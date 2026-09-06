@@ -36,6 +36,22 @@
   layout, restore exactly as before and the restore script needs no flag to
   tell them apart.
 
+- **A busy phone could be signed out at the very moment it renewed its
+  credentials.** The app renews its access token about once a day, and a
+  renewal that landed while several requests were already on the wire killed
+  the token those requests were carrying. They came back "this credential was
+  withdrawn", the app read that as "sign in again", and asked for another
+  renewal using the refresh token it had just spent — which looks exactly
+  like a stolen token being replayed, so every credential for that device was
+  withdrawn and the person had to log in again. Renewal now retires the
+  outgoing token by pulling its expiry in to fifteen seconds rather than
+  withdrawing it: long enough for requests already in flight to finish, short
+  enough that the old token gains nothing worth having over the seconds it
+  was valid for anyway. A token whose own expiry falls inside that window
+  keeps its own. The replay defence is unchanged — a refresh token presented
+  twice still withdraws the device's credentials on the spot, and so does
+  signing out.
+
 ## [1.38.9] — 2026-09-05
 
 The date order you choose now reaches every date on screen, a plain-HTTP

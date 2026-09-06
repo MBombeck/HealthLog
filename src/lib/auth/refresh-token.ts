@@ -2,10 +2,12 @@
  * Refresh-token issuance + rotation (v1.4 G4).
  *
  * One-time-use semantics: every successful refresh marks the consumed
- * row's `usedAt`, sets `replacedById` to the new row, and revokes the
- * paired access token. Reuse of an already-consumed token is treated as
- * a stolen-token signal and revokes the entire token family (caller must
- * log in again).
+ * row's `usedAt`, sets `replacedById` to the new row, and sunsets the
+ * paired access token — its expiry is pulled in to a few seconds so
+ * requests already on the wire finish, without the token outliving its
+ * sibling. Reuse of an already-consumed token is treated as a
+ * stolen-token signal and revokes the entire token family instantly
+ * (caller must log in again).
  */
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/db";
@@ -29,6 +31,28 @@ export interface IssueRefreshOpts {
   /** Token name suffix for the underlying ApiToken row. */
   source: string;
 }
+
+/**
+ * How long an access token stays usable after the refresh token it was paired
+ * with has been rotated away.
+ *
+ * A native client fires several requests at once and rotates in the middle of
+ * them: a request that left the device a few hundred milliseconds before the
+ * rotation committed still carries the outgoing access token and lands after
+ * it. Killing that token at the instant of the commit answered those requests
+ * with 401 `revoked`, which a client reads as "re-authenticate" — it then
+ * rotates again with the refresh token it just consumed, trips reuse
+ * detection, and loses the whole family. Being busy was enough to be signed
+ * out.
+ *
+ * 15 seconds is picked from both ends. Long enough that a request already on
+ * the wire over a slow mobile link finishes on the old credential, including a
+ * retry; short enough that a leaked access token gains nothing worth having —
+ * it was already valid for the seconds before the rotation, and this only
+ * carries that same validity a few seconds further, against an access token
+ * that lives a day.
+ */
+export const ACCESS_TOKEN_SUNSET_MS = 15_000;
 
 function generateRefreshTokenSecret(): string {
   return `hlr_${randomBytes(32).toString("hex")}`;
@@ -91,8 +115,9 @@ export type RotationResult =
 
 /**
  * Atomically rotate a refresh token: validate, mark consumed, issue a new
- * pair, revoke the previously-paired access token. Reuse of a consumed
- * token revokes the whole family (defence against stolen refresh tokens).
+ * pair, sunset the previously-paired access token (see
+ * `ACCESS_TOKEN_SUNSET_MS`). Reuse of a consumed token revokes the whole
+ * family immediately (defence against stolen refresh tokens).
  */
 export async function rotateRefreshToken(input: {
   refreshToken: string;
@@ -221,13 +246,45 @@ export async function rotateRefreshToken(input: {
     return { ok: false, reason: "already_used" };
   }
 
-  // Best-effort: revoke the access token paired with the consumed refresh,
-  // so any leaked access token can't outlive its refresh-token sibling.
+  // Best-effort: sunset the access token paired with the consumed refresh, so
+  // a leaked access token can't meaningfully outlive its refresh-token
+  // sibling. It is a SHORTENED EXPIRY, not a revoke: a request that left the
+  // device before this rotation committed must still be served, and
+  // `expiresAt <= now` is the verdict a client already knows how to handle
+  // (`bearer.ts` answers it with reason `expired`), whereas `revoked` reads as
+  // "re-authenticate" and drives the client into a second rotation with the
+  // refresh token it just consumed.
+  //
+  // This grace applies to the ORDINARY rotation only. The reuse-detection path
+  // above — a replayed refresh token, a spoofed device id — is the
+  // stolen-token defence and keeps revoking the family and its access tokens
+  // instantly, with no window. So does `revokeBearerAccessToken` at logout.
+  //
+  // The write can only ever SHORTEN. `LEAST(expires_at, $1)` takes the minimum
+  // inside the single UPDATE, so a token already inside its last seconds is
+  // not handed extra life by the very call that retires it, and there is no
+  // read-then-write window for a concurrent update to fall into. Postgres
+  // `LEAST` skips NULLs, which is the semantics we want for a token carrying
+  // no fixed expiry: it gets the window and nothing longer.
+  //
+  // Raw because Prisma's `updateMany` cannot express a column-referencing
+  // expression in `data`. Both values ride as tagged-template parameters.
   if (row.accessTokenHash) {
-    await prisma.apiToken.updateMany({
-      where: { tokenHash: row.accessTokenHash, revoked: false },
-      data: { revoked: true },
-    });
+    const sunsetAt = new Date(Date.now() + ACCESS_TOKEN_SUNSET_MS);
+    // The bound value is an ISO-8601 UTC string cast in SQL, not a JS `Date`:
+    // a Date parameter is serialised in the process's local zone, and
+    // `expires_at` is a zone-less UTC column, so the comparison would shift by
+    // the host's offset. `::timestamptz AT TIME ZONE 'UTC'` pins the instant
+    // whatever TZ the app process runs under.
+    await prisma.$executeRaw`
+      UPDATE api_tokens
+         SET expires_at = LEAST(
+               expires_at,
+               ${sunsetAt.toISOString()}::timestamptz AT TIME ZONE 'UTC'
+             )
+       WHERE token_hash = ${row.accessTokenHash}
+         AND revoked = false
+    `;
   }
 
   return { ok: true, bundle };
@@ -243,6 +300,11 @@ export async function rotateRefreshToken(input: {
  * revokes its paired `RefreshToken` sibling (matched by `accessTokenHash`)
  * so the whole credential pair dies with the logout.
  *
+ * A logout is instant and stays instant: no sunset window applies here. The
+ * rotation-time grace exists for requests the client did not choose to
+ * abandon; a person signing out chose, and must not keep a live token for a
+ * further few seconds.
+ *
  * Returns true when a matching live ApiToken row was revoked.
  */
 export async function revokeBearerAccessToken(
@@ -256,7 +318,7 @@ export async function revokeBearerAccessToken(
   });
 
   // Revoke the paired refresh sibling so a native logout kills both halves
-  // of the pair, mirroring the rotation-time access-token revoke.
+  // of the pair in one call.
   await prisma.refreshToken.updateMany({
     where: { accessTokenHash: accessHash, revokedAt: null },
     data: { revokedAt: new Date() },
