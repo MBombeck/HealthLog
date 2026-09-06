@@ -1,3 +1,4 @@
+import type { Readable } from "node:stream";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { encryptBackup } from "../offhost-backup";
 import {
@@ -29,6 +30,14 @@ function makeS3Mock(initial: Record<string, Buffer> = {}) {
   const store = new Map<string, Buffer>(Object.entries(initial));
   return {
     store,
+    // Consumes what it is given rather than storing the stream: the upload
+    // path is what applies backpressure to the producer, so a double that did
+    // not read would deadlock instead of failing.
+    putStream: vi.fn(async (k: string, body: Readable) => {
+      const chunks: Buffer[] = [];
+      for await (const c of body) chunks.push(Buffer.from(c as Uint8Array));
+      store.set(k, Buffer.concat(chunks));
+    }),
     putObject: vi.fn(async (k: string, b: Buffer | Uint8Array) => {
       store.set(k, Buffer.from(b));
     }),

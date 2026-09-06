@@ -1,7 +1,7 @@
 /**
  * The full-backup payload, written out incrementally instead of built.
  *
- * Why it exists. `buildFullBackupJson` has to hold two things at once that
+ * Why it exists. the old whole-string builder (removed with the streaming path) had to hold two things at once that
  * both scale with the record: the payload object graph, and the JSON string
  * `JSON.stringify` makes of it. On a seeded account of 445 000 measurements,
  * 30 000 mood entries and 60 000 intake events, that pair alone exhausts a

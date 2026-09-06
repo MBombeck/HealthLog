@@ -1,5 +1,41 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- **The nightly off-host backup no longer takes the instance down with it.**
+  Configuring an S3 target and waiting for 02:30 was, on a long-lived record,
+  a way to restart the container: the uploader built the whole backup as one
+  JSON string, gzipped that whole string, encrypted the whole result and
+  handed the finished buffer to a single upload, so four full copies of the
+  record were alive at once. On an account of 445 000 measurements the JSON
+  alone is 242 MB, and the run died of heap exhaustion seventeen seconds in —
+  taking every signed-in session on the instance with it, because the job runs
+  inside the app process. It streams now, end to end: the JSON is produced a
+  page at a time, gzip and the cipher consume it as it arrives, and the object
+  goes up in 8 MB parts. What the process holds no longer depends on how much
+  you have recorded.
+
+- **A nightly run that uploaded nothing for anybody now reports failure.** It
+  used to say it was fine. Wrong credentials, a bucket that does not exist and
+  an unreachable endpoint all fail every account rather than one, and all
+  three used to leave the jobs page reading healthy over an empty bucket. The
+  run now fails with the storage provider's own sentence as the cause. A run
+  where some account got a copy still succeeds, with the rest counted, because
+  retrying the whole cohort over one object would re-upload everybody's.
+
+### Changed
+
+- **Off-host objects carry their authentication tag at the end.** The tag can
+  only be produced once the last block of ciphertext is in, so a leading one
+  meant the whole object had to exist before its first byte could be sent —
+  which is the thing that could not be streamed. Nothing about the encryption
+  changes; the tag still covers every byte and is still verified before any
+  plaintext comes back. Objects already in your bucket, in either older
+  layout, restore exactly as before and the restore script needs no flag to
+  tell them apart.
+
 ## [1.38.9] — 2026-09-05
 
 The date order you choose now reaches every date on screen, a plain-HTTP

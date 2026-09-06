@@ -429,6 +429,76 @@ export function extractKeyId(encoded: string): string | null {
 /** Marker prefix of a streamed ciphertext. Disjoint from every other format. */
 const STREAM_CODEC_PREFIX = "~hlgcm1.";
 
+/**
+ * Incremental AES-256-GCM writer over raw bytes.
+ *
+ * The byte-level half of the codec, split out from the base64 one below
+ * because not every destination is a text column. `iv | update()* | final()`
+ * concatenated in order is the same `iv | ciphertext | authTag` the base64
+ * form encodes, so the two write the same bytes and only differ in how they
+ * are framed on the way out.
+ *
+ * The key is passed in rather than looked up. Every application row goes
+ * through `createStreamEncryptor()` under the active `ENCRYPTION_KEYS` entry,
+ * but the off-host backup is deliberately encrypted under a SEPARATE key
+ * (`BACKUP_ENCRYPTION_KEY`) so a leak of one does not expose the other — and
+ * it needs this exact writer, not a second scheme.
+ */
+export interface RawStreamEncryptor {
+  /** The 12-byte IV. Belongs in front of the ciphertext. */
+  readonly iv: Buffer;
+  /** Encrypt one plaintext chunk. May return an empty buffer. */
+  update(chunk: Buffer): Buffer;
+  /** Flush the cipher and append the auth tag. No further calls after this. */
+  final(): Buffer;
+}
+
+/** Open a byte-level streaming encryptor under an explicit 32-byte key. */
+export function createRawStreamEncryptor(key: Buffer): RawStreamEncryptor {
+  if (key.byteLength !== 32) {
+    throw new Error("Stream encryption key must be 32 bytes");
+  }
+  const iv = randomBytes(IV_LENGTH);
+  const cipher = createCipheriv(ALGORITHM, key, iv);
+  let done = false;
+
+  return {
+    iv,
+    update(chunk: Buffer): Buffer {
+      if (done) throw new Error("Stream encryptor already finalised");
+      return cipher.update(chunk);
+    },
+    final(): Buffer {
+      if (done) throw new Error("Stream encryptor already finalised");
+      done = true;
+      // The tag is plaintext-independent trailing data, so it simply joins
+      // the byte stream.
+      return Buffer.concat([cipher.final(), cipher.getAuthTag()]);
+    },
+  };
+}
+
+/**
+ * Verify and decrypt `iv | ciphertext | authTag` under an explicit key.
+ *
+ * Deliberately not incremental: the tag covers every ciphertext byte and is
+ * checked by `final()` before a single plaintext byte is returned, and a
+ * caller that reads a backup parses it as one document anyway. Releasing
+ * unverified plaintext to save a copy would trade the authentication for
+ * memory.
+ */
+export function decryptRawStream(packed: Buffer, key: Buffer): Buffer {
+  if (packed.byteLength < IV_LENGTH + AUTH_TAG_LENGTH) {
+    throw new Error("Streamed ciphertext is truncated");
+  }
+  const iv = packed.subarray(0, IV_LENGTH);
+  const tag = packed.subarray(packed.byteLength - AUTH_TAG_LENGTH);
+  const ct = packed.subarray(IV_LENGTH, packed.byteLength - AUTH_TAG_LENGTH);
+  const dec = createDecipheriv(ALGORITHM, key, iv);
+  dec.setAuthTag(tag);
+  return Buffer.concat([dec.update(ct), dec.final()]);
+}
+
 /** Incremental AES-256-GCM writer. Emits base64 pieces; concatenate in order. */
 export interface StreamEncryptor {
   /** The header, including base64(iv). Emit before any `update()` output. */
@@ -440,7 +510,7 @@ export interface StreamEncryptor {
 }
 
 /**
- * Open a streaming encryptor under the ACTIVE key.
+ * Open a streaming encryptor under the ACTIVE key, framed as base64.
  *
  * The 12-byte IV is exactly four base64 groups, so it encodes standalone and
  * the ciphertext continues on a group boundary — which is what lets the rest
@@ -448,11 +518,9 @@ export interface StreamEncryptor {
  */
 export function createStreamEncryptor(): StreamEncryptor {
   const { id, key } = getActiveKey();
-  const iv = randomBytes(IV_LENGTH);
-  const cipher = createCipheriv(ALGORITHM, key, iv);
+  const raw = createRawStreamEncryptor(key);
   // Bytes that did not fill a 3-byte base64 group in the previous chunk.
   let carry = Buffer.alloc(0);
-  let done = false;
 
   const emit = (bytes: Buffer): string => {
     const buf = carry.byteLength > 0 ? Buffer.concat([carry, bytes]) : bytes;
@@ -462,17 +530,13 @@ export function createStreamEncryptor(): StreamEncryptor {
   };
 
   return {
-    header: `${STREAM_CODEC_PREFIX}${id}.${iv.toString("base64")}`,
+    header: `${STREAM_CODEC_PREFIX}${id}.${raw.iv.toString("base64")}`,
     update(chunk: Buffer): string {
-      if (done) throw new Error("Stream encryptor already finalised");
-      return emit(cipher.update(chunk));
+      return emit(raw.update(chunk));
     },
     final(): string {
-      if (done) throw new Error("Stream encryptor already finalised");
-      done = true;
-      // The tag is plaintext-independent trailing data, so it simply joins the
-      // byte stream; the last group is padded exactly once, here.
-      const tail = Buffer.concat([carry, cipher.final(), cipher.getAuthTag()]);
+      // The last group is padded exactly once, here.
+      const tail = Buffer.concat([carry, raw.final()]);
       carry = Buffer.alloc(0);
       return tail.toString("base64");
     },
@@ -511,16 +575,7 @@ export function decryptStream(stored: string): Buffer {
         `ENCRYPTION_KEYS before decrypting rows written under that key.`,
     );
   }
-  const packed = Buffer.from(rest.slice(dot + 1), "base64");
-  if (packed.byteLength < IV_LENGTH + AUTH_TAG_LENGTH) {
-    throw new Error("Streamed ciphertext is truncated");
-  }
-  const iv = packed.subarray(0, IV_LENGTH);
-  const tag = packed.subarray(packed.byteLength - AUTH_TAG_LENGTH);
-  const ct = packed.subarray(IV_LENGTH, packed.byteLength - AUTH_TAG_LENGTH);
-  const dec = createDecipheriv(ALGORITHM, key, iv);
-  dec.setAuthTag(tag);
-  return Buffer.concat([dec.update(ct), dec.final()]);
+  return decryptRawStream(Buffer.from(rest.slice(dot + 1), "base64"), key);
 }
 
 /** The key id a streamed ciphertext was written under, or null when unparsable. */

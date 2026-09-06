@@ -661,43 +661,6 @@ export function isDeferredRows(value: unknown): value is DeferredRows {
     (value as Record<symbol, unknown>)[DEFERRED_ROWS] === true
   );
 }
-
-/**
- * The same payload, already serialised, with the object graph released.
- *
- * Built through the streaming writer rather than by stringifying a finished
- * payload, so the object graph and the string never coexist: the three
- * unbounded tables go past a page at a time and every other section is
- * released as soon as its JSON exists. What is left is the answer itself,
- * which a caller that wants a string necessarily holds.
- *
- * A caller that does NOT need the string — the weekly job, which only wants
- * the compressed ciphertext — should go through `packBackupBlobStreaming` and
- * `streamFullBackupJson` directly and never let the whole document exist at
- * all. This function is for the callers that genuinely hand a JSON body on.
- */
-export async function buildFullBackupJson(
-  prisma: PrismaClient,
-  userId: string,
-  options: FullBackupOptions = {},
-): Promise<string> {
-  // Imported here rather than at the top of the file: the writer imports this
-  // module for `buildFullBackupPayload`, and a static edge in both directions
-  // is a cycle. The call is once per backup, so the cost is nil.
-  const { streamFullBackupJson } =
-    await import("@/lib/export/full-backup-stream");
-  const pieces: string[] = [];
-  await streamFullBackupJson(
-    prisma,
-    userId,
-    (chunk) => {
-      pieces.push(chunk);
-    },
-    options,
-  );
-  return pieces.join("");
-}
-
 /**
  * Build the canonical full-backup payload for `userId`. Portable exports omit
  * tombstones and document ciphertext; disaster-recovery payloads preserve

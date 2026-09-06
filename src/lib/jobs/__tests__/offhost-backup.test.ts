@@ -1,4 +1,5 @@
 import { createCipheriv, randomBytes } from "node:crypto";
+import type { Readable } from "node:stream";
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
@@ -10,20 +11,14 @@ const mocks = vi.hoisted(() => ({
   buildFullBackupPayload: vi.fn(),
 }));
 
-// The uploader takes the already-serialised form, so the stand-in for
-// `buildFullBackupJson` serialises whatever the payload mock was told to
-// return. Every case below keeps stubbing the PAYLOAD, which is the thing
-// these tests are actually about.
+// Only the payload builder is stubbed. The REAL streaming writer runs on top
+// of it, so every case below keeps stubbing the PAYLOAD — which is what these
+// tests are about — while the framing that turns it into object bytes is the
+// framing the job actually uses. `isDeferredRows` rides along because the
+// writer asks it about every section; nothing here defers.
 vi.mock("@/lib/export/full-backup-payload", () => ({
   buildFullBackupPayload: mocks.buildFullBackupPayload,
-  buildFullBackupJson: async (...args: unknown[]) =>
-    JSON.stringify(
-      (
-        (await mocks.buildFullBackupPayload(...args)) as {
-          payload: unknown;
-        }
-      ).payload,
-    ),
+  isDeferredRows: () => false,
 }));
 import {
   encryptBackup,
@@ -31,6 +26,7 @@ import {
   loadOffhostConfig,
   runOffhostBackup,
   runOffhostRoundtripTest,
+  uploadEncryptedBackup,
 } from "../offhost-backup";
 
 const ENC_KEY =
@@ -114,6 +110,14 @@ function makeS3Mock() {
   const store = new Map<string, Buffer>();
   return {
     store,
+    // Consumes what it is given rather than storing the stream: the upload
+    // path is what applies backpressure to the producer, so a double that did
+    // not read would deadlock instead of failing.
+    putStream: vi.fn(async (k: string, body: Readable) => {
+      const chunks: Buffer[] = [];
+      for await (const c of body) chunks.push(Buffer.from(c as Uint8Array));
+      store.set(k, Buffer.concat(chunks));
+    }),
     putObject: vi.fn(async (k: string, b: Buffer) => {
       store.set(k, Buffer.from(b));
     }),
@@ -214,7 +218,14 @@ describe("runOffhostBackup", () => {
     expect(mocks.buildFullBackupPayload).toHaveBeenCalledWith(prisma, "u1", {
       purpose: "disaster-recovery",
       exportedAt: now,
+      // The three unbounded tables are declared, not read. Without this the
+      // writer is streaming a payload that was materialised first, which is
+      // the arrangement that took the container down.
+      deferBulk: true,
     });
+    // Nothing went through the whole-buffer arm.
+    expect(s3.putObject).not.toHaveBeenCalled();
+    expect(s3.putStream).toHaveBeenCalledTimes(2);
   });
 
   it("uploads the canonical builder output without reshaping it", async () => {
@@ -252,8 +263,11 @@ describe("runOffhostBackup", () => {
         },
       ],
     };
+    // A copy, because the streaming writer releases each section from the
+    // payload as it goes — that destructive walk is what keeps its peak at one
+    // section, and handing it the fixture itself would empty the expectation.
     mocks.buildFullBackupPayload.mockResolvedValueOnce({
-      payload: canonicalPayload,
+      payload: structuredClone(canonicalPayload),
       counts: {},
     });
 
@@ -297,6 +311,156 @@ describe("runOffhostBackup", () => {
 
     expect(report.uploaded).toBe(1);
     expect(report.failed).toBe(1);
+  });
+
+  it("refuses an account whose object outgrows one multipart upload", async () => {
+    const s3 = makeS3Mock();
+    const prisma = {
+      user: { findMany: vi.fn().mockResolvedValue([{ id: "u1" }]) },
+    };
+    mocks.buildFullBackupPayload.mockResolvedValue({
+      payload: {
+        schemaVersion: BACKUP_SCHEMA_VERSION,
+        exportedAt: "2026-05-08T00:00:00.000Z",
+        userId: "u1",
+        // Incompressible, so the limit is crossed by real object bytes rather
+        // than by gzip failing to shrink a repetitive fixture.
+        measurements: Array.from({ length: 400 }, (_, at) => ({
+          id: `m-${at}`,
+          note: randomBytes(64).toString("hex"),
+        })),
+      },
+      counts: {},
+    });
+
+    const report = await runOffhostBackup(
+      prisma as never,
+      s3,
+      new Date("2026-05-08T00:00:00Z"),
+      { maxBytes: 1024 },
+    );
+
+    expect(report.uploaded).toBe(0);
+    expect(report.failed).toBe(1);
+    expect(report.oversized).toBe(1);
+    expect(report.failures[0]?.message).toContain("a single object may occupy");
+    // The refusal is the account's, not the process's, and it leaves nothing
+    // half-written behind it.
+    expect(s3.store.size).toBe(0);
+  });
+
+  it("reports the largest object it wrote", async () => {
+    const s3 = makeS3Mock();
+    const prisma = {
+      user: { findMany: vi.fn().mockResolvedValue([{ id: "u1" }]) },
+    };
+    const report = await runOffhostBackup(
+      prisma as never,
+      s3,
+      new Date("2026-05-08T00:00:00Z"),
+    );
+    expect(report.largestObjectBytes).toBe(
+      s3.store.get("2026-05-08/user-u1.json.enc")!.byteLength,
+    );
+    expect(report.oversized).toBe(0);
+  });
+});
+
+describe("uploadEncryptedBackup", () => {
+  const key = Buffer.from(ENC_KEY, "hex");
+
+  it("writes a version-3 object that reads back byte for byte", async () => {
+    const s3 = makeS3Mock();
+    const document = JSON.stringify({
+      hello: "world",
+      rows: Array.from({ length: 5_000 }, (_, at) => ({ at })),
+    });
+
+    const bytes = await uploadEncryptedBackup(s3, "k", key, async (write) => {
+      // In pieces, because that is how the real producer arrives.
+      for (let at = 0; at < document.length; at += 997) {
+        await write(document.slice(at, at + 997));
+      }
+    });
+
+    const stored = s3.store.get("k")!;
+    expect(stored.byteLength).toBe(bytes);
+    expect(stored.subarray(0, 5).toString("binary")).toBe("HLBK\x03");
+    expect(decryptBackup(stored, key)).toBe(document);
+  });
+
+  it("restores an object of the old shape and one of the new one alike", async () => {
+    const s3 = makeS3Mock();
+    const document = JSON.stringify({ userId: "u1", n: 7 });
+
+    // A genuine version-2 object: the writer that produced every object
+    // already sitting in an operator's bucket.
+    const legacy = encryptBackup(document, key);
+    await s3.putObject("old", legacy);
+    await uploadEncryptedBackup(s3, "new", key, (write) => write(document));
+
+    const oldBytes = s3.store.get("old")!;
+    const newBytes = s3.store.get("new")!;
+    expect(oldBytes.subarray(0, 5).toString("binary")).toBe("HLBK\x02");
+    expect(newBytes.subarray(0, 5).toString("binary")).toBe("HLBK\x03");
+    // Different framing, same record, one reader.
+    expect(decryptBackup(oldBytes, key)).toBe(document);
+    expect(decryptBackup(newBytes, key)).toBe(document);
+  });
+
+  it("rejects a tampered version-3 object rather than returning a partial one", async () => {
+    const s3 = makeS3Mock();
+    await uploadEncryptedBackup(s3, "k", key, (write) =>
+      write(JSON.stringify({ userId: "u1" })),
+    );
+    const stored = Buffer.from(s3.store.get("k")!);
+    // One flipped bit in the ciphertext body, well clear of the trailing tag.
+    stored[20] ^= 0x01;
+    expect(() => decryptBackup(stored, key)).toThrow();
+  });
+
+  it("fails the upload rather than the process when the producer throws", async () => {
+    const s3 = makeS3Mock();
+    await expect(
+      uploadEncryptedBackup(s3, "k", key, async (write) => {
+        await write("{");
+        throw new Error("db gone");
+      }),
+    ).rejects.toThrow("db gone");
+    expect(s3.store.has("k")).toBe(false);
+  });
+
+  it("stops the producer when the bucket refuses the upload mid-write", async () => {
+    const s3 = makeS3Mock();
+    // Refused after the producer is already going, and without reading a byte
+    // — the shape a rejected CreateMultipartUpload has. The producer is by
+    // then waiting on the compressor to drain, and the reader that would have
+    // drained it is gone.
+    s3.putStream.mockImplementationOnce(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      throw new Error("The specified bucket does not exist");
+    });
+
+    await expect(
+      uploadEncryptedBackup(s3, "k", key, async (write) => {
+        // Well past the compressor's buffer, so the wait is real.
+        for (let at = 0; at < 200; at++) {
+          await write(randomBytes(4096).toString("hex"));
+        }
+      }),
+    ).rejects.toThrow("The specified bucket does not exist");
+  });
+
+  it("surfaces the target's own message when the upload is refused", async () => {
+    const s3 = makeS3Mock();
+    s3.putStream.mockRejectedValueOnce(
+      new Error(
+        "The request signature we calculated does not match the signature you provided.",
+      ),
+    );
+    await expect(
+      uploadEncryptedBackup(s3, "k", key, (write) => write("{}")),
+    ).rejects.toThrow("The request signature we calculated");
   });
 });
 
