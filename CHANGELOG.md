@@ -1,6 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [1.38.10] — 2026-09-06
+
+The nightly off-host backup streams and fits a small container, and a
+busy native client is no longer signed out at the token boundary.
 
 ### Fixed
 
