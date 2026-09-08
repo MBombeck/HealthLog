@@ -1,5 +1,57 @@
 # Changelog
 
+## [1.38.11] — 2026-09-08
+
+"Sign out everywhere" now means everywhere, a refresh cannot outrun a
+revocation, and the idempotency cache can no longer answer for a credential
+the route has not seen.
+
+### Fixed
+
+- **"Sign out everywhere" signs out the other phones, not the one pressing
+  it.** A native login is two rows: a refresh token and the access token it is
+  paired with, and the Bearer check consults only the second. Revoking the
+  refresh tokens alone, which is what the button did, left every other device
+  working until its access token ran out, up to a day on the default policy.
+  Worse, a phone pressing the button described itself to the server as a
+  browser session, so the exception meant to spare the caller matched nothing
+  and the phone revoked its own refresh token: it was the one device signed
+  out, at its next rotation. Both ends are fixed. The button revokes the paired
+  access tokens of every other device inside the same transaction, and a
+  Bearer caller is named by its access token so its own login is the one kept.
+  Long-lived API tokens from the settings page are untouched, as before.
+
+- **A refresh that overlaps a revocation loses.** Rotation read the presented
+  refresh token as live, minted a new pair, and only then marked the old row
+  consumed with a condition that checked "not yet used" but not "not yet
+  revoked". A sign-out-everywhere or a credential rotation landing in that
+  window was overtaken: the update still matched, and the pair minted a moment
+  after the family ended was the one live login left. The condition now
+  includes the revocation, the pair minted inside the window is retired, and
+  the client hears `revoked`, which it answers with a fresh sign-in, rather
+  than `already_used`, which it would retry. Pinned by an integration test that
+  revokes the family from inside the window against real Postgres.
+
+- **The idempotency cache is keyed by the authority a request carries.** A
+  retry that replays a cached response runs before the route's own permission
+  check, by design, so what the cache could answer had to match what the route
+  would allow. Two gaps: a delegate whose grant had been replaced by a narrower
+  one, or whose scope had been edited in place, still matched the cell they
+  filled under the wider grant, because the replay checked only that a live
+  grant existed; and a narrow-scoped API token of the same account could read
+  a cell filled by a wildcard credential on a route outside its scope.
+  Delegated cells now fold the grant's identity, level and scope into the key,
+  and a narrow token's cells are keyed by the token, so any change of authority
+  lands a retry in a fresh cell where the route decides. Cookie sessions and
+  wildcard tokens acting on their own record are keyed byte-for-byte as before;
+  no client changes.
+
+### Changed
+
+- **README: immunizations are in.** The record list still said immunization
+  records were deliberately out of scope; the vaccination record has shipped
+  since v1.37.3.
+
 ## [1.38.10] — 2026-09-06
 
 The nightly off-host backup streams and fits a small container, and a
