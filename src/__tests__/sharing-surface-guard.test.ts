@@ -3108,23 +3108,33 @@ describe("(h) the guardian route set is frozen", () => {
 /* -------------------------------------------------------------------------- */
 
 describe("(i) delegated replay is re-authorized", () => {
-  it("checks the current grant before returning a cached delegated body", () => {
-    const replay = functionSource(
-      "lib/idempotency.ts",
-      "canReplayDelegatedResponse",
-    );
-    expect(replay.length).toBeGreaterThan(0);
-    expect(replay).toContain("findActiveGrant");
-    expect(replay).toContain("grantorId: recordUserId");
-    expect(replay).toContain("granteeId: actorUserId");
+  // v1.38.11 — the grant is no longer consulted at replay time; it is folded
+  // into the cell key BEFORE any cell is read or claimed (`delegatedGrantFacet`),
+  // so a replaced or narrowed grant cannot reach a cell filled under the wider
+  // one. The invariant this pins moved accordingly: the grant lookup names the
+  // right pair, it happens before `findCached`, and a missing grant leaves the
+  // wrapper without touching a cell.
+  it("resolves the current grant into the cell key before any cell is read", () => {
+    const facet = functionSource("lib/idempotency.ts", "delegatedGrantFacet");
+    expect(facet.length).toBeGreaterThan(0);
+    expect(facet).toContain("findActiveGrant");
+    expect(facet).toContain("grantorId: recordUserId");
+    expect(facet).toContain("granteeId: actorUserId");
+    expect(facet).toContain("grant.id");
+    expect(facet).toContain("grant.access");
+    expect(facet).toContain("scopeJson");
 
     const wrapper = functionSource("lib/idempotency.ts", "withIdempotency");
     expect(wrapper.length).toBeGreaterThan(0);
     expect(wrapper).toContain("claimedRecord === undefined");
-    const authorization = wrapper.indexOf("canReplayDelegatedResponse");
+    const authorization = wrapper.indexOf("delegatedGrantFacet(");
+    const noGrant = wrapper.indexOf("grantFacet === null");
+    const cacheRead = wrapper.indexOf("findCached(ctx)");
     const replayReturn = wrapper.indexOf("return cached.response");
     expect(authorization).toBeGreaterThan(-1);
-    expect(replayReturn).toBeGreaterThan(authorization);
+    expect(noGrant).toBeGreaterThan(authorization);
+    expect(cacheRead).toBeGreaterThan(noGrant);
+    expect(replayReturn).toBeGreaterThan(cacheRead);
   });
 });
 

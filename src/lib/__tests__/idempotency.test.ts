@@ -52,7 +52,23 @@ import {
 } from "../idempotency";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+vi.mock("@/lib/sharing/grants", () => ({
+  findActiveGrant: vi.fn(),
+}));
+
+import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { findActiveGrant } from "@/lib/sharing/grants";
+
+/** A live WRITE grant, whole record, as `delegatedGrantFacet` reads it. */
+const GRANT = { id: "grant-1", access: "WRITE", scopeJson: null };
+function grantFacet(grant: { id: string; access: string; scopeJson: unknown }) {
+  const fp = createHash("sha256")
+    .update(JSON.stringify(grant.scopeJson ?? null))
+    .digest("hex")
+    .slice(0, 16);
+  return `g:${grant.id}:${grant.access}:${fp}`;
+}
 
 function makeRequest(
   method: string,
@@ -68,6 +84,7 @@ function makeRequest(
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.idempotencyKey.findUnique).mockResolvedValue(null);
+  vi.mocked(findActiveGrant).mockResolvedValue(GRANT as never);
   vi.mocked(prisma.idempotencyKey.create).mockResolvedValue({} as never);
   vi.mocked(prisma.idempotencyKey.updateMany).mockResolvedValue({
     count: 1,
@@ -365,7 +382,9 @@ describe("defaultUserIdResolver (audit C-4)", () => {
     vi.mocked(getSession).mockResolvedValue(null);
     mockHeader("Bearer hlk_abcdef");
     vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "tok-device",
       userId: "u-bearer",
+      permissions: ["*"],
       revoked: false,
       expiresAt: null,
     } as never);
@@ -610,13 +629,13 @@ describe("withIdempotency — record-scoped cells", () => {
 
     await run();
 
-    expect(lookedUpKey()).toBe(`owner-9|${CLIENT_KEY}`);
+    expect(lookedUpKey()).toBe(`owner-9|${grantFacet(GRANT)}|${CLIENT_KEY}`);
     // The owner column stays the ACTOR. It is a foreign key to `users` with a
     // cascade behind it, so it can only ever hold a real account id — which is
     // why the record moved into the key and not into here.
     expect(claimed()).toMatchObject({
       userId: "u-1",
-      key: `owner-9|${CLIENT_KEY}`,
+      key: `owner-9|${grantFacet(GRANT)}|${CLIENT_KEY}`,
     });
   });
 
@@ -626,7 +645,80 @@ describe("withIdempotency — record-scoped cells", () => {
 
     await run();
 
-    expect(claimed().key).toBe(`owner-7|${CLIENT_KEY}`);
+    expect(claimed().key).toBe(`owner-7|${grantFacet(GRANT)}|${CLIENT_KEY}`);
+  });
+
+  it("files a delegated request under the grant it acts through, so a replaced grant is a fresh cell", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    present({ "x-healthlog-account": "owner-9" });
+    await run();
+    const underFirstGrant = claimed().key;
+
+    vi.clearAllMocks();
+    vi.mocked(prisma.idempotencyKey.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.idempotencyKey.create).mockResolvedValue({} as never);
+    vi.mocked(findActiveGrant).mockResolvedValue({
+      ...GRANT,
+      id: "grant-2",
+      access: "READ",
+    } as never);
+    present({ "x-healthlog-account": "owner-9" });
+    await run();
+
+    expect(claimed().key).not.toBe(underFirstGrant);
+    expect(claimed().key).toBe(
+      `owner-9|${grantFacet({ ...GRANT, id: "grant-2", access: "READ" })}|${CLIENT_KEY}`,
+    );
+  });
+
+  it("files a scope edited in place under a fresh cell too", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    vi.mocked(findActiveGrant).mockResolvedValue({
+      ...GRANT,
+      scopeJson: { areas: ["vitals"] },
+    } as never);
+    present({ "x-healthlog-account": "owner-9" });
+    await run();
+    expect(claimed().key).not.toBe(
+      `owner-9|${grantFacet(GRANT)}|${CLIENT_KEY}`,
+    );
+  });
+
+  it("neither reads nor claims a cell when no live grant exists", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    vi.mocked(findActiveGrant).mockResolvedValue(null);
+    present({ "x-healthlog-account": "owner-9" });
+    await run();
+    expect(prisma.idempotencyKey.findUnique).not.toHaveBeenCalled();
+    expect(prisma.idempotencyKey.create).not.toHaveBeenCalled();
+  });
+
+  it("keys a narrow-scoped token's own-record cell by the token, and a wildcard token's byte-for-byte", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "tok-narrow",
+      userId: "u-1",
+      permissions: ["measurements:write"],
+      revoked: false,
+      expiresAt: null,
+    } as never);
+    present({ authorization: `Bearer hlk_${"b".repeat(64)}` });
+    await run();
+    expect(claimed().key).toBe(`t:tok-narrow|${CLIENT_KEY}`);
+
+    vi.clearAllMocks();
+    vi.mocked(prisma.idempotencyKey.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.idempotencyKey.create).mockResolvedValue({} as never);
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "tok-wild",
+      userId: "u-1",
+      permissions: ["*"],
+      revoked: false,
+      expiresAt: null,
+    } as never);
+    present({ authorization: `Bearer hlk_${"c".repeat(64)}` });
+    await run();
+    expect(claimed().key).toBe(CLIENT_KEY);
   });
 
   it("keys a request with no acting account byte-for-byte as the client sent it", async () => {
@@ -807,7 +899,9 @@ describe("the record-session fence sits above the replay cache", () => {
     // header on this transport is neither read nor honoured.
     vi.mocked(getSession).mockResolvedValue(null);
     vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "tok-device",
       userId: "u-bearer",
+      permissions: ["*"],
       revoked: false,
       expiresAt: null,
     } as never);

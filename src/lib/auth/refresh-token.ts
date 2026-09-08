@@ -224,8 +224,14 @@ export async function rotateRefreshToken(input: {
     select: { id: true },
   });
 
+  // `revokedAt: null` is part of the guard, not only `usedAt: null`. The row
+  // was read as live at the top of this function; a revocation landing between
+  // that read and this write — "sign out everywhere", a credential rotation,
+  // reuse detection tripped by a sibling — would otherwise be overtaken, and
+  // the pair minted a moment ago would be the one live login left on a family
+  // the user had just ended.
   const updated = await prisma.refreshToken.updateMany({
-    where: { id: row.id, usedAt: null },
+    where: { id: row.id, usedAt: null, revokedAt: null },
     data: {
       usedAt: new Date(),
       replacedById: newRow?.id ?? null,
@@ -233,8 +239,11 @@ export async function rotateRefreshToken(input: {
   });
 
   if (updated.count === 0) {
-    // Lost the race — another concurrent refresh consumed this row.
-    // Revoke our just-issued tokens to avoid leaking an extra valid pair.
+    // Lost the race: another concurrent refresh consumed this row, or a
+    // revocation landed underneath it. Either way, retire what was just minted
+    // so no extra valid pair leaks, then say which it was — a revoked family
+    // must read as `revoked`, which the client answers with a fresh sign-in,
+    // not as `already_used`, which it would retry.
     await prisma.refreshToken.updateMany({
       where: { tokenHash: newHash },
       data: { revokedAt: new Date() },
@@ -243,7 +252,11 @@ export async function rotateRefreshToken(input: {
       where: { tokenHash: hashToken(bundle.accessToken) },
       data: { revoked: true },
     });
-    return { ok: false, reason: "already_used" };
+    const now = await prisma.refreshToken.findUnique({
+      where: { id: row.id },
+      select: { revokedAt: true },
+    });
+    return { ok: false, reason: now?.revokedAt ? "revoked" : "already_used" };
   }
 
   // Best-effort: sunset the access token paired with the consumed refresh, so

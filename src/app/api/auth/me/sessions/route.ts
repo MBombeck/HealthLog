@@ -12,13 +12,19 @@
  * caller's own row is flagged `isCurrent` so the UI can mark "this device".
  */
 import { NextRequest } from "next/server";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { headers } from "next/headers";
+import { apiHandler, HttpError, requireAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { getClientIp } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
-import { destroyOtherSessions, sessionHandle } from "@/lib/auth/session";
+import { hashToken } from "@/lib/auth/hmac";
+import {
+  destroyOtherSessions,
+  sessionHandle,
+  type CurrentCredential,
+} from "@/lib/auth/session";
 import { lookupIpLocation } from "@/lib/geo";
 import { coarseDeviceLabel, maskIp } from "@/lib/auth/device-fingerprint";
 
@@ -86,23 +92,54 @@ export const GET = apiHandler(async () => {
 });
 
 export const DELETE = apiHandler(async (request: NextRequest) => {
-  const { user, session } = await requireAuth();
+  const auth = await requireAuth();
+  const { user } = auth;
 
-  const { sessionsRevoked } = await destroyOtherSessions(user.id, {
-    kind: "session",
-    sessionId: session.id,
-  });
+  // Name the caller by the transport it actually used. On the Bearer path
+  // `session.id` is the `ApiToken` row id, not a session id; handing that to
+  // the session-kind spared nothing, so the phone that pressed "sign out
+  // everywhere" was the one signed out at its next rotation, while the other
+  // devices kept their access tokens. The access-token kind spares the
+  // caller's own device login by its `accessTokenHash`.
+  const current: CurrentCredential =
+    auth.authMethod === "bearer"
+      ? {
+          kind: "accessToken",
+          accessTokenHash: hashToken(await presentedBearerToken()),
+        }
+      : { kind: "session", sessionId: auth.session.id };
+
+  const { sessionsRevoked, accessTokensRevoked } = await destroyOtherSessions(
+    user.id,
+    current,
+  );
 
   await auditLog("auth.session.revoke_others", {
     userId: user.id,
     ipAddress: getClientIp(request),
-    details: { sessionsRevoked },
+    details: { sessionsRevoked, accessTokensRevoked },
   });
 
   annotate({
     action: { name: "auth.session.revoke_others" },
-    meta: { sessions_revoked: sessionsRevoked },
+    meta: {
+      sessions_revoked: sessionsRevoked,
+      access_tokens_revoked: accessTokensRevoked,
+    },
   });
 
   return apiSuccess({ sessionsRevoked });
 });
+
+/**
+ * The raw Bearer token this request presented. `requireAuth` has already
+ * accepted it, so a missing header here is a programming error, not a client
+ * one; it is refused the same way rather than reasoned about.
+ */
+async function presentedBearerToken(): Promise<string> {
+  const authHeader = (await headers()).get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    throw new HttpError(401, "Not authenticated");
+  }
+  return authHeader.slice(7);
+}

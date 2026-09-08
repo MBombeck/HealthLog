@@ -27,6 +27,7 @@ import { annotate } from "@/lib/logging/context";
 import { isP2002 } from "@/lib/prisma-errors";
 import { findActiveGrant } from "@/lib/sharing/grants";
 import { decrypt, encrypt } from "@/lib/crypto";
+import { createHash } from "node:crypto";
 
 const TTL_MS = 24 * 60 * 60 * 1000;
 /**
@@ -70,10 +71,36 @@ const RECORD_SEPARATOR = "|";
  * No carrier means the key the client sent, byte for byte. Every request that
  * is nobody's delegate therefore files exactly where it filed before, and the
  * fold cannot change the behaviour of a client that never heard of sharing.
+ *
+ * The cell a request reads and claims, since v1.38.11:
+ *
+ * An own-record request under a cookie session or a wildcard token is keyed
+ * byte-for-byte as the client sent it — that contract is frozen by the unit
+ * tests and is what every existing client's retry depends on. Everything else
+ * folds the authority the request carries into the key, so a cell can only be
+ * hit again by a request the handler would answer the same way:
+ *
+ * - a delegated request carries the grant it acts under (`delegatedGrantFacet`),
+ *   so a replaced or narrowed grant lands in a fresh cell and reaches the
+ *   handler's own refusal instead of an earlier response;
+ * - a narrow-scoped Bearer token carries its own identity (`narrowTokenFacet`),
+ *   so it replays only what it wrote itself and never a wildcard credential's
+ *   response on a route outside its scope.
+ *
+ * The handler's `requireRecordAuth` remains the authority; the key only makes
+ * sure the cache cannot answer for a credential the handler has not seen.
  */
-function cellKey(clientKey: string, actingAccountId: string | null): string {
-  if (actingAccountId === null) return clientKey;
-  return `${actingAccountId}${RECORD_SEPARATOR}${clientKey}`;
+function cellKey(
+  clientKey: string,
+  actingAccountId: string | null,
+  facets: readonly string[],
+): string {
+  const parts = [
+    ...(actingAccountId === null ? [] : [actingAccountId]),
+    ...facets,
+    clientKey,
+  ];
+  return parts.join(RECORD_SEPARATOR);
 }
 
 export interface IdempotencyContext {
@@ -399,70 +426,79 @@ function inflightConflictResponse(): Response {
 }
 
 /**
- * Whether a cached delegated response may still be returned.
+ * The grant a delegated request acts under, as a key facet — or `null` when
+ * there is no live grant, in which case the request must not touch a cell at
+ * all and the handler issues its own refusal.
  *
- * The wrapper runs before a route can call `requireRecordAuth`, but it must
- * not become an alternate way around that fresh grant check. A completed cell
- * carries the caller and claimed record; the grant row is the only authority
- * that decides whether that pair is live now. A missing, expired, revoked, or
- * unreadable grant deliberately falls through to the handler, whose normal
- * refusal is the only response the caller receives.
+ * The wrapper runs before a route can call `requireRecordAuth`, and it must
+ * not become an alternate way around that check. Until v1.38.11 the grant was
+ * consulted at replay time, but only for its existence: a delegate whose grant
+ * had been replaced by a narrower one, or whose scope had been edited in
+ * place, still matched the cell they filled under the wider grant and were
+ * handed that body back. Folding the grant's identity, level and scope into
+ * the key means a cell is reachable only under the exact authority it was
+ * written under; any change lands the retry in a fresh cell, where the handler
+ * decides. A missing, expired, revoked, or unreadable grant reads as `null` —
+ * the cache is an accelerator, and falling through to the handler is always
+ * the safe answer.
  */
-async function canReplayDelegatedResponse(
+async function delegatedGrantFacet(
   actorUserId: string,
   recordUserId: string,
-): Promise<boolean> {
+): Promise<string | null> {
   try {
-    return (
-      (await findActiveGrant({
-        grantorId: recordUserId,
-        granteeId: actorUserId,
-      })) !== null
-    );
+    const grant = await findActiveGrant({
+      grantorId: recordUserId,
+      granteeId: actorUserId,
+    });
+    if (!grant) return null;
+    const scopeFingerprint = createHash("sha256")
+      .update(JSON.stringify(grant.scopeJson ?? null))
+      .digest("hex")
+      .slice(0, 16);
+    return `g:${grant.id}:${grant.access}:${scopeFingerprint}`;
   } catch {
-    // The cache is an accelerator. A failed lookup must never return a body
-    // that the route would refuse once the database is available again.
-    return false;
+    return null;
   }
 }
 
 /**
- * Is this request presenting a narrow, single-purpose Bearer token?
+ * The identity of a narrow, single-purpose Bearer token, as a key facet — or
+ * `null` for a cookie session, a wildcard token, or no Bearer header.
  *
- * Asked only on the delegated-replay path, and it exists because a live grant
- * is no longer the whole question there. A narrow scope is refused delegation
- * outright by `requireRecordAuth` — before any grant is read — so a credential
- * that would be refused by the handler must not be handed a cached delegated
- * body instead. The actor may genuinely hold the grant and the row may be
- * genuinely theirs; the point is that THIS credential is not one the grant was
- * ever exercised through.
+ * A narrow token is refused delegation outright by `requireRecordAuth`, and
+ * refused any own-record route outside its scope by `requireAuth`. Neither
+ * refusal is cachable, so a narrow token can never fill a cell it should not
+ * have; what it could do, before v1.38.11, was READ one: the own-record cell
+ * is keyed by account, and a wildcard credential of the same account had
+ * filled it. Keying the narrow token's cells by the token itself keeps its own
+ * retries idempotent — an ingest client re-posting after a timeout still
+ * replays — while no cell written by another credential is reachable to it.
  *
- * Authorises nothing, exactly like the resolver above: a true answer only
- * declines to serve the cache, and the handler then issues its own refusal with
- * the audit trail that belongs to it. One indexed single-row read, on a path
- * that is already doing a grant lookup.
+ * Authorises nothing. An unreadable token reads as narrow, and then keys by
+ * the presented hash: falling into a private cell is always safe. One indexed
+ * single-row read, only when a Bearer header is present.
  */
-async function presentsNarrowScopedToken(): Promise<boolean> {
+async function narrowTokenFacet(): Promise<string | null> {
   let authHeader: string | null = null;
   try {
     const headerList = await headers();
     authHeader = headerList.get("authorization");
   } catch {
-    return false;
+    return null;
   }
-  if (!authHeader?.startsWith("Bearer ")) return false;
+  if (!authHeader?.startsWith("Bearer ")) return null;
 
+  const presentedHash = hashToken(authHeader.slice(7));
   const apiToken = await prisma.apiToken
     .findUnique({
-      where: { tokenHash: hashToken(authHeader.slice(7)) },
-      select: { permissions: true },
+      where: { tokenHash: presentedHash },
+      select: { id: true, permissions: true },
     })
     .catch(() => null);
 
-  // Unreadable reads as narrow: the cache is an accelerator, and falling
-  // through to the handler is always a safe answer.
-  if (!apiToken) return true;
-  return !apiToken.permissions.includes("*");
+  if (!apiToken) return `t:${presentedHash.slice(0, 32)}`;
+  return apiToken.permissions.includes("*") ? null : `t:${apiToken.id}`;
 }
 
 export function withIdempotency<
@@ -533,31 +569,34 @@ export function withIdempotency<
       return handler(...args);
     }
 
+    // The authority this request carries, folded into the cell key BEFORE any
+    // cell is read or claimed — see `cellKey`. Both facets are resolved here
+    // rather than at replay time so that a request the handler would refuse
+    // cannot read a cell at all, and a request the handler would accept lands
+    // in a cell only a request with the same authority can reach.
+    const facets: string[] = [];
+    if (claimedRecord !== null) {
+      const grantFacet = await delegatedGrantFacet(userId, claimedRecord);
+      if (grantFacet === null) {
+        // No live grant: neither read nor claim a cell. The route owns the
+        // stable 403 envelope and the audit trail that goes with it.
+        return handler(...args);
+      }
+      facets.push(grantFacet);
+    }
+    const tokenFacet = await narrowTokenFacet();
+    if (tokenFacet !== null) facets.push(tokenFacet);
+
     const url = new URL(request.url);
     const ctx: IdempotencyContext = {
       userId,
-      key: cellKey(key, claimedRecord),
+      key: cellKey(key, claimedRecord, facets),
       method: request.method,
       path: url.pathname,
     };
 
     const cached = await findCached(ctx);
     if (cached?.kind === "replay") {
-      if (
-        claimedRecord !== null &&
-        (!(await canReplayDelegatedResponse(userId, claimedRecord)) ||
-          // A narrow scope is refused delegation by the handler before any
-          // grant is read, so a live grant is not sufficient here. Without this
-          // arm, a cell filled earlier by the same person under a cookie
-          // session could be replayed by a single-purpose token naming the
-          // owner's record — no row written, but the owner's response body
-          // returned to a credential the handler would have turned away.
-          (await presentsNarrowScopedToken()))
-      ) {
-        // Do not replace the route's refusal with a cache-specific response:
-        // it owns the stable 403 envelope and the associated audit trail.
-        return handler(...args);
-      }
       return cached.response;
     }
     if (cached?.kind === "pending") {

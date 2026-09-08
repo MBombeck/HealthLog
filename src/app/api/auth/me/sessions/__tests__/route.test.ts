@@ -5,7 +5,14 @@ import { NextRequest } from "next/server";
 process.env.API_TOKEN_HMAC_KEY ??= "a".repeat(64);
 
 vi.mock("@/lib/db", () => ({
-  prisma: { session: { findMany: vi.fn() } },
+  prisma: {
+    session: { findMany: vi.fn() },
+    apiToken: {
+      findUnique: vi.fn(),
+      update: vi.fn(() => ({ catch: () => undefined })),
+    },
+    user: { findUnique: vi.fn() },
+  },
 }));
 
 // `sessionHandle` stays REAL: the point of the handle test is that the route
@@ -43,6 +50,8 @@ vi.mock("next/headers", () => ({
 }));
 
 import { GET, DELETE } from "../route";
+import { headers } from "next/headers";
+import { hashToken } from "@/lib/auth/hmac";
 import { DELETE as DELETE_ONE } from "../[id]/route";
 import { prisma } from "@/lib/db";
 import {
@@ -151,7 +160,10 @@ describe("GET /api/auth/me/sessions", () => {
 describe("DELETE /api/auth/me/sessions (sign out everywhere)", () => {
   it("revokes other sessions and reports the count", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(destroyOtherSessions).mockResolvedValue({ sessionsRevoked: 3 });
+    vi.mocked(destroyOtherSessions).mockResolvedValue({
+      sessionsRevoked: 3,
+      accessTokensRevoked: 0,
+    });
 
     const res = await DELETE(del());
     expect(res.status).toBe(200);
@@ -161,6 +173,41 @@ describe("DELETE /api/auth/me/sessions (sign out everywhere)", () => {
       kind: "session",
       sessionId: "sess-current",
     });
+  });
+
+  it("names a Bearer caller by its access token so its own device login is spared", async () => {
+    // No cookie session: the caller is a phone presenting its login token.
+    vi.mocked(getSession).mockResolvedValue(null);
+    const raw = `hlk_${"d".repeat(64)}`;
+    vi.mocked(headers).mockResolvedValue({
+      get: (name: string) =>
+        name.toLowerCase() === "authorization" ? `Bearer ${raw}` : null,
+    } as never);
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "tok-phone",
+      userId: "user-1",
+      permissions: ["*"],
+      revoked: false,
+      expiresAt: null,
+    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "user-1",
+      username: "u",
+      role: "USER",
+    } as never);
+    vi.mocked(destroyOtherSessions).mockResolvedValue({
+      sessionsRevoked: 1,
+      accessTokensRevoked: 1,
+    });
+
+    const res = await DELETE(del());
+
+    expect(res.status).toBe(200);
+    expect(destroyOtherSessions).toHaveBeenCalledWith("user-1", {
+      kind: "accessToken",
+      accessTokenHash: hashToken(raw),
+    });
+    vi.mocked(headers).mockResolvedValue({ get: () => null } as never);
   });
 });
 
