@@ -525,19 +525,30 @@ export type CurrentCredential =
 /**
  * v1.23 — "sign out everywhere" for the user-facing active-session surface
  * (issue #64). Distinct from `destroyAllSessions`: this keeps the caller's
- * CURRENT cookie session alive so clicking the button doesn't log the user out
- * of the device they pressed it on, and it does NOT revoke `ApiToken`s — those
- * are long-lived programmatic credentials the user manages separately under
- * /settings/api-tokens, not "sessions" in the device-list sense. It DOES revoke
- * every native-client `RefreshToken` (each is a device login) so a signed-in
- * phone/tablet is dropped too, matching the "everywhere" promise.
+ * CURRENT credential alive so pressing the button does not sign out the device
+ * it was pressed on, and it leaves the long-lived programmatic `ApiToken`s
+ * alone — those are credentials the user manages separately under
+ * /settings/api-tokens, not "sessions" in the device-list sense.
  *
- * Returns the number of OTHER web sessions removed so the surface can confirm.
+ * It DOES revoke every other native-client `RefreshToken` (each is a device
+ * login), and, since v1.38.11, the access token paired with each of them. A
+ * native login is two rows: the `RefreshToken`, and the `ApiToken` its
+ * `accessTokenHash` points at, which is the only row the Bearer resolver
+ * consults. Revoking the refresh token alone left the other phone working
+ * until its access token expired — up to a day on the default policy — which
+ * is not what "everywhere" promised. The paired access tokens are found
+ * through the refresh rows inside the same transaction, so a rotation landing
+ * between the read and the write cannot slip a fresh pair past it: the
+ * rotation's own consume step refuses a row revoked underneath it and retires
+ * what it minted.
+ *
+ * Returns the number of OTHER web sessions removed and the number of access
+ * tokens revoked, so the surface and the audit row can say what happened.
  */
 export async function destroyOtherSessions(
   userId: string,
   current: CurrentCredential,
-): Promise<{ sessionsRevoked: number }> {
+): Promise<{ sessionsRevoked: number; accessTokensRevoked: number }> {
   // Which rows describe the CALLER depends on how the caller authenticated, and
   // the two shapes are not interchangeable. A cookie caller is a `Session` row.
   // A Bearer caller is an `ApiToken` whose device login is the `RefreshToken`
@@ -551,28 +562,53 @@ export async function destroyOtherSessions(
     current.kind === "accessToken"
       ? { accessTokenHash: { not: current.accessTokenHash } }
       : {};
+  const revokedAt = new Date();
 
-  const [deleted] = await prisma.$transaction([
-    prisma.session.deleteMany({
+  return prisma.$transaction(async (tx) => {
+    const families = await tx.refreshToken.findMany({
+      where: { userId, revokedAt: null, ...keptRefreshWhere },
+      select: { accessTokenHash: true },
+    });
+    const pairedAccessHashes = families
+      .map((row) => row.accessTokenHash)
+      .filter((hash): hash is string => hash !== null);
+
+    const deleted = await tx.session.deleteMany({
       where: {
         userId,
         ...(keptSessionId ? { id: { not: keptSessionId } } : {}),
       },
-    }),
-    prisma.refreshToken.updateMany({
+    });
+    await tx.refreshToken.updateMany({
       where: { userId, revokedAt: null, ...keptRefreshWhere },
-      data: { revokedAt: new Date() },
-    }),
+      data: { revokedAt },
+    });
+    // Only the access tokens the revoked refresh rows point at. A programmatic
+    // `hlk_` token has no refresh row and is never in this list.
+    const access =
+      pairedAccessHashes.length === 0
+        ? { count: 0 }
+        : await tx.apiToken.updateMany({
+            where: {
+              userId,
+              tokenHash: { in: pairedAccessHashes },
+              revoked: false,
+            },
+            data: { revoked: true },
+          });
     // v1.23 — "sign out everywhere" also drops every trusted device so a
     // remembered browser can no longer skip the second factor (§1.7: a device
     // cookie is killed on sign-out-everywhere).
-    prisma.trustedDevice.deleteMany({ where: { userId } }),
+    await tx.trustedDevice.deleteMany({ where: { userId } });
     // v1.30.34 — and every step-up elevation. A user who signs out everywhere
     // expects nothing to remain that could act on the account; a live elevation
     // is exactly that.
-    prisma.stepUpElevation.deleteMany({ where: { userId } }),
-  ]);
-  return { sessionsRevoked: deleted.count };
+    await tx.stepUpElevation.deleteMany({ where: { userId } });
+    return {
+      sessionsRevoked: deleted.count,
+      accessTokensRevoked: access.count,
+    };
+  });
 }
 
 /**

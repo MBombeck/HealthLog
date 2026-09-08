@@ -149,3 +149,127 @@ describe("UserKnownDevice unique index", () => {
     expect(rows).toHaveLength(2);
   });
 });
+
+describe("destroyOtherSessions — native device logins", () => {
+  it("revokes the access token paired with every other refresh token, and nothing else", async () => {
+    const prisma = getPrismaClient();
+    const user = await makeUser("sess-native-owner");
+    const current = await prisma.session.create({
+      data: { userId: user.id, expiresAt: new Date(Date.now() + 1e6) },
+    });
+    // Two phones: each is a RefreshToken pointing at its login ApiToken.
+    for (const n of ["a", "b"]) {
+      await prisma.apiToken.create({
+        data: {
+          userId: user.id,
+          name: `native-${n}`,
+          tokenHash: `access-${n}`,
+          permissions: ["*"],
+        },
+      });
+      await prisma.refreshToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: `refresh-${n}`,
+          accessTokenHash: `access-${n}`,
+          expiresAt: new Date(Date.now() + 1e6),
+        },
+      });
+    }
+    // A programmatic token: no refresh row, managed under /settings/api-tokens.
+    const automation = await prisma.apiToken.create({
+      data: {
+        userId: user.id,
+        name: "automation",
+        tokenHash: "hlk-automation",
+        permissions: ["measurements:write"],
+      },
+    });
+    // Another account's phone must be untouched.
+    const other = await makeUser("sess-native-other");
+    await prisma.apiToken.create({
+      data: {
+        userId: other.id,
+        name: "native-other",
+        tokenHash: "access-other",
+        permissions: ["*"],
+      },
+    });
+    await prisma.refreshToken.create({
+      data: {
+        userId: other.id,
+        tokenHash: "refresh-other",
+        accessTokenHash: "access-other",
+        expiresAt: new Date(Date.now() + 1e6),
+      },
+    });
+
+    const result = await destroyOtherSessions(user.id, {
+      kind: "session",
+      sessionId: current.id,
+    });
+    expect(result.accessTokensRevoked).toBe(2);
+
+    const revoked = await prisma.apiToken.findMany({
+      where: { tokenHash: { in: ["access-a", "access-b"] } },
+      select: { revoked: true },
+    });
+    expect(revoked.map((t) => t.revoked)).toEqual([true, true]);
+    const kept = await prisma.apiToken.findMany({
+      where: { tokenHash: { in: [automation.tokenHash, "access-other"] } },
+      select: { tokenHash: true, revoked: true },
+    });
+    expect(kept.every((t) => t.revoked === false)).toBe(true);
+    const otherRefresh = await prisma.refreshToken.findUnique({
+      where: { tokenHash: "refresh-other" },
+    });
+    expect(otherRefresh?.revokedAt).toBeNull();
+  });
+
+  it("spares the calling phone when the caller is a Bearer device login", async () => {
+    const prisma = getPrismaClient();
+    const user = await makeUser("sess-native-caller");
+    for (const n of ["caller", "other"]) {
+      await prisma.apiToken.create({
+        data: {
+          userId: user.id,
+          name: `native-${n}`,
+          tokenHash: `access-${n}`,
+          permissions: ["*"],
+        },
+      });
+      await prisma.refreshToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: `refresh-${n}`,
+          accessTokenHash: `access-${n}`,
+          expiresAt: new Date(Date.now() + 1e6),
+        },
+      });
+    }
+    await prisma.session.create({
+      data: { userId: user.id, expiresAt: new Date(Date.now() + 1e6) },
+    });
+
+    const result = await destroyOtherSessions(user.id, {
+      kind: "accessToken",
+      accessTokenHash: "access-caller",
+    });
+    // A Bearer caller has no session row, so every browser session goes.
+    expect(result.sessionsRevoked).toBe(1);
+    expect(result.accessTokensRevoked).toBe(1);
+
+    const caller = await prisma.refreshToken.findUnique({
+      where: { tokenHash: "refresh-caller" },
+    });
+    expect(caller?.revokedAt).toBeNull();
+    const callerAccess = await prisma.apiToken.findUnique({
+      where: { tokenHash: "access-caller" },
+    });
+    expect(callerAccess?.revoked).toBe(false);
+    const otherAccess = await prisma.apiToken.findUnique({
+      where: { tokenHash: "access-other" },
+    });
+    expect(otherAccess?.revoked).toBe(true);
+  });
+});
