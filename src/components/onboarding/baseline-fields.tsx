@@ -24,7 +24,12 @@ import type {
  * own against a server answer. The step's whole defect lived between
  * the response and these inputs — the server named a field it refused
  * and nothing on screen changed — so the seam a test needs is exactly
- * here: field values in, markup out.
+ * here: field values in, field rejections in, markup out.
+ *
+ * Each field id doubles as the id of its error paragraph
+ * (`<id>-error`), which is what the control points `aria-describedby`
+ * at, so a rejection is announced with the input rather than only
+ * painted next to it.
  */
 
 export interface BaselineFieldValues {
@@ -33,6 +38,15 @@ export interface BaselineFieldValues {
   dateOfBirth: string;
   gender: string;
 }
+
+/**
+ * Per-field sentences keyed by the SCHEMA field name the server uses
+ * (`heightCm`, not `height`) — the key the rejection arrives under, so
+ * nothing has to be renamed between the wire and the slot.
+ */
+export type BaselineFieldErrors = Partial<
+  Record<"displayName" | "heightCm" | "dateOfBirth" | "gender", string>
+>;
 
 const IDS = {
   displayName: "ob-baseline-display-name",
@@ -45,6 +59,7 @@ export function BaselineFields({
   value,
   onChange,
   heightAdapter,
+  errors,
 }: {
   value: BaselineFieldValues;
   onChange: <K extends keyof BaselineFieldValues>(
@@ -52,6 +67,7 @@ export function BaselineFields({
     next: BaselineFieldValues[K],
   ) => void;
   heightAdapter: HeightUnitAdapter;
+  errors: BaselineFieldErrors;
 }) {
   const { t } = useTranslations();
 
@@ -63,6 +79,7 @@ export function BaselineFields({
         htmlFor={IDS.displayName}
         label={t("onboarding.baseline.displayNameLabel")}
         hint={t("onboarding.baseline.displayNameHint")}
+        error={errors.displayName}
       >
         <Input
           id={IDS.displayName}
@@ -71,6 +88,10 @@ export function BaselineFields({
           autoComplete="nickname"
           maxLength={50}
           placeholder={t("onboarding.baseline.displayNamePlaceholder")}
+          aria-invalid={errors.displayName ? true : undefined}
+          aria-describedby={
+            errors.displayName ? `${IDS.displayName}-error` : undefined
+          }
         />
       </FieldGroup>
 
@@ -82,6 +103,7 @@ export function BaselineFields({
               ? t("onboarding.baseline.heightLabelFtIn")
               : t("onboarding.baseline.heightLabel")
           }
+          error={errors.heightCm}
         >
           <HeightFieldControl
             idPrefix={IDS.heightCm}
@@ -89,11 +111,14 @@ export function BaselineFields({
             value={value.height}
             onChange={(next) => onChange("height", next)}
             autoComplete="off"
+            invalid={Boolean(errors.heightCm)}
+            describedBy={errors.heightCm ? `${IDS.heightCm}-error` : undefined}
           />
         </FieldGroup>
         <FieldGroup
           htmlFor={IDS.gender}
           label={t("onboarding.baseline.genderLabel")}
+          error={errors.gender}
         >
           <Select
             // The design system's Radix Select uses an empty-string
@@ -107,6 +132,10 @@ export function BaselineFields({
               id={IDS.gender}
               className="w-full"
               data-slot="onboarding-baseline-gender"
+              aria-invalid={errors.gender ? true : undefined}
+              aria-describedby={
+                errors.gender ? `${IDS.gender}-error` : undefined
+              }
             >
               <SelectValue placeholder={t("onboarding.baseline.genderNone")} />
             </SelectTrigger>
@@ -129,6 +158,7 @@ export function BaselineFields({
         htmlFor={IDS.dateOfBirth}
         label={t("onboarding.baseline.dateOfBirthLabel")}
         hint={t("onboarding.baseline.dateOfBirthHint")}
+        error={errors.dateOfBirth}
       >
         <DateField
           id={IDS.dateOfBirth}
@@ -136,6 +166,10 @@ export function BaselineFields({
           onChange={(next) => onChange("dateOfBirth", next)}
           max={new Date().toISOString().slice(0, 10)}
           autoComplete="bday"
+          aria-invalid={errors.dateOfBirth ? true : undefined}
+          aria-describedby={
+            errors.dateOfBirth ? `${IDS.dateOfBirth}-error` : undefined
+          }
         />
       </FieldGroup>
     </fieldset>

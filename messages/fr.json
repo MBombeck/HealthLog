@@ -5353,6 +5353,14 @@
     "profileSaved": "Profil enregistré",
     "profilePartiallySaved": "Profil enregistré, mais {field} n'a pas pu être mis à jour.",
     "profileNothingSaved": "Rien n'a été enregistré. Corrigez {field} et réessayez.",
+    "profileRejection": {
+      "tooBig": "La valeur dépasse la plage acceptée par ce champ.",
+      "tooSmall": "La valeur est en dessous de la plage acceptée par ce champ.",
+      "invalidValue": "Ce n'est pas une des réponses acceptées par ce champ.",
+      "invalidFormat": "Ce n'est pas écrit dans un format que ce champ peut lire.",
+      "invalidType": "La valeur n'est pas arrivée dans un format que ce champ peut enregistrer.",
+      "other": "Cette valeur n'a pas été acceptée. Vérifiez-la et réessayez."
+    },
     "avatar": {
       "title": "Photo de profil",
       "description": "Téléverse une photo stockée sur ton propre serveur. Elle apparaît dans toute l'application à la place d'un service d'avatar externe.",

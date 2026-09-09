@@ -8,7 +8,10 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { BaselineFields } from "@/components/onboarding/baseline-fields";
+import {
+  BaselineFields,
+  type BaselineFieldErrors,
+} from "@/components/onboarding/baseline-fields";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import {
   EMPTY_HEIGHT_DRAFT,
@@ -90,6 +93,10 @@ export function BaselineForm() {
 
   const [form, setForm] = useState<BaselineFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  // Refusals from the last save, one sentence per field. Cleared on
+  // every attempt so a slot never keeps a reason the server no longer
+  // has, and cleared per field as it is edited.
+  const [fieldErrors, setFieldErrors] = useState<BaselineFieldErrors>({});
 
   // v1.17.1 — optional anamnesis (conditions + allergies). Persisted
   // through the existing encrypted self-context path
@@ -127,11 +134,23 @@ export function BaselineForm() {
     value: BaselineFormState[K],
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
+    // The person is answering the objection; the objection goes away
+    // while they type rather than sitting under a value they already
+    // corrected. `height` is the draft's name here and `heightCm` the
+    // schema's — the same field, so editing either box clears it.
+    const slot = key === "height" ? "heightCm" : key;
+    setFieldErrors((prev) => {
+      if (!(slot in prev)) return prev;
+      const next = { ...prev };
+      delete next[slot as keyof BaselineFieldErrors];
+      return next;
+    });
   }
 
   async function advance(opts: { saveProfile: boolean }) {
     if (saving) return;
     setSaving(true);
+    setFieldErrors({});
     try {
       if (opts.saveProfile) {
         const profileBody = buildBaselineProfileBody(
@@ -150,9 +169,12 @@ export function BaselineForm() {
             show(outcome.notice.message);
           }
           if (!outcome.advance) {
-            // Nothing was written. Staying on the step is the point —
-            // the person has a named field to fix and the values they
-            // typed are still in front of them.
+            // A field was refused. Staying on the step is the point —
+            // each refused input now says why under itself, the values
+            // the person typed are still in front of them, and the
+            // account is not stamped as set up over a value that never
+            // landed.
+            setFieldErrors(outcome.fieldErrors);
             setSaving(false);
             return;
           }
@@ -195,6 +217,7 @@ export function BaselineForm() {
         value={form}
         onChange={patch}
         heightAdapter={heightAdapter}
+        errors={fieldErrors}
       />
 
       <AnamnesisCard

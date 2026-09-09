@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { FieldError } from "@/components/forms/field-error";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,9 @@ import { cn } from "@/lib/utils";
  * is a no-op on rendered output.
  *
  * - `hint` renders below the control as muted fine print.
+ * - `error` renders below the hint as the field's own error slot, with
+ *   the id `<htmlFor>-error` so the control can point
+ *   `aria-describedby` at it.
  * - `labelAccessory` sits right-aligned in the label row (e.g. a char counter);
  *   when present the label row becomes a `justify-between` flex row.
  */
@@ -17,6 +21,7 @@ export function FieldGroup({
   htmlFor,
   label,
   hint,
+  error,
   labelAccessory,
   className,
   labelClassName,
@@ -25,6 +30,7 @@ export function FieldGroup({
   htmlFor: string;
   label: ReactNode;
   hint?: ReactNode;
+  error?: ReactNode;
   labelAccessory?: ReactNode;
   className?: string;
   labelClassName?: string;
@@ -46,6 +52,7 @@ export function FieldGroup({
       )}
       {children}
       {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
+      <FieldError id={`${htmlFor}-error`} message={error} />
     </div>
   );
 }

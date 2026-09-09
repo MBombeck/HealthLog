@@ -5353,6 +5353,14 @@
     "profileSaved": "Profil gespeichert",
     "profilePartiallySaved": "Profil gespeichert, aber {field} konnte nicht aktualisiert werden.",
     "profileNothingSaved": "Es wurde nichts gespeichert. Bitte {field} korrigieren und erneut versuchen.",
+    "profileRejection": {
+      "tooBig": "Der Wert liegt über dem Bereich, den dieses Feld annimmt.",
+      "tooSmall": "Der Wert liegt unter dem Bereich, den dieses Feld annimmt.",
+      "invalidValue": "Das ist keine der Antworten, die dieses Feld annimmt.",
+      "invalidFormat": "Das ist nicht in einer Form geschrieben, die dieses Feld lesen kann.",
+      "invalidType": "Der Wert kam nicht in einer Form an, die dieses Feld speichern kann.",
+      "other": "Dieser Wert wurde nicht angenommen. Bitte prüfen und erneut versuchen."
+    },
     "avatar": {
       "title": "Profilfoto",
       "description": "Lade ein Foto hoch, das auf deinem eigenen Server gespeichert wird. Es erscheint überall in der App anstelle eines externen Avatar-Dienstes.",
