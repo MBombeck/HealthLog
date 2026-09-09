@@ -35,6 +35,11 @@ const E2E_DIR = resolve(__dirname, "../../e2e");
  */
 const ALLOWLIST: ReadonlyArray<{ file: string; test: string; why: string }> = [
   {
+    file: "vaccinations.spec.ts",
+    test: "the list and the capture form carry no serious accessibility violations",
+    why: "The evaluate after the goto reads no DOM: it issues the seed POST from the page's own origin so the row is written over the browser's socket rather than the runner's shared keep-alive agent, which handed POSTs to sockets the server had already closed. The scan that follows is gated on the reloaded list.",
+  },
+  {
     file: "ipad-viewport.spec.ts",
     test: "no horizontal overflow and full-width content on",
     why: "Deliberate swallowed waitForFunction. The rail settle can land just after networkidle on a loaded runner, but a genuine regression — the rail never engaging — still fails at the width assertion below, which reports the actual measured number. A hard gate here would replace that number with a generic timeout message, so the swallow buys a better diagnostic rather than hiding a race.",
