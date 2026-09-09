@@ -21350,9 +21350,12 @@ components:
           type: string
           minLength: 1
           maxLength: 60
-          description: "Apple's `HKUnit` string for `value`, captured for audit. The server does NOT convert from it: `value` is
-            read in the unit HealthLog stores the identifier in (`m` for walking distance, `kg` for body mass, `kcal`
-            for energy, `degC` for temperature). Send the sample in that unit."
+          description: "Apple's `HKUnit` string for `value`, captured for audit: the server records it and never validates `value`
+            against it. `value` is read in Apple's own `HKUnit` for the identifier — `m` for a length, `kg` for body
+            mass, `kcal` for energy, `degC` for temperature, a `fraction` for the percent-shaped ones (oxygen
+            saturation, body fat) — and HealthLog applies its storage scaling after that. A waist circumference sent as
+            `0.86` in `m` is stored as `86` `cm`; an oxygen saturation sent as `0.98` in `fraction` is stored as `98`
+            `%`. Send the sample in Apple's unit, not in HealthLog's."
         startDate:
           type: string
           format: date-time
