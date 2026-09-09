@@ -13,7 +13,8 @@
  *
  * Retention: the worker NEVER calls DeleteObject on backup keys. Operators
  * MUST configure a bucket-level lifecycle rule (e.g. expire after
- * `BACKUP_RETENTION_DAYS`). This keeps the IAM grant for the worker
+ * `BACKUP_RETENTION_DAYS`, which this module reads nowhere — see
+ * `loadOffhostConfig`). This keeps the IAM grant for the worker
  * limited to PutObject + GetObject + AbortMultipartUpload, so a compromised
  * worker cannot wipe the backup history. The abort is what cleans up a run
  * that failed partway rather than leaving billed, unlistable parts behind;
@@ -40,7 +41,6 @@ export interface OffhostBackupConfig {
   secretKey: string;
   region: string;
   encryptionKey: Buffer;
-  retentionDays: number;
 }
 
 export class OffhostBackupNotConfiguredError extends Error {
@@ -69,13 +69,13 @@ export function loadOffhostConfig(): OffhostBackupConfig | null {
   const encRaw = process.env.BACKUP_ENCRYPTION_KEY;
   if (!endpoint || !bucket || !accessKey || !secretKey || !encRaw) return null;
 
-  const retentionDays = (() => {
-    const raw = process.env.BACKUP_RETENTION_DAYS;
-    if (!raw) return 30;
-    const v = parseInt(raw, 10);
-    return Number.isFinite(v) && v >= 1 ? v : 30;
-  })();
-
+  // `BACKUP_RETENTION_DAYS` is deliberately absent from this config. It used
+  // to be parsed and clamped here and then read by nobody, which read as an
+  // enforcer the worker is not: retention belongs to the bucket's lifecycle
+  // rule, and no consumer can ever appear here because DeleteObject is kept
+  // out of the worker's grant on purpose (see the header). The variable stays
+  // documented and on the compose whitelist because it is the number the
+  // operator sets that rule to.
   return {
     endpoint,
     bucket,
@@ -83,7 +83,6 @@ export function loadOffhostConfig(): OffhostBackupConfig | null {
     secretKey,
     region: process.env.BACKUP_S3_REGION ?? "auto",
     encryptionKey: decodeBackupKey(encRaw),
-    retentionDays,
   };
 }
 
