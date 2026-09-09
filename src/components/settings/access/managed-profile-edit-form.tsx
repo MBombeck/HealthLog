@@ -99,12 +99,17 @@ export function ManagedProfileEditForm({
     );
   }
 
-  // Keyed on the loaded record so the field state below is seeded from it once
-  // rather than through an effect that re-seeds on every refetch — a refetch
-  // landing mid-edit must not silently replace what somebody is typing.
+  // Keyed on WHICH record is open, so the field state below is seeded once per
+  // record rather than through an effect that re-seeds on every refetch. The
+  // key was the query's `dataUpdatedAt`, which did the opposite of what it
+  // claimed: any invalidation of the `managed-profiles` prefix — removing a
+  // guardian from another row, say — refetches this read, moves the timestamp
+  // and remounts the fields, so a half-typed name disappears while somebody is
+  // looking at it. The id is stable for as long as the form is about the same
+  // record, which is exactly as long as the seeding should hold.
   return (
     <ManagedProfileEditFields
-      key={profile.dataUpdatedAt}
+      key={profile.data.id}
       profile={profile.data}
       onDone={onDone}
     />
