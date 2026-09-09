@@ -26,12 +26,16 @@
  *                the row's id, value, unit and source.
  *   5. delete  — `DELETE /api/measurements/{id}` so the account stays clean.
  *
+ * `BASE_URL` decides where the probe account's password is POSTed, so it is
+ * checked against a closed in-repo host allowlist and refused with exit 2
+ * otherwise.
+ *
  * The first failing leg ends the run with a non-zero exit, the response
  * status and a short body excerpt. Anything token-shaped in that excerpt
  * is redacted before it reaches the log.
  *
  * Usage:
- *   BASE_URL=https://review.example.test \
+ *   BASE_URL=https://review.healthlog.dev \
  *   SYNTHETIC_USERNAME=… SYNTHETIC_PASSWORD=… EXPECTED_VERSION=v1.38.13 \
  *   node scripts/synthetic-journey.mjs
  *
@@ -59,6 +63,36 @@ const BODY_EXCERPT_LIMIT = 400;
 
 /** The reading the journey writes. Distinctive, plausible, and short-lived. */
 const PROBE = { type: "WEIGHT", value: 77.7, unit: "kg", source: "MANUAL" };
+
+/**
+ * The journey signs in with a real account and POSTs that account's password
+ * to whatever `BASE_URL` names, so `BASE_URL` alone decides where the
+ * password goes. Anyone able to name the host walks off with a working
+ * credential; masking guards the log, not the egress. The allowlist is the
+ * defence, and it is deliberately a const: it changes by a commit and a
+ * review, never by a form field.
+ */
+const ALLOWED_HOSTS = [
+  "review.healthlog.dev",
+  "healthlog.bombeck.io",
+  "localhost",
+  "127.0.0.1",
+];
+
+/**
+ * `null` when the host may receive the probe credentials, otherwise the line
+ * the caller prints before exiting 2.
+ */
+function hostRefusal(baseUrl) {
+  let host;
+  try {
+    host = new URL(baseUrl).hostname;
+  } catch {
+    return `BASE_URL is not a URL: ${JSON.stringify(baseUrl)}`;
+  }
+  if (ALLOWED_HOSTS.includes(host)) return null;
+  return `BASE_URL host ${JSON.stringify(host)} is not on the allowlist — the probe password is only ever sent to ${ALLOWED_HOSTS.join(", ")}`;
+}
 
 /**
  * Patterns that must never reach a log line. The first three are this
@@ -488,6 +522,40 @@ function startMockInstance(breaks) {
   });
 }
 
+/**
+ * The allowlist is the only thing standing between a dispatcher and the
+ * probe account's password, so prove it refuses — including the prefix
+ * lookalike, which a `startsWith` check would have waved through.
+ */
+function selfTestHostAllowlist() {
+  const cases = [
+    { url: "https://review.healthlog.dev", refused: false },
+    { url: "https://healthlog.bombeck.io/", refused: false },
+    { url: "http://localhost:3000", refused: false },
+    { url: "http://127.0.0.1:3000", refused: false },
+    { url: "https://healthlog.bombeck.io.example.test", refused: true },
+    { url: "https://collector.example.test", refused: true },
+    { url: "not-a-url", refused: true },
+  ];
+
+  let failures = 0;
+  for (const testCase of cases) {
+    const refusal = hostRefusal(testCase.url);
+    const label = `host ${testCase.url}`;
+    if (Boolean(refusal) === testCase.refused) {
+      console.log(
+        `self-test ok      ${label.padEnd(44)} → ${refusal ? "refused" : "allowed"}`,
+      );
+    } else {
+      failures += 1;
+      console.log(
+        `self-test FAILED  ${label.padEnd(44)} → ${refusal ? "refused" : "allowed"}, expected ${testCase.refused ? "refused" : "allowed"}`,
+      );
+    }
+  }
+  return failures;
+}
+
 async function selfTest() {
   const cases = [
     { breaks: null, expect: "pass" },
@@ -501,7 +569,7 @@ async function selfTest() {
     { breaks: "delete", expect: "fail", leg: "delete" },
   ];
 
-  let failures = 0;
+  let failures = selfTestHostAllowlist();
   for (const testCase of cases) {
     const label = testCase.breaks ?? "nothing broken";
     const instance = await startMockInstance(testCase.breaks);
@@ -537,7 +605,9 @@ async function selfTest() {
     console.error(`\nself-test: ${failures} case(s) behaved wrongly`);
     return 1;
   }
-  console.log(`\nself-test: ${cases.length} cases, every leg proven breakable`);
+  console.log(
+    `\nself-test: ${cases.length} journey cases, every leg proven breakable; host allowlist proven`,
+  );
   return 0;
 }
 
@@ -561,6 +631,11 @@ function readConfig() {
     console.error(
       "Usage: BASE_URL=… SYNTHETIC_USERNAME=… SYNTHETIC_PASSWORD=… EXPECTED_VERSION=… node scripts/synthetic-journey.mjs",
     );
+    process.exit(2);
+  }
+  const refusal = hostRefusal(config.baseUrl);
+  if (refusal) {
+    console.error(refusal);
     process.exit(2);
   }
   return config;

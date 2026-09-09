@@ -21,10 +21,19 @@ name: Synthetic journey
 on:
   workflow_dispatch:
     inputs:
+      # A closed list, not free text. The dispatcher chooses where the probe
+      # account's password is POSTed, so the choice is between the hosted
+      # instances and nothing else. The script re-checks the host against its
+      # own const allowlist and exits 2 on anything else, so a dispatch that
+      # goes round this form still cannot reach a stranger's collector.
       base_url:
-        description: Instance to walk, e.g. https://review.healthlog.dev
+        description: Instance to walk
         required: true
-        type: string
+        type: choice
+        default: https://review.healthlog.dev
+        options:
+          - https://review.healthlog.dev
+          - https://healthlog.bombeck.io
       expected_version:
         description: Version the instance must serve, e.g. v1.38.13
         required: true
@@ -53,7 +62,8 @@ jobs:
         run: node scripts/synthetic-journey.mjs --self-test
 
       # Every input and secret rides an env var — never interpolated into
-      # the shell command.
+      # the shell command. The script refuses a `BASE_URL` whose host is off
+      # its allowlist before it sends the password anywhere.
       - name: Walk the journey
         env:
           BASE_URL: ${{ inputs.base_url }}
