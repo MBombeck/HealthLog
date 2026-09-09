@@ -673,6 +673,22 @@ function selfTestHostAllowlist() {
   return failures;
 }
 
+/**
+ * The excerpt path is what keeps a token out of a failure log. Prove it
+ * once, on a body shaped like this project's own key prefix.
+ */
+function selfTestRedaction() {
+  const shaped = `hlk_${"a".repeat(24)}`;
+  const redacted = excerpt(`{"error":"bad token","token":"${shaped}"}`);
+  const label = "redaction";
+  if (redacted.includes("hlk_") || !redacted.includes("[redacted]")) {
+    console.log(`self-test FAILED  ${label.padEnd(44)} → ${redacted}`);
+    return 1;
+  }
+  console.log(`self-test ok      ${label.padEnd(44)} → ${redacted}`);
+  return 0;
+}
+
 async function selfTest() {
   const cases = [
     { breaks: null, expect: "pass", clean: true },
@@ -713,7 +729,7 @@ async function selfTest() {
     { breaks: "delete: kept", expect: "fail", leg: "delete" },
   ];
 
-  let failures = selfTestHostAllowlist();
+  let failures = selfTestHostAllowlist() + selfTestRedaction();
   for (const testCase of cases) {
     const label = testCase.breaks ?? "nothing broken";
     const instance = await startMockInstance(testCase.breaks);
@@ -752,7 +768,7 @@ async function selfTest() {
     return 1;
   }
   console.log(
-    `\nself-test: ${cases.length} journey cases, every leg proven breakable; host allowlist proven`,
+    `\nself-test: ${cases.length} journey cases, every leg proven breakable; host allowlist and redaction proven`,
   );
   return 0;
 }
