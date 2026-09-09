@@ -27,7 +27,11 @@ vi.mock("@/hooks/use-encounters", () => ({
 }));
 
 vi.mock("@/hooks/use-record-capabilities", () => ({
-  useRecordCapabilities: () => ({ canManage: true, canAdd: true }),
+  useRecordCapabilities: () => ({
+    canManage: true,
+    canAdd: true,
+    canManageDomain: () => true,
+  }),
 }));
 
 vi.mock("next/navigation", () => ({

@@ -598,7 +598,8 @@ export function LedgerRowItem({
   onUnpin: (eventId: string) => void;
 }) {
   const { t } = useTranslations();
-  const { canAdd, canManage } = useRecordCapabilities();
+  const { canAdd, canManageDomain } = useRecordCapabilities();
+  const canManageMedications = canManageDomain("medications");
   const fmt = useFormatters();
 
   const actionable = isSlotActionable(row);
@@ -733,7 +734,7 @@ export function LedgerRowItem({
             items in one menu, a delegate gets skip as its own control beside
             take, which is the shape the card already uses. The owner keeps it
             where it was. */}
-        {showTakenButton && canAdd && !canManage && (
+        {showTakenButton && canAdd && !canManageMedications && (
           <Button
             variant="outline"
             size="sm"
@@ -754,7 +755,7 @@ export function LedgerRowItem({
             {t("medications.detail.verlauf.markSkipped")}
           </Button>
         )}
-        {canManage && (
+        {canManageMedications && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

@@ -62,9 +62,10 @@ export function MedicationCardMenu({
   // medication and opening its history editor are not. When nothing in the
   // menu survives, the trigger goes with it rather than opening onto an empty
   // sheet. The card itself is untouched: no wash, no badge, no colour change.
-  const { canAdd, canManage } = useRecordCapabilities();
+  const { canAdd, canManageDomain } = useRecordCapabilities();
+  const canManageMedications = canManageDomain("medications");
   const showSideEffect = onLogSideEffect != null && canAdd;
-  if (!canManage && !showSideEffect) return null;
+  if (!canManageMedications && !showSideEffect) return null;
 
   return (
     <DropdownMenu>
@@ -87,7 +88,7 @@ export function MedicationCardMenu({
         className="w-56"
         data-slot="medication-card-menu"
       >
-        {canManage && (
+        {canManageMedications && (
           <>
             <DropdownMenuItem onClick={onEdit}>
               <Pencil className="mr-2 h-4 w-4" />
@@ -101,7 +102,7 @@ export function MedicationCardMenu({
         )}
         {showSideEffect && onLogSideEffect && (
           <>
-            {canManage && <DropdownMenuSeparator />}
+            {canManageMedications && <DropdownMenuSeparator />}
             <DropdownMenuItem onClick={onLogSideEffect}>
               <Stethoscope className="mr-2 h-4 w-4" />
               {t("medications.glp1LogSideEffect")}

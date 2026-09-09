@@ -16,14 +16,15 @@
  * Mutation checks, run:
  *   - `useRecordCapabilities` returning `canAdd: true` unconditionally → the
  *     read-only legs for the intake row and the card menu go red.
- *   - `DeleteButton` dropping its `canManage` bail → "no row delete inside
- *     somebody else's record" goes red.
+ *   - `DeleteButton` dropping its `canManageDomain` bail → "no row delete inside
+ *     somebody else's record" goes red; answering it for every section → the
+ *     vault leg of "a guardian's row delete follows the section" goes red.
  *   - `TodayHero` passing `onDismiss` / `onAction` unconditionally → the rail
  *     legs go red, printing the dismiss control and the check-in buttons.
- *   - `VorsorgeDashboardCard` dropping its `canManage` bail → the mark-done
- *     leg goes red.
- *   - `EpisodeDocumentsCard` dropping its `canManage` bail → the link +
- *     upload leg goes red.
+ *   - `VorsorgeDashboardCard` dropping its `canManageDomain` bail → the
+ *     mark-done leg goes red.
+ *   - `EpisodeDocumentsCard` dropping its `canManageDomain` bail → the link +
+ *     upload leg goes red, on the MANAGE arm.
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -31,6 +32,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import type { AccountAccess } from "@/lib/sharing/account-access-view";
+import { delegatedDomains } from "@/lib/sharing/domain-write-support";
 
 const OWNER = {
   accountId: "acct-owner",
@@ -42,6 +44,8 @@ const OWNER = {
   sections: null,
   recordKind: "shared" as const,
   canWrite: false,
+  writableDomains: [],
+  manageableDomains: [],
 };
 
 const OWN_RECORD: AccountAccess = {
@@ -56,7 +60,30 @@ const READ_ONLY: AccountAccess = {
 };
 const WRITABLE: AccountAccess = {
   accounts: [OWNER],
-  active: { ...OWNER, access: "write", level: "write", canWrite: true },
+  active: {
+    ...OWNER,
+    access: "write",
+    level: "write",
+    canWrite: true,
+    writableDomains: delegatedDomains("write", null, "write"),
+    manageableDomains: [],
+  },
+  canSwitch: true,
+};
+/**
+ * v1.38.12 — a MANAGE grant, published as the server publishes it: the
+ * sections with a delegated route, and never the vault.
+ */
+const MANAGING: AccountAccess = {
+  accounts: [OWNER],
+  active: {
+    ...OWNER,
+    access: "write",
+    level: "manage",
+    canWrite: true,
+    writableDomains: delegatedDomains("manage", null, "write"),
+    manageableDomains: delegatedDomains("manage", null, "manage"),
+  },
   canSwitch: true,
 };
 
@@ -141,25 +168,60 @@ function render(
 
 describe("row delete", () => {
   const node = (
-    <DeleteButton onConfirm={() => {}} title="Delete?" description="Gone." />
+    <DeleteButton
+      domain="labs"
+      onConfirm={() => {}}
+      title="Delete?"
+      description="Gone."
+    />
   );
 
   it("renders in the caller's own record", () => {
     expect(render(OWN_RECORD, node)).toContain("<button");
   });
 
-  it("is absent inside somebody else's record, at both levels", () => {
+  it("is absent inside somebody else's record below MANAGE", () => {
     // Not disabled. A greyed bin still claims the row is the delegate's to
     // remove, and it is not — at either grant level, including for a row the
     // delegate entered themselves.
     expect(render(READ_ONLY, node)).toBe("");
     expect(render(WRITABLE, node)).toBe("");
   });
+
+  it("follows the section for a guardian: labs yes, the vault and owner-only rows no", () => {
+    // The v1.37.0 hold-back answered "no" for every section; #939 is what
+    // that cost. The answer is per section now, and the server's.
+    expect(render(MANAGING, node)).toContain("<button");
+    expect(
+      render(
+        MANAGING,
+        <DeleteButton
+          domain="documents"
+          onConfirm={() => {}}
+          title="Delete?"
+          description="Gone."
+        />,
+      ),
+    ).toBe("");
+    // `null`: the row's delete route resolves the caller (custom metrics).
+    expect(
+      render(
+        MANAGING,
+        <DeleteButton
+          domain={null}
+          onConfirm={() => {}}
+          title="Delete?"
+          description="Gone."
+        />,
+      ),
+    ).toBe("");
+  });
 });
 
 describe("bulk selection bar", () => {
   const node = (
     <SelectionActionBar
+      domain="mind"
       count={3}
       onClear={() => {}}
       onConfirmDelete={() => {}}
@@ -175,8 +237,14 @@ describe("bulk selection bar", () => {
     );
   });
 
-  it("is absent inside somebody else's record", () => {
+  it("is absent inside somebody else's record below MANAGE", () => {
     expect(render(WRITABLE, node)).toBe("");
+  });
+
+  it("renders for a guardian in a section whose bulk route answers", () => {
+    expect(render(MANAGING, node)).toContain(
+      'data-slot="selection-action-bar"',
+    );
   });
 });
 
@@ -273,12 +341,13 @@ describe("the Today rail's mutating affordances", () => {
     expect(html).toContain("Keep it");
   });
 
-  it("withholds both inside somebody else's record, at either level", () => {
+  it("withholds both inside somebody else's record, at every level", () => {
     // Dismissing an observation and answering a coach check-in are neither of
     // them an admitted create, and both write through routes that resolve the
     // CALLER — so a delegate tapping either would file it against their own
-    // record if the route allowed it, and gets a 403 because it does not.
-    for (const access of [READ_ONLY, WRITABLE]) {
+    // record if the route allowed it, and gets a 403 because it does not. A
+    // MANAGE grant changes nothing here: no section reaches a caller route.
+    for (const access of [READ_ONLY, WRITABLE, MANAGING]) {
       const html = render(access, node);
       expect(html).not.toContain('data-slot="priority-card-dismiss"');
       expect(html).not.toContain("Keep it");
@@ -326,7 +395,7 @@ describe("the Vorsorge summary's mark-done", () => {
     expect(html).toContain("Done");
   });
 
-  it("is absent inside somebody else's record, at either level", () => {
+  it("is absent inside somebody else's record below MANAGE", () => {
     // `/checkups` already withheld this exact action; the dashboard summary
     // offering it was the inconsistency that showed nobody had asked.
     for (const access of [READ_ONLY, WRITABLE]) {
@@ -334,6 +403,12 @@ describe("the Vorsorge summary's mark-done", () => {
       expect(html).toContain("Dental check-up");
       expect(html).not.toContain("Done");
     }
+  });
+
+  it("is offered to a guardian: the satisfy route answers at MANAGE under measurements", () => {
+    const html = render(MANAGING, node, seed);
+    expect(html).toContain("Dental check-up");
+    expect(html).toContain("Done");
   });
 });
 
@@ -350,12 +425,13 @@ describe("linking a document to an illness episode", () => {
     expect(html).toContain("Upload");
   });
 
-  it("offers neither inside somebody else's record, at either level", () => {
+  it("offers neither inside somebody else's record, at every level", () => {
     // Both write through `POST /api/documents/inbound/bulk`, which the vault
     // gates on the same answer throughout — the episode side of the same link
     // had no gate at all, and the upload deep-linked to a page whose own
-    // upload control is already withheld.
-    for (const access of [READ_ONLY, WRITABLE]) {
+    // upload control is already withheld. The vault has no delegated write
+    // route, so a MANAGE grant is refused the same way.
+    for (const access of [READ_ONLY, WRITABLE, MANAGING]) {
       const html = render(access, node);
       expect(html).not.toContain(">Link<");
       expect(html).not.toContain("Upload");
@@ -374,24 +450,45 @@ describe("linking a document to an illness episode", () => {
 describe("the capture picker's kinds", () => {
   const ALL = ["measurement", "medication", "mood"] as const;
 
+  const OWNER_CAPS = { canAdd: true, canManageDomain: () => true };
+  const WRITER_CAPS = { canAdd: true, canManageDomain: () => false };
+  const READER_CAPS = { canAdd: false, canManageDomain: () => false };
+  // A guardian: every section with a delegated route answers at MANAGE.
+  const GUARDIAN_CAPS = {
+    canAdd: true,
+    canManageDomain: (domain: string) =>
+      delegatedDomains("manage", null, "manage").includes(
+        domain as "measurements",
+      ),
+  };
+
   it("offers everything in the caller's own record", () => {
-    expect(
-      visibleCaptureKinds({ canAdd: true, canManage: true }, [...ALL]),
-    ).toEqual(["measurement", "medication", "mood"]);
+    expect(visibleCaptureKinds(OWNER_CAPS, [...ALL])).toEqual([
+      "measurement",
+      "medication",
+      "mood",
+    ]);
   });
 
   it("offers a delegate only what the delegation admits", () => {
-    // A reading and a dose are admitted verbs. A mood entry is not, and the
-    // server refuses it under a switch.
-    expect(
-      visibleCaptureKinds({ canAdd: true, canManage: false }, [...ALL]),
-    ).toEqual(["measurement", "medication"]);
+    // A reading and a dose are admitted verbs. A mood entry is a MANAGE
+    // create, and the server refuses it under a WRITE grant.
+    expect(visibleCaptureKinds(WRITER_CAPS, [...ALL])).toEqual([
+      "measurement",
+      "medication",
+    ]);
+  });
+
+  it("offers a guardian the mood entry too, because its route answers", () => {
+    expect(visibleCaptureKinds(GUARDIAN_CAPS, [...ALL])).toEqual([
+      "measurement",
+      "medication",
+      "mood",
+    ]);
   });
 
   it("offers a read-only delegate nothing", () => {
-    expect(
-      visibleCaptureKinds({ canAdd: false, canManage: false }, [...ALL]),
-    ).toEqual([]);
+    expect(visibleCaptureKinds(READER_CAPS, [...ALL])).toEqual([]);
   });
 });
 
@@ -480,7 +577,7 @@ describe("a form opened before the record answered", () => {
   });
 
   it("withdraws a dashboard quick-entry sheet the delegation does not admit", () => {
-    const DELEGATE = { canAdd: true, canManage: false };
+    const DELEGATE = { canAdd: true, canManageDomain: () => false };
     expect(admittedQuickEntry("mood", DELEGATE)).toBe(null);
     expect(admittedQuickEntry("measurement", DELEGATE)).toBe("measurement");
     expect(admittedQuickEntry("medicationIntake", DELEGATE)).toBe(
@@ -488,15 +585,23 @@ describe("a form opened before the record answered", () => {
     );
   });
 
+  it("keeps the mood sheet for a guardian, whose mind routes answer at MANAGE", () => {
+    const GUARDIAN = {
+      canAdd: true,
+      canManageDomain: (domain: string) => domain === "mind",
+    };
+    expect(admittedQuickEntry("mood", GUARDIAN)).toBe("mood");
+  });
+
   it("withdraws every quick-entry sheet from a read-only delegate", () => {
-    const READER = { canAdd: false, canManage: false };
+    const READER = { canAdd: false, canManageDomain: () => false };
     for (const sheet of ["measurement", "mood", "medicationIntake"] as const) {
       expect(admittedQuickEntry(sheet, READER), sheet).toBe(null);
     }
   });
 
   it("leaves the owner's own sheets alone", () => {
-    const OWNER_CAPS = { canAdd: true, canManage: true };
+    const OWNER_CAPS = { canAdd: true, canManageDomain: () => true };
     for (const sheet of ["measurement", "mood", "medicationIntake"] as const) {
       expect(admittedQuickEntry(sheet, OWNER_CAPS), sheet).toBe(sheet);
     }

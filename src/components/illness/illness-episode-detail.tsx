@@ -41,7 +41,8 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
   const { t } = useTranslations();
   // v1.36.x — logging a day, editing and resolving an episode are the
   // owner's; a delegate reads the episode.
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageIllness = canManageDomain("illness");
   const fmt = useFormatters();
   const {
     data: episode,
@@ -98,7 +99,7 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
           ) : undefined
         }
         actions={
-          canManage ? (
+          canManageIllness ? (
             <>
               <Button
                 onClick={() => setLogOpen(true)}

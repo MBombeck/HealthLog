@@ -74,7 +74,8 @@ function EpisodeCard({
   view,
 }: EpisodeCardProps) {
   const { t } = useTranslations();
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageIllness = canManageDomain("illness");
   const fmt = useFormatters();
   const active = episode.resolvedAt === null;
   const isChronic = episode.lifecycle === "CHRONIC_ONGOING";
@@ -109,7 +110,7 @@ function EpisodeCard({
               </span>
             </div>
           </div>
-          {canManage && (
+          {canManageIllness && (
             <div className="flex shrink-0 items-center gap-1">
               <Button
                 variant="outline"
@@ -145,7 +146,7 @@ function EpisodeCard({
             <span className="block truncate">{episode.label}</span>
           </Link>
         </CardTitle>
-        {canManage && (
+        {canManageIllness && (
           <CardAction>
             <EpisodeMenu
               episode={episode}
@@ -211,7 +212,7 @@ function EpisodeCard({
             flow, promoted from a busy inline cluster. The card navigates to
             the detail surface on its title link; this is the one explicit
             button. */}
-        {canManage && (
+        {canManageIllness && (
           <div className="mt-auto pt-0">
             <Button
               className="min-h-11 w-full sm:min-h-9"
@@ -319,7 +320,7 @@ export function IllnessView() {
   // v1.36.x — opening an illness entry is an admitted delegated write. Logging
   // a day against one, editing it, resolving it and deleting it are not, so a
   // delegate can start the record of an illness and nothing more.
-  const { canAdd, canManage } = useRecordCapabilities();
+  const { canAdd, inSharedRecord } = useRecordCapabilities();
   const {
     data: episodes,
     isLoading,
@@ -391,8 +392,9 @@ export function IllnessView() {
         actions={
           <>
             {/* v1.18.6 (MOD-01) — wrench left of the primary Add, linking to the
-                Illness settings page (view + reorder). */}
-            {canManage && (
+                Illness settings page (view + reorder). `/settings` is the
+                caller's, not the record's, so no grant reaches it. */}
+            {!inSharedRecord && (
               <Button
                 asChild
                 variant="ghost"

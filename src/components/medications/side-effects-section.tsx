@@ -112,7 +112,8 @@ function entryI18nKey(entry: MedicationSideEffectEntry): string {
 
 export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
   const { t } = useTranslations();
-  const { canAdd, canManage } = useRecordCapabilities();
+  const { canAdd, canManageDomain } = useRecordCapabilities();
+  const canManageMedications = canManageDomain("medications");
   const fmt = useFormatters();
   const queryClient = useQueryClient();
 
@@ -346,7 +347,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                     </p>
                   )}
                 </div>
-                {canManage && (
+                {canManageMedications && (
                   <Button
                     variant="ghost"
                     size="icon"

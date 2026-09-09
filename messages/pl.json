@@ -9548,6 +9548,7 @@
     "title": "Dokumenty",
     "subtitle": "Każde pismo, wynik i skan w jednym przeszukiwalnym miejscu — zaszyfrowane w spoczynku.",
     "pageUpload": "Prześlij",
+    "ownerOnlyUpload": "Dokumenty może dodawać tylko właściciel kartoteki.",
     "kind": {
       "DOCTOR_REPORT": "Raport lekarski",
       "DISCHARGE_LETTER": "Wypis ze szpitala",

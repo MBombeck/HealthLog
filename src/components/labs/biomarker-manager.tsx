@@ -151,6 +151,7 @@ export function BiomarkerManager() {
           <Pencil className="h-4 w-4" />
         </Button>
         <DeleteButton
+          domain="labs"
           onConfirm={() => deleteMutation.mutate(marker.id)}
           title={t("labs.biomarker.deleteConfirmTitle")}
           description={t("labs.biomarker.deleteConfirmDescription")}

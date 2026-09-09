@@ -95,7 +95,8 @@ const READINGS_PAGE_SIZE = 200;
  */
 export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
   const { user } = useAuth();
-  const { canAdd, canManage } = useRecordCapabilities();
+  const { canAdd, canManageDomain } = useRecordCapabilities();
+  const canManageLabs = canManageDomain("labs");
   const { t, locale } = useTranslations();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -332,6 +333,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
               full marker editor behind the pencil, so the separate range
               control was dropped). */}
             <DeleteButton
+              domain="labs"
               onConfirm={() => deleteMarker.mutate()}
               title={t("labs.biomarker.deleteConfirmTitle")}
               description={t("labs.biomarker.deleteConfirmDescription")}
@@ -340,7 +342,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
               className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
               iconClassName="h-4 w-4"
             />
-            {canManage && (
+            {canManageLabs && (
               <Button
                 variant="ghost"
                 size="icon"

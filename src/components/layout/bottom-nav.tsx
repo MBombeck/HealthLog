@@ -29,7 +29,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { CapturePicker } from "@/components/layout/capture-picker";
+import {
+  CAPTURE_KIND_ORDER,
+  CapturePicker,
+  visibleCaptureKinds,
+} from "@/components/layout/capture-picker";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -105,13 +109,12 @@ export function BottomNav() {
   // v1.36.0 — acting on somebody else's record. Same gate as the sidebar, from
   // the same resolved payload, so the two bars cannot disagree about what a
   // delegate is offered.
-  const {
-    inSharedRecord: sharedRecord,
-    sections,
-    canAdd,
-    canManage,
-  } = useRecordCapabilities();
-  const canCapture = canAdd || canManage;
+  const capabilities = useRecordCapabilities();
+  const { inSharedRecord: sharedRecord, sections } = capabilities;
+  // The capture button opens the picker, so it shows exactly when the picker
+  // would offer at least one kind — the same per-section rule, asked once.
+  const canCapture =
+    visibleCaptureKinds(capabilities, CAPTURE_KIND_ORDER).length > 0;
 
   // v1.17.1 (F-1) — the More hub is the model-computed hub: every visible
   // feature destination that isn't a primary slot, plus the shared utility

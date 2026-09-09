@@ -49,10 +49,11 @@ export function EpisodeDocumentsCard({ episodeId }: { episodeId: string }) {
   const { user } = useAuth();
   // Linking a document to an episode writes through
   // `POST /api/documents/inbound/bulk`, the same endpoint the vault gates on
-  // `canManage` throughout. The episode side of the same link had no gate at
+  // `canManageDocuments` throughout. The episode side of the same link had no gate at
   // all, so the vault refused what this card offered. Reading the linked
   // documents stays: the list rows and "show all" are pure navigation.
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageDocuments = canManageDomain("documents");
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const moduleEnabled = user?.modules?.inboundDocuments === true;
@@ -146,7 +147,7 @@ export function EpisodeDocumentsCard({ episodeId }: { episodeId: string }) {
           )}
 
           <div className="flex flex-wrap items-center gap-1.5">
-            {canManage ? (
+            {canManageDocuments ? (
               <>
                 <Button
                   variant="outline"
@@ -158,7 +159,7 @@ export function EpisodeDocumentsCard({ episodeId }: { episodeId: string }) {
                 </Button>
                 {/* The upload affordance is a deep link into the vault with
                     this episode pre-filtered. The vault's own upload control
-                    is `canManage`-gated, so an ungated link here would send a
+                    is `canManageDocuments`-gated, so an ungated link here would send a
                     delegate to a page with nothing to press. */}
                 <Button asChild variant="outline" size="sm">
                   <Link href={vaultHref}>
@@ -184,7 +185,7 @@ export function EpisodeDocumentsCard({ episodeId }: { episodeId: string }) {
         </CardContent>
       </Card>
 
-      {canManage ? (
+      {canManageDocuments ? (
         <DocumentLinkPicker
           episodeId={episodeId}
           open={pickerOpen}

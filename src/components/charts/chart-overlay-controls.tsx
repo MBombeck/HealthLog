@@ -100,8 +100,8 @@ export function ChartOverlayControls({
   // reasoning that keeps the mood tag layout off the delegable list. So a
   // delegate reads the owner's chart in its stored shape and is not offered a
   // dial that would silently fail.
-  const { canManage } = useRecordCapabilities();
-  if (!canManage) return null;
+  const { inSharedRecord } = useRecordCapabilities();
+  if (inSharedRecord) return null;
 
   return (
     <DropdownMenu>

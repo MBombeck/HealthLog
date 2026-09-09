@@ -93,7 +93,8 @@ export function CycleView() {
   // v1.36.x — no grant level admits a cycle write. Inside somebody else's
   // record the page stays readable and every path into the log-day sheet and
   // the profile settings is absent, rather than opening onto a refusal.
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageCycle = canManageDomain("cycle");
 
   // Deep-link support: `/cycle?tab=insights` opens the insights tab. The value
   // is read ONCE for the initial `defaultValue` (uncontrolled tabs — so normal
@@ -188,7 +189,7 @@ export function CycleView() {
           // One action. The settings glyph that used to sit beside it was a
           // second door to the tab directly below, and no other page in the
           // app carries a gear in that corner.
-          canManage ? (
+          canManageCycle ? (
             <Button
               onClick={() => openSheet(today)}
               className="min-h-11 sm:min-h-9"
@@ -275,7 +276,7 @@ export function CycleView() {
               ) : null}
               {/* Log CTA — first period when no cycle exists yet, next period
                   when the count paused on an overdue cycle. */}
-              {canManage &&
+              {canManageCycle &&
               !loading &&
               !calendarError &&
               verdict?.dayOfCycle == null ? (
@@ -333,7 +334,7 @@ export function CycleView() {
             >
               {t("cycle.tabs.insights")}
             </TabsTrigger>
-            {canManage && (
+            {canManageCycle && (
               <TabsTrigger
                 value="settings"
                 className="text-xs sm:flex-1 sm:text-sm"
@@ -385,7 +386,7 @@ export function CycleView() {
                             null)
                           : null
                       }
-                      onSelectDay={canManage ? openSheet : undefined}
+                      onSelectDay={canManageCycle ? openSheet : undefined}
                       onVisibleMonthChange={setVisibleMonth}
                     />
                   </>
@@ -453,7 +454,7 @@ export function CycleView() {
               <div className="flex h-32 items-center justify-center">
                 <Loader2 className="text-muted-foreground h-6 w-6 animate-spin motion-reduce:animate-none" />
               </div>
-            ) : profileQuery.data && canManage ? (
+            ) : profileQuery.data && canManageCycle ? (
               <CycleSettings
                 key={profileQuery.data.updatedAt}
                 profile={profileQuery.data}

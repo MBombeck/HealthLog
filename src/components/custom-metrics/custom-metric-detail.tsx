@@ -196,6 +196,7 @@ export function CustomMetricDetail({
           <>
             {/* Controls, left → right: Delete · Edit · Show-all-values · Add. */}
             <DeleteButton
+              domain={null}
               onConfirm={() => deleteMetric.mutate()}
               title={t("customMetrics.deleteConfirmTitle")}
               description={t("customMetrics.deleteConfirmDescription")}

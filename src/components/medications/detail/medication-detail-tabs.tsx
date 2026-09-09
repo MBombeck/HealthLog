@@ -185,11 +185,22 @@ type TabSlug = (typeof TAB_SLUGS)[number];
  * none of it at any level.
  */
 const OWNER_ONLY_TABS: ReadonlySet<TabSlug> = new Set([
+  // Schedule times are a MANAGE route, but the tab also carries the reminder
+  // and notification settings, which resolve the caller.
   "zeitplan",
-  "bestand",
+  // Per-medication tokens: a credential surface, never delegated.
   "api",
+  // Phase config, export and the token-adjacent rows resolve the caller.
   "erweitert",
 ]);
+
+/**
+ * v1.38.12 — tabs whose every write is a MANAGE route under `medications`,
+ * so a grant that reaches those routes is shown the tab. The supply ledger
+ * is one; the three above are not, because each mixes in a route that
+ * resolves the caller and would 403 under a switch.
+ */
+const MANAGE_TABS: ReadonlySet<TabSlug> = new Set(["bestand"]);
 
 /**
  * Legacy slugs that point at a dissolved tab. The Erinnerung tab folded
@@ -242,7 +253,8 @@ export function MedicationDetailTabs({
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
+  const canManageMedications = canManageDomain("medications");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -308,9 +320,16 @@ export function MedicationDetailTabs({
           (slug !== "injektion" || isInjectable) &&
           (slug !== "zeitplan" || !asNeeded) &&
           (slug !== "wirkung" || hasEfficacyTarget) &&
-          (canManage || !OWNER_ONLY_TABS.has(slug)),
+          (!inSharedRecord || !OWNER_ONLY_TABS.has(slug)) &&
+          (canManageMedications || !MANAGE_TABS.has(slug)),
       ),
-    [isInjectable, asNeeded, hasEfficacyTarget, canManage],
+    [
+      isInjectable,
+      asNeeded,
+      hasEfficacyTarget,
+      inSharedRecord,
+      canManageMedications,
+    ],
   );
 
   const requestedRaw = searchParams?.get("tab");
@@ -908,7 +927,7 @@ export function MedicationDetailTabs({
           (`PUT /api/medications/[id]` is not delegable), so the deep link is
           gated exactly like the hero button it stands in for. */}
       <MedicationWizardDialog
-        open={editOpen && canManage}
+        open={editOpen && canManageMedications}
         onOpenChange={setEditOpen}
         mode="edit"
         initial={payload}

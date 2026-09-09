@@ -14,6 +14,8 @@
  *     nothing" goes red.
  *   - make the `!active` branch return `canAdd: false` → "the caller's own
  *     record keeps everything" goes red.
+ *   - answer `canManageDomain` from `level === "manage"` instead of the list →
+ *     "the vault is never manageable" goes red.
  */
 import { describe, expect, it } from "vitest";
 
@@ -22,6 +24,8 @@ import {
   resolveRecordCapabilities,
 } from "@/hooks/use-record-capabilities";
 import type { AccountAccessEntry } from "@/lib/sharing/account-access-view";
+import { delegatedDomains } from "@/lib/sharing/domain-write-support";
+import { SHARE_DOMAINS } from "@/lib/sharing/scope";
 
 const READ_ONLY: AccountAccessEntry = {
   accountId: "acct-owner",
@@ -33,13 +37,20 @@ const READ_ONLY: AccountAccessEntry = {
   sections: null,
   recordKind: "shared",
   canWrite: false,
+  writableDomains: [],
+  manageableDomains: [],
 };
 
+// The lists are what the server publishes for each level over the whole
+// record: the same helper `resolveAccountAccess` runs, so the fixture is the
+// payload and not a guess at it.
 const WRITABLE: AccountAccessEntry = {
   ...READ_ONLY,
   access: "write",
   level: "write",
   canWrite: true,
+  writableDomains: delegatedDomains("write", null, "write"),
+  manageableDomains: [],
 };
 
 const MANAGING: AccountAccessEntry = {
@@ -47,6 +58,8 @@ const MANAGING: AccountAccessEntry = {
   access: "write",
   level: "manage",
   canWrite: true,
+  writableDomains: delegatedDomains("manage", null, "write"),
+  manageableDomains: delegatedDomains("manage", null, "manage"),
 };
 
 const SCOPED: AccountAccessEntry = {
@@ -59,7 +72,8 @@ describe("resolveRecordCapabilities", () => {
     // `null` is not "no access", it is "this is mine". Both an unswitched
     // session and a payload from a server that has never heard of sharing
     // land here, which is why the absent case must be the permissive one.
-    expect(resolveRecordCapabilities(null)).toEqual({
+    const own = resolveRecordCapabilities(null);
+    expect(own).toMatchObject({
       inSharedRecord: false,
       canWrite: false,
       canAdd: true,
@@ -71,13 +85,21 @@ describe("resolveRecordCapabilities", () => {
       sections: null,
       recordKind: "self",
     });
-    expect(resolveRecordCapabilities(undefined)).toEqual(
-      resolveRecordCapabilities(null),
-    );
+    for (const domain of SHARE_DOMAINS) {
+      expect(own.canWriteDomain(domain), domain).toBe(true);
+      expect(own.canManageDomain(domain), domain).toBe(true);
+    }
+    expect(resolveRecordCapabilities(undefined)).toMatchObject({
+      inSharedRecord: false,
+      canAdd: true,
+      canManage: true,
+      recordKind: "self",
+    });
   });
 
   it("refuses a malformed published block instead of treating it as own record", () => {
-    expect(resolveRecordCapabilities(null, true)).toEqual({
+    const refused = resolveRecordCapabilities(null, true);
+    expect(refused).toMatchObject({
       inSharedRecord: true,
       canWrite: false,
       canAdd: false,
@@ -87,10 +109,15 @@ describe("resolveRecordCapabilities", () => {
       recordKind: "shared",
       accessRefused: true,
     });
+    for (const domain of SHARE_DOMAINS) {
+      expect(refused.canWriteDomain(domain), domain).toBe(false);
+      expect(refused.canManageDomain(domain), domain).toBe(false);
+    }
   });
 
   it("a read-only delegate adds nothing", () => {
-    expect(resolveRecordCapabilities(READ_ONLY)).toEqual({
+    const reader = resolveRecordCapabilities(READ_ONLY);
+    expect(reader).toMatchObject({
       inSharedRecord: true,
       canWrite: false,
       canAdd: false,
@@ -99,12 +126,17 @@ describe("resolveRecordCapabilities", () => {
       sections: null,
       recordKind: "shared",
     });
+    for (const domain of SHARE_DOMAINS) {
+      expect(reader.canWriteDomain(domain), domain).toBe(false);
+      expect(reader.canManageDomain(domain), domain).toBe(false);
+    }
   });
 
   it("a delegate may not change what is already there", () => {
     // The asymmetry the whole design rests on: a WRITE grant adds, and that
     // is all it does. Not even to an entry the delegate made a minute ago.
-    expect(resolveRecordCapabilities(WRITABLE)).toEqual({
+    const writer = resolveRecordCapabilities(WRITABLE);
+    expect(writer).toMatchObject({
       inSharedRecord: true,
       canWrite: true,
       canAdd: true,
@@ -113,6 +145,14 @@ describe("resolveRecordCapabilities", () => {
       sections: null,
       recordKind: "shared",
     });
+    // Writable where a WRITE route exists, manageable nowhere.
+    expect(writer.canWriteDomain("measurements")).toBe(true);
+    expect(writer.canWriteDomain("labs")).toBe(true);
+    expect(writer.canWriteDomain("mind")).toBe(false);
+    expect(writer.canWriteDomain("documents")).toBe(false);
+    for (const domain of SHARE_DOMAINS) {
+      expect(writer.canManageDomain(domain), domain).toBe(false);
+    }
   });
 
   it("carries the level and the sections through untouched", () => {
@@ -128,22 +168,45 @@ describe("resolveRecordCapabilities", () => {
     expect(resolveRecordCapabilities(MANAGING).level).toBe("manage");
   });
 
-  it("does not hand a manage grant the affordances its routes cannot answer yet", () => {
-    // The deliberate gap, pinned so it cannot close by accident. MANAGE will
-    // bring the edit and delete controls back, and it does so in the release
-    // where the routes behind them answer — not in the one that merely
-    // publishes the level. A `canManage: true` here today would paint
-    // controls that 403, which is the exact failure these booleans exist to
-    // prevent.
-    expect(resolveRecordCapabilities(MANAGING)).toEqual({
+  it("hands a manage grant exactly the sections its routes answer for", () => {
+    // The v1.37.0 hold-back answered `canManage: false` here until the routes
+    // behind the edit and delete controls existed. They exist; the answer is
+    // the server's per-section list, and the coarse boolean is "is that list
+    // non-empty".
+    const manager = resolveRecordCapabilities(MANAGING);
+    expect(manager).toMatchObject({
       inSharedRecord: true,
       canWrite: true,
       canAdd: true,
-      canManage: false,
+      canManage: true,
       level: "manage",
       sections: null,
       recordKind: "shared",
     });
+    expect(manager.canManageDomain("mind")).toBe(true);
+    expect(manager.canManageDomain("profile")).toBe(true);
+    expect(manager.canManageDomain("labs")).toBe(true);
+    expect(manager.canWriteDomain("mind")).toBe(true);
+  });
+
+  it("never lets a shared record manage the vault", () => {
+    // The vault has no delegated write route, so the server's list never
+    // names it — and the hook binds the list rather than the level. Answering
+    // from `level === "manage"` would paint the upload control that 403s.
+    expect(
+      resolveRecordCapabilities(MANAGING).canManageDomain("documents"),
+    ).toBe(false);
+    expect(
+      resolveRecordCapabilities(MANAGING).canWriteDomain("documents"),
+    ).toBe(false);
+    const claimsEverything: AccountAccessEntry = {
+      ...MANAGING,
+      manageableDomains: [],
+    };
+    // An empty list from the server is an empty answer, whatever the level.
+    const held = resolveRecordCapabilities(claimsEverything);
+    expect(held.canManage).toBe(false);
+    expect(held.canManageDomain("mind")).toBe(false);
   });
 
   it("binds the server's boolean rather than the grant's label", () => {
@@ -157,6 +220,19 @@ describe("resolveRecordCapabilities", () => {
       canWrite: false,
     };
     expect(resolveRecordCapabilities(disagreeing).canAdd).toBe(false);
+    // The same posture for the lists: a scoped WRITE grant is writable only
+    // where its list says so, not wherever its level would reach.
+    const scopedWriter: AccountAccessEntry = {
+      ...WRITABLE,
+      sections: ["labs"],
+      writableDomains: ["labs"],
+    };
+    expect(resolveRecordCapabilities(scopedWriter).canWriteDomain("labs")).toBe(
+      true,
+    );
+    expect(
+      resolveRecordCapabilities(scopedWriter).canWriteDomain("measurements"),
+    ).toBe(false);
   });
 });
 
@@ -242,8 +318,10 @@ describe("an unprovable record context withholds every control", () => {
   it("leaves every existing arm untouched when the two agree", () => {
     // The fourth argument defaults to false, so every case above this block
     // means exactly what it meant before the fence existed.
-    expect(resolveRecordCapabilities(READ_ONLY)).toEqual(
-      resolveRecordCapabilities(READ_ONLY, false, false, false),
-    );
+    expect(resolveRecordCapabilities(READ_ONLY)).toMatchObject({
+      ...resolveRecordCapabilities(READ_ONLY, false, false, false),
+      canWriteDomain: expect.any(Function),
+      canManageDomain: expect.any(Function),
+    });
   });
 });

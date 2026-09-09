@@ -169,7 +169,7 @@ export default function MedicationsPageClient() {
   // to tapping each card in turn — so withholding it made a caregiver with
   // five morning tablets tap five times for nothing. The customize page stays
   // withheld; sharing does not cover it at all.
-  const { canAdd, canManage, inSharedRecord } = useRecordCapabilities();
+  const { canAdd, inSharedRecord } = useRecordCapabilities();
   // v1.18.1 (D3) — medications is an opt-out module. When the account has it
   // turned off the whole page disappears (the nav entry is hidden by the same
   // gate) and the list query never fires (the API would 403 anyway).
@@ -433,7 +433,7 @@ export default function MedicationsPageClient() {
               Same glyph, slot (left of the add button) and responsive
               44-px mobile tap floor as the dashboard and insights
               headers. */}
-            {canManage && (
+            {!inSharedRecord && (
               <Button
                 asChild
                 variant="ghost"

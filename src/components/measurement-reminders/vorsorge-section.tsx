@@ -223,7 +223,8 @@ export function VorsorgeSection({
   variant?: "settings" | "page";
 }) {
   const { t } = useTranslations();
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
+  const canManageMeasurements = canManageDomain("measurements");
   const router = useRouter();
   const {
     data: reminders,
@@ -382,7 +383,7 @@ export function VorsorgeSection({
   // and no grant level admits creating, editing or satisfying one. Inside
   // somebody else's record the schedule stays readable and every control that
   // would change it is absent.
-  const addButton = canManage ? (
+  const addButton = canManageMeasurements ? (
     <Button
       type="button"
       className="min-h-11 shrink-0 sm:min-h-9"
@@ -396,8 +397,9 @@ export function VorsorgeSection({
   // v1.18.6 (MOD-01) — the wrench links to the Vorsorge settings page (view,
   // reorder, per-reminder enable toggles), left of the Add button — the
   // canonical medication-page pattern. The old kebab "Anpassen" sheet is
-  // gone (MOD-07); its toggles moved to the settings page.
-  const wrenchButton = canManage ? (
+  // gone (MOD-07); its toggles moved to the settings page. `/settings` is the
+  // caller's, not the record's, so no grant reaches it.
+  const wrenchButton = !inSharedRecord ? (
     <Button
       asChild
       variant="ghost"
@@ -716,7 +718,7 @@ export function VorsorgeSection({
           title={t("measurementReminders.empty.title")}
           description={t("measurementReminders.empty.description")}
           action={
-            canManage ? (
+            canManageMeasurements ? (
               <Button type="button" onClick={openCreate}>
                 {t("common.add")}
               </Button>
@@ -864,7 +866,8 @@ function VorsorgeCard({
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageMeasurements = canManageDomain("measurements");
   // Issue #490 — day-boundary zone for the relative "today / yesterday"
   // bucket must match the zone `fmt.date` renders in (mirror → Berlin).
   // The next-due phrase reads off the SAME zone as the last-done date below
@@ -938,7 +941,7 @@ function VorsorgeCard({
 
   // Single med-style kebab: Edit + Delete. The Delete item is the shared
   // confirm-on-delete control rendered as a full-width menu row.
-  const headerActions = canManage ? (
+  const headerActions = canManageMeasurements ? (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
@@ -1009,7 +1012,7 @@ function VorsorgeCard({
   // `resolve.ts` states the same boundary server-side: an appointment reminder
   // is free-text by construction.
   const fileVisitButton =
-    canManage && !isLinked ? (
+    canManageMeasurements && !isLinked ? (
       <Button
         type="button"
         variant="outline"
@@ -1028,7 +1031,7 @@ function VorsorgeCard({
   // on the card. Outline against the filled primary: the same pairing, and
   // the same rule as everything else in this bar — one constant look, never
   // tinted by how overdue the checkup is.
-  const postponeButton = canManage ? (
+  const postponeButton = canManageMeasurements ? (
     <Button
       type="button"
       variant="outline"
@@ -1042,7 +1045,7 @@ function VorsorgeCard({
     </Button>
   ) : null;
 
-  const primaryButton = canManage ? (
+  const primaryButton = canManageMeasurements ? (
     <Button
       type="button"
       className="min-h-11 flex-1"
@@ -1272,7 +1275,7 @@ function VorsorgeCard({
                   ungated copy, and which branch a person sees is a per-browser
                   preference that survives the switch — so the identical action
                   was offered or withheld depending on a view toggle. */}
-              {canManage ? (
+              {canManageMeasurements ? (
                 <Button
                   type="button"
                   size="sm"
@@ -1292,7 +1295,7 @@ function VorsorgeCard({
               {/* Icon-only in the dense list, labelled in the cards branch —
                   the same action either way, never one branch offering what
                   the other withholds. */}
-              {canManage ? (
+              {canManageMeasurements ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -1309,7 +1312,7 @@ function VorsorgeCard({
               ) : null}
               {/* Free-text reminders only: a typed / screening reminder has no
                   practice visit behind it. */}
-              {canManage && !isLinked ? (
+              {canManageMeasurements && !isLinked ? (
                 <Button
                   type="button"
                   variant="outline"

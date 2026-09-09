@@ -94,7 +94,8 @@ export function IllnessDayTimeline({
 }) {
   const { t } = useTranslations();
   // v1.36.x — logging a day is not a delegated verb.
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageIllness = canManageDomain("illness");
   const { data, isLoading, isError } = useIllnessDayLogList(episodeId, "desc");
 
   const dayLogs = data?.dayLogs ?? [];
@@ -119,7 +120,7 @@ export function IllnessDayTimeline({
             <p className="text-muted-foreground text-sm">
               {t("illness.timeline.empty")}
             </p>
-            {canManage && (
+            {canManageIllness && (
               <Button
                 variant="outline"
                 className="min-h-11 sm:min-h-9"

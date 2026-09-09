@@ -21,7 +21,9 @@ import { useTranslations } from "@/lib/i18n/context";
 
 export default function MoodPageClient() {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const { canManage, inSharedRecord } = useRecordCapabilities();
+  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
+  // A mood entry is created at MANAGE under the mind section.
+  const canAddMood = canManageDomain("mind");
   const mounted = useMounted();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -89,7 +91,7 @@ export default function MoodPageClient() {
                 the "not part of what was shared" panel: `/settings` is not a
                 shared-record destination and the shell answers before the
                 page does. */}
-            {canManage && (
+            {!inSharedRecord && (
               <Button
                 asChild
                 variant="ghost"
@@ -105,13 +107,13 @@ export default function MoodPageClient() {
                 </Link>
               </Button>
             )}
-            {/* v1.36.x — a mood entry is not one of the verbs a grant
-                admits, so it stays with the account whose record it is. A
-                delegate at any level gets no add path here. */}
-            {canManage && (
+            {/* A mood entry is a MANAGE create: a WRITE delegate gets no add
+                path here, a guardian or a MANAGE delegate does. */}
+            {canAddMood && (
               <Button
                 onClick={() => setDialogOpen(true)}
                 className="min-h-11 sm:min-h-9"
+                data-slot="mood-add-entry"
               >
                 <Plus className="h-4 w-4" />
                 {t("mood.addEntry")}

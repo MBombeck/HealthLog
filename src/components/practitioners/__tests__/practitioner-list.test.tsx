@@ -21,7 +21,11 @@ vi.mock("@/hooks/use-practitioners", () => ({
 }));
 
 vi.mock("@/hooks/use-record-capabilities", () => ({
-  useRecordCapabilities: () => ({ canManage: true }),
+  useRecordCapabilities: () => ({
+    canManage: true,
+    canWriteDomain: () => true,
+    canManageDomain: () => true,
+  }),
 }));
 
 vi.mock("@/hooks/use-debounced-value", () => ({

@@ -47,15 +47,16 @@ export function shouldProbeOcrCapability({
   isLoading,
   labsEnabled,
   mounted,
-  canManage,
+  ownRecord,
 }: {
   isAuthenticated: boolean;
   isLoading: boolean;
   labsEnabled: boolean;
   mounted: boolean;
-  canManage: boolean;
+  /** In the caller's own record; the probe and the commit resolve the caller, never a grant. */
+  ownRecord: boolean;
 }): boolean {
-  return isAuthenticated && !isLoading && labsEnabled && mounted && canManage;
+  return isAuthenticated && !isLoading && labsEnabled && mounted && ownRecord;
 }
 
 /** Capability probe — refetched when the scan dialog opens. */

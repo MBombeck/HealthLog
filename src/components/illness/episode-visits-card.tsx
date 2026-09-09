@@ -36,7 +36,9 @@ export function EpisodeVisitsCard({ episodeId }: { episodeId: string }) {
   const { t } = useTranslations();
   const format = useFormatters();
   const { user } = useAuth();
-  const { canManage } = useRecordCapabilities();
+  const { canWriteDomain } = useRecordCapabilities();
+  // The pre-linked visit is a `POST /api/encounters`, which answers at WRITE.
+  const canAddVisit = canWriteDomain("profile");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [session, setSession] = useState(0);
 
@@ -114,7 +116,7 @@ export function EpisodeVisitsCard({ episodeId }: { episodeId: string }) {
             </ul>
           )}
 
-          {canManage ? (
+          {canAddVisit ? (
             <div className="flex flex-wrap items-center gap-1.5">
               <Button
                 type="button"
@@ -135,7 +137,7 @@ export function EpisodeVisitsCard({ episodeId }: { episodeId: string }) {
         </CardContent>
       </Card>
 
-      {canManage ? (
+      {canAddVisit ? (
         <EncounterSheet
           key={session}
           open={sheetOpen}

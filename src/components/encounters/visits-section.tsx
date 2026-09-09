@@ -30,7 +30,9 @@ import { VisitCard } from "./visit-card";
 
 export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
   const { t } = useTranslations();
-  const { canManage } = useRecordCapabilities();
+  const { canWriteDomain } = useRecordCapabilities();
+  // `POST /api/encounters` answers at WRITE under the profile section.
+  const canAddVisit = canWriteDomain("profile");
   const list = useEncounters(enabled);
 
   // `null` closed, `"new"` create, a row edits it.
@@ -45,7 +47,7 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
   const past = list.data?.past ?? [];
   const empty = upcoming.length === 0 && past.length === 0;
 
-  const addButton = canManage ? (
+  const addButton = canAddVisit ? (
     <Button
       type="button"
       className="min-h-11"

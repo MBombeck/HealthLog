@@ -9548,6 +9548,7 @@
     "title": "Documenti",
     "subtitle": "Ogni lettera, referto e scansione in un unico posto ricercabile — cifrato a riposo.",
     "pageUpload": "Carica",
+    "ownerOnlyUpload": "Solo il titolare della cartella può aggiungere documenti.",
     "kind": {
       "DOCTOR_REPORT": "Referto medico",
       "DISCHARGE_LETTER": "Lettera di dimissione",

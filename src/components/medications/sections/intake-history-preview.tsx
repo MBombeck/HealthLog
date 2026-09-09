@@ -36,7 +36,8 @@ export function IntakeHistoryPreview({
 }: IntakeHistoryPreviewProps) {
   const { t } = useTranslations();
   // v1.36.x — importing dose history is not a delegated verb.
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageMedications = canManageDomain("medications");
 
   return (
     <>
@@ -45,7 +46,7 @@ export function IntakeHistoryPreview({
         title={t("medications.detail.intake.title")}
         dataSlot="medication-detail-intake-history-section"
         headerExtras={
-          canManage ? (
+          canManageMedications ? (
             <Button
               variant="outline"
               size="sm"

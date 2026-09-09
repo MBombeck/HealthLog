@@ -53,6 +53,7 @@ import { Loader2, PackageOpen, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/data-list/delete-button";
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SettingsGroup } from "@/components/medications/settings-group";
 import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
@@ -112,6 +113,7 @@ export function InventorySection({
   deliveryForm?: string;
 }) {
   const { t, locale } = useTranslations();
+  const { inSharedRecord } = useRecordCapabilities();
   const dateFormatPref = useDateFormatPreference();
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
@@ -301,19 +303,24 @@ export function InventorySection({
         {/* v1.16.11 — cross-link to the low-stock alert setting: the
             threshold lives in Settings → Notifications, but the question
             "when will it warn me?" comes up here, where the stock lives. */}
-        <div className="py-2">
-          <Link
-            href="/settings/notifications#low-stock"
-            className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
-            data-slot="inventory-low-stock-link"
-          >
-            {lowStockDays !== null
-              ? t("medications.detail.bestand.lowStockLinkOn", {
-                  days: lowStockDays,
-                })
-              : t("medications.detail.bestand.lowStockLinkOff")}
-          </Link>
-        </div>
+        {/* `/settings` is not a shared-record destination, so the cross-link
+            is withheld under a switch rather than opening onto the "not part
+            of what was shared" panel. */}
+        {!inSharedRecord && (
+          <div className="py-2">
+            <Link
+              href="/settings/notifications#low-stock"
+              className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
+              data-slot="inventory-low-stock-link"
+            >
+              {lowStockDays !== null
+                ? t("medications.detail.bestand.lowStockLinkOn", {
+                    days: lowStockDays,
+                  })
+                : t("medications.detail.bestand.lowStockLinkOff")}
+            </Link>
+          </div>
+        )}
       </SettingsGroup>
 
       {/* v1.16.11 — packaging economics surfaced where the stock lives:
@@ -443,6 +450,7 @@ export function InventorySection({
                 {t("medications.detail.bestand.adjustButton")}
               </Button>
               <DeleteButton
+                domain="medications"
                 onConfirm={() => void deleteItem(item)}
                 title={t("medications.detail.bestand.deleteTitle")}
                 description={t("medications.detail.bestand.deleteDescription")}
