@@ -60,7 +60,7 @@ afterEach(() => {
 });
 
 describe("onboarding baseline profile save", () => {
-  it("names the rejected field and still lets the accepted ones stand", async () => {
+  it("names the rejected field, keeps the accepted ones, and holds the step", async () => {
     const calls = stubProfilePut(200, {
       data: {
         id: "u1",
@@ -88,14 +88,21 @@ describe("onboarding baseline profile save", () => {
       gender: "OTHER",
     });
 
-    // The accepted fields are saved and the wizard moves on...
-    expect(outcome.advance).toBe(true);
-    // ...but the declined one is said out loud, by the name this screen
-    // put next to the input.
+    // The accepted fields are saved, and the declined one is said out
+    // loud by the name this screen put next to the input.
     expect(outcome.notice).toEqual({
       tone: "warning",
       message: "Profile saved, but Height (cm) could not be updated.",
     });
+    // This assertion was `true` until the rejection reached the input
+    // it belongs to. Advancing here posted `step: 4`, stamped the
+    // account as set up and replaced the only screen that could show
+    // the refused value — a toast on the way out was the whole notice
+    // the person got. The step now waits for a correction.
+    expect(outcome.advance).toBe(false);
+    expect(outcome.fieldErrors.heightCm).toBe(
+      "That value is above the range this field accepts.",
+    );
   });
 
   it("says nothing when every field was accepted", async () => {
@@ -107,7 +114,7 @@ describe("onboarding baseline profile save", () => {
       baselineFieldLabelKeys(false),
     );
 
-    expect(outcome).toEqual({ advance: true, notice: null });
+    expect(outcome).toEqual({ advance: true, notice: null, fieldErrors: {} });
   });
 
   it("names the blocking field and holds the step when nothing was saved", async () => {

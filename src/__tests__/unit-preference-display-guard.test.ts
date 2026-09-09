@@ -56,9 +56,19 @@ const TARGET_SURFACES = [
  * the same failure the target block guards against — a converted field
  * over a canonical save silently rewrites the stored height.
  */
+/**
+ * One entry per surface. A surface is a group of files because the
+ * onboarding step keeps the preference and the adapter where the save
+ * happens and renders the control from its own inputs file — the three
+ * conditions below are asserted across the group, not per file, so
+ * splitting a form does not read as an un-wire.
+ */
 const HEIGHT_SURFACES = [
-  join(SRC, "components", "onboarding", "baseline-form.tsx"),
-  join(SRC, "components", "settings", "account-section", "index.tsx"),
+  [
+    join(SRC, "components", "onboarding", "baseline-form.tsx"),
+    join(SRC, "components", "onboarding", "baseline-fields.tsx"),
+  ],
+  [join(SRC, "components", "settings", "account-section", "index.tsx")],
 ];
 
 const HEIGHT_CONTROL = join(
@@ -153,21 +163,25 @@ describe("unit-preference display guard", () => {
     // from one form and it falls back to centimetres while its sibling
     // shows feet and inches.
     const offenders: string[] = [];
-    for (const file of HEIGHT_SURFACES) {
-      const src = readFileSync(file, "utf8");
+    for (const files of HEIGHT_SURFACES) {
+      const surface = files.join(" + ");
+      const src = files.map((file) => readFileSync(file, "utf8")).join("\n");
       if (!src.includes("useUnitDisplay()")) {
-        offenders.push(`${file}: no preference hook`);
+        offenders.push(`${surface}: no preference hook`);
       }
       if (!src.includes("resolveHeightUnitAdapter")) {
-        offenders.push(`${file}: no height adapter`);
+        offenders.push(`${surface}: no height adapter`);
       }
-      if (!src.includes("HeightFieldControl")) {
-        offenders.push(`${file}: hand-rolled height input`);
+      // Word-bounded: a renamed local wrapper whose name merely starts
+      // with the control's satisfies a substring check while rendering
+      // something else entirely.
+      if (!/\bHeightFieldControl\b/.test(src)) {
+        offenders.push(`${surface}: hand-rolled height input`);
       }
       // The canonical centimetre guardrails must come from the
       // adapter's inward-rounded bounds, never from a literal.
       if (/min=\{50\}|max=\{300\}/.test(src)) {
-        offenders.push(`${file}: hardcoded centimetre guardrail`);
+        offenders.push(`${surface}: hardcoded centimetre guardrail`);
       }
     }
     expect(offenders).toEqual([]);

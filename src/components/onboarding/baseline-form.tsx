@@ -8,17 +8,10 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { DateField } from "@/components/ui/date-field";
-import { FieldGroup } from "@/components/ui/field-group";
-import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { HeightFieldControl } from "@/components/profile/height-field-control";
+  BaselineFields,
+  type BaselineFieldErrors,
+} from "@/components/onboarding/baseline-fields";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import {
   EMPTY_HEIGHT_DRAFT,
@@ -100,6 +93,10 @@ export function BaselineForm() {
 
   const [form, setForm] = useState<BaselineFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  // Refusals from the last save, one sentence per field. Cleared on
+  // every attempt so a slot never keeps a reason the server no longer
+  // has, and cleared per field as it is edited.
+  const [fieldErrors, setFieldErrors] = useState<BaselineFieldErrors>({});
 
   // v1.17.1 — optional anamnesis (conditions + allergies). Persisted
   // through the existing encrypted self-context path
@@ -137,11 +134,23 @@ export function BaselineForm() {
     value: BaselineFormState[K],
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
+    // The person is answering the objection; the objection goes away
+    // while they type rather than sitting under a value they already
+    // corrected. `height` is the draft's name here and `heightCm` the
+    // schema's — the same field, so editing either box clears it.
+    const slot = key === "height" ? "heightCm" : key;
+    setFieldErrors((prev) => {
+      if (!(slot in prev)) return prev;
+      const next = { ...prev };
+      delete next[slot as keyof BaselineFieldErrors];
+      return next;
+    });
   }
 
   async function advance(opts: { saveProfile: boolean }) {
     if (saving) return;
     setSaving(true);
+    setFieldErrors({});
     try {
       if (opts.saveProfile) {
         const profileBody = buildBaselineProfileBody(
@@ -160,9 +169,12 @@ export function BaselineForm() {
             show(outcome.notice.message);
           }
           if (!outcome.advance) {
-            // Nothing was written. Staying on the step is the point —
-            // the person has a named field to fix and the values they
-            // typed are still in front of them.
+            // A field was refused. Staying on the step is the point —
+            // each refused input now says why under itself, the values
+            // the person typed are still in front of them, and the
+            // account is not stamped as set up over a value that never
+            // landed.
+            setFieldErrors(outcome.fieldErrors);
             setSaving(false);
             return;
           }
@@ -201,91 +213,12 @@ export function BaselineForm() {
         </p>
       </header>
 
-      <fieldset className="bg-card border-border space-y-4 rounded-xl border p-4 md:p-6">
-        <legend className="sr-only">{t("onboarding.baseline.title")}</legend>
-
-        <FieldGroup
-          htmlFor="ob-baseline-display-name"
-          label={t("onboarding.baseline.displayNameLabel")}
-          hint={t("onboarding.baseline.displayNameHint")}
-        >
-          <Input
-            id="ob-baseline-display-name"
-            value={form.displayName}
-            onChange={(e) => patch("displayName", e.target.value)}
-            autoComplete="nickname"
-            maxLength={50}
-            placeholder={t("onboarding.baseline.displayNamePlaceholder")}
-          />
-        </FieldGroup>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FieldGroup
-            htmlFor="ob-baseline-height"
-            label={
-              heightAdapter.usesFeetInches
-                ? t("onboarding.baseline.heightLabelFtIn")
-                : t("onboarding.baseline.heightLabel")
-            }
-          >
-            <HeightFieldControl
-              idPrefix="ob-baseline-height"
-              adapter={heightAdapter}
-              value={form.height}
-              onChange={(next) => patch("height", next)}
-              autoComplete="off"
-            />
-          </FieldGroup>
-          <FieldGroup
-            htmlFor="ob-baseline-gender"
-            label={t("onboarding.baseline.genderLabel")}
-          >
-            <Select
-              // The design system's Radix Select uses an empty-string
-              // sentinel to mean "no selection"; map back and forth so
-              // the form state ("") and the Select's value (undefined-
-              // adjacent) stay aligned. v1.4.25 W21 Fix-N (design-M1).
-              value={form.gender === "" ? undefined : form.gender}
-              onValueChange={(next) => patch("gender", next)}
-            >
-              <SelectTrigger
-                id="ob-baseline-gender"
-                className="w-full"
-                data-slot="onboarding-baseline-gender"
-              >
-                <SelectValue
-                  placeholder={t("onboarding.baseline.genderNone")}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MALE">
-                  {t("onboarding.baseline.genderMale")}
-                </SelectItem>
-                <SelectItem value="FEMALE">
-                  {t("onboarding.baseline.genderFemale")}
-                </SelectItem>
-                <SelectItem value="OTHER">
-                  {t("onboarding.baseline.genderOther")}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </FieldGroup>
-        </div>
-
-        <FieldGroup
-          htmlFor="ob-baseline-dob"
-          label={t("onboarding.baseline.dateOfBirthLabel")}
-          hint={t("onboarding.baseline.dateOfBirthHint")}
-        >
-          <DateField
-            id="ob-baseline-dob"
-            value={form.dateOfBirth}
-            onChange={(value) => patch("dateOfBirth", value)}
-            max={new Date().toISOString().slice(0, 10)}
-            autoComplete="bday"
-          />
-        </FieldGroup>
-      </fieldset>
+      <BaselineFields
+        value={form}
+        onChange={patch}
+        heightAdapter={heightAdapter}
+        errors={fieldErrors}
+      />
 
       <AnamnesisCard
         value={anamnesis}

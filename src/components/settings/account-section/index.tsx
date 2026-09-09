@@ -37,9 +37,12 @@ import { detectBrowserTimezone } from "@/lib/tz/format";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import {
   describeRejectedProfileField,
+  describeRejectedProfileFields,
   type RejectedProfileField,
 } from "@/lib/profile/rejected-fields";
+import { FieldError } from "@/components/forms/field-error";
 import {
+  clearRejectedField,
   resolveInitialTimezone,
   statusText,
   type StatusMessage,
@@ -90,6 +93,20 @@ export function AccountSection() {
   const [saveMsgType, setSaveMsgType] = useState<
     "success" | "warning" | "error" | null
   >(null);
+  // One sentence per field the last save refused, keyed by the schema
+  // name the server sent. The banner above the button says a save was
+  // partial; these say which value was not stored and why, under the
+  // input holding it. Cleared at the start of every save, and per field
+  // as that field is edited.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // The person is answering the objection; the objection goes away
+  // while they type rather than sitting under a value they already
+  // corrected. The slot is the schema name the server sent, which is
+  // what the sentence under the input is keyed by — the height boxes
+  // hold a `height` draft but name the `heightCm` slot.
+  function clearFieldError(slot: string) {
+    setFieldErrors((prev) => clearRejectedField(prev, slot));
+  }
 
   // v1.23 — passkey + second-factor management moved to the dedicated
   // /settings/security hub so "how I secure my account" reads as one place.
@@ -172,6 +189,7 @@ export function AccountSection() {
     setSaving(true);
     setSaveMsg(null);
     setSaveMsgType(null);
+    setFieldErrors({});
     const savedProfile = {
       email: email.trim(),
       height,
@@ -234,6 +252,7 @@ export function AccountSection() {
           params: { field: describeRejectedProfileField(rejected, t) ?? "" },
         });
         setSaveMsgType("warning");
+        setFieldErrors(describeRejectedProfileFields(rejected, t));
         await refetch();
         setSeededUserId(null);
       } else {
@@ -272,6 +291,7 @@ export function AccountSection() {
       } | null;
       const errorCode = json?.meta?.errorCode;
       const field = describeRejectedProfileField(json?.details?.issues, t);
+      setFieldErrors(describeRejectedProfileFields(json?.details?.issues, t));
       if (errorCode === "profile.update.nothingSaved" && field) {
         setSaveMsg({ key: "settings.profileNothingSaved", params: { field } });
       } else if (errorCode) {
@@ -336,12 +356,18 @@ export function AccountSection() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  clearFieldError("email");
+                }}
                 placeholder={t("auth.emailPlaceholder")}
                 maxLength={320}
                 autoComplete="email"
                 enterKeyHint="next"
+                aria-invalid={fieldErrors.email ? true : undefined}
+                aria-describedby={fieldErrors.email ? "email-error" : undefined}
               />
+              <FieldError id="email-error" message={fieldErrors.email} />
             </div>
           </div>
 
@@ -351,7 +377,14 @@ export function AccountSection() {
               <NativeSelect
                 id="gender"
                 value={gender}
-                onChange={(e) => setGender(e.target.value)}
+                onChange={(e) => {
+                  setGender(e.target.value);
+                  clearFieldError("gender");
+                }}
+                aria-invalid={fieldErrors.gender ? true : undefined}
+                aria-describedby={
+                  fieldErrors.gender ? "gender-error" : undefined
+                }
               >
                 <option value="">{t("settings.genderNone")}</option>
                 <option value="MALE">{t("settings.genderMale")}</option>
@@ -361,6 +394,7 @@ export function AccountSection() {
               <p className="text-muted-foreground text-xs">
                 {t("settings.genderHint")}
               </p>
+              <FieldError id="gender-error" message={fieldErrors.gender} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="height">
@@ -372,9 +406,15 @@ export function AccountSection() {
                 idPrefix="height"
                 adapter={heightAdapter}
                 value={height}
-                onChange={setHeight}
+                onChange={(next) => {
+                  setHeight(next);
+                  clearFieldError("heightCm");
+                }}
                 enterKeyHint="next"
+                invalid={Boolean(fieldErrors.heightCm)}
+                describedBy={fieldErrors.heightCm ? "height-error" : undefined}
               />
+              <FieldError id="height-error" message={fieldErrors.heightCm} />
             </div>
           </div>
 
@@ -390,12 +430,20 @@ export function AccountSection() {
               <DateField
                 id="dob"
                 value={dateOfBirth}
-                onChange={setDateOfBirth}
+                onChange={(next) => {
+                  setDateOfBirth(next);
+                  clearFieldError("dateOfBirth");
+                }}
                 max={new Date().toISOString().slice(0, 10)}
+                aria-invalid={fieldErrors.dateOfBirth ? true : undefined}
+                aria-describedby={
+                  fieldErrors.dateOfBirth ? "dob-error" : undefined
+                }
               />
               <p className="text-muted-foreground text-xs">
                 {t("settings.dateOfBirthHint")}
               </p>
+              <FieldError id="dob-error" message={fieldErrors.dateOfBirth} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="language-select">{t("settings.language")}</Label>
@@ -451,11 +499,19 @@ export function AccountSection() {
               <Input
                 id="full-name"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={(e) => {
+                  setFullName(e.target.value);
+                  clearFieldError("fullName");
+                }}
                 placeholder={t("settings.identity.fullNamePlaceholder")}
                 maxLength={120}
                 autoComplete="name"
+                aria-invalid={fieldErrors.fullName ? true : undefined}
+                aria-describedby={
+                  fieldErrors.fullName ? "full-name-error" : undefined
+                }
               />
+              <FieldError id="full-name-error" message={fieldErrors.fullName} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -465,9 +521,20 @@ export function AccountSection() {
                 <Input
                   id="insurer"
                   value={insurerName}
-                  onChange={(e) => setInsurerName(e.target.value)}
+                  onChange={(e) => {
+                    setInsurerName(e.target.value);
+                    clearFieldError("insurerName");
+                  }}
                   placeholder={t("settings.identity.insurerPlaceholder")}
                   maxLength={120}
+                  aria-invalid={fieldErrors.insurerName ? true : undefined}
+                  aria-describedby={
+                    fieldErrors.insurerName ? "insurer-error" : undefined
+                  }
+                />
+                <FieldError
+                  id="insurer-error"
+                  message={fieldErrors.insurerName}
                 />
               </div>
               <div className="space-y-2">
@@ -477,17 +544,28 @@ export function AccountSection() {
                 <Input
                   id="insurance-number"
                   value={insuranceNumber}
-                  onChange={(e) =>
-                    setInsuranceNumber(e.target.value.toUpperCase())
-                  }
+                  onChange={(e) => {
+                    setInsuranceNumber(e.target.value.toUpperCase());
+                    clearFieldError("insuranceNumber");
+                  }}
                   placeholder="A123456780"
                   maxLength={10}
                   autoCapitalize="characters"
                   spellCheck={false}
+                  aria-invalid={fieldErrors.insuranceNumber ? true : undefined}
+                  aria-describedby={
+                    fieldErrors.insuranceNumber
+                      ? "insurance-number-error"
+                      : undefined
+                  }
                 />
                 <p className="text-muted-foreground text-xs">
                   {t("settings.identity.insuranceNumberHint")}
                 </p>
+                <FieldError
+                  id="insurance-number-error"
+                  message={fieldErrors.insuranceNumber}
+                />
               </div>
             </div>
           </div>

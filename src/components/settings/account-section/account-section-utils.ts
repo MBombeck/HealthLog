@@ -67,3 +67,25 @@ export function statusText(
  * uses the default label map, which points at the labels these inputs
  * already carry.
  */
+
+/**
+ * Drop one field's refusal as the person edits that field.
+ *
+ * A refusal answers a value. Once the value changes it answers nothing,
+ * so it goes instead of sitting under an input that has already been
+ * corrected — the same rule the onboarding baseline step applies in its
+ * `patch` helper. Only the edited slot is dropped: the other fields the
+ * same save refused were not touched, so their sentences still stand.
+ *
+ * The map is returned unchanged when the slot holds nothing, so typing
+ * in a field that was never refused does not re-render the form.
+ */
+export function clearRejectedField(
+  errors: Record<string, string>,
+  slot: string,
+): Record<string, string> {
+  if (!(slot in errors)) return errors;
+  const next = { ...errors };
+  delete next[slot];
+  return next;
+}

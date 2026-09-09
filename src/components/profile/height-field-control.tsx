@@ -31,6 +31,10 @@ interface HeightFieldControlProps {
   onChange: (next: HeightDraft) => void;
   autoComplete?: string;
   enterKeyHint?: "next";
+  /** Marks every box of the control as refused. */
+  invalid?: boolean;
+  /** Id of the error paragraph the control's boxes point at. */
+  describedBy?: string;
 }
 
 export function HeightFieldControl({
@@ -40,6 +44,8 @@ export function HeightFieldControl({
   onChange,
   autoComplete,
   enterKeyHint,
+  invalid,
+  describedBy,
 }: HeightFieldControlProps) {
   const { t } = useTranslations();
   const { bounds } = adapter;
@@ -58,6 +64,8 @@ export function HeightFieldControl({
         max={bounds.cm.max}
         step={0.1}
         autoComplete={autoComplete}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
       />
     );
   }
@@ -77,6 +85,8 @@ export function HeightFieldControl({
           max={bounds.feet.max}
           step={1}
           autoComplete={autoComplete}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
           aria-label={t("common.heightFeet")}
         />
         <span
@@ -99,6 +109,8 @@ export function HeightFieldControl({
           max={bounds.inches.max}
           step={1}
           autoComplete={autoComplete}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
           aria-label={t("common.heightInches")}
         />
         <span

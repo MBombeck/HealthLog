@@ -1,6 +1,7 @@
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import {
   describeRejectedProfileField,
+  describeRejectedProfileFields,
   type RejectedProfileField,
 } from "@/lib/profile/rejected-fields";
 import { toProfileSex } from "@/lib/profile/sex";
@@ -15,14 +16,19 @@ import { toProfileSex } from "@/lib/profile/sex";
  * screen with nothing said, and the person walked away believing it was
  * stored.
  *
- * The settings account form already answers this question (see
- * `handleSaveProfile` in `src/components/settings/account-section`):
- * name the field in the person's own words, keep validator prose off
- * the screen, and only claim a clean save when there is one. The two
- * screens share the field-naming helper and the two sentences, so the
- * same rejection reads the same wherever it happens; only the labels
- * differ, because each screen calls the fields what its own inputs
- * call them.
+ * The settings account form answers the same question the same way
+ * (see `handleSaveProfile` in `src/components/settings/account-section`):
+ * name the field in the person's own words, put the reason in that
+ * field's own slot, keep validator prose off the screen, and only claim
+ * a clean save when there is one. The two screens share the
+ * field-naming helper and the sentences, so the same rejection reads
+ * the same wherever it happens; only the labels differ, because each
+ * screen calls the fields what its own inputs call them.
+ *
+ * A refused field also stops the wizard. Walking on would stamp
+ * `onboardingCompletedAt` over a step the person has not finished, and
+ * the only screen that could have shown them the refused value is the
+ * one they just left.
  */
 
 /** The parts of the profile response this step reads. */
@@ -41,6 +47,12 @@ export interface BaselineSaveOutcome {
   advance: boolean;
   /** A ready-to-show sentence, already localized. Null on a clean save. */
   notice: { tone: "warning" | "error"; message: string } | null;
+  /**
+   * One localized reason per refused field, keyed by the schema field
+   * name so the step can drop each into the slot under its own input.
+   * Empty on a clean save and on a failure that named no field.
+   */
+  fieldErrors: Record<string, string>;
 }
 
 /**
@@ -125,22 +137,25 @@ export function describeBaselineSaveOutcome(
   if (res.ok) {
     const rejected = res.body?.data?.rejectedFields;
     const field = describeRejectedProfileField(rejected, t, labelKeys);
-    if (!field) return { advance: true, notice: null };
+    if (!field) return { advance: true, notice: null, fieldErrors: {} };
+    // Some fields landed, at least one did not. The wizard stops here:
+    // the accepted values are stored and stay in the inputs, the
+    // refused ones say why under their own control, and the person can
+    // correct and press the same button again. Moving on would mark
+    // the account set up over a value nobody ever saw refused.
     return {
-      advance: true,
+      advance: false,
       notice: {
         tone: "warning",
         message: t("settings.profilePartiallySaved", { field }),
       },
+      fieldErrors: describeRejectedProfileFields(rejected, t),
     };
   }
 
   const errorCode = res.body?.meta?.errorCode;
-  const blockingField = describeRejectedProfileField(
-    res.body?.details?.issues,
-    t,
-    labelKeys,
-  );
+  const issues = res.body?.details?.issues;
+  const blockingField = describeRejectedProfileField(issues, t, labelKeys);
 
   if (errorCode === "profile.update.nothingSaved" && blockingField) {
     return {
@@ -149,12 +164,14 @@ export function describeBaselineSaveOutcome(
         tone: "error",
         message: t("settings.profileNothingSaved", { field: blockingField }),
       },
+      fieldErrors: describeRejectedProfileFields(issues, t),
     };
   }
 
   return {
     advance: false,
     notice: { tone: "error", message: localizedCode(errorCode, t) },
+    fieldErrors: {},
   };
 }
 

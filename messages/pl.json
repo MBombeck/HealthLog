@@ -5355,6 +5355,14 @@
     "profileSaved": "Profil zapisany",
     "profilePartiallySaved": "Profil zapisany, ale nie udało się zaktualizować pola {field}.",
     "profileNothingSaved": "Nic nie zostało zapisane. Popraw {field} i spróbuj ponownie.",
+    "profileRejection": {
+      "tooBig": "Wartość jest powyżej zakresu, który przyjmuje to pole.",
+      "tooSmall": "Wartość jest poniżej zakresu, który przyjmuje to pole.",
+      "invalidValue": "To nie jest jedna z odpowiedzi, które przyjmuje to pole.",
+      "invalidFormat": "To nie jest zapisane w formacie, który to pole może odczytać.",
+      "invalidType": "Wartość nie dotarła w formacie, który to pole może zapisać.",
+      "other": "Ta wartość nie została przyjęta. Sprawdź ją i spróbuj ponownie."
+    },
     "avatar": {
       "title": "Zdjęcie profilowe",
       "description": "Prześlij zdjęcie przechowywane na własnym serwerze. Pojawia się w całej aplikacji zamiast zewnętrznej usługi awatarów.",
