@@ -49,6 +49,7 @@ import {
   GLUCOSE_PANEL_WINDOW_DAYS,
   type GlucoseClinicalMetrics,
 } from "@/lib/analytics/glucose-metrics";
+import { groupByGlucoseContext } from "@/lib/glucose";
 import {
   computeBpInTargetFastPath,
   type BpInTargetEnvelope,
@@ -133,13 +134,6 @@ import {
   gateSummariesByModules,
   unavailableWidgetIds,
 } from "@/lib/dashboard/widget-modules";
-
-const GLUCOSE_CONTEXTS = [
-  "FASTING",
-  "POSTPRANDIAL",
-  "RANDOM",
-  "BEDTIME",
-] as const;
 
 /**
  * v1.7.0 — HealthLog `MeasurementType` → iOS `MetricKind` raw value.
@@ -832,15 +826,16 @@ async function buildExtras(
     orderBy: { measuredAt: "asc" },
     select: { value: true, measuredAt: true, glucoseContext: true },
   });
+  // #943 — grouped through the shared bucket resolver, so readings with no
+  // meal-time tag land in `UNSPECIFIED` instead of being dropped on the floor.
   const glucoseByContext: Record<string, DataSummary> = {};
-  if (glucoseRows.length > 0) {
-    for (const ctx of GLUCOSE_CONTEXTS) {
-      const ctxRows = glucoseRows.filter((r) => r.glucoseContext === ctx);
-      if (ctxRows.length === 0) continue;
-      glucoseByContext[ctx] = summarize(
-        ctxRows.map((r): DataPoint => ({ date: r.measuredAt, value: r.value })),
-      );
-    }
+  for (const [bucket, ctxRows] of groupByGlucoseContext(
+    glucoseRows,
+    (r) => r.glucoseContext,
+  )) {
+    glucoseByContext[bucket] = summarize(
+      ctxRows.map((r): DataPoint => ({ date: r.measuredAt, value: r.value })),
+    );
   }
 
   // v1.17.0 — clinical panel from the SAME 30-day glucose rows already read

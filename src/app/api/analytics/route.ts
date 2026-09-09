@@ -34,6 +34,7 @@ import {
   GLUCOSE_PANEL_WINDOW_DAYS,
   type GlucoseClinicalMetrics,
 } from "@/lib/analytics/glucose-metrics";
+import { groupByGlucoseContext } from "@/lib/glucose";
 import {
   decisionForEvidence,
   PATTERN_FAMILIES,
@@ -495,16 +496,16 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
     orderBy: { measuredAt: "asc" },
     select: { value: true, measuredAt: true, glucoseContext: true },
   });
+  // #943 — grouped through the shared bucket resolver, so readings with no
+  // meal-time tag land in `UNSPECIFIED` instead of being dropped on the floor.
   const glucoseByContext: Record<string, ReturnType<typeof summarize>> = {};
-  if (glucoseRows.length > 0) {
-    const contexts = ["FASTING", "POSTPRANDIAL", "RANDOM", "BEDTIME"] as const;
-    for (const ctx of contexts) {
-      const ctxRows = glucoseRows.filter((r) => r.glucoseContext === ctx);
-      if (ctxRows.length === 0) continue;
-      glucoseByContext[ctx] = summarize(
-        ctxRows.map((r): DataPoint => ({ date: r.measuredAt, value: r.value })),
-      );
-    }
+  for (const [bucket, ctxRows] of groupByGlucoseContext(
+    glucoseRows,
+    (r) => r.glucoseContext,
+  )) {
+    glucoseByContext[bucket] = summarize(
+      ctxRows.map((r): DataPoint => ({ date: r.measuredAt, value: r.value })),
+    );
   }
 
   // v1.17.0 — server-authoritative glucose clinical panel. The TIR / GMI /
