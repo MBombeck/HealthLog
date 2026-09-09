@@ -208,6 +208,7 @@
     "typeGlucosePostprandial": "Glukose (postprandial)",
     "typeGlucoseRandom": "Glukose (beliebig)",
     "typeGlucoseBedtime": "Glukose (vor dem Schlafen)",
+    "typeGlucoseUnspecified": "Glukose (ohne Angabe)",
     "glucoseClassificationTitle": "Blutzucker — Referenzbereiche (ADA 2024 / DDG)",
     "glucoseRow": "{label}: Ø {avg} {unit} (Ziel {rangeMin}–{rangeMax}) — {class}",
     "glucoseInTarget": "im Ziel",
@@ -3438,6 +3439,7 @@
             "postprandial": "Nach dem Essen",
             "random": "Beliebig",
             "bedtime": "Vor dem Schlafen",
+            "unspecified": "Ohne Angabe",
             "readingsShort": "{count} Messungen",
             "readingsShortOne": "1 Messung"
           }
@@ -7593,6 +7595,7 @@
     "glucosePostprandial": "Glukose — postprandial",
     "glucoseRandom": "Glukose — beliebig",
     "glucoseBedtime": "Glukose — vor dem Schlafen",
+    "glucoseUnspecified": "Glukose — ohne Angabe",
     "status": {
       "underweight": "Untergewicht",
       "normal": "Normal",

@@ -6,6 +6,9 @@ import {
   toCanonicalMgdl,
   resolveGlucoseUnit,
   thresholdMetricForContext,
+  glucoseContextBucket,
+  groupByGlucoseContext,
+  GLUCOSE_CONTEXT_UNSPECIFIED,
 } from "../glucose";
 
 describe("glucose conversion", () => {
@@ -106,5 +109,51 @@ describe("glucose conversion", () => {
     expect(toCanonicalMgdl(7.0, "mmol/L")).toBe(126);
     expect(toCanonicalMgdl(mgdlToMmol(126), "mmol/L")).toBeCloseTo(126, -0.5);
     expect(toCanonicalMgdl(mgdlToMmol(70), "mmol/L")).toBe(70);
+  });
+});
+
+describe("glucose context buckets (#943)", () => {
+  it("files NULL, blank and unknown values under the untagged bucket", () => {
+    expect(glucoseContextBucket(null)).toBe(GLUCOSE_CONTEXT_UNSPECIFIED);
+    expect(glucoseContextBucket(undefined)).toBe(GLUCOSE_CONTEXT_UNSPECIFIED);
+    expect(glucoseContextBucket("")).toBe(GLUCOSE_CONTEXT_UNSPECIFIED);
+    expect(glucoseContextBucket("   ")).toBe(GLUCOSE_CONTEXT_UNSPECIFIED);
+    expect(glucoseContextBucket("BEFORE_MEAL")).toBe(
+      GLUCOSE_CONTEXT_UNSPECIFIED,
+    );
+  });
+
+  it("keeps the named contexts named, case- and whitespace-tolerant", () => {
+    expect(glucoseContextBucket("FASTING")).toBe("FASTING");
+    expect(glucoseContextBucket(" bedtime ")).toBe("BEDTIME");
+  });
+
+  it("groups in canonical order with the untagged bucket last", () => {
+    const rows = [
+      { ctx: null, v: 1 },
+      { ctx: "BEDTIME", v: 2 },
+      { ctx: "FASTING", v: 3 },
+      { ctx: "", v: 4 },
+    ];
+    const grouped = groupByGlucoseContext(rows, (row) => row.ctx);
+
+    expect(grouped.map(([bucket]) => bucket)).toEqual([
+      "FASTING",
+      "BEDTIME",
+      "UNSPECIFIED",
+    ]);
+    // Input order survives inside a bucket, so a caller reading "latest" off
+    // the head keeps reading the same row.
+    expect(grouped[2][1].map((row) => row.v)).toEqual([1, 4]);
+  });
+
+  it("returns nothing for no rows", () => {
+    expect(groupByGlucoseContext([], () => null)).toEqual([]);
+  });
+
+  it("judges the untagged bucket against the RANDOM threshold", () => {
+    expect(thresholdMetricForContext(GLUCOSE_CONTEXT_UNSPECIFIED)).toBe(
+      "BLOOD_GLUCOSE_RANDOM",
+    );
   });
 });
