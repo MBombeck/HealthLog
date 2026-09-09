@@ -453,7 +453,7 @@ const accountPayload = z
   .meta({
     id: "AccountPayload",
     description:
-      "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do. Additional properties are the preference fields this spec does not yet enumerate. Under an active switch this payload still describes the CALLER — their preferences, their modules, their identity — because display preferences belong to the person at the keyboard rather than to the record they are reading.",
+      "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do. Additional properties are the preference fields this spec does not yet enumerate. Under an active switch the identity and preference fields still describe the CALLER, because display preferences belong to the person at the keyboard rather than to the record they are reading. Two fields are the exception (v1.38.14): `modules` and `cycleTrackingEnabled` describe the ACTIVE RECORD, since every surface they gate shows the record's data — and they are masked to the sections the active grant opens, so a scoped grant reads `false` for a module outside it rather than the record's true state. With no switch — which is every native request, since the Bearer transport carries none — the two are the same account and nothing is masked.",
   });
 
 /**
@@ -475,7 +475,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "The signed-in account, and what sharing lets it do",
       description:
-        "Keeps answering while the browser is acting on another record — the switcher, the banner naming whose record is open, and the way back out all read it, so a refusal here would strand a switched session. It is therefore an ACTOR surface: it always serves the caller's own rows, and a request that attaches `X-HealthLog-Account` is refused with 403 `sharing.not_permitted` rather than quietly answered. A client that wants a record's data sends the selector on the read that needs it, never on this call.",
+        "Keeps answering while the browser is acting on another record — the switcher, the banner naming whose record is open, and the way back out all read it, so a refusal here would strand a switched session. It is therefore an ACTOR surface: it serves the caller's own rows — apart from `modules` and `cycleTrackingEnabled`, which answer for the record the session is inside, masked to what the grant opens — and a request that attaches `X-HealthLog-Account` is refused with 403 `sharing.not_permitted` rather than quietly answered. A client that wants a record's data sends the selector on the read that needs it, never on this call.",
       responses: {
         ...stdResponses,
         "200": {
