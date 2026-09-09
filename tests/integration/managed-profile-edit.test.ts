@@ -216,9 +216,9 @@ describe("PATCH /api/managed-profiles/{id}", () => {
       where: { action: "managed_profile.updated", userId: profile.id },
     });
     expect(audit.actorUserId).toBe(guardian.id);
-    expect(
-      ((audit.details as { changed?: string[] } | null)?.changed ?? []).sort(),
-    ).toEqual(["displayName", "timezone"]);
+    // `auditLog` stores `details` as a JSON STRING, not as a Json column.
+    const details = JSON.parse(audit.details ?? "{}") as { changed?: string[] };
+    expect((details.changed ?? []).sort()).toEqual(["displayName", "timezone"]);
   });
 
   it("records the sex a Guardian sets, which is what the cycle module reads", async () => {
