@@ -155,7 +155,17 @@ describe("Apple Health export distance repair — integration", () => {
       factor: 1000,
       rows: 2,
       issue: 944,
+      // Flipped only after the rollup tail returned. A run that repaired the
+      // rows and lost the tail leaves this false, and the account is skipped
+      // from here on — so it is the only place the gap can still be seen.
+      rollupsRefreshed: true,
     });
+    expect(outcome.rollupsPending).toBe(false);
+
+    const second = await planAppleHealthDistanceRepair(prisma, {
+      archiveUnit: "km",
+    });
+    expect(second[0].rollupsPending).toBe(false);
   });
 
   it("is idempotent — a second run finds nothing to repair", async () => {

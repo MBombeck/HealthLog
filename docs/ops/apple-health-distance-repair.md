@@ -112,7 +112,19 @@ metre factor, `sync_version` incremented and `updated_at` bumped so paired iOS
 clients pick the rows up on their next delta sync, and an audit row
 (`measurement.apple_health_distance.repaired`) recording the unit, the factor
 and the row count. The DAY/WEEK/MONTH/YEAR rollups and the cached status
-insights for the touched days are recomputed afterwards.
+insights for the touched days are recomputed afterwards, outside that
+transaction.
+
+If that recompute fails, the rows are right and every chart is not, and no
+later run of this script would notice — it skips a repaired account. So the
+audit row is written with `rollupsRefreshed: false` and only flipped to `true`
+once the recompute has returned. A run that could not finish it prints the
+account and the command to re-run, exits non-zero, and a later dry run repeats
+the warning until the backfill has been run:
+
+```bash
+pnpm dlx tsx scripts/backfill-rollups.ts --user <userId>
+```
 
 A row whose repaired value would leave the plausible range (0–200 000 m)
 refuses the **whole account**: nothing is written, the offending rows and the

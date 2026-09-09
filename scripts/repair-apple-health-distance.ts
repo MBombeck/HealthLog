@@ -28,6 +28,10 @@
  *     the WHOLE account: one such row is evidence the rows are not the 1000x
  *     class (an account re-imported on the fixed build looks exactly like
  *     this), and its rest days would otherwise be multiplied again.
+ *   - The rollup/status tail runs after the transaction. If it throws, the
+ *     rows are repaired and the derived tier is not; the script names the
+ *     backfill to re-run, the audit row keeps `rollupsRefreshed: false` so a
+ *     later run can still see it, and the exit code is non-zero.
  *   - `--unit=mi` for an imperial archive (default `km`). The stored row keeps
  *     no record of the archive's unit — that is the defect — so the operator
  *     names it; a mismatched unit is why the flag exists rather than a guess.
@@ -45,6 +49,7 @@ import {
   parseArchiveUnit,
   planAppleHealthDistanceRepair,
   repairFactorFor,
+  rollupRepairCommand,
 } from "@/lib/measurements/repair-apple-health-distance";
 
 function readArchiveUnit(): "km" | "mi" {
@@ -79,6 +84,7 @@ async function main(): Promise<void> {
   let totalUpdated = 0;
   let totalSkipped = 0;
   let refused = 0;
+  let rollupsPending = 0;
 
   for (const plan of plans) {
     if (plan.alreadyRepairedAt) {
@@ -86,6 +92,15 @@ async function main(): Promise<void> {
         `  • ${plan.userId}: already repaired on ` +
           `${plan.alreadyRepairedAt.toISOString()} — ${plan.candidateCount} row(s) left alone.`,
       );
+      if (plan.rollupsPending) {
+        rollupsPending += 1;
+        console.log(
+          "      ! rollups PENDING from that run: the DAY/WEEK/MONTH/YEAR " +
+            "buckets and the cached status insights still hold the " +
+            "pre-repair numbers.",
+        );
+        console.log(`        re-run: ${rollupRepairCommand(plan.userId)}`);
+      }
       continue;
     }
 
@@ -133,6 +148,18 @@ async function main(): Promise<void> {
     console.log(
       `      ✓ repaired ${outcome.updated} row(s), skipped ${outcome.skipped}`,
     );
+    if (outcome.rollupsPending) {
+      rollupsPending += 1;
+      console.error(
+        `      ! ${plan.userId}: rows repaired, but the rollup refresh failed.`,
+      );
+      console.error(outcome.rollupError);
+      console.error(
+        "        The DAY/WEEK/MONTH/YEAR buckets and the cached status " +
+          "insights still hold the pre-repair numbers.",
+      );
+      console.error(`        re-run: ${rollupRepairCommand(plan.userId)}`);
+    }
   }
 
   console.log(
@@ -143,6 +170,16 @@ async function main(): Promise<void> {
           "Read the worked examples above and decide before re-running with " +
           "--apply.",
   );
+
+  if (rollupsPending > 0) {
+    // The rows are right and the derived tier is not, which no later run of
+    // this script will notice — it skips a repaired account. Fail loudly.
+    console.error(
+      `\n${rollupsPending} account(s) need the rollup backfill re-run ` +
+        "(commands above).",
+    );
+    process.exitCode = 1;
+  }
 }
 
 main()

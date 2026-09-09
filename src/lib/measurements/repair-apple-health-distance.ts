@@ -97,6 +97,13 @@ export interface AccountRepairPlan {
   outOfRange: RepairCandidateRow[];
   /** Non-null when this account already carries the repair's audit row. */
   alreadyRepairedAt: Date | null;
+  /**
+   * True when a previous run wrote the rows but its rollup tail did not
+   * finish — the audit row still says `rollupsRefreshed: false`, so the
+   * DAY/WEEK/MONTH/YEAR buckets and the cached status insights still hold
+   * the pre-repair numbers. Meaningless unless `alreadyRepairedAt` is set.
+   */
+  rollupsPending: boolean;
   /** Candidate rows found, whatever the disposition above. */
   candidateCount: number;
 }
@@ -147,12 +154,15 @@ export async function planAppleHealthDistanceRepair(
       action: APPLE_HEALTH_DISTANCE_REPAIR_ACTION,
       userId: { in: userIds },
     },
-    select: { userId: true, createdAt: true },
+    select: { userId: true, createdAt: true, details: true },
     orderBy: { createdAt: "asc" },
   });
   const repairedAt = new Map<string, Date>();
+  const rollupsPending = new Set<string>();
   for (const entry of repaired) {
-    if (entry.userId) repairedAt.set(entry.userId, entry.createdAt);
+    if (!entry.userId) continue;
+    repairedAt.set(entry.userId, entry.createdAt);
+    if (!rollupsRefreshedIn(entry.details)) rollupsPending.add(entry.userId);
   }
 
   const plans = new Map<string, AccountRepairPlan>();
@@ -164,6 +174,7 @@ export async function planAppleHealthDistanceRepair(
         repairable: [],
         outOfRange: [],
         alreadyRepairedAt: repairedAt.get(row.userId) ?? null,
+        rollupsPending: rollupsPending.has(row.userId),
         candidateCount: 0,
       };
       plans.set(row.userId, plan);
@@ -184,6 +195,31 @@ export async function planAppleHealthDistanceRepair(
   return Array.from(plans.values());
 }
 
+/**
+ * The command that heals the rollup tail when it did not run.
+ *
+ * Named here rather than in the script so the message an operator reads is
+ * the same one the module can be asked for.
+ */
+export function rollupRepairCommand(userId: string): string {
+  return `pnpm dlx tsx scripts/backfill-rollups.ts --user ${userId}`;
+}
+
+/** Did a repair audit row record a finished rollup tail? */
+function rollupsRefreshedIn(details: string | null): boolean {
+  if (!details) return false;
+  try {
+    const parsed: unknown = JSON.parse(details);
+    return (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      (parsed as { rollupsRefreshed?: unknown }).rollupsRefreshed === true
+    );
+  } catch {
+    return false;
+  }
+}
+
 export interface RepairOutcome {
   userId: string;
   updated: number;
@@ -195,6 +231,15 @@ export interface RepairOutcome {
   refusedReason: string | null;
   /** The out-of-range candidates — what a refusal was decided on. */
   skippedRows: RepairCandidateRow[];
+  /**
+   * True when the rows were written but the rollup tail was not. The audit
+   * row still reads `rollupsRefreshed: false`, so a later run can tell this
+   * apart from a finished repair; the caller must surface
+   * `rollupRepairCommand(userId)` and exit non-zero.
+   */
+  rollupsPending: boolean;
+  /** What the rollup tail threw, when it threw. */
+  rollupError: unknown;
 }
 
 /**
@@ -236,6 +281,8 @@ export async function applyAppleHealthDistanceRepair(
     updated: 0,
     skipped,
     skippedRows: plan.outOfRange,
+    rollupsPending: false,
+    rollupError: null,
   };
   if (plan.alreadyRepairedAt) {
     return {
@@ -252,7 +299,20 @@ export async function applyAppleHealthDistanceRepair(
   }
 
   const ids = plan.repairable.map((row) => row.id);
-  await client.$transaction(async (tx) => {
+  const details = {
+    type: REPAIRED_TYPE,
+    archiveUnit: options.archiveUnit,
+    factor,
+    rows: ids.length,
+    skippedOutOfRange: skipped,
+    issue: 944,
+    // Flipped to true only once the rollup tail below has finished. A row
+    // left at false says "rows repaired, rollups still pre-repair", which is
+    // what a re-run has to be able to see: the account is skipped from here
+    // on, so nothing else would ever notice.
+    rollupsRefreshed: false,
+  };
+  const auditId = await client.$transaction(async (tx): Promise<string> => {
     // One statement per chunk rather than one per row: an account with a
     // decade of history carries thousands of rows and an interactive
     // transaction has a clock on it. `sync_version` + `updated_at` are
@@ -272,27 +332,50 @@ export async function applyAppleHealthDistanceRepair(
       client: tx,
       userId: plan.userId,
       actorUserId: null,
-      details: {
-        type: REPAIRED_TYPE,
-        archiveUnit: options.archiveUnit,
-        factor,
-        rows: ids.length,
-        skippedOutOfRange: skipped,
-        issue: 944,
-      },
+      details,
     });
+    // Read the row back rather than widening `auditLog`'s return type for
+    // ~600 call sites. Inside the same transaction, and an account can hold
+    // at most one of these rows — the second run is refused above — so the
+    // lookup is exact, not a guess at the newest.
+    const entry = await tx.auditLog.findFirstOrThrow({
+      where: {
+        action: APPLE_HEALTH_DISTANCE_REPAIR_ACTION,
+        userId: plan.userId,
+      },
+      select: { id: true },
+    });
+    return entry.id;
   });
 
-  // Best-effort tail: the DAY/WEEK/MONTH/YEAR rollups and the cached
-  // status insights hold the pre-repair numbers until they are recomputed.
-  await afterMeasurementMutation(
-    plan.userId,
-    plan.repairable.map((row) => ({
-      type: REPAIRED_TYPE,
-      measuredAt: row.measuredAt,
-    })),
-    "repair-apple-health-distance",
-  );
+  // The tail: the DAY/WEEK/MONTH/YEAR rollups and the cached status insights
+  // hold the pre-repair numbers until they are recomputed. It runs outside
+  // the transaction, so a throw here leaves the rows repaired and the derived
+  // tier stale — and the account is skipped from the next run on. Hence the
+  // flag: it is flipped only after the tail returned, and the caller is told
+  // to run the backfill and to exit non-zero.
+  let rollupsPending = false;
+  let rollupError: unknown = null;
+  try {
+    await afterMeasurementMutation(
+      plan.userId,
+      plan.repairable.map((row) => ({
+        type: REPAIRED_TYPE,
+        measuredAt: row.measuredAt,
+      })),
+      "repair-apple-health-distance",
+    );
+    await client.auditLog.update({
+      where: { id: auditId },
+      data: { details: JSON.stringify({ ...details, rollupsRefreshed: true }) },
+    });
+  } catch (err) {
+    // Either leg failing leaves the flag at false, which is the safe
+    // direction: an operator re-running the backfill needlessly costs time,
+    // one who never learns it is due keeps wrong numbers on every chart.
+    rollupsPending = true;
+    rollupError = err;
+  }
 
   return {
     userId: plan.userId,
@@ -300,6 +383,8 @@ export async function applyAppleHealthDistanceRepair(
     skipped,
     refusedReason: null,
     skippedRows: plan.outOfRange,
+    rollupsPending,
+    rollupError,
   };
 }
 
