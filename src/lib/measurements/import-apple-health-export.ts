@@ -42,7 +42,10 @@ import {
 } from "@/lib/measurements/drain-per-sample-cumulative";
 import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
 import { resolveHkWorkoutSportType } from "@/lib/measurements/hk-workout-activity-type-map";
-import { hkDistanceToMetres } from "@/lib/measurements/hk-units";
+import {
+  convertHkValue,
+  hkDistanceToMetres,
+} from "@/lib/measurements/hk-units";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
@@ -948,6 +951,7 @@ export async function streamParseExportXml(
       const totalDistance = Number.parseFloat(attrs.totalDistance ?? "");
       const totalEnergy = Number.parseFloat(attrs.totalEnergyBurned ?? "");
       const distanceUnit = attrs.totalDistanceUnit ?? "";
+      const energyUnit = attrs.totalEnergyBurnedUnit ?? "";
       // Apple ships the ACCOUNT's own length unit on HKWorkout.totalDistance
       // (km for a metric account, mi for an imperial one); metres is the
       // canonical DB unit. issue #944 — the same conversion the `<Record>`
@@ -969,7 +973,13 @@ export async function streamParseExportXml(
         startedAt: startDate,
         endedAt: endDate,
         durationSec,
-        totalEnergyKcal: Number.isFinite(totalEnergy) ? totalEnergy : null,
+        totalEnergyKcal: Number.isFinite(totalEnergy)
+          ? // issue #944 — the energy attribute carries the account's own
+            // unit too: a Health app set to kilojoules writes `kJ` here, and
+            // the column is kilocalories. Same shared conversion; an unknown
+            // unit leaves the number alone.
+            (convertHkValue(totalEnergy, energyUnit, "kcal") ?? totalEnergy)
+          : null,
         totalDistanceM: distanceM,
         externalId,
         externalSourceVersion: attrs.sourceVersion ?? null,
