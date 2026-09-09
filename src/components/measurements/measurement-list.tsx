@@ -343,6 +343,29 @@ export function MeasurementList({
     },
     [unitDisplay, glucoseUnit],
   );
+  /**
+   * Machine-readable mirror of what the row renders — the same number and
+   * the same unit, before `Intl` turns them into locale text.
+   *
+   * The rendered cell is the only place a reading's value and unit appear
+   * together, and it appears there as "8.421 steps" or "8,421 steps"
+   * depending on who is looking. A browser test that has to assert a stored
+   * unit therefore either pins a locale or matches a loose number, and both
+   * describe the formatter rather than the reading. These attributes carry
+   * the reading itself, and the desktop table and the mobile list emit the
+   * same set, so an assertion holds at either viewport.
+   */
+  const rowIdentityAttrs = useCallback(
+    (m: Measurement, isGrouped: boolean) => ({
+      "data-testid": "measurement-row",
+      "data-measurement-type": m.type,
+      "data-measurement-value": String(
+        isGrouped ? m.value : rowDisplay(m).value,
+      ),
+      "data-measurement-unit": isGrouped ? m.unit : rowDisplay(m).unit,
+    }),
+    [rowDisplay],
+  );
   // v1.28.42 (H3) — the desktop table and the mobile card list used to BOTH
   // render (only CSS `display` hid one), so a dense cumulative (up to ~5000
   // rows) or sleep page built every row subtree twice — double the DOM, double
@@ -1161,6 +1184,7 @@ export function MeasurementList({
                         <Fragment key={m.id}>
                           <TableRow
                             data-state={isSelected ? "selected" : undefined}
+                            {...rowIdentityAttrs(m, isGrouped)}
                           >
                             <TableCell className="pl-4">
                               {/* Grouped/synthetic rows aren't individually
@@ -1358,6 +1382,7 @@ export function MeasurementList({
                     <ListRow
                       key={m.id}
                       data-state={isSelected ? "selected" : undefined}
+                      {...rowIdentityAttrs(m, isGrouped)}
                       className="bg-card border-border data-[state=selected]:border-primary/60 data-[state=selected]:bg-primary/5"
                     >
                       <div className="flex items-center justify-between">
