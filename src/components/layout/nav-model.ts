@@ -342,13 +342,22 @@ function isNavDestinationVisible(
   ) {
     return false;
   }
-  // A shared record's server-resolved scope decides which health-domain doors
-  // exist. The actor's module preferences describe their own dashboard and
-  // must not hide a domain the target record explicitly granted.
-  if (sharedRecord) return true;
-  if (d.sharedRecordOnly) return false;
+  // The inverse marker: a destination that exists ONLY inside somebody else's
+  // record (the read-only profile summary). Guarded on `!sharedRecord` rather
+  // than reached only through the shared arm, which is what it relied on
+  // before the module gate below started applying to a shared record too.
+  if (!sharedRecord && d.sharedRecordOnly) return false;
   if (!d.requiresModule) return true;
   if (!mounted) return false;
+  // The module map, and whose it is, is the whole point. A shared record used
+  // to skip this line: the grant's scope decided which doors existed, and the
+  // module map was the ACTOR's, which describes their own dashboard and must
+  // not hide a domain the record granted. `GET /api/auth/me` now resolves the
+  // map for the RECORD the session is inside (#939), so the objection is gone
+  // and the line is the one that makes a guardian's toggle visible — without
+  // it, turning Cycle off for a profile left the Cycle door standing in that
+  // profile's own navigation. Scope decides which doors the grant opens;
+  // this decides which of them the record tracks at all.
   return modules?.[d.requiresModule] !== false;
 }
 
