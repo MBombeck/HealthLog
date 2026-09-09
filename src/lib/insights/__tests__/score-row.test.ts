@@ -14,6 +14,27 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: (...args: unknown[]) => annotateMock(...args),
 }));
 
+/**
+ * The post-mutation tail talks to the real database, and this file does not.
+ *
+ * `upsertScoreRow` routes every stored score through
+ * `afterMeasurementMutation`, which reads the `@/lib/db` singleton rather than
+ * the client the caller injected. A unit test that hands in a fake Prisma
+ * therefore still opened a socket to a Postgres the unit job does not run: the
+ * attempt failed with ECONNREFUSED a few hundred milliseconds later and both
+ * legs logged on the way out, after the test that started them had ended. A
+ * console write that lands while the worker is closing its RPC channel fails
+ * the whole run with `EnvironmentTeardownError: Closing rpc while
+ * "onUserConsoleLog" was pending` — four of nine unit-suite failures in thirty
+ * days, every one of them with all tests green. Stubbing the tail removes the
+ * doomed I/O rather than the log line, and the call it made by accident is
+ * asserted below instead.
+ */
+vi.mock("@/lib/rollups/after-measurement-mutation", () => ({
+  afterMeasurementMutation: vi.fn(async () => {}),
+}));
+
+import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import {
   scoreDayKey,
   scoreMeasuredAt,
@@ -91,6 +112,31 @@ describe("upsertScoreRow", () => {
       value: 77,
       measuredAt: arg.create.measuredAt,
     });
+  });
+
+  it("routes the written row through the shared post-mutation tail", async () => {
+    // v1.37.19 wiring: a score row is a Measurement like any other, so the
+    // (type, day) rollup bucket and the cached status assessment converge on
+    // the tick that wrote it. Pinned here rather than left to a live database
+    // call that no unit job can serve.
+    const prisma = {
+      measurement: { upsert: vi.fn().mockResolvedValue({}) },
+    } as unknown as Parameters<typeof upsertScoreRow>[0];
+
+    await upsertScoreRow(prisma, {
+      userId: "u1",
+      type: "STRAIN_SCORE",
+      externalIdPrefix: "strain:",
+      score: 42,
+      now: new Date("2026-06-02T03:00:00Z"),
+    });
+
+    expect(afterMeasurementMutation).toHaveBeenCalledWith("u1", [
+      {
+        type: "STRAIN_SCORE",
+        measuredAt: new Date("2026-06-01T12:00:00.000Z"),
+      },
+    ]);
   });
 });
 

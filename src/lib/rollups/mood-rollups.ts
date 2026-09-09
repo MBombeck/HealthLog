@@ -48,6 +48,7 @@
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
 import type {
   Prisma,
@@ -307,25 +308,30 @@ export async function recomputeMoodBucketsForEntry(
   // off the pg-boss critical path. Errors stay caught inside
   // `enqueueMoodRollupRecompute` so the unhandled-rejection logger
   // captures any pg-boss failure.
-  void Promise.all(
-    ASYNC_GRANULARITIES.map((granularity) => {
-      const { from, to } = bucketSpan(dateLabel, granularity);
-      return enqueueMoodRollupRecompute({
-        userId,
-        granularity,
-        from,
-        to,
-      }).catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : String(err);
-        annotate({
-          meta: {
-            mood_rollup_enqueue_failed: true,
-            mood_rollup_enqueue_error: message,
-          },
+  // Registered so the test suite can await it: the error below is a console
+  // write on a detached handle, and one that lands while a vitest worker is
+  // closing its RPC channel fails the whole run. No-op outside test.
+  trackBackgroundTask(
+    Promise.all(
+      ASYNC_GRANULARITIES.map((granularity) => {
+        const { from, to } = bucketSpan(dateLabel, granularity);
+        return enqueueMoodRollupRecompute({
+          userId,
+          granularity,
+          from,
+          to,
+        }).catch((err: unknown) => {
+          const message = err instanceof Error ? err.message : String(err);
+          annotate({
+            meta: {
+              mood_rollup_enqueue_failed: true,
+              mood_rollup_enqueue_error: message,
+            },
+          });
+          console.error("[mood-rollups] async enqueue failed:", message);
         });
-        console.error("[mood-rollups] async enqueue failed:", message);
-      });
-    }),
+      }),
+    ),
   );
 }
 
