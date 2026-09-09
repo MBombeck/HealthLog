@@ -26,6 +26,13 @@
  *                the row's id, value, unit and source.
  *   5. delete  — `DELETE /api/measurements/{id}` so the account stays clean.
  *
+ * Legs 3 to 5 run inside a `try`/`finally`: from the write on, the run owns
+ * a row on a real account, and a red read leg must not leave it behind. The
+ * `finally` sweeps whatever the delete leg did not — including a row whose
+ * id the write leg never learned, because the response was lost after the
+ * server had committed. That row is found again by a marker the write puts
+ * in `notes`, unique per run.
+ *
  * `BASE_URL` decides where the probe account's password is POSTed, so it is
  * checked against a closed in-repo host allowlist and refused with exit 2
  * otherwise.
@@ -279,17 +286,19 @@ async function signIn(baseUrl, jar, username, password) {
   return { detail: "session cookie held" };
 }
 
-async function writeReading(baseUrl, jar) {
+async function writeReading(baseUrl, jar, run) {
   const measuredAt = new Date().toISOString();
   const result = await call(baseUrl, "/api/measurements", {
     method: "POST",
     jar,
-    headers: { "idempotency-key": randomUUID() },
+    headers: { "idempotency-key": run.idempotencyKey },
     body: {
       type: PROBE.type,
       value: PROBE.value,
       measuredAt,
       source: PROBE.source,
+      // The one handle on this row that exists before the response does.
+      notes: run.marker,
     },
   });
   expectStatus(result, 201, "write");
@@ -303,7 +312,7 @@ async function writeReading(baseUrl, jar) {
   return { id: created.id, measuredAt, detail: `wrote ${created.id}` };
 }
 
-async function readBack(baseUrl, jar, written) {
+async function readBack(baseUrl, jar, writtenId) {
   const result = await call(
     baseUrl,
     "/api/measurements?type=WEIGHT&limit=1&sortBy=measuredAt&sortDir=desc",
@@ -318,20 +327,60 @@ async function readBack(baseUrl, jar, written) {
     });
   }
   const row = rows[0];
-  expectValue(row.id, written.id, "read back: id", result);
+  expectValue(row.id, writtenId, "read back: id", result);
   expectValue(row.value, PROBE.value, "read back: value", result);
   expectValue(row.unit, PROBE.unit, "read back: unit", result);
   expectValue(row.source, PROBE.source, "read back: source", result);
   return { detail: `${row.value} ${row.unit} (${row.source})` };
 }
 
-async function removeReading(baseUrl, jar, written) {
-  const result = await call(baseUrl, `/api/measurements/${written.id}`, {
+async function removeReading(baseUrl, jar, writtenId) {
+  const result = await call(baseUrl, `/api/measurements/${writtenId}`, {
     method: "DELETE",
     jar,
   });
   expectStatus(result, 200, "delete");
   return { detail: "account left clean" };
+}
+
+/**
+ * The id the write leg never learned. A POST that times out after the server
+ * committed leaves a row this run owns and cannot name, so ask the instance
+ * for it: the marker rides in `notes`, is unique per run, and comes back
+ * decrypted on the list.
+ */
+async function findLeftover(baseUrl, jar, marker) {
+  const result = await call(
+    baseUrl,
+    "/api/measurements?type=WEIGHT&limit=20&sortBy=measuredAt&sortDir=desc",
+    { jar },
+  );
+  if (result.status !== 200) return null;
+  const rows = result.json?.data?.measurements;
+  if (!Array.isArray(rows)) return null;
+  return rows.find((row) => row?.notes === marker)?.id ?? null;
+}
+
+/**
+ * Best effort, never throws: a red leg is already the run's verdict, and a
+ * sweep that threw would replace it. It says out loud what it could not
+ * remove so the maintainer can.
+ */
+async function sweep(baseUrl, jar, writtenId, marker, log) {
+  let id = writtenId;
+  if (!id) {
+    id = await findLeftover(baseUrl, jar, marker).catch(() => null);
+  }
+  if (!id) return;
+  const result = await call(baseUrl, `/api/measurements/${id}`, {
+    method: "DELETE",
+    jar,
+  }).catch(() => null);
+  log(
+    result?.status === 200
+      ? `sweep     removed ${id} after a failed leg`
+      : `sweep     could not remove ${id} — delete it by hand`,
+  );
 }
 
 /**
@@ -342,6 +391,13 @@ async function removeReading(baseUrl, jar, written) {
 async function runJourney(config, log = console.log) {
   const { baseUrl, username, password, expectedVersion } = config;
   const jar = createCookieJar();
+  // Both known BEFORE the write, so a write whose response never arrives is
+  // still recoverable: the key folds into the server's idempotency cell, the
+  // marker into the row's own `notes`.
+  const run = {
+    idempotencyKey: randomUUID(),
+    marker: `synthetic-journey ${randomUUID()}`,
+  };
 
   const warmStarted = performance.now();
   await warm(baseUrl, jar);
@@ -349,33 +405,19 @@ async function runJourney(config, log = console.log) {
     `warm      ${Math.round(performance.now() - warmStarted)} ms  (discarded)`,
   );
 
-  let written = null;
-  const legs = [
-    {
-      name: "version",
-      run: () => assertVersion(baseUrl, jar, expectedVersion),
-    },
-    { name: "sign in", run: () => signIn(baseUrl, jar, username, password) },
-    {
-      name: "write",
-      run: async () => (written = await writeReading(baseUrl, jar)),
-    },
-    { name: "read back", run: () => readBack(baseUrl, jar, written) },
-    { name: "delete", run: () => removeReading(baseUrl, jar, written) },
-  ];
-
-  for (const leg of legs) {
+  const runLeg = async (name, execute) => {
     const started = performance.now();
     try {
-      const outcome = await leg.run();
+      const outcome = await execute();
       const elapsed = Math.round(performance.now() - started);
       log(
-        `ok        ${leg.name.padEnd(10)} ${String(elapsed).padStart(6)} ms  ${outcome?.detail ?? ""}`.trimEnd(),
+        `ok        ${name.padEnd(10)} ${String(elapsed).padStart(6)} ms  ${outcome?.detail ?? ""}`.trimEnd(),
       );
+      return { ok: true };
     } catch (error) {
       const elapsed = Math.round(performance.now() - started);
       log(
-        `FAILED    ${leg.name.padEnd(10)} ${String(elapsed).padStart(6)} ms  ${redact(error.message)}`,
+        `FAILED    ${name.padEnd(10)} ${String(elapsed).padStart(6)} ms  ${redact(error.message)}`,
       );
       if (error instanceof LegFailure) {
         if (error.status !== null) log(`          status ${error.status}`);
@@ -383,8 +425,48 @@ async function runJourney(config, log = console.log) {
       } else {
         log(`          ${redact(error.stack ?? "")}`);
       }
-      return { ok: false, leg: leg.name, error };
+      return { ok: false, leg: name, error };
     }
+  };
+
+  for (const [name, execute] of [
+    ["version", () => assertVersion(baseUrl, jar, expectedVersion)],
+    ["sign in", () => signIn(baseUrl, jar, username, password)],
+  ]) {
+    const result = await runLeg(name, execute);
+    if (!result.ok) return result;
+  }
+
+  // From the write on, the run owns a row on somebody's real account. A red
+  // read leg is not a reason to leave it there, so the cleanup sits in a
+  // `finally` and not in a leg that a `return` can skip.
+  let writtenId = null;
+  let removed = false;
+  try {
+    for (const [name, execute] of [
+      [
+        "write",
+        async () => {
+          const written = await writeReading(baseUrl, jar, run);
+          writtenId = written.id;
+          return written;
+        },
+      ],
+      ["read back", () => readBack(baseUrl, jar, writtenId)],
+      [
+        "delete",
+        async () => {
+          const outcome = await removeReading(baseUrl, jar, writtenId);
+          removed = true;
+          return outcome;
+        },
+      ],
+    ]) {
+      const result = await runLeg(name, execute);
+      if (!result.ok) return result;
+    }
+  } finally {
+    if (!removed) await sweep(baseUrl, jar, writtenId, run.marker, log);
   }
   return { ok: true };
 }
@@ -470,8 +552,14 @@ function startMockInstance(breaks) {
           unit: PROBE.unit,
           source: parsed.source,
           measuredAt: parsed.measuredAt,
+          notes: parsed.notes ?? null,
         };
         rows.set(row.id, row);
+        // The case the sweep exists for: the server committed and the
+        // caller never learned the id. Only the marker leads back here.
+        if (breaks === "write: committed") {
+          return send(500, { data: null, error: "gateway timed out" });
+        }
         send(201, { data: row, error: null });
       });
       return;
@@ -516,6 +604,7 @@ function startMockInstance(breaks) {
       const { port } = server.address();
       resolve({
         baseUrl: `http://127.0.0.1:${port}`,
+        rows,
         close: () => new Promise((done) => server.close(done)),
       });
     });
@@ -558,14 +647,40 @@ function selfTestHostAllowlist() {
 
 async function selfTest() {
   const cases = [
-    { breaks: null, expect: "pass" },
+    { breaks: null, expect: "pass", clean: true },
     { breaks: "version", expect: "fail", leg: "version" },
     { breaks: "sign in", expect: "fail", leg: "sign in" },
-    { breaks: "write", expect: "fail", leg: "write" },
-    { breaks: "read back: missing", expect: "fail", leg: "read back" },
-    { breaks: "read back: value", expect: "fail", leg: "read back" },
-    { breaks: "read back: unit", expect: "fail", leg: "read back" },
-    { breaks: "read back: source", expect: "fail", leg: "read back" },
+    { breaks: "write", expect: "fail", leg: "write", clean: true },
+    // The write committed and the response was lost: no id, and the sweep
+    // has to find the row again by its marker.
+    { breaks: "write: committed", expect: "fail", leg: "write", clean: true },
+    // The four read cases are also the proof that a red read still deletes:
+    // `clean` is asserted after the run, and only the `finally` can satisfy
+    // it once the delete leg has been skipped.
+    {
+      breaks: "read back: missing",
+      expect: "fail",
+      leg: "read back",
+      clean: true,
+    },
+    {
+      breaks: "read back: value",
+      expect: "fail",
+      leg: "read back",
+      clean: true,
+    },
+    {
+      breaks: "read back: unit",
+      expect: "fail",
+      leg: "read back",
+      clean: true,
+    },
+    {
+      breaks: "read back: source",
+      expect: "fail",
+      leg: "read back",
+      clean: true,
+    },
     { breaks: "delete", expect: "fail", leg: "delete" },
   ];
 
@@ -583,19 +698,21 @@ async function selfTest() {
       },
       (line) => lines.push(line),
     );
+    const leftBehind = instance.rows.size;
     await instance.close();
 
     const wanted = testCase.expect === "pass";
     const legMatches =
       testCase.expect === "pass" || outcome.leg === testCase.leg;
-    if (outcome.ok === wanted && legMatches) {
+    const cleanEnough = !testCase.clean || leftBehind === 0;
+    if (outcome.ok === wanted && legMatches && cleanEnough) {
       console.log(
-        `self-test ok      ${label.padEnd(20)} → ${outcome.ok ? "green" : `red on "${outcome.leg}"`}`,
+        `self-test ok      ${label.padEnd(44)} → ${outcome.ok ? "green" : `red on "${outcome.leg}"`}${testCase.clean ? ", account clean" : ""}`,
       );
     } else {
       failures += 1;
       console.log(
-        `self-test FAILED  ${label.padEnd(20)} → ${outcome.ok ? "green" : `red on "${outcome.leg}"`}, expected ${testCase.expect}${testCase.leg ? ` on "${testCase.leg}"` : ""}`,
+        `self-test FAILED  ${label.padEnd(44)} → ${outcome.ok ? "green" : `red on "${outcome.leg}"`}${cleanEnough ? "" : `, ${leftBehind} row(s) left behind`}, expected ${testCase.expect}${testCase.leg ? ` on "${testCase.leg}"` : ""}`,
       );
       for (const line of lines) console.log(`          | ${line}`);
     }
