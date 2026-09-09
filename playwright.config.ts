@@ -152,6 +152,14 @@ export default defineConfig({
         // through stable data-slots, not a mobile layout, so it runs in one
         // project.
         "vaccinations.spec.ts",
+        // The adherence journey walks the wizard, records doses on the one
+        // shared account and then reads RATES back off it — and the dashboard
+        // tile sums the expected doses of every active medication the account
+        // holds. Two projects writing that cabinet in parallel would each sit
+        // in the other's denominator, so the percentages would be answers to a
+        // question neither test asked. It proves flows through stable
+        // data-slots, not a mobile layout, so it runs in one project.
+        "medication-compliance-journey.spec.ts",
         // Runs only in the service-worker project.
         "v137-record-session-fence-offline.spec.ts",
       ],

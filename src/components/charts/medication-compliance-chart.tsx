@@ -393,10 +393,19 @@ export function MedicationComplianceChart({
   // explicit user opt-in — silence would feel like a bug).
   const hasData = chartData.length > 0;
 
+  // The tile's adherence number exists only as bar geometry, so nothing on
+  // this surface can be read back except by measuring pixels. The most
+  // recent day's rate — the one figure a reader takes off the tile — rides
+  // the root as a plain data attribute so the browser journey can assert the
+  // dashboard and the medication card agree on the same dose. Presentation
+  // is untouched; the value is the one `chartData` already carries.
+  const latestRate = hasData ? chartData[chartData.length - 1].rate : null;
+
   return (
     <div
       className="bg-card border-border rounded-xl border p-4 md:p-6"
       data-slot="medication-compliance-chart"
+      data-latest-rate={latestRate ?? undefined}
     >
       {/* v1.4.19 A2 — header layout split into title row + controls
           row on small screens. Pre-fix the trend chip + 4 range tabs +
