@@ -131,12 +131,19 @@ jobs:
       - name: Build Docker image
         run: docker build -t healthlog:scan .
 
+      # The release binary, pinned, straight from the Trivy release. The apt
+      # route ran `apt-get update` across every repository on the runner
+      # image, and an unrelated one (the Chrome repository the runner ships
+      # with) answering with a corrupt index failed the step twice in a row
+      # on a release commit. The installer downloads the tarball for this
+      # exact version and checks it against the published checksums.
       - name: Install Trivy
+        env:
+          TRIVY_VERSION: v0.74.0
         run: |
-          sudo apt-get install -y wget apt-transport-https gnupg
-          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee /etc/apt/sources.list.d/trivy.list
-          sudo apt-get update && sudo apt-get install -y trivy
+          curl -sfL "https://raw.githubusercontent.com/aquasecurity/trivy/${TRIVY_VERSION}/contrib/install.sh" \
+            | sh -s -- -b /usr/local/bin "${TRIVY_VERSION}"
+          trivy --version
 
       # Blocking since v1.15.20 — a HIGH/CRITICAL finding in the built
       # image fails the job. For a finding without an upstream fix
