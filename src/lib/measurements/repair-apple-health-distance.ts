@@ -35,6 +35,16 @@
  * archive on the fixed build repairs those, and is the authoritative
  * repair for any account that still has its `export.zip`.
  *
+ * ── The refusal ────────────────────────────────────────────────────
+ *
+ * The criterion proves an archive ORIGIN. It cannot prove the archive was
+ * imported on the broken build — an account re-imported since carries the
+ * same stamp with the right numbers, and its rest days still pass the
+ * plausibility check after another x1000. So any candidate whose repaired
+ * value would leave the range refuses the whole account: nothing is
+ * written, the rows are reported, and the operator decides. Re-importing
+ * the archive is the authoritative repair and needs no script.
+ *
  * ── Idempotency ────────────────────────────────────────────────────
  *
  * Applying the repair writes one `AuditLog` row per account inside the
@@ -81,8 +91,8 @@ export interface AccountRepairPlan {
   repairable: RepairCandidateRow[];
   /**
    * Candidates whose repaired value would leave the plausibility range
-   * (`validateMeasurementRange`) — reported, never written. A row here is
-   * a sign the account's rows are NOT the 1000x class.
+   * (`validateMeasurementRange`). One row here refuses the whole account:
+   * it is evidence the rows are NOT the 1000x class.
    */
   outOfRange: RepairCandidateRow[];
   /** Non-null when this account already carries the repair's audit row. */
@@ -178,6 +188,35 @@ export interface RepairOutcome {
   userId: string;
   updated: number;
   skipped: number;
+  /**
+   * Why the account was left alone, when it was. Null on a run that wrote.
+   * The script prints it verbatim.
+   */
+  refusedReason: string | null;
+  /** The out-of-range candidates — what a refusal was decided on. */
+  skippedRows: RepairCandidateRow[];
+}
+
+/**
+ * The refusal an out-of-range candidate earns.
+ *
+ * The provenance criterion proves an archive origin; it cannot prove the
+ * archive was imported on the BROKEN build. An account that has since been
+ * re-imported on the fixed build carries the same stamp with the right
+ * numbers, and its rest days — under 200 m, phone left at home — pass the
+ * plausibility check after another x1000 and would be written. So a single
+ * row that would leave the range is treated as what it is: evidence the
+ * account is not the 1000x class. The whole account stops.
+ */
+function outOfRangeRefusal(plan: AccountRepairPlan, factor: number): string {
+  return (
+    `${plan.outOfRange.length} of ${plan.candidateCount} candidate row(s) ` +
+    `leave the plausible range after x${factor}, so these rows are not the ` +
+    "1000x class — the account was most likely re-imported on the fixed " +
+    "build, or its archive was never in the affected unit. Nothing written. " +
+    "Check the dry run's worked examples against the account's Health app " +
+    "before forcing anything."
+  );
 }
 
 /**
@@ -192,8 +231,24 @@ export async function applyAppleHealthDistanceRepair(
 ): Promise<RepairOutcome> {
   const factor = repairFactorFor(options.archiveUnit);
   const skipped = plan.outOfRange.length;
-  if (plan.alreadyRepairedAt || plan.repairable.length === 0) {
-    return { userId: plan.userId, updated: 0, skipped };
+  const base = {
+    userId: plan.userId,
+    updated: 0,
+    skipped,
+    skippedRows: plan.outOfRange,
+  };
+  if (plan.alreadyRepairedAt) {
+    return {
+      ...base,
+      refusedReason: `already repaired on ${plan.alreadyRepairedAt.toISOString()}`,
+    };
+  }
+  // Refuse the ACCOUNT, not just the row: see `outOfRangeRefusal`.
+  if (plan.outOfRange.length > 0) {
+    return { ...base, refusedReason: outOfRangeRefusal(plan, factor) };
+  }
+  if (plan.repairable.length === 0) {
+    return { ...base, refusedReason: "no repairable rows" };
   }
 
   const ids = plan.repairable.map((row) => row.id);
@@ -239,7 +294,13 @@ export async function applyAppleHealthDistanceRepair(
     "repair-apple-health-distance",
   );
 
-  return { userId: plan.userId, updated: ids.length, skipped };
+  return {
+    userId: plan.userId,
+    updated: ids.length,
+    skipped,
+    refusedReason: null,
+    skippedRows: plan.outOfRange,
+  };
 }
 
 /** Narrowing helper for the script's `--unit` flag. */

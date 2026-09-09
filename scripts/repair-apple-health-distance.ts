@@ -24,8 +24,10 @@
  *   - `--apply` writes, one transaction per account, and records an audit row
  *     in that same transaction. An account carrying that row is skipped, so a
  *     second run finds nothing.
- *   - A row whose repaired value would leave the plausibility range is
- *     reported and never written.
+ *   - A row whose repaired value would leave the plausibility range refuses
+ *     the WHOLE account: one such row is evidence the rows are not the 1000x
+ *     class (an account re-imported on the fixed build looks exactly like
+ *     this), and its rest days would otherwise be multiplied again.
  *   - `--unit=mi` for an imperial archive (default `km`). The stored row keeps
  *     no record of the archive's unit — that is the defect — so the operator
  *     names it; a mismatched unit is why the flag exists rather than a guess.
@@ -76,6 +78,7 @@ async function main(): Promise<void> {
   let totalRepairable = 0;
   let totalUpdated = 0;
   let totalSkipped = 0;
+  let refused = 0;
 
   for (const plan of plans) {
     if (plan.alreadyRepairedAt) {
@@ -107,7 +110,12 @@ async function main(): Promise<void> {
     for (const row of plan.outOfRange) {
       console.log(
         `      ! ${row.id} (${row.measuredAt.toISOString().slice(0, 10)}): ` +
-          `${row.value} m x ${factor} leaves the plausible range — not written`,
+          `${row.value} m x ${factor} leaves the plausible range`,
+      );
+    }
+    if (plan.outOfRange.length > 0) {
+      console.log(
+        "      ! this account will be REFUSED — see the reason under --apply",
       );
     }
 
@@ -117,6 +125,11 @@ async function main(): Promise<void> {
     });
     totalUpdated += outcome.updated;
     totalSkipped += outcome.skipped;
+    if (outcome.refusedReason) {
+      refused += 1;
+      console.log(`      ✗ refused: ${outcome.refusedReason}`);
+      continue;
+    }
     console.log(
       `      ✓ repaired ${outcome.updated} row(s), skipped ${outcome.skipped}`,
     );
@@ -124,9 +137,11 @@ async function main(): Promise<void> {
 
   console.log(
     apply
-      ? `\nDone. ${totalUpdated} row(s) repaired, ${totalSkipped} skipped.`
+      ? `\nDone. ${totalUpdated} row(s) repaired, ${totalSkipped} skipped, ` +
+          `${refused} account(s) refused.`
       : `\nDry run: ${totalRepairable} row(s) would be repaired. ` +
-          "Re-run with --apply to write.",
+          "Read the worked examples above and decide before re-running with " +
+          "--apply.",
   );
 }
 

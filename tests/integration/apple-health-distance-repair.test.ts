@@ -187,25 +187,101 @@ describe("Apple Health export distance repair — integration", () => {
     expect((await readRow(prisma, rowId)).syncVersion).toBe(2);
   });
 
-  it("uses the archive's own unit and never writes an implausible value", async () => {
+  it("uses the archive's own unit", async () => {
     const prisma = getPrismaClient();
     const userId = await makeUser(prisma, "mi");
     const mile = await seedRow(prisma, userId, { value: 1.543 });
-    const absurd = await seedRow(prisma, userId, { value: 250 });
 
     const plans = await planAppleHealthDistanceRepair(prisma, {
       archiveUnit: "mi",
     });
     expect(plans[0].repairable.map((row) => row.id)).toEqual([mile]);
+
+    const outcome = await applyAppleHealthDistanceRepair(prisma, plans[0], {
+      archiveUnit: "mi",
+    });
+    await settleBackgroundTasks();
+    expect(outcome).toMatchObject({ updated: 1, skipped: 0 });
+    expect((await readRow(prisma, mile)).value).toBeCloseTo(2483.217792, 6);
+  });
+
+  it("refuses the whole account when one row would leave the range", async () => {
+    const prisma = getPrismaClient();
+    const userId = await makeUser(prisma, "mixed");
+    const plausible = await seedRow(prisma, userId, { value: 1.543 });
+    const absurd = await seedRow(prisma, userId, { value: 250 });
+
+    const plans = await planAppleHealthDistanceRepair(prisma, {
+      archiveUnit: "mi",
+    });
+    expect(plans[0].repairable.map((row) => row.id)).toEqual([plausible]);
     expect(plans[0].outOfRange.map((row) => row.id)).toEqual([absurd]);
 
     const outcome = await applyAppleHealthDistanceRepair(prisma, plans[0], {
       archiveUnit: "mi",
     });
     await settleBackgroundTasks();
-    expect(outcome).toMatchObject({ updated: 1, skipped: 1 });
-    expect((await readRow(prisma, mile)).value).toBeCloseTo(2483.217792, 6);
+    expect(outcome.updated).toBe(0);
+    expect(outcome.skipped).toBe(1);
+    expect(outcome.skippedRows.map((row) => row.id)).toEqual([absurd]);
+    expect(outcome.refusedReason).toMatch(/leave the plausible range/);
+
+    // Nothing written at all — not the "repairable" row, not the audit row
+    // that would make a later, correct run a no-op.
+    expect((await readRow(prisma, plausible)).value).toBe(1.543);
+    expect((await readRow(prisma, plausible)).syncVersion).toBe(1);
     expect((await readRow(prisma, absurd)).value).toBe(250);
+    expect(
+      await prisma.auditLog.count({
+        where: { action: APPLE_HEALTH_DISTANCE_REPAIR_ACTION, userId },
+      }),
+    ).toBe(0);
+  });
+
+  it("leaves an account re-imported on the fixed build untouched", async () => {
+    // The scenario the criterion cannot see: the operator re-imported
+    // `export.zip` on the fixed build, so the rows are already right. They
+    // still carry `EXPORT_XML_SOURCE_MAX` + the `stats:` external id and
+    // still have no audit row, so they are selected exactly like a broken
+    // account's rows. The rest day survives another x1000; the ordinary days
+    // do not, and that is what has to stop the account.
+    const prisma = getPrismaClient();
+    const userId = await makeUser(prisma, "reimported");
+    const ordinary = await seedRow(prisma, userId, { value: 2484 });
+    const longWalk = await seedRow(prisma, userId, { value: 7020 });
+    const restDay = await seedRow(prisma, userId, { value: 150 });
+
+    const plans = await planAppleHealthDistanceRepair(prisma, {
+      archiveUnit: "km",
+    });
+    expect(plans).toHaveLength(1);
+    // The rest day would pass the plausibility check on its own.
+    expect(plans[0].repairable.map((row) => row.id)).toEqual([restDay]);
+    expect(plans[0].outOfRange.map((row) => row.id).sort()).toEqual(
+      [ordinary, longWalk].sort(),
+    );
+
+    const outcome = await applyAppleHealthDistanceRepair(prisma, plans[0], {
+      archiveUnit: "km",
+    });
+    await settleBackgroundTasks();
+    expect(outcome.updated).toBe(0);
+    expect(outcome.refusedReason).not.toBeNull();
+
+    for (const [id, value] of [
+      [ordinary, 2484],
+      [longWalk, 7020],
+      [restDay, 150],
+    ] as const) {
+      const row = await readRow(prisma, id);
+      expect(row.value).toBe(value);
+      expect(row.syncVersion).toBe(1);
+    }
+    expect(
+      await prisma.auditLog.count({
+        where: { action: APPLE_HEALTH_DISTANCE_REPAIR_ACTION, userId },
+      }),
+    ).toBe(0);
   });
 
   it("plans one entry per account", async () => {

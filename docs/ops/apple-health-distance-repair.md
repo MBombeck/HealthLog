@@ -25,6 +25,16 @@ build rewrites every affected day with the right number, needs no flags, and
 also repairs rows this script deliberately leaves alone (see the criterion
 below). The script exists for accounts that no longer have the archive.
 
+**An account that has been re-imported must not then be repaired.** The
+re-import already fixed it. Its rows keep the same `EXPORT_XML_SOURCE_MAX`
+stamp and the same `stats:` external id, and they carry no audit row, so the
+criterion selects them exactly as it selects a broken account — the stamp
+proves where a row came from, not which build imported it. Multiplying them
+again turns a 2.484 km day into 2484 km. The script refuses such an account on
+its own (any day whose value would leave the plausible range after the
+multiply stops the whole account), but that guard fires on the big days: keep
+the two apart yourself before you type `--apply`.
+
 ## Which rows it touches
 
 Only rows carrying the stamp the archive importer itself writes:
@@ -51,7 +61,13 @@ Deliberately out of scope:
 
 ## Run a dry-run first
 
-Always. The default mode reports and never writes:
+Always, and read it. The dry run is where the decision is made, not a
+formality in front of a decision already taken: it is the only place the
+script shows you real numbers from the account before it changes them. If the
+worked example does not match what that person's Health app shows for that day,
+the run is wrong and `--apply` will make it permanent.
+
+The default mode reports and never writes:
 
 ```bash
 # from a source checkout, with DATABASE_URL pointing at the instance
@@ -94,9 +110,12 @@ clients pick the rows up on their next delta sync, and an audit row
 and the row count. The DAY/WEEK/MONTH/YEAR rollups and the cached status
 insights for the touched days are recomputed afterwards.
 
-A row whose repaired value would leave the plausible range (0–200 000 m) is
-reported and never written — several of those in one account mean the rows are
-not the 1000x class and the run should be stopped.
+A row whose repaired value would leave the plausible range (0–200 000 m)
+refuses the **whole account**: nothing is written, the offending rows and the
+reason are printed, and the run moves on to the next account. One such row is
+evidence the account is not the 1000x class — a re-imported account looks
+exactly like this — and repairing the rest of it would multiply days that were
+already right.
 
 ## It runs once per account
 
