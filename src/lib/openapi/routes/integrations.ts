@@ -38,6 +38,7 @@ import { ouraCredentialsSchema } from "@/lib/validations/oura";
 import { polarCredentialsSchema } from "@/lib/validations/polar";
 import { stravaCredentialsSchema } from "@/lib/validations/strava";
 import { whoopCredentialsSchema } from "@/lib/validations/whoop";
+import { nightscoutConnectSchema } from "@/lib/validations/nightscout";
 import { withingsCredentialsSchema } from "@/lib/validations/withings";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 
@@ -329,6 +330,12 @@ const integrationLedgerState = z
   .describe(
     "Last recorded ledger state for this provider. `connected` is also the value a user who has never synced sees — the ledger row is created on the first attempt, and its absence reads as `connected`, not as an error.",
   );
+
+const nightscoutConnectRequest = nightscoutConnectSchema.meta({
+  id: "NightscoutConnectRequest",
+  description:
+    "Instance URL and optional API token. Both are trimmed before use — a trailing space or newline from a copy button reaches the instance verbatim and answers as an opaque DNS failure. `token` may be omitted or empty for a fully public instance (`AUTH_DEFAULT_ROLES=readable`). `allowPrivateHost` is accepted for older clients and ignored: only the server-side `NIGHTSCOUT_PRIVATE_ORIGINS` allowlist can authorise a private origin.",
+});
 
 const nightscoutStatusResponse = z
   .object({
@@ -1098,6 +1105,52 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+      },
+    },
+  },
+  "/api/nightscout/connect": {
+    post: {
+      tags: ["Integrations"],
+      summary: "Connect (or update) the caller's Nightscout instance",
+      description:
+        "Validates the URL and token with a live single-entry probe BEFORE storing anything, so a wrong token, an unreachable instance or an unapproved private origin surfaces here rather than on the first cron tick. On success the URL and token are encrypted at rest, the `nightscout` ledger is reset to connected, and a first sync is enqueued best-effort. Re-sending replaces the stored values; there is no partial update. Body capped at 16 KiB, rate-limited 10 requests / 60 s per user. Auth via cookie or Bearer.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: nightscoutConnectRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The instance answered the probe and was stored.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ connected: z.literal(true) }),
+                "NightscoutConnectEnvelope",
+              ),
+            },
+          },
+        },
+        "400": {
+          description: "Body is not parseable JSON.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "413": {
+          description: "Body exceeds 16 KiB.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "The URL failed validation, the origin is private and the operator has not approved it (`meta.errorCode` = `private_origin_not_approved` or `invalid_origin`), Nightscout rejected the token, or the instance could not be reached. Nothing was written. The message is fixed per class and never the upstream error's own: a Nightscout base URL carries its API token as a query parameter.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "429": {
+          description:
+            "More than 10 connection attempts in 60 s from this user.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },
