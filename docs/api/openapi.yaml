@@ -21350,6 +21350,9 @@ components:
           type: string
           minLength: 1
           maxLength: 60
+          description: "Apple's `HKUnit` string for `value`, captured for audit. The server does NOT convert from it: `value` is
+            read in the unit HealthLog stores the identifier in (`m` for walking distance, `kg` for body mass, `kcal`
+            for energy, `degC` for temperature). Send the sample in that unit."
         startDate:
           type: string
           format: date-time
