@@ -259,8 +259,9 @@ function outOfRangeRefusal(plan: AccountRepairPlan, factor: number): string {
     `leave the plausible range after x${factor}, so these rows are not the ` +
     "1000x class — the account was most likely re-imported on the fixed " +
     "build, or its archive was never in the affected unit. Nothing written. " +
-    "Check the dry run's worked examples against the account's Health app " +
-    "before forcing anything."
+    "There is no override: check the dry run's worked examples against the " +
+    "account's Health app, and if the archive really was in another unit, " +
+    "re-run with the matching --unit."
   );
 }
 
