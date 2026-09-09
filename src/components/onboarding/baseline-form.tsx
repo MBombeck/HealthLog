@@ -8,17 +8,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { DateField } from "@/components/ui/date-field";
-import { FieldGroup } from "@/components/ui/field-group";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { HeightFieldControl } from "@/components/profile/height-field-control";
+import { BaselineFields } from "@/components/onboarding/baseline-fields";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import {
   EMPTY_HEIGHT_DRAFT,
@@ -201,91 +191,11 @@ export function BaselineForm() {
         </p>
       </header>
 
-      <fieldset className="bg-card border-border space-y-4 rounded-xl border p-4 md:p-6">
-        <legend className="sr-only">{t("onboarding.baseline.title")}</legend>
-
-        <FieldGroup
-          htmlFor="ob-baseline-display-name"
-          label={t("onboarding.baseline.displayNameLabel")}
-          hint={t("onboarding.baseline.displayNameHint")}
-        >
-          <Input
-            id="ob-baseline-display-name"
-            value={form.displayName}
-            onChange={(e) => patch("displayName", e.target.value)}
-            autoComplete="nickname"
-            maxLength={50}
-            placeholder={t("onboarding.baseline.displayNamePlaceholder")}
-          />
-        </FieldGroup>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FieldGroup
-            htmlFor="ob-baseline-height"
-            label={
-              heightAdapter.usesFeetInches
-                ? t("onboarding.baseline.heightLabelFtIn")
-                : t("onboarding.baseline.heightLabel")
-            }
-          >
-            <HeightFieldControl
-              idPrefix="ob-baseline-height"
-              adapter={heightAdapter}
-              value={form.height}
-              onChange={(next) => patch("height", next)}
-              autoComplete="off"
-            />
-          </FieldGroup>
-          <FieldGroup
-            htmlFor="ob-baseline-gender"
-            label={t("onboarding.baseline.genderLabel")}
-          >
-            <Select
-              // The design system's Radix Select uses an empty-string
-              // sentinel to mean "no selection"; map back and forth so
-              // the form state ("") and the Select's value (undefined-
-              // adjacent) stay aligned. v1.4.25 W21 Fix-N (design-M1).
-              value={form.gender === "" ? undefined : form.gender}
-              onValueChange={(next) => patch("gender", next)}
-            >
-              <SelectTrigger
-                id="ob-baseline-gender"
-                className="w-full"
-                data-slot="onboarding-baseline-gender"
-              >
-                <SelectValue
-                  placeholder={t("onboarding.baseline.genderNone")}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MALE">
-                  {t("onboarding.baseline.genderMale")}
-                </SelectItem>
-                <SelectItem value="FEMALE">
-                  {t("onboarding.baseline.genderFemale")}
-                </SelectItem>
-                <SelectItem value="OTHER">
-                  {t("onboarding.baseline.genderOther")}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </FieldGroup>
-        </div>
-
-        <FieldGroup
-          htmlFor="ob-baseline-dob"
-          label={t("onboarding.baseline.dateOfBirthLabel")}
-          hint={t("onboarding.baseline.dateOfBirthHint")}
-        >
-          <DateField
-            id="ob-baseline-dob"
-            value={form.dateOfBirth}
-            onChange={(value) => patch("dateOfBirth", value)}
-            max={new Date().toISOString().slice(0, 10)}
-            autoComplete="bday"
-          />
-        </FieldGroup>
-      </fieldset>
+      <BaselineFields
+        value={form}
+        onChange={patch}
+        heightAdapter={heightAdapter}
+      />
 
       <AnamnesisCard
         value={anamnesis}
