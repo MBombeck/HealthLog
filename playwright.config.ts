@@ -152,6 +152,14 @@ export default defineConfig({
         // through stable data-slots, not a mobile layout, so it runs in one
         // project.
         "vaccinations.spec.ts",
+        // The blood-glucose journey writes readings to the one shared account
+        // and then reads GLOBAL verdicts off it — three rows in the list, one
+        // tile per meal-time context — while also moving that account's
+        // display-unit column. Two projects mutating it in parallel would
+        // leave a fourth row in the count and could flip the unit under the
+        // other one mid-navigation. It proves a flow through stable
+        // data-slots, not a mobile layout, so it runs in one project.
+        "glucose-journey.spec.ts",
         // Runs only in the service-worker project.
         "v137-record-session-fence-offline.spec.ts",
       ],
