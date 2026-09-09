@@ -12,7 +12,10 @@ import { stepUpErrorKey } from "@/components/settings/access/grant-action-error"
 import { ApiError } from "@/lib/api/api-fetch";
 import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
-import { useCreateManagedProfile } from "@/lib/queries/use-managed-profiles";
+import {
+  useCreateManagedProfile,
+  type ManagedProfileGender,
+} from "@/lib/queries/use-managed-profiles";
 import {
   DEFAULT_TIMEZONE,
   detectBrowserTimezone,
@@ -22,15 +25,22 @@ import {
 /**
  * v1.37.0 — creating a record that has no login of its own.
  *
- * ## Why the form is exactly four fields
+ * ## Why the form is exactly five fields
  *
  * `POST /api/managed-profiles` parses with a `.strict()` schema. A strict
  * schema refuses an extra key outright, so a form that helpfully posted an
- * empty `heightCm` — or a `gender` somebody thought would be useful — is
- * refused with a validation error about a field the person never filled in.
- * The four fields below are the schema, and the submit handler names them one
- * by one rather than spreading the form state, so a fifth control cannot reach
- * the wire by accident.
+ * empty `heightCm` is refused with a validation error about a field the person
+ * never filled in. The five fields below are the schema, and the submit
+ * handler names them one by one rather than spreading the form state, so a
+ * sixth control cannot reach the wire by accident.
+ *
+ * The fifth is `gender`, and it arrived late for a stated reason (#939). It
+ * was left out of v1.37.0 on the argument that a record's identity should ask
+ * for as little as possible — and the consequence was that every managed
+ * record started with `gender` NULL, which is what the cycle module derives
+ * its default from. A guardian creating a record for a child could neither
+ * record the answer nor turn the module off from here. Asking once, optionally,
+ * is less intrusive than the module surface that had to exist to undo it.
  *
  * ## The date of birth is genuinely optional
  *
@@ -70,6 +80,7 @@ export function ManagedProfileCreateForm() {
   const [displayName, setDisplayName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [locale, setLocale] = useState<Locale>(actorLocale);
+  const [gender, setGender] = useState<ManagedProfileGender>(null);
   const [timezone, setTimezone] = useState(() => browserTimezone());
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<string | null>(null);
@@ -95,14 +106,16 @@ export function ManagedProfileCreateForm() {
         dateOfBirth: dateOfBirth.length > 0 ? dateOfBirth : null,
         locale,
         timezone,
+        gender,
       },
       {
         onSuccess: (profile) => {
           setDisplayName("");
           setDateOfBirth("");
           setLocale(actorLocale);
+          setGender(null);
           setTimezone(browserTimezone());
-          setCreated(profile.displayName);
+          setCreated(profile.displayName ?? trimmedName);
         },
         // Nothing is cleared here, on purpose: a refused creation is one the
         // person is being asked to retry, and a form that emptied itself
@@ -190,6 +203,28 @@ export function ManagedProfileCreateForm() {
         </NativeSelect>
         <p className="text-muted-foreground text-xs">
           {t("recordSharing.managed.localeHint")}
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="managed-profile-gender">
+          {t("recordSharing.managed.genderLabel")}
+        </Label>
+        <NativeSelect
+          id="managed-profile-gender"
+          data-slot="managed-profile-gender"
+          className="w-full"
+          value={gender ?? ""}
+          onChange={(e) => setGender(genderFromSelect(e.target.value))}
+        >
+          {MANAGED_PROFILE_GENDER_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {t(option.labelKey)}
+            </option>
+          ))}
+        </NativeSelect>
+        <p className="text-muted-foreground text-xs">
+          {t("recordSharing.managed.genderHint")}
         </p>
       </div>
 
@@ -305,6 +340,36 @@ export function FieldGuidance({
       )}
     </>
   );
+}
+
+/**
+ * The sex control's options, in the order the record's own settings offer them.
+ *
+ * Shared with the edit form rather than written twice: the empty value is the
+ * NULL the column really stores, and a second copy of this list is how one
+ * surface ends up offering four options and the other three.
+ */
+export const MANAGED_PROFILE_GENDER_OPTIONS: ReadonlyArray<{
+  value: string;
+  labelKey: string;
+}> = [
+  { value: "", labelKey: "recordSharing.managed.genderNone" },
+  { value: "MALE", labelKey: "recordSharing.managed.genderMale" },
+  { value: "FEMALE", labelKey: "recordSharing.managed.genderFemale" },
+  { value: "OTHER", labelKey: "recordSharing.managed.genderOther" },
+];
+
+/**
+ * The select's string, as the route's enum.
+ *
+ * Exported and pure because the empty option is the one that matters: it means
+ * NULL — "not recorded" — and a form that sent `""` would be refused by the
+ * enum for a choice the person deliberately made.
+ */
+export function genderFromSelect(value: string): ManagedProfileGender {
+  return value === "MALE" || value === "FEMALE" || value === "OTHER"
+    ? value
+    : null;
 }
 
 /** The browser's zone, or the app default when the engine will not say. */

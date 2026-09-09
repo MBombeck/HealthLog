@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { UserRoundCog } from "lucide-react";
 
 import {
@@ -7,9 +8,11 @@ import {
   grantActionErrorKey,
 } from "@/components/settings/access/grant-action-error";
 import { ManagedProfileCreateForm } from "@/components/settings/access/managed-profile-create-form";
+import { ManagedProfileEditForm } from "@/components/settings/access/managed-profile-edit-form";
 import { ManagedProfileGuardians } from "@/components/settings/access/managed-profile-guardians";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useAuth } from "@/hooks/use-auth";
@@ -127,6 +130,10 @@ function ManagedProfileRow({
   const guardians = useManagedProfileGuardians(profile.accountId);
   const name = accountLabel(profile);
   const failed = remove.isError && remove.variables === profile.accountId;
+  // Per row, not per card. The edit form reads the record's identity when it
+  // opens, so one shared flag would put every row's form on the wire the
+  // moment any of them was opened.
+  const [editing, setEditing] = useState(false);
 
   return (
     <li
@@ -143,8 +150,24 @@ function ManagedProfileRow({
             {t("recordSharing.lookingAfter.kindManaged")}
           </p>
         </div>
-        {guardians.data && (
-          <div className="flex shrink-0 items-center">
+        {/* UI-STANDARDS §11: the actions stay beside the name, never below it.
+            Edit is offered without waiting for the roster — it changes what the
+            record IS and does not depend on how many people look after it,
+            unlike the deletion beside it, whose confirm copy states that
+            number and therefore cannot exist before the roster answers. */}
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            data-slot="managed-profile-edit"
+            aria-expanded={editing}
+            onClick={() => setEditing((open) => !open)}
+          >
+            {t("recordSharing.managed.edit")}
+          </Button>
+          {guardians.data && (
             <ConfirmButton
               slot="managed-profile-delete"
               size="sm"
@@ -161,9 +184,15 @@ function ManagedProfileRow({
               pending={remove.isPending}
               onConfirm={() => remove.mutate(profile.accountId)}
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
+      {editing && (
+        <ManagedProfileEditForm
+          profileId={profile.accountId}
+          onDone={() => setEditing(false)}
+        />
+      )}
       {failed && (
         <GrantActionAlert
           grantId={profile.accountId}

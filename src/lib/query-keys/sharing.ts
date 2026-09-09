@@ -50,6 +50,14 @@ export const sharingKeys = {
   managedProfileGuardians: (profileId: string) =>
     ["managed-profiles", profileId, "guardians"] as const,
 
+  /**
+   * One managed record's identity (`GET /api/managed-profiles/{id}`). Keyed by
+   * profile for the same reason the roster is, and under the same prefix so a
+   * grant transition invalidates it with the rest of the family.
+   */
+  managedProfile: (profileId: string) =>
+    ["managed-profiles", profileId, "profile"] as const,
+
   /** Mutation keys — kept in the factory so no bare array reaches a call site. */
   accountGrantInvite: () => ["account", "grants", "invite"] as const,
   accountGrantAccept: () => ["account", "grants", "accept"] as const,
@@ -57,6 +65,7 @@ export const sharingKeys = {
   accountGrantRenounce: () => ["account", "grants", "renounce"] as const,
   accountSwitchMutation: () => ["account", "switch"] as const,
   managedProfileCreate: () => ["managed-profiles", "create"] as const,
+  managedProfileUpdate: () => ["managed-profiles", "update"] as const,
   managedProfileDelete: () => ["managed-profiles", "delete"] as const,
   managedProfileGuardianInvite: () =>
     ["managed-profiles", "guardian", "invite"] as const,

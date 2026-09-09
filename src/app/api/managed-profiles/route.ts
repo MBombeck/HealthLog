@@ -13,6 +13,7 @@ import {
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { createManagedProfile } from "@/lib/managed-profiles/create";
+import { toManagedProfileView } from "@/lib/managed-profiles/lifecycle";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createManagedProfileSchema } from "@/lib/validations/managed-profiles";
@@ -62,6 +63,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
       : null,
     locale: parsed.data.locale,
     timezone: parsed.data.timezone,
+    // Absent and null both mean "not recorded". The record keeps the same
+    // NULL an account that never answered carries, and the cycle module
+    // derives its default from it rather than from a guess about the person.
+    gender: parsed.data.gender ?? null,
   });
 
   await auditLog("managed_profile.created", {
@@ -73,15 +78,5 @@ export const POST = apiHandler(async (request: NextRequest) => {
     meta: { profile_id: profile.id },
   });
 
-  return apiSuccess(
-    {
-      id: profile.id,
-      displayName: profile.displayName,
-      dateOfBirth: profile.dateOfBirth,
-      locale: profile.locale,
-      timezone: profile.timezone,
-      recordKind: "managed" as const,
-    },
-    201,
-  );
+  return apiSuccess(toManagedProfileView(profile), 201);
 });
