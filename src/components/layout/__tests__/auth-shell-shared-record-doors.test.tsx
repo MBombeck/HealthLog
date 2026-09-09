@@ -127,6 +127,7 @@ vi.mock("@/components/gamification/achievement-unlock-notifier", () => ({
 }));
 
 import { AuthShell } from "../auth-shell";
+import { delegatedDomains } from "@/lib/sharing/domain-write-support";
 
 const OWNER_READ: AccountAccessEntry = {
   accountId: "acct-owner",
@@ -138,12 +139,16 @@ const OWNER_READ: AccountAccessEntry = {
   sections: null,
   recordKind: "shared" as const,
   canWrite: false,
+  writableDomains: [],
+  manageableDomains: [],
 };
 const OWNER_WRITE: AccountAccessEntry = {
   ...OWNER_READ,
   access: "write",
   level: "write",
   canWrite: true,
+  writableDomains: [],
+  manageableDomains: [],
 };
 const MANAGED_GUARDIAN: AccountAccessEntry = {
   accountId: "managed-record",
@@ -155,6 +160,8 @@ const MANAGED_GUARDIAN: AccountAccessEntry = {
   sections: null,
   recordKind: "managed" as const,
   canWrite: true,
+  writableDomains: delegatedDomains("manage", null, "write"),
+  manageableDomains: delegatedDomains("manage", null, "manage"),
 };
 
 function render(

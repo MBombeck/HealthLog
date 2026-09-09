@@ -37,6 +37,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@/lib/i18n/context";
 import { ApiError } from "@/lib/api/api-fetch";
 import type { AccountAccessEntry } from "@/lib/sharing/account-access-view";
+import { delegatedDomains } from "@/lib/sharing/domain-write-support";
 import type { GrantList } from "@/lib/queries/use-account-grants";
 import type { ManagedProfileGuardian } from "@/lib/queries/use-managed-profiles";
 
@@ -219,6 +220,8 @@ function entry(partial: Partial<AccountAccessEntry> = {}): AccountAccessEntry {
     recordKind: "managed",
     sections: null,
     canWrite: true,
+    writableDomains: delegatedDomains("manage", null, "write"),
+    manageableDomains: delegatedDomains("manage", null, "manage"),
     ...partial,
   };
 }

@@ -12,6 +12,8 @@ const sharedEntry = {
   recordKind: "shared",
   sections: ["labs"],
   canWrite: false,
+  writableDomains: [],
+  manageableDomains: [],
 };
 
 function accessBlock(overrides: Record<string, unknown> = {}) {
@@ -45,6 +47,8 @@ describe("parseAccountAccess", () => {
       level: "manage",
       sections: null,
       canWrite: true,
+      writableDomains: ["measurements", "mind"],
+      manageableDomains: ["mind"],
     };
 
     const parsed = parseAccountAccess(
@@ -56,7 +60,26 @@ describe("parseAccountAccess", () => {
       access: "write",
       sections: null,
       canWrite: true,
+      writableDomains: ["measurements", "mind"],
+      manageableDomains: ["mind"],
     });
+  });
+
+  it("keeps the delegated write lists when they are consistent with the grant", () => {
+    const writer = {
+      ...sharedEntry,
+      access: "write",
+      level: "write",
+      sections: ["labs", "measurements"],
+      canWrite: true,
+      writableDomains: ["measurements", "labs"],
+      manageableDomains: [],
+    };
+    const parsed = parseAccountAccess(
+      accessBlock({ accounts: [writer], active: writer }),
+    );
+    expect(parsed?.active?.writableDomains).toEqual(["measurements", "labs"]);
+    expect(parsed?.active?.manageableDomains).toEqual([]);
   });
 
   it.each([
@@ -79,6 +102,28 @@ describe("parseAccountAccess", () => {
     // field. A parity matcher blind to it would let the banner and the
     // switcher name the same owner differently.
     ["full name", { fullName: "Different name" }, {}],
+    // v1.38.12 — the two lists are read by every control, so the two views
+    // must agree on them like on every other field.
+    [
+      "writable domains",
+      {
+        access: "write",
+        level: "write",
+        canWrite: true,
+        writableDomains: ["labs"],
+      },
+      {
+        accounts: [
+          {
+            ...sharedEntry,
+            access: "write",
+            level: "write",
+            canWrite: true,
+            writableDomains: [],
+          },
+        ],
+      },
+    ],
   ])(
     "fails closed when active disagrees with its canonical entry on %s",
     (_field, activeOverrides, blockOverrides) => {
@@ -105,6 +150,51 @@ describe("parseAccountAccess", () => {
       "manage with read legacy field",
       { access: "read", level: "manage", sections: null, canWrite: true },
     ],
+    // v1.38.12 — structural invariants of the two lists. Which sections
+    // qualify is the server's table and is not re-decided here; what IS
+    // checked is that the lists cannot claim more than the grant.
+    ["read grant with a writable domain", { writableDomains: ["labs"] }],
+    [
+      "write grant with a manageable domain",
+      {
+        access: "write",
+        level: "write",
+        canWrite: true,
+        writableDomains: ["labs"],
+        manageableDomains: ["labs"],
+      },
+    ],
+    [
+      "manageable domain that is not writable",
+      {
+        access: "write",
+        level: "manage",
+        sections: null,
+        canWrite: true,
+        writableDomains: ["labs"],
+        manageableDomains: ["mind"],
+      },
+    ],
+    [
+      "writable domain outside the grant's sections",
+      {
+        access: "write",
+        level: "write",
+        canWrite: true,
+        writableDomains: ["measurements"],
+      },
+    ],
+    [
+      "duplicated writable domain",
+      {
+        access: "write",
+        level: "write",
+        canWrite: true,
+        writableDomains: ["labs", "labs"],
+      },
+    ],
+    ["unknown writable domain", { writableDomains: ["other"] }],
+    ["missing writable domains", { writableDomains: undefined }],
   ])("fails closed for %s entries", (_name, entryOverrides) => {
     const entry = { ...sharedEntry, ...entryOverrides };
 

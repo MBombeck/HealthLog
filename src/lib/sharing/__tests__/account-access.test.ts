@@ -10,20 +10,23 @@ vi.mock("@/lib/db", () => ({
 
 import { prisma } from "@/lib/db";
 import { resolveAccountAccess } from "../account-access";
+import { delegatedDomains } from "@/lib/sharing/domain-write-support";
 import { decodeLegacyWholeRecordAccess } from "../account-access-view";
 import { LEGACY_ACCOUNT_PAYLOADS } from "../../../../tests/fixtures/v137/legacy-account-payloads";
 
 function activeGrant({
   access,
   managedProfileAt = null,
+  scopeJson = null,
 }: {
   access: "READ" | "WRITE" | "MANAGE";
   managedProfileAt?: Date | null;
+  scopeJson?: string[] | null;
 }) {
   return {
     id: `grant-${access.toLowerCase()}`,
     access,
-    scopeJson: null,
+    scopeJson,
     acceptedAt: new Date("2026-08-01T00:00:00.000Z"),
     revokedAt: null,
     expiresAt: null,
@@ -69,9 +72,45 @@ describe("resolveAccountAccess", () => {
         level: "manage",
         sections: null,
         recordKind: "managed",
+        // v1.38.12 — the routes' answer for a whole-record MANAGE grant: every
+        // section with a delegated write route, and never the vault.
+        writableDomains: delegatedDomains("manage", null, "write"),
+        manageableDomains: delegatedDomains("manage", null, "manage"),
       }),
     );
+    expect(access.active?.manageableDomains).toContain("mind");
+    expect(access.active?.manageableDomains).not.toContain("documents");
     expect(access.recordKind).toBe("managed");
+  });
+
+  it("publishes a WRITE grant's writable sections within its scope and no manageable ones", async () => {
+    vi.mocked(prisma.accountGrant.findMany).mockResolvedValue([
+      activeGrant({ access: "WRITE", scopeJson: ["mind", "labs"] }),
+    ] as never);
+
+    const access = await resolveAccountAccess({
+      user: { id: "delegate" },
+      session: { actingAsUserId: "record-owner" },
+    });
+
+    // `mind` is opened by the scope but has no WRITE route, so it is absent;
+    // `labs` has one. Consent order, not scope order.
+    expect(access.active?.writableDomains).toEqual(["labs"]);
+    expect(access.active?.manageableDomains).toEqual([]);
+  });
+
+  it("publishes two empty lists for a READ grant", async () => {
+    vi.mocked(prisma.accountGrant.findMany).mockResolvedValue([
+      activeGrant({ access: "READ" }),
+    ] as never);
+
+    const access = await resolveAccountAccess({
+      user: { id: "delegate" },
+      session: { actingAsUserId: "record-owner" },
+    });
+
+    expect(access.active?.writableDomains).toEqual([]);
+    expect(access.active?.manageableDomains).toEqual([]);
   });
 
   it("resolves an ordinary shared record on the server", async () => {
