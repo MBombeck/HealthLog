@@ -119,6 +119,10 @@ const GLUCOSE_TARGET_TYPES = [
   "BLOOD_GLUCOSE_POSTPRANDIAL",
   "BLOOD_GLUCOSE_RANDOM",
   "BLOOD_GLUCOSE_BEDTIME",
+  // #943 — readings whose source recorded no meal-time context. The route
+  // emits this card whenever such rows exist, so the panel must list it or
+  // an account with only untagged readings gets no reference band at all.
+  "BLOOD_GLUCOSE_UNSPECIFIED",
 ];
 
 interface MetricTargetSummaryProps {

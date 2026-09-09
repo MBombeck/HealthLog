@@ -40,10 +40,17 @@ import {
   type UserProfileForRange,
 } from "@/lib/analytics/effective-range";
 import type { TrafficRange } from "@/lib/analytics/value-bands";
-import { thresholdMetricForContext } from "@/lib/glucose";
+import {
+  thresholdMetricForContext,
+  type GlucoseContextBucket,
+} from "@/lib/glucose";
 
-export type GlucoseContextKey =
-  "FASTING" | "POSTPRANDIAL" | "RANDOM" | "BEDTIME";
+/**
+ * The buckets a glucose target can be resolved for — the four named contexts
+ * plus the untagged bucket (#943), which is judged against the RANDOM band
+ * because an untagged reading is a spot reading.
+ */
+export type GlucoseContextKey = GlucoseContextBucket;
 
 /**
  * ADA glycemic GOAL bands for people living with diabetes (mg/dL).
@@ -59,6 +66,9 @@ export type GlucoseContextKey =
  *   higher floor guards against nocturnal hypoglycemia. Kept identical to the
  *   non-diabetic bedtime band on purpose — the diabetic delta lives in the
  *   fasting/post-prandial goals, where ADA is explicit.
+ * UNSPECIFIED: a reading whose source recorded no meal-time context. Same band
+ *   as RANDOM, and for the same reason — an untagged reading is a spot
+ *   reading, and the post-prandial goal is the defensible comparator.
  */
 const DIABETIC_GOAL_BANDS: Record<
   GlucoseContextKey,
@@ -68,6 +78,7 @@ const DIABETIC_GOAL_BANDS: Record<
   POSTPRANDIAL: { min: 80, max: 180 },
   RANDOM: { min: 80, max: 180 },
   BEDTIME: { min: 90, max: 150 },
+  UNSPECIFIED: { min: 80, max: 180 },
 };
 
 /** Source label surfaced on the resolved range for the targets surface. */
