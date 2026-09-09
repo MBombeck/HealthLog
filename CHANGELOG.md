@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.38.12] — 2026-09-09
+
+A dependency release: the image and the lockfile stop carrying twelve
+advisories the container scanner reported, and `next build` learns to
+type-check the application without the test tree.
+
+### Security
+
+- **Twelve scanner advisories cleared, none in this code.** next 16.2.11
+  carried two critical advisories (fixed in 16.3.3) and pulled a vulnerable
+  sharp; nodemailer 9.0.3 carried one high and three medium; js-yaml 4.3.1
+  one high; hono 4.13.3, under the MCP SDK's node server, three medium; the
+  vitest mocker and baseline-browser-mapping one medium each. Dependabot
+  listed none of them. next moves to 16.3.4, nodemailer to 9.1.1 and vitest
+  to 4.1.11 as direct pins; js-yaml, hono, baseline-browser-mapping and sharp
+  move through pnpm overrides bounded to the vulnerable ranges, so exactly
+  the copies the scanner named change and nothing else does.
+
+### Changed
+
+- **`next build` type-checks the application program, not the test tree.**
+  Next 16.3 checks the whole tsconfig program during the build, which reaches
+  the unit tests under `src/**/__tests__`, their fixtures under `tests/`, and
+  the test-runner configs; the image build context leaves `tests/` and `e2e/`
+  out on purpose, so the image build failed on both architectures with a
+  missing fixture module. The build now reads `tsconfig.build.json`, which
+  extends the main config without that tree. `pnpm typecheck` keeps using
+  `tsconfig.json` and still covers everything.
+
 ## [1.38.11] — 2026-09-08
 
 "Sign out everywhere" now means everywhere, a refresh cannot outrun a

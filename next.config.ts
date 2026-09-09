@@ -5,6 +5,12 @@ import { version as PKG_VERSION } from "./package.json";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // `next build` type-checks the whole tsconfig program since 16.3, which
+  // reaches the unit tests under `src/**/__tests__` and their fixtures under
+  // `tests/`. The image build context leaves `tests/` and `e2e/` out on
+  // purpose, so the build reads a tsconfig without them; `pnpm typecheck`
+  // still covers the full program.
+  typescript: { tsconfigPath: "tsconfig.build.json" },
   poweredByHeader: false,
   // v1.4.38.4 — expose the package.json version to the client bundle
   // so the `<VersionPoller>` can compare the shell-baked version

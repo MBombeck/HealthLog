@@ -1,4 +1,13 @@
 overrides:
+  # CVE-2026-84375 (js-yaml < 4.3.2, HIGH), CVE-2026-84363/84364/84365 (hono
+  # < 4.13.5, via @hono/node-server under the MCP SDK), CVE-2026-45819
+  # (baseline-browser-mapping < 2.11.0), GHSA-rgj7-g3m4-5g8c (sharp < 0.35.4,
+  # pulled by next). None is a direct dependency; the bounds move the copies
+  # the scanner flags and nothing else.
+  "js-yaml@<4.3.2": "^4.3.2"
+  "hono@<4.13.5": "^4.13.5"
+  "baseline-browser-mapping@<2.11.0": "^2.11.0"
+  "sharp@<0.35.4": "^0.35.4"
   # GHSA-55q2-fjhq-7xh7: a crafted document gets past the sanitiser and its
   # markup survives into the output. The copy here is jspdf's optional HTML
   # renderer, which the doctor-report PDF path reaches.
