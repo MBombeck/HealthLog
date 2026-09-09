@@ -162,6 +162,15 @@ export default defineConfig({
         "glucose-journey.spec.ts",
         // Runs only in the service-worker project.
         "v137-record-session-fence-offline.spec.ts",
+        // The Apple Health import journey uploads an archive into the one
+        // shared account and its refusal control asserts that the account's
+        // Apple-Health row count did not move. A second project running the
+        // same journey in parallel would import beside it and flip that
+        // verdict — and both would be spending the kick-off route's
+        // three-uploads-per-minute budget on each other. It proves a flow
+        // through stable data attributes, not a mobile layout, so it runs in
+        // one project.
+        "apple-health-import.spec.ts",
       ],
       use: {
         // Pixel 5 — Chromium-based mobile profile so CI only needs

@@ -499,6 +499,7 @@ export function AppleHealthImportCard() {
         )}
         {(isFailed || uploadError) && (
           <p
+            data-testid="import-apple-health-error"
             role="alert"
             className="text-destructive flex items-start gap-2 text-sm"
           >

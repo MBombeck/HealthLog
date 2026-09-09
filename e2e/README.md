@@ -14,6 +14,7 @@ The Playwright config (`../playwright.config.ts`) builds the app (`next build`) 
 
 - **`setup/`** — `test.ts` (the suite's `test` + `expect` entry point), `global-setup.ts` (auth + DB seeding), `test-helpers.ts` (shared login + navigation helpers).
 - **`utils/`** — fixtures such as `mock-dashboard-snapshot.ts`.
+- **`fixtures/`** — synthetic payloads a journey uploads, built in code rather than committed as blobs so the content stays reviewable (`apple-health-export.ts`).
 - **`*.spec.ts`** — one spec per flow: auth/login/redirect, dashboard, charts, the medication-wizard cadences (`medications-wizard-*`), insights generation + scroll restoration, doctor report, settings, mobile-viewport consistency, locale switch, accessibility (`a11y.spec.ts`), and the `v1427-*` regression set.
 
 ## Conventions
