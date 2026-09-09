@@ -27,9 +27,19 @@
  * settings wrote a column nothing on screen was reading. Design §4 is about
  * whose eyes are on the screen; this is about whose record is on it.
  *
+ * Those two fields are then MASKED to the sections the active grant names.
+ * `accountAccess.active` is set for any live grant, level and scope included,
+ * so the record scoping on its own would hand a delegate scoped to
+ * `measurements` the owner's cycle, screener, illness and nutrient
+ * configuration — and the cycle flag is a derivation of the owner's recorded
+ * sex. A section the grant does not open answers `false`, which is the answer
+ * a module that is off already gives and the answer the browser's own route
+ * inventory has always acted on. An unscoped grant names every section and is
+ * unaffected.
+ *
  * The own-record case is byte-identical: with no switch the active record IS
- * the caller, and every value below is resolved from the same row it always
- * was.
+ * the caller, there is no grant to narrow to, and every value below is
+ * resolved from the same row it always was.
  */
 import { apiSuccess } from "@/lib/api-response";
 import { apiHandler, requireActorAuth } from "@/lib/api-handler";
@@ -46,6 +56,10 @@ import {
 } from "@/lib/modules/gate";
 import { parseTourProgress } from "@/lib/onboarding/tour-progress";
 import { resolveAccountAccess } from "@/lib/sharing/account-access";
+import {
+  maskModulesToSections,
+  sectionsOpen,
+} from "@/lib/sharing/module-disclosure";
 import { recordSessionForPayload } from "@/lib/sharing/record-session-fence";
 
 export const dynamic = "force-dynamic";
@@ -87,8 +101,13 @@ export const GET = apiHandler(async () => {
   // revoked record's configuration would be paid once, by somebody else.
   const recordId = accountAccess.active?.accountId ?? user.id;
 
-  const [record, cycleProfile, modules, moduleAvailability] = await Promise.all(
-    [
+  // What the grant opens, and therefore what the two record fields below may
+  // say. `null` is the whole record — the answer for an unscoped grant and for
+  // no switch at all, and the reason the own-record payload is untouched.
+  const sections = accountAccess.active?.sections ?? null;
+
+  const [record, cycleProfile, resolvedModules, moduleAvailability] =
+    await Promise.all([
       // The actor's own row is already in hand; a switched session needs the
       // record's `gender`, which is the column the cycle gate derives from.
       recordId === user.id
@@ -115,12 +134,24 @@ export const GET = apiHandler(async () => {
       // Server-WIDE, so it is the same map for every record and is not
       // re-scoped here.
       getOperatorModuleAvailability(),
-    ],
-  );
-  const cycleTrackingEnabled = isCycleEnabled(
-    record?.gender ?? null,
-    cycleProfile,
-  );
+    ]);
+
+  // The masking step, and the one place the record scoping is narrowed rather
+  // than resolved. `active` is set for ANY live grant — a READ grant scoped to
+  // `measurements` included — so publishing the record's whole map would tell
+  // a delegate whether the owner tracks their cycle, their screeners, their
+  // illness episodes or their supplement intake, none of which their grant
+  // opens. A closed section reads `false`, the same answer a module that is
+  // off already gives, and the navigation the client builds from it drops
+  // exactly the doors `isSharedRecordPathPresentable` drops anyway.
+  const modules = maskModulesToSections(resolvedModules, sections);
+  // The cycle flag is masked on its own rather than read off `modules.cycle`:
+  // that key also carries the operator's server-wide availability, and this
+  // field never has. Same section, same answer, without borrowing a second
+  // layer's decision.
+  const cycleTrackingEnabled =
+    sectionsOpen(sections, "cycle") &&
+    isCycleEnabled(record?.gender ?? null, cycleProfile);
 
   // v1.7.0 — patient-identity fields for the health-record export. The
   // KVNR is stored encrypted; decrypt fail-soft so a key-rotation gap on
@@ -199,8 +230,9 @@ export const GET = apiHandler(async () => {
     // v1.15.0 — cycle-tracking feature gate, resolved server-side. iOS
     // hides the whole cycle tab when this is false. v1.38.14 — resolved for
     // the ACTIVE RECORD, so a switched browser hides the tab the record does
-    // not track rather than the one the actor does not (#939). Unchanged on
-    // the native transport, which carries no switch.
+    // not track rather than the one the actor does not (#939), and `false`
+    // whenever the active grant does not name the `cycle` section. Unchanged
+    // on the native transport, which carries no switch.
     cycleTrackingEnabled,
     // v1.18.0 — module enable/disable map. `{ <moduleKey>: boolean }`
     // for every toggleable module; `false` means the module is OFF and
@@ -208,7 +240,8 @@ export const GET = apiHandler(async () => {
     // …). `cycle` mirrors `cycleTrackingEnabled` and `coach` mirrors the
     // resolved `disableCoach` + operator master flag, so this map is the
     // single thing a client needs to gate every secondary domain.
-    // v1.38.14 — resolved for the ACTIVE RECORD; see the module docblock.
+    // v1.38.14 — resolved for the ACTIVE RECORD and masked to the sections
+    // the active grant opens; see the module docblock.
     modules,
     // v1.18.0 — operator-layer availability per toggleable module. `false`
     // ⇒ the operator turned the module off server-wide (off for every

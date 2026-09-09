@@ -24,6 +24,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NextRequest } from "next/server";
 
+import type { ShareDomain } from "@/lib/sharing/scope";
+
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables, switchSessionTo } from "./setup";
 
@@ -83,7 +85,9 @@ async function signIn(userId: string) {
 interface MePayload {
   modules: Record<string, boolean>;
   cycleTrackingEnabled: boolean;
-  accountAccess: { active: { accountId: string } | null };
+  accountAccess: {
+    active: { accountId: string; sections: string[] | null } | null;
+  };
 }
 
 async function readMe(): Promise<MePayload> {
@@ -318,5 +322,73 @@ describe("who may write the record's module map", () => {
     expect((await patchModules({ cycleTrackingEnabled: false })).status).toBe(
       403,
     );
+  });
+});
+
+describe("what a SCOPED grant is told about the record's modules", () => {
+  /** An owner who tracks everything, and a delegate holding one section. */
+  async function delegateInside(scope: ShareDomain[] | null) {
+    const owner = await makeUser("owner");
+    const delegate = await makeUser("delegate");
+    const { acceptGrant, inviteGrant } = await import("@/lib/sharing/grants");
+    const grant = await inviteGrant({
+      grantorId: owner.id,
+      granteeId: delegate.id,
+      access: "READ",
+      scope,
+    });
+    await acceptGrant({ grantId: grant.id, granteeId: delegate.id });
+    const session = await signIn(delegate.id);
+    await switchSessionTo(session.id, owner.id);
+    return { owner, delegate };
+  }
+
+  it("answers false for every module outside the granted sections", async () => {
+    // The disclosure the record scoping opened: `active` is set for ANY live
+    // grant, so a delegate holding `measurements` would otherwise read the
+    // owner's cycle, screener, illness and lab configuration — and the cycle
+    // flag derives from the owner's recorded sex.
+    const { owner } = await delegateInside(["measurements"]);
+
+    const payload = await readMe();
+    expect(payload.accountAccess.active?.accountId).toBe(owner.id);
+    expect(payload.accountAccess.active?.sections).toEqual(["measurements"]);
+
+    // The owner really does track these — masked, not merely absent.
+    const { resolveModuleMap } = await import("@/lib/modules/gate");
+    const truth = await resolveModuleMap(owner.id);
+    for (const key of [
+      "cycle",
+      "mood",
+      "mentalHealth",
+      "illness",
+      "labs",
+      "medications",
+      "inboundDocuments",
+    ] as const) {
+      expect(truth[key], `the record's own ${key}`).toBe(true);
+      expect(payload.modules[key], `the delegate's ${key}`).toBe(false);
+    }
+    expect(payload.cycleTrackingEnabled).toBe(false);
+
+    // The granted section still answers honestly, or the mask would be a
+    // blackout rather than a scope.
+    for (const key of ["sleep", "glucose", "workouts", "recovery"] as const) {
+      expect(payload.modules[key], `the delegate's ${key}`).toBe(true);
+    }
+  });
+
+  it("leaves an unscoped grant reading the record's true map", async () => {
+    // `scope: null` is the whole record, which every grant written before
+    // scoping carries. Masking it would break the case the record scoping was
+    // built for.
+    const { owner } = await delegateInside(null);
+
+    const payload = await readMe();
+    expect(payload.accountAccess.active?.sections).toBeNull();
+
+    const { resolveModuleMap } = await import("@/lib/modules/gate");
+    expect(payload.modules).toEqual(await resolveModuleMap(owner.id));
+    expect(payload.cycleTrackingEnabled).toBe(true);
   });
 });
