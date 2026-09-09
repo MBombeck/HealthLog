@@ -101,7 +101,11 @@ jobs:
   dependency-audit:
     name: Dependency Audit
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
+    # Runs on pull requests too, but advisory: an advisory published against a
+    # dependency the branch did not touch must not block the branch. The push
+    # run on main and the daily schedule stay blocking, and a tag is only ever
+    # cut from a main whose push run is green.
+    continue-on-error: ${{ github.event_name == 'pull_request' }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
