@@ -1,0 +1,63 @@
+# Synthetic post-deploy journey.
+#
+# `post-publish-verify.yml` proves the published image boots. This one
+# proves that on a running instance a person can sign in, write a reading
+# and read it back, and that the instance serves the version that was just
+# published.
+#
+# Deliberately manual for now: the maintainer picks the target instance and
+# creates the two repository secrets. Nothing calls this from the deploy
+# path yet.
+#
+# Secrets, both required:
+#   SYNTHETIC_USERNAME — the probe account's username or email
+#   SYNTHETIC_PASSWORD — its password
+#
+# The probe account must be password-only (the password flow stops at the
+# MFA ticket, which the script reports as a configuration failure), and the
+# target must not be the demo instance, where every mutation is blocked.
+name: Synthetic journey
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Instance to walk, e.g. https://review.healthlog.dev
+        required: true
+        type: string
+      expected_version:
+        description: Version the instance must serve, e.g. v1.38.13
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  journey:
+    name: Sign in, write a reading, read it back
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      # A check that cannot fail is worse than none. The self-test walks the
+      # journey against an in-process instance once per leg with that leg
+      # broken, and fails if any of them still comes back green.
+      - name: Prove the check can go red
+        run: node scripts/synthetic-journey.mjs --self-test
+
+      # Every input and secret rides an env var — never interpolated into
+      # the shell command.
+      - name: Walk the journey
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+          SYNTHETIC_USERNAME: ${{ secrets.SYNTHETIC_USERNAME }}
+          SYNTHETIC_PASSWORD: ${{ secrets.SYNTHETIC_PASSWORD }}
+        run: node scripts/synthetic-journey.mjs
