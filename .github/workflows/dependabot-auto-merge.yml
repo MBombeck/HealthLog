@@ -31,6 +31,23 @@ jobs:
 
       - run: pnpm db:generate
 
+      # The hero-geometry check in the unit suite renders the real panel in a
+      # real browser and measures the boxes, and it refuses to skip when CI is
+      # set — a check that skips measures nothing. This job runs the same suite
+      # as the quality job in `security.yml` and needs the same browser: without
+      # it every Dependabot pull request went red on a launch failure that said
+      # nothing about the bump (four of them on 2026-09-06 alone). Headless
+      # shell only, matching that job.
+      - name: Cache Playwright headless shell
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-shell-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-shell-${{ runner.os }}-
+
+      - run: pnpm exec playwright install --only-shell chromium
+
       - run: pnpm test
 
       # Auto-merge is gated on the Dependabot-declared update type:
