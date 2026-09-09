@@ -855,14 +855,21 @@ export async function streamParseExportXml(
         return;
       }
 
-      const mapped = mapAppleHealthEntry({
-        hkIdentifier: hkType,
-        value: parsedValue.value,
-        unit: attrs.unit ?? mapping.hkUnit,
-        startDate: attrs.startDate,
-        endDate: attrs.endDate,
-        sleepStage: parsedValue.sleepStage,
-      });
+      const mapped = mapAppleHealthEntry(
+        {
+          hkIdentifier: hkType,
+          value: parsedValue.value,
+          unit: attrs.unit ?? mapping.hkUnit,
+          startDate: attrs.startDate,
+          endDate: attrs.endDate,
+          sleepStage: parsedValue.sleepStage,
+        },
+        // issue #944 — the archive is the one caller whose unit attribute
+        // is authoritative: Apple writes the account's own display unit on
+        // every quantity `<Record>`, so `km` here means kilometres and the
+        // reading has to be converted before it is stored.
+        { convertRecordUnit: true },
+      );
       if (!mapped) {
         unknown[`${hkType}::map_failed`] =
           (unknown[`${hkType}::map_failed`] ?? 0) + 1;

@@ -58,7 +58,7 @@ const batchEntrySchema = z
       .min(1)
       .max(60)
       .describe(
-        "Apple's `HKUnit` string for `value`. The server converts the reading into the unit it stores the identifier in when the two differ and the factor is known (`km` to `m`, `lb` to `kg`, `degF` to `degC`, and their siblings); a unit the server cannot place leaves the reading untouched.",
+        "Apple's `HKUnit` string for `value`, captured for audit. The server does NOT convert from it: `value` is read in the unit HealthLog stores the identifier in (`m` for walking distance, `kg` for body mass, `kcal` for energy, `degC` for temperature). Send the sample in that unit.",
       ),
     startDate: z.iso.datetime({ offset: true }),
     endDate: z.iso.datetime({ offset: true }),

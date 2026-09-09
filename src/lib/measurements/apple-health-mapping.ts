@@ -54,8 +54,9 @@ export interface AppleHealthMapping {
    * Apple's `export.xml` writes the ACCOUNT's display unit on every
    * quantity `<Record>`, not the unit this table assumes, so
    * `mapAppleHealthEntry()` converts the reading from the record's own
-   * unit into `hkUnit` before `convertToDbUnit` runs. That only works for
-   * a unit `convertHkValue()` knows a factor for. An entry whose `hkUnit`
+   * unit into `hkUnit` before `convertToDbUnit` runs — on the archive
+   * path, which is the caller that opts in. That only works for a unit
+   * `convertHkValue()` knows a factor for. An entry whose `hkUnit`
    * is NOT convertible (a dimensionless count, a pinned event, a
    * logarithmic dB level, a compound rate) must say here why no record
    * unit can change its reading — the structural guard
@@ -1205,10 +1206,12 @@ export interface AppleHealthEntryInput {
   /** Numeric value as Apple delivers it (pre-conversion). */
   value: number;
   /**
-   * Apple's unit string for this reading. issue #944 — the mapper converts
-   * the value from this unit into the table's `hkUnit` when the two differ
-   * and a factor is known (`km` -> `m`, `lb` -> `kg`, `degF` -> `degC`, …);
-   * an unknown or unplaceable unit leaves the reading untouched.
+   * Apple's unit string for this reading, captured for audit.
+   *
+   * Read ONLY when the caller opts in with `convertRecordUnit` — see
+   * `AppleHealthEntryOptions`. Every other caller gets the historical
+   * contract: the field is recorded and the reading is taken to already
+   * be in the table's `hkUnit`.
    */
   unit: string;
   /** ISO timestamp string (e.g. HealthKit `startDate`). */
@@ -1242,6 +1245,33 @@ export interface AppleHealthEntryInput {
    */
   valueMin?: number;
   valueMax?: number;
+}
+
+/**
+ * Per-call options for `mapAppleHealthEntry()`.
+ */
+export interface AppleHealthEntryOptions {
+  /**
+   * Convert the reading out of `input.unit` and into the table's `hkUnit`
+   * before `convertToDbUnit` runs. Default FALSE.
+   *
+   * issue #944 — only the `export.xml` archive path passes `true`, because
+   * only there is the unit attribute known to be authoritative: Apple
+   * stamps every quantity `<Record>` with the ACCOUNT's display unit, so a
+   * metric archive reports walking distance in `km` and the number is
+   * meaningless without it.
+   *
+   * `POST /api/measurements/batch` deliberately does NOT opt in. Its `unit`
+   * is documented as captured-for-audit, not validated, and the native
+   * client's unit strings for the seventeen convertible identifiers are not
+   * pinned by anything in this repository — no fixture, no contract test, no
+   * coordination note. A client that reads a sample in metres and stamps the
+   * person's DISPLAY unit (`km`) into the field would have every walking
+   * distance multiplied by a thousand on ingest. Reading the field there is
+   * a wire change, and a wire change needs the client's strings pinned
+   * first.
+   */
+  convertRecordUnit?: boolean;
 }
 
 /** Output of `mapAppleHealthEntry()`. */
@@ -1283,6 +1313,7 @@ export interface AppleHealthEntryOutput {
  */
 export function mapAppleHealthEntry(
   input: AppleHealthEntryInput,
+  options: AppleHealthEntryOptions = {},
 ): AppleHealthEntryOutput | null {
   const mapping = APPLE_HEALTH_TYPE_MAP[input.hkIdentifier];
   if (!mapping) return null;
@@ -1294,10 +1325,14 @@ export function mapAppleHealthEntry(
   // `hkUnit`, but Apple's `export.xml` stamps each `<Record>` with the
   // ACCOUNT's own display unit: a metric archive reports walking distance
   // in `km`, an imperial one in `mi`, body mass in `lb`, energy in `kJ`.
-  // Normalise the reading into `hkUnit` first; a unit we cannot place
-  // leaves the value untouched (see `convertHkValue`).
+  // The archive path opts in and the reading is normalised into `hkUnit`
+  // first; a unit we cannot place leaves the value untouched (see
+  // `convertHkValue`). Every other caller keeps the identity behaviour —
+  // see `AppleHealthEntryOptions.convertRecordUnit` for why.
   const toHkUnit = (raw: number): number =>
-    convertHkValue(raw, input.unit, mapping.hkUnit) ?? raw;
+    options.convertRecordUnit
+      ? (convertHkValue(raw, input.unit, mapping.hkUnit) ?? raw)
+      : raw;
 
   const value = mapping.convertToDbUnit(toHkUnit(input.value));
 

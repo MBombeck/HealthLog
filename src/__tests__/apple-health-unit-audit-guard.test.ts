@@ -20,6 +20,12 @@
  *      Apple could write would change the reading (a dimensionless count,
  *      a pinned event, a logarithmic dB level, a compound rate).
  *
+ * The conversion is opt-in per caller (`convertRecordUnit`), and only the
+ * archive path opts in: `POST /api/measurements/batch` documents its `unit`
+ * as captured-not-validated and nothing pins the native client's strings.
+ * The last block below holds that boundary, so the batch contract cannot be
+ * widened by accident.
+ *
  * The reason arm alone would be a guard that cannot fail: an entry could
  * declare a convertible unit while the mapper quietly ignored it. The
  * behavioural block below therefore feeds every convertible entry a
@@ -122,8 +128,14 @@ describe("Apple Health mapping — the record's own unit (issue #944)", () => {
         startDate: "2026-05-14T08:00:00.000Z",
         endDate: "2026-05-14T08:30:00.000Z",
       };
-      const native = mapAppleHealthEntry({ ...base, unit: mapping.hkUnit });
-      const foreign = mapAppleHealthEntry({ ...base, unit: sibling! });
+      const native = mapAppleHealthEntry(
+        { ...base, unit: mapping.hkUnit },
+        { convertRecordUnit: true },
+      );
+      const foreign = mapAppleHealthEntry(
+        { ...base, unit: sibling! },
+        { convertRecordUnit: true },
+      );
       expect(native).not.toBeNull();
       expect(foreign).not.toBeNull();
 
@@ -136,14 +148,59 @@ describe("Apple Health mapping — the record's own unit (issue #944)", () => {
   );
 
   it("keeps a unit it cannot place from rescaling the reading", () => {
-    const out = mapAppleHealthEntry({
-      hkIdentifier: "HKQuantityTypeIdentifierDistanceWalkingRunning",
-      value: 1234,
-      unit: "furlong",
-      startDate: "2026-05-14T08:00:00.000Z",
-      endDate: "2026-05-14T08:30:00.000Z",
-    });
+    const out = mapAppleHealthEntry(
+      {
+        hkIdentifier: "HKQuantityTypeIdentifierDistanceWalkingRunning",
+        value: 1234,
+        unit: "furlong",
+        startDate: "2026-05-14T08:00:00.000Z",
+        endDate: "2026-05-14T08:30:00.000Z",
+      },
+      { convertRecordUnit: true },
+    );
     expect(out?.value).toBe(1234);
+  });
+
+  it("leaves the batch path's readings alone whatever unit they name", () => {
+    // The batch contract: `unit` is captured, never read. Every convertible
+    // entry has to behave that way by DEFAULT, or a native client stamping
+    // the person's display unit silently rescales their history.
+    for (const mapping of convertible) {
+      const sibling = siblingUnitFor(mapping.hkUnit);
+      if (!sibling) continue;
+      const base = {
+        hkIdentifier: mapping.hkIdentifier,
+        value: 2,
+        startDate: "2026-05-14T08:00:00.000Z",
+        endDate: "2026-05-14T08:30:00.000Z",
+      };
+      const declared = mapAppleHealthEntry({ ...base, unit: mapping.hkUnit });
+      const foreign = mapAppleHealthEntry({ ...base, unit: sibling });
+      expect(declared).not.toBeNull();
+      expect(
+        foreign!.value,
+        `${mapping.hkIdentifier} rescaled a batch reading from "${sibling}"`,
+      ).toBeCloseTo(declared!.value, 9);
+    }
+  });
+
+  it("has only the archive path opting into the conversion", () => {
+    // A grep, not a proof — but the wire change this pins is exactly the
+    // kind that lands as a one-word argument in an unrelated diff.
+    const optIn = "convertRecordUnit: true";
+    const archive = readFileSync(
+      join(process.cwd(), "src/lib/measurements/import-apple-health-export.ts"),
+      "utf8",
+    );
+    expect(archive).toContain(optIn);
+    const batch = readFileSync(
+      join(process.cwd(), "src/app/api/measurements/batch/route.ts"),
+      "utf8",
+    );
+    expect(
+      batch,
+      "the batch route opted into record-unit conversion",
+    ).not.toContain("convertRecordUnit");
   });
 
   it("leaves the km/mi factors in one shared module", () => {
