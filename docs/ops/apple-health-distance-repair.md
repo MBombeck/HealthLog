@@ -99,6 +99,10 @@ first.
 
 ## Apply
 
+Take a backup first — `docs/ops/backup-restore.md`. The multiply is in place
+and has no reverse operation: once an account is written wrong, the database
+copy you took beforehand is the only way back.
+
 ```bash
 pnpm dlx tsx scripts/repair-apple-health-distance.ts --apply
 ```
