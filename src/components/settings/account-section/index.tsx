@@ -42,6 +42,7 @@ import {
 } from "@/lib/profile/rejected-fields";
 import { FieldError } from "@/components/forms/field-error";
 import {
+  clearRejectedField,
   resolveInitialTimezone,
   statusText,
   type StatusMessage,
@@ -95,8 +96,17 @@ export function AccountSection() {
   // One sentence per field the last save refused, keyed by the schema
   // name the server sent. The banner above the button says a save was
   // partial; these say which value was not stored and why, under the
-  // input holding it. Cleared at the start of every save.
+  // input holding it. Cleared at the start of every save, and per field
+  // as that field is edited.
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // The person is answering the objection; the objection goes away
+  // while they type rather than sitting under a value they already
+  // corrected. The slot is the schema name the server sent, which is
+  // what the sentence under the input is keyed by — the height boxes
+  // hold a `height` draft but name the `heightCm` slot.
+  function clearFieldError(slot: string) {
+    setFieldErrors((prev) => clearRejectedField(prev, slot));
+  }
 
   // v1.23 — passkey + second-factor management moved to the dedicated
   // /settings/security hub so "how I secure my account" reads as one place.
@@ -346,7 +356,10 @@ export function AccountSection() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  clearFieldError("email");
+                }}
                 placeholder={t("auth.emailPlaceholder")}
                 maxLength={320}
                 autoComplete="email"
@@ -364,7 +377,10 @@ export function AccountSection() {
               <NativeSelect
                 id="gender"
                 value={gender}
-                onChange={(e) => setGender(e.target.value)}
+                onChange={(e) => {
+                  setGender(e.target.value);
+                  clearFieldError("gender");
+                }}
                 aria-invalid={fieldErrors.gender ? true : undefined}
                 aria-describedby={
                   fieldErrors.gender ? "gender-error" : undefined
@@ -390,7 +406,10 @@ export function AccountSection() {
                 idPrefix="height"
                 adapter={heightAdapter}
                 value={height}
-                onChange={setHeight}
+                onChange={(next) => {
+                  setHeight(next);
+                  clearFieldError("heightCm");
+                }}
                 enterKeyHint="next"
                 invalid={Boolean(fieldErrors.heightCm)}
                 describedBy={fieldErrors.heightCm ? "height-error" : undefined}
@@ -411,7 +430,10 @@ export function AccountSection() {
               <DateField
                 id="dob"
                 value={dateOfBirth}
-                onChange={setDateOfBirth}
+                onChange={(next) => {
+                  setDateOfBirth(next);
+                  clearFieldError("dateOfBirth");
+                }}
                 max={new Date().toISOString().slice(0, 10)}
                 aria-invalid={fieldErrors.dateOfBirth ? true : undefined}
                 aria-describedby={
@@ -477,7 +499,10 @@ export function AccountSection() {
               <Input
                 id="full-name"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={(e) => {
+                  setFullName(e.target.value);
+                  clearFieldError("fullName");
+                }}
                 placeholder={t("settings.identity.fullNamePlaceholder")}
                 maxLength={120}
                 autoComplete="name"
@@ -496,7 +521,10 @@ export function AccountSection() {
                 <Input
                   id="insurer"
                   value={insurerName}
-                  onChange={(e) => setInsurerName(e.target.value)}
+                  onChange={(e) => {
+                    setInsurerName(e.target.value);
+                    clearFieldError("insurerName");
+                  }}
                   placeholder={t("settings.identity.insurerPlaceholder")}
                   maxLength={120}
                   aria-invalid={fieldErrors.insurerName ? true : undefined}
@@ -516,9 +544,10 @@ export function AccountSection() {
                 <Input
                   id="insurance-number"
                   value={insuranceNumber}
-                  onChange={(e) =>
-                    setInsuranceNumber(e.target.value.toUpperCase())
-                  }
+                  onChange={(e) => {
+                    setInsuranceNumber(e.target.value.toUpperCase());
+                    clearFieldError("insuranceNumber");
+                  }}
                   placeholder="A123456780"
                   maxLength={10}
                   autoCapitalize="characters"
