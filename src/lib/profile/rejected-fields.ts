@@ -92,10 +92,11 @@ const REJECTION_FALLBACK_KEY = "settings.profileRejection.other";
  * twice. Where a field is refused for several reasons at once the first
  * one wins — the others are restatements of the same wrong value.
  *
- * `labelKeys` is accepted for symmetry with
- * `describeRejectedProfileField` and for the caller that wants to know
- * which fields it can actually render; a path the calling screen has no
- * input for still gets an entry, so nothing is dropped on the floor.
+ * No label map is needed: the sentence sits under the input, which
+ * already carries the label, and the key is the schema path so the
+ * calling screen can place it without a rename. A path the screen has
+ * no input for still gets an entry rather than being dropped, so the
+ * caller can decide what to do with it.
  */
 export function describeRejectedProfileFields(
   fields: RejectedProfileField[] | undefined,
