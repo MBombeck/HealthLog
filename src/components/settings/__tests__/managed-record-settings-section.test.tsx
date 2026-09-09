@@ -5,7 +5,10 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { MANAGED_RECORD_SETTINGS_MODULE_DEFAULTS } from "@/lib/record-settings";
 import { ALL_METRICS } from "@/lib/validations/thresholds";
 
-import { ManagedRecordSettingsForm } from "../managed-record-settings-section";
+import {
+  managedModulesPatch,
+  ManagedRecordSettingsForm,
+} from "../managed-record-settings-section";
 
 const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko"] as const;
 
@@ -200,4 +203,61 @@ describe("managed record settings forms", () => {
       expect(insights).not.toContain("settings.sharedRecord");
     },
   );
+});
+
+describe("what a managed Modules save sends", () => {
+  const moduleKeys = Object.keys(MANAGED_RECORD_SETTINGS_MODULE_DEFAULTS);
+
+  /** The form as it stands after somebody flips one switch. */
+  const formWith = (checked: Record<string, boolean>) => {
+    const form = new FormData();
+    for (const [name, on] of Object.entries(checked)) {
+      if (on) form.set(name, "on");
+    }
+    return form;
+  };
+
+  it("omits the cycle flag when only a direct module moved", () => {
+    // The record tracks cycles and the guardian is turning Labs off. Sending
+    // the cycle switch's position here would write the sex-derived default as
+    // an explicit answer and freeze it against a later change of sex.
+    const settings = {
+      modulePreferences: {},
+      cycleTrackingEnabled: true,
+    };
+    const checked = Object.fromEntries(
+      moduleKeys.map((key) => [key, key !== "labs"]),
+    );
+
+    const patch = managedModulesPatch(
+      settings,
+      formWith({ ...checked, cycleTrackingEnabled: true }),
+    );
+
+    expect(patch.modulePreferences.labs).toBe(false);
+    expect("cycleTrackingEnabled" in patch).toBe(false);
+  });
+
+  it("sends the cycle flag when the cycle switch itself moved", () => {
+    const patch = managedModulesPatch(
+      { modulePreferences: {}, cycleTrackingEnabled: true },
+      formWith(Object.fromEntries(moduleKeys.map((key) => [key, true]))),
+    );
+
+    expect(patch.cycleTrackingEnabled).toBe(false);
+  });
+
+  it("sends the cycle flag when a record with none turns it on", () => {
+    // `cycleTrackingEnabled` absent is the record that never answered; the
+    // switch opens off, so turning it on is a change and has to ride.
+    const patch = managedModulesPatch(
+      { modulePreferences: {} },
+      formWith({
+        ...Object.fromEntries(moduleKeys.map((key) => [key, true])),
+        cycleTrackingEnabled: true,
+      }),
+    );
+
+    expect(patch.cycleTrackingEnabled).toBe(true);
+  });
 });

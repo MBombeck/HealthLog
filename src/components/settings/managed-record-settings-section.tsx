@@ -484,6 +484,49 @@ function ProfileSettingsForm({
   );
 }
 
+/**
+ * What a Modules save actually sends.
+ *
+ * The direct modules ride along whether or not they moved — they are one blob
+ * the route merges, and a key that did not change writes the value it already
+ * had. `cycleTrackingEnabled` is not one of them: it is a DELEGATED module
+ * whose column the cycle gate honours OVER the sex-derived default, so sending
+ * the switch's current position on every save freezes the derivation. A record
+ * created with no recorded sex derives cycle OFF; a guardian who turns Labs off
+ * and saves would write that OFF as an explicit answer, and the record's sex
+ * being set to FEMALE afterwards would then leave cycle off with nothing on
+ * screen to say why. It also put `cycleTrackingEnabled` in the record's audit
+ * trail on every save of any module.
+ *
+ * So it is sent only when it differs from the value the form opened on, which
+ * is what the managed-record edit form's `managedProfileEditPatch` already does
+ * for its own five fields.
+ *
+ * Exported and pure because it is the decision this form makes, and a decision
+ * about what NOT to send is invisible in the rendered markup.
+ */
+export function managedModulesPatch(
+  settings: Record<string, unknown>,
+  form: FormData,
+): {
+  modulePreferences: Record<string, boolean>;
+  cycleTrackingEnabled?: boolean;
+} {
+  const cycleTrackingEnabled = form.get("cycleTrackingEnabled") === "on";
+  // The same expression the switch is seeded from, so "differs from what the
+  // form opened on" is one statement rather than two that can drift.
+  const loaded = settings.cycleTrackingEnabled === true;
+  return {
+    modulePreferences: Object.fromEntries(
+      Object.keys(MANAGED_RECORD_SETTINGS_MODULE_DEFAULTS).map((key) => [
+        key,
+        form.get(key) === "on",
+      ]),
+    ),
+    ...(cycleTrackingEnabled !== loaded ? { cycleTrackingEnabled } : {}),
+  };
+}
+
 function ModulesSettingsForm({
   settings,
   disabled,
@@ -500,13 +543,7 @@ function ModulesSettingsForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    onSave({
-      modulePreferences: Object.fromEntries(
-        entries.map(([key]) => [key, form.get(key) === "on"]),
-      ),
-      cycleTrackingEnabled: form.get("cycleTrackingEnabled") === "on",
-    });
+    onSave(managedModulesPatch(settings, new FormData(event.currentTarget)));
   }
 
   return (
