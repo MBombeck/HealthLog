@@ -4834,6 +4834,7 @@ paths:
           schema:
             type: string
           required: true
+        - *a6
       requestBody:
         required: true
         content:
@@ -4855,6 +4856,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
         "422": *a4
         "429":
           description: More than 30 side-effect writes in the trailing minute for this ACTOR.
@@ -5213,6 +5215,8 @@ paths:
         medications.mirror.limit_exceeded`) once the caller already holds 30 medications mirrored from the same external
         source; an idempotent re-post of a medication already mirrored is unaffected, and native creates are never
         gated.
+      parameters:
+        - *a6
       requestBody:
         required: true
         content:
@@ -5228,6 +5232,7 @@ paths:
                 $ref: "#/components/schemas/CreateMedicationResponse"
         "401": *a1
         "403": *a8
+        "409": *a7
         "422": *a4
         "429": *a5
   /api/medications/layout:
@@ -5563,6 +5568,7 @@ paths:
           schema:
             type: string
           required: true
+        - *a6
       requestBody:
         required: true
         content:
@@ -5584,6 +5590,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
         "422": *a4
         "429": *a5
   /api/medications/{id}/inventory/{itemId}:
