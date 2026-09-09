@@ -20,9 +20,27 @@ vi.mock("next/navigation", () => ({
 const mockModulesRef: { value: Record<string, boolean> | undefined } = {
   value: undefined,
 };
+// v1.37.0 — the shell also filters by which record the browser is inside.
+// Unlike the module gate above, that filter is NOT hydration-deferred: the
+// server has already resolved which record is active, so it applies on the SSR
+// pass and is assertable from a static render.
+const mockActiveRecordRef: {
+  value: { recordKind: "managed" | "shared"; level: string } | null;
+} = { value: null };
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
-    user: { id: "u1", role: "USER", modules: mockModulesRef.value },
+    user: {
+      id: "u1",
+      role: "USER",
+      modules: mockModulesRef.value,
+      accountAccess: mockActiveRecordRef.value
+        ? {
+            accounts: [mockActiveRecordRef.value],
+            active: mockActiveRecordRef.value,
+            canSwitch: true,
+          }
+        : null,
+    },
     isAuthenticated: true,
     isLoading: false,
     refetch: vi.fn(),
@@ -42,9 +60,11 @@ function renderShell(props: {
   pathname?: string;
   locale?: "en" | "de";
   modules?: Record<string, boolean>;
+  activeRecord?: { recordKind: "managed" | "shared"; level: string } | null;
 }) {
   mockPathnameRef.value = props.pathname ?? "/settings/account";
   mockModulesRef.value = props.modules;
+  mockActiveRecordRef.value = props.activeRecord ?? null;
   return renderToStaticMarkup(
     <I18nProvider initialLocale={props.locale ?? "en"}>
       <SettingsShell active={props.active}>
@@ -325,6 +345,39 @@ describe("<SettingsShell>", () => {
       modules: { doctorReport: false },
     });
     expect(optedOut).toContain('href="/settings/gesundheitsakte"');
+  });
+
+  describe("inside somebody else's record", () => {
+    /**
+     * #939 — a guardian could turn a module off for the profile they look
+     * after and had to find the page by URL to do it. The section is
+     * classified `managed-guardian`, which is what the shell offers a managed
+     * record; asserting it here is what stops a future narrowing of the filter
+     * from silently taking the destination away again.
+     */
+    it("offers the Modules destination to a guardian on a managed record", () => {
+      const html = renderShell({
+        active: "account",
+        activeRecord: { recordKind: "managed", level: "manage" },
+      });
+      expect(html).toContain('href="/settings/modules"');
+      // Its own configuration is not the record's, and stays away.
+      expect(html).not.toContain('href="/settings/security"');
+    });
+
+    it("does not offer it to an adult delegate holding MANAGE", () => {
+      // A delegate manages somebody's health record, not their account:
+      // modules, thresholds and notification routing stay with the owner.
+      // Integrations remains status-only on a managed record, and unreachable
+      // here — both are `managed-guardian`, which an adult record never opens.
+      const html = renderShell({
+        active: "account",
+        activeRecord: { recordKind: "shared", level: "manage" },
+      });
+      expect(html).not.toContain('href="/settings/modules"');
+      expect(html).not.toContain('href="/settings/integrations"');
+      expect(html).toContain('href="/settings/anamnesis"');
+    });
   });
 
   it("falls back to `account` when the pathname doesn't match a known slug", () => {

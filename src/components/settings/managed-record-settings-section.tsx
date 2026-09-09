@@ -505,6 +505,7 @@ function ModulesSettingsForm({
       modulePreferences: Object.fromEntries(
         entries.map(([key]) => [key, form.get(key) === "on"]),
       ),
+      cycleTrackingEnabled: form.get("cycleTrackingEnabled") === "on",
     });
   }
 
@@ -523,6 +524,17 @@ function ModulesSettingsForm({
           disabled={disabled}
         />
       ))}
+      {/* v1.38.14 (#939) — Cycle sits below the rest because it is not one of
+          them: it is a DELEGATED module, so its state lives in the record's own
+          cycle profile rather than in the module blob, and it had no row here
+          at all. A guardian could not turn it off for a record whose sex says
+          it should be on, which is the case the issue was opened about. */}
+      <ManagedSwitchRow
+        name="cycleTrackingEnabled"
+        label={t(MODULE_REGISTRY.cycle.labelKey)}
+        defaultChecked={settings.cycleTrackingEnabled === true}
+        disabled={disabled}
+      />
       <FormFooter disabled={disabled} label={saveLabel} error={error} />
     </form>
   );

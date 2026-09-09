@@ -30,7 +30,7 @@ export const MANAGED_RECORD_SETTINGS_FIELD_ALLOWLIST = {
     "timeFormat",
     "dateFormat",
   ],
-  modules: ["modulePreferences"],
+  modules: ["modulePreferences", "cycleTrackingEnabled"],
   notifications: ["moodReminderEnabled", "notificationPreferences"],
   thresholds: ["overrides"],
   coach: ["disableCoach", "preferences"],
@@ -140,7 +140,31 @@ const managedCoachPreferencesSchema = coachPrefsSchema
  */
 export const MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS = {
   profile: profilePatchSchema,
-  modules: z.object({ modulePreferences: modulePrefsPatchSchema }).strict(),
+  /**
+   * Two fields because the module foundation has two kinds of key, and only
+   * one of them lives in `modulePreferencesJson`.
+   *
+   * `cycle` is a DELEGATED module: its user-layer state is owned by
+   * `CycleProfile.cycleTrackingEnabled` (NULL derives from `User.gender`), and
+   * `modulePreferencesJson.cycle` is ignored on purpose — which is why
+   * `modulePrefsPatchSchema` refuses the key. A guardian therefore had no way
+   * to turn Cycle off for a record whose sex says it should be on, and no row
+   * for it in the list either: it is simply not a writable key (#939). Naming
+   * the real column here writes the real source of truth rather than minting a
+   * second one that the gate would ignore.
+   *
+   * Both optional so a client may send either alone; at least one required, so
+   * an empty body is a refusal rather than a save that changed nothing.
+   */
+  modules: z
+    .object({
+      modulePreferences: modulePrefsPatchSchema.optional(),
+      cycleTrackingEnabled: z.boolean().optional(),
+    })
+    .strict()
+    .refine((patch) => Object.values(patch).some((v) => v !== undefined), {
+      message: "Name at least one field to change",
+    }),
   notifications: z
     .object({
       moodReminderEnabled: z.boolean().optional(),
