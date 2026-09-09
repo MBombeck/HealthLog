@@ -42,6 +42,7 @@ import {
 } from "@/lib/measurements/drain-per-sample-cumulative";
 import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
 import { resolveHkWorkoutSportType } from "@/lib/measurements/hk-workout-activity-type-map";
+import { hkDistanceToMetres } from "@/lib/measurements/hk-units";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
@@ -947,14 +948,12 @@ export async function streamParseExportXml(
       const totalDistance = Number.parseFloat(attrs.totalDistance ?? "");
       const totalEnergy = Number.parseFloat(attrs.totalEnergyBurned ?? "");
       const distanceUnit = attrs.totalDistanceUnit ?? "";
-      // Apple ships km for HKWorkout.totalDistance by default; metres
-      // is the canonical DB unit. Convert when the unit is km.
+      // Apple ships the ACCOUNT's own length unit on HKWorkout.totalDistance
+      // (km for a metric account, mi for an imperial one); metres is the
+      // canonical DB unit. issue #944 — the same conversion the `<Record>`
+      // path now runs, so the two can never drift apart again.
       const distanceM = Number.isFinite(totalDistance)
-        ? distanceUnit === "km"
-          ? totalDistance * 1000
-          : distanceUnit === "mi"
-            ? totalDistance * 1609.344
-            : totalDistance
+        ? hkDistanceToMetres(totalDistance, distanceUnit)
         : null;
 
       const externalId = hashSampleKey(
