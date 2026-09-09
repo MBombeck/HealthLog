@@ -24,7 +24,9 @@
  *   3. write   — `POST /api/measurements` with an `Idempotency-Key`.
  *   4. read    — `GET /api/measurements?type=WEIGHT&limit=1` and assert
  *                the row's id, value, unit and source.
- *   5. delete  — `DELETE /api/measurements/{id}` so the account stays clean.
+ *   5. delete  — `DELETE /api/measurements/{id}`, then a direct `GET` on
+ *                the same id that must 404, so the account stays clean and
+ *                the leg proves it rather than trusting a 200.
  *
  * Legs 3 to 5 run inside a `try`/`finally`: from the write on, the run owns
  * a row on a real account, and a red read leg must not leave it behind. The
@@ -340,6 +342,16 @@ async function removeReading(baseUrl, jar, writtenId) {
     jar,
   });
   expectStatus(result, 200, "delete");
+  // A 200 is the instance's claim, not the outcome. An instance that answers
+  // 200 and keeps the row would have printed "account left clean" — so read
+  // the id back and require the 404.
+  const gone = await call(baseUrl, `/api/measurements/${writtenId}`, { jar });
+  if (gone.status !== 404) {
+    throw new LegFailure(
+      `delete: ${writtenId} still reads back after a 200 delete`,
+      { status: gone.status, body: gone.text },
+    );
+  }
   return { detail: "account left clean" };
 }
 
@@ -592,8 +604,24 @@ function startMockInstance(breaks) {
       if (breaks === "delete") {
         return send(404, { data: null, error: "Measurement not found" });
       }
+      // 200 and the row still there — the status alone cannot catch this,
+      // only the read-back the delete leg does afterwards.
+      if (breaks === "delete: kept") {
+        return send(200, { data: { success: true }, error: null });
+      }
       rows.delete(url.pathname.split("/").pop());
       return send(200, { data: { success: true }, error: null });
+    }
+
+    if (
+      url.pathname.startsWith("/api/measurements/") &&
+      request.method === "GET"
+    ) {
+      const row = rows.get(url.pathname.split("/").pop());
+      if (!row) {
+        return send(404, { data: null, error: "Measurement not found" });
+      }
+      return send(200, { data: row, error: null });
     }
 
     send(404, { data: null, error: "Not found" });
@@ -682,6 +710,7 @@ async function selfTest() {
       clean: true,
     },
     { breaks: "delete", expect: "fail", leg: "delete" },
+    { breaks: "delete: kept", expect: "fail", leg: "delete" },
   ];
 
   let failures = selfTestHostAllowlist();
