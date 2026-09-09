@@ -21350,6 +21350,9 @@ components:
           type: string
           minLength: 1
           maxLength: 60
+          description: Apple's `HKUnit` string for `value`. The server converts the reading into the unit it stores the identifier
+            in when the two differ and the factor is known (`km` to `m`, `lb` to `kg`, `degF` to `degC`, and their
+            siblings); a unit the server cannot place leaves the reading untouched.
         startDate:
           type: string
           format: date-time

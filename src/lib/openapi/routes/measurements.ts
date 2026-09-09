@@ -53,7 +53,13 @@ const batchEntrySchema = z
       .describe(
         "v1.19.2 (iOS #34 extension) — the bucket's MAXIMUM bpm for a 10-minute heart-rate bucket (see `externalId`). Persisted ONLY on a well-formed `stats:HKQuantityTypeIdentifierHeartRate:<bucket-start>` row; ignored (stored null) on every other entry. Omit on a pre-v1.19.2 client — the bucket keeps the avg-only contract.",
       ),
-    unit: z.string().min(1).max(60),
+    unit: z
+      .string()
+      .min(1)
+      .max(60)
+      .describe(
+        "Apple's `HKUnit` string for `value`. The server converts the reading into the unit it stores the identifier in when the two differ and the factor is known (`km` to `m`, `lb` to `kg`, `degF` to `degC`, and their siblings); a unit the server cannot place leaves the reading untouched.",
+      ),
     startDate: z.iso.datetime({ offset: true }),
     endDate: z.iso.datetime({ offset: true }),
     sleepStage: z
