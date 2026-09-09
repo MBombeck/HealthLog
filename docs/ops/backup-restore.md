@@ -54,8 +54,10 @@ Cloudflare R2 the **Object Read & Write** token already covers all three.
 
 ## Bucket lifecycle (recommended)
 
-The worker prunes objects older than `BACKUP_RETENTION_DAYS`, but the
-storage provider's lifecycle rule is the canonical safety net:
+The worker never deletes a backup object: its grant covers PutObject,
+GetObject and AbortMultipartUpload only, so a compromised worker cannot
+wipe the history. Expiry is the storage provider's lifecycle rule, set to
+match `BACKUP_RETENTION_DAYS`:
 
 ```
 Filter: "" (all objects)
