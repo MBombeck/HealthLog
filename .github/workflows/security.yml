@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Daily, 05:47 UTC. Carries the dependency audit only — every other job
+    # here answers "is this change safe" and has nothing to say about a tree
+    # nobody touched. See the note on `dependency-audit`.
+    - cron: "47 5 * * *"
 
 permissions:
   contents: read
@@ -13,6 +18,7 @@ jobs:
   quality:
     name: Lint, Typecheck & Test
     runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -81,9 +87,21 @@ jobs:
           fi
           echo "::notice::OpenAPI spec in sync with Zod source schemas."
 
+  # Not on pull requests. `pnpm audit` answers a question about the published
+  # advisory database, not about the diff: the same lockfile passes on Monday
+  # and fails on Tuesday because someone else published, and the branch that
+  # goes red changed nothing. Seventeen of the forty-one failures this workflow
+  # produced in thirty days were exactly that, and a gate that fails for
+  # reasons the author cannot act on is a gate people learn to re-run rather
+  # than read. It runs on every push to `main` and once a day on the schedule
+  # above, which is the cadence the question actually has. What ships is still
+  # gated: `docker-security` scans the built image on every push to `main`, and
+  # `trivy.yml` scans the lockfile (dev dependencies included) and the
+  # published image daily.
   dependency-audit:
     name: Dependency Audit
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -109,6 +127,7 @@ jobs:
   secret-scan:
     name: Secret Scanning
     runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

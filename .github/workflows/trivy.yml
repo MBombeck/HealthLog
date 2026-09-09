@@ -4,7 +4,7 @@ name: Trivy Scheduled Scan
 #
 # What already exists and is NOT repeated here:
 #   - `security.yml` → `dependency-audit` runs `pnpm audit --prod` on every
-#     push and pull request, blocking on HIGH/CRITICAL.
+#     push to `main` and once a day, blocking on HIGH/CRITICAL.
 #   - `security.yml` → `docker-security` builds the image on a push to `main`
 #     and runs `trivy image` against it, blocking on HIGH/CRITICAL.
 #
