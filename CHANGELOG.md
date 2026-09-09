@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.38.13] — 2026-09-09
+
+A guardian acting on a managed profile gets the add, edit and delete
+controls the server has accepted since v1.37, decided per domain and
+published by the server. Reported by @sreeramachandramurthy in #939.
+
+### Fixed
+
+- **Managed profiles: the controls the routes accept are shown again.** A
+  person acting on a managed profile, or on a record shared with them at the
+  manage level, saw no way to add or change anything on mood, wellbeing
+  check-ins, visits, allergies, family history, labs and more, although the
+  server accepted those writes. The client hard-wired `canManage` to false for
+  every shared record, a hold-back from the release that introduced managed
+  profiles that was never lifted. It is lifted per domain: a table records
+  which share domains accept delegated writes at `write` and at `manage`,
+  frozen by a structural test that reads every API route and fails on drift;
+  every entry in the account access list on `/api/auth/me` now carries
+  `writableDomains` and `manageableDomains` (additive, existing clients
+  ignore them); and every surface asks for its own domain. Documents cannot
+  be delegated at any level, so the documents page tells a guardian that only
+  the record owner can add documents instead of showing an empty slot. Module
+  switches per managed profile, editing a profile after creation and asking
+  for sex at creation are still open in #939 and follow as one piece.
+
 ## [1.38.12] — 2026-09-09
 
 A dependency release: the image and the lockfile stop carrying twelve
