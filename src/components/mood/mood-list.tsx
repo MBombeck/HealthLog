@@ -177,7 +177,8 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
   const { isAuthenticated } = useAuth();
   // v1.36.x — mood is not a delegated verb. Inside somebody else's record the
   // list stays readable and every control that would change it is absent.
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageMind = canManageDomain("mind");
   const queryClient = useQueryClient();
   // URL-owned filter state (the documents-vault pattern): mood, source and
   // date range parse from `?mood&source&from&to` and every change writes back
@@ -721,7 +722,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                 >
                   {t("mood.emptyResetFilter")}
                 </Button>
-              ) : onAddFirst && canManage ? (
+              ) : onAddFirst && canManageMind ? (
                 <Button size="sm" onClick={onAddFirst}>
                   <Plus className="h-4 w-4" />
                   {t("mood.emptyAddFirst")}
@@ -747,7 +748,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                   <TableRow>
                     <TableHead className="w-10 pl-4">
                       {/* v1.15.13 — select-all-on-page header checkbox. */}
-                      {canManage && (
+                      {canManageMind && (
                         <Checkbox
                           checked={
                             selectAll === "all"
@@ -800,7 +801,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                         data-state={isSelected ? "selected" : undefined}
                       >
                         <TableCell className="pl-4">
-                          {canManage && (
+                          {canManageMind && (
                             <Checkbox
                               checked={isSelected}
                               onCheckedChange={() => onToggleRow(entry.id)}
@@ -844,7 +845,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                         </TableCell>
                         <TableCell className="pr-4 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {canManage && (
+                            {canManageMind && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -856,6 +857,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                               </Button>
                             )}
                             <DeleteButton
+                              domain="mind"
                               onConfirm={() => deleteMutation.mutate(entry.id)}
                               title={t("mood.deleteConfirmTitle")}
                               description={t("mood.deleteConfirmDescription")}
@@ -898,7 +900,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                         stays the single control and owns the 44px hit area
                         via an `after` hit-slop (clicks on a pseudo-element
                         hit-test against its host button). */}
-                      {canManage && (
+                      {canManageMind && (
                         <div className="flex size-11 shrink-0 items-center justify-center">
                           <Checkbox
                             checked={isSelected}
@@ -945,7 +947,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                         and delete actions meet WCAG 2.5.5 on touch
                         devices. The desktop table keeps its denser
                         h-8 w-8 since pointer targets allow it. */}
-                      {canManage && (
+                      {canManageMind && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -957,6 +959,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
                         </Button>
                       )}
                       <DeleteButton
+                        domain="mind"
                         onConfirm={() => deleteMutation.mutate(entry.id)}
                         iconClassName="h-4 w-4"
                         title={t("mood.deleteConfirmTitle")}
@@ -972,6 +975,7 @@ export function MoodList({ onAddFirst }: MoodListProps = {}) {
 
         {/* v1.15.13 — page-scoped multi-select action bar. */}
         <SelectionActionBar
+          domain="mind"
           count={selectedOnPage}
           onClear={clearSelection}
           onConfirmDelete={onConfirmBulkDelete}

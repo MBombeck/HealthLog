@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useTranslations } from "@/lib/i18n/context";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import type { ShareDomain } from "@/lib/sharing/scope";
 
 /**
  * Selection action bar for the data-management lists (measurements +
@@ -31,10 +32,13 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
  * The confirm copy is passed in because the title/body differ per surface
  * (measurements vs mood) and the count is interpolated by the caller.
  *
- * v1.36.x — bulk delete is the owner's alone at every grant level, so the bar
- * is absent inside somebody else's record. The row checkboxes that feed it are
- * dropped at their lists for the same reason; this guard is the backstop, so a
- * list that forgets cannot leave a delete button floating over the page.
+ * v1.36.x — bulk delete is a MANAGE verb, so the bar is absent inside somebody
+ * else's record below that level. The row checkboxes that feed it are dropped
+ * at their lists for the same reason; this guard is the backstop, so a list
+ * that forgets cannot leave a delete button floating over the page.
+ *
+ * v1.38.12 — the caller names the section its bulk route answers under, and
+ * the bar asks `canManageDomain` for it; `null` marks an owner-only route.
  */
 export function SelectionActionBar({
   count,
@@ -43,7 +47,10 @@ export function SelectionActionBar({
   isDeleting,
   confirmTitle,
   confirmBody,
+  domain,
 }: {
+  /** The section the bulk-delete route answers under, or `null` for owner-only. */
+  domain: ShareDomain | null;
   count: number;
   onClear: () => void;
   onConfirmDelete: () => void;
@@ -52,9 +59,10 @@ export function SelectionActionBar({
   confirmBody: string;
 }) {
   const { t } = useTranslations();
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
+  const allowed = domain === null ? !inSharedRecord : canManageDomain(domain);
 
-  if (count <= 0 || !canManage) return null;
+  if (count <= 0 || !allowed) return null;
 
   return (
     <div

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { sheetBodyHasUnsavedInput } from "@/components/dashboard/quick-entry-sheets";
 import { useTranslations } from "@/lib/i18n/context";
+import type { ShareDomain } from "@/lib/sharing/scope";
 import {
   useRecordCapabilities,
   type RecordCapabilities,
@@ -63,8 +64,20 @@ const DELEGABLE_CAPTURE_KINDS: ReadonlySet<CaptureKind> = new Set([
   "medication",
 ]);
 
+/**
+ * v1.38.12 — the section each capture surface writes to. A MANAGE grant that
+ * reaches the section's routes is offered the surface; a mood entry is a
+ * MANAGE create under `mind`, so a guardian gets it and a WRITE delegate does
+ * not.
+ */
+const CAPTURE_KIND_DOMAIN: Readonly<Record<CaptureKind, ShareDomain>> = {
+  measurement: "measurements",
+  medication: "medications",
+  mood: "mind",
+};
+
 /** The order the chooser lists them in. */
-const CAPTURE_KIND_ORDER: ReadonlyArray<CaptureKind> = [
+export const CAPTURE_KIND_ORDER: ReadonlyArray<CaptureKind> = [
   "measurement",
   "medication",
   "mood",
@@ -104,11 +117,11 @@ export function admittedCaptureKind(
  * cannot tap the button that opens it.
  */
 export function visibleCaptureKinds(
-  caps: Pick<RecordCapabilities, "canAdd" | "canManage">,
+  caps: Pick<RecordCapabilities, "canAdd" | "canManageDomain">,
   kinds: ReadonlyArray<CaptureKind>,
 ): CaptureKind[] {
   return kinds.filter((kind) => {
-    if (caps.canManage) return true;
+    if (caps.canManageDomain(CAPTURE_KIND_DOMAIN[kind])) return true;
     return caps.canAdd && DELEGABLE_CAPTURE_KINDS.has(kind);
   });
 }

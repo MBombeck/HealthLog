@@ -9548,6 +9548,7 @@
     "title": "Documents",
     "subtitle": "Chaque courrier, compte rendu et scan au même endroit, consultable — chiffré au repos.",
     "pageUpload": "Téléverser",
+    "ownerOnlyUpload": "Seul le titulaire du dossier peut ajouter des documents.",
     "kind": {
       "DOCTOR_REPORT": "Compte rendu médical",
       "DISCHARGE_LETTER": "Lettre de sortie",

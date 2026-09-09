@@ -63,7 +63,8 @@ export function IntakeHistoryEditable({
 }: IntakeHistoryEditableProps) {
   const { t } = useTranslations();
   // v1.36.x — bulk-deleting recorded doses is the owner's alone.
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageMedications = canManageDomain("medications");
   const queryClient = useQueryClient();
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -135,7 +136,7 @@ export function IntakeHistoryEditable({
   return (
     <>
       <div className="space-y-3" data-slot="intake-history-editable-body">
-        {canManage && selected.size > 0 && (
+        {canManageMedications && selected.size > 0 && (
           <div
             className="border-border bg-muted/40 flex flex-wrap items-center justify-between gap-2 rounded-md border p-2"
             role="region"

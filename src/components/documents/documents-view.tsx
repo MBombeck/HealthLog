@@ -241,8 +241,10 @@ export function DocumentsView() {
   // v1.36.x — uploading a document, filing it, sharing it and asking the AI
   // about it are none of them delegated verbs. Inside somebody else's record
   // the vault reads and nothing more: no upload path, no selection, no bulk
-  // bar, no corpus backfill.
-  const { canManage, inSharedRecord, sections } = useRecordCapabilities();
+  // bar, no corpus backfill. `canManageDomain("documents")` says so from the
+  // server's table, and answers false under every grant today.
+  const { canManageDomain, inSharedRecord, sections } = useRecordCapabilities();
+  const canManageDocuments = canManageDomain("documents");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -424,7 +426,9 @@ export function DocumentsView() {
     },
     [episodeIdFilter, t],
   );
-  const { dropActive } = usePageFileDrop(canManage ? enqueueFiles : undefined);
+  const { dropActive } = usePageFileDrop(
+    canManageDocuments ? enqueueFiles : undefined,
+  );
 
   const episodes = useIllnessEpisodes(
     true,
@@ -439,7 +443,7 @@ export function DocumentsView() {
   const contentIndex = usage.data?.contentIndex;
   const canIndexContent = contentIndex?.enabled ?? false;
   const showIndexAll =
-    canManage &&
+    canManageDocuments &&
     canIndexContent &&
     contentIndex !== undefined &&
     contentIndex.totalCount > 0 &&
@@ -872,7 +876,7 @@ export function DocumentsView() {
         title={t("documents.title")}
         description={t("documents.subtitle")}
         actions={
-          canManage ? (
+          canManageDocuments ? (
             <Button
               className="min-h-11 sm:min-h-9"
               onClick={() => uploadInputRef.current?.click()}
@@ -884,12 +888,22 @@ export function DocumentsView() {
         }
       />
 
-      {canManage && (
+      {canManageDocuments && (
         <UploadZone
           usage={usage.data}
           inputRef={uploadInputRef}
           onFiles={enqueueFiles}
         />
+      )}
+      {inSharedRecord && !canManageDocuments && (
+        // Where the upload zone would be: the one empty space a person acting
+        // for somebody else would otherwise search a control in.
+        <p
+          className="text-muted-foreground text-sm"
+          data-slot="documents-owner-only"
+        >
+          {t("documents.ownerOnlyUpload")}
+        </p>
       )}
 
       <DocumentFilterBar
@@ -932,7 +946,7 @@ export function DocumentsView() {
           description={t("documents.empty.description")}
           ctaSize="lg"
           action={
-            canManage ? (
+            canManageDocuments ? (
               <Button
                 className="min-h-11 sm:min-h-9"
                 onClick={() => uploadInputRef.current?.click()}
@@ -963,9 +977,9 @@ export function DocumentsView() {
           isFetchingNextPage={list.isFetchingNextPage}
           onLoadMore={() => void list.fetchNextPage()}
           selectedIds={selectedIds}
-          onToggleSelected={canManage ? toggleSelected : undefined}
+          onToggleSelected={canManageDocuments ? toggleSelected : undefined}
           onOpen={openDetail}
-          onDelete={canManage ? (id) => deleteBulk([id]) : undefined}
+          onDelete={canManageDocuments ? (id) => deleteBulk([id]) : undefined}
           highlightId={upload.highlightId}
           onPrefetch={prefetchDetail}
         />
@@ -979,7 +993,7 @@ export function DocumentsView() {
         contentIndexEnabled={usage.data?.contentIndex.enabled}
       />
 
-      {canManage && selectedIds.size > 0 ? (
+      {canManageDocuments && selectedIds.size > 0 ? (
         <DocumentBulkBar
           selectedCount={selectedIds.size}
           episodes={(episodes.data ?? []).map((e) => ({

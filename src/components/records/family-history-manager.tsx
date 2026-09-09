@@ -91,6 +91,7 @@ export function FamilyHistoryManager() {
           <Pencil className="h-4 w-4" />
         </Button>
         <DeleteButton
+          domain="profile"
           onConfirm={() => deleteMutation.mutate(row.id)}
           title={t("records.family.deleteConfirmTitle")}
           description={t("records.family.deleteConfirmDescription")}

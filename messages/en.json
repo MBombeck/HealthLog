@@ -9548,6 +9548,7 @@
     "title": "Documents",
     "subtitle": "Every letter, report, and scan in one searchable place — encrypted at rest.",
     "pageUpload": "Upload",
+    "ownerOnlyUpload": "Documents can only be added by the record owner.",
     "kind": {
       "DOCTOR_REPORT": "Doctor report",
       "DISCHARGE_LETTER": "Discharge letter",

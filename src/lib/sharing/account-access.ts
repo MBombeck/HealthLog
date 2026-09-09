@@ -42,6 +42,7 @@ import type {
   AccountAccessEntry,
   AccountAccessLevel,
 } from "@/lib/sharing/account-access-view";
+import { delegatedDomains } from "@/lib/sharing/domain-write-support";
 import { resolveGrantSections } from "@/lib/sharing/grant-view";
 import { grantAllows, isGrantActive } from "@/lib/sharing/grants";
 import type { AccountGrantAccess } from "@/generated/prisma/client";
@@ -126,6 +127,7 @@ export async function resolveAccountAccess(auth: {
       // clients that have not learned the canonical level. `level` names the
       // complete three-level contract.
       const level = LEVEL[grant.access];
+      const sections = resolveGrantSections(grant.scopeJson);
       return {
         accountId: grant.grantor.id,
         username: grant.grantor.username,
@@ -135,8 +137,14 @@ export async function resolveAccountAccess(auth: {
         level,
         recordKind:
           grant.grantor.managedProfileAt === null ? "shared" : "managed",
-        sections: resolveGrantSections(grant.scopeJson),
+        sections,
         canWrite: grantAllows(grant, "write", now),
+        // v1.38.12 — per-section write answers, from the same level and scope
+        // the two fields above publish, intersected with the routes that
+        // exist. The lists are what the controls read; the level and the
+        // sections stay published so the chrome can say what was granted.
+        writableDomains: delegatedDomains(level, sections, "write"),
+        manageableDomains: delegatedDomains(level, sections, "manage"),
       };
     });
 

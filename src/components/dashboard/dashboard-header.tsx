@@ -40,7 +40,9 @@ export function DashboardHeader({
   // two of them (a reading, a dose). Mood stays with the account whose record
   // it is, and the customize shortcut points at a settings page sharing does
   // not cover at all.
-  const { canAdd, canManage } = useRecordCapabilities();
+  const { canAdd, canManageDomain, inSharedRecord } = useRecordCapabilities();
+  // A mood entry is created at MANAGE under the mind section.
+  const canAddMood = canManageDomain("mind");
 
   // The pre-hero greeting derivation, kept hydration-safe: `user` comes
   // from the auth query, which can resolve before this boundary
@@ -98,7 +100,7 @@ export function DashboardHeader({
               a `min-h-11 min-w-11` mobile floor so it meets the 44 px
               touch-target contract the add button also honours, shrinking
               back to the 40 px icon footprint on sm+. */}
-          {canManage && (
+          {!inSharedRecord && (
             <Button
               asChild
               variant="ghost"
@@ -154,7 +156,7 @@ export function DashboardHeader({
                   <Activity className="mr-2 h-4 w-4" aria-hidden="true" />
                   {t("dashboard.quickAddMeasurement")}
                 </DropdownMenuItem>
-                {canManage && (
+                {canAddMood && (
                   <DropdownMenuItem onClick={() => onQuickEntry("mood")}>
                     <Waves className="mr-2 h-4 w-4" aria-hidden="true" />
                     {t("dashboard.quickAddMood")}

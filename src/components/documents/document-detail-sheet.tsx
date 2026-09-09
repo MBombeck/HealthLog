@@ -373,7 +373,8 @@ export function DocumentDetailSheet({
       (fact) => fact.factType === "OBSERVATION" && fact.status === "APPROVED",
     ).length ?? 0;
   const { user } = useAuth();
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageDocuments = canManageDomain("documents");
   const labsModuleEnabled = user?.modules?.labs !== false;
 
   const episodes = useIllnessEpisodes(true);
@@ -387,14 +388,14 @@ export function DocumentDetailSheet({
   // document reads behind this sheet are delegable; the AI verbs above them are
   // not, and both of these routes stay on the caller's own authentication. A
   // delegate would fire two queries that must 403 in order to compute an
-  // affordance every branch below already withholds on `canManage`.
+  // affordance every branch below already withholds on `canManageDocuments`.
   const capability = useDocumentAiCapability(
-    canManage && open && documentId !== null,
+    canManageDocuments && open && documentId !== null,
   );
   // When auto-read is ON, reading happens automatically on upload — the manual
   // per-document AI action row is redundant and collapses away.
   const autoRead = useDocumentsAutoAiRead(
-    canManage && open && documentId !== null,
+    canManageDocuments && open && documentId !== null,
   );
   const suggest = useSuggestDetails();
   const summary = useDocumentSummary();
@@ -709,7 +710,7 @@ export function DocumentDetailSheet({
                   owner's alone. Inside somebody else's record the sheet reads
                   the document and offers the download, and the leading slot
                   simply has nothing in it. */}
-              {canManage ? (
+              {canManageDocuments ? (
                 <Button
                   variant="ghost"
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -751,7 +752,7 @@ export function DocumentDetailSheet({
                     </span>
                   </Button>
                 ) : null}
-                {canManage && (
+                {canManageDocuments && (
                   <Button
                     variant="outline"
                     onClick={() => setShareOpen(true)}
@@ -829,7 +830,7 @@ export function DocumentDetailSheet({
               // The stored summary is read; generating one writes to the
               // owner's record, so a delegate reads what is there and has no
               // generate control.
-              canGenerate={canManage}
+              canGenerate={canManageDocuments}
               summaryState={doc.summaryState}
               generatedAtLabel={
                 doc.summaryGeneratedAt
@@ -842,7 +843,7 @@ export function DocumentDetailSheet({
               onGenerate={generateStoredSummary}
             />
 
-            {canManage && (
+            {canManageDocuments && (
               <DocumentAiSection
                 aiEnabled={aiEnabled}
                 autoReadEnabled={autoReadEnabled}
@@ -906,7 +907,7 @@ export function DocumentDetailSheet({
                     maxLength={200}
                     placeholder={t("documents.detail.titlePlaceholder")}
                   />
-                ) : !canManage ? (
+                ) : !canManageDocuments ? (
                   <p
                     id="document-title-input"
                     className={cn(
@@ -952,7 +953,7 @@ export function DocumentDetailSheet({
                       without accepting a change is the honest rendering. */}
                   <Select
                     value={doc.kind}
-                    disabled={!canManage}
+                    disabled={!canManageDocuments}
                     onValueChange={(value) =>
                       patch.mutate({ kind: value as InboundDocumentKindValue })
                     }
@@ -975,7 +976,7 @@ export function DocumentDetailSheet({
                   </Label>
                   <DateField
                     id="document-date-field"
-                    disabled={!canManage}
+                    disabled={!canManageDocuments}
                     value={doc.documentDate ?? ""}
                     onChange={(value) =>
                       patch.mutate({
@@ -1006,7 +1007,7 @@ export function DocumentDetailSheet({
                       {t("documents.detail.noConditions")}
                     </span>
                   ) : null}
-                  {canManage && (episodes.data?.length ?? 0) > 0 ? (
+                  {canManageDocuments && (episodes.data?.length ?? 0) > 0 ? (
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -1058,7 +1059,7 @@ export function DocumentDetailSheet({
                 alreadyLinked={
                   doc.encounterLinks.length > 0 && pickedEncounterId === null
                 }
-                disabled={!canManage}
+                disabled={!canManageDocuments}
                 value={pickedEncounterId}
                 onChange={setSuggestedEncounter}
               />
@@ -1069,7 +1070,7 @@ export function DocumentDetailSheet({
                 <VaccinationDocumentSuggestion
                   anchor={doc.reportDate ?? doc.documentDate}
                   documentId={doc.id}
-                  disabled={!canManage}
+                  disabled={!canManageDocuments}
                 />
               ) : null}
 
@@ -1111,7 +1112,7 @@ export function DocumentDetailSheet({
                   values" over its stored text — never a re-upload. */}
               <DocumentFactsSection
                 doc={doc}
-                canManage={canManage}
+                canManage={canManageDocuments}
                 aiEnabled={aiEnabled}
                 labsModuleEnabled={labsModuleEnabled}
               />

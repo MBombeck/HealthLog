@@ -6,6 +6,10 @@ import {
   accountLabel,
   type AccountAccessEntry,
 } from "@/lib/sharing/account-access-view";
+import type { ShareDomain } from "@/lib/sharing/scope";
+
+const NEVER = () => false;
+const ALWAYS = () => true;
 
 /**
  * What the person at the keyboard may do to the record on screen.
@@ -20,7 +24,7 @@ import {
  * still taught them the product was broken. This hook is what every mutation
  * affordance asks before it renders.
  *
- * ## The two answers, and why there are two
+ * ## The answers, and why there are several
  *
  * A grant at WRITE admits a short, closed list of verbs: entering readings,
  * lab results, an illness entry, a biomarker, a side effect, a medication, and
@@ -32,34 +36,44 @@ import {
  * reason one release later: its only form sits on `/custom-metrics/{id}`,
  * which a switch closes too.
  * `sharing-surface-guard.test.ts` carries that argument
- * in full and is the list that binds; this paragraph has to agree with it. Editing, deleting, restoring, purging, importing and
- * bulk-acting stay with the owner, including on an entry the delegate added
- * themselves a minute ago, and so does every create the list does not name
- * (a mood entry, a screener, a cycle day). Two booleans carry that:
+ * in full and is the list that binds; this paragraph has to agree with it.
+ * Editing, deleting, restoring, purging, importing and bulk-acting are MANAGE
+ * verbs, and so is every create the list does not name (a mood entry, a
+ * screener, a cycle day). Which sections answer at which level is the
+ * server's table (`domain-write-support.ts`), published per grant as two
+ * lists on `accountAccess.active`. Four answers carry that:
  *
  *   - `canAdd` — may this person add one of the admitted kinds.
- *   - `canManage` — may this person change what is already there, or add
- *     something the delegation does not cover. True only in one's own record.
+ *   - `canWriteDomain(domain)` — is there a delegated write in this section
+ *     the grant satisfies.
+ *   - `canManageDomain(domain)` — may this person change what is already
+ *     there in this section, or add what a WRITE grant does not cover.
+ *   - `canManage` — the coarse switch: is there ANY section this person may
+ *     manage. The banner and the navigation ask it; a control never should,
+ *     because a control belongs to one section and the answer differs per
+ *     section (the vault is read-only under every grant).
  *
- * A surface that offers an admitted create asks `canAdd`. Everything else
- * asks `canManage`. Neither is a permission decision made here: `canWrite`
- * arrives resolved from the server on `accountAccess.active` and is bound,
- * never recomputed (`account-access-view.ts:11-15`). What this file decides is
- * only which class of affordance a resolved level covers, and that mapping is
- * a property of the release, not of the caller.
+ * A surface that offers an admitted create asks `canAdd`. A control that
+ * edits, deletes or creates what WRITE does not cover asks `canManageDomain`
+ * for its own section. A control whose route resolves the caller rather than
+ * the record (settings, credentials, AI budget, chart preferences) asks
+ * `!inSharedRecord`: no grant reaches it at any level. None of these is a
+ * permission decision made here: `canWrite` and the two lists arrive resolved
+ * from the server on `accountAccess.active` and are bound, never recomputed
+ * (`account-access-view.ts`). What this file decides is only which class of
+ * affordance a resolved answer covers.
  *
- * ## The two facts this hook carries but does not yet act on
+ * ## Why the lists are per section
  *
- * v1.37.0 gives a grant a section set and a third level, and both arrive here
- * (`sections`, `level`) as resolved values beside the booleans. Nothing in
- * this file turns either into a capability, and that is the state of the
- * release rather than an omission: the nav narrowing that reads `sections`
- * and the return of the edit and delete affordances that reads `level` are
- * the shared-session UX work, which lands after the routes that answer for a
- * MANAGE grant exist. Publishing the facts here first is what lets those be
- * a rendering change rather than a second access decision — and a control
- * that appeared before its route answered would be the failure the two
- * booleans above were written to end.
+ * v1.37.0 published `level` and `sections` and answered `canManage: false`
+ * for every shared record, a hold-back for the release where the level
+ * arrived before the routes behind it. The routes landed and the hold-back
+ * stayed, so a guardian of a managed profile saw no add, edit or delete
+ * control on Mood, screeners, visits, allergies and labs while the server
+ * accepted every one of those writes (#939). A single boolean could not have
+ * closed that without opening the vault, whose routes accept none; the lists
+ * close it section by section, and a section with no delegated route stays
+ * closed by the same mechanism.
  *
  * ## Absent, not disabled
  *
@@ -82,17 +96,35 @@ export interface RecordCapabilities {
   canWrite: boolean;
   /** May the caller add an entry of a kind the delegation admits. */
   canAdd: boolean;
-  /** May the caller change what exists, or add what the delegation excludes. */
+  /**
+   * May the caller change what exists somewhere in this record, or add what
+   * the delegation excludes. In one's own record, always. In a shared record,
+   * true when `manageableDomains` is non-empty: the coarse switch the banner
+   * and the navigation read. A control asks {@link canManageDomain} for its
+   * own section instead, because the answer differs per section.
+   */
   canManage: boolean;
+  /**
+   * v1.38.12 — is there a delegated write in `domain` this grant satisfies.
+   * Own record: always. Shared record: membership in
+   * `accountAccess.active.writableDomains`. Refused, pending or unproven
+   * context: never.
+   */
+  canWriteDomain: (domain: ShareDomain) => boolean;
+  /**
+   * v1.38.12 — may the caller edit, delete or bulk-act in `domain`, or add
+   * what a WRITE grant does not cover there. Own record: always. Shared
+   * record: membership in `accountAccess.active.manageableDomains`. Refused,
+   * pending or unproven context: never.
+   */
+  canManageDomain: (domain: ShareDomain) => boolean;
   /**
    * v1.37.0 — the resolved level of the grant on screen, or `null` in one's
    * own record (which is not a grant and has no level).
    *
-   * Bound from `accountAccess.active.level`, never derived. `canManage` is
-   * deliberately NOT computed from it in this release: the edit and delete
-   * affordances come back for `"manage"` when the routes that answer them
-   * land, and a control that appears before its route answers is the exact
-   * failure the two booleans above exist to prevent.
+   * Bound from `accountAccess.active.level`, never derived, and not what the
+   * controls read: the two domain lists are, because a level says what was
+   * granted and the lists say which routes answer for it.
    */
   level: AccountAccessEntry["level"] | null;
   /**
@@ -136,6 +168,8 @@ export function resolveRecordCapabilities(
       canWrite: false,
       canAdd: false,
       canManage: false,
+      canWriteDomain: NEVER,
+      canManageDomain: NEVER,
       level: null,
       sections: [],
       recordKind: "shared",
@@ -147,6 +181,8 @@ export function resolveRecordCapabilities(
       canWrite: false,
       canAdd: true,
       canManage: true,
+      canWriteDomain: ALWAYS,
+      canManageDomain: ALWAYS,
       // One's own record has no grant, so it has no level, and it is open in
       // full. Null on both counts rather than a fabricated "manage" over all
       // eight sections: the caller is not a delegate, and a consumer that had
@@ -156,11 +192,19 @@ export function resolveRecordCapabilities(
       recordKind: "self",
     };
   }
+  // Bound, not derived: the two lists are the server's intersection of the
+  // grant with the routes that exist. Membership is the whole of the client's
+  // part, and `canManage` is only the question "is either list non-empty"
+  // asked of the manage one.
+  const writable = new Set<ShareDomain>(active.writableDomains);
+  const manageable = new Set<ShareDomain>(active.manageableDomains);
   return {
     inSharedRecord: true,
     canWrite: active.canWrite,
     canAdd: active.canWrite,
-    canManage: false,
+    canManage: manageable.size > 0,
+    canWriteDomain: (domain) => writable.has(domain),
+    canManageDomain: (domain) => manageable.has(domain),
     level: active.level,
     sections: active.sections,
     recordKind: active.recordKind,

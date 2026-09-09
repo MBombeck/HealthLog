@@ -162,12 +162,14 @@ describe("what the canonical readers make of the same payload", () => {
       expect(capabilities.recordKind).toBe(fixture.recordKind);
       expect(capabilities.inSharedRecord).toBe(true);
       // Resolved server-side and rendered, never re-derived: `canAdd` follows
-      // `canWrite`, and MANAGE does not become `canManage` on the client — a
-      // delegate's management reach is the server's answer, one request at a
-      // time.
+      // `canWrite`, and `canManage` follows the published `manageableDomains`
+      // list rather than the level — a delegate's management reach is the
+      // server's answer, section by section.
       expect(capabilities.canWrite).toBe(fixture.canWrite);
       expect(capabilities.canAdd).toBe(fixture.canWrite);
-      expect(capabilities.canManage).toBe(false);
+      const manageable = active?.manageableDomains ?? [];
+      expect(capabilities.canManage).toBe(manageable.length > 0);
+      expect(manageable.length > 0).toBe(fixture.level === "manage");
     },
   );
 

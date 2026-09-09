@@ -117,6 +117,7 @@ export default defineConfig({
       testIgnore: [
         "v137-sharing-managed-profiles.spec.ts",
         "v137-sharing-managed-profiles-a11y.spec.ts",
+        "v138-managed-record-capabilities.spec.ts",
         // v1.37.0 — every spec that MOVES a session's record selector runs in
         // exactly one project.
         //

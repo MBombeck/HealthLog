@@ -114,12 +114,13 @@ export function TodayHero({
   const dismissItem = usePriorityItemDismiss();
   // The rail's two mutating affordances — dismissing an observation and
   // answering a coach check-in — are neither of them an admitted create, so
-  // they ask `canManage` and are absent at both grant levels. Both write
+  // they ask for the caller's own record and are absent under every grant. Both write
   // through routes that resolve the CALLER (`POST /api/daily/digest/dismiss`,
   // `PATCH /api/coach/plans/[id]`), which under a switch means a 403 rather
   // than a stray row; the control still goes, because an affordance the
   // server is on record refusing should not be on the page.
-  const { canManage } = useRecordCapabilities();
+  const { inSharedRecord } = useRecordCapabilities();
+  const ownRecord = !inSharedRecord;
 
   // The coach check-in card's keep / let-go intents carry the plan id after the
   // ":" (a closed two-intent allowlist); adjust is an href handled by the card
@@ -237,9 +238,9 @@ export function TodayHero({
           <PriorityCard
             key={`${item.kind}-${i}`}
             item={item}
-            onAction={canManage ? handleAction : undefined}
+            onAction={ownRecord ? handleAction : undefined}
             onDismiss={
-              canManage ? (itemKey) => dismissItem.mutate(itemKey) : undefined
+              ownRecord ? (itemKey) => dismissItem.mutate(itemKey) : undefined
             }
             actionsPending={
               item.kind === "coach_checkin" &&

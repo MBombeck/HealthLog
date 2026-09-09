@@ -1304,6 +1304,7 @@ export function MeasurementList({
                                       </Button>
                                     )}
                                     <DeleteButton
+                                      domain="measurements"
                                       onConfirm={() =>
                                         deleteMutation.mutate(m.id)
                                       }
@@ -1504,6 +1505,7 @@ export function MeasurementList({
                                 </Button>
                               )}
                               <DeleteButton
+                                domain="measurements"
                                 iconClassName="h-4 w-4"
                                 onConfirm={() => deleteMutation.mutate(m.id)}
                                 title={t("measurements.deleteConfirmTitle")}
@@ -1535,6 +1537,7 @@ export function MeasurementList({
 
         {/* v1.15.13 — page-scoped multi-select action bar. */}
         <SelectionActionBar
+          domain="measurements"
           count={selectedOnPage}
           onClear={clearSelection}
           onConfirmDelete={onConfirmBulkDelete}

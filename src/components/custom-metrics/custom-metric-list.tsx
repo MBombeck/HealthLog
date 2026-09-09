@@ -38,7 +38,9 @@ export function CustomMetricList() {
   // Logging a value against a custom metric was admitted for a release and is
   // not any more: this paragraph named the gap, the release shipped over it,
   // and the write withdrew rather than the sentence staying true.
-  const { canManage } = useRecordCapabilities();
+  // Every custom-metric write resolves the caller (`requireAuth`); no grant
+  // reaches it at any level.
+  const { inSharedRecord } = useRecordCapabilities();
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
   const [addFooterEl, setAddFooterEl] = useState<HTMLDivElement | null>(null);
@@ -57,7 +59,7 @@ export function CustomMetricList() {
     router.push(`/custom-metrics/${saved.id}`);
   }
 
-  if (!canManage) return null;
+  if (inSharedRecord) return null;
 
   return (
     <section

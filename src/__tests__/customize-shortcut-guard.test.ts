@@ -12,16 +12,24 @@
  * it, so this states it. It is structural rather than rendered because these
  * pages early-return a loading gate under SSR — the markup a delegate would
  * see is not reachable without a browser, and the property is about the source
- * either way: the link is inside a `canManage` conditional, or it is not.
+ * either way: the link is inside an `inSharedRecord` conditional, or it is
+ * not.
+ *
+ * v1.38.12 — the guard used to name the manage capability, which was true
+ * only in one's own record. It answers per section now and is true for a
+ * guardian, so a wrench behind it would send a guardian into the wall. The
+ * customise pages live under `/settings`, which is the CALLER's and never the
+ * record's, so the link is withheld on `inSharedRecord` — the one answer no
+ * grant level moves.
  *
  * ## What decides
  *
  * The AST. The `href` is found as a string literal on a JSX attribute and the
  * ancestor chain above it is walked for a `&&` whose left-hand side names
- * `canManage`. A comment about gating cannot satisfy that, and a `canManage`
- * used elsewhere in the same file cannot either — which a "does this file
- * mention the symbol" matcher would have accepted, and which is exactly what
- * `/mood` looked like the day it shipped ungated.
+ * `inSharedRecord`. A comment about gating cannot satisfy that, and an
+ * `inSharedRecord` used elsewhere in the same file cannot either — which a
+ * "does this file mention the symbol" matcher would have accepted, and which
+ * is exactly what `/mood` looked like the day it shipped ungated.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join, sep } from "node:path";
@@ -34,8 +42,8 @@ const SRC = join(process.cwd(), "src");
 /** The prefix every customise shortcut points at. */
 const LAYOUT_PREFIX = "/settings/layout/";
 
-/** The capability a shared-record surface withholds these on. */
-const GUARD = "canManage";
+/** The answer a shared-record surface withholds these on: `!inSharedRecord`. */
+const GUARD = "inSharedRecord";
 
 /**
  * The surfaces that carry a layout shortcut and need no gate.
@@ -66,16 +74,16 @@ function allSourceFiles(): string[] {
     .sort();
 }
 
-/** Does any ancestor of `node` gate it behind `<GUARD> && …`? */
-function guardedByCanManage(node: ts.Node): boolean {
+/** Does any ancestor of `node` gate it behind `!<GUARD> && …`? */
+function guardedByOwnRecord(node: ts.Node): boolean {
   for (let cur: ts.Node | undefined = node; cur; cur = cur.parent) {
     const parent: ts.Node | undefined = cur.parent;
     if (
       parent &&
       ts.isBinaryExpression(parent) &&
       parent.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken &&
-      // Only the RIGHT side is the guarded branch. `canManage && x` guards `x`;
-      // `x && canManage` is `canManage` being the guarded thing.
+      // Only the RIGHT side is the guarded branch. `!inSharedRecord && x`
+      // guards `x`; `x && !inSharedRecord` is the answer being the guarded thing.
       parent.right === cur
     ) {
       const names = new Set<string>();
@@ -87,7 +95,7 @@ function guardedByCanManage(node: ts.Node): boolean {
       if (names.has(GUARD)) return true;
     }
     // A conditional whose whenTrue branch holds the link, guarded on the
-    // capability: `canManage ? <Link/> : null`, the shape `vorsorge-section`
+    // answer: `!inSharedRecord ? <Link/> : null`, the shape `vorsorge-section`
     // uses.
     if (
       parent &&
@@ -120,7 +128,7 @@ function unguardedShortcuts(source: string, fileName: string): string[] {
     if (
       ts.isStringLiteralLike(node) &&
       node.text.startsWith(LAYOUT_PREFIX) &&
-      !guardedByCanManage(node)
+      !guardedByOwnRecord(node)
     ) {
       found.push(node.text);
     }
@@ -160,20 +168,20 @@ describe("the customise shortcut is withheld inside somebody else's record", () 
     }
     expect(
       offenders,
-      `a customise link outside a \`${GUARD}\` branch sends a delegate to /settings, which a switch closes`,
+      `a customise link outside a \`!${GUARD}\` branch sends a delegate to /settings, which a switch closes`,
     ).toEqual([]);
   });
 
   it("the matcher reads the branch, not the file", () => {
-    // The shape that shipped: the capability is resolved and used elsewhere in
+    // The shape that shipped: the answer is resolved and used elsewhere in
     // the module while the link itself sits outside any branch. A matcher
-    // asking "does this file name canManage" calls this clean.
+    // asking "does this file name inSharedRecord" calls this clean.
     const UNGATED = `
       export function Page() {
-        const { canManage } = useRecordCapabilities();
+        const { inSharedRecord } = useRecordCapabilities();
         return (
           <>
-            {canManage && <Button data-slot="add" />}
+            {!inSharedRecord && <Button data-slot="add" />}
             <Link href="/settings/layout/mood">Customise</Link>
           </>
         );
@@ -186,16 +194,16 @@ describe("the customise shortcut is withheld inside somebody else's record", () 
 
     const GATED = `
       export function Page() {
-        const { canManage } = useRecordCapabilities();
-        return canManage && <Link href="/settings/layout/mood">Customise</Link>;
+        const { inSharedRecord } = useRecordCapabilities();
+        return !inSharedRecord && <Link href="/settings/layout/mood">Customise</Link>;
       }
     `;
     expect(unguardedShortcuts(GATED, "g.tsx")).toEqual([]);
 
     const TERNARY = `
       export function Page() {
-        const { canManage } = useRecordCapabilities();
-        const wrench = canManage ? (
+        const { inSharedRecord } = useRecordCapabilities();
+        const wrench = !inSharedRecord ? (
           <Link href="/settings/layout/vorsorge">Customise</Link>
         ) : null;
         return wrench;
@@ -203,12 +211,12 @@ describe("the customise shortcut is withheld inside somebody else's record", () 
     `;
     expect(unguardedShortcuts(TERNARY, "t.tsx")).toEqual([]);
 
-    // And the inverted shape is not a gate: `href && canManage` puts the
-    // capability in the guarded position, not the link.
+    // And the inverted shape is not a gate: `href && !inSharedRecord` puts
+    // the answer in the guarded position, not the link.
     const INVERTED = `
       export function Page() {
-        const { canManage } = useRecordCapabilities();
-        return <Link href={"/settings/layout/labs"}>{something && canManage}</Link>;
+        const { inSharedRecord } = useRecordCapabilities();
+        return <Link href={"/settings/layout/labs"}>{something && !inSharedRecord}</Link>;
       }
     `;
     expect(unguardedShortcuts(INVERTED, "i.tsx")).toEqual([

@@ -199,6 +199,17 @@ export const SCOPE_A11Y_STORAGE_STATE_PATH = resolve(
 );
 
 /**
+ * v1.38.12 — the managed-record capabilities journey's own jar. Same scope
+ * delegate, its own session row, for the reason every switching spec has
+ * one: it moves the record selector, and two specs driving one row from two
+ * workers would test their interference rather than the controls.
+ */
+export const SCOPE_CAPABILITIES_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateScopeCapabilities.json",
+);
+
+/**
  * v1.37.0 — one jar per SWITCHING spec, for the reason spelled out at
  * `DELEGATE_STORAGE_STATE_PATH` above and now applied to the scope delegate as
  * well.
@@ -739,6 +750,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
     await capture(E2E_SCOPE_DELEGATE, SCOPE_DELEGATE_STORAGE_STATE_PATH);
     await capture(E2E_SCOPE_DELEGATE, SCOPE_A11Y_STORAGE_STATE_PATH);
+    await capture(E2E_SCOPE_DELEGATE, SCOPE_CAPABILITIES_STORAGE_STATE_PATH);
 
     // v1.37.0 — one jar per switching spec. See the block comment on
     // FENCE_STORAGE_STATE_PATH: these three used to share the scope delegate's

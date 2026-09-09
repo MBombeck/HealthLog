@@ -24,7 +24,12 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 vi.mock("@/hooks/use-record-capabilities", () => ({
-  useRecordCapabilities: () => ({ canManage: true, canWrite: true }),
+  useRecordCapabilities: () => ({
+    canManage: true,
+    canWrite: true,
+    canWriteDomain: () => true,
+    canManageDomain: () => true,
+  }),
 }));
 
 vi.mock("@/lib/api/api-fetch", async () => {

@@ -393,7 +393,9 @@ function RetargetControl({
   // owner chose — not an admitted create, and `PUT .../efficacy/target`
   // resolves the caller, so it is refused at both grant levels. The Wirkung
   // tab itself stays readable; only the dial goes.
-  const { canManage } = useRecordCapabilities();
+  // `PUT /api/medications/[id]/efficacy/target` resolves the caller, not the
+  // record: no grant reaches it, so the editor belongs to the owner alone.
+  const { inSharedRecord } = useRecordCapabilities();
   const [value, setValue] = useState<string>("");
   const [busy, setBusy] = useState(false);
 
@@ -443,7 +445,7 @@ function RetargetControl({
     }
   };
 
-  if (!canManage || items.length === 0) return null;
+  if (inSharedRecord || items.length === 0) return null;
 
   return (
     <div

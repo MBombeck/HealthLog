@@ -9548,6 +9548,7 @@
     "title": "Dokumente",
     "subtitle": "Jeder Brief, Befund und Scan an einem durchsuchbaren Ort — verschlüsselt gespeichert.",
     "pageUpload": "Hochladen",
+    "ownerOnlyUpload": "Dokumente kann nur die Inhaberin oder der Inhaber der Akte hinzufügen.",
     "kind": {
       "DOCTOR_REPORT": "Arztbericht",
       "DISCHARGE_LETTER": "Entlassungsbrief",

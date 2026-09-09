@@ -37,6 +37,8 @@ const canonicalEntry = {
   recordKind: "shared",
   sections: ["labs"],
   canWrite: false,
+  writableDomains: [],
+  manageableDomains: [],
 };
 
 beforeEach(() => {

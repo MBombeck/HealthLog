@@ -13,6 +13,8 @@ vi.mock("@/hooks/use-record-capabilities", () => ({
     canWrite: false,
     canAdd: true,
     canManage: true,
+    canWriteDomain: () => true,
+    canManageDomain: () => true,
   }),
 }));
 

@@ -12,7 +12,11 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/hooks/use-record-capabilities", () => ({
-  useRecordCapabilities: () => ({ canManage: true, canAdd: true }),
+  useRecordCapabilities: () => ({
+    canManage: true,
+    canAdd: true,
+    canManageDomain: () => true,
+  }),
 }));
 
 const errorQuery = {

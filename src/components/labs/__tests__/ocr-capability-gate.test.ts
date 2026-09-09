@@ -9,7 +9,7 @@ describe("shouldProbeOcrCapability", () => {
       isLoading: false,
       labsEnabled: true,
       mounted: true,
-      canManage: true,
+      ownRecord: true,
     };
 
     expect(shouldProbeOcrCapability(ownerControl)).toBe(true);
@@ -17,7 +17,7 @@ describe("shouldProbeOcrCapability", () => {
       shouldProbeOcrCapability({ ...ownerControl, isAuthenticated: false }),
     ).toBe(false);
     expect(
-      shouldProbeOcrCapability({ ...ownerControl, canManage: false }),
+      shouldProbeOcrCapability({ ...ownerControl, ownRecord: false }),
     ).toBe(false);
     expect(
       shouldProbeOcrCapability({ ...ownerControl, labsEnabled: false }),

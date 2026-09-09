@@ -44,7 +44,7 @@ export default function LabsPage() {
   // Scanning a report is not: it files a document and commits through the OCR
   // route, and neither is delegated. So a WRITE delegate keeps the manual add
   // and loses the choice menu around it.
-  const { canAdd, canManage, inSharedRecord } = useRecordCapabilities();
+  const { canAdd, inSharedRecord } = useRecordCapabilities();
   const mounted = useMounted();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -69,7 +69,7 @@ export default function LabsPage() {
       isLoading,
       labsEnabled: enabled,
       mounted,
-      canManage,
+      ownRecord: !inSharedRecord,
     }),
   );
 
@@ -111,7 +111,7 @@ export default function LabsPage() {
                 point, left of the primary Add and linking to the Labs settings
                 page (view, sort order, biomarker CRUD + reorder). Mirrors the
                 medication page header's wrench glyph + slot + 44px tap floor. */}
-            {canManage && (
+            {!inSharedRecord && (
               <Button
                 asChild
                 variant="ghost"
@@ -133,7 +133,7 @@ export default function LabsPage() {
                 mode (vision, or local OCR opted-in for text-only providers), so
                 the surface stays simple for everyone else. When scanning is
                 unavailable, Add opens the manual form directly. */}
-            {ocrCapability.data?.available && canManage ? (
+            {ocrCapability.data?.available && !inSharedRecord ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button className="min-h-11 sm:min-h-9">

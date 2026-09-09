@@ -103,6 +103,24 @@ export interface AccountAccessEntry {
    * than smuggled into this boolean.
    */
   canWrite: boolean;
+  /**
+   * v1.38.12 — the sections this grant can add to, resolved server-side from
+   * the grant's level and scope against the delegated write routes that
+   * exist (`domain-write-support.ts`). In the consent screen's order. Empty
+   * for a READ grant, and empty for any section whose routes accept no
+   * delegated write at all — the vault, today.
+   *
+   * A list rather than a boolean because the answer differs per section, and
+   * the client's per-control question is "this section", never "any".
+   */
+  writableDomains: ShareDomain[];
+  /**
+   * v1.38.12 — the sections this grant can change: edit, delete, restore,
+   * bulk-act, and the creates a WRITE grant does not cover. A subset of
+   * {@link AccountAccessEntry.writableDomains} by construction, and empty
+   * below MANAGE.
+   */
+  manageableDomains: ShareDomain[];
 }
 
 /** The `accountAccess` block on `GET /api/auth/me`. */

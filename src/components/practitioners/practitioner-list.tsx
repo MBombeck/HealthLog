@@ -44,7 +44,10 @@ import { PractitionerSheet } from "./practitioner-sheet";
 
 export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
   const { t } = useTranslations();
-  const { canManage } = useRecordCapabilities();
+  const { canWriteDomain, canManageDomain } = useRecordCapabilities();
+  // `POST /api/practitioners` answers at WRITE; editing and deleting at MANAGE.
+  const canAddPractitioner = canWriteDomain("profile");
+  const canManageProfile = canManageDomain("profile");
   const [term, setTerm] = useState("");
   const debounced = useDebouncedValue(term, 250);
   const list = usePractitioners(debounced, enabled);
@@ -87,7 +90,7 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
   }, [rows]);
   const showGroupHeadings = groups.some(([specialty]) => specialty !== null);
 
-  const addButton = canManage ? (
+  const addButton = canAddPractitioner ? (
     <Button
       type="button"
       className="min-h-11"
@@ -186,7 +189,7 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
                             </p>
                           ) : null}
                         </div>
-                        {canManage ? (
+                        {canManageProfile ? (
                           <div className="flex shrink-0 items-center gap-1">
                             <Button
                               type="button"

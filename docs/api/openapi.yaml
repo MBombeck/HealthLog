@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.38.12
+  version: 1.38.13
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -65685,6 +65685,32 @@ components:
                   - type: "null"
               canWrite:
                 type: boolean
+              writableDomains:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - measurements
+                    - medications
+                    - labs
+                    - profile
+                    - illness
+                    - mind
+                    - cycle
+                    - documents
+              manageableDomains:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - measurements
+                    - medications
+                    - labs
+                    - profile
+                    - illness
+                    - mind
+                    - cycle
+                    - documents
             required:
               - accountId
               - username
@@ -65695,6 +65721,8 @@ components:
               - recordKind
               - sections
               - canWrite
+              - writableDomains
+              - manageableDomains
             additionalProperties: false
         active:
           anyOf:
@@ -65747,6 +65775,32 @@ components:
                     - type: "null"
                 canWrite:
                   type: boolean
+                writableDomains:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - measurements
+                      - medications
+                      - labs
+                      - profile
+                      - illness
+                      - mind
+                      - cycle
+                      - documents
+                manageableDomains:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - measurements
+                      - medications
+                      - labs
+                      - profile
+                      - illness
+                      - mind
+                      - cycle
+                      - documents
               required:
                 - accountId
                 - username
@@ -65757,6 +65811,8 @@ components:
                 - recordKind
                 - sections
                 - canWrite
+                - writableDomains
+                - manageableDomains
               additionalProperties: false
             - type: "null"
         recordKind:

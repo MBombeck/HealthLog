@@ -59,6 +59,8 @@ const OWNER = {
   sections: null,
   recordKind: "shared" as const,
   canWrite: false,
+  writableDomains: [],
+  manageableDomains: [],
 };
 
 const OWN_RECORD: AccountAccess = {

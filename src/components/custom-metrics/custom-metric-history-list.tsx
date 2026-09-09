@@ -261,6 +261,7 @@ export function CustomMetricHistoryList({
                     <Pencil className="h-4 w-4" />
                   </Button>
                   <DeleteButton
+                    domain={null}
                     onConfirm={() => deleteMutation.mutate(r.id)}
                     title={t("customMetrics.entry.deleteConfirmTitle")}
                     description={t(

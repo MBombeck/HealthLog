@@ -62,6 +62,8 @@ const OWNER = {
   sections: null,
   recordKind: "shared" as const,
   canWrite: false,
+  writableDomains: [],
+  manageableDomains: [],
 };
 
 function render(access: AccountAccess, node: React.ReactNode): string {

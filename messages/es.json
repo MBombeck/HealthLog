@@ -9548,6 +9548,7 @@
     "title": "Documentos",
     "subtitle": "Cada carta, informe y escaneo en un solo lugar con búsqueda — cifrado en reposo.",
     "pageUpload": "Subir",
+    "ownerOnlyUpload": "Solo el titular del historial puede añadir documentos.",
     "kind": {
       "DOCTOR_REPORT": "Informe médico",
       "DISCHARGE_LETTER": "Informe de alta",

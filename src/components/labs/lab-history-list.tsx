@@ -77,7 +77,8 @@ function parseDecimal(raw: string): number | null {
  */
 export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
   const { t } = useTranslations();
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageLabs = canManageDomain("labs");
   const queryClient = useQueryClient();
 
   // Client-side column sort over the in-memory reading feed.
@@ -379,7 +380,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
               </TableCell>
               <TableCell className="pr-4 text-right">
                 <div className="flex items-center justify-end gap-1">
-                  {canManage && (
+                  {canManageLabs && (
                     <Button
                       size="icon"
                       variant="ghost"
@@ -393,6 +394,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                     </Button>
                   )}
                   <DeleteButton
+                    domain="labs"
                     onConfirm={() => deleteMutation.mutate(r.id)}
                     title={t("labs.deleteConfirmTitle")}
                     description={t("labs.deleteConfirmDescription")}

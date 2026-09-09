@@ -24,7 +24,6 @@ overrides:
   # because the advisory is fixed there too and 2.x is a major nothing asked
   # for.
   "@hono/node-server@<1.19.15": "^1.19.15"
-  "hono@<4.12.25": "^4.12.25"
   "picomatch@<4.0.4": "^4.0.4"
   "body-parser@<2.3.0": "^2.3.0"
   # Array-limit bypass through bracket-key comma parsing, and a denial of
@@ -36,9 +35,6 @@ overrides:
   # copy, so it sits on a path this app exposes.
   "fast-uri@<3.1.6": "^3.1.6"
   "flatted@<3.4.2": "^3.4.2"
-  # The advisory covers 4.x only; the bound keeps a hypothetical 3.x consumer
-  # off a major it never asked for.
-  "js-yaml@>=4.0.0 <4.3.1": "^4.3.1"
   # GHSA-3f6p-5ww8-9rcr: auth-plugin downgrade leaking plaintext credentials.
   # Reached only through prisma's MySQL driver, which this app never opens;
   # pinned so the audit reads clean, and mirrored for /opt/prisma-cli in the

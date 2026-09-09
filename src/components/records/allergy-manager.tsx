@@ -106,6 +106,7 @@ export function AllergyManager() {
           <Pencil className="h-4 w-4" />
         </Button>
         <DeleteButton
+          domain="profile"
           onConfirm={() => deleteMutation.mutate(row.id)}
           title={t("records.allergies.deleteConfirmTitle")}
           description={t("records.allergies.deleteConfirmDescription")}

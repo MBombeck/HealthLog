@@ -79,7 +79,8 @@ export function VorsorgeDashboardCard() {
   // (`POST /api/measurement-reminders/[id]/satisfy` resolves the caller), and
   // the dashboard summary offering what the dedicated page withholds was the
   // tell that this row had never been asked.
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageMeasurements = canManageDomain("measurements");
   const { data: reminders, isError, refetch } = useMeasurementReminders();
 
   // A query's `isLoading` is not a hydration-safe branch: TanStack reports the
@@ -197,7 +198,7 @@ export function VorsorgeDashboardCard() {
                         })}
                       </Badge>
                     </div>
-                    {canManage ? (
+                    {canManageMeasurements ? (
                       <Button
                         type="button"
                         size="default"

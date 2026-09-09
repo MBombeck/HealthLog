@@ -37,7 +37,8 @@ export function InstrumentDetail({
   const { t } = useTranslations();
   const { date: formatDate } = useFormatters();
   // v1.36.x — see the card: starting a screener is not a delegated verb.
-  const { canManage } = useRecordCapabilities();
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageMind = canManageDomain("mind");
   // Issue #490 — day-boundary zone for the relative "today / yesterday"
   // bucket must match the zone `formatDate` renders in (mirror → Berlin).
   const displayTz = useDisplayTimezone();
@@ -76,7 +77,7 @@ export function InstrumentDetail({
 
       {/* The Start action stays reachable here too — the detail is a calm
           reading surface, not a dead end. */}
-      {canManage && (
+      {canManageMind && (
         <Button
           type="button"
           className="min-h-11 w-full"

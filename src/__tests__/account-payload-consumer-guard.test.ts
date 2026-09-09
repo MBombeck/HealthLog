@@ -107,6 +107,19 @@ const ACCOUNT_ACCESS_ADDITIVE_FIELDS = [
 ] as const;
 
 /**
+ * v1.38.12 — fields that answer "what may I do in the record I am inside",
+ * which only the active-record consumer has a use for. The switcher and the
+ * navigation presentation say what was granted (`level`, `sections`); the
+ * controls read these two lists. Requiring an entry-site reader for them
+ * would be an artificial read written to satisfy this guard, so they are
+ * checked against the active-record consumer only.
+ */
+const ACTIVE_RECORD_ONLY_FIELDS = [
+  "writableDomains",
+  "manageableDomains",
+] as const;
+
+/**
  * Fields with no client reader, each with the reason it is nonetheless
  * correct for the payload to carry it. An entry here is a claim; write one
  * only when the claim is true and checkable.
@@ -273,5 +286,12 @@ describe("account payload consumer guard", () => {
     );
 
     expect(readerCount).toBeGreaterThan(0);
+
+    for (const field of ACTIVE_RECORD_ONLY_FIELDS) {
+      expect(
+        activeSource,
+        `no active-record reader for account access field \`${field}\``,
+      ).toMatch(new RegExp(`active\\.${field}(?![\\w$])`));
+    }
   });
 });
