@@ -47,13 +47,29 @@ describe("checkRateLimit (real Postgres)", () => {
     const key = "test:reset:1.2.3.4";
     const limit = 3;
 
-    // Burn the budget with a short 50ms window.
+    // Burn the budget in a window wide enough that it cannot close under the
+    // four calls that fill it. It used to be 50 ms, which asked the four
+    // round-trips to a containerised Postgres to finish inside a twentieth of
+    // a second: on a loaded runner the window expired mid-burn, the counter
+    // reset, and the fourth call came back allowed — three failures in thirty
+    // days, two of them on `main` (run 33614804032, `expected true to be
+    // false` on the line below, in a file that took 1278 ms to run). The short
+    // window bought nothing either way, because the expiry this test is about
+    // is forced by hand a few lines down rather than waited for.
+    const windowMs = 60_000;
     for (let i = 0; i < 3; i++) {
-      const r = await checkRateLimit(key, limit, 50);
+      const r = await checkRateLimit(key, limit, windowMs);
       expect(r.allowed).toBe(true);
     }
-    const denied = await checkRateLimit(key, limit, 50);
+    const denied = await checkRateLimit(key, limit, windowMs);
     expect(denied.allowed).toBe(false);
+
+    // The denial has to be the cap, not a window that closed under the burn —
+    // a reset would also have produced three allowed calls before it.
+    const burned = await getPrismaClient().rateLimit.findUnique({
+      where: { key },
+    });
+    expect(burned?.count).toBe(4);
 
     // Manually expire the window: cheaper than sleeping and avoids
     // flaky timing on slow CI runners. The branch under test compares

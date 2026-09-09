@@ -23,11 +23,20 @@
  *   pnpm bundle-report            # print the report table
  *   pnpm bundle-report --check    # enforce bundle-budget.json (CI gate)
  *
- * Budgets live in `bundle-budget.json` (repo root). Numbers are KB gzip
- * with deliberate headroom over the measured value — the gate exists to
- * catch step-change regressions (a ~100 KB catalog, a ~90 KB duplicate
- * library), not day-to-day noise. Raise a budget consciously, in the same
- * PR that pays the cost, with the reason in the PR body.
+ * Budgets live in `bundle-budget.json` (repo root). Numbers are KB gzip.
+ *
+ * Per-route the file states a MEASURED baseline and one drift allowance
+ * over it, and a route fails on the delta rather than on a ceiling it is
+ * already touching. Flat ceilings had been re-stated but never re-based, so
+ * three routes ended up sitting within a kilobyte of theirs and any
+ * unrelated dependency bump failed the e2e job on a regression nobody had
+ * made. The delta is printed on every run, so a route that has crept most of
+ * the way through its allowance is readable in the log before it is red.
+ *
+ * The gate still exists to catch step changes (a ~100 KB statically imported
+ * catalog, a ~90 KB duplicate library), which are several times the
+ * allowance. Re-base consciously, in the same PR that pays the cost, with
+ * the reason written into `$comment`.
  */
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
@@ -166,14 +175,28 @@ console.log(
 console.log(`recharts-fingerprint chunks:     ${rechartsChunks}`);
 console.log("");
 
-const watched = budget ? Object.keys(budget.routesKbGz ?? {}) : [];
+const baselines = budget?.routeBaselineKbGz ?? {};
+const allowanceKb = budget?.routeDriftAllowanceKbGz ?? 0;
+/** The ceiling a route's measured baseline plus the drift allowance buys it. */
+const capFor = (route) =>
+  baselines[route] == null ? null : baselines[route] + allowanceKb;
+
+const watched = Object.keys(baselines);
 const rows = [...routeTotals.entries()]
   .filter(([route]) => !watched.length || watched.includes(route))
   .sort((a, b) => b[1].gz - a[1].gz);
 for (const [route, { gz }] of rows.slice(0, watched.length || 15)) {
-  const cap = budget?.routesKbGz?.[route];
+  const baseline = baselines[route];
+  if (baseline == null) {
+    console.log(`${fmt(gz).padStart(8)} gz  ${route}`);
+    continue;
+  }
+  const delta = kb(gz) - baseline;
+  const sign = delta >= 0 ? "+" : "−";
   console.log(
-    `${fmt(gz).padStart(8)} gz  ${route}${cap ? `  (budget ${cap} KB)` : ""}`,
+    `${fmt(gz).padStart(8)} gz  ${route}  (baseline ${baseline} KB, ` +
+      `${sign}${Math.abs(delta).toFixed(1)} KB of ${allowanceKb} KB allowed, ` +
+      `cap ${capFor(route)} KB)`,
   );
 }
 
@@ -185,16 +208,30 @@ if (!budget) {
   process.exit(2);
 }
 
+// A budget file that states no baselines gates nothing, and would do it
+// quietly — the loop below would simply have nothing to walk. Say so instead.
+if (watched.length === 0) {
+  console.error(
+    "check-bundle-budget: bundle-budget.json states no routeBaselineKbGz " +
+      "entries, so no route is gated. Measure the eager routes and write " +
+      "them in, with a routeDriftAllowanceKbGz over them.",
+  );
+  process.exit(2);
+}
+
 const failures = [];
-for (const [route, capKb] of Object.entries(budget.routesKbGz ?? {})) {
+for (const [route, baselineKb] of Object.entries(baselines)) {
   const actual = routeTotals.get(route);
   if (!actual) {
     failures.push(`route ${route} not found in the build output`);
     continue;
   }
-  if (kb(actual.gz) > capKb) {
+  const delta = kb(actual.gz) - baselineKb;
+  if (delta > allowanceKb) {
     failures.push(
-      `${route}: ${fmt(actual.gz)} gz exceeds the ${capKb} KB budget`,
+      `${route}: ${fmt(actual.gz)} gz is ${delta.toFixed(1)} KB over the ` +
+        `${baselineKb} KB baseline, past the ${allowanceKb} KB drift ` +
+        `allowance (cap ${capFor(route)} KB)`,
     );
   }
 }

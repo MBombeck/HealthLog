@@ -223,16 +223,23 @@ beforeAll(async () => {
     browser = await chromium.launch();
   } catch (error) {
     const reason = `no Chromium build available (${String(error).slice(0, 200)})`;
-    // In CI the browser is installed by the quality job, so a launch failure
-    // is the job being wrong, not the machine being bare. Throwing from the
-    // hook fails every test in this suite: a geometry check that quietly
-    // skips is the same thing as no geometry check, and this repo shipped
-    // exactly that for months because the skip only ever reached a console
-    // line nobody reads.
+    // In CI the browser is installed by the job that runs the suite, so a
+    // launch failure is the job being wrong, not the machine being bare.
+    // Throwing from the hook fails every test in this suite: a geometry check
+    // that quietly skips is the same thing as no geometry check, and this repo
+    // shipped exactly that for months because the skip only ever reached a
+    // console line nobody reads.
+    //
+    // TWO jobs run `pnpm test`, and naming only one of them here sent a reader
+    // to a workflow that was already correct: the quality job in
+    // `security.yml` and the auto-merge job in `dependabot-auto-merge.yml`.
+    // The second had no install step for three days after this check started
+    // failing instead of skipping, and turned every dependency bump red.
     if (process.env.CI) {
       throw new Error(
         `[hero geometry] ${reason}. This check is the gate in CI and it has no browser to measure with. ` +
-          `Restore the "pnpm exec playwright install --only-shell chromium" step in the quality job of .github/workflows/security.yml.`,
+          `Add the "pnpm exec playwright install --only-shell chromium" step to whichever job ran this suite — ` +
+          `the quality job of .github/workflows/security.yml, or the auto-merge job of .github/workflows/dependabot-auto-merge.yml.`,
       );
     }
     skipReason = reason;

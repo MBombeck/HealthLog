@@ -12,6 +12,18 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Derived } from "@/lib/insights/derived/types";
 import type { ReadinessValue } from "@/lib/insights/derived/readiness";
 
+/**
+ * The post-mutation tail reads the real `@/lib/db` client, not the fake this
+ * file injects, so a stored score opened a socket to a Postgres the unit job
+ * does not run. The attempt failed a few hundred milliseconds later and logged
+ * on the way out — after the test that started it had ended — which is how a
+ * green file tore its worker's RPC channel down mid-write. Stubbed here;
+ * `score-row.test.ts` asserts the wiring this stands for.
+ */
+vi.mock("@/lib/rollups/after-measurement-mutation", () => ({
+  afterMeasurementMutation: vi.fn(async () => {}),
+}));
+
 const computeReadinessMock =
   vi.fn<(...args: unknown[]) => Promise<Derived<ReadinessValue>>>();
 
