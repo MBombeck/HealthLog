@@ -131,10 +131,12 @@ function ManagedProfileEditFields({
   // A record with no recorded language opens on the actor's, which is the same
   // default the creation form uses. It is a starting point for a control the
   // person is looking at, not an inference written behind their back — nothing
-  // is sent until they save.
-  const [locale, setLocale] = useState<Locale>(
+  // is sent unless they move it, which is why the seed is frozen at mount and
+  // handed to the patch builder as what "moved" is measured against.
+  const [seededLocale] = useState<Locale>(() =>
     isLocale(profile.locale) ? profile.locale : actorLocale,
   );
+  const [locale, setLocale] = useState<Locale>(seededLocale);
   const [gender, setGender] = useState<ManagedProfileGender>(profile.gender);
   const [timezone, setTimezone] = useState(profile.timezone);
   const [error, setError] = useState<string | null>(null);
@@ -143,13 +145,17 @@ function ManagedProfileEditFields({
   const timezoneIssue = isValidTimezone(timezone)
     ? null
     : "recordSharing.managed.timezoneInvalid";
-  const patch = managedProfileEditPatch(profile, {
-    displayName,
-    dateOfBirth,
-    locale,
-    gender,
-    timezone,
-  });
+  const patch = managedProfileEditPatch(
+    profile,
+    {
+      displayName,
+      dateOfBirth,
+      locale,
+      gender,
+      timezone,
+    },
+    seededLocale,
+  );
   const blocked =
     nameIssue !== null || timezoneIssue !== null || patch === null;
 
@@ -333,13 +339,22 @@ interface ManagedProfileEditDraft {
 export function managedProfileEditPatch(
   profile: ManagedProfileView,
   draft: ManagedProfileEditDraft,
+  /**
+   * The language the control opened on, which is the record's own or — for a
+   * record that has none — the actor's. Compared against instead of
+   * `profile.locale` because those two differ exactly when the record has no
+   * language: comparing against the column made every save of a record like
+   * that carry `locale`, so moving only the timezone wrote the actor's
+   * language into somebody else's record.
+   */
+  seededLocale: Locale,
 ): Omit<UpdateManagedProfileInput, "profileId"> | null {
   const displayName = draft.displayName.trim();
   const dateOfBirth = draft.dateOfBirth.length > 0 ? draft.dateOfBirth : null;
   const patch: Omit<UpdateManagedProfileInput, "profileId"> = {
     ...(displayName !== (profile.displayName ?? "") ? { displayName } : {}),
     ...(dateOfBirth !== profile.dateOfBirth ? { dateOfBirth } : {}),
-    ...(draft.locale !== profile.locale ? { locale: draft.locale } : {}),
+    ...(draft.locale !== seededLocale ? { locale: draft.locale } : {}),
     ...(draft.gender !== profile.gender ? { gender: draft.gender } : {}),
     ...(draft.timezone !== profile.timezone
       ? { timezone: draft.timezone }
