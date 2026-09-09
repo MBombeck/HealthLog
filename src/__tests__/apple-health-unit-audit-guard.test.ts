@@ -206,17 +206,41 @@ describe("Apple Health mapping — the record's own unit (issue #944)", () => {
   it("leaves the km/mi factors in one shared module", () => {
     // The workout path used to carry its own copy of the km/mi branch; the
     // duplicate is what let the `<Record>` path stay wrong for ten years.
+    //
+    // `* 1000` alone is not the offence — these files also turn seconds into
+    // milliseconds — so a rescale only counts when it stands in a LENGTH
+    // context: a distance identifier on the same line, or within the five
+    // lines above it (which covers a rescale in the body of a
+    // distance-named helper). The limit is the usual one for a matcher of
+    // this shape: a length conversion inside a helper named nothing like a
+    // distance, more than five lines below its own signature, slips it.
     const shared = join(process.cwd(), "src/lib/measurements/hk-units.ts");
     const owners = [
       "src/lib/measurements/apple-health-mapping.ts",
       "src/lib/measurements/import-apple-health-export.ts",
     ];
     expect(readFileSync(shared, "utf8")).toContain("1609.344");
+
+    const RESCALE = /\*\s*1_?000(?!\d)/;
+    const LENGTH = /distance|metre|meter|\bkm\b/i;
     for (const rel of owners) {
       const source = readFileSync(join(process.cwd(), rel), "utf8");
-      expect(source, `${rel} re-implements a length factor`).not.toMatch(
-        /1609\.344|\* 1000\b/,
+      expect(source, `${rel} re-implements the mile factor`).not.toContain(
+        "1609.344",
       );
+      const lines = source.split("\n");
+      const offenders = lines
+        .map((line, i) => ({ line, i }))
+        .filter(
+          ({ line, i }) =>
+            RESCALE.test(line) &&
+            lines.slice(Math.max(0, i - 5), i + 1).some((l) => LENGTH.test(l)),
+        )
+        .map(({ line, i }) => `${rel}:${i + 1}: ${line.trim()}`);
+      expect(
+        offenders,
+        `${rel} re-implements a length factor — the km/mi conversion belongs in hk-units.ts`,
+      ).toEqual([]);
     }
   });
 });
