@@ -411,12 +411,28 @@ test.describe.serial("FENCE-AC-07 record-fence disk layers", () => {
       expect(stored!.epoch).toMatch(/^\d+$/);
       expect(stored!.scope).not.toBe("self");
 
-      // The EXTERNAL switch: driven from a request context, so the app never
-      // runs its cache wipe and the entry above survives.
-      const left = await context.request.post("/api/account/switch", {
-        data: { accountId: null },
+      // The EXTERNAL switch: nothing in the app initiates it, so
+      // `clearOfflineCachesForRecordSwitch` never runs and the entry above
+      // survives — the positive control below is what proves that.
+      //
+      // Sent with the page's own `fetch` rather than through
+      // `context.request`. Both are outside the app: the switch UI is what runs
+      // the wipe, and a bare `fetch` is not it (the service worker returns
+      // without touching any non-GET, so the request reaches the network
+      // unaltered). What differs is the socket. Every Playwright API context in
+      // the runner shares one process-wide keep-alive agent, so this POST could
+      // be handed a connection the server had already closed on its five-second
+      // idle timeout, and a POST is never replayed on a fresh one — twice this
+      // line ended the spec with `read ECONNRESET`, on all three attempts.
+      const left = await page.evaluate(async () => {
+        const res = await fetch("/api/account/switch", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ accountId: null }),
+        });
+        return res.status;
       });
-      expect(left.status()).toBe(200);
+      expect(left).toBe(200);
       const me = await context.request.get("/api/auth/me");
       const now = (await me.json()).data.recordSession as {
         epoch: number;
