@@ -1278,3 +1278,35 @@ describe("streamParseExportXml — the archive's own export stamp", () => {
     expect(stamps).toEqual([]);
   });
 });
+
+describe("streamParseExportXml — the record's own unit (issue #944)", () => {
+  it("stores a km-scale walking distance in metres", async () => {
+    const { prisma } = await importCumulativeFixture(
+      cumulativeExportXml(
+        "HKQuantityTypeIdentifierDistanceWalkingRunning",
+        "km",
+        [{ value: 2.484, sourceName: "iPhone", hour: 8 }],
+      ),
+    );
+
+    expect(prisma._measurements).toHaveLength(1);
+    expect(prisma._measurements[0]).toMatchObject({
+      type: "WALKING_RUNNING_DISTANCE",
+      unit: "m",
+    });
+    expect(prisma._measurements[0].value).toBeCloseTo(2484, 6);
+  });
+
+  it("stores a mile-scale walking distance in metres", async () => {
+    const { prisma } = await importCumulativeFixture(
+      cumulativeExportXml(
+        "HKQuantityTypeIdentifierDistanceWalkingRunning",
+        "mi",
+        [{ value: 1.543, sourceName: "iPhone", hour: 8 }],
+      ),
+    );
+
+    expect(prisma._measurements).toHaveLength(1);
+    expect(prisma._measurements[0].value).toBeCloseTo(2483.217792, 6);
+  });
+});
