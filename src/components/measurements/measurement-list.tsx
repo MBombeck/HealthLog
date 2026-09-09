@@ -1161,6 +1161,18 @@ export function MeasurementList({
                         <Fragment key={m.id}>
                           <TableRow
                             data-state={isSelected ? "selected" : undefined}
+                            // A row is addressable by what it holds, not by
+                            // the copy it paints: the type is an enum and the
+                            // unit is a symbol, so a browser journey can pin
+                            // "this glucose reading now reads in mmol/L"
+                            // without matching translated text that also
+                            // renders at a different size on the card list
+                            // below.
+                            data-testid="measurement-row"
+                            data-measurement-type={m.type}
+                            data-display-unit={
+                              isGrouped ? m.unit : rowDisplay(m).unit
+                            }
                           >
                             <TableCell className="pl-4">
                               {/* Grouped/synthetic rows aren't individually
@@ -1197,7 +1209,10 @@ export function MeasurementList({
                                 </button>
                               </Badge>
                             </TableCell>
-                            <TableCell className="font-semibold tabular-nums">
+                            <TableCell
+                              className="font-semibold tabular-nums"
+                              data-slot="measurement-row-value"
+                            >
                               {/* v1.4.39.3 — non-grouped rows render the
                                 stored value with its native precision
                                 (`fmt.number` honours up to 3 fraction
@@ -1358,6 +1373,12 @@ export function MeasurementList({
                     <ListRow
                       key={m.id}
                       data-state={isSelected ? "selected" : undefined}
+                      // Same addressing contract as the desktop row above.
+                      data-testid="measurement-row"
+                      data-measurement-type={m.type}
+                      data-display-unit={
+                        isGrouped ? m.unit : rowDisplay(m).unit
+                      }
                       className="bg-card border-border data-[state=selected]:border-primary/60 data-[state=selected]:bg-primary/5"
                     >
                       <div className="flex items-center justify-between">
@@ -1412,7 +1433,10 @@ export function MeasurementList({
                                 {t(TYPE_LABEL_KEYS[m.type])}
                               </Badge>
                             )}
-                            <span className="font-semibold tabular-nums">
+                            <span
+                              className="font-semibold tabular-nums"
+                              data-slot="measurement-row-value"
+                            >
                               {/* v1.4.39.3 — mirror the desktop table:
                                 grouped daily aggregates stay integer,
                                 non-grouped single readings render with
