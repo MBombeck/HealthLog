@@ -111,7 +111,12 @@ function jsonRequest(url: string, body: unknown): NextRequest {
 
 async function postMood() {
   const { POST } = await import("@/app/api/mood-entries/route");
-  return POST(jsonRequest("/api/mood-entries", { mood: "GUT" }));
+  return POST(
+    jsonRequest("/api/mood-entries", {
+      mood: "GUT",
+      moodLoggedAt: new Date().toISOString(),
+    }),
+  );
 }
 
 async function postAllergy() {

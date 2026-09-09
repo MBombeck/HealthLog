@@ -81,6 +81,8 @@ interface AccountAccessEntry {
   recordKind: "shared" | "managed";
   sections: string[] | null;
   canWrite: boolean;
+  writableDomains: string[];
+  manageableDomains: string[];
 }
 
 interface AccountAccessBlock {
@@ -183,6 +185,8 @@ describe("accountAccess — what the payload publishes", () => {
         recordKind: "shared",
         sections: null,
         canWrite: false,
+        writableDomains: [],
+        manageableDomains: [],
       },
     ]);
     expect(accountAccess.canSwitch).toBe(true);
@@ -342,6 +346,8 @@ describe("accountAccess — the active record", () => {
       recordKind: "shared",
       sections: null,
       canWrite: false,
+      writableDomains: [],
+      manageableDomains: [],
     });
     // The active entry is one of the listed ones, by construction. A banner
     // that had to join the two could render unnamed when they disagreed.
