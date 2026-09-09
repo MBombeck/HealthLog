@@ -767,6 +767,10 @@ export function MoodChart({
           ? "h-[var(--chart-height,140px)]"
           : "h-[var(--chart-height,200px)] md:h-[var(--chart-height-md,220px)]"
       } touch-pan-y`}
+      // Same stable hook as the measurement chart: rendered by the data
+      // branch only, so the browser suite can gate on it instead of on
+      // Recharts' own class names.
+      data-slot="chart-plot"
       role="img"
       aria-label={moodAriaLabel}
     >

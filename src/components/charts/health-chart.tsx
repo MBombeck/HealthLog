@@ -1945,6 +1945,11 @@ export function HealthChart({
             ) : null}
 
             <div
+              // Stable hook for the browser suite. `.recharts-wrapper` is a
+              // library-internal class and it is what the a11y scan used to
+              // gate on; this slot is rendered by the data branch only, so it
+              // says the same thing without depending on Recharts' markup.
+              data-slot="chart-plot"
               className="relative z-10 h-full touch-pan-y"
               role="img"
               aria-label={chartAriaLabel}
