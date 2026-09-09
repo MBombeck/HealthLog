@@ -23,6 +23,7 @@ import { serializeScheduleRecurrence } from "@/lib/medication-schedule";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { readMedicationsListCached } from "@/lib/medications/list-read";
 import { serializeScheduleUnitsPerDose } from "@/lib/medications/schedule-units-dto";
+import { withIdempotency } from "@/lib/idempotency";
 import { NextRequest } from "next/server";
 
 // v1.32.25 — blast-radius cap on externally-mirrored medications per user.
@@ -103,7 +104,16 @@ async function respondWithExistingMirror(
   });
 }
 
-export const POST = apiHandler(async (request: NextRequest) => {
+/**
+ * The create is wrapped in `withIdempotency` so a client replaying its offline
+ * outbox after a lost success response replays the first answer instead of
+ * minting a second medication. The `(externalSource, externalId)` dedupe below
+ * only ever covered a MIRRORED create; a manually entered medication carries
+ * neither field and had nothing to collapse a retry onto.
+ */
+export const POST = apiHandler(withIdempotency<[NextRequest]>(postMedication));
+
+async function postMedication(request: NextRequest): Promise<Response> {
   // v1.36.x — a delegated write, and the asymmetric one: a delegate can ADD a
   // medication with its whole nested schedule, and can never edit or delete
   // it afterwards — `PUT /api/medications/[id]` and the DELETE beside it stay
@@ -424,4 +434,4 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
     201,
   );
-});
+}

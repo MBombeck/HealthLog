@@ -575,6 +575,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
     post: {
+      parameters: [idempotencyKeyParameter],
       tags: ["Medications"],
       summary: "Log a side effect",
       description:
@@ -585,6 +586,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         content: { "application/json": { schema: createSideEffectRequest } },
       },
       responses: {
+        ...idempotentWrite(),
         ...recordRefusal(),
         "201": {
           description: "The created entry, with its note decrypted.",
@@ -912,6 +914,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
     post: {
+      parameters: [idempotencyKeyParameter],
       tags: ["Medications"],
       summary: "Create a medication with at least one schedule",
       description:
@@ -921,6 +924,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         content: { "application/json": { schema: createMedicationSchema } },
       },
       responses: {
+        ...idempotentWrite(),
         ...recordRefusal(),
         "201": {
           description: "Created medication with its schedules.",
@@ -1220,6 +1224,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
     post: {
+      parameters: [idempotencyKeyParameter],
       tags: ["Medications"],
       summary: "Register a new supply container",
       description:
@@ -1234,6 +1239,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
       },
       responses: {
+        ...idempotentWrite(),
         ...recordRefusal(),
         "201": {
           description: "Created inventory item.",
