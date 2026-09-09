@@ -135,6 +135,68 @@ describe("target section builders", () => {
     });
   });
 
+  it("emits a card for readings with no meal-time context (#943)", () => {
+    // A meter synced through Apple Health writes no HealthKit meal-time
+    // metadata, so every row arrives with a null context. Iterating the four
+    // named contexts alone returned no glucose target at all.
+    const targets = buildGlucoseTargets({
+      rows: [
+        { value: 112, measuredAt: NOW, glucoseContext: null },
+        { value: 104, measuredAt: NOW, glucoseContext: null },
+      ],
+      profile: {
+        heightCm: 180,
+        dateOfBirth: new Date("1985-01-01T00:00:00.000Z"),
+        gender: "MALE",
+        glucoseUnit: "mg/dL",
+        hasDiabetes: false,
+        thresholdsJson: null,
+      },
+      timezone: TZ,
+      now: NOW,
+    });
+
+    expect(targets.map((target) => target.type)).toEqual([
+      "BLOOD_GLUCOSE_UNSPECIFIED",
+    ]);
+    expect(targets[0]).toMatchObject({
+      label: "targets.glucoseUnspecified",
+      current: 112,
+      average30: 108,
+      unit: "mg/dL",
+    });
+    // The untagged bucket is judged against the RANDOM band, so it still
+    // carries a range and a classification rather than a blank card.
+    expect(targets[0].range).not.toBeNull();
+    expect(targets[0].classification).not.toBeNull();
+  });
+
+  it("keeps the tagged breakdown and puts the untagged bucket last (#943)", () => {
+    const targets = buildGlucoseTargets({
+      rows: [
+        { value: 130, measuredAt: NOW, glucoseContext: "RANDOM" as const },
+        { value: 90, measuredAt: NOW, glucoseContext: "FASTING" as const },
+        { value: 111, measuredAt: NOW, glucoseContext: null },
+      ],
+      profile: {
+        heightCm: 180,
+        dateOfBirth: new Date("1985-01-01T00:00:00.000Z"),
+        gender: "MALE",
+        glucoseUnit: "mg/dL",
+        hasDiabetes: false,
+        thresholdsJson: null,
+      },
+      timezone: TZ,
+      now: NOW,
+    });
+
+    expect(targets.map((target) => target.type)).toEqual([
+      "BLOOD_GLUCOSE_FASTING",
+      "BLOOD_GLUCOSE_RANDOM",
+      "BLOOD_GLUCOSE_UNSPECIFIED",
+    ]);
+  });
+
   it("keeps summary streak ties stable by public target order", () => {
     expect(
       buildTargetPageSummary([

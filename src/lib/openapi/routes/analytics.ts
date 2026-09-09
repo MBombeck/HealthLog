@@ -507,7 +507,7 @@ const analyticsDefaultResponse = z
       .record(z.string(), dataSummary)
       .nullable()
       .describe(
-        "Per-context glucose summaries (FASTING / POSTPRANDIAL / RANDOM / BEDTIME) over the trailing 30 days, canonical mg/dL. Contexts with no readings are omitted; the whole block is null when the glucose module is off.",
+        "Per-context glucose summaries (FASTING / POSTPRANDIAL / RANDOM / BEDTIME, plus UNSPECIFIED for readings whose source recorded no meal-time context) over the trailing 30 days, canonical mg/dL. Buckets with no readings are omitted; the whole block is null when the glucose module is off.",
       ),
     glucoseClinical: glucoseClinicalSchema
       .nullable()

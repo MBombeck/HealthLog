@@ -244,6 +244,7 @@
     "typeGlucosePostprandial": "혈당 (식후)",
     "typeGlucoseRandom": "혈당 (임의)",
     "typeGlucoseBedtime": "혈당 (취침 전)",
+    "typeGlucoseUnspecified": "혈당 (미지정)",
     "glucoseClassificationTitle": "혈당 — 참고 범위 (ADA 2024 / DDG)",
     "glucoseRow": "{label}: 평균 {avg} {unit} (목표 {rangeMin}–{rangeMax}) — {class}",
     "glucoseInTarget": "목표 범위 내",
@@ -3438,6 +3439,7 @@
             "postprandial": "식후",
             "random": "임의",
             "bedtime": "취침 전",
+            "unspecified": "미지정",
             "readingsShort": "측정값 {count}개",
             "readingsShortOne": "측정값 1개"
           }
@@ -7593,6 +7595,7 @@
     "glucosePostprandial": "혈당 — 식후",
     "glucoseRandom": "혈당 — 무작위",
     "glucoseBedtime": "혈당 — 취침 전",
+    "glucoseUnspecified": "혈당 — 미지정",
     "status": {
       "underweight": "저체중",
       "normal": "정상",

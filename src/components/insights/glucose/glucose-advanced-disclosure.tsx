@@ -31,6 +31,8 @@ const CONTEXT_LABEL_KEYS: Record<string, string> = {
     "insights.bloodGlucose.clinical.advanced.byContext.postprandial",
   RANDOM: "insights.bloodGlucose.clinical.advanced.byContext.random",
   BEDTIME: "insights.bloodGlucose.clinical.advanced.byContext.bedtime",
+  // #943 — readings whose source recorded no meal-time context.
+  UNSPECIFIED: "insights.bloodGlucose.clinical.advanced.byContext.unspecified",
 };
 
 export interface GlucoseAdvancedDisclosureProps {

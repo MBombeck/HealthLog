@@ -244,6 +244,7 @@
     "typeGlucosePostprandial": "Glucose (postprandial)",
     "typeGlucoseRandom": "Glucose (random)",
     "typeGlucoseBedtime": "Glucose (bedtime)",
+    "typeGlucoseUnspecified": "Glucose (untagged)",
     "glucoseClassificationTitle": "Blood glucose — reference ranges (ADA 2024 / DDG)",
     "glucoseRow": "{label}: avg {avg} {unit} (target {rangeMin}–{rangeMax}) — {class}",
     "glucoseInTarget": "in target",
@@ -3438,6 +3439,7 @@
             "postprandial": "After meals",
             "random": "Random",
             "bedtime": "Bedtime",
+            "unspecified": "Untagged",
             "readingsShort": "{count} readings",
             "readingsShortOne": "1 reading"
           }
@@ -7593,6 +7595,7 @@
     "glucosePostprandial": "Glucose — post-meal",
     "glucoseRandom": "Glucose — random",
     "glucoseBedtime": "Glucose — bedtime",
+    "glucoseUnspecified": "Glucose — untagged",
     "status": {
       "underweight": "Underweight",
       "normal": "Normal",

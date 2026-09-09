@@ -20,12 +20,14 @@ import {
   getEffectiveRange,
   type ThresholdOverridesJson,
 } from "@/lib/analytics/effective-range";
-import { resolveGlucoseUnit, thresholdMetricForContext } from "@/lib/glucose";
+import {
+  GLUCOSE_CONTEXT_BUCKETS,
+  groupByGlucoseContext,
+  resolveGlucoseUnit,
+  thresholdMetricForContext,
+} from "@/lib/glucose";
 import { computeGlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
-import type {
-  GlucoseContext,
-  MeasurementType,
-} from "@/generated/prisma/client";
+import type { MeasurementType } from "@/generated/prisma/client";
 import {
   reconstructSleepNights,
   type SleepStageRow,
@@ -69,13 +71,6 @@ import {
   loadVisits,
   loadLabResults,
 } from "./clinical-records";
-
-const GLUCOSE_CONTEXTS: GlucoseContext[] = [
-  "FASTING",
-  "POSTPRANDIAL",
-  "RANDOM",
-  "BEDTIME",
-];
 
 const DENSE_REPORT_RAW_WINDOW_DAYS = 90;
 
@@ -413,9 +408,19 @@ export async function collectDoctorReportData(
     gender: userProfile?.gender ?? null,
   };
   if (glucosePanelOn) {
-    for (const ctx of GLUCOSE_CONTEXTS) {
+    // #943 — the untagged bucket is a bucket. A report built from a meter
+    // that records no meal-time context used to carry an empty glucose panel.
+    const groupedGlucose = groupByGlucoseContext(
+      glucoseRows,
+      (m) => m.glucoseContext,
+    );
+    const glucoseBuckets = denseGlucose
+      ? GLUCOSE_CONTEXT_BUCKETS
+      : groupedGlucose.map(([bucket]) => bucket);
+    for (const ctx of glucoseBuckets) {
       if (!denseGlucose) {
-        const rows = glucoseRows.filter((m) => m.glucoseContext === ctx);
+        const rows =
+          groupedGlucose.find(([bucket]) => bucket === ctx)?.[1] ?? [];
         if (rows.length === 0) continue;
         const values = rows.map((r) => r.value);
         glucoseStats[ctx] = {

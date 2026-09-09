@@ -12,7 +12,11 @@
  * read plus the shared accumulators, so the emitted shape and ordering
  * are unchanged.
  */
-import { convertGlucose, type GlucoseUnit } from "@/lib/glucose";
+import {
+  convertGlucose,
+  glucoseContextBucket,
+  type GlucoseUnit,
+} from "@/lib/glucose";
 import {
   computeGlucoseClinicalMetrics,
   GLUCOSE_PANEL_WINDOW_DAYS,
@@ -80,15 +84,18 @@ export function buildGlucoseBlock(ctx: Readonly<GlucoseBlockContext>): void {
       meta: { cluster: "glucose", source: "glucose" },
     });
   } else {
-    // Group by context (NULL → "unspecified"), then per-day mean.
+    // Group by context (NULL → "unspecified"), then per-day mean. The bucket
+    // resolver is the shared one (#943) — this block named the untagged
+    // bucket first, and the rest of the tree now resolves through the same
+    // helper rather than repeating the NULL arm at each surface.
     const byContext = new Map<
       string,
       Array<{ measuredAt: Date; value: number }>
     >();
     for (const r of glucoseRows) {
-      const ctxKey = r.glucoseContext
-        ? String(r.glucoseContext).toLowerCase()
-        : "unspecified";
+      const ctxKey = glucoseContextBucket(
+        typeof r.glucoseContext === "string" ? r.glucoseContext : null,
+      ).toLowerCase();
       const list = byContext.get(ctxKey) ?? [];
       list.push({ measuredAt: r.measuredAt, value: r.value });
       byContext.set(ctxKey, list);

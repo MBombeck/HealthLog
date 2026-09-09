@@ -1,21 +1,18 @@
-import type { GlucoseContext } from "@/generated/prisma/client";
-import { resolveGlucoseUnit } from "@/lib/glucose";
+import {
+  groupByGlucoseContext,
+  resolveGlucoseUnit,
+  type GlucoseContextBucket,
+} from "@/lib/glucose";
 import { resolveGlucoseTarget } from "./glucose-targets";
 import { makeRangeClassifier, rollupConsistency } from "./consistency";
 import type { TargetGlucoseRow, TargetItem, TargetProfile } from "./types";
 
-const GLUCOSE_CONTEXTS: GlucoseContext[] = [
-  "FASTING",
-  "POSTPRANDIAL",
-  "RANDOM",
-  "BEDTIME",
-];
-
-const LABEL_BY_CONTEXT: Record<GlucoseContext, string> = {
+const LABEL_BY_CONTEXT: Record<GlucoseContextBucket, string> = {
   FASTING: "targets.glucoseFasting",
   POSTPRANDIAL: "targets.glucosePostprandial",
   RANDOM: "targets.glucoseRandom",
   BEDTIME: "targets.glucoseBedtime",
+  UNSPECIFIED: "targets.glucoseUnspecified",
 };
 
 interface GlucoseTargetsInput {
@@ -35,10 +32,13 @@ export function buildGlucoseTargets({
   const unit = resolveGlucoseUnit(profile.glucoseUnit);
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  for (const context of GLUCOSE_CONTEXTS) {
-    const contextRows = rows.filter((row) => row.glucoseContext === context);
-    if (contextRows.length === 0) continue;
-
+  // #943 — the untagged bucket rides the same loop. Iterating the four named
+  // contexts alone left an account whose source writes no meal-time tag with
+  // no glucose target at all, the same gap the dashboard tile had.
+  for (const [context, contextRows] of groupByGlucoseContext(
+    rows,
+    (row) => row.glucoseContext,
+  )) {
     const latest = contextRows[0].value;
     const recent = contextRows.filter((row) => row.measuredAt >= thirtyDaysAgo);
     const average30 =

@@ -69,6 +69,10 @@ const TARGET_TYPE_TO_METRIC: Record<string, ThresholdMetric | null> = {
   // BLOOD_PRESSURE handled specially with both sys + dia.
   // BMI / MOOD_SCORE / MOOD_STABILITY / MEDICATION_COMPLIANCE /
   // BLOOD_PRESSURE_IN_TARGET — derived, no editable threshold.
+  // BLOOD_GLUCOSE_UNSPECIFIED (#943) — deliberately absent. The untagged
+  // bucket is judged against the RANDOM band; giving it its own editor row
+  // would offer two controls that write one threshold, so the cog renders
+  // disabled the same way it does for a derived card.
 };
 
 interface CurrentRange {
