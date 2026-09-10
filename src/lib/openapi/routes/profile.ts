@@ -84,7 +84,7 @@ const moduleMapResolved = z
   .meta({
     id: "ModuleMap",
     description:
-      "Fully-resolved per-user module enable/disable map. Every toggleable module key is present. `false` means the surface should disappear end-to-end (nav, dashboard, insights, …). `cycle` mirrors `cycleTrackingEnabled`; `coach` mirrors the resolved per-user opt-out + operator master flag.",
+      "Fully-resolved module enable/disable map. Every toggleable module key is present. `false` means the surface should disappear end-to-end (nav, dashboard, insights, …). `cycle` mirrors `cycleTrackingEnabled`; `coach` mirrors the resolved per-user opt-out + operator master flag. On `GET /api/auth/me` it answers for the RECORD the session is inside rather than for the caller, because every surface it gates shows the record's data, and it is masked to the sections the active grant opens — a module outside them reads `false` rather than the record's true state. With no switch — which is every native request, since the Bearer transport carries none — the two are the same account, nothing is masked and the payload is unchanged.",
   });
 
 const moduleMapEnvelopeInner = z

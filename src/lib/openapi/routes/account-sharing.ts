@@ -32,6 +32,7 @@ import {
 import {
   createManagedProfileSchema,
   inviteManagedProfileGuardianSchema,
+  updateManagedProfileSchema,
 } from "@/lib/validations/managed-profiles";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 
@@ -63,7 +64,13 @@ const accountGrantInvite = inviteGrantSchema.meta({
 const createManagedProfileRequest = createManagedProfileSchema.meta({
   id: "CreateManagedProfileRequest",
   description:
-    "Create a health record for somebody who has no login of their own — a child, a dependent adult, an animal. The caller becomes its first Guardian in the same transaction, through an ordinary MANAGE grant with the new record as grantor, so the profile appears in `accountAccess.accounts` on the next `GET /api/auth/me` and is switched into like any other shared record. `displayName` is the only required text; `dateOfBirth` is an optional `YYYY-MM-DD` and is never synthesised from a year. `locale` and `timezone` belong to the RECORD and not to the Guardian reading it: they decide how the profile's own reminders are worded and when its day starts. Strict — an unexpected field is a 422 rather than an ignored key. Cookie transport only and step-up gated (`requireFreshMfa`, unconditional): a Bearer caller cannot mint a credential-less person and a permanent management relationship, and an account with no second factor enrolled is refused rather than waved through. Rate-limited to ten an hour per caller.",
+    "Create a health record for somebody who has no login of their own — a child, a dependent adult, an animal. The caller becomes its first Guardian in the same transaction, through an ordinary MANAGE grant with the new record as grantor, so the profile appears in `accountAccess.accounts` on the next `GET /api/auth/me` and is switched into like any other shared record. `displayName` is the only required text; `dateOfBirth` is an optional `YYYY-MM-DD` and is never synthesised from a year. `gender` is optional and takes the same three values `PATCH /api/auth/me` takes for an ordinary account (`MALE`, `FEMALE`, `OTHER`) or null; absent and null both mean not recorded, and the value is what the cycle module derives its default from, so a record created for a child who does not need it starts with it off. `locale` and `timezone` belong to the RECORD and not to the Guardian reading it: they decide how the profile's own reminders are worded and when its day starts. Strict — an unexpected field is a 422 rather than an ignored key. Cookie transport only and step-up gated (`requireFreshMfa`, unconditional): a Bearer caller cannot mint a credential-less person and a permanent management relationship, and an account with no second factor enrolled is refused rather than waved through. Rate-limited to ten an hour per caller.",
+});
+
+const updateManagedProfileRequest = updateManagedProfileSchema.meta({
+  id: "UpdateManagedProfileRequest",
+  description:
+    "Change what a managed record is, from the Guardian's own panel. The same five fields creation takes, every one of them optional, and at least one required — an empty body is a 422 rather than a no-op that audits a change nobody made. Absence means leave the field alone; an explicit null on `dateOfBirth` or `gender` clears it, and the two are different answers. Nothing else on the record is reachable here: credentials, provider connections, notification routing and the health profile are not identity, and the wider configuration surface is `PATCH /api/record-settings/{family}`, which is guardian-fenced and answers only while switched into the record. Strict, cookie-only and step-up gated, like every act in this family.",
 });
 
 const inviteManagedProfileGuardianRequest =
@@ -183,9 +190,25 @@ const managedProfileCreated = z
       .describe(
         "The profile's account id — the value `POST /api/account/switch` and the `X-HealthLog-Account` selector take, and the `{id}` in this family's paths.",
       ),
-    displayName: z.string(),
-    dateOfBirth: z.string().nullable(),
-    locale: z.string(),
+    displayName: z.string().nullable(),
+    dateOfBirth: z
+      .string()
+      .nullable()
+      .describe(
+        "`YYYY-MM-DD`, or null. The same date-only shape the request takes — this is a calendar date, not an instant, and publishing it with a time would invite a client to apply a zone to it.",
+      ),
+    gender: z
+      .enum(["MALE", "FEMALE", "OTHER"])
+      .nullable()
+      .describe(
+        "`User.gender` for this record. Null means not recorded, which is a real answer and not a missing one.",
+      ),
+    locale: z
+      .string()
+      .nullable()
+      .describe(
+        "The record's own language. Every profile this family creates carries one, because creation requires it; the column is nullable, so null means a row written before that and a client renders its own language rather than the word.",
+      ),
     timezone: z.string(),
     recordKind: z
       .literal("managed")
@@ -196,7 +219,7 @@ const managedProfileCreated = z
   .meta({
     id: "ManagedProfile",
     description:
-      "A record somebody looks after, as its creation answers with it. There is deliberately no list endpoint: the profiles a Guardian looks after are the `managed` entries of `accountAccess.accounts` on GET /api/auth/me, because a Guardian's relationship to a profile IS a MANAGE grant. Re-read the account payload after any change here; a client that refreshed only its own panel would leave the new record out of the switcher and the banner until the next boot.",
+      "A record somebody looks after, as its creation, its read and its edit all answer with it. There is deliberately no list endpoint: the profiles a Guardian looks after are the `managed` entries of `accountAccess.accounts` on GET /api/auth/me, because a Guardian's relationship to a profile IS a MANAGE grant. Re-read the account payload after any change here; a client that refreshed only its own panel would leave the new record out of the switcher and the banner until the next boot.",
   });
 
 const endedGuardianGrant = z
@@ -430,8 +453,21 @@ const accountPayload = z
   .meta({
     id: "AccountPayload",
     description:
-      "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do. Additional properties are the preference fields this spec does not yet enumerate. Under an active switch this payload still describes the CALLER — their preferences, their modules, their identity — because display preferences belong to the person at the keyboard rather than to the record they are reading.",
+      "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do. Additional properties are the preference fields this spec does not yet enumerate. Under an active switch the identity and preference fields still describe the CALLER, because display preferences belong to the person at the keyboard rather than to the record they are reading. Two fields are the exception (v1.38.14): `modules` and `cycleTrackingEnabled` describe the ACTIVE RECORD, since every surface they gate shows the record's data — and they are masked to the sections the active grant opens, so a scoped grant reads `false` for a module outside it rather than the record's true state. With no switch — which is every native request, since the Bearer transport carries none — the two are the same account and nothing is masked.",
   });
+
+/**
+ * One envelope, three routes.
+ *
+ * `dataEnvelope` mints a new schema on every call, and two schemas cannot share
+ * a component id — so creating, reading and editing a managed profile have to
+ * reference the SAME const rather than call the helper three times. They do
+ * describe the same thing, which is why they may.
+ */
+const managedProfileEnvelope = dataEnvelope(
+  managedProfileCreated,
+  "ManagedProfileEnvelope",
+);
 
 export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/auth/me": {
@@ -439,7 +475,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "The signed-in account, and what sharing lets it do",
       description:
-        "Keeps answering while the browser is acting on another record — the switcher, the banner naming whose record is open, and the way back out all read it, so a refusal here would strand a switched session. It is therefore an ACTOR surface: it always serves the caller's own rows, and a request that attaches `X-HealthLog-Account` is refused with 403 `sharing.not_permitted` rather than quietly answered. A client that wants a record's data sends the selector on the read that needs it, never on this call.",
+        "Keeps answering while the browser is acting on another record — the switcher, the banner naming whose record is open, and the way back out all read it, so a refusal here would strand a switched session. It is therefore an ACTOR surface: it serves the caller's own rows — apart from `modules` and `cycleTrackingEnabled`, which answer for the record the session is inside, masked to what the grant opens — and a request that attaches `X-HealthLog-Account` is refused with 403 `sharing.not_permitted` rather than quietly answered. A client that wants a record's data sends the selector on the read that needs it, never on this call.",
       responses: {
         ...stdResponses,
         "200": {
@@ -676,10 +712,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The new record.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
-                managedProfileCreated,
-                "ManagedProfileEnvelope",
-              ),
+              schema: managedProfileEnvelope,
             },
           },
         },
@@ -697,6 +730,72 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     },
   },
   "/api/managed-profiles/{id}": {
+    get: {
+      tags: ["Account sharing"],
+      summary: "Read a managed record's identity",
+      description:
+        "What the record is right now — the five fields its creation took. The read an edit form fills itself from, and the reason it exists: `accountAccess.accounts` on the account payload carries the record's name and nothing else, so a form offered from the Guardian's own panel had no way to show the timezone, the language or the date of birth it was about to overwrite. Cookie transport only, an ACTOR surface (the profile is named in the path and the caller acts as themselves, so it answers without switching into the record), and NOT step-up gated: this is a read, it discloses to a Guardian only what they already administer, and the gate belongs to the acts.",
+      requestParams: {
+        path: z.object({ id: z.string() }),
+      },
+      responses: {
+        ...stdResponses,
+        "200": {
+          description: "The record as it stands.",
+          content: {
+            "application/json": {
+              schema: managedProfileEnvelope,
+            },
+          },
+        },
+        "404": {
+          description:
+            "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode: managed_profile.not_found`). The two are byte-identical, so the refusal is not an enumeration oracle.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+    patch: {
+      tags: ["Account sharing"],
+      summary: "Change a managed record's identity",
+      description:
+        "Edit the record after it exists — the name that was a placeholder, the timezone that moved with the household, the date of birth somebody finally has, the sex that decides whether the cycle module is on. Any active Guardian may do it, from a cookie session with a fresh second factor: the same gate creation and deletion carry, because the three acts mint, change and end an account that can never prove anything about itself. Ten an hour per caller, the ceiling creation carries. Answers with the whole record, so a client re-renders from the server's version rather than from what it sent.",
+      requestParams: {
+        path: z.object({ id: z.string() }),
+      },
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: updateManagedProfileRequest },
+        },
+      },
+      responses: {
+        ...stdResponses,
+        "200": {
+          description: "The record as it now stands.",
+          content: {
+            "application/json": {
+              schema: managedProfileEnvelope,
+            },
+          },
+        },
+        "401": {
+          description:
+            "No fresh second-factor proof, or none enrolled. Same unconditional gate as creation and deletion.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "404": {
+          description:
+            "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode: managed_profile.not_found`). The two are byte-identical.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "429": {
+          description:
+            "More than ten edits from one caller within the hour — the ceiling creation carries. No error code; branch on the status. Nothing was changed, and the refusal lands before the record named in the path is looked at.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
     delete: {
       tags: ["Account sharing"],
       summary: "Delete a managed record",

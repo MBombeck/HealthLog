@@ -30,6 +30,8 @@ import {
   parseManagedRecordSettingsPatch,
   resolveGuardianRecordSettingsAccess,
 } from "@/lib/record-settings";
+import { isCycleEnabled } from "@/lib/cycle/gate";
+import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
 import {
   resolveInsightsLayout,
   serializeInsightsLayout,
@@ -101,13 +103,23 @@ export const GET = apiHandler(
           dateFormat: record.dateFormat,
         };
         break;
-      case "modules":
+      case "modules": {
+        // The delegated key needs its real source, which is not the module
+        // blob. `isCycleEnabled` resolves the record's own opt-in against its
+        // sex exactly as `/api/auth/me` does for the account itself, so the
+        // switch a guardian sees is the state the gate will answer with.
+        const cycleProfile = await prisma.cycleProfile.findUnique({
+          where: { userId: access.recordId },
+          select: { cycleTrackingEnabled: true },
+        });
         settings = {
           modulePreferences: managedModulePreferencesFrom(
             record.modulePreferencesJson,
           ),
+          cycleTrackingEnabled: isCycleEnabled(record.gender, cycleProfile),
         };
         break;
+      }
       case "notifications": {
         const preferences = parseNotificationPrefs(record.notificationPrefs);
         settings = {
@@ -233,19 +245,50 @@ export const PATCH = apiHandler(
           const patch = parseManagedRecordSettingsPatch("modules", body);
           const current = await prisma.user.findUnique({
             where: { id: access.recordId },
-            select: { modulePreferencesJson: true },
+            select: { modulePreferencesJson: true, gender: true },
           });
           const modulePreferences = {
             ...managedModulePreferencesFrom(current?.modulePreferencesJson),
             ...patch.modulePreferences,
           };
-          await prisma.user.update({
-            where: { id: access.recordId },
-            data: { modulePreferencesJson: toJson(modulePreferences) },
+          if (patch.modulePreferences !== undefined) {
+            await prisma.user.update({
+              where: { id: access.recordId },
+              data: { modulePreferencesJson: toJson(modulePreferences) },
+            });
+          }
+          // The delegated key writes its own column. An explicit boolean is
+          // what the cycle gate honours over the sex-derived default, so a
+          // guardian turning Cycle off for a record whose sex says otherwise
+          // is recorded as the deliberate answer it is.
+          if (patch.cycleTrackingEnabled !== undefined) {
+            await getOrCreateCycleProfile(access.recordId);
+            await prisma.cycleProfile.update({
+              where: { userId: access.recordId },
+              data: { cycleTrackingEnabled: patch.cycleTrackingEnabled },
+            });
+          }
+          const cycleProfile = await prisma.cycleProfile.findUnique({
+            where: { userId: access.recordId },
+            select: { cycleTrackingEnabled: true },
           });
           invalidateUserHealthScore(access.recordId);
-          settings = { modulePreferences };
-          changed = Object.keys(patch.modulePreferences);
+          settings = {
+            modulePreferences,
+            cycleTrackingEnabled: isCycleEnabled(
+              current?.gender ?? null,
+              cycleProfile,
+            ),
+          };
+          // The module keys themselves, not the wrapper field: the record's
+          // trail should say which module moved. `cycleTrackingEnabled` is
+          // named as itself because that is the column it writes.
+          changed = [
+            ...Object.keys(patch.modulePreferences ?? {}),
+            ...(patch.cycleTrackingEnabled !== undefined
+              ? ["cycleTrackingEnabled"]
+              : []),
+          ];
           break;
         }
         case "notifications": {

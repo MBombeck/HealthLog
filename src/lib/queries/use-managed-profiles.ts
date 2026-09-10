@@ -27,7 +27,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 import { invalidateGrantReads } from "@/lib/queries/use-account-grants";
 import type { GrantParty } from "@/lib/queries/use-account-grants";
@@ -49,16 +49,42 @@ export interface CreateManagedProfileInput {
   locale: Locale;
   /** IANA zone name. */
   timezone: string;
+  /** `User.gender`. Null is a real answer — "not recorded" — not an omission. */
+  gender: ManagedProfileGender;
 }
 
-/** What the create route answers with. */
-export interface ManagedProfileCreated {
+/** The three values `User.gender` takes, plus the honest absence. */
+export type ManagedProfileGender = "MALE" | "FEMALE" | "OTHER" | null;
+
+/** What the create, read and update routes all answer with. */
+export interface ManagedProfileView {
   id: string;
-  displayName: string;
+  displayName: string | null;
   dateOfBirth: string | null;
-  locale: string;
+  gender: ManagedProfileGender;
+  /** Nullable, as the column is. A record created here always carries one. */
+  locale: string | null;
   timezone: string;
   recordKind: "managed";
+}
+
+/**
+ * The body `PATCH /api/managed-profiles/{id}` accepts, plus the record it is
+ * addressed to.
+ *
+ * Every field optional, at least one required, and `.strict()` on the server —
+ * so the mutation names the fields one by one rather than spreading form state,
+ * exactly as the creation does. An absent key means "leave it"; an explicit
+ * null on the two nullable fields clears it. `profileId` addresses the request
+ * and is deliberately not in the body: the schema would refuse it.
+ */
+export interface UpdateManagedProfileInput {
+  profileId: string;
+  displayName?: string;
+  dateOfBirth?: string | null;
+  locale?: Locale;
+  timezone?: string;
+  gender?: ManagedProfileGender;
 }
 
 /**
@@ -94,9 +120,86 @@ export function useCreateManagedProfile() {
   return useMutation({
     mutationKey: queryKeys.managedProfileCreate(),
     mutationFn: (input: CreateManagedProfileInput) =>
-      apiPost<ManagedProfileCreated>("/api/managed-profiles", input),
+      apiPost<ManagedProfileView>("/api/managed-profiles", input),
     onSuccess: invalidate,
   });
+}
+
+/**
+ * The record as it stands, for the form that is about to change it.
+ *
+ * The account payload names a managed record and nothing more, so a form
+ * opened from the Guardian's own panel cannot show the timezone, the language,
+ * the date of birth or the sex it is about to overwrite. This is that read.
+ * `enabled` is what keeps it off the wire until somebody opens the form: a
+ * Guardian with four records should not fetch four identities to paint a list
+ * that shows none of them.
+ */
+export function useManagedProfile(profileId: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.managedProfile(profileId),
+    queryFn: () =>
+      apiGet<ManagedProfileView>(`/api/managed-profiles/${profileId}`),
+    enabled,
+  });
+}
+
+/**
+ * Change a record somebody looks after.
+ *
+ * Guarded by `requireFreshMfa` like every other act in this family, so a 401
+ * carrying `meta.errorCode: auth.stepup.required` is the expected first answer
+ * rather than a failure — the form routes it into the re-verification path.
+ *
+ * The whole family is invalidated on success because the display name is what
+ * the switcher, the record banner and this card all identify the record by, and
+ * the record's own identity read is dropped alongside so a second edit opens
+ * from the server's version rather than from the one that was just replaced.
+ */
+export function useUpdateManagedProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: queryKeys.managedProfileUpdate(),
+    mutationFn: (input: UpdateManagedProfileInput) =>
+      apiPatch<ManagedProfileView>(
+        `/api/managed-profiles/${input.profileId}`,
+        managedProfileEditBody(input),
+      ),
+    onSuccess: (_result, input) => {
+      invalidateManagedProfileReads(queryClient);
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.managedProfile(input.profileId),
+      });
+    },
+  });
+}
+
+/**
+ * The wire body, composed once and exported.
+ *
+ * Pure and separate from the mutation for the same reason `guardianInviteBody`
+ * is: the integration suite posts the REAL body through the REAL route rather
+ * than a hand-written copy, which is the assembly a two-sided test misses.
+ *
+ * Each key is present only when the caller named it, because the route reads
+ * absence as "leave it" and an explicit `undefined` would serialise to nothing
+ * anyway — stating it is what stops a later spread from sending five keys for a
+ * one-field edit.
+ */
+export function managedProfileEditBody(
+  input: UpdateManagedProfileInput,
+): Record<string, unknown> {
+  return {
+    ...(input.displayName !== undefined
+      ? { displayName: input.displayName }
+      : {}),
+    ...(input.dateOfBirth !== undefined
+      ? { dateOfBirth: input.dateOfBirth }
+      : {}),
+    ...(input.locale !== undefined ? { locale: input.locale } : {}),
+    ...(input.timezone !== undefined ? { timezone: input.timezone } : {}),
+    ...(input.gender !== undefined ? { gender: input.gender } : {}),
+  };
 }
 
 /** One person who looks after a profile, as the roster publishes them. */

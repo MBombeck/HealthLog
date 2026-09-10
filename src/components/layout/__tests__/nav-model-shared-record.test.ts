@@ -89,6 +89,32 @@ describe("the destination list under a switch", () => {
   });
 });
 
+describe("a module the RECORD does not track", () => {
+  /**
+   * #939 — the map `GET /api/auth/me` publishes is the RECORD's while a
+   * session is switched into one, so this filter is what makes a guardian's
+   * toggle visible. Before it, turning Cycle off for a profile left the Cycle
+   * door standing in that profile's own navigation, and the toggle wrote a
+   * column nothing on screen was reading.
+   */
+  it("drops its destination inside the record", () => {
+    const withCycle = visibleNavDestinations(ALL_MODULES, true, true, null).map(
+      (d) => d.href,
+    );
+    expect(withCycle).toContain("/cycle");
+
+    const withoutCycle = visibleNavDestinations(
+      { ...ALL_MODULES, cycle: false },
+      true,
+      true,
+      null,
+    ).map((d) => d.href);
+    expect(withoutCycle).not.toContain("/cycle");
+    // Only that one door: a module toggle is not a scope change.
+    expect(withoutCycle).toContain("/measurements");
+  });
+});
+
 describe("the utility tail under a switch", () => {
   it("disappears entirely", () => {
     // Settings holds credentials, integrations, notification channels and
