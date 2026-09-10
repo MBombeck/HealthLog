@@ -49,7 +49,7 @@ export interface OffhostAccountRow {
  *
  * Computed from the ledger the nightly worker writes, never from the bucket:
  * the page must be able to answer "does this account have a recent copy
- * off-host" on a host whose worker holds PutObject and nothing else.
+ * off-host" on a host whose worker holds no listing grant on the bucket.
  */
 export interface OffhostBackupOverview {
   /** Whether this host has the variables the nightly job needs. */

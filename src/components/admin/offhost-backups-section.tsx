@@ -11,9 +11,11 @@
  * been refusing the worker's signature since March.
  *
  * Every verdict is computed server-side from the ledger the worker writes. The
- * page never lists the bucket: the worker's grant is deliberately PutObject +
- * GetObject, and putting a credentialed listing call on the render path of an
- * admin page would be a poor trade for a number the database already holds.
+ * page never lists the bucket: the worker's grant is deliberately PutObject,
+ * GetObject and AbortMultipartUpload — the three the runbook documents, the
+ * abort being what the multipart path needs — and putting a credentialed
+ * listing call on the render path of an admin page would be a poor trade for
+ * a number the database already holds.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -31,7 +33,7 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import type { OffhostBackupFreshness } from "@/lib/jobs/offhost-backup-freshness";
 import type { BackupsList, OffhostAccountRow } from "@/types/backups";
-import { formatBytes } from "./backups-section";
+import { formatBytes } from "@/lib/format/bytes";
 
 /**
  * Status wash per verdict. `never` and `unknown` are deliberately neutral

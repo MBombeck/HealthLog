@@ -18,7 +18,7 @@
  * host last put that account's encrypted copy in the operator's bucket and how
  * stale that is against the nightly schedule. It comes from the ledger the
  * worker writes, never from a bucket listing — the answer has to hold on a host
- * whose worker grant is PutObject and nothing else.
+ * whose worker holds no listing grant on the bucket.
  */
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
@@ -31,6 +31,7 @@ import { offhostBackupConfigured } from "@/lib/jobs/offhost-backup";
 import {
   classifyOffhostBackup,
   OFFHOST_BACKUP_PERIOD_HOURS,
+  type OffhostBackupFreshness,
 } from "@/lib/jobs/offhost-backup-freshness";
 // v1.4.41 W-ORG — `BackupRow` / `BackupsList` moved to `src/types/backups.ts`
 // so callers (in particular `components/admin/backups-section.tsx`) don't
@@ -84,27 +85,35 @@ export const GET = apiHandler(async () => {
 
   // The off-host leg, per account, read from the ledger the nightly worker
   // writes rather than from the bucket. The page must be able to answer "which
-  // account has no recent copy off-host" on a host whose worker grant is
-  // PutObject and nothing else, and a listing call from a page render would
-  // put the operator's credentials on the request path of every page view.
+  // account has no recent copy off-host" on a host whose worker holds the
+  // three grants the runbook documents and no listing grant at all, and a
+  // listing call from a page render would put the operator's credentials on
+  // the request path of every page view.
   const now = new Date();
-  const configured = offhostBackupConfigured();
-  const offhostAccounts = configured
-    ? await prisma.user.findMany({
+  const offhostAccounts = await prisma.user.findMany({
+    select: {
+      id: true,
+      username: true,
+      offhostBackupState: {
         select: {
-          id: true,
-          username: true,
-          offhostBackupState: {
-            select: {
-              lastAttemptAt: true,
-              lastSuccessAt: true,
-              sizeBytes: true,
-            },
-          },
+          lastAttemptAt: true,
+          lastSuccessAt: true,
+          sizeBytes: true,
         },
-        orderBy: { username: "asc" },
-      })
-    : [];
+      },
+    },
+    orderBy: { username: "asc" },
+  });
+
+  // Evidence beats this process's environment. `offhostBackupConfigured()`
+  // reads the variables of whichever process serves this request, and a
+  // hand-rolled split that gives `BACKUP_S3_*` only to the worker would make
+  // the web process say "nothing leaves this host" over a ledger full of
+  // fresh rows. A row in that table is proof an upload happened; no
+  // environment read can outrank it.
+  const configured =
+    offhostBackupConfigured() ||
+    offhostAccounts.some((account) => account.offhostBackupState !== null);
 
   const offhostRows: OffhostAccountRow[] = offhostAccounts.map((account) => {
     const state = account.offhostBackupState;
@@ -130,6 +139,23 @@ export const GET = apiHandler(async () => {
     };
   });
 
+  // Worst first. Sorting by username puts the one account that needs
+  // attention wherever the alphabet happens to leave it, which on a
+  // hundred-account cohort is the same "one bad row hides in the crowd"
+  // problem this card was built to end, moved out of a count and into a list.
+  const FRESHNESS_ORDER: Record<OffhostBackupFreshness, number> = {
+    stale: 0,
+    due: 1,
+    never: 2,
+    unknown: 3,
+    fresh: 4,
+  };
+  offhostRows.sort(
+    (a, b) =>
+      FRESHNESS_ORDER[a.freshness] - FRESHNESS_ORDER[b.freshness] ||
+      a.username.localeCompare(b.username),
+  );
+
   const payload: BackupsList = {
     rows: list,
     // Matches the retention window the backup-prune job enforces so the
@@ -145,7 +171,9 @@ export const GET = apiHandler(async () => {
     offhost: {
       configured,
       periodHours: OFFHOST_BACKUP_PERIOD_HOURS,
-      rows: offhostRows,
+      // An unconfigured host has nothing to list, and the card says so rather
+      // than painting an empty table that reads as "no problems".
+      rows: configured ? offhostRows : [],
     },
   };
 
