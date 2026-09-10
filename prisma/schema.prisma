@@ -995,6 +995,12 @@ model User {
   // seeded catalogue).
   cycleSymptomsCustom CycleSymptom[]   @relation("UserCycleSymptoms")
 
+  // v1.39 — the needs-based onboarding's answers and step ledger for THIS
+  // record. 1:1, and keyed by record rather than by the person at the
+  // keyboard so a guardian running a managed profile's setup writes the
+  // child's row, not their own. See `OnboardingRecord`.
+  onboardingRecord           OnboardingRecord?
+
   // v1.15.20 — user-authored "about me" context for the AI surfaces
   // (1:1, encrypted free text). See `UserHealthProfile`.
   healthProfile              UserHealthProfile?
@@ -8297,4 +8303,64 @@ model VaccinationDocumentLink {
   @@index([documentId])
   @@index([userId])
   @@map("vaccination_document_links")
+}
+
+// ─── Onboarding (needs-based flow) ─────────────────────────────
+
+/// v1.39 (C1) — what a record answered when it was set up, and how far the
+/// flow got.
+///
+/// One row per RECORD, not per person: a managed profile is an ordinary `User`
+/// row with no credentials, so keying on `userId` is what lets a guardian run
+/// a child's setup and have the answers land on the child's record. Created
+/// lazily by the first answer; an account that never entered the flow has no
+/// row and reads as "nothing answered, nine steps pending".
+///
+/// The three JSON columns hold closed enum vocabularies, not free text, so
+/// nothing here is encrypted: the encryption convention in this repository
+/// covers free text a person wrote (`UserHealthProfile.aboutMeEncrypted`, the
+/// Coach transcript, the emergency note) and identifiers (the KVNR), and an
+/// answer drawn from nine fixed chips is neither. It is the same class of
+/// value as `modulePreferencesJson` and `onboardingGoals`, both of which sit
+/// in plaintext beside it. Readers are fail-soft rather than schema-validated
+/// at the database edge — see `src/lib/onboarding/needs.ts`.
+model OnboardingRecord {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// The answers as given: `{ recordTarget, areas[], medication, sources[],
+  /// visit, units }`. Read by `parseOnboardingNeeds`, published on
+  /// `GET /api/auth/me` as `onboarding.needs`, and the input the module
+  /// derivation reads once at confirm time.
+  needsJson Json? @map("needs_json")
+
+  /// The ordered steps as `[{ id, status }]` with `status` one of
+  /// `pending | done | skipped`. Stored as a status lookup — the ORDER on the
+  /// wire is always this release's `ONBOARDING_STEP_IDS`, so a step added or
+  /// retired needs no backfill.
+  stepsJson Json? @map("steps_json")
+
+  /// The one task the flow offered at the end, and whether it produced its
+  /// result: `{ task, target, completedAt }`. Null until the first-result
+  /// step names one.
+  firstResultJson Json? @map("first_result_json")
+
+  /// When the module map was derived from `needsJson`. The derivation is
+  /// once-only per run of the flow: `POST /api/onboarding/complete` skips it
+  /// while this is set, and `POST /api/onboarding/restart` clears it so a
+  /// re-run may derive again. Without it a repeated confirm would re-apply
+  /// the answers over decisions taken in Settings since.
+  modulesDerivedAt DateTime? @map("modules_derived_at")
+
+  /// When the needs flow was completed. Deliberately NOT
+  /// `User.onboardingCompletedAt`: that column gates the first-run redirect in
+  /// `src/proxy.ts` and keeps that meaning, while this one may be cleared by
+  /// "Set up again" without pushing the person back through the redirect.
+  completedAt DateTime? @map("completed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("onboarding_records")
 }

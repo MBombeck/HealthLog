@@ -423,3 +423,189 @@ export function moduleDelegatesTo(
 export function isOptInModule(key: ModuleKey): boolean {
   return MODULE_REGISTRY[key].optIn === true;
 }
+
+/* ─── Needs-based onboarding: the areas a person names → the modules ───────── */
+
+/**
+ * v1.39 (C1) — the nine areas the needs questionnaire offers (design spec
+ * §"The questions", Q2), as stable slugs.
+ *
+ * They live here rather than in the flow because the answer only means
+ * something as a set of modules, and the mapping below is what gives it that
+ * meaning. Putting the map next to `MODULE_KEYS` is what keeps a module key
+ * renamed or retired from leaving a dangling area behind: the record type
+ * makes it a compile error rather than a silently empty selection.
+ *
+ * All nine stay visible, cycle included — it is one chip, and hiding it behind
+ * recorded sex would make the flow guess at something the person is being
+ * asked about anyway.
+ */
+export const ONBOARDING_AREA_KEYS = [
+  "blood-pressure",
+  "weight-body",
+  "glucose",
+  "sleep",
+  "mood",
+  "cycle",
+  "activity",
+  "labs",
+  "illness",
+] as const;
+
+export type OnboardingAreaKey = (typeof ONBOARDING_AREA_KEYS)[number];
+
+/**
+ * The area → module map. Every area names at least one module; blood pressure
+ * and weight name only `insights`, because the readings themselves are CORE
+ * (weight / blood pressure / pulse have no key and can never be switched off)
+ * and the narrative layer is the only thing an answer can decide there.
+ *
+ * `cycle` is in the map and is NOT written through `modulePreferencesJson`:
+ * that key delegates to `CycleProfile.cycleTrackingEnabled`, so the derivation
+ * reports it separately (see {@link DerivedModuleDefaults.cycleTracking}) and
+ * the caller writes the real column. `coach` appears nowhere: the flow never
+ * talks to an AI provider, and turning the Coach on is a Settings decision
+ * with a cost attached to it.
+ */
+export const ONBOARDING_AREA_MODULES: Readonly<
+  Record<OnboardingAreaKey, readonly ModuleKey[]>
+> = Object.freeze({
+  "blood-pressure": ["insights"],
+  "weight-body": ["insights"],
+  glucose: ["glucose", "insights"],
+  sleep: ["sleep", "recovery"],
+  // "Mood and mental wellbeing" is one chip over two modules: the daily mood
+  // entry and the WHO-5 / PHQ-9 / GAD-7 check-in live on the same surface as
+  // far as the person answering is concerned.
+  mood: ["mood", "mentalHealth"],
+  cycle: ["cycle"],
+  activity: ["workouts"],
+  labs: ["labs"],
+  illness: ["illness"],
+});
+
+/**
+ * Modules that stay on whatever the answers say (design spec §"Needs → modules
+ * → first result"): the measurement engine is CORE and has no key, and these
+ * three are the surfaces a record is unusable without — the narrative layer,
+ * the badges, and the document vault.
+ */
+export const ONBOARDING_ALWAYS_ON_MODULES: readonly ModuleKey[] = [
+  "insights",
+  "achievements",
+  "inboundDocuments",
+];
+
+/**
+ * The answers the module derivation actually reads. The flow stores more than
+ * this (the sources, the units); nothing else changes which modules are on.
+ *
+ * The literal unions are written here rather than imported so this file keeps
+ * depending on nothing. `src/lib/onboarding/needs.ts` declares the same
+ * vocabulary with `satisfies`, and the derivation call site is typed against
+ * this interface — a value that drifts apart fails to compile there.
+ */
+export interface OnboardingModuleNeeds {
+  recordTarget: "me" | "someone-else" | "both";
+  areas: readonly OnboardingAreaKey[];
+  medication: "yes" | "no" | "sometimes";
+  visit: "within-a-month" | "later" | "no";
+}
+
+/** A toggleable module whose state `modulePreferencesJson` really owns. */
+export type OwnedModuleKey = Exclude<ModuleKey, ModuleDelegation>;
+
+/** Toggleable modules minus the two delegated keys, in registry order. */
+export const OWNED_MODULE_KEYS: readonly OwnedModuleKey[] = MODULE_KEYS.filter(
+  (key): key is OwnedModuleKey =>
+    MODULE_REGISTRY[key].delegatesTo === undefined,
+);
+
+export interface DerivedModuleDefaults {
+  /**
+   * An explicit value for every directly-owned module: `true` for what the
+   * answers named, `false` for the rest. Explicit `false` rather than absence
+   * is the "ordering versus removal" decision from the design spec — the
+   * stored map is a disabled allowlist, so absence would mean ON.
+   */
+  preferences: Record<OwnedModuleKey, boolean>;
+  /**
+   * Whether the answers asked for cycle tracking. Only ever `true` here: the
+   * gate derives an unanswered cycle from recorded sex, and an area the person
+   * did not tick is not a statement that they want it switched off. The caller
+   * writes `CycleProfile.cycleTrackingEnabled` when this is true and leaves
+   * the column alone when it is not.
+   */
+  cycleTracking: boolean;
+}
+
+/**
+ * Turn the needs answers into the module map the record starts from.
+ *
+ * Pure and total: every directly-owned key gets a value, so the caller never
+ * has to reason about which keys the answers happened to mention. It says
+ * nothing about what the record already holds — merging is
+ * {@link mergeDerivedModulePreferences}, deliberately a second step, because
+ * "what the answers imply" and "what this person already decided by hand" are
+ * different questions and only one of them may be overwritten.
+ */
+export function deriveOnboardingModuleDefaults(
+  needs: OnboardingModuleNeeds,
+): DerivedModuleDefaults {
+  const on = new Set<ModuleKey>(ONBOARDING_ALWAYS_ON_MODULES);
+
+  for (const area of needs.areas) {
+    for (const key of ONBOARDING_AREA_MODULES[area] ?? []) on.add(key);
+  }
+  if (needs.medication === "yes" || needs.medication === "sometimes") {
+    on.add("medications");
+  }
+  // A visit that is coming at all is what the doctor report is for; "no" is
+  // the only answer that leaves the export surface off.
+  if (needs.visit === "within-a-month" || needs.visit === "later") {
+    on.add("doctorReport");
+  }
+  // A record somebody else runs is usually a child's or a parent's, and the
+  // immunization log is the part of it that matters most there.
+  if (needs.recordTarget === "someone-else" || needs.recordTarget === "both") {
+    on.add("vaccinations");
+  }
+
+  const preferences = {} as Record<OwnedModuleKey, boolean>;
+  for (const key of OWNED_MODULE_KEYS) preferences[key] = on.has(key);
+
+  return { preferences, cycleTracking: on.has("cycle") };
+}
+
+/**
+ * Merge a derived map into the one the record already holds, without ever
+ * retracting a decision the person made by hand.
+ *
+ * The rule is one-directional: a derived `true` always lands, a derived
+ * `false` lands only where the stored map does not already carry an explicit
+ * `true`. Someone who switched the MCP endpoint on, then ran the flow again
+ * and did not tick anything that implies it, keeps it on — the questionnaire
+ * orders a record, it does not undo it.
+ *
+ * Keys the stored map carries that are not module keys are dropped; the caller
+ * is expected to have normalised it (`normalisePrefs`), and this is the second
+ * belt on the same trousers rather than a place to be clever.
+ */
+export function mergeDerivedModulePreferences(
+  existing: Readonly<Record<string, boolean>>,
+  derived: Readonly<Record<OwnedModuleKey, boolean>>,
+): Record<string, boolean> {
+  const merged: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(existing)) {
+    if (isModuleKey(key)) merged[key] = value;
+  }
+  for (const [key, value] of Object.entries(derived)) {
+    if (value) {
+      merged[key] = true;
+      continue;
+    }
+    if (merged[key] === true) continue; // switched on by hand — never retracted
+    merged[key] = false;
+  }
+  return merged;
+}
