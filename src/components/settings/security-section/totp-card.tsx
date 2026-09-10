@@ -45,8 +45,13 @@ interface ConfirmResult {
   recoveryCodesRemaining: number;
 }
 
-/** Map a step-up 401 to a clear re-login message; otherwise the raw message. */
-function describeError(
+/**
+ * Map a step-up 401 to a clear re-login message; otherwise the raw message.
+ *
+ * Exported for the unit suite: this is the sentence a refused mutation leaves
+ * on the card, and the card is where a person reads it.
+ */
+export function describeError(
   err: unknown,
   fallback: string,
   stepUpMsg: string,
@@ -88,6 +93,22 @@ export function TotpCard({
   const [disableMethod, setDisableMethod] = useState<"totp" | "recovery">(
     "totp",
   );
+
+  // Both confirmations are controlled rather than left to Radix.
+  //
+  // The confirming click has to `preventDefault()` — that is what keeps the
+  // dialog up, and the button disabled, while the request is in flight. But
+  // suppressing the close means nothing closes it afterwards either, and on a
+  // REFUSAL the branch below survives the answer: the dialog stayed open over
+  // a card whose message the overlay covered, with the confirm button live
+  // again, so the same refusal could be re-triggered forever with no way to
+  // read why. On success it went unnoticed only because the fresh-codes panel
+  // replaces this branch and the dialog unmounts with it.
+  //
+  // So each mutation puts its own dialog down when the request settles,
+  // whatever the answer was, and the message lands on an uncovered card.
+  const [regenerateOpen, setRegenerateOpen] = useState(false);
+  const [disableOpen, setDisableOpen] = useState(false);
 
   function resetWizard() {
     setSetup(null);
@@ -162,6 +183,7 @@ export function TotpCard({
           t("settings.security.stepUpRequired"),
         ),
       ),
+    onSettled: () => setDisableOpen(false),
   });
 
   const regenerate = useMutation({
@@ -183,6 +205,7 @@ export function TotpCard({
           t("settings.security.stepUpRequired"),
         ),
       ),
+    onSettled: () => setRegenerateOpen(false),
   });
 
   async function copySecret() {
@@ -356,7 +379,10 @@ export function TotpCard({
               )}
             </p>
             <div className="flex flex-wrap gap-2">
-              <AlertDialog>
+              <AlertDialog
+                open={regenerateOpen}
+                onOpenChange={setRegenerateOpen}
+              >
                 <AlertDialogTrigger asChild>
                   <Button
                     type="button"
@@ -371,7 +397,7 @@ export function TotpCard({
                     {t("settings.security.recovery.regenerate")}
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent data-testid="recovery-regenerate-dialog">
                   <AlertDialogHeader>
                     <AlertDialogTitle>
                       {t("settings.security.recovery.regenerateTitle")}
@@ -400,7 +426,7 @@ export function TotpCard({
                 </AlertDialogContent>
               </AlertDialog>
 
-              <AlertDialog>
+              <AlertDialog open={disableOpen} onOpenChange={setDisableOpen}>
                 <AlertDialogTrigger asChild>
                   <Button
                     type="button"
@@ -410,7 +436,7 @@ export function TotpCard({
                     {t("settings.security.totp.disable")}
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent data-testid="totp-disable-dialog">
                   <AlertDialogHeader>
                     <AlertDialogTitle>
                       {t("settings.security.totp.disableTitle")}
