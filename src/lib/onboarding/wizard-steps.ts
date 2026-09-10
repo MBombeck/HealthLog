@@ -211,6 +211,10 @@ export function previousScreen(
  * actually is. A screen the order does not contain (units for someone who
  * ticked no unit-bearing area) is refused too, so a stale link cannot show
  * a question whose answer would mean nothing.
+ *
+ * The first question is the one exception: it is where the welcome screen's
+ * "Set up" goes, and a record that has not entered the flow resumes on the
+ * welcome, so without this arm nobody could ever start.
  */
 export function canVisitScreen(
   state: FlowState,
@@ -219,7 +223,7 @@ export function canVisitScreen(
   const order = screenOrder(state);
   const index = order.indexOf(screen);
   if (index === -1) return false;
-  return index <= order.indexOf(resumeScreen(state));
+  return index <= Math.max(order.indexOf(resumeScreen(state)), 1);
 }
 
 /**

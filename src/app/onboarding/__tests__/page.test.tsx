@@ -1,19 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { ReactElement } from "react";
+
+import {
+  defaultOnboardingSteps,
+  emptyOnboardingNeeds,
+  type OnboardingStateDto,
+  type OnboardingStepId,
+  type OnboardingStepStatus,
+} from "@/lib/onboarding/needs";
 
 /**
- * v1.4.25 W14b-Content — onboarding root redirect tests.
+ * v1.39 (C2) — the setup flow's front door.
  *
- * The v1.4.20 single-file wizard was deleted in this commit; the root
- * `/onboarding` page is now a server-side redirect into the new
- * `/onboarding/[step]` flow. These tests cover the three redirect
- * branches: missing session, mid-flow user, completed user.
+ * Three ways in, decided by the step machine: a record that never entered
+ * the flow sees the welcome screen, a record mid-way is sent to the step it
+ * owes, and a finished record sees the welcome's "again" variant. No session
+ * mirrors the proxy's gate.
  */
 
 const redirectMock = vi.fn((href: string) => {
-  // next/navigation `redirect()` throws a special sentinel inside the
-  // server-component renderer to short-circuit rendering. Mimic that
-  // by throwing an error tagged with the href so each test can
-  // unambiguously assert the redirect target.
   const err = new Error(`__redirect__:${href}`);
   (err as Error & { __redirect__: string }).__redirect__ = href;
   throw err;
@@ -23,79 +28,119 @@ vi.mock("next/navigation", () => ({
   redirect: (href: string) => redirectMock(href),
 }));
 
-const getSessionMock = vi.fn();
-vi.mock("@/lib/auth/session", () => ({
-  getSession: () => getSessionMock(),
+const loadMock = vi.fn();
+vi.mock("@/lib/onboarding/load-flow-state", () => ({
+  loadOnboardingFlowState: () => loadMock(),
+}));
+
+// The shell resolves a locale from cookies; the tree is inspected, not
+// rendered, so a plain passthrough is all the test needs.
+vi.mock("@/components/onboarding/onboarding-shell", () => ({
+  OnboardingShell: ({ children }: { children: ReactElement }) => children,
 }));
 
 import OnboardingRootPage from "../page";
+import { WelcomeScreen } from "@/components/onboarding/welcome-screen";
 
 beforeEach(() => {
   redirectMock.mockClear();
-  getSessionMock.mockReset();
+  loadMock.mockReset();
 });
 
-function makeSession(opts: {
-  onboardingStep?: number | null;
-  onboardingCompletedAt?: Date | null;
-}) {
+function state(
+  statuses: Partial<Record<OnboardingStepId, OnboardingStepStatus>> = {},
+  needs: Partial<OnboardingStateDto["needs"]> = {},
+  completedAt: string | null = null,
+): OnboardingStateDto {
   return {
-    session: { id: "sess-1", expiresAt: new Date(Date.now() + 86400000) },
-    user: {
-      id: "user-1",
-      onboardingStep: opts.onboardingStep ?? null,
-      onboardingCompletedAt: opts.onboardingCompletedAt ?? null,
-    },
+    steps: defaultOnboardingSteps().map((step) => ({
+      ...step,
+      status: statuses[step.id] ?? step.status,
+    })),
+    needs: { ...emptyOnboardingNeeds(), ...needs },
+    completedAt,
+    firstResult: null,
   };
 }
 
-async function runRedirect(): Promise<string> {
+type ShellElement = ReactElement<{
+  children: ReactElement<{ variant: string }>;
+}>;
+
+async function run(): Promise<
+  { redirect: string } | { element: ShellElement }
+> {
   try {
-    await OnboardingRootPage();
+    const element = (await OnboardingRootPage()) as ShellElement;
+    return { element };
   } catch (e) {
     const tagged = e as Error & { __redirect__?: string };
-    if (tagged.__redirect__) return tagged.__redirect__;
+    if (tagged.__redirect__) return { redirect: tagged.__redirect__ };
     throw e;
   }
-  throw new Error("expected redirect, none thrown");
 }
 
-describe("<OnboardingRootPage> root redirect", () => {
-  it("redirects to /auth/login when no session", async () => {
-    getSessionMock.mockResolvedValueOnce(null);
-    const href = await runRedirect();
-    expect(href).toBe("/auth/login");
+function welcomeVariant(element: ShellElement): string {
+  const child = element.props.children;
+  expect(child.type).toBe(WelcomeScreen);
+  return child.props.variant;
+}
+
+describe("<OnboardingRootPage>", () => {
+  it("redirects to /auth/login when there is no session", async () => {
+    loadMock.mockResolvedValueOnce(null);
+    expect(await run()).toEqual({ redirect: "/auth/login" });
   });
 
-  it("redirects fresh user (onboardingStep null) to /onboarding/0", async () => {
-    getSessionMock.mockResolvedValueOnce(makeSession({}));
-    const href = await runRedirect();
-    expect(href).toBe("/onboarding/0");
+  it("shows the welcome screen to a record that never entered the flow", async () => {
+    loadMock.mockResolvedValueOnce({
+      userId: "u1",
+      userLocale: "en",
+      state: state(),
+    });
+    const result = await run();
+    expect("element" in result && welcomeVariant(result.element)).toBe("fresh");
   });
 
-  it("redirects mid-flow user to /onboarding/<current>", async () => {
-    getSessionMock.mockResolvedValueOnce(makeSession({ onboardingStep: 2 }));
-    const href = await runRedirect();
-    expect(href).toBe("/onboarding/2");
+  it("sends a record mid-way to the step it owes", async () => {
+    loadMock.mockResolvedValueOnce({
+      userId: "u1",
+      userLocale: "en",
+      state: state({ who: "done", areas: "done" }, { recordTarget: "me" }),
+    });
+    expect(await run()).toEqual({ redirect: "/onboarding/medication" });
   });
 
-  it("clamps an out-of-range onboardingStep into the 0..4 window", async () => {
-    getSessionMock.mockResolvedValueOnce(makeSession({ onboardingStep: 99 }));
-    const href = await runRedirect();
-    expect(href).toBe("/onboarding/4");
+  it("sends a confirmed flow with an open first result to that screen", async () => {
+    loadMock.mockResolvedValueOnce({
+      userId: "u1",
+      userLocale: "en",
+      state: state(
+        {
+          who: "done",
+          areas: "done",
+          medication: "done",
+          sources: "done",
+          visit: "done",
+          confirm: "done",
+        },
+        { recordTarget: "me", areas: ["blood-pressure"] },
+        "2026-09-10T08:00:00.000Z",
+      ),
+    });
+    expect(await run()).toEqual({ redirect: "/onboarding/first-result" });
   });
 
-  it("redirects a completed user to /onboarding/<current>", async () => {
-    getSessionMock.mockResolvedValueOnce(
-      makeSession({
-        onboardingStep: 4,
-        onboardingCompletedAt: new Date("2026-05-01"),
-      }),
-    );
-    const href = await runRedirect();
-    // The step page handles the welcome-back banner at step 0 and the
-    // done-screen at step 4 — the root page just bounces into the
-    // current step regardless of completion state.
-    expect(href).toBe("/onboarding/4");
+  it("offers the questions again to a finished record", async () => {
+    const done = Object.fromEntries(
+      defaultOnboardingSteps().map((s) => [s.id, "done" as const]),
+    ) as Record<OnboardingStepId, OnboardingStepStatus>;
+    loadMock.mockResolvedValueOnce({
+      userId: "u1",
+      userLocale: "en",
+      state: state(done, { recordTarget: "me" }, "2026-09-10T08:00:00.000Z"),
+    });
+    const result = await run();
+    expect("element" in result && welcomeVariant(result.element)).toBe("again");
   });
 });

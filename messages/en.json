@@ -4490,7 +4490,9 @@
       "step1of4": "Step 1 of 4",
       "step2of4": "Step 2 of 4",
       "step3of4": "Step 3 of 4",
-      "step4of4": "Step 4 of 4"
+      "step4of4": "Step 4 of 4",
+      "stepOf": "Step {current} of {total}",
+      "stepsLabel": "Setup steps"
     },
     "goals": {
       "title": "What would you like to track?",
@@ -4620,6 +4622,28 @@
       "keylessLine": "HealthLog is fully useful without AI. Your tiles, charts, trends and exports all work — AI only adds the plain-language read on top.",
       "setupCta": "Set it up (about a minute)",
       "sharedKeyNote": "This instance already provides a shared AI provider, so insights work for you right now — no setup needed."
+    },
+    "steps": {
+      "who": "Who this record is for",
+      "areas": "What to keep an eye on",
+      "medication": "Medication",
+      "sources": "Where readings come from",
+      "visit": "Doctor's visit",
+      "units": "Units",
+      "confirm": "Confirm",
+      "first-result": "First result",
+      "done": "Done"
+    },
+    "flow": {
+      "welcome": {
+        "title": "Welcome to HealthLog",
+        "body": "Five short questions decide what HealthLog shows you first. It takes about two minutes.",
+        "changeLater": "Nothing is final: every choice can be changed later under Settings.",
+        "setUp": "Set up",
+        "skip": "Skip for now",
+        "againBody": "Your setup is finished. Answer the questions again to change what HealthLog shows first, or go to the dashboard.",
+        "setUpAgain": "Set up again"
+      }
     }
   },
   "gettingStarted": {

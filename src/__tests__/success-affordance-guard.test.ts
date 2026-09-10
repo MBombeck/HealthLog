@@ -275,7 +275,6 @@ const PINNED_AFFORDANCES: Record<
   "src/components/mood/mood-form.tsx": { "toast.success": 1 },
   "src/components/mood/mood-list.tsx": { "toast.success": 3 },
   "src/components/onboarding/done-screen.tsx": { CheckCircle2: 2 },
-  "src/components/onboarding/source-card-grid.tsx": { CheckCircle2: 2 },
   "src/components/records/allergy-form.tsx": { "toast.success": 1 },
   "src/components/records/allergy-manager.tsx": { "toast.success": 1 },
   "src/components/records/conditions-manager.tsx": { "toast.success": 1 },

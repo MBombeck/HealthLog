@@ -360,6 +360,11 @@ describe("canVisitScreen", () => {
     expect(canVisitScreen(midway, "done")).toBe(false);
   });
 
+  it("always admits the first question, which is where the welcome screen goes", () => {
+    expect(canVisitScreen(state(), "who")).toBe(true);
+    expect(canVisitScreen(state(), "areas")).toBe(false);
+  });
+
   it("refuses a screen the order does not contain", () => {
     const noUnits = state(QUESTIONS_DONE, {
       recordTarget: "me",

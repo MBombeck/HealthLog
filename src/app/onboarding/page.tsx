@@ -1,44 +1,49 @@
 import { redirect } from "next/navigation";
 
-import { getSession } from "@/lib/auth/session";
+import { OnboardingShell } from "@/components/onboarding/onboarding-shell";
+import { WelcomeScreen } from "@/components/onboarding/welcome-screen";
+import { loadOnboardingFlowState } from "@/lib/onboarding/load-flow-state";
+import { isOnboardingSettled } from "@/lib/onboarding/needs";
+import { resumeScreen } from "@/lib/onboarding/wizard-steps";
 
 /**
- * v1.4.25 W14b — onboarding root redirect.
+ * v1.39 (C2) — the setup flow's front door.
  *
- * The proxy redirect (`src/proxy.ts:179`) lands every still-pending user
- * on `/onboarding`. Until W14b shipped, this file rendered the v1.4.20
- * single-file 3-step wizard inline. The new flow lives under
- * `/onboarding/[step]/page.tsx`, so this root page now resolves to a
- * server-side redirect into the right step:
+ * The proxy lands every account still pending its first run here, and
+ * Settings → "Set up again" does too. What is shown depends on where the
+ * flow stands, read off the same ledger every screen reads:
  *
- *   - No session                  → `/auth/login` (the proxy enforces
- *     this too; we mirror it to keep the contract explicit).
- *   - `onboardingCompletedAt != null` (returning user)
- *                                 → `/onboarding/0` so the welcome-back
- *                                   banner can show; the dashboard is
- *                                   one click away from there.
- *   - Otherwise                   → `/onboarding/<current>` where
- *                                   `current = user.onboardingStep ?? 0`.
+ *   - never entered            → the welcome screen ("Set up" / "Skip for now")
+ *   - a step still owed        → redirect to that step
+ *   - finished                 → the welcome screen's "again" variant, which
+ *                                offers the questions once more or the dashboard
  *
- * The previous wizard remained the entry point through the
- * W14b-Foundation phase to keep an unbroken flow; this commit swaps it
- * out now that every step page renders real UI.
+ * No session mirrors the proxy's own gate (`/onboarding` is a public path,
+ * so the page has to say it too).
  */
 export default async function OnboardingRootPage() {
-  const session = await getSession();
-  if (!session) {
+  const flow = await loadOnboardingFlowState();
+  if (!flow) {
     redirect("/auth/login");
   }
-  const { user } = session;
+  const { state, userLocale } = flow;
 
-  const current = clampCurrentStep(user.onboardingStep);
-  redirect(`/onboarding/${current}`);
-}
+  const resume = resumeScreen(state);
+  if (resume !== "welcome") {
+    const finished = state.completedAt !== null && isOnboardingSettled(state);
+    if (!finished) {
+      redirect(`/onboarding/${resume}`);
+    }
+    return (
+      <OnboardingShell screen="welcome" state={state} userLocale={userLocale}>
+        <WelcomeScreen variant="again" />
+      </OnboardingShell>
+    );
+  }
 
-function clampCurrentStep(value: number | null | undefined): 0 | 1 | 2 | 3 | 4 {
-  if (value == null || !Number.isFinite(value)) return 0;
-  const floor = Math.floor(value);
-  if (floor <= 0) return 0;
-  if (floor >= 4) return 4;
-  return floor as 0 | 1 | 2 | 3 | 4;
+  return (
+    <OnboardingShell screen="welcome" state={state} userLocale={userLocale}>
+      <WelcomeScreen variant="fresh" />
+    </OnboardingShell>
+  );
 }
