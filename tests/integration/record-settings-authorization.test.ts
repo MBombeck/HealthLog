@@ -79,7 +79,17 @@ describe("record settings authorization", () => {
     expect(route).toContain("details: { changed }");
     expect(route).not.toContain("details: { recordId:");
     expect(route).toContain("invalidateUserMedications(access.recordId, {");
-    expect(route).toContain("invalidateUserHealthScore(access.recordId)");
+    // The module write is one record-keyed function shared with the setup
+    // flow's derivation; the health-score invalidation lives there, so the
+    // route must call it with the record and the helper must still invalidate.
+    expect(route).toContain("writeRecordModulePreferences({");
+    expect(route).toContain("recordId: access.recordId,");
+    expect(route).not.toContain("invalidateUserHealthScore(");
+    const moduleWrite = await readFile(
+      fromRoot("src/lib/record-settings/modules.ts"),
+      "utf8",
+    );
+    expect(moduleWrite).toContain("invalidateUserHealthScore(input.recordId)");
     expect(route).toContain("getAllEffectiveRanges(record, overrides)");
     expect(route).toContain(
       "effective: getAllEffectiveRanges(record, overrides)",
