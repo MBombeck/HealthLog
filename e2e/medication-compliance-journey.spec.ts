@@ -231,8 +231,8 @@ async function openSeedingSurface(page: Page): Promise<void> {
 }
 
 /**
- * The two dose times the journey's medication runs on: now, and twelve hours
- * from now.
+ * The two dose times the journey's medication runs on: now, and a twin later
+ * the same day.
  *
  * They are derived from the clock rather than picked from the wizard's
  * suggestion chips, and that is the whole reason the flow is stable. The card
@@ -241,17 +241,27 @@ async function openSeedingSurface(page: Page): Promise<void> {
  * belongs to yesterday or to tomorrow, and the day the write lands on decides
  * what the dashboard tile reads. A slot anchored at "now" is inside its own
  * on-time window by construction, so the take is always today's, whenever the
- * suite runs. Its twin twelve hours away is the second dose of the day.
+ * suite runs.
+ *
+ * The twin must be on today's calendar as well, because the skip lands on it
+ * and the tile reads the latest day: a twin twelve hours on wraps past
+ * midnight for every run that starts after noon, the skip then lands on
+ * tomorrow's slot, and today reads one taken over two expected (50) where the
+ * skip-parity figure is 100. So the twin is twelve hours on before noon and
+ * the last minute of the day after it; either way the card offers it next.
  */
 async function clockAnchoredDoseTimes(
   page: Page,
 ): Promise<{ open: string; other: string }> {
   return page.evaluate(() => {
     const pad = (n: number) => String(n).padStart(2, "0");
+    const hhmm = (minutes: number) =>
+      `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
     const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
     return {
-      open: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
-      other: `${pad((now.getHours() + 12) % 24)}:${pad(now.getMinutes())}`,
+      open: hhmm(nowMinutes),
+      other: hhmm(Math.min(nowMinutes + 12 * 60, 24 * 60 - 1)),
     };
   });
 }
@@ -362,7 +372,7 @@ test.describe("medication adherence journey", () => {
 
     // The tile reads THE LATEST day, and a day boundary crossed mid-flow moves
     // that day out from under both tile assertions: a fresh day has two doses
-    // scheduled, none taken, and answers 0 where 50 is asserted. The flow is a
+    // scheduled, none taken, and answers 0 where 100 is asserted. The flow is a
     // couple of minutes long, so declining to start in the last ten of the day
     // is enough. The clock is the browser's, which the config pins to the zone
     // the compliance engine falls back to.
