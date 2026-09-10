@@ -214,9 +214,11 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       action: { name: "insights.coach.invalid" },
       meta: { issues: parsed.error.issues.length },
     });
-    // The dotted token keeps its place in `error` — clients already match on it
-    // there — while `meta.errorCode` publishes it in the field a machine code
-    // belongs in, and `details.issues` names the fields that were refused.
+    // The dotted token keeps its place in `error`: this refusal keeps its 422,
+    // so moving the string would be a wire change with nothing forcing it —
+    // the `invalid_json` siblings moved only because their status moved to 400
+    // anyway. `meta.errorCode` publishes the same token in the field a machine
+    // code belongs in, and `details.issues` names the fields that were refused.
     return apiValidationError(
       "coach.request.invalid",
       sanitiseZodIssues(parsed.error.issues),

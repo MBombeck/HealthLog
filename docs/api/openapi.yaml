@@ -7773,7 +7773,8 @@ paths:
         - Auth
       summary: Replace the owner's saved doctor-report selection
       description: Replace, not merge — the body states the whole scope or it is not a scope; a leaf omitted from the body is
-        a leaf removed from the saved profile. An unknown leaf id is refused with a 422 that names it. The saved
+        a leaf removed from the saved profile. An unknown leaf id is refused with a 422 carrying `meta.errorCode`
+        `report-selection.leaves.unknown` and `meta.unknownLeaves`, the ids this build does not know. The saved
         selection is also what the FHIR REST face and the MCP doctor-visit surfaces replay for a caller that cannot ask
         a human, so every write is audit-logged. Auth via cookie or Bearer.
       requestBody:
@@ -29574,19 +29575,20 @@ components:
                 onboarding.step.rateLimited, onboarding.tour.invalid, onboarding.user.notFound; personal_records —
                 personal_records.invalid_query; practitioner — practitioner.invalid; profile —
                 profile.update.emailInUse, profile.update.invalidBody, profile.update.nothingSaved; report-selection —
-                report-selection.body.invalid_json, report-selection.body.invalid_shape; route — route.retired;
-                share-link — share-link.document.decryptFailed, share-link.document.notFound,
-                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
-                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
-                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
-                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
-                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.refused,
-                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
-                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
-                sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
-                source-priority.body.invalid_shape; tokens — tokens.measurements.ceiling_reached; vaccination —
-                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.encounter-not-found,
-                vaccination.identity-required, vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
+                report-selection.body.invalid_json, report-selection.body.invalid_shape,
+                report-selection.leaves.unknown; route — route.retired; share-link — share-link.document.decryptFailed,
+                share-link.document.notFound, share-link.document.rateLimited, share-link.documents.invalid,
+                share-link.report.notFound, share-link.report.rateLimited, share-link.selection.forbidden_leaf,
+                share-link.selection.unknown_leaf; sharing — sharing.accept.expired, sharing.accept.not_found,
+                sharing.accept.not_pending, sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate,
+                sharing.invite.invalid, sharing.invite.invalid_scope, sharing.invite.manage_browser_only,
+                sharing.invite.refused, sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended,
+                sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
+                sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
+                source-priority.body.invalid_json, source-priority.body.invalid_shape; tokens —
+                tokens.measurements.ceiling_reached; vaccination — vaccination.booster-invalid,
+                vaccination.booster-no-antigen, vaccination.encounter-not-found, vaccination.identity-required,
+                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
                 vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
                 workout.batch.too_large; (unprefixed) — about_me_conflict, ai_response_truncated, coach_prefs_conflict,
                 dashboard_layout_conflict, empty_file, health_score_config_conflict, insights_layout_conflict,

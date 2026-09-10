@@ -1540,7 +1540,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Replace the owner's saved doctor-report selection",
       description:
-        "Replace, not merge — the body states the whole scope or it is not a scope; a leaf omitted from the body is a leaf removed from the saved profile. An unknown leaf id is refused with a 422 that names it. The saved selection is also what the FHIR REST face and the MCP doctor-visit surfaces replay for a caller that cannot ask a human, so every write is audit-logged. Auth via cookie or Bearer.",
+        "Replace, not merge — the body states the whole scope or it is not a scope; a leaf omitted from the body is a leaf removed from the saved profile. An unknown leaf id is refused with a 422 carrying `meta.errorCode` `report-selection.leaves.unknown` and `meta.unknownLeaves`, the ids this build does not know. The saved selection is also what the FHIR REST face and the MCP doctor-visit surfaces replay for a caller that cannot ask a human, so every write is audit-logged. Auth via cookie or Bearer.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: savedReportProfile } },

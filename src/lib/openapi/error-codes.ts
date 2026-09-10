@@ -254,6 +254,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     "report-selection": [
       "report-selection.body.invalid_json",
       "report-selection.body.invalid_shape",
+      "report-selection.leaves.unknown",
     ],
     route: ["route.retired"],
     "share-link": [

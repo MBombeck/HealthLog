@@ -16,7 +16,7 @@
  * Replaces `GET`/`PUT /api/auth/me/doctor-report-prefs`, whose column nothing
  * outside that route ever read.
  */
-import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
@@ -65,9 +65,11 @@ export const PUT = apiHandler(async (req: Request) => {
       action: { name: "auth.me.report-selection.put.invalid" },
       meta: { issues: parsed.error.issues.length },
     });
-    // The dotted token keeps its place in `error` — clients already match on it
-    // there — while `meta.errorCode` publishes it in the field a machine code
-    // belongs in, and `details.issues` names the fields that were refused.
+    // The dotted token keeps its place in `error`: this refusal keeps its 422,
+    // so moving the string would be a wire change with nothing forcing it —
+    // the `invalid_json` siblings moved only because their status moved to 400
+    // anyway. `meta.errorCode` publishes the same token in the field a machine
+    // code belongs in, and `details.issues` names the fields that were refused.
     return apiValidationError(
       "report-selection.body.invalid_shape",
       sanitiseZodIssues(parsed.error.issues),
@@ -82,7 +84,17 @@ export const PUT = apiHandler(async (req: Request) => {
       action: { name: "auth.me.report-selection.put.invalid" },
       meta: { unknownLeaves: minted.error.unknownLeaves },
     });
-    throw new HttpError(422, "report-selection.leaves.unknown");
+    // Not a Zod refusal, so there is no issue list to carry — but the same
+    // rule applies: a sentence in `error`, the machine token in
+    // `meta.errorCode`, and the leaves that were refused named beside it.
+    return apiError(
+      "Report selection names leaves this build does not know",
+      422,
+      {
+        errorCode: "report-selection.leaves.unknown",
+        unknownLeaves: minted.error.unknownLeaves,
+      },
+    );
   }
 
   // Persist the canonical ordering rather than the caller's, so two clients
