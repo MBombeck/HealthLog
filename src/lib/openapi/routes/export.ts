@@ -310,7 +310,9 @@ export const exportPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         "403": {
-          description: SHARING_NOT_PERMITTED_DESCRIPTION,
+          description:
+            "The Bearer token carries a narrow scope. The encrypted archive needs a cookie session or a full-access token; the refusal happens before any second-factor proof is looked at.\n\n" +
+            SHARING_NOT_PERMITTED_DESCRIPTION,
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,

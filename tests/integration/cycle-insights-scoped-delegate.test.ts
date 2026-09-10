@@ -165,6 +165,29 @@ async function seedRecord() {
     today,
   );
 
+  // One catalogue symptom, logged on enough phase-labelled days to clear the
+  // pattern floor. Without it `symptomPatterns` is empty in every leg and the
+  // "the cycle-native answer still arrives" property could not be shown even
+  // by a leg that asserted it.
+  //
+  // Upserted rather than created: the symptom catalogue is seeded by migration
+  // and survives the per-test truncation, so a plain create passes on the
+  // first leg and collides on the second.
+  const category = await prisma.cycleSymptomCategory.upsert({
+    where: { key: "cycle-insights-cat" },
+    update: {},
+    create: { key: "cycle-insights-cat", labelKey: "cycle.category.test" },
+  });
+  const symptom = await prisma.cycleSymptom.upsert({
+    where: { key: "cycle-insights-cramps" },
+    update: {},
+    create: {
+      categoryId: category.id,
+      key: "cycle-insights-cramps",
+      labelKey: "cycle.symptom.cramps",
+    },
+  });
+
   let luteal = 0;
   let follicular = 0;
   for (const [day, phase] of phaseByDay) {
@@ -195,6 +218,18 @@ async function seedRecord() {
         tz: "UTC",
       },
     });
+    // Cycle-native data, logged on the luteal days only so the pattern has a
+    // dominant phase to report.
+    if (high) {
+      await prisma.cycleDayLog.create({
+        data: {
+          userId: OWNER_ID,
+          date: day,
+          tz: "UTC",
+          symptomLinks: { create: [{ symptomId: symptom.id }] },
+        },
+      });
+    }
   }
 
   expect(
@@ -211,7 +246,7 @@ interface InsightsBody {
   rows: Array<{ metricKey: string }>;
   headline: { metricKey: string } | null;
   lagged: { discovered: unknown[] };
-  symptomPatterns: unknown[];
+  symptomPatterns: Array<{ symptomKey: string; topPhase: string }>;
 }
 
 async function readInsights(): Promise<InsightsBody> {
@@ -243,6 +278,10 @@ describe("cycle insights fence the sections it reads across", () => {
       "weight",
     );
     expect(keys, "and the mood contrast beside it").toContain("mood");
+    expect(
+      body.symptomPatterns.map((row) => row.symptomKey),
+      "and the cycle-native patterns the fence must not touch",
+    ).toContain("cycle-insights-cramps");
   });
 
   it("gives an entire-record delegate the same figures", async () => {
@@ -267,6 +306,13 @@ describe("cycle insights fence the sections it reads across", () => {
       body.lagged.discovered,
       "the lagged matrix is built from the same two sections",
     ).toHaveLength(0);
+    // The other half of the property, and the one a blanket refusal would
+    // break: the symptom-by-phase patterns are cycle data and the grant opens
+    // cycle, so they arrive in full.
+    expect(
+      body.symptomPatterns.map((row) => row.symptomKey),
+      "the cycle-native answer still arrives",
+    ).toContain("cycle-insights-cramps");
   });
 
   it("gives a cycle+mind delegate the mood figure and not the weight", async () => {

@@ -10,6 +10,13 @@
  * On a successful create the caller may raise the booster-mint prompt; this
  * sheet completes and closes regardless of what the person does with it. The
  * mint is an offer, never a step.
+ *
+ * Capability note: the same posture as the visit sheet. No check here; Delete
+ * renders only in edit mode, and the one mount that can reach edit mode
+ * (`VaccinationsView`) asks `canManageDomain("profile")` before handing over a
+ * record, while its create path asks `canWriteDomain("profile")`. A second
+ * mount that skips either question reintroduces an ungated control with
+ * nothing failing.
  */
 import { useState } from "react";
 import { Trash2 } from "lucide-react";

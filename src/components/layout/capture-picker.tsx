@@ -58,9 +58,11 @@ type CaptureKind = "measurement" | "medication" | "mood";
  * offered whenever the grant could write anywhere — and that answer is the
  * grant's LEVEL with no scope term at all. A WRITE grant scoped to `["labs"]`
  * read as true and got a weight form the server refuses; one scoped to
- * `["documents"]`, which takes no delegated write at any level, got both. `writableDomains` is already the level × scope × route-table
- * intersection, so asking it per section answers both cases and the mood
- * entry's MANAGE-only create as well.
+ * `["documents"]`, which takes no delegated write at any level, got both.
+ *
+ * `writableDomains` is already the level × scope × route-table intersection,
+ * so asking it per section answers both cases and the mood entry's
+ * MANAGE-only create as well.
  */
 const CAPTURE_KIND_DOMAIN: Readonly<Record<CaptureKind, ShareDomain>> = {
   measurement: "measurements",

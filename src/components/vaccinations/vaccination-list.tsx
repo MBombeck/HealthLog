@@ -157,6 +157,10 @@ function DoseRow({
     <Card
       className="hover:bg-muted/40 gap-0 transition-colors"
       data-slot="vaccination-row"
+      // A second, stable marker for the state rather than for the row: the
+      // `role` is markup that could legitimately change, and a guard matching
+      // on it would pass the day a real `<button>` replaced the card.
+      data-slot-open={onEdit ? "vaccination-row-open" : undefined}
       data-vaccination-id={record.id}
       onClick={onEdit ? () => onEdit(record) : undefined}
       role={onEdit ? "button" : undefined}

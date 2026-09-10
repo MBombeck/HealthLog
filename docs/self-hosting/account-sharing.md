@@ -84,17 +84,24 @@ Three levels, fixed when the invitation is written. Raising one means
 revoking and inviting again, because widening a grant in place would carry
 a consent the other person never gave.
 
-| Level  | Adds                                                                                                                                                                                                                                                           |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Read   | Read what the grant opens, and change nothing.                                                                                                                                                                                                                 |
-| Write  | Add entries: a reading, a lab result, an analyte, an illness entry, a side effect, a medication, marking a dose taken or skipped, a visit, a practice, a vaccination dose and the booster reminder it suggests. Editing, deleting and restoring stay with you. |
-| Manage | Change and remove entries, including ones the owner wrote; record the health background; read the insights generated from the record. Always the entire record.                                                                                                |
+| Level  | Adds                                                                                                                                                                                                                          |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Read   | Read what the grant opens, and change nothing.                                                                                                                                                                                |
+| Write  | Add entries: a reading, a lab result, an analyte, an illness entry, a side effect, a medication, marking a dose taken or skipped, a visit, a practice, and a vaccination dose. Editing, deleting and restoring stay with you. |
+| Manage | Change and remove entries, including ones the owner wrote; record the health background; read the insights generated from the record. Always the entire record.                                                               |
 
 Some entries are creates only **manage** reaches, and the split runs by
 entry rather than by section: an allergy, a family-history entry, a mood
 entry, a screener, a cycle day, a water entry and a preventive-care
 reminder are all created at manage, in sections a write grant can
 otherwise add to. Nothing in the document vault is writable at any level.
+
+One entry needs two sections rather than a higher level. Planning the
+booster a vaccination suggests files it as a preventive-care reminder,
+which lives under Readings, so a grant that opens Health background alone
+logs the dose and is refused the booster. Logging the dose is unaffected
+either way, and the app does not offer the booster to a grant that cannot
+plan it.
 
 Offering **manage** asks the owner for a fresh second factor if they have
 one enrolled, which makes it a browser-only act either way: a Bearer

@@ -714,11 +714,15 @@ describe("the immunization log's add, edit and delete", () => {
     });
   };
 
+  /** The row carries the edit affordance only while it opens something. */
+  const rowIsTappable = (html: string) =>
+    html.includes('data-slot-open="vaccination-row-open"');
+
   it("offers all three in the caller's own record", () => {
     const html = render(OWN_RECORD, <VaccinationsView />, seedList);
     expect(html).toContain('data-slot="vaccination-add"');
     // The row opens the edit sheet, which is where the delete lives.
-    expect(html).toContain('role="button"');
+    expect(rowIsTappable(html)).toBe(true);
   });
 
   it("offers a read-only delegate none of them", () => {
@@ -730,7 +734,7 @@ describe("the immunization log's add, edit and delete", () => {
       seedList,
     );
     expect(html).not.toContain('data-slot="vaccination-add"');
-    expect(html).not.toContain('role="button"');
+    expect(rowIsTappable(html)).toBe(false);
   });
 
   it("offers a WRITE delegate the add and not the row", () => {
@@ -740,8 +744,8 @@ describe("the immunization log's add, edit and delete", () => {
       seedList,
     );
     expect(html).toContain('data-slot="vaccination-add"');
-    expect(html, "editing and deleting a dose are MANAGE").not.toContain(
-      'role="button"',
+    expect(rowIsTappable(html), "editing and deleting a dose are MANAGE").toBe(
+      false,
     );
   });
 
@@ -752,7 +756,7 @@ describe("the immunization log's add, edit and delete", () => {
       seedList,
     );
     expect(html).toContain('data-slot="vaccination-add"');
-    expect(html).toContain('role="button"');
+    expect(rowIsTappable(html)).toBe(true);
   });
 
   it("offers a MANAGE delegate outside the section neither", () => {
@@ -764,7 +768,7 @@ describe("the immunization log's add, edit and delete", () => {
       seedList,
     );
     expect(html).not.toContain('data-slot="vaccination-add"');
-    expect(html).not.toContain('role="button"');
+    expect(rowIsTappable(html)).toBe(false);
   });
 
   it("offers the empty state's add on the same rule", () => {
