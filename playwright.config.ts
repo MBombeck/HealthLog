@@ -4,6 +4,11 @@ import {
   SSR_PREFETCH_BASE_URL,
   SSR_PREFETCH_PORT,
 } from "./e2e/setup/ssr-prefetch-server";
+import {
+  SMTP_STUB_FROM,
+  SMTP_STUB_HOST,
+  SMTP_STUB_PORT,
+} from "./e2e/setup/smtp-stub";
 
 /**
  * Playwright configuration for the HealthLog E2E suite.
@@ -171,6 +176,14 @@ export default defineConfig({
         // through stable data attributes, not a mobile layout, so it runs in
         // one project.
         "apple-health-import.spec.ts",
+        // The notification-dispatch journey binds a local SMTP responder on a
+        // fixed port and reads GLOBAL verdicts off one account's delivery
+        // ledger — "one email attempt, no ntfy attempt, the APNs arm skipped
+        // for this reason". A second project would fight it for the port and
+        // add attempts to the window it counts. It proves a dispatch decision
+        // through stable attributes and the account's own API, not a mobile
+        // layout, so it runs in one project.
+        "notification-dispatch-journey.spec.ts",
       ],
       use: {
         // Pixel 5 — Chromium-based mobile profile so CI only needs
@@ -210,6 +223,15 @@ export default defineConfig({
             // Disable the prefetch for the e2e server — the suite keeps the
             // deterministic client-fetch path.
             DASHBOARD_SSR_PREFETCH: "false",
+            // The one delivery channel a notification journey can exercise
+            // for real on one machine. Its transport is operator config, not
+            // account input, so it never crosses the SSRF floor that refuses
+            // a local host for ntfy / webhook / Web Push. The responder these
+            // point at is started by the journey itself; see
+            // `e2e/setup/smtp-stub.ts` for why no other channel can be.
+            SMTP_HOST: SMTP_STUB_HOST,
+            SMTP_PORT: String(SMTP_STUB_PORT),
+            SMTP_FROM: SMTP_STUB_FROM,
           },
         },
         // The SHIPPED configuration, on its own port.
