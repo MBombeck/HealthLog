@@ -4,10 +4,11 @@
  * `meta.errorCode` is the mechanism this API chose for machine-readable errors
  * — the envelope's own description tells a client to branch on it rather than
  * on the prose — and until this file existed a client could not enumerate it.
- * Sixteen of the two hundred and forty-two codes appeared somewhere in
- * `docs/api/openapi.yaml`; the rest existed only in server source, so the only
- * way to learn one was to trigger the error in testing and the only way to
- * learn a new one had appeared was to trigger that too.
+ * When this file was written, sixteen of its two hundred and forty-two codes
+ * appeared somewhere in `docs/api/openapi.yaml`; the rest existed only in
+ * server source, so the only way to learn one was to trigger the error in
+ * testing and the only way to learn a new one had appeared was to trigger
+ * that too.
  *
  * The list is generated from the code and then committed as a literal, so it is
  * reviewable in a diff and stable across a release. `error-code-catalogue.test.ts`

@@ -874,7 +874,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Cycle-phase correlation insights (v1.15.0)",
       description:
-        "FDR-guarded luteal-vs-follicular phase contrast per outcome metric (RHR / HRV / sleep / steps / weight / temperatures), plus the single headline finding (resting-heart-rate-by-phase, falling back to HRV). The same Welch t-test + Benjamini-Hochberg machinery the mood-factor crosstab runs; only rows with p < 0.05 AND q ≤ 0.10 surface. Strictly gender-gated — phase never appears on the general `/api/insights/correlations` route. Observational only, never causal. Gated: `cycle.disabled` 403 when the feature is off.",
+        "FDR-guarded luteal-vs-follicular phase contrast per outcome metric (RHR / HRV / sleep / steps / weight / temperatures), plus the single headline finding (resting-heart-rate-by-phase, falling back to HRV). The same Welch t-test + Benjamini-Hochberg machinery the mood-factor crosstab runs; only rows with p < 0.05 AND q ≤ 0.10 surface. Strictly gender-gated — phase never appears on the general `/api/insights/correlations` route. Observational only, never causal. Gated: `cycle.disabled` 403 when the feature is off. Declared for the `cycle` section; the outcome columns are fenced per section at the query, so a grant scoped to the cycle alone receives the phase rows with no `lutealAvg` / `follicularAvg` / `delta` for measurement or mood outcomes and no lagged discovery, exactly as a record with nothing logged would read. The owner and a whole-record grant are unchanged.",
       responses: {
         "200": {
           description: "Phase-correlation rows + headline.",
