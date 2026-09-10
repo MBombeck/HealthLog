@@ -145,6 +145,37 @@ export const E2E_MEDICATION = {
   role: "USER",
 } as const;
 
+/**
+ * The notification-dispatch journey's own account.
+ *
+ * It has one, rather than borrowing the shared fixture, because the journey's
+ * verdicts are counts over ONE account's `push_attempts` ledger — "one email
+ * attempt, no ntfy attempt, the APNs arm skipped and for which reason".
+ *
+ * The direction that matters is the one that is easy to state backwards. The
+ * exposure is not mainly that another spec writes into this account's window;
+ * it is that this journey's own trigger — the admin reminder sweep — dispatches
+ * for whatever accounts it is pointed at, and pointed at the instance it
+ * reaches all of them. A dedicated account gives the sweep something to name,
+ * so the run stays a writer for exactly one ledger and a reader of exactly the
+ * same one.
+ *
+ * ADMIN because the two surfaces the journey reads the dispatch decision
+ * through — the reminder trigger and the notification diagnostic — are
+ * `requireAdmin()`, which is cookie-only by construction.
+ */
+export const E2E_NOTIFY = {
+  email: "e2e-notify@healthlog.test",
+  username: "e2e-notify",
+  password: "Xd6!Ct3pW9qBz5Fh",
+  role: "ADMIN",
+} as const;
+
+export const NOTIFY_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateNotify.json",
+);
+
 /** A separate delegate session for the eight scoped-record browser journeys. */
 export const E2E_SCOPE_DELEGATE = {
   email: "e2e-scope-delegate@healthlog.test",
@@ -556,6 +587,33 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       ],
     );
 
+    // The notification-dispatch journey's account. Seeded like the others;
+    // its channels, devices, ledger rows and preferences are reset by
+    // `e2e/setup/notification-fixture.ts` before every test, because the
+    // journey has to be re-runnable and `--repeat-each` is exactly the case a
+    // once-per-suite reset does not cover.
+    await pool.query(
+      `INSERT INTO users
+        (id, username, email, password_hash, role, created_at, updated_at,
+         onboarding_completed_at, onboarding_tour_completed)
+       VALUES ($1, $2, $3, $4, $5, $6, $6, $6, true)
+       ON CONFLICT (username) DO UPDATE SET
+         email = EXCLUDED.email,
+         password_hash = EXCLUDED.password_hash,
+         role = EXCLUDED.role,
+         updated_at = EXCLUDED.updated_at,
+         onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+         onboarding_tour_completed = EXCLUDED.onboarding_tour_completed`,
+      [
+        cuid(),
+        E2E_NOTIFY.username,
+        E2E_NOTIFY.email,
+        await hashPassword(E2E_NOTIFY.password),
+        E2E_NOTIFY.role,
+        now,
+      ],
+    );
+
     // The doctor-report journey's account. Seeded like the shared one — a
     // record with a height, a date of birth and a gender, so the report has a
     // patient header to print — and with the two report columns cleared, which
@@ -845,7 +903,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
        WHERE key LIKE 'sharing:%'`,
     );
 
-    // The login bucket, for the same reason. This setup signs in SIXTEEN times now
+    // The login bucket, for the same reason. This setup signs in SEVENTEEN times now
     // (the shared jar, the owner, and one jar apiece for every spec that moves
     // a session's record selector), and the ceiling is five attempts per IP per
     // quarter-hour — so two local runs in a row would otherwise end with a 429
@@ -989,7 +1047,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
      * Log one account in, clearing the login bucket first.
      *
      * The ceiling is FIVE attempts per IP per quarter-hour and this setup now
-     * signs in sixteen times, so clearing once before the batch is no longer
+     * signs in seventeen times, so clearing once before the batch is no longer
      * enough — the sixth would be answered by the fixture's own 429 rather
      * than by the product. Only the auth surfaces' buckets are touched, and
      * only between logins this setup is itself performing.
@@ -1018,6 +1076,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // The adherence journey's jar. Its own account, so nothing it writes and
     // nothing it clears is visible to the shared one.
     await capture(E2E_MEDICATION, MEDICATION_STORAGE_STATE_PATH);
+
+    // The notification-dispatch journey's jar. Its own account, so its own
+    // login — see `E2E_NOTIFY` for why the ledger counts need one.
+    await capture(E2E_NOTIFY, NOTIFY_STORAGE_STATE_PATH);
 
     await capture(E2E_SCOPE_DELEGATE, SCOPE_DELEGATE_STORAGE_STATE_PATH);
     await capture(E2E_SCOPE_DELEGATE, SCOPE_A11Y_STORAGE_STATE_PATH);

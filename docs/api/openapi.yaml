@@ -9750,6 +9750,50 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/admin/notifications/reminder-check:
+    post:
+      tags:
+        - Admin
+      summary: Run the medication-reminder sweep
+      description: >-
+        The admin panel's manual reminder sweep: it classifies every active medication's dose windows against the OWNING
+        account's wall clock and dispatches a MEDICATION_REMINDER for each overdue slot that has no intake event today.
+        Cookie auth only — `requireAdmin()` refuses every Bearer caller, wildcard scope included.
+
+
+        Scope is the thing to get right. With no body the sweep is INSTANCE-WIDE and dispatches into every account that
+        has an overdue dose and a configured channel; that is the operator button's behaviour and it is deliberate. A
+        caller that means to sweep one account sends `userId` and stops being a second writer for every other one. The
+        selector can only narrow: it feeds the Prisma `where`, never the authorisation.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                  pattern: ^[A-Za-z0-9_-]+$
+              additionalProperties: false
+      responses:
+        "200":
+          description: The sweep's findings and how many reminders it sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminReminderCheckResponse"
+        "401": *a1
+        "403":
+          description: Caller is not an admin.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/admin/notifications/diagnostic:
     get:
       tags:
@@ -49138,6 +49182,132 @@ components:
         - data
         - error
       additionalProperties: false
+    AdminReminderCheckResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminReminderCheckResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminReminderCheckResult:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        missedThresholdMinutes:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        scoped:
+          type: boolean
+          description: True when the request named a `userId` and the sweep therefore walked one account only.
+        medications:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminReminderMedication"
+        notificationsSent:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        message:
+          type: string
+      required:
+        - timestamp
+        - missedThresholdMinutes
+        - scoped
+        - medications
+        - notificationsSent
+        - message
+      additionalProperties: false
+      description: What the sweep found and what it sent. `notificationsSent` counts DISPATCHES, not deliveries — each one
+        enters the channel cascade and the per-channel verdict lands in the `push_attempts` ledger the notification
+        diagnostic surfaces.
+    AdminReminderMedication:
+      type: object
+      properties:
+        name:
+          type: string
+        dose:
+          type: string
+        user:
+          type: string
+        timezone:
+          type: string
+        localTime:
+          type: string
+        dayOfWeek:
+          type: string
+        notificationsEnabled:
+          type: boolean
+        schedules:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminReminderScheduleStatus"
+        eventsToday:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - name
+        - dose
+        - user
+        - timezone
+        - localTime
+        - dayOfWeek
+        - notificationsEnabled
+        - schedules
+        - eventsToday
+      additionalProperties: false
+      description: One active medication the sweep walked, with the account it belongs to and that account's local clock — the
+        sweep classifies every window against the owner's timezone, never the operator's.
+    AdminReminderScheduleStatus:
+      type: object
+      properties:
+        window:
+          type: string
+        days:
+          type: string
+        status:
+          type: string
+          enum:
+            - open
+            - late
+            - threshold
+            - missed
+            - skipped
+        label:
+          type: string
+        minutesPastEnd:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        notificationSent:
+          type: boolean
+      required:
+        - window
+        - days
+        - status
+        - label
+        - minutesPastEnd
+        - notificationSent
+      additionalProperties: false
+      description: One dose window as the sweep classified it against the OWNING account's wall clock, and whether this run
+        dispatched for it. `notificationSent` is false for a window that is still open, for a day the schedule does not
+        cover, and for a slot that already has an intake event today.
     AdminDiagnosticResponse:
       type: object
       properties:
@@ -66178,12 +66348,27 @@ components:
           anyOf:
             - $ref: "#/components/schemas/RecordSessionState"
             - type: "null"
+        notificationPrefs:
+          type: object
+          properties:
+            medication:
+              type: object
+              properties:
+                clientManaged:
+                  type: boolean
+              required:
+                - clientManaged
+              additionalProperties: {}
+          required:
+            - medication
+          additionalProperties: {}
       required:
         - id
         - username
         - accountAccess
         - moduleAccess
         - recordSession
+        - notificationPrefs
       additionalProperties: {}
       description: "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do.
         Additional properties are the preference fields this spec does not yet enumerate. Under an active switch the

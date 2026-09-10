@@ -347,3 +347,25 @@ export const webPushSubscriptionSchema = z.object({
     auth: z.string().min(1),
   }),
 });
+
+/**
+ * Body of `POST /api/admin/notifications/reminder-check` — the admin panel's
+ * manual reminder sweep.
+ *
+ * `userId` narrows the sweep to one account. Omitted (and a bodyless POST is
+ * the admin console's own call) the sweep stays instance-wide, which is what
+ * the operator button has always done. The field is an ACCOUNT SELECTOR, not
+ * an identity: the route is `requireAdmin()`, cookie-only by construction, so
+ * naming an account here can never widen who is allowed to run the sweep — it
+ * only narrows whose overdue doses it dispatches for.
+ *
+ * Strict, so a typo'd key is a 422 rather than a silently instance-wide run.
+ */
+export const adminReminderCheckSchema = z.strictObject({
+  userId: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[A-Za-z0-9_-]+$/, "Ungültige Account-ID")
+    .optional(),
+});

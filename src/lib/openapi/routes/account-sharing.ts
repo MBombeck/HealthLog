@@ -451,6 +451,17 @@ const accountPayload = z
     accountAccess: accountAccessBlock,
     moduleAccess: moduleAccessMap,
     recordSession: recordSessionState.nullable(),
+    // Enumerated because a client DECIDES on it rather than displays it: the
+    // medication surface hides the server-side reminder switch when
+    // `medication.clientManaged` is true, because the phone owns those
+    // reminders and a switch that no longer decides anything is worse than no
+    // switch. Always fully resolved — an account that never opted in reads
+    // `false`, not absent. `PATCH /api/auth/me/notification-prefs` writes it;
+    // the categories this object does not name are the rest of the open
+    // preference envelope.
+    notificationPrefs: z.looseObject({
+      medication: z.looseObject({ clientManaged: z.boolean() }),
+    }),
   })
   .meta({
     id: "AccountPayload",

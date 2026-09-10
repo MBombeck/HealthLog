@@ -1,7 +1,10 @@
+import type { NextRequest } from "next/server";
+
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
-import { apiSuccess } from "@/lib/api-response";
+import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import { adminReminderCheckSchema } from "@/lib/validations/notifications";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { dispatchLocalisedNotification } from "@/lib/notifications/dispatch-localised";
 import { getUserTodayBounds, getDayOfWeekInTz } from "@/lib/tz/local-day";
@@ -40,13 +43,50 @@ interface MedicationResult {
 }
 
 /**
- * POST: Execute the reminder check — analyzes all medications AND sends
+ * POST: Execute the reminder check — analyses medications AND sends
  * notifications for overdue schedules (late + missed). Returns detailed
  * results for display in the admin panel.
+ *
+ * ## Scope
+ *
+ * The sweep is instance-wide by default: no body, every active medication on
+ * the instance, one dispatch per overdue slot. That is the operator button's
+ * long-standing behaviour and it stays.
+ *
+ * An optional `userId` in the body narrows it to ONE account. The direction
+ * that matters is easy to state backwards, so it is written here: the hazard a
+ * caller of this route creates is not that somebody else writes into its
+ * window, it is that THIS call dispatches into everybody else's — a run reaches
+ * every account that has an overdue dose and a configured channel. A caller
+ * that only means to sweep one account names it and stops being a second
+ * writer for every other one.
+ *
+ * Naming an account cannot widen anything. `requireAdmin()` is cookie-only by
+ * construction, so a Bearer token — wildcard scope included — never reaches
+ * this handler at all, and the field only ever removes rows from the `where`.
  */
-export const POST = apiHandler(async () => {
+export const POST = apiHandler(async (request: NextRequest) => {
   await requireAdmin();
-  annotate({ action: { name: "admin.notifications.reminder-check" } });
+
+  // A bodyless POST is the admin console's own call (`apiPost(path)` sends no
+  // body and no content-type), so the parse only runs when a JSON body is
+  // actually presented. An empty object is the same instance-wide sweep.
+  let input: unknown = {};
+  if (
+    (request.headers.get("content-type") ?? "").includes("application/json")
+  ) {
+    const { data, error } = await safeJson(request, { maxBytes: 4 * 1024 });
+    if (error) return error;
+    input = data ?? {};
+  }
+  const parsed = adminReminderCheckSchema.safeParse(input);
+  if (!parsed.success) return returnAllZodIssues(parsed.error);
+  const scopedUserId = parsed.data.userId ?? null;
+
+  annotate({
+    action: { name: "admin.notifications.reminder-check" },
+    meta: { scope: scopedUserId ? "account" : "instance" },
+  });
 
   const now = new Date();
 
@@ -57,7 +97,11 @@ export const POST = apiHandler(async () => {
   const missedMinutes = appSettings?.reminderMissedMinutes ?? 240;
 
   const medications = await prisma.medication.findMany({
-    where: { active: true },
+    where: {
+      active: true,
+      // Absent selector ⇒ no `userId` key ⇒ the instance-wide sweep.
+      ...(scopedUserId ? { userId: scopedUserId } : {}),
+    },
     include: {
       schedules: true,
       user: { select: { id: true, username: true, timezone: true } },
@@ -211,6 +255,7 @@ export const POST = apiHandler(async () => {
   return apiSuccess({
     timestamp: now.toISOString(),
     missedThresholdMinutes: missedMinutes,
+    scoped: scopedUserId !== null,
     medications: results,
     notificationsSent,
     message:

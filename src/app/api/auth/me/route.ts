@@ -55,6 +55,7 @@ import {
   getOperatorModuleAvailability,
 } from "@/lib/modules/gate";
 import { parseTourProgress } from "@/lib/onboarding/tour-progress";
+import { parseNotificationPrefs } from "@/lib/validations/notification-prefs";
 import { resolveAccountAccess } from "@/lib/sharing/account-access";
 import {
   buildModuleDisclosure,
@@ -224,6 +225,16 @@ export const GET = apiHandler(async () => {
     // the account has never saved one, which is what makes the panel show the
     // named template on the first run rather than a silent server default.
     reportSelection: user.reportSelectionJson ?? null,
+    // The account's resolved notification preferences — the same resolver
+    // `GET /api/auth/me/notification-prefs` answers with, so the two surfaces
+    // cannot disagree. Published here because the medication detail's
+    // notification section decides between the server-side reminder switch and
+    // the client-managed chip on `medication.clientManaged`, and it reads that
+    // decision off THIS payload: the dedicated endpoint is not on the app-boot
+    // path. An account that has never opted in resolves to the documented
+    // defaults rather than to `undefined`, so the switch is what renders.
+    // No extra query — the session already loads the row this column is on.
+    notificationPrefs: parseNotificationPrefs(user.notificationPrefs ?? null),
     // v1.4.47 W3 — per-user Coach opt-out. Default `false` if the
     // column is absent (partial-deploy rollback safety, see migration
     // 0078 commentary). Every Coach mount point on the client checks
