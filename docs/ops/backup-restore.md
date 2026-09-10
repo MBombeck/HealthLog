@@ -124,6 +124,24 @@ decompresses to a few hundred megabytes, and
 `NODE_OPTIONS=--max-old-space-size=2048` in front of the command is enough for
 a 445 000-measurement account.
 
+### Restoring from the backups console
+
+An admin can restore a stored snapshot from the browser instead of the shell.
+`/admin/backups` lists one row per account and per backup type: **Backup now**
+enqueues the `data-backup` pass for every account on the instance, **Download**
+decrypts one snapshot and hands back the JSON, and **Restore** opens a dialog
+that first shows what the file carries and then requires the word `RESTORE` to
+be typed before it will run. The restore targets the account the snapshot was
+taken for, never the admin running it, and it refuses a file whose declared
+owner does not match the stored row. Instance-wide settings ride along only
+when you tick _Also restore instance settings_ in the dialog; leave it clear to
+restore the account alone.
+
+A stored copy this instance can no longer open — the key that wrote it dropped
+from `ENCRYPTION_KEYS` one rotation too early, or bytes that are not the ones
+written — is refused by all three buttons with `422` and
+`meta.errorCode = backup.payload.undecryptable`, before anything is read back.
+
 ### What a backup deliberately does not carry
 
 Every credential-shaped row is left out, and this is not an oversight to fix:
@@ -263,6 +281,16 @@ one column: chunk it across rows, or keep only the off-host copy. Reading it bac
 shape, and worse: a restore parses the whole document, so the read path needs
 several times the blob in heap. An operator restoring a very large account
 should give the container more memory for the duration.
+
+### What a restore replaces
+
+A restore replaces the account's data tables; it does not merge into them.
+Every row the file carries is written back under its original id, and every row
+the account gained after the snapshot was taken — readings, doses, mood
+entries, documents — is deleted with the rest of the class before the file is
+read back. Restoring Monday's copy on Wednesday therefore costs the account
+everything it recorded on Tuesday. If the current state is worth keeping, take
+a fresh snapshot from the backups console before restoring the old one.
 
 ## Monthly restore drill (automatic)
 
