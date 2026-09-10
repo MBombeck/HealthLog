@@ -73,7 +73,12 @@ function renderUnder(
 const SURFACES = [
   {
     name: "onboarding baseline step",
-    node: <BaselineForm />,
+    node: (
+      <BaselineForm
+        initial={{ heightCm: null, dateOfBirth: null, gender: null }}
+        onConfirmed={async () => {}}
+      />
+    ),
     firstInputId: "ob-baseline-height",
     metricLabel: "Height (cm)",
   },

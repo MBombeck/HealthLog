@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { OnboardingShell } from "@/components/onboarding/onboarding-shell";
+import { ConfirmScreen } from "@/components/onboarding/confirm-screen";
 import { QuestionScreen } from "@/components/onboarding/question-screen";
 import { UnitsScreen } from "@/components/onboarding/units-screen";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -97,6 +98,9 @@ function renderScreen(screen: OnboardingStepId, state: OnboardingStateDto) {
   }
   if (screen === "units") {
     return <UnitsScreen state={state} />;
+  }
+  if (screen === "confirm") {
+    return <ConfirmScreen state={state} />;
   }
   notFound();
 }

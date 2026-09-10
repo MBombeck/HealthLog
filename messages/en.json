@@ -4719,6 +4719,27 @@
           "metric": "kg and cm",
           "imperial": "lb and ft/in"
         }
+      },
+      "confirm": {
+        "title": "Here is what your answers switch on",
+        "body": "One look, then HealthLog is set up. Nothing here is final.",
+        "modulesTitle": "Modules",
+        "switchedOn": "Switched on: {modules}.",
+        "nothingExtra": "Your answers switch on no extra module; the core readings are always there.",
+        "alwaysOn": "Always on: {modules}, and the core readings (weight, blood pressure, pulse).",
+        "everythingElse": "Everything else stays one click away under",
+        "modulesLink": "Settings, Modules",
+        "glucoseUnit": "Blood glucose",
+        "unitPreference": "Units",
+        "language": "Language",
+        "timezone": "Time zone",
+        "changeInSettings": "Change these under Settings, Account",
+        "cta": "Confirm and continue",
+        "managedTitle": "The person you look after",
+        "managedBody": "Their record has no login of its own; you look after it from your account. A second factor on your account is required to create it.",
+        "managedCreate": "Create the profile and finish",
+        "managedLater": "You can also create it later under Settings, Shared access.",
+        "finishWithoutProfile": "Finish without the profile"
       }
     }
   },
