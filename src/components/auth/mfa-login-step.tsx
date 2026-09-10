@@ -198,7 +198,7 @@ export function MfaLoginStep({
       {hasTotp && (
         <button
           type="button"
-          data-testid="mfa-toggle-recovery"
+          data-testid="mfa-recovery-toggle"
           onClick={() => {
             setUseRecovery((v) => !v);
             setCode("");

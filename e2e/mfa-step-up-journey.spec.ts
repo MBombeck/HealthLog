@@ -6,6 +6,12 @@ import type {
 } from "@playwright/test";
 import * as OTPAuth from "otpauth";
 
+import {
+  TOTP_ALGORITHM,
+  TOTP_DIGITS,
+  TOTP_PERIOD_SECONDS,
+} from "@/lib/auth/mfa/totp";
+
 import { expect, test } from "./setup/test";
 import {
   clearAuthRateLimits,
@@ -77,7 +83,6 @@ import {
  * current step has too little left — instead of hoping the wall clock is kind.
  */
 
-const TOTP_PERIOD_SECONDS = 30;
 const RECOVERY_CODE_COUNT = 10;
 const REGENERATE_ENDPOINT = "/api/auth/me/mfa/recovery-codes/regenerate";
 /** `/api/auth/login`, per IP per 15 minutes (`src/lib/rate-limit.ts`). */
@@ -96,8 +101,8 @@ function totpCodeAt(secretBase32: string, atMs: number): string {
   return new OTPAuth.TOTP({
     issuer: "HealthLog",
     label: "HealthLog",
-    algorithm: "SHA1",
-    digits: 6,
+    algorithm: TOTP_ALGORITHM,
+    digits: TOTP_DIGITS,
     period: TOTP_PERIOD_SECONDS,
     secret: OTPAuth.Secret.fromBase32(secretBase32),
   }).generate({ timestamp: atMs });
@@ -141,8 +146,8 @@ async function submitPassword(
   await clearAuthRateLimits();
   await page.goto("/auth/login");
   await page.getByTestId("login-use-password").click();
-  await page.locator("#email").fill(account.username);
-  await page.locator("#password").fill(account.password);
+  await page.getByTestId("login-email").fill(account.username);
+  await page.getByTestId("login-password").fill(account.password);
   const answer = page.waitForResponse(
     (res) =>
       res.url().includes("/api/auth/login") &&
@@ -394,7 +399,7 @@ test.describe("second factor", () => {
     });
 
     await test.step("spends a recovery code once", async () => {
-      await page.getByTestId("mfa-toggle-recovery").click();
+      await page.getByTestId("mfa-recovery-toggle").click();
       const answer = await submitFactor(page, liveRecoveryCodes[0]);
       expect(answer.status()).toBe(200);
       await page.waitForURL("/");
@@ -406,7 +411,7 @@ test.describe("second factor", () => {
       await submitPassword(page, account);
       await expect(page.getByTestId("mfa-login-step")).toBeVisible();
 
-      await page.getByTestId("mfa-toggle-recovery").click();
+      await page.getByTestId("mfa-recovery-toggle").click();
       const answer = await submitFactor(page, liveRecoveryCodes[0]);
       expect(answer.status()).toBe(401);
       await expect(page.getByTestId("mfa-error")).toBeVisible();
