@@ -343,6 +343,29 @@ export function MeasurementList({
     },
     [unitDisplay, glucoseUnit],
   );
+  /**
+   * Machine-readable mirror of what the row renders — the same number and
+   * the same unit, before `Intl` turns them into locale text.
+   *
+   * The rendered cell is the only place a reading's value and unit appear
+   * together, and it appears there as "8.421 steps" or "8,421 steps"
+   * depending on who is looking. A browser test that has to assert a stored
+   * unit therefore either pins a locale or matches a loose number, and both
+   * describe the formatter rather than the reading. These attributes carry
+   * the reading itself, and the desktop table and the mobile list emit the
+   * same set, so an assertion holds at either viewport.
+   */
+  const rowIdentityAttrs = useCallback(
+    (m: Measurement, isGrouped: boolean) => ({
+      "data-testid": "measurement-row",
+      "data-measurement-type": m.type,
+      "data-measurement-value": String(
+        isGrouped ? m.value : rowDisplay(m).value,
+      ),
+      "data-measurement-unit": isGrouped ? m.unit : rowDisplay(m).unit,
+    }),
+    [rowDisplay],
+  );
   // v1.28.42 (H3) — the desktop table and the mobile card list used to BOTH
   // render (only CSS `display` hid one), so a dense cumulative (up to ~5000
   // rows) or sleep page built every row subtree twice — double the DOM, double
@@ -1161,6 +1184,17 @@ export function MeasurementList({
                         <Fragment key={m.id}>
                           <TableRow
                             data-state={isSelected ? "selected" : undefined}
+                            // A row is addressable by what it holds, not by
+                            // the copy it paints: the type is an enum and the
+                            // unit is a symbol, so a browser journey can pin
+                            // "this glucose reading now reads in mmol/L"
+                            // without matching translated text that also
+                            // renders at a different size on the card list
+                            // below.
+                            {...rowIdentityAttrs(m, isGrouped)}
+                            data-display-unit={
+                              isGrouped ? m.unit : rowDisplay(m).unit
+                            }
                           >
                             <TableCell className="pl-4">
                               {/* Grouped/synthetic rows aren't individually
@@ -1197,7 +1231,10 @@ export function MeasurementList({
                                 </button>
                               </Badge>
                             </TableCell>
-                            <TableCell className="font-semibold tabular-nums">
+                            <TableCell
+                              className="font-semibold tabular-nums"
+                              data-slot="measurement-row-value"
+                            >
                               {/* v1.4.39.3 — non-grouped rows render the
                                 stored value with its native precision
                                 (`fmt.number` honours up to 3 fraction
@@ -1358,6 +1395,11 @@ export function MeasurementList({
                     <ListRow
                       key={m.id}
                       data-state={isSelected ? "selected" : undefined}
+                      // Same addressing contract as the desktop row above.
+                      {...rowIdentityAttrs(m, isGrouped)}
+                      data-display-unit={
+                        isGrouped ? m.unit : rowDisplay(m).unit
+                      }
                       className="bg-card border-border data-[state=selected]:border-primary/60 data-[state=selected]:bg-primary/5"
                     >
                       <div className="flex items-center justify-between">
@@ -1412,7 +1454,10 @@ export function MeasurementList({
                                 {t(TYPE_LABEL_KEYS[m.type])}
                               </Badge>
                             )}
-                            <span className="font-semibold tabular-nums">
+                            <span
+                              className="font-semibold tabular-nums"
+                              data-slot="measurement-row-value"
+                            >
                               {/* v1.4.39.3 — mirror the desktop table:
                                 grouped daily aggregates stay integer,
                                 non-grouped single readings render with

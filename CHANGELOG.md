@@ -1,5 +1,97 @@
 # Changelog
 
+## [1.38.14] — 2026-09-09
+
+Two reported bugs fixed at their class, and the release gate stops crying
+wolf. Both reports came from @mbreitkreuz, each traced to the line (#943,
+#944).
+
+### Fixed
+
+- **Walking distance from an `export.zip` import was stored a thousand times
+  too small (#944).** Apple stamps every record in the archive with the
+  account's own display unit, and the import read the number without ever
+  reading that unit, so a 2.5 km day landed as 2.5 metres. HealthKit units
+  now convert through one shared table (`src/lib/measurements/hk-units.ts`),
+  the same conversion the workout import already used, which also caught a
+  workout archived with its energy in kilojoules. Every mapping entry that
+  keeps a fixed unit carries a written reason, enforced by a structural test.
+  Re-importing the archive repairs stored rows; for accounts without their
+  archive, `scripts/repair-apple-health-distance.ts` repairs exactly the rows
+  the export path wrote, dry-run by default, once per account. Runbook under
+  `docs/ops/apple-health-distance-repair.md`.
+
+- **Blood glucose readings without a meal-time tag now count everywhere
+  (#943).** A meter synced through Apple Health writes no meal-time metadata,
+  so an account could hold hundreds of readings and see no Blood Glucose
+  tile, no glucose target and an empty glucose panel in the doctor report,
+  with the module on and no warning anywhere. Untagged readings are a bucket
+  of their own (`UNSPECIFIED`): they light the tile, carry its value and
+  trend, get a target card judged against the random-reading band, and reach
+  the report and the FHIR export. Tagged accounts keep their per-context
+  breakdown. A structural test refuses a dashboard tile gated on an enum
+  without an arm for the untagged case.
+
+- **Four end-to-end specs that failed through two retries had real causes.**
+  `a11y` recognised "the chart" by a library class every chart shares (now a
+  `data-slot`); `documents` maximised the drawer before the vault had booked
+  the Coach hand-off; `vaccinations` and the record-session fence spec shared
+  a socket-reuse race in Playwright's keep-alive agent against the server's
+  five-second idle timeout (seeds now go through the page's own `fetch`).
+
+- **Three unit specs had a teardown race that was a defect.** The score
+  tests' fake database was bypassed by a tail call to the real client, which
+  on a runner without Postgres failed after the test had ended and closed the
+  worker mid-write. The registration is wrapped, the settle guard covers it,
+  and the specs run in 20 ms instead of 700.
+
+- **The first-run profile step no longer throws away what the server told
+  it.** A height outside the accepted range, or a date the server would not
+  take, was dropped on save while the wizard moved on and marked setup
+  finished; the value was gone and nothing said so. A refused field now says
+  why underneath the input that holds it, in the interface language, and the
+  step waits. The same applies to the profile card in Settings. A structural
+  test freezes every submitter of the profile route to that behaviour. The
+  iOS app has the same gap and is tracked there.
+
+- **A retried medication write no longer lands twice.** Adding a medication,
+  logging a side effect and registering a supply container now honour
+  `Idempotency-Key`: a replay after a lost response returns the first answer
+  with `X-Idempotent-Replay: true` instead of creating a second row, which is
+  what the native client's offline queue relies on. The API contract says so.
+
+### Changed
+
+- **Release gate hygiene.** Bundle budgets carry a measured baseline per route
+  and 20 KB of headroom instead of one; the rate-limit integration test no
+  longer expects four database round trips inside 50 ms; the geometry checks
+  fail rather than skip when no browser is present, and the dependency-bump
+  workflow installs one; the dependency audit runs on pushes to `main` and
+  daily instead of failing pull requests over advisories that changed
+  nothing.
+
+- **A synthetic journey after a deploy.** `scripts/synthetic-journey.mjs`
+  warms an instance, checks `/api/version` against the tag just published,
+  signs in, writes a reading with an idempotency key, reads it back and
+  deletes it, one line per leg; `.github/workflows/synthetic-journey.yml`
+  runs it by hand against a chosen instance. `docs/ops/deploy.md` says how and
+  what a red leg means.
+
+- **Two more journeys in the gate.** Blood glucose in both units through the
+  capture form, the unit switch and the dashboard tiles; an Apple Health
+  `export.zip` through the import card to the measurements list with units
+  asserted. Both carry a skipped assertion that turns on with this release's
+  fixes, and both were broken deliberately once to prove they can fail.
+
+- **`POST /api/nightscout/connect` is documented.** It sat in the route
+  coverage guard as an OAuth hand-off, which it is not; the native client's
+  reconciliation now finds it.
+
+- **Off-host backup variables documented.** `BACKUP_S3_REGION` and
+  `BACKUP_RETENTION_DAYS` are in `.env.production.example`, and the runbook no
+  longer claims the worker prunes old objects: it never deletes, the bucket
+  lifecycle rule does.
+
 ## [1.38.13] — 2026-09-09
 
 A guardian acting on a managed profile gets the add, edit and delete

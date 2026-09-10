@@ -19,6 +19,18 @@
  * `.catch()` / `.then()` whose handler writes to the console — the shape that
  * actually produced the failure. A background path that logs some other way,
  * or that logs from a callee rather than from the handler, is invisible to it.
+ *
+ * It was narrower than that until the window below was widened. An
+ * eight-line handler window and a five-line registration preamble were both
+ * measured against the sites that existed when the guard was written, and
+ * both cut through real code: the console write in `mood-rollups.ts` sits
+ * nine lines into its handler, so the sweep never saw the one detached
+ * `Promise.all` in the tree that was genuinely unregistered, and the
+ * registration in `fire-and-forget.ts` sits BELOW its handler rather than
+ * above it, so a site that is correct read as a violation. The window now
+ * spans a plausible handler body and registration counts wherever it wraps
+ * the statement — above the handle or on the line that files the settled
+ * result.
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
@@ -57,6 +69,37 @@ function sourceFiles(): string[] {
     .filter((rel) => !rel.endsWith(".test.ts") && !rel.endsWith(".test.tsx"));
 }
 
+/**
+ * How far past the `.catch(` / `.then(` line a handler's console write still
+ * counts as this handler's. Twenty lines covers every handler body in the
+ * tree with room to spare; eight did not.
+ */
+const HANDLER_WINDOW = 20;
+
+const registers = (text: string) => /trackBackgroundTask\(/.test(text);
+
+/**
+ * The source lines that open a call still unclosed at the start of `line` —
+ * the chain of enclosing calls the handler sits inside, innermost last.
+ *
+ * Paren counting is a coarse reading of TypeScript: a `(` inside a string or a
+ * comment counts like any other. That costs nothing here, because the question
+ * asked of the result is only whether one of those lines names
+ * `trackBackgroundTask`, and a stray paren can at worst widen the chain by a
+ * line that does not.
+ */
+function enclosingOpenCallLines(source: string, line: number): string[] {
+  const lines = source.split("\n");
+  const open: number[] = [];
+  for (let i = 0; i < line - 1; i += 1) {
+    for (const ch of lines[i]) {
+      if (ch === "(") open.push(i);
+      else if (ch === ")") open.pop();
+    }
+  }
+  return open.map((i) => lines[i]);
+}
+
 /** Lines starting a `.catch()` / `.then()` whose handler writes to the console. */
 function consoleWritingHandlers(): { file: string; line: number }[] {
   const found: { file: string; line: number }[] = [];
@@ -64,7 +107,7 @@ function consoleWritingHandlers(): { file: string; line: number }[] {
     const lines = readFileSync(join(SRC, rel), "utf8").split("\n");
     lines.forEach((line, index) => {
       if (!/\.(catch|then)\(/.test(line)) return;
-      const handler = lines.slice(index, index + 8).join("\n");
+      const handler = lines.slice(index, index + HANDLER_WINDOW).join("\n");
       if (!/console\.(log|warn|error|info|debug|trace)\(/.test(handler)) return;
       found.push({ file: rel, line: index + 1 });
     });
@@ -149,11 +192,18 @@ describe("background-task settle contract", () => {
 
     const unregistered = sites.filter(({ file, line }) => {
       if (UNREGISTERED_BY_DESIGN.has(file)) return false;
-      const lines = readFileSync(join(SRC, file), "utf8").split("\n");
-      // The registration wraps the handle, so it opens on one of the few lines
-      // above the `.catch(` / `.then(` the sweep matched.
-      const preamble = lines.slice(Math.max(0, line - 5), line).join("\n");
-      return !/trackBackgroundTask\(/.test(preamble);
+      const source = readFileSync(join(SRC, file), "utf8");
+      // Registered either by wrapping the handle — `trackBackgroundTask(` is
+      // then one of the calls still open where the handler starts, however
+      // many lines above that is — or by filing the settled handle just after
+      // the handler closes. Both shapes are in the tree; a fixed window above
+      // the match saw neither reliably.
+      if (enclosingOpenCallLines(source, line).some(registers)) return false;
+      const lines = source.split("\n");
+      const trailer = lines
+        .slice(line, line + HANDLER_WINDOW + 5)
+        .filter((l) => registers(l));
+      return trailer.length === 0;
     });
 
     expect(

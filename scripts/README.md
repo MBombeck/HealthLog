@@ -24,6 +24,7 @@ typecheck.
 - **`assert-deploy.ts`** — post-deploy `/api/version` assertion.
 - **`rotate-encryption-key.ts`** — AES-256-GCM key rotation; see `docs/ops/encryption-key-rotation.md`.
 - **`restore-backup.ts`** — restore an off-host AES-GCM backup from an S3-compatible bucket.
+- **`repair-apple-health-distance.ts`** — repair walking-distance rows the `export.zip` import stored 1000x too small; dry-run by default, see `docs/ops/apple-health-distance-repair.md`.
 - **`repair-intake-anomalies.ts`** — repair historic medication-ledger defects (duplicate dose-slot rows, implausible `taken_at`); dry-run by default, see `docs/ops/intake-repair.md`.
 - **`backfill-rollups.ts`**, **`drain-per-sample-cumulative.ts`**, **`backfill-mood-note-column.ts`** — historical data backfills (note: the boot-time `rollup-full-backfill` queue handles new accounts automatically; the CLI is the manual fallback).
 - **`seed-demo.ts`** + **`seed-demo-v15.sql`** — populate a demo tenant.

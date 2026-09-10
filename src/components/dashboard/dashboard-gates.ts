@@ -7,6 +7,10 @@
  * `../page` test imports stay valid.
  */
 import type { DataSummary } from "@/lib/analytics/trends";
+import {
+  GLUCOSE_CONTEXT_BUCKETS,
+  type GlucoseContextBucket,
+} from "@/lib/glucose";
 import type { DashboardLayout } from "@/lib/dashboard-layout";
 
 /**
@@ -206,4 +210,47 @@ export function pickHrvSummary(
   // either way, and reporting the fallback here would make an account with
   // no HRV at all look like a ring user.
   return pick(primary ?? null, "HEART_RATE_VARIABILITY");
+}
+
+/**
+ * The i18n key naming each glucose bucket on the tile strip. The untagged
+ * bucket is named, not blank: a strip of cards where one carries no label
+ * reads as a rendering fault, and the user needs to know the readings behind
+ * it are the ones their meter never tagged.
+ */
+export const GLUCOSE_TILE_LABEL_KEY: Record<GlucoseContextBucket, string> = {
+  FASTING: "targets.glucoseFasting",
+  POSTPRANDIAL: "targets.glucosePostprandial",
+  RANDOM: "targets.glucoseRandom",
+  BEDTIME: "targets.glucoseBedtime",
+  UNSPECIFIED: "targets.glucoseUnspecified",
+};
+
+/** One resolved glucose strip tile. */
+export interface GlucoseTile {
+  bucket: GlucoseContextBucket;
+  labelKey: string;
+  summary: DataSummary;
+}
+
+/**
+ * Which glucose tiles the strip paints, in the canonical bucket order. An
+ * empty result means the tile is not eligible and the whole glucose block is
+ * omitted.
+ *
+ * #943 — the untagged bucket is in the loop, not outside it. Gating on the
+ * four named contexts alone hid the tile from every account whose source
+ * writes no meal-time tag, with no warning anywhere: the module was on, the
+ * layout toggle was on, the readings were current, and the strip was empty.
+ */
+export function resolveGlucoseTiles(
+  byContext: Record<string, DataSummary> | undefined,
+): GlucoseTile[] {
+  const tiles: GlucoseTile[] = [];
+  for (const bucket of GLUCOSE_CONTEXT_BUCKETS) {
+    const summary = byContext?.[bucket];
+    if (!summary || summary.count <= 0) continue;
+    tiles.push({ bucket, labelKey: GLUCOSE_TILE_LABEL_KEY[bucket], summary });
+  }
+  return tiles;
 }

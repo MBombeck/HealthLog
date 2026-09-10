@@ -75,6 +75,20 @@ const fixedMeasurementRows = Array.from({ length: 10 }, (_, index) => ({
   notes: null,
 }));
 
+// Ten daily mood scores ending yesterday, anchored for the same reason the
+// measurement rows above are: the mood chart windows by calendar day and
+// withholds its line below three DISTINCT days, so a fixed date left the mood
+// sub-page painting its sparse placeholder. The scan's painted gate was then
+// satisfied by a different chart on the page, and the mood line — the reason
+// the case exists — was never waited for and might never have been scanned.
+const fixedMoodEntries = Array.from({ length: 10 }, (_, index) => ({
+  date: new Date(Date.now() - (index + 1) * 86_400_000)
+    .toISOString()
+    .slice(0, 10),
+  score: 3 + (index % 3) * 0.5,
+  samples: 1,
+}));
+
 const workoutListEntry = {
   id: A11Y_WORKOUT_ID,
   sportType: "running",
@@ -330,8 +344,8 @@ async function installA11yMocks(page: Page) {
 
   await page.route("**/api/mood/analytics", (route) =>
     fulfilJson(route, {
-      entries: [{ date: "2026-07-20", score: 4 }],
-      summary: { count: 1 },
+      entries: fixedMoodEntries,
+      summary: { count: fixedMoodEntries.length },
     }),
   );
 
@@ -342,11 +356,8 @@ async function installA11yMocks(page: Page) {
   // present-but-empty; the correlations block carries every metric key.
   await page.route("**/api/mood/insights", (route) =>
     fulfilJson(route, {
-      summary: { totalEntries: 1, inTargetPct: null },
-      heatmap: {
-        windowDays: 30,
-        cells: [{ date: "2026-07-20", score: 4, samples: 1 }],
-      },
+      summary: { totalEntries: fixedMoodEntries.length, inTargetPct: null },
+      heatmap: { windowDays: 30, cells: fixedMoodEntries },
       distribution: [],
       weekday: [],
       timeOfDay: { buckets: [], reliable: false, best: null, worst: null },
@@ -712,18 +723,25 @@ const INSIGHTS_ROUTES: readonly RouteCase[] = [
       }),
   },
   {
+    // `.recharts-wrapper` is a class the charting library writes, not a
+    // contract this repository keeps, and it is shared by every chart on the
+    // page — so the gate could be satisfied by a chart other than the one the
+    // route exists to render, and it moves whenever the library's markup does.
+    // `chart-plot` is the measurement chart's own slot and the data branch is
+    // the only branch that renders it: an empty window paints `ChartEmptyState`
+    // instead and this scan still waits, which is what it is for.
     name: "/insights/weight metric subpage",
     path: "/insights/weight",
-    painted: (page) => page.locator(".recharts-wrapper").first(),
+    painted: (page) => page.locator('[data-slot="chart-plot"]').first(),
   },
   {
     // Mood is event-driven, so its sub-page renders the heatmap and the mood
     // line chart from `/api/mood/insights` rather than a MeasurementType series.
-    // Gate on the line chart's recharts wrapper — the same painted signal the
-    // weight sub-page uses — so the scan waits for the heavy content to land.
+    // The mood chart carries the same `chart-plot` slot on the same terms, so
+    // the scan waits for the heavy content to land here too.
     name: "/insights/mood metric subpage",
     path: "/insights/mood",
-    painted: (page) => page.locator(".recharts-wrapper").first(),
+    painted: (page) => page.locator('[data-slot="chart-plot"]').first(),
   },
   {
     // The two states this page's OWN render produces: the list, or the

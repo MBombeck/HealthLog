@@ -345,6 +345,16 @@ test.describe("document vault", () => {
     await detail.locator('[data-slot="document-chat-open"]').click();
     const drawer = page.locator('[data-slot="coach-drawer"]');
     await expect(drawer).toBeVisible();
+    // The drawer being on screen is not the same event as the vault having
+    // recorded the hand-off. The page books `?doc=` as the way back only once
+    // the detail sheet is actually closed with the drawer owning the same
+    // document; maximize before that and the close path takes the other branch
+    // — `history.back()` — which races the push to `/coach` and lands back on
+    // `/documents` with nothing raised. The sheet's own close control leaves
+    // the tree with the sheet, so its absence is that hand-off, observed.
+    await expect(
+      page.locator('[data-slot="document-detail-close"]'),
+    ).toHaveCount(0);
     await drawer.locator('[data-slot="coach-drawer-maximize"]').click();
     await expect.poll(() => new URL(page.url()).pathname).toBe("/coach");
     expect(new URL(page.url()).searchParams.get("doc")).toBe(MRT_DOC_ID);
@@ -392,11 +402,19 @@ test.describe("document vault", () => {
     await sheet.getByRole("button", { name: "Delete" }).click();
 
     // Undo toast → restore → the card returns.
-    await expect(
-      page.getByText("Document deleted", { exact: true }),
-    ).toBeVisible();
+    //
+    // Addressed to the toast's own attributes, not to its copy. The copy is
+    // i18n-driven and the literal here has already been wrong once — a trailing
+    // full stop moved and the assertion spent its whole timeout looking for a
+    // sentence that no longer existed, on every attempt, on both projects. The
+    // success type is what the delete claims and the action button is what the
+    // undo needs; both are structural.
+    const undo = page.locator(
+      '[data-sonner-toast][data-type="success"] [data-button]',
+    );
+    await expect(undo).toBeVisible();
     await expect(openButton(page, `${title}.pdf`)).not.toBeVisible();
-    await page.getByRole("button", { name: "Undo" }).click();
+    await undo.click();
     await expect(openButton(page, `${title}.pdf`)).toBeVisible();
   });
 

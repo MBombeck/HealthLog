@@ -41,7 +41,7 @@ the restore script needs no flag to tell them apart.
 | `BACKUP_S3_ACCESS_KEY`  | yes      |                                                                      |
 | `BACKUP_S3_SECRET_KEY`  | yes      |                                                                      |
 | `BACKUP_S3_REGION`      | no       | defaults to `auto` (Cloudflare R2)                                   |
-| `BACKUP_RETENTION_DAYS` | no       | defaults to `30`                                                     |
+| `BACKUP_RETENTION_DAYS` | no       | not read by the app; the number for your bucket's lifecycle rule     |
 
 ## Bucket permissions
 
@@ -54,8 +54,11 @@ Cloudflare R2 the **Object Read & Write** token already covers all three.
 
 ## Bucket lifecycle (recommended)
 
-The worker prunes objects older than `BACKUP_RETENTION_DAYS`, but the
-storage provider's lifecycle rule is the canonical safety net:
+The worker never deletes a backup object: its grant covers PutObject,
+GetObject and AbortMultipartUpload only, so a compromised worker cannot
+wipe the history, and nothing in the app reads `BACKUP_RETENTION_DAYS`.
+Expiry is the storage provider's lifecycle rule, set to match the number
+you wrote there:
 
 ```
 Filter: "" (all objects)

@@ -174,6 +174,7 @@ import {
   resolveConfiguredTileCount,
   resolveChartRowPlaceholderCount,
   pickHrvSummary,
+  resolveGlucoseTiles,
 } from "@/components/dashboard/dashboard-gates";
 
 /**
@@ -725,23 +726,12 @@ export default function DashboardPageClient({
   const glucoseWidgetVisible = isTileVisible("glucose");
   const displayGlucoseUnit = resolveGlucoseUnit(user?.glucoseUnit ?? null);
   const glucoseByContext = data?.glucoseByContext ?? {};
-  const glucoseContexts = [
-    "FASTING",
-    "POSTPRANDIAL",
-    "RANDOM",
-    "BEDTIME",
-  ] as const;
-  const glucoseSummariesPresent = glucoseContexts.filter(
-    (ctx) => (glucoseByContext[ctx]?.count ?? 0) > 0,
-  );
-  const showGlucoseCards =
-    glucoseWidgetVisible && glucoseSummariesPresent.length > 0;
-  const glucoseLabelKey: Record<string, string> = {
-    FASTING: "targets.glucoseFasting",
-    POSTPRANDIAL: "targets.glucosePostprandial",
-    RANDOM: "targets.glucoseRandom",
-    BEDTIME: "targets.glucoseBedtime",
-  };
+  // #943 — eligibility comes from `resolveGlucoseTiles`, which walks the
+  // untagged bucket alongside the four named contexts. The gate used to be
+  // an inline filter over the named contexts only, so an account whose
+  // source never writes a meal-time tag saw nothing.
+  const glucoseTiles = resolveGlucoseTiles(glucoseByContext);
+  const showGlucoseCards = glucoseWidgetVisible && glucoseTiles.length > 0;
   // v1.18.6 — band / target math is computed SERVER-side in the snapshot
   // DTO (`targetBands`) so the client stops recomputing it from the
   // profile (audit finding #3). When snapshot mode is on, read the
@@ -1634,16 +1624,15 @@ export default function DashboardPageClient({
         }
         if (showGlucoseCards) {
           const glucoseOrder = widgetOrder("glucose");
-          glucoseSummariesPresent.forEach((ctx, idx) => {
-            const s = glucoseByContext[ctx];
+          glucoseTiles.forEach(({ bucket, labelKey, summary: s }, idx) => {
             trendCards.push({
-              id: `glucose-${ctx}`,
+              id: `glucose-${bucket}`,
               // sub-order so all glucose cards stay in a block and order stable
               order: glucoseOrder + idx / 1000,
               node: (
                 <TrendCard
-                  key={`glucose-${ctx}`}
-                  label={t(glucoseLabelKey[ctx])}
+                  key={`glucose-${bucket}`}
+                  label={t(labelKey)}
                   latest={
                     s.latest != null
                       ? convertGlucose(s.latest, displayGlucoseUnit)

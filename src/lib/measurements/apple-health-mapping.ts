@@ -28,6 +28,7 @@ import type {
   SleepStage,
   RhythmClassification,
 } from "@/generated/prisma/client";
+import { convertHkValue } from "./hk-units";
 
 /**
  * How a batch of HealthKit samples for the same identifier should be
@@ -47,6 +48,22 @@ export interface AppleHealthMapping {
   measurementType: MeasurementType;
   /** Apple's HK unit string (e.g. `kg`, `count/min`, `mL/(kg*min)`). */
   hkUnit: string;
+  /**
+   * issue #944 — why this entry's `hkUnit` can be trusted as fixed.
+   *
+   * Apple's `export.xml` writes the ACCOUNT's display unit on every
+   * quantity `<Record>`, not the unit this table assumes, so
+   * `mapAppleHealthEntry()` converts the reading from the record's own
+   * unit into `hkUnit` before `convertToDbUnit` runs — on the archive
+   * path, which is the caller that opts in. That only works for a unit
+   * `convertHkValue()` knows a factor for. An entry whose `hkUnit`
+   * is NOT convertible (a dimensionless count, a pinned event, a
+   * logarithmic dB level, a compound rate) must say here why no record
+   * unit can change its reading — the structural guard
+   * `src/__tests__/apple-health-unit-audit-guard.test.ts` fails on an
+   * entry that offers neither.
+   */
+  unitFixedReason?: string;
   /** HealthLog canonical DB unit (must match `getUnitForType()`). */
   dbUnit: string;
   /** Convert a HK sample value into the canonical DB unit. Identity for most. */
@@ -189,6 +206,28 @@ export const APPLE_HEALTH_SLEEP_STAGE_MAP: Record<number, SleepStage> = {
  * metric: check Apple's HK unit; percent → ×100 path, m/m·s/kg/etc
  * → identity path.
  */
+/**
+ * issue #944 — the written reasons a mapping entry may cite for keeping a
+ * fixed `hkUnit`. Each one answers the same question: what could Apple
+ * possibly write in this record's `unit` attribute that would change the
+ * reading? Shared constants rather than free text so the audit reads as
+ * one decision per class instead of forty near-duplicates.
+ */
+const UNIT_FIXED_DIMENSIONLESS_COUNT =
+  "Dimensionless tally: Apple emits `count` in every locale and HKUnit has no sibling spelling for it, so no record unit can rescale the reading.";
+const UNIT_FIXED_PER_MINUTE =
+  "Per-minute rate: Apple emits `count/min` in every locale and the Health app offers no alternative display unit, so there is nothing to convert from.";
+const UNIT_FIXED_PERCENT_FRACTION =
+  "Apple writes the percent unit but the VALUE rides as a 0..1 fraction; the x100 in `convertToDbUnit` already covers both spellings, so branching on the record unit would double-scale it.";
+const UNIT_FIXED_EVENT_PIN =
+  "Categorical event: `convertToDbUnit` pins the stored value to 1 fired event regardless of the reading, so no unit attribute can move it.";
+const UNIT_FIXED_AUDIO_SPL =
+  "Sound-pressure level: Apple emits `dBASPL` only, and a decibel is logarithmic — a sibling unit would need its own formula, never a factor.";
+const UNIT_FIXED_COMPOSITE_VO2 =
+  "Compound rate Apple emits verbatim as `mL/(kg*min)`; the Health app exposes no other spelling and the compound has no sibling unit to convert from.";
+const UNIT_FIXED_SLEEP_CATEGORY =
+  "Sleep samples carry a symbolic category value, not a quantity: the importer derives the duration in minutes from the sample's own dates, so the record's unit attribute (empty in Apple's archive) says nothing about the reading.";
+
 export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
   // ── Body composition ────────────────────────────────────────
   HKQuantityTypeIdentifierBodyMass: {
@@ -203,6 +242,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierBodyFatPercentage",
     measurementType: "BODY_FAT",
     hkUnit: "%",
+    unitFixedReason: UNIT_FIXED_PERCENT_FRACTION,
     dbUnit: "%",
     // Apple ships 0..1 fraction; HealthLog stores 0..100.
     convertToDbUnit: (v) => v * 100,
@@ -254,6 +294,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierHeartRate",
     measurementType: "PULSE",
     hkUnit: "count/min",
+    unitFixedReason: UNIT_FIXED_PER_MINUTE,
     dbUnit: "bpm",
     convertToDbUnit: (v) => v,
     aggregation: "latest",
@@ -262,6 +303,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierRestingHeartRate",
     measurementType: "RESTING_HEART_RATE",
     hkUnit: "count/min",
+    unitFixedReason: UNIT_FIXED_PER_MINUTE,
     dbUnit: "bpm",
     convertToDbUnit: (v) => v,
     aggregation: "latest",
@@ -284,6 +326,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     // duplication; see `.planning/phase-W1-v1423-research.md`).
     measurementType: "ACTIVITY_STEPS",
     hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_DIMENSIONLESS_COUNT,
     dbUnit: "steps",
     convertToDbUnit: (v) => v,
     aggregation: "sum",
@@ -300,6 +343,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierFlightsClimbed",
     measurementType: "FLIGHTS_CLIMBED",
     hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_DIMENSIONLESS_COUNT,
     dbUnit: "flights",
     convertToDbUnit: (v) => v,
     aggregation: "sum",
@@ -318,6 +362,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierVO2Max",
     measurementType: "VO2_MAX",
     hkUnit: "mL/(kg*min)",
+    unitFixedReason: UNIT_FIXED_COMPOSITE_VO2,
     dbUnit: "mL/(kg·min)",
     convertToDbUnit: (v) => v,
     aggregation: "latest",
@@ -337,6 +382,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierOxygenSaturation",
     measurementType: "OXYGEN_SATURATION",
     hkUnit: "fraction",
+    unitFixedReason: UNIT_FIXED_PERCENT_FRACTION,
     dbUnit: "%",
     // Apple ships 0..1 fraction; HealthLog stores 0..100.
     convertToDbUnit: (v) => v * 100,
@@ -348,6 +394,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKCategoryTypeIdentifierSleepAnalysis",
     measurementType: "SLEEP_DURATION",
     hkUnit: "category",
+    unitFixedReason: UNIT_FIXED_SLEEP_CATEGORY,
     dbUnit: "minutes",
     // value here is duration-in-minutes (caller computes
     // `endDate - startDate` and converts to minutes); the per-stage
@@ -367,6 +414,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierEnvironmentalAudioExposure",
     measurementType: "AUDIO_EXPOSURE_ENV",
     hkUnit: "dBASPL",
+    unitFixedReason: UNIT_FIXED_AUDIO_SPL,
     dbUnit: "dBA",
     convertToDbUnit: (v) => v,
     aggregation: "mean",
@@ -379,6 +427,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierHeadphoneAudioExposure",
     measurementType: "AUDIO_EXPOSURE_HEADPHONE",
     hkUnit: "dBASPL",
+    unitFixedReason: UNIT_FIXED_AUDIO_SPL,
     dbUnit: "dBA",
     convertToDbUnit: (v) => v,
     aggregation: "mean",
@@ -403,6 +452,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierAppleWalkingSteadiness",
     measurementType: "WALKING_STEADINESS",
     hkUnit: "%",
+    unitFixedReason: UNIT_FIXED_PERCENT_FRACTION,
     dbUnit: "%",
     // Apple ships 0..1 fraction; HealthLog stores 0..100.
     convertToDbUnit: (v) => v * 100,
@@ -416,6 +466,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKCategoryTypeIdentifierEnvironmentalAudioExposureEvent",
     measurementType: "AUDIO_EXPOSURE_EVENT",
     hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_EVENT_PIN,
     dbUnit: "count",
     convertToDbUnit: () => 1,
     aggregation: "sum",
@@ -427,6 +478,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKCategoryTypeIdentifierHeadphoneAudioExposureEvent",
     measurementType: "AUDIO_EXPOSURE_EVENT",
     hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_EVENT_PIN,
     dbUnit: "count",
     convertToDbUnit: () => 1,
     aggregation: "sum",
@@ -449,6 +501,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKCategoryTypeIdentifierIrregularHeartRhythmEvent",
     measurementType: "IRREGULAR_RHYTHM_NOTIFICATION",
     hkUnit: "event",
+    unitFixedReason: UNIT_FIXED_EVENT_PIN,
     dbUnit: "event",
     convertToDbUnit: () => 1,
     aggregation: "sum",
@@ -462,6 +515,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKCategoryTypeIdentifierHighHeartRateEvent",
     measurementType: "HIGH_HEART_RATE_EVENT",
     hkUnit: "event",
+    unitFixedReason: UNIT_FIXED_EVENT_PIN,
     dbUnit: "event",
     convertToDbUnit: () => 1,
     aggregation: "sum",
@@ -474,6 +528,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKCategoryTypeIdentifierLowHeartRateEvent",
     measurementType: "LOW_HEART_RATE_EVENT",
     hkUnit: "event",
+    unitFixedReason: UNIT_FIXED_EVENT_PIN,
     dbUnit: "event",
     convertToDbUnit: () => 1,
     aggregation: "sum",
@@ -487,6 +542,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKCategoryTypeIdentifierAppleWalkingSteadinessEvent",
     measurementType: "WALKING_STEADINESS_EVENT",
     hkUnit: "event",
+    unitFixedReason: UNIT_FIXED_EVENT_PIN,
     dbUnit: "event",
     convertToDbUnit: () => 1,
     aggregation: "sum",
@@ -501,6 +557,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKCategoryTypeIdentifierSleepApneaEvent",
     measurementType: "BREATHING_DISTURBANCE_EVENT",
     hkUnit: "event",
+    unitFixedReason: UNIT_FIXED_EVENT_PIN,
     dbUnit: "event",
     convertToDbUnit: () => 1,
     aggregation: "sum",
@@ -524,6 +581,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierRespiratoryRate",
     measurementType: "RESPIRATORY_RATE",
     hkUnit: "count/min",
+    unitFixedReason: UNIT_FIXED_PER_MINUTE,
     dbUnit: "breaths/min",
     convertToDbUnit: (v) => v,
     aggregation: "mean",
@@ -537,6 +595,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierBodyMassIndex",
     measurementType: "BODY_MASS_INDEX",
     hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_DIMENSIONLESS_COUNT,
     dbUnit: "kg/m²",
     convertToDbUnit: (v) => v,
     aggregation: "latest",
@@ -557,6 +616,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierWalkingHeartRateAverage",
     measurementType: "WALKING_HEART_RATE_AVERAGE",
     hkUnit: "count/min",
+    unitFixedReason: UNIT_FIXED_PER_MINUTE,
     dbUnit: "bpm",
     convertToDbUnit: (v) => v,
     aggregation: "mean",
@@ -570,6 +630,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierWalkingAsymmetryPercentage",
     measurementType: "WALKING_ASYMMETRY",
     hkUnit: "%",
+    unitFixedReason: UNIT_FIXED_PERCENT_FRACTION,
     dbUnit: "%",
     convertToDbUnit: (v) => v * 100,
     aggregation: "latest",
@@ -580,6 +641,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierWalkingDoubleSupportPercentage",
     measurementType: "WALKING_DOUBLE_SUPPORT",
     hkUnit: "%",
+    unitFixedReason: UNIT_FIXED_PERCENT_FRACTION,
     dbUnit: "%",
     convertToDbUnit: (v) => v * 100,
     aggregation: "latest",
@@ -622,6 +684,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierHeartRateRecoveryOneMinute",
     measurementType: "CARDIO_RECOVERY",
     hkUnit: "count/min",
+    unitFixedReason: UNIT_FIXED_PER_MINUTE,
     dbUnit: "bpm",
     convertToDbUnit: (v) => v,
     aggregation: "latest",
@@ -645,6 +708,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierNumberOfTimesFallen",
     measurementType: "FALL_COUNT",
     hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_DIMENSIONLESS_COUNT,
     dbUnit: "count",
     convertToDbUnit: (v) => v,
     aggregation: "sum",
@@ -685,6 +749,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkIdentifier: "HKQuantityTypeIdentifierAppleSleepingBreathingDisturbances",
     measurementType: "BREATHING_DISTURBANCES",
     hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_DIMENSIONLESS_COUNT,
     dbUnit: "count",
     convertToDbUnit: (v) => v,
     aggregation: "latest",
@@ -1140,7 +1205,14 @@ export interface AppleHealthEntryInput {
   hkIdentifier: string;
   /** Numeric value as Apple delivers it (pre-conversion). */
   value: number;
-  /** Apple's unit string, captured for audit; not currently validated. */
+  /**
+   * Apple's unit string for this reading, captured for audit.
+   *
+   * Read ONLY when the caller opts in with `convertRecordUnit` — see
+   * `AppleHealthEntryOptions`. Every other caller gets the historical
+   * contract: the field is recorded and the reading is taken to already
+   * be in the table's `hkUnit`.
+   */
   unit: string;
   /** ISO timestamp string (e.g. HealthKit `startDate`). */
   startDate: string;
@@ -1173,6 +1245,33 @@ export interface AppleHealthEntryInput {
    */
   valueMin?: number;
   valueMax?: number;
+}
+
+/**
+ * Per-call options for `mapAppleHealthEntry()`.
+ */
+export interface AppleHealthEntryOptions {
+  /**
+   * Convert the reading out of `input.unit` and into the table's `hkUnit`
+   * before `convertToDbUnit` runs. Default FALSE.
+   *
+   * issue #944 — only the `export.xml` archive path passes `true`, because
+   * only there is the unit attribute known to be authoritative: Apple
+   * stamps every quantity `<Record>` with the ACCOUNT's display unit, so a
+   * metric archive reports walking distance in `km` and the number is
+   * meaningless without it.
+   *
+   * `POST /api/measurements/batch` deliberately does NOT opt in. Its `unit`
+   * is documented as captured-for-audit, not validated, and the native
+   * client's unit strings for the seventeen convertible identifiers are not
+   * pinned by anything in this repository — no fixture, no contract test, no
+   * coordination note. A client that reads a sample in metres and stamps the
+   * person's DISPLAY unit (`km`) into the field would have every walking
+   * distance multiplied by a thousand on ingest. Reading the field there is
+   * a wire change, and a wire change needs the client's strings pinned
+   * first.
+   */
+  convertRecordUnit?: boolean;
 }
 
 /** Output of `mapAppleHealthEntry()`. */
@@ -1214,6 +1313,7 @@ export interface AppleHealthEntryOutput {
  */
 export function mapAppleHealthEntry(
   input: AppleHealthEntryInput,
+  options: AppleHealthEntryOptions = {},
 ): AppleHealthEntryOutput | null {
   const mapping = APPLE_HEALTH_TYPE_MAP[input.hkIdentifier];
   if (!mapping) return null;
@@ -1221,7 +1321,20 @@ export function mapAppleHealthEntry(
   const takenAt = new Date(input.endDate);
   if (Number.isNaN(takenAt.getTime())) return null;
 
-  const value = mapping.convertToDbUnit(input.value);
+  // issue #944 — `convertToDbUnit` is written against the table's fixed
+  // `hkUnit`, but Apple's `export.xml` stamps each `<Record>` with the
+  // ACCOUNT's own display unit: a metric archive reports walking distance
+  // in `km`, an imperial one in `mi`, body mass in `lb`, energy in `kJ`.
+  // The archive path opts in and the reading is normalised into `hkUnit`
+  // first; a unit we cannot place leaves the value untouched (see
+  // `convertHkValue`). Every other caller keeps the identity behaviour —
+  // see `AppleHealthEntryOptions.convertRecordUnit` for why.
+  const toHkUnit = (raw: number): number =>
+    options.convertRecordUnit
+      ? (convertHkValue(raw, input.unit, mapping.hkUnit) ?? raw)
+      : raw;
+
+  const value = mapping.convertToDbUnit(toHkUnit(input.value));
 
   const out: AppleHealthEntryOutput = {
     type: mapping.measurementType,
@@ -1235,10 +1348,10 @@ export function mapAppleHealthEntry(
   // hourly HR bucket). A finite check guards a malformed payload; the
   // caller only persists these on the HR-bucket row.
   if (typeof input.valueMin === "number" && Number.isFinite(input.valueMin)) {
-    out.valueMin = mapping.convertToDbUnit(input.valueMin);
+    out.valueMin = mapping.convertToDbUnit(toHkUnit(input.valueMin));
   }
   if (typeof input.valueMax === "number" && Number.isFinite(input.valueMax)) {
-    out.valueMax = mapping.convertToDbUnit(input.valueMax);
+    out.valueMax = mapping.convertToDbUnit(toHkUnit(input.valueMax));
   }
 
   if (mapping.sleepStageMap) {

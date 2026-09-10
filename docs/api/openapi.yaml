@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.38.13
+  version: 1.38.14
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -4834,6 +4834,7 @@ paths:
           schema:
             type: string
           required: true
+        - *a6
       requestBody:
         required: true
         content:
@@ -4855,6 +4856,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
         "422": *a4
         "429":
           description: More than 30 side-effect writes in the trailing minute for this ACTOR.
@@ -5213,6 +5215,8 @@ paths:
         medications.mirror.limit_exceeded`) once the caller already holds 30 medications mirrored from the same external
         source; an idempotent re-post of a medication already mirrored is unaffected, and native creates are never
         gated.
+      parameters:
+        - *a6
       requestBody:
         required: true
         content:
@@ -5228,6 +5232,7 @@ paths:
                 $ref: "#/components/schemas/CreateMedicationResponse"
         "401": *a1
         "403": *a8
+        "409": *a7
         "422": *a4
         "429": *a5
   /api/medications/layout:
@@ -5563,6 +5568,7 @@ paths:
           schema:
             type: string
           required: true
+        - *a6
       requestBody:
         required: true
         content:
@@ -5584,6 +5590,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
         "422": *a4
         "429": *a5
   /api/medications/{id}/inventory/{itemId}:
@@ -16633,6 +16640,57 @@ paths:
         "401": *a1
         "422": *a4
         "429": *a5
+  /api/nightscout/connect:
+    post:
+      tags:
+        - Integrations
+      summary: Connect (or update) the caller's Nightscout instance
+      description: Validates the URL and token with a live single-entry probe BEFORE storing anything, so a wrong token, an
+        unreachable instance or an unapproved private origin surfaces here rather than on the first cron tick. On
+        success the URL and token are encrypted at rest, the `nightscout` ledger is reset to connected, and a first sync
+        is enqueued best-effort. Re-sending replaces the stored values; there is no partial update. Body capped at 16
+        KiB, rate-limited 10 requests / 60 s per user. Auth via cookie or Bearer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NightscoutConnectRequest"
+      responses:
+        "200":
+          description: The instance answered the probe and was stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NightscoutConnectEnvelope"
+        "400":
+          description: Body is not parseable JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401": *a1
+        "413":
+          description: Body exceeds 16 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "The URL failed validation, the origin is private and the operator has not approved it (`meta.errorCode` =
+            `private_origin_not_approved` or `invalid_origin`), Nightscout rejected the token, or the instance could not
+            be reached. Nothing was written. The message is fixed per class and never the upstream error's own: a
+            Nightscout base URL carries its API token as a query parameter."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: More than 10 connection attempts in 60 s from this user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/nightscout/status:
     get:
       tags:
@@ -21350,6 +21408,12 @@ components:
           type: string
           minLength: 1
           maxLength: 60
+          description: "Apple's `HKUnit` string for `value`, captured for audit: the server records it and never validates `value`
+            against it. `value` is read in Apple's own `HKUnit` for the identifier — `m` for a length, `kg` for body
+            mass, `kcal` for energy, `degC` for temperature, a `fraction` for the percent-shaped ones (oxygen
+            saturation, body fat) — and HealthLog applies its storage scaling after that. A waist circumference sent as
+            `0.86` in `m` is stored as `86` `cm`; an oxygen saturation sent as `0.98` in `fraction` is stored as `98`
+            `%`. Send the sample in Apple's unit, not in HealthLog's."
         startDate:
           type: string
           format: date-time
@@ -27443,6 +27507,26 @@ components:
         - entries
       description: Merge-by-`id` update of the HealthKit metric config. Unknown ids are silently ignored; omitted fields fall
         back to the stored (or default) value for that entry. Up to 50 entries per call.
+    NightscoutConnectRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          minLength: 1
+          maxLength: 2048
+        token:
+          default: ""
+          type: string
+          maxLength: 512
+        allowPrivateHost:
+          default: false
+          type: boolean
+      required:
+        - url
+      description: "Instance URL and optional API token. Both are trimmed before use — a trailing space or newline from a copy
+        button reaches the instance verbatim and answers as an opaque DNS failure. `token` may be omitted or empty for a
+        fully public instance (`AUTH_DEFAULT_ROLES=readable`). `allowPrivateHost` is accepted for older clients and
+        ignored: only the server-side `NIGHTSCOUT_PRIVATE_ORIGINS` allowlist can authorise a private origin."
     WhoopCredentialsRequest:
       type: object
       properties:
@@ -49994,9 +50078,9 @@ components:
               additionalProperties:
                 $ref: "#/components/schemas/MetricDataSummary"
             - type: "null"
-          description: Per-context glucose summaries (FASTING / POSTPRANDIAL / RANDOM / BEDTIME) over the trailing 30 days,
-            canonical mg/dL. Contexts with no readings are omitted; the whole block is null when the glucose module is
-            off.
+          description: Per-context glucose summaries (FASTING / POSTPRANDIAL / RANDOM / BEDTIME, plus UNSPECIFIED for readings
+            whose source recorded no meal-time context) over the trailing 30 days, canonical mg/dL. Buckets with no
+            readings are omitted; the whole block is null when the glucose module is off.
         glucoseClinical:
           anyOf:
             - $ref: "#/components/schemas/GlucoseClinicalMetrics"
@@ -62767,6 +62851,30 @@ components:
         - durationMs
         - truncated
         - reasonCode
+      additionalProperties: false
+    NightscoutConnectEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            connected:
+              type: boolean
+              const: true
+          required:
+            - connected
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
       additionalProperties: false
     NightscoutStatusEnvelope:
       type: object

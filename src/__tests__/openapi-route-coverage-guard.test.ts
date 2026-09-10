@@ -293,7 +293,15 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   },
   "/api/fitbit/connect": { kind: "browserHandoff", methods: ["GET"] },
   "/api/google-health/connect": { kind: "browserHandoff", methods: ["GET"] },
-  "/api/nightscout/connect": { kind: "browserHandoff", methods: ["POST"] },
+  // `/api/nightscout/connect` sat here as a `browserHandoff` and is published
+  // now. Nightscout has no OAuth step and no authorise page: the route is an
+  // authenticated JSON POST that Zod-parses a URL and a token, probes the
+  // instance and encrypts the pair onto the row. It was the only POST among
+  // eight `connect` entries and the only one whose siblings — status, test,
+  // disconnect — were all published, which is what makes it read as an entry
+  // that inherited a neighbour's reason rather than earned its own. The seven
+  // GET handoffs below keep it: each of those really does end at a provider's
+  // authorise page.
   "/api/oura/connect": { kind: "browserHandoff", methods: ["GET"] },
   "/api/polar/connect": { kind: "browserHandoff", methods: ["GET"] },
   "/api/strava/connect": { kind: "browserHandoff", methods: ["GET"] },

@@ -42,6 +42,10 @@ import {
 } from "@/lib/measurements/drain-per-sample-cumulative";
 import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
 import { resolveHkWorkoutSportType } from "@/lib/measurements/hk-workout-activity-type-map";
+import {
+  convertHkValue,
+  hkDistanceToMetres,
+} from "@/lib/measurements/hk-units";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
@@ -851,14 +855,21 @@ export async function streamParseExportXml(
         return;
       }
 
-      const mapped = mapAppleHealthEntry({
-        hkIdentifier: hkType,
-        value: parsedValue.value,
-        unit: attrs.unit ?? mapping.hkUnit,
-        startDate: attrs.startDate,
-        endDate: attrs.endDate,
-        sleepStage: parsedValue.sleepStage,
-      });
+      const mapped = mapAppleHealthEntry(
+        {
+          hkIdentifier: hkType,
+          value: parsedValue.value,
+          unit: attrs.unit ?? mapping.hkUnit,
+          startDate: attrs.startDate,
+          endDate: attrs.endDate,
+          sleepStage: parsedValue.sleepStage,
+        },
+        // issue #944 — the archive is the one caller whose unit attribute
+        // is authoritative: Apple writes the account's own display unit on
+        // every quantity `<Record>`, so `km` here means kilometres and the
+        // reading has to be converted before it is stored.
+        { convertRecordUnit: true },
+      );
       if (!mapped) {
         unknown[`${hkType}::map_failed`] =
           (unknown[`${hkType}::map_failed`] ?? 0) + 1;
@@ -947,14 +958,13 @@ export async function streamParseExportXml(
       const totalDistance = Number.parseFloat(attrs.totalDistance ?? "");
       const totalEnergy = Number.parseFloat(attrs.totalEnergyBurned ?? "");
       const distanceUnit = attrs.totalDistanceUnit ?? "";
-      // Apple ships km for HKWorkout.totalDistance by default; metres
-      // is the canonical DB unit. Convert when the unit is km.
+      const energyUnit = attrs.totalEnergyBurnedUnit ?? "";
+      // Apple ships the ACCOUNT's own length unit on HKWorkout.totalDistance
+      // (km for a metric account, mi for an imperial one); metres is the
+      // canonical DB unit. issue #944 — the same conversion the `<Record>`
+      // path now runs, so the two can never drift apart again.
       const distanceM = Number.isFinite(totalDistance)
-        ? distanceUnit === "km"
-          ? totalDistance * 1000
-          : distanceUnit === "mi"
-            ? totalDistance * 1609.344
-            : totalDistance
+        ? hkDistanceToMetres(totalDistance, distanceUnit)
         : null;
 
       const externalId = hashSampleKey(
@@ -970,7 +980,13 @@ export async function streamParseExportXml(
         startedAt: startDate,
         endedAt: endDate,
         durationSec,
-        totalEnergyKcal: Number.isFinite(totalEnergy) ? totalEnergy : null,
+        totalEnergyKcal: Number.isFinite(totalEnergy)
+          ? // issue #944 — the energy attribute carries the account's own
+            // unit too: a Health app set to kilojoules writes `kJ` here, and
+            // the column is kilocalories. Same shared conversion; an unknown
+            // unit leaves the number alone.
+            (convertHkValue(totalEnergy, energyUnit, "kcal") ?? totalEnergy)
+          : null,
         totalDistanceM: distanceM,
         externalId,
         externalSourceVersion: attrs.sourceVersion ?? null,

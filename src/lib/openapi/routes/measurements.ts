@@ -53,7 +53,13 @@ const batchEntrySchema = z
       .describe(
         "v1.19.2 (iOS #34 extension) — the bucket's MAXIMUM bpm for a 10-minute heart-rate bucket (see `externalId`). Persisted ONLY on a well-formed `stats:HKQuantityTypeIdentifierHeartRate:<bucket-start>` row; ignored (stored null) on every other entry. Omit on a pre-v1.19.2 client — the bucket keeps the avg-only contract.",
       ),
-    unit: z.string().min(1).max(60),
+    unit: z
+      .string()
+      .min(1)
+      .max(60)
+      .describe(
+        "Apple's `HKUnit` string for `value`, captured for audit: the server records it and never validates `value` against it. `value` is read in Apple's own `HKUnit` for the identifier — `m` for a length, `kg` for body mass, `kcal` for energy, `degC` for temperature, a `fraction` for the percent-shaped ones (oxygen saturation, body fat) — and HealthLog applies its storage scaling after that. A waist circumference sent as `0.86` in `m` is stored as `86` `cm`; an oxygen saturation sent as `0.98` in `fraction` is stored as `98` `%`. Send the sample in Apple's unit, not in HealthLog's.",
+      ),
     startDate: z.iso.datetime({ offset: true }),
     endDate: z.iso.datetime({ offset: true }),
     sleepStage: z

@@ -38,6 +38,7 @@ import {
 import { categoryForEntry } from "@/lib/medications/side-effects/taxonomy";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { encryptNote, shapeSideEffectNotes } from "@/lib/crypto/note-cipher";
+import { withIdempotency } from "@/lib/idempotency";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -96,93 +97,104 @@ export const GET = apiHandler(
   },
 );
 
+/**
+ * Wrapped in `withIdempotency`: the client replays this write out of its
+ * offline outbox with the same `Idempotency-Key`, and a replay after a lost
+ * success response must not log the same symptom twice. Nothing else on this
+ * row is unique, so the wrapper is the only thing that can collapse a retry.
+ */
 export const POST = apiHandler(
-  async (request: NextRequest, { params }: RouteParams) => {
-    // v1.36.x — a delegated write. `user` is the record the entry lands under;
-    // `actor` is whoever is typing, and the two differ only under a switch.
-    const { user, actor } = await requireRecordAuth("write", "medications");
-    const { id } = await params;
-
-    const guard = await assertMedicationOwnership(id, user.id);
-    if (guard) return guard;
-
-    // Per-caller POST rate-limit — 30/min comfortably absorbs a session
-    // of bulk back-fill (e.g. "log yesterday's symptoms") while cutting
-    // off automated abuse.
-    //
-    // v1.36.x — the bucket keys on the ACTOR, not on the resolved record, and
-    // this is the one condition on which delegating this verb was admitted. On
-    // the record key a delegate could exhaust the owner's allowance and lock
-    // them out of their own log, and could collect a fresh one by switching to
-    // another record. On the actor key they burn their own, once, wherever
-    // they are. `medications/compliance` set the same precedent on the read
-    // side. `actor.id` equals `user.id` for everyone who has not switched, so
-    // the bucket a self-writer lands in is byte-identical to before.
-    const rl = await checkRateLimit(
-      `medication-side-effect:post:${actor.id}`,
-      POST_RATE_LIMIT,
-      POST_WINDOW_MS,
-    );
-    if (!rl.allowed) {
-      return apiError("Too many requests", 429, {
-        headers: rateLimitHeaders(rl),
-      });
-    }
-
-    const { data: body, error: jsonError } = await safeJson(request, {
-      maxBytes: 64 * 1024,
-    });
-    if (jsonError) return jsonError;
-
-    const parsed = createSideEffectSchema.safeParse(body);
-    if (!parsed.success) {
-      // v1.4.43 W6 — multi-issue 422.
-      return returnAllZodIssues(parsed.error, 422);
-    }
-
-    const { entry, severity, occurredAt, notes } = parsed.data;
-
-    // v1.4.25 W21 Fix-N (code-M6) — category is derived server-side
-    // from the entry via the authoritative taxonomy mapping. The wire
-    // schema no longer accepts `category`; older clients that still
-    // send it now have it ignored by Zod's strict drop, and the row
-    // lands with the correct (entry-derived) category every time.
-    const category = categoryForEntry(entry);
-
-    const created = await prisma.medicationSideEffect.create({
-      data: {
-        userId: user.id,
-        medicationId: id,
-        category,
-        entry,
-        severity,
-        occurredAt: occurredAt ?? new Date(),
-        // Encrypt the free-text note at rest; the plaintext column stays null.
-        notesEncrypted: encryptNote(notes),
-        notes: null,
-      },
-    });
-
-    await auditLog("medication.sideEffect.create", {
-      userId: user.id,
-      ipAddress: getClientIp(request),
-      details: {
-        medicationId: id,
-        sideEffectId: created.id,
-        entry,
-        severity,
-      },
-    });
-
-    annotate({
-      action: {
-        name: "medication.sideEffect.create",
-        entity_type: "medication_side_effect",
-        entity_id: created.id,
-      },
-      meta: { medication_id: id, entry, severity },
-    });
-
-    return apiSuccess(shapeSideEffectNotes(created), 201);
-  },
+  withIdempotency<[NextRequest, RouteParams]>(postSideEffect),
 );
+
+async function postSideEffect(
+  request: NextRequest,
+  { params }: RouteParams,
+): Promise<Response> {
+  // v1.36.x — a delegated write. `user` is the record the entry lands under;
+  // `actor` is whoever is typing, and the two differ only under a switch.
+  const { user, actor } = await requireRecordAuth("write", "medications");
+  const { id } = await params;
+
+  const guard = await assertMedicationOwnership(id, user.id);
+  if (guard) return guard;
+
+  // Per-caller POST rate-limit — 30/min comfortably absorbs a session
+  // of bulk back-fill (e.g. "log yesterday's symptoms") while cutting
+  // off automated abuse.
+  //
+  // v1.36.x — the bucket keys on the ACTOR, not on the resolved record, and
+  // this is the one condition on which delegating this verb was admitted. On
+  // the record key a delegate could exhaust the owner's allowance and lock
+  // them out of their own log, and could collect a fresh one by switching to
+  // another record. On the actor key they burn their own, once, wherever
+  // they are. `medications/compliance` set the same precedent on the read
+  // side. `actor.id` equals `user.id` for everyone who has not switched, so
+  // the bucket a self-writer lands in is byte-identical to before.
+  const rl = await checkRateLimit(
+    `medication-side-effect:post:${actor.id}`,
+    POST_RATE_LIMIT,
+    POST_WINDOW_MS,
+  );
+  if (!rl.allowed) {
+    return apiError("Too many requests", 429, {
+      headers: rateLimitHeaders(rl),
+    });
+  }
+
+  const { data: body, error: jsonError } = await safeJson(request, {
+    maxBytes: 64 * 1024,
+  });
+  if (jsonError) return jsonError;
+
+  const parsed = createSideEffectSchema.safeParse(body);
+  if (!parsed.success) {
+    // v1.4.43 W6 — multi-issue 422.
+    return returnAllZodIssues(parsed.error, 422);
+  }
+
+  const { entry, severity, occurredAt, notes } = parsed.data;
+
+  // v1.4.25 W21 Fix-N (code-M6) — category is derived server-side
+  // from the entry via the authoritative taxonomy mapping. The wire
+  // schema no longer accepts `category`; older clients that still
+  // send it now have it ignored by Zod's strict drop, and the row
+  // lands with the correct (entry-derived) category every time.
+  const category = categoryForEntry(entry);
+
+  const created = await prisma.medicationSideEffect.create({
+    data: {
+      userId: user.id,
+      medicationId: id,
+      category,
+      entry,
+      severity,
+      occurredAt: occurredAt ?? new Date(),
+      // Encrypt the free-text note at rest; the plaintext column stays null.
+      notesEncrypted: encryptNote(notes),
+      notes: null,
+    },
+  });
+
+  await auditLog("medication.sideEffect.create", {
+    userId: user.id,
+    ipAddress: getClientIp(request),
+    details: {
+      medicationId: id,
+      sideEffectId: created.id,
+      entry,
+      severity,
+    },
+  });
+
+  annotate({
+    action: {
+      name: "medication.sideEffect.create",
+      entity_type: "medication_side_effect",
+      entity_id: created.id,
+    },
+    meta: { medication_id: id, entry, severity },
+  });
+
+  return apiSuccess(shapeSideEffectNotes(created), 201);
+}

@@ -630,6 +630,49 @@ describe("sendViaApns — dispatcher fan-out", () => {
     expect(note.payload.eventType).toBe("MEDICATION_REMINDER");
   });
 
+  // The iOS Notification Service Extension that replaces the medication name
+  // on the lock screen runs only when the payload carries
+  // `aps.mutable-content = 1`. The category test above happens to touch the
+  // flag; this pins it on its own, because losing it would not fail a
+  // category assertion and the name would silently reappear on the lock
+  // screen of a device that asked for it to be hidden.
+  it("marks a MEDICATION_REMINDER mutable so the client extension can rewrite the alert", async () => {
+    vi.mocked(prisma.device.findMany).mockResolvedValueOnce([
+      { id: "d1", apnsToken: "tok-a", apnsEnvironment: "sandbox" },
+    ] as never);
+    sendMock.mockResolvedValueOnce({ sent: [{ device: "tok-a" }], failed: [] });
+
+    await sendViaApns("u-1", {
+      title: "t",
+      message: "m",
+      eventType: "MEDICATION_REMINDER",
+      metadata: { medicationId: "med-1" },
+    });
+
+    expect(sendMock.mock.calls[0][0].mutableContent).toBe(true);
+  });
+
+  // Not a medication-only flag: `sendViaApns` sets it on every alert it
+  // builds, so an extension may enrich whichever event types the client
+  // registers for. Recorded as an assertion rather than left to be assumed
+  // from the source, because narrowing it to one branch would take a
+  // capability away from the client and should read as the contract change it
+  // is, not as a tidy-up.
+  it("marks every alert event type mutable, not only the medication branch", async () => {
+    vi.mocked(prisma.device.findMany).mockResolvedValueOnce([
+      { id: "d1", apnsToken: "tok-a", apnsEnvironment: "sandbox" },
+    ] as never);
+    sendMock.mockResolvedValueOnce({ sent: [{ device: "tok-a" }], failed: [] });
+
+    await sendViaApns("u-1", {
+      title: "t",
+      message: "m",
+      eventType: "MEASUREMENT_REMINDER",
+    });
+
+    expect(sendMock.mock.calls[0][0].mutableContent).toBe(true);
+  });
+
   it("omits action metadata and categories for a managed Guardian", async () => {
     vi.mocked(prisma.device.findMany).mockResolvedValueOnce([
       { id: "d1", apnsToken: "tok-a", apnsEnvironment: "sandbox" },

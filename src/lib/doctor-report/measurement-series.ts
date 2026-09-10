@@ -9,6 +9,7 @@
  * Split out of the aggregator with the selection rework.
  */
 import { collapseMeasurementsToCanonical } from "@/lib/doctor-report-helpers";
+import { glucoseContextBucket } from "@/lib/glucose";
 import type { DoctorReportStats } from "@/lib/doctor-report-types";
 import type { GlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
 import type { DenseMeasurementBucket } from "./dense-buckets";
@@ -117,8 +118,11 @@ export function summariseDenseBuckets(
   }
 
   for (const row of canonical) {
-    if (row.type !== "BLOOD_GLUCOSE" || !row.glucoseContext) continue;
-    accumulate(glucoseStatsAcc, row.glucoseContext, {
+    if (row.type !== "BLOOD_GLUCOSE") continue;
+    // #943 — a reading with no meal-time context is filed under the shared
+    // untagged bucket. Skipping it here dropped the whole panel for an
+    // account whose meter never records one.
+    accumulate(glucoseStatsAcc, glucoseContextBucket(row.glucoseContext), {
       count: row.count,
       sum: row.sumValue,
       min: row.minValue,

@@ -208,6 +208,7 @@
     "typeGlucosePostprandial": "Glicemia (postprandiale)",
     "typeGlucoseRandom": "Glicemia (qualsiasi)",
     "typeGlucoseBedtime": "Glicemia (prima di coricarsi)",
+    "typeGlucoseUnspecified": "Glicemia (non indicata)",
     "glucoseClassificationTitle": "Glicemia — Intervalli di riferimento (ADA 2024 / DDG)",
     "glucoseRow": "{label}: media {avg} {unit} (obiettivo {rangeMin}–{rangeMax}) — {class}",
     "glucoseInTarget": "in obiettivo",
@@ -3438,6 +3439,7 @@
             "postprandial": "Dopo i pasti",
             "random": "Casuale",
             "bedtime": "Prima di dormire",
+            "unspecified": "Non indicata",
             "readingsShort": "{count} misurazioni",
             "readingsShortOne": "1 misurazione"
           }
@@ -5353,6 +5355,14 @@
     "profileSaved": "Profilo salvato",
     "profilePartiallySaved": "Profilo salvato, ma non è stato possibile aggiornare {field}.",
     "profileNothingSaved": "Non è stato salvato nulla. Correggi {field} e riprova.",
+    "profileRejection": {
+      "tooBig": "Il valore supera l'intervallo accettato da questo campo.",
+      "tooSmall": "Il valore è inferiore all'intervallo accettato da questo campo.",
+      "invalidValue": "Questa non è una delle risposte accettate da questo campo.",
+      "invalidFormat": "Non è scritto in un formato che questo campo possa leggere.",
+      "invalidType": "Il valore non è arrivato in un formato che questo campo possa salvare.",
+      "other": "Questo valore non è stato accettato. Controllalo e riprova."
+    },
     "avatar": {
       "title": "Foto del profilo",
       "description": "Carica una foto archiviata sul tuo server. Appare in tutta l'app al posto di un servizio di avatar esterno.",
@@ -7593,6 +7603,7 @@
     "glucosePostprandial": "Glicemia — postprandiale",
     "glucoseRandom": "Glicemia — qualsiasi",
     "glucoseBedtime": "Glicemia — prima di coricarsi",
+    "glucoseUnspecified": "Glicemia — non indicata",
     "status": {
       "underweight": "Sottopeso",
       "normal": "Normal",

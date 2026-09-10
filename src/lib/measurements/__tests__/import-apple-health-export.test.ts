@@ -1278,3 +1278,67 @@ describe("streamParseExportXml — the archive's own export stamp", () => {
     expect(stamps).toEqual([]);
   });
 });
+
+describe("streamParseExportXml — the record's own unit (issue #944)", () => {
+  it("stores a km-scale walking distance in metres", async () => {
+    const { prisma } = await importCumulativeFixture(
+      cumulativeExportXml(
+        "HKQuantityTypeIdentifierDistanceWalkingRunning",
+        "km",
+        [{ value: 2.484, sourceName: "iPhone", hour: 8 }],
+      ),
+    );
+
+    expect(prisma._measurements).toHaveLength(1);
+    expect(prisma._measurements[0]).toMatchObject({
+      type: "WALKING_RUNNING_DISTANCE",
+      unit: "m",
+    });
+    expect(prisma._measurements[0].value).toBeCloseTo(2484, 6);
+  });
+
+  it("stores a kilojoule workout burn in kilocalories", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "healthlog-parser-energy-test-"));
+    const xmlPath = join(tmp, "export.xml");
+    writeFileSync(
+      xmlPath,
+      `<?xml version="1.0" encoding="UTF-8"?>
+<HealthData locale="en_AU">
+  <Workout workoutActivityType="HKWorkoutActivityTypeRunning"
+           duration="42.0"
+           durationUnit="min"
+           totalDistance="6.5"
+           totalDistanceUnit="km"
+           totalEnergyBurned="1724"
+           totalEnergyBurnedUnit="kJ"
+           startDate="2026-05-14 18:00:00 +0200"
+           endDate="2026-05-14 18:42:00 +0200"
+           sourceName="Apple Watch"/>
+</HealthData>`,
+    );
+    const prisma = makeFakePrisma();
+    await streamParseExportXml({
+      xmlPath,
+      userId: "user-energy",
+      userTimezone: "Europe/Berlin",
+      prisma: prisma as unknown as PrismaClient,
+    });
+
+    expect(prisma._workouts).toHaveLength(1);
+    expect(prisma._workouts[0].totalDistanceM).toBeCloseTo(6500, 6);
+    expect(prisma._workouts[0].totalEnergyKcal).toBeCloseTo(412.0458891, 6);
+  });
+
+  it("stores a mile-scale walking distance in metres", async () => {
+    const { prisma } = await importCumulativeFixture(
+      cumulativeExportXml(
+        "HKQuantityTypeIdentifierDistanceWalkingRunning",
+        "mi",
+        [{ value: 1.543, sourceName: "iPhone", hour: 8 }],
+      ),
+    );
+
+    expect(prisma._measurements).toHaveLength(1);
+    expect(prisma._measurements[0].value).toBeCloseTo(2483.217792, 6);
+  });
+});

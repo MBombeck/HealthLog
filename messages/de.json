@@ -208,6 +208,7 @@
     "typeGlucosePostprandial": "Glukose (postprandial)",
     "typeGlucoseRandom": "Glukose (beliebig)",
     "typeGlucoseBedtime": "Glukose (vor dem Schlafen)",
+    "typeGlucoseUnspecified": "Glukose (ohne Angabe)",
     "glucoseClassificationTitle": "Blutzucker — Referenzbereiche (ADA 2024 / DDG)",
     "glucoseRow": "{label}: Ø {avg} {unit} (Ziel {rangeMin}–{rangeMax}) — {class}",
     "glucoseInTarget": "im Ziel",
@@ -3438,6 +3439,7 @@
             "postprandial": "Nach dem Essen",
             "random": "Beliebig",
             "bedtime": "Vor dem Schlafen",
+            "unspecified": "Ohne Angabe",
             "readingsShort": "{count} Messungen",
             "readingsShortOne": "1 Messung"
           }
@@ -5353,6 +5355,14 @@
     "profileSaved": "Profil gespeichert",
     "profilePartiallySaved": "Profil gespeichert, aber {field} konnte nicht aktualisiert werden.",
     "profileNothingSaved": "Es wurde nichts gespeichert. Bitte {field} korrigieren und erneut versuchen.",
+    "profileRejection": {
+      "tooBig": "Der Wert liegt über dem Bereich, den dieses Feld annimmt.",
+      "tooSmall": "Der Wert liegt unter dem Bereich, den dieses Feld annimmt.",
+      "invalidValue": "Das ist keine der Antworten, die dieses Feld annimmt.",
+      "invalidFormat": "Das ist nicht in einer Form geschrieben, die dieses Feld lesen kann.",
+      "invalidType": "Der Wert kam nicht in einer Form an, die dieses Feld speichern kann.",
+      "other": "Dieser Wert wurde nicht angenommen. Bitte prüfen und erneut versuchen."
+    },
     "avatar": {
       "title": "Profilfoto",
       "description": "Lade ein Foto hoch, das auf deinem eigenen Server gespeichert wird. Es erscheint überall in der App anstelle eines externen Avatar-Dienstes.",
@@ -7593,6 +7603,7 @@
     "glucosePostprandial": "Glukose — postprandial",
     "glucoseRandom": "Glukose — beliebig",
     "glucoseBedtime": "Glukose — vor dem Schlafen",
+    "glucoseUnspecified": "Glukose — ohne Angabe",
     "status": {
       "underweight": "Untergewicht",
       "normal": "Normal",

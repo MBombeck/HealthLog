@@ -208,6 +208,7 @@
     "typeGlucosePostprandial": "Glukoza (po posiłku)",
     "typeGlucoseRandom": "Glukoza (dowolna)",
     "typeGlucoseBedtime": "Glukoza (przed snem)",
+    "typeGlucoseUnspecified": "Glukoza (bez oznaczenia)",
     "glucoseClassificationTitle": "Glikemia — zakresy referencyjne (ADA 2024 / DDG)",
     "glucoseRow": "{label}: śr. {avg} {unit} (cel {rangeMin}–{rangeMax}) — {class}",
     "glucoseInTarget": "w celu",
@@ -3438,6 +3439,7 @@
             "postprandial": "Po posiłku",
             "random": "Losowy",
             "bedtime": "Przed snem",
+            "unspecified": "Bez oznaczenia",
             "readingsShort": "{count} pomiarów",
             "readingsShortOne": "1 pomiar"
           }
@@ -5353,6 +5355,14 @@
     "profileSaved": "Profil zapisany",
     "profilePartiallySaved": "Profil zapisany, ale nie udało się zaktualizować pola {field}.",
     "profileNothingSaved": "Nic nie zostało zapisane. Popraw {field} i spróbuj ponownie.",
+    "profileRejection": {
+      "tooBig": "Wartość jest powyżej zakresu, który przyjmuje to pole.",
+      "tooSmall": "Wartość jest poniżej zakresu, który przyjmuje to pole.",
+      "invalidValue": "To nie jest jedna z odpowiedzi, które przyjmuje to pole.",
+      "invalidFormat": "To nie jest zapisane w formacie, który to pole może odczytać.",
+      "invalidType": "Wartość nie dotarła w formacie, który to pole może zapisać.",
+      "other": "Ta wartość nie została przyjęta. Sprawdź ją i spróbuj ponownie."
+    },
     "avatar": {
       "title": "Zdjęcie profilowe",
       "description": "Prześlij zdjęcie przechowywane na własnym serwerze. Pojawia się w całej aplikacji zamiast zewnętrznej usługi awatarów.",
@@ -7593,6 +7603,7 @@
     "glucosePostprandial": "Glikemia — po posiłku",
     "glucoseRandom": "Glikemia — dowolna",
     "glucoseBedtime": "Glikemia — przed snem",
+    "glucoseUnspecified": "Glikemia — bez oznaczenia",
     "status": {
       "underweight": "Niedowaga",
       "normal": "Normal",

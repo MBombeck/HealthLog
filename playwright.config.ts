@@ -152,8 +152,25 @@ export default defineConfig({
         // through stable data-slots, not a mobile layout, so it runs in one
         // project.
         "vaccinations.spec.ts",
+        // The blood-glucose journey writes readings to the one shared account
+        // and then reads GLOBAL verdicts off it — three rows in the list, one
+        // tile per meal-time context — while also moving that account's
+        // display-unit column. Two projects mutating it in parallel would
+        // leave a fourth row in the count and could flip the unit under the
+        // other one mid-navigation. It proves a flow through stable
+        // data-slots, not a mobile layout, so it runs in one project.
+        "glucose-journey.spec.ts",
         // Runs only in the service-worker project.
         "v137-record-session-fence-offline.spec.ts",
+        // The Apple Health import journey uploads an archive into the one
+        // shared account and its refusal control asserts that the account's
+        // Apple-Health row count did not move. A second project running the
+        // same journey in parallel would import beside it and flip that
+        // verdict — and both would be spending the kick-off route's
+        // three-uploads-per-minute budget on each other. It proves a flow
+        // through stable data attributes, not a mobile layout, so it runs in
+        // one project.
+        "apple-health-import.spec.ts",
       ],
       use: {
         // Pixel 5 — Chromium-based mobile profile so CI only needs

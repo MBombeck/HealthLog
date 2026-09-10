@@ -605,7 +605,14 @@ export function MeasurementForm({
             </SelectTrigger>
             <SelectContent>
               {GLUCOSE_CONTEXTS.map((ctx) => (
-                <SelectItem key={ctx.value} value={ctx.value}>
+                <SelectItem
+                  key={ctx.value}
+                  value={ctx.value}
+                  // The option carries its enum alongside the translated
+                  // label, so an option can be chosen by which meal time it
+                  // means rather than by the words the current locale prints.
+                  data-glucose-context={ctx.value}
+                >
                   {t(ctx.labelKey)}
                 </SelectItem>
               ))}

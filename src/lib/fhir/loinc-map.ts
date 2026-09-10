@@ -77,6 +77,10 @@ export const GLUCOSE_LOINC: Record<string, { loinc: string; display: string }> =
     },
     RANDOM: { loinc: "2339-0", display: "Glucose [Mass/volume] in Blood" },
     BEDTIME: { loinc: "2339-0", display: "Glucose [Mass/volume] in Blood" },
+    // #943 — the untagged bucket. Already named in the table above; without
+    // the entry the exported bundle silently dropped every reading whose
+    // source recorded no meal time.
+    UNSPECIFIED: { loinc: "2339-0", display: "Glucose [Mass/volume] in Blood" },
   };
 
 /* ── Clinical glucose-panel LOINCs (v1.18.0) ───────────────────────────

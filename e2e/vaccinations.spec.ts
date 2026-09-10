@@ -282,16 +282,34 @@ test.describe("vaccinations", () => {
 
   test("the list and the capture form carry no serious accessibility violations", async ({
     page,
-    request,
   }) => {
     // Seed one dose so the list scans a populated surface rather than the empty
     // state, then scan both the list and the open capture form.
-    const seeded = await request.post("/api/vaccinations", {
-      data: { occurredAt: "2019-05-01T00:00:00.000Z", antigenSlug: "polio" },
-    });
-    expect(seeded.status()).toBe(201);
-
+    //
+    // Written from the page, not from a Playwright API context. Every API
+    // context in the runner shares ONE process-wide keep-alive agent
+    // (`httpHappyEyeballsAgent`), so a request can be handed a pooled socket the
+    // server has already closed on its five-second idle timeout — and a POST,
+    // unlike a GET, is never replayed on a fresh one. This seed died that way
+    // twice, on this line, on all three attempts each time: `socket hang up`
+    // and `read ECONNRESET`. The browser opens its own connection and the row
+    // is still written by the real route, so nothing about the fixture changes
+    // except which socket carries it.
     await page.goto("/vaccinations");
+    const seededStatus = await page.evaluate(async () => {
+      const res = await fetch("/api/vaccinations", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          occurredAt: "2019-05-01T00:00:00.000Z",
+          antigenSlug: "polio",
+        }),
+      });
+      return res.status;
+    });
+    expect(seededStatus).toBe(201);
+
+    await page.reload();
     await expect(
       page.locator('[data-slot="vaccination-group"][data-antigen="polio"]'),
     ).toBeVisible({ timeout: 15_000 });

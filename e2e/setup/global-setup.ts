@@ -675,7 +675,12 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
          SELECT $1, u.id, 'WEIGHT', $2, 'kg', 'MANUAL', $3,
                 'e2e-sharing-marker', $3, $3
          FROM users u WHERE u.username = $4`,
-        [cuid(), kg, now, username],
+        // `measured_at` is `timestamp without time zone` and the driver
+        // serialises a `Date` in the HOST's zone, so a developer machine east
+        // of UTC seeded this row hours into the FUTURE — where every fold
+        // whose window ends "now" skips it, and the type stays uncovered.
+        // Send the instant as UTC, the same shape the app's own writes take.
+        [cuid(), kg, now.toISOString(), username],
       );
     }
 

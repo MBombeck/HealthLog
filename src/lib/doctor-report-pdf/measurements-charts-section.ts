@@ -1,4 +1,5 @@
 import type { jsPDF } from "jspdf";
+import { GLUCOSE_CONTEXT_BUCKETS } from "@/lib/glucose";
 import autoTable from "jspdf-autotable";
 import { convertGlucose, resolveGlucoseUnit } from "../glucose";
 import type { MeasurementType } from "@/generated/prisma/client";
@@ -20,6 +21,8 @@ const GLUCOSE_LABEL_KEYS = {
   POSTPRANDIAL: "doctorReport.typeGlucosePostprandial",
   RANDOM: "doctorReport.typeGlucoseRandom",
   BEDTIME: "doctorReport.typeGlucoseBedtime",
+  // #943 — readings the source never tagged with a meal time.
+  UNSPECIFIED: "doctorReport.typeGlucoseUnspecified",
 } as const;
 
 const DEFAULT_GLUCOSE_RANGES = {
@@ -27,13 +30,12 @@ const DEFAULT_GLUCOSE_RANGES = {
   POSTPRANDIAL: { min: 70, max: 140 },
   RANDOM: { min: 70, max: 140 },
   BEDTIME: { min: 90, max: 150 },
+  // Same band as RANDOM: an untagged reading is a spot reading.
+  UNSPECIFIED: { min: 70, max: 140 },
 } as const;
 
 const GLUCOSE_CONTEXTS: Array<keyof typeof GLUCOSE_LABEL_KEYS> = [
-  "FASTING",
-  "POSTPRANDIAL",
-  "RANDOM",
-  "BEDTIME",
+  ...GLUCOSE_CONTEXT_BUCKETS,
 ];
 
 /** A single charted reading. */

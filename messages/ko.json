@@ -244,6 +244,7 @@
     "typeGlucosePostprandial": "혈당 (식후)",
     "typeGlucoseRandom": "혈당 (임의)",
     "typeGlucoseBedtime": "혈당 (취침 전)",
+    "typeGlucoseUnspecified": "혈당 (미지정)",
     "glucoseClassificationTitle": "혈당 — 참고 범위 (ADA 2024 / DDG)",
     "glucoseRow": "{label}: 평균 {avg} {unit} (목표 {rangeMin}–{rangeMax}) — {class}",
     "glucoseInTarget": "목표 범위 내",
@@ -3438,6 +3439,7 @@
             "postprandial": "식후",
             "random": "임의",
             "bedtime": "취침 전",
+            "unspecified": "미지정",
             "readingsShort": "측정값 {count}개",
             "readingsShortOne": "측정값 1개"
           }
@@ -5353,6 +5355,14 @@
     "profileSaved": "프로필을 저장했어요",
     "profilePartiallySaved": "프로필을 저장했지만 {field} 항목은 업데이트하지 못했어요.",
     "profileNothingSaved": "아무것도 저장하지 못했어요. {field} 항목을 고친 뒤 다시 시도해 주세요.",
+    "profileRejection": {
+      "tooBig": "이 항목이 받는 범위보다 큰 값이에요.",
+      "tooSmall": "이 항목이 받는 범위보다 작은 값이에요.",
+      "invalidValue": "이 항목이 받는 답변이 아니에요.",
+      "invalidFormat": "이 항목이 읽을 수 있는 형식이 아니에요.",
+      "invalidType": "이 항목이 저장할 수 있는 형식으로 오지 않았어요.",
+      "other": "이 값은 저장하지 못했어요. 확인한 뒤 다시 시도해 주세요."
+    },
     "avatar": {
       "title": "프로필 사진",
       "description": "직접 운영하는 서버에 저장되는 사진을 올려요. 외부 아바타 서비스 대신 앱 전체에 표시돼요.",
@@ -7593,6 +7603,7 @@
     "glucosePostprandial": "혈당 — 식후",
     "glucoseRandom": "혈당 — 무작위",
     "glucoseBedtime": "혈당 — 취침 전",
+    "glucoseUnspecified": "혈당 — 미지정",
     "status": {
       "underweight": "저체중",
       "normal": "정상",

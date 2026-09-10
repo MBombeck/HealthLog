@@ -60,3 +60,53 @@ export function describeRejectedProfileField(
   const labelKey = labelKeys[first.path];
   return labelKey ? t(labelKey) : first.path;
 }
+
+/**
+ * The sentence a person reads under the input, keyed by the validator
+ * code the server sent back. The code is the only reason that crosses
+ * the wire — `message` is the validator's own prose and is deliberately
+ * never shown — so each code gets one plain sentence saying what was
+ * wrong with the value, in the person's language.
+ *
+ * A code with no entry here falls back to `other`, which says the field
+ * was not accepted without inventing a reason. New Zod codes therefore
+ * degrade to something honest instead of to silence.
+ */
+const REJECTION_REASON_KEYS: Record<string, string> = {
+  too_big: "settings.profileRejection.tooBig",
+  too_small: "settings.profileRejection.tooSmall",
+  invalid_value: "settings.profileRejection.invalidValue",
+  invalid_format: "settings.profileRejection.invalidFormat",
+  invalid_type: "settings.profileRejection.invalidType",
+};
+
+const REJECTION_FALLBACK_KEY = "settings.profileRejection.other";
+
+/**
+ * Turn a rejection list into one sentence per field, keyed by the
+ * schema path so a form can drop each one into the slot under the
+ * input it belongs to.
+ *
+ * Every refused field is carried, not just the first: a submission with
+ * two bad values that only names one sends the person round the loop
+ * twice. Where a field is refused for several reasons at once the first
+ * one wins — the others are restatements of the same wrong value.
+ *
+ * No label map is needed: the sentence sits under the input, which
+ * already carries the label, and the key is the schema path so the
+ * calling screen can place it without a rename. A path the screen has
+ * no input for still gets an entry rather than being dropped, so the
+ * caller can decide what to do with it.
+ */
+export function describeRejectedProfileFields(
+  fields: RejectedProfileField[] | undefined,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const field of fields ?? []) {
+    if (out[field.path]) continue;
+    const key = REJECTION_REASON_KEYS[field.code] ?? REJECTION_FALLBACK_KEY;
+    out[field.path] = t(key);
+  }
+  return out;
+}

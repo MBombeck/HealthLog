@@ -94,6 +94,55 @@ Pass `--only=prod` / `--only=demo` to check a single target, or
 `--attempts=N --interval=ms` to widen the retry window while a slow
 pull settles.
 
+## Walk the synthetic journey
+
+The version check proves the instance serves the right build. It does not
+prove a person can use it. `scripts/synthetic-journey.mjs` walks the
+shortest journey that touches the whole stack — sign in, write a reading,
+read it back, delete it again — against a running instance:
+
+```sh
+# Plain Node 22, no dependencies: runs from a workstation, a runner, or
+# the deploy host. Warms the instance first, then asserts each leg.
+BASE_URL=https://review.healthlog.dev \
+SYNTHETIC_USERNAME=<probe account> \
+SYNTHETIC_PASSWORD=<its password> \
+EXPECTED_VERSION=v1.38.13 \
+  node scripts/synthetic-journey.mjs
+```
+
+It prints one line per leg with the elapsed time and stops at the first
+failure with the status and a redacted body excerpt. The warm-up hit on
+each route is timed but discarded — the first request after a deploy pays
+the cold-start cost and says nothing about the instance's steady state.
+
+The same journey is available as the **Synthetic journey** workflow
+(`workflow_dispatch`, inputs `base_url` and `expected_version`), which
+reads the credentials from the `SYNTHETIC_USERNAME` / `SYNTHETIC_PASSWORD`
+repository secrets. Nothing calls it from the deploy path; run it by hand
+after a deploy until a target instance is settled.
+
+Two preconditions on the probe account: it must be password-only, because
+the password flow stops at the MFA ticket for an account with a second
+factor, and the target must not be the demo instance, where every mutation
+is blocked and the write leg would be red for a reason unrelated to the
+deploy.
+
+**A red result.** The leg that failed names the layer:
+
+| Red leg     | What it means                                                                                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version`   | The instance serves a different build than the tag you deployed. Check the image digest and the `pull_policy` before looking anywhere else. |
+| `sign in`   | Sessions are broken, or the probe account gained a second factor. A 429 here is the login rate limit, not the deploy.                       |
+| `write`     | The write path is down: database, encryption keys, or a migration that did not run.                                                         |
+| `read back` | A value was written and cannot be read back — the shape this project keeps rediscovering. Roll back.                                        |
+| `delete`    | The write path works and the reversible delete does not; the probe reading is still on the account and needs removing by hand.              |
+
+Run `node scripts/synthetic-journey.mjs --self-test` to confirm the check
+itself still works: it walks the journey against an in-process instance
+once per leg with that leg broken, and fails if any of them comes back
+green.
+
 ## Verify the image signature
 
 Every release image (the multi-arch manifest **index**, covering both

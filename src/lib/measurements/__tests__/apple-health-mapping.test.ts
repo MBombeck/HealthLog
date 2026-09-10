@@ -390,6 +390,38 @@ describe("mapAppleHealthEntry", () => {
     expect(out!.takenAt.toISOString()).toBe(ts);
   });
 
+  it("stores a batch reading in the unit the table assumes, whatever `unit` says", () => {
+    // issue #944 — the batch route's `unit` is captured for audit and never
+    // read. A client that stamps the person's DISPLAY unit into the field
+    // must not have its metres multiplied by a thousand: the conversion is
+    // opt-in and only the `export.xml` path opts in.
+    const out = mapAppleHealthEntry({
+      hkIdentifier: "HKQuantityTypeIdentifierDistanceWalkingRunning",
+      value: 2484,
+      unit: "km",
+      startDate: ts,
+      endDate: ts,
+    });
+    expect(out).not.toBeNull();
+    expect(out!.value).toBe(2484);
+    expect(out!.unit).toBe("m");
+  });
+
+  it("converts out of the record's own unit when the caller opts in", () => {
+    const out = mapAppleHealthEntry(
+      {
+        hkIdentifier: "HKQuantityTypeIdentifierDistanceWalkingRunning",
+        value: 2.484,
+        unit: "km",
+        startDate: ts,
+        endDate: ts,
+      },
+      { convertRecordUnit: true },
+    );
+    expect(out).not.toBeNull();
+    expect(out!.value).toBeCloseTo(2484, 9);
+  });
+
   it("applies the unit conversion for fraction-shaped quantities", () => {
     const out = mapAppleHealthEntry({
       hkIdentifier: "HKQuantityTypeIdentifierOxygenSaturation",
