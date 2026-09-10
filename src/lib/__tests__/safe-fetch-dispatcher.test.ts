@@ -1,8 +1,14 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import dns from "node:dns";
+import http from "node:http";
+import type { AddressInfo } from "node:net";
 import { fetch as undiciFetch } from "undici";
-import { isPublicIp } from "@/lib/validations/notifications";
 import {
+  isOperatorGrantableIp,
+  isPublicIp,
+} from "@/lib/validations/notifications";
+import {
+  getPinnedOperatorApprovedDispatcher,
   getPinnedPublicDispatcher,
   _resetPinnedDispatcherForTests,
 } from "../safe-fetch-dispatcher";
@@ -17,6 +23,21 @@ const EMBEDDED_PRIVATE_DNS_ANSWERS = [
   ["RFC8215 local-use RFC1918", "64:ff9b:1:ac10:0:1::"],
   ["RFC8215 local-use metadata", "64:ff9b:1:a9fe:0:a9fe::"],
 ] as const;
+
+/** True when the policy marker the dispatcher stamps is anywhere in the chain. */
+function hasPrivateHostMarker(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const value = error as {
+    safeFetchKind?: unknown;
+    cause?: unknown;
+    errors?: unknown[];
+  };
+  return (
+    value.safeFetchKind === "private_host" ||
+    hasPrivateHostMarker(value.cause) ||
+    (value.errors ?? []).some(hasPrivateHostMarker)
+  );
+}
 
 function errorCodes(error: unknown): string[] {
   if (!error || typeof error !== "object") return [];
@@ -220,4 +241,145 @@ describe("pinnedPublicDispatcher", () => {
     },
     5_000,
   );
+});
+
+describe("isOperatorGrantableIp", () => {
+  it("keeps the private ranges an operator may deliberately list", () => {
+    expect(isOperatorGrantableIp("10.0.0.5")).toBe(true);
+    // Loopback is grantable: a host-networking deployment lists it exactly.
+    expect(isOperatorGrantableIp("127.0.0.1")).toBe(true);
+    expect(isOperatorGrantableIp("127.255.0.1")).toBe(true);
+    expect(isOperatorGrantableIp("::1")).toBe(true);
+    expect(isOperatorGrantableIp("::ffff:127.0.0.1")).toBe(true);
+    expect(isOperatorGrantableIp("172.16.0.9")).toBe(true);
+    expect(isOperatorGrantableIp("192.168.1.20")).toBe(true);
+    expect(isOperatorGrantableIp("100.64.0.7")).toBe(true);
+    expect(isOperatorGrantableIp("fd12:3456:789a::1")).toBe(true);
+    expect(isOperatorGrantableIp("::ffff:10.0.0.5")).toBe(true);
+  });
+
+  it("keeps public addresses grantable (a listed public origin is harmless)", () => {
+    expect(isOperatorGrantableIp("203.0.113.5")).toBe(true);
+    expect(isOperatorGrantableIp("2001:db8::1")).toBe(true);
+  });
+
+  it.each([
+    ["IPv4 unspecified", "0.0.0.0"],
+    ["IPv4 link-local / metadata", "169.254.169.254"],
+    ["IPv6 unspecified", "::"],
+    ["IPv6 link-local", "fe80::1"],
+    ["IPv4-mapped metadata", "::ffff:169.254.169.254"],
+    ["IPv4-mapped unspecified", "::ffff:0.0.0.0"],
+    ["6to4 metadata", "2002:a9fe:a9fe::"],
+    ["NAT64 metadata", "64:ff9b::a9fe:a9fe"],
+    ["not an address", "gotify.lan"],
+    ["empty", ""],
+  ])("never grants %s, listed or not", (_label, ip) => {
+    expect(isOperatorGrantableIp(ip)).toBe(false);
+  });
+});
+
+describe("pinnedOperatorApprovedDispatcher", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    _resetPinnedDispatcherForTests();
+  });
+
+  function resolveTo(addresses: dns.LookupAddress[]): void {
+    vi.spyOn(dns, "lookup").mockImplementation(((
+      _hostname: string,
+      _opts: dns.LookupAllOptions,
+      callback: (
+        err: NodeJS.ErrnoException | null,
+        addrs: dns.LookupAddress[],
+      ) => void,
+    ) => {
+      callback(null, addresses);
+    }) as unknown as typeof dns.lookup);
+  }
+
+  it.each([
+    ["link-local / metadata", { address: "169.254.169.254", family: 4 }],
+    ["unspecified", { address: "0.0.0.0", family: 4 }],
+    ["IPv6 unspecified", { address: "::", family: 6 }],
+    ["IPv6 link-local", { address: "fe80::1", family: 6 }],
+    ["IPv4-mapped metadata", { address: "::ffff:169.254.169.254", family: 6 }],
+  ])(
+    "refuses a listed name that resolves to %s even under the approved policy",
+    async (_label, answer) => {
+      resolveTo([answer]);
+
+      const dispatcher = getPinnedOperatorApprovedDispatcher();
+      let caught: unknown;
+      try {
+        await undiciFetch("http://gotify-listed.example.test:8089/message", {
+          dispatcher,
+          signal: AbortSignal.timeout(750),
+        });
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).toBeDefined();
+      expect(errorCodes(caught)).toContain("ENOTFOUND");
+      // A real NXDOMAIN would also be ENOTFOUND; the policy marker is what
+      // proves the refusal came from the floor and not from the resolver.
+      expect(hasPrivateHostMarker(caught)).toBe(true);
+    },
+    5_000,
+  );
+
+  it("forwards an RFC1918 answer to the connector (the grant does its job)", async () => {
+    // 10.255.255.1 is private and, on this harness, unroutable: the pinned
+    // lookup must ACCEPT it (no ENOTFOUND) and the failure, if any, comes from
+    // the socket below.
+    resolveTo([{ address: "10.255.255.1", family: 4 }]);
+
+    const dispatcher = getPinnedOperatorApprovedDispatcher();
+    let caught: unknown;
+    try {
+      await undiciFetch("http://gotify-listed.example.test:8089/message", {
+        dispatcher,
+        signal: AbortSignal.timeout(500),
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(errorCodes(caught)).not.toContain("ENOTFOUND");
+  }, 20_000);
+
+  it("drops the metadata answer from a mixed set and dials the loopback one", async () => {
+    // A real server on loopback proves both halves: the listed name resolves
+    // to the metadata endpoint AND to loopback; the pinned lookup drops the
+    // metadata answer and hands undici the loopback survivor, which is
+    // grantable, so the server receives exactly one request.
+    let requests = 0;
+    const server = http.createServer((_req, res) => {
+      requests += 1;
+      res.writeHead(200);
+      res.end();
+    });
+    await new Promise<void>((resolve) =>
+      server.listen(0, "127.0.0.1", () => resolve()),
+    );
+    const port = (server.address() as AddressInfo).port;
+    try {
+      resolveTo([
+        { address: "169.254.169.254", family: 4 },
+        { address: "127.0.0.1", family: 4 },
+      ]);
+
+      const dispatcher = getPinnedOperatorApprovedDispatcher();
+      const res = await undiciFetch(
+        `http://gotify-listed.example.test:${port}/message`,
+        { dispatcher, signal: AbortSignal.timeout(5_000) },
+      );
+
+      expect(res.status).toBe(200);
+      expect(requests).toBe(1);
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  }, 20_000);
 });

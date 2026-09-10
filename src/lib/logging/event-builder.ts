@@ -150,6 +150,16 @@ export class WideEventBuilder {
     return this;
   }
 
+  /**
+   * Whether a caller has already named this event's action. A leaf that
+   * wants to mark the event (the private-origin egress mark in the
+   * notification senders) checks this first so it never overwrites the
+   * route's or job's own action name, which dashboards pin on.
+   */
+  hasAction(): boolean {
+    return this.event.action !== undefined;
+  }
+
   setBackground(bg: WideEvent["background"]): this {
     this.event.background = bg;
     return this;

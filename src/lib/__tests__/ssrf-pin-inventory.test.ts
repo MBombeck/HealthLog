@@ -58,14 +58,30 @@ describe("SSRF requirePublicHost pin inventory", () => {
     );
   });
 
-  // v1.11.2 product-lead M2 (optional) — lock the PRE-EXISTING user/operator
-  // webhook pins too, so the full inventory is CI-guarded and a future edit
-  // that drops one of these reds here rather than shipping silently.
-  it("ntfy sender pins the user/operator-supplied server outbound", () => {
-    expect(read("notifications/senders/ntfy.ts")).toMatch(
-      /requirePublicHost:\s*true/,
-    );
-  });
+  // v1.11.2 locked the ntfy pin as an unconditional `true`. Since #947 both
+  // user-supplied notification targets carry the same conditional shape as
+  // Nightscout: the public pin unless the operator listed the exact origin
+  // in NOTIFICATION_PRIVATE_ORIGINS, in which case the operator-approved pin
+  // takes over. Neither a bare `true` (the grant would be dead) nor a bare
+  // `false` (the pin would be gone) may reappear.
+  it.each([
+    ["webhook", "notifications/senders/webhook.ts"],
+    ["ntfy", "notifications/senders/ntfy.ts"],
+  ])(
+    "%s sender routes an exact operator-approved private origin through the private pin",
+    (_channel, rel) => {
+      const src = read(rel);
+      expect(src).toMatch(
+        /requirePublicHost:\s*!policy\.privateOriginApproved/,
+      );
+      expect(src).toMatch(
+        /operatorApprovedPrivateOrigin:\s*policy\.canonicalOrigin/,
+      );
+      expect(src).not.toMatch(/requirePublicHost:\s*(?:true|false)\b/);
+      // The verdict must come from the shared policy, never a local check.
+      expect(src).toMatch(/evaluateNotificationTarget\(/);
+    },
+  );
 
   it("local AI client keeps the pin CONDITIONAL (LAN escape hatch)", () => {
     const src = read("ai/local-client.ts");

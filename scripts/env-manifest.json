@@ -227,6 +227,17 @@
       ]
     },
     {
+      "name": "Notification targets on a private network",
+      "description": "Operator grant for webhook (Gotify, Home Assistant, n8n) and ntfy targets on the operator's own network. Unset, a target that resolves to a private address is refused at send time and the test button reports private_origin_not_approved. Optional; public targets never need it.",
+      "required": false,
+      "variables": [
+        {
+          "name": "NOTIFICATION_PRIVATE_ORIGINS",
+          "purpose": "Comma-separated exact origins (scheme://host[:port], no path, no wildcard, no CIDR), e.g. \"https://gotify.example.com,http://ntfy.lan:8080\". Link-local, metadata and unspecified addresses stay refused even when listed; a malformed entry is logged once and grants nothing."
+        }
+      ]
+    },
+    {
       "name": "Off-host backups",
       "description": "Required ALL-OR-NONE: any of these without the rest disables backups silently.",
       "required": false,

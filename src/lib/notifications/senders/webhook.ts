@@ -6,9 +6,15 @@ import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { classifyHttpStatus } from "@/lib/notifications/retry-policy";
 import { getEvent } from "@/lib/logging/context";
 import { recordPushAttemptForPayload } from "@/lib/notifications/senders/push-attempt-record";
-import { safeFetch } from "@/lib/safe-fetch";
+import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";
 import { plainPushText } from "@/lib/notifications/strip-emoji";
 import { stripHtml } from "@/lib/notifications/strip-html";
+import {
+  annotatePrivateOriginEgress,
+  evaluateNotificationTarget,
+  PRIVATE_ORIGIN_NOT_APPROVED_CODE,
+} from "@/lib/notifications/egress-policy";
+import type { OriginReason } from "@/lib/private-origin-policy";
 
 /**
  * Send a notification via a generic outbound webhook (v1.17.1).
@@ -20,10 +26,15 @@ import { stripHtml } from "@/lib/notifications/strip-html";
  * `title`/`message` fields are stripped of HTML + decorative emoji on routine
  * reminders exactly like the ntfy sender.
  *
- * Outbound goes through `safeFetch({ requirePublicHost: true })`: the SSRF
- * floor plus the connect-time DNS-rebinding pin apply because the host is
- * user-supplied. The optional shared-secret header would otherwise leak on a
- * rebinding flip to a private address.
+ * Outbound goes through `safeFetch` with the connect-time DNS-rebinding pin
+ * because the host is user-supplied; the optional shared-secret header would
+ * otherwise leak on a rebinding flip to a private address. A public target
+ * runs under the public pin. An origin the operator listed in
+ * `NOTIFICATION_PRIVATE_ORIGINS` (#947) runs under the operator-approved pin
+ * instead: still resolved and pinned inside the connector, redirects
+ * forbidden, loopback and metadata answers refused. The verdict comes from
+ * `evaluateNotificationTarget`, the same function the settings routes use,
+ * so the test button and the dispatcher cannot disagree.
  *
  * Returns a `SendOutcome` so the dispatcher can distinguish hard rejects
  * (404/410 endpoint gone, 401/403 secret wrong) from soft errors (5xx, 429,
@@ -35,6 +46,10 @@ export async function sendViaWebhook(
 ): Promise<SendOutcome> {
   const userId = payload.recipientUserId ?? payload.userId;
   const start = performance.now();
+  // Set when the policy itself refuses, so the outcome can say which of the
+  // two refusals it was: an origin the operator could list, or one no grant
+  // can open.
+  let policyReason: OriginReason | null = null;
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -63,6 +78,18 @@ export async function sendViaWebhook(
             : "default",
     });
 
+    const policy = evaluateNotificationTarget(config.url);
+    if (!policy.allowed || !policy.canonicalOrigin) {
+      policyReason = policy.reasonCode;
+      throw new SafeFetchError(
+        "webhook target refused by the notification origin policy",
+        "private_host",
+      );
+    }
+    if (policy.privateOriginApproved) {
+      annotatePrivateOriginEgress("webhook", policy.canonicalOrigin);
+    }
+
     const res = await safeFetch(
       config.url,
       {
@@ -70,7 +97,13 @@ export async function sendViaWebhook(
         headers,
         body,
       },
-      { timeoutMs: 5_000, requirePublicHost: true },
+      {
+        timeoutMs: 5_000,
+        requirePublicHost: !policy.privateOriginApproved,
+        ...(policy.privateOriginApproved
+          ? { operatorApprovedPrivateOrigin: policy.canonicalOrigin }
+          : {}),
+      },
     );
 
     getEvent()?.addExternalCall({
@@ -105,6 +138,15 @@ export async function sendViaWebhook(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "request_failed";
+    // A policy refusal is not a network fault: the target is on a private
+    // network the operator has not listed. It keeps the soft classification
+    // (delivery resumes the moment the origin is listed) but carries its own
+    // reason so the ledger and the test button can say why.
+    const policyRefused =
+      err instanceof SafeFetchError && err.kind === "private_host";
+    const reason = policyRefused
+      ? "webhook_private_origin_refused"
+      : "webhook_network_error";
     getEvent()?.addExternalCall({
       service: "webhook",
       method: "sendNotification",
@@ -116,13 +158,16 @@ export async function sendViaWebhook(
       channel: "WEBHOOK",
       eventType: payload.eventType,
       result: "error",
-      reason: "webhook_network_error",
+      reason,
     });
     return {
       ok: false,
       hardReject: false,
-      reason: "webhook_network_error",
+      reason,
       message,
+      ...(policyRefused
+        ? { errorCode: policyReason ?? PRIVATE_ORIGIN_NOT_APPROVED_CODE }
+        : {}),
     };
   }
 }

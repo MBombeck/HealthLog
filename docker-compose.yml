@@ -205,6 +205,13 @@ x-healthlog-env: &healthlog_env
   # validator should accept, comma-separated (e.g. "http://nightscout.lan").
   # Without it a LAN/private Nightscout URL is refused as an SSRF target.
   NIGHTSCOUT_PRIVATE_ORIGINS: "${NIGHTSCOUT_PRIVATE_ORIGINS:-}"
+  # Webhook (Gotify, Home Assistant, n8n) and ntfy targets on your own
+  # network, comma-separated exact origins (e.g. "https://gotify.example.com,
+  # http://ntfy.lan:8080"). Without it a target that resolves to a private
+  # address is refused at send time as an SSRF target. Link-local, metadata
+  # and unspecified addresses stay refused even when listed. See
+  # docs/self-hosting/notifications.md.
+  NOTIFICATION_PRIVATE_ORIGINS: "${NOTIFICATION_PRIVATE_ORIGINS:-}"
   # Open-Meteo endpoints for the environment/weather correlation. Default to
   # the hosted service; point them at your own Open-Meteo deployment to keep
   # the coordinate lookups off a third party.

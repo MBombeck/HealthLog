@@ -5990,6 +5990,8 @@
         "connection_failed": "Verbindung fehlgeschlagen",
         "not_configured": "Nicht konfiguriert",
         "url_not_public": "URL ist kein öffentlicher Endpunkt",
+        "private_origin_not_approved": "Ziel im privaten Netz. Der Betreiber muss diesen Origin in NOTIFICATION_PRIVATE_ORIGINS eintragen",
+        "private_origin_not_grantable": "Diese Adresse ist Link-local, eine Metadaten- oder eine unspezifizierte Adresse; keine Betreiber-Freigabe kann sie öffnen. Bitte die Adresse verwenden, auf der das Relay lauscht",
         "url_invalid": "URL ist ungültig",
         "redirected": "Endpunkt leitet weiter — URL prüfen",
         "endpoint_not_found": "Endpunkt unter der URL nicht gefunden",

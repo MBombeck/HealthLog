@@ -1,89 +1,62 @@
 import { z } from "zod/v4";
-import { isPublicUrl } from "@/lib/validations/notifications";
+import {
+  canonicalOrigin,
+  evaluateOriginGrant,
+  INVALID_ORIGIN,
+  parsePrivateOrigins,
+  PRIVATE_ORIGIN_NOT_APPROVED_CODE,
+  type OriginReason,
+  type OriginVerdict,
+} from "@/lib/private-origin-policy";
 
 export const NIGHTSCOUT_PRIVATE_ORIGIN_REASON =
-  "private_origin_not_approved" as const;
-export const NIGHTSCOUT_INVALID_ORIGIN_REASON = "invalid_origin" as const;
-
-export type NightscoutOriginReason =
-  | typeof NIGHTSCOUT_PRIVATE_ORIGIN_REASON
-  | typeof NIGHTSCOUT_INVALID_ORIGIN_REASON;
-
-export interface NightscoutOriginVerdict {
-  allowed: boolean;
-  canonicalOrigin: string | null;
-  privateOriginApproved: boolean;
-  reasonCode: NightscoutOriginReason | null;
-}
+  PRIVATE_ORIGIN_NOT_APPROVED_CODE;
+export const NIGHTSCOUT_INVALID_ORIGIN_REASON = INVALID_ORIGIN;
 
 /**
- * Parse one exact http(s) origin.
- *
- * Credentials, paths, queries, and fragments are deliberately forbidden: the
- * operator grants a complete canonical scheme/host/port trust unit, never a
- * suffix, wildcard, capability URL, or prefix.
+ * Thrown when `NIGHTSCOUT_PRIVATE_ORIGINS` holds an entry that is not a
+ * grant. The message names the entry (scheme and host only) and the reason,
+ * so the sync ledger and the connect form show the operator what to edit
+ * instead of a bare "invalid entry". Loopback and `localhost` entries stay
+ * valid grants exactly as before #947; the shared floor refuses only the
+ * unspecified address, link-local and the metadata range.
  */
-function canonicalOrigin(value: string): string | null {
-  try {
-    const url = new URL(value);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    if (url.username || url.password) return null;
-    if (url.pathname !== "/" || url.search || url.hash) return null;
-    if (!url.hostname || url.hostname.includes("*")) return null;
-    return url.origin;
-  } catch {
-    return null;
+export class NightscoutOriginConfigError extends Error {
+  constructor(redactedEntry: string, reason: string) {
+    super(
+      `Invalid NIGHTSCOUT_PRIVATE_ORIGINS entry "${redactedEntry}": ${reason}`,
+    );
+    this.name = "NightscoutOriginConfigError";
   }
 }
 
-function sharesApprovedPrivateHostname(
-  origin: string,
-  privateOrigins: ReadonlySet<string>,
-): boolean {
-  const hostname = new URL(origin).hostname;
+export type NightscoutOriginReason = OriginReason;
 
-  for (const approvedOrigin of privateOrigins) {
-    const approvedHostname = new URL(approvedOrigin).hostname;
-    if (
-      hostname === approvedHostname ||
-      hostname.endsWith(`.${approvedHostname}`)
-    ) {
-      return true;
-    }
-  }
-
-  return false;
-}
+export type NightscoutOriginVerdict = OriginVerdict;
 
 /**
  * Parse the server-only comma-separated exact-origin allowlist.
  *
- * Invalid non-empty entries fail startup/call-site evaluation loudly rather
- * than being skipped: partial acceptance makes an operator believe a private
- * integration is protected while silently changing which origin is trusted.
+ * The grammar lives in `@/lib/private-origin-policy` and is shared with
+ * `NOTIFICATION_PRIVATE_ORIGINS`. Invalid non-empty entries fail
+ * startup/call-site evaluation loudly rather than being skipped: partial
+ * acceptance makes an operator believe a private integration is protected
+ * while silently changing which origin is trusted.
  */
 export function parseNightscoutPrivateOrigins(
   raw: string | undefined,
 ): ReadonlySet<string> {
-  const origins = new Set<string>();
-  for (const entry of (raw ?? "").split(",")) {
-    const trimmed = entry.trim();
-    if (!trimmed) continue;
-    const origin = canonicalOrigin(trimmed);
-    if (!origin) {
-      throw new Error("Invalid NIGHTSCOUT_PRIVATE_ORIGINS entry");
-    }
-    origins.add(origin);
-  }
-  return origins;
+  return parsePrivateOrigins(raw, (redactedEntry, reason) => {
+    throw new NightscoutOriginConfigError(redactedEntry, reason);
+  });
 }
 
 /**
  * Resolve one user-supplied Nightscout base URL against server policy.
  *
- * Exact operator membership wins before the ordinary public-host verdict so a
- * private DNS name can be trusted without granting its suffix or sibling
- * ports. Public origins remain supported without configuration.
+ * A Nightscout base URL is itself a bare origin, so the strict grant grammar
+ * applies to the input as well: a path, query, fragment or credential part
+ * is `invalid_origin`, not merely unapproved.
  */
 export function evaluateNightscoutOrigin(
   value: string,
@@ -98,43 +71,7 @@ export function evaluateNightscoutOrigin(
       reasonCode: NIGHTSCOUT_INVALID_ORIGIN_REASON,
     };
   }
-
-  if (privateOrigins.has(origin)) {
-    return {
-      allowed: true,
-      canonicalOrigin: origin,
-      privateOriginApproved: true,
-      reasonCode: null,
-    };
-  }
-
-  // An exact grant must not accidentally become a hostname suffix grant.
-  // Deny related hosts before the generic public-host fallback: private DNS
-  // names such as cgm.lan may otherwise look syntactically public here.
-  if (sharesApprovedPrivateHostname(origin, privateOrigins)) {
-    return {
-      allowed: false,
-      canonicalOrigin: origin,
-      privateOriginApproved: false,
-      reasonCode: NIGHTSCOUT_PRIVATE_ORIGIN_REASON,
-    };
-  }
-
-  if (isPublicUrl(origin)) {
-    return {
-      allowed: true,
-      canonicalOrigin: origin,
-      privateOriginApproved: false,
-      reasonCode: null,
-    };
-  }
-
-  return {
-    allowed: false,
-    canonicalOrigin: origin,
-    privateOriginApproved: false,
-    reasonCode: NIGHTSCOUT_PRIVATE_ORIGIN_REASON,
-  };
+  return evaluateOriginGrant(origin, privateOrigins);
 }
 
 export function configuredNightscoutPrivateOrigins(): ReadonlySet<string> {
