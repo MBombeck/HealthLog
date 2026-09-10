@@ -1,12 +1,13 @@
 /**
  * Which sections of the record the caller is actually inside.
  *
- * Lives here rather than beside one feature because three unrelated seams ask
- * it — a visit's link labels, a vaccination's, and the cycle crosstab's
- * outcome columns — and a route that reads across its own declared section is
- * a shape the product will keep growing. Two verbatim copies of it already
- * existed in the visits and vaccination services; a third would have been the
- * one that drifted.
+ * Lives here rather than beside one feature because a route that reads or
+ * writes across its own declared section is a shape the product keeps growing,
+ * and its callers are already spread over four features. No list of them here:
+ * a comment that enumerates its own callers is a comment that goes stale on
+ * the next one. Two verbatim copies of this existed in the visits and the
+ * vaccination service, with a note on the second saying a second spelling
+ * would be a second thing to keep in step.
  *
  * Returns a predicate rather than a set so the owner path costs nothing: with
  * no grant there is nothing to look up and every domain is open. A grant that
