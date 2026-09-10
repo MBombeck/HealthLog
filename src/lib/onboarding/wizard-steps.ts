@@ -54,7 +54,7 @@ export type BrowserConnectableSource =
   (typeof BROWSER_CONNECTABLE_SOURCES)[number];
 
 export function isBrowserConnectableSource(
-  source: OnboardingSourceKey,
+  source: string,
 ): source is BrowserConnectableSource {
   return (BROWSER_CONNECTABLE_SOURCES as readonly string[]).includes(source);
 }

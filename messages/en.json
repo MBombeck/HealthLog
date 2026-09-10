@@ -4740,6 +4740,37 @@
         "managedCreate": "Create the profile and finish",
         "managedLater": "You can also create it later under Settings, Shared access.",
         "finishWithoutProfile": "Finish without the profile"
+      },
+      "first-result": {
+        "connect-source": {
+          "title": "Connect {target}",
+          "body": "One connection, chosen from your answers. Readings then arrive on their own.",
+          "howTo": "The connection is made on the integrations page. Come back here afterwards; this screen notices when it is done.",
+          "cta": "Connect {target}",
+          "checking": "Checking the connection.",
+          "waiting": "Not connected yet.",
+          "done": "{target} is connected.",
+          "syncing": "The first sync is in progress. Readings appear on the dashboard as they arrive."
+        },
+        "add-medication": {
+          "title": "Add your first medication",
+          "body": "Name, dose and schedule; the reminder follows the schedule you set.",
+          "howTo": "The medication is added in a few short steps. You can add more later on the medications page.",
+          "cta": "Add a medication",
+          "done": "{name} is added.",
+          "doneUnnamed": "Your first medication is added.",
+          "nextDose": "Next dose: {when}.",
+          "reminders": "Reminders follow the schedule you set."
+        },
+        "log-reading": {
+          "title": "Enter one reading: {target}",
+          "body": "One reading puts the first value on your dashboard. The trend draws itself from the fifth.",
+          "done": "Your first reading is on its tile.",
+          "doneElsewhere": "Your first entry for {target} is recorded.",
+          "elsewhere": "{target} has its own page. Open it, make the first entry, then come back and mark it done.",
+          "open": "Open {target}",
+          "markDone": "I have made the entry"
+        }
       }
     }
   },
