@@ -259,6 +259,10 @@ function sourceClient() {
         },
       ]),
     },
+    // The setup answers. Absent for this fixture's account, which is the
+    // ordinary case: the export has to answer for a record that never entered
+    // the flow without inventing one.
+    onboardingRecord: { findUnique: vi.fn().mockResolvedValue(null) },
     // The score as it was SHOWN on a local day. Not recomputable: today's
     // number always comes from today's rows, so once the readings behind this
     // day moved, nothing can reproduce what it said.
