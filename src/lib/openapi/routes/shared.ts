@@ -21,20 +21,76 @@ import { createBatchWorkoutSchema as createBatchWorkoutSchemaBase } from "@/lib/
  * `{ data, error, meta? }`. The OpenAPI surface mirrors that contract
  * so iOS / external-ingest clients can decode uniformly.
  */
+/**
+ * One rejected field from a multi-issue 422.
+ *
+ * `returnAllZodIssues` has emitted this since v1.4.42 so a client can fix
+ * three bad fields in one round-trip instead of three, and 166 route files
+ * send it — but no component schema declared it, so the very consumer it was
+ * built for could not read it from the contract. `params` never ships: some
+ * Zod codes embed the offending value in it and that is user content.
+ */
+const validationIssue = z
+  .object({
+    path: z
+      .string()
+      .describe(
+        "Dot-joined path to the rejected field, e.g. `entries.3.measuredAt`. Empty string when the whole body was rejected.",
+      ),
+    code: z
+      .string()
+      .describe(
+        "Zod issue code, e.g. `invalid_type`, `too_small`, `unrecognized_keys`. Treat an unfamiliar code as a generic rejection of `path`.",
+      ),
+    message: z
+      .string()
+      .describe(
+        "English sentence describing the rejection. Safe to log; show the user your own wording keyed on `path`.",
+      ),
+    keys: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Only on `unrecognized_keys`: the refused key names, bounded to 10 and 64 characters each. Zod reports every unknown key of one object in a single issue whose `path` is the object, so the names live here and nowhere in `path`.",
+      ),
+  })
+  .meta({
+    id: "ValidationIssue",
+    description:
+      "One rejected field in a multi-issue 422. Sanitised: no rejected VALUE is echoed back.",
+  });
+
 export const errorEnvelope = z
   .object({
     data: z.null(),
     error: z.string(),
+    details: z
+      .object({ issues: z.array(validationIssue) })
+      .optional()
+      .describe(
+        "Present on a 422 raised by the multi-issue validator: every field the request got wrong, not only the first. Absent on every other status.",
+      ),
+    // Loose on purpose. Real refusals put more than the two named keys here —
+    // `removedIn` / `replacedBy` on a 410, `module` beside `module.disabled`,
+    // the per-integration context on a failed connection test — and a closed
+    // object made the body invalid against its own published schema, which any
+    // strict generated decoder is entitled to reject.
     meta: z
-      .object({
+      .looseObject({
         requestId: z.string().optional(),
-        errorCode: z.string().optional(),
+        errorCode: z
+          .string()
+          .optional()
+          .describe(
+            "Stable machine code for this refusal. Branch on it rather than on `error`, which is prose and may be reworded.",
+          ),
       })
       .optional(),
   })
   .meta({
     id: "ErrorEnvelope",
-    description: "Standard error response: data is null, error is human prose.",
+    description:
+      "Standard error response: `data` is null, `error` is human prose. `meta.errorCode` carries the stable machine code where one exists, and `meta` may carry further per-refusal context. A 422 from the multi-issue validator additionally carries `details.issues` — every field the request got wrong, so a client can fix them in one round-trip.",
   });
 
 export function dataEnvelope<T extends z.ZodType>(payload: T, id: string) {

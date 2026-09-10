@@ -29018,19 +29018,63 @@ components:
           type: "null"
         error:
           type: string
+        details:
+          description: "Present on a 422 raised by the multi-issue validator: every field the request got wrong, not only the
+            first. Absent on every other status."
+          type: object
+          properties:
+            issues:
+              type: array
+              items:
+                $ref: "#/components/schemas/ValidationIssue"
+          required:
+            - issues
+          additionalProperties: false
         meta:
           type: object
           properties:
             requestId:
               type: string
             errorCode:
+              description: Stable machine code for this refusal. Branch on it rather than on `error`, which is prose and may be
+                reworded.
               type: string
-          additionalProperties: false
+          additionalProperties: {}
       required:
         - data
         - error
       additionalProperties: false
-      description: "Standard error response: data is null, error is human prose."
+      description: "Standard error response: `data` is null, `error` is human prose. `meta.errorCode` carries the stable
+        machine code where one exists, and `meta` may carry further per-refusal context. A 422 from the multi-issue
+        validator additionally carries `details.issues` — every field the request got wrong, so a client can fix them in
+        one round-trip."
+    ValidationIssue:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Dot-joined path to the rejected field, e.g. `entries.3.measuredAt`. Empty string when the whole body was
+            rejected.
+        code:
+          type: string
+          description: Zod issue code, e.g. `invalid_type`, `too_small`, `unrecognized_keys`. Treat an unfamiliar code as a
+            generic rejection of `path`.
+        message:
+          type: string
+          description: English sentence describing the rejection. Safe to log; show the user your own wording keyed on `path`.
+        keys:
+          description: "Only on `unrecognized_keys`: the refused key names, bounded to 10 and 64 characters each. Zod reports
+            every unknown key of one object in a single issue whose `path` is the object, so the names live here and
+            nowhere in `path`."
+          type: array
+          items:
+            type: string
+      required:
+        - path
+        - code
+        - message
+      additionalProperties: false
+      description: "One rejected field in a multi-issue 422. Sanitised: no rejected VALUE is echoed back."
     CycleCustomSymptomCreatedEnvelope:
       type: object
       properties:
