@@ -239,8 +239,30 @@ export const stdResponses = {
   },
   "429": {
     description:
-      "Rate limit exceeded. The response carries `Retry-After` (whole seconds, rounded up — wait at least that long before retrying), `X-RateLimit-Limit` (the bucket's cap), `X-RateLimit-Remaining` and `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back off on `Retry-After` rather than guessing.",
+      "Rate limit exceeded. The response carries `Retry-After` (whole seconds, rounded up and never below 1 — wait at least that long before retrying), `X-RateLimit-Limit` (the bucket's cap), `X-RateLimit-Remaining` and `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back off on `Retry-After` rather than guessing. A 429 raised by a ceiling that is not one of these buckets — a daily AI budget, an upstream provider's own refusal relayed onward — carries none of them, because there is no bucket to describe.",
     content: { "application/json": { schema: errorEnvelope } },
+    // Declared rather than only described: a generated client gets a typed
+    // accessor for the field the description tells it to back off on.
+    headers: {
+      "Retry-After": {
+        description:
+          "Whole seconds to wait before retrying. Rounded up, never below 1.",
+        schema: { type: "integer" as const, minimum: 1 },
+      },
+      "X-RateLimit-Limit": {
+        description: "Requests the bucket allows per window.",
+        schema: { type: "integer" as const, minimum: 1 },
+      },
+      "X-RateLimit-Remaining": {
+        description: "Requests left in the current window; 0 on a refusal.",
+        schema: { type: "integer" as const, minimum: 0 },
+      },
+      "X-RateLimit-Reset": {
+        description:
+          "Instant the current window rolls over, ISO-8601 — not epoch seconds.",
+        schema: { type: "string" as const, format: "date-time" },
+      },
+    },
   },
 };
 

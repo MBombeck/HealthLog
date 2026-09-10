@@ -112,10 +112,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": &a5
-          description: Rate limit exceeded. The response carries `Retry-After` (whole seconds, rounded up — wait at least that
-            long before retrying), `X-RateLimit-Limit` (the bucket's cap), `X-RateLimit-Remaining` and
+          description: Rate limit exceeded. The response carries `Retry-After` (whole seconds, rounded up and never below 1 — wait
+            at least that long before retrying), `X-RateLimit-Limit` (the bucket's cap), `X-RateLimit-Remaining` and
             `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back off on `Retry-After` rather than
-            guessing.
+            guessing. A 429 raised by a ceiling that is not one of these buckets — a daily AI budget, an upstream
+            provider's own refusal relayed onward — carries none of them, because there is no bucket to describe.
+          headers:
+            Retry-After:
+              description: Whole seconds to wait before retrying. Rounded up, never below 1.
+              schema:
+                type: integer
+                minimum: 1
+            X-RateLimit-Limit:
+              description: Requests the bucket allows per window.
+              schema:
+                type: integer
+                minimum: 1
+            X-RateLimit-Remaining:
+              description: Requests left in the current window; 0 on a refusal.
+              schema:
+                type: integer
+                minimum: 0
+            X-RateLimit-Reset:
+              description: Instant the current window rolls over, ISO-8601 — not epoch seconds.
+              schema:
+                type: string
+                format: date-time
           content:
             application/json:
               schema:
@@ -15432,9 +15454,10 @@ paths:
         returns a `{ title, kind, documentDate }` DRAFT for the edit form. AI-consent / rate / budget gated (shares the
         per-user document-AI bucket with extract/summary/index — default 6/hour, operator-tunable via
         `DOCUMENT_AI_LIMIT_PER_HOUR`; a slot is only consumed when the request reaches the provider, and the 429 carries
-        the reset instant in `X-RateLimit-Reset` and `meta.retryAt`). WRITES NOTHING — never stages facts, never flips
-        status; the user reviews and saves. 422 (`documents.inbound.providerUnsupported`) with no provider configured.
-        Never interprets or diagnoses; the title is a neutral filing label."
+        `Retry-After`, the `X-RateLimit-Limit` / `-Remaining` / `-Reset` triple, and `meta.retryAt`). WRITES NOTHING —
+        never stages facts, never flips status; the user reviews and saves. 422
+        (`documents.inbound.providerUnsupported`) with no provider configured. Never interprets or diagnoses; the title
+        is a neutral filing label."
       parameters:
         - name: id
           in: path
@@ -19768,9 +19791,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429":
-          description: More than 60 requests in a minute for this token — or, when no valid token was presented, from this client
-            IP. `meta.errorCode` = `ingest.rate_limited`, plus the standard `X-RateLimit-Remaining` /
-            `X-RateLimit-Reset` headers.
+          description: "More than 60 requests in a minute for this token — or, when no valid token was presented, from this client
+            IP. `meta.errorCode` = `ingest.rate_limited`, plus the standard rate-limit headers: `Retry-After` (whole
+            seconds, at least 1), `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`."
           content:
             application/json:
               schema:
