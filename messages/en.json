@@ -4487,53 +4487,8 @@
       "back": "Back",
       "skip": "Skip",
       "next": "Continue",
-      "step1of4": "Step 1 of 4",
-      "step2of4": "Step 2 of 4",
-      "step3of4": "Step 3 of 4",
-      "step4of4": "Step 4 of 4",
       "stepOf": "Step {current} of {total}",
       "stepsLabel": "Setup steps"
-    },
-    "goals": {
-      "title": "What would you like to track?",
-      "body": "Pick the areas you care about — we'll surface them first on your dashboard, and they help you decide what to set up next.",
-      "helpHint": "One to three priorities tend to work best — you can always add more later.",
-      "options": {
-        "weightManagement": "Weight management",
-        "bpTracking": "Blood pressure",
-        "glucoseTracking": "Glucose",
-        "sleepImprovement": "Better sleep",
-        "medicationCompliance": "Medications",
-        "generalWellness": "General wellness"
-      }
-    },
-    "source": {
-      "title": "Connect a source",
-      "body": "Bring in measurements automatically, or stay on manual entry. Nothing here is configured for you — each card just shows where to connect it. Device sources need a free developer app registered on your own account (about 5 minutes); the setup guide on each card walks through it.",
-      "recommended": "Recommended",
-      "manual": {
-        "title": "Manual entry",
-        "body": "Log readings yourself, whenever it fits. Works on any device, no third-party account required."
-      },
-      "withings": {
-        "title": "Withings",
-        "body": "Scales, blood-pressure cuffs and trackers from Withings sync automatically once connected.",
-        "cta": "Connect Withings",
-        "setupCta": "Set up",
-        "setupHint": "Needs your own free Withings developer app first — about 5 minutes, one time."
-      },
-      "more": {
-        "title": "More sources",
-        "body": "Connect any of these in Settings whenever you're ready — most need a free developer app registered on your own account first.",
-        "appleHealth": "Apple Health",
-        "whoop": "WHOOP",
-        "oura": "Oura",
-        "polar": "Polar",
-        "nightscout": "Nightscout",
-        "fitbit": "Fitbit",
-        "appleHealthHint": "Apple Health has no web connection — finish onboarding here, then open the HealthLog app on your iPhone to complete Apple Health setup."
-      },
-      "import": "Import existing history"
     },
     "baseline": {
       "title": "A bit about you",
@@ -4549,8 +4504,7 @@
       "genderFemale": "Female",
       "genderOther": "Other",
       "dateOfBirthLabel": "Date of birth",
-      "dateOfBirthHint": "Used only for age-aware analytics.",
-      "saveCta": "Save and continue"
+      "dateOfBirthHint": "Used only for age-aware analytics."
     },
     "done": {
       "title": "You're all set",
@@ -4564,33 +4518,11 @@
     },
     "welcomeBack": {
       "title": "Welcome back",
-      "body": "You've already finished onboarding. To adjust anything, head to Settings — everything you set up is editable from there.",
       "cta": "Open dashboard"
     },
     "disclaimer": {
       "acknowledge": "I understand: HealthLog is a private tracking tool, not a clinical assessment or diagnosis. If I'm worried I'll talk to my doctor, not this app.",
       "learnMore": "Learn more"
-    },
-    "welcome": {
-      "title": "Welcome to HealthLog",
-      "carouselLabel": "Welcome carousel",
-      "slideOf": "Slide {current} of {total}",
-      "prevSlide": "Previous slide",
-      "nextSlide": "Next slide",
-      "gotoSlide": "Go to slide {index}",
-      "cta": "Get started",
-      "slide1": {
-        "title": "Track every signal",
-        "body": "Weight, blood pressure, glucose, sleep, mood — keep your full picture in one log you own."
-      },
-      "slide2": {
-        "title": "Connect your sources",
-        "body": "Sync with Apple Health and Withings, or add readings by hand. Your data stays on your server."
-      },
-      "slide3": {
-        "title": "See the pattern",
-        "body": "Daily summaries, trend charts, and a coach that surfaces what changed — all on your own device."
-      }
     },
     "anamnesis": {
       "title": "About your health (optional)",

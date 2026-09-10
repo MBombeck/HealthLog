@@ -4487,51 +4487,8 @@
       "back": "이전",
       "skip": "건너뛰기",
       "next": "계속",
-      "step1of4": "1/4단계",
-      "step2of4": "2/4단계",
-      "step3of4": "3/4단계",
-      "step4of4": "4/4단계"
-    },
-    "goals": {
-      "title": "무엇을 기록하고 싶으세요?",
-      "body": "관심 있는 영역을 골라 주세요. 대시보드에 먼저 보여 드리고, 다음에 무엇을 설정할지 정하는 데도 도움이 돼요.",
-      "helpHint": "우선순위는 1~3개가 가장 잘 맞아요 — 나중에 언제든 더 추가할 수 있어요.",
-      "options": {
-        "weightManagement": "체중 관리",
-        "bpTracking": "혈압",
-        "glucoseTracking": "혈당",
-        "sleepImprovement": "더 나은 수면",
-        "medicationCompliance": "복약",
-        "generalWellness": "전반적인 건강"
-      }
-    },
-    "source": {
-      "title": "소스 연결",
-      "body": "측정값을 자동으로 가져오거나, 직접 입력만 써도 돼요. 여기서 대신 설정해 주는 건 없고, 카드마다 어디서 연결하는지만 알려 줘요. 기기 소스는 본인 계정에 무료 개발자 앱을 등록해야 하고(약 5분), 카드의 설정 가이드가 순서를 알려 줘요.",
-      "recommended": "추천",
-      "manual": {
-        "title": "직접 입력",
-        "body": "편할 때 직접 기록해요. 어떤 기기에서도 되고, 외부 계정도 필요 없어요."
-      },
-      "withings": {
-        "title": "Withings",
-        "body": "Withings 체중계, 혈압계, 트래커는 연결해 두면 자동으로 동기화돼요.",
-        "cta": "Withings 연결",
-        "setupCta": "설정",
-        "setupHint": "먼저 본인의 무료 Withings 개발자 앱이 필요해요 — 처음 한 번, 약 5분."
-      },
-      "more": {
-        "title": "다른 소스",
-        "body": "준비되면 언제든 설정에서 연결할 수 있어요 — 대부분 본인 계정에 무료 개발자 앱을 먼저 등록해야 해요.",
-        "appleHealth": "Apple Health",
-        "whoop": "WHOOP",
-        "oura": "Oura",
-        "polar": "Polar",
-        "nightscout": "Nightscout",
-        "fitbit": "Fitbit",
-        "appleHealthHint": "Apple Health는 웹으로 연결할 수 없어요 — 여기서 시작 설정을 마친 뒤 iPhone에서 HealthLog 앱을 열어 Apple Health 설정을 끝내 주세요."
-      },
-      "import": "기존 기록 불러오기"
+      "stepOf": "{total}단계 중 {current}단계",
+      "stepsLabel": "설정 단계"
     },
     "baseline": {
       "title": "나에 대해 조금만",
@@ -4547,8 +4504,7 @@
       "genderFemale": "여성",
       "genderOther": "기타",
       "dateOfBirthLabel": "생년월일",
-      "dateOfBirthHint": "나이를 반영한 분석에만 써요.",
-      "saveCta": "저장하고 계속"
+      "dateOfBirthHint": "나이를 반영한 분석에만 써요."
     },
     "done": {
       "title": "준비 끝났어요",
@@ -4562,33 +4518,11 @@
     },
     "welcomeBack": {
       "title": "다시 오셨네요",
-      "body": "시작 설정은 이미 마쳤어요. 바꾸고 싶은 게 있으면 설정으로 가 보세요 — 설정한 건 모두 거기서 수정할 수 있어요.",
       "cta": "대시보드 열기"
     },
     "disclaimer": {
       "acknowledge": "이해했어요. HealthLog는 개인 기록 도구일 뿐, 임상 평가나 진단이 아니에요. 걱정되는 일이 있으면 이 앱이 아니라 의사와 상의할게요.",
       "learnMore": "자세히 보기"
-    },
-    "welcome": {
-      "title": "HealthLog에 오신 걸 환영해요",
-      "carouselLabel": "환영 캐러셀",
-      "slideOf": "{current}/{total}번째 슬라이드",
-      "prevSlide": "이전 슬라이드",
-      "nextSlide": "다음 슬라이드",
-      "gotoSlide": "{index}번 슬라이드로 이동",
-      "cta": "시작하기",
-      "slide1": {
-        "title": "모든 신호를 기록해요",
-        "body": "체중, 혈압, 혈당, 수면, 기분 — 내가 가진 하나의 기록에 전체 그림을 담아요."
-      },
-      "slide2": {
-        "title": "소스를 연결해요",
-        "body": "Apple Health, Withings와 동기화하거나 직접 입력해요. 데이터는 내 서버에 남아요."
-      },
-      "slide3": {
-        "title": "패턴이 보여요",
-        "body": "하루 요약, 추이 차트, 무엇이 달라졌는지 짚어 주는 코치 — 모두 내 기기 안에서."
-      }
     },
     "anamnesis": {
       "title": "건강에 대해 (선택)",
@@ -4620,6 +4554,161 @@
       "keylessLine": "AI 없이도 HealthLog는 충분히 쓸모 있어요. 타일, 차트, 추이, 내보내기 모두 그대로 작동하고 — AI는 그 위에 쉬운 말 해설을 더할 뿐이에요.",
       "setupCta": "설정하기 (1분 정도)",
       "sharedKeyNote": "이 인스턴스에는 이미 공용 AI 제공자가 있어서 지금 바로 인사이트를 쓸 수 있어요 — 따로 설정할 게 없어요."
+    },
+    "steps": {
+      "who": "이 기록의 대상",
+      "areas": "관심 있게 볼 항목",
+      "medication": "복약",
+      "sources": "측정값의 출처",
+      "visit": "진료 예정",
+      "units": "단위",
+      "confirm": "확인",
+      "first-result": "첫 결과",
+      "done": "완료"
+    },
+    "flow": {
+      "welcome": {
+        "title": "HealthLog에 오신 것을 환영합니다",
+        "body": "짧은 질문 다섯 개로 HealthLog가 먼저 보여 줄 내용이 정해집니다. 약 2분이 걸립니다.",
+        "changeLater": "확정되는 것은 없습니다. 모든 선택은 나중에 설정에서 바꿀 수 있습니다.",
+        "setUp": "설정 시작",
+        "skip": "지금은 건너뛰기",
+        "againBody": "설정이 완료되었습니다. HealthLog가 먼저 보여 줄 내용을 바꾸려면 질문에 다시 답하고, 아니면 대시보드로 이동하세요.",
+        "setUpAgain": "다시 설정하기"
+      },
+      "who": {
+        "title": "이 기록은 누구의 것인가요?",
+        "body": "이어지는 답변은 이 기록에 적용됩니다.",
+        "options": {
+          "me": "나",
+          "someone-else": "내가 돌보는 사람",
+          "both": "둘 다"
+        },
+        "hints": {
+          "someone-else": "예를 들어 자녀나 부모님입니다. 그 사람의 프로필은 마지막에 만들어집니다.",
+          "both": "지금은 내 기록을 설정하고, 다른 사람의 프로필은 마지막에 안내됩니다."
+        }
+      },
+      "areas": {
+        "title": "무엇을 관심 있게 보고 싶으신가요?",
+        "body": "원하는 만큼 고르세요. 어떤 모듈을 켤지와 대시보드에 먼저 보일 내용이 정해집니다.",
+        "options": {
+          "blood-pressure": "혈압",
+          "weight-body": "체중과 신체",
+          "glucose": "혈당",
+          "sleep": "수면과 회복",
+          "mood": "기분과 정신 건강",
+          "cycle": "생리 주기",
+          "activity": "활동과 운동",
+          "labs": "검사 결과",
+          "illness": "질병과 증상"
+        }
+      },
+      "medication": {
+        "title": "정해진 일정에 따라 약을 복용하시나요?",
+        "body": "일정이 있으면 복약 모듈과 알림이 켜집니다.",
+        "options": {
+          "yes": "예",
+          "no": "아니요",
+          "sometimes": "가끔"
+        }
+      },
+      "sources": {
+        "title": "현재 측정값은 어디에서 오나요?",
+        "body": "원하는 만큼 고르세요. 마지막에 연결 하나를 안내하며, 필수는 아닙니다.",
+        "options": {
+          "manual": "직접 입력합니다",
+          "apple-health": "iPhone의 Apple 건강",
+          "withings": "Withings",
+          "oura": "Oura",
+          "whoop": "WHOOP",
+          "polar": "Polar",
+          "fitbit": "Fitbit",
+          "strava": "Strava",
+          "nightscout": "Nightscout",
+          "file": "이미 가지고 있는 파일"
+        },
+        "hints": {
+          "apple-health": "iOS 앱이 동기화하거나 내보내기 파일에서 가져옵니다.",
+          "file": "여기서 마친 뒤 설정에서 가져옵니다."
+        }
+      },
+      "visit": {
+        "title": "예정된 진료가 있나요?",
+        "body": "진료가 있으면 진료 보고서가 켜지고 준비 항목이 체크리스트에 추가됩니다.",
+        "options": {
+          "within-a-month": "예, 한 달 안에",
+          "later": "나중에",
+          "no": "아니요"
+        }
+      },
+      "units": {
+        "title": "어떤 단위를 사용하시나요?",
+        "body": "측정값은 한 번 저장되고 선택한 단위로 표시됩니다. 나중에 설정에서 바꿀 수 있습니다.",
+        "glucoseLegend": "혈당",
+        "weightLegend": "체중과 키",
+        "options": {
+          "metric": "kg과 cm",
+          "imperial": "lb와 ft/in"
+        }
+      },
+      "confirm": {
+        "title": "답변으로 켜지는 항목입니다",
+        "body": "한 번 확인하면 HealthLog 설정이 끝납니다. 여기서 확정되는 것은 없습니다.",
+        "modulesTitle": "모듈",
+        "switchedOn": "켜짐: {modules}.",
+        "nothingExtra": "답변으로 추가 모듈이 켜지지는 않습니다. 기본 측정값은 항상 있습니다.",
+        "alwaysOn": "항상 켜짐: {modules}, 그리고 기본 측정값(체중, 혈압, 맥박).",
+        "everythingElse": "나머지는 한 번의 클릭으로 열 수 있습니다:",
+        "modulesLink": "설정, 모듈",
+        "glucoseUnit": "혈당",
+        "unitPreference": "단위",
+        "language": "언어",
+        "timezone": "시간대",
+        "changeInSettings": "설정, 계정에서 변경",
+        "cta": "확인하고 계속",
+        "managedTitle": "내가 돌보는 사람",
+        "managedBody": "이 기록에는 별도의 로그인이 없으며 내 계정에서 관리합니다. 만들려면 내 계정에 2차 인증이 필요합니다.",
+        "managedCreate": "프로필 만들고 마치기",
+        "managedLater": "나중에 설정, 공유 접근에서 만들 수도 있습니다.",
+        "finishWithoutProfile": "프로필 없이 마치기"
+      },
+      "first-result": {
+        "connect-source": {
+          "title": "{target} 연결",
+          "body": "답변을 바탕으로 고른 연결 하나입니다. 이후 측정값은 저절로 들어옵니다.",
+          "howTo": "연결은 연동 페이지에서 합니다. 마친 뒤 이곳으로 돌아오면 이 화면이 연결을 감지합니다.",
+          "cta": "{target} 연결",
+          "checking": "연결을 확인하는 중입니다.",
+          "waiting": "아직 연결되지 않았습니다.",
+          "done": "{target}이(가) 연결되었습니다.",
+          "syncing": "첫 동기화가 진행 중입니다. 측정값이 도착하는 대로 대시보드에 나타납니다."
+        },
+        "add-medication": {
+          "title": "첫 약 추가하기",
+          "body": "이름, 용량, 일정을 입력하면 알림이 그 일정을 따릅니다.",
+          "howTo": "약은 몇 단계로 짧게 추가합니다. 나중에 복약 페이지에서 더 추가할 수 있습니다.",
+          "cta": "약 추가",
+          "done": "{name}이(가) 추가되었습니다.",
+          "doneUnnamed": "첫 약이 추가되었습니다.",
+          "nextDose": "다음 복용: {when}.",
+          "reminders": "알림은 설정한 일정을 따릅니다."
+        },
+        "log-reading": {
+          "title": "측정값 하나 입력: {target}",
+          "body": "측정값 하나로 대시보드에 첫 값이 표시됩니다. 다섯 번째부터는 추세가 저절로 그려집니다.",
+          "done": "첫 측정값이 타일에 표시되었습니다.",
+          "doneElsewhere": "{target}의 첫 기록이 저장되었습니다.",
+          "elsewhere": "{target}에는 전용 페이지가 있습니다. 열어서 첫 기록을 남긴 뒤 여기로 돌아와 완료로 표시하세요.",
+          "open": "{target} 열기",
+          "markDone": "기록을 남겼습니다"
+        }
+      },
+      "done": {
+        "tourCta": "짧은 둘러보기",
+        "openRecord": "{name}의 기록 열기",
+        "createProfile": "내가 돌보는 사람의 프로필 만들기"
+      }
     }
   },
   "gettingStarted": {
@@ -4646,7 +4735,11 @@
       "notificationsCta": "알림 열기",
       "insightsTitle": "인사이트 켜기(선택)",
       "insightsDescription": "로컬 모델이나 내 AI 키를 넣으면 일일 브리핑과 코치가 열려요.",
-      "insightsCta": "인사이트 켜기"
+      "insightsCta": "인사이트 켜기",
+      "visitTitle": "진료 준비하기",
+      "visitDescription": "예약을 달력에 넣으세요. 진료 보고서가 가져갈 내용을 모아 줍니다.",
+      "visitCta": "진료 열기",
+      "dataSourceNamedTitle": "{source} 연결"
     }
   },
   "trendHints": {
@@ -6458,7 +6551,15 @@
     },
     "dangerZoneDetail": "계정과 로그인에 쓰는 인증 정보는 그대로 남아요.",
     "deleteAccountCardDetail": "되돌릴 수 없어요.",
-    "passkeyStepUpRequired": "보안을 위해 패스키를 삭제하기 전에 다시 로그인해 주세요."
+    "passkeyStepUpRequired": "보안을 위해 패스키를 삭제하기 전에 다시 로그인해 주세요.",
+    "setup": {
+      "title": "초기 설정",
+      "description": "HealthLog가 먼저 보여 줄 내용을 정하는 질문과 대시보드의 시작 체크리스트입니다.",
+      "setUpAgain": "다시 설정하기",
+      "showChecklist": "체크리스트 다시 표시",
+      "checklistShown": "체크리스트가 대시보드에 다시 표시됩니다.",
+      "checklistNothingHidden": "체크리스트는 숨겨져 있지 않았습니다. 대시보드에서 열립니다."
+    }
   },
   "admin": {
     "title": "관리자",
@@ -8730,7 +8831,8 @@
     "unavailable": {
       "description": "운영자가 이 서버의 모든 계정에서 {module} 모듈을 껐어요. 개인 설정으로는 되돌릴 수 없어요.",
       "title": "이 서버에서는 사용할 수 없어요"
-    }
+    },
+    "openModules": "설정, 모듈 열기"
   },
   "vaccinations": {
     "title": "예방접종",
