@@ -380,6 +380,11 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
  * `Retry-After` is the presence test rather than a flag: a handler that built
  * its own headers already carries it (they come from the same builder), so
  * this leaves that response exactly as it was written.
+ *
+ * The cell holds refusals only, so a 429 no limiter produced — a spent daily
+ * AI budget, an hourly generation quota, a provider-side 429 relayed onward —
+ * reads null here and goes out undressed. There is no bucket to describe, and
+ * one that still has room would name a delay against the wrong window.
  */
 function attachRateLimitHeaders(response: NextResponse): void {
   if (response.status !== 429) return;

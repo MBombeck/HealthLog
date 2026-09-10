@@ -7,9 +7,10 @@
  * plain integers, and the reset instant in the ISO form it has always carried.
  *
  * The capture half is what lets `apiHandler` dress a 429 that a handler built
- * without headers. Its one interesting rule is that a refusal outranks a pass:
- * a handler that clears one bucket and is refused by the next must report the
- * bucket that refused it.
+ * without headers. It keeps refusals and nothing else: a handler that clears
+ * one bucket and is refused by the next reports the bucket that refused it,
+ * and a request every bucket let through reports nothing at all, because a
+ * 429 it ends up answering came from some other ceiling.
  */
 import { describe, expect, it } from "vitest";
 
@@ -78,7 +79,7 @@ describe("request-scoped rate-limit capture", () => {
     expect(capturedRateLimit()).toBeNull();
   });
 
-  it("reports the last verdict when every bucket passed", () => {
+  it("reports nothing when every bucket passed, so a 429 from elsewhere stays undressed", () => {
     runWithRateLimitCapture(() => {
       captureRateLimitResult({
         allowed: true,
@@ -92,12 +93,11 @@ describe("request-scoped rate-limit capture", () => {
         remaining: 8,
         resetAt: 2_000,
       });
-      expect(capturedRateLimit()).toEqual({
-        allowed: true,
-        limit: 9,
-        remaining: 8,
-        resetAt: 2_000,
-      });
+      // Passing every bucket is exactly the state in which a 429 did not come
+      // from the limiter. Rendering the passing verdict would put
+      // `X-RateLimit-Remaining: 8` beside a refusal and a delay measured
+      // against a window that has nothing to do with it.
+      expect(capturedRateLimit()).toBeNull();
     });
   });
 

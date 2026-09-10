@@ -1,5 +1,5 @@
 /**
- * Request-scoped capture of the rate-limiter's last verdict, plus the one
+ * Request-scoped capture of the rate-limiter's refusals, plus the one
  * builder that turns a verdict into response headers — a LEAF module.
  *
  * It lives apart from `rate-limit.ts` on purpose. Nearly two hundred route
@@ -29,7 +29,6 @@ export interface RateLimitSnapshot {
 }
 
 interface RateLimitCapture {
-  last: RateLimitSnapshot | null;
   denied: RateLimitSnapshot | null;
 }
 
@@ -41,30 +40,39 @@ const storage = new AsyncLocalStorage<RateLimitCapture>();
  * {@link capturedRateLimit} reads null.
  */
 export function runWithRateLimitCapture<T>(fn: () => T): T {
-  return storage.run({ last: null, denied: null }, fn);
+  return storage.run({ denied: null }, fn);
 }
 
 /**
  * Record a limiter verdict for the request in flight.
  *
- * A denied verdict wins over an allowed one: a handler that consults two
- * buckets and is refused by the second must report the bucket that actually
- * refused it, not the one it passed.
+ * Only refusals are kept. A verdict that let the request through describes a
+ * bucket that still has room, and there is no 429 it could honestly explain:
+ * if the response ends up being a 429 anyway, some other ceiling produced it.
+ * The last refusal wins, since a handler that consults two buckets refuses at
+ * the first denial it acts on.
  */
 export function captureRateLimitResult(
   result: RateLimitSnapshot & { allowed: boolean },
 ): void {
   const store = storage.getStore();
   if (!store) return;
-  store.last = result;
   if (!result.allowed) store.denied = result;
 }
 
-/** The verdict to render for this request, or null when none was taken. */
+/**
+ * The refusal to render for this request, or null when no limiter refused it.
+ *
+ * Null is the answer for a request every bucket let through, so a 429 raised
+ * by something else — a daily AI budget, an hourly generation quota, a
+ * provider-side 429 relayed onward — is left undressed rather than labelled
+ * with a bucket that has room left and a delay measured against an unrelated
+ * window.
+ */
 export function capturedRateLimit(): RateLimitSnapshot | null {
   const store = storage.getStore();
   if (!store) return null;
-  return store.denied ?? store.last;
+  return store.denied;
 }
 
 /**
