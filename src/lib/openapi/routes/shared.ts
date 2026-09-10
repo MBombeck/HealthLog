@@ -21,20 +21,76 @@ import { createBatchWorkoutSchema as createBatchWorkoutSchemaBase } from "@/lib/
  * `{ data, error, meta? }`. The OpenAPI surface mirrors that contract
  * so iOS / external-ingest clients can decode uniformly.
  */
+/**
+ * One rejected field from a multi-issue 422.
+ *
+ * `returnAllZodIssues` has emitted this since v1.4.42 so a client can fix
+ * three bad fields in one round-trip instead of three, and 166 route files
+ * send it — but no component schema declared it, so the very consumer it was
+ * built for could not read it from the contract. `params` never ships: some
+ * Zod codes embed the offending value in it and that is user content.
+ */
+const validationIssue = z
+  .object({
+    path: z
+      .string()
+      .describe(
+        "Dot-joined path to the rejected field, e.g. `entries.3.measuredAt`. Empty string when the whole body was rejected.",
+      ),
+    code: z
+      .string()
+      .describe(
+        "Zod issue code, e.g. `invalid_type`, `too_small`, `unrecognized_keys`. Treat an unfamiliar code as a generic rejection of `path`.",
+      ),
+    message: z
+      .string()
+      .describe(
+        "English sentence describing the rejection. Safe to log; show the user your own wording keyed on `path`.",
+      ),
+    keys: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Only on `unrecognized_keys`: the refused key names, bounded to 10 and 64 characters each. Zod reports every unknown key of one object in a single issue whose `path` is the object, so the names live here and nowhere in `path`.",
+      ),
+  })
+  .meta({
+    id: "ValidationIssue",
+    description:
+      "One rejected field in a multi-issue 422. Sanitised: no rejected VALUE is echoed back.",
+  });
+
 export const errorEnvelope = z
   .object({
     data: z.null(),
     error: z.string(),
+    details: z
+      .object({ issues: z.array(validationIssue) })
+      .optional()
+      .describe(
+        "Present on a 422 raised by the multi-issue validator: every field the request got wrong, not only the first. Absent on every other status.",
+      ),
+    // Loose on purpose. Real refusals put more than the two named keys here —
+    // `removedIn` / `replacedBy` on a 410, `module` beside `module.disabled`,
+    // the per-integration context on a failed connection test — and a closed
+    // object made the body invalid against its own published schema, which any
+    // strict generated decoder is entitled to reject.
     meta: z
-      .object({
+      .looseObject({
         requestId: z.string().optional(),
-        errorCode: z.string().optional(),
+        errorCode: z
+          .string()
+          .optional()
+          .describe(
+            "Stable machine code for this refusal. Branch on it rather than on `error`, which is prose and may be reworded.",
+          ),
       })
       .optional(),
   })
   .meta({
     id: "ErrorEnvelope",
-    description: "Standard error response: data is null, error is human prose.",
+    description:
+      "Standard error response: `data` is null, `error` is human prose. `meta.errorCode` carries the stable machine code where one exists, and `meta` may carry further per-refusal context. A 422 from the multi-issue validator additionally carries `details.issues` — every field the request got wrong, so a client can fix them in one round-trip.",
   });
 
 export function dataEnvelope<T extends z.ZodType>(payload: T, id: string) {
@@ -173,7 +229,8 @@ export const invalidBaseTokenResponse = {
 
 export const stdResponses = {
   "401": {
-    description: "Authentication required or invalid credentials.",
+    description:
+      "Authentication required or invalid credentials. The generic auth gates — the ones every route passes through before its own body runs — name the reason in `meta.errorCode`, and that is the field to branch on there; the English sentence beside it may be reworded or localised at any time. `auth.missing`: no session cookie and no Bearer header; send the user to sign in. `auth.token.expired`: the Bearer token's lifetime has passed; refresh and retry the request. `auth.token.invalid`: unknown, revoked, or the owning account is gone; discard the credential and sign in again — retrying will not help. `auth.mfa.code_invalid`: a second factor presented on a step-up flow did not verify; re-prompt for a code and keep the session. The related 403 refusals carry `auth.scope.insufficient` (the credential is valid but its scope does not reach this route, including any Bearer token against an admin surface) and `auth.admin.required` (a cookie session that is not an admin's). A route that checks a credential of its own — sign-in, the MFA challenge exchange, a password confirmation — may still answer 401 with prose and no code, so a missing `meta.errorCode` means the route refused the credential it was handed, not that the response is malformed.",
     content: { "application/json": { schema: errorEnvelope } },
   },
   "422": {
@@ -181,8 +238,31 @@ export const stdResponses = {
     content: { "application/json": { schema: errorEnvelope } },
   },
   "429": {
-    description: "Rate limit exceeded.",
+    description:
+      "Rate limit exceeded. The response carries `Retry-After` (whole seconds, rounded up and never below 1 — wait at least that long before retrying), `X-RateLimit-Limit` (the bucket's cap), `X-RateLimit-Remaining` and `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back off on `Retry-After` rather than guessing. A 429 raised by a ceiling that is not one of these buckets — a daily AI budget, an upstream provider's own refusal relayed onward — carries none of them, because there is no bucket to describe.",
     content: { "application/json": { schema: errorEnvelope } },
+    // Declared rather than only described: a generated client gets a typed
+    // accessor for the field the description tells it to back off on.
+    headers: {
+      "Retry-After": {
+        description:
+          "Whole seconds to wait before retrying. Rounded up, never below 1.",
+        schema: { type: "integer" as const, minimum: 1 },
+      },
+      "X-RateLimit-Limit": {
+        description: "Requests the bucket allows per window.",
+        schema: { type: "integer" as const, minimum: 1 },
+      },
+      "X-RateLimit-Remaining": {
+        description: "Requests left in the current window; 0 on a refusal.",
+        schema: { type: "integer" as const, minimum: 0 },
+      },
+      "X-RateLimit-Reset": {
+        description:
+          "Instant the current window rolls over, ISO-8601 — not epoch seconds.",
+        schema: { type: "string" as const, format: "date-time" },
+      },
+    },
   },
 };
 

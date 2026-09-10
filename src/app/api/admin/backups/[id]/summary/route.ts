@@ -16,7 +16,11 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, HttpError, requireAdmin } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
-import { unpackBackupBlob } from "@/lib/export/backup-blob";
+import {
+  BACKUP_UNDECRYPTABLE_CODE,
+  BACKUP_UNDECRYPTABLE_ERROR,
+  unpackBackupBlob,
+} from "@/lib/export/backup-blob";
 import { annotate } from "@/lib/logging/context";
 import {
   isCompatibleSchemaVersion,
@@ -46,7 +50,12 @@ export const GET = apiHandler(
     try {
       plaintext = unpackBackupBlob(backup.data);
     } catch {
-      return apiError("Failed to decrypt backup payload", 500);
+      // Same refusal the restore and the download give, for the same reason:
+      // a copy this instance cannot open is bad stored input, and the preview
+      // is the first place an operator meets it.
+      return apiError(BACKUP_UNDECRYPTABLE_ERROR, 422, {
+        errorCode: BACKUP_UNDECRYPTABLE_CODE,
+      });
     }
 
     let payload;

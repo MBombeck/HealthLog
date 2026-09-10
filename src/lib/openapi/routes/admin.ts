@@ -8,6 +8,7 @@
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { inviteCreateSchema } from "@/lib/validations/invite";
+import { adminReminderCheckSchema } from "@/lib/validations/notifications";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 
 // v1.4.48 H-APNs-1 — admin diagnostic endpoint for the notification
@@ -190,7 +191,91 @@ export const adminInvitePaths: NonNullable<ZodOpenApiObject["paths"]> = {
   },
 };
 
+const adminReminderSchedule = z
+  .object({
+    window: z.string(),
+    days: z.string(),
+    status: z.enum(["open", "late", "threshold", "missed", "skipped"]),
+    label: z.string(),
+    minutesPastEnd: z.number().int().nullable(),
+    notificationSent: z.boolean(),
+  })
+  .meta({
+    id: "AdminReminderScheduleStatus",
+    description:
+      "One dose window as the sweep classified it against the OWNING account's wall clock, and whether this run dispatched for it. `notificationSent` is false for a window that is still open, for a day the schedule does not cover, and for a slot that already has an intake event today.",
+  });
+
+const adminReminderMedication = z
+  .object({
+    name: z.string(),
+    dose: z.string(),
+    user: z.string(),
+    timezone: z.string(),
+    localTime: z.string(),
+    dayOfWeek: z.string(),
+    notificationsEnabled: z.boolean(),
+    schedules: z.array(adminReminderSchedule),
+    eventsToday: z.number().int(),
+  })
+  .meta({
+    id: "AdminReminderMedication",
+    description:
+      "One active medication the sweep walked, with the account it belongs to and that account's local clock — the sweep classifies every window against the owner's timezone, never the operator's.",
+  });
+
+const adminReminderCheckResult = z
+  .object({
+    timestamp: z.iso.datetime({ offset: true }),
+    missedThresholdMinutes: z.number().int(),
+    scoped: z
+      .boolean()
+      .describe(
+        "True when the request named a `userId` and the sweep therefore walked one account only.",
+      ),
+    medications: z.array(adminReminderMedication),
+    notificationsSent: z.number().int(),
+    message: z.string(),
+  })
+  .meta({
+    id: "AdminReminderCheckResult",
+    description:
+      "What the sweep found and what it sent. `notificationsSent` counts DISPATCHES, not deliveries — each one enters the channel cascade and the per-channel verdict lands in the `push_attempts` ledger the notification diagnostic surfaces.",
+  });
+
 export const adminDiagnosticPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/admin/notifications/reminder-check": {
+    post: {
+      tags: ["Admin"],
+      summary: "Run the medication-reminder sweep",
+      description:
+        "The admin panel's manual reminder sweep: it classifies every active medication's dose windows against the OWNING account's wall clock and dispatches a MEDICATION_REMINDER for each overdue slot that has no intake event today. Cookie auth only — `requireAdmin()` refuses every Bearer caller, wildcard scope included.\n\nScope is the thing to get right. With no body the sweep is INSTANCE-WIDE and dispatches into every account that has an overdue dose and a configured channel; that is the operator button's behaviour and it is deliberate. A caller that means to sweep one account sends `userId` and stops being a second writer for every other one. The selector can only narrow: it feeds the Prisma `where`, never the authorisation.",
+      requestBody: {
+        required: false,
+        content: {
+          "application/json": { schema: adminReminderCheckSchema },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The sweep's findings and how many reminders it sent.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                adminReminderCheckResult,
+                "AdminReminderCheckResponse",
+              ),
+            },
+          },
+        },
+        "403": {
+          description: "Caller is not an admin.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/admin/notifications/diagnostic": {
     get: {
       tags: ["Admin"],

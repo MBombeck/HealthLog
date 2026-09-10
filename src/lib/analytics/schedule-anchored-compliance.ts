@@ -12,11 +12,17 @@
  * dashboard tile: both now consume this.
  *
  * `scheduled` is the canonical recurrence engine's expected-dose count for the
- * day, summed across the user's active medications, so days the schedule
- * expected a dose that the user missed pull the rate down — and the 7/30/90
- * windows genuinely diverge with partial adherence. `taken` stays the count of
- * taken (non-skipped, non-auto-missed) doses that day, capped at the day's
- * expected count so a duplicate log can't push a day above 100%.
+ * day, summed across the user's active medications and MINUS the doses the
+ * user deliberately skipped, so days the schedule expected a dose that the
+ * user missed pull the rate down — and the 7/30/90 windows genuinely diverge
+ * with partial adherence. `taken` stays the count of taken (non-skipped,
+ * non-auto-missed) doses that day, capped at the day's expected count so a
+ * duplicate log can't push a day above 100%.
+ *
+ * The skip exclusion is what keeps this engine and the ledger tally
+ * (`tallyComplianceFromLedger`, the source of the rate on the medication card,
+ * the dose history and the doctor report) reporting ONE number: both treat a
+ * skip as a deliberate pause outside the denominator, never as a miss.
  *
  * Pure-ish over a single pinned `now` so a cached row is internally
  * consistent. Bounded: one active-medications query + one window-events query,
@@ -147,6 +153,30 @@ export async function buildScheduleAnchoredComplianceBuckets(
       );
       if (scheduled === 0) continue;
 
+      const inDay = (at: Date) => at >= bounds.start && at < bounds.end;
+
+      // A deliberate skip is a pause, not a miss (the semantics the ledger
+      // tally has carried since v1.15.9 and the only reading the "consistent
+      // skip handling" contract admits). The skipped slot leaves the
+      // denominator entirely instead of being counted as expected-and-missed
+      // — otherwise the dashboard tile reported a lower rate than the card,
+      // the history view and the doctor report for the very same day. The
+      // count is capped at the expected slots so a stray skip row outside
+      // the minted grid cannot drive the denominator negative; a day whose
+      // every expected dose was skipped drops out of the buckets, exactly as
+      // it drops out of the ledger denominator.
+      //
+      // `skipped` outranks `autoMissed` here for the same reason it does in
+      // `reconstructDoseHistory`: the cron marks a forgotten dose
+      // `autoMissed`, so a row still carrying `skipped` is a real user
+      // decision.
+      const skippedThisDay = Math.min(
+        medEvents.filter((e) => e.skipped && inDay(e.scheduledFor)).length,
+        scheduled,
+      );
+      const expected = scheduled - skippedThisDay;
+      if (expected === 0) continue;
+
       // Taken doses that landed in this day's window (non-skipped, non-auto-
       // missed), capped at the expected count so a duplicate log can't push a
       // single day above 100%.
@@ -155,13 +185,12 @@ export async function buildScheduleAnchoredComplianceBuckets(
           e.takenAt !== null &&
           !e.skipped &&
           !e.autoMissed &&
-          e.scheduledFor >= bounds.start &&
-          e.scheduledFor < bounds.end,
+          inDay(e.scheduledFor),
       ).length;
 
       const bucket = totals.get(key)!;
-      bucket.scheduled += scheduled;
-      bucket.taken += Math.min(takenThisDay, scheduled);
+      bucket.scheduled += expected;
+      bucket.taken += Math.min(takenThisDay, expected);
     }
   }
 

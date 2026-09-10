@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.38.14
+  version: 1.38.15
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -70,7 +70,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/CycleCustomSymptomListEnvelope"
         "401": &a1
-          description: Authentication required or invalid credentials.
+          description: "Authentication required or invalid credentials. The generic auth gates — the ones every route passes
+            through before its own body runs — name the reason in `meta.errorCode`, and that is the field to branch on
+            there; the English sentence beside it may be reworded or localised at any time. `auth.missing`: no session
+            cookie and no Bearer header; send the user to sign in. `auth.token.expired`: the Bearer token's lifetime has
+            passed; refresh and retry the request. `auth.token.invalid`: unknown, revoked, or the owning account is
+            gone; discard the credential and sign in again — retrying will not help. `auth.mfa.code_invalid`: a second
+            factor presented on a step-up flow did not verify; re-prompt for a code and keep the session. The related
+            403 refusals carry `auth.scope.insufficient` (the credential is valid but its scope does not reach this
+            route, including any Bearer token against an admin surface) and `auth.admin.required` (a cookie session that
+            is not an admin's). A route that checks a credential of its own — sign-in, the MFA challenge exchange, a
+            password confirmation — may still answer 401 with prose and no code, so a missing `meta.errorCode` means the
+            route refused the credential it was handed, not that the response is malformed."
           content:
             application/json:
               schema:
@@ -101,7 +112,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": &a5
-          description: Rate limit exceeded.
+          description: Rate limit exceeded. The response carries `Retry-After` (whole seconds, rounded up and never below 1 — wait
+            at least that long before retrying), `X-RateLimit-Limit` (the bucket's cap), `X-RateLimit-Remaining` and
+            `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back off on `Retry-After` rather than
+            guessing. A 429 raised by a ceiling that is not one of these buckets — a daily AI budget, an upstream
+            provider's own refusal relayed onward — carries none of them, because there is no bucket to describe.
+          headers:
+            Retry-After:
+              description: Whole seconds to wait before retrying. Rounded up, never below 1.
+              schema:
+                type: integer
+                minimum: 1
+            X-RateLimit-Limit:
+              description: Requests the bucket allows per window.
+              schema:
+                type: integer
+                minimum: 1
+            X-RateLimit-Remaining:
+              description: Requests left in the current window; 0 on a refusal.
+              schema:
+                type: integer
+                minimum: 0
+            X-RateLimit-Reset:
+              description: Instant the current window rolls over, ISO-8601 — not epoch seconds.
+              schema:
+                type: string
+                format: date-time
           content:
             application/json:
               schema:
@@ -3328,10 +3364,12 @@ paths:
     get:
       tags:
         - Sync
-      summary: Measurements delta feed
-      description: "Incremental catch-up after the first-pair backfill (never a replacement for it). Pages over an opaque
-        keyset cursor; each page carries `tombstones` (soft-deleted rows, keyed on `externalId`) and `upserts` (live
-        rows). Apply tombstones before upserts within a page. `cursorExpired: true` forces a clean re-init."
+      summary: Multi-domain delta feed
+      description: "Incremental catch-up after the first-pair backfill (never a replacement for it). Pages over one opaque
+        keyset cursor spanning five domains — measurements, mood, medication intakes, cycle day logs and cycles. Each
+        domain carries `tombstones` (soft-deleted rows) and `upserts` (live rows); apply tombstones before upserts
+        within a domain. Tombstone identity is `externalId` for measurements and the server `id` everywhere else.
+        `cursorExpired: true` forces a clean re-init and the page is empty in every domain."
       parameters:
         - in: query
           name: cursor
@@ -9712,6 +9750,50 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/admin/notifications/reminder-check:
+    post:
+      tags:
+        - Admin
+      summary: Run the medication-reminder sweep
+      description: >-
+        The admin panel's manual reminder sweep: it classifies every active medication's dose windows against the OWNING
+        account's wall clock and dispatches a MEDICATION_REMINDER for each overdue slot that has no intake event today.
+        Cookie auth only — `requireAdmin()` refuses every Bearer caller, wildcard scope included.
+
+
+        Scope is the thing to get right. With no body the sweep is INSTANCE-WIDE and dispatches into every account that
+        has an overdue dose and a configured channel; that is the operator button's behaviour and it is deliberate. A
+        caller that means to sweep one account sends `userId` and stops being a second writer for every other one. The
+        selector can only narrow: it feeds the Prisma `where`, never the authorisation.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                  pattern: ^[A-Za-z0-9_-]+$
+              additionalProperties: false
+      responses:
+        "200":
+          description: The sweep's findings and how many reminders it sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminReminderCheckResponse"
+        "401": *a1
+        "403":
+          description: Caller is not an admin.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/admin/notifications/diagnostic:
     get:
       tags:
@@ -15423,9 +15505,10 @@ paths:
         returns a `{ title, kind, documentDate }` DRAFT for the edit form. AI-consent / rate / budget gated (shares the
         per-user document-AI bucket with extract/summary/index — default 6/hour, operator-tunable via
         `DOCUMENT_AI_LIMIT_PER_HOUR`; a slot is only consumed when the request reaches the provider, and the 429 carries
-        the reset instant in `X-RateLimit-Reset` and `meta.retryAt`). WRITES NOTHING — never stages facts, never flips
-        status; the user reviews and saves. 422 (`documents.inbound.providerUnsupported`) with no provider configured.
-        Never interprets or diagnoses; the title is a neutral filing label."
+        `Retry-After`, the `X-RateLimit-Limit` / `-Remaining` / `-Reset` triple, and `meta.retryAt`). WRITES NOTHING —
+        never stages facts, never flips status; the user reviews and saves. 422
+        (`documents.inbound.providerUnsupported`) with no provider configured. Never interprets or diagnoses; the title
+        is a neutral filing label."
       parameters:
         - name: id
           in: path
@@ -18200,7 +18283,8 @@ paths:
       summary: The signed-in account, and what sharing lets it do
       description: "Keeps answering while the browser is acting on another record — the switcher, the banner naming whose
         record is open, and the way back out all read it, so a refusal here would strand a switched session. It is
-        therefore an ACTOR surface: it always serves the caller's own rows, and a request that attaches
+        therefore an ACTOR surface: it serves the caller's own rows — apart from `modules` and `cycleTrackingEnabled`,
+        which answer for the record the session is inside, masked to what the grant opens — and a request that attaches
         `X-HealthLog-Account` is refused with 403 `sharing.not_permitted` rather than quietly answered. A client that
         wants a record's data sends the selector on the read that needs it, never on this call."
       responses:
@@ -18504,6 +18588,89 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
   /api/managed-profiles/{id}:
+    get:
+      tags:
+        - Account sharing
+      summary: Read a managed record's identity
+      description: "What the record is right now — the five fields its creation took. The read an edit form fills itself from,
+        and the reason it exists: `accountAccess.accounts` on the account payload carries the record's name and nothing
+        else, so a form offered from the Guardian's own panel had no way to show the timezone, the language or the date
+        of birth it was about to overwrite. Cookie transport only, an ACTOR surface (the profile is named in the path
+        and the caller acts as themselves, so it answers without switching into the record), and NOT step-up gated: this
+        is a read, it discloses to a Guardian only what they already administer, and the gate belongs to the acts."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: The record as it stands.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedProfileEnvelope"
+        "401": *a1
+        "404":
+          description: "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode:
+            managed_profile.not_found`). The two are byte-identical, so the refusal is not an enumeration oracle."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+    patch:
+      tags:
+        - Account sharing
+      summary: Change a managed record's identity
+      description: "Edit the record after it exists — the name that was a placeholder, the timezone that moved with the
+        household, the date of birth somebody finally has, the sex that decides whether the cycle module is on. Any
+        active Guardian may do it, from a cookie session with a fresh second factor: the same gate creation and deletion
+        carry, because the three acts mint, change and end an account that can never prove anything about itself. Ten an
+        hour per caller, the ceiling creation carries. Answers with the whole record, so a client re-renders from the
+        server's version rather than from what it sent."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateManagedProfileRequest"
+      responses:
+        "200":
+          description: The record as it now stands.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedProfileEnvelope"
+        "401":
+          description: No fresh second-factor proof, or none enrolled. Same unconditional gate as creation and deletion.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode:
+            managed_profile.not_found`). The two are byte-identical."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429":
+          description: More than ten edits from one caller within the hour — the ceiling creation carries. No error code; branch
+            on the status. Nothing was changed, and the refusal lands before the record named in the path is looked at.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
     delete:
       tags:
         - Account sharing
@@ -19810,9 +19977,122 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429":
-          description: More than 60 requests in a minute for this token — or, when no valid token was presented, from this client
-            IP. `meta.errorCode` = `ingest.rate_limited`, plus the standard `X-RateLimit-Remaining` /
-            `X-RateLimit-Reset` headers.
+          description: "More than 60 requests in a minute for this token — or, when no valid token was presented, from this client
+            IP. `meta.errorCode` = `ingest.rate_limited`, plus the standard rate-limit headers: `Retry-After` (whole
+            seconds, at least 1), `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/admin/backups/{id}/download:
+    get:
+      tags:
+        - Admin
+      summary: Download one stored backup as JSON
+      description: "Decrypts one stored copy and returns the backup document itself, with `Content-Disposition: attachment`
+        and `Cache-Control: no-store`. The response is the raw document, not the standard envelope — it is the artefact
+        an operator keeps. The ciphertext stays in the database. Admin session cookie required; Bearer tokens cannot
+        reach admin endpoints."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            description: "`DataBackup.id`."
+          required: true
+          description: "`DataBackup.id`."
+      responses:
+        "200":
+          description: The decrypted backup document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBackupDocument"
+        "403": &a43
+          description: Caller is not an admin. `requireAdmin()` is cookie-only, so a Bearer token lands here whatever its scope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404": &a44
+          description: No stored copy with this id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "The stored copy could not be opened: either the key that wrote it is no longer in `ENCRYPTION_KEYS` (a
+            rotation that dropped the legacy entry too early), or the stored bytes are not the ones that were written.
+            `meta.errorCode` = `backup.payload.undecryptable`. Nothing was changed."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: The copy decrypted and then failed schema validation — a document this instance wrote and cannot parse.
+            This one genuinely is a server fault, and is reported as one.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/admin/backups/{id}/restore:
+    post:
+      tags:
+        - Admin
+      summary: Restore one stored backup over its owner's record
+      description: "Replaces the snapshot owner's data tables from the stored copy, in one transaction, under the ids the file
+        carries. Replacing is not merging: every row the account gained after the snapshot was taken is deleted with the
+        rest of its class. The target is the account the snapshot was taken for, never the admin running it, and a
+        payload declaring a different owner than the stored row is refused. Admin session cookie required; Bearer tokens
+        cannot reach admin endpoints."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            description: "`DataBackup.id`."
+          required: true
+          description: "`DataBackup.id`."
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminBackupRestoreRequest"
+      responses:
+        "200":
+          description: The restore ran.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBackupRestoreResponse"
+        "400":
+          description: Body was not JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403": *a43
+        "404": *a44
+        "409":
+          description: Either the payload declares a different owner than the stored row, or a request under the same
+            `Idempotency-Key` is still in flight. Nothing was changed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: Body exceeds 64 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "The request or the file was refused before anything was written: `confirm` missing, the copy undecryptable
+            (`meta.errorCode` = `backup.payload.undecryptable`), the payload failing schema validation, an unsupported
+            `schemaVersion`, a section the file's own manifest says it carries and does not (`meta.errorCode` =
+            `backup.section.missing`), a metadata-only document entry, or an owner who no longer exists here."
           content:
             application/json:
               schema:
@@ -28096,6 +28376,14 @@ components:
           type: string
           minLength: 1
           maxLength: 64
+        gender:
+          anyOf:
+            - type: string
+              enum:
+                - MALE
+                - FEMALE
+                - OTHER
+            - type: "null"
       required:
         - displayName
         - locale
@@ -28105,12 +28393,58 @@ components:
         The caller becomes its first Guardian in the same transaction, through an ordinary MANAGE grant with the new
         record as grantor, so the profile appears in `accountAccess.accounts` on the next `GET /api/auth/me` and is
         switched into like any other shared record. `displayName` is the only required text; `dateOfBirth` is an
-        optional `YYYY-MM-DD` and is never synthesised from a year. `locale` and `timezone` belong to the RECORD and not
-        to the Guardian reading it: they decide how the profile's own reminders are worded and when its day starts.
-        Strict — an unexpected field is a 422 rather than an ignored key. Cookie transport only and step-up gated
+        optional `YYYY-MM-DD` and is never synthesised from a year. `gender` is optional and takes the same three values
+        `PATCH /api/auth/me` takes for an ordinary account (`MALE`, `FEMALE`, `OTHER`) or null; absent and null both
+        mean not recorded, and the value is what the cycle module derives its default from, so a record created for a
+        child who does not need it starts with it off. `locale` and `timezone` belong to the RECORD and not to the
+        Guardian reading it: they decide how the profile's own reminders are worded and when its day starts. Strict — an
+        unexpected field is a 422 rather than an ignored key. Cookie transport only and step-up gated
         (`requireFreshMfa`, unconditional): a Bearer caller cannot mint a credential-less person and a permanent
         management relationship, and an account with no second factor enrolled is refused rather than waved through.
         Rate-limited to ten an hour per caller."
+    UpdateManagedProfileRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        dateOfBirth:
+          anyOf:
+            - type: string
+              format: date
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            - type: "null"
+        locale:
+          type: string
+          enum:
+            - de
+            - en
+            - es
+            - fr
+            - it
+            - pl
+            - ko
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        gender:
+          anyOf:
+            - type: string
+              enum:
+                - MALE
+                - FEMALE
+                - OTHER
+            - type: "null"
+      additionalProperties: false
+      description: "Change what a managed record is, from the Guardian's own panel. The same five fields creation takes, every
+        one of them optional, and at least one required — an empty body is a 422 rather than a no-op that audits a
+        change nobody made. Absence means leave the field alone; an explicit null on `dateOfBirth` or `gender` clears
+        it, and the two are different answers. Nothing else on the record is reachable here: credentials, provider
+        connections, notification routing and the health profile are not identity, and the wider configuration surface
+        is `PATCH /api/record-settings/{family}`, which is guardian-fenced and answers only while switched into the
+        record. Strict, cookie-only and step-up gated, like every act in this family."
     InviteManagedProfileGuardianRequest:
       type: object
       properties:
@@ -28375,10 +28709,15 @@ components:
             vaccinations:
               type: boolean
           additionalProperties: false
-      required:
-        - modulePreferences
+        cycleTrackingEnabled:
+          type: boolean
       additionalProperties: false
-      description: Partial module toggle. Merged onto the record's current preferences; omitted keys keep their value.
+      description: "Partial module toggle. `modulePreferences` is merged onto the record's current preferences; omitted keys
+        keep their value. `cycleTrackingEnabled` is separate because `cycle` is a DELEGATED module: its state lives in
+        the record's own cycle profile and `modulePreferences.cycle` is refused, so this is the field that turns cycle
+        tracking on or off for the record — an explicit boolean overrides the default the record's sex would derive.
+        Both fields are optional and at least one is required; an empty body is a 422 rather than a save that changed
+        nothing."
     RecordNotificationSettingsPatch:
       type: object
       properties:
@@ -28915,6 +29254,21 @@ components:
         the same plausibility range the interactive create paths use. `idempotencyKey` is an identity, not a windowed
         replay token: it is stored on the row forever and matched by equality, so a key that rotates per client launch
         never matches its own earlier row and every re-sync logs the dose again."
+    AdminBackupRestoreRequest:
+      type: object
+      properties:
+        confirm:
+          type: string
+          const: RESTORE
+        restoreInstanceSettings:
+          type: boolean
+      required:
+        - confirm
+      description: "`confirm` is the literal typed gate; anything else is refused with 422 and nothing is read.
+        `restoreInstanceSettings` defaults to false: the restore then replaces the snapshot owner's data tables and
+        leaves the singleton instance settings — registration, MFA requirement, default locale and timezone, module
+        availability, notification and AI configuration, document cap and quota — exactly as they are. Send `true` only
+        when rebuilding a host from a snapshot, because those settings apply to every account on the installation."
     MedicationTreatmentClass:
       type: string
       enum:
@@ -29099,19 +29453,63 @@ components:
           type: "null"
         error:
           type: string
+        details:
+          description: "Present on a 422 raised by the multi-issue validator: every field the request got wrong, not only the
+            first. Absent on every other status."
+          type: object
+          properties:
+            issues:
+              type: array
+              items:
+                $ref: "#/components/schemas/ValidationIssue"
+          required:
+            - issues
+          additionalProperties: false
         meta:
           type: object
           properties:
             requestId:
               type: string
             errorCode:
+              description: Stable machine code for this refusal. Branch on it rather than on `error`, which is prose and may be
+                reworded.
               type: string
-          additionalProperties: false
+          additionalProperties: {}
       required:
         - data
         - error
       additionalProperties: false
-      description: "Standard error response: data is null, error is human prose."
+      description: "Standard error response: `data` is null, `error` is human prose. `meta.errorCode` carries the stable
+        machine code where one exists, and `meta` may carry further per-refusal context. A 422 from the multi-issue
+        validator additionally carries `details.issues` — every field the request got wrong, so a client can fix them in
+        one round-trip."
+    ValidationIssue:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Dot-joined path to the rejected field, e.g. `entries.3.measuredAt`. Empty string when the whole body was
+            rejected.
+        code:
+          type: string
+          description: Zod issue code, e.g. `invalid_type`, `too_small`, `unrecognized_keys`. Treat an unfamiliar code as a
+            generic rejection of `path`.
+        message:
+          type: string
+          description: English sentence describing the rejection. Safe to log; show the user your own wording keyed on `path`.
+        keys:
+          description: "Only on `unrecognized_keys`: the refused key names, bounded to 10 and 64 characters each. Zod reports
+            every unknown key of one object in a single issue whose `path` is the object, so the names live here and
+            nowhere in `path`."
+          type: array
+          items:
+            type: string
+      required:
+        - path
+        - code
+        - message
+      additionalProperties: false
+      description: "One rejected field in a multi-issue 422. Sanitised: no rejected VALUE is echoed back."
     CycleCustomSymptomCreatedEnvelope:
       type: object
       properties:
@@ -37364,10 +37762,45 @@ components:
                 - upserts
                 - tombstones
               additionalProperties: false
+            cycleDays:
+              type: object
+              properties:
+                upserts:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CycleDayLogDTO"
+                tombstones:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncCycleDayTombstone"
+              required:
+                - upserts
+                - tombstones
+              additionalProperties: false
+              description: Cycle day logs. Present on every page, empty arrays when the account has the cycle module off.
+            cycles:
+              type: object
+              properties:
+                upserts:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/MenstrualCycleDTO"
+                tombstones:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncCycleTombstone"
+              required:
+                - upserts
+                - tombstones
+              additionalProperties: false
+              description: Menstrual cycles, observed and forward-predicted. Present on every page, empty arrays when the account has
+                the cycle module off.
           required:
             - measurements
             - mood
             - intakes
+            - cycleDays
+            - cycles
           additionalProperties: false
       required:
         - serverNow
@@ -37376,9 +37809,10 @@ components:
         - cursorExpired
         - changes
       additionalProperties: false
-      description: "Multi-domain delta page (v1.7.0): measurements + mood + intakes. One opaque multi-domain keyset cursor;
-        tombstones apply before upserts within each domain. Tombstone identity: measurements key on externalId, mood +
-        intakes on server id. The iOS consumer is measurements-only this cycle; mood + intakes are forward-prep."
+      description: "Multi-domain delta page: measurements, mood, intakes, cycle day logs and cycles. One opaque multi-domain
+        keyset cursor; tombstones apply before upserts within each domain. Tombstone identity: measurements key on
+        externalId, every other domain on server id. All five keys are present on every response, including the
+        `cursorExpired` short-circuit — a domain with nothing to report sends empty arrays rather than being omitted."
     SyncMeasurementUpsert:
       type: object
       properties:
@@ -37720,6 +38154,60 @@ components:
         - updatedAt
       additionalProperties: false
       description: A soft-deleted medication intake, keyed on server `id`. Apply before upserts within the domain page.
+    SyncCycleDayTombstone:
+      type: object
+      properties:
+        id:
+          type: string
+        externalId:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: The client's own key for the day log, when it set one.
+        syncVersion:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        deletedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - externalId
+        - syncVersion
+        - deletedAt
+        - updatedAt
+      additionalProperties: false
+      description: A soft-deleted cycle day log, keyed on server `id`. Apply before upserts within the domain page.
+    SyncCycleTombstone:
+      type: object
+      properties:
+        id:
+          type: string
+        syncVersion:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        deletedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - syncVersion
+        - deletedAt
+        - updatedAt
+      additionalProperties: false
+      description: A soft-deleted menstrual cycle, keyed on server `id`. Apply before upserts within the domain page.
     GetMeasurementsSeriesBatchResponse:
       type: object
       properties:
@@ -43832,9 +44320,13 @@ components:
         - nutrients
         - vaccinations
       additionalProperties: false
-      description: Fully-resolved per-user module enable/disable map. Every toggleable module key is present. `false` means
-        the surface should disappear end-to-end (nav, dashboard, insights, …). `cycle` mirrors `cycleTrackingEnabled`;
-        `coach` mirrors the resolved per-user opt-out + operator master flag.
+      description: Fully-resolved module enable/disable map. Every toggleable module key is present. `false` means the surface
+        should disappear end-to-end (nav, dashboard, insights, …). `cycle` mirrors `cycleTrackingEnabled`; `coach`
+        mirrors the resolved per-user opt-out + operator master flag. On `GET /api/auth/me` it answers for the RECORD
+        the session is inside rather than for the caller, because every surface it gates shows the record's data, and it
+        is masked to the sections the active grant opens — a module outside them reads `false` rather than the record's
+        true state. With no switch — which is every native request, since the Bearer transport carries none — the two
+        are the same account, nothing is masked and the payload is unchanged.
     PatchModulesResponse:
       type: object
       properties:
@@ -48690,6 +49182,132 @@ components:
         - data
         - error
       additionalProperties: false
+    AdminReminderCheckResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminReminderCheckResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminReminderCheckResult:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        missedThresholdMinutes:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        scoped:
+          type: boolean
+          description: True when the request named a `userId` and the sweep therefore walked one account only.
+        medications:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminReminderMedication"
+        notificationsSent:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        message:
+          type: string
+      required:
+        - timestamp
+        - missedThresholdMinutes
+        - scoped
+        - medications
+        - notificationsSent
+        - message
+      additionalProperties: false
+      description: What the sweep found and what it sent. `notificationsSent` counts DISPATCHES, not deliveries — each one
+        enters the channel cascade and the per-channel verdict lands in the `push_attempts` ledger the notification
+        diagnostic surfaces.
+    AdminReminderMedication:
+      type: object
+      properties:
+        name:
+          type: string
+        dose:
+          type: string
+        user:
+          type: string
+        timezone:
+          type: string
+        localTime:
+          type: string
+        dayOfWeek:
+          type: string
+        notificationsEnabled:
+          type: boolean
+        schedules:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminReminderScheduleStatus"
+        eventsToday:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - name
+        - dose
+        - user
+        - timezone
+        - localTime
+        - dayOfWeek
+        - notificationsEnabled
+        - schedules
+        - eventsToday
+      additionalProperties: false
+      description: One active medication the sweep walked, with the account it belongs to and that account's local clock — the
+        sweep classifies every window against the owner's timezone, never the operator's.
+    AdminReminderScheduleStatus:
+      type: object
+      properties:
+        window:
+          type: string
+        days:
+          type: string
+        status:
+          type: string
+          enum:
+            - open
+            - late
+            - threshold
+            - missed
+            - skipped
+        label:
+          type: string
+        minutesPastEnd:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        notificationSent:
+          type: boolean
+      required:
+        - window
+        - days
+        - status
+        - label
+        - minutesPastEnd
+        - notificationSent
+      additionalProperties: false
+      description: One dose window as the sweep classified it against the OWNING account's wall clock, and whether this run
+        dispatched for it. `notificationSent` is false for a window that is still open, for a day the schedule does not
+        cover, and for a slot that already has an intake event today.
     AdminDiagnosticResponse:
       type: object
       properties:
@@ -65724,20 +66342,44 @@ components:
           type: string
         accountAccess:
           $ref: "#/components/schemas/AccountAccess"
+        moduleAccess:
+          $ref: "#/components/schemas/ModuleAccessMap"
         recordSession:
           anyOf:
             - $ref: "#/components/schemas/RecordSessionState"
             - type: "null"
+        notificationPrefs:
+          type: object
+          properties:
+            medication:
+              type: object
+              properties:
+                clientManaged:
+                  type: boolean
+              required:
+                - clientManaged
+              additionalProperties: {}
+          required:
+            - medication
+          additionalProperties: {}
       required:
         - id
         - username
         - accountAccess
+        - moduleAccess
         - recordSession
+        - notificationPrefs
       additionalProperties: {}
       description: "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do.
-        Additional properties are the preference fields this spec does not yet enumerate. Under an active switch this
-        payload still describes the CALLER — their preferences, their modules, their identity — because display
-        preferences belong to the person at the keyboard rather than to the record they are reading."
+        Additional properties are the preference fields this spec does not yet enumerate. Under an active switch the
+        identity and preference fields still describe the CALLER, because display preferences belong to the person at
+        the keyboard rather than to the record they are reading. Two fields are the exception (v1.38.14): `modules` and
+        `cycleTrackingEnabled` describe the ACTIVE RECORD, since every surface they gate shows the record's data — and
+        they are masked to the sections the active grant opens, so a scoped grant reads `false` for a module outside it
+        rather than the record's true state. With no switch — which is every native request, since the Bearer transport
+        carries none — the two are the same account and nothing is masked. `moduleAccess` says WHY each module is or is
+        not there — the record's own switch, the edge of the grant, or the operator's instance-wide one — beside the
+        `modules` booleans it never contradicts."
     AccountAccess:
       type: object
       properties:
@@ -65942,6 +66584,191 @@ components:
         be a second program deciding one person's access to a health record, and the two answer differently the first
         time an expiry or a revocation appears. Always present — an account nobody has shared with gets an empty list,
         not a missing field."
+    ModuleAccessMap:
+      type: object
+      properties:
+        cycle:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "cycle" module is or is not available here.
+        mood:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "mood" module is or is not available here.
+        sleep:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "sleep" module is or is not available here.
+        glucose:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "glucose" module is or is not available here.
+        workouts:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "workouts" module is or is not available here.
+        recovery:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "recovery" module is or is not available here.
+        labs:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "labs" module is or is not available here.
+        illness:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "illness" module is or is not available here.
+        achievements:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "achievements" module is or is not available here.
+        coach:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "coach" module is or is not available here.
+        insights:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "insights" module is or is not available here.
+        medications:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "medications" module is or is not available here.
+        doctorReport:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "doctorReport" module is or is not available here.
+        environment:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "environment" module is or is not available here.
+        mcp:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "mcp" module is or is not available here.
+        inboundDocuments:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "inboundDocuments" module is or is not available here.
+        mentalHealth:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "mentalHealth" module is or is not available here.
+        nutrients:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "nutrients" module is or is not available here.
+        vaccinations:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "vaccinations" module is or is not available here.
+      required:
+        - cycle
+        - mood
+        - sleep
+        - glucose
+        - workouts
+        - recovery
+        - labs
+        - illness
+        - achievements
+        - coach
+        - insights
+        - medications
+        - doctorReport
+        - environment
+        - mcp
+        - inboundDocuments
+        - mentalHealth
+        - nutrients
+        - vaccinations
+      additionalProperties: false
+      description: "Why each toggleable module is or is not available for the record this session is inside. `enabled` — the
+        module is on and the client may paint it. `disabled` — the record has it switched off. `not_granted` — the
+        active grant's sections do not open the module's section, which also covers every module that reads across the
+        whole record (achievements, the assistant surfaces, the export, environment, the account's own MCP endpoint)
+        since no scoped grant opens one. `unavailable` — the operator switched the module off for the whole instance.
+        Precedence, highest first: `unavailable` > `not_granted` > `disabled` > `enabled`, so the reason published is
+        the one nothing further in can change. Own-record sessions and unscoped grants never produce `not_granted`.
+        Every key is present, and `modules[key] === (moduleAccess[key] === \"enabled\")` holds for every key — this
+        field adds a reason, never a different gate."
     RecordSessionState:
       type: object
       properties:
@@ -66360,13 +67187,31 @@ components:
           description: The profile's account id — the value `POST /api/account/switch` and the `X-HealthLog-Account` selector
             take, and the `{id}` in this family's paths.
         displayName:
-          type: string
+          anyOf:
+            - type: string
+            - type: "null"
         dateOfBirth:
           anyOf:
             - type: string
             - type: "null"
+          description: "`YYYY-MM-DD`, or null. The same date-only shape the request takes — this is a calendar date, not an
+            instant, and publishing it with a time would invite a client to apply a zone to it."
+        gender:
+          anyOf:
+            - type: string
+              enum:
+                - MALE
+                - FEMALE
+                - OTHER
+            - type: "null"
+          description: "`User.gender` for this record. Null means not recorded, which is a real answer and not a missing one."
         locale:
-          type: string
+          anyOf:
+            - type: string
+            - type: "null"
+          description: The record's own language. Every profile this family creates carries one, because creation requires it; the
+            column is nullable, so null means a row written before that and a client renders its own language rather
+            than the word.
         timezone:
           type: string
         recordKind:
@@ -66378,15 +67223,16 @@ components:
         - id
         - displayName
         - dateOfBirth
+        - gender
         - locale
         - timezone
         - recordKind
       additionalProperties: false
-      description: "A record somebody looks after, as its creation answers with it. There is deliberately no list endpoint:
-        the profiles a Guardian looks after are the `managed` entries of `accountAccess.accounts` on GET /api/auth/me,
-        because a Guardian's relationship to a profile IS a MANAGE grant. Re-read the account payload after any change
-        here; a client that refreshed only its own panel would leave the new record out of the switcher and the banner
-        until the next boot."
+      description: "A record somebody looks after, as its creation, its read and its edit all answer with it. There is
+        deliberately no list endpoint: the profiles a Guardian looks after are the `managed` entries of
+        `accountAccess.accounts` on GET /api/auth/me, because a Guardian's relationship to a profile IS a MANAGE grant.
+        Re-read the account payload after any change here; a client that refreshed only its own panel would leave the
+        new record out of the switcher and the banner until the next boot."
     DeletedManagedProfileEnvelope:
       type: object
       properties:
@@ -68370,6 +69216,90 @@ components:
         - data
         - error
       additionalProperties: false
+    AdminBackupDocument:
+      type: object
+      propertyNames:
+        type: string
+      additionalProperties: {}
+      description: "The backup payload as the writer serialised it: `schemaVersion`, `exportedAt`, `userId`, and one array or
+        object per serialised class."
+    AdminBackupRestoreResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminBackupRestoreResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminBackupRestoreResult:
+      type: object
+      properties:
+        restored:
+          type: boolean
+          const: true
+        summary:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+        skipped:
+          type: object
+          properties:
+            catalogueKeys:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminBackupRestoreSkipEntry"
+            links:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - catalogueKeys
+            - links
+          additionalProperties: false
+        cleared:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: integer
+            minimum: -9007199254740991
+            maximum: 9007199254740991
+      required:
+        - restored
+        - summary
+        - skipped
+        - cleared
+      additionalProperties: false
+      description: What the transaction wrote. `cleared` counts the rows each class held before it was rebuilt from the file,
+        `summary` counts what the file carried, and `skipped.links` is the number of links dropped because a catalogue
+        key in the file does not exist here — zero is the normal answer.
+    AdminBackupRestoreSkipEntry:
+      type: object
+      properties:
+        catalogue:
+          type: string
+        key:
+          type: string
+        links:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - catalogue
+        - key
+        - links
+      additionalProperties: false
+      description: One catalogue key the file referenced and this instance could not resolve, with the number of links it cost.
     __schema0:
       anyOf:
         - type: string

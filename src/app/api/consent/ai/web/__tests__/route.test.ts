@@ -43,7 +43,12 @@ const SESSION_OK = {
   user: { id: "user-1", username: "testuser", role: "USER" as const },
 };
 
-const RL_OK = { allowed: true, remaining: 19, resetAt: Date.now() + 60_000 };
+const RL_OK = {
+  allowed: true,
+  limit: 20,
+  remaining: 19,
+  resetAt: Date.now() + 60_000,
+};
 
 /** The mount heal posts no body and no content-type. */
 function mkHeal(): Request {
@@ -79,6 +84,7 @@ describe("POST /api/consent/ai/web", () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(checkConsentRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 20,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

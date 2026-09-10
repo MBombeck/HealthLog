@@ -19,7 +19,11 @@ import { prisma } from "@/lib/db";
 import { apiHandler, HttpError, requireAdmin } from "@/lib/api-handler";
 import { apiError, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
-import { unpackBackupBlob } from "@/lib/export/backup-blob";
+import {
+  BACKUP_UNDECRYPTABLE_CODE,
+  BACKUP_UNDECRYPTABLE_ERROR,
+  unpackBackupBlob,
+} from "@/lib/export/backup-blob";
 import { annotate } from "@/lib/logging/context";
 import { parseBackupPayload } from "@/lib/validations/backup";
 
@@ -54,9 +58,10 @@ export const GET = apiHandler(
     try {
       plaintext = unpackBackupBlob(backup.data);
     } catch (err) {
-      // Decryption failure is rare but real — a rotated/missing key, or a
-      // corrupted blob from a partially-failed write. Surface it as a 500
-      // and audit the event so the admin has something to investigate.
+      // A rotated or dropped key, or a stored copy that is no longer the one
+      // that was written. Both are bad stored input rather than a fault in
+      // this process, so the answer is 422 with a reason the operator can act
+      // on — and the audit row keeps the underlying message.
       await auditLog("admin.backups.download.failed", {
         userId: admin.id,
         ipAddress: getClientIp(request),
@@ -66,7 +71,9 @@ export const GET = apiHandler(
           reason: err instanceof Error ? err.message : "decrypt_failed",
         },
       });
-      return apiError("Failed to decrypt backup payload", 500);
+      return apiError(BACKUP_UNDECRYPTABLE_ERROR, 422, {
+        errorCode: BACKUP_UNDECRYPTABLE_CODE,
+      });
     }
 
     // Validate the payload BEFORE handing it back. This catches the

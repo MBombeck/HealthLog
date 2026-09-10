@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Copias de seguridad",
         "subtitle": "Instantáneas de datos semanales por usuario almacenadas en PostgreSQL.",
-        "description": "Cada usuario tiene una instantánea rotativa por tipo de copia. Los tamaños muestran el blob cifrado; los contenidos no se pueden descargar desde esta página.",
+        "description": "Cada usuario tiene una instantánea rotativa por tipo de copia. Los tamaños muestran el blob cifrado. Descargar descifra la instantánea para el administrador que la pide; el texto cifrado permanece en la base de datos.",
         "runNow": "Hacer copia ahora",
         "runEnqueued": "Tarea de copia de seguridad en cola",
         "runFailed": "No se pudo poner en cola la copia de seguridad",
@@ -6960,6 +6960,8 @@
         "restoreAria": "Restaurar desde copia de seguridad de {username}",
         "restoreTitle": "Restaurar desde copia de seguridad",
         "restoreDescription": "Esto reemplazará TODOS los datos actuales de {username} con la instantánea del {when}. Se eliminarán las mediciones, los medicamentos, los eventos de toma, las entradas de ánimo, los canales de notificación, las suscripciones push y las eliminaciones de Telegram en cola existentes.",
+        "restoreInstanceSettingsLabel": "Restaurar también los ajustes de la instancia",
+        "restoreInstanceSettingsHint": "Registro, requisito de MFA, idioma predeterminado, disponibilidad de módulos, configuración de notificaciones e IA: se toman de la instantánea y se aplican a todos en esta instalación. Déjalo sin marcar para restaurar solo esta cuenta.",
         "restorePromptLabel": "Escribe RESTORE para continuar",
         "previewTitle": "Contenido de la copia",
         "previewLoading": "Leyendo el contenido…",
@@ -8693,6 +8695,20 @@
       "description": "La cartilla de vacunación estructurada: dosis, serie, próximo refuerzo."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} está desactivado en este registro, así que sus páginas quedan ocultas. Vuelve a activarlo para recuperarlas.",
+      "title": "{module} está desactivado"
+    },
+    "notGranted": {
+      "description": "{module} queda fuera de las secciones que se han compartido contigo. Lo que abarca un registro compartido lo decide la persona propietaria.",
+      "title": "No forma parte del acceso compartido"
+    },
+    "unavailable": {
+      "description": "El operador ha desactivado {module} para todas las cuentas de este servidor. Ningún ajuste tuyo puede recuperarlo.",
+      "title": "No disponible en este servidor"
+    }
+  },
   "vaccinations": {
     "title": "Vacunas",
     "subtitle": "Tu registro de vacunación, dosis a dosis.",
@@ -9931,7 +9947,6 @@
     "page": {
       "title": "Ingesta de nutrientes",
       "description": "Hidratación e ingesta de vitaminas/minerales sincronizadas desde la app de salud de tu teléfono, más entradas manuales de agua.",
-      "moduleOffTitle": "La ingesta de nutrientes está desactivada",
       "moduleOffDescription": "Activa el módulo de nutrientes para ver aquí la hidratación y la ingesta de vitaminas/minerales. Los datos sincronizados pasarán a formar parte del registro que el Coach puede leer.",
       "moduleOffCta": "Activar nutrientes",
       "emptyTitle": "Aún no hay datos de nutrientes",
@@ -10280,6 +10295,12 @@
       "dobHint": "Déjala vacía si prefieres no registrarla. No se deduce nada a partir de un año.",
       "localeLabel": "Idioma de este historial",
       "localeHint": "El idioma de los textos que se escriben en este historial. Tus propias pantallas siguen en tu idioma.",
+      "genderLabel": "Sexo (opcional)",
+      "genderHint": "Determina si el seguimiento del ciclo empieza activado en este registro. Se puede cambiar cuando quieras.",
+      "genderNone": "Sin especificar",
+      "genderMale": "Hombre",
+      "genderFemale": "Mujer",
+      "genderOther": "Otro",
       "timezoneHint": "La zona en la que se miden los días de este historial.",
       "timezoneInvalid": "Este navegador no conoce esa zona horaria.",
       "create": "Crear perfil",
@@ -10289,6 +10310,12 @@
       "errorOffline": "Esto no llegó al servidor. No ha cambiado nada — revisa tu conexión y vuelve a intentarlo.",
       "errorInvalid": "El servidor rechazó esos datos. Revisa el nombre, la fecha y la zona horaria.",
       "errorFailed": "No se pudo crear el perfil.",
+      "edit": "Editar",
+      "editSave": "Guardar cambios",
+      "editSaving": "Guardando…",
+      "editLoadError": "No se han podido cargar esos datos.",
+      "editErrorGone": "Ese registro ya no existe, o ya no te ocupas de él.",
+      "editErrorFailed": "No se han podido guardar los cambios.",
       "delete": "Eliminar perfil",
       "deleteTitle": "¿Eliminar {name}?",
       "deleteBody": "Todo lo registrado para {name} desaparece con el perfil — mediciones, medicamentos, documentos y notas. Esto no se puede deshacer.",

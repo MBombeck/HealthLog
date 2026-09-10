@@ -18,6 +18,7 @@
  */
 import {
   apiHandler,
+  AUTH_ERROR_CODES,
   requireMfaManagementAuth,
   HttpError,
 } from "@/lib/api-handler";
@@ -99,7 +100,7 @@ export const POST = apiHandler(async (req: Request) => {
       action: { name: "auth.mfa.totp.confirm.invalid" },
       meta: { replay: result.replay },
     });
-    throw new HttpError(401, "Invalid code");
+    throw new HttpError(401, "Invalid code", AUTH_ERROR_CODES.mfaCode);
   }
 
   const recoveryCodes = generateRecoveryCodes();

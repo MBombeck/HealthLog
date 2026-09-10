@@ -609,7 +609,8 @@ describe("compliance bars — fixed geometry (v1.16.6)", () => {
     );
     // Strip text nodes; the remaining tag/class skeleton must be identical
     // between a 0% and a 100% card (transform style varies with the value
-    // by design, so it is normalised too).
+    // by design, so it is normalised too — as are the two rate attributes the
+    // block publishes, which are the value and not the geometry).
     const skeleton = (html: string) =>
       html
         .replace(/>[^<]+</g, "><")
@@ -617,6 +618,8 @@ describe("compliance bars — fixed geometry (v1.16.6)", () => {
         .replace(/aria-valuenow="\d+"/g, 'aria-valuenow="N"')
         .replace(/data-state="[^"]*"/g, 'data-state="S"')
         .replace(/data-value="[^"]*"/g, 'data-value="V"')
+        .replace(/data-rate-short="[^"]*"/g, 'data-rate-short="R"')
+        .replace(/data-rate-long="[^"]*"/g, 'data-rate-long="R"')
         .replace(/data-max="[^"]*"/g, 'data-max="M"');
     expect(skeleton(a)).toBe(skeleton(b));
   });

@@ -9,12 +9,37 @@
  * shell would 403 the moment a switch was on.
  *
  * So every field below is still the CALLER's own — their preferences, their
- * modules, their identity — and the one field about the switch,
- * `accountAccess`, says so explicitly. Nothing here ever renders the owner's
- * data; a delegate reading their own display preferences while inside
- * somebody else's record is the correct behaviour and the reason the mode
- * exists (design §4: locale, theme and layout belong to the person, not the
- * record).
+ * identity — and the one field about the switch, `accountAccess`, says so
+ * explicitly. Nothing here ever renders the owner's health data; a delegate
+ * reading their own display preferences while inside somebody else's record is
+ * the correct behaviour and the reason the mode exists (design §4: locale,
+ * theme and layout belong to the person, not the record).
+ *
+ * TWO fields are the exception, and the exception is the rule applied rather
+ * than a hole in it: `modules` and `cycleTrackingEnabled` resolve for the
+ * RECORD the session is inside, not for the actor (#939). They are not display
+ * preferences. They say what this record tracks — and every consumer of them
+ * gates a surface that shows the RECORD's data: the navigation, the dashboard
+ * tiles, the insights sections, quick-add. Publishing the actor's map while
+ * switched meant a Guardian who turned Cycle off for the child still saw a
+ * Cycle destination in the child's record, and a Guardian who tracks it saw
+ * one there whether or not the child did — the toggle in the record's own
+ * settings wrote a column nothing on screen was reading. Design §4 is about
+ * whose eyes are on the screen; this is about whose record is on it.
+ *
+ * Those two fields are then MASKED to the sections the active grant names.
+ * `accountAccess.active` is set for any live grant, level and scope included,
+ * so the record scoping on its own would hand a delegate scoped to
+ * `measurements` the owner's cycle, screener, illness and nutrient
+ * configuration — and the cycle flag is a derivation of the owner's recorded
+ * sex. A section the grant does not open answers `false`, which is the answer
+ * a module that is off already gives and the answer the browser's own route
+ * inventory has always acted on. An unscoped grant names every section and is
+ * unaffected.
+ *
+ * The own-record case is byte-identical: with no switch the active record IS
+ * the caller, there is no grant to narrow to, and every value below is
+ * resolved from the same row it always was.
  */
 import { apiSuccess } from "@/lib/api-response";
 import { apiHandler, requireActorAuth } from "@/lib/api-handler";
@@ -30,7 +55,12 @@ import {
   getOperatorModuleAvailability,
 } from "@/lib/modules/gate";
 import { parseTourProgress } from "@/lib/onboarding/tour-progress";
+import { parseNotificationPrefs } from "@/lib/validations/notification-prefs";
 import { resolveAccountAccess } from "@/lib/sharing/account-access";
+import {
+  buildModuleDisclosure,
+  sectionsOpen,
+} from "@/lib/sharing/module-disclosure";
 import { recordSessionForPayload } from "@/lib/sharing/record-session-fence";
 
 export const dynamic = "force-dynamic";
@@ -41,26 +71,54 @@ export const GET = apiHandler(async () => {
 
   annotate({ action: { name: "auth.me" } });
 
-  // Two independent awaits, overlapped: the onboarding-cookie resync
-  // (v1.4.22 W5 Sr-H1 — fall-back for legacy sessions that predate the
-  // cookie; new sessions anchor it inside `createSession`) touches only
-  // the cookie store, while the cycle-profile read (v1.15.0 — resolved
-  // cycle-tracking gate; no row is forced, a NULL toggle derives from
-  // gender) is a Postgres round-trip. Running them sequentially added
-  // the cookie hop to every /me — and /me sits on every app boot path.
-  const [, , cycleProfile, modules, moduleAvailability, accountAccess] =
+  // Overlapped, not sequential: the two cookie resyncs (v1.4.22 W5 Sr-H1 —
+  // the onboarding fall-back for sessions that predate the cookie; new ones
+  // anchor it inside `createSession`) touch only the cookie store, while the
+  // access resolution is a Postgres round-trip. Running them one after the
+  // other added the cookie hop to every /me, and /me sits on every app boot.
+  const [, , accountAccess] = await Promise.all([
+    setOnboardingPendingCookie(user.onboardingCompletedAt == null),
+    // v1.23 — keep the admin-enforced-MFA hint cookie honest on every app
+    // boot, mirroring the onboarding-cookie resync. A locally edited cookie is
+    // corrected here; an account that enrols (or has the policy lifted) loses
+    // the redirect on the next /me read.
+    syncMfaEnrollCookie(user.id, {
+      totpConfirmedAt: user.totpConfirmedAt,
+      mfaEnforced: user.mfaEnforced,
+    }),
+    // v1.36.0 — which records this caller may open, which one they are
+    // inside, and what they may do there. Every value resolved server-side;
+    // see the module docblock for why none of it is left to the client.
+    resolveAccountAccess(auth),
+  ]);
+
+  // The record the two module fields answer for, and the reason this read is
+  // sequenced after the block above rather than inside it: the active record
+  // has to be the GRANT-VALIDATED one. The session row's own selector is not
+  // that — it is a stamp, and a stamp whose grant was revoked a minute ago
+  // still names an account. `resolveAccountAccess` is what checks the live
+  // grant, so its answer is what may pick whose configuration is published.
+  // The cost is one round-trip on a hot path, paid on every /me; publishing a
+  // revoked record's configuration would be paid once, by somebody else.
+  const recordId = accountAccess.active?.accountId ?? user.id;
+
+  // What the grant opens, and therefore what the two record fields below may
+  // say. `null` is the whole record — the answer for an unscoped grant and for
+  // no switch at all, and the reason the own-record payload is untouched.
+  const sections = accountAccess.active?.sections ?? null;
+
+  const [record, cycleProfile, resolvedModules, moduleAvailability] =
     await Promise.all([
-      setOnboardingPendingCookie(user.onboardingCompletedAt == null),
-      // v1.23 — keep the admin-enforced-MFA hint cookie honest on every app
-      // boot, mirroring the onboarding-cookie resync. A locally edited cookie is
-      // corrected here; an account that enrols (or has the policy lifted) loses
-      // the redirect on the next /me read.
-      syncMfaEnrollCookie(user.id, {
-        totpConfirmedAt: user.totpConfirmedAt,
-        mfaEnforced: user.mfaEnforced,
-      }),
+      // The actor's own row is already in hand; a switched session needs the
+      // record's `gender`, which is the column the cycle gate derives from.
+      recordId === user.id
+        ? Promise.resolve({ gender: user.gender })
+        : prisma.user.findUnique({
+            where: { id: recordId },
+            select: { gender: true },
+          }),
       prisma.cycleProfile.findUnique({
-        where: { userId: user.id },
+        where: { userId: recordId },
         select: { cycleTrackingEnabled: true },
       }),
       // v1.18.0 — resolved module enable/disable map for every toggleable
@@ -68,19 +126,41 @@ export const GET = apiHandler(async () => {
       // gate / disableCoach + operator assistant flag); the rest read the
       // disabled-allowlist `modulePreferencesJson`. Default-on. Clients
       // hide a whole module surface end-to-end when its key is `false`.
-      resolveModuleMap(user.id),
+      resolveModuleMap(recordId),
       // v1.18.0 — operator-layer availability map (server-wide kill-switch).
       // The resolved `modules` map above already AND-s this in, so it cannot
       // distinguish operator-off from user-off. The Modules hub needs that
       // distinction to render an operator-disabled module as a read-only
       // "disabled server-wide" row instead of a live toggle that no-ops.
+      // Server-WIDE, so it is the same map for every record and is not
+      // re-scoped here.
       getOperatorModuleAvailability(),
-      // v1.36.0 — which records this caller may open, which one they are
-      // inside, and what they may do there. Every value resolved server-side;
-      // see the module docblock for why none of it is left to the client.
-      resolveAccountAccess(auth),
     ]);
-  const cycleTrackingEnabled = isCycleEnabled(user.gender, cycleProfile);
+
+  // The masking step, and the one place the record scoping is narrowed rather
+  // than resolved. `active` is set for ANY live grant — a READ grant scoped to
+  // `measurements` included — so publishing the record's whole map would tell
+  // a delegate whether the owner tracks their cycle, their screeners, their
+  // illness episodes or their supplement intake, none of which their grant
+  // opens. A closed section reads `false`, the same answer a module that is
+  // off already gives, and the navigation the client builds from it drops
+  // exactly the doors `isSharedRecordPathPresentable` drops anyway.
+  // Two maps out of one pass: `modules` is the boolean gate map, masked
+  // exactly as it was, and `moduleAccess` is the same answer with the reason
+  // attached — the record's own switch, the grant's edge, or the operator's.
+  // Every client that only wants "paint it or not" keeps reading the boolean.
+  const { modules, moduleAccess } = buildModuleDisclosure(
+    resolvedModules,
+    moduleAvailability,
+    sections,
+  );
+  // The cycle flag is masked on its own rather than read off `modules.cycle`:
+  // that key also carries the operator's server-wide availability, and this
+  // field never has. Same section, same answer, without borrowing a second
+  // layer's decision.
+  const cycleTrackingEnabled =
+    sectionsOpen(sections, "cycle") &&
+    isCycleEnabled(record?.gender ?? null, cycleProfile);
 
   // v1.7.0 — patient-identity fields for the health-record export. The
   // KVNR is stored encrypted; decrypt fail-soft so a key-rotation gap on
@@ -145,6 +225,16 @@ export const GET = apiHandler(async () => {
     // the account has never saved one, which is what makes the panel show the
     // named template on the first run rather than a silent server default.
     reportSelection: user.reportSelectionJson ?? null,
+    // The account's resolved notification preferences — the same resolver
+    // `GET /api/auth/me/notification-prefs` answers with, so the two surfaces
+    // cannot disagree. Published here because the medication detail's
+    // notification section decides between the server-side reminder switch and
+    // the client-managed chip on `medication.clientManaged`, and it reads that
+    // decision off THIS payload: the dedicated endpoint is not on the app-boot
+    // path. An account that has never opted in resolves to the documented
+    // defaults rather than to `undefined`, so the switch is what renders.
+    // No extra query — the session already loads the row this column is on.
+    notificationPrefs: parseNotificationPrefs(user.notificationPrefs ?? null),
     // v1.4.47 W3 — per-user Coach opt-out. Default `false` if the
     // column is absent (partial-deploy rollback safety, see migration
     // 0078 commentary). Every Coach mount point on the client checks
@@ -157,7 +247,11 @@ export const GET = apiHandler(async () => {
     insurerIkNumber: user.insurerIkNumber ?? null,
     insuranceNumber,
     // v1.15.0 — cycle-tracking feature gate, resolved server-side. iOS
-    // hides the whole cycle tab when this is false.
+    // hides the whole cycle tab when this is false. v1.38.14 — resolved for
+    // the ACTIVE RECORD, so a switched browser hides the tab the record does
+    // not track rather than the one the actor does not (#939), and `false`
+    // whenever the active grant does not name the `cycle` section. Unchanged
+    // on the native transport, which carries no switch.
     cycleTrackingEnabled,
     // v1.18.0 — module enable/disable map. `{ <moduleKey>: boolean }`
     // for every toggleable module; `false` means the module is OFF and
@@ -165,6 +259,8 @@ export const GET = apiHandler(async () => {
     // …). `cycle` mirrors `cycleTrackingEnabled` and `coach` mirrors the
     // resolved `disableCoach` + operator master flag, so this map is the
     // single thing a client needs to gate every secondary domain.
+    // v1.38.14 — resolved for the ACTIVE RECORD and masked to the sections
+    // the active grant opens; see the module docblock.
     modules,
     // v1.18.0 — operator-layer availability per toggleable module. `false`
     // ⇒ the operator turned the module off server-wide (off for every
@@ -172,6 +268,15 @@ export const GET = apiHandler(async () => {
     // this to show a "disabled server-wide" read-only row; everywhere else
     // the already-AND-ed `modules` map is the single gate to read.
     moduleAvailability,
+    // Why each module's surfaces are or are not there, for the record this
+    // session is inside: `enabled`, `disabled` (the record's own switch),
+    // `not_granted` (the active grant does not open the module's section) or
+    // `unavailable` (the operator switched it off for the whole instance).
+    // Precedence outside-in: unavailable > not_granted > disabled > enabled.
+    // `modules[key]` stays exactly `moduleAccess[key] === "enabled"`, so this
+    // adds a reason without moving a gate; empty states read it to say the
+    // honest thing rather than offering a switch the reader cannot reach.
+    moduleAccess,
     // v1.36.0 — account sharing, resolved. `accounts` is the switcher's menu,
     // `active` is the record this session is inside (null when it is in its
     // own), `canSwitch` and per-entry `canWrite` are the booleans the UI binds

@@ -155,6 +155,19 @@ const DEFAULT_PAGE_SIZE = 25;
  */
 const STATUS_FILTER = "completed";
 
+/**
+ * The row's outcome as a stable token, carried on both layouts' rows as
+ * `data-status`. The visible outcome is a translated badge that renders at a
+ * different size on each layout, so it is not a thing an end-to-end journey
+ * can address; the branch itself is one line and already computed twice.
+ * "unknown" cannot occur while `STATUS_FILTER` holds — it is what a malformed
+ * row would say rather than quietly reading as taken.
+ */
+function rowStatus(isTaken: boolean, isSkipped: boolean): string {
+  if (isTaken) return "taken";
+  return isSkipped ? "skipped" : "unknown";
+}
+
 export function IntakeHistoryListV2({
   medicationId,
   pageSize = DEFAULT_PAGE_SIZE,
@@ -346,7 +359,11 @@ export function IntakeHistoryListV2({
                     const isSelected =
                       selection?.selected.has(event.id) ?? false;
                     return (
-                      <TableRow key={event.id}>
+                      <TableRow
+                        key={event.id}
+                        data-slot="intake-history-row"
+                        data-status={rowStatus(isTaken, isSkipped)}
+                      >
                         {showSelection && (
                           <TableCell className="w-8">
                             <Checkbox
@@ -441,6 +458,8 @@ export function IntakeHistoryListV2({
                   return (
                     <ListRow
                       key={event.id}
+                      data-slot="intake-history-row"
+                      data-status={rowStatus(isTaken, isSkipped)}
                       data-state={isSelected ? "selected" : undefined}
                       className="bg-card border-border data-[state=selected]:border-primary/60 data-[state=selected]:bg-primary/5"
                     >

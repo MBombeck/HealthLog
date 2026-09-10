@@ -5,11 +5,14 @@
 
 import { prisma } from "@/lib/db";
 import { getClientIpOrTrustWarning } from "@/lib/api-response";
+import {
+  captureRateLimitResult,
+  rateLimitResponseHeaders,
+  type RateLimitSnapshot,
+} from "@/lib/rate-limit-context";
 
-export interface RateLimitResult {
+export interface RateLimitResult extends RateLimitSnapshot {
   allowed: boolean;
-  remaining: number;
-  resetAt: number;
 }
 
 /**
@@ -45,11 +48,16 @@ export async function checkRateLimit(
   const resetAt = row.reset_at.getTime();
   const count = Number(row.count);
 
-  return {
+  const result: RateLimitResult = {
     allowed: count <= limit,
+    limit,
     remaining: Math.max(0, limit - count),
     resetAt,
   };
+  // Hand the verdict to the request-scoped cell so `apiHandler` can dress a
+  // bare 429 on the way out. A no-op outside a request.
+  captureRateLimitResult(result);
+  return result;
 }
 
 /**
@@ -77,15 +85,13 @@ export async function refundRateLimit(key: string): Promise<void> {
 }
 
 /**
- * Rate limit response headers.
+ * Rate limit response headers: `Retry-After` plus the `X-RateLimit-*` triple.
+ * See `rateLimitResponseHeaders` for what each one promises.
  */
 export function rateLimitHeaders(
-  result: RateLimitResult,
+  result: RateLimitSnapshot,
 ): Record<string, string> {
-  return {
-    "X-RateLimit-Remaining": String(result.remaining),
-    "X-RateLimit-Reset": new Date(result.resetAt).toISOString(),
-  };
+  return rateLimitResponseHeaders(result);
 }
 
 /**

@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Backup",
         "subtitle": "Istantanee settimanali dei dati per utente archiviate in PostgreSQL.",
-        "description": "Ogni utente ha un'istantanea a rotazione per tipo di backup. Le dimensioni mostrano il blob cifrato: i contenuti non sono scaricabili da questa pagina.",
+        "description": "Ogni utente ha un'istantanea a rotazione per tipo di backup. Le dimensioni mostrano il blob cifrato. Il download decifra l'istantanea per l'amministratore che la richiede; il testo cifrato resta nel database.",
         "runNow": "Esegui backup ora",
         "runEnqueued": "Processo di backup messo in coda",
         "runFailed": "Impossibile mettere in coda il backup",
@@ -6960,6 +6960,8 @@
         "restoreAria": "Ripristina dal backup di {username}",
         "restoreTitle": "Ripristina dal backup",
         "restoreDescription": "Questa operazione sostituirà TUTTI i dati attuali di {username} con l'istantanea del {when}. Misurazioni, farmaci, eventi di assunzione, voci dell'umore, canali di notifica, sottoscrizioni push ed eliminazioni Telegram in coda esistenti verranno eliminati.",
+        "restoreInstanceSettingsLabel": "Ripristina anche le impostazioni dell'istanza",
+        "restoreInstanceSettingsHint": "Registrazione, obbligo di MFA, lingua predefinita, disponibilità dei moduli, configurazione di notifiche e IA: presi dall'istantanea e applicati a tutti su questa installazione. Lascia deselezionato per ripristinare solo questo account.",
         "restorePromptLabel": "Digita RESTORE per continuare",
         "previewTitle": "Contenuto del backup",
         "previewLoading": "Lettura del contenuto…",
@@ -8693,6 +8695,20 @@
       "description": "Il libretto vaccinale strutturato: dose, serie, prossimo richiamo."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} è disattivato per questi dati, quindi le sue pagine restano nascoste. Riattivalo per ritrovarle.",
+      "title": "{module} è disattivato"
+    },
+    "notGranted": {
+      "description": "{module} è fuori dalle sezioni condivise con te. Cosa comprende un accesso condiviso lo decide la persona a cui appartengono i dati.",
+      "title": "Non fa parte dell'accesso condiviso"
+    },
+    "unavailable": {
+      "description": "Chi gestisce il server ha disattivato {module} per tutti gli account. Nessuna impostazione tua può riportarlo indietro.",
+      "title": "Non disponibile su questo server"
+    }
+  },
   "vaccinations": {
     "title": "Vaccinazioni",
     "subtitle": "Il tuo libretto vaccinale, dose per dose.",
@@ -9931,7 +9947,6 @@
     "page": {
       "title": "Apporto di nutrienti",
       "description": "Idratazione e apporto di vitamine/minerali sincronizzati dall'app salute del telefono, più le voci di acqua inserite manualmente.",
-      "moduleOffTitle": "L'apporto di nutrienti è disattivato",
       "moduleOffDescription": "Attiva il modulo nutrienti per vedere qui idratazione e apporto di vitamine/minerali. I dati sincronizzati diventano parte dei dati che il Coach può leggere.",
       "moduleOffCta": "Attiva nutrienti",
       "emptyTitle": "Ancora nessun dato sui nutrienti",
@@ -10280,6 +10295,12 @@
       "dobHint": "Lascia il campo vuoto se preferisci non registrarla. Da un anno di nascita non si deduce nulla.",
       "localeLabel": "Lingua di questa cartella",
       "localeHint": "La lingua dei testi scritti in questa cartella. Le tue schermate restano nella tua lingua.",
+      "genderLabel": "Sesso (facoltativo)",
+      "genderHint": "Determina se il monitoraggio del ciclo parte attivo per questa scheda. Modificabile in qualsiasi momento.",
+      "genderNone": "Non specificato",
+      "genderMale": "Uomo",
+      "genderFemale": "Donna",
+      "genderOther": "Altro",
       "timezoneHint": "Il fuso in cui si contano le giornate di questa cartella.",
       "timezoneInvalid": "Questo browser non conosce quel fuso orario.",
       "create": "Crea profilo",
@@ -10289,6 +10310,12 @@
       "errorOffline": "Non è arrivato al server. Non è cambiato nulla — controlla la connessione e riprova.",
       "errorInvalid": "Il server ha rifiutato questi dati. Controlla nome, data e fuso orario.",
       "errorFailed": "Non è stato possibile creare il profilo.",
+      "edit": "Modifica",
+      "editSave": "Salva le modifiche",
+      "editSaving": "Salvataggio…",
+      "editLoadError": "Non è stato possibile caricare questi dati.",
+      "editErrorGone": "Questa scheda non esiste più, oppure non te ne occupi più.",
+      "editErrorFailed": "Non è stato possibile salvare le modifiche.",
       "delete": "Elimina profilo",
       "deleteTitle": "Eliminare {name}?",
       "deleteBody": "Tutto ciò che è stato registrato per {name} sparisce insieme al profilo — misurazioni, farmaci, documenti e note. Non si può annullare.",

@@ -150,29 +150,67 @@ export function ConfiguredBadge() {
   );
 }
 
+/** The meaning a status tile's value carries. */
+export type StatusTone = "success" | "warning" | "destructive";
+
+/**
+ * Tone → classes for a status tile's value line.
+ *
+ * `--success` and `--warning` clear AA as text on the tile's `bg-muted/50`
+ * surface, so they tint the wording directly. `--destructive` does not: it is
+ * AA on the card itself (4.85:1 in the light theme) but the tile paints a
+ * muted wash over that card, and the tinted value measures 3.97:1 there —
+ * under the 4.5:1 floor. That is what axe reports on `/admin` whenever the
+ * process serving the page is not the worker and the worker row goes red.
+ *
+ * So the destructive tone takes the shape the other status rows already use
+ * (the medication detail status row, the invite-token chips): the token
+ * paints a small indicator and the wording stays in `text-foreground`. The
+ * word itself ("Stopped", "Error") states the condition, so nothing hangs on
+ * the colour alone.
+ */
+const STATUS_TONE_CLASS: Record<StatusTone, string> = {
+  success: "text-success",
+  warning: "text-warning",
+  destructive: "text-foreground",
+};
+
 /**
  * The console's label/value tile. Four hand-rolled variants of this box used
  * to exist side by side; `StatTile` is the one, and this is the thin adapter
- * the status grids call (the `className` they pass tints the VALUE, which is
- * why it cannot just be `StatTile` under a different name).
+ * the status grids call (the `tone` they pass decides how the VALUE reads,
+ * which is why it cannot just be `StatTile` under a different name).
  */
 export function StatusItem({
   icon,
   label,
   value,
-  className,
+  tone,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
-  className?: string;
+  tone?: StatusTone;
 }) {
   return (
     <StatTile
       icon={icon}
       label={label}
-      value={value}
-      valueClassName={className}
+      value={
+        tone === "destructive" ? (
+          <span className="flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              data-slot="status-item-indicator"
+              className="bg-destructive size-2 shrink-0 rounded-full"
+            />
+            {value}
+          </span>
+        ) : (
+          value
+        )
+      }
+      valueClassName={tone ? STATUS_TONE_CLASS[tone] : undefined}
     />
   );
 }

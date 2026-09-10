@@ -6904,7 +6904,7 @@
       "backups": {
         "title": "백업",
         "subtitle": "PostgreSQL에 저장되는 주간 사용자별 데이터 스냅샷이에요.",
-        "description": "사용자마다 백업 유형별로 최신 스냅샷 하나를 굴려가며 보관해요. 크기는 암호화된 blob 기준이고, 이 페이지에서 내용을 내려받을 수는 없어요.",
+        "description": "사용자마다 백업 유형별로 최신 스냅샷 하나를 굴려가며 보관해요. 크기는 암호화된 blob 기준이에요. 내려받기는 요청한 관리자에게만 스냅샷을 복호화해 주고, 암호문은 데이터베이스에 그대로 남아요.",
         "runNow": "지금 백업",
         "runEnqueued": "백업 작업을 큐에 넣었어요",
         "runFailed": "백업을 큐에 넣지 못했어요",
@@ -6939,7 +6939,9 @@
         "restore": "복원",
         "restoreAria": "{username}의 백업에서 복원",
         "restoreTitle": "백업에서 복원",
-        "restoreDescription": "{username}의 현재 데이터 전체를 {when} 스냅샷으로 바꿔요. 기존 측정, 약, 복용 기록, 기분 기록, 알림 채널, 푸시 구독, 대기 중인 Telegram 삭제 항목이 지워져요. 스냅샷에 인스턴스 전체 설정이 들어 있으면 설치본 전체 설정을 덮어써요.",
+        "restoreDescription": "{username}의 현재 데이터 전체를 {when} 스냅샷으로 바꿔요. 기존 측정, 약, 복용 기록, 기분 기록, 알림 채널, 푸시 구독, 대기 중인 Telegram 삭제 항목이 지워져요.",
+        "restoreInstanceSettingsLabel": "인스턴스 설정도 함께 복원",
+        "restoreInstanceSettingsHint": "가입, MFA 필수 여부, 기본 언어, 모듈 사용 여부, 알림과 AI 설정 — 스냅샷에서 가져와 이 설치본의 모든 사용자에게 적용돼요. 이 계정만 복원하려면 선택하지 마세요.",
         "restorePromptLabel": "계속하려면 RESTORE를 입력해 주세요",
         "previewTitle": "이 백업에 담긴 내용",
         "previewLoading": "내용을 읽는 중…",
@@ -8693,6 +8695,20 @@
       "description": "예방접종 기록을 구조화해서: 용량, 차수, 다음 추가 접종."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "이 기록에서 {module} 모듈이 꺼져 있어서 관련 페이지가 보이지 않아요. 다시 켜면 돌아와요.",
+      "title": "{module} 모듈이 꺼져 있어요"
+    },
+    "notGranted": {
+      "description": "{module} 모듈은 공유된 영역 밖에 있어요. 공유된 기록이 어디까지 포함되는지는 기록의 주인이 정해요.",
+      "title": "공유 범위에 없는 항목"
+    },
+    "unavailable": {
+      "description": "운영자가 이 서버의 모든 계정에서 {module} 모듈을 껐어요. 개인 설정으로는 되돌릴 수 없어요.",
+      "title": "이 서버에서는 사용할 수 없어요"
+    }
+  },
   "vaccinations": {
     "title": "예방접종",
     "subtitle": "접종 한 건씩 남기는 예방접종 기록이에요.",
@@ -9931,7 +9947,6 @@
     "page": {
       "title": "영양소 섭취",
       "description": "휴대폰 건강 앱에서 동기화된 수분·비타민/미네랄 섭취량과 직접 입력한 수분 기록이에요.",
-      "moduleOffTitle": "영양소 섭취가 꺼져 있어요",
       "moduleOffDescription": "영양소 모듈을 켜면 수분과 비타민/미네랄 섭취량을 여기서 볼 수 있어요. 동기화된 섭취량은 코치가 읽는 기록에 포함돼요.",
       "moduleOffCta": "영양소 켜기",
       "emptyTitle": "아직 영양소 데이터가 없어요",
@@ -10280,6 +10295,12 @@
       "dobHint": "적고 싶지 않으면 비워 두세요. 연도로 뭔가를 추측하지는 않아요.",
       "localeLabel": "이 기록의 언어",
       "localeHint": "이 기록에 적히는 글의 언어예요. 내 화면은 내 언어 그대로예요.",
+      "genderLabel": "성별(선택)",
+      "genderHint": "이 기록에서 주기 추적을 처음에 켜둘지 결정합니다. 언제든 바꿀 수 있습니다.",
+      "genderNone": "지정 안 함",
+      "genderMale": "남성",
+      "genderFemale": "여성",
+      "genderOther": "기타",
       "timezoneHint": "이 기록의 하루를 재는 기준 시간대예요.",
       "timezoneInvalid": "이 브라우저가 모르는 시간대예요.",
       "create": "프로필 만들기",
@@ -10289,6 +10310,12 @@
       "errorOffline": "서버에 닿지 못했어요. 바뀐 것은 없으니 연결을 확인하고 다시 시도해 주세요.",
       "errorInvalid": "서버가 그 내용을 거절했어요. 이름과 날짜, 시간대를 확인해 주세요.",
       "errorFailed": "프로필을 만들지 못했어요.",
+      "edit": "편집",
+      "editSave": "변경 사항 저장",
+      "editSaving": "저장 중…",
+      "editLoadError": "해당 정보를 불러오지 못했습니다.",
+      "editErrorGone": "그 기록이 없거나 더 이상 관리하지 않습니다.",
+      "editErrorFailed": "변경 사항을 저장하지 못했습니다.",
       "delete": "프로필 삭제",
       "deleteTitle": "{name} 님 프로필을 삭제할까요?",
       "deleteBody": "{name} 님에 대해 기록한 모든 것이 프로필과 함께 사라져요. 측정값, 약, 문서, 메모 전부요. 되돌릴 수 없어요.",

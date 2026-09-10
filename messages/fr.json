@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Sauvegardes",
         "subtitle": "Instantanés de données hebdomadaires par utilisateur stockés dans PostgreSQL.",
-        "description": "Chaque utilisateur dispose d'un instantané glissant par type de sauvegarde. Les tailles indiquent le blob chiffré — les contenus ne sont pas téléchargeables depuis cette page.",
+        "description": "Chaque utilisateur dispose d'un instantané glissant par type de sauvegarde. Les tailles indiquent le blob chiffré. Télécharger déchiffre l'instantané pour l'administrateur qui le demande ; le texte chiffré reste dans la base de données.",
         "runNow": "Sauvegarder maintenant",
         "runEnqueued": "Tâche de sauvegarde mise en file d'attente",
         "runFailed": "Échec de la mise en file d'attente de la sauvegarde",
@@ -6960,6 +6960,8 @@
         "restoreAria": "Restaurer à partir de la sauvegarde de {username}",
         "restoreTitle": "Restaurer à partir d'une sauvegarde",
         "restoreDescription": "Cette action remplacera TOUTES les données actuelles de {username} par l'instantané du {when}. Les mesures, médicaments, événements de prise, entrées d'humeur, canaux de notification, abonnements push et suppressions Telegram en file d'attente existants seront supprimés.",
+        "restoreInstanceSettingsLabel": "Restaurer aussi les paramètres de l'instance",
+        "restoreInstanceSettingsHint": "Inscription, exigence MFA, langue par défaut, disponibilité des modules, configuration des notifications et de l'IA — repris de l'instantané et appliqués à tout le monde sur cette installation. Laissez décoché pour ne restaurer que ce compte.",
         "restorePromptLabel": "Tapez RESTORE pour continuer",
         "previewTitle": "Contenu de la sauvegarde",
         "previewLoading": "Lecture du contenu…",
@@ -8693,6 +8695,20 @@
       "description": "Le carnet de vaccination structuré : dose, série, prochain rappel."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} est désactivé pour ce dossier, ses pages restent donc masquées. Réactivez le module pour les retrouver.",
+      "title": "{module} est désactivé"
+    },
+    "notGranted": {
+      "description": "{module} se trouve en dehors des sections partagées avec vous. Ce que couvre un dossier partagé est décidé par la personne à qui il appartient.",
+      "title": "Ne fait pas partie de l'accès partagé"
+    },
+    "unavailable": {
+      "description": "L'exploitant a désactivé {module} pour tous les comptes de ce serveur. Aucun réglage de votre côté ne peut le rétablir.",
+      "title": "Non disponible sur ce serveur"
+    }
+  },
   "vaccinations": {
     "title": "Vaccinations",
     "subtitle": "Votre carnet de vaccination, dose par dose.",
@@ -9931,7 +9947,6 @@
     "page": {
       "title": "Apports en nutriments",
       "description": "Hydratation et apports en vitamines/minéraux synchronisés depuis l'appli santé de votre téléphone, plus les entrées manuelles d'eau.",
-      "moduleOffTitle": "Le suivi des nutriments est désactivé",
       "moduleOffDescription": "Activez le module nutriments pour voir ici l'hydratation et les apports en vitamines/minéraux. Les données synchronisées feront partie du dossier que le Coach peut lire.",
       "moduleOffCta": "Activer les nutriments",
       "emptyTitle": "Pas encore de données nutritionnelles",
@@ -10280,6 +10295,12 @@
       "dobHint": "Laissez le champ vide si vous préférez ne pas en enregistrer. Rien n'est déduit d'une année.",
       "localeLabel": "Langue de ce dossier",
       "localeHint": "La langue des textes écrits dans ce dossier. Vos propres écrans restent dans votre langue.",
+      "genderLabel": "Sexe (facultatif)",
+      "genderHint": "Détermine si le suivi du cycle est activé au départ pour ce dossier. Modifiable à tout moment.",
+      "genderNone": "Non précisé",
+      "genderMale": "Homme",
+      "genderFemale": "Femme",
+      "genderOther": "Autre",
       "timezoneHint": "Le fuseau dans lequel les journées de ce dossier sont comptées.",
       "timezoneInvalid": "Ce navigateur ne connaît pas ce fuseau horaire.",
       "create": "Créer le profil",
@@ -10289,6 +10310,12 @@
       "errorOffline": "Cela n'a pas atteint le serveur. Rien n'a changé — vérifiez votre connexion et réessayez.",
       "errorInvalid": "Le serveur a refusé ces informations. Vérifiez le nom, la date et le fuseau horaire.",
       "errorFailed": "Le profil n'a pas pu être créé.",
+      "edit": "Modifier",
+      "editSave": "Enregistrer les modifications",
+      "editSaving": "Enregistrement…",
+      "editLoadError": "Ces informations n'ont pas pu être chargées.",
+      "editErrorGone": "Ce dossier n'existe plus, ou vous ne vous en occupez plus.",
+      "editErrorFailed": "Les modifications n'ont pas pu être enregistrées.",
       "delete": "Supprimer le profil",
       "deleteTitle": "Supprimer {name} ?",
       "deleteBody": "Tout ce qui a été enregistré pour {name} disparaît avec le profil — mesures, médicaments, documents et notes. Cette action est irréversible.",

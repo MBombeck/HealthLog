@@ -112,7 +112,7 @@ const cycleSymptomDto = z.object({
   severity: z.number().int().min(1).max(4).nullable(),
 });
 
-const cycleDayLogDto = z
+export const cycleDayLogDto = z
   .object({
     id: z.string(),
     date: z.string(),
@@ -145,7 +145,7 @@ const cycleDayLogDto = z
       "The canonical day-log row iOS mirrors. `note` is decrypted on read. Soft-deleted rows ride `/api/sync/changes` as tombstones.",
   });
 
-const menstrualCycleDto = z
+export const menstrualCycleDto = z
   .object({
     id: z.string(),
     startDate: z.string(),

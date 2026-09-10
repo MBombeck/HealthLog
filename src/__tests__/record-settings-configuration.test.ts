@@ -23,7 +23,7 @@ describe("managed record settings configuration contract", () => {
         "timeFormat",
         "dateFormat",
       ],
-      modules: ["modulePreferences"],
+      modules: ["modulePreferences", "cycleTrackingEnabled"],
       notifications: ["moodReminderEnabled", "notificationPreferences"],
       thresholds: ["overrides"],
       coach: ["disableCoach", "preferences"],
@@ -34,6 +34,13 @@ describe("managed record settings configuration contract", () => {
   it.each([
     ["profile", { email: "not-allowed@example.test" }],
     ["modules", { role: "ADMIN" }],
+    // The delegated key by its module name, which is the mistake a stale
+    // client makes. It has to stay a refusal: accepting it would persist an
+    // inert `false` behind a green "saved" and change nothing.
+    ["modules", { modulePreferences: { cycle: false } }],
+    // An empty patch. It parses as a strict object and would audit a change
+    // nobody made.
+    ["modules", {}],
     [
       "notifications",
       {
@@ -63,6 +70,11 @@ describe("managed record settings configuration contract", () => {
       },
     ],
     ["modules", { modulePreferences: { mood: false } }],
+    // v1.38.14 (#939) — the delegated key, sent on its own. `cycle` is not a
+    // writable module preference and never will be: its user-layer state is
+    // the record's own cycle profile, so the family names the real column
+    // rather than a blob entry the gate ignores.
+    ["modules", { cycleTrackingEnabled: false }],
     [
       "notifications",
       {

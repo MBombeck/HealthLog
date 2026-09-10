@@ -84,7 +84,33 @@ const moduleMapResolved = z
   .meta({
     id: "ModuleMap",
     description:
-      "Fully-resolved per-user module enable/disable map. Every toggleable module key is present. `false` means the surface should disappear end-to-end (nav, dashboard, insights, …). `cycle` mirrors `cycleTrackingEnabled`; `coach` mirrors the resolved per-user opt-out + operator master flag.",
+      "Fully-resolved module enable/disable map. Every toggleable module key is present. `false` means the surface should disappear end-to-end (nav, dashboard, insights, …). `cycle` mirrors `cycleTrackingEnabled`; `coach` mirrors the resolved per-user opt-out + operator master flag. On `GET /api/auth/me` it answers for the RECORD the session is inside rather than for the caller, because every surface it gates shows the record's data, and it is masked to the sections the active grant opens — a module outside them reads `false` rather than the record's true state. With no switch — which is every native request, since the Bearer transport carries none — the two are the same account, nothing is masked and the payload is unchanged.",
+  });
+
+/**
+ * The same answer as `ModuleMap`, with the reason attached.
+ *
+ * Additive and beside the booleans, which keep their meaning: for every key
+ * `modules[key]` is exactly `moduleAccess[key] === "enabled"`. A client that
+ * only gates a surface keeps reading the boolean; a client that has to TELL
+ * somebody why a surface is missing reads this, because the boolean collapses
+ * three different situations into one `false`.
+ */
+export const moduleAccessMap = z
+  .object(
+    Object.fromEntries(
+      MODULE_KEYS.map((k) => [
+        k,
+        z
+          .enum(["enabled", "disabled", "not_granted", "unavailable"])
+          .describe(`Why the "${k}" module is or is not available here.`),
+      ]),
+    ),
+  )
+  .meta({
+    id: "ModuleAccessMap",
+    description:
+      "Why each toggleable module is or is not available for the record this session is inside. `enabled` — the module is on and the client may paint it. `disabled` — the record has it switched off. `not_granted` — the active grant's sections do not open the module's section, which also covers every module that reads across the whole record (achievements, the assistant surfaces, the export, environment, the account's own MCP endpoint) since no scoped grant opens one. `unavailable` — the operator switched the module off for the whole instance. Precedence, highest first: `unavailable` > `not_granted` > `disabled` > `enabled`, so the reason published is the one nothing further in can change. Own-record sessions and unscoped grants never produce `not_granted`. Every key is present, and `modules[key] === (moduleAccess[key] === \"enabled\")` holds for every key — this field adds a reason, never a different gate.",
   });
 
 const moduleMapEnvelopeInner = z

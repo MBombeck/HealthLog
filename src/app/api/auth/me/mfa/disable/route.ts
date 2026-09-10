@@ -13,6 +13,7 @@
  */
 import {
   apiHandler,
+  AUTH_ERROR_CODES,
   requireMfaManagementAuth,
   HttpError,
 } from "@/lib/api-handler";
@@ -81,7 +82,7 @@ export const POST = apiHandler(async (req: Request) => {
       },
     });
     annotate({ action: { name: "auth.mfa.disable.invalid_factor" } });
-    throw new HttpError(401, "Invalid code");
+    throw new HttpError(401, "Invalid code", AUTH_ERROR_CODES.mfaCode);
   }
 
   // Every cheap check has passed and the teardown is next, so spend the

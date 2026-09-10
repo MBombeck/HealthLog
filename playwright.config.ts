@@ -1,9 +1,18 @@
 import { defineConfig, devices } from "@playwright/test";
 
 import {
+  NOTIFICATION_BASE_URL,
+  NOTIFICATION_PORT,
+} from "./e2e/setup/notification-server";
+import {
   SSR_PREFETCH_BASE_URL,
   SSR_PREFETCH_PORT,
 } from "./e2e/setup/ssr-prefetch-server";
+import {
+  resolveSmtpStubPort,
+  SMTP_STUB_FROM,
+  SMTP_STUB_HOST,
+} from "./e2e/setup/smtp-stub";
 
 /**
  * Playwright configuration for the HealthLog E2E suite.
@@ -19,6 +28,14 @@ import {
  * To run locally: `pnpm dlx playwright install --with-deps chromium`
  * once, then `pnpm e2e`.
  */
+/**
+ * Drawn once here, before any server or worker exists, and published through
+ * `process.env.SMTP_STUB_PORT` — which the web server inherits and which every
+ * worker process re-reads when it loads this config, so all three agree on one
+ * number without a constant to collide on.
+ */
+const smtpStubPort = resolveSmtpStubPort();
+
 export default defineConfig({
   testDir: "./e2e",
   testIgnore: ["setup/**"],
@@ -160,6 +177,26 @@ export default defineConfig({
         // other one mid-navigation. It proves a flow through stable
         // data-slots, not a mobile layout, so it runs in one project.
         "glucose-journey.spec.ts",
+        // The adherence journey walks the wizard, records doses on its own
+        // account and then reads RATES back off it — and the dashboard tile
+        // sums the expected doses of every active medication that account
+        // holds. The account keeps siblings out; two PROJECTS running this
+        // same file in parallel would still write the one cabinet and each
+        // sit in the other's denominator, so the percentages would be answers
+        // to a question neither test asked. It proves flows through stable
+        // data-slots, not a mobile layout, so it runs in one project.
+        "medication-compliance-journey.spec.ts",
+        // The doctor-report journey seeds a few weeks of readings into its own
+        // account, presses Generate and reads the PDF back off the download.
+        // Two projects doing that in parallel would leave a second set of rows
+        // in the window one of them is asserting an empty report for, and would
+        // spend the shared hourly export bucket twice over. The panel's mobile
+        // layout is covered by `settings-export.spec.ts`, which measures its
+        // tap targets there; this journey is about the artefact.
+        "doctor-report.spec.ts",
+        // Its delegate half MOVES the session's record selector, so it runs in
+        // exactly one project for the reason written above the fence specs.
+        "doctor-report-delegate.spec.ts",
         // Runs only in the service-worker project.
         "v137-record-session-fence-offline.spec.ts",
         // The Apple Health import journey uploads an archive into the one
@@ -171,6 +208,20 @@ export default defineConfig({
         // through stable data attributes, not a mobile layout, so it runs in
         // one project.
         "apple-health-import.spec.ts",
+        // The backup/restore journey, for both reasons already on this list
+        // at once: it restores a snapshot over its own account, so a second
+        // project would be two browsers rewriting one record's tables in
+        // parallel, and its last act switches a session into that record.
+        "backup-restore-journey.spec.ts",
+        // The notification-dispatch journey binds a local SMTP responder and
+        // reads verdicts off one account's delivery ledger — "one email
+        // attempt, no ntfy attempt, the APNs arm skipped for this reason". A
+        // second project would run the file in a second worker process, whose
+        // stub would find the port already bound, and would add attempts to
+        // the window the first one counts. It proves a dispatch decision
+        // through stable attributes and the account's own API, not a mobile
+        // layout, so it runs in one project.
+        "notification-dispatch-journey.spec.ts",
       ],
       use: {
         // Pixel 5 — Chromium-based mobile profile so CI only needs
@@ -238,6 +289,38 @@ export default defineConfig({
             ...process.env,
             NATIVE_CANVAS: "off",
             DASHBOARD_SSR_PREFETCH: "true",
+          },
+        },
+        // The mail-configured, scheduler-free server, on its own port.
+        //
+        // Only `notification-dispatch-journey.spec.ts` talks to it, and
+        // `e2e/setup/notification-server.ts` carries the whole reasoning: why
+        // the SMTP env must not reach the shared server (it would render the
+        // Email card for every spec that opens `/settings/integrations`), why
+        // this process must not run the reminder scheduler (a tick inside the
+        // journey's window is a writer no spec can see), and what the shared
+        // server keeping "all" still leaves standing.
+        {
+          command: `PORT=${NOTIFICATION_PORT} HOSTNAME=127.0.0.1 ${JSON.stringify(process.execPath)} .next/standalone/server.js`,
+          url: `${NOTIFICATION_BASE_URL}/api/version`,
+          timeout: 60_000,
+          reuseExistingServer: !process.env.CI,
+          stdout: "ignore",
+          stderr: "pipe",
+          env: {
+            ...process.env,
+            NATIVE_CANVAS: "off",
+            DASHBOARD_SSR_PREFETCH: "false",
+            HEALTHLOG_PROCESS_TYPE: "web",
+            // The one delivery channel a notification journey can exercise for
+            // real on one machine. Its transport is operator config, not
+            // account input, so it never crosses the SSRF floor that refuses a
+            // local host for ntfy / webhook / Web Push. The responder these
+            // point at is started by the journey itself; see
+            // `e2e/setup/smtp-stub.ts` for why no other channel can be.
+            SMTP_HOST: SMTP_STUB_HOST,
+            SMTP_PORT: String(smtpStubPort),
+            SMTP_FROM: SMTP_STUB_FROM,
           },
         },
       ],

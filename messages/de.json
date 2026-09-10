@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Backups",
         "subtitle": "Wöchentliche Daten-Snapshots pro Nutzer in PostgreSQL.",
-        "description": "Jeder Nutzer hat einen rollierenden Snapshot pro Backup-Typ. Größen zeigen den verschlüsselten Blob — die Inhalte sind hier nicht herunterladbar.",
+        "description": "Jeder Nutzer hat einen rollierenden Snapshot pro Backup-Typ. Größen zeigen den verschlüsselten Blob. Download entschlüsselt den Snapshot für den anfragenden Admin; der Chiffretext bleibt in der Datenbank.",
         "runNow": "Jetzt sichern",
         "runEnqueued": "Backup-Job eingeplant",
         "runFailed": "Backup konnte nicht eingeplant werden",
@@ -6959,7 +6959,9 @@
         "restore": "Wiederherstellen",
         "restoreAria": "Backup für {username} wiederherstellen",
         "restoreTitle": "Aus Backup wiederherstellen",
-        "restoreDescription": "Dies ersetzt ALLE aktuellen Daten von {username} mit dem Snapshot von {when}. Vorhandene Messungen, Medikamente, Einnahmen, Stimmungseinträge, Benachrichtigungs-Kanäle, Push-Abos und Telegram-Lösch-Aufträge werden entfernt. Falls im Snapshot enthalten, überschreiben instanzweite Einstellungen die Konfiguration der gesamten Installation.",
+        "restoreDescription": "Dies ersetzt ALLE aktuellen Daten von {username} mit dem Snapshot von {when}. Vorhandene Messungen, Medikamente, Einnahmen, Stimmungseinträge, Benachrichtigungs-Kanäle, Push-Abos und Telegram-Lösch-Aufträge werden entfernt.",
+        "restoreInstanceSettingsLabel": "Instanzweite Einstellungen mitwiederherstellen",
+        "restoreInstanceSettingsHint": "Registrierung, MFA-Pflicht, Standardsprache, Modulverfügbarkeit, Benachrichtigungs- und KI-Konfiguration — aus dem Snapshot, gültig für alle auf dieser Installation. Leer lassen, um nur dieses Konto wiederherzustellen.",
         "restorePromptLabel": "Tippe RESTORE zum Fortfahren",
         "previewTitle": "Inhalt der Sicherung",
         "previewLoading": "Inhalt wird gelesen…",
@@ -8693,6 +8695,20 @@
       "description": "Der Impfpass in strukturierter Form: Dosis, Serie, nächste Auffrischung."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} ist für diese Akte ausgeschaltet, deshalb bleiben die Seiten verborgen. Schalte das Modul wieder ein, um sie zurückzuholen.",
+      "title": "{module} ist ausgeschaltet"
+    },
+    "notGranted": {
+      "description": "{module} liegt außerhalb der Bereiche, die mit dir geteilt wurden. Was ein geteilter Zugriff umfasst, legt die Person fest, der die Akte gehört.",
+      "title": "Gehört nicht zum geteilten Zugriff"
+    },
+    "unavailable": {
+      "description": "Der Betreiber hat {module} für alle Konten auf diesem Server ausgeschaltet. Keine eigene Einstellung holt es zurück.",
+      "title": "Auf diesem Server nicht verfügbar"
+    }
+  },
   "vaccinations": {
     "title": "Impfungen",
     "subtitle": "Dein Impfpass, Dosis für Dosis.",
@@ -9931,7 +9947,6 @@
     "page": {
       "title": "Nährstoffaufnahme",
       "description": "Flüssigkeits- und Vitamin-/Mineralstoffaufnahme aus der Gesundheits-App deines Telefons, plus manuelle Wassereinträge.",
-      "moduleOffTitle": "Nährstoffaufnahme ist aus",
       "moduleOffDescription": "Aktiviere das Nährstoffe-Modul, um Flüssigkeits- und Vitamin-/Mineralstoffaufnahme hier zu sehen. Synchronisierte Werte werden Teil der Aufzeichnung, die der Coach lesen kann.",
       "moduleOffCta": "Nährstoffe aktivieren",
       "emptyTitle": "Noch keine Nährstoffdaten",
@@ -10280,6 +10295,12 @@
       "dobHint": "Lass das Feld leer, wenn du keines hinterlegen willst. Aus einem Jahrgang wird nichts abgeleitet.",
       "localeLabel": "Sprache dieser Akte",
       "localeHint": "Die Sprache für Texte, die in diese Akte geschrieben werden. Deine eigenen Ansichten bleiben in deiner Sprache.",
+      "genderLabel": "Geschlecht (optional)",
+      "genderHint": "Entscheidet, ob die Zyklus-Funktion für diese Akte zunächst an ist. Jederzeit änderbar.",
+      "genderNone": "Keine Angabe",
+      "genderMale": "Männlich",
+      "genderFemale": "Weiblich",
+      "genderOther": "Divers",
       "timezoneHint": "Die Zeitzone, in der die Tage dieser Akte gezählt werden.",
       "timezoneInvalid": "Diese Zeitzone kennt der Browser nicht.",
       "create": "Profil anlegen",
@@ -10289,6 +10310,12 @@
       "errorOffline": "Das hat den Server nicht erreicht. Es hat sich nichts geändert — prüfe deine Verbindung und versuche es erneut.",
       "errorInvalid": "Der Server hat diese Angaben abgelehnt. Prüfe Name, Datum und Zeitzone.",
       "errorFailed": "Das Profil konnte nicht angelegt werden.",
+      "edit": "Bearbeiten",
+      "editSave": "Änderungen speichern",
+      "editSaving": "Wird gespeichert…",
+      "editLoadError": "Diese Angaben konnten nicht geladen werden.",
+      "editErrorGone": "Diese Akte gibt es nicht mehr, oder du betreust sie nicht mehr.",
+      "editErrorFailed": "Die Änderungen konnten nicht gespeichert werden.",
       "delete": "Profil löschen",
       "deleteTitle": "{name} löschen?",
       "deleteBody": "Alles, was für {name} erfasst wurde, verschwindet mit dem Profil — Messwerte, Medikamente, Dokumente und Notizen. Das lässt sich nicht rückgängig machen.",

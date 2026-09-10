@@ -217,14 +217,10 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   "/api/admin/backups": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/backups/run": { kind: "adminConsole", methods: ["POST"] },
   "/api/admin/backups/upload": { kind: "adminConsole", methods: ["POST"] },
-  "/api/admin/backups/{id}/download": {
-    kind: "adminConsole",
-    methods: ["GET"],
-  },
-  "/api/admin/backups/{id}/restore": {
-    kind: "adminConsole",
-    methods: ["POST"],
-  },
+  // `/api/admin/backups/{id}/download` and `/api/admin/backups/{id}/restore`
+  // are published rather than exempted: both open the encrypted stored copy,
+  // and the refusal they answer when it will not open is a promise an operator
+  // needs to be able to look up. See `src/lib/openapi/routes/admin-backups.ts`.
   "/api/admin/backups/{id}/summary": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/central-codex": {
     kind: "adminConsole",
@@ -260,10 +256,6 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   },
   "/api/admin/provider-health": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/notifications/health": { kind: "adminConsole", methods: ["GET"] },
-  "/api/admin/notifications/reminder-check": {
-    kind: "adminConsole",
-    methods: ["POST"],
-  },
   "/api/admin/notifications/test": { kind: "adminConsole", methods: ["POST"] },
   "/api/admin/rollups/recompute": { kind: "adminConsole", methods: ["POST"] },
   "/api/admin/settings": { kind: "adminConsole", methods: ["GET", "PUT"] },

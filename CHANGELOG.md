@@ -1,5 +1,167 @@
 # Changelog
 
+## [1.38.15] — 2026-09-10
+
+The rest of #939 for managed profiles, one figure for medication adherence
+on every surface, and four more journeys in the gate.
+
+### Added
+
+- **A guardian can edit a managed record, and record its sex (#939).**
+  `PATCH /api/managed-profiles/{id}` accepts name, date of birth, language,
+  timezone and sex; the creation form asks for sex as well, so cycle tracking
+  can derive from it. Both arms require the fresh second factor the create
+  and delete routes already do, refuse with 404 rather than 403 for a record
+  the caller does not manage, and the edit is capped at ten an hour per
+  account. Every field is documented; `rejectedFields` says which value the
+  server would not take.
+
+- **Modules are switched per record.** `GET`/`PUT /api/record-settings/modules`
+  read and write the module map of the record the browser is acting on, and
+  `GET /api/auth/me` under an active switch reports `modules` and
+  `cycleTrackingEnabled` for that record, not for the caller. Navigation
+  follows the record's own map, so a guardian sees the doors the child's record
+  has open. Under a scoped grant the two fields are masked to the sections the
+  grant names: a delegate scoped to measurements does not learn whether the
+  owner tracks their cycle, screeners, illness episodes or supplements, and the
+  cycle flag, which derives from the owner's recorded sex, answers `false`
+  outside a grant that opens it. Own record and unscoped grants are unchanged.
+  Documented on the account payload, which now says which fields describe the
+  caller and which the record.
+
+- **`moduleAccess` says why a module is off.** Beside the boolean map,
+  `GET /api/auth/me` carries one of `enabled`, `disabled`, `not_granted` or
+  `unavailable` per module, in that order of precedence from the bottom: the
+  operator's instance-wide switch, then the grant's sections, then the
+  record's own choice. The booleans keep their exact meaning (`modules[key]`
+  is `moduleAccess[key] === "enabled"`, asserted over every grant shape). The
+  module-off notice on the web names the reason and offers the switch only
+  when the record itself turned the module off; a native client can show the
+  same sentence instead of a silently missing row.
+
+### Fixed
+
+- **A skipped dose is a pause, not a miss, on the dashboard too.** The
+  medication card, the dose history and the doctor report have excluded a
+  deliberate skip from the denominator since v1.15.9; the dashboard tile's
+  schedule-anchored engine counted it as expected-and-missed, so the same day
+  read two different rates. The tile engine now subtracts the day's skips,
+  capped at the minted slots, and a wholly skipped day drops out of its
+  buckets exactly as it drops out of the ledger. One test feeds both engines
+  the same fixture and asserts one figure.
+
+- **Saving the Modules card no longer freezes a record's cycle derivation.**
+  Every save sent `cycleTrackingEnabled`, which wrote an explicit boolean over
+  the derivation from sex; a record without a recorded sex that later got one
+  stayed off with nothing on screen saying why. The flag now rides only when
+  it moved.
+
+- **A refused second-factor action no longer hides its reason behind the
+  dialog.** Regenerating recovery codes or disabling the authenticator asked
+  for confirmation in a dialog whose confirm handler kept it open; when the
+  server refused (a stale step-up, most often) the message painted on the card
+  underneath the overlay. Both dialogs are controlled now and close when the
+  request settles, whichever way it went. Found by the second-factor journey
+  below.
+
+- **The managed-record edit form keeps what you typed across a refetch.** It
+  was keyed on the query's timestamp, so any invalidation of the profile list
+  remounted it and dropped the input; it is keyed on the record now. A save
+  that only moved the timezone also wrote the actor's language into a record
+  with none recorded; the language is compared against what the form seeded.
+
+- **The admin status rows read at AA contrast in every state.** With the
+  worker absent (a split deployment serving the page from the web process,
+  or a dead worker) the status row rendered its text in the destructive
+  colour at 3.97:1 on the tile's wash, below the floor, and the
+  accessibility suite went red in exactly that state. Status text is
+  foreground now with the tone on the indicator, the pattern the medication
+  rows already use; the database and telemetry rows moved with it.
+
+- **The "my phone owns the reminders" chip can render now.** The medication
+  notification settings read `notificationPrefs.medication.clientManaged`
+  from the account payload, which never carried it, so the chip that tells
+  a person the server-side switch decides nothing for their paired phone
+  could not appear; the write path and the dispatch decision were right all
+  along. `GET /api/auth/me` publishes the resolved `notificationPrefs` now.
+  The account-payload guard checked only that every published field has a
+  reader; it checks the other direction too, so a reader of a field the
+  payload does not publish fails a unit test.
+
+- **The admin reminder sweep can name one account.**
+  `POST /api/admin/notifications/reminder-check` accepts an optional
+  `userId`; without it the sweep stays instance-wide as before. Documented.
+
+- **A console restore leaves the instance's settings alone unless asked.**
+  Restoring an account's snapshot from `/admin/backups` also rewrote the
+  singleton instance settings row whenever the snapshot carried one, as a
+  side effect of a per-account action. The write is behind an explicit
+  checkbox beside the typed confirmation now (`restoreInstanceSettings`,
+  default off); the disaster-recovery case keeps the capability, the routine
+  case no longer touches what every other account shares. The runbook says
+  what a restore replaces (rows created after the snapshot are removed) and
+  describes the console path, which it did not before.
+
+- **A stored copy that will not open is a 422, not a 500.** A tampered
+  archive, or one written under a key the instance no longer holds, made the
+  restore, the download and the preview fail as internal errors. They answer
+  422 with `meta.errorCode = backup.payload.undecryptable` and are in the
+  API document, the restore with its `Idempotency-Key`.
+
+- **Every refused request says when to come back.** No 429 the rate limiter
+  produced carried `Retry-After`, and 129 of the 199 limited routes sent no
+  rate-limit headers at all, the four batch endpoints, `/api/sync/changes`
+  and `/api/auth/refresh` among them; an offline queue that tripped the cap
+  got prose and nothing else. The limiter's refusal is now recorded per
+  request and `apiHandler` attaches `Retry-After` (whole seconds, at least
+  one) and `X-RateLimit-Limit`, `-Remaining` and `-Reset` to exactly the
+  429s the limiter produced; a 429 relayed from an AI provider or raised by
+  a budget keeps its own shape. The 429 response in the API document lists
+  the headers.
+
+- **Offset pagination cannot skip or repeat a row any more.** Seven lists
+  ordered by a timestamp that ties across types (measurements, labs, the
+  measurement drill-down, custom-metric entries, medication intake in both
+  arms, mental-health assessments) now break the tie on `id`, so two pages
+  of a history pull are disjoint and complete. A test seeds ties and pulls
+  two pages.
+
+- **The published error envelope allows what the server sends.**
+  `ErrorEnvelope` closed the object and omitted `details.issues`, the field
+  the multi-issue 422 was built for; `SyncChangesResponse` omitted
+  `cycleDays` and `cycles`, sent on every pull. Both corrected, and a test
+  now parses real responses of `/api/sync/changes` and a multi-issue 422
+  against the schemas that publish them, so a shape drift fails the gate.
+
+- **Generic auth refusals carry a stable `errorCode`.** The session, Bearer,
+  admin, step-up and MFA-code refusals name their reason in `meta.errorCode`
+  (`auth.session.missing`, `auth.mfa.code_invalid`, …), documented on the
+  401 and 403 responses; a route's own credential check may still answer
+  with prose alone, and the description says so.
+
+### Changed
+
+- **Four more journeys in the gate.** Medication adherence from the wizard
+  through take and skip to the card, the history and the dashboard tile, on a
+  two-weekday plan against its daily twin; doctor-report generation with the
+  PDF's text asserted (period, blood-pressure section, medication, allergy),
+  an empty window that still names its span, and the manage boundary for a
+  delegate; the second factor from enrolment through a fresh sign-in, the
+  step-up window (accepted while fresh, refused once the stamp is aged),
+  a wrong code, a replayed code, and a recovery code that works exactly
+  once, with the server's own replay verdict read from the audit log rather
+  than inferred from a 401, and the login limiter's documented ceiling
+  asserted with its headers; backup and restore through the settings
+  surfaces, with the archive header asserted as bytes, a reading and a dose
+  deleted and restored under their original ids, a row added after the
+  snapshot gone, a tampered copy refused, and a read delegate kept out;
+  notification preferences through to the dispatch decision, read off the
+  account's own delivery ledger (one email attempt against a local mail
+  responder, none for the switched-off channel, the APNs arm skipped for
+  the documented reason, and a private-range URL refused with nothing
+  written). Each on its own account, each with a refusing control, each broken
+  deliberately once to prove it can fail.
+
 ## [1.38.14] — 2026-09-09
 
 Two reported bugs fixed at their class, and the release gate stops crying

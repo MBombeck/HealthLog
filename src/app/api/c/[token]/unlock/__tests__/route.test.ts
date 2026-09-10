@@ -68,6 +68,7 @@ beforeEach(() => {
   vi.stubEnv("API_TOKEN_HMAC_KEY", TEST_HMAC_KEY);
   vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 9,
     resetAt: Date.now() + 60_000,
     ip: "1.2.3.4",
@@ -137,6 +138,7 @@ describe("POST /api/c/[token]/unlock", () => {
     });
     vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 60_000,
       ip: "1.2.3.4",

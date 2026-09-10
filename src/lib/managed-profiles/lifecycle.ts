@@ -215,6 +215,191 @@ export async function deleteManagedProfile(input: {
 }
 
 /**
+ * One managed record, as its own family publishes it.
+ *
+ * The same five fields the creation answers with, plus `gender`. It is a view
+ * and not the row: a `User` carries credentials, provider connections and the
+ * whole health profile, and a Guardian panel needs the record's identity, not
+ * its account.
+ */
+export interface ManagedProfileView {
+  id: string;
+  displayName: string | null;
+  /** ISO `yyyy-MM-dd`, or null. Never synthesised from a year. */
+  dateOfBirth: string | null;
+  gender: string | null;
+  /**
+   * The column is nullable and this view says so. Every record this family
+   * creates carries one — creation requires it — so null here means a row that
+   * predates the requirement or was written by something else, and a client
+   * renders its own language for it rather than the string "null".
+   */
+  locale: string | null;
+  timezone: string;
+  recordKind: "managed";
+}
+
+/** The columns the view is built from, kept in one place for both readers. */
+const MANAGED_PROFILE_VIEW_SELECT = {
+  id: true,
+  displayName: true,
+  dateOfBirth: true,
+  gender: true,
+  locale: true,
+  timezone: true,
+} as const;
+
+export function toManagedProfileView(row: {
+  id: string;
+  displayName: string | null;
+  dateOfBirth: Date | null;
+  gender: string | null;
+  locale: string | null;
+  timezone: string;
+}): ManagedProfileView {
+  return {
+    id: row.id,
+    displayName: row.displayName,
+    dateOfBirth: row.dateOfBirth?.toISOString().slice(0, 10) ?? null,
+    gender: row.gender,
+    locale: row.locale,
+    timezone: row.timezone,
+    recordKind: "managed",
+  };
+}
+
+/**
+ * The record as it stands, or `null` when the caller may not have it.
+ *
+ * One `null` for "no such account", "not a managed profile" and "you are not
+ * an active Guardian of it", exactly as the roster read answers, so the route
+ * above it is not an enumeration oracle.
+ *
+ * No lock and no transaction, for the same reason the roster takes neither:
+ * this guards no invariant. It is the read an edit form fills itself from, and
+ * a form filled from a snapshot that moved under it is refused by the write,
+ * not by the read.
+ */
+export async function readManagedProfileForGuardian(input: {
+  profileId: string;
+  guardianId: string;
+  now?: Date;
+}): Promise<ManagedProfileView | null> {
+  const profile = await prisma.user.findUnique({
+    where: { id: input.profileId },
+    select: { ...MANAGED_PROFILE_VIEW_SELECT, managedProfileAt: true },
+  });
+  if (!profile?.managedProfileAt) return null;
+
+  const guardian = await prisma.accountGrant.findFirst({
+    where: {
+      grantorId: profile.id,
+      granteeId: input.guardianId,
+      ...activeGuardianWhere(input.now ?? new Date()),
+    },
+    select: { id: true },
+  });
+  if (!guardian) return null;
+
+  return toManagedProfileView(profile);
+}
+
+/**
+ * The fields a Guardian may change, in the shape the route's schema parses
+ * them into — `dateOfBirth` an ISO `yyyy-MM-dd` string rather than a `Date`.
+ *
+ * The parsed body arrives here and the column assembly happens below, in one
+ * place. Doing it at the route and again here would be two statements of which
+ * fields are writable, and the second one to be forgotten is the one that
+ * matters.
+ */
+export interface ManagedProfileEdit {
+  displayName?: string;
+  dateOfBirth?: string | null;
+  locale?: string;
+  timezone?: string;
+  gender?: string | null;
+}
+
+/**
+ * Change a managed record's identity.
+ *
+ * Guarded exactly as the deletion beside it is: the same advisory lock, the
+ * same managed-profile marker, and the same active-Guardian grant lookup, so
+ * the two acts on one record cannot disagree about who may perform them. The
+ * lock is not strictly needed to write five columns — it is taken because a
+ * concurrent deletion holds it, and an edit that landed between that
+ * transaction's guardian check and its `user.delete` would be a write to a row
+ * on its way out.
+ *
+ * The Prisma payload is assembled field by field from the parsed patch — never
+ * by spreading it — and the `changed` list the audit row carries is derived
+ * from the same object, so the trail names what actually moved rather than
+ * what the form rendered.
+ */
+export async function updateManagedProfile(input: {
+  profileId: string;
+  guardianId: string;
+  patch: ManagedProfileEdit;
+}): Promise<ManagedProfileView> {
+  return prisma.$transaction(async (tx) => {
+    return withManagedProfileLock(tx, input.profileId, async (profile) => {
+      if (!profile) throw new ManagedProfileLifecycleError("not_found");
+      if (!profile.managedProfileAt) {
+        throw new ManagedProfileLifecycleError("not_managed");
+      }
+
+      const guardian = await tx.accountGrant.findFirst({
+        where: {
+          grantorId: profile.id,
+          granteeId: input.guardianId,
+          ...activeGuardianWhere(new Date()),
+        },
+        select: { id: true },
+      });
+      if (!guardian) throw new ManagedProfileLifecycleError("not_guardian");
+
+      const patch = input.patch;
+      const data = {
+        ...(patch.displayName !== undefined
+          ? { displayName: patch.displayName }
+          : {}),
+        ...(patch.dateOfBirth !== undefined
+          ? {
+              dateOfBirth: patch.dateOfBirth
+                ? new Date(`${patch.dateOfBirth}T00:00:00.000Z`)
+                : null,
+            }
+          : {}),
+        ...(patch.locale !== undefined ? { locale: patch.locale } : {}),
+        ...(patch.timezone !== undefined ? { timezone: patch.timezone } : {}),
+        ...(patch.gender !== undefined ? { gender: patch.gender } : {}),
+      };
+
+      const updated = await tx.user.update({
+        where: { id: profile.id },
+        data,
+        select: MANAGED_PROFILE_VIEW_SELECT,
+      });
+
+      // Filed under the RECORD with the Guardian named as the actor, which is
+      // how every other record-scoped change is filed. The record's activity
+      // trail is the one an incoming Guardian reads to learn what happened to
+      // it, and a row filed under whoever happened to be at the keyboard would
+      // leave that trail with a hole in it.
+      await auditLog("managed_profile.updated", {
+        userId: profile.id,
+        actorUserId: input.guardianId,
+        details: { changed: Object.keys(data) },
+        client: tx,
+      });
+
+      return toManagedProfileView(updated);
+    });
+  });
+}
+
+/**
  * Internal-only future compatibility hook. There is intentionally no route for
  * this state change in the current product; holding the same lock ensures any
  * later handover cannot race a Guardian reduction.

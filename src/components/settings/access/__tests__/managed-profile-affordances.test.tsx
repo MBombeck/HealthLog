@@ -262,12 +262,16 @@ describe("the managed-profile card, in the shared-access section", () => {
     expect(html).toContain("you become its first guardian");
   });
 
-  it("collects the four fields the route accepts and nothing else", () => {
+  it("collects the five fields the route accepts and nothing else", () => {
     const html = renderGatedSection();
     for (const slot of [
       "managed-profile-name",
       "managed-profile-dob",
       "managed-profile-locale",
+      // v1.38.14 (#939) — the fifth. The route's schema is `.strict()`, so a
+      // control the schema does not name is a 422 about a field nobody filled
+      // in; this list and the schema are the same list.
+      "managed-profile-gender",
       "managed-profile-create-submit",
     ]) {
       expect(html, slot).toContain(`data-slot="${slot}"`);
@@ -280,6 +284,27 @@ describe("the managed-profile card, in the shared-access section", () => {
         .exec(html)?.[0]
         .match(/<option/g) ?? [];
     expect(options).toHaveLength(7);
+    // Four sex options, and the first is the empty one: null is a real answer
+    // ("not recorded") rather than an absent field, and a form offering only
+    // the three enum members would make it unsayable.
+    const genderOptions =
+      /<select[^>]*data-slot="managed-profile-gender"[\s\S]*?<\/select>/
+        .exec(html)?.[0]
+        .match(/<option/g) ?? [];
+    expect(genderOptions).toHaveLength(4);
+  });
+
+  it("offers an edit control on every row it lists", () => {
+    // Issue #939: a managed record could be created and deleted and never
+    // changed, so a name typed as a placeholder was permanent. The control is
+    // offered while the guardian roster is still in flight, unlike the
+    // deletion beside it, whose confirm copy states how many people lose the
+    // record and therefore cannot exist before that read answers.
+    authRef.value = { accounts: [entry()], active: null };
+    rosterRef.value = "loading";
+    const html = renderGatedSection();
+    expect(html).toContain('data-slot="managed-profile-edit"');
+    expect(html).not.toContain('data-slot="managed-profile-delete"');
   });
 
   it("lists the profiles this account looks after, and only those", () => {

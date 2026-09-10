@@ -92,7 +92,7 @@ export const ingestPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "429": {
           description:
-            "More than 60 requests in a minute for this token — or, when no valid token was presented, from this client IP. `meta.errorCode` = `ingest.rate_limited`, plus the standard `X-RateLimit-Remaining` / `X-RateLimit-Reset` headers.",
+            "More than 60 requests in a minute for this token — or, when no valid token was presented, from this client IP. `meta.errorCode` = `ingest.rate_limited`, plus the standard rate-limit headers: `Retry-After` (whole seconds, at least 1), `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

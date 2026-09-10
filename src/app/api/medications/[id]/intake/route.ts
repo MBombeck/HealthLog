@@ -729,10 +729,17 @@ export const GET = apiHandler(
     // the history view. Pinning them last keeps the descending order
     // reading today → yesterday → … with real timestamps first. Other
     // sort columns are non-null so they keep the simple shape.
+    // The trailing `{ id: sortDir }` is the unique tiebreaker. Scheduled
+    // slots share an instant by construction — a twice-daily medication puts
+    // every morning dose on the same `scheduledFor` — so offset paging over
+    // the primary key alone can repeat a row on one page and drop another.
     const orderBy =
       sortBy === "takenAt"
-        ? { takenAt: { sort: sortDir, nulls: "last" as const } }
-        : { [sortBy]: sortDir };
+        ? [
+            { takenAt: { sort: sortDir, nulls: "last" as const } },
+            { id: sortDir },
+          ]
+        : [{ [sortBy]: sortDir }, { id: sortDir }];
 
     const [events, total] = await Promise.all([
       prisma.medicationIntakeEvent.findMany({

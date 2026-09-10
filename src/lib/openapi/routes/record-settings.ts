@@ -276,7 +276,7 @@ const recordSettingsPatchRequest = z
     MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS.modules.meta({
       id: "RecordModuleSettingsPatch",
       description:
-        "Partial module toggle. Merged onto the record's current preferences; omitted keys keep their value.",
+        "Partial module toggle. `modulePreferences` is merged onto the record's current preferences; omitted keys keep their value. `cycleTrackingEnabled` is separate because `cycle` is a DELEGATED module: its state lives in the record's own cycle profile and `modulePreferences.cycle` is refused, so this is the field that turns cycle tracking on or off for the record — an explicit boolean overrides the default the record's sex would derive. Both fields are optional and at least one is required; an empty body is a 422 rather than a save that changed nothing.",
     }),
     MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS.notifications.meta({
       id: "RecordNotificationSettingsPatch",

@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Kopie zapasowe",
         "subtitle": "Cotygodniowe migawki danych dla każdego użytkownika przechowywane w PostgreSQL.",
-        "description": "Każdy użytkownik ma jedną przesuwaną migawkę na typ kopii. Rozmiary pokazują zaszyfrowany blob — zawartości nie można pobrać z tej strony.",
+        "description": "Każdy użytkownik ma jedną przesuwaną migawkę na typ kopii. Rozmiary pokazują zaszyfrowany blob. Pobieranie odszyfrowuje migawkę dla proszącego administratora; szyfrogram zostaje w bazie danych.",
         "runNow": "Utwórz kopię teraz",
         "runEnqueued": "Zadanie kopii zapasowej dodano do kolejki",
         "runFailed": "Nie udało się dodać kopii do kolejki",
@@ -6960,6 +6960,8 @@
         "restoreAria": "Przywróć z kopii zapasowej dla {username}",
         "restoreTitle": "Przywróć z kopii zapasowej",
         "restoreDescription": "Spowoduje to zastąpienie WSZYSTKICH bieżących danych {username} migawką z {when}. Istniejące pomiary, leki, zdarzenia przyjęcia, wpisy nastroju, kanały powiadomień, subskrypcje push i zakolejkowane usunięcia Telegram zostaną usunięte.",
+        "restoreInstanceSettingsLabel": "Przywróć też ustawienia instancji",
+        "restoreInstanceSettingsHint": "Rejestracja, wymóg MFA, domyślny język, dostępność modułów, konfiguracja powiadomień i AI — brane z migawki i stosowane do wszystkich w tej instalacji. Zostaw niezaznaczone, aby przywrócić tylko to konto.",
         "restorePromptLabel": "Wpisz RESTORE, aby kontynuować",
         "previewTitle": "Zawartość kopii",
         "previewLoading": "Odczytywanie zawartości…",
@@ -8693,6 +8695,20 @@
       "description": "Książeczka szczepień uporządkowana: dawka, seria, następne przypomnienie."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} jest wyłączone dla tego zapisu, więc jego strony pozostają ukryte. Włącz moduł ponownie, aby je odzyskać.",
+      "title": "{module} jest wyłączone"
+    },
+    "notGranted": {
+      "description": "{module} jest poza sekcjami udostępnionymi tobie. O tym, co obejmuje udostępniony zapis, decyduje osoba, do której należy.",
+      "title": "Nie należy do udostępnionego dostępu"
+    },
+    "unavailable": {
+      "description": "Operator wyłączył {module} dla wszystkich kont na tym serwerze. Żadne twoje ustawienie tego nie przywróci.",
+      "title": "Niedostępne na tym serwerze"
+    }
+  },
   "vaccinations": {
     "title": "Szczepienia",
     "subtitle": "Twoja karta szczepień, dawka po dawce.",
@@ -9931,7 +9947,6 @@
     "page": {
       "title": "Spożycie składników odżywczych",
       "description": "Nawodnienie oraz spożycie witamin/minerałów zsynchronizowane z aplikacji zdrowia telefonu, plus ręczne wpisy wody.",
-      "moduleOffTitle": "Śledzenie składników odżywczych jest wyłączone",
       "moduleOffDescription": "Włącz moduł składników odżywczych, aby zobaczyć tu nawodnienie i spożycie witamin/minerałów. Zsynchronizowane dane staną się częścią zapisu, który może odczytać Coach.",
       "moduleOffCta": "Włącz składniki odżywcze",
       "emptyTitle": "Brak jeszcze danych o składnikach odżywczych",
@@ -10280,6 +10295,12 @@
       "dobHint": "Zostaw puste, jeśli wolisz jej nie zapisywać. Z samego rocznika nic nie jest wyliczane.",
       "localeLabel": "Język tej karty",
       "localeHint": "Język tekstów zapisywanych w tej karcie. Twoje własne widoki pozostają w Twoim języku.",
+      "genderLabel": "Płeć (opcjonalnie)",
+      "genderHint": "Decyduje, czy śledzenie cyklu jest na start włączone dla tego profilu. Możesz to zmienić w każdej chwili.",
+      "genderNone": "Nie podano",
+      "genderMale": "Mężczyzna",
+      "genderFemale": "Kobieta",
+      "genderOther": "Inna",
       "timezoneHint": "Strefa, w której liczone są dni tej karty.",
       "timezoneInvalid": "Ta przeglądarka nie zna takiej strefy czasowej.",
       "create": "Utwórz profil",
@@ -10289,6 +10310,12 @@
       "errorOffline": "To nie dotarło do serwera. Nic się nie zmieniło — sprawdź połączenie i spróbuj ponownie.",
       "errorInvalid": "Serwer odrzucił te dane. Sprawdź nazwę, datę i strefę czasową.",
       "errorFailed": "Nie udało się utworzyć profilu.",
+      "edit": "Edytuj",
+      "editSave": "Zapisz zmiany",
+      "editSaving": "Zapisywanie…",
+      "editLoadError": "Nie udało się wczytać tych danych.",
+      "editErrorGone": "Tego profilu już nie ma albo już się nim nie opiekujesz.",
+      "editErrorFailed": "Nie udało się zapisać zmian.",
       "delete": "Usuń profil",
       "deleteTitle": "Usunąć {name}?",
       "deleteBody": "Wszystko, co zapisano dla {name}, znika razem z profilem — pomiary, leki, dokumenty i notatki. Tego nie da się cofnąć.",

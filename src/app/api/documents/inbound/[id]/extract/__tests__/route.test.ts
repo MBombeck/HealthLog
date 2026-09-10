@@ -168,6 +168,7 @@ beforeEach(() => {
   vi.mocked(prisma.extractedFact.count).mockResolvedValue(0 as never);
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 5,
     resetAt: Date.now() + 60 * 60 * 1000,
   });
@@ -304,6 +305,7 @@ describe("POST /api/documents/inbound/[id]/extract — stored mode", () => {
   it("consumes the shared document-AI bucket honestly", async () => {
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 30 * 60_000,
     });

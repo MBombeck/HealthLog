@@ -208,6 +208,27 @@ describe("GET /api/medications/[id]/intake — status filter", () => {
     });
   });
 
+  it("orders on a unique tiebreaker, keeping NULLS LAST on the takenAt arm", async () => {
+    // Scheduled slots share an instant by construction — a twice-daily
+    // medication puts every morning dose on the same `scheduledFor` — so
+    // offset paging over the sort key alone can repeat a row on one page and
+    // drop another. The `takenAt` arm keeps its NULLS LAST pin as well: the
+    // tiebreaker must not push skipped rows back to the top.
+    await GET(makeRequest("sortBy=takenAt&sortDir=desc"), ROUTE_PARAMS);
+    expect(
+      vi.mocked(prisma.medicationIntakeEvent.findMany).mock.calls[0][0]
+        ?.orderBy,
+    ).toEqual([{ takenAt: { sort: "desc", nulls: "last" } }, { id: "desc" }]);
+
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockClear();
+
+    await GET(makeRequest("sortBy=scheduledFor&sortDir=asc"), ROUTE_PARAMS);
+    expect(
+      vi.mocked(prisma.medicationIntakeEvent.findMany).mock.calls[0][0]
+        ?.orderBy,
+    ).toEqual([{ scheduledFor: "asc" }, { id: "asc" }]);
+  });
+
   it("rejects unknown status values with a 422", async () => {
     const res = await GET(makeRequest("status=junk"), ROUTE_PARAMS);
     expect(res.status).toBe(422);

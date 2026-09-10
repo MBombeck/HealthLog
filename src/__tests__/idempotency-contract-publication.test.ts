@@ -124,10 +124,7 @@ function idempotentOperationsFromContract(): Set<string> {
  * Listed rather than filtered silently, so the exclusion stays visible in the
  * file that would otherwise claim full coverage.
  */
-const UNPUBLISHED_PATHS: Readonly<Record<string, string>> = {
-  "/api/admin/backups/{id}/restore":
-    "Admin surface: cookie-only by construction, so arguably out of scope for a client contract.",
-};
+const UNPUBLISHED_PATHS: Readonly<Record<string, string>> = {};
 
 describe("idempotency — the contract matches the wrapper", () => {
   it("finds idempotent operations in the source tree at all", () => {

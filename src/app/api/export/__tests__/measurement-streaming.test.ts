@@ -71,6 +71,7 @@ beforeEach(() => {
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 9,
     resetAt: Date.now() + 3_600_000,
   });

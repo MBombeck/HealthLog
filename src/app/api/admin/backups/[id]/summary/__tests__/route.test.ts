@@ -81,12 +81,18 @@ describe("GET /api/admin/backups/[id]/summary", () => {
     await expect(GET(request, params)).rejects.toMatchObject({ status: 404 });
   });
 
-  it("degrades to an error response when the file cannot be decrypted", async () => {
+  it("refuses a file it cannot decrypt with the documented 422", async () => {
     decryptMock.mockImplementation(() => {
       throw new Error("bad key");
     });
     const res = await GET(request, params);
-    expect(res.status).toBe(500);
+    // Bad stored input — a key dropped from `ENCRYPTION_KEYS`, or bytes that
+    // are not the ones written — and not a fault in this process, so it does
+    // not answer 500 and does not reach the error reporter as one.
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({
+      meta: { errorCode: "backup.payload.undecryptable" },
+    });
   });
 
   it("422s a file that fails schema validation", async () => {

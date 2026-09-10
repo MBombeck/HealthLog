@@ -12,6 +12,12 @@ export interface CreateManagedProfileInput {
   dateOfBirth: Date | null;
   locale: string;
   timezone: string;
+  /**
+   * `User.gender` — "MALE" | "FEMALE" | "OTHER". Omitted or null both mean not
+   * recorded, and the column keeps the NULL an account that never answered
+   * carries; nothing is inferred from the name or from the date of birth.
+   */
+  gender?: string | null;
 }
 
 export interface CreatedManagedProfile {
@@ -58,6 +64,7 @@ export async function createManagedProfile(
             passwordHash: null,
             displayName: input.displayName,
             dateOfBirth: input.dateOfBirth,
+            gender: input.gender ?? null,
             locale: input.locale,
             timezone: input.timezone,
             managedProfileAt: now,

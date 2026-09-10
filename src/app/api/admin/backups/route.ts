@@ -2,9 +2,11 @@
  * GET /api/admin/backups — admin-only listing of `DataBackup` rows.
  *
  * Returns one row per (userId, type) pair. The `data` payload is NOT
- * shipped — only metadata (id, userId, username, type, size in bytes,
- * createdAt). The encrypted blob remains server-side; admins can trigger
- * a re-snapshot but not download another user's payload from the UI.
+ * shipped by THIS route — only metadata (id, userId, username, type, size in
+ * bytes, createdAt), so the listing costs a count and not a decrypt. The
+ * payload has its own route: `/api/admin/backups/<id>/download` decrypts one
+ * snapshot for the admin who asks for it, and the ciphertext stays in the
+ * database either way.
  *
  * Alongside the rows, the response says whether the SCHEDULE is still alive:
  * how old the newest scheduled copy is and how the last scheduled run ended.

@@ -15,8 +15,16 @@ import {
  * aggregation helper produces the correct rates.
  */
 
+/**
+ * The daily points the mocked query serves. Mutable so one test can hand the
+ * chart a loaded window; every other test leaves it empty.
+ */
+const queryState = vi.hoisted(() => ({
+  data: [] as { date: string; scheduled: number; taken: number }[],
+}));
+
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: [], isLoading: false }),
+  useQuery: () => ({ data: queryState.data, isLoading: false }),
   useQueryClient: () => ({
     cancelQueries: () => Promise.resolve(),
     getQueryData: () => undefined,
@@ -194,5 +202,25 @@ describe("<MedicationComplianceChart>", () => {
   it("does not paint the trend chip in the empty state", () => {
     const html = render(<MedicationComplianceChart />);
     expect(html).not.toContain('data-slot="medication-trend-chip"');
+  });
+
+  /**
+   * The tile's adherence number exists only as bar geometry, so the root's
+   * `data-latest-rate` is the one way to read it back — and the browser suite
+   * was its only reader, which put a production attribute's shape three
+   * minutes and a whole server away from the gate that should own it. Pinned
+   * here: the value is the LAST day's rate, as an integer.
+   */
+  it("carries the last day's rate on the root as data-latest-rate", () => {
+    queryState.data = [
+      { date: "2026-05-01", scheduled: 2, taken: 2 }, // 100 %
+      { date: "2026-05-02", scheduled: 4, taken: 1 }, // 25 %
+    ];
+    try {
+      const html = render(<MedicationComplianceChart />);
+      expect(html).toContain('data-latest-rate="25"');
+    } finally {
+      queryState.data = [];
+    }
   });
 });

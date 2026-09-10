@@ -88,19 +88,43 @@ describe("shared-record navigation", () => {
     ).toEqual(["/checkups"]);
   });
 
-  it("uses the active record scope instead of the actor's module flags", () => {
-    const actorModules = {
-      medications: false,
-      labs: false,
-      mood: false,
-      mentalHealth: false,
-      cycle: false,
-      illness: false,
-      inboundDocuments: false,
-    };
+  /**
+   * Scope and modules are two filters and they answer different questions.
+   *
+   * This case used to assert that the module map was IGNORED inside a shared
+   * record, and the reason was sound at the time: the map `GET /api/auth/me`
+   * published was the ACTOR's, which describes their own dashboard, so letting
+   * it hide a domain the record had granted would have been the actor's
+   * preference deciding somebody else's navigation.
+   *
+   * v1.38.14 (#939) removed the premise rather than the filter. The payload
+   * now resolves the map for the RECORD the session is inside, so the map is
+   * the record's own answer to "what does this record track" — and honouring
+   * it is what makes a guardian's Modules toggle visible inside the profile it
+   * was set for. The scope still decides which doors the grant opens; the map
+   * decides which of them the record uses at all.
+   */
+  it("applies the record's own module map on top of its scope", () => {
+    const scope = ["medications", "labs"] as const;
 
     expect(
-      visibleNavDestinations(actorModules, true, true, ["medications"]).map(
+      visibleNavDestinations({}, true, true, [...scope]).map(
+        (destination) => destination.href,
+      ),
+    ).toEqual(["/medications", "/labs"]);
+
+    // The record tracks medications and not labs. Both are in scope; one door
+    // is offered.
+    expect(
+      visibleNavDestinations({ labs: false }, true, true, [...scope]).map(
+        (destination) => destination.href,
+      ),
+    ).toEqual(["/medications"]);
+
+    // And the scope still binds: a module the record tracks is not a door the
+    // grant opens.
+    expect(
+      visibleNavDestinations({}, true, true, ["medications"]).map(
         (destination) => destination.href,
       ),
     ).toEqual(["/medications"]);

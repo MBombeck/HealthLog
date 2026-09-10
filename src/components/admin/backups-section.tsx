@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -124,13 +125,18 @@ function RestoreRowDialog({
 }: {
   row: BackupRow;
   pending: boolean;
-  onConfirm: () => void;
+  onConfirm: (options: { restoreInstanceSettings: boolean }) => void;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const matched = typed.trim() === "RESTORE";
+  // Off unless the operator says otherwise. A disaster-recovery snapshot
+  // carries the host's own settings alongside the account's data, and putting
+  // one account back is not a reason to reconfigure the installation for
+  // everybody on it — so the second effect is a second decision.
+  const [withInstanceSettings, setWithInstanceSettings] = useState(false);
 
   // v1.37.20 — restore preview: fetch what the file contains the moment the
   // dialog opens, so the typed confirmation is an informed one. Derived from
@@ -170,13 +176,17 @@ function RestoreRowDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) setTyped("");
+        if (!next) {
+          setTyped("");
+          setWithInstanceSettings(false);
+        }
       }}
     >
       <AlertDialogTrigger asChild>
         <Button
           size="sm"
           variant="destructive"
+          data-testid="backup-restore-trigger"
           disabled={pending}
           aria-label={t("admin.section.backups.restoreAria", {
             username: row.username,
@@ -254,12 +264,33 @@ function RestoreRowDialog({
             </ul>
           )}
         </div>
+        {/* The second decision, before the typed gate rather than after it:
+            the account's data comes back either way, the host's settings only
+            if this is ticked. */}
+        <label
+          className="flex items-start gap-2 text-sm"
+          data-slot="restore-instance-settings"
+        >
+          <Checkbox
+            data-testid="backup-restore-instance-settings"
+            checked={withInstanceSettings}
+            onCheckedChange={(next) => setWithInstanceSettings(next === true)}
+            className="mt-0.5"
+          />
+          <span>
+            {t("admin.section.backups.restoreInstanceSettingsLabel")}
+            <span className="text-muted-foreground block text-xs">
+              {t("admin.section.backups.restoreInstanceSettingsHint")}
+            </span>
+          </span>
+        </label>
         <div className="space-y-2">
           <Label htmlFor={`restore-prompt-${row.id}`}>
             {t("admin.section.backups.restorePromptLabel")}
           </Label>
           <Input
             id={`restore-prompt-${row.id}`}
+            data-testid="backup-restore-prompt"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             autoComplete="off"
@@ -270,13 +301,15 @@ function RestoreRowDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction
+            data-testid="backup-restore-confirm"
             disabled={!matched || pending}
             variant="destructive"
             onClick={() => {
               if (!matched) return;
               setOpen(false);
               setTyped("");
-              onConfirm();
+              onConfirm({ restoreInstanceSettings: withInstanceSettings });
+              setWithInstanceSettings(false);
             }}
           >
             {pending
@@ -778,14 +811,20 @@ export function BackupsSection() {
   // and used inline by `<RestoreRowDialog>` below — keeping the
   // mutation here lets the parent invalidate the list query on success.
   const restore = useMutation({
-    mutationFn: async (row: BackupRow) => {
+    mutationFn: async ({
+      row,
+      restoreInstanceSettings,
+    }: {
+      row: BackupRow;
+      restoreInstanceSettings: boolean;
+    }) => {
       // Idempotency-Key prevents a double-click from re-running the
       // destructive transaction. Include the row id so two different
       // backups can both be restored independently in the same minute.
       const idempotencyKey = `restore-${row.id}-${randomId()}`;
       return apiPost<{ restored: true; skipped?: RestoreSkipSummary }>(
         `/api/admin/backups/${row.id}/restore`,
-        { confirm: "RESTORE" },
+        { confirm: "RESTORE", restoreInstanceSettings },
         { headers: { "Idempotency-Key": idempotencyKey } },
       );
     },
@@ -978,6 +1017,11 @@ export function BackupsSection() {
         // primitive. The header already exposes "Backup now" but a
         // brand-new admin lands inside the card and benefits from a
         // duplicate CTA right next to the explanation.
+        //
+        // Its own test id, because both buttons are in the tree while the list
+        // is empty and they do the same thing: one id on two elements forces
+        // every caller to pick one blind, and a third button would join the
+        // pick without anything failing.
         <div>
           <EmptyState
             icon={<Database className="size-6" />}
@@ -986,6 +1030,7 @@ export function BackupsSection() {
             action={
               <Button
                 size="sm"
+                data-testid="backup-run-now-empty"
                 disabled={runBackup.isPending}
                 onClick={() => runBackup.mutate()}
                 className="min-h-11"
@@ -1033,7 +1078,12 @@ export function BackupsSection() {
                   it holds at any viewport. */}
               <tbody data-slot="backup-rows" className="divide-border divide-y">
                 {rows.map((row, i) => (
-                  <tr key={row.id} className={i % 2 === 0 ? "bg-muted/30" : ""}>
+                  <tr
+                    key={row.id}
+                    data-backup-id={row.id}
+                    data-backup-username={row.username}
+                    className={i % 2 === 0 ? "bg-muted/30" : ""}
+                  >
                     <td className="px-3 py-2 font-medium">{row.username}</td>
                     <td className="px-3 py-2">
                       <Badge variant="secondary" className="text-xs">
@@ -1051,6 +1101,7 @@ export function BackupsSection() {
                         <Button
                           size="sm"
                           variant="outline"
+                          data-testid="backup-download"
                           disabled={downloadingId === row.id}
                           onClick={() => handleDownload(row)}
                           aria-label={t("admin.section.backups.downloadAria", {
@@ -1069,9 +1120,11 @@ export function BackupsSection() {
                           row={row}
                           pending={
                             restore.isPending &&
-                            restore.variables?.id === row.id
+                            restore.variables?.row.id === row.id
                           }
-                          onConfirm={() => restore.mutate(row)}
+                          onConfirm={(options) =>
+                            restore.mutate({ row, ...options })
+                          }
                         />
                       </div>
                     </td>
@@ -1095,7 +1148,7 @@ export function BackupsSection() {
                 key={row.id}
                 className="bg-muted/30 border-border"
               >
-                <li>
+                <li data-backup-id={row.id} data-backup-username={row.username}>
                   <div className="flex items-center gap-2">
                     <span className="truncate font-medium">{row.username}</span>
                     <Badge variant="secondary" className="text-xs">
@@ -1111,6 +1164,7 @@ export function BackupsSection() {
                     <Button
                       size="sm"
                       variant="outline"
+                      data-testid="backup-download"
                       disabled={downloadingId === row.id}
                       onClick={() => handleDownload(row)}
                       aria-label={t("admin.section.backups.downloadAria", {
@@ -1128,9 +1182,12 @@ export function BackupsSection() {
                     <RestoreRowDialog
                       row={row}
                       pending={
-                        restore.isPending && restore.variables?.id === row.id
+                        restore.isPending &&
+                        restore.variables?.row.id === row.id
                       }
-                      onConfirm={() => restore.mutate(row)}
+                      onConfirm={(options) =>
+                        restore.mutate({ row, ...options })
+                      }
                     />
                   </div>
                 </li>
@@ -1149,6 +1206,7 @@ export function BackupsSection() {
       <SettingsCardActions>
         <Button
           size="sm"
+          data-testid="backup-run-now"
           disabled={runBackup.isPending}
           onClick={() => runBackup.mutate()}
           className="min-h-11"

@@ -11,6 +11,10 @@
  * Metadata-only portable document exports are rejected before mutation; the
  * importer never fabricates content. Audit rows remain outside the wipe, and
  * cache invalidation runs only after the complete restore transaction.
+ *
+ * Everything above is scoped to ONE account. The instance-wide settings a
+ * disaster-recovery payload also carries are not, and they are opt-in for that
+ * reason: see the `restoreInstanceSettings` block below.
  */
 import { Buffer } from "node:buffer";
 
@@ -19,7 +23,11 @@ import { prisma, toJson } from "@/lib/db";
 import { apiHandler, HttpError, requireAdmin } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
-import { unpackBackupBlob } from "@/lib/export/backup-blob";
+import {
+  BACKUP_UNDECRYPTABLE_CODE,
+  BACKUP_UNDECRYPTABLE_ERROR,
+  unpackBackupBlob,
+} from "@/lib/export/backup-blob";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
@@ -142,16 +150,25 @@ const handler = apiHandler(
     const { id } = await params;
     annotate({ action: { name: "admin.backups.restore" }, meta: { id } });
 
-    let body: { confirm?: string } = {};
+    let body: { confirm?: string; restoreInstanceSettings?: boolean } = {};
     try {
       const raw = await request.text();
       if (raw.length > 64 * 1024) {
         return apiError(`Request body exceeds ${64 * 1024} bytes`, 413);
       }
-      body = JSON.parse(raw) as { confirm?: string };
+      body = JSON.parse(raw) as {
+        confirm?: string;
+        restoreInstanceSettings?: boolean;
+      };
     } catch {
       return apiError("Invalid JSON body", 400);
     }
+
+    // Restoring one account's data and reconfiguring the whole host are two
+    // different decisions, so they are two different answers. Anything but a
+    // literal `true` restores the account alone.
+    const restoreInstanceSettings = body.restoreInstanceSettings === true;
+    annotate({ meta: { restore_instance_settings: restoreInstanceSettings } });
 
     if (body.confirm !== "RESTORE") {
       await auditLog("admin.backups.restore.denied", {
@@ -160,7 +177,7 @@ const handler = apiHandler(
         details: { reason: "missing_confirmation", backupId: id },
       });
       return apiError(
-        "Confirmation token missing — restoring user data and included instance-wide settings requires confirm: 'RESTORE'",
+        "Confirmation token missing — replacing an account's data requires confirm: 'RESTORE'",
         422,
       );
     }
@@ -191,7 +208,14 @@ const handler = apiHandler(
           reason: err instanceof Error ? err.message : "decrypt_failed",
         },
       });
-      return apiError("Failed to decrypt backup payload", 500);
+      // Bad stored input, not a broken server: a copy written under a key the
+      // operator has since dropped, or one whose bytes have changed. Every
+      // other bad-input arm on this route answers 4xx, and a 500 here would
+      // also page the error reporter for a rotation mistake. Refused above the
+      // transaction, so nothing was touched.
+      return apiError(BACKUP_UNDECRYPTABLE_ERROR, 422, {
+        errorCode: BACKUP_UNDECRYPTABLE_CODE,
+      });
     }
 
     // Parsed once and kept, because the schema's per-section `.default([])`
@@ -292,6 +316,7 @@ const handler = apiHandler(
         ownerId,
         ownerUsername: owner.username,
         snapshotExportedAt: payload.exportedAt,
+        restoreInstanceSettings,
       },
     });
 
@@ -441,7 +466,20 @@ const handler = apiHandler(
             where: { userId: ownerId },
           });
 
-          if (payload.appSettings) {
+          // The one section of the file that is not this account's.
+          //
+          // A disaster-recovery payload carries the singleton `app_settings`
+          // row — registration, the MFA requirement, the default locale and
+          // timezone, module availability, the notification and AI
+          // configuration, the document size cap and quota. Writing it back as
+          // a side effect of restoring ONE account reconfigures the host for
+          // everybody on it, silently and hours or weeks out of date: an
+          // operator putting a single record back on Wednesday has no reason to
+          // expect Monday's registration switch and Monday's upload cap to come
+          // with it. Rebuilding a host from a snapshot is a real case, so the
+          // write stays available — as an answer the operator gives, not one
+          // the account restore assumes.
+          if (payload.appSettings && restoreInstanceSettings) {
             const settings = payload.appSettings;
             const settingsData = {
               registrationEnabled: settings.registrationEnabled,
@@ -2084,6 +2122,10 @@ const handler = apiHandler(
         backupId: id,
         ownerId,
         ownerUsername: owner.username,
+        // Whether this restore also rewrote the host's own settings. The one
+        // effect of a restore that reaches accounts other than `ownerId`, so
+        // the trail has to be able to answer it later.
+        restoreInstanceSettings,
         cleared,
         // The durable half of the report. The response reaches whoever was
         // looking at the screen; the audit row is still here next week when

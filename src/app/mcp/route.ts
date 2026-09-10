@@ -55,6 +55,7 @@ import { annotate } from "@/lib/logging/context";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { checkMcpRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import type { RateLimitSnapshot } from "@/lib/rate-limit-context";
 import {
   isMcpOriginConfigured,
   resolveBaseOrigin,
@@ -114,11 +115,9 @@ function moduleDisabled(): Response {
 }
 
 /** 429 with the standard rate-limit headers. */
-function tooManyRequests(resetAt: number, remaining: number): Response {
+function tooManyRequests(rl: RateLimitSnapshot): Response {
   const response = Response.json({ error: "rate_limited" }, { status: 429 });
-  for (const [k, v] of Object.entries(
-    rateLimitHeaders({ allowed: false, remaining, resetAt }),
-  )) {
+  for (const [k, v] of Object.entries(rateLimitHeaders(rl))) {
     response.headers.set(k, v);
   }
   return response;
@@ -179,7 +178,7 @@ async function handleMcp(request: Request): Promise<Response> {
     const rl = await checkMcpRateLimit(ctx.binding);
     if (!rl.allowed) {
       annotate({ action: { name: "mcp.rate_limited" } });
-      return tooManyRequests(rl.resetAt, rl.remaining);
+      return tooManyRequests(rl);
     }
 
     // 3. MODULE GATE — off by default; hide the surface entirely when off.

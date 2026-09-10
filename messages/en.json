@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Backups",
         "subtitle": "Weekly per-user data snapshots stored in PostgreSQL.",
-        "description": "Each user gets one rolling snapshot per backup type. Sizes show the encrypted blob — payloads are not downloadable from this page.",
+        "description": "Each user gets one rolling snapshot per backup type. Sizes show the encrypted blob. Download decrypts the snapshot for the admin who asks; the ciphertext stays in the database.",
         "runNow": "Backup now",
         "runEnqueued": "Backup job enqueued",
         "runFailed": "Failed to enqueue backup",
@@ -6959,7 +6959,9 @@
         "restore": "Restore",
         "restoreAria": "Restore from backup for {username}",
         "restoreTitle": "Restore from backup",
-        "restoreDescription": "This will replace ALL current data for {username} with the snapshot from {when}. Existing measurements, medications, intake events, mood entries, notification channels, push subscriptions and queued Telegram deletions will be deleted. If included in the snapshot, instance-wide settings overwrite the configuration for the entire installation.",
+        "restoreDescription": "This will replace ALL current data for {username} with the snapshot from {when}. Existing measurements, medications, intake events, mood entries, notification channels, push subscriptions and queued Telegram deletions will be deleted.",
+        "restoreInstanceSettingsLabel": "Also restore instance settings",
+        "restoreInstanceSettingsHint": "Registration, MFA requirement, default locale, module availability, notification and AI configuration — taken from the snapshot and applied to everybody on this installation. Leave it clear to restore this account alone.",
         "restorePromptLabel": "Type RESTORE to continue",
         "previewTitle": "What this backup contains",
         "previewLoading": "Reading contents…",
@@ -8693,6 +8695,20 @@
       "description": "The vaccination record, structured: dose, series, next booster."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} is off for this record, so its pages stay hidden. Turn it back on to bring them back.",
+      "title": "{module} is switched off"
+    },
+    "notGranted": {
+      "description": "{module} sits outside the sections shared with you. What a shared record covers is decided by the person who owns it.",
+      "title": "Not part of the shared access"
+    },
+    "unavailable": {
+      "description": "The operator switched {module} off for every account on this server. No setting of your own can bring it back.",
+      "title": "Not available on this server"
+    }
+  },
   "vaccinations": {
     "title": "Vaccinations",
     "subtitle": "Your immunization record, dose by dose.",
@@ -9931,7 +9947,6 @@
     "page": {
       "title": "Nutrient intake",
       "description": "Hydration and vitamin/mineral intake synced from your phone's health app, plus manual water entries.",
-      "moduleOffTitle": "Nutrient intake is off",
       "moduleOffDescription": "Turn on the nutrients module to see hydration and vitamin/mineral intake here. Synced intake becomes part of the record the Coach can read.",
       "moduleOffCta": "Turn on nutrients",
       "emptyTitle": "No nutrient data yet",
@@ -10280,6 +10295,12 @@
       "dobHint": "Leave it empty if you would rather not record one. Nothing is guessed from a year.",
       "localeLabel": "Language of this record",
       "localeHint": "The language used for text written into this record. Your own screens stay in your language.",
+      "genderLabel": "Gender (optional)",
+      "genderHint": "Decides whether cycle tracking starts on for this record. Change it any time.",
+      "genderNone": "Not specified",
+      "genderMale": "Male",
+      "genderFemale": "Female",
+      "genderOther": "Other",
       "timezoneHint": "The zone this record's days are measured in.",
       "timezoneInvalid": "This browser does not know that timezone.",
       "create": "Create profile",
@@ -10289,6 +10310,12 @@
       "errorOffline": "That did not reach the server. Nothing has changed — check your connection and try again.",
       "errorInvalid": "The server refused those details. Check the name, the date and the timezone.",
       "errorFailed": "The profile could not be created.",
+      "edit": "Edit",
+      "editSave": "Save changes",
+      "editSaving": "Saving…",
+      "editLoadError": "Those details could not be loaded.",
+      "editErrorGone": "That record is gone, or you no longer look after it.",
+      "editErrorFailed": "The changes could not be saved.",
       "delete": "Delete profile",
       "deleteTitle": "Delete {name}?",
       "deleteBody": "Everything recorded for {name} goes with the profile — readings, medications, documents and notes. This cannot be undone.",
