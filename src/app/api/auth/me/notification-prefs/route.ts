@@ -23,7 +23,7 @@
  * extra round-trip. Rate-limit is intentionally generous (60/min) —
  * matches the disable-coach route which is the closest analogue.
  */
-import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
@@ -86,7 +86,9 @@ export const PATCH = apiHandler(async (req: Request) => {
   try {
     body = await req.json();
   } catch {
-    throw new HttpError(422, "notification-prefs.body.invalid_json");
+    return apiError("Invalid JSON body", 400, {
+      errorCode: "notification-prefs.body.invalid_json",
+    });
   }
 
   // v1.32.22 (M1) — pull the optimistic-concurrency base token off the body

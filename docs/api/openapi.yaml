@@ -672,6 +672,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CyclePrefsPatchEnvelope"
+        "400": &a10
+          description: The request body is not parseable JSON. Nothing was read and nothing was written. `meta.errorCode` names
+            the surface that refused it (`<surface>.body.invalid_json`). This is a client-side serialisation fault, not
+            a validation failure — a body that parses but fails the schema is the 422 beside this.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
         "422": *a4
         "429": *a5
@@ -4196,7 +4204,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetWorkoutResponse"
         "401": *a1
-        "403": &a12
+        "403": &a13
           description: 'Module disabled for this account: the user (or operator) has the module turned off. `meta.errorCode` =
             `module.disabled` and `meta.module` carries the disabled module key (e.g. "sleep"). Returned even for a
             valid Bearer token. Clients hide the whole module surface end-to-end rather than retry.'
@@ -5323,7 +5331,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": &a10
+        "422": &a11
           description: Request validation failed. When the body carried a `baseUpdatedAt` that could not be parsed as an ISO-8601
             timestamp — including an explicit `null` — `meta.errorCode` = `invalid_base_updated_at` and nothing was
             written. Omit the key entirely for the unconditional write; do not send `null` for it.
@@ -6483,6 +6491,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutCoachPrefsResponse"
+        "400": *a10
         "401": *a1
         "409":
           description: Coach preferences changed since it was loaded (optimistic-concurrency conflict). No write happened. Re-read
@@ -6492,7 +6501,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a10
+        "422": *a11
         "429": *a5
   /api/auth/me/disable-coach:
     get:
@@ -6530,6 +6539,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PatchDisableCoachResponse"
+        "400": *a10
         "401": *a1
         "422": *a4
         "429": *a5
@@ -6684,6 +6694,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PatchModulesResponse"
+        "400": *a10
         "401": *a1
         "409":
           description: Module preferences changed since it was loaded (optimistic-concurrency conflict). No write happened.
@@ -6693,7 +6704,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a10
+        "422": *a11
         "429": *a5
   /api/auth/me/source-priority:
     get:
@@ -7524,6 +7535,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutSourcePriorityResponse"
+        "400": *a10
         "401": *a1
         "422": *a4
         "429": *a5
@@ -7710,6 +7722,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PatchNotificationPrefsResponse"
+        "400": *a10
         "401": *a1
         "409":
           description: Notification preferences changed since it was loaded (optimistic-concurrency conflict). No write happened.
@@ -7719,7 +7732,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a10
+        "422": *a11
         "429": *a5
   /api/auth/me/report-selection:
     get:
@@ -7760,6 +7773,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutReportSelectionResponseEnvelope"
+        "400": *a10
         "401": *a1
         "422": *a4
         "429": *a5
@@ -8734,7 +8748,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a10
+        "422": *a11
         "429": *a5
     delete:
       tags:
@@ -8938,7 +8952,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a10
+        "422": *a11
         "429": *a5
   /api/anamnesis/facts:
     get:
@@ -9066,7 +9080,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CorrectAnamnesisFactResponse"
         "401": *a1
-        "404": &a11
+        "404": &a12
           description: No current revision with this id exists for the authenticated account.
           content:
             application/json:
@@ -9102,7 +9116,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RemoveAnamnesisFactResponse"
         "401": *a1
-        "404": *a11
+        "404": *a12
         "409":
           description: Anamnesis fact changed since it was loaded (optimistic-concurrency conflict). No write happened. Re-read
             the resource, re-apply the user's change against the fresh state, and resend with the new token.
@@ -10226,7 +10240,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CoachSeededQuestionEnvelope"
         "401": *a1
-        "403": *a12
+        "403": *a13
         "422": *a4
         "429": *a5
   /api/insights/narrative:
@@ -10996,7 +11010,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EcgIngestCreatedEnvelope"
         "401": *a1
-        "403": *a12
+        "403": *a13
         "422": *a4
         "429": *a5
   /api/insights/ecg/{id}:
@@ -11223,7 +11237,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodDailySeriesEnvelope"
         "401": *a1
-        "403": *a12
+        "403": *a13
         "422": *a4
         "429": *a5
   /api/mood/insights:
@@ -11245,7 +11259,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodAggregatesEnvelope"
         "401": *a1
-        "403": *a12
+        "403": *a13
         "422": *a4
         "429": *a5
   /api/mood/prognosis:
@@ -11378,7 +11392,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodCustomTagPatchEnvelope"
         "401": *a1
-        "404": &a13
+        "404": &a14
           description: Not found / not owned by the caller.
           content:
             application/json:
@@ -11413,7 +11427,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodCustomTagDeleteEnvelope"
         "401": *a1
-        "404": *a13
+        "404": *a14
         "422": *a4
         "429": *a5
   /api/mood/tags/{key}/hidden:
@@ -11449,7 +11463,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "404": *a13
+        "404": *a14
         "422": *a4
         "429": *a5
   /api/mood/tags/groups:
@@ -11502,7 +11516,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodTagGroupPatchEnvelope"
         "401": *a1
-        "404": *a13
+        "404": *a14
         "422": *a4
         "429": *a5
     delete:
@@ -11533,7 +11547,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodTagGroupDeleteEnvelope"
         "401": *a1
-        "404": *a13
+        "404": *a14
         "422": *a4
         "429": *a5
   /api/mood/tags/layout:
@@ -11581,7 +11595,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a10
+        "422": *a11
         "429": *a5
   /api/mood-entries:
     get:
@@ -11698,7 +11712,7 @@ paths:
                 $ref: "#/components/schemas/MoodEntryEnvelope"
         "401": *a1
         "403": *a8
-        "409": &a14
+        "409": &a15
           description: A mood entry with the same `(date, moodLoggedAt)` instant already exists. `meta.errorCode` =
             `mood.duplicate_timestamp`. Only a request without `externalId` can answer this — with one, the write
             upserts in place.
@@ -11730,7 +11744,7 @@ paths:
                 $ref: "#/components/schemas/MoodEntryEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a13
+        "404": *a14
         "422": *a4
         "429": *a5
     put:
@@ -11765,8 +11779,8 @@ paths:
                 $ref: "#/components/schemas/MoodEntryEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a13
-        "409": *a14
+        "404": *a14
+        "409": *a15
         "422": *a4
         "429": *a5
     delete:
@@ -11792,7 +11806,7 @@ paths:
                 $ref: "#/components/schemas/MoodEntryDeleteEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a13
+        "404": *a14
         "422": *a4
         "429": *a5
   /api/mood-entries/restore:
@@ -11942,7 +11956,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutNtfySettingsResponse"
-        "400": &a15
+        "400": &a16
           description: Body is not parseable JSON.
           content:
             application/json:
@@ -11955,13 +11969,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "413": &a16
+        "413": &a17
           description: Body exceeds 64 KiB.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "415": &a17
+        "415": &a18
           description: Content-Type is not `application/json`.
           content:
             application/json:
@@ -12019,7 +12033,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutTelegramSettingsResponse"
-        "400": *a15
+        "400": *a16
         "401": *a1
         "403":
           description: The operator switched Telegram off for this instance and the body asked to enable it. No webhook was
@@ -12034,8 +12048,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "413": *a16
-        "415": *a17
+        "413": *a17
+        "415": *a18
         "422":
           description: Body matched neither accepted shape; or `enabled` is true without both a bot token and a chat id; or the
             deployment's `APP_URL` is not a public HTTPS host on port 80/88/443/8443; or Telegram refused the webhook
@@ -12089,10 +12103,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutWebhookSettingsResponse"
-        "400": *a15
+        "400": *a16
         "401": *a1
-        "413": *a16
-        "415": *a17
+        "413": *a17
+        "415": *a18
         "422":
           description: Body matched neither accepted shape, or `enabled` is true while no webhook URL is stored.
           content:
@@ -12556,7 +12570,7 @@ paths:
                 anyOf:
                   - $ref: "#/components/schemas/ConsentLatestForKindEnvelope"
                   - $ref: "#/components/schemas/ConsentLatestByKindEnvelope"
-        "400": &a18
+        "400": &a19
           description: "`kind` was present but is not one of `ai_full`, `ai_insights_only`, `ai_coach`. Multi-issue envelope;
             nothing was read or revoked. The consent family answers 400 here where the rest of the API answers 422."
           content:
@@ -12605,7 +12619,7 @@ paths:
                 anyOf:
                   - $ref: "#/components/schemas/ConsentRevokeForKindEnvelope"
                   - $ref: "#/components/schemas/ConsentRevokeAllEnvelope"
-        "400": *a18
+        "400": *a19
         "401": *a1
         "422": *a4
         "429": *a5
@@ -12891,7 +12905,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderEnvelope"
         "401": *a1
         "403": *a8
-        "404": &a19
+        "404": &a20
           description: Measurement reminder not found / not owned.
           content:
             application/json:
@@ -12926,7 +12940,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderPatchEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a19
+        "404": *a20
         "422": *a4
         "429": *a5
     delete:
@@ -12949,7 +12963,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderDeleteEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a19
+        "404": *a20
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/satisfy:
@@ -12974,7 +12988,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderSatisfyEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a19
+        "404": *a20
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/complete:
@@ -13002,7 +13016,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderCompleteEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a19
+        "404": *a20
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/skip:
@@ -13032,7 +13046,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderSkipEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a19
+        "404": *a20
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/snooze:
@@ -13066,7 +13080,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderSnoozeEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a19
+        "404": *a20
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/history:
@@ -13107,7 +13121,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderHistoryEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a19
+        "404": *a20
         "422": *a4
         "429": *a5
   /api/labs:
@@ -13231,7 +13245,7 @@ paths:
                 $ref: "#/components/schemas/GetLabResultResponse"
         "401": *a1
         "403": *a8
-        "404": &a20
+        "404": &a21
           description: Lab result not found (or owned by another user).
           content:
             application/json:
@@ -13266,7 +13280,7 @@ paths:
                 $ref: "#/components/schemas/UpdateLabResultResponse"
         "401": *a1
         "403": *a8
-        "404": *a20
+        "404": *a21
         "422": *a4
         "429": *a5
     delete:
@@ -13289,7 +13303,7 @@ paths:
                 $ref: "#/components/schemas/DeleteLabResultResponse"
         "401": *a1
         "403": *a8
-        "404": *a20
+        "404": *a21
         "422": *a4
         "429": *a5
   /api/labs/restore:
@@ -13445,7 +13459,7 @@ paths:
                 $ref: "#/components/schemas/CreateBiomarkerResponse"
         "401": *a1
         "403": *a8
-        "409": &a22
+        "409": &a23
           description: A biomarker with this name already exists for the caller.
           content:
             application/json:
@@ -13474,7 +13488,7 @@ paths:
                 $ref: "#/components/schemas/GetBiomarkerResponse"
         "401": *a1
         "403": *a8
-        "404": &a21
+        "404": &a22
           description: Biomarker not found (or owned by another user).
           content:
             application/json:
@@ -13509,8 +13523,8 @@ paths:
                 $ref: "#/components/schemas/UpdateBiomarkerResponse"
         "401": *a1
         "403": *a8
-        "404": *a21
-        "409": *a22
+        "404": *a22
+        "409": *a23
         "422": *a4
         "429": *a5
     delete:
@@ -13533,7 +13547,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteBiomarkerResponse"
         "401": *a1
-        "404": *a21
+        "404": *a22
         "422": *a4
         "429": *a5
   /api/encounters:
@@ -13672,7 +13686,7 @@ paths:
                 $ref: "#/components/schemas/GetEncounterEnvelope"
         "401": *a1
         "403": *a8
-        "404": &a23
+        "404": &a24
           description: Visit not found (or owned by another user).
           content:
             application/json:
@@ -13706,7 +13720,7 @@ paths:
                 $ref: "#/components/schemas/UpdateEncounterEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a23
+        "404": *a24
         "422": *a4
         "429": *a5
     delete:
@@ -13731,7 +13745,7 @@ paths:
                 $ref: "#/components/schemas/DeleteEncounterEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a23
+        "404": *a24
         "422": *a4
         "429": *a5
   /api/encounters/{id}/restore:
@@ -13757,7 +13771,7 @@ paths:
                 $ref: "#/components/schemas/RestoreEncounterEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a23
+        "404": *a24
         "422": *a4
         "429": *a5
   /api/encounters/{id}/links:
@@ -13787,7 +13801,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LinkEncounterEnvelope"
         "401": *a1
-        "404": *a23
+        "404": *a24
         "422": *a4
         "429": *a5
     delete:
@@ -13816,7 +13830,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnlinkEncounterEnvelope"
         "401": *a1
-        "404": *a23
+        "404": *a24
         "422": *a4
         "429": *a5
   /api/practitioners:
@@ -13895,7 +13909,7 @@ paths:
                 $ref: "#/components/schemas/GetPractitionerEnvelope"
         "401": *a1
         "403": *a8
-        "404": &a24
+        "404": &a25
           description: Practitioner not found (or owned by another user).
           content:
             application/json:
@@ -13929,7 +13943,7 @@ paths:
                 $ref: "#/components/schemas/UpdatePractitionerEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a24
+        "404": *a25
         "422": *a4
         "429": *a5
     delete:
@@ -13953,7 +13967,7 @@ paths:
                 $ref: "#/components/schemas/DeletePractitionerEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a24
+        "404": *a25
         "422": *a4
         "429": *a5
   /api/practitioners/{id}/restore:
@@ -13979,7 +13993,7 @@ paths:
                 $ref: "#/components/schemas/RestorePractitionerEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a24
+        "404": *a25
         "422": *a4
         "429": *a5
   /api/vaccinations:
@@ -14074,7 +14088,7 @@ paths:
                 $ref: "#/components/schemas/GetVaccinationEnvelope"
         "401": *a1
         "403": *a8
-        "404": &a25
+        "404": &a26
           description: Vaccination not found (or owned by another user).
           content:
             application/json:
@@ -14109,7 +14123,7 @@ paths:
                 $ref: "#/components/schemas/UpdateVaccinationEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a25
+        "404": *a26
         "422": *a4
         "429": *a5
     delete:
@@ -14134,7 +14148,7 @@ paths:
                 $ref: "#/components/schemas/DeleteVaccinationEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a25
+        "404": *a26
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/restore:
@@ -14159,7 +14173,7 @@ paths:
                 $ref: "#/components/schemas/RestoreVaccinationEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a25
+        "404": *a26
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/booster:
@@ -14200,7 +14214,7 @@ paths:
                 $ref: "#/components/schemas/MintVaccinationBoosterEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a25
+        "404": *a26
         "422": *a4
         "429": *a5
   /api/vaccinations/suggest:
@@ -14258,7 +14272,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LinkVaccinationEnvelope"
         "401": *a1
-        "404": *a25
+        "404": *a26
         "422": *a4
         "429": *a5
     delete:
@@ -14287,7 +14301,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnlinkVaccinationEnvelope"
         "401": *a1
-        "404": *a25
+        "404": *a26
         "422": *a4
         "429": *a5
   /api/illness/episodes:
@@ -14371,7 +14385,7 @@ paths:
                 $ref: "#/components/schemas/GetIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a8
-        "404": &a26
+        "404": &a27
           description: Illness episode not found (or owned by another user).
           content:
             application/json:
@@ -14406,7 +14420,7 @@ paths:
                 $ref: "#/components/schemas/UpdateIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a26
+        "404": *a27
         "422": *a4
         "429": *a5
     delete:
@@ -14430,7 +14444,7 @@ paths:
                 $ref: "#/components/schemas/DeleteIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a26
+        "404": *a27
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/restore:
@@ -14458,7 +14472,7 @@ paths:
                 $ref: "#/components/schemas/RestoreIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a26
+        "404": *a27
         "409": *a7
         "422": *a4
         "429": *a5
@@ -14491,7 +14505,7 @@ paths:
                 $ref: "#/components/schemas/ResolveIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a26
+        "404": *a27
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/day-logs:
@@ -14542,7 +14556,7 @@ paths:
                 $ref: "#/components/schemas/GetIllnessDayLogEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a26
+        "404": *a27
         "422": *a4
         "429": *a5
     post:
@@ -14579,7 +14593,7 @@ paths:
                 $ref: "#/components/schemas/UpsertIllnessDayLogCreatedEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a26
+        "404": *a27
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/correlation:
@@ -14606,7 +14620,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/IllnessCorrelationEnvelope"
         "401": *a1
-        "404": *a26
+        "404": *a27
         "422": *a4
         "429": *a5
   /api/illness/insights:
@@ -14815,7 +14829,7 @@ paths:
                 $ref: "#/components/schemas/GetAllergyEnvelope"
         "401": *a1
         "403": *a8
-        "404": &a27
+        "404": &a28
           description: Allergy not found (or owned by another user).
           content:
             application/json:
@@ -14849,7 +14863,7 @@ paths:
                 $ref: "#/components/schemas/UpdateAllergyEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a27
+        "404": *a28
         "422": *a4
         "429": *a5
     delete:
@@ -14873,7 +14887,7 @@ paths:
                 $ref: "#/components/schemas/DeleteAllergyEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a27
+        "404": *a28
         "422": *a4
         "429": *a5
   /api/family-history:
@@ -14947,7 +14961,7 @@ paths:
                 $ref: "#/components/schemas/GetFamilyHistoryEnvelope"
         "401": *a1
         "403": *a8
-        "404": &a28
+        "404": &a29
           description: Family history entry not found (or owned by another user).
           content:
             application/json:
@@ -14981,7 +14995,7 @@ paths:
                 $ref: "#/components/schemas/UpdateFamilyHistoryEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a28
+        "404": *a29
         "422": *a4
         "429": *a5
     delete:
@@ -15005,7 +15019,7 @@ paths:
                 $ref: "#/components/schemas/DeleteFamilyHistoryEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a28
+        "404": *a29
         "422": *a4
         "429": *a5
   /api/documents/inbound:
@@ -15900,7 +15914,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateCustomMetricResponse"
         "401": *a1
-        "409": &a30
+        "409": &a31
           description: A custom metric with this name already exists for the caller.
           content:
             application/json:
@@ -15929,7 +15943,7 @@ paths:
                 $ref: "#/components/schemas/GetCustomMetricResponse"
         "401": *a1
         "403": *a8
-        "404": &a29
+        "404": &a30
           description: Custom metric not found (or owned by another user).
           content:
             application/json:
@@ -15963,8 +15977,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateCustomMetricResponse"
         "401": *a1
-        "404": *a29
-        "409": *a30
+        "404": *a30
+        "409": *a31
         "422": *a4
         "429": *a5
     delete:
@@ -15987,7 +16001,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteCustomMetricResponse"
         "401": *a1
-        "404": *a29
+        "404": *a30
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries:
@@ -16031,7 +16045,7 @@ paths:
                 $ref: "#/components/schemas/ListCustomMetricEntriesEnvelope"
         "401": *a1
         "403": *a8
-        "404": *a29
+        "404": *a30
         "422": *a4
         "429": *a5
     post:
@@ -16060,7 +16074,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateCustomMetricEntryResponse"
         "401": *a1
-        "404": *a29
+        "404": *a30
         "409": *a7
         "422": *a4
         "429": *a5
@@ -16096,7 +16110,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateCustomMetricEntryResponse"
         "401": *a1
-        "404": &a31
+        "404": &a32
           description: Custom metric entry not found (or owned by another user).
           content:
             application/json:
@@ -16129,7 +16143,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteCustomMetricEntryResponse"
         "401": *a1
-        "404": *a31
+        "404": *a32
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries/restore:
@@ -16467,7 +16481,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientOverviewEnvelope"
         "401": *a1
-        "403": &a32
+        "403": &a33
           description: >-
             The opt-in `nutrients` module is off for this account (errorCode `module.disabled`). Stop syncing and do not
             retry; offer the enable-in-settings hint. Only run the HealthKit read-authorization flow while the module is
@@ -16522,7 +16536,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientDailySeriesEnvelope"
         "401": *a1
-        "403": *a32
+        "403": *a33
         "422": *a4
         "429": *a5
   /api/nutrients/water:
@@ -16551,7 +16565,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientWaterWriteEnvelope"
         "401": *a1
-        "403": *a32
+        "403": *a33
         "409": *a7
         "422": *a4
         "429": *a5
@@ -17053,26 +17067,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WithingsCredentialsUpdateEnvelope"
-        "400": &a33
+        "400": &a34
           description: Body is not parseable JSON.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "413": &a34
+        "413": &a35
           description: Body exceeds 64 KiB.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "415": &a35
+        "415": &a36
           description: Content-Type is not `application/json`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": &a36
+        "422": &a37
           description: "`clientId` and `clientSecret` are both required and each must be 1–200 characters. The envelope carries a
             single fixed message, not per-field issues."
           content:
@@ -17258,11 +17272,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FitbitCredentialsUpdateEnvelope"
-        "400": *a33
+        "400": *a34
         "401": *a1
-        "413": *a34
-        "415": *a35
-        "422": *a36
+        "413": *a35
+        "415": *a36
+        "422": *a37
         "429": *a5
     delete:
       tags:
@@ -17405,11 +17419,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GoogleHealthCredentialsUpdateEnvelope"
-        "400": *a33
+        "400": *a34
         "401": *a1
-        "413": *a34
-        "415": *a35
-        "422": *a36
+        "413": *a35
+        "415": *a36
+        "422": *a37
         "429": *a5
     delete:
       tags:
@@ -17562,11 +17576,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OuraCredentialsUpdateEnvelope"
-        "400": *a33
+        "400": *a34
         "401": *a1
-        "413": *a34
-        "415": *a35
-        "422": *a36
+        "413": *a35
+        "415": *a36
+        "422": *a37
         "429": *a5
     delete:
       tags:
@@ -17642,21 +17656,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/OuraTestEnvelope"
         "401": *a1
-        "422": &a37
+        "422": &a38
           description: No usable connection for this provider — nothing stored, or the stored grant could no longer be resolved
             into an access token. `meta.errorCode` = `not_configured`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": &a38
+        "429": &a39
           description: More than 5 requests in 60 s from this user. `meta.errorCode` = `rate_limited_self` — this is the local
             limiter, distinct from a `rate_limited` 502 which is the provider's.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "502": &a39
+        "502": &a40
           description: "The probe did not complete. `meta.errorCode` names the class: `credentials_rejected` (the provider
             answered 401/403 — the stored grant is gone), `rate_limited` (the PROVIDER answered 429, which is not this
             endpoint's own limiter), `upstream_error` (5xx), `timeout` (no answer within 5 s), `connection_failed`
@@ -17701,11 +17715,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PolarCredentialsUpdateEnvelope"
-        "400": *a33
+        "400": *a34
         "401": *a1
-        "413": *a34
-        "415": *a35
-        "422": *a36
+        "413": *a35
+        "415": *a36
+        "422": *a37
         "429": *a5
     delete:
       tags:
@@ -17781,9 +17795,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/PolarTestEnvelope"
         "401": *a1
-        "422": *a37
-        "429": *a38
-        "502": *a39
+        "422": *a38
+        "429": *a39
+        "502": *a40
   /api/strava/credentials:
     get:
       tags:
@@ -17819,11 +17833,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StravaCredentialsUpdateEnvelope"
-        "400": *a33
+        "400": *a34
         "401": *a1
-        "413": *a34
-        "415": *a35
-        "422": *a36
+        "413": *a35
+        "415": *a36
+        "422": *a37
         "429": *a5
     delete:
       tags:
@@ -17901,9 +17915,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/StravaTestEnvelope"
         "401": *a1
-        "422": *a37
-        "429": *a38
-        "502": *a39
+        "422": *a38
+        "429": *a39
+        "502": *a40
   /api/integrations/status:
     get:
       tags:
@@ -17939,7 +17953,7 @@ paths:
                 $ref: "#/components/schemas/FitbitResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a38
+        "429": *a39
   /api/integrations/fitbit/test:
     post:
       tags:
@@ -17957,9 +17971,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/FitbitIntegrationTestEnvelope"
         "401": *a1
-        "422": *a37
-        "429": *a38
-        "502": *a39
+        "422": *a38
+        "429": *a39
+        "502": *a40
   /api/integrations/google-health/resume:
     post:
       tags:
@@ -17976,7 +17990,7 @@ paths:
                 $ref: "#/components/schemas/GoogleHealthResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a38
+        "429": *a39
   /api/integrations/google-health/test:
     post:
       tags:
@@ -18009,9 +18023,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a37
-        "429": *a38
-        "502": *a39
+        "422": *a38
+        "429": *a39
+        "502": *a40
   /api/integrations/whoop/resume:
     post:
       tags:
@@ -18028,7 +18042,7 @@ paths:
                 $ref: "#/components/schemas/WhoopResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a38
+        "429": *a39
   /api/integrations/whoop/test:
     post:
       tags:
@@ -18045,9 +18059,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/WhoopIntegrationTestEnvelope"
         "401": *a1
-        "422": *a37
-        "429": *a38
-        "502": *a39
+        "422": *a38
+        "429": *a39
+        "502": *a40
   /api/integrations/withings/resume:
     post:
       tags:
@@ -18065,7 +18079,7 @@ paths:
                 $ref: "#/components/schemas/WithingsResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a38
+        "429": *a39
   /api/integrations/withings/test:
     post:
       tags:
@@ -18083,8 +18097,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/WithingsIntegrationTestEnvelope"
         "401": *a1
-        "422": *a37
-        "429": *a38
+        "422": *a38
+        "429": *a39
         "502":
           description: "The probe did not complete. The shared codes apply (`credentials_rejected`, `rate_limited`,
             `upstream_error`, `timeout`, `connection_failed`) and this path adds one of its own:
@@ -18148,7 +18162,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DismissPriorityItemEnvelope"
         "401": *a1
-        "403": *a12
+        "403": *a13
         "422": *a4
         "429": *a5
   /api/dashboard/chart-overlay-prefs:
@@ -18258,7 +18272,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a10
+        "422": *a11
         "429": *a5
     delete:
       tags:
@@ -18321,7 +18335,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecordActivityEnvelope"
         "401": *a1
-        "403": &a40
+        "403": &a41
           description: Refused. `meta.errorCode` is `sharing.not_permitted` when the request was made while acting on another
             account (grant management is never delegable), or `sharing.access.denied` when the caller may not act as the
             account they named. The latter is byte-identical for an account that does not exist and one that granted
@@ -18346,7 +18360,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AccountGrantListEnvelope"
         "401": *a1
-        "403": *a40
+        "403": *a41
         "422": *a4
         "429": *a5
     post:
@@ -18441,7 +18455,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AcceptedAccountGrantEnvelope"
         "401": *a1
-        "403": *a40
+        "403": *a41
         "404":
           description: No such invitation for this account.
           content:
@@ -18485,7 +18499,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RevokedAccountGrantEnvelope"
         "401": *a1
-        "403": *a40
+        "403": *a41
         "404":
           description: No such grant on this account's record.
           content:
@@ -18526,7 +18540,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RenouncedAccountGrantEnvelope"
         "401": *a1
-        "403": *a40
+        "403": *a41
         "404":
           description: No such grant held by this account.
           content:
@@ -18908,7 +18922,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a40
+        "403": *a41
         "409":
           description: "The record this browser session is on is not the record the request asserted. `meta.errorCode` is
             `sharing.session.changed`. It is not a refusal of access — the caller may well be entitled to both records —
@@ -19238,7 +19252,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionListEnvelope"
         "401": *a1
-        "403": &a41
+        "403": &a42
           description: The operator has disabled the API instance-wide. Every route in this module refuses while that setting is
             off, for a cookie session as well as for a Bearer token; it is not a per-user permission and retrying will
             not help.
@@ -19271,7 +19285,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionRevokeEnvelope"
         "401": *a1
-        "403": *a41
+        "403": *a42
         "404":
           description: No live connection with this id for this caller — also the answer for an already-revoked one, so a repeat
             revoke is 404 rather than an idempotent 200.
@@ -19298,7 +19312,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenListEnvelope"
         "401": *a1
-        "403": *a41
+        "403": *a42
         "422": *a4
         "429": *a5
     post:
@@ -19328,7 +19342,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a41
+        "403": *a42
         "413":
           description: Body exceeds 16 KiB.
           content:
@@ -19371,7 +19385,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenRevokeEnvelope"
         "401": *a1
-        "403": *a41
+        "403": *a42
         "404":
           description: No `health:read` token with this id for this caller. An already-revoked token is still found, so a repeat
             revoke answers 200.
@@ -19429,7 +19443,7 @@ paths:
       description: Returns the named family's resolved settings for the record the session is acting on. Cookie session or
         Bearer, while acting on a managed record the caller guards.
       parameters:
-        - &a42
+        - &a43
           name: family
           in: path
           required: true
@@ -19473,7 +19487,7 @@ paths:
         ride the audit row. Body capped at 64 KiB. Cookie session or Bearer, while acting on a managed record the caller
         guards.
       parameters:
-        - *a42
+        - *a43
       requestBody:
         required: true
         content:
@@ -19625,7 +19639,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EnvironmentOverviewEnvelope"
         "401": *a1
-        "403": *a12
+        "403": *a13
         "422": *a4
         "429": *a5
   /api/environment/home:
@@ -19662,7 +19676,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EnvironmentHomeEnvelope"
         "401": *a1
-        "403": *a12
+        "403": *a13
         "413":
           description: Body exceeds 4 KiB.
           content:
@@ -19716,7 +19730,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EnvironmentBackfillEnvelope"
         "401": *a1
-        "403": *a12
+        "403": *a13
         "409":
           description: No home location is set, so there is nothing to resolve the days against. `meta.errorCode` =
             `environment.no_home`.
@@ -19775,7 +19789,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EnvironmentGeocodeEnvelope"
         "401": *a1
-        "403": *a12
+        "403": *a13
         "422":
           description: "`q` was missing, empty after trimming, or longer than 120 characters. `meta.errorCode` =
             `environment.invalid`."
@@ -19814,7 +19828,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateEnvironmentTravelEnvelope"
         "401": *a1
-        "403": *a12
+        "403": *a13
         "413":
           description: Body exceeds 4 KiB.
           content:
@@ -19867,7 +19881,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteEnvironmentTravelEnvelope"
         "401": *a1
-        "403": *a12
+        "403": *a13
         "404":
           description: No such override for this account. `meta.errorCode` = `environment.travel.not_found`. Also the answer for
             an id owned by somebody else — existence is not leaked.
@@ -20008,13 +20022,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupDocument"
-        "403": &a43
+        "403": &a44
           description: Caller is not an admin. `requireAdmin()` is cookie-only, so a Bearer token lands here whatever its scope.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": &a44
+        "404": &a45
           description: No stored copy with this id.
           content:
             application/json:
@@ -20073,8 +20087,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "403": *a43
-        "404": *a44
+        "403": *a44
+        "404": *a45
         "409":
           description: Either the payload declares a different owner than the stored row, or a request under the same
             `Idempotency-Key` is still in flight. Nothing was changed.

@@ -15,8 +15,9 @@
  * helper. The Coach prompt builder + snapshot builder both read this
  * row on every turn — there's no caching layer to invalidate.
  */
-import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
+  apiError,
   apiSuccess,
   apiValidationError,
   sanitiseZodIssues,
@@ -61,7 +62,9 @@ export const PUT = apiHandler(async (req: Request) => {
   try {
     body = await req.json();
   } catch {
-    throw new HttpError(422, "coach-prefs.body.invalid_json");
+    return apiError("Invalid JSON body", 400, {
+      errorCode: "coach-prefs.body.invalid_json",
+    });
   }
 
   // v1.32.22 (M4) — pull the optimistic-concurrency base token off before the

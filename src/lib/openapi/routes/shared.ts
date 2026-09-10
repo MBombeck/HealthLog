@@ -225,6 +225,29 @@ export const invalidBaseTokenResponse = {
   },
 };
 
+/**
+ * The 400 an unparseable JSON body earns.
+ *
+ * `safeJson` has answered 400 for a body that will not parse since it was
+ * written, and roughly two hundred and twenty routes go through it — but seven
+ * `/api/auth/me/*` writes hand-rolled the parse and answered 422, so a client's
+ * "my serializer produced garbage" branch had to accept two statuses on a
+ * subset of routes it could not predict. They answer 400 now, and this is the
+ * response that says so. The dotted token each route already carried moved to
+ * `meta.errorCode`, where a machine code belongs.
+ *
+ * Spread only on the operations that hand-rolled the parse. It is deliberately
+ * NOT folded into `stdResponses`: that set is spread onto reads as well, and a
+ * GET that accepts no body has no malformed body to refuse.
+ */
+export const malformedJsonResponse = {
+  "400": {
+    description:
+      "The request body is not parseable JSON. Nothing was read and nothing was written. `meta.errorCode` names the surface that refused it (`<surface>.body.invalid_json`). This is a client-side serialisation fault, not a validation failure — a body that parses but fails the schema is the 422 beside this.",
+    content: { "application/json": { schema: errorEnvelope } },
+  },
+};
+
 // ── Standard 401 / 422 / 429 responses ───────────────────────────────
 
 export const stdResponses = {

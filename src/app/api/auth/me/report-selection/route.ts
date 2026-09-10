@@ -18,6 +18,7 @@
  */
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
 import {
+  apiError,
   apiSuccess,
   apiValidationError,
   getClientIp,
@@ -53,7 +54,9 @@ export const PUT = apiHandler(async (req: Request) => {
   try {
     body = await req.json();
   } catch {
-    throw new HttpError(422, "report-selection.body.invalid_json");
+    return apiError("Invalid JSON body", 400, {
+      errorCode: "report-selection.body.invalid_json",
+    });
   }
 
   const parsed = savedReportProfileSchema.safeParse(body ?? {});

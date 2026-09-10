@@ -18,8 +18,9 @@
  * decides which source's rows the cached targets / derived / analytics
  * payloads were built from.
  */
-import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
+  apiError,
   apiSuccess,
   apiValidationError,
   getClientIp,
@@ -53,7 +54,9 @@ export const PUT = apiHandler(async (req: Request) => {
   try {
     body = await req.json();
   } catch {
-    throw new HttpError(422, "source-priority.body.invalid_json");
+    return apiError("Invalid JSON body", 400, {
+      errorCode: "source-priority.body.invalid_json",
+    });
   }
 
   const parsed = sourcePrioritySchema.safeParse(body ?? {});

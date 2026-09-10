@@ -33,6 +33,7 @@ import {
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
+  malformedJsonResponse,
   recordRefusal,
   stdResponses,
 } from "./shared";
@@ -991,6 +992,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...malformedJsonResponse,
       },
     },
   },
