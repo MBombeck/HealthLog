@@ -37,6 +37,10 @@ export function VaccinationsView() {
   // next door.
   const canAddDose = canWriteDomain("profile");
   const canManageProfile = canManageDomain("profile");
+  // Planning the booster mints a `MeasurementReminder`, which lives in the
+  // measurements section rather than this one. A grant that opened only the
+  // health background is refused there, so the offer is not made.
+  const canPlanBooster = canWriteDomain("measurements");
   const { data, isLoading, isError, refetch } = useVaccinations();
   const records = data?.vaccinations ?? [];
 
@@ -91,7 +95,8 @@ export function VaccinationsView() {
         onCreated={(created) => {
           // Offer the booster only when the catalogue entry carries an
           // interval; a free-text or one-off dose never prompts.
-          if (boosterOfferFor(created)) setBoosterFor(created);
+          if (canPlanBooster && boosterOfferFor(created))
+            setBoosterFor(created);
         }}
       />
 
