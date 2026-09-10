@@ -77,9 +77,23 @@ export async function resetNotificationFixture(): Promise<void> {
       userId,
     ]);
     await pool.query("DELETE FROM devices WHERE user_id = $1", [userId]);
+    // `user_id` and `recipient_user_id`, and deliberately NOT
+    // `record_user_id`: that column is the health-record SUBJECT, so a
+    // delivery ABOUT this account sent TO a guardian carries it while the
+    // recipient is somebody else. Deleting on it would take a row out of
+    // another account's ledger. The diagnostic this journey reads filters on
+    // the recipient, so the two agree.
     await pool.query(
       `DELETE FROM push_attempts
-        WHERE user_id = $1 OR recipient_user_id = $1 OR record_user_id = $1`,
+        WHERE user_id = $1 OR recipient_user_id = $1`,
+      [userId],
+    );
+    // The medication delete cascades to its intake events, but a stale event
+    // is what makes the sweep decide a dose was already taken and skip its
+    // dispatch, so the statement is written out rather than inherited from a
+    // foreign key a future fixture might stop relying on.
+    await pool.query(
+      "DELETE FROM medication_intake_events WHERE user_id = $1",
       [userId],
     );
     await pool.query("DELETE FROM medications WHERE user_id = $1", [userId]);

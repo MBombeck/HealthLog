@@ -35,11 +35,37 @@
  * a form-control id — or the account's own API responses, never rendered copy:
  * the labels are i18n-driven and this account renders them in English only by
  * cookie.
+ *
+ * What isolates this file, and what does not. `test.describe.configure({ mode:
+ * "serial" })` orders the tests INSIDE it; the suite runs `fullyParallel` with
+ * two workers, so every other spec file is live against the same database
+ * throughout. Three things carry the isolation instead: the account is this
+ * file's own (`E2E_NOTIFY`), the server is this file's own (mail configured, no
+ * reminder scheduler — `e2e/setup/notification-server.ts`), and the reminder
+ * sweep is told which account to walk, so the one trigger here that could
+ * dispatch for the whole instance no longer does.
+ *
+ * What is left standing is a precondition rather than a mechanism: nothing else
+ * delivers email in this run, because no other e2e account configures an EMAIL
+ * channel and no other server is pointed at the responder. `smtp.accepted()` is
+ * asserted by exact equality on the strength of that, and a spec that seeds an
+ * email channel for another account has to say so here.
+ *
+ * `reason: "apns_not_configured"` and `reason: "client_managed"` are internal
+ * sender / dispatcher constants rather than published contract, and they are
+ * pinned on purpose: the ledger reason is the only place the DECISION is
+ * legible, and the whole claim of the client-managed opt-in is that the reason
+ * changes while everything else does not. A rename that reaches here should
+ * read as a decision to make, not as a mystery break.
  */
 import type { Page } from "@playwright/test";
 
-import { NOTIFY_STORAGE_STATE_PATH } from "./setup/global-setup";
-import { resetNotificationFixture } from "./setup/notification-fixture";
+import { E2E_NOTIFY, NOTIFY_STORAGE_STATE_PATH } from "./setup/global-setup";
+import { NOTIFICATION_BASE_URL } from "./setup/notification-server";
+import {
+  notificationAccountId,
+  resetNotificationFixture,
+} from "./setup/notification-fixture";
 import { startSmtpStub, type SmtpStub } from "./setup/smtp-stub";
 import { expect, test } from "./setup/test";
 
@@ -144,12 +170,24 @@ async function readDiagnostic(page: Page): Promise<DiagnosticPayload> {
  * `expected` is asserted, not merely awaited — an EXTRA attempt is the failure
  * this journey exists to catch (a channel that was switched off delivering
  * anyway), and a poll that stops at "at least" would never see it.
+ *
+ * The diagnostic returns the trailing TWENTY rows and no more
+ * (`src/app/api/admin/notifications/diagnostic/route.ts`). The fixture resets
+ * the ledger to zero before every test and the largest cascade here is two, so
+ * the ceiling is far away — but a poll that ran past it could never converge
+ * and would report "the dispatch wrote N delivery attempt(s)" while the real
+ * answer was "the diagnostic stopped counting". The ceiling is asserted up
+ * front so that failure names itself.
  */
 async function attemptsSince(
   page: Page,
   before: number,
   expected: number,
 ): Promise<PushAttempt[]> {
+  expect(
+    before + expected,
+    "the diagnostic returns at most 20 attempts, so a larger window could never converge",
+  ).toBeLessThanOrEqual(20);
   await expect
     .poll(async () => (await readDiagnostic(page)).recentPushAttempts.length, {
       message: `the dispatch wrote ${expected} delivery attempt(s)`,
@@ -345,25 +383,43 @@ async function createOverdueMedication(page: Page): Promise<string> {
 }
 
 interface SweepResult {
+  scoped: boolean;
   medications: Array<{
     name: string;
+    user: string;
     schedules: Array<{ notificationSent: boolean }>;
   }>;
 }
 
 /**
- * Run the reminder sweep the admin notifications panel drives. This is the
- * product's own trigger for the medication-reminder dispatch, and it goes
- * through `dispatchNotification` — the cascade, the per-channel preference
- * read and the client-managed gate — rather than calling a sender directly.
+ * Run the reminder sweep the admin notifications panel drives, NAMING this
+ * account. This is the product's own trigger for the medication-reminder
+ * dispatch, and it goes through `dispatchNotification` — the cascade, the
+ * per-channel preference read and the client-managed gate — rather than
+ * calling a sender directly.
+ *
+ * The selector is not a convenience. Without it the sweep walks every active
+ * medication on the instance and dispatches for each overdue slot, which makes
+ * this file a writer into every other account's delivery ledger — the exact
+ * inverse of the interference it is trying to avoid, and one that would start
+ * sending real mail the moment another account had a channel and an overdue
+ * dose. Scoped, the run reaches one account: the one it then counts.
  */
-async function runReminderSweep(page: Page): Promise<void> {
+async function runReminderSweep(page: Page, userId: string): Promise<void> {
   const res = await fromPage<SweepResult>(
     page,
     "/api/admin/notifications/reminder-check",
-    { method: "POST" },
+    { method: "POST", body: { userId } },
   );
   expect(res.status, "the sweep ran").toBe(200);
+  expect(
+    res.data?.scoped,
+    "the sweep walked one account, not the instance",
+  ).toBe(true);
+  expect(
+    [...new Set(res.data?.medications.map((m) => m.user))],
+    "every medication the sweep touched belongs to this account",
+  ).toEqual([E2E_NOTIFY.username]);
   const mine = res.data?.medications.find((m) => m.name === MEDICATION_NAME);
   expect(mine, "the sweep saw this account's overdue medication").toBeTruthy();
   expect(
@@ -381,7 +437,16 @@ function attemptFor(
 }
 
 test.describe("notification preferences drive the dispatch decision", () => {
-  test.use({ storageState: NOTIFY_STORAGE_STATE_PATH });
+  /**
+   * Its own server as well as its own account. That process is the one carrying
+   * the mail configuration, and the one with no reminder scheduler inside it —
+   * `e2e/setup/notification-server.ts` says why each matters and what the
+   * shared server keeping the scheduler still leaves standing.
+   */
+  test.use({
+    storageState: NOTIFY_STORAGE_STATE_PATH,
+    baseURL: NOTIFICATION_BASE_URL,
+  });
 
   /**
    * Serial, because every test configures the one account's channels and then
@@ -391,20 +456,48 @@ test.describe("notification preferences drive the dispatch decision", () => {
   test.describe.configure({ mode: "serial" });
 
   /**
-   * The sweep walks every active medication on the instance and the ledger
-   * write that follows is fire-and-forget, so the budget covers a loaded
-   * runner rather than the 30 s default.
+   * The ledger write that follows a dispatch is fire-and-forget and the tests
+   * poll for it, so the budget covers a loaded runner rather than the 30 s
+   * default.
    */
   test.setTimeout(120_000);
 
   let smtp: SmtpStub;
+  let accountId: string;
 
-  test.beforeAll(async () => {
+  test.beforeAll(async ({ playwright }) => {
     smtp = await startSmtpStub();
+    accountId = await notificationAccountId();
+
+    // The one precondition this file cannot arrange for itself: the server it
+    // talks to has to have been started with `SMTP_*`. `playwright.config.ts`
+    // hands them to the server it starts, but `reuseExistingServer` (the local
+    // default) and `E2E_SKIP_WEB_SERVER=1` both attach to a server started
+    // without them — and the symptom is a missing `#email-recipient` field
+    // thirty lines into the first test, which points nowhere near the cause.
+    const api = await playwright.request.newContext({
+      baseURL: NOTIFICATION_BASE_URL,
+      storageState: NOTIFY_STORAGE_STATE_PATH,
+    });
+    try {
+      const res = await api.get("/api/settings/email");
+      const body = (await res.json()) as { data: { smtpConfigured: boolean } };
+      expect(
+        body.data?.smtpConfigured,
+        `the server on ${NOTIFICATION_BASE_URL} was started without SMTP_* — a reused ` +
+          `dev server or E2E_SKIP_WEB_SERVER=1 does not carry them. Start it with ` +
+          `SMTP_HOST=127.0.0.1 SMTP_PORT=${smtp.port} SMTP_FROM=<addr>.`,
+      ).toBe(true);
+    } finally {
+      await api.dispose();
+    }
   });
 
   test.afterAll(async () => {
-    await smtp.close();
+    // Optional-chained: a `beforeAll` that threw before the stub resolved
+    // leaves this undefined, and a teardown TypeError buries the real cause
+    // under its own.
+    await smtp?.close();
   });
 
   test.beforeEach(async () => {
@@ -467,7 +560,7 @@ test.describe("notification preferences drive the dispatch decision", () => {
     await createOverdueMedication(page);
 
     const before = await attemptCount(page);
-    await runReminderSweep(page);
+    await runReminderSweep(page, accountId);
 
     // Two arms, and exactly two: the paired phone and the enabled email
     // channel. A third row would mean the switched-off relay was dialled.
@@ -520,7 +613,7 @@ test.describe("notification preferences drive the dispatch decision", () => {
     expect(resolved.data?.medication.clientManaged).toBe(true);
 
     const before = await attemptCount(page);
-    await runReminderSweep(page);
+    await runReminderSweep(page, accountId);
 
     const attempts = await attemptsSince(page, before, 2);
 

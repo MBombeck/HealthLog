@@ -1,13 +1,17 @@
 import { defineConfig, devices } from "@playwright/test";
 
 import {
+  NOTIFICATION_BASE_URL,
+  NOTIFICATION_PORT,
+} from "./e2e/setup/notification-server";
+import {
   SSR_PREFETCH_BASE_URL,
   SSR_PREFETCH_PORT,
 } from "./e2e/setup/ssr-prefetch-server";
 import {
+  resolveSmtpStubPort,
   SMTP_STUB_FROM,
   SMTP_STUB_HOST,
-  SMTP_STUB_PORT,
 } from "./e2e/setup/smtp-stub";
 
 /**
@@ -24,6 +28,14 @@ import {
  * To run locally: `pnpm dlx playwright install --with-deps chromium`
  * once, then `pnpm e2e`.
  */
+/**
+ * Drawn once here, before any server or worker exists, and published through
+ * `process.env.SMTP_STUB_PORT` — which the web server inherits and which every
+ * worker process re-reads when it loads this config, so all three agree on one
+ * number without a constant to collide on.
+ */
+const smtpStubPort = resolveSmtpStubPort();
+
 export default defineConfig({
   testDir: "./e2e",
   testIgnore: ["setup/**"],
@@ -176,11 +188,12 @@ export default defineConfig({
         // through stable data attributes, not a mobile layout, so it runs in
         // one project.
         "apple-health-import.spec.ts",
-        // The notification-dispatch journey binds a local SMTP responder on a
-        // fixed port and reads GLOBAL verdicts off one account's delivery
-        // ledger — "one email attempt, no ntfy attempt, the APNs arm skipped
-        // for this reason". A second project would fight it for the port and
-        // add attempts to the window it counts. It proves a dispatch decision
+        // The notification-dispatch journey binds a local SMTP responder and
+        // reads verdicts off one account's delivery ledger — "one email
+        // attempt, no ntfy attempt, the APNs arm skipped for this reason". A
+        // second project would run the file in a second worker process, whose
+        // stub would find the port already bound, and would add attempts to
+        // the window the first one counts. It proves a dispatch decision
         // through stable attributes and the account's own API, not a mobile
         // layout, so it runs in one project.
         "notification-dispatch-journey.spec.ts",
@@ -223,15 +236,6 @@ export default defineConfig({
             // Disable the prefetch for the e2e server — the suite keeps the
             // deterministic client-fetch path.
             DASHBOARD_SSR_PREFETCH: "false",
-            // The one delivery channel a notification journey can exercise
-            // for real on one machine. Its transport is operator config, not
-            // account input, so it never crosses the SSRF floor that refuses
-            // a local host for ntfy / webhook / Web Push. The responder these
-            // point at is started by the journey itself; see
-            // `e2e/setup/smtp-stub.ts` for why no other channel can be.
-            SMTP_HOST: SMTP_STUB_HOST,
-            SMTP_PORT: String(SMTP_STUB_PORT),
-            SMTP_FROM: SMTP_STUB_FROM,
           },
         },
         // The SHIPPED configuration, on its own port.
@@ -260,6 +264,38 @@ export default defineConfig({
             ...process.env,
             NATIVE_CANVAS: "off",
             DASHBOARD_SSR_PREFETCH: "true",
+          },
+        },
+        // The mail-configured, scheduler-free server, on its own port.
+        //
+        // Only `notification-dispatch-journey.spec.ts` talks to it, and
+        // `e2e/setup/notification-server.ts` carries the whole reasoning: why
+        // the SMTP env must not reach the shared server (it would render the
+        // Email card for every spec that opens `/settings/integrations`), why
+        // this process must not run the reminder scheduler (a tick inside the
+        // journey's window is a writer no spec can see), and what the shared
+        // server keeping "all" still leaves standing.
+        {
+          command: `PORT=${NOTIFICATION_PORT} HOSTNAME=127.0.0.1 ${JSON.stringify(process.execPath)} .next/standalone/server.js`,
+          url: `${NOTIFICATION_BASE_URL}/api/version`,
+          timeout: 60_000,
+          reuseExistingServer: !process.env.CI,
+          stdout: "ignore",
+          stderr: "pipe",
+          env: {
+            ...process.env,
+            NATIVE_CANVAS: "off",
+            DASHBOARD_SSR_PREFETCH: "false",
+            HEALTHLOG_PROCESS_TYPE: "web",
+            // The one delivery channel a notification journey can exercise for
+            // real on one machine. Its transport is operator config, not
+            // account input, so it never crosses the SSRF floor that refuses a
+            // local host for ntfy / webhook / Web Push. The responder these
+            // point at is started by the journey itself; see
+            // `e2e/setup/smtp-stub.ts` for why no other channel can be.
+            SMTP_HOST: SMTP_STUB_HOST,
+            SMTP_PORT: String(smtpStubPort),
+            SMTP_FROM: SMTP_STUB_FROM,
           },
         },
       ],

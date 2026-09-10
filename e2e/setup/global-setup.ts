@@ -98,9 +98,15 @@ export const E2E_GUARDIAN = {
  *
  * It has one, rather than borrowing the shared fixture, because the journey's
  * verdicts are counts over ONE account's `push_attempts` ledger — "one email
- * attempt, no ntfy attempt, the APNs arm skipped and for which reason". Any
- * other spec that happened to trigger a delivery for the shared account would
- * land inside that window and flip a count that is not about it.
+ * attempt, no ntfy attempt, the APNs arm skipped and for which reason".
+ *
+ * The direction that matters is the one that is easy to state backwards. The
+ * exposure is not mainly that another spec writes into this account's window;
+ * it is that this journey's own trigger — the admin reminder sweep — dispatches
+ * for whatever accounts it is pointed at, and pointed at the instance it
+ * reaches all of them. A dedicated account gives the sweep something to name,
+ * so the run stays a writer for exactly one ledger and a reader of exactly the
+ * same one.
  *
  * ADMIN because the two surfaces the journey reads the dispatch decision
  * through — the reminder trigger and the notification diagnostic — are
