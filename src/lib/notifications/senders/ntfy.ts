@@ -6,10 +6,15 @@ import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { classifyHttpStatus } from "@/lib/notifications/retry-policy";
 import { getEvent } from "@/lib/logging/context";
 import { recordPushAttemptForPayload } from "@/lib/notifications/senders/push-attempt-record";
-import { safeFetch } from "@/lib/safe-fetch";
+import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";
 import { plainPushText } from "@/lib/notifications/strip-emoji";
 import { stripHtml } from "@/lib/notifications/strip-html";
 import { isUrgentPayload } from "@/lib/notifications/types";
+import {
+  annotatePrivateOriginEgress,
+  evaluateNotificationTarget,
+  PRIVATE_ORIGIN_NOT_APPROVED,
+} from "@/lib/notifications/egress-policy";
 
 /**
  * Send notification via ntfy (simple HTTP POST).
@@ -60,11 +65,24 @@ export async function sendViaNtfy(
     // Strip HTML tags for ntfy (plain text only) + emoji on routine reminders
     const body = plainPushText(stripHtml(payload.message), payload.eventType);
 
-    // requirePublicHost adds the DNS-rebinding pin (issue #217) on top
-    // of the input-time isPublicUrl guard already enforced when the
-    // user saved the ntfy serverUrl in their channel config. The
-    // authToken would otherwise leak on a rebinding flip to a private
-    // address.
+    // The DNS-rebinding pin (issue #217) sits on top of the input-time
+    // guard enforced when the user saved the serverUrl; the authToken would
+    // otherwise leak on a rebinding flip to a private address. A server the
+    // operator listed in NOTIFICATION_PRIVATE_ORIGINS (#947) runs under the
+    // operator-approved pin instead — same resolver pin, redirects
+    // forbidden, loopback and metadata refused. Same verdict function as
+    // the settings routes and the webhook sender.
+    const policy = evaluateNotificationTarget(url);
+    if (!policy.allowed || !policy.canonicalOrigin) {
+      throw new SafeFetchError(
+        "ntfy server refused by the notification origin policy",
+        "private_host",
+      );
+    }
+    if (policy.privateOriginApproved) {
+      annotatePrivateOriginEgress("ntfy", policy.canonicalOrigin);
+    }
+
     const res = await safeFetch(
       url,
       {
@@ -72,7 +90,13 @@ export async function sendViaNtfy(
         headers,
         body,
       },
-      { timeoutMs: 5_000, requirePublicHost: true },
+      {
+        timeoutMs: 5_000,
+        requirePublicHost: !policy.privateOriginApproved,
+        ...(policy.privateOriginApproved
+          ? { operatorApprovedPrivateOrigin: policy.canonicalOrigin }
+          : {}),
+      },
     );
 
     getEvent()?.addExternalCall({
@@ -107,6 +131,13 @@ export async function sendViaNtfy(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "request_failed";
+    // A policy refusal is not a network fault (see the webhook sender): soft
+    // classification, its own reason, and a code the test route can forward.
+    const policyRefused =
+      err instanceof SafeFetchError && err.kind === "private_host";
+    const reason = policyRefused
+      ? "ntfy_private_origin_refused"
+      : "ntfy_network_error";
     getEvent()?.addExternalCall({
       service: "ntfy",
       method: "sendNotification",
@@ -118,13 +149,14 @@ export async function sendViaNtfy(
       channel: "NTFY",
       eventType: payload.eventType,
       result: "error",
-      reason: "ntfy_network_error",
+      reason,
     });
     return {
       ok: false,
       hardReject: false,
-      reason: "ntfy_network_error",
+      reason,
       message,
+      ...(policyRefused ? { errorCode: PRIVATE_ORIGIN_NOT_APPROVED } : {}),
     };
   }
 }
