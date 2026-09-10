@@ -27,10 +27,15 @@
  *   7. Persist user message + assistant message (encrypted) and bump
  *      the day's CoachUsage token ledger.
  */
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
 
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { redactOptional, redactSecrets } from "@/lib/logging/redact";
 import { auditLog } from "@/lib/auth/audit";
@@ -209,9 +214,16 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       action: { name: "insights.coach.invalid" },
       meta: { issues: parsed.error.issues.length },
     });
-    return NextResponse.json(
-      { data: null, error: "coach.request.invalid" },
-      { status: 422 },
+    // The dotted token keeps its place in `error`: this refusal keeps its 422,
+    // so moving the string would be a wire change with nothing forcing it —
+    // the `invalid_json` siblings moved only because their status moved to 400
+    // anyway. `meta.errorCode` publishes the same token in the field a machine
+    // code belongs in, and `details.issues` names the fields that were refused.
+    return apiValidationError(
+      "coach.request.invalid",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      { errorCode: "coach.request.invalid" },
     );
   }
   const {

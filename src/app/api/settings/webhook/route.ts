@@ -1,5 +1,11 @@
 import { prisma } from "@/lib/db";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import {
   notificationChannelEnabledSchema,
   webhookSettingsSchema,
@@ -108,7 +114,12 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   }
 
   const parsed = webhookSettingsSchema.safeParse(body);
-  if (!parsed.success) return apiError("Invalid data", 422);
+  if (!parsed.success)
+    return apiValidationError(
+      "Invalid data",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
 
   const { url, headerName, headerValue, enabled } = parsed.data;
 

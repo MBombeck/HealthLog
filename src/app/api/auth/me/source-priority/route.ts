@@ -18,8 +18,14 @@
  * decides which source's rows the cached targets / derived / analytics
  * payloads were built from.
  */
-import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import { apiSuccess, getClientIp } from "@/lib/api-response";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  getClientIp,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -48,7 +54,9 @@ export const PUT = apiHandler(async (req: Request) => {
   try {
     body = await req.json();
   } catch {
-    throw new HttpError(422, "source-priority.body.invalid_json");
+    return apiError("Invalid JSON body", 400, {
+      errorCode: "source-priority.body.invalid_json",
+    });
   }
 
   const parsed = sourcePrioritySchema.safeParse(body ?? {});
@@ -57,7 +65,17 @@ export const PUT = apiHandler(async (req: Request) => {
       action: { name: "auth.me.source-priority.put.invalid" },
       meta: { issues: parsed.error.issues.length },
     });
-    throw new HttpError(422, "source-priority.body.invalid_shape");
+    // The dotted token keeps its place in `error`: this refusal keeps its 422,
+    // so moving the string would be a wire change with nothing forcing it —
+    // the `invalid_json` siblings moved only because their status moved to 400
+    // anyway. `meta.errorCode` publishes the same token in the field a machine
+    // code belongs in, and `details.issues` names the fields that were refused.
+    return apiValidationError(
+      "source-priority.body.invalid_shape",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      { errorCode: "source-priority.body.invalid_shape" },
+    );
   }
 
   // v1.4.25 W10 reconcile (security M-3): capture the previous shape

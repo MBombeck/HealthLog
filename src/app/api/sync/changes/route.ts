@@ -50,7 +50,12 @@ import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, apiError } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { readNote } from "@/lib/crypto/note-cipher";
@@ -211,7 +216,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
     limit: url.searchParams.get("limit") ?? undefined,
   });
   if (!parsed.success) {
-    return apiError("Invalid sync query", 422);
+    return apiValidationError(
+      "Invalid sync query",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
   const limit = parsed.data.limit ?? DEFAULT_LIMIT;
 

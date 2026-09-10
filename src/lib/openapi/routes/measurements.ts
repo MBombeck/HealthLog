@@ -21,6 +21,7 @@ import {
   measurementSourceEnum,
   measurementTypeEnum,
   recordRefusal,
+  recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
 
@@ -885,6 +886,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         // After the spread: `stdResponses` carries a generic 422 that would
         // otherwise overwrite this one.
         ...stdResponses,
+        ...recordWriteRateLimitResponse,
         "422": {
           description:
             "Validation failed, or (`measurement.create.source_not_permitted`) a narrow `measurements:write` credential named `APPLE_HEALTH` as the source. Refused rather than relabelled, so the caller can fix the payload instead of discovering rows it did not ask for.",

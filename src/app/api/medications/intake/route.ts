@@ -21,6 +21,7 @@ import {
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
@@ -202,6 +203,16 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // the response they are already awaiting. What the owner gets instead is the
   // notification at the end of this handler.
   const { user, actor } = await requireRecordAuth("write", "medications");
+
+  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
+  // batch siblings have always been capped; the per-record creates a looping
+  // client hits were not.
+  const writeRl = await checkRecordWriteRateLimit(actor.id);
+  if (!writeRl.allowed) {
+    return apiError("Too many writes, try again later", 429, {
+      errorCode: "record_write.rate_limited",
+    });
+  }
 
   const { data: body, error } = await safeJson(request, {
     maxBytes: 64 * 1024,

@@ -1,6 +1,12 @@
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
-import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  getClientIp,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getGlitchtipSettings } from "@/lib/monitoring-settings";
 import { sendGlitchtipEvent } from "@/lib/monitoring/glitchtip";
@@ -42,7 +48,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const parsed = clientErrorSchema.safeParse(body);
-  if (!parsed.success) return apiError("Invalid error data", 422);
+  if (!parsed.success)
+    return apiValidationError(
+      "Invalid error data",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
 
   const delivery = await sendGlitchtipEvent({
     dsn: settings.glitchtipDsn,

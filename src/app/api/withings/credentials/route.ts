@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { isP2025 } from "@/lib/prisma-errors";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
@@ -46,7 +51,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   if (jsonError) return jsonError;
   const result = z.safeParse(withingsCredentialsSchema, body);
   if (!result.success) {
-    return apiError("Client ID and Client Secret are required", 422);
+    return apiValidationError(
+      "Client ID and Client Secret are required",
+      sanitiseZodIssues(result.error.issues),
+      422,
+    );
   }
 
   await prisma.user.update({

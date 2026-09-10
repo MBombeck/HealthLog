@@ -18,7 +18,13 @@
  */
 import { NextRequest } from "next/server";
 import { apiHandler, requireBearerAuth } from "@/lib/api-handler";
-import { apiError, apiSuccess, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -50,7 +56,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = stepUpOptionsSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("Invalid request", 422);
+    return apiValidationError(
+      "Invalid request",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
 
   if (parsed.data.method === "webauthn") {

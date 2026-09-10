@@ -2,7 +2,12 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiSuccess, apiError } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { CHANNEL_TYPE_LABELS, EVENT_TYPES } from "@/lib/notifications/types";
 import type { ChannelType, EventType } from "@/lib/notifications/types";
 import { reEnableChannel } from "@/lib/notifications/channel-state";
@@ -156,7 +161,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const parsed = reEnableChannelSchema.safeParse(body);
-  if (!parsed.success) return apiError("Invalid data", 422);
+  if (!parsed.success)
+    return apiValidationError(
+      "Invalid data",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
 
   const channel = await prisma.notificationChannel.findFirst({
     where: { id: parsed.data.channelId, userId: user.id },

@@ -3,7 +3,12 @@ import { z } from "zod/v4";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { DISCLAIMER_VERSION } from "@/lib/onboarding/disclaimer";
 
 /**
@@ -38,9 +43,14 @@ export const POST = apiHandler(async (request) => {
 
   const parsed = z.safeParse(bodySchema, rawBody);
   if (!parsed.success) {
-    return apiError("Invalid input", 422, {
-      errorCode: "onboarding.disclaimer.invalid",
-    });
+    return apiValidationError(
+      "Invalid input",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      {
+        errorCode: "onboarding.disclaimer.invalid",
+      },
+    );
   }
 
   // The server pins the canonical version it stamps — the body version is

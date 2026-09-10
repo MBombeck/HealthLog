@@ -10,6 +10,7 @@ import {
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import {
   intakeSchema,
   listIntakeEventsSchema,
@@ -57,6 +58,16 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
     "write",
     "medications",
   );
+
+  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
+  // batch siblings have always been capped; the per-record creates a looping
+  // client hits were not.
+  const writeRl = await checkRecordWriteRateLimit(actor.id);
+  if (!writeRl.allowed) {
+    return apiError("Too many writes, try again later", 429, {
+      errorCode: "record_write.rate_limited",
+    });
+  }
 
   // v1.36.1 follow-up — the sibling route `POST /api/medications/intake`
   // refuses a delegate changing a dose the owner already recorded. This route

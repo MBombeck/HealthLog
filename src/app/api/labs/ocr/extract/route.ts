@@ -28,7 +28,13 @@
 import { Buffer } from "node:buffer";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiError, apiSuccess, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { assertConsentForChain } from "@/lib/ai/consent-guard";
 import {
@@ -154,9 +160,14 @@ async function handleTextExtract(
 
   const parsed = ocrTextExtractSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("Invalid OCR text payload", 422, {
-      errorCode: "labs.ocr.extractFailed",
-    });
+    return apiValidationError(
+      "Invalid OCR text payload",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      {
+        errorCode: "labs.ocr.extractFailed",
+      },
+    );
   }
 
   // Budget — text mode is a plain text→JSON structuring pass, far cheaper than

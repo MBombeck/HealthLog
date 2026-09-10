@@ -2,7 +2,12 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
-import { apiSuccess, apiError } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { notificationPreferenceSchema } from "@/lib/validations/notifications";
 import { EVENT_TYPES, CHANNEL_TYPE_LABELS } from "@/lib/notifications/types";
 import type { ChannelType } from "@/lib/notifications/types";
@@ -106,7 +111,12 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   }
 
   const parsed = notificationPreferenceSchema.safeParse(body);
-  if (!parsed.success) return apiError("Invalid data", 422);
+  if (!parsed.success)
+    return apiValidationError(
+      "Invalid data",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
 
   const { channelId, eventType, enabled } = parsed.data;
 

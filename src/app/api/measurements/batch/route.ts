@@ -45,8 +45,10 @@ import { auditLog } from "@/lib/auth/audit";
 import {
   apiError,
   apiSuccess,
+  apiValidationError,
   getClientIp,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { withIdempotency } from "@/lib/idempotency";
 import {
@@ -274,7 +276,11 @@ async function postBatch(request: NextRequest): Promise<Response> {
 
   const parsed = batchPayloadSchema.safeParse(rawBody);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0]?.message ?? "Invalid batch", 422);
+    return apiValidationError(
+      parsed.error.issues[0]?.message ?? "Invalid batch",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
 
   // A scoped credential may attribute MANUAL and nothing else. Refused loudly

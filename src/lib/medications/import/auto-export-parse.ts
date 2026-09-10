@@ -92,8 +92,14 @@ export interface AutoExportRefusal {
   reason: AutoExportRefusalReason;
 }
 
-/** A file-level problem: nothing can be read at all. */
-export const AUTO_EXPORT_FATAL_REASONS = [
+/**
+ * A file-level problem: nothing can be read at all.
+ *
+ * These values ship as `meta.errorCode` on the import route's 422, which is
+ * why the constant is named for what they are on the wire rather than for the
+ * field that carries them internally.
+ */
+export const AUTO_EXPORT_FATAL_ERROR_CODES = [
   "empty_file",
   "missing_required_columns",
   "unreadable_json",
@@ -102,10 +108,11 @@ export const AUTO_EXPORT_FATAL_REASONS = [
   "json_carries_no_intake_time",
 ] as const;
 
-export type AutoExportFatalReason = (typeof AUTO_EXPORT_FATAL_REASONS)[number];
+export type AutoExportFatalErrorCode =
+  (typeof AUTO_EXPORT_FATAL_ERROR_CODES)[number];
 
 export interface AutoExportParseOutcome {
-  fatal?: { reason: AutoExportFatalReason; detail?: string };
+  fatal?: { reason: AutoExportFatalErrorCode; detail?: string };
   doses: AutoExportDose[];
   refusals: AutoExportRefusal[];
   /** Data rows read, refusals included. `doses + refusals` must equal it. */

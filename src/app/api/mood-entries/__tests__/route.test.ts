@@ -31,6 +31,17 @@ const txClient = {
   },
 };
 
+vi.mock("@/lib/rate-limit", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/rate-limit")>()),
+  // The shared single-record write ceiling. Allowed here: this file is about
+  // what the handler does with a body it accepted, not about the bucket.
+  checkRecordWriteRateLimit: vi.fn(async () => ({
+    allowed: true,
+    limit: 300,
+    remaining: 299,
+    resetAt: Date.now() + 60_000,
+  })),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     moodEntry: {

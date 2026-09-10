@@ -10,7 +10,13 @@
 import { type NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiError, apiSuccess, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -65,9 +71,14 @@ export const POST = apiHandler(
     if (jsonError) return jsonError;
     const parsed = coachAttachmentCreateSchema.safeParse(body);
     if (!parsed.success) {
-      return apiError("Invalid attachment request", 422, {
-        errorCode: "coach.fenced.invalid",
-      });
+      return apiValidationError(
+        "Invalid attachment request",
+        sanitiseZodIssues(parsed.error.issues),
+        422,
+        {
+          errorCode: "coach.fenced.invalid",
+        },
+      );
     }
     const { documentId } = parsed.data;
 
