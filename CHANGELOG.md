@@ -1,5 +1,137 @@
 # Changelog
 
+## [1.38.16] — 2026-09-10
+
+The API says what it refused and why, on every route, and the admin page
+says whether last night's off-host copy actually landed for each account.
+
+### Added
+
+- **Off-host backup freshness per account.** The nightly job reported
+  counts, which cannot name the failing account. It now keeps a ledger row
+  per account (`OffhostBackupState`: last attempt, last success, size),
+  written the moment the object is durably in the bucket and under its own
+  error boundary, so a ledger write that fails cannot turn a landed backup
+  into a failure. Admin → Backups shows one row per account with a state
+  judged against the nightly schedule with six hours of grace for the Berlin
+  clock: `fresh` (within one period), `due` (within two), `stale`, `never`
+  (walked by a run, no object yet) and `unknown` (labelled "No record yet"
+  in the console; the honest answer on the first day after this release).
+  Stale first. Never a bucket listing; an empty state says so when off-host
+  backup is not configured. The row is in the wipe plan and registered as
+  not part of the backup itself. Runbook updated.
+
+- **The server side of the needs-based onboarding.** A record now holds its
+  onboarding answers (who the record is for, the areas to watch, medication
+  on a schedule, where readings come from, an upcoming visit, units), the
+  ordered steps with stable ids and a status each, when the flow completed
+  and which first result was offered. `GET /api/auth/me` publishes it as
+  `onboarding` for the record the payload describes;
+  `PATCH /api/onboarding/answers` takes one step at a time and is
+  idempotent, `POST /api/onboarding/complete` derives the module map from
+  the answers exactly once and only when every question is answered or
+  passed, `POST /api/onboarding/restart` re-asks the questions and keeps the
+  modules. The derivation turns on what the answers name and writes an
+  explicit off for the rest, but never turns off a module the person
+  switched on by hand and never one whose domain already holds rows, so
+  nothing is lost by a choice; the mapping from needs to modules lives in
+  the module registry next to the keys. The getting-started checklist orders
+  its items from the answers and no longer reads every account that never
+  entered the flow as unfinished. The web wizard that asks these questions
+  follows in a later release; today's first-run steps are unchanged.
+
+- **The error-reporting card tells the truth.** A green "Configured" badge
+  appeared from a DSN alone, even with sending off, and never said where
+  reports go. The forwarder now records the last successful and the last
+  failed delivery (timestamps and a short reason, never a response body);
+  the badge is green only when a report left within fourteen days, amber
+  otherwise with the reason, and the card names the target host, never the
+  key. `docs/ops/deploy.md` gains a note on setting it for an instance you
+  operate yourself; there is deliberately no default target.
+
+### Fixed
+
+- **A cycle-only share no longer sees the rest of the record.**
+  `GET /api/cycle/insights` was declared for the `cycle` section but
+  returned luteal and follicular averages for weight, resting heart rate,
+  HRV, sleep, steps, glucose and mood score, which are `measurements` and
+  `mind` data, to a delegate whose grant opened only the cycle. The route
+  asks the grant per section now and skips the queries it does not cover;
+  the owner and an unscoped grant get the same answer as before. One helper
+  answers "which sections does this grant open" for every route; two
+  verbatim copies of it are gone.
+
+- **Controls a delegate could not use are not offered.** The vaccination
+  pass showed add, edit and delete to a read-level delegate; a visit row
+  opened an editable sheet with Save and Delete for read and write levels;
+  the capture surfaces and the dashboard's quick entry offered kinds whose
+  section the grant did not open; nine pages stayed open to any delegate
+  because of a coarse "in a shared record" test. Each control asks the
+  section its own route requires (`canWriteDomain` / `canManageDomain`), the
+  coarse "may this person add" answer is retired, the nine page gates read
+  the record's own module map, and a structural guard sweeps every component
+  for the shape rather than naming files, because the first sweep found six
+  and missed three.
+
+- **A wipe, an account deletion and an encrypted export refuse under an
+  active switch.** They always did (the fresh-second-factor gate opens with
+  the plain authentication that refuses any switch) but the contract did not
+  say so; the three operations now publish the refusal, and a test drives it
+  through the browser's own carrier.
+
+- **A booster reminder is not minted for a record its grant does not
+  cover.** The mint refuses rather than silently skipping, with a test that
+  no row is written.
+
+### Changed
+
+- **Every shape refusal carries the issue list.** 59 refusal sites in 57
+  routes answered a schema refusal with a bare 422 and a sentence; they go
+  through the shared helper now, so `details.issues` names each field the
+  way the rest of the tree already did. `error` and `meta` are unchanged;
+  six of the eleven dotted tokens that are still the whole `error` string
+  also ride as `meta.errorCode`, the five Coach reminder tokens do not yet.
+  A structural sweep reads every `safeParse` refusal in `src/app/api` and
+  fails when one bypasses the helper; its allowlist is empty. A second sweep
+  inventories the eleven token-string 422s, each with a written reason: one
+  is a published contract, five keep the string because the status did not
+  move and the token rides in `meta.errorCode` as well, five are the Coach
+  reminder surfaces that move as one piece or not at all.
+
+- **A body that is not JSON at all is a 400 everywhere.** Seven preference
+  routes answered 422 with a dotted token as the whole message; they answer
+  400 with a sentence and the same token in `meta.errorCode`, the status
+  roughly two hundred other routes already use. A body that parses but fails
+  the schema is still the 422 beside it. The native client branches on
+  `meta.errorCode`, which did not change; the health-score configuration
+  route keeps its published 422 with a written reason.
+  `PUT /api/auth/me/report-selection` also names the leaf ids it does not
+  know in `meta.unknownLeaves` instead of refusing with a bare token.
+
+- **Two more writes honour `Idempotency-Key`.** The GLP-1 log and the custom
+  cycle symptom, the two row-creating writes the native client's offline
+  queue is most likely to replay after a lost response, join the routes that
+  return the first answer with `X-Idempotent-Replay: true` instead of a
+  second row. Documented per route.
+
+- **Single-record writes share one generous per-account bucket.** Eleven
+  routes that create or edit one row had no rate limit at all; they share
+  `record-write:<accountId>` at 300 per minute, keyed on the acting account,
+  applied after authentication, with the 429 carrying `Retry-After`, the
+  `X-RateLimit-*` triple and `meta.errorCode = record_write.rate_limited` so
+  a client can tell the shared bucket from a route's own. The batch
+  endpoints keep their own buckets. A test pulls the key and the window out
+  of the limiter's query and holds the documentation to them.
+
+- **The error codes are a published list.** 257 `errorCode` values across 47
+  surfaces, plus a group for the handful that carry no prefix, are
+  catalogued in `src/lib/openapi/error-codes.ts` and rendered into the error
+  envelope's description, grouped by surface. A guard walks the import graph
+  from every route (about fourteen hundred modules, the generated client
+  never opened) and fails in both directions: a code emitted anywhere a
+  route can reach but absent from the catalogue, and a catalogue entry
+  nothing emits. Existing codes keep their spelling.
+
 ## [1.38.15] — 2026-09-10
 
 The rest of #939 for managed profiles, one figure for medication adherence
