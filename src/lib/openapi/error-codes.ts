@@ -301,6 +301,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     vaccination: [
       "vaccination.booster-invalid",
       "vaccination.booster-no-antigen",
+      "vaccination.booster-out-of-scope",
       "vaccination.encounter-not-found",
       "vaccination.identity-required",
       "vaccination.invalid",

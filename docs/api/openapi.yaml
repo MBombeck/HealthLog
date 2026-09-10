@@ -30067,8 +30067,8 @@ components:
                 sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
                 source-priority.body.invalid_json, source-priority.body.invalid_shape; tokens —
                 tokens.measurements.ceiling_reached; vaccination — vaccination.booster-invalid,
-                vaccination.booster-no-antigen, vaccination.encounter-not-found, vaccination.identity-required,
-                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
+                vaccination.booster-no-antigen, vaccination.booster-out-of-scope, vaccination.encounter-not-found,
+                vaccination.identity-required, vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
                 vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
                 workout.batch.too_large; (unprefixed) — about_me_conflict, ai_response_truncated, coach_prefs_conflict,
                 dashboard_layout_conflict, empty_file, health_score_config_conflict, insights_layout_conflict,
