@@ -7006,7 +7006,9 @@
           "stateDue": "지연",
           "stateStale": "오래됨",
           "stateNever": "없음",
-          "neverDetail": "이 계정의 사본이 버킷에 도착한 적이 없습니다.",
+          "stateUnknown": "기록 없음",
+          "neverDetail": "이 계정으로 도착한 것이 없습니다. 마지막 확인 {when}.",
+          "unknownDetail": "아직 어떤 야간 실행도 이 계정을 기록하지 않았습니다.",
           "age": "{hours}시간 전",
           "scheduleNote": "업로드는 {hours}시간마다 실행됩니다. 최신은 한 번의 실행 이내, 지연은 한 번이 아무것도 만들지 못한 상태, 오래됨은 두 번이 그런 상태입니다."
         }

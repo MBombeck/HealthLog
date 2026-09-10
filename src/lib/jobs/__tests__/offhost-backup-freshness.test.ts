@@ -16,20 +16,40 @@ function ago(ms: number): Date {
 }
 
 describe("classifyOffhostBackup", () => {
-  it("says never when the worker has put nothing there for this account", () => {
-    expect(classifyOffhostBackup({ lastSuccessAt: null, now: NOW })).toEqual({
-      freshness: "never",
-      ageHours: null,
-    });
+  it("says unknown, not never, when no run has recorded this account", () => {
+    // The ledger starts empty. On the first morning after the upgrade every
+    // account on a perfectly healthy host looks like this, and `never` would
+    // assert something about the bucket the host has not looked at.
+    expect(
+      classifyOffhostBackup({
+        lastAttemptAt: null,
+        lastSuccessAt: null,
+        now: NOW,
+      }),
+    ).toEqual({ freshness: "unknown", ageHours: null });
+  });
+
+  it("says never once a run has walked the account and put nothing there", () => {
+    expect(
+      classifyOffhostBackup({
+        lastAttemptAt: ago(HOUR),
+        lastSuccessAt: null,
+        now: NOW,
+      }),
+    ).toEqual({ freshness: "never", ageHours: null });
   });
 
   it("is fresh right up to one period plus the grace and due one millisecond past it", () => {
     expect(
-      classifyOffhostBackup({ lastSuccessAt: ago(PERIOD + GRACE), now: NOW })
-        .freshness,
+      classifyOffhostBackup({
+        lastAttemptAt: ago(0),
+        lastSuccessAt: ago(PERIOD + GRACE),
+        now: NOW,
+      }).freshness,
     ).toBe("fresh");
     expect(
       classifyOffhostBackup({
+        lastAttemptAt: ago(0),
         lastSuccessAt: ago(PERIOD + GRACE + 1),
         now: NOW,
       }).freshness,
@@ -39,12 +59,14 @@ describe("classifyOffhostBackup", () => {
   it("is due right up to two periods plus the grace and stale one millisecond past it", () => {
     expect(
       classifyOffhostBackup({
+        lastAttemptAt: ago(0),
         lastSuccessAt: ago(PERIOD * 2 + GRACE),
         now: NOW,
       }).freshness,
     ).toBe("due");
     expect(
       classifyOffhostBackup({
+        lastAttemptAt: ago(0),
         lastSuccessAt: ago(PERIOD * 2 + GRACE + 1),
         now: NOW,
       }).freshness,
@@ -66,6 +88,7 @@ describe("classifyOffhostBackup", () => {
     // on every host, with nothing wrong anywhere.
     expect(
       classifyOffhostBackup({
+        lastAttemptAt: ago(0),
         lastSuccessAt: beforeTheChange,
         now: afterTheChange,
       }).freshness,
@@ -76,14 +99,21 @@ describe("classifyOffhostBackup", () => {
     // 31 hours: past one period even with six hours of slack, so a run that
     // produced nothing for this account still shows.
     expect(
-      classifyOffhostBackup({ lastSuccessAt: ago(31 * HOUR), now: NOW })
-        .freshness,
+      classifyOffhostBackup({
+        lastAttemptAt: ago(0),
+        lastSuccessAt: ago(31 * HOUR),
+        now: NOW,
+      }).freshness,
     ).toBe("due");
   });
 
   it("reports whole hours of age", () => {
     expect(
-      classifyOffhostBackup({ lastSuccessAt: ago(90 * 60_000), now: NOW }),
+      classifyOffhostBackup({
+        lastAttemptAt: ago(0),
+        lastSuccessAt: ago(90 * 60_000),
+        now: NOW,
+      }),
     ).toEqual({ freshness: "fresh", ageHours: 1 });
   });
 
@@ -93,10 +123,15 @@ describe("classifyOffhostBackup", () => {
     // as zero so the thresholds under test are the caller's period alone.
     const twelveHours = ago(12 * HOUR);
     expect(
-      classifyOffhostBackup({ lastSuccessAt: twelveHours, now: NOW }).freshness,
+      classifyOffhostBackup({
+        lastAttemptAt: ago(0),
+        lastSuccessAt: twelveHours,
+        now: NOW,
+      }).freshness,
     ).toBe("fresh");
     expect(
       classifyOffhostBackup({
+        lastAttemptAt: ago(0),
         lastSuccessAt: twelveHours,
         now: NOW,
         periodHours: 6,
@@ -105,6 +140,7 @@ describe("classifyOffhostBackup", () => {
     ).toBe("due");
     expect(
       classifyOffhostBackup({
+        lastAttemptAt: ago(0),
         lastSuccessAt: twelveHours,
         now: NOW,
         periodHours: 5,
@@ -116,6 +152,7 @@ describe("classifyOffhostBackup", () => {
   it("does not call a copy stale because the host clock ran backwards", () => {
     expect(
       classifyOffhostBackup({
+        lastAttemptAt: ago(0),
         lastSuccessAt: new Date(NOW.getTime() + 2 * HOUR),
         now: NOW,
       }),

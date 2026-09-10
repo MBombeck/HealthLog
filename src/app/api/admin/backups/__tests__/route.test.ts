@@ -63,6 +63,7 @@ describe("GET /api/admin/backups — off-host freshness", () => {
         id: "u1",
         username: "account-one",
         offhostBackupState: {
+          lastAttemptAt: new Date(now - 3 * HOUR),
           lastSuccessAt: new Date(now - 3 * HOUR),
           // The column is BigInt — an object may be 80 GB — and the wire type
           // is a plain number.
@@ -73,6 +74,7 @@ describe("GET /api/admin/backups — off-host freshness", () => {
         id: "u2",
         username: "account-two",
         offhostBackupState: {
+          lastAttemptAt: new Date(now - 31 * HOUR),
           lastSuccessAt: new Date(now - 31 * HOUR),
           sizeBytes: BigInt(8192),
         },
@@ -81,11 +83,24 @@ describe("GET /api/admin/backups — off-host freshness", () => {
         id: "u3",
         username: "account-three",
         offhostBackupState: {
+          lastAttemptAt: new Date(now - 100 * HOUR),
           lastSuccessAt: new Date(now - 100 * HOUR),
           sizeBytes: BigInt(128),
         },
       },
-      { id: "u4", username: "account-four", offhostBackupState: null },
+      {
+        id: "u4",
+        username: "account-four",
+        // Walked by a run, nothing landed.
+        offhostBackupState: {
+          lastAttemptAt: new Date(now - 2 * HOUR),
+          lastSuccessAt: null,
+          sizeBytes: null,
+        },
+      },
+      // No run has recorded this one at all — the state of every account on
+      // the morning the ledger ships.
+      { id: "u5", username: "account-five", offhostBackupState: null },
     ]);
 
     const body = await read();
@@ -99,12 +114,17 @@ describe("GET /api/admin/backups — off-host freshness", () => {
       ["account-two", "due"],
       ["account-three", "stale"],
       ["account-four", "never"],
+      ["account-five", "unknown"],
     ]);
     expect(body.offhost.rows[0]?.sizeBytes).toBe(4096);
     expect(typeof body.offhost.rows[0]?.sizeBytes).toBe("number");
     expect(body.offhost.rows[0]?.ageHours).toBe(3);
     expect(body.offhost.rows[3]?.lastSuccessAt).toBeNull();
     expect(body.offhost.rows[3]?.sizeBytes).toBeNull();
+    expect(body.offhost.rows[3]?.lastAttemptAt).not.toBeNull();
+    // `unknown` is the honest one: the ledger has no history for this
+    // account, which is not the same claim as "the bucket is empty".
+    expect(body.offhost.rows[4]?.lastAttemptAt).toBeNull();
   });
 
   it("says so and reads no account when off-host backup is not configured", async () => {
@@ -128,6 +148,7 @@ describe("GET /api/admin/backups — off-host freshness", () => {
         id: "u1",
         username: "account-one",
         offhostBackupState: {
+          lastAttemptAt: new Date(),
           lastSuccessAt: new Date(),
           sizeBytes: BigInt(1),
         },
@@ -139,6 +160,7 @@ describe("GET /api/admin/backups — off-host freshness", () => {
     expect(Object.keys(body.offhost.rows[0] ?? {}).sort()).toEqual([
       "ageHours",
       "freshness",
+      "lastAttemptAt",
       "lastSuccessAt",
       "sizeBytes",
       "userId",

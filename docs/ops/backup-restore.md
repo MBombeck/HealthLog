@@ -225,8 +225,16 @@ failed` each time, which looks like weather.
 host last put that account's encrypted copy in the bucket, how big it was, and
 how that compares with the nightly schedule. **Fresh** is inside one run,
 **due** means one run produced nothing for that account, **stale** means two
-did not, and **never** means no object has ever landed. On a host without
-`BACKUP_S3_*` the card says off-host backup is not configured and stops there.
+did not, **never** means a run walked the account and no object has ever
+landed for it, and **no record yet** means no run has recorded the account at
+all. On a host without `BACKUP_S3_*` the card says off-host backup is not
+configured and stops there.
+
+The ledger starts empty on the release that adds it, so on a host that has
+been uploading nightly for months every account reads **no record yet** until
+the first run after the upgrade. That is the ledger having no history, not the
+bucket being empty — which is why it is a separate word from **never**, and
+why the row says so rather than claiming nothing has ever reached the bucket.
 
 Each verdict carries six hours of slack on top of the schedule's own 24, and
 that slack is load-bearing on two nights. The cron runs at 02:30 Europe/Berlin,

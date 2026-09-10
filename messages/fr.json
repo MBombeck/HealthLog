@@ -7026,7 +7026,9 @@
           "stateDue": "Attendue",
           "stateStale": "Périmée",
           "stateNever": "Jamais",
-          "neverDetail": "Aucune copie n'est jamais arrivée dans le bucket pour ce compte.",
+          "stateUnknown": "Pas encore d'enregistrement",
+          "neverDetail": "Rien n'est arrivé pour ce compte. Dernière vérification {when}.",
+          "unknownDetail": "Aucun cycle nocturne n'a encore enregistré ce compte.",
           "age": "il y a {hours} h",
           "scheduleNote": "L'envoi tourne toutes les {hours} h. Récente signifie dans un cycle, attendue qu'un cycle n'a rien produit, périmée que deux n'ont rien produit."
         }

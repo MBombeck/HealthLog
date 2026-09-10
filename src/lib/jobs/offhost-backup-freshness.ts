@@ -14,10 +14,16 @@
  * same whether or not the app process holds a read grant on the bucket, and a
  * listing of somebody's backups never crosses the network to show a page.
  *
- * Four states, because the run is nightly and one missed night is not the same
- * event as four:
+ * Five states, because the run is nightly and one missed night is not the same
+ * event as four — and because "we have not looked yet" is not a verdict:
  *
- *   never — the worker has never put an object there for this account.
+ *   unknown — no nightly run has recorded this account. The ledger starts
+ *           empty, so this is what every account on a perfectly healthy host
+ *           reads between the upgrade that adds the table and the first run
+ *           after it. Saying "never" there would assert something the host
+ *           cannot know.
+ *   never — a run walked this account and put no object there, and no earlier
+ *           run ever did either.
  *   fresh — inside one schedule period plus the grace below. This is what
  *           every account looks like on a host where the cron is doing its
  *           job.
@@ -54,7 +60,8 @@ export const OFFHOST_BACKUP_PERIOD_HOURS = 24;
  */
 export const OFFHOST_BACKUP_GRACE_HOURS = 6;
 
-export type OffhostBackupFreshness = "never" | "fresh" | "due" | "stale";
+export type OffhostBackupFreshness =
+  "unknown" | "never" | "fresh" | "due" | "stale";
 
 export interface OffhostBackupVerdict {
   freshness: OffhostBackupFreshness;
@@ -63,6 +70,11 @@ export interface OffhostBackupVerdict {
 }
 
 export function classifyOffhostBackup(args: {
+  /**
+   * When a run last walked this account, or null when none has. Null is the
+   * only thing that separates `unknown` from `never`.
+   */
+  lastAttemptAt: Date | null;
   lastSuccessAt: Date | null;
   now: Date;
   /** Defaults to the nightly schedule. Tests pass their own. */
@@ -70,7 +82,8 @@ export function classifyOffhostBackup(args: {
   /** Defaults to `OFFHOST_BACKUP_GRACE_HOURS`. Tests pass their own. */
   graceHours?: number;
 }): OffhostBackupVerdict {
-  const { lastSuccessAt, now } = args;
+  const { lastAttemptAt, lastSuccessAt, now } = args;
+  if (lastAttemptAt === null) return { freshness: "unknown", ageHours: null };
   if (lastSuccessAt === null) return { freshness: "never", ageHours: null };
 
   const periodMs =

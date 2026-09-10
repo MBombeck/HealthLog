@@ -29,6 +29,12 @@ export interface BackupRow {
 export interface OffhostAccountRow {
   userId: string;
   username: string;
+  /**
+   * ISO instant a run last walked this account, or null when none has. Null
+   * is what the whole cohort reads until the first run after the upgrade that
+   * adds the ledger, and the card says so rather than claiming `never`.
+   */
+  lastAttemptAt: string | null;
   /** ISO instant the newest object landed, or null when there is none. */
   lastSuccessAt: string | null;
   /** Size of that object in bytes, or null when there is none. */

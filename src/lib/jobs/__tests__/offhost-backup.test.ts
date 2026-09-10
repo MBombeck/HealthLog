@@ -334,16 +334,24 @@ describe("runOffhostBackup", () => {
 
     expect(report.uploaded).toBe(1);
     expect(report.failed).toBe(1);
+    // Both accounts are recorded as walked — that is what separates "a run
+    // looked and found nothing" from "no run has looked at this account" —
+    // but only the one whose object landed carries a success.
+    type Upsert = {
+      where: { userId: string };
+      update: Record<string, unknown>;
+      create: Record<string, unknown>;
+    };
+    const calls = upsert.mock.calls.map((call) => call[0] as Upsert);
+    expect(calls.map((call) => call.where.userId)).toEqual(["u1", "u2"]);
+    expect(calls[0]?.update).toHaveProperty("lastSuccessAt");
     // The guarantee an operator leans on: an account whose upload failed keeps
-    // whatever `lastSuccessAt` it already had. A failed upload writes no
-    // success into the ledger, so yesterday's good copy is still what the
-    // console reports — the run does not overwrite it with today's failure.
-    expect(upsert).toHaveBeenCalledTimes(1);
-    expect(
-      upsert.mock.calls.map(
-        (call) => (call[0] as { where: { userId: string } }).where.userId,
-      ),
-    ).toEqual(["u1"]);
+    // whatever `lastSuccessAt` it already had. The failed arm names only the
+    // walk instant, so yesterday's good copy is still what the console
+    // reports — the run does not overwrite it with today's failure.
+    expect(calls[1]?.update).not.toHaveProperty("lastSuccessAt");
+    expect(calls[1]?.update).not.toHaveProperty("sizeBytes");
+    expect(calls[1]?.create).not.toHaveProperty("lastSuccessAt");
   });
 
   it("still reports a landed object as uploaded when the ledger write fails", async () => {
@@ -368,6 +376,7 @@ describe("runOffhostBackup", () => {
     expect(report.failed).toBe(0);
     expect(report.failures).toEqual([]);
     expect(s3.store.has("2026-05-08/user-u1.json.enc")).toBe(true);
+    expect(prisma.offhostBackupState.upsert).toHaveBeenCalledTimes(1);
   });
 
   it("refuses an account whose object outgrows one multipart upload", async () => {

@@ -7026,7 +7026,9 @@
           "stateDue": "Due",
           "stateStale": "Stale",
           "stateNever": "Never",
-          "neverDetail": "No copy has ever reached the bucket for this account.",
+          "stateUnknown": "No record yet",
+          "neverDetail": "Nothing has landed for this account. Last checked {when}.",
+          "unknownDetail": "No nightly run has recorded this account yet.",
           "age": "{hours} h ago",
           "scheduleNote": "The upload runs every {hours} h. Fresh means inside one run, due means one run produced nothing, stale means two did not."
         }

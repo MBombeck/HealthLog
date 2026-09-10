@@ -109,6 +109,7 @@ describe("off-host backup ledger (real Postgres)", () => {
 
       expect(
         classifyOffhostBackup({
+          lastAttemptAt: row.lastAttemptAt,
           lastSuccessAt: row.lastSuccessAt,
           now: new Date(),
         }).freshness,
@@ -144,10 +145,78 @@ describe("off-host backup ledger (real Postgres)", () => {
     });
     expect(
       classifyOffhostBackup({
+        lastAttemptAt: row.lastAttemptAt,
         lastSuccessAt: row.lastSuccessAt,
         now: new Date(),
       }).freshness,
     ).toBe("stale");
+  });
+
+  it("separates an account no run has recorded from one a run found nothing for", async () => {
+    const prisma = getPrismaClient();
+    await seedUser("account-one");
+
+    // Before any run: the ledger is empty, which is what every account on a
+    // host that has been uploading for months looks like the moment this
+    // table ships. It must not read as "nothing has ever reached the bucket".
+    expect(
+      classifyOffhostBackup({
+        lastAttemptAt: null,
+        lastSuccessAt: null,
+        now: new Date(),
+      }).freshness,
+    ).toBe("unknown");
+
+    // A run that reaches the account and produces no object records the walk
+    // and leaves the success columns alone.
+    const bucket = makeBucket();
+    bucket.putStream = async () => {
+      throw new Error("bucket refused the signature");
+    };
+    const report = await runOffhostBackup(prisma, bucket, new Date());
+    expect(report.uploaded).toBe(0);
+    expect(report.failed).toBe(1);
+
+    const row = await prisma.offhostBackupState.findUniqueOrThrow({
+      where: { userId: "account-one" },
+    });
+    expect(row.lastSuccessAt).toBeNull();
+    expect(row.sizeBytes).toBeNull();
+    expect(
+      classifyOffhostBackup({
+        lastAttemptAt: row.lastAttemptAt,
+        lastSuccessAt: row.lastSuccessAt,
+        now: new Date(),
+      }).freshness,
+    ).toBe("never");
+  });
+
+  it("keeps the last good copy on the row when a later run fails", async () => {
+    const prisma = getPrismaClient();
+    await seedUser("account-one");
+
+    const bucket = makeBucket();
+    await runOffhostBackup(prisma, bucket, new Date());
+    const good = await prisma.offhostBackupState.findUniqueOrThrow({
+      where: { userId: "account-one" },
+    });
+    expect(good.lastSuccessAt).not.toBeNull();
+
+    bucket.putStream = async () => {
+      throw new Error("bucket refused the signature");
+    };
+    await runOffhostBackup(prisma, bucket, new Date());
+
+    const after = await prisma.offhostBackupState.findUniqueOrThrow({
+      where: { userId: "account-one" },
+    });
+    // The failed run moved the walk instant and nothing else: yesterday's
+    // copy is still the copy this account has off-host.
+    expect(after.lastSuccessAt?.getTime()).toBe(good.lastSuccessAt?.getTime());
+    expect(after.sizeBytes).toBe(good.sizeBytes);
+    expect(after.lastAttemptAt.getTime()).toBeGreaterThanOrEqual(
+      good.lastAttemptAt.getTime(),
+    );
   });
 
   it("goes with the account it describes", async () => {

@@ -59,6 +59,7 @@ describe("<OffhostBackupsSection>", () => {
         {
           userId: "u1",
           username: "account-one",
+          lastAttemptAt: "2026-09-10T06:00:00.000Z",
           lastSuccessAt: "2026-09-10T06:00:00.000Z",
           sizeBytes: 4096,
           ageHours: 3,
@@ -67,6 +68,7 @@ describe("<OffhostBackupsSection>", () => {
         {
           userId: "u2",
           username: "account-two",
+          lastAttemptAt: "2026-09-06T06:00:00.000Z",
           lastSuccessAt: "2026-09-06T06:00:00.000Z",
           sizeBytes: 2048,
           ageHours: 99,
@@ -75,10 +77,20 @@ describe("<OffhostBackupsSection>", () => {
         {
           userId: "u3",
           username: "account-three",
+          lastAttemptAt: "2026-09-10T02:30:00.000Z",
           lastSuccessAt: null,
           sizeBytes: null,
           ageHours: null,
           freshness: "never",
+        },
+        {
+          userId: "u4",
+          username: "account-four",
+          lastAttemptAt: null,
+          lastSuccessAt: null,
+          sizeBytes: null,
+          ageHours: null,
+          freshness: "unknown",
         },
       ],
     });
@@ -86,9 +98,14 @@ describe("<OffhostBackupsSection>", () => {
     expect(html).toContain('data-offhost-freshness="fresh"');
     expect(html).toContain('data-offhost-freshness="stale"');
     expect(html).toContain('data-offhost-freshness="never"');
+    expect(html).toContain('data-offhost-freshness="unknown"');
     expect(html).toContain("account-two");
-    // The account with no object says so instead of showing a blank cell.
-    expect(html).toContain("No copy has ever reached the bucket");
+    // The account a run walked and found nothing for says that, with the
+    // instant it was checked.
+    expect(html).toContain("Nothing has landed for this account");
+    // The account no run has recorded says THAT — not "never", which would
+    // claim the bucket is empty on the strength of an empty ledger.
+    expect(html).toContain("No nightly run has recorded this account yet");
     // Never the bucket's own coordinates.
     expect(html).not.toMatch(/secret|access[- ]key/i);
   });

@@ -717,6 +717,7 @@ async function installA11yMocks(page: Page) {
           {
             userId: "a11y-user",
             username: "a11y-backup-user",
+            lastAttemptAt: "2026-07-20T03:00:00.000Z",
             lastSuccessAt: "2026-07-20T03:00:00.000Z",
             sizeBytes: 4096,
             ageHours: 3,
@@ -725,6 +726,7 @@ async function installA11yMocks(page: Page) {
           {
             userId: "a11y-user-2",
             username: "a11y-backup-user-2",
+            lastAttemptAt: "2026-07-14T03:00:00.000Z",
             lastSuccessAt: "2026-07-14T03:00:00.000Z",
             sizeBytes: 2048,
             ageHours: 150,
@@ -733,10 +735,20 @@ async function installA11yMocks(page: Page) {
           {
             userId: "a11y-user-3",
             username: "a11y-backup-user-3",
+            lastAttemptAt: "2026-07-20T03:00:00.000Z",
             lastSuccessAt: null,
             sizeBytes: null,
             ageHours: null,
             freshness: "never",
+          },
+          {
+            userId: "a11y-user-4",
+            username: "a11y-backup-user-4",
+            lastAttemptAt: null,
+            lastSuccessAt: null,
+            sizeBytes: null,
+            ageHours: null,
+            freshness: "unknown",
           },
         ],
       },

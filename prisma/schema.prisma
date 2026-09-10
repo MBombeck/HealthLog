@@ -4953,17 +4953,28 @@ model DataBackup {
 model OffhostBackupState {
   userId String @id @map("user_id")
 
-  /// When the newest object for this account finished uploading. Consumer:
-  /// `classifyOffhostBackup()` behind `GET /api/admin/backups`.
-  lastSuccessAt DateTime @map("last_success_at")
+  /// When the last nightly run walked this account, whether or not an object
+  /// came of it. It is what separates "no run has reached this account yet"
+  /// from "a run reached it and put nothing there" — two facts that look
+  /// identical in a ledger keyed only on success, and the first of which is
+  /// what every account reads on the day this table ships. Consumer:
+  /// `classifyOffhostBackup()` behind `GET /api/admin/backups`, and the
+  /// card's "last checked" line.
+  lastAttemptAt DateTime @map("last_attempt_at")
+
+  /// When the newest object for this account finished uploading. NULL means
+  /// a run has looked at this account and nothing has ever landed for it.
+  /// Consumer: `classifyOffhostBackup()` behind `GET /api/admin/backups`.
+  lastSuccessAt DateTime? @map("last_success_at")
 
   /// Size of that object in bytes — the same number the run reports as its
   /// largest, per account. `BigInt` because the uploader permits an object of
   /// up to 8 MiB × 10 000 parts = 80 GB and a 32-bit column stops at 2.1 GB:
   /// the biggest account on the host, the one an operator cares most about,
   /// is exactly the one whose row would refuse to be written.
+  /// NULL alongside a NULL `lastSuccessAt`.
   /// Consumer: the off-host card's size column.
-  sizeBytes BigInt @map("size_bytes")
+  sizeBytes BigInt? @map("size_bytes")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

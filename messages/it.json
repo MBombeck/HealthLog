@@ -7026,7 +7026,9 @@
           "stateDue": "Attesa",
           "stateStale": "Obsoleta",
           "stateNever": "Mai",
-          "neverDetail": "Per questo account nessuna copia è mai arrivata nel bucket.",
+          "stateUnknown": "Nessuna registrazione",
+          "neverDetail": "Per questo account non è arrivato nulla. Ultimo controllo {when}.",
+          "unknownDetail": "Nessun giro notturno ha ancora registrato questo account.",
           "age": "{hours} h fa",
           "scheduleNote": "Il caricamento gira ogni {hours} h. Recente significa entro un giro, attesa che un giro non ha prodotto nulla, obsoleta che non lo hanno fatto due."
         }

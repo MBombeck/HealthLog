@@ -615,32 +615,49 @@ export async function runOffhostBackup(
     // by here the object is durably in the bucket and this account's backup
     // has succeeded whatever the database does next. A pool timeout on the
     // row would otherwise un-count a copy that exists — the run would report
-    // one failure too many and the console would read `never` for an account
+    // one failure too many and the console would read stale for an account
     // whose disaster-recovery object is fine, which is exactly the inversion
     // the ledger exists to remove.
     //
+    // The row is written whether or not an object came of the walk, because a
+    // ledger keyed only on success cannot tell "no run has reached this
+    // account" from "a run reached it and nothing landed" — and the first of
+    // those is what every account on a running host looks like the day this
+    // table ships. A failed walk touches `lastAttemptAt` and leaves
+    // `lastSuccessAt` exactly as it was, so yesterday's good copy still reads
+    // as the copy this account has.
+    //
     // `new Date()` rather than the run's `now`, because on a large cohort the
-    // two are hours apart and the row is meant to say when this account's
-    // object landed.
-    if (objectBytes !== null) {
-      const bytes = BigInt(objectBytes);
-      try {
-        await prisma.offhostBackupState.upsert({
-          where: { userId: user.id },
-          update: { lastSuccessAt: new Date(), sizeBytes: bytes },
-          create: {
-            userId: user.id,
-            lastSuccessAt: new Date(),
-            sizeBytes: bytes,
-          },
-        });
-      } catch (err) {
-        ledgerWriteFailures++;
-        const message = (err as Error).message ?? "unknown";
-        evt?.addWarning(
-          `offhost-backup ledger write failed for ${user.id}: ${message.slice(0, 200)}`,
-        );
-      }
+    // two are hours apart and the row is meant to say when this account was
+    // reached.
+    const at = new Date();
+    try {
+      await prisma.offhostBackupState.upsert({
+        where: { userId: user.id },
+        update:
+          objectBytes === null
+            ? { lastAttemptAt: at }
+            : {
+                lastAttemptAt: at,
+                lastSuccessAt: at,
+                sizeBytes: BigInt(objectBytes),
+              },
+        create:
+          objectBytes === null
+            ? { userId: user.id, lastAttemptAt: at }
+            : {
+                userId: user.id,
+                lastAttemptAt: at,
+                lastSuccessAt: at,
+                sizeBytes: BigInt(objectBytes),
+              },
+      });
+    } catch (err) {
+      ledgerWriteFailures++;
+      const message = (err as Error).message ?? "unknown";
+      evt?.addWarning(
+        `offhost-backup ledger write failed for ${user.id}: ${message.slice(0, 200)}`,
+      );
     }
   }
   if (ledgerWriteFailures > 0) {

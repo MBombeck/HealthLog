@@ -7026,7 +7026,9 @@
           "stateDue": "Zaległa",
           "stateStale": "Przeterminowana",
           "stateNever": "Nigdy",
-          "neverDetail": "Dla tego konta żadna kopia nigdy nie trafiła do bucketu.",
+          "stateUnknown": "Brak wpisu",
+          "neverDetail": "Dla tego konta nic nie dotarło. Ostatnie sprawdzenie {when}.",
+          "unknownDetail": "Żaden nocny przebieg nie zarejestrował jeszcze tego konta.",
           "age": "{hours} h temu",
           "scheduleNote": "Wysyłka działa co {hours} h. Świeża znaczy w obrębie jednego przebiegu, zaległa że jeden nic nie dał, przeterminowana że dwa."
         }

@@ -7026,7 +7026,9 @@
           "stateDue": "Pendiente",
           "stateStale": "Obsoleta",
           "stateNever": "Nunca",
-          "neverDetail": "Para esta cuenta nunca ha llegado una copia al bucket.",
+          "stateUnknown": "Sin registro aún",
+          "neverDetail": "No ha llegado nada para esta cuenta. Última comprobación {when}.",
+          "unknownDetail": "Ninguna ejecución nocturna ha registrado esta cuenta todavía.",
           "age": "hace {hours} h",
           "scheduleNote": "La subida se ejecuta cada {hours} h. Reciente significa dentro de una ejecución, pendiente que una no produjo nada, obsoleta que fueron dos."
         }

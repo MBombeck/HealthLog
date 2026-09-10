@@ -34,16 +34,17 @@ import type { BackupsList, OffhostAccountRow } from "@/types/backups";
 import { formatBytes } from "./backups-section";
 
 /**
- * Status wash per verdict. `never` is deliberately neutral rather than
- * alarming: a host that turned the off-host job on this afternoon has not
- * failed at anything yet, and painting every row red on day one is how an
- * operator learns to stop reading the colour.
+ * Status wash per verdict. `never` and `unknown` are deliberately neutral
+ * rather than alarming: a host that turned the off-host job on this afternoon
+ * has not failed at anything yet, and painting every row red on day one is how
+ * an operator learns to stop reading the colour.
  */
 const FRESHNESS_STYLE: Record<OffhostBackupFreshness, string> = {
   fresh: "border-success/30 bg-success/10 text-success",
   due: "border-warning/30 bg-warning/10 text-warning",
   stale: "border-destructive/30 bg-destructive/10 text-destructive",
   never: "border-border bg-muted text-muted-foreground",
+  unknown: "border-border bg-muted text-muted-foreground",
 };
 
 function freshnessLabel(
@@ -61,6 +62,8 @@ function freshnessLabel(
       return t("admin.section.backups.offhost.stateStale");
     case "never":
       return t("admin.section.backups.offhost.stateNever");
+    case "unknown":
+      return t("admin.section.backups.offhost.stateUnknown");
   }
 }
 
@@ -87,14 +90,22 @@ function AccountRow({ row }: { row: OffhostAccountRow }) {
           </Badge>
         </div>
         <p className="text-muted-foreground text-xs">
-          {row.lastSuccessAt === null || row.sizeBytes === null
-            ? t("admin.section.backups.offhost.neverDetail")
-            : `${fmt.dateTime(row.lastSuccessAt)} · ${formatBytes(
-                row.sizeBytes,
-                fmt,
-              )} · ${t("admin.section.backups.offhost.age", {
-                hours: row.ageHours ?? 0,
-              })}`}
+          {row.lastAttemptAt === null
+            ? // No run has recorded this account. Saying "never" here would
+              // claim the bucket is empty when what is empty is the ledger,
+              // which is exactly what every account looks like between the
+              // upgrade that adds it and the first nightly run after that.
+              t("admin.section.backups.offhost.unknownDetail")
+            : row.lastSuccessAt === null || row.sizeBytes === null
+              ? t("admin.section.backups.offhost.neverDetail", {
+                  when: fmt.dateTime(row.lastAttemptAt),
+                })
+              : `${fmt.dateTime(row.lastSuccessAt)} · ${formatBytes(
+                  row.sizeBytes,
+                  fmt,
+                )} · ${t("admin.section.backups.offhost.age", {
+                  hours: row.ageHours ?? 0,
+                })}`}
         </p>
       </li>
     </ListRow>

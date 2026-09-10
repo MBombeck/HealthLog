@@ -7026,7 +7026,9 @@
           "stateDue": "Fällig",
           "stateStale": "Veraltet",
           "stateNever": "Nie",
-          "neverDetail": "Für dieses Konto ist noch nie eine Kopie im Bucket angekommen.",
+          "stateUnknown": "Noch kein Eintrag",
+          "neverDetail": "Für dieses Konto ist nichts angekommen. Zuletzt geprüft {when}.",
+          "unknownDetail": "Noch kein nächtlicher Lauf hat dieses Konto erfasst.",
           "age": "vor {hours} h",
           "scheduleNote": "Der Upload läuft alle {hours} h. Frisch heißt innerhalb eines Laufs, fällig heißt ein Lauf blieb ohne Ergebnis, veraltet heißt zwei."
         }
