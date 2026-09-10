@@ -156,7 +156,7 @@ beforeEach(() => {
   vi.mocked(isApiGloballyEnabled).mockResolvedValue(true);
   vi.mocked(checkMcpRateLimit).mockResolvedValue({
     allowed: true,
-    limit: 60,
+    limit: 120,
     remaining: 119,
     resetAt: Date.now() + 60_000,
   });
@@ -353,7 +353,7 @@ describe("/mcp — rate limit", () => {
     validToken();
     vi.mocked(checkMcpRateLimit).mockResolvedValue({
       allowed: false,
-      limit: 60,
+      limit: 120,
       remaining: 0,
       resetAt: Date.now() + 30_000,
     });

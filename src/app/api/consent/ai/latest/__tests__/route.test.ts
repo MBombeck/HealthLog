@@ -104,7 +104,7 @@ describe("GET /api/consent/ai/latest", () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(checkConsentRateLimit).mockResolvedValue({
       allowed: false,
-      limit: 60,
+      limit: 20,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });
@@ -203,7 +203,7 @@ describe("DELETE /api/consent/ai/latest", () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(checkConsentRateLimit).mockResolvedValue({
       allowed: false,
-      limit: 60,
+      limit: 20,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

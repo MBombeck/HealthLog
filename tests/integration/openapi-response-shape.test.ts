@@ -8,7 +8,7 @@
  * five domains against a three-domain contract while the body was invalid
  * against its own published schema.
  *
- * Two responses are covered — the ones the audit found broken:
+ * Two responses are covered — the two that were broken:
  *
  *   - `GET /api/sync/changes`, the multi-domain delta the native client mirrors
  *     its whole history from.
@@ -17,9 +17,16 @@
  *
  * The check is stricter than `safeParse` alone. Zod strips undeclared keys
  * rather than refusing them, so a pass would say nothing about a field the
- * server sends and the contract omits — exactly the direction both High
- * findings drifted in. Comparing the parsed value back to the raw body catches
+ * server sends and the contract omits — exactly the direction both of those
+ * drifted in. Comparing the parsed value back to the raw body catches
  * the strip: if anything was dropped, the schema is short of the wire.
+ *
+ * One limit worth knowing before leaning on that half: `meta` is declared as a
+ * loose object, deliberately, because real refusals put `removedIn`,
+ * `replacedBy` and per-integration context there. Loose keys survive the parse,
+ * so the strip comparison does not reach inside `meta`. A `meta` field that
+ * ever becomes load-bearing for a client needs its own declaration and its own
+ * assertion.
  */
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
