@@ -1,5 +1,11 @@
 import { prisma } from "@/lib/db";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import {
   notificationChannelEnabledSchema,
   webhookSettingsSchemaWith,
@@ -129,6 +135,9 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   const parsed = webhookSettingsSchema.safeParse(body);
   if (!parsed.success) {
+    // Every shape refusal carries the issue list; the private-origin case
+    // adds the code and a message naming the operator's lever (#947).
+    const issues = sanitiseZodIssues(parsed.error.issues);
     const candidate = (body as { url?: unknown } | null)?.url;
     if (
       typeof candidate === "string" &&
@@ -139,11 +148,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
         action: { name: "settings.webhook.update" },
         meta: { refused: PRIVATE_ORIGIN_NOT_APPROVED },
       });
-      return apiError(PRIVATE_ORIGIN_REFUSAL, 422, {
+      return apiValidationError(PRIVATE_ORIGIN_REFUSAL, issues, 422, {
         errorCode: PRIVATE_ORIGIN_NOT_APPROVED,
       });
     }
-    return apiError("Invalid data", 422);
+    return apiValidationError("Invalid data", issues, 422);
   }
 
   const { url, headerName, headerValue, enabled } = parsed.data;

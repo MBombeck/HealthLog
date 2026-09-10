@@ -6598,6 +6598,13 @@
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "Środowisko GlitchTip",
     "glitchtipEnvironmentPlaceholder": "production",
+    "glitchtipTargetOn": "Zgłoszenia błędów trafiają do {host}.",
+    "glitchtipTargetOff": "Zgłoszenia błędów zostają na tym hoście. Nic nie jest wysyłane.",
+    "glitchtipTargetNoTarget": "Śledzenie błędów jest włączone, ale nie ustawiono celu, więc nic nie jest wysyłane.",
+    "glitchtipUnproven": "Niepotwierdzone",
+    "glitchtipDeliveryUnproven": "Cel jest ustawiony, ale żaden raport nie opuścił jeszcze tego hosta. Naciśnij Testuj, aby sprawdzić, czy zostanie przyjęty.",
+    "glitchtipDeliveryStale": "Przez ostatnie {hours} h żaden raport nie opuścił tego hosta. Naciśnij Testuj, aby sprawdzić, czy cel nadal je przyjmuje.",
+    "glitchtipDeliveryFailed": "Ostatni raport nie dotarł ({reason}).",
     "webPushVapidDescription": "Skonfiguruj tutaj klucze VAPID i subject, aby push przeglądarki działał bez zmiennych środowiskowych.",
     "webPushVapidPublicKey": "Klucz publiczny VAPID",
     "webPushVapidPublicKeyPlaceholder": "BElx... (Base64URL)",
@@ -7013,7 +7020,23 @@
         "restoreMissingDocuments": "Dokumenty",
         "restoreMissingWorkouts": "Treningi",
         "restoreMissingMentalHealth": "Kwestionariusze zdrowia psychicznego",
-        "restoreMissingConsent": "Potwierdzenia zgody"
+        "restoreMissingConsent": "Potwierdzenia zgody",
+        "offhost": {
+          "title": "Kopie poza hostem",
+          "description": "Kiedy ten host ostatnio umieścił zaszyfrowaną kopię każdego konta w Twoim buckecie.",
+          "loadError": "Nie udało się wczytać stanu poza hostem.",
+          "notConfiguredTitle": "Kopia poza hostem nie jest skonfigurowana",
+          "notConfiguredDescription": "Nie ustawiono ani bucketu, ani klucza, więc nic nie opuszcza tego hosta. Ustaw BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY i BACKUP_ENCRYPTION_KEY, aby włączyć nocne wysyłanie.",
+          "stateFresh": "Świeża",
+          "stateDue": "Zaległa",
+          "stateStale": "Przeterminowana",
+          "stateNever": "Nigdy",
+          "stateUnknown": "Brak wpisu",
+          "neverDetail": "Dla tego konta nic nie dotarło. Ostatnie sprawdzenie {when}.",
+          "unknownDetail": "Żaden nocny przebieg nie zarejestrował jeszcze tego konta.",
+          "age": "{hours} h temu",
+          "scheduleNote": "Wysyłka działa co {hours} h. Świeża znaczy w obrębie jednego przebiegu, zaległa że jeden nic nie dał, przeterminowana że dwa."
+        }
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",
@@ -10485,7 +10508,7 @@
       },
       "mind": {
         "label": "Nastrój i zdrowie psychiczne",
-        "detail": "Wpisy o nastroju i historia kwestionariuszy zdrowia psychicznego."
+        "detail": "Wpisy o nastroju i historia kwestionariuszy zdrowia psychicznego. Wypełniony kwestionariusz zapisuje też swój wynik łączny jako pomiar."
       },
       "cycle": {
         "label": "Cykl",

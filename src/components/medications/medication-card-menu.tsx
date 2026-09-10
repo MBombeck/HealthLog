@@ -62,9 +62,10 @@ export function MedicationCardMenu({
   // medication and opening its history editor are not. When nothing in the
   // menu survives, the trigger goes with it rather than opening onto an empty
   // sheet. The card itself is untouched: no wash, no badge, no colour change.
-  const { canAdd, canManageDomain } = useRecordCapabilities();
+  const { canWriteDomain, canManageDomain } = useRecordCapabilities();
+  const canAddSideEffect = canWriteDomain("medications");
   const canManageMedications = canManageDomain("medications");
-  const showSideEffect = onLogSideEffect != null && canAdd;
+  const showSideEffect = onLogSideEffect != null && canAddSideEffect;
   if (!canManageMedications && !showSideEffect) return null;
 
   return (

@@ -21,7 +21,7 @@
  */
 import { z } from "zod";
 
-import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
@@ -78,7 +78,9 @@ export const PATCH = apiHandler(async (req: Request) => {
   try {
     body = await req.json();
   } catch {
-    throw new HttpError(422, "disable-coach.body.invalid_json");
+    return apiError("Invalid JSON body", 400, {
+      errorCode: "disable-coach.body.invalid_json",
+    });
   }
 
   const parsed = patchBodySchema.safeParse(body);

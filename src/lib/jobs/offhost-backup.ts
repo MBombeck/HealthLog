@@ -28,7 +28,7 @@ import { createGzip, gunzipSync, gzipSync } from "node:zlib";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { createRawStreamEncryptor, decryptRawStream } from "@/lib/crypto";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
-import { getEvent } from "@/lib/logging/context";
+import { annotate, getEvent } from "@/lib/logging/context";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
@@ -60,6 +60,27 @@ function decodeBackupKey(raw: string): Buffer {
     "BACKUP_ENCRYPTION_KEY must be 64 hex chars or 32-byte base64",
   );
 }
+
+/**
+ * Whether this host has the five variables the nightly job needs.
+ *
+ * Separate from `loadOffhostConfig()` because a surface that only wants to say
+ * "off-host backup is not set up here" must not decode the encryption key to
+ * find out — `decodeBackupKey` throws on a malformed one, and an operator
+ * whose key has a typo should see the admin page, not a 500.
+ */
+export function offhostBackupConfigured(): boolean {
+  return OFFHOST_ENV_VARS.every((name) => Boolean(process.env[name]));
+}
+
+/** The five variables the nightly job needs, in one place. */
+const OFFHOST_ENV_VARS = [
+  "BACKUP_S3_ENDPOINT",
+  "BACKUP_S3_BUCKET",
+  "BACKUP_S3_ACCESS_KEY",
+  "BACKUP_S3_SECRET_KEY",
+  "BACKUP_ENCRYPTION_KEY",
+] as const;
 
 export function loadOffhostConfig(): OffhostBackupConfig | null {
   const endpoint = process.env.BACKUP_S3_ENDPOINT;
@@ -555,10 +576,12 @@ export async function runOffhostBackup(
   let oversized = 0;
   let largestObjectBytes = 0;
   const failures: Array<{ userId: string; message: string }> = [];
+  let ledgerWriteFailures = 0;
   const evt = getEvent();
   for (const user of users) {
+    let objectBytes: number | null = null;
     try {
-      const objectBytes = await uploadEncryptedBackup(
+      objectBytes = await uploadEncryptedBackup(
         s3,
         `${dateKey}/user-${user.id}.json.enc`,
         cfg.encryptionKey,
@@ -586,6 +609,62 @@ export async function runOffhostBackup(
         `offhost-backup user ${user.id} failed: ${message.slice(0, 200)}`,
       );
     }
+
+    // The per-account ledger, and deliberately NOT inside the upload's `try`.
+    // `uploadEncryptedBackup` resolves only after the multipart completes, so
+    // by here the object is durably in the bucket and this account's backup
+    // has succeeded whatever the database does next. A pool timeout on the
+    // row would otherwise un-count a copy that exists — the run would report
+    // one failure too many and the console would read stale for an account
+    // whose disaster-recovery object is fine, which is exactly the inversion
+    // the ledger exists to remove.
+    //
+    // The row is written whether or not an object came of the walk, because a
+    // ledger keyed only on success cannot tell "no run has reached this
+    // account" from "a run reached it and nothing landed" — and the first of
+    // those is what every account on a running host looks like the day this
+    // table ships. A failed walk touches `lastAttemptAt` and leaves
+    // `lastSuccessAt` exactly as it was, so yesterday's good copy still reads
+    // as the copy this account has.
+    //
+    // `new Date()` rather than the run's `now`, because on a large cohort the
+    // two are hours apart and the row is meant to say when this account was
+    // reached.
+    const at = new Date();
+    try {
+      await prisma.offhostBackupState.upsert({
+        where: { userId: user.id },
+        update:
+          objectBytes === null
+            ? { lastAttemptAt: at }
+            : {
+                lastAttemptAt: at,
+                lastSuccessAt: at,
+                sizeBytes: BigInt(objectBytes),
+              },
+        create:
+          objectBytes === null
+            ? { userId: user.id, lastAttemptAt: at }
+            : {
+                userId: user.id,
+                lastAttemptAt: at,
+                lastSuccessAt: at,
+                sizeBytes: BigInt(objectBytes),
+              },
+      });
+    } catch (err) {
+      ledgerWriteFailures++;
+      const message = (err as Error).message ?? "unknown";
+      evt?.addWarning(
+        `offhost-backup ledger write failed for ${user.id}: ${message.slice(0, 200)}`,
+      );
+    }
+  }
+  if (ledgerWriteFailures > 0) {
+    // A distinct fact from a failed upload, and one an operator has to be able
+    // to tell apart: the copies are in the bucket, the console's per-account
+    // view of them is behind.
+    annotate({ meta: { offhost_ledger_write_failures: ledgerWriteFailures } });
   }
 
   return {

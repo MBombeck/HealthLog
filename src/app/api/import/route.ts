@@ -3,10 +3,12 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
-  apiSuccess,
   apiError,
+  apiSuccess,
+  apiValidationError,
   getClientIp,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
@@ -175,8 +177,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (jsonError) return jsonError;
   const parsed = importSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(
+    return apiValidationError(
       parsed.error.issues[0]?.message ?? "Invalid import payload",
+      sanitiseZodIssues(parsed.error.issues),
       422,
     );
   }

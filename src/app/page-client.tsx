@@ -254,7 +254,8 @@ export default function DashboardPageClient({
     value: number | null | undefined,
   ): number | null =>
     value == null ? null : unitDisplay.toDisplayDelta(type, value);
-  const { canAdd } = useRecordCapabilities();
+  const { canWriteDomain } = useRecordCapabilities();
+  const canAddMeasurement = canWriteDomain("measurements");
   const [quickEntryDialog, setQuickEntryDialog] =
     useState<QuickEntryDialog>(null);
 
@@ -2028,7 +2029,7 @@ export default function DashboardPageClient({
               title={t("dashboard.emptyTitle")}
               description={t("dashboard.emptyDescription")}
               action={
-                canAdd ? (
+                canAddMeasurement ? (
                   <Button
                     size="sm"
                     onClick={() => setQuickEntryDialog("measurement")}

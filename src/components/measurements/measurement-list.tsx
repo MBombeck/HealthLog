@@ -292,8 +292,9 @@ export function MeasurementList({
   // v1.36.x — inside somebody else's record, only the add path survives:
   // entering a reading is an admitted delegated write, editing and deleting
   // one are not. The row controls are dropped rather than disabled.
-  const { canAdd, canManage, inSharedRecord, canWrite } =
+  const { canWriteDomain, canManage, inSharedRecord, canWrite } =
     useRecordCapabilities();
+  const canAddMeasurement = canWriteDomain("measurements");
   const activeRecord = user?.accountAccess?.active ?? null;
   // Named only when the sentence below is owed: a delegate who may add but
   // not change. In the caller's own record, and for a read-only delegate who
@@ -1068,7 +1069,7 @@ export function MeasurementList({
                   >
                     {t("measurements.emptyResetFilter")}
                   </Button>
-                ) : onAddFirst && canAdd ? (
+                ) : onAddFirst && canAddMeasurement ? (
                   <Button onClick={onAddFirst}>
                     <Plus className="h-4 w-4" />
                     {t("measurements.emptyAddFirst")}

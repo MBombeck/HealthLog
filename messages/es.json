@@ -6598,6 +6598,13 @@
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "Entorno de GlitchTip",
     "glitchtipEnvironmentPlaceholder": "production",
+    "glitchtipTargetOn": "Los informes de errores van a {host}.",
+    "glitchtipTargetOff": "Los informes de errores se quedan en este host. No se envía nada.",
+    "glitchtipTargetNoTarget": "El seguimiento de errores está activado, pero no hay destino, así que no se envía nada.",
+    "glitchtipUnproven": "Sin confirmar",
+    "glitchtipDeliveryUnproven": "Hay un destino definido, pero ningún informe ha salido aún de este host. Pulsa Probar para ver si lo acepta.",
+    "glitchtipDeliveryStale": "Ningún informe ha salido de este host en las últimas {hours} h. Pulsa Probar para comprobar que el destino sigue aceptándolos.",
+    "glitchtipDeliveryFailed": "El último informe no llegó ({reason}).",
     "webPushVapidDescription": "Configura aquí las claves VAPID y el subject para que el push del navegador funcione sin variables de entorno.",
     "webPushVapidPublicKey": "Clave pública VAPID",
     "webPushVapidPublicKeyPlaceholder": "BElx... (Base64URL)",
@@ -7013,7 +7020,23 @@
         "restoreMissingDocuments": "Documentos",
         "restoreMissingWorkouts": "Entrenamientos",
         "restoreMissingMentalHealth": "Cuestionarios de salud mental",
-        "restoreMissingConsent": "Comprobantes de consentimiento"
+        "restoreMissingConsent": "Comprobantes de consentimiento",
+        "offhost": {
+          "title": "Copias fuera del host",
+          "description": "Cuándo puso este host por última vez la copia cifrada de cada cuenta en tu bucket.",
+          "loadError": "No se pudo cargar el estado fuera del host.",
+          "notConfiguredTitle": "La copia fuera del host no está configurada",
+          "notConfiguredDescription": "No hay bucket ni clave definidos, así que nada sale de este host. Define BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY y BACKUP_ENCRYPTION_KEY para activar la subida nocturna.",
+          "stateFresh": "Reciente",
+          "stateDue": "Pendiente",
+          "stateStale": "Obsoleta",
+          "stateNever": "Nunca",
+          "stateUnknown": "Sin registro aún",
+          "neverDetail": "No ha llegado nada para esta cuenta. Última comprobación {when}.",
+          "unknownDetail": "Ninguna ejecución nocturna ha registrado esta cuenta todavía.",
+          "age": "hace {hours} h",
+          "scheduleNote": "La subida se ejecuta cada {hours} h. Reciente significa dentro de una ejecución, pendiente que una no produjo nada, obsoleta que fueron dos."
+        }
       },
       "danger-zone": {
         "title": "Zona de peligro",
@@ -10485,7 +10508,7 @@
       },
       "mind": {
         "label": "Ánimo y bienestar mental",
-        "detail": "Las entradas de ánimo y el historial de los cuestionarios de salud mental."
+        "detail": "Las entradas de ánimo y el historial de los cuestionarios de salud mental. Un cuestionario completado también registra su puntuación total como una medición."
       },
       "cycle": {
         "label": "Ciclo",

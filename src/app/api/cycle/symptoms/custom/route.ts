@@ -26,6 +26,7 @@ import {
 } from "@/lib/api-response";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { withIdempotency } from "@/lib/idempotency";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
@@ -67,7 +68,23 @@ export const GET = apiHandler(async () => {
   return apiSuccess({ symptoms });
 });
 
-export const POST = apiHandler(async (request: NextRequest) => {
+/**
+ * Wrapped in `withIdempotency`: a custom symptom is minted from the client's
+ * offline outbox under the same `Idempotency-Key`, and nothing else here would
+ * catch the replay. The row's key is minted fresh per request
+ * (`custom:<uuid>`), and the label it would duplicate lives in
+ * `labelEncrypted` — AES-GCM with a per-write IV, so no unique index can be
+ * put on it. A replay after a lost success response therefore wrote a SECOND
+ * row carrying the same label, up to the fifty-row cap: a silent duplicate in
+ * the person's own symptom vocabulary rather than a conflict anything refused.
+ * The wrapper answers the first attempt's 201 instead, and the in-flight 409 it
+ * defines is the only 409 this route can produce.
+ */
+export const POST = apiHandler(
+  withIdempotency<[NextRequest]>(postCustomSymptom),
+);
+
+async function postCustomSymptom(request: NextRequest): Promise<Response> {
   // v1.37.0 — MANAGE. The record's own symptom vocabulary, which the day-log
   // writes the level admits need in order to say anything.
   const { user, actor } = await requireRecordAuth("manage", "cycle");
@@ -151,4 +168,4 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
     201,
   );
-});
+}

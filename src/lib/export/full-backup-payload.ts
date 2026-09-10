@@ -112,6 +112,12 @@ import {
   type IntradayProfileBackupCounts,
   type IntradayProfileBackupSection,
 } from "@/lib/export/intraday-profile-backup";
+import {
+  buildOnboardingBackupSection,
+  countOnboardingBackupSection,
+  type OnboardingBackupCounts,
+  type OnboardingBackupSection,
+} from "@/lib/export/onboarding-backup";
 
 export interface FullBackupCounts
   extends
@@ -128,6 +134,7 @@ export interface FullBackupCounts
     DocumentFilingBackupCounts,
     AwardsBackupCounts,
     EnvironmentBackupCounts,
+    OnboardingBackupCounts,
     EcgBackupCounts {
   measurements: number;
   medications: number;
@@ -696,6 +703,7 @@ export async function buildFullBackupPayload(
     documentFiling,
     awards,
     environment,
+    onboardingRecord,
     ecg,
     nutrientDays,
   ] = await Promise.all([
@@ -860,6 +868,12 @@ export async function buildFullBackupPayload(
     // `src/lib/export/environment-backup.ts`, and the purpose is absent for
     // the same reason as the awards above.
     buildEnvironmentBackupSection(prisma, userId),
+    // The needs-based setup answers. One small row, and the only copy of what
+    // the person told the flow. Both ends live in
+    // `src/lib/export/onboarding-backup.ts` beside each other.
+    buildOnboardingBackupSection(prisma, userId, {
+      purpose: disasterRecovery ? "disaster-recovery" : "portable-export",
+    }),
     // The ECG strips, their rhythm verdicts and their traces. Both ends live
     // in `src/lib/export/ecg-backup.ts` beside each other, the same
     // arrangement as the sections above and for the same reason.
@@ -892,6 +906,7 @@ export async function buildFullBackupPayload(
   const profileSection: ProfileBackupSection = profile;
   const intradaySection: IntradayProfileBackupSection = intradayProfiles;
   const healthScoreSection: HealthScoreBackupSection = healthScoreRecords;
+  const onboardingSection: OnboardingBackupSection = onboardingRecord;
   const visitsSection: VisitsBackupSection = visits;
   const vaccinationsSection: VaccinationsBackupSection = vaccinations;
   const remindersSection: RemindersBackupSection = reminders;
@@ -1238,6 +1253,7 @@ export async function buildFullBackupPayload(
     ...profileSection,
     ...intradaySection,
     ...healthScoreSection,
+    ...onboardingSection,
     ...visitsSection,
     ...vaccinationsSection,
     ...remindersSection,
@@ -1306,6 +1322,7 @@ export async function buildFullBackupPayload(
       ...countProfileBackupSection(profile),
       ...countIntradayProfileBackupSection(intradayProfiles),
       ...countHealthScoreBackupSection(healthScoreRecords),
+      ...countOnboardingBackupSection(onboardingRecord),
       ...countVisitsBackupSection(visits),
       ...countVaccinationsBackupSection(vaccinations),
       ...countRemindersBackupSection(reminders),

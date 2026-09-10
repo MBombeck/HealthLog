@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { markDisconnected } from "@/lib/integrations/status";
@@ -51,7 +56,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   const result = z.safeParse(ouraCredentialsSchema, body);
   if (!result.success) {
-    return apiError("Client ID and Client Secret are required", 422);
+    return apiValidationError(
+      "Client ID and Client Secret are required",
+      sanitiseZodIssues(result.error.issues),
+      422,
+    );
   }
 
   await storeOuraClientCredentials(

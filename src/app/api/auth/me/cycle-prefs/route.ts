@@ -65,7 +65,7 @@ export const PATCH = apiHandler(async (req: Request) => {
   try {
     body = await req.json();
   } catch {
-    return apiError("Invalid JSON body", 422, {
+    return apiError("Invalid JSON body", 400, {
       errorCode: "cycle-prefs.body.invalid_json",
     });
   }

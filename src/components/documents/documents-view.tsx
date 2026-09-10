@@ -251,8 +251,7 @@ export function DocumentsView() {
   const queryClient = useQueryClient();
   const coachLaunch = useCoachLaunch();
 
-  const moduleEnabled =
-    inSharedRecord || user?.modules?.inboundDocuments === true;
+  const moduleEnabled = user?.modules?.inboundDocuments === true;
 
   // UX redirect only — the API routes enforce the gate server-side.
   useEffect(() => {

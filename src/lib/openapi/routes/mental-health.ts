@@ -135,7 +135,8 @@ export const mentalHealthPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Mental health"],
       summary: "Record a completed screener",
       description:
-        "Stores one administration (item answers encrypted) and writes the derived total as a server-owned PHQ9_SCORE / GAD7_SCORE / WHO5_SCORE / SCI_SCORE measurement (source COMPUTED — never client-writable). WHO-5 and SCI totals run HIGHER = better; their follow-up thresholds point downwards (≤ 50 / ≤ 16). On a positive PHQ-9 item-9 the response carries the locale-aware crisis-resource set.",
+        "Stores one administration (item answers encrypted) and writes the derived total as a server-owned PHQ9_SCORE / GAD7_SCORE / WHO5_SCORE / SCI_SCORE measurement (source COMPUTED — never client-writable). WHO-5 and SCI totals run HIGHER = better; their follow-up thresholds point downwards (≤ 50 / ≤ 16). On a positive PHQ-9 item-9 the response carries the locale-aware crisis-resource set.\n\n" +
+        "The projection row is the one write this operation makes outside its declared section: the operation is fenced on `mind`, and the measurement it derives lands in `measurements`. It is deliberate and unconditional — a screener whose own total is missing from the record would be an inconsistency inside the section the grant does open. The consent copy for the mood-and-mind section names it.",
       parameters: [idempotencyKeyParameter],
       requestBody: {
         content: {

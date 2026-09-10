@@ -74,6 +74,15 @@ const LEVEL_RANK: Record<AccountAccessLevel, number> = {
  * `sections === null` is the entire record. A MANAGE grant always carries it
  * (`grants.ts` refuses a scope on a MANAGE invitation), a WRITE grant may.
  *
+ * The answer is EXISTENTIAL per section, never per verb: "is there a route in
+ * this section at this need the grant satisfies". Three of the four sections
+ * that answer `write: true` also carry MANAGE-only creates — an allergy and a
+ * family-history entry under `profile`, a water entry and a checkup reminder
+ * under `measurements`, a snooze and a re-recorded dose under `medications` —
+ * and no list keyed on the section can distinguish them. A control asks the
+ * hook for its own verb class instead; the route declarations stay the one
+ * place the split is decided.
+ *
  * For `need === "write"` the answer is "is there a non-read route in this
  * section the grant satisfies": a WRITE grant reaches the section's `"write"`
  * routes, a MANAGE grant reaches those and its `"manage"` routes as well.

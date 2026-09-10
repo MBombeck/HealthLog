@@ -3,7 +3,13 @@ import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
@@ -53,7 +59,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const result = z.safeParse(nightscoutConnectSchema, body);
   if (!result.success) {
-    return apiError("A valid Nightscout URL is required", 422);
+    return apiValidationError(
+      "A valid Nightscout URL is required",
+      sanitiseZodIssues(result.error.issues),
+      422,
+    );
   }
 
   const { url, token } = result.data;

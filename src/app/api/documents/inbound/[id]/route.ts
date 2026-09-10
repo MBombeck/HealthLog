@@ -13,8 +13,10 @@ import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
+  apiValidationError,
   getClientIp,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -143,9 +145,14 @@ export const PATCH = apiHandler(
 
     const parsed = documentUpdateSchema.safeParse(body);
     if (!parsed.success) {
-      return apiError("Invalid document update", 422, {
-        errorCode: "documents.inbound.invalidUpdate",
-      });
+      return apiValidationError(
+        "Invalid document update",
+        sanitiseZodIssues(parsed.error.issues),
+        422,
+        {
+          errorCode: "documents.inbound.invalidUpdate",
+        },
+      );
     }
 
     const existing = await prisma.inboundDocument.findFirst({

@@ -25,7 +25,7 @@
  * carries it. The semantics are a DISABLED allowlist: a key set to
  * `false` disables that module; `true` (or absence) leaves it enabled.
  */
-import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
@@ -84,7 +84,9 @@ export const PATCH = apiHandler(async (req: Request) => {
   try {
     body = await req.json();
   } catch {
-    throw new HttpError(422, "modules.body.invalid_json");
+    return apiError("Invalid JSON body", 400, {
+      errorCode: "modules.body.invalid_json",
+    });
   }
 
   // v1.32.22 (M3) — strip the optimistic-concurrency base token BEFORE the

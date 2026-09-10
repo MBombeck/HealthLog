@@ -109,6 +109,10 @@ const PINNED_AFFORDANCES: Record<
   "src/components/admin/module-availability-section.tsx": {
     "toast.success": 1,
   },
+  // Reads a ledger, writes nothing: the wash marks how fresh one account's
+  // off-host copy is, and the state it paints green came out of the database
+  // rather than out of a request this card just made.
+  "src/components/admin/offhost-backups-section.tsx": { "text-success": 1 },
   "src/components/admin/recent-audit-preview.tsx": {
     CheckCircle2: 2,
     "text-success": 1,

@@ -19,6 +19,7 @@ import {
   dataEnvelope,
   errorEnvelope,
   recordRefusal,
+  SHARING_NOT_PERMITTED_DESCRIPTION,
   stdResponses,
 } from "./shared";
 
@@ -615,7 +616,8 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "403": {
           description:
-            "The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal happens before any second-factor proof is looked at.",
+            "The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal happens before any second-factor proof is looked at.\n\n" +
+            SHARING_NOT_PERMITTED_DESCRIPTION,
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -811,7 +813,8 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "403": {
           description:
-            "The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal happens before any second-factor proof is looked at.",
+            "The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal happens before any second-factor proof is looked at.\n\n" +
+            SHARING_NOT_PERMITTED_DESCRIPTION,
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

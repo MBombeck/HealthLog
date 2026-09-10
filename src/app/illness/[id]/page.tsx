@@ -14,7 +14,6 @@ import { PageAuthGate } from "@/components/ui/page-auth-gate";
 import { IllnessEpisodeDetail } from "@/components/illness/illness-episode-detail";
 import { BackLink } from "@/components/ui/back-link";
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useMounted } from "@/hooks/use-mounted";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -25,12 +24,11 @@ export default function IllnessEpisodePage({
 }) {
   const { id } = use(params);
   const { user, isAuthenticated, isLoading } = useAuth();
-  const { inSharedRecord } = useRecordCapabilities();
   const mounted = useMounted();
   const router = useRouter();
   const { t } = useTranslations();
 
-  const enabled = inSharedRecord || user?.modules?.illness === true;
+  const enabled = user?.modules?.illness === true;
 
   useEffect(() => {
     if (isLoading) return;

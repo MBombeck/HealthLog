@@ -36,13 +36,19 @@ export function DashboardHeader({
   const { t } = useTranslations();
   const { user } = useAuth();
   const mounted = useMounted();
-  // v1.36.x — the dashboard quick-add offers three kinds; a delegation admits
-  // two of them (a reading, a dose). Mood stays with the account whose record
-  // it is, and the customize shortcut points at a settings page sharing does
-  // not cover at all.
-  const { canAdd, canManageDomain, inSharedRecord } = useRecordCapabilities();
+  // The quick-add offers three kinds, and each one is asked about its own
+  // section: a reading under `measurements`, a dose under `medications`, a
+  // mood entry under `mind`. The coarse `canAdd` this used to gate the whole
+  // menu on carries the grant's LEVEL and no scope, so it answered true for a
+  // grant that opens neither of the two sections the menu never asked about.
+  // The customize shortcut points at a settings page sharing does not cover at
+  // all.
+  const { canWriteDomain, inSharedRecord } = useRecordCapabilities();
+  const canAddMeasurement = canWriteDomain("measurements");
+  const canAddIntake = canWriteDomain("medications");
   // A mood entry is created at MANAGE under the mind section.
-  const canAddMood = canManageDomain("mind");
+  const canAddMood = canWriteDomain("mind");
+  const canAddAnything = canAddMeasurement || canAddIntake || canAddMood;
 
   // The pre-hero greeting derivation, kept hydration-safe: `user` comes
   // from the auth query, which can resolve before this boundary
@@ -117,7 +123,7 @@ export function DashboardHeader({
               </Link>
             </Button>
           )}
-          {canAdd && (
+          {canAddAnything && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 {/* v1.4.33 maintainer-item-7 — restore proportional sizing
@@ -152,10 +158,12 @@ export function DashboardHeader({
                   phase-A3 fix #1 hardened this with a unit guard at
                   `src/app/__tests__/quick-add-labels.test.ts` — both labels
                   must differ from each other AND from `common.add`. */}
-                <DropdownMenuItem onClick={() => onQuickEntry("measurement")}>
-                  <Activity className="mr-2 h-4 w-4" aria-hidden="true" />
-                  {t("dashboard.quickAddMeasurement")}
-                </DropdownMenuItem>
+                {canAddMeasurement && (
+                  <DropdownMenuItem onClick={() => onQuickEntry("measurement")}>
+                    <Activity className="mr-2 h-4 w-4" aria-hidden="true" />
+                    {t("dashboard.quickAddMeasurement")}
+                  </DropdownMenuItem>
+                )}
                 {canAddMood && (
                   <DropdownMenuItem onClick={() => onQuickEntry("mood")}>
                     <Waves className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -167,12 +175,14 @@ export function DashboardHeader({
                   the other two; the menu label is a self-contained
                   verb-phrase so it doesn't collide with the trigger or
                   the sibling rows (cf. quick-add-labels.test.ts). */}
-                <DropdownMenuItem
-                  onClick={() => onQuickEntry("medicationIntake")}
-                >
-                  <Pill className="mr-2 h-4 w-4" aria-hidden="true" />
-                  {t("dashboard.quickAddMedicationIntake")}
-                </DropdownMenuItem>
+                {canAddIntake && (
+                  <DropdownMenuItem
+                    onClick={() => onQuickEntry("medicationIntake")}
+                  >
+                    <Pill className="mr-2 h-4 w-4" aria-hidden="true" />
+                    {t("dashboard.quickAddMedicationIntake")}
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}

@@ -29,7 +29,7 @@ vi.mock("@/hooks/use-encounters", () => ({
 vi.mock("@/hooks/use-record-capabilities", () => ({
   useRecordCapabilities: () => ({
     canManage: true,
-    canAdd: true,
+    canWriteDomain: () => true,
     canManageDomain: () => true,
   }),
 }));

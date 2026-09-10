@@ -15,8 +15,13 @@
  * helper. The Coach prompt builder + snapshot builder both read this
  * row on every turn — there's no caching layer to invalidate.
  */
-import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import { apiSuccess } from "@/lib/api-response";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import {
@@ -57,7 +62,9 @@ export const PUT = apiHandler(async (req: Request) => {
   try {
     body = await req.json();
   } catch {
-    throw new HttpError(422, "coach-prefs.body.invalid_json");
+    return apiError("Invalid JSON body", 400, {
+      errorCode: "coach-prefs.body.invalid_json",
+    });
   }
 
   // v1.32.22 (M4) — pull the optimistic-concurrency base token off before the
@@ -74,7 +81,17 @@ export const PUT = apiHandler(async (req: Request) => {
       action: { name: "auth.me.coach-prefs.put.invalid" },
       meta: { issues: parsed.error.issues.length },
     });
-    throw new HttpError(422, "coach-prefs.body.invalid_shape");
+    // The dotted token keeps its place in `error`: this refusal keeps its 422,
+    // so moving the string would be a wire change with nothing forcing it —
+    // the `invalid_json` siblings moved only because their status moved to 400
+    // anyway. `meta.errorCode` publishes the same token in the field a machine
+    // code belongs in, and `details.issues` names the fields that were refused.
+    return apiValidationError(
+      "coach-prefs.body.invalid_shape",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      { errorCode: "coach-prefs.body.invalid_shape" },
+    );
   }
 
   // Persist the canonical defaulted form so the column shape stays

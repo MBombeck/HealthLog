@@ -11,8 +11,10 @@ import { apiHandler, requireMfaManagementAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
+  apiValidationError,
   getClientIp,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -34,7 +36,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = mfaWebauthnRegisterVerifySchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("Invalid request", 422);
+    return apiValidationError(
+      "Invalid request",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
   const { challengeId, credential, name } = parsed.data;
 

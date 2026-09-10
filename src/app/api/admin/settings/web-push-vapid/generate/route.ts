@@ -2,10 +2,12 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
 import {
-  apiSuccess,
   apiError,
+  apiSuccess,
+  apiValidationError,
   getClientIp,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { encrypt } from "@/lib/crypto";
@@ -58,7 +60,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = generateSchema.safeParse(body ?? {});
   if (!parsed.success) {
-    return apiError("Invalid request", 422);
+    return apiValidationError(
+      "Invalid request",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
 
   const existing = await prisma.appSettings.findUnique({

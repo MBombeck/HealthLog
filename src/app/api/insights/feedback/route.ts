@@ -4,8 +4,10 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
+  apiValidationError,
   getClientIp,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -66,7 +68,11 @@ async function handlePost(request: NextRequest) {
       action: { name: "insights.recommendation.feedback" },
       meta: { outcome: "validation_failed" },
     });
-    return apiError("Invalid feedback payload", 422);
+    return apiValidationError(
+      "Invalid feedback payload",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
   const body = parsed.data;
 

@@ -33,7 +33,13 @@ import {
   requireRecordAuth,
   type AuthContext,
 } from "@/lib/api-handler";
-import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  getClientIp,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { hashQueryTokens } from "@/lib/documents/content-index";
@@ -236,9 +242,14 @@ async function processUpload(
     encounterIds: rawEncounterIds.length > 0 ? rawEncounterIds : undefined,
   });
   if (!parsed.success) {
-    return apiError("Invalid document metadata", 422, {
-      errorCode: "documents.inbound.invalidMetadata",
-    });
+    return apiValidationError(
+      "Invalid document metadata",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      {
+        errorCode: "documents.inbound.invalidMetadata",
+      },
+    );
   }
 
   let buffer: Buffer;
@@ -518,9 +529,14 @@ export const GET = apiHandler(async (request: Request) => {
     kind: kinds.length > 0 ? kinds : undefined,
   });
   if (!parsed.success) {
-    return apiError("Invalid list query", 422, {
-      errorCode: "documents.inbound.invalidQuery",
-    });
+    return apiValidationError(
+      "Invalid list query",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      {
+        errorCode: "documents.inbound.invalidQuery",
+      },
+    );
   }
   const {
     q,

@@ -13,6 +13,12 @@
  * Without those two the page cannot tell a working backup from one that
  * stopped six weeks ago — every row it lists has a perfectly ordinary
  * timestamp either way.
+ *
+ * And alongside both, the off-host leg: one row per account saying when this
+ * host last put that account's encrypted copy in the operator's bucket and how
+ * stale that is against the nightly schedule. It comes from the ledger the
+ * worker writes, never from a bucket listing — the answer has to hold on a host
+ * whose worker holds no listing grant on the bucket.
  */
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
@@ -21,10 +27,20 @@ import { annotate } from "@/lib/logging/context";
 import { DATA_BACKUP_QUEUE } from "@/lib/jobs/data-backup-policy";
 import { readLastQueueRun } from "@/lib/jobs/job-failures";
 import { summariseBackupSchedule } from "@/lib/jobs/backup-schedule-status";
+import { offhostBackupConfigured } from "@/lib/jobs/offhost-backup";
+import {
+  classifyOffhostBackup,
+  OFFHOST_BACKUP_PERIOD_HOURS,
+  type OffhostBackupFreshness,
+} from "@/lib/jobs/offhost-backup-freshness";
 // v1.4.41 W-ORG — `BackupRow` / `BackupsList` moved to `src/types/backups.ts`
 // so callers (in particular `components/admin/backups-section.tsx`) don't
 // have to reach across the component → route-handler layer boundary.
-import type { BackupRow, BackupsList } from "@/types/backups";
+import type {
+  BackupRow,
+  BackupsList,
+  OffhostAccountRow,
+} from "@/types/backups";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +83,79 @@ export const GET = apiHandler(async () => {
     createdAt: row.created_at.toISOString(),
   }));
 
+  // The off-host leg, per account, read from the ledger the nightly worker
+  // writes rather than from the bucket. The page must be able to answer "which
+  // account has no recent copy off-host" on a host whose worker holds the
+  // three grants the runbook documents and no listing grant at all, and a
+  // listing call from a page render would put the operator's credentials on
+  // the request path of every page view.
+  const now = new Date();
+  const offhostAccounts = await prisma.user.findMany({
+    select: {
+      id: true,
+      username: true,
+      offhostBackupState: {
+        select: {
+          lastAttemptAt: true,
+          lastSuccessAt: true,
+          sizeBytes: true,
+        },
+      },
+    },
+    orderBy: { username: "asc" },
+  });
+
+  // Evidence beats this process's environment. `offhostBackupConfigured()`
+  // reads the variables of whichever process serves this request, and a
+  // hand-rolled split that gives `BACKUP_S3_*` only to the worker would make
+  // the web process say "nothing leaves this host" over a ledger full of
+  // fresh rows. A row in that table is proof an upload happened; no
+  // environment read can outrank it.
+  const configured =
+    offhostBackupConfigured() ||
+    offhostAccounts.some((account) => account.offhostBackupState !== null);
+
+  const offhostRows: OffhostAccountRow[] = offhostAccounts.map((account) => {
+    const state = account.offhostBackupState;
+    const verdict = classifyOffhostBackup({
+      lastAttemptAt: state?.lastAttemptAt ?? null,
+      lastSuccessAt: state?.lastSuccessAt ?? null,
+      now,
+    });
+    return {
+      userId: account.id,
+      username: account.username,
+      lastAttemptAt: state?.lastAttemptAt.toISOString() ?? null,
+      lastSuccessAt: state?.lastSuccessAt?.toISOString() ?? null,
+      // BigInt column -> number on the wire. The value is bytes of one
+      // object, capped by the uploader at 80 GB, so it is nowhere near
+      // Number.MAX_SAFE_INTEGER and JSON has no BigInt.
+      sizeBytes:
+        state?.sizeBytes === null || state?.sizeBytes === undefined
+          ? null
+          : Number(state.sizeBytes),
+      ageHours: verdict.ageHours,
+      freshness: verdict.freshness,
+    };
+  });
+
+  // Worst first. Sorting by username puts the one account that needs
+  // attention wherever the alphabet happens to leave it, which on a
+  // hundred-account cohort is the same "one bad row hides in the crowd"
+  // problem this card was built to end, moved out of a count and into a list.
+  const FRESHNESS_ORDER: Record<OffhostBackupFreshness, number> = {
+    stale: 0,
+    due: 1,
+    never: 2,
+    unknown: 3,
+    fresh: 4,
+  };
+  offhostRows.sort(
+    (a, b) =>
+      FRESHNESS_ORDER[a.freshness] - FRESHNESS_ORDER[b.freshness] ||
+      a.username.localeCompare(b.username),
+  );
+
   const payload: BackupsList = {
     rows: list,
     // Matches the retention window the backup-prune job enforces so the
@@ -77,8 +166,15 @@ export const GET = apiHandler(async () => {
         .filter((row) => row.type === SCHEDULED_BACKUP_TYPE)
         .map((row) => row.created_at),
       lastRun: await readLastQueueRun(DATA_BACKUP_QUEUE),
-      now: new Date(),
+      now,
     }),
+    offhost: {
+      configured,
+      periodHours: OFFHOST_BACKUP_PERIOD_HOURS,
+      // An unconfigured host has nothing to list, and the card says so rather
+      // than painting an empty table that reads as "no problems".
+      rows: configured ? offhostRows : [],
+    },
   };
 
   return apiSuccess(payload);

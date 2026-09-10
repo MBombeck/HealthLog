@@ -30,9 +30,13 @@ import { VisitCard } from "./visit-card";
 
 export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
   const { t } = useTranslations();
-  const { canWriteDomain } = useRecordCapabilities();
-  // `POST /api/encounters` answers at WRITE under the profile section.
+  const { canWriteDomain, canManageDomain } = useRecordCapabilities();
+  // `POST /api/encounters` answers at WRITE under the profile section; the
+  // edit and the delete behind the row are both MANAGE. Only the add was
+  // asked, so every row stayed tappable into a sheet whose Save and Delete
+  // the server refuses.
   const canAddVisit = canWriteDomain("profile");
+  const canManageVisits = canManageDomain("profile");
   const list = useEncounters(enabled);
 
   // `null` closed, `"new"` create, a row edits it.
@@ -109,7 +113,7 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
                 <VisitCard
                   key={encounter.id}
                   encounter={encounter}
-                  onOpen={openSheet}
+                  onOpen={canManageVisits ? openSheet : undefined}
                 />
               ))}
             </div>
@@ -125,7 +129,7 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
                 <VisitCard
                   key={encounter.id}
                   encounter={encounter}
-                  onOpen={openSheet}
+                  onOpen={canManageVisits ? openSheet : undefined}
                 />
               ))}
             </div>

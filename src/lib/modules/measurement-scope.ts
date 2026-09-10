@@ -224,3 +224,20 @@ export function moduleForMeasurementType(
 ): ModuleKey | null {
   return OWNER_BY_MEASUREMENT_TYPE.get(type) ?? null;
 }
+
+/**
+ * The inverse: every measurement type `key` owns, or an empty list for a
+ * module that owns no measurement-level domain.
+ *
+ * Derived from the same map {@link moduleForMeasurementType} answers from, so
+ * the two can never disagree about who owns what. Read by the setup flow's
+ * derivation, which asks "does this record already hold data in that domain"
+ * before it switches a module off.
+ */
+export function measurementTypesOwnedBy(key: ModuleKey): MeasurementType[] {
+  const out: MeasurementType[] = [];
+  for (const [type, owner] of OWNER_BY_MEASUREMENT_TYPE) {
+    if (owner === key) out.push(type);
+  }
+  return out;
+}

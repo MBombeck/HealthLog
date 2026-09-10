@@ -29,6 +29,7 @@ import {
   returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
+import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { withIdempotency } from "@/lib/idempotency";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
@@ -112,7 +113,17 @@ export const GET = apiHandler(async (request: NextRequest) => {
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postVaccination));
 
 async function postVaccination(request: NextRequest): Promise<Response> {
-  const { user } = await requireRecordAuth("write", "profile");
+  const { user, actor } = await requireRecordAuth("write", "profile");
+
+  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
+  // batch siblings have always been capped; the per-record creates a looping
+  // client hits were not.
+  const writeRl = await checkRecordWriteRateLimit(actor.id);
+  if (!writeRl.allowed) {
+    return apiError("Too many writes, try again later", 429, {
+      errorCode: "record_write.rate_limited",
+    });
+  }
 
   const { data: rawBody, error: jsonError } = await safeJson(request, {
     maxBytes: 32 * 1024,

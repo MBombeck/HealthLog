@@ -101,6 +101,17 @@ export interface AdminSettings {
   glitchtipEnabled: boolean;
   glitchtipDsn: string | null;
   glitchtipEnvironment: string | null;
+  /** A report left this host successfully inside the delivery window. */
+  glitchtipReportsDelivering: boolean;
+  /** A report has left this host successfully at some point. */
+  glitchtipEverDelivered: boolean;
+  /**
+   * Why the last attempt failed, when that failure is newer than the last
+   * success. A short classification, never a remote response body.
+   */
+  glitchtipLastFailureReason: string | null;
+  /** How long a successful send stands for before the badge stops claiming it. */
+  glitchtipDeliveryWindowHours: number;
   reminderLateMinutes: number;
   reminderMissedMinutes: number;
   // v1.4.25 W7 — null means "fall back to Europe/Berlin in the resolver".

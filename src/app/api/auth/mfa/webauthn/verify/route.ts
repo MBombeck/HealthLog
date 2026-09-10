@@ -16,7 +16,12 @@
  */
 import { NextRequest } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
-import { apiError, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -59,7 +64,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = mfaWebauthnLoginVerifySchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("Invalid request", 422);
+    return apiValidationError(
+      "Invalid request",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
   const { mfaTicket, challengeId, credential, rememberDevice } = parsed.data;
 

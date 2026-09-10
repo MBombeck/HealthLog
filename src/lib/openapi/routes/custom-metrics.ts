@@ -27,6 +27,7 @@ import {
   idempotencyKeyParameter,
   idempotentWrite,
   recordRefusal,
+  recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
 
@@ -314,6 +315,7 @@ export const customMetricPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...notFound,
         ...stdResponses,
+        ...recordWriteRateLimitResponse,
       },
     },
   },

@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 
 import { VaccinationList } from "./vaccination-list";
@@ -27,6 +28,19 @@ import { useVaccinations, type Vaccination } from "./use-vaccinations";
 
 export function VaccinationsView() {
   const { t } = useTranslations();
+  const { canWriteDomain, canManageDomain } = useRecordCapabilities();
+  // `POST /api/vaccinations` answers at WRITE; the edit, the delete and the
+  // restore behind it are all MANAGE. The page is presentable to every
+  // `profile`-scoped grant, so without this a READ delegate was shown add,
+  // edit and delete, and every one of them was refused by a server that was
+  // right to refuse. Same split, same domain, same shape as the address book
+  // next door.
+  const canAddDose = canWriteDomain("profile");
+  const canManageProfile = canManageDomain("profile");
+  // Planning the booster mints a `MeasurementReminder`, which lives in the
+  // measurements section rather than this one. A grant that opened only the
+  // health background is refused there, so the offer is not made.
+  const canPlanBooster = canWriteDomain("measurements");
   const { data, isLoading, isError, refetch } = useVaccinations();
   const records = data?.vaccinations ?? [];
 
@@ -50,6 +64,17 @@ export function VaccinationsView() {
     setSheetOpen(true);
   };
 
+  const addButton = canAddDose ? (
+    <Button
+      className="min-h-11 sm:min-h-9"
+      data-slot="vaccination-add"
+      onClick={openCreate}
+    >
+      <Plus className="size-4" />
+      {t("common.add")}
+    </Button>
+  ) : null;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -59,16 +84,7 @@ export function VaccinationsView() {
           </span>
         }
         description={t("vaccinations.subtitle")}
-        actions={
-          <Button
-            className="min-h-11 sm:min-h-9"
-            data-slot="vaccination-add"
-            onClick={openCreate}
-          >
-            <Plus className="size-4" />
-            {t("common.add")}
-          </Button>
-        }
+        actions={addButton}
       />
 
       <VaccinationSheet
@@ -79,7 +95,8 @@ export function VaccinationsView() {
         onCreated={(created) => {
           // Offer the booster only when the catalogue entry carries an
           // interval; a free-text or one-off dose never prompts.
-          if (boosterOfferFor(created)) setBoosterFor(created);
+          if (canPlanBooster && boosterOfferFor(created))
+            setBoosterFor(created);
         }}
       />
 
@@ -102,21 +119,26 @@ export function VaccinationsView() {
           onRetry={() => void refetch()}
         />
       ) : records.length > 0 ? (
-        <VaccinationList records={records} onEdit={openEdit} />
+        <VaccinationList
+          records={records}
+          onEdit={canManageProfile ? openEdit : undefined}
+        />
       ) : (
         <EmptyState
           icon={<Syringe className="size-6" />}
           title={t("vaccinations.empty.title")}
           description={t("vaccinations.empty.description")}
           action={
-            <Button
-              className="min-h-11 sm:min-h-9"
-              data-slot="vaccination-add-empty"
-              onClick={openCreate}
-            >
-              <Plus className="size-4" />
-              {t("common.add")}
-            </Button>
+            canAddDose ? (
+              <Button
+                className="min-h-11 sm:min-h-9"
+                data-slot="vaccination-add-empty"
+                onClick={openCreate}
+              >
+                <Plus className="size-4" />
+                {t("common.add")}
+              </Button>
+            ) : undefined
           }
         />
       )}

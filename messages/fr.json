@@ -6598,6 +6598,13 @@
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "Environnement GlitchTip",
     "glitchtipEnvironmentPlaceholder": "production",
+    "glitchtipTargetOn": "Les rapports d'erreur vont vers {host}.",
+    "glitchtipTargetOff": "Les rapports d'erreur restent sur cet hôte. Rien n'est envoyé.",
+    "glitchtipTargetNoTarget": "Le suivi des erreurs est activé, mais aucune cible n'est définie, donc rien n'est envoyé.",
+    "glitchtipUnproven": "Non confirmé",
+    "glitchtipDeliveryUnproven": "Une cible est définie, mais aucun rapport n'a encore quitté cet hôte. Appuyez sur Tester pour voir si elle en accepte un.",
+    "glitchtipDeliveryStale": "Aucun rapport n'a quitté cet hôte depuis {hours} h. Appuyez sur Tester pour vérifier que la cible en accepte toujours.",
+    "glitchtipDeliveryFailed": "Le dernier rapport n'est pas passé ({reason}).",
     "webPushVapidDescription": "Configurez ici les clés VAPID et le subject pour que le push du navigateur fonctionne sans variables d'environnement.",
     "webPushVapidPublicKey": "Clé publique VAPID",
     "webPushVapidPublicKeyPlaceholder": "BElx... (Base64URL)",
@@ -7013,7 +7020,23 @@
         "restoreMissingDocuments": "Documents",
         "restoreMissingWorkouts": "Séances",
         "restoreMissingMentalHealth": "Questionnaires de santé mentale",
-        "restoreMissingConsent": "Preuves de consentement"
+        "restoreMissingConsent": "Preuves de consentement",
+        "offhost": {
+          "title": "Copies hors hôte",
+          "description": "Quand cet hôte a déposé pour la dernière fois la copie chiffrée de chaque compte dans votre bucket.",
+          "loadError": "Impossible de charger l'état hors hôte.",
+          "notConfiguredTitle": "La sauvegarde hors hôte n'est pas configurée",
+          "notConfiguredDescription": "Aucun bucket ni clé ne sont définis, donc rien ne quitte cet hôte. Définissez BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY et BACKUP_ENCRYPTION_KEY pour activer l'envoi nocturne.",
+          "stateFresh": "Récente",
+          "stateDue": "Attendue",
+          "stateStale": "Périmée",
+          "stateNever": "Jamais",
+          "stateUnknown": "Pas encore d'enregistrement",
+          "neverDetail": "Rien n'est arrivé pour ce compte. Dernière vérification {when}.",
+          "unknownDetail": "Aucun cycle nocturne n'a encore enregistré ce compte.",
+          "age": "il y a {hours} h",
+          "scheduleNote": "L'envoi tourne toutes les {hours} h. Récente signifie dans un cycle, attendue qu'un cycle n'a rien produit, périmée que deux n'ont rien produit."
+        }
       },
       "danger-zone": {
         "title": "Zone de danger",
@@ -10485,7 +10508,7 @@
       },
       "mind": {
         "label": "Humeur et santé mentale",
-        "detail": "Les entrées d'humeur et l'historique des questionnaires de santé mentale."
+        "detail": "Les entrées d'humeur et l'historique des questionnaires de santé mentale. Un questionnaire rempli enregistre aussi son score total comme une mesure."
       },
       "cycle": {
         "label": "Cycle",
