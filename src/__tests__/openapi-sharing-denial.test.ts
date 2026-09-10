@@ -45,16 +45,16 @@
  * - Comments are stripped before matching. `.../guardians/route.ts` names both
  *   fence helpers in a docblock explaining why it uses neither, and counting
  *   prose would classify an actor surface as delegable.
- * - It covers the PUBLISHED surface, which is not the whole delegable surface.
- *   116 route modules resolve the fence; 90 of them are in the OpenAPI document
- *   and 26 have never been (mood entries, the record-settings tree, the
- *   medication intake tree, several insight reads). That gap predates this
- *   release and is not closed here — "frozen" means the published contract is
- *   complete and consistent, not that every delegable route is described. What
- *   this guard does guarantee is that one of those 26 cannot be published
- *   without its refusal, because publishing it puts it in scope on the next run.
+ * - It covered the PUBLISHED surface and not the whole delegable one. That was
+ *   the honest limit at v1.37.0, when 116 route modules resolved the fence and
+ *   26 of them were in no OpenAPI document at all. The gap is closed on this
+ *   tree, so the limit is now an assertion rather than a caveat: the last leg
+ *   below recomputes the fenced modules from the route sources and requires
+ *   every one of them to be published. Two counts is one too many, so it names
+ *   no number — a hard-coded figure is what turned the paragraph it replaces
+ *   into a false claim about the contract.
  */
-import { readFileSync, existsSync } from "node:fs";
+import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -82,6 +82,42 @@ interface PublishedOperation {
 
 function stripComments(text: string): string {
   return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/.*$/gm, "$1");
+}
+
+/**
+ * Every `route.ts` under `src/app/api` whose handlers resolve the record fence.
+ *
+ * Comments stripped first, for the reason the operation matcher strips them:
+ * one module names both fence helpers in a docblock explaining why it uses
+ * neither.
+ */
+function fencedRouteModules(): string[] {
+  const out: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (entry.name !== "route.ts") continue;
+      const source = stripComments(readFileSync(full, "utf8"));
+      if (/require(RecordAuth|GuardianAuth)\s*\(/.test(source)) {
+        out.push(full);
+      }
+    }
+  };
+  walk(join(ROOT, "src/app/api"));
+  return out;
+}
+
+/** `…/src/app/api/labs/[id]/route.ts` → `/api/labs/{id}`. */
+function apiPathFor(moduleFile: string): string {
+  return moduleFile
+    .slice(join(ROOT, "src/app").length)
+    .replaceAll("\\", "/")
+    .replace(/\/route\.ts$/, "")
+    .replace(/\[([^\]]+)\]/g, "{$1}");
 }
 
 function routeModulePath(apiPath: string): string {
@@ -332,6 +368,33 @@ describe("the sharing refusal every delegable path publishes", () => {
           "reason, or take the fence back out.",
       );
     }
+  });
+
+  it("publishes every module that resolves the fence", () => {
+    // The reverse direction of the leg above, and the one the docblock used to
+    // apologise for: that one holds every PUBLISHED fenced operation to the
+    // refusal, and says nothing about a fenced module nobody published. A
+    // module missing from the document is a delegable surface a generated
+    // client cannot see and a reader of the contract cannot find, which is
+    // exactly how the mood-entry tree and the record-settings tree stayed
+    // invisible for a release.
+    const modules = fencedRouteModules();
+    expect(
+      modules.length,
+      "no fenced route module was discovered — the matcher found nothing",
+    ).toBeGreaterThan(100);
+
+    const published = new Set(Object.keys(openApiPaths));
+    const missing = modules
+      .map((rel) => apiPathFor(rel))
+      .filter((apiPath) => !published.has(apiPath));
+
+    expect(
+      missing,
+      `these route modules resolve the record fence and are in no published path:\n${missing
+        .map((apiPath) => `  ❌ ${apiPath}`)
+        .join("\n")}`,
+    ).toEqual([]);
   });
 
   it("carries the refusal into the generated document", () => {
