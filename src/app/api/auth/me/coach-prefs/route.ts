@@ -16,7 +16,11 @@
  * row on every turn — there's no caching layer to invalidate.
  */
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import { apiSuccess } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiValidationError,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import {
@@ -74,7 +78,15 @@ export const PUT = apiHandler(async (req: Request) => {
       action: { name: "auth.me.coach-prefs.put.invalid" },
       meta: { issues: parsed.error.issues.length },
     });
-    throw new HttpError(422, "coach-prefs.body.invalid_shape");
+    // The dotted token keeps its place in `error` — clients already match on it
+    // there — while `meta.errorCode` publishes it in the field a machine code
+    // belongs in, and `details.issues` names the fields that were refused.
+    return apiValidationError(
+      "coach-prefs.body.invalid_shape",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      { errorCode: "coach-prefs.body.invalid_shape" },
+    );
   }
 
   // Persist the canonical defaulted form so the column shape stays

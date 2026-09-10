@@ -4,8 +4,10 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
+  apiValidationError,
   getClientIp,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { setOnboardingPendingCookie } from "@/lib/auth/session";
@@ -80,9 +82,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
       action: { name: "onboarding.step" },
       meta: { outcome: "validation_failed" },
     });
-    return apiError("Invalid step payload", 422, {
-      errorCode: "onboarding.step.invalid",
-    });
+    return apiValidationError(
+      "Invalid step payload",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      {
+        errorCode: "onboarding.step.invalid",
+      },
+    );
   }
   const { step, goals } = parsed.data;
 

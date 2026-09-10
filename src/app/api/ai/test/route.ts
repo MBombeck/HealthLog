@@ -6,7 +6,13 @@ import {
   type AITestOverride,
 } from "@/lib/ai/provider";
 import { singleUserTurn } from "@/lib/ai/types";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -69,7 +75,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     if (error) return error;
     const parsed = aiTestOverrideSchema.safeParse(data);
     if (!parsed.success) {
-      return apiError("Invalid override payload", 422);
+      return apiValidationError(
+        "Invalid override payload",
+        sanitiseZodIssues(parsed.error.issues),
+        422,
+      );
     }
     override = parsed.data;
   }

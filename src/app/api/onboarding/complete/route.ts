@@ -1,7 +1,12 @@
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { setOnboardingPendingCookie } from "@/lib/auth/session";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
@@ -22,9 +27,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (jsonError) return jsonError;
   const result = z.safeParse(onboardingCompleteSchema, body);
   if (!result.success) {
-    return apiError("Invalid input", 422, {
-      errorCode: "onboarding.complete.invalid",
-    });
+    return apiValidationError(
+      "Invalid input",
+      sanitiseZodIssues(result.error.issues),
+      422,
+      {
+        errorCode: "onboarding.complete.invalid",
+      },
+    );
   }
 
   const data: Record<string, unknown> = {

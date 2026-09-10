@@ -24,7 +24,13 @@
 import { type NextRequest } from "next/server";
 
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import { apiError, apiSuccess, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -93,9 +99,14 @@ export const POST = apiHandler(
     if (jsonError) return jsonError;
     const parsed = documentChatRequestSchema.safeParse(body);
     if (!parsed.success) {
-      return apiError("Invalid document chat request", 422, {
-        errorCode: "documents.chat.invalid",
-      });
+      return apiValidationError(
+        "Invalid document chat request",
+        sanitiseZodIssues(parsed.error.issues),
+        422,
+        {
+          errorCode: "documents.chat.invalid",
+        },
+      );
     }
     const { conversationId, message, locale: bodyLocale } = parsed.data;
 
@@ -231,9 +242,14 @@ export const GET = apiHandler(
       limit: url.searchParams.get("limit") ?? undefined,
     });
     if (!parsed.success) {
-      return apiError("Invalid chat history query", 422, {
-        errorCode: "documents.chat.invalid",
-      });
+      return apiValidationError(
+        "Invalid chat history query",
+        sanitiseZodIssues(parsed.error.issues),
+        422,
+        {
+          errorCode: "documents.chat.invalid",
+        },
+      );
     }
 
     // With a conversationId → that one thread's messages (must hold this document).

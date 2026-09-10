@@ -18,7 +18,12 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
 import { cycleCalendarQuerySchema } from "@/lib/validations/cycle";
 import {
@@ -55,9 +60,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
     to: url.searchParams.get("to") ?? undefined,
   });
   if (!parsed.success) {
-    return apiError("Invalid calendar query", 422, {
-      errorCode: "cycle.calendar.invalid",
-    });
+    return apiValidationError(
+      "Invalid calendar query",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      {
+        errorCode: "cycle.calendar.invalid",
+      },
+    );
   }
 
   const tz = user.timezone ?? DEFAULT_TIMEZONE;

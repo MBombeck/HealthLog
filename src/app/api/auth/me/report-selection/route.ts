@@ -17,7 +17,12 @@
  * outside that route ever read.
  */
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import { apiSuccess, getClientIp } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiValidationError,
+  getClientIp,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma, toJson } from "@/lib/db";
@@ -57,7 +62,15 @@ export const PUT = apiHandler(async (req: Request) => {
       action: { name: "auth.me.report-selection.put.invalid" },
       meta: { issues: parsed.error.issues.length },
     });
-    throw new HttpError(422, "report-selection.body.invalid_shape");
+    // The dotted token keeps its place in `error` — clients already match on it
+    // there — while `meta.errorCode` publishes it in the field a machine code
+    // belongs in, and `details.issues` names the fields that were refused.
+    return apiValidationError(
+      "report-selection.body.invalid_shape",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      { errorCode: "report-selection.body.invalid_shape" },
+    );
   }
 
   const minted = selectionFromRequest(parsed.data);

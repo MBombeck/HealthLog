@@ -19,7 +19,12 @@
  * payloads were built from.
  */
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import { apiSuccess, getClientIp } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiValidationError,
+  getClientIp,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -57,7 +62,15 @@ export const PUT = apiHandler(async (req: Request) => {
       action: { name: "auth.me.source-priority.put.invalid" },
       meta: { issues: parsed.error.issues.length },
     });
-    throw new HttpError(422, "source-priority.body.invalid_shape");
+    // The dotted token keeps its place in `error` — clients already match on it
+    // there — while `meta.errorCode` publishes it in the field a machine code
+    // belongs in, and `details.issues` names the fields that were refused.
+    return apiValidationError(
+      "source-priority.body.invalid_shape",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      { errorCode: "source-priority.body.invalid_shape" },
+    );
   }
 
   // v1.4.25 W10 reconcile (security M-3): capture the previous shape

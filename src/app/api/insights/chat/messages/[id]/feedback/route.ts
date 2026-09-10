@@ -34,8 +34,10 @@ import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
+  apiValidationError,
   getClientIp,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -91,7 +93,15 @@ async function handlePost(request: NextRequest, ctx: RouteContext) {
       action: { name: "insights.coach.message.feedback" },
       meta: { outcome: "validation_failed" },
     });
-    throw new HttpError(422, "feedback.body.invalid");
+    // The dotted token keeps its place in `error` — clients already match on it
+    // there — while `meta.errorCode` publishes it in the field a machine code
+    // belongs in, and `details.issues` names the fields that were refused.
+    return apiValidationError(
+      "feedback.body.invalid",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      { errorCode: "feedback.body.invalid" },
+    );
   }
   const body = parsed.data;
 
