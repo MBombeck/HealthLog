@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import type { EncounterDTO, EncounterListDTO } from "@/lib/encounters/dto";
+
 import {
   buildChecklist,
   checklistOrderFromNeeds,
@@ -9,6 +11,7 @@ import {
   isProfileComplete,
   shouldShowChecklist,
   trendHintFor,
+  upcomingVisitCountFrom,
   visibleChecklist,
   type ChecklistItemId,
 } from "../checklist";
@@ -140,6 +143,28 @@ describe("buildChecklist", () => {
     expect(hrefs.dataSource).toBe("/settings/integrations");
     expect(hrefs.notifications).toBe("/settings/notifications");
     expect(hrefs.insights).toBe("/settings/ai");
+  });
+});
+
+describe("upcomingVisitCountFrom (the visits list's wire shape)", () => {
+  it("counts the upcoming array of the body `GET /api/encounters` publishes", () => {
+    // The route answers `{ upcoming, past }` as data and publishes no meta;
+    // the row read `meta.upcoming` once and could never flip to done.
+    const body: EncounterListDTO = { upcoming: [], past: [] };
+    expect(upcomingVisitCountFrom(body)).toBe(0);
+    const two: EncounterListDTO = {
+      upcoming: [{ id: "v1" }, { id: "v2" }] as unknown as EncounterDTO[],
+      past: [],
+    };
+    expect(upcomingVisitCountFrom(two)).toBe(2);
+  });
+
+  it("reads a missing or malformed body as no visit", () => {
+    expect(upcomingVisitCountFrom(null)).toBe(0);
+    expect(upcomingVisitCountFrom(undefined)).toBe(0);
+    expect(
+      upcomingVisitCountFrom({ upcoming: 3 as unknown as unknown[] }),
+    ).toBe(0);
   });
 });
 

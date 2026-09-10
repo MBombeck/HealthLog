@@ -19,6 +19,8 @@ import {
 import {
   BROWSER_CONNECTABLE_SOURCES,
   canVisitScreen,
+  isOnboardingPathname,
+  questionsToPassBeforeConfirm,
   chooseFirstResultTask,
   firstResultApplies,
   nextScreen,
@@ -372,6 +374,57 @@ describe("canVisitScreen", () => {
     });
     expect(canVisitScreen(noUnits, "units")).toBe(false);
     expect(canVisitScreen(noUnits, "first-result")).toBe(false);
+  });
+});
+
+describe("questionsToPassBeforeConfirm", () => {
+  it("passes the units question the flow never showed, and nothing shown", () => {
+    // No unit-bearing area: Q6 is hidden, still pending, and the completion
+    // route would otherwise answer "incomplete" — the first real run's find.
+    expect(
+      questionsToPassBeforeConfirm(
+        state(QUESTIONS_DONE, { recordTarget: "me", areas: ["mood"] }),
+      ),
+    ).toEqual(["units"]);
+    // Units shown and answered: nothing to pass.
+    expect(
+      questionsToPassBeforeConfirm(
+        state(
+          { ...QUESTIONS_DONE, units: "done" },
+          {
+            recordTarget: "me",
+            areas: ["glucose"],
+            units: { glucoseUnit: "mg/dL", unitPreference: null },
+          },
+        ),
+      ),
+    ).toEqual([]);
+  });
+
+  it("never passes a question the person still owes on screen", () => {
+    expect(
+      questionsToPassBeforeConfirm(
+        state({ who: "done" }, { recordTarget: "me", areas: ["mood"] }),
+      ),
+    ).toEqual(["units"]);
+  });
+
+  it("leaves the first-result step to the confirm screen's own rule", () => {
+    expect(
+      questionsToPassBeforeConfirm(
+        state(QUESTIONS_DONE, { recordTarget: "me" }),
+      ),
+    ).not.toContain("first-result");
+  });
+});
+
+describe("isOnboardingPathname", () => {
+  it("covers the front door and every step, and nothing that only starts alike", () => {
+    expect(isOnboardingPathname("/onboarding")).toBe(true);
+    expect(isOnboardingPathname("/onboarding/who")).toBe(true);
+    expect(isOnboardingPathname("/onboarding/first-result")).toBe(true);
+    expect(isOnboardingPathname("/onboarding-export")).toBe(false);
+    expect(isOnboardingPathname("/")).toBe(false);
   });
 });
 

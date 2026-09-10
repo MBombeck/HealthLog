@@ -47,9 +47,7 @@ export const AREA_WIDGET_SEED_MAP: Readonly<
 });
 
 /** Q3 "yes" or "sometimes" promotes the medication tile. */
-export const MEDICATION_WIDGET_SEED: readonly DashboardWidgetId[] = [
-  "medications",
-];
+const MEDICATION_WIDGET_SEED: readonly DashboardWidgetId[] = ["medications"];
 
 /**
  * The tiles the answers promote, in the default layout's order. Empty when

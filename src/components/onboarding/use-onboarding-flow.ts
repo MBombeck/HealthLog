@@ -46,16 +46,17 @@ interface CompleteEnvelope {
 /**
  * `POST /api/onboarding/complete` — the confirm screen, and "skip for now".
  *
- * The body is always empty: profile values go through `PUT /api/auth/profile`
- * (the canonical write, with its per-field refusals), never through the
- * completion stamp's optional fields.
+ * Profile values never ride this body: they go through `PUT /api/auth/profile`
+ * (the canonical write, with its per-field refusals). The one field the
+ * screen sends is `managedRecordId`, after "someone I look after" created the
+ * profile, so the derivation lands on that record and not on the caller's.
  */
 export function useOnboardingComplete() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: queryKeys.onboardingCompleteMutation(),
-    mutationFn: async () =>
-      apiPost<CompleteEnvelope>("/api/onboarding/complete", {}),
+    mutationFn: async (input?: { managedRecordId: string }) =>
+      apiPost<CompleteEnvelope>("/api/onboarding/complete", input ?? {}),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.authMe() });
     },

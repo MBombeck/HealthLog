@@ -71,11 +71,26 @@ test.describe("setup flow — a visit within a month, with labs", () => {
     await page.locator('[data-slot="onboarding-open-dashboard"]').click();
     await expect.poll(() => new URL(page.url()).pathname).toBe("/");
 
-    // The checklist opens with the visit row on it.
+    // The checklist opens with the visit row on it, not yet done.
     const checklist = page.locator('[data-testid="onboarding-card"]');
     await expect(checklist).toBeVisible({ timeout: 15_000 });
     await expect(checklist.locator("#getting-started-body")).toBeVisible();
-    await expect(checklist.locator('a[href="/checkups"]')).toBeVisible();
+    const visitRow = checklist.locator('li[data-item-id="visit"]');
+    await expect(visitRow).toHaveAttribute("data-done", "false");
+    await expect(visitRow.locator('a[href="/checkups"]')).toBeVisible();
+
+    // Book the visit; the row reads the visits list's own body and flips.
+    const booked = await page.request.post("/api/encounters", {
+      data: {
+        occurredAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+        status: "PLANNED",
+      },
+    });
+    expect(booked.status(), "booking the visit").toBe(201);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(
+      page.locator('[data-testid="onboarding-card"] li[data-item-id="visit"]'),
+    ).toHaveAttribute("data-done", "true", { timeout: 15_000 });
 
     const me = await readMe(page);
     expect(me.modules.labs).not.toBe(false);

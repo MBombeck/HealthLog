@@ -71,8 +71,13 @@ export function FirstResultScreen({ state }: { state: OnboardingStateDto }) {
   const offer = chooseFirstResultTask(state.needs);
   const back = previousScreen(state, "first-result");
 
+  // Completed only when the LEDGER says so as well: a restart puts the step
+  // back to pending, and a stored result from the previous run must not paint
+  // this screen as done, or "Next" would go to done without ever writing the
+  // step and the flow would resume here forever.
   const [completed, setCompleted] = useState(
-    state.firstResult?.task === offer?.task &&
+    state.steps.find((step) => step.id === "first-result")?.status === "done" &&
+      state.firstResult?.task === offer?.task &&
       state.firstResult?.completedAt !== null,
   );
 
@@ -425,9 +430,10 @@ function LatestReadingTile({
     queryFn: async () =>
       Promise.all(
         storedTypes.map((type) =>
-          apiGet<MeasurementRow[]>(
+          // The list route answers `{ measurements, meta }`, not a bare array.
+          apiGet<{ measurements: MeasurementRow[] }>(
             `/api/measurements?type=${encodeURIComponent(type)}&limit=1`,
-          ).then((rows) => rows[0] ?? null),
+          ).then((page) => page.measurements[0] ?? null),
         ),
       ),
   });

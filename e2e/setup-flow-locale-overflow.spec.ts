@@ -52,8 +52,15 @@ const SCREENS: Array<{ screen: SetupScreen; path: string }> = [
   { screen: "done", path: "/onboarding/done" },
 ];
 
-/** i18n keys look like `section.subKey`; a rendered one is a lookup that fell through. */
-const RAW_KEY = /\b[a-z]+(?:[A-Z][a-z]+)?\.[a-z][A-Za-z0-9_.-]+\b/;
+/**
+ * A rendered i18n key is a lookup that fell through. The flow's keys are
+ * three or more dotted segments (`onboarding.flow.who.options.me`,
+ * `onboarding.steps.first-result`), lowercase and kebab as often as camel —
+ * so the test is the dotted shape itself, not a camelCase segment inside it
+ * (which the locale-switch smoke test requires and which most of these keys
+ * do not have). No sentence on these screens carries such a run.
+ */
+const RAW_KEY = /\b[a-z]+(?:\.[a-zA-Z][\w-]*){2,}\b/;
 
 /**
  * Lengthen every text node under the shell by 30%, then measure. Padding
@@ -172,11 +179,10 @@ test.describe("setup flow — every locale at 30% longer strings", () => {
           // No raw key before the padding touches the text.
           const body = await page.locator(SHELL).innerText();
           const match = body.match(RAW_KEY);
-          if (match && /\.[a-z][A-Z]/.test(match[0])) {
-            throw new Error(
-              `raw i18n key on ${item.screen} in ${locale}: ${match[0]}`,
-            );
-          }
+          expect(
+            match?.[0] ?? null,
+            `raw i18n key on ${item.screen} in ${locale}`,
+          ).toBeNull();
 
           const result = await padAndMeasure(page);
           const label = `${item.screen} ${locale} @${vp.label}`;

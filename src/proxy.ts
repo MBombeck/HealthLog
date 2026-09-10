@@ -166,6 +166,14 @@ const DEMO_MUTATION_ALLOWLIST: ReadonlyArray<{ path: string; method: string }> =
     { path: "/api/onboarding/answers", method: "PATCH" },
     { path: "/api/onboarding/complete", method: "POST" },
     { path: "/api/onboarding/restart", method: "POST" },
+    // v1.39 (C2) — the two writes the flow's welcome and exit make: the
+    // one-time disclaimer acknowledgment gates both welcome buttons, and the
+    // tour's progress checkpoint is what the done screen's offer leads to.
+    // Without the first, a demo account on a fresh seed (or after a version
+    // bump of the disclaimer) got a 403 from "Set up" and "Skip for now" both.
+    // Neither creates health data.
+    { path: "/api/onboarding/disclaimer", method: "POST" },
+    { path: "/api/onboarding/tour", method: "POST" },
   ];
 
 // Legacy route redirects (German → English)

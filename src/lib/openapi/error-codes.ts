@@ -237,6 +237,8 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "onboarding.answers.invalid",
       "onboarding.answers.rateLimited",
       "onboarding.complete.invalid",
+      "onboarding.complete.notGuardian",
+      "onboarding.complete.recordTargetMismatch",
       "onboarding.disclaimer.invalid",
       "onboarding.restart.invalid",
       "onboarding.restart.rateLimited",

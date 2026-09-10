@@ -26,10 +26,11 @@ import {
   buildChecklist,
   checklistProgress,
   shouldShowChecklist,
+  upcomingVisitCountFrom,
   visibleChecklist,
   type ChecklistItemId,
 } from "@/lib/onboarding/checklist";
-import { apiFetchEnvelope, apiGet } from "@/lib/api/api-fetch";
+import { apiGet } from "@/lib/api/api-fetch";
 import {
   CHECKLIST_DISMISSED_ALL_KEY as DISMISSED_ALL_KEY,
   CHECKLIST_DISMISSED_ITEMS_KEY as DISMISSED_ITEMS_KEY,
@@ -88,10 +89,6 @@ const ITEM_LABEL_KEYS: Record<
     cta: "gettingStarted.items.visitCta",
   },
 };
-
-interface EncounterListMeta {
-  upcoming?: number;
-}
 
 interface IntegrationsStatus {
   integrations?: Array<{ connected?: boolean; enabled?: boolean }>;
@@ -306,14 +303,12 @@ export function GettingStartedChecklist() {
   // for it: a visit within a month. Reads the visits list's own meta count so
   // the row flips done the moment one is on the calendar.
   const visitAsked = user?.onboarding?.needs.visit === "within-a-month";
-  const { data: encountersMeta } = useQuery<EncounterListMeta>({
+  const { data: upcomingVisitCount } = useQuery<number>({
     queryKey: queryKeys.onboardingUpcomingVisits(),
-    queryFn: async () => {
-      const { meta } = await apiFetchEnvelope<unknown, EncounterListMeta>(
-        "/api/encounters",
-      );
-      return meta ?? {};
-    },
+    queryFn: async () =>
+      upcomingVisitCountFrom(
+        await apiGet<{ upcoming: unknown[] }>("/api/encounters"),
+      ),
     enabled: checklistRelevant && visitAsked,
   });
 
@@ -346,7 +341,7 @@ export function GettingStartedChecklist() {
         notificationsConfigured,
         insightsConfigured,
         dismissedIds,
-        upcomingVisitCount: encountersMeta?.upcoming ?? 0,
+        upcomingVisitCount: upcomingVisitCount ?? 0,
         // v1.39 (C1) — the setup answers order these rows: medication first
         // for somebody who said they take one daily, the data-source row first
         // for somebody who named a wearable. The payload resolves them for the
@@ -366,7 +361,7 @@ export function GettingStartedChecklist() {
       notificationsConfigured,
       insightsConfigured,
       dismissedIds,
-      encountersMeta?.upcoming,
+      upcomingVisitCount,
     ],
   );
 
@@ -509,6 +504,8 @@ export function GettingStartedChecklist() {
             return (
               <li
                 key={item.id}
+                data-item-id={item.id}
+                data-done={item.done}
                 className="hover:bg-accent/40 group flex items-center gap-3 rounded-md px-2 py-2"
               >
                 <span

@@ -14,6 +14,7 @@
 import type { OnboardingSourceKey } from "./needs";
 import {
   hasEnteredOnboardingFlow,
+  ONBOARDING_SKIPPABLE_STEP_IDS,
   type OnboardingFirstResultTask,
   type OnboardingNeeds,
   type OnboardingStateDto,
@@ -212,6 +213,38 @@ export function canVisitScreen(
   const index = order.indexOf(screen);
   if (index === -1) return false;
   return index <= Math.max(order.indexOf(resumeScreen(state)), 1);
+}
+
+/**
+ * The questions the confirm screen must pass on the ledger before it
+ * completes: every skippable question this flow never showed and that is
+ * still pending. The completion route derives only once EVERY question is
+ * answered or passed, and Q6 is a question the machine hides for a flow with
+ * no unit-bearing area — so without this the route answers "incomplete" to
+ * three flows out of four, which is exactly what the first real run found.
+ * The first-result step is not a question and is passed by the confirm
+ * screen on its own rule.
+ */
+export function questionsToPassBeforeConfirm(
+  state: FlowState,
+): Exclude<(typeof ONBOARDING_SKIPPABLE_STEP_IDS)[number], "first-result">[] {
+  const shown = new Set<string>(questionScreens(state));
+  return ONBOARDING_SKIPPABLE_STEP_IDS.filter(
+    (id): id is Exclude<typeof id, "first-result"> =>
+      id !== "first-result" &&
+      !shown.has(id) &&
+      status(state, id) === "pending",
+  );
+}
+
+/**
+ * Whether a pathname is the setup flow's. The auth shell paints these screens
+ * without the app chrome, and it once matched only the front door — every
+ * question screen then rendered with the sidebar. Pure, so the shell's
+ * decision is pinned without a browser.
+ */
+export function isOnboardingPathname(pathname: string): boolean {
+  return pathname === "/onboarding" || pathname.startsWith("/onboarding/");
 }
 
 /**

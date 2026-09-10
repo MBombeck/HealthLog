@@ -86,7 +86,7 @@ export function WelcomeScreen({ variant }: { variant: "fresh" | "again" }) {
     if (pending || !acknowledged) return;
     try {
       await acknowledge.mutateAsync();
-      await complete.mutateAsync();
+      await complete.mutateAsync(undefined);
       markChecklistExpanded();
       router.push("/");
     } catch (err) {

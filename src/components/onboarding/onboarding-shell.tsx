@@ -31,7 +31,7 @@ import {
  * action row (`StepActions`), because what "next" persists differs per
  * screen and the shell should not know.
  */
-export interface OnboardingShellProps {
+interface OnboardingShellProps {
   screen: OnboardingScreenId;
   state: OnboardingStateDto;
   userLocale: string | null;

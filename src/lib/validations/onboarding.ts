@@ -23,6 +23,16 @@ import { z } from "zod/v4";
  * empty body and writes its profile through `PUT /api/auth/profile`.
  */
 export const onboardingCompleteSchema = z.object({
+  /**
+   * v1.39 (C2) — the managed record the answers were given FOR. Sent by the
+   * confirm screen after "someone I look after" created the profile: the
+   * module map and the dashboard order derived from the caller's answers are
+   * applied to that record, and the caller's own record is stamped complete
+   * without deriving. The caller must be a guardian of it, and the answer to
+   * Q1 must be "someone-else"; anything else is refused rather than applied
+   * to the wrong record.
+   */
+  managedRecordId: z.string().trim().min(1).max(64).optional(),
   displayName: z.string().trim().min(1).max(50).optional(),
   heightCm: z.number().min(50).max(300).optional(),
   dateOfBirth: z.string().optional(),

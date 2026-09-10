@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
   BaselineFields,
   type BaselineFieldErrors,
@@ -29,6 +26,7 @@ import {
   describeBaselineSaveOutcome,
   putBaselineProfile,
 } from "@/components/onboarding/baseline-form-utils";
+import { StepActions } from "@/components/onboarding/step-actions";
 
 /**
  * The profile half of the confirm screen: display name, height, date of
@@ -55,7 +53,7 @@ import {
  * filled later from Settings.
  */
 
-export interface BaselineInitialValues {
+interface BaselineInitialValues {
   heightCm: number | null;
   dateOfBirth: string | null;
   gender: string | null;
@@ -225,47 +223,13 @@ export function BaselineForm({
         disabled={saving}
       />
 
-      <div
-        className="flex flex-wrap items-center justify-between gap-2 pt-2"
-        data-slot="onboarding-step-actions"
-      >
-        {backHref ? (
-          <Button asChild variant="ghost" className="min-h-11 min-w-11">
-            <Link href={backHref} data-slot="onboarding-back">
-              {t("onboarding.shell.back")}
-            </Link>
-          </Button>
-        ) : (
-          <span aria-hidden="true" />
-        )}
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => advance({ saveProfile: false })}
-            disabled={saving || confirming}
-            className="min-h-11 min-w-11"
-            data-slot="onboarding-skip"
-          >
-            {t("onboarding.shell.skip")}
-          </Button>
-          <Button
-            type="button"
-            onClick={() => advance({ saveProfile: true })}
-            disabled={saving || confirming}
-            className="min-h-11 min-w-11"
-            data-slot="onboarding-next"
-          >
-            {saving || confirming ? (
-              <Loader2
-                aria-hidden="true"
-                className="size-4 animate-spin motion-reduce:animate-none"
-              />
-            ) : null}
-            {t("onboarding.flow.confirm.cta")}
-          </Button>
-        </div>
-      </div>
+      <StepActions
+        backHref={backHref}
+        onSkip={() => void advance({ saveProfile: false })}
+        onNext={() => void advance({ saveProfile: true })}
+        nextLabel={t("onboarding.flow.confirm.cta")}
+        pending={saving || confirming}
+      />
     </section>
   );
 }

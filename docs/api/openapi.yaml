@@ -27918,6 +27918,10 @@ components:
     OnboardingCompleteRequest:
       type: object
       properties:
+        managedRecordId:
+          type: string
+          minLength: 1
+          maxLength: 64
         displayName:
           type: string
           minLength: 1
@@ -29877,6 +29881,7 @@ components:
                 nutrient — nutrient.batch.invalid, nutrient.batch.too_large, nutrient.daily.invalid,
                 nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day; onboarding —
                 onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
+                onboarding.complete.notGuardian, onboarding.complete.recordTargetMismatch,
                 onboarding.disclaimer.invalid, onboarding.restart.invalid, onboarding.restart.rateLimited,
                 onboarding.tour.invalid; personal_records — personal_records.invalid_query; practitioner —
                 practitioner.invalid; profile — profile.update.emailInUse, profile.update.invalidBody,

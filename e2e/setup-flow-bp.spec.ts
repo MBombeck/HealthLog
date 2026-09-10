@@ -95,9 +95,10 @@ test.describe("setup flow — blood pressure and weight, typed in", () => {
     await page.locator("#dia").fill("78");
     await page.locator("#puls").fill("66");
     await page.getByRole("button", { name: /^save$/i }).click();
-    await expect(
-      page.locator('[data-slot="onboarding-first-result-done"]'),
-    ).toBeVisible({ timeout: 15_000 });
+    const done = page.locator('[data-slot="onboarding-first-result-done"]');
+    await expect(done).toBeVisible({ timeout: 15_000 });
+    // The reading on its tile, not only a tick: the value that was typed.
+    await expect(done).toContainText("124/78", { timeout: 15_000 });
     await next(page);
 
     await expectScreen(page, "done");

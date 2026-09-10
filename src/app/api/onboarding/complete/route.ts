@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import {
+  apiError,
   apiSuccess,
   apiValidationError,
   getClientIp,
@@ -30,6 +31,7 @@ import {
   readOnboardingRecordState,
   toOnboardingStateDto,
 } from "@/lib/onboarding/needs-store";
+import { readManagedProfileForGuardian } from "@/lib/managed-profiles/lifecycle";
 import { writeRecordModulePreferences } from "@/lib/record-settings/modules";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
@@ -57,6 +59,17 @@ import { onboardingCompleteSchema } from "@/lib/validations/onboarding";
  * carry both halves of Q2 — which modules are on, and what is on top — and
  * the seed keeps the wizard's one contract: only while the layout column is
  * still unset.
+ *
+ * `managedRecordId` (C2) — "someone I look after". The answers were given
+ * FOR the profile the confirm screen just created, so the derivation and the
+ * seed land on THAT record: the same access rule the guardian's own
+ * `PATCH /api/record-settings/modules` applies (an active guardian grant on a
+ * managed record), the same `writeRecordModulePreferences`, the same audit
+ * event. The caller's own record is stamped complete and its derivation
+ * marker set — latched, so a later confirm cannot derive the child's answers
+ * onto the guardian — and its module map is not touched. A guardian's own
+ * dashboard and modules are theirs; the child's answers say nothing about
+ * them.
  */
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -102,6 +115,15 @@ export const POST = apiHandler(async (request: NextRequest) => {
     data.displayName = result.data.displayName;
   }
 
+  // The managed arm is checked BEFORE anything is stamped: a refused record
+  // must leave the flow exactly where it was, so the person can fix the
+  // answer or the profile and confirm again.
+  const managedRecordId = result.data.managedRecordId ?? null;
+  if (managedRecordId !== null) {
+    const refusal = await refuseManagedRecord(user.id, managedRecordId);
+    if (refusal) return refusal;
+  }
+
   await prisma.user.update({
     where: { id: user.id },
     data,
@@ -115,10 +137,53 @@ export const POST = apiHandler(async (request: NextRequest) => {
     user.id,
     readHeldUnitPreferences(user),
     request,
+    managedRecordId,
   );
 
   return apiSuccess({ completed: true, ...(onboarding ? { onboarding } : {}) });
 });
+
+/**
+ * Whether `managedRecordId` may receive this caller's answers: the record
+ * must be a managed profile the caller actively guards, and the answer to Q1
+ * must be "someone-else" — the one answer that says the questions were about
+ * another person. A `null` means proceed.
+ */
+async function refuseManagedRecord(
+  userId: string,
+  managedRecordId: string,
+): Promise<Response | null> {
+  const guarded = await readManagedProfileForGuardian({
+    profileId: managedRecordId,
+    guardianId: userId,
+  });
+  if (!guarded) {
+    annotate({
+      action: { name: "onboarding.needs.complete" },
+      meta: { outcome: "not_guardian" },
+    });
+    return apiError("Not a guardian of that record", 403, {
+      errorCode: "onboarding.complete.notGuardian",
+    });
+  }
+  const record = await prisma.onboardingRecord.findUnique({
+    where: { userId },
+    select: ONBOARDING_RECORD_SELECT,
+  });
+  const state = readOnboardingRecordState(record);
+  if (state.needs.recordTarget !== "someone-else") {
+    annotate({
+      action: { name: "onboarding.needs.complete" },
+      meta: { outcome: "record_target_mismatch" },
+    });
+    return apiError(
+      "The answers were not given for somebody else's record",
+      422,
+      { errorCode: "onboarding.complete.recordTargetMismatch" },
+    );
+  }
+  return null;
+}
 
 /**
  * The needs half: derive the module map once, mark the confirm step, stamp the
@@ -132,6 +197,7 @@ async function completeNeedsFlow(
   userId: string,
   held: HeldUnitPreferences,
   request: NextRequest,
+  managedRecordId: string | null,
 ) {
   const record = await prisma.onboardingRecord.findUnique({
     where: { userId },
@@ -169,10 +235,14 @@ async function completeNeedsFlow(
     return toOnboardingStateDto(record, held);
   }
 
+  const now = new Date();
   let derived = false;
   let dashboardSeeded = false;
   let keptForData: string[] = [];
   if (record.modulesDerivedAt === null) {
+    // The record the answers are about: the managed profile for "someone I
+    // look after" (verified above), otherwise the caller's own.
+    const targetId = managedRecordId ?? userId;
     const defaults = deriveOnboardingModuleDefaults({
       recordTarget: state.needs.recordTarget,
       areas: state.needs.areas,
@@ -184,7 +254,7 @@ async function completeNeedsFlow(
     });
 
     const row = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: targetId },
       select: { modulePreferencesJson: true },
     });
     // Only the modules the answers would switch OFF are worth asking about,
@@ -196,7 +266,7 @@ async function completeNeedsFlow(
     );
     const holdsData = await modulesHoldingRecordData(
       prisma,
-      userId,
+      targetId,
       wouldSwitchOff,
     );
     const merged = mergeDerivedModulePreferences(
@@ -212,7 +282,7 @@ async function completeNeedsFlow(
     // unanswered cycle from recorded sex, and an untick is not a request to
     // retract that.
     await writeRecordModulePreferences({
-      recordId: userId,
+      recordId: targetId,
       modulePreferences: merged,
       ...(defaults.cycleTracking ? { cycleTrackingEnabled: true } : {}),
     });
@@ -228,9 +298,14 @@ async function completeNeedsFlow(
       ...(defaults.cycleTracking ? ["cycleTrackingEnabled"] : []),
     ];
     await auditLog("user.modules.update", {
-      userId,
+      userId: targetId,
       ipAddress: getClientIp(request),
-      details: { changed, keptForData: [...holdsData], source: "onboarding" },
+      details: {
+        changed,
+        keptForData: [...holdsData],
+        source: "onboarding",
+        ...(managedRecordId ? { guardianId: userId } : {}),
+      },
     });
 
     keptForData = [...holdsData];
@@ -249,16 +324,43 @@ async function completeNeedsFlow(
     if (seededLayout) {
       const seeded = await prisma.user.updateMany({
         where: {
-          id: userId,
+          id: targetId,
           dashboardWidgetsJson: { equals: Prisma.AnyNull },
         },
         data: { dashboardWidgetsJson: toJson(seededLayout) },
       });
       dashboardSeeded = seeded.count === 1;
     }
+
+    // The managed record's own setup row: the answers it was configured
+    // from, every step settled, both stamps set. Its account payload then
+    // reads a finished setup rather than nine pending steps, and a guardian
+    // who opens the questions from inside that record later is offered a
+    // re-run, not a first run.
+    if (managedRecordId) {
+      const settled = steps.map((step) => ({
+        ...step,
+        status: "done" as const,
+      }));
+      await prisma.onboardingRecord.upsert({
+        where: { userId: managedRecordId },
+        create: {
+          userId: managedRecordId,
+          needsJson: toJson(state.needs),
+          stepsJson: toJson(settled),
+          completedAt: now,
+          modulesDerivedAt: now,
+        },
+        update: {
+          needsJson: toJson(state.needs),
+          stepsJson: toJson(settled),
+          completedAt: now,
+          modulesDerivedAt: now,
+        },
+      });
+    }
   }
 
-  const now = new Date();
   const confirmed = steps.map((step) =>
     step.id === "confirm" && step.status === "pending"
       ? { ...step, status: "done" as const }
@@ -283,6 +385,7 @@ async function completeNeedsFlow(
       outcome: derived ? "derived" : "already_derived",
       keptForData: keptForData.length,
       dashboard_seeded: dashboardSeeded,
+      ...(managedRecordId ? { target: "managed_record" } : {}),
     },
   });
 

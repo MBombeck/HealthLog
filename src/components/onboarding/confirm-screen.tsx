@@ -20,15 +20,12 @@ import { localeLabels } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 import { MODULE_REGISTRY } from "@/lib/modules/registry";
 import { confirmedModules } from "@/lib/onboarding/confirm-summary";
-import {
-  ONBOARDING_SKIPPABLE_STEP_IDS,
-  type OnboardingStateDto,
-} from "@/lib/onboarding/needs";
+import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import {
   firstResultApplies,
   nextScreen,
   previousScreen,
-  questionScreens,
+  questionsToPassBeforeConfirm,
 } from "@/lib/onboarding/wizard-steps";
 
 /**
@@ -71,7 +68,13 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
   const unitPreference =
     needs.units.unitPreference ?? user?.unitPreference ?? "metric";
 
-  async function finish() {
+  /**
+   * Complete the flow. `managedRecordId` is the profile "someone I look
+   * after" just created: the route then applies the derivation to THAT
+   * record and stamps this one complete without deriving, so the guardian's
+   * own modules are never re-ordered around the child's answers.
+   */
+  async function finish(managedRecordId?: string) {
     if (finishing) return;
     setFinishing(true);
     try {
@@ -79,16 +82,12 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
       // unit-bearing area — is passed on the ledger before the completion,
       // because the route derives only once EVERY question is answered or
       // passed, and a step nobody was asked cannot be answered.
-      const shown = new Set<string>(questionScreens(state));
-      for (const id of ONBOARDING_SKIPPABLE_STEP_IDS) {
-        if (id === "first-result") continue;
-        const pending =
-          state.steps.find((step) => step.id === id)?.status === "pending";
-        if (!shown.has(id) && pending) {
-          await answer.mutateAsync({ step: id, status: "skipped" });
-        }
+      for (const id of questionsToPassBeforeConfirm(state)) {
+        await answer.mutateAsync({ step: id, status: "skipped" });
       }
-      const { onboarding } = await complete.mutateAsync();
+      const { onboarding } = await complete.mutateAsync(
+        managedRecordId ? { managedRecordId } : undefined,
+      );
       let written = onboarding ?? state;
       if (!firstResultApplies(written)) {
         // Nothing to offer, so the step is passed rather than left owed:
@@ -197,7 +196,7 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
           </div>
           <ManagedProfileCreateForm
             submitLabel={t("onboarding.flow.confirm.managedCreate")}
-            onCreated={() => void finish()}
+            onCreated={(profile) => void finish(profile.id)}
           />
           <p className="text-sm">{t("onboarding.flow.confirm.managedLater")}</p>
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2">

@@ -276,6 +276,19 @@ export function shouldShowChecklist(args: {
 }
 
 /**
+ * The upcoming-visit count off the visits list's own body. `GET
+ * /api/encounters` answers `{ upcoming, past }` as DATA — there is no `meta`
+ * on that wire, and a reader that looked for one counted zero forever (the
+ * "prepare the visit" row could never flip). Pure, so the shape is pinned
+ * against the DTO the route publishes.
+ */
+export function upcomingVisitCountFrom(
+  body: { upcoming: readonly unknown[] } | null | undefined,
+): number {
+  return Array.isArray(body?.upcoming) ? body.upcoming.length : 0;
+}
+
+/**
  * Profile is "complete" once height, date of birth and gender are all
  * set. Display name is captured automatically at signup, so it doesn't
  * gate this item.

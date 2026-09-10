@@ -17,9 +17,13 @@
  *   - clear `User.onboardingCompletedAt`. That column gates the first-run
  *     redirect in `src/proxy.ts`; clearing it would drop the person back into
  *     the wizard of today rather than into the questions they asked for.
- *   - forget a first result that really happened. The task produced a reading,
- *     a medication or a connection; a re-run of the questions does not unmake
- *     it.
+ *
+ * What it DOES clear, since v1.39 (C2): the first result. The reading, the
+ * medication or the connection the task produced stays where it landed — the
+ * ledger entry is only the record of the OFFER. Kept, it painted the re-run's
+ * first-result screen as already done, "Next" then skipped the write, and the
+ * step stayed pending: the flow resumed there forever and the checklist never
+ * went away. A re-run offers a task again and records what it produces again.
  *
  * `requireAuth()` for the reason the answers route gives: the caller's own
  * record, refused outright under an acting-account switch.
@@ -36,6 +40,7 @@ import {
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma, toJson } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { annotate } from "@/lib/logging/context";
 import {
   defaultOnboardingSteps,
@@ -93,6 +98,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       stepsJson: toJson(steps),
       completedAt: null,
       modulesDerivedAt: null,
+      firstResultJson: Prisma.DbNull,
     },
     select: ONBOARDING_RECORD_SELECT,
   });

@@ -538,7 +538,147 @@ describe("POST /api/onboarding/complete", () => {
   });
 });
 
+describe("POST /api/onboarding/complete for somebody else's record", () => {
+  async function guardianWithChild() {
+    const guardian = await makeUser("guardian");
+    const { createManagedProfile } =
+      await import("@/lib/managed-profiles/create");
+    const { profile } = await createManagedProfile({
+      creatorId: guardian.id,
+      displayName: "Child record",
+      dateOfBirth: null,
+      locale: "en",
+      timezone: "UTC",
+    });
+    await signIn(guardian.id);
+    await patchAnswer({ step: "who", recordTarget: "someone-else" });
+    await patchAnswer({ step: "areas", areas: ["blood-pressure"] });
+    await patchAnswer({ step: "medication", medication: "no" });
+    await patchAnswer({ step: "sources", sources: ["manual"] });
+    await patchAnswer({ step: "visit", visit: "no" });
+    await patchAnswer({ step: "units", status: "skipped" });
+    return { guardian, profile };
+  }
+
+  it("derives onto the managed record and leaves the guardian's own map alone", async () => {
+    // The review's H1: a parent setting up a child's record must not have
+    // their own modules switched off around the child's answers. The
+    // derivation is the same function, applied through the same record-keyed
+    // write the guardian's modules route uses — to the child.
+    const { guardian, profile } = await guardianWithChild();
+
+    const res = await postComplete({ managedRecordId: profile.id });
+    expect(res.status).toBe(200);
+
+    const child = await modulePrefs(profile.id);
+    expect(child.vaccinations).toBe(true);
+    expect(child.insights).toBe(true);
+    expect(child.glucose).toBe(false);
+    expect(child.medications).toBe(false);
+    expect(child.doctorReport).toBe(false);
+
+    // Untouched: a fresh account carries no map at all, and still does.
+    expect(await modulePrefs(guardian.id)).toEqual({});
+
+    // The guardian's own flow is complete and its derivation latched, so a
+    // later confirm cannot derive the child's answers onto the guardian.
+    const own = await getPrismaClient().onboardingRecord.findUniqueOrThrow({
+      where: { userId: guardian.id },
+    });
+    expect(own.completedAt).not.toBeNull();
+    expect(own.modulesDerivedAt).not.toBeNull();
+    expect(statusOf(await readState(res), "confirm")).toBe("done");
+
+    // The child's own setup row reads as finished, from the same answers.
+    const theirs = await getPrismaClient().onboardingRecord.findUniqueOrThrow({
+      where: { userId: profile.id },
+    });
+    expect(theirs.completedAt).not.toBeNull();
+    expect(theirs.modulesDerivedAt).not.toBeNull();
+    const dashboard = await getPrismaClient().user.findUniqueOrThrow({
+      where: { id: profile.id },
+      select: { dashboardWidgetsJson: true },
+    });
+    expect(dashboard.dashboardWidgetsJson).not.toBeNull();
+
+    // A second confirm derives nowhere: the guardian is latched, and the
+    // child keeps what it has.
+    expect((await postComplete({ managedRecordId: profile.id })).status).toBe(
+      200,
+    );
+    expect(await modulePrefs(guardian.id)).toEqual({});
+  });
+
+  it("refuses a record the caller does not guard, and touches nothing", async () => {
+    const { guardian } = await guardianWithChild();
+    const stranger = await makeUser("stranger-guardian");
+    const { createManagedProfile } =
+      await import("@/lib/managed-profiles/create");
+    const { profile: theirs } = await createManagedProfile({
+      creatorId: stranger.id,
+      displayName: "Somebody else's child",
+      dateOfBirth: null,
+      locale: "en",
+      timezone: "UTC",
+    });
+
+    const res = await postComplete({ managedRecordId: theirs.id });
+    expect(res.status).toBe(403);
+    expect(await modulePrefs(theirs.id)).toEqual({});
+    expect(await modulePrefs(guardian.id)).toEqual({});
+    const own = await getPrismaClient().onboardingRecord.findUniqueOrThrow({
+      where: { userId: guardian.id },
+    });
+    expect(own.completedAt).toBeNull();
+    // Nothing stamped the first-run gate either.
+    const row = await getPrismaClient().user.findUniqueOrThrow({
+      where: { id: guardian.id },
+      select: { onboardingCompletedAt: true },
+    });
+    expect(row.onboardingCompletedAt).toBeNull();
+  });
+
+  it("refuses a managed record when the answers were given for the caller", async () => {
+    const guardian = await makeUser("guardian-me");
+    const { createManagedProfile } =
+      await import("@/lib/managed-profiles/create");
+    const { profile } = await createManagedProfile({
+      creatorId: guardian.id,
+      displayName: "Child record",
+      dateOfBirth: null,
+      locale: "en",
+      timezone: "UTC",
+    });
+    await signIn(guardian.id);
+    await answerTheQuestions(); // Q1 = "me"
+
+    const res = await postComplete({ managedRecordId: profile.id });
+    expect(res.status).toBe(422);
+    expect(await modulePrefs(profile.id)).toEqual({});
+    expect(await modulePrefs(guardian.id)).toEqual({});
+  });
+});
+
 describe("POST /api/onboarding/restart", () => {
+  it("clears the first result so a re-run offers the task again", async () => {
+    // M2: kept, the old result painted the re-run's first-result screen as
+    // done, "Next" skipped the write, and the step stayed pending forever.
+    const user = await makeUser("restart-first-result");
+    await signIn(user.id);
+    await answerTheQuestions();
+    expect((await postComplete()).status).toBe(200);
+    await patchAnswer({
+      step: "first-result",
+      firstResult: { task: "add-medication", target: null, completed: true },
+    });
+    expect((await readMe()).firstResult?.completedAt).not.toBeNull();
+
+    expect((await postRestart()).status).toBe(200);
+    const after = await readMe();
+    expect(after.firstResult).toBeNull();
+    expect(statusOf(after, "first-result")).toBe("pending");
+  });
+
   it("resets the steps and leaves the modules where they are", async () => {
     const user = await makeUser("restart");
     await signIn(user.id);
