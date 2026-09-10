@@ -88,7 +88,8 @@ export const GET = apiHandler(
       const [rows, total] = await Promise.all([
         prisma.illnessDayLog.findMany({
           where,
-          orderBy: { date: sortDir },
+          // Unique tiebreaker — `date` is a calendar day and repeats.
+          orderBy: [{ date: sortDir }, { id: sortDir }],
           take: limit,
           skip: offset,
           include: dayLogSymptomInclude,

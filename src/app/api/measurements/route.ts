@@ -544,7 +544,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const [measurements, total] = await Promise.all([
     prisma.measurement.findMany({
       where,
-      orderBy: { [sortBy]: sortDir },
+      // `{ id: sortDir }` is the tiebreaker, not decoration. `measuredAt`
+      // is not unique here and ties are the normal case — an Apple Health
+      // import stamps long runs with one instant, and the
+      // `stats:<id>:YYYY-MM-DD` daily-rollup convention puts every daily
+      // total at the same one. Without a unique secondary key Postgres is
+      // free to order the tied block differently between the query for page
+      // N and the query for page N+1, so a client paging its own history
+      // silently gets one row twice and never gets another.
+      orderBy: [{ [sortBy]: sortDir }, { id: sortDir }],
       take: limit,
       skip: offset,
     }),
