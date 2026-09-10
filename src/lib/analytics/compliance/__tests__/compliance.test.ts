@@ -1701,6 +1701,41 @@ describe("buildComplianceDisplay — two rows, cadence-scaled windows", () => {
     );
   });
 
+  it("currentCycle — a row on sibling schedule A's 08:00 leaves sibling B's 12:00 due", () => {
+    // Two schedule rows on one medication (08:00 daily plus 12:00 daily).
+    // Berlin (CEST): 06:00Z + 10:00Z. The row carries no schedule identity;
+    // B's slot must lose to A's nearer occurrence, not read resolved.
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "08:00",
+        windowEnd: "08:00",
+        daysOfWeek: null,
+        rollingIntervalDays: null,
+        timesOfDay: ["08:00"],
+      },
+      {
+        windowStart: "12:00",
+        windowEnd: "12:00",
+        daysOfWeek: null,
+        rollingIntervalDays: null,
+        timesOfDay: ["12:00"],
+      },
+    ];
+    const slot = new Date("2025-06-15T06:00:00Z");
+    const takenAt = new Date("2025-06-15T06:03:00Z");
+    const events = [{ scheduledFor: slot, takenAt, skipped: false }];
+    const display = buildComplianceDisplay(
+      events,
+      schedules,
+      ctx({ lastIntakeAt: takenAt, timeZone: "Europe/Berlin" }),
+      { now: new Date("2025-06-15T07:00:00Z") },
+    );
+    expect(display.currentCycle.state).toBe("on_track");
+    expect(display.currentCycle.nextDueAt?.toISOString()).toBe(
+      "2025-06-15T10:00:00.000Z",
+    );
+  });
+
   it("currentCycle — rolling weekly overdue past grace → missed", () => {
     // v1.13.x Fix 4 — last shot ~10 days ago (cadence 7) → next due was 3
     // days ago, well past grace → the open cycle is `missed` (the only red

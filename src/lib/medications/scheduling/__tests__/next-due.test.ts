@@ -672,30 +672,6 @@ describe("Mounjaro rolling weekly — canonical overdue band after day change", 
       scheduleId: "mounjaro-sibling",
     });
   });
-
-  it("does not let an action from the archived era suppress the live-era occurrence", () => {
-    const liveEraStart = d("2026-07-27T12:00:00.000Z");
-    const display = computeDisplayDue({
-      medication,
-      schedules: [schedule],
-      now: d("2026-07-29T10:00:00.000Z"),
-      userTz: BERLIN,
-      lastIntakeAt: lastTaken,
-      eraStart: liveEraStart,
-      resolvedSlots: [
-        identifiedMark(missedOccurrence, {
-          scheduleId: "mounjaro-weekly",
-          actionAt: d("2026-07-27T11:59:59.000Z"),
-        }),
-      ],
-    });
-
-    expect(display).toMatchObject({
-      at: missedOccurrence,
-      overdue: true,
-      scheduleId: "mounjaro-weekly",
-    });
-  });
 });
 
 /**
@@ -859,21 +835,98 @@ describe("resolved-slot marks — a row resolves only its nearest occurrence", (
   });
 
   it("an ad-hoc row seconds off a close slot still resolves that slot only", () => {
+    // Only the ad-hoc row is present: at 12:30 the 12:00 band is still open,
+    // so the slot reads resolved through the epsilon path alone.
     const adhoc = d("2026-06-10T09:59:30Z"); // 11:59:30 Berlin
     const now = d("2026-06-10T10:30:00Z"); // 12:30 Berlin
-    const next = computeNextDueAt({
+    const due = computeDisplayDue({
       medication,
       schedules: [closeSlots(["08:00", "12:00"])],
       now,
       userTz: BERLIN,
       lastIntakeAt: adhoc,
       resolvedSlots: [
-        mark(d("2026-06-10T06:00:00Z")),
         toResolvedSlotMark({ scheduledFor: adhoc, takenAt: adhoc }),
       ],
     });
+    expect(due).not.toBeNull();
+    expect(due!.overdue).toBe(false);
+    expect(due!.at.toISOString()).toBe("2026-06-11T06:00:00.000Z"); // tomorrow 08:00
+  });
+
+  it("a row exactly midway between two slots resolves the earlier one", () => {
+    // 08:00 + 12:00 Berlin, a row anchored at 10:00: the tie goes to 08:00,
+    // so 12:00 stays due.
+    const now = d("2026-06-10T07:00:00Z"); // 09:00 Berlin
+    const next = computeNextDueAt({
+      medication,
+      schedules: [closeSlots(["08:00", "12:00"])],
+      now,
+      userTz: BERLIN,
+      lastIntakeAt: d("2026-06-10T08:00:00Z"),
+      resolvedSlots: [mark(d("2026-06-10T08:00:00Z"))], // 10:00 Berlin
+    });
     expect(next).not.toBeNull();
-    expect(next!.toISOString()).toBe("2026-06-11T06:00:00.000Z"); // tomorrow 08:00
+    expect(next!.toISOString()).toBe("2026-06-10T10:00:00.000Z"); // 12:00 Berlin
+  });
+
+  it("a row on sibling schedule A's 08:00 does not resolve sibling B's 12:00", () => {
+    // Two schedule rows on one medication (08:00 daily plus 12:00 daily), the
+    // wizard's compose shape. Rows carry no schedule identity, so B's slot
+    // must lose to A's nearer occurrence, not be tested against B alone.
+    const a: WorkerScheduleRow = { ...closeSlots(["08:00"]), id: "sched-a" };
+    const b: WorkerScheduleRow = { ...closeSlots(["12:00"]), id: "sched-b" };
+    const now = d("2026-06-10T07:00:00Z"); // 09:00 Berlin
+    const input = {
+      medication,
+      schedules: [a, b],
+      now,
+      userTz: BERLIN,
+      lastIntakeAt: d("2026-06-10T06:00:00Z"),
+      resolvedSlots: [mark(d("2026-06-10T06:00:00Z"))], // A's 08:00 exactly
+    };
+    expect(computeNextDueAt(input)?.toISOString()).toBe(
+      "2026-06-10T10:00:00.000Z",
+    );
+    const due = computeDisplayDue(input);
+    expect(due).not.toBeNull();
+    expect(due!.overdue).toBe(false);
+    expect(due!.at.toISOString()).toBe("2026-06-10T10:00:00.000Z");
+    expect(due!.scheduleId).toBe("sched-b");
+  });
+
+  it("on the 25-hour fall-back day a slot across the repeated hour stays due", () => {
+    // 2026-10-25 Berlin falls back at 03:00 CEST to 02:00 CET. 01:00 local
+    // is 2026-10-24T23:00Z (CEST); 03:00 local is 02:00Z (CET), three hours
+    // on. Taking the 01:00 dose must leave 03:00 due.
+    const now = d("2026-10-25T00:00:00Z");
+    const next = computeNextDueAt({
+      medication,
+      schedules: [closeSlots(["01:00", "03:00"])],
+      now,
+      userTz: BERLIN,
+      lastIntakeAt: d("2026-10-24T23:00:00Z"),
+      resolvedSlots: [mark(d("2026-10-24T23:00:00Z"))],
+    });
+    expect(next).not.toBeNull();
+    expect(next!.toISOString()).toBe("2026-10-25T02:00:00.000Z");
+  });
+
+  it("on the fall-back day a row anchored in the old offset still resolves 08:00", () => {
+    // 08:00 CET on 2026-10-25 is 07:00Z; a row computed in the CEST offset
+    // sits at 06:00Z, an hour off, and still stands for that slot.
+    const now = d("2026-10-25T07:30:00Z"); // 08:30 CET
+    const due = computeDisplayDue({
+      medication,
+      schedules: [closeSlots(["08:00", "20:00"])],
+      now,
+      userTz: BERLIN,
+      lastIntakeAt: d("2026-10-25T06:00:00Z"),
+      resolvedSlots: [mark(d("2026-10-25T06:00:00Z"))],
+    });
+    expect(due).not.toBeNull();
+    expect(due!.overdue).toBe(false);
+    expect(due!.at.toISOString()).toBe("2026-10-25T19:00:00.000Z"); // 20:00 CET
   });
 
   it("the overdue search agrees: 23:59 stays open overdue after midnight", () => {

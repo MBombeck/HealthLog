@@ -3,7 +3,8 @@
 ## [1.38.17] — 2026-09-10
 
 A webhook or ntfy target on your own network can be reached again, with the
-operator's say-so, and the test button says why a private target was refused.
+operator's say-so, the test button says why a private target was refused,
+and the second of two close doses can be logged from the card again.
 
 ### Fixed
 

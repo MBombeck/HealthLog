@@ -11,6 +11,7 @@ import {
   ADHOC_RESOLVE_EPSILON_MS,
   anchorResolvesOccurrence,
   RESOLVE_RADIUS_MS,
+  type NearestOccurrenceCache,
 } from "@/lib/medications/scheduling/slot-resolution";
 import {
   lastNonSkippedTakenAt,
@@ -88,7 +89,9 @@ function slotIsResolved(
   slotAt: Date,
   intakes: ComplianceIntakeInstant[],
   schedule: CanonicalSchedule,
+  schedules: CanonicalSchedule[],
   ctx: RecurrenceContext,
+  cache: NearestOccurrenceCache,
 ): boolean {
   for (const e of intakes) {
     const isResolved = e.skipped || e.autoMissed === true || e.takenAt !== null;
@@ -104,7 +107,9 @@ function slotIsResolved(
       occurrenceAt: slotAt,
       radiusMs: adHoc ? ADHOC_RESOLVE_EPSILON_MS : RESOLVE_RADIUS_MS,
       schedule,
+      schedules,
       ctx,
+      cache,
     });
     if (resolves) return true;
   }
@@ -143,9 +148,11 @@ export function buildCurrentCycle(
     }
   };
 
-  for (let i = 0; i < schedules.length; i++) {
-    const s = schedules[i];
-    const canonical = toCanonicalSchedule(s, `compliance-cycle-${i}`);
+  const canonicals = schedules.map((s, i) =>
+    toCanonicalSchedule(s, `compliance-cycle-${i}`),
+  );
+  const nearestCache: NearestOccurrenceCache = new Map();
+  for (const canonical of canonicals) {
     if (canonical.scheduleType === "PRN") continue;
     const n = canonical.rollingIntervalDays;
     if (n !== null && n > 0) {
@@ -171,7 +178,16 @@ export function buildCurrentCycle(
     for (let step = 0; step < 64; step++) {
       const occ = nextOccurrenceAfter(canonical, after, recurrenceCtx);
       if (!occ) break;
-      if (!slotIsResolved(occ.at, allIntakes, canonical, recurrenceCtx)) {
+      if (
+        !slotIsResolved(
+          occ.at,
+          allIntakes,
+          canonical,
+          canonicals,
+          recurrenceCtx,
+          nearestCache,
+        )
+      ) {
         picked = occ;
         break;
       }

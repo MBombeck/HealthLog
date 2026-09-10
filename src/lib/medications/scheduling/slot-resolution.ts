@@ -21,8 +21,11 @@
  * under test only when no other occurrence is nearer (an exact tie goes to
  * the earlier occurrence). So the effective reach is `min(radius, half the
  * gap to the neighbouring occurrence)`, and a sibling can never be swallowed.
- * Rolling cadences emit at most one occurrence per interval day, which is
- * farther than any radius here, so the nearest test is skipped for them.
+ * The neighbours are every schedule's occurrences, not only the schedule
+ * under test: a medication composed of sibling schedules (08:00 daily plus
+ * 12:00 daily) is one cadence to the person taking it. Rolling cadences emit
+ * at most one occurrence per interval day, which is farther than any radius
+ * here, so the nearest test is skipped for them.
  */
 import {
   occurrencesBetween,
@@ -46,6 +49,53 @@ export const RESOLVE_RADIUS_MS = 6 * 60 * 60 * 1000;
  */
 export const ADHOC_RESOLVE_EPSILON_MS = 60 * 1000;
 
+/**
+ * Nearest occurrence to `anchor` within `radiusMs`, across EVERY schedule
+ * of the medication: `at` and its distance, or null when no schedule emits
+ * inside the window. On an exact tie the earlier occurrence wins. Memoised
+ * per anchor in `cache` when one is passed, because the set depends on the
+ * row alone and a predicate asks about many slots per row.
+ */
+function nearestOccurrenceWithin(input: {
+  anchor: number;
+  radiusMs: number;
+  schedules: CanonicalSchedule[];
+  ctx: RecurrenceContext;
+  cache?: NearestOccurrenceCache;
+}): { at: number; distance: number } | null {
+  const key = `${input.anchor}:${input.radiusMs}`;
+  const cached = input.cache?.get(key);
+  if (cached !== undefined) return cached;
+  let nearest: { at: number; distance: number } | null = null;
+  const from = new Date(input.anchor - input.radiusMs);
+  const to = new Date(input.anchor + input.radiusMs);
+  for (const schedule of input.schedules) {
+    for (const occurrence of occurrencesBetween(
+      schedule,
+      from,
+      to,
+      input.ctx,
+    )) {
+      const at = occurrence.at.getTime();
+      const distance = Math.abs(input.anchor - at);
+      if (
+        nearest === null ||
+        distance < nearest.distance ||
+        (distance === nearest.distance && at < nearest.at)
+      ) {
+        nearest = { at, distance };
+      }
+    }
+  }
+  input.cache?.set(key, nearest);
+  return nearest;
+}
+
+export type NearestOccurrenceCache = Map<
+  string,
+  { at: number; distance: number } | null
+>;
+
 export function anchorResolvesOccurrence(input: {
   /** The resolved row's anchor (`scheduledFor`, or the take instant). */
   anchor: Date;
@@ -53,8 +103,18 @@ export function anchorResolvesOccurrence(input: {
   occurrenceAt: Date;
   /** Reach of this row: the drift radius, or the ad-hoc epsilon. */
   radiusMs: number;
+  /** The schedule that emitted `occurrenceAt`. */
   schedule: CanonicalSchedule;
+  /**
+   * Every schedule of the medication. The nearest test enumerates all of
+   * them: production rows carry no schedule identity, so a row on sibling
+   * A's 08:00 is also asked about sibling B's 12:00, and B's own
+   * occurrences alone would never show that A's 08:00 is nearer.
+   */
+  schedules: CanonicalSchedule[];
   ctx: RecurrenceContext;
+  /** Optional per-predicate memo for the nearest-occurrence enumeration. */
+  cache?: NearestOccurrenceCache;
 }): boolean {
   const anchor = input.anchor.getTime();
   const slot = input.occurrenceAt.getTime();
@@ -66,17 +126,16 @@ export function anchorResolvesOccurrence(input: {
   // Drifted: the row stands for its nearest occurrence only. Any occurrence
   // strictly nearer than the slot under test, or equally near but earlier,
   // claims the row instead.
-  const neighbours = occurrencesBetween(
-    input.schedule,
-    new Date(anchor - input.radiusMs),
-    new Date(anchor + input.radiusMs),
-    input.ctx,
+  const nearest = nearestOccurrenceWithin({
+    anchor,
+    radiusMs: input.radiusMs,
+    schedules: input.schedules,
+    ctx: input.ctx,
+    cache: input.cache,
+  });
+  if (nearest === null || nearest.at === slot) return true;
+  return !(
+    nearest.distance < distance ||
+    (nearest.distance === distance && nearest.at < slot)
   );
-  for (const occurrence of neighbours) {
-    const at = occurrence.at.getTime();
-    if (at === slot) continue;
-    const other = Math.abs(anchor - at);
-    if (other < distance || (other === distance && at < slot)) return false;
-  }
-  return true;
 }
