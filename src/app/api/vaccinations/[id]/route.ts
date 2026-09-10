@@ -32,7 +32,6 @@ import { vaccinationUpdateSchema } from "@/lib/validations/vaccinations";
 import { toVaccinationDTO } from "@/lib/vaccinations/dto";
 import {
   VACCINATION_INCLUDE,
-  actingDomainVisibility,
   applyVaccinationLinks,
   loadVaccinationDocuments,
   resolveOwnedEncounter,
@@ -40,6 +39,7 @@ import {
   resolveSeriesFor,
 } from "@/lib/vaccinations/service";
 import type { Prisma } from "@/generated/prisma/client";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

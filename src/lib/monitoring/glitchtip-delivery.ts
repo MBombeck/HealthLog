@@ -110,23 +110,3 @@ export function summariseGlitchtipDelivery(
     windowHours: GLITCHTIP_DELIVERY_WINDOW_HOURS,
   };
 }
-
-export async function getGlitchtipDeliveryState(): Promise<GlitchtipDeliveryState> {
-  try {
-    const settings = await prisma.appSettings.findUnique({
-      where: { id: "singleton" },
-      select: {
-        glitchtipLastOkAt: true,
-        glitchtipLastFailureAt: true,
-        glitchtipLastFailureReason: true,
-      },
-    });
-    return {
-      lastOkAt: settings?.glitchtipLastOkAt ?? null,
-      lastFailureAt: settings?.glitchtipLastFailureAt ?? null,
-      lastFailureReason: settings?.glitchtipLastFailureReason ?? null,
-    };
-  } catch {
-    return { lastOkAt: null, lastFailureAt: null, lastFailureReason: null };
-  }
-}

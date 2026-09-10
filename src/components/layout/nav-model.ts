@@ -224,11 +224,28 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     tourId: "nav-documents",
     requiresModule: "inboundDocuments",
   },
-  // v1.36.0 — Insights and the Coach carry no `sharedRecord` flag, so they
-  // drop out under a switch. Both are AI surfaces, and AI egress of a
-  // person's health data rides the consent THAT person gave for their own
-  // use; a delegate triggering it would create a consent-shaped act the owner
-  // never made. Non-delegable in v1, server-side and here (design §4).
+  // Insights and the Coach carry no `sharedRecord` flag, so they drop out
+  // under a switch. The reason has changed since v1.36.0 and the old wording
+  // ("non-delegable, server-side and here") is no longer true of the tiles:
+  // twenty-seven `/api/insights/*` reads plus `/api/dashboard/summary` and
+  // `/api/export/health-record` declare `("manage", "record")`, and the
+  // AI-egress objection they were closed for is answered by construction —
+  // the record resolver stamps `setDelegatedGenerationSuppressed`, so a
+  // delegate reads what the owner's own account generated and causes no
+  // egress.
+  //
+  // What keeps the door shut is the OVERVIEW's own reads rather than the
+  // tiles': `/api/insights/layout` (`insights/layout/route.ts`) and
+  // `/api/insights/generate` (`insights/generate/route.ts`) both resolve
+  // `requireAuth()`, which refuses any switch at any level. Opening the entry
+  // without deciding what those two mean for a delegate — whose saved layout,
+  // and whether the briefing reads or regenerates — would hand a MANAGE
+  // delegate a page whose chrome 403s while its tiles answer. That is a
+  // decision about two more routes, not a flag on this one.
+  //
+  // The Coach stays closed on the original argument, unchanged:
+  // `/api/insights/chat` is genuinely not delegable, and the page is a
+  // generation surface rather than a read of one.
   {
     href: "/insights",
     tKey: "nav.insights",

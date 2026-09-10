@@ -26,10 +26,8 @@ import {
 } from "@/lib/api-response";
 import { vaccinationLinkSchema } from "@/lib/validations/vaccinations";
 import { linkTargets, unlinkTargets } from "@/lib/links";
-import {
-  actingDomainVisibility,
-  loadVaccinationDocuments,
-} from "@/lib/vaccinations/service";
+import { loadVaccinationDocuments } from "@/lib/vaccinations/service";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

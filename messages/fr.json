@@ -10609,7 +10609,7 @@
       },
       "mind": {
         "label": "Humeur et santé mentale",
-        "detail": "Les entrées d'humeur et l'historique des questionnaires de santé mentale."
+        "detail": "Les entrées d'humeur et l'historique des questionnaires de santé mentale. Un questionnaire rempli enregistre aussi son score total comme une mesure."
       },
       "cycle": {
         "label": "Cycle",

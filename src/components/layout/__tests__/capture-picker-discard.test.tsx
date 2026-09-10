@@ -18,7 +18,6 @@ vi.mock("@/hooks/use-record-capabilities", () => ({
   useRecordCapabilities: () => ({
     inSharedRecord: false,
     canWrite: false,
-    canAdd: true,
     canManage: true,
     canWriteDomain: () => true,
     canManageDomain: () => true,

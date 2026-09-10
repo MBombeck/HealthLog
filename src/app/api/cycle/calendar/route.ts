@@ -121,6 +121,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // Apple Watch wrist/skin temperature feeds the temperature-trend
     // ovulation layer. Read the WRIST_TEMPERATURE measurements as nightly
     // values; the engine derives the trailing-mean deviation itself.
+    //
+    // This is a measurements read on a route declared under `cycle`, and it
+    // needs no section predicate for one reason: no value from it reaches the
+    // response. It goes into `predictCycle` and what comes out the other side
+    // is a shifted date. The crosstab next door reads the same channel and IS
+    // fenced, because there the values are the answer.
     prisma.measurement.findMany({
       where: {
         userId: user.id,

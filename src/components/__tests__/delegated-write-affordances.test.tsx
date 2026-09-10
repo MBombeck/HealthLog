@@ -14,8 +14,8 @@
  * path is not proven at all. That leg lives in `e2e/account-sharing.spec.ts`.
  *
  * Mutation checks, run:
- *   - `useRecordCapabilities` returning `canAdd: true` unconditionally → the
- *     read-only legs for the intake row and the card menu go red.
+ *   - `useRecordCapabilities` answering `canWriteDomain` for every section →
+ *     the read-only legs for the intake row and the card menu go red.
  *   - `DeleteButton` dropping its `canManageDomain` bail → "no row delete inside
  *     somebody else's record" goes red; answering it for every section → the
  *     vault leg of "a guardian's row delete follows the section" goes red.
@@ -31,8 +31,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
-import type { AccountAccess } from "@/lib/sharing/account-access-view";
+import type {
+  AccountAccess,
+  AccountAccessEntry,
+} from "@/lib/sharing/account-access-view";
 import { delegatedDomains } from "@/lib/sharing/domain-write-support";
+import type { ShareDomain } from "@/lib/sharing/scope";
 
 const OWNER = {
   accountId: "acct-owner",
@@ -87,6 +91,44 @@ const MANAGING: AccountAccess = {
   canSwitch: true,
 };
 
+/**
+ * A grant with a SCOPE, published the way the server publishes one.
+ *
+ * Every fixture above carries `sections: null`, and that is the hole the
+ * section-blind controls lived in: a WRITE grant scoped to one section answers
+ * `canWrite: true` like any other, so a control asking the coarse question was
+ * offered in sections the grant never opened. The two lists are the level ×
+ * scope × route-table intersection, derived here by the same function the
+ * server derives them with rather than by hand.
+ */
+function grant(
+  level: AccountAccessEntry["level"],
+  sections: ShareDomain[] | null,
+): AccountAccess {
+  return {
+    accounts: [OWNER],
+    active: {
+      ...OWNER,
+      access: level === "read" ? "read" : "write",
+      level,
+      sections,
+      canWrite: level !== "read",
+      writableDomains: delegatedDomains(level, sections, "write"),
+      manageableDomains: delegatedDomains(level, sections, "manage"),
+    },
+    canSwitch: true,
+  };
+}
+
+/** The write answer per section, for the pure helpers that take only that. */
+function writeCaps(
+  level: AccountAccessEntry["level"],
+  sections: ShareDomain[] | null,
+) {
+  const writable = new Set(delegatedDomains(level, sections, "write"));
+  return { canWriteDomain: (domain: ShareDomain) => writable.has(domain) };
+}
+
 const mockAccessRef: { value: AccountAccess } = { value: OWN_RECORD };
 
 vi.mock("@/hooks/use-auth", () => ({
@@ -140,6 +182,9 @@ import { TodayHero } from "@/components/daily/today-hero";
 import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsorge-dashboard-card";
 import { EpisodeDocumentsCard } from "@/components/documents/episode-documents-card";
 import { LedgerRowItem } from "@/components/medications/dose-history-ledger";
+import { VaccinationsView } from "@/components/vaccinations/vaccinations-view";
+import { VisitsSection } from "@/components/encounters/visits-section";
+import type { EncounterDTO } from "@/lib/encounters/dto";
 import { queryKeys } from "@/lib/query-keys";
 import type { DailyDigest } from "@/lib/daily/digest";
 import type { MeasurementReminder } from "@/hooks/use-measurement-reminders";
@@ -450,17 +495,13 @@ describe("linking a document to an illness episode", () => {
 describe("the capture picker's kinds", () => {
   const ALL = ["measurement", "medication", "mood"] as const;
 
-  const OWNER_CAPS = { canAdd: true, canManageDomain: () => true };
-  const WRITER_CAPS = { canAdd: true, canManageDomain: () => false };
-  const READER_CAPS = { canAdd: false, canManageDomain: () => false };
+  /** The picker asks one question per kind, of that kind's own section. */
+  const caps = writeCaps;
+  const OWNER_CAPS = { canWriteDomain: () => true };
+  const WRITER_CAPS = caps("write", null);
+  const READER_CAPS = caps("read", null);
   // A guardian: every section with a delegated route answers at MANAGE.
-  const GUARDIAN_CAPS = {
-    canAdd: true,
-    canManageDomain: (domain: string) =>
-      delegatedDomains("manage", null, "manage").includes(
-        domain as "measurements",
-      ),
-  };
+  const GUARDIAN_CAPS = caps("manage", null);
 
   it("offers everything in the caller's own record", () => {
     expect(visibleCaptureKinds(OWNER_CAPS, [...ALL])).toEqual([
@@ -489,6 +530,37 @@ describe("the capture picker's kinds", () => {
 
   it("offers a read-only delegate nothing", () => {
     expect(visibleCaptureKinds(READER_CAPS, [...ALL])).toEqual([]);
+  });
+
+  it("offers a scoped WRITE delegate only the kinds its sections cover", () => {
+    // The gap this closes. The coarse answer was the grant's LEVEL with no
+    // scope term, so a labs-scoped WRITE grant read as true and the picker
+    // offered a weight form and a dose the server refuses at
+    // `grantCoversDomain`.
+    expect(visibleCaptureKinds(caps("write", ["labs"]), [...ALL])).toEqual([]);
+    expect(
+      visibleCaptureKinds(caps("write", ["measurements"]), [...ALL]),
+    ).toEqual(["measurement"]);
+    expect(
+      visibleCaptureKinds(caps("write", ["measurements", "medications"]), [
+        ...ALL,
+      ]),
+    ).toEqual(["measurement", "medication"]);
+  });
+
+  it("offers a documents-scoped WRITE delegate nothing at all", () => {
+    // The worst case: the vault takes no delegated write at any level, so the
+    // grant's writable list is empty while `canWrite` still answers true.
+    expect(visibleCaptureKinds(caps("write", ["documents"]), [...ALL])).toEqual(
+      [],
+    );
+  });
+
+  it("offers a scoped MANAGE delegate the mood entry only with the mind section", () => {
+    expect(visibleCaptureKinds(caps("manage", ["mind"]), [...ALL])).toEqual([
+      "mood",
+    ]);
+    expect(visibleCaptureKinds(caps("manage", ["labs"]), [...ALL])).toEqual([]);
   });
 });
 
@@ -577,7 +649,7 @@ describe("a form opened before the record answered", () => {
   });
 
   it("withdraws a dashboard quick-entry sheet the delegation does not admit", () => {
-    const DELEGATE = { canAdd: true, canManageDomain: () => false };
+    const DELEGATE = writeCaps("write", null);
     expect(admittedQuickEntry("mood", DELEGATE)).toBe(null);
     expect(admittedQuickEntry("measurement", DELEGATE)).toBe("measurement");
     expect(admittedQuickEntry("medicationIntake", DELEGATE)).toBe(
@@ -586,25 +658,209 @@ describe("a form opened before the record answered", () => {
   });
 
   it("keeps the mood sheet for a guardian, whose mind routes answer at MANAGE", () => {
-    const GUARDIAN = {
-      canAdd: true,
-      canManageDomain: (domain: string) => domain === "mind",
-    };
-    expect(admittedQuickEntry("mood", GUARDIAN)).toBe("mood");
+    expect(admittedQuickEntry("mood", writeCaps("manage", null))).toBe("mood");
+  });
+
+  it("withdraws a sheet whose section the grant's scope leaves out", () => {
+    const LABS_ONLY = writeCaps("write", ["labs"]);
+    for (const sheet of ["measurement", "mood", "medicationIntake"] as const) {
+      expect(admittedQuickEntry(sheet, LABS_ONLY), sheet).toBe(null);
+    }
   });
 
   it("withdraws every quick-entry sheet from a read-only delegate", () => {
-    const READER = { canAdd: false, canManageDomain: () => false };
+    const READER = writeCaps("read", null);
     for (const sheet of ["measurement", "mood", "medicationIntake"] as const) {
       expect(admittedQuickEntry(sheet, READER), sheet).toBe(null);
     }
   });
 
   it("leaves the owner's own sheets alone", () => {
-    const OWNER_CAPS = { canAdd: true, canManageDomain: () => true };
+    const OWNER_CAPS = { canWriteDomain: () => true };
     for (const sheet of ["measurement", "mood", "medicationIntake"] as const) {
       expect(admittedQuickEntry(sheet, OWNER_CAPS), sheet).toBe(sheet);
     }
     expect(admittedQuickEntry(null, OWNER_CAPS)).toBe(null);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* The immunization log                                                       */
+/* -------------------------------------------------------------------------- */
+
+describe("the immunization log's add, edit and delete", () => {
+  const DOSE = {
+    id: "dose-1",
+    occurredAt: "2026-03-01T00:00:00.000Z",
+    antigenSlug: null,
+    vaccineName: "Tetanus",
+    doseNumber: null,
+    seriesDoses: null,
+    lotNumber: null,
+    site: null,
+    catalogEntry: null,
+    series: [],
+    practitioner: null,
+    encounter: null,
+    reminderId: null,
+    note: null,
+    createdAt: "2026-03-01T00:00:00.000Z",
+    updatedAt: "2026-03-01T00:00:00.000Z",
+  };
+
+  const seedList = (client: QueryClient) => {
+    client.setQueryData(queryKeys.vaccinationList(null), {
+      vaccinations: [DOSE],
+    });
+  };
+
+  /** The row carries the edit affordance only while it opens something. */
+  const rowIsTappable = (html: string) =>
+    html.includes('data-slot-open="vaccination-row-open"');
+
+  it("offers all three in the caller's own record", () => {
+    const html = render(OWN_RECORD, <VaccinationsView />, seedList);
+    expect(html).toContain('data-slot="vaccination-add"');
+    // The row opens the edit sheet, which is where the delete lives.
+    expect(rowIsTappable(html)).toBe(true);
+  });
+
+  it("offers a read-only delegate none of them", () => {
+    // `POST /api/vaccinations` is WRITE and everything else is MANAGE, so a
+    // READ delegate was being shown three controls and refused by all three.
+    const html = render(
+      grant("read", ["profile"]),
+      <VaccinationsView />,
+      seedList,
+    );
+    expect(html).not.toContain('data-slot="vaccination-add"');
+    expect(rowIsTappable(html)).toBe(false);
+  });
+
+  it("offers a WRITE delegate the add and not the row", () => {
+    const html = render(
+      grant("write", ["profile"]),
+      <VaccinationsView />,
+      seedList,
+    );
+    expect(html).toContain('data-slot="vaccination-add"');
+    expect(rowIsTappable(html), "editing and deleting a dose are MANAGE").toBe(
+      false,
+    );
+  });
+
+  it("offers a MANAGE delegate holding the section both", () => {
+    const html = render(
+      grant("manage", ["profile"]),
+      <VaccinationsView />,
+      seedList,
+    );
+    expect(html).toContain('data-slot="vaccination-add"');
+    expect(rowIsTappable(html)).toBe(true);
+  });
+
+  it("offers a MANAGE delegate outside the section neither", () => {
+    // The page is presentable to a `profile` grant; a grant scoped elsewhere
+    // that still lands on the URL gets a log it can read and nothing else.
+    const html = render(
+      grant("manage", ["labs"]),
+      <VaccinationsView />,
+      seedList,
+    );
+    expect(html).not.toContain('data-slot="vaccination-add"');
+    expect(rowIsTappable(html)).toBe(false);
+  });
+
+  it("offers the empty state's add on the same rule", () => {
+    const seedEmpty = (client: QueryClient) => {
+      client.setQueryData(queryKeys.vaccinationList(null), {
+        vaccinations: [],
+      });
+    };
+    expect(render(OWN_RECORD, <VaccinationsView />, seedEmpty)).toContain(
+      'data-slot="vaccination-add-empty"',
+    );
+    expect(
+      render(grant("read", ["profile"]), <VaccinationsView />, seedEmpty),
+    ).not.toContain('data-slot="vaccination-add-empty"');
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* The visits list                                                            */
+/* -------------------------------------------------------------------------- */
+
+describe("a visit row's edit sheet", () => {
+  const VISIT: EncounterDTO = {
+    id: "visit-1",
+    occurredAt: "2026-08-01T09:00:00.000Z",
+    status: "DONE",
+    kind: "ROUTINE",
+    practitioner: null,
+    reason: null,
+    outcome: null,
+    reminderNextDueAt: null,
+    createdAt: "2026-08-01T09:00:00.000Z",
+    updatedAt: "2026-08-01T09:00:00.000Z",
+  };
+
+  const seedList = (client: QueryClient) => {
+    client.setQueryData(
+      queryKeys.encounterList(null, null, undefined, undefined),
+      {
+        upcoming: [],
+        past: [VISIT],
+      },
+    );
+  };
+
+  /** The row's content is a button only while it opens something. */
+  const rowIsTappable = (html: string) =>
+    html.includes('data-slot="visit-card-open"');
+
+  it("opens for the owner", () => {
+    expect(rowIsTappable(render(OWN_RECORD, <VisitsSection />, seedList))).toBe(
+      true,
+    );
+  });
+
+  it("does not open for a READ or a WRITE delegate", () => {
+    // The add button was the only thing asked, and it asks the right question
+    // — `POST /api/encounters` is WRITE. The row underneath opens a sheet
+    // whose Save is `PATCH` and whose Delete is `DELETE`, both MANAGE.
+    for (const level of ["read", "write"] as const) {
+      const html = render(
+        grant(level, ["profile"]),
+        <VisitsSection />,
+        seedList,
+      );
+      expect(html, `${level} still sees the row`).toContain(
+        'data-slot="visit-card"',
+      );
+      expect(rowIsTappable(html), `${level} may open the sheet`).toBe(false);
+    }
+  });
+
+  it("keeps the add button for a WRITE delegate", () => {
+    // The two answers are different questions and must not collapse into one.
+    expect(
+      render(grant("write", ["profile"]), <VisitsSection />, seedList),
+    ).toContain('data-slot="visits-add"');
+    expect(
+      render(grant("read", ["profile"]), <VisitsSection />, seedList),
+    ).not.toContain('data-slot="visits-add"');
+  });
+
+  it("opens for a MANAGE delegate holding the section, and not one outside it", () => {
+    expect(
+      rowIsTappable(
+        render(grant("manage", ["profile"]), <VisitsSection />, seedList),
+      ),
+    ).toBe(true);
+    expect(
+      rowIsTappable(
+        render(grant("manage", ["labs"]), <VisitsSection />, seedList),
+      ),
+    ).toBe(false);
   });
 });

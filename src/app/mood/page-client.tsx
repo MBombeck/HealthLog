@@ -39,7 +39,7 @@ export default function MoodPageClient() {
   // absent key reads as enabled, so a direct URL hit only bounces on an
   // explicit `false`. Every `/api/mood-entries/*` route also enforces the gate
   // server-side, so this is a UX redirect, not the security boundary.
-  const enabled = inSharedRecord || user?.modules?.mood !== false;
+  const enabled = user?.modules?.mood !== false;
 
   // v1.16.4 — PWA pull-to-refresh: a top-anchored touch pull refetches
   // whatever this page currently has mounted (`type: "active"` scopes the

@@ -10609,7 +10609,7 @@
       },
       "mind": {
         "label": "Ánimo y bienestar mental",
-        "detail": "Las entradas de ánimo y el historial de los cuestionarios de salud mental."
+        "detail": "Las entradas de ánimo y el historial de los cuestionarios de salud mental. Un cuestionario completado también registra su puntuación total como una medición."
       },
       "cycle": {
         "label": "Ciclo",

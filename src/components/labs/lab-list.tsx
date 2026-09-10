@@ -93,7 +93,8 @@ function LabRangeBarSlot({ reading }: { reading: LabResultDto }) {
 
 export function LabList({ onAddFirst }: { onAddFirst?: () => void } = {}) {
   const { t } = useTranslations();
-  const { canAdd } = useRecordCapabilities();
+  const { canWriteDomain } = useRecordCapabilities();
+  const canAddLab = canWriteDomain("labs");
   const { prefs } = useModuleListPrefs("labs");
 
   // v1.22 — a short, factual line under each marker heading describing what the
@@ -184,7 +185,7 @@ export function LabList({ onAddFirst }: { onAddFirst?: () => void } = {}) {
         title={t("labs.emptyTitle")}
         description={t("labs.emptyDescription")}
         action={
-          onAddFirst && canAdd ? (
+          onAddFirst && canAddLab ? (
             <Button onClick={onAddFirst}>{t("labs.addFirst")}</Button>
           ) : undefined
         }

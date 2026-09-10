@@ -112,7 +112,8 @@ function entryI18nKey(entry: MedicationSideEffectEntry): string {
 
 export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
   const { t } = useTranslations();
-  const { canAdd, canManageDomain } = useRecordCapabilities();
+  const { canWriteDomain, canManageDomain } = useRecordCapabilities();
+  const canAddSideEffect = canWriteDomain("medications");
   const canManageMedications = canManageDomain("medications");
   const fmt = useFormatters();
   const queryClient = useQueryClient();
@@ -250,7 +251,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
       )}
       {/* v1.36.x — noting a side effect is an admitted delegated write.
           Removing one that is already noted is not. */}
-      {canAdd && (
+      {canAddSideEffect && (
         <Button
           size="sm"
           variant="outline"
