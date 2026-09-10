@@ -6,9 +6,11 @@ import { setOnboardingPendingCookie } from "@/lib/auth/session";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
 import { normalisePrefs } from "@/lib/modules/gate";
+import { modulesHoldingRecordData } from "@/lib/modules/domain-data";
 import {
   deriveOnboardingModuleDefaults,
   mergeDerivedModulePreferences,
+  OWNED_MODULE_KEYS,
 } from "@/lib/modules/registry";
 import {
   everyOnboardingQuestionSettled,
@@ -148,6 +150,7 @@ async function completeNeedsFlow(userId: string, held: HeldUnitPreferences) {
   }
 
   let derived = false;
+  let keptForData: string[] = [];
   if (record.modulesDerivedAt === null) {
     const defaults = deriveOnboardingModuleDefaults({
       recordTarget: state.needs.recordTarget,
@@ -163,9 +166,22 @@ async function completeNeedsFlow(userId: string, held: HeldUnitPreferences) {
       where: { id: userId },
       select: { modulePreferencesJson: true },
     });
+    // Only the modules the answers would switch OFF are worth asking about,
+    // and a record that already holds rows in one of those domains keeps its
+    // surface: the flow orders a record, and it cannot order away content
+    // somebody already has.
+    const wouldSwitchOff = OWNED_MODULE_KEYS.filter(
+      (key) => defaults.preferences[key] === false,
+    );
+    const holdsData = await modulesHoldingRecordData(
+      prisma,
+      userId,
+      wouldSwitchOff,
+    );
     const merged = mergeDerivedModulePreferences(
       normalisePrefs(row?.modulePreferencesJson),
       defaults.preferences,
+      holdsData,
     );
     await prisma.user.update({
       where: { id: userId },
@@ -187,6 +203,7 @@ async function completeNeedsFlow(userId: string, held: HeldUnitPreferences) {
     // A module toggle adds or removes a Health Score pillar, so the cached
     // composite was computed from a composition that no longer holds.
     invalidateUserHealthScore(userId);
+    keptForData = [...holdsData];
     derived = true;
   }
 
@@ -208,7 +225,10 @@ async function completeNeedsFlow(userId: string, held: HeldUnitPreferences) {
 
   annotate({
     action: { name: "onboarding.needs.complete" },
-    meta: { outcome: derived ? "derived" : "already_derived" },
+    meta: {
+      outcome: derived ? "derived" : "already_derived",
+      keptForData: keptForData.length,
+    },
   });
 
   return toOnboardingStateDto(written, held);

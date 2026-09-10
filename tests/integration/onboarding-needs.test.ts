@@ -331,6 +331,44 @@ describe("POST /api/onboarding/complete", () => {
     expect((await modulePrefs(user.id)).mcp).toBe(true);
   });
 
+  it("never switches off a domain the record already holds rows in", async () => {
+    const user = await makeUser("established");
+    await signIn(user.id);
+    // An account that has been running for years: mood entries and workouts,
+    // no stored module preference at all, because both were default-on and
+    // nobody ever touched a toggle. The questions below name neither.
+    await getPrismaClient().moodEntry.create({
+      data: {
+        userId: user.id,
+        date: "2026-09-01",
+        mood: "GUT",
+        score: 4,
+        moodLoggedAt: new Date("2026-09-01T18:00:00.000Z"),
+      },
+    });
+    await getPrismaClient().workout.create({
+      data: {
+        userId: user.id,
+        sportType: "RUNNING",
+        startedAt: new Date("2026-09-01T06:00:00.000Z"),
+        endedAt: new Date("2026-09-01T06:30:00.000Z"),
+        durationSec: 1800,
+      },
+    });
+
+    await answerTheQuestions();
+    await postComplete();
+
+    const prefs = await modulePrefs(user.id);
+    // Left alone rather than written false: absence is what "on" looks like
+    // in the stored map, and the surfaces stay.
+    expect(prefs).not.toHaveProperty("mood");
+    expect(prefs).not.toHaveProperty("workouts");
+    // A domain with nothing in it is still switched off by the answers.
+    expect(prefs.illness).toBe(false);
+    expect(prefs.vaccinations).toBe(false);
+  });
+
   it("switches cycle tracking on through its own column when the area is chosen", async () => {
     const user = await makeUser("cycle");
     await signIn(user.id);

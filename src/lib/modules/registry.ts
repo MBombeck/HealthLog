@@ -579,13 +579,25 @@ export function deriveOnboardingModuleDefaults(
 
 /**
  * Merge a derived map into the one the record already holds, without ever
- * retracting a decision the person made by hand.
+ * retracting a decision the person made by hand or a domain they already use.
  *
  * The rule is one-directional: a derived `true` always lands, a derived
  * `false` lands only where the stored map does not already carry an explicit
  * `true`. Someone who switched the MCP endpoint on, then ran the flow again
  * and did not tick anything that implies it, keeps it on — the questionnaire
  * orders a record, it does not undo it.
+ *
+ * `holdsData` is the second thing a derived `false` cannot cross, and it is
+ * about a record with content rather than a record with an opinion. An
+ * established account upgrading into the setup flow has, for most modules, no
+ * stored preference at all — they were default-on and nobody ever touched the
+ * toggle — so without this the first confirm would switch off the navigation
+ * entry, the dashboard widget and the settings entry for every domain the
+ * person did not tick, including the ones holding years of rows. The design
+ * spec's "nothing is lost by a choice" is written about a NEW record; for one
+ * that already has content the honest answer is to write nothing and leave the
+ * stored value exactly where it was. Absence means ON, so leaving the key
+ * alone is what keeps the surface.
  *
  * Keys the stored map carries that are not module keys are dropped; the caller
  * is expected to have normalised it (`normalisePrefs`), and this is the second
@@ -594,6 +606,7 @@ export function deriveOnboardingModuleDefaults(
 export function mergeDerivedModulePreferences(
   existing: Readonly<Record<string, boolean>>,
   derived: Readonly<Record<OwnedModuleKey, boolean>>,
+  holdsData: ReadonlySet<string>,
 ): Record<string, boolean> {
   const merged: Record<string, boolean> = {};
   for (const [key, value] of Object.entries(existing)) {
@@ -605,6 +618,7 @@ export function mergeDerivedModulePreferences(
       continue;
     }
     if (merged[key] === true) continue; // switched on by hand — never retracted
+    if (holdsData.has(key)) continue; // the domain holds rows — never retracted
     merged[key] = false;
   }
   return merged;

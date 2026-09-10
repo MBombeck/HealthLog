@@ -24,6 +24,9 @@ import {
   type OnboardingModuleNeeds,
 } from "../registry";
 
+/** A record with nothing in it — the state a first setup describes. */
+const NO_DATA: ReadonlySet<string> = new Set();
+
 function needs(
   overrides: Partial<OnboardingModuleNeeds> = {},
 ): OnboardingModuleNeeds {
@@ -174,6 +177,7 @@ describe("mergeDerivedModulePreferences", () => {
     const merged = mergeDerivedModulePreferences(
       { mcp: true, labs: true },
       preferences,
+      NO_DATA,
     );
     expect(merged.mcp).toBe(true);
     expect(merged.labs).toBe(true);
@@ -181,7 +185,7 @@ describe("mergeDerivedModulePreferences", () => {
 
   it("does turn off a module the record only had by default", () => {
     const { preferences } = deriveOnboardingModuleDefaults(needs());
-    const merged = mergeDerivedModulePreferences({}, preferences);
+    const merged = mergeDerivedModulePreferences({}, preferences, NO_DATA);
     expect(merged.labs).toBe(false);
     expect(merged.workouts).toBe(false);
   });
@@ -190,7 +194,11 @@ describe("mergeDerivedModulePreferences", () => {
     const { preferences } = deriveOnboardingModuleDefaults(
       needs({ areas: ["labs"] }),
     );
-    const merged = mergeDerivedModulePreferences({ labs: false }, preferences);
+    const merged = mergeDerivedModulePreferences(
+      { labs: false },
+      preferences,
+      NO_DATA,
+    );
     expect(merged.labs).toBe(true);
   });
 
@@ -199,16 +207,61 @@ describe("mergeDerivedModulePreferences", () => {
     const merged = mergeDerivedModulePreferences(
       { weight: false, nonsense: true },
       preferences,
+      NO_DATA,
     );
     expect(merged).not.toHaveProperty("weight");
     expect(merged).not.toHaveProperty("nonsense");
+  });
+
+  it("never switches off a domain the record already holds rows in", () => {
+    const { preferences } = deriveOnboardingModuleDefaults(needs());
+    expect(preferences.labs).toBe(false);
+    expect(preferences.mood).toBe(false);
+
+    // An established record with no stored preference at all: default-on, and
+    // nobody ever touched the toggle. A derived `false` would take the nav
+    // entry, the dashboard widget and the settings entry away from a domain
+    // holding years of rows, so the key is left exactly as it was — and
+    // absence means on.
+    const merged = mergeDerivedModulePreferences(
+      {},
+      preferences,
+      new Set(["labs", "mood"]),
+    );
+    expect(merged).not.toHaveProperty("labs");
+    expect(merged).not.toHaveProperty("mood");
+    expect(merged.workouts).toBe(false);
+  });
+
+  it("keeps a stored explicit off where the domain holds rows", () => {
+    const { preferences } = deriveOnboardingModuleDefaults(needs());
+    // Somebody switched labs off by hand and still has old results. The flow
+    // must not switch it back on, and must not restate the decision either.
+    const merged = mergeDerivedModulePreferences(
+      { labs: false },
+      preferences,
+      new Set(["labs"]),
+    );
+    expect(merged.labs).toBe(false);
+  });
+
+  it("still switches a domain ON when the answers name it, rows or not", () => {
+    const { preferences } = deriveOnboardingModuleDefaults(
+      needs({ areas: ["labs"] }),
+    );
+    const merged = mergeDerivedModulePreferences(
+      {},
+      preferences,
+      new Set(["labs"]),
+    );
+    expect(merged.labs).toBe(true);
   });
 
   it("leaves the two delegated keys alone in both directions", () => {
     const { preferences } = deriveOnboardingModuleDefaults(
       needs({ areas: ["cycle"] }),
     );
-    const merged = mergeDerivedModulePreferences({}, preferences);
+    const merged = mergeDerivedModulePreferences({}, preferences, NO_DATA);
     expect(merged).not.toHaveProperty("cycle");
     expect(merged).not.toHaveProperty("coach");
   });
