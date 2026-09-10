@@ -35,7 +35,10 @@ export function StepActions({
 
   return (
     <div
-      className="flex items-center justify-between gap-2 pt-2"
+      // `flex-wrap` on both rows: a locale whose labels run 30% longer must
+      // drop the action group to its own line at 390 px, not push it past
+      // the viewport (the string-headroom sweep measures exactly this).
+      className="flex flex-wrap items-center justify-between gap-2 pt-2"
       data-slot="onboarding-step-actions"
     >
       {backHref ? (
@@ -47,7 +50,7 @@ export function StepActions({
       ) : (
         <span aria-hidden="true" />
       )}
-      <div className="flex items-center gap-2">
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
         {onSkip ? (
           <Button
             type="button"

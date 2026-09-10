@@ -57,9 +57,11 @@ const RAW_KEY = /\b[a-z]+(?:[A-Z][a-z]+)?\.[a-z][A-Za-z0-9_.-]+\b/;
 
 /**
  * Lengthen every text node under the shell by 30%, then measure. Padding
- * appends letters to the LAST word so the longest unbreakable run grows,
- * which is the case that overflows; a padding that only added spaces would
- * wrap for free and prove nothing.
+ * lengthens every WORD by 30%, so the longest unbreakable run grows in the
+ * same proportion as the sentence — which is what a longer translation does.
+ * Appending the whole surplus to one word would manufacture an unbreakable
+ * run no locale produces; adding only spaces would wrap for free and prove
+ * nothing.
  */
 async function padAndMeasure(page: Page) {
   return page.evaluate((shellSelector) => {
@@ -76,8 +78,11 @@ async function padAndMeasure(page: Page) {
         letters >= 3 &&
         node.parentElement?.closest("script,style") === null
       ) {
-        const extra = Math.ceil(letters * 0.3);
-        node.textContent = text.replace(/\s*$/, "") + "x".repeat(extra);
+        node.textContent = text.replace(/\S+/g, (word) =>
+          word.length >= 2
+            ? word + "x".repeat(Math.ceil(word.length * 0.3))
+            : word,
+        );
         padded += 1;
       }
       node = walker.nextNode();
@@ -86,6 +91,16 @@ async function padAndMeasure(page: Page) {
     const doc = document.documentElement;
     const clippers = [...shell.querySelectorAll<HTMLElement>("*")]
       .filter((el) => {
+        // Screen-reader-only text is a 1 px clipped box on purpose; it is
+        // read, not seen, and cannot truncate.
+        if (el.classList.contains("sr-only") || el.clientWidth <= 1) {
+          return false;
+        }
+        // A select's value ellipsises by design (shadcn `SelectValue`, app
+        // wide): the full text is the option in the list and the control's
+        // accessible name, and a trigger that grew with its longest option
+        // would move every neighbour. Not a layout that lost headroom.
+        if (el.dataset.slot === "select-value") return false;
         const overflowX = getComputedStyle(el).overflowX;
         return overflowX === "hidden" || overflowX === "clip";
       })

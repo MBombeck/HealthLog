@@ -200,7 +200,7 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
             onCreated={() => void finish()}
           />
           <p className="text-sm">{t("onboarding.flow.confirm.managedLater")}</p>
-          <div className="flex items-center justify-between gap-2 pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
             {back ? (
               <Button asChild variant="ghost" className="min-h-11 min-w-11">
                 <Link href={screenHref(back)} data-slot="onboarding-back">

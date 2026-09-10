@@ -226,7 +226,7 @@ export function BaselineForm({
       />
 
       <div
-        className="flex items-center justify-between gap-2 pt-2"
+        className="flex flex-wrap items-center justify-between gap-2 pt-2"
         data-slot="onboarding-step-actions"
       >
         {backHref ? (
@@ -238,7 +238,7 @@ export function BaselineForm({
         ) : (
           <span aria-hidden="true" />
         )}
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <Button
             type="button"
             variant="ghost"
