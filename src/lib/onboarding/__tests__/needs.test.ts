@@ -17,6 +17,7 @@ import {
   accountHoldsBothUnits,
   defaultOnboardingSteps,
   everyOnboardingQuestionSettled,
+  hasEnteredOnboardingFlow,
   ONBOARDING_QUESTION_STEP_IDS,
   emptyOnboardingNeeds,
   isOnboardingSettled,
@@ -224,7 +225,8 @@ describe("applyOnboardingAnswer", () => {
 describe("isOnboardingSettled", () => {
   const settled: OnboardingStateDto = {
     steps: ONBOARDING_STEP_IDS.map((id) => ({ id, status: "done" as const })),
-    needs: emptyOnboardingNeeds(),
+    // Q1 answered: the mark of a record that actually entered the flow.
+    needs: { ...emptyOnboardingNeeds(), recordTarget: "me" },
     completedAt: "2026-09-10T08:00:00.000Z",
     firstResult: {
       task: "log-reading",
@@ -261,6 +263,81 @@ describe("isOnboardingSettled", () => {
       isOnboardingSettled({
         ...settled,
         firstResult: { task: "log-reading", target: null, completedAt: null },
+      }),
+    ).toBe(false);
+  });
+
+  it("settles when the offered task was deliberately passed", () => {
+    // The task was offered — `firstResult` names it, with no completion — and
+    // the person passed. Asking only "did it produce anything" answers no
+    // forever, which pins the checklist open with no way out but dismissing
+    // rows one by one.
+    expect(
+      isOnboardingSettled({
+        ...settled,
+        steps: settled.steps.map((s) =>
+          s.id === "first-result" ? { ...s, status: "skipped" as const } : s,
+        ),
+        firstResult: { task: "log-reading", target: null, completedAt: null },
+      }),
+    ).toBe(true);
+  });
+
+  it("settles a record that never entered the flow, however it is published", () => {
+    // The payload carries the field for EVERY record. Without this arm, an
+    // account that predates the flow reads as permanently unfinished.
+    expect(
+      isOnboardingSettled({
+        steps: defaultOnboardingSteps(),
+        needs: emptyOnboardingNeeds(),
+        completedAt: null,
+        firstResult: null,
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("hasEnteredOnboardingFlow", () => {
+  const blankState: OnboardingStateDto = {
+    steps: defaultOnboardingSteps(),
+    needs: emptyOnboardingNeeds(),
+    completedAt: null,
+    firstResult: null,
+  };
+
+  it("is false for a record the flow never touched", () => {
+    expect(hasEnteredOnboardingFlow(null)).toBe(false);
+    expect(hasEnteredOnboardingFlow(blankState)).toBe(false);
+  });
+
+  it("is true once the one required question is answered", () => {
+    expect(
+      hasEnteredOnboardingFlow({
+        ...blankState,
+        needs: { ...emptyOnboardingNeeds(), recordTarget: "someone-else" },
+      }),
+    ).toBe(true);
+  });
+
+  it("is true for a flow that was completed", () => {
+    expect(
+      hasEnteredOnboardingFlow({
+        ...blankState,
+        completedAt: "2026-09-10T08:00:00.000Z",
+      }),
+    ).toBe(true);
+  });
+
+  it("is not fooled by the units step resolving from the account's columns", () => {
+    // `resolveOnboardingSteps` marks `units` done for an account that already
+    // holds both preferences. That record has still never seen a question.
+    expect(
+      hasEnteredOnboardingFlow({
+        ...blankState,
+        steps: resolveOnboardingSteps(defaultOnboardingSteps(), {
+          glucoseUnit: "mg/dL",
+          unitPreference: "metric",
+        }),
       }),
     ).toBe(false);
   });

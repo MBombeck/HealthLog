@@ -335,6 +335,26 @@ export function everyOnboardingStepSettled(
 }
 
 /**
+ * Did this record ever enter the setup flow?
+ *
+ * Q1 is the one question with no skip arm, so an answer to it is the mark of
+ * having started, and the flow's own completion stamp covers a row whose
+ * answers a later release stopped recognising.
+ *
+ * Deliberately NOT "any step is not pending": `units` resolves to `done` from
+ * the account's own unit columns, so a record that never saw a question can
+ * carry a settled step. The published state is additive — every record has an
+ * `onboarding` field, and a record that predates the flow reads as empty
+ * answers with nine pending steps — so this is what tells the two apart.
+ */
+export function hasEnteredOnboardingFlow(
+  state: OnboardingStateDto | null | undefined,
+): boolean {
+  if (!state) return false;
+  return state.completedAt !== null || state.needs.recordTarget !== null;
+}
+
+/**
  * Has the person finished setting up?
  *
  * Three conditions, and each of them is a way the flow can be left half-done:
@@ -343,15 +363,26 @@ export function everyOnboardingStepSettled(
  * point of the whole flow — it ends on one completed task — so an offer with
  * no result is not a finished setup.
  *
- * `null` (a record that never entered the flow) settles: there is no
- * unfinished flow to keep anything open for.
+ * Two things settle it outright. `null`, and a record that never entered the
+ * flow: there is no unfinished setup to keep anything open for, and since the
+ * payload publishes the field for every record, without that arm every account
+ * that predates the flow would read as permanently unfinished.
+ *
+ * And a first-result step the person deliberately passed. The task is offered
+ * (`firstResult` records which one, with no completion) and then skipped; the
+ * offer is still on the row, so asking only "did the offered task produce
+ * anything" answers "no" forever. A deliberate pass is an answer, not an
+ * unfinished task.
  */
 export function isOnboardingSettled(
   state: OnboardingStateDto | null | undefined,
 ): boolean {
   if (!state) return true;
+  if (!hasEnteredOnboardingFlow(state)) return true;
   if (!everyOnboardingStepSettled(state.steps)) return false;
   if (state.completedAt === null) return false;
+  const offered = state.steps.find((step) => step.id === "first-result");
+  if (offered?.status === "skipped") return true;
   return state.firstResult === null || state.firstResult.completedAt !== null;
 }
 

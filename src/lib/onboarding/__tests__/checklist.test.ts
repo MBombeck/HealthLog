@@ -2,13 +2,38 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildChecklist,
+  checklistOrderFromNeeds,
   checklistProgress,
+  CHECKLIST_ITEM_IDS,
   isProfileComplete,
   shouldShowChecklist,
   trendHintFor,
   visibleChecklist,
   type ChecklistItemId,
 } from "../checklist";
+import {
+  defaultOnboardingSteps,
+  emptyOnboardingNeeds,
+  type OnboardingNeeds,
+  type OnboardingStateDto,
+} from "../needs";
+
+/** A setup state the flow really produced: Q1 answered, confirm reached. */
+function onboardingState(
+  overrides: Partial<OnboardingStateDto> = {},
+  needs: Partial<OnboardingNeeds> = {},
+): OnboardingStateDto {
+  return {
+    steps: defaultOnboardingSteps().map((step) => ({
+      ...step,
+      status: "done" as const,
+    })),
+    needs: { ...emptyOnboardingNeeds(), recordTarget: "me", ...needs },
+    completedAt: "2026-09-10T08:00:00.000Z",
+    firstResult: null,
+    ...overrides,
+  };
+}
 
 const completeProfile = {
   heightCm: 175,
@@ -245,5 +270,226 @@ describe("trendHintFor", () => {
   it("hides once 5 readings reached", () => {
     expect(trendHintFor(5)).toEqual({ kind: "hidden" });
     expect(trendHintFor(99)).toEqual({ kind: "hidden" });
+  });
+});
+
+describe("checklistOrderFromNeeds", () => {
+  function order(needs: Partial<OnboardingNeeds>) {
+    return checklistOrderFromNeeds({ ...emptyOnboardingNeeds(), ...needs });
+  }
+
+  it("keeps profile first whatever the answers say", () => {
+    for (const needs of [
+      {},
+      { medication: "yes" as const },
+      { sources: ["withings" as const] },
+      { areas: ["sleep" as const] },
+    ]) {
+      expect(order(needs)[0]).toBe("profile");
+    }
+  });
+
+  it("puts medication second for somebody who takes one on a schedule", () => {
+    expect(order({ medication: "yes" })[1]).toBe("medication");
+    expect(order({ medication: "sometimes" })[1]).toBe("medication");
+    expect(order({ medication: "no" })[1]).not.toBe("medication");
+  });
+
+  it("promotes the data source only for a source that is a connection", () => {
+    expect(order({ sources: ["withings"] }).indexOf("dataSource")).toBe(1);
+    // Typing readings in and uploading a file are not connections, so they
+    // say nothing about that row.
+    expect(order({ sources: ["manual", "file"] }).indexOf("dataSource")).toBe(
+      3,
+    );
+  });
+
+  it("promotes the reading row once an area was chosen", () => {
+    expect(order({ areas: ["blood-pressure"] })[1]).toBe("measurement");
+  });
+
+  it("orders medication ahead of the data source when both are answered", () => {
+    const ids = order({ medication: "yes", sources: ["oura"] });
+    expect(ids.indexOf("medication")).toBeLessThan(ids.indexOf("dataSource"));
+  });
+
+  it("never drops or duplicates a row, for any answer combination", () => {
+    const combinations: Partial<OnboardingNeeds>[] = [
+      {},
+      { medication: "yes" },
+      { sources: ["manual"] },
+      { sources: ["fitbit"] },
+      { areas: ["mood", "labs"] },
+      { medication: "sometimes", sources: ["nightscout"], areas: ["glucose"] },
+    ];
+    for (const needs of combinations) {
+      const ids = order(needs);
+      expect([...ids].sort()).toEqual([...CHECKLIST_ITEM_IDS].sort());
+    }
+  });
+});
+
+describe("buildChecklist, ordered by the setup answers", () => {
+  it("keeps the fixed order for a record that never entered the flow", () => {
+    expect(buildChecklist(inputs()).map((i) => i.id)).toEqual([
+      ...CHECKLIST_ITEM_IDS,
+    ]);
+  });
+
+  it("keeps the fixed order while the answers are still being given", () => {
+    const items = buildChecklist(
+      inputs({
+        onboarding: onboardingState(
+          { completedAt: null },
+          { medication: "yes" },
+        ),
+      }),
+    );
+    // Re-ordering the dashboard under somebody mid-question would be movement
+    // they did not ask for.
+    expect(items.map((i) => i.id)).toEqual([...CHECKLIST_ITEM_IDS]);
+  });
+
+  it("orders the rows from the answers once the flow is confirmed", () => {
+    const items = buildChecklist(
+      inputs({
+        onboarding: onboardingState(
+          {},
+          { medication: "yes", sources: ["withings"] },
+        ),
+      }),
+    );
+    expect(items.map((i) => i.id).slice(0, 3)).toEqual([
+      "profile",
+      "medication",
+      "dataSource",
+    ]);
+    expect([...items.map((i) => i.id)].sort()).toEqual(
+      [...CHECKLIST_ITEM_IDS].sort(),
+    );
+  });
+
+  it("carries each row's own state through the reordering", () => {
+    const items = buildChecklist(
+      inputs({
+        medicationCount: 2,
+        dismissedIds: new Set<ChecklistItemId>(["insights"]),
+        onboarding: onboardingState({}, { medication: "yes" }),
+      }),
+    );
+    expect(items.find((i) => i.id === "medication")?.done).toBe(true);
+    expect(items.find((i) => i.id === "insights")?.dismissed).toBe(true);
+  });
+});
+
+describe("shouldShowChecklist and the setup flow", () => {
+  const doneItems = () =>
+    buildChecklist(
+      inputs({
+        measurementCount: 3,
+        medicationCount: 1,
+        dataSourceConnected: true,
+        notificationsConfigured: true,
+        insightsConfigured: true,
+      }),
+    );
+
+  it("no longer disappears at five readings for a record that ran the flow", () => {
+    const items = buildChecklist(inputs({ measurementCount: 10 }));
+    expect(
+      shouldShowChecklist({
+        onboardingCompletedAt: "2026-01-01T00:00:00Z",
+        measurementCount: 10,
+        dismissedAll: false,
+        items,
+        onboarding: onboardingState(),
+      }),
+    ).toBe(true);
+  });
+
+  it("goes when its rows are done, even for a record that ran the flow", () => {
+    expect(
+      shouldShowChecklist({
+        onboardingCompletedAt: "2026-01-01T00:00:00Z",
+        measurementCount: 10,
+        dismissedAll: false,
+        items: doneItems(),
+        onboarding: onboardingState(),
+      }),
+    ).toBe(false);
+  });
+
+  it("goes when the person hides the whole list", () => {
+    expect(
+      shouldShowChecklist({
+        onboardingCompletedAt: null,
+        measurementCount: 0,
+        dismissedAll: true,
+        items: buildChecklist(inputs()),
+        onboarding: onboardingState(),
+      }),
+    ).toBe(false);
+  });
+
+  it("stays while the flow is unfinished, even with every row done", () => {
+    // The one task the flow offered is not one of the six rows, so "every row
+    // done" is not the same statement as "the setup finished".
+    expect(
+      shouldShowChecklist({
+        onboardingCompletedAt: "2026-01-01T00:00:00Z",
+        measurementCount: 10,
+        dismissedAll: false,
+        items: doneItems(),
+        onboarding: onboardingState({
+          firstResult: {
+            task: "log-reading",
+            target: null,
+            completedAt: null,
+          },
+        }),
+      }),
+    ).toBe(true);
+  });
+
+  it("does not stay pinned by a first-result task the person passed", () => {
+    const state = onboardingState({
+      firstResult: { task: "log-reading", target: null, completedAt: null },
+    });
+    expect(
+      shouldShowChecklist({
+        onboardingCompletedAt: "2026-01-01T00:00:00Z",
+        measurementCount: 10,
+        dismissedAll: false,
+        items: doneItems(),
+        onboarding: {
+          ...state,
+          steps: state.steps.map((step) =>
+            step.id === "first-result"
+              ? { ...step, status: "skipped" as const }
+              : step,
+          ),
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it("leaves an account that predates the flow on the rule it already had", () => {
+    // The payload publishes the field for every record, so "nine pending
+    // steps" must not read as an unfinished setup.
+    const untouched: OnboardingStateDto = {
+      steps: defaultOnboardingSteps(),
+      needs: emptyOnboardingNeeds(),
+      completedAt: null,
+      firstResult: null,
+    };
+    expect(
+      shouldShowChecklist({
+        onboardingCompletedAt: "2026-01-01T00:00:00Z",
+        measurementCount: 10,
+        dismissedAll: false,
+        items: buildChecklist(inputs({ measurementCount: 10 })),
+        onboarding: untouched,
+      }),
+    ).toBe(false);
   });
 });

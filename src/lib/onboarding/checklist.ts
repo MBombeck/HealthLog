@@ -7,6 +7,7 @@
  */
 
 import {
+  hasEnteredOnboardingFlow,
   isOnboardingSettled,
   type OnboardingNeeds,
   type OnboardingStateDto,
@@ -208,12 +209,18 @@ export function checklistProgress(items: ChecklistItem[]): ChecklistProgress {
 /**
  * Should the dashboard render the checklist at all?
  *
- * Visible while the user is still in the setup phase:
- *   - `onboardingCompletedAt` is null  OR
- *   - they have fewer than 5 measurements
+ * Never when the whole list is dismissed, and never when there is no
+ * non-dismissed row left to show.
  *
- * AND the user has not dismissed the entire checklist
- * AND there is at least one undone, non-dismissed item.
+ * For a record that ran the setup flow the design spec retires the old
+ * five-reading rule: the list goes when its rows are done or the person hides
+ * it. Five readings were never evidence that anything was set up. A record
+ * that never entered the flow keeps the pre-v1.39 rule unchanged — first-run
+ * wizard unfinished, or fewer than five readings.
+ *
+ * A list whose rows are all done still stays while the flow itself is
+ * unfinished, because the one task the flow offered is not one of the six
+ * rows: "every row done" and "the setup finished" are different statements.
  */
 export function shouldShowChecklist(args: {
   onboardingCompletedAt: string | null;
@@ -221,25 +228,26 @@ export function shouldShowChecklist(args: {
   dismissedAll: boolean;
   items: ChecklistItem[];
   /**
-   * v1.39 (C1) — the needs-based setup state. While it is unsettled — a step
-   * still pending, the flow never confirmed, or a first-result task offered
-   * and never produced — the checklist stays whatever the reading count says.
-   * That is the design spec's "it no longer disappears at five measurements":
-   * five readings are not evidence that the setup finished.
-   *
-   * Optional, and absence means nothing is outstanding: a record with no
-   * onboarding row has no unfinished flow to keep the list open for.
+   * v1.39 (C1) — the needs-based setup state for this record, or null before
+   * the account payload resolves. A record that never entered the flow reads
+   * as empty answers with nine pending steps and is treated as having no
+   * unfinished setup, which is what keeps every account that predates the flow
+   * on the rule it already had.
    */
   onboarding?: OnboardingStateDto | null;
 }): boolean {
   if (args.dismissedAll) return false;
-  const stillInSetup =
-    args.onboardingCompletedAt == null ||
-    args.measurementCount < 5 ||
-    !isOnboardingSettled(args.onboarding);
-  if (!stillInSetup) return false;
+  const onboarding = args.onboarding ?? null;
   const visible = visibleChecklist(args.items);
   if (visible.length === 0) return false;
+
+  const stillInSetup =
+    hasEnteredOnboardingFlow(onboarding) ||
+    args.onboardingCompletedAt == null ||
+    args.measurementCount < 5;
+  if (!stillInSetup) return false;
+
+  if (!isOnboardingSettled(onboarding)) return true;
   return visible.some((item) => !item.done);
 }
 
