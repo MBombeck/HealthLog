@@ -16,6 +16,8 @@ import { applyOnboardingAnswer } from "../needs-apply";
 import {
   accountHoldsBothUnits,
   defaultOnboardingSteps,
+  everyOnboardingQuestionSettled,
+  ONBOARDING_QUESTION_STEP_IDS,
   emptyOnboardingNeeds,
   isOnboardingSettled,
   ONBOARDING_STEP_IDS,
@@ -352,5 +354,63 @@ describe("resolveOnboardingSteps", () => {
         .filter((s) => s.id !== "units")
         .map((s) => s.status),
     );
+  });
+});
+
+describe("everyOnboardingQuestionSettled", () => {
+  function withStatuses(
+    status: "pending" | "done" | "skipped",
+    overrides: Partial<Record<string, "pending" | "done" | "skipped">> = {},
+  ) {
+    return defaultOnboardingSteps().map((step) => ({
+      ...step,
+      status: overrides[step.id] ?? status,
+    }));
+  }
+
+  it("names the six questions and stops before the confirm screen", () => {
+    expect([...ONBOARDING_QUESTION_STEP_IDS]).toEqual([
+      "who",
+      "areas",
+      "medication",
+      "sources",
+      "visit",
+      "units",
+    ]);
+  });
+
+  it("refuses a flow that only answered the first question", () => {
+    expect(
+      everyOnboardingQuestionSettled(withStatuses("pending", { who: "done" })),
+    ).toBe(false);
+  });
+
+  it("refuses a flow with any one question still waiting", () => {
+    for (const id of ONBOARDING_QUESTION_STEP_IDS) {
+      expect(
+        everyOnboardingQuestionSettled(
+          withStatuses("done", { [id]: "pending" }),
+        ),
+        `\`${id}\` still pending should not read as a finished questionnaire`,
+      ).toBe(false);
+    }
+  });
+
+  it("accepts a deliberate pass as an answer", () => {
+    expect(
+      everyOnboardingQuestionSettled(withStatuses("skipped", { who: "done" })),
+    ).toBe(true);
+  });
+
+  it("ignores what happens after the confirm screen", () => {
+    expect(
+      everyOnboardingQuestionSettled(
+        withStatuses("done", {
+          confirm: "pending",
+          "first-result": "pending",
+          done: "pending",
+        }),
+      ),
+    ).toBe(true);
   });
 });

@@ -296,6 +296,37 @@ export function parseOnboardingFirstResult(
   };
 }
 
+/**
+ * The steps that are QUESTIONS — everything the flow puts to the person before
+ * the confirm screen.
+ *
+ * Sliced out of the ordered list rather than written out again, so a question
+ * added to the flow joins this set on the day it lands and the completion gate
+ * below cannot fall behind the screens.
+ */
+export const ONBOARDING_QUESTION_STEP_IDS: readonly OnboardingStepId[] =
+  ONBOARDING_STEP_IDS.slice(0, ONBOARDING_STEP_IDS.indexOf("confirm"));
+
+/**
+ * Has the questionnaire been finished?
+ *
+ * Every question answered or deliberately passed — not "Q1 is set". The
+ * difference matters because the answers become a module map: deriving from a
+ * flow somebody abandoned after the first screen reads every unanswered
+ * question as its conservative default and switches off the surfaces that
+ * default implies, and the derivation latch then makes that unrepeatable.
+ *
+ * `who` cannot be passed (the schema gives it no skip arm), so "not pending"
+ * means "answered" for it and "answered or passed" for the rest.
+ */
+export function everyOnboardingQuestionSettled(
+  steps: readonly OnboardingStepState[],
+): boolean {
+  return ONBOARDING_QUESTION_STEP_IDS.every(
+    (id) => steps.find((step) => step.id === id)?.status !== "pending",
+  );
+}
+
 /** True once every step has been answered or deliberately passed. */
 export function everyOnboardingStepSettled(
   steps: readonly OnboardingStepState[],

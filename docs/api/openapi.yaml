@@ -16371,14 +16371,20 @@ paths:
 
 
         v1.39 — this is also the needs-based flow's confirm endpoint, and the two halves live side by side. For a record
-        that answered the questions (Q1 is set), it derives that record's module map from the answers and applies it,
-        ONCE: the derivation marker is what stops a second confirm re-applying the questionnaire over decisions taken in
-        Settings since, and `POST /api/onboarding/restart` clears the marker when the person asks for the questions
-        again. The merge is one-directional — a module the answers name is switched on, a module they do not name is
-        switched off only where the record does not already carry an explicit on. The `cycle` key is not written here at
-        all: it delegates to the cycle profile, which this route sets to `true` when the cycle area was chosen and never
-        to `false`. The response then carries `onboarding` beside `completed`; a caller that never entered the needs
-        flow gets the fixed acknowledgement it always did.
+        that FINISHED the questions — every one of them answered or deliberately passed — it derives that record's
+        module map from the answers and applies it, ONCE: the derivation marker is what stops a second confirm
+        re-applying the questionnaire over decisions taken in Settings since, and `POST /api/onboarding/restart` clears
+        the marker when the person asks for the questions again. The merge is one-directional — a module the answers
+        name is switched on, a module they do not name is switched off only where the record does not already carry an
+        explicit on. The `cycle` key is not written here at all: it delegates to the cycle profile, which this route
+        sets to `true` when the cycle area was chosen and never to `false`. A half-answered flow derives nothing and is
+        not stamped as complete: the answers become a module map, and a flow somebody abandoned after the first screen
+        would have every remaining question read as its conservative default. The same gate is what keeps the LEGACY
+        wizard's completion out of the derivation, since that wizard never puts these questions.
+
+
+        The response then carries `onboarding` beside `completed`; a caller that never entered the needs flow gets the
+        fixed acknowledgement it always did.
 
 
         The older sibling of `POST /api/onboarding/step`. It is unconditional in a way the step route is not: it stamps

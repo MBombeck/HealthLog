@@ -127,13 +127,18 @@ function statusOf(state: OnboardingStateDto, id: OnboardingStepId) {
   return state.steps.find((step) => step.id === id)?.status;
 }
 
-/** The five answers a "blood pressure and medication" setup gives. */
+/**
+ * The answers a "blood pressure and medication" setup gives — all six
+ * questions, because the confirm screen is only reached once every one of them
+ * has an answer or a deliberate pass.
+ */
 async function answerTheQuestions() {
   await patchAnswer({ step: "who", recordTarget: "me" });
   await patchAnswer({ step: "areas", areas: ["blood-pressure", "labs"] });
   await patchAnswer({ step: "medication", medication: "yes" });
   await patchAnswer({ step: "sources", status: "skipped" });
   await patchAnswer({ step: "visit", visit: "no" });
+  await patchAnswer({ step: "units", status: "skipped" });
 }
 
 async function modulePrefs(userId: string) {
@@ -337,6 +342,40 @@ describe("POST /api/onboarding/complete", () => {
       where: { userId: user.id },
     });
     expect(profile.cycleTrackingEnabled).toBe(true);
+  });
+
+  it("derives nothing from a questionnaire that was never finished", async () => {
+    const user = await makeUser("half");
+    await signIn(user.id);
+    // Q1 and nothing else — the tab was closed, or the legacy four-step wizard
+    // posted here afterwards. Either way the remaining five questions have no
+    // answer, and reading them as their conservative defaults would switch off
+    // eleven surfaces and latch the result.
+    await patchAnswer({ step: "who", recordTarget: "me" });
+
+    const res = await postComplete();
+    expect(res.status).toBe(200);
+
+    const row = await getPrismaClient().user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { modulePreferencesJson: true },
+    });
+    expect(row.modulePreferencesJson).toBeNull();
+
+    const record = await getPrismaClient().onboardingRecord.findUniqueOrThrow({
+      where: { userId: user.id },
+    });
+    expect(record.modulesDerivedAt).toBeNull();
+    expect(record.completedAt).toBeNull();
+
+    const state = await readState(res);
+    expect(statusOf(state, "confirm")).toBe("pending");
+
+    // Finishing the questions later still derives, so the gate defers the
+    // work rather than losing it.
+    await answerTheQuestions();
+    await postComplete();
+    expect((await modulePrefs(user.id)).medications).toBe(true);
   });
 
   it("leaves a record that never answered the questions exactly as it was", async () => {

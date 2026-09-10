@@ -11,6 +11,7 @@ import {
   mergeDerivedModulePreferences,
 } from "@/lib/modules/registry";
 import {
+  everyOnboardingQuestionSettled,
   readHeldUnitPreferences,
   resolveOnboardingSteps,
   type HeldUnitPreferences,
@@ -32,8 +33,9 @@ import { onboardingCompleteSchema } from "@/lib/validations/onboarding";
  * flow, and the two live side by side rather than one replacing the other.
  * The legacy half is unchanged: the optional profile fields, the completion
  * stamp on `User.onboardingCompletedAt`, and the cleared pending cookie. The
- * needs half runs only for a record that actually answered the questions
- * (`needs.recordTarget` is set) and is what turns the answers into a module
+ * needs half runs only for a record that actually FINISHED the questions —
+ * every one of them answered or deliberately passed — and is what turns them
+ * into a module
  * map — ONCE, guarded by `OnboardingRecord.modulesDerivedAt`, because a
  * re-derivation would re-apply the questionnaire over decisions taken in
  * Settings since. `POST /api/onboarding/restart` clears that marker when the
@@ -126,6 +128,21 @@ async function completeNeedsFlow(userId: string, held: HeldUnitPreferences) {
     annotate({
       action: { name: "onboarding.needs.complete" },
       meta: { outcome: "no_answers" },
+    });
+    return toOnboardingStateDto(record, held);
+  }
+  if (!everyOnboardingQuestionSettled(steps)) {
+    // The confirm screen is the only caller that may derive, and it is reached
+    // only once every question has an answer or a deliberate pass. Q1 alone is
+    // not enough: an abandoned flow would have every remaining question read
+    // as its conservative default, switch off the surfaces that default
+    // implies, and latch the result so nobody could re-derive it. This route
+    // is also the LEGACY wizard's endpoint, and that wizard knows nothing
+    // about these questions — so a person who answered Q1, left, and later
+    // finished the old wizard must not have a module map derived for them.
+    annotate({
+      action: { name: "onboarding.needs.complete" },
+      meta: { outcome: "incomplete" },
     });
     return toOnboardingStateDto(record, held);
   }
