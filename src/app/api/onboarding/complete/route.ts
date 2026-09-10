@@ -236,7 +236,10 @@ async function completeNeedsFlow(
     where: { userId },
     data: {
       stepsJson: toJson(confirmed),
-      completedAt: now,
+      // Stamped once. The derivation is latched and the stamp should be too,
+      // or a replay of the confirm quietly moves the instant the setup
+      // finished at.
+      completedAt: record.completedAt ?? now,
       ...(derived ? { modulesDerivedAt: now } : {}),
     },
     select: ONBOARDING_RECORD_SELECT,

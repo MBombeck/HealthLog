@@ -51,7 +51,7 @@ const RATE_WINDOW_MS = 10 * 60 * 1000;
 
 export const PATCH = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
-  annotate({ action: { name: "onboarding.answer.save" } });
+  annotate({ action: { name: "onboarding.needs.save" } });
 
   const rl = await checkRateLimit(
     `onboarding-answers:${user.id}`,
@@ -60,7 +60,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   );
   if (!rl.allowed) {
     annotate({
-      action: { name: "onboarding.answer.save" },
+      action: { name: "onboarding.needs.save" },
       meta: { outcome: "rate_limited" },
     });
     return apiError("Too many onboarding writes, try again later", 429, {
@@ -76,7 +76,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   const parsed = onboardingAnswerSchema.safeParse(body);
   if (!parsed.success) {
     annotate({
-      action: { name: "onboarding.answer.save" },
+      action: { name: "onboarding.needs.save" },
       meta: { outcome: "validation_failed" },
     });
     return returnAllZodIssues(parsed.error, 422, {
@@ -175,7 +175,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   }
 
   annotate({
-    action: { name: "onboarding.answer.save" },
+    action: { name: "onboarding.needs.save" },
     meta: {
       step: answer.step,
       status: answer.status === "skipped" ? "skipped" : "done",

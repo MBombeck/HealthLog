@@ -340,6 +340,8 @@ describe("POST /api/onboarding/complete", () => {
     // Somebody changes their mind in Settings, then the confirm screen is
     // replayed. The second call must leave that decision alone: the latch is
     // what stops a questionnaire from re-applying itself over a later choice.
+    // The completion instant is latched with it — a replay does not move the
+    // moment the setup finished at.
     await getPrismaClient().user.update({
       where: { id: user.id },
       data: { modulePreferencesJson: { ...derived, labs: false } },
@@ -347,6 +349,7 @@ describe("POST /api/onboarding/complete", () => {
     const second = await postComplete();
     expect(second.status).toBe(200);
     expect((await modulePrefs(user.id)).labs).toBe(false);
+    expect((await readState(second)).completedAt).toBe(state.completedAt);
   });
 
   it("never switches off a module the person switched on by hand", async () => {

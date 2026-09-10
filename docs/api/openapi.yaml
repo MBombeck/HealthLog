@@ -16244,7 +16244,7 @@ paths:
         Cookie or wildcard Bearer, own record only — same refusal under a switch as the answers route. Rate-limited to
         10 restarts per 10 minutes per account.
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:

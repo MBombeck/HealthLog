@@ -285,7 +285,9 @@ export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       description:
         "\"Set up again\", from Settings. Puts the nine steps back to `pending`, clears the flow's own completion stamp, and clears the derivation marker so the next `POST /api/onboarding/complete` may derive a module map again.\n\nIt writes no module state at all: the ordering-versus-removal decision says a re-run never turns off a module somebody turned on by hand, and the protection against the second derivation lives in the merge rather than here. It also keeps the answers, as the prefill for the re-run, keeps a first result that really happened, and leaves the account payload's `onboardingCompletedAt` alone so nobody is pushed back through the first-run redirect.\n\nCookie or wildcard Bearer, own record only — same refusal under a switch as the answers route. Rate-limited to 10 restarts per 10 minutes per account.",
       requestBody: {
-        required: true,
+        // The route accepts an absent body and treats it as `{}`; the schema
+        // is strict, so a body that carries anything is a 422.
+        required: false,
         content: { "application/json": { schema: onboardingRestartRequest } },
       },
       responses: {

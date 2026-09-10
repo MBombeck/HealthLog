@@ -222,6 +222,27 @@ describe("applyOnboardingAnswer", () => {
   });
 });
 
+describe("applyOnboardingAnswer and the two list answers", () => {
+  it("stores the list de-duplicated, so the column holds what the reader returns", () => {
+    const next = applyOnboardingAnswer(
+      blank(),
+      {
+        step: "areas",
+        areas: ["sleep", "sleep", "labs"],
+      },
+      AT,
+    );
+    expect(next.needs.areas).toEqual(["sleep", "labs"]);
+
+    const sources = applyOnboardingAnswer(
+      blank(),
+      { step: "sources", sources: ["oura", "oura", "manual"] },
+      AT,
+    );
+    expect(sources.needs.sources).toEqual(["oura", "manual"]);
+  });
+});
+
 describe("isOnboardingSettled", () => {
   const settled: OnboardingStateDto = {
     steps: ONBOARDING_STEP_IDS.map((id) => ({ id, status: "done" as const })),

@@ -27,6 +27,15 @@ export interface OnboardingRecordState {
   firstResult: OnboardingFirstResult | null;
 }
 
+/**
+ * The two list answers are stored as given, and a client that sends the same
+ * chip twice would otherwise leave the column holding something the reader
+ * never returns — `parseOnboardingNeeds` de-duplicates on the way out.
+ */
+function unique<T>(values: readonly T[]): T[] {
+  return [...new Set(values)];
+}
+
 function withStatus(
   steps: readonly OnboardingStepState[],
   id: OnboardingStepId,
@@ -63,7 +72,11 @@ export function applyOnboardingAnswer(
         needs: { ...state.needs, recordTarget: input.recordTarget },
       };
     case "areas":
-      return { ...state, steps, needs: { ...state.needs, areas: input.areas } };
+      return {
+        ...state,
+        steps,
+        needs: { ...state.needs, areas: unique(input.areas) },
+      };
     case "medication":
       return {
         ...state,
@@ -74,7 +87,7 @@ export function applyOnboardingAnswer(
       return {
         ...state,
         steps,
-        needs: { ...state.needs, sources: input.sources },
+        needs: { ...state.needs, sources: unique(input.sources) },
       };
     case "visit":
       return { ...state, steps, needs: { ...state.needs, visit: input.visit } };
