@@ -42,6 +42,10 @@ import {
 
 const PROFILE_NAME = "Setup journey child";
 
+// Serial: both tests reset and walk the ONE account, and two workers doing
+// that at once each undo the other's setup mid-flow.
+test.describe.configure({ mode: "serial" });
+
 test.describe("setup flow — a child's managed profile", () => {
   test.use({ storageState: SETUP_CHILD_STORAGE_STATE_PATH });
 
