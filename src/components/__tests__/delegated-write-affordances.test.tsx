@@ -14,8 +14,8 @@
  * path is not proven at all. That leg lives in `e2e/account-sharing.spec.ts`.
  *
  * Mutation checks, run:
- *   - `useRecordCapabilities` returning `canAdd: true` unconditionally → the
- *     read-only legs for the intake row and the card menu go red.
+ *   - `useRecordCapabilities` answering `canWriteDomain` for every section →
+ *     the read-only legs for the intake row and the card menu go red.
  *   - `DeleteButton` dropping its `canManageDomain` bail → "no row delete inside
  *     somebody else's record" goes red; answering it for every section → the
  *     vault leg of "a guardian's row delete follows the section" goes red.
@@ -533,9 +533,10 @@ describe("the capture picker's kinds", () => {
   });
 
   it("offers a scoped WRITE delegate only the kinds its sections cover", () => {
-    // The gap this closes. `canAdd` is the grant's LEVEL with no scope term,
-    // so a labs-scoped WRITE grant answered true and the picker offered a
-    // weight form and a dose the server refuses at `grantCoversDomain`.
+    // The gap this closes. The coarse answer was the grant's LEVEL with no
+    // scope term, so a labs-scoped WRITE grant read as true and the picker
+    // offered a weight form and a dose the server refuses at
+    // `grantCoversDomain`.
     expect(visibleCaptureKinds(caps("write", ["labs"]), [...ALL])).toEqual([]);
     expect(
       visibleCaptureKinds(caps("write", ["measurements"]), [...ALL]),

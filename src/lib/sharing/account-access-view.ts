@@ -96,11 +96,20 @@ export interface AccountAccessEntry {
    */
   sections: ShareDomain[] | null;
   /**
-   * May this caller ADD to that record. Resolved server-side. It does not by
-   * itself mean edit or delete — a WRITE grant adds and does nothing more, and
-   * that stayed true when a third level arrived. A MANAGE grant answers true
-   * here as well, and what it additionally admits is said by `level` rather
-   * than smuggled into this boolean.
+   * The grant's LEVEL, resolved server-side: is it at or above WRITE.
+   *
+   * It is not "may this caller add something", and reading it that way is how
+   * section-blind controls happen. There is no scope term in it: a WRITE grant
+   * scoped to the document vault answers `true` here with
+   * `writableDomains: []`, because the vault takes no delegated write at any
+   * level. Ask {@link AccountAccessEntry.writableDomains} for the section the
+   * control belongs to; this boolean answers only whether the grant is a
+   * reading one.
+   *
+   * It does not by itself mean edit or delete — a WRITE grant adds and does
+   * nothing more, and that stayed true when a third level arrived. A MANAGE
+   * grant answers true here as well, and what it additionally admits is said
+   * by `level` rather than smuggled into this boolean.
    */
   canWrite: boolean;
   /**

@@ -320,7 +320,8 @@ export function IllnessView() {
   // v1.36.x — opening an illness entry is an admitted delegated write. Logging
   // a day against one, editing it, resolving it and deleting it are not, so a
   // delegate can start the record of an illness and nothing more.
-  const { canAdd, inSharedRecord } = useRecordCapabilities();
+  const { canWriteDomain, inSharedRecord } = useRecordCapabilities();
+  const canAddEpisode = canWriteDomain("illness");
   const {
     data: episodes,
     isLoading,
@@ -412,7 +413,7 @@ export function IllnessView() {
             )}
             {/* v1.18.6 (MOD-02) — the add button reads "hinzufügen" like every
                 other module, not the bespoke "neue Episode". */}
-            {canAdd && (
+            {canAddEpisode && (
               <Button
                 onClick={() => setNewOpen(true)}
                 className="min-h-11 sm:min-h-9"
@@ -476,7 +477,7 @@ export function IllnessView() {
           description={t("illness.empty.body")}
           ctaSize="lg"
           action={
-            canAdd ? (
+            canAddEpisode ? (
               <Button onClick={() => setNewOpen(true)}>
                 <Plus className="h-4 w-4" />
                 {t("illness.newEpisode")}

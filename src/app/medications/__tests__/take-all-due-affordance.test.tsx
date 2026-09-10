@@ -48,6 +48,7 @@ vi.mock("@/components/medications/log-intake-dialog", () => ({
 import MedicationsPage from "@/app/medications/page-client";
 import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { delegatedDomains } from "@/lib/sharing/domain-write-support";
 
 const OWNER = {
   accountId: "acct-owner",
@@ -75,7 +76,17 @@ const READ_ONLY: AccountAccess = {
 };
 const WRITABLE: AccountAccess = {
   accounts: [OWNER],
-  active: { ...OWNER, access: "write", level: "write", canWrite: true },
+  active: {
+    ...OWNER,
+    access: "write",
+    level: "write",
+    canWrite: true,
+    // Published the way the server publishes it: the sections a WRITE grant
+    // over the whole record can add to. A fixture that said `canWrite: true`
+    // over an empty list described a grant the server never mints, and the
+    // control asks the list.
+    writableDomains: delegatedDomains("write", null, "write"),
+  },
   canSwitch: true,
 };
 

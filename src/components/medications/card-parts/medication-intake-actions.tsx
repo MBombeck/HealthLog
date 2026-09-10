@@ -36,8 +36,9 @@ export function MedicationIntakeActions({
   // v1.36.x — marking a dose taken or skipped is the verb the delegation was
   // written for. A read-only delegate sees the card and its schedule and no
   // action row; the card is otherwise unchanged.
-  const { canAdd } = useRecordCapabilities();
-  if (!canAdd) return null;
+  const { canWriteDomain } = useRecordCapabilities();
+  const canRecordIntake = canWriteDomain("medications");
+  if (!canRecordIntake) return null;
 
   return (
     <div className="flex gap-2">

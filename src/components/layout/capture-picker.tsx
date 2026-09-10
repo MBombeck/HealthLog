@@ -55,11 +55,10 @@ type CaptureKind = "measurement" | "medication" | "mood";
  *
  * One question per kind, asked of that kind's own section. The picker used to
  * ask a coarse one as well — a closed list of kinds a WRITE grant admits,
- * offered whenever `canAdd` was true — and `canAdd` is bound to the grant's
- * LEVEL with no scope term at all. A WRITE grant scoped to `["labs"]`
- * published `canAdd: true` and got a weight form the server refuses; one
- * scoped to `["documents"]`, which takes no delegated write at any level, got
- * both. `writableDomains` is already the level × scope × route-table
+ * offered whenever the grant could write anywhere — and that answer is the
+ * grant's LEVEL with no scope term at all. A WRITE grant scoped to `["labs"]`
+ * read as true and got a weight form the server refuses; one scoped to
+ * `["documents"]`, which takes no delegated write at any level, got both. `writableDomains` is already the level × scope × route-table
  * intersection, so asking it per section answers both cases and the mood
  * entry's MANAGE-only create as well.
  */

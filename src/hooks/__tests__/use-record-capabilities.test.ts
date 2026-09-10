@@ -10,10 +10,10 @@
  * Mutation checks, run:
  *   - return `canManage: true` for a WRITE record → "a delegate may not change
  *     what is already there" goes red.
- *   - return `canAdd: true` for a READ record → "a read-only delegate adds
- *     nothing" goes red.
- *   - make the `!active` branch return `canAdd: false` → "the caller's own
- *     record keeps everything" goes red.
+ *   - answer `canWriteDomain` from `level` instead of the published list →
+ *     "a read-only delegate adds nothing" and the scoped legs go red.
+ *   - make the `!active` branch answer `canWriteDomain: false` → "the caller's
+ *     own record keeps everything" goes red.
  *   - answer `canManageDomain` from `level === "manage"` instead of the list →
  *     "the vault is never manageable" goes red.
  */
@@ -76,7 +76,6 @@ describe("resolveRecordCapabilities", () => {
     expect(own).toMatchObject({
       inSharedRecord: false,
       canWrite: false,
-      canAdd: true,
       canManage: true,
       // No grant, so no level and no narrowing — not a fabricated "manage"
       // over all eight sections, which a consumer would then have to tell
@@ -91,10 +90,12 @@ describe("resolveRecordCapabilities", () => {
     }
     expect(resolveRecordCapabilities(undefined)).toMatchObject({
       inSharedRecord: false,
-      canAdd: true,
       canManage: true,
       recordKind: "self",
     });
+    expect(resolveRecordCapabilities(undefined).canWriteDomain("labs")).toBe(
+      true,
+    );
   });
 
   it("refuses a malformed published block instead of treating it as own record", () => {
@@ -102,7 +103,6 @@ describe("resolveRecordCapabilities", () => {
     expect(refused).toMatchObject({
       inSharedRecord: true,
       canWrite: false,
-      canAdd: false,
       canManage: false,
       level: null,
       sections: [],
@@ -120,7 +120,6 @@ describe("resolveRecordCapabilities", () => {
     expect(reader).toMatchObject({
       inSharedRecord: true,
       canWrite: false,
-      canAdd: false,
       canManage: false,
       level: "read",
       sections: null,
@@ -139,7 +138,6 @@ describe("resolveRecordCapabilities", () => {
     expect(writer).toMatchObject({
       inSharedRecord: true,
       canWrite: true,
-      canAdd: true,
       canManage: false,
       level: "write",
       sections: null,
@@ -153,6 +151,26 @@ describe("resolveRecordCapabilities", () => {
     for (const domain of SHARE_DOMAINS) {
       expect(writer.canManageDomain(domain), domain).toBe(false);
     }
+  });
+
+  it("a grant that can write nothing is still a WRITE grant, and offers nothing", () => {
+    // The reason the coarse answer is gone. `canWrite` is the LEVEL and has no
+    // scope term, so a WRITE grant scoped to the vault — which takes no
+    // delegated write at any level — answers true while every section answers
+    // false. A control gating on the level would paint an upload button that
+    // 403s at `grantCoversDomain`.
+    const vaultOnly = resolveRecordCapabilities({
+      ...WRITABLE,
+      sections: ["documents"],
+      writableDomains: [],
+      manageableDomains: [],
+    });
+    expect(vaultOnly.canWrite).toBe(true);
+    for (const domain of SHARE_DOMAINS) {
+      expect(vaultOnly.canWriteDomain(domain), domain).toBe(false);
+      expect(vaultOnly.canManageDomain(domain), domain).toBe(false);
+    }
+    expect(vaultOnly.canManage).toBe(false);
   });
 
   it("carries the level and the sections through untouched", () => {
@@ -177,7 +195,6 @@ describe("resolveRecordCapabilities", () => {
     expect(manager).toMatchObject({
       inSharedRecord: true,
       canWrite: true,
-      canAdd: true,
       canManage: true,
       level: "manage",
       sections: null,
@@ -219,7 +236,12 @@ describe("resolveRecordCapabilities", () => {
       access: "write",
       canWrite: false,
     };
-    expect(resolveRecordCapabilities(disagreeing).canAdd).toBe(false);
+    for (const domain of SHARE_DOMAINS) {
+      expect(
+        resolveRecordCapabilities(disagreeing).canWriteDomain(domain),
+        domain,
+      ).toBe(false);
+    }
     // The same posture for the lists: a scoped WRITE grant is writable only
     // where its list says so, not wherever its level would reach.
     const scopedWriter: AccountAccessEntry = {
@@ -246,7 +268,7 @@ describe("resolveRecordCapabilities", () => {
  * every delegable route will refuse, while `active` being null would otherwise
  * make this hook answer "your own record, all controls". That combination
  * paints an add button on a page whose every write is about to 403 — the exact
- * failure `canAdd` exists to end.
+ * failure the per-section answers exist to end.
  */
 describe("an unprovable record context withholds every control", () => {
   it("holds when the raw selector names a record the grant no longer opens", () => {
@@ -254,7 +276,9 @@ describe("an unprovable record context withholds every control", () => {
       recordContextIsUnproven({ epoch: 3, scope: "acct-owner" }, null),
     ).toBe(true);
     const held = resolveRecordCapabilities(null, false, false, true);
-    expect(held.canAdd).toBe(false);
+    for (const domain of SHARE_DOMAINS) {
+      expect(held.canWriteDomain(domain), domain).toBe(false);
+    }
     expect(held.canManage).toBe(false);
     // REFUSED, not pending. `recordSessionPending` renders a bare spinner with
     // no controls, which is right for a switch in flight and a wedge here: this
