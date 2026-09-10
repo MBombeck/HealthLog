@@ -84,6 +84,7 @@ async function main(): Promise<void> {
   let totalUpdated = 0;
   let totalSkipped = 0;
   let refused = 0;
+  let wouldRefuse = 0;
   let rollupsPending = 0;
 
   for (const plan of plans) {
@@ -104,7 +105,11 @@ async function main(): Promise<void> {
       continue;
     }
 
-    totalRepairable += plan.repairable.length;
+    // An account with one out-of-range candidate is refused whole, so its
+    // rows are not "would be repaired" — counting them promised work the
+    // --apply run then declined to do.
+    if (plan.outOfRange.length > 0) wouldRefuse += 1;
+    else totalRepairable += plan.repairable.length;
     const first = plan.repairable[0];
     const last = plan.repairable[plan.repairable.length - 1];
     console.log(
@@ -130,7 +135,8 @@ async function main(): Promise<void> {
     }
     if (plan.outOfRange.length > 0) {
       console.log(
-        "      ! this account will be REFUSED — see the reason under --apply",
+        "      ! this account will be REFUSED whole — its rows are not in " +
+          "the count below; see the reason under --apply",
       );
     }
 
@@ -166,9 +172,13 @@ async function main(): Promise<void> {
     apply
       ? `\nDone. ${totalUpdated} row(s) repaired, ${totalSkipped} skipped, ` +
           `${refused} account(s) refused.`
-      : `\nDry run: ${totalRepairable} row(s) would be repaired. ` +
-          "Read the worked examples above and decide before re-running with " +
-          "--apply.",
+      : `\nDry run: ${totalRepairable} row(s) would be repaired` +
+          (wouldRefuse > 0
+            ? `, ${wouldRefuse} account(s) would be refused (their rows are ` +
+              "not in that number)"
+            : "") +
+          ". Read the worked examples above and decide before re-running " +
+          "with --apply.",
   );
 
   if (rollupsPending > 0) {
