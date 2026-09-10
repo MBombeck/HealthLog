@@ -51,24 +51,17 @@ import {
 type CaptureKind = "measurement" | "medication" | "mood";
 
 /**
- * v1.36.x — which of the capture surfaces a delegation admits.
+ * The section each capture surface writes to.
  *
- * A WRITE grant covers entering a reading and marking a dose. It does not
- * cover a mood entry: that verb stays on the owner's own authentication and
- * the server refuses it under a switch. The picker is the fastest path into
- * all three on a phone, so it is the surface where offering an unadmitted one
- * costs the most.
- */
-const DELEGABLE_CAPTURE_KINDS: ReadonlySet<CaptureKind> = new Set([
-  "measurement",
-  "medication",
-]);
-
-/**
- * v1.38.12 — the section each capture surface writes to. A MANAGE grant that
- * reaches the section's routes is offered the surface; a mood entry is a
- * MANAGE create under `mind`, so a guardian gets it and a WRITE delegate does
- * not.
+ * One question per kind, asked of that kind's own section. The picker used to
+ * ask a coarse one as well — a closed list of kinds a WRITE grant admits,
+ * offered whenever `canAdd` was true — and `canAdd` is bound to the grant's
+ * LEVEL with no scope term at all. A WRITE grant scoped to `["labs"]`
+ * published `canAdd: true` and got a weight form the server refuses; one
+ * scoped to `["documents"]`, which takes no delegated write at any level, got
+ * both. `writableDomains` is already the level × scope × route-table
+ * intersection, so asking it per section answers both cases and the mood
+ * entry's MANAGE-only create as well.
  */
 const CAPTURE_KIND_DOMAIN: Readonly<Record<CaptureKind, ShareDomain>> = {
   measurement: "measurements",
@@ -117,13 +110,10 @@ export function admittedCaptureKind(
  * cannot tap the button that opens it.
  */
 export function visibleCaptureKinds(
-  caps: Pick<RecordCapabilities, "canAdd" | "canManageDomain">,
+  caps: Pick<RecordCapabilities, "canWriteDomain">,
   kinds: ReadonlyArray<CaptureKind>,
 ): CaptureKind[] {
-  return kinds.filter((kind) => {
-    if (caps.canManageDomain(CAPTURE_KIND_DOMAIN[kind])) return true;
-    return caps.canAdd && DELEGABLE_CAPTURE_KINDS.has(kind);
-  });
+  return kinds.filter((kind) => caps.canWriteDomain(CAPTURE_KIND_DOMAIN[kind]));
 }
 
 interface CapturePickerProps {

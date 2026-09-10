@@ -120,6 +120,15 @@ function grant(
   };
 }
 
+/** The write answer per section, for the pure helpers that take only that. */
+function writeCaps(
+  level: AccountAccessEntry["level"],
+  sections: ShareDomain[] | null,
+) {
+  const writable = new Set(delegatedDomains(level, sections, "write"));
+  return { canWriteDomain: (domain: ShareDomain) => writable.has(domain) };
+}
+
 const mockAccessRef: { value: AccountAccess } = { value: OWN_RECORD };
 
 vi.mock("@/hooks/use-auth", () => ({
@@ -486,17 +495,13 @@ describe("linking a document to an illness episode", () => {
 describe("the capture picker's kinds", () => {
   const ALL = ["measurement", "medication", "mood"] as const;
 
-  const OWNER_CAPS = { canAdd: true, canManageDomain: () => true };
-  const WRITER_CAPS = { canAdd: true, canManageDomain: () => false };
-  const READER_CAPS = { canAdd: false, canManageDomain: () => false };
+  /** The picker asks one question per kind, of that kind's own section. */
+  const caps = writeCaps;
+  const OWNER_CAPS = { canWriteDomain: () => true };
+  const WRITER_CAPS = caps("write", null);
+  const READER_CAPS = caps("read", null);
   // A guardian: every section with a delegated route answers at MANAGE.
-  const GUARDIAN_CAPS = {
-    canAdd: true,
-    canManageDomain: (domain: string) =>
-      delegatedDomains("manage", null, "manage").includes(
-        domain as "measurements",
-      ),
-  };
+  const GUARDIAN_CAPS = caps("manage", null);
 
   it("offers everything in the caller's own record", () => {
     expect(visibleCaptureKinds(OWNER_CAPS, [...ALL])).toEqual([
@@ -525,6 +530,36 @@ describe("the capture picker's kinds", () => {
 
   it("offers a read-only delegate nothing", () => {
     expect(visibleCaptureKinds(READER_CAPS, [...ALL])).toEqual([]);
+  });
+
+  it("offers a scoped WRITE delegate only the kinds its sections cover", () => {
+    // The gap this closes. `canAdd` is the grant's LEVEL with no scope term,
+    // so a labs-scoped WRITE grant answered true and the picker offered a
+    // weight form and a dose the server refuses at `grantCoversDomain`.
+    expect(visibleCaptureKinds(caps("write", ["labs"]), [...ALL])).toEqual([]);
+    expect(
+      visibleCaptureKinds(caps("write", ["measurements"]), [...ALL]),
+    ).toEqual(["measurement"]);
+    expect(
+      visibleCaptureKinds(caps("write", ["measurements", "medications"]), [
+        ...ALL,
+      ]),
+    ).toEqual(["measurement", "medication"]);
+  });
+
+  it("offers a documents-scoped WRITE delegate nothing at all", () => {
+    // The worst case: the vault takes no delegated write at any level, so the
+    // grant's writable list is empty while `canWrite` still answers true.
+    expect(visibleCaptureKinds(caps("write", ["documents"]), [...ALL])).toEqual(
+      [],
+    );
+  });
+
+  it("offers a scoped MANAGE delegate the mood entry only with the mind section", () => {
+    expect(visibleCaptureKinds(caps("manage", ["mind"]), [...ALL])).toEqual([
+      "mood",
+    ]);
+    expect(visibleCaptureKinds(caps("manage", ["labs"]), [...ALL])).toEqual([]);
   });
 });
 
@@ -613,7 +648,7 @@ describe("a form opened before the record answered", () => {
   });
 
   it("withdraws a dashboard quick-entry sheet the delegation does not admit", () => {
-    const DELEGATE = { canAdd: true, canManageDomain: () => false };
+    const DELEGATE = writeCaps("write", null);
     expect(admittedQuickEntry("mood", DELEGATE)).toBe(null);
     expect(admittedQuickEntry("measurement", DELEGATE)).toBe("measurement");
     expect(admittedQuickEntry("medicationIntake", DELEGATE)).toBe(
@@ -622,22 +657,25 @@ describe("a form opened before the record answered", () => {
   });
 
   it("keeps the mood sheet for a guardian, whose mind routes answer at MANAGE", () => {
-    const GUARDIAN = {
-      canAdd: true,
-      canManageDomain: (domain: string) => domain === "mind",
-    };
-    expect(admittedQuickEntry("mood", GUARDIAN)).toBe("mood");
+    expect(admittedQuickEntry("mood", writeCaps("manage", null))).toBe("mood");
+  });
+
+  it("withdraws a sheet whose section the grant's scope leaves out", () => {
+    const LABS_ONLY = writeCaps("write", ["labs"]);
+    for (const sheet of ["measurement", "mood", "medicationIntake"] as const) {
+      expect(admittedQuickEntry(sheet, LABS_ONLY), sheet).toBe(null);
+    }
   });
 
   it("withdraws every quick-entry sheet from a read-only delegate", () => {
-    const READER = { canAdd: false, canManageDomain: () => false };
+    const READER = writeCaps("read", null);
     for (const sheet of ["measurement", "mood", "medicationIntake"] as const) {
       expect(admittedQuickEntry(sheet, READER), sheet).toBe(null);
     }
   });
 
   it("leaves the owner's own sheets alone", () => {
-    const OWNER_CAPS = { canAdd: true, canManageDomain: () => true };
+    const OWNER_CAPS = { canWriteDomain: () => true };
     for (const sheet of ["measurement", "mood", "medicationIntake"] as const) {
       expect(admittedQuickEntry(sheet, OWNER_CAPS), sheet).toBe(sheet);
     }
