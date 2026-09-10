@@ -46,11 +46,7 @@ export function SystemStatusSummary() {
                 ? t("admin.databaseConnected")
                 : t("admin.databaseError")
             }
-            className={
-              status.database === "connected"
-                ? "text-success"
-                : "text-destructive"
-            }
+            tone={status.database === "connected" ? "success" : "destructive"}
           />
           <StatusItem
             icon={Cog}
@@ -60,9 +56,7 @@ export function SystemStatusSummary() {
                 ? t("admin.workerRunning")
                 : t("admin.workerStopped")
             }
-            className={
-              status.worker.running ? "text-success" : "text-destructive"
-            }
+            tone={status.worker.running ? "success" : "destructive"}
           />
           <StatusItem
             icon={Clock}
@@ -84,9 +78,7 @@ export function SystemStatusSummary() {
                       host: version.geoProviderHost ?? "ipwho.is",
                     })
               }
-              className={
-                version.offlineGeoEnabled ? "text-success" : "text-warning"
-              }
+              tone={version.offlineGeoEnabled ? "success" : "warning"}
             />
           )}
         </div>

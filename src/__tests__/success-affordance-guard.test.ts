@@ -78,7 +78,10 @@ const PINNED_AFFORDANCES: Record<
   string,
   Partial<Record<SuccessMarker, number>>
 > = {
-  "src/components/admin/_shared.tsx": { "text-success": 2, "toast.success": 1 },
+  // The third `text-success` is the success arm of StatusItem's tone table:
+  // the two status grids used to spell the tint at every call site and now
+  // name a tone instead, so the marker lives here once.
+  "src/components/admin/_shared.tsx": { "text-success": 3, "toast.success": 1 },
   "src/components/admin/ai-server-key-section.tsx": { "toast.success": 1 },
   "src/components/admin/api-token-overview-section.tsx": { "text-success": 1 },
   "src/components/admin/app-log-preview-section.tsx": {
@@ -115,8 +118,6 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 4,
     "toast.success": 2,
   },
-  "src/components/admin/system-status-section.tsx": { "text-success": 6 },
-  "src/components/admin/system-status-summary.tsx": { "text-success": 3 },
   "src/components/admin/umami-section.tsx": { "toast.success": 1 },
   "src/components/admin/user-management-section.tsx": {
     "text-success": 2,
