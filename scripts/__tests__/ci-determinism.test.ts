@@ -45,16 +45,19 @@ describe("Playwright CI determinism", () => {
     expect(config.retries).toBe(2);
     expect(config.failOnFlakyTests).toBe(true);
     expect(config.reporter).toEqual([["github"], ["html", { open: "never" }]]);
-    // Two servers, and which is which matters. The suite's own server runs
+    // Three servers, and which is which matters. The suite's own server runs
     // with the dashboard's RSC prefetch OFF so `page.route` fixtures govern
     // what the dashboard paints; the second runs it ON, which is the default
     // and therefore the only configuration self-hosters ever see. A React #418
     // hydration bailout shipped on `/` precisely because nothing in CI ran the
-    // shipped one. Pin both so that gap cannot reopen by deletion.
+    // shipped one. The third is the mail-configured, scheduler-free process the
+    // notification journey drives, kept apart so the SMTP env never renders
+    // the Email card for every other spec. Pin all three so no gap can reopen
+    // by deletion.
     const servers = config.webServer;
     expect(Array.isArray(servers)).toBe(true);
     const webServers = servers as Array<Record<string, unknown>>;
-    expect(webServers).toHaveLength(2);
+    expect(webServers).toHaveLength(3);
     for (const server of webServers) {
       expect(server).toMatchObject({
         command: expect.stringContaining(
@@ -71,6 +74,12 @@ describe("Playwright CI determinism", () => {
     expect(webServers[1]!.env).toMatchObject({
       DASHBOARD_SSR_PREFETCH: "true",
     });
+    expect(webServers[2]!.env).toMatchObject({
+      HEALTHLOG_PROCESS_TYPE: "web",
+      SMTP_HOST: expect.any(String),
+    });
+    expect(webServers[0]!.env).not.toHaveProperty("SMTP_HOST");
+    expect(webServers[1]!.env).not.toHaveProperty("SMTP_HOST");
   });
 
   it("retains the Playwright report after every workflow outcome", () => {
