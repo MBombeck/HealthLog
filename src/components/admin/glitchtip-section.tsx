@@ -34,7 +34,30 @@ export function GlitchtipSection() {
   const glitchtipEnvironmentValue =
     glitchtipEnvironmentDraft ?? settings?.glitchtipEnvironment ?? "production";
 
-  const configured = Boolean(settings?.glitchtipDsn);
+  /**
+   * The host the DSN addresses, and nothing else from it. An operator asking
+   * "where do my errors go" is asking for a hostname; the public key in the
+   * DSN answers a different question and does not belong in a status line.
+   *
+   * There is deliberately no default here and none anywhere else in the tree:
+   * a self-hoster's crash reports must not leave their host because nobody
+   * told them not to. Reporting starts when this operator types a target.
+   */
+  const targetHost = ((): string | null => {
+    const dsn = settings?.glitchtipDsn;
+    if (!dsn) return null;
+    try {
+      return new URL(dsn).host || null;
+    } catch {
+      return null;
+    }
+  })();
+
+  // "Configured" has to mean reports are actually going somewhere. A DSN with
+  // the switch off sends nothing, and a green badge over that is the kind of
+  // reassurance an operator only discovers was wrong when they go looking for
+  // a crash that was never reported.
+  const reporting = Boolean(settings?.glitchtipEnabled && targetHost);
 
   const testGlitchtip = useMutation({
     mutationFn: async () => {
@@ -76,7 +99,7 @@ export function GlitchtipSection() {
         icon={AlertTriangle}
         title={t("admin.glitchtipTitle")}
         description={t("admin.glitchtipDescription")}
-        status={configured ? <ConfiguredBadge /> : null}
+        status={reporting ? <ConfiguredBadge /> : null}
       />
 
       <div className="space-y-3">
@@ -89,6 +112,13 @@ export function GlitchtipSection() {
           }
           disabled={updateSettings.isPending}
         />
+        <p className="text-sm" data-slot="glitchtip-target">
+          {reporting && targetHost
+            ? t("admin.glitchtipTargetOn", { host: targetHost })
+            : settings?.glitchtipEnabled
+              ? t("admin.glitchtipTargetNoTarget")
+              : t("admin.glitchtipTargetOff")}
+        </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="admin-glitchtip-dsn" className="text-xs">
