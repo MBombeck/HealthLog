@@ -73,7 +73,7 @@ describe("GET /api/admin/backups — off-host freshness", () => {
         id: "u2",
         username: "account-two",
         offhostBackupState: {
-          lastSuccessAt: new Date(now - 30 * HOUR),
+          lastSuccessAt: new Date(now - 31 * HOUR),
           sizeBytes: BigInt(8192),
         },
       },

@@ -18,8 +18,9 @@
  * event as four:
  *
  *   never — the worker has never put an object there for this account.
- *   fresh — inside one schedule period. This is what every account looks like
- *           on a host where the cron is doing its job.
+ *   fresh — inside one schedule period plus the grace below. This is what
+ *           every account looks like on a host where the cron is doing its
+ *           job.
  *   due   — past one period, inside two. One night produced nothing: a retry, a
  *           long run, a restart during the window. Worth showing, not worth
  *           alarming about.
@@ -29,9 +30,29 @@
 
 /**
  * Hours between two scheduled off-host runs. Tracks `OFFHOST_BACKUP_CRON`
- * (`30 2 * * *`) in `src/lib/jobs/reminder/register-maintenance.ts` — nightly.
+ * (`30 2 * * *`) in `src/lib/jobs/reminder/register-maintenance.ts`, which
+ * every schedule runs in `Europe/Berlin` (`tz` in `registrar-shared.ts`).
+ * This is the number the card quotes — the schedule's own period, not the
+ * threshold a verdict is measured against.
  */
 export const OFFHOST_BACKUP_PERIOD_HOURS = 24;
+
+/**
+ * Slack on top of one period, before a verdict moves.
+ *
+ * Two things make a healthy host miss a bare 24 hours. The schedule is
+ * Berlin-local, so on the DST fall-back night the gap between two 02:30 runs
+ * is 25 hours and every account on every host would cross one period on the
+ * same morning. And the ledger instant is when THAT account's object landed,
+ * deliberately: on a cohort walked one account at a time, an account reached
+ * at 05:30 one night and 06:30 the next is 25 hours old with two entirely
+ * successful runs behind it.
+ *
+ * Six hours is the budget for both. A card whose argument is that a count
+ * trains an operator to stop reading it cannot afford an annual cohort-wide
+ * false `due`.
+ */
+export const OFFHOST_BACKUP_GRACE_HOURS = 6;
 
 export type OffhostBackupFreshness = "never" | "fresh" | "due" | "stale";
 
@@ -46,12 +67,15 @@ export function classifyOffhostBackup(args: {
   now: Date;
   /** Defaults to the nightly schedule. Tests pass their own. */
   periodHours?: number;
+  /** Defaults to `OFFHOST_BACKUP_GRACE_HOURS`. Tests pass their own. */
+  graceHours?: number;
 }): OffhostBackupVerdict {
   const { lastSuccessAt, now } = args;
   if (lastSuccessAt === null) return { freshness: "never", ageHours: null };
 
   const periodMs =
     (args.periodHours ?? OFFHOST_BACKUP_PERIOD_HOURS) * 3_600_000;
+  const graceMs = (args.graceHours ?? OFFHOST_BACKUP_GRACE_HOURS) * 3_600_000;
   const ageMs = now.getTime() - lastSuccessAt.getTime();
   // A clock that ran backwards between the upload and this read reports a
   // negative age. That is a host-clock problem, not a backup problem, and
@@ -59,7 +83,10 @@ export function classifyOffhostBackup(args: {
   // thing.
   const ageHours = Math.max(0, Math.floor(ageMs / 3_600_000));
 
-  if (ageMs <= periodMs) return { freshness: "fresh", ageHours };
-  if (ageMs <= periodMs * 2) return { freshness: "due", ageHours };
+  // The grace rides on each threshold rather than on the period, so `due`
+  // still means "one scheduled run produced nothing" and `stale` still means
+  // two — the slack only keeps a long night from being read as a missed one.
+  if (ageMs <= periodMs + graceMs) return { freshness: "fresh", ageHours };
+  if (ageMs <= periodMs * 2 + graceMs) return { freshness: "due", ageHours };
   return { freshness: "stale", ageHours };
 }

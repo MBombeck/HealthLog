@@ -14,6 +14,7 @@ import type { Readable } from "node:stream";
 
 import {
   classifyOffhostBackup,
+  OFFHOST_BACKUP_GRACE_HOURS,
   OFFHOST_BACKUP_PERIOD_HOURS,
 } from "@/lib/jobs/offhost-backup-freshness";
 import {
@@ -129,7 +130,9 @@ describe("off-host backup ledger (real Postgres)", () => {
     // because the run that skipped this account still reported a success for
     // everybody else.
     const aged = new Date(
-      Date.now() - (OFFHOST_BACKUP_PERIOD_HOURS * 2 + 1) * HOUR,
+      Date.now() -
+        (OFFHOST_BACKUP_PERIOD_HOURS * 2 + OFFHOST_BACKUP_GRACE_HOURS + 1) *
+          HOUR,
     );
     await prisma.offhostBackupState.update({
       where: { userId: "account-one" },

@@ -228,6 +228,14 @@ how that compares with the nightly schedule. **Fresh** is inside one run,
 did not, and **never** means no object has ever landed. On a host without
 `BACKUP_S3_*` the card says off-host backup is not configured and stops there.
 
+Each verdict carries six hours of slack on top of the schedule's own 24, and
+that slack is load-bearing on two nights. The cron runs at 02:30 Europe/Berlin,
+so on the DST fall-back Sunday two consecutive runs are 25 hours apart; and the
+timestamp is when _that account's_ object landed, so on a cohort walked one
+account at a time an account reached later tonight than last night drifts by
+hours. Without the slack a healthy host would paint its whole cohort **due**
+once a year.
+
 The verdicts come from a ledger the worker writes when the object lands
 (`offhost_backup_state`), not from a listing of the bucket. Keep the worker's
 grant as documented — PutObject, GetObject, AbortMultipartUpload — and the card
