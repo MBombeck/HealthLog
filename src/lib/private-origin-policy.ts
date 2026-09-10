@@ -48,7 +48,16 @@ export function canonicalOrigin(value: string): string | null {
     if (url.username || url.password) return null;
     if (url.pathname !== "/" || url.search || url.hash) return null;
     if (!url.hostname || url.hostname.includes("*")) return null;
-    const literal = url.hostname.replace(/^\[|\]$/g, "");
+    // `localhost` and `*.localhost` are loopback by definition (RFC 6761);
+    // refuse them at parse time like a literal loopback address. Other
+    // reserved-looking names (`.local` mDNS, `.internal`, `.lan`) stay
+    // grantable: an explicitly listed origin is what the list is for, and
+    // the dial-time floor still drops a loopback or metadata answer.
+    const hostname = url.hostname.toLowerCase();
+    if (hostname === "localhost" || hostname.endsWith(".localhost")) {
+      return null;
+    }
+    const literal = hostname.replace(/^\[|\]$/g, "");
     if (isIP(literal) !== 0 && !isOperatorGrantableIp(literal)) return null;
     return url.origin;
   } catch {

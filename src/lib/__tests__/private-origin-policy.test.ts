@@ -57,8 +57,20 @@ describe("canonicalOrigin", () => {
     ["IPv6 link-local", "http://[fe80::1]:8080"],
     ["IPv4-mapped loopback", "http://[::ffff:127.0.0.1]:8080"],
     ["IPv4-mapped metadata", "http://[::ffff:169.254.169.254]"],
+    ["localhost", "http://localhost:8080"],
+    ["a *.localhost name", "http://gotify.localhost"],
   ])("refuses %s as a grant", (_label, value) => {
     expect(canonicalOrigin(value)).toBeNull();
+  });
+
+  it("keeps mDNS and other reserved-looking names grantable when listed exactly", () => {
+    // The input-time floor refuses `.local` and `.internal` unlisted; an
+    // operator naming the exact origin is the override, and a loopback or
+    // metadata answer is still dropped at dial time.
+    expect(canonicalOrigin("http://gotify.local")).toBe("http://gotify.local");
+    expect(canonicalOrigin("http://ntfy.internal:8080")).toBe(
+      "http://ntfy.internal:8080",
+    );
   });
 
   it("keeps RFC1918, CGNAT and ULA grantable — that is the point of the list", () => {

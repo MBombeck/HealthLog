@@ -2,13 +2,28 @@ import { prisma } from "@/lib/db";
 import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
 import {
   notificationChannelEnabledSchema,
-  ntfySettingsSchema,
+  ntfySettingsSchemaWith,
 } from "@/lib/validations/notifications";
+import {
+  evaluateNotificationTarget,
+  isAllowedNotificationTarget,
+  PRIVATE_ORIGIN_NOT_APPROVED,
+} from "@/lib/notifications/egress-policy";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { isChannelGloballyEnabled } from "@/lib/app-settings";
 import { annotate } from "@/lib/logging/context";
+
+/**
+ * The save-time schema evaluates the same policy the sender does: the public
+ * floor, plus the operator's exact-origin grant (#947). A listed private
+ * server therefore saves; an unlisted one is refused here with the reason.
+ */
+const ntfySettingsSchema = ntfySettingsSchemaWith(isAllowedNotificationTarget);
+
+const PRIVATE_ORIGIN_REFUSAL =
+  "This server is on a private network. The operator has to list its exact origin (scheme://host:port) in NOTIFICATION_PRIVATE_ORIGINS before HealthLog can send to it.";
 
 /**
  * Refusal for an enable attempt on a channel the operator switched off
@@ -119,7 +134,23 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   }
 
   const parsed = ntfySettingsSchema.safeParse(body);
-  if (!parsed.success) return apiError("Invalid data", 422);
+  if (!parsed.success) {
+    const candidate = (body as { serverUrl?: unknown } | null)?.serverUrl;
+    if (
+      typeof candidate === "string" &&
+      evaluateNotificationTarget(candidate).reasonCode ===
+        PRIVATE_ORIGIN_NOT_APPROVED
+    ) {
+      annotate({
+        action: { name: "settings.ntfy.update" },
+        meta: { refused: PRIVATE_ORIGIN_NOT_APPROVED },
+      });
+      return apiError(PRIVATE_ORIGIN_REFUSAL, 422, {
+        errorCode: PRIVATE_ORIGIN_NOT_APPROVED,
+      });
+    }
+    return apiError("Invalid data", 422);
+  }
 
   const { serverUrl, topic, authToken, enabled } = parsed.data;
 

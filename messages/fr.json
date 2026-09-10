@@ -5990,6 +5990,7 @@
         "connection_failed": "Échec de la connexion",
         "not_configured": "Non configuré",
         "url_not_public": "L’URL n’est pas un point de terminaison public",
+        "private_origin_not_approved": "Cible sur un réseau privé. L’opérateur doit ajouter cette origine à NOTIFICATION_PRIVATE_ORIGINS",
         "url_invalid": "L’URL n’est pas valide",
         "redirected": "Le point de terminaison redirige — vérifiez l’URL",
         "endpoint_not_found": "Point de terminaison introuvable à l’URL",

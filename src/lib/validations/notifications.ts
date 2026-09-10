@@ -337,41 +337,64 @@ export function isPublicUrl(url: string): boolean {
   }
 }
 
-export const ntfySettingsSchema = z.object({
-  serverUrl: z
-    .url("Ungültige Server-URL")
-    .max(200)
-    .refine(
-      (url) => isPublicUrl(url),
-      "Server-URL darf nicht auf interne Netzwerke zeigen",
-    )
-    .optional()
-    .or(z.literal("")),
-  topic: z.string().max(100).optional().or(z.literal("")),
-  authToken: z.string().max(200).optional().or(z.literal("")),
-  enabled: z.boolean(),
-});
+/**
+ * ntfy channel settings. The server URL is user-supplied and must pass the
+ * target predicate at input time. The exported constant carries the plain
+ * public floor (`isPublicUrl`) for the OpenAPI contract; the save route
+ * builds the same shape with `isAllowedNotificationTarget`, which adds the
+ * operator's `NOTIFICATION_PRIVATE_ORIGINS` grant (#947) on top of the floor
+ * without this module having to read the environment.
+ */
+export function ntfySettingsSchemaWith(
+  isAllowedTarget: (url: string) => boolean,
+) {
+  return z.object({
+    serverUrl: z
+      .url("Ungültige Server-URL")
+      .max(200)
+      .refine(
+        isAllowedTarget,
+        "Server-URL darf nicht auf interne Netzwerke zeigen",
+      )
+      .optional()
+      .or(z.literal("")),
+    topic: z.string().max(100).optional().or(z.literal("")),
+    authToken: z.string().max(200).optional().or(z.literal("")),
+    enabled: z.boolean(),
+  });
+}
+
+export const ntfySettingsSchema = ntfySettingsSchemaWith(isPublicUrl);
 
 /**
  * Generic-webhook channel settings (v1.17.1). The URL is user-supplied and
- * must pass the SSRF floor (`isPublicUrl`) at input time; the dispatcher
- * re-checks it at fetch time via `safeFetch({ requirePublicHost: true })`. The
- * optional header name/value carry a shared secret (e.g. Gotify token).
+ * must pass the target predicate at input time; the sender re-checks it at
+ * fetch time through `safeFetch` with the connect-time pin. The exported
+ * constant carries the plain public floor for the OpenAPI contract; the save
+ * route passes `isAllowedNotificationTarget` so an origin the operator listed
+ * in `NOTIFICATION_PRIVATE_ORIGINS` (#947) saves. The optional header
+ * name/value carry a shared secret (e.g. Gotify token).
  */
-export const webhookSettingsSchema = z.object({
-  url: z
-    .url("Ungültige Webhook-URL")
-    .max(500)
-    .refine(
-      (url) => isPublicUrl(url),
-      "Webhook-URL darf nicht auf interne Netzwerke zeigen",
-    )
-    .optional()
-    .or(z.literal("")),
-  headerName: z.string().max(100).optional().or(z.literal("")),
-  headerValue: z.string().max(500).optional().or(z.literal("")),
-  enabled: z.boolean(),
-});
+export function webhookSettingsSchemaWith(
+  isAllowedTarget: (url: string) => boolean,
+) {
+  return z.object({
+    url: z
+      .url("Ungültige Webhook-URL")
+      .max(500)
+      .refine(
+        isAllowedTarget,
+        "Webhook-URL darf nicht auf interne Netzwerke zeigen",
+      )
+      .optional()
+      .or(z.literal("")),
+    headerName: z.string().max(100).optional().or(z.literal("")),
+    headerValue: z.string().max(500).optional().or(z.literal("")),
+    enabled: z.boolean(),
+  });
+}
+
+export const webhookSettingsSchema = webhookSettingsSchemaWith(isPublicUrl);
 
 /**
  * Email channel settings (v1.17.1). The SMTP transport is operator-configured;

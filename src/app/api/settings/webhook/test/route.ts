@@ -41,6 +41,20 @@ export const POST = apiHandler(async () => {
   });
 
   if (!result.ok) {
+    // A private-origin refusal is a policy decision, not a delivery fault:
+    // say so, with the code the card translates, instead of a bare 500 that
+    // sends the operator to the wide-event log to learn why (#947).
+    if (result.errorCode) {
+      annotate({
+        action: { name: "settings.webhook.test" },
+        meta: { success: false, refused: result.errorCode },
+      });
+      return apiError(
+        "The target is on a private network the operator has not approved. List its exact origin (scheme://host:port) in NOTIFICATION_PRIVATE_ORIGINS on the server.",
+        422,
+        { errorCode: result.errorCode },
+      );
+    }
     return apiError("Failed to send test message", 500);
   }
 

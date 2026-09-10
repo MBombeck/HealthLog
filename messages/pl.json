@@ -5990,6 +5990,7 @@
         "connection_failed": "Połączenie nie powiodło się",
         "not_configured": "Nieskonfigurowano",
         "url_not_public": "Adres URL nie jest publicznym punktem końcowym",
+        "private_origin_not_approved": "Cel w sieci prywatnej. Operator musi dodać to źródło do NOTIFICATION_PRIVATE_ORIGINS",
         "url_invalid": "Adres URL jest nieprawidłowy",
         "redirected": "Punkt końcowy przekierowuje — sprawdź adres URL",
         "endpoint_not_found": "Nie znaleziono punktu końcowego pod adresem URL",

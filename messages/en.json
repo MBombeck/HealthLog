@@ -5990,6 +5990,7 @@
         "connection_failed": "Connection failed",
         "not_configured": "Not configured",
         "url_not_public": "URL is not a public endpoint",
+        "private_origin_not_approved": "Private network target. The operator has to list this origin in NOTIFICATION_PRIVATE_ORIGINS",
         "url_invalid": "URL is invalid",
         "redirected": "Endpoint redirects — check the URL",
         "endpoint_not_found": "Endpoint not found at the URL",
