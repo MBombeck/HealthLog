@@ -16410,6 +16410,16 @@ paths:
 
 
         Cookie or wildcard Bearer; `userId` is never read from the body.
+
+
+        `managedRecordId` — "someone I look after". The answers were given for the profile the confirm screen created,
+        so the derivation and the seed land on THAT record through the same record-keyed write the guardian's modules
+        route uses, its setup row is written as finished, and the caller's own record is stamped complete and latched
+        with its map untouched. A managed record the caller does not actively guard, a record that is not a managed
+        profile, or an id that does not exist all answer 404 with nothing stamped; a body naming a record when Q1 was
+        not `someone-else` is a 422. With Q1 = `someone-else` and NO record id, the flow completes and latches without
+        deriving anything onto anybody: there is no record the answers describe yet, and they never describe the
+        guardian's.
       requestBody:
         required: true
         content:
@@ -16426,6 +16436,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/OnboardingCompleteEnvelope"
         "401": *a1
+        "404":
+          description: "`managedRecordId` names no managed profile the caller actively guards — missing, not a managed record, or
+            not theirs; one answer for all three. `meta.errorCode` = `onboarding.complete.recordNotFound`. Nothing was
+            stamped."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "413":
           description: Body exceeds 64 KiB.
           content:
@@ -16439,8 +16457,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
-          description: The body did not validate. `meta.errorCode` = `onboarding.complete.invalid`. Single-message, not the
-            multi-issue envelope.
+          description: The body did not validate (`meta.errorCode` = `onboarding.complete.invalid`; single-message, not the
+            multi-issue envelope), or `managedRecordId` was sent for answers that were not given for somebody else's
+            record — Q1 was `me` or `both` (`meta.errorCode` = `onboarding.complete.recordTargetMismatch`; nothing
+            stamped).
           content:
             application/json:
               schema:
@@ -27983,6 +28003,13 @@ components:
       type: object
       properties:
         managedRecordId:
+          description: The managed record the setup answers were given FOR — the profile "someone I look after" created on the
+            confirm screen. When present, the module map and the dashboard order derived from the caller's answers are
+            applied to THAT record and its own setup row is written as finished; the caller's own record is stamped
+            complete and its derivation latched without any module being touched. Honoured only for a managed profile
+            the caller actively guards (otherwise 404 `onboarding.complete.recordNotFound`) and only when the answer to
+            Q1 was `someone-else` (otherwise 422 `onboarding.complete.recordTargetMismatch`); nothing is stamped on a
+            refusal. Absent with Q1 = `someone-else`, the flow completes without deriving anything anywhere.
           type: string
           minLength: 1
           maxLength: 64
@@ -28002,10 +28029,12 @@ components:
             - MALE
             - FEMALE
             - OTHER
-      description: "Optional profile fields to save alongside the completion stamp. Every field is optional and only a truthy
-        value is written — sending `heightCm: 0` or an empty `displayName` leaves the column alone rather than clearing
-        it. There is no way to CLEAR a field through this endpoint. `dateOfBirth` is a free string parsed with `new
-        Date(...)`: an unparseable value is silently ignored, not refused."
+      description: "The completion stamp's body. `managedRecordId` (v1.39) names the managed record the answers were given for
+        — see the field. The profile fields are the legacy half: every one optional, only a truthy value is written —
+        sending `heightCm: 0` or an empty `displayName` leaves the column alone rather than clearing it, and there is no
+        way to CLEAR a field through this endpoint. `dateOfBirth` is a free string parsed with `new Date(...)`: an
+        unparseable value is silently ignored, not refused. The web flow writes its profile through `PUT
+        /api/auth/profile` instead."
     DisclaimerAckRequest:
       type: object
       properties:
@@ -29945,7 +29974,7 @@ components:
                 nutrient — nutrient.batch.invalid, nutrient.batch.too_large, nutrient.daily.invalid,
                 nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day; onboarding —
                 onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
-                onboarding.complete.notGuardian, onboarding.complete.recordTargetMismatch,
+                onboarding.complete.recordNotFound, onboarding.complete.recordTargetMismatch,
                 onboarding.disclaimer.invalid, onboarding.restart.invalid, onboarding.restart.rateLimited,
                 onboarding.tour.invalid; personal_records — personal_records.invalid_query; practitioner —
                 practitioner.invalid; profile — profile.update.emailInUse, profile.update.invalidBody,

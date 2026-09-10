@@ -4739,7 +4739,10 @@
       "visitTitle": "Prepararse para la visita",
       "visitDescription": "Anota la cita en el calendario; el informe médico reúne lo que debes llevar.",
       "visitCta": "Abrir visitas",
-      "dataSourceNamedTitle": "Conectar {source}"
+      "dataSourceNamedTitle": "Conectar {source}",
+      "managedProfileTitle": "Crear el perfil de la persona a tu cargo",
+      "managedProfileDescription": "Tus respuestas eran para el registro de otra persona; se crea en Acceso compartido.",
+      "managedProfileCta": "Crear el perfil"
     }
   },
   "trendHints": {

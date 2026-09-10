@@ -4739,7 +4739,10 @@
       "visitTitle": "Préparer la visite",
       "visitDescription": "Notez le rendez-vous dans le calendrier ; le rapport médical rassemble ce qu'il faut apporter.",
       "visitCta": "Ouvrir les visites",
-      "dataSourceNamedTitle": "Connecter {source}"
+      "dataSourceNamedTitle": "Connecter {source}",
+      "managedProfileTitle": "Créer le profil de la personne dont vous vous occupez",
+      "managedProfileDescription": "Vos réponses concernaient le dossier d'une autre personne ; il se crée dans Accès partagé.",
+      "managedProfileCta": "Créer le profil"
     }
   },
   "trendHints": {

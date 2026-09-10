@@ -4739,7 +4739,10 @@
       "visitTitle": "Przygotuj się do wizyty",
       "visitDescription": "Wpisz termin do kalendarza; raport dla lekarza zbiera to, co warto zabrać.",
       "visitCta": "Otwórz wizyty",
-      "dataSourceNamedTitle": "Połącz {source}"
+      "dataSourceNamedTitle": "Połącz {source}",
+      "managedProfileTitle": "Utwórz profil osoby, którą się opiekujesz",
+      "managedProfileDescription": "Twoje odpowiedzi dotyczyły kartoteki innej osoby; tworzy się ją w Dostępie współdzielonym.",
+      "managedProfileCta": "Utwórz profil"
     }
   },
   "trendHints": {

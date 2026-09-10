@@ -4739,7 +4739,10 @@
       "visitTitle": "Prepara la visita",
       "visitDescription": "Segna l'appuntamento nel calendario; il referto per il medico raccoglie cosa portare.",
       "visitCta": "Apri le visite",
-      "dataSourceNamedTitle": "Collega {source}"
+      "dataSourceNamedTitle": "Collega {source}",
+      "managedProfileTitle": "Crea il profilo della persona di cui ti prendi cura",
+      "managedProfileDescription": "Le tue risposte riguardavano la cartella di un'altra persona; si crea in Accesso condiviso.",
+      "managedProfileCta": "Crea il profilo"
     }
   },
   "trendHints": {

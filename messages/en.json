@@ -4739,7 +4739,10 @@
       "visitTitle": "Prepare for the visit",
       "visitDescription": "Put the appointment on the calendar; the doctor report bundles what to bring.",
       "visitCta": "Open visits",
-      "dataSourceNamedTitle": "Connect {source}"
+      "dataSourceNamedTitle": "Connect {source}",
+      "managedProfileTitle": "Create the profile you look after",
+      "managedProfileDescription": "Your answers were given for another person's record; it is created under Shared access.",
+      "managedProfileCta": "Create the profile"
     }
   },
   "trendHints": {

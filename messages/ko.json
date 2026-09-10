@@ -4739,7 +4739,10 @@
       "visitTitle": "진료 준비하기",
       "visitDescription": "예약을 달력에 넣으세요. 진료 보고서가 가져갈 내용을 모아 줍니다.",
       "visitCta": "진료 열기",
-      "dataSourceNamedTitle": "{source} 연결"
+      "dataSourceNamedTitle": "{source} 연결",
+      "managedProfileTitle": "돌보는 사람의 프로필 만들기",
+      "managedProfileDescription": "답변은 다른 사람의 기록에 대한 것이었습니다. 프로필은 공유 접근에서 만듭니다.",
+      "managedProfileCta": "프로필 만들기"
     }
   },
   "trendHints": {

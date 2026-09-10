@@ -131,4 +131,55 @@ test.describe("setup flow — a child's managed profile", () => {
     await page.locator('[data-slot="onboarding-open-dashboard"]').click();
     await expect.poll(() => new URL(page.url()).pathname).toBe("/");
   });
+
+  test("finishing without the profile derives nothing onto the guardian", async ({
+    page,
+  }) => {
+    // The other exit of the same screen (H1'): no profile is created, so
+    // there is no record the answers describe. The guardian's own map must
+    // stay exactly as it was, and the checklist carries the profile instead.
+    test.setTimeout(90_000);
+
+    await page.goto("/onboarding");
+    await acceptAndSetUp(page);
+    await choose(page, "who", ["someone-else"]);
+    await next(page);
+    await expectScreen(page, "areas");
+    await choose(page, "areas", ["blood-pressure"]);
+    await next(page);
+    await expectScreen(page, "medication");
+    await choose(page, "medication", ["yes"]);
+    await next(page);
+    await expectScreen(page, "sources");
+    await choose(page, "sources", ["oura"]);
+    await next(page);
+    await expectScreen(page, "visit");
+    await choose(page, "visit", ["within-a-month"]);
+    await next(page);
+
+    await expectScreen(page, "confirm");
+    await page
+      .locator('[data-slot="onboarding-finish-without-profile"]')
+      .click();
+    await expectScreen(page, "done");
+    await expect(
+      page.locator('[data-slot="onboarding-open-managed-record"]'),
+    ).toHaveCount(0);
+
+    const me = await readMe(page);
+    expect(me.onboarding.completedAt).not.toBeNull();
+    for (const key of ["glucose", "sleep", "mood", "labs", "vaccinations"]) {
+      expect(me.modules[key], `guardian module ${key}`).not.toBe(false);
+    }
+    expect((me.accountAccess?.accounts ?? []).length).toBe(0);
+
+    await page.locator('[data-slot="onboarding-open-dashboard"]').click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe("/");
+    const checklist = page.locator('[data-testid="onboarding-card"]');
+    await expect(checklist).toBeVisible({ timeout: 15_000 });
+    await expect(
+      checklist.locator('li[data-item-id="managedProfile"]'),
+    ).toHaveAttribute("data-done", "false");
+    await expect(checklist.locator('li[data-item-id="visit"]')).toHaveCount(0);
+  });
 });

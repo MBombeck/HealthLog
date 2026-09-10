@@ -158,12 +158,15 @@ async function refuseManagedRecord(
     guardianId: userId,
   });
   if (!guarded) {
+    // 404 for every case at once — missing, not a managed profile, not
+    // guarded by the caller — as the id-addressed managed-profile route
+    // answers (`managed_profile.not_found`): one answer, no existence oracle.
     annotate({
       action: { name: "onboarding.needs.complete" },
-      meta: { outcome: "not_guardian" },
+      meta: { outcome: "record_not_found" },
     });
-    return apiError("Not a guardian of that record", 403, {
-      errorCode: "onboarding.complete.notGuardian",
+    return apiError("Managed record not found", 404, {
+      errorCode: "onboarding.complete.recordNotFound",
     });
   }
   const record = await prisma.onboardingRecord.findUnique({
@@ -239,7 +242,16 @@ async function completeNeedsFlow(
   let derived = false;
   let dashboardSeeded = false;
   let keptForData: string[] = [];
-  if (record.modulesDerivedAt === null) {
+  // "Someone I look after" with no profile to apply the answers to: the
+  // person declined (or could not, without a second factor) to create it on
+  // the confirm screen. There is no record the answers describe yet, and
+  // they must not describe the guardian's — so the flow is stamped complete
+  // and LATCHED without deriving or seeding anything. The profile created
+  // later under Settings starts from the defaults. Enforced here, on the
+  // server, whatever the client sent.
+  const answersForNobody =
+    state.needs.recordTarget === "someone-else" && managedRecordId === null;
+  if (record.modulesDerivedAt === null && !answersForNobody) {
     // The record the answers are about: the managed profile for "someone I
     // look after" (verified above), otherwise the caller's own.
     const targetId = managedRecordId ?? userId;
@@ -338,6 +350,11 @@ async function completeNeedsFlow(
     // who opens the questions from inside that record later is offered a
     // re-run, not a first run.
     if (managedRecordId) {
+      // `needsJson` is the guardian's answers as given, `recordTarget`
+      // "someone-else" included: from inside the child's record that reads
+      // as "for somebody else", which is true of how it was set up. Nothing
+      // acts on it there — the three writes refuse under a switch — so it is
+      // kept as the honest record of the flow that configured the row.
       const settled = steps.map((step) => ({
         ...step,
         status: "done" as const,
@@ -374,7 +391,9 @@ async function completeNeedsFlow(
       // or a replay of the confirm quietly moves the instant the setup
       // finished at.
       completedAt: record.completedAt ?? now,
-      ...(derived ? { modulesDerivedAt: now } : {}),
+      // Latched on a derivation, and on the no-record arm as well: a later
+      // confirm must not apply the child's answers to the guardian either.
+      ...(derived || answersForNobody ? { modulesDerivedAt: now } : {}),
     },
     select: ONBOARDING_RECORD_SELECT,
   });
@@ -382,7 +401,11 @@ async function completeNeedsFlow(
   annotate({
     action: { name: "onboarding.needs.complete" },
     meta: {
-      outcome: derived ? "derived" : "already_derived",
+      outcome: answersForNobody
+        ? "no_record_for_answers"
+        : derived
+          ? "derived"
+          : "already_derived",
       keptForData: keptForData.length,
       dashboard_seeded: dashboardSeeded,
       ...(managedRecordId ? { target: "managed_record" } : {}),

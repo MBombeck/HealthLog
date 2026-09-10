@@ -32,7 +32,15 @@ export const onboardingCompleteSchema = z.object({
    * Q1 must be "someone-else"; anything else is refused rather than applied
    * to the wrong record.
    */
-  managedRecordId: z.string().trim().min(1).max(64).optional(),
+  managedRecordId: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .optional()
+    .describe(
+      "The managed record the setup answers were given FOR — the profile \"someone I look after\" created on the confirm screen. When present, the module map and the dashboard order derived from the caller's answers are applied to THAT record and its own setup row is written as finished; the caller's own record is stamped complete and its derivation latched without any module being touched. Honoured only for a managed profile the caller actively guards (otherwise 404 `onboarding.complete.recordNotFound`) and only when the answer to Q1 was `someone-else` (otherwise 422 `onboarding.complete.recordTargetMismatch`); nothing is stamped on a refusal. Absent with Q1 = `someone-else`, the flow completes without deriving anything anywhere.",
+    ),
   displayName: z.string().trim().min(1).max(50).optional(),
   heightCm: z.number().min(50).max(300).optional(),
   dateOfBirth: z.string().optional(),

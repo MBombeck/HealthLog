@@ -4739,7 +4739,10 @@
       "visitTitle": "Auf den Arztbesuch vorbereiten",
       "visitDescription": "Trag den Termin in den Kalender ein; der Arztbericht bündelt, was du mitbringst.",
       "visitCta": "Besuche öffnen",
-      "dataSourceNamedTitle": "{source} verbinden"
+      "dataSourceNamedTitle": "{source} verbinden",
+      "managedProfileTitle": "Profil der betreuten Person anlegen",
+      "managedProfileDescription": "Deine Antworten galten der Akte einer anderen Person; sie wird unter Geteilter Zugriff angelegt.",
+      "managedProfileCta": "Profil anlegen"
     }
   },
   "trendHints": {

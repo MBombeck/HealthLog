@@ -23,13 +23,17 @@ export const CHECKLIST_ITEM_IDS = [
   // v1.39 (C2) — present only for an answer that named a visit within a
   // month (design spec §After the flow: "prepare the visit").
   "visit",
+  // v1.39 (C2) — "someone I look after" (or "both") with no managed profile
+  // yet: the answers were given for a record that does not exist, and this
+  // row is where it gets created.
+  "managedProfile",
 ] as const;
 
 export type ChecklistItemId = (typeof CHECKLIST_ITEM_IDS)[number];
 
 /** The rows every record has; the visit row joins only when asked for. */
 export const CHECKLIST_BASE_ITEM_IDS: readonly ChecklistItemId[] =
-  CHECKLIST_ITEM_IDS.filter((id) => id !== "visit");
+  CHECKLIST_ITEM_IDS.filter((id) => id !== "visit" && id !== "managedProfile");
 
 export interface ChecklistItem {
   id: ChecklistItemId;
@@ -85,6 +89,11 @@ export interface ChecklistInputs {
    */
   upcomingVisitCount: number;
   /**
+   * v1.39 (C2) — managed profiles this account looks after, for the row that
+   * asks a guardian to create the one their answers were about.
+   */
+  managedProfileCount: number;
+  /**
    * v1.39 (C1) — the needs-based setup state from `GET /api/auth/me`, or null
    * for a record that never entered the flow.
    *
@@ -115,6 +124,19 @@ export function checklistOrderFromNeeds(
   const promote = (id: ChecklistItemId) => {
     if (!promoted.includes(id)) promoted.push(id);
   };
+
+  // Answers given for somebody else's record say nothing about the
+  // guardian's own dashboard: the one row they promote is the profile.
+  if (needs.recordTarget === "someone-else") {
+    promote("managedProfile");
+    return [
+      "profile",
+      ...promoted,
+      ...CHECKLIST_ITEM_IDS.filter(
+        (id) => id !== "profile" && !promoted.includes(id),
+      ),
+    ];
+  }
 
   if (needs.medication === "yes" || needs.medication === "sometimes") {
     promote("medication");
@@ -185,12 +207,26 @@ export function buildChecklist(inputs: ChecklistInputs): ChecklistItem[] {
   if (!inputs.onboarding) return items;
   // The visit row exists only for the answer that asked for it; every other
   // record keeps the six rows it had. Done once a visit is on the calendar.
-  if (inputs.onboarding.needs.visit === "within-a-month") {
+  const target = inputs.onboarding.needs.recordTarget;
+  if (
+    target !== "someone-else" &&
+    inputs.onboarding.needs.visit === "within-a-month"
+  ) {
     items.push({
       id: "visit",
       done: inputs.upcomingVisitCount >= 1,
       href: "/checkups",
       dismissed: inputs.dismissedIds.has("visit"),
+    });
+  }
+  // The profile the answers were about. Offered to "both" as well, which
+  // the spec says gets the profile at the end.
+  if (target === "someone-else" || target === "both") {
+    items.push({
+      id: "managedProfile",
+      done: inputs.managedProfileCount >= 1,
+      href: "/settings/access",
+      dismissed: inputs.dismissedIds.has("managedProfile"),
     });
   }
   // Ordered from the answers only once the flow has been confirmed: before

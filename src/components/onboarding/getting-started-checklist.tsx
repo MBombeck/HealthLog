@@ -12,6 +12,7 @@ import {
   Sparkles,
   Stethoscope,
   User2,
+  UserPlus,
   Wifi,
   X,
 } from "lucide-react";
@@ -47,6 +48,7 @@ const ITEM_ICONS: Record<ChecklistItemId, LucideIcon> = {
   notifications: Bell,
   insights: Sparkles,
   visit: Stethoscope,
+  managedProfile: UserPlus,
 };
 
 const ITEM_LABEL_KEYS: Record<
@@ -87,6 +89,11 @@ const ITEM_LABEL_KEYS: Record<
     title: "gettingStarted.items.visitTitle",
     description: "gettingStarted.items.visitDescription",
     cta: "gettingStarted.items.visitCta",
+  },
+  managedProfile: {
+    title: "gettingStarted.items.managedProfileTitle",
+    description: "gettingStarted.items.managedProfileDescription",
+    cta: "gettingStarted.items.managedProfileCta",
   },
 };
 
@@ -302,7 +309,11 @@ export function GettingStartedChecklist() {
   // v1.39 (C2) — the "prepare the visit" row, only for the answer that asked
   // for it: a visit within a month. Reads the visits list's own meta count so
   // the row flips done the moment one is on the calendar.
-  const visitAsked = user?.onboarding?.needs.visit === "within-a-month";
+  // Answers given for somebody else's record (Q1 "someone I look after") are
+  // the child's, not this dashboard's: no visit row, no named source here.
+  const answersAreOwn = user?.onboarding?.needs.recordTarget !== "someone-else";
+  const visitAsked =
+    answersAreOwn && user?.onboarding?.needs.visit === "within-a-month";
   const { data: upcomingVisitCount } = useQuery<number>({
     queryKey: queryKeys.onboardingUpcomingVisits(),
     queryFn: async () =>
@@ -314,8 +325,12 @@ export function GettingStartedChecklist() {
 
   // The named source: "Connect Oura" rather than "Connect a data source"
   // for somebody who said their readings come from one.
-  const namedSource =
-    user?.onboarding?.needs.sources.find(isBrowserConnectableSource) ?? null;
+  const namedSource = answersAreOwn
+    ? (user?.onboarding?.needs.sources.find(isBrowserConnectableSource) ?? null)
+    : null;
+  const managedProfileCount = (user?.accountAccess?.accounts ?? []).filter(
+    (entry) => entry.recordKind === "managed",
+  ).length;
 
   const medicationCount = medsData?.length ?? 0;
   const dataSourceConnected = (integrationsData?.integrations ?? []).some(
@@ -342,6 +357,7 @@ export function GettingStartedChecklist() {
         insightsConfigured,
         dismissedIds,
         upcomingVisitCount: upcomingVisitCount ?? 0,
+        managedProfileCount,
         // v1.39 (C1) — the setup answers order these rows: medication first
         // for somebody who said they take one daily, the data-source row first
         // for somebody who named a wearable. The payload resolves them for the
@@ -362,6 +378,7 @@ export function GettingStartedChecklist() {
       insightsConfigured,
       dismissedIds,
       upcomingVisitCount,
+      managedProfileCount,
     ],
   );
 

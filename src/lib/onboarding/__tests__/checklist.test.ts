@@ -57,6 +57,7 @@ function inputs(
     insightsConfigured: false,
     dismissedIds: new Set<ChecklistItemId>(),
     upcomingVisitCount: 0,
+    managedProfileCount: 0,
     onboarding: null,
     ...overrides,
   };
@@ -168,6 +169,45 @@ describe("upcomingVisitCountFrom (the visits list's wire shape)", () => {
   });
 });
 
+describe("answers given for somebody else's record (v1.39 C2)", () => {
+  it("adds the profile row and reads none of the child's answers as the guardian's", () => {
+    const items = buildChecklist(
+      inputs({
+        onboarding: onboardingState(
+          {},
+          {
+            recordTarget: "someone-else",
+            visit: "within-a-month",
+            sources: ["oura"],
+          },
+        ),
+      }),
+    );
+    const ids = items.map((i) => i.id);
+    expect(ids).toContain("managedProfile");
+    expect(ids).not.toContain("visit");
+    expect(items.find((i) => i.id === "managedProfile")).toMatchObject({
+      done: false,
+      href: "/settings/access",
+    });
+    expect(ids[1]).toBe("managedProfile");
+  });
+
+  it("is done once a managed profile exists, and offered to both as well", () => {
+    const both = buildChecklist(
+      inputs({
+        onboarding: onboardingState({}, { recordTarget: "both" }),
+        managedProfileCount: 1,
+      }),
+    );
+    expect(both.find((i) => i.id === "managedProfile")?.done).toBe(true);
+    const me = buildChecklist(
+      inputs({ onboarding: onboardingState({}, { recordTarget: "me" }) }),
+    );
+    expect(me.map((i) => i.id)).not.toContain("managedProfile");
+  });
+});
+
 describe("the visit row (v1.39 C2)", () => {
   it("exists only for an answer that named a visit within a month", () => {
     const asked = buildChecklist(
@@ -209,6 +249,7 @@ describe("the visit row (v1.39 C2)", () => {
       "dataSource",
       "notifications",
       "insights",
+      "managedProfile",
     ]);
   });
 });
@@ -253,6 +294,7 @@ describe("visibleChecklist + checklistProgress", () => {
       insightsConfigured: false,
       dismissedIds: new Set(),
       upcomingVisitCount: 0,
+      managedProfileCount: 0,
     });
     const progress = checklistProgress(items);
     expect(progress.percent).toBe(0);

@@ -609,7 +609,44 @@ describe("POST /api/onboarding/complete for somebody else's record", () => {
     expect(await modulePrefs(guardian.id)).toEqual({});
   });
 
-  it("refuses a record the caller does not guard, and touches nothing", async () => {
+  it("derives nowhere when the answers were for somebody else and no profile exists", async () => {
+    // H1' — "Finish without the profile" (no second factor, or a change of
+    // mind). There is no record the answers describe, and they must not
+    // describe the guardian's: the flow completes and latches, nothing is
+    // derived or seeded on the guardian, whatever the client sends.
+    const guardian = await makeUser("guardian-no-profile");
+    await signIn(guardian.id);
+    await patchAnswer({ step: "who", recordTarget: "someone-else" });
+    await patchAnswer({ step: "areas", areas: ["blood-pressure"] });
+    await patchAnswer({ step: "medication", medication: "yes" });
+    await patchAnswer({ step: "sources", sources: ["manual"] });
+    await patchAnswer({ step: "visit", visit: "within-a-month" });
+    await patchAnswer({ step: "units", status: "skipped" });
+
+    const res = await postComplete();
+    expect(res.status).toBe(200);
+    expect(await modulePrefs(guardian.id)).toEqual({});
+    const row = await getPrismaClient().user.findUniqueOrThrow({
+      where: { id: guardian.id },
+      select: { dashboardWidgetsJson: true, onboardingCompletedAt: true },
+    });
+    expect(row.dashboardWidgetsJson).toBeNull();
+    expect(row.onboardingCompletedAt).not.toBeNull();
+    const own = await getPrismaClient().onboardingRecord.findUniqueOrThrow({
+      where: { userId: guardian.id },
+    });
+    expect(own.completedAt).not.toBeNull();
+    // Latched: a second confirm, with or without a record, derives nothing.
+    expect(own.modulesDerivedAt).not.toBeNull();
+    expect((await postComplete()).status).toBe(200);
+    expect(await modulePrefs(guardian.id)).toEqual({});
+  });
+
+  it("answers 404 for a record the caller does not guard, and touches nothing", async () => {
+    // M7 — a record addressed by id answers 404 for missing, not managed and
+    // not guarded alike, as `GET /api/managed-profiles/{id}` does through
+    // the same helper: one answer, no existence oracle. This asserted 403
+    // once; the id-addressed convention is 404.
     const { guardian } = await guardianWithChild();
     const stranger = await makeUser("stranger-guardian");
     const { createManagedProfile } =
@@ -623,7 +660,10 @@ describe("POST /api/onboarding/complete for somebody else's record", () => {
     });
 
     const res = await postComplete({ managedRecordId: theirs.id });
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
+    expect(
+      (await postComplete({ managedRecordId: "no-such-record" })).status,
+    ).toBe(404);
     expect(await modulePrefs(theirs.id)).toEqual({});
     expect(await modulePrefs(guardian.id)).toEqual({});
     const own = await getPrismaClient().onboardingRecord.findUniqueOrThrow({

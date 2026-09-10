@@ -213,7 +213,7 @@ const disclaimerAckResponse = z
 const onboardingCompleteRequest = onboardingCompleteSchema.meta({
   id: "OnboardingCompleteRequest",
   description:
-    "Optional profile fields to save alongside the completion stamp. Every field is optional and only a truthy value is written — sending `heightCm: 0` or an empty `displayName` leaves the column alone rather than clearing it. There is no way to CLEAR a field through this endpoint. `dateOfBirth` is a free string parsed with `new Date(...)`: an unparseable value is silently ignored, not refused.",
+    "The completion stamp's body. `managedRecordId` (v1.39) names the managed record the answers were given for — see the field. The profile fields are the legacy half: every one optional, only a truthy value is written — sending `heightCm: 0` or an empty `displayName` leaves the column alone rather than clearing it, and there is no way to CLEAR a field through this endpoint. `dateOfBirth` is a free string parsed with `new Date(...)`: an unparseable value is silently ignored, not refused. The web flow writes its profile through `PUT /api/auth/profile` instead.",
 });
 
 export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
@@ -302,7 +302,7 @@ export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Onboarding"],
       summary: "Stamp onboarding as complete, and derive the module map",
       description:
-        "Marks onboarding finished and saves whatever profile fields came with it, then clears the proxy-readable pending cookie so the next navigation stops redirecting to `/onboarding`.\n\nv1.39 — this is the needs-based flow's confirm endpoint. For a record that FINISHED the questions — every one of them answered or deliberately passed — it derives that record's module map from the answers and applies it, ONCE: the derivation marker is what stops a second confirm re-applying the questionnaire over decisions taken in Settings since, and `POST /api/onboarding/restart` clears the marker when the person asks for the questions again. The merge is one-directional — a module the answers name is switched on, a module they do not name is switched off only where the record does not already carry an explicit on and holds no data in that domain. The `cycle` key is not written here at all: it delegates to the cycle profile, which this route sets to `true` when the cycle area was chosen and never to `false`. In the same derivation the dashboard order is seeded from the answers — the tiles of the chosen areas (and the medication tile for a schedule) move to the front and are made visible — but only while the layout column is still unset, so a person who already arranged their tiles is never clobbered. A half-answered flow derives nothing and is not stamped as complete.\n\nThe response carries `onboarding` beside `completed`; a caller that never entered the needs flow gets the fixed acknowledgement alone — it stamps the completion whatever the answers say, re-stamps on every call rather than refusing a second one, and enforces no rate limit of its own. The legacy half writes no audit row; the needs half writes one (`user.modules.update`) when it derives, because that is the same column the dedicated modules route audits.\n\nCookie or wildcard Bearer; `userId` is never read from the body.",
+        "Marks onboarding finished and saves whatever profile fields came with it, then clears the proxy-readable pending cookie so the next navigation stops redirecting to `/onboarding`.\n\nv1.39 — this is the needs-based flow's confirm endpoint. For a record that FINISHED the questions — every one of them answered or deliberately passed — it derives that record's module map from the answers and applies it, ONCE: the derivation marker is what stops a second confirm re-applying the questionnaire over decisions taken in Settings since, and `POST /api/onboarding/restart` clears the marker when the person asks for the questions again. The merge is one-directional — a module the answers name is switched on, a module they do not name is switched off only where the record does not already carry an explicit on and holds no data in that domain. The `cycle` key is not written here at all: it delegates to the cycle profile, which this route sets to `true` when the cycle area was chosen and never to `false`. In the same derivation the dashboard order is seeded from the answers — the tiles of the chosen areas (and the medication tile for a schedule) move to the front and are made visible — but only while the layout column is still unset, so a person who already arranged their tiles is never clobbered. A half-answered flow derives nothing and is not stamped as complete.\n\nThe response carries `onboarding` beside `completed`; a caller that never entered the needs flow gets the fixed acknowledgement alone — it stamps the completion whatever the answers say, re-stamps on every call rather than refusing a second one, and enforces no rate limit of its own. The legacy half writes no audit row; the needs half writes one (`user.modules.update`) when it derives, because that is the same column the dedicated modules route audits.\n\nCookie or wildcard Bearer; `userId` is never read from the body.\n\n`managedRecordId` — \"someone I look after\". The answers were given for the profile the confirm screen created, so the derivation and the seed land on THAT record through the same record-keyed write the guardian's modules route uses, its setup row is written as finished, and the caller's own record is stamped complete and latched with its map untouched. A managed record the caller does not actively guard, a record that is not a managed profile, or an id that does not exist all answer 404 with nothing stamped; a body naming a record when Q1 was not `someone-else` is a 422. With Q1 = `someone-else` and NO record id, the flow completes and latches without deriving anything onto anybody: there is no record the answers describe yet, and they never describe the guardian's.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: onboardingCompleteRequest } },
@@ -323,6 +323,11 @@ export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
+        "404": {
+          description:
+            "`managedRecordId` names no managed profile the caller actively guards — missing, not a managed record, or not theirs; one answer for all three. `meta.errorCode` = `onboarding.complete.recordNotFound`. Nothing was stamped.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         "413": {
           description: "Body exceeds 64 KiB.",
           content: { "application/json": { schema: errorEnvelope } },
@@ -334,7 +339,7 @@ export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "The body did not validate. `meta.errorCode` = `onboarding.complete.invalid`. Single-message, not the multi-issue envelope.",
+            "The body did not validate (`meta.errorCode` = `onboarding.complete.invalid`; single-message, not the multi-issue envelope), or `managedRecordId` was sent for answers that were not given for somebody else's record — Q1 was `me` or `both` (`meta.errorCode` = `onboarding.complete.recordTargetMismatch`; nothing stamped).",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
