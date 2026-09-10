@@ -24,6 +24,16 @@
  * domain outside the vocabulary other than `record` fails the run outright,
  * because the table is keyed on the vocabulary and would silently lack it.
  *
+ * What it deliberately does not hold, stated so nobody reads more into a green
+ * run than it earns: the table is EXISTENTIAL per section. It answers "does
+ * any route in this section accept this need", and within a section the answer
+ * varies by verb — `POST /api/encounters` is WRITE while `POST /api/allergies`
+ * beside it is MANAGE, both under `profile`. So this guard proves the table
+ * and the routes agree about the section, never that one control's own verb is
+ * covered. That is the control's job: it asks the hook for its own verb class,
+ * and a control that read "my section is writable, therefore my create is"
+ * would be wrong in three of the four sections marked writable.
+ *
  * Mutation checks, run:
  *   - set `mind.write` to `true` in the table → "agrees with the routes" red;
  *   - change `requireRecordAuth("manage", "mind")` in `mood-entries/route.ts`
