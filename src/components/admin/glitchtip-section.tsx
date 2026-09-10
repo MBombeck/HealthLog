@@ -112,13 +112,18 @@ export function GlitchtipSection() {
           }
           disabled={updateSettings.isPending}
         />
-        <p className="text-sm" data-slot="glitchtip-target">
-          {reporting && targetHost
-            ? t("admin.glitchtipTargetOn", { host: targetHost })
-            : settings?.glitchtipEnabled
-              ? t("admin.glitchtipTargetNoTarget")
-              : t("admin.glitchtipTargetOff")}
-        </p>
+        {/* Only once the settings are in hand: a line that says "nothing is
+            sent" while the answer is still loading is a claim, not a
+            placeholder. */}
+        {settings ? (
+          <p className="text-sm" data-slot="glitchtip-target">
+            {reporting && targetHost
+              ? t("admin.glitchtipTargetOn", { host: targetHost })
+              : settings.glitchtipEnabled
+                ? t("admin.glitchtipTargetNoTarget")
+                : t("admin.glitchtipTargetOff")}
+          </p>
+        ) : null}
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="admin-glitchtip-dsn" className="text-xs">

@@ -26,6 +26,7 @@ import { ListRow } from "@/components/ui/list-row";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiGet } from "@/lib/api/api-fetch";
+import { cn } from "@/lib/utils";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import type { OffhostBackupFreshness } from "@/lib/jobs/offhost-backup-freshness";
@@ -80,7 +81,7 @@ function AccountRow({ row }: { row: OffhostAccountRow }) {
           </span>
           <Badge
             variant="outline"
-            className={`shrink-0 ${FRESHNESS_STYLE[row.freshness]}`}
+            className={cn("shrink-0", FRESHNESS_STYLE[row.freshness])}
           >
             {freshnessLabel(row.freshness, t)}
           </Badge>
