@@ -28,7 +28,7 @@ import { createGzip, gunzipSync, gzipSync } from "node:zlib";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { createRawStreamEncryptor, decryptRawStream } from "@/lib/crypto";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
-import { getEvent } from "@/lib/logging/context";
+import { annotate, getEvent } from "@/lib/logging/context";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
@@ -576,10 +576,12 @@ export async function runOffhostBackup(
   let oversized = 0;
   let largestObjectBytes = 0;
   const failures: Array<{ userId: string; message: string }> = [];
+  let ledgerWriteFailures = 0;
   const evt = getEvent();
   for (const user of users) {
+    let objectBytes: number | null = null;
     try {
-      const objectBytes = await uploadEncryptedBackup(
+      objectBytes = await uploadEncryptedBackup(
         s3,
         `${dateKey}/user-${user.id}.json.enc`,
         cfg.encryptionKey,
@@ -594,21 +596,6 @@ export async function runOffhostBackup(
           }),
         options,
       );
-      // The per-account ledger, written the moment the object exists. The run
-      // itself only ever reported counts, and a count cannot say WHICH account
-      // has no copy — which is the one question an operator asks about a
-      // backup. `new Date()` rather than the run's `now`, because on a large
-      // cohort the two are hours apart and the row is meant to say when this
-      // account's object landed.
-      await prisma.offhostBackupState.upsert({
-        where: { userId: user.id },
-        update: { lastSuccessAt: new Date(), sizeBytes: objectBytes },
-        create: {
-          userId: user.id,
-          lastSuccessAt: new Date(),
-          sizeBytes: objectBytes,
-        },
-      });
       largestObjectBytes = Math.max(largestObjectBytes, objectBytes);
       uploaded++;
     } catch (err) {
@@ -622,6 +609,45 @@ export async function runOffhostBackup(
         `offhost-backup user ${user.id} failed: ${message.slice(0, 200)}`,
       );
     }
+
+    // The per-account ledger, and deliberately NOT inside the upload's `try`.
+    // `uploadEncryptedBackup` resolves only after the multipart completes, so
+    // by here the object is durably in the bucket and this account's backup
+    // has succeeded whatever the database does next. A pool timeout on the
+    // row would otherwise un-count a copy that exists — the run would report
+    // one failure too many and the console would read `never` for an account
+    // whose disaster-recovery object is fine, which is exactly the inversion
+    // the ledger exists to remove.
+    //
+    // `new Date()` rather than the run's `now`, because on a large cohort the
+    // two are hours apart and the row is meant to say when this account's
+    // object landed.
+    if (objectBytes !== null) {
+      const bytes = objectBytes;
+      try {
+        await prisma.offhostBackupState.upsert({
+          where: { userId: user.id },
+          update: { lastSuccessAt: new Date(), sizeBytes: bytes },
+          create: {
+            userId: user.id,
+            lastSuccessAt: new Date(),
+            sizeBytes: bytes,
+          },
+        });
+      } catch (err) {
+        ledgerWriteFailures++;
+        const message = (err as Error).message ?? "unknown";
+        evt?.addWarning(
+          `offhost-backup ledger write failed for ${user.id}: ${message.slice(0, 200)}`,
+        );
+      }
+    }
+  }
+  if (ledgerWriteFailures > 0) {
+    // A distinct fact from a failed upload, and one an operator has to be able
+    // to tell apart: the copies are in the bucket, the console's per-account
+    // view of them is behind.
+    annotate({ meta: { offhost_ledger_write_failures: ledgerWriteFailures } });
   }
 
   return {

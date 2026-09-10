@@ -306,8 +306,9 @@ describe("runOffhostBackup", () => {
 
   it("counts per-user failures without aborting the whole run", async () => {
     const s3 = makeS3Mock();
+    const upsert = vi.fn();
     const prisma = {
-      offhostBackupState: { upsert: vi.fn() },
+      offhostBackupState: { upsert },
       user: {
         findMany: vi.fn().mockResolvedValue([{ id: "u1" }, { id: "u2" }]),
       },
@@ -331,6 +332,40 @@ describe("runOffhostBackup", () => {
 
     expect(report.uploaded).toBe(1);
     expect(report.failed).toBe(1);
+    // The guarantee an operator leans on: an account whose upload failed keeps
+    // whatever `lastSuccessAt` it already had. A failed upload writes no
+    // success into the ledger, so yesterday's good copy is still what the
+    // console reports — the run does not overwrite it with today's failure.
+    expect(upsert).toHaveBeenCalledTimes(1);
+    expect(
+      upsert.mock.calls.map(
+        (call) => (call[0] as { where: { userId: string } }).where.userId,
+      ),
+    ).toEqual(["u1"]);
+  });
+
+  it("still reports a landed object as uploaded when the ledger write fails", async () => {
+    const s3 = makeS3Mock();
+    const prisma = {
+      offhostBackupState: {
+        upsert: vi.fn().mockRejectedValue(new Error("pool timeout")),
+      },
+      user: { findMany: vi.fn().mockResolvedValue([{ id: "u1" }]) },
+    };
+
+    const report = await runOffhostBackup(
+      prisma as never,
+      s3,
+      new Date("2026-05-08T00:00:00Z"),
+    );
+
+    // The object is in the bucket. Only the record of it is missing, and that
+    // is a different fact: counting it as a failure would tell the operator
+    // their disaster-recovery copy does not exist when it does.
+    expect(report.uploaded).toBe(1);
+    expect(report.failed).toBe(0);
+    expect(report.failures).toEqual([]);
+    expect(s3.store.has("2026-05-08/user-u1.json.enc")).toBe(true);
   });
 
   it("refuses an account whose object outgrows one multipart upload", async () => {
