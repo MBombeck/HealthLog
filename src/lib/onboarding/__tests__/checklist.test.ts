@@ -4,6 +4,7 @@ import {
   buildChecklist,
   checklistOrderFromNeeds,
   checklistProgress,
+  CHECKLIST_BASE_ITEM_IDS,
   CHECKLIST_ITEM_IDS,
   isProfileComplete,
   shouldShowChecklist,
@@ -52,6 +53,7 @@ function inputs(
     notificationsConfigured: false,
     insightsConfigured: false,
     dismissedIds: new Set<ChecklistItemId>(),
+    upcomingVisitCount: 0,
     onboarding: null,
     ...overrides,
   };
@@ -141,6 +143,51 @@ describe("buildChecklist", () => {
   });
 });
 
+describe("the visit row (v1.39 C2)", () => {
+  it("exists only for an answer that named a visit within a month", () => {
+    const asked = buildChecklist(
+      inputs({ onboarding: onboardingState({}, { visit: "within-a-month" }) }),
+    );
+    expect(asked.map((i) => i.id)).toContain("visit");
+    expect(asked.find((i) => i.id === "visit")).toMatchObject({
+      done: false,
+      href: "/checkups",
+    });
+    const later = buildChecklist(
+      inputs({ onboarding: onboardingState({}, { visit: "later" }) }),
+    );
+    expect(later.map((i) => i.id)).not.toContain("visit");
+    expect(buildChecklist(inputs()).map((i) => i.id)).not.toContain("visit");
+  });
+
+  it("is done once a visit is on the calendar", () => {
+    const items = buildChecklist(
+      inputs({
+        onboarding: onboardingState({}, { visit: "within-a-month" }),
+        upcomingVisitCount: 1,
+      }),
+    );
+    expect(items.find((i) => i.id === "visit")?.done).toBe(true);
+  });
+
+  it("is promoted by the answers like the other needs-shaped rows", () => {
+    expect(
+      checklistOrderFromNeeds({
+        ...emptyOnboardingNeeds(),
+        visit: "within-a-month",
+      }),
+    ).toEqual([
+      "profile",
+      "visit",
+      "measurement",
+      "medication",
+      "dataSource",
+      "notifications",
+      "insights",
+    ]);
+  });
+});
+
 describe("visibleChecklist + checklistProgress", () => {
   it("hides per-item dismissed rows from the visible list", () => {
     const items = buildChecklist(
@@ -180,6 +227,7 @@ describe("visibleChecklist + checklistProgress", () => {
       notificationsConfigured: false,
       insightsConfigured: false,
       dismissedIds: new Set(),
+      upcomingVisitCount: 0,
     });
     const progress = checklistProgress(items);
     expect(progress.percent).toBe(0);
@@ -332,7 +380,7 @@ describe("checklistOrderFromNeeds", () => {
 describe("buildChecklist, ordered by the setup answers", () => {
   it("keeps the fixed order for a record that never entered the flow", () => {
     expect(buildChecklist(inputs()).map((i) => i.id)).toEqual([
-      ...CHECKLIST_ITEM_IDS,
+      ...CHECKLIST_BASE_ITEM_IDS,
     ]);
   });
 
@@ -347,7 +395,7 @@ describe("buildChecklist, ordered by the setup answers", () => {
     );
     // Re-ordering the dashboard under somebody mid-question would be movement
     // they did not ask for.
-    expect(items.map((i) => i.id)).toEqual([...CHECKLIST_ITEM_IDS]);
+    expect(items.map((i) => i.id)).toEqual([...CHECKLIST_BASE_ITEM_IDS]);
   });
 
   it("orders the rows from the answers once the flow is confirmed", () => {
@@ -365,7 +413,7 @@ describe("buildChecklist, ordered by the setup answers", () => {
       "dataSource",
     ]);
     expect([...items.map((i) => i.id)].sort()).toEqual(
-      [...CHECKLIST_ITEM_IDS].sort(),
+      [...CHECKLIST_BASE_ITEM_IDS].sort(),
     );
   });
 

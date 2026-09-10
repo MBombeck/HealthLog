@@ -4803,7 +4803,11 @@
       "notificationsCta": "Open notifications",
       "insightsTitle": "Turn on insights (optional)",
       "insightsDescription": "Add a local model or your own AI key to unlock the daily briefing and Coach.",
-      "insightsCta": "Turn on insights"
+      "insightsCta": "Turn on insights",
+      "visitTitle": "Prepare for the visit",
+      "visitDescription": "Put the appointment on the calendar; the doctor report bundles what to bring.",
+      "visitCta": "Open visits",
+      "dataSourceNamedTitle": "Connect {source}"
     }
   },
   "trendHints": {
@@ -6615,7 +6619,15 @@
     },
     "dangerZoneDetail": "Your account and the credentials you sign in with are kept.",
     "deleteAccountCardDetail": "This cannot be undone.",
-    "passkeyStepUpRequired": "For your security, sign in again before removing a passkey."
+    "passkeyStepUpRequired": "For your security, sign in again before removing a passkey.",
+    "setup": {
+      "title": "Setup",
+      "description": "The questions that decide what HealthLog shows first, and the getting-started checklist on the dashboard.",
+      "setUpAgain": "Set up again",
+      "showChecklist": "Show the checklist again",
+      "checklistShown": "The checklist is back on the dashboard.",
+      "checklistNothingHidden": "The checklist was not hidden; it opens on the dashboard."
+    }
   },
   "admin": {
     "title": "Administration",
@@ -8887,7 +8899,8 @@
     "unavailable": {
       "description": "The operator switched {module} off for every account on this server. No setting of your own can bring it back.",
       "title": "Not available on this server"
-    }
+    },
+    "openModules": "Open Settings, Modules"
   },
   "vaccinations": {
     "title": "Vaccinations",

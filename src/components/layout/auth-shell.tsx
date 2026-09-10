@@ -27,6 +27,7 @@ import { DemoBanner } from "./demo-banner";
 import { OfflineBanner } from "./offline-banner";
 import { SharedRecordBanner } from "./shared-record-banner";
 import { SharedRecordUnavailable } from "./shared-record-unavailable";
+import { ModulePageGate } from "@/components/layout/module-page-gate";
 import { RecordScopeHydrationGate } from "./record-scope-hydration-gate";
 import { SidebarNav } from "./sidebar-nav";
 import { TopBar } from "./top-bar";
@@ -466,7 +467,11 @@ export function AuthShell({
                 data-slot="main-content-wrapper"
                 className="mx-auto max-w-screen-xl px-4 pt-6 pb-20 md:px-6"
               >
-                {outsideSharedRecord ? <SharedRecordUnavailable /> : children}
+                {outsideSharedRecord ? (
+                  <SharedRecordUnavailable />
+                ) : (
+                  <ModulePageGate>{children}</ModulePageGate>
+                )}
               </div>
             </main>
           </div>

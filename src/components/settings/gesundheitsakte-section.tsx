@@ -43,6 +43,8 @@ export function GesundheitsakteSection() {
 
       <section id="sharing" className="scroll-mt-28 space-y-4">
         <SectionHeading
+          // The module tour's "export" stop (the doctor report) anchors here.
+          tourId="export-hero"
           icon={Share2}
           title={t("settings.sections.sharing.title")}
           subtitle={t("settings.sections.sharing.subtitle")}

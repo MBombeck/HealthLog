@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Pill,
   Sparkles,
+  Stethoscope,
   User2,
   Wifi,
   X,
@@ -28,11 +29,14 @@ import {
   visibleChecklist,
   type ChecklistItemId,
 } from "@/lib/onboarding/checklist";
-import { apiGet } from "@/lib/api/api-fetch";
-
-const DISMISSED_ITEMS_KEY = "healthlog-getting-started-dismissed";
-const DISMISSED_ALL_KEY = "healthlog-getting-started-hidden";
-const EXPANDED_KEY = "healthlog-getting-started-expanded";
+import { apiFetchEnvelope, apiGet } from "@/lib/api/api-fetch";
+import {
+  CHECKLIST_DISMISSED_ALL_KEY as DISMISSED_ALL_KEY,
+  CHECKLIST_DISMISSED_ITEMS_KEY as DISMISSED_ITEMS_KEY,
+  CHECKLIST_EXPANDED_KEY as EXPANDED_KEY,
+} from "@/lib/onboarding/checklist-storage";
+import { questionOptionLabelKey } from "@/lib/onboarding/question-config";
+import { isBrowserConnectableSource } from "@/lib/onboarding/wizard-steps";
 
 const ITEM_ICONS: Record<ChecklistItemId, LucideIcon> = {
   profile: User2,
@@ -41,6 +45,7 @@ const ITEM_ICONS: Record<ChecklistItemId, LucideIcon> = {
   dataSource: Wifi,
   notifications: Bell,
   insights: Sparkles,
+  visit: Stethoscope,
 };
 
 const ITEM_LABEL_KEYS: Record<
@@ -77,7 +82,16 @@ const ITEM_LABEL_KEYS: Record<
     description: "gettingStarted.items.insightsDescription",
     cta: "gettingStarted.items.insightsCta",
   },
+  visit: {
+    title: "gettingStarted.items.visitTitle",
+    description: "gettingStarted.items.visitDescription",
+    cta: "gettingStarted.items.visitCta",
+  },
 };
+
+interface EncounterListMeta {
+  upcoming?: number;
+}
 
 interface IntegrationsStatus {
   integrations?: Array<{ connected?: boolean; enabled?: boolean }>;
@@ -288,6 +302,26 @@ export function GettingStartedChecklist() {
     enabled: checklistRelevant,
   });
 
+  // v1.39 (C2) — the "prepare the visit" row, only for the answer that asked
+  // for it: a visit within a month. Reads the visits list's own meta count so
+  // the row flips done the moment one is on the calendar.
+  const visitAsked = user?.onboarding?.needs.visit === "within-a-month";
+  const { data: encountersMeta } = useQuery<EncounterListMeta>({
+    queryKey: queryKeys.onboardingUpcomingVisits(),
+    queryFn: async () => {
+      const { meta } = await apiFetchEnvelope<unknown, EncounterListMeta>(
+        "/api/encounters",
+      );
+      return meta ?? {};
+    },
+    enabled: checklistRelevant && visitAsked,
+  });
+
+  // The named source: "Connect Oura" rather than "Connect a data source"
+  // for somebody who said their readings come from one.
+  const namedSource =
+    user?.onboarding?.needs.sources.find(isBrowserConnectableSource) ?? null;
+
   const medicationCount = medsData?.length ?? 0;
   const dataSourceConnected = (integrationsData?.integrations ?? []).some(
     (integration) =>
@@ -312,6 +346,7 @@ export function GettingStartedChecklist() {
         notificationsConfigured,
         insightsConfigured,
         dismissedIds,
+        upcomingVisitCount: encountersMeta?.upcoming ?? 0,
         // v1.39 (C1) — the setup answers order these rows: medication first
         // for somebody who said they take one daily, the data-source row first
         // for somebody who named a wearable. The payload resolves them for the
@@ -331,6 +366,7 @@ export function GettingStartedChecklist() {
       notificationsConfigured,
       insightsConfigured,
       dismissedIds,
+      encountersMeta?.upcoming,
     ],
   );
 
@@ -497,7 +533,13 @@ export function GettingStartedChecklist() {
                         : "truncate text-sm font-medium"
                     }
                   >
-                    {t(labels.title)}
+                    {item.id === "dataSource" && namedSource
+                      ? t("gettingStarted.items.dataSourceNamedTitle", {
+                          source: t(
+                            questionOptionLabelKey("sources", namedSource),
+                          ),
+                        })
+                      : t(labels.title)}
                   </p>
                   <p className="text-muted-foreground truncate text-xs">
                     {t(labels.description)}

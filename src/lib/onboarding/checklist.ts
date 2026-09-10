@@ -20,9 +20,16 @@ export const CHECKLIST_ITEM_IDS = [
   "dataSource",
   "notifications",
   "insights",
+  // v1.39 (C2) — present only for an answer that named a visit within a
+  // month (design spec §After the flow: "prepare the visit").
+  "visit",
 ] as const;
 
 export type ChecklistItemId = (typeof CHECKLIST_ITEM_IDS)[number];
+
+/** The rows every record has; the visit row joins only when asked for. */
+export const CHECKLIST_BASE_ITEM_IDS: readonly ChecklistItemId[] =
+  CHECKLIST_ITEM_IDS.filter((id) => id !== "visit");
 
 export interface ChecklistItem {
   id: ChecklistItemId;
@@ -72,6 +79,12 @@ export interface ChecklistInputs {
   /** Dismissed item ids (per-item localStorage state). */
   dismissedIds: ReadonlySet<ChecklistItemId>;
   /**
+   * v1.39 (C2) — visits booked from today on, for the "prepare the visit"
+   * row. Read only while the row can exist, so a caller that never asked the
+   * question passes zero.
+   */
+  upcomingVisitCount: number;
+  /**
    * v1.39 (C1) — the needs-based setup state from `GET /api/auth/me`, or null
    * for a record that never entered the flow.
    *
@@ -112,6 +125,7 @@ export function checklistOrderFromNeeds(
     promote("dataSource");
   }
   if (needs.areas.length > 0) promote("measurement");
+  if (needs.visit === "within-a-month") promote("visit");
 
   return [
     "profile",
@@ -125,8 +139,8 @@ export function checklistOrderFromNeeds(
 /**
  * Compute the ordered checklist for the dashboard hero. Stable order:
  * profile → measurement → medication → dataSource → notifications →
- * insights. Each item carries the deep-link the row's CTA should
- * navigate to.
+ * insights, plus the visit row for an answer that named one. Each item
+ * carries the deep-link the row's CTA should navigate to.
  */
 export function buildChecklist(inputs: ChecklistInputs): ChecklistItem[] {
   const profileDone = isProfileComplete(inputs.profile);
@@ -169,6 +183,16 @@ export function buildChecklist(inputs: ChecklistInputs): ChecklistItem[] {
     },
   ];
   if (!inputs.onboarding) return items;
+  // The visit row exists only for the answer that asked for it; every other
+  // record keeps the six rows it had. Done once a visit is on the calendar.
+  if (inputs.onboarding.needs.visit === "within-a-month") {
+    items.push({
+      id: "visit",
+      done: inputs.upcomingVisitCount >= 1,
+      href: "/checkups",
+      dismissed: inputs.dismissedIds.has("visit"),
+    });
+  }
   // Ordered from the answers only once the flow has been confirmed: before
   // that the answers are still being given, and re-ordering the dashboard
   // under someone mid-question would be movement they did not ask for.

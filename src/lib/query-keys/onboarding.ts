@@ -24,4 +24,13 @@ export const onboardingKeys = {
    */
   onboardingLatestReading: (type: string) =>
     ["measurements", "onboarding-latest", type] as const,
+  /**
+   * The upcoming-visit count the checklist's "prepare the visit" row reads
+   * off the visits list's meta. Its own key under the `["encounters"]`
+   * prefix: the list surfaces cache the rows under `encounters()`, and a
+   * second `queryFn` shape on the same key would poison that cell, while
+   * the prefix still lets `encounterDependentKeys` evict this one.
+   */
+  onboardingUpcomingVisits: () =>
+    ["encounters", "onboarding-upcoming"] as const,
 };

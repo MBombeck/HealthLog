@@ -48,6 +48,7 @@ import {
   type StatusMessage,
 } from "./account-section-utils";
 import { AvatarSection } from "./avatar-section";
+import { SetupCard } from "./setup-card";
 
 export { resolveInitialTimezone } from "./account-section-utils";
 
@@ -329,6 +330,10 @@ export function AccountSection() {
       {/* Profile card */}
       {/* Profile photo card */}
       <AvatarSection />
+
+      {/* v1.39 (C2) — the way back into the first-run experience: the setup
+          questions again, and the dashboard checklist this browser hid. */}
+      <SetupCard />
 
       <SettingsCard>
         <SettingsCardHeader icon={User} title={t("settings.profile")} />

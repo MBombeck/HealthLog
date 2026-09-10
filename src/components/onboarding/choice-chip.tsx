@@ -37,7 +37,7 @@ export function ChoiceChip({
   return (
     <label
       className={cn(
-        "border-border bg-card flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors duration-150 ease-out motion-reduce:transition-none",
+        "border-border bg-card flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border p-3 text-left transition-colors duration-150 ease-out motion-reduce:transition-none",
         "hover:border-primary/50",
         "has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2",
         checked && "border-primary bg-primary/5",
