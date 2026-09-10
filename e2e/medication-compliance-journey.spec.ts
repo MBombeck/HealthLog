@@ -13,19 +13,23 @@
  *   1. Journey — a twice-daily medication created through the real wizard, one
  *      dose taken and one skipped from the card, and the resulting figure read
  *      back on the card, in the intake history and on the dashboard tile.
- *   2. Refusal — a dose recorded against a schedule that does not exist is
- *      refused, and the rate is exactly what it was before.
+ *   2. Refusal — an intake against a medication this account does not own, and
+ *      one against a slot its schedule does not have, are both refused and the
+ *      rate is exactly what it was before.
  *   3. Cadence — a medication due on two weekdays does not count the other
  *      five as missed. Its daily twin, given the identical doses, does.
  *
  * Every assertion addresses a `data-slot` / `data-*` attribute rather than
- * viewport text: the copy is i18n-driven, the wizard runs in German and the
- * card's own labels collapse to icons at narrow widths.
+ * viewport text: the copy is i18n-driven and the wizard runs in German, so
+ * addressing a control by its label would assert the translation.
  *
- * The flows mutate the one seeded account and read counts back off it, so —
- * like `visits.spec.ts` and `vaccinations.spec.ts` — this file runs in a
- * single project (see `playwright.config.ts`) and serial, and clears the
- * cabinet before each test so a rate counts only the doses the test wrote.
+ * The flows write rows and read counts back off them, so they run on their own
+ * account (`E2E_MEDICATION`) — the rate a card shows is a percentage over one
+ * cabinet, and a sibling spec mounting `/medications` in the other worker
+ * would otherwise be spending the same per-actor read allowance and sitting in
+ * the same dashboard denominator. The file still runs serial and in a single
+ * project (see `playwright.config.ts`), because its three tests share that one
+ * cabinet with each other.
  *
  * Why the medications are aged (`ageMedication`): compliance is reconstructed
  * from the medication's creation stamp forward, so a medication created a
@@ -252,7 +256,16 @@ async function clockAnchoredDoseTimes(
   });
 }
 
-/** Add one `HH:mm` to the wizard's times-of-day chips. */
+/**
+ * Add one `HH:mm` to the wizard's times-of-day chips.
+ *
+ * The Enter press is the commit, not a flourish: the field's overlay input
+ * holds what is being typed and only hands it to the form on Enter or on blur
+ * (`src/components/ui/time-field.tsx:175-184`). Until then the draft is empty,
+ * and the add button is `disabled` on exactly that
+ * (`times-of-day-chips.tsx:267`) — so a fill followed straight by a click
+ * waits out the actionability timeout on a button that never enables.
+ */
 async function addDoseTime(page: Page, time: string): Promise<void> {
   const chips = page.locator('[data-slot="times-of-day-chips"]');
   const draft = chips.getByTestId("times-of-day-draft-input");

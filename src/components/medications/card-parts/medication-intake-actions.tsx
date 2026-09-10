@@ -24,9 +24,9 @@ interface MedicationIntakeActionsProps {
  * structurally rather than kept byte-equivalent by hand.
  *
  * Both buttons carry a `data-slot`. They are the only controls on the card
- * that write, and their labels are i18n copy that also collapses to an icon
- * on the narrow card — an e2e journey addressing them by text would be
- * asserting the translation, not the control.
+ * that write, and their labels are translated copy — an e2e journey
+ * addressing them by text would be asserting the translation, not the
+ * control.
  */
 export function MedicationIntakeActions({
   intakeLoading,
