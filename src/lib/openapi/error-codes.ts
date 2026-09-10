@@ -244,6 +244,12 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "onboarding.tour.invalid",
       "onboarding.user.notFound",
     ],
+    onboarding: [
+      "onboarding.answers.invalid",
+      "onboarding.answers.rateLimited",
+      "onboarding.restart.invalid",
+      "onboarding.restart.rateLimited",
+    ],
     personal_records: ["personal_records.invalid_query"],
     practitioner: ["practitioner.invalid"],
     profile: [
