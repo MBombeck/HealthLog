@@ -118,6 +118,36 @@ async function padAndMeasure(page: Page) {
         scrollWidth: el.scrollWidth,
         clientWidth: el.clientWidth,
       }));
+    /**
+     * A name for the box that overflowed, so a red run says WHAT rather than
+     * only that the page grew: tag, `data-slot`, the first classes, the text
+     * it starts with, and its edges. The CI runner's fallback fonts render a
+     * pixel or two wider than a Mac's, so the culprit is often invisible
+     * locally and the message is the whole diagnosis.
+     */
+    const describe = (el: HTMLElement, r: DOMRect) => ({
+      tag: el.tagName.toLowerCase(),
+      slot: el.dataset.slot ?? null,
+      classes: el.className.toString().split(/\s+/).slice(0, 4).join(" "),
+      text: (el.textContent ?? "").trim().slice(0, 40),
+      left: Math.round(r.left),
+      right: Math.round(r.right),
+      width: Math.round(r.width),
+    });
+    const shellRight = shell.getBoundingClientRect().right;
+    // Every box that reaches past the shell's own right edge, widest first,
+    // deepest first among equals (the leaf is the culprit, its ancestors
+    // merely grew with it).
+    const widest = [...shell.querySelectorAll<HTMLElement>("*")]
+      .map((el) => ({ el, r: el.getBoundingClientRect() }))
+      .filter(({ r }) => r.width > 0 && r.right > shellRight + 1)
+      .sort(
+        (a, b) =>
+          b.r.right - a.r.right || b.el.children.length - a.el.children.length,
+      )
+      .reverse()
+      .slice(0, 6)
+      .map(({ el, r }) => describe(el, r));
     const outside = [
       ...shell.querySelectorAll<HTMLElement>(
         "button, input, select, textarea, a[href], [tabindex]:not([tabindex='-1'])",
@@ -126,11 +156,7 @@ async function padAndMeasure(page: Page) {
       .map((el) => ({ el, r: el.getBoundingClientRect() }))
       .filter(({ r }) => r.width > 0 && r.height > 0)
       .filter(({ r }) => r.right > window.innerWidth + 1 || r.left < -1)
-      .map(({ el, r }) => ({
-        slot: el.dataset.slot ?? el.tagName.toLowerCase(),
-        left: Math.round(r.left),
-        right: Math.round(r.right),
-      }));
+      .map(({ el, r }) => describe(el, r));
 
     return {
       padded,
@@ -138,6 +164,7 @@ async function padAndMeasure(page: Page) {
       pageClientWidth: doc.clientWidth,
       shellScrollWidth: shell.scrollWidth,
       shellClientWidth: shell.clientWidth,
+      widest,
       clippers,
       outside,
     };
@@ -191,13 +218,14 @@ test.describe("setup flow — every locale at 30% longer strings", () => {
             result!.padded,
             `${label}: nothing was padded, so this measured nothing`,
           ).toBeGreaterThan(3);
+          const culprits = JSON.stringify(result!.widest);
           expect(
             result!.pageScrollWidth,
-            `${label}: the page scrolls sideways`,
+            `${label}: the page scrolls sideways; past the shell's edge: ${culprits}`,
           ).toBeLessThanOrEqual(result!.pageClientWidth + 1);
           expect(
             result!.shellScrollWidth,
-            `${label}: the shell scrolls sideways`,
+            `${label}: the shell scrolls sideways; past the shell's edge: ${culprits}`,
           ).toBeLessThanOrEqual(result!.shellClientWidth + 1);
           expect(result!.clippers, `${label}: text is clipped`).toEqual([]);
           expect(
