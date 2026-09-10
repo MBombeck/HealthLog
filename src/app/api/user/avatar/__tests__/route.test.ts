@@ -24,6 +24,7 @@ vi.mock("@/lib/db-compat", () => ({
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn().mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 9,
     resetAt: Date.now() + 3_600_000,
   }),
@@ -89,6 +90,7 @@ beforeEach(() => {
   // Default rate-limit pass-through; per-test overrides drop in below.
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 9,
     resetAt: Date.now() + 3_600_000,
   });
@@ -210,6 +212,7 @@ describe("POST /api/user/avatar", () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(checkRateLimit).mockResolvedValueOnce({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 30_000,
     });

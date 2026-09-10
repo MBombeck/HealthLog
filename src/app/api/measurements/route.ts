@@ -190,7 +190,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
         measuredAt: { gte: dayStart, lt: dayEnd },
         deletedAt: null,
       },
-      orderBy: { measuredAt: sortDir },
+      // Same tiebreaker as the paged list. This one slices in memory rather
+      // than with `skip`, so there is no page drift to prevent — but two
+      // identical requests would still be free to render a tied block in
+      // different orders, and a drill-down that reshuffles on refresh reads
+      // as data changing.
+      orderBy: [{ measuredAt: sortDir }, { id: sortDir }],
       // v1.4.38 — the 1000-row cap now lives on the validator (refine
       // on `(limit, dayKey)` returning 422 when a caller asks for
       // more). The route reads `limit` straight through because the
@@ -544,7 +549,17 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const [measurements, total] = await Promise.all([
     prisma.measurement.findMany({
       where,
-      orderBy: { [sortBy]: sortDir },
+      // `{ id: sortDir }` is the tiebreaker, not decoration. `measuredAt`
+      // is not unique here and ties are the normal case. Only the exact
+      // tuple `(userId, type, measuredAt, source, sleepStage)` is unique,
+      // so a tie survives across `type` (the `stats:<id>:YYYY-MM-DD`
+      // daily-rollup convention puts every daily total at one instant),
+      // across `source` (two writers landing on the same instant) and
+      // across `sleepStage`. Without a unique secondary key Postgres is
+      // free to order the tied block differently between the query for page
+      // N and the query for page N+1, so a client paging its own history
+      // silently gets one row twice and never gets another.
+      orderBy: [{ [sortBy]: sortDir }, { id: sortDir }],
       take: limit,
       skip: offset,
     }),

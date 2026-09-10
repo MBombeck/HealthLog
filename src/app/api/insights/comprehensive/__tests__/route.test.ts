@@ -117,6 +117,7 @@ beforeEach(() => {
   // v1.15.20 — default to an allowing analytics-read budget.
   vi.mocked(checkAnalyticsReadRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 120,
     remaining: 119,
     resetAt: Date.now() + 60_000,
   });

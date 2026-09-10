@@ -13,7 +13,12 @@
  */
 import { NextRequest } from "next/server";
 import { headers } from "next/headers";
-import { apiHandler, HttpError, requireAuth } from "@/lib/api-handler";
+import {
+  apiHandler,
+  AUTH_ERROR_CODES,
+  HttpError,
+  requireAuth,
+} from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -139,7 +144,7 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
 async function presentedBearerToken(): Promise<string> {
   const authHeader = (await headers()).get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    throw new HttpError(401, "Not authenticated");
+    throw new HttpError(401, "Not authenticated", AUTH_ERROR_CODES.missing);
   }
   return authHeader.slice(7);
 }

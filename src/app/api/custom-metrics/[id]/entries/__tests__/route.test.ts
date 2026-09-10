@@ -90,10 +90,18 @@ describe("GET /api/custom-metrics/[id]/entries", () => {
     expect(body.data.meta.total).toBe(5);
     expect(body.data.meta.limit).toBe(1);
     const findCall = vi.mocked(prisma.customMetricEntry.findMany).mock
-      .calls[0][0] as { where: Record<string, unknown>; take: number };
+      .calls[0][0] as {
+      where: Record<string, unknown>;
+      take: number;
+      orderBy: unknown;
+    };
     expect(findCall.where.userId).toBe("user-1");
     expect(findCall.where.customMetricId).toBe("cm-1");
     expect(findCall.take).toBe(1);
+    // `measuredAt` is not unique on a custom metric — a batch of readings can
+    // share one instant — so offset paging over it alone can repeat a row on
+    // one page and drop another.
+    expect(findCall.orderBy).toEqual([{ measuredAt: "desc" }, { id: "desc" }]);
   });
 
   it("404s a cross-user / unknown metric", async () => {

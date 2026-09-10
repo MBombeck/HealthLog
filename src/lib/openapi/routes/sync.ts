@@ -9,6 +9,7 @@ import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { measurementResource } from "./measurements";
 import { moodContextWire } from "./mood";
+import { cycleDayLogDto, menstrualCycleDto } from "./cycle";
 import { dataEnvelope, stdResponses } from "./shared";
 
 // ── Sync (v1.7.0 offline / server-optional) ─────────────────────────
@@ -185,6 +186,36 @@ const syncIntakeTombstone = z
       "A soft-deleted medication intake, keyed on server `id`. Apply before upserts within the domain page.",
   });
 
+const syncCycleDayTombstone = z
+  .object({
+    id: z.string(),
+    externalId: z
+      .string()
+      .nullable()
+      .describe("The client's own key for the day log, when it set one."),
+    syncVersion: z.number().int().nonnegative(),
+    deletedAt: z.iso.datetime({ offset: true }),
+    updatedAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({
+    id: "SyncCycleDayTombstone",
+    description:
+      "A soft-deleted cycle day log, keyed on server `id`. Apply before upserts within the domain page.",
+  });
+
+const syncCycleTombstone = z
+  .object({
+    id: z.string(),
+    syncVersion: z.number().int().nonnegative(),
+    deletedAt: z.iso.datetime({ offset: true }),
+    updatedAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({
+    id: "SyncCycleTombstone",
+    description:
+      "A soft-deleted menstrual cycle, keyed on server `id`. Apply before upserts within the domain page.",
+  });
+
 const syncChangesQuery = z
   .object({
     cursor: z
@@ -205,7 +236,15 @@ const syncChangesQuery = z
   })
   .meta({ id: "SyncChangesQuery" });
 
-const syncChangesResponse = z
+/**
+ * Exported so a test can `safeParse` a real `/api/sync/changes` body against
+ * it. Nothing else checks a response SHAPE against its published schema —
+ * `openapi:check` proves the YAML matches the registry, and the route-coverage
+ * guard proves the path is listed, so a schema that disagrees with what
+ * `apiSuccess()` sends passes both. That is how this endpoint went five
+ * domains wide against a three-domain contract.
+ */
+export const syncChangesResponse = z
   .object({
     serverNow: z.iso.datetime({ offset: true }),
     cursor: z
@@ -233,12 +272,28 @@ const syncChangesResponse = z
         upserts: z.array(syncIntakeUpsert),
         tombstones: z.array(syncIntakeTombstone),
       }),
+      cycleDays: z
+        .object({
+          upserts: z.array(cycleDayLogDto),
+          tombstones: z.array(syncCycleDayTombstone),
+        })
+        .describe(
+          "Cycle day logs. Present on every page, empty arrays when the account has the cycle module off.",
+        ),
+      cycles: z
+        .object({
+          upserts: z.array(menstrualCycleDto),
+          tombstones: z.array(syncCycleTombstone),
+        })
+        .describe(
+          "Menstrual cycles, observed and forward-predicted. Present on every page, empty arrays when the account has the cycle module off.",
+        ),
     }),
   })
   .meta({
     id: "SyncChangesResponse",
     description:
-      "Multi-domain delta page (v1.7.0): measurements + mood + intakes. One opaque multi-domain keyset cursor; tombstones apply before upserts within each domain. Tombstone identity: measurements key on externalId, mood + intakes on server id. The iOS consumer is measurements-only this cycle; mood + intakes are forward-prep.",
+      "Multi-domain delta page: measurements, mood, intakes, cycle day logs and cycles. One opaque multi-domain keyset cursor; tombstones apply before upserts within each domain. Tombstone identity: measurements key on externalId, every other domain on server id. All five keys are present on every response, including the `cursorExpired` short-circuit — a domain with nothing to report sends empty arrays rather than being omitted.",
   });
 
 export const syncPaths: NonNullable<ZodOpenApiObject["paths"]> = {
@@ -264,9 +319,9 @@ export const syncPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/sync/changes": {
     get: {
       tags: ["Sync"],
-      summary: "Measurements delta feed",
+      summary: "Multi-domain delta feed",
       description:
-        "Incremental catch-up after the first-pair backfill (never a replacement for it). Pages over an opaque keyset cursor; each page carries `tombstones` (soft-deleted rows, keyed on `externalId`) and `upserts` (live rows). Apply tombstones before upserts within a page. `cursorExpired: true` forces a clean re-init.",
+        "Incremental catch-up after the first-pair backfill (never a replacement for it). Pages over one opaque keyset cursor spanning five domains — measurements, mood, medication intakes, cycle day logs and cycles. Each domain carries `tombstones` (soft-deleted rows) and `upserts` (live rows); apply tombstones before upserts within a domain. Tombstone identity is `externalId` for measurements and the server `id` everywhere else. `cursorExpired: true` forces a clean re-init and the page is empty in every domain.",
       requestParams: {
         query: syncChangesQuery,
       },

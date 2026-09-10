@@ -70,7 +70,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/CycleCustomSymptomListEnvelope"
         "401": &a1
-          description: Authentication required or invalid credentials.
+          description: "Authentication required or invalid credentials. The generic auth gates — the ones every route passes
+            through before its own body runs — name the reason in `meta.errorCode`, and that is the field to branch on
+            there; the English sentence beside it may be reworded or localised at any time. `auth.missing`: no session
+            cookie and no Bearer header; send the user to sign in. `auth.token.expired`: the Bearer token's lifetime has
+            passed; refresh and retry the request. `auth.token.invalid`: unknown, revoked, or the owning account is
+            gone; discard the credential and sign in again — retrying will not help. `auth.mfa.code_invalid`: a second
+            factor presented on a step-up flow did not verify; re-prompt for a code and keep the session. The related
+            403 refusals carry `auth.scope.insufficient` (the credential is valid but its scope does not reach this
+            route, including any Bearer token against an admin surface) and `auth.admin.required` (a cookie session that
+            is not an admin's). A route that checks a credential of its own — sign-in, the MFA challenge exchange, a
+            password confirmation — may still answer 401 with prose and no code, so a missing `meta.errorCode` means the
+            route refused the credential it was handed, not that the response is malformed."
           content:
             application/json:
               schema:
@@ -101,7 +112,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": &a5
-          description: Rate limit exceeded.
+          description: Rate limit exceeded. The response carries `Retry-After` (whole seconds, rounded up and never below 1 — wait
+            at least that long before retrying), `X-RateLimit-Limit` (the bucket's cap), `X-RateLimit-Remaining` and
+            `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back off on `Retry-After` rather than
+            guessing. A 429 raised by a ceiling that is not one of these buckets — a daily AI budget, an upstream
+            provider's own refusal relayed onward — carries none of them, because there is no bucket to describe.
+          headers:
+            Retry-After:
+              description: Whole seconds to wait before retrying. Rounded up, never below 1.
+              schema:
+                type: integer
+                minimum: 1
+            X-RateLimit-Limit:
+              description: Requests the bucket allows per window.
+              schema:
+                type: integer
+                minimum: 1
+            X-RateLimit-Remaining:
+              description: Requests left in the current window; 0 on a refusal.
+              schema:
+                type: integer
+                minimum: 0
+            X-RateLimit-Reset:
+              description: Instant the current window rolls over, ISO-8601 — not epoch seconds.
+              schema:
+                type: string
+                format: date-time
           content:
             application/json:
               schema:
@@ -3328,10 +3364,12 @@ paths:
     get:
       tags:
         - Sync
-      summary: Measurements delta feed
-      description: "Incremental catch-up after the first-pair backfill (never a replacement for it). Pages over an opaque
-        keyset cursor; each page carries `tombstones` (soft-deleted rows, keyed on `externalId`) and `upserts` (live
-        rows). Apply tombstones before upserts within a page. `cursorExpired: true` forces a clean re-init."
+      summary: Multi-domain delta feed
+      description: "Incremental catch-up after the first-pair backfill (never a replacement for it). Pages over one opaque
+        keyset cursor spanning five domains — measurements, mood, medication intakes, cycle day logs and cycles. Each
+        domain carries `tombstones` (soft-deleted rows) and `upserts` (live rows); apply tombstones before upserts
+        within a domain. Tombstone identity is `externalId` for measurements and the server `id` everywhere else.
+        `cursorExpired: true` forces a clean re-init and the page is empty in every domain."
       parameters:
         - in: query
           name: cursor
@@ -15423,9 +15461,10 @@ paths:
         returns a `{ title, kind, documentDate }` DRAFT for the edit form. AI-consent / rate / budget gated (shares the
         per-user document-AI bucket with extract/summary/index — default 6/hour, operator-tunable via
         `DOCUMENT_AI_LIMIT_PER_HOUR`; a slot is only consumed when the request reaches the provider, and the 429 carries
-        the reset instant in `X-RateLimit-Reset` and `meta.retryAt`). WRITES NOTHING — never stages facts, never flips
-        status; the user reviews and saves. 422 (`documents.inbound.providerUnsupported`) with no provider configured.
-        Never interprets or diagnoses; the title is a neutral filing label."
+        `Retry-After`, the `X-RateLimit-Limit` / `-Remaining` / `-Reset` triple, and `meta.retryAt`). WRITES NOTHING —
+        never stages facts, never flips status; the user reviews and saves. 422
+        (`documents.inbound.providerUnsupported`) with no provider configured. Never interprets or diagnoses; the title
+        is a neutral filing label."
       parameters:
         - name: id
           in: path
@@ -19894,9 +19933,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429":
-          description: More than 60 requests in a minute for this token — or, when no valid token was presented, from this client
-            IP. `meta.errorCode` = `ingest.rate_limited`, plus the standard `X-RateLimit-Remaining` /
-            `X-RateLimit-Reset` headers.
+          description: "More than 60 requests in a minute for this token — or, when no valid token was presented, from this client
+            IP. `meta.errorCode` = `ingest.rate_limited`, plus the standard rate-limit headers: `Retry-After` (whole
+            seconds, at least 1), `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`."
           content:
             application/json:
               schema:
@@ -29242,19 +29281,63 @@ components:
           type: "null"
         error:
           type: string
+        details:
+          description: "Present on a 422 raised by the multi-issue validator: every field the request got wrong, not only the
+            first. Absent on every other status."
+          type: object
+          properties:
+            issues:
+              type: array
+              items:
+                $ref: "#/components/schemas/ValidationIssue"
+          required:
+            - issues
+          additionalProperties: false
         meta:
           type: object
           properties:
             requestId:
               type: string
             errorCode:
+              description: Stable machine code for this refusal. Branch on it rather than on `error`, which is prose and may be
+                reworded.
               type: string
-          additionalProperties: false
+          additionalProperties: {}
       required:
         - data
         - error
       additionalProperties: false
-      description: "Standard error response: data is null, error is human prose."
+      description: "Standard error response: `data` is null, `error` is human prose. `meta.errorCode` carries the stable
+        machine code where one exists, and `meta` may carry further per-refusal context. A 422 from the multi-issue
+        validator additionally carries `details.issues` — every field the request got wrong, so a client can fix them in
+        one round-trip."
+    ValidationIssue:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Dot-joined path to the rejected field, e.g. `entries.3.measuredAt`. Empty string when the whole body was
+            rejected.
+        code:
+          type: string
+          description: Zod issue code, e.g. `invalid_type`, `too_small`, `unrecognized_keys`. Treat an unfamiliar code as a
+            generic rejection of `path`.
+        message:
+          type: string
+          description: English sentence describing the rejection. Safe to log; show the user your own wording keyed on `path`.
+        keys:
+          description: "Only on `unrecognized_keys`: the refused key names, bounded to 10 and 64 characters each. Zod reports
+            every unknown key of one object in a single issue whose `path` is the object, so the names live here and
+            nowhere in `path`."
+          type: array
+          items:
+            type: string
+      required:
+        - path
+        - code
+        - message
+      additionalProperties: false
+      description: "One rejected field in a multi-issue 422. Sanitised: no rejected VALUE is echoed back."
     CycleCustomSymptomCreatedEnvelope:
       type: object
       properties:
@@ -37507,10 +37590,45 @@ components:
                 - upserts
                 - tombstones
               additionalProperties: false
+            cycleDays:
+              type: object
+              properties:
+                upserts:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CycleDayLogDTO"
+                tombstones:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncCycleDayTombstone"
+              required:
+                - upserts
+                - tombstones
+              additionalProperties: false
+              description: Cycle day logs. Present on every page, empty arrays when the account has the cycle module off.
+            cycles:
+              type: object
+              properties:
+                upserts:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/MenstrualCycleDTO"
+                tombstones:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncCycleTombstone"
+              required:
+                - upserts
+                - tombstones
+              additionalProperties: false
+              description: Menstrual cycles, observed and forward-predicted. Present on every page, empty arrays when the account has
+                the cycle module off.
           required:
             - measurements
             - mood
             - intakes
+            - cycleDays
+            - cycles
           additionalProperties: false
       required:
         - serverNow
@@ -37519,9 +37637,10 @@ components:
         - cursorExpired
         - changes
       additionalProperties: false
-      description: "Multi-domain delta page (v1.7.0): measurements + mood + intakes. One opaque multi-domain keyset cursor;
-        tombstones apply before upserts within each domain. Tombstone identity: measurements key on externalId, mood +
-        intakes on server id. The iOS consumer is measurements-only this cycle; mood + intakes are forward-prep."
+      description: "Multi-domain delta page: measurements, mood, intakes, cycle day logs and cycles. One opaque multi-domain
+        keyset cursor; tombstones apply before upserts within each domain. Tombstone identity: measurements key on
+        externalId, every other domain on server id. All five keys are present on every response, including the
+        `cursorExpired` short-circuit — a domain with nothing to report sends empty arrays rather than being omitted."
     SyncMeasurementUpsert:
       type: object
       properties:
@@ -37863,6 +37982,60 @@ components:
         - updatedAt
       additionalProperties: false
       description: A soft-deleted medication intake, keyed on server `id`. Apply before upserts within the domain page.
+    SyncCycleDayTombstone:
+      type: object
+      properties:
+        id:
+          type: string
+        externalId:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: The client's own key for the day log, when it set one.
+        syncVersion:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        deletedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - externalId
+        - syncVersion
+        - deletedAt
+        - updatedAt
+      additionalProperties: false
+      description: A soft-deleted cycle day log, keyed on server `id`. Apply before upserts within the domain page.
+    SyncCycleTombstone:
+      type: object
+      properties:
+        id:
+          type: string
+        syncVersion:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        deletedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - syncVersion
+        - deletedAt
+        - updatedAt
+      additionalProperties: false
+      description: A soft-deleted menstrual cycle, keyed on server `id`. Apply before upserts within the domain page.
     GetMeasurementsSeriesBatchResponse:
       type: object
       properties:

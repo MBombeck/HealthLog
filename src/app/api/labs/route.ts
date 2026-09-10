@@ -105,7 +105,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const [rows, total] = await Promise.all([
     prisma.labResult.findMany({
       where,
-      orderBy: { takenAt: sortDir },
+      // Unique tiebreaker: `takenAt` is a day-resolution timestamp, so a
+      // panel drawn in one sitting ties across every analyte in it. Offset
+      // paging over a non-unique sort key can repeat a row on one page and
+      // drop another, invisibly to both sides.
+      orderBy: [{ takenAt: sortDir }, { id: sortDir }],
       take: limit,
       skip: offset,
       include: {

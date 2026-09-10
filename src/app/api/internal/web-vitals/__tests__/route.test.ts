@@ -50,6 +50,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 59,
     resetAt: Date.now() + 60_000,
   });
@@ -114,6 +115,7 @@ describe("POST /api/internal/web-vitals", () => {
   it("returns 429 when the rate-limit fires", async () => {
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

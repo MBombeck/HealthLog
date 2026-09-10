@@ -24,6 +24,7 @@ vi.mock("@/lib/modules/gate", () => ({
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(async () => ({
     allowed: true,
+    limit: 60,
     remaining: 39,
     resetAt: Date.now() + 60_000,
   })),
@@ -159,6 +160,7 @@ describe("POST /api/daily/digest/dismiss", () => {
     const { checkRateLimit } = await import("@/lib/rate-limit");
     vi.mocked(checkRateLimit).mockResolvedValueOnce({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

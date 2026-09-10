@@ -31,6 +31,7 @@ vi.mock("@/lib/auth/audit", () => ({
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn().mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 29,
     resetAt: Date.now() + 60_000,
   }),
@@ -84,6 +85,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 29,
     resetAt: Date.now() + 60_000,
   });
@@ -298,6 +300,7 @@ describe("POST /api/medications/[id]/side-effects", () => {
     vi.mocked(prisma.medication.findUnique).mockResolvedValue(MED_OK as never);
     vi.mocked(checkRateLimit).mockResolvedValueOnce({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

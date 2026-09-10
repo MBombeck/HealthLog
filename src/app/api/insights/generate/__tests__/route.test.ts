@@ -188,6 +188,7 @@ beforeEach(() => {
   selfContextText.mockResolvedValue(null);
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 9,
     resetAt: Date.now() + 3600_000,
   });
@@ -366,6 +367,7 @@ describe("POST /api/insights/generate — rate limit (v1.4.16 A7.1)", () => {
       expect(limit).toBe(10);
       return {
         allowed: callCount <= 10,
+        limit: 10,
         remaining: Math.max(0, 10 - callCount),
         resetAt: Date.now() + 3600_000,
       };
@@ -392,6 +394,7 @@ describe("POST /api/insights/generate — rate limit (v1.4.16 A7.1)", () => {
       expect(limit).toBe(3);
       return {
         allowed: callCount <= 3,
+        limit: 3,
         remaining: Math.max(0, 3 - callCount),
         resetAt: Date.now() + 3600_000,
       };
@@ -673,6 +676,7 @@ describe("POST /api/insights/generate — briefingless fresh cache (v1.28.30)", 
     mockBriefinglessFreshCache();
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 3600_000,
     });
@@ -691,6 +695,7 @@ describe("POST /api/insights/generate — briefingless fresh cache (v1.28.30)", 
     mockBriefinglessFreshCache();
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 3600_000,
     });

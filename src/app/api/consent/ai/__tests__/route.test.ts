@@ -55,7 +55,12 @@ import { getSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { checkConsentRateLimit } from "@/lib/rate-limit";
 
-const RL_OK = { allowed: true, remaining: 19, resetAt: Date.now() + 60_000 };
+const RL_OK = {
+  allowed: true,
+  limit: 20,
+  remaining: 19,
+  resetAt: Date.now() + 60_000,
+};
 
 const $transaction = vi.mocked(prisma.$transaction) as unknown as {
   mockImplementation: (impl: (fn: TxFn) => unknown) => void;
@@ -109,6 +114,7 @@ describe("POST /api/consent/ai", () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(checkConsentRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 20,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

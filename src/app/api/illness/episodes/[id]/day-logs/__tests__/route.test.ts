@@ -105,7 +105,10 @@ describe("GET /api/illness/episodes/{id}/day-logs — date-less list", () => {
     const findArgs = vi.mocked(prisma.illnessDayLog.findMany).mock.calls[0][0];
     expect(findArgs).toMatchObject({
       where: { episodeId: "ep-1", deletedAt: null },
-      orderBy: { date: "desc" },
+      // `date` is a calendar day and repeats within an episode, so the
+      // unique tiebreaker is what keeps `skip`-based paging from repeating
+      // one row and dropping another between pages.
+      orderBy: [{ date: "desc" }, { id: "desc" }],
       take: 60,
       skip: 0,
     });
@@ -126,7 +129,7 @@ describe("GET /api/illness/episodes/{id}/day-logs — date-less list", () => {
 
     const findArgs = vi.mocked(prisma.illnessDayLog.findMany).mock.calls[0][0];
     expect(findArgs).toMatchObject({
-      orderBy: { date: "asc" },
+      orderBy: [{ date: "asc" }, { id: "asc" }],
       take: 10,
       skip: 20,
     });

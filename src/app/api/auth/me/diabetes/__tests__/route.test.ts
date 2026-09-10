@@ -32,6 +32,7 @@ vi.mock("@/lib/db-compat", () => ({
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn().mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 59,
     resetAt: Date.now() + 60_000,
   }),
@@ -192,6 +193,7 @@ describe("PATCH /api/auth/me/diabetes", () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(checkRateLimit).mockResolvedValueOnce({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 30_000,
     });

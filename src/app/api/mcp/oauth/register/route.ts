@@ -80,11 +80,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         { error: "temporarily_unavailable" },
         {
           status: 429,
-          headers: rateLimitHeaders({
-            allowed: false,
-            remaining: rl.remaining,
-            resetAt: rl.resetAt,
-          }),
+          headers: rateLimitHeaders(rl),
         },
       );
     }

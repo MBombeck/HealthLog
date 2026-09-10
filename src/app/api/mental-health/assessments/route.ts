@@ -123,7 +123,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
       deletedAt: null,
       ...(instrument ? { instrument } : {}),
     },
-    orderBy: { takenAt: "desc" },
+    // Unique tiebreaker — `takenAt` is day-resolution and two instruments
+    // taken in one sitting tie.
+    orderBy: [{ takenAt: "desc" }, { id: "desc" }],
     take: limit ?? 100,
     skip: offset ?? 0,
     select: {

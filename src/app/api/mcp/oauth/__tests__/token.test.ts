@@ -37,12 +37,14 @@ vi.mock("@/lib/auth/issue-token", () => ({
 vi.mock("@/lib/rate-limit", () => ({
   checkAuthSurfaceRateLimit: vi.fn(async () => ({
     allowed: true,
+    limit: 60,
     remaining: 100,
     resetAt: Date.now() + 60_000,
     ip: "1.2.3.4",
   })),
   checkRateLimit: vi.fn(async () => ({
     allowed: true,
+    limit: 60,
     remaining: 0,
     resetAt: Date.now() + 60_000,
   })),
@@ -103,6 +105,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 0,
     resetAt: Date.now() + 60_000,
   });
@@ -215,6 +218,7 @@ describe("authorization_code grant", () => {
   it("rejects a replayed code (single-use jti already claimed)", async () => {
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

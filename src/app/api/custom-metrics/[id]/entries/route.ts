@@ -62,7 +62,9 @@ export const GET = apiHandler(
     const [rows, total] = await Promise.all([
       prisma.customMetricEntry.findMany({
         where,
-        orderBy: { measuredAt: sortDir },
+        // Unique tiebreaker — see the measurements list: offset paging over
+        // a non-unique sort key can repeat and drop rows between pages.
+        orderBy: [{ measuredAt: sortDir }, { id: sortDir }],
         take: limit,
         skip: offset,
       }),

@@ -45,7 +45,8 @@ export const GET = apiHandler(
     const [rows, total] = await Promise.all([
       prisma.measurementReminderEvent.findMany({
         where,
-        orderBy: { occurredAt: "desc" },
+        // Unique tiebreaker — several reminder events can share one instant.
+        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
         take: limit,
         skip: offset,
       }),
