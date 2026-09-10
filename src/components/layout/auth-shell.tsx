@@ -27,6 +27,8 @@ import { DemoBanner } from "./demo-banner";
 import { OfflineBanner } from "./offline-banner";
 import { SharedRecordBanner } from "./shared-record-banner";
 import { SharedRecordUnavailable } from "./shared-record-unavailable";
+import { ModulePageGate } from "@/components/layout/module-page-gate";
+import { isOnboardingPathname } from "@/lib/onboarding/wizard-steps";
 import { RecordScopeHydrationGate } from "./record-scope-hydration-gate";
 import { SidebarNav } from "./sidebar-nav";
 import { TopBar } from "./top-bar";
@@ -129,7 +131,10 @@ export function AuthShell({
     inSharedRecord &&
     !isDestinationInSharedRecord(pathname, sections) &&
     !isRecordSettingsPath;
-  const isOnboardingPage = pathname === "/onboarding";
+  // The whole setup flow, not only its front door: every screen lives under
+  // `/onboarding/<step>` (v1.39 C2), and an exact match here put the
+  // questions inside the full app chrome, sidebar and all.
+  const isOnboardingPage = isOnboardingPathname(pathname);
   const showUnlockNotifier = isAuthenticated && !isPublicPage && !!user?.id;
 
   // v1.9.0 — the document-level scrollbar-gutter (globals.css) is reserved
@@ -466,7 +471,11 @@ export function AuthShell({
                 data-slot="main-content-wrapper"
                 className="mx-auto max-w-screen-xl px-4 pt-6 pb-20 md:px-6"
               >
-                {outsideSharedRecord ? <SharedRecordUnavailable /> : children}
+                {outsideSharedRecord ? (
+                  <SharedRecordUnavailable />
+                ) : (
+                  <ModulePageGate>{children}</ModulePageGate>
+                )}
               </div>
             </main>
           </div>

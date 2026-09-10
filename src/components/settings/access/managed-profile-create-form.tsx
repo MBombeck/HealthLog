@@ -15,6 +15,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import {
   useCreateManagedProfile,
   type ManagedProfileGender,
+  type ManagedProfileView,
 } from "@/lib/queries/use-managed-profiles";
 import {
   DEFAULT_TIMEZONE,
@@ -73,7 +74,19 @@ import {
  * invitation form does, rather than the generic "could not be created", which
  * would send somebody looking for a problem with what they typed.
  */
-export function ManagedProfileCreateForm() {
+export function ManagedProfileCreateForm({
+  submitLabel,
+  onCreated,
+}: {
+  /** The button's label when the form sits somewhere other than the panel. */
+  submitLabel?: string;
+  /**
+   * v1.39 (C2) — fired after a successful creation, with the record. The
+   * setup flow's confirm screen mounts this form and continues from here;
+   * the sharing panel leaves it unset and shows the confirmation line.
+   */
+  onCreated?: (profile: ManagedProfileView) => void;
+} = {}) {
   const { t, locale: actorLocale } = useTranslations();
   const create = useCreateManagedProfile();
 
@@ -116,6 +129,7 @@ export function ManagedProfileCreateForm() {
           setGender(null);
           setTimezone(browserTimezone());
           setCreated(profile.displayName ?? trimmedName);
+          onCreated?.(profile);
         },
         // Nothing is cleared here, on purpose: a refused creation is one the
         // person is being asked to retry, and a form that emptied itself
@@ -258,7 +272,7 @@ export function ManagedProfileCreateForm() {
       >
         {create.isPending
           ? t("recordSharing.managed.creating")
-          : t("recordSharing.managed.create")}
+          : (submitLabel ?? t("recordSharing.managed.create"))}
       </Button>
 
       {error && (

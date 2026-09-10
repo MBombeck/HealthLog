@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { globSync, readFileSync } from "node:fs";
+import { join, sep } from "node:path";
 
 /**
  * Demo-mode mutation allowlist. On a `DEMO_MODE=true` deploy the proxy
@@ -73,7 +75,35 @@ describe("proxy.ts DEMO_MODE mutation allowlist", () => {
     expect(proxy(makeRequest("/api/onboarding/answers", "DELETE")).status).toBe(
       403,
     );
-    expect(proxy(makeRequest("/api/onboarding/step", "POST")).status).toBe(403);
+    expect(proxy(makeRequest("/api/onboarding/tour", "DELETE")).status).toBe(
+      403,
+    );
+  });
+
+  it("admits every mutating onboarding route, read off the route files", () => {
+    // v1.39 (C2) — the demo has to be able to walk the whole flow, and the
+    // flow's welcome and exit make writes the C1 allowlist did not carry: the
+    // disclaimer acknowledgment (both welcome buttons await it) and the tour
+    // checkpoint. A hand-kept list of three paths could not see the other
+    // two, so this reads the route files instead: every exported mutating
+    // handler under `src/app/api/onboarding` must pass the proxy.
+    const onboardingApi = join(process.cwd(), "src/app/api/onboarding");
+    const routes = globSync("**/route.ts", { cwd: onboardingApi })
+      .map((p) => p.split(sep).join("/"))
+      .sort();
+    expect(routes.length, "the onboarding route files").toBeGreaterThan(3);
+    const missing: string[] = [];
+    for (const rel of routes) {
+      const source = readFileSync(join(onboardingApi, rel), "utf8");
+      const path = `/api/onboarding/${rel.replace(/\/route\.ts$/, "")}`;
+      for (const method of ["POST", "PATCH", "PUT", "DELETE"] as const) {
+        if (!new RegExp(`export const ${method}\\b`).test(source)) continue;
+        if (proxy(makeRequest(path, method)).status === 403) {
+          missing.push(`${method} ${path}`);
+        }
+      }
+    }
+    expect(missing, "onboarding writes the demo cannot make").toEqual([]);
   });
 
   it("still blocks a health-data mutation (POST /api/measurements)", () => {

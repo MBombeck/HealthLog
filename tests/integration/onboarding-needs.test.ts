@@ -52,6 +52,12 @@ vi.mock("@/lib/db-compat", () => ({
 }));
 
 import { acceptGrant, inviteGrant } from "@/lib/sharing/grants";
+import {
+  DEFAULT_DASHBOARD_LAYOUT,
+  resolveDashboardLayout,
+  serializeDashboardLayout,
+} from "@/lib/dashboard-layout";
+import { toJson } from "@/lib/db";
 import { emptyOnboardingNeeds } from "@/lib/onboarding/needs";
 import type {
   OnboardingStateDto,
@@ -355,6 +361,58 @@ describe("POST /api/onboarding/complete", () => {
     expect((await readState(second)).completedAt).toBe(state.completedAt);
   });
 
+  it("seeds the dashboard order from the answers, and only while the layout is unset", async () => {
+    const user = await makeUser("seed");
+    await signIn(user.id);
+    await answerTheQuestions();
+    expect((await postComplete()).status).toBe(200);
+
+    const stored = async () =>
+      (
+        await getPrismaClient().user.findUniqueOrThrow({
+          where: { id: user.id },
+          select: { dashboardWidgetsJson: true },
+        })
+      ).dashboardWidgetsJson;
+
+    // Blood pressure and a daily medication were answered: their tiles lead,
+    // visible on both surfaces, and nothing is dropped.
+    const seeded = await stored();
+    expect(seeded).not.toBeNull();
+    const layout = resolveDashboardLayout(seeded);
+    const order = [...layout.widgets]
+      .sort((a, b) => a.order - b.order)
+      .map((w) => w.id);
+    expect(new Set(order.slice(0, 4))).toEqual(
+      new Set(["bp", "bpInTarget", "pulse", "medications"]),
+    );
+    for (const id of ["bp", "bpInTarget", "pulse", "medications"]) {
+      const widget = layout.widgets.find((w) => w.id === id);
+      expect(widget?.visible, id).toBe(true);
+      expect(widget?.tileVisible, id).toBe(true);
+    }
+    expect(layout.widgets.length).toBe(DEFAULT_DASHBOARD_LAYOUT.widgets.length);
+
+    // A layout somebody arranged is never clobbered: put the default back
+    // (weight first), ask the questions again, confirm again — the seed sees
+    // a set column and writes nothing.
+    await getPrismaClient().user.update({
+      where: { id: user.id },
+      data: {
+        dashboardWidgetsJson: toJson(
+          serializeDashboardLayout(DEFAULT_DASHBOARD_LAYOUT),
+        ),
+      },
+    });
+    expect((await postRestart()).status).toBe(200);
+    await answerTheQuestions();
+    expect((await postComplete()).status).toBe(200);
+    const kept = resolveDashboardLayout(await stored());
+    expect([...kept.widgets].sort((a, b) => a.order - b.order)[0]?.id).toBe(
+      "weight",
+    );
+  });
+
   it("never switches off a module the person switched on by hand", async () => {
     const user = await makeUser("handmade");
     await signIn(user.id);
@@ -480,7 +538,187 @@ describe("POST /api/onboarding/complete", () => {
   });
 });
 
+describe("POST /api/onboarding/complete for somebody else's record", () => {
+  async function guardianWithChild() {
+    const guardian = await makeUser("guardian");
+    const { createManagedProfile } =
+      await import("@/lib/managed-profiles/create");
+    const { profile } = await createManagedProfile({
+      creatorId: guardian.id,
+      displayName: "Child record",
+      dateOfBirth: null,
+      locale: "en",
+      timezone: "UTC",
+    });
+    await signIn(guardian.id);
+    await patchAnswer({ step: "who", recordTarget: "someone-else" });
+    await patchAnswer({ step: "areas", areas: ["blood-pressure"] });
+    await patchAnswer({ step: "medication", medication: "no" });
+    await patchAnswer({ step: "sources", sources: ["manual"] });
+    await patchAnswer({ step: "visit", visit: "no" });
+    await patchAnswer({ step: "units", status: "skipped" });
+    return { guardian, profile };
+  }
+
+  it("derives onto the managed record and leaves the guardian's own map alone", async () => {
+    // The review's H1: a parent setting up a child's record must not have
+    // their own modules switched off around the child's answers. The
+    // derivation is the same function, applied through the same record-keyed
+    // write the guardian's modules route uses — to the child.
+    const { guardian, profile } = await guardianWithChild();
+
+    const res = await postComplete({ managedRecordId: profile.id });
+    expect(res.status).toBe(200);
+
+    const child = await modulePrefs(profile.id);
+    expect(child.vaccinations).toBe(true);
+    expect(child.insights).toBe(true);
+    expect(child.glucose).toBe(false);
+    expect(child.medications).toBe(false);
+    expect(child.doctorReport).toBe(false);
+
+    // Untouched: a fresh account carries no map at all, and still does.
+    expect(await modulePrefs(guardian.id)).toEqual({});
+
+    // The guardian's own flow is complete and its derivation latched, so a
+    // later confirm cannot derive the child's answers onto the guardian.
+    const own = await getPrismaClient().onboardingRecord.findUniqueOrThrow({
+      where: { userId: guardian.id },
+    });
+    expect(own.completedAt).not.toBeNull();
+    expect(own.modulesDerivedAt).not.toBeNull();
+    expect(statusOf(await readState(res), "confirm")).toBe("done");
+
+    // The child's own setup row reads as finished, from the same answers.
+    const theirs = await getPrismaClient().onboardingRecord.findUniqueOrThrow({
+      where: { userId: profile.id },
+    });
+    expect(theirs.completedAt).not.toBeNull();
+    expect(theirs.modulesDerivedAt).not.toBeNull();
+    const dashboard = await getPrismaClient().user.findUniqueOrThrow({
+      where: { id: profile.id },
+      select: { dashboardWidgetsJson: true },
+    });
+    expect(dashboard.dashboardWidgetsJson).not.toBeNull();
+
+    // A second confirm derives nowhere: the guardian is latched, and the
+    // child keeps what it has.
+    expect((await postComplete({ managedRecordId: profile.id })).status).toBe(
+      200,
+    );
+    expect(await modulePrefs(guardian.id)).toEqual({});
+  });
+
+  it("derives nowhere when the answers were for somebody else and no profile exists", async () => {
+    // H1' — "Finish without the profile" (no second factor, or a change of
+    // mind). There is no record the answers describe, and they must not
+    // describe the guardian's: the flow completes and latches, nothing is
+    // derived or seeded on the guardian, whatever the client sends.
+    const guardian = await makeUser("guardian-no-profile");
+    await signIn(guardian.id);
+    await patchAnswer({ step: "who", recordTarget: "someone-else" });
+    await patchAnswer({ step: "areas", areas: ["blood-pressure"] });
+    await patchAnswer({ step: "medication", medication: "yes" });
+    await patchAnswer({ step: "sources", sources: ["manual"] });
+    await patchAnswer({ step: "visit", visit: "within-a-month" });
+    await patchAnswer({ step: "units", status: "skipped" });
+
+    const res = await postComplete();
+    expect(res.status).toBe(200);
+    expect(await modulePrefs(guardian.id)).toEqual({});
+    const row = await getPrismaClient().user.findUniqueOrThrow({
+      where: { id: guardian.id },
+      select: { dashboardWidgetsJson: true, onboardingCompletedAt: true },
+    });
+    expect(row.dashboardWidgetsJson).toBeNull();
+    expect(row.onboardingCompletedAt).not.toBeNull();
+    const own = await getPrismaClient().onboardingRecord.findUniqueOrThrow({
+      where: { userId: guardian.id },
+    });
+    expect(own.completedAt).not.toBeNull();
+    // Latched: a second confirm, with or without a record, derives nothing.
+    expect(own.modulesDerivedAt).not.toBeNull();
+    expect((await postComplete()).status).toBe(200);
+    expect(await modulePrefs(guardian.id)).toEqual({});
+  });
+
+  it("answers 404 for a record the caller does not guard, and touches nothing", async () => {
+    // M7 — a record addressed by id answers 404 for missing, not managed and
+    // not guarded alike, as `GET /api/managed-profiles/{id}` does through
+    // the same helper: one answer, no existence oracle. This asserted 403
+    // once; the id-addressed convention is 404.
+    const { guardian } = await guardianWithChild();
+    const stranger = await makeUser("stranger-guardian");
+    const { createManagedProfile } =
+      await import("@/lib/managed-profiles/create");
+    const { profile: theirs } = await createManagedProfile({
+      creatorId: stranger.id,
+      displayName: "Somebody else's child",
+      dateOfBirth: null,
+      locale: "en",
+      timezone: "UTC",
+    });
+
+    const res = await postComplete({ managedRecordId: theirs.id });
+    expect(res.status).toBe(404);
+    expect(
+      (await postComplete({ managedRecordId: "no-such-record" })).status,
+    ).toBe(404);
+    expect(await modulePrefs(theirs.id)).toEqual({});
+    expect(await modulePrefs(guardian.id)).toEqual({});
+    const own = await getPrismaClient().onboardingRecord.findUniqueOrThrow({
+      where: { userId: guardian.id },
+    });
+    expect(own.completedAt).toBeNull();
+    // Nothing stamped the first-run gate either.
+    const row = await getPrismaClient().user.findUniqueOrThrow({
+      where: { id: guardian.id },
+      select: { onboardingCompletedAt: true },
+    });
+    expect(row.onboardingCompletedAt).toBeNull();
+  });
+
+  it("refuses a managed record when the answers were given for the caller", async () => {
+    const guardian = await makeUser("guardian-me");
+    const { createManagedProfile } =
+      await import("@/lib/managed-profiles/create");
+    const { profile } = await createManagedProfile({
+      creatorId: guardian.id,
+      displayName: "Child record",
+      dateOfBirth: null,
+      locale: "en",
+      timezone: "UTC",
+    });
+    await signIn(guardian.id);
+    await answerTheQuestions(); // Q1 = "me"
+
+    const res = await postComplete({ managedRecordId: profile.id });
+    expect(res.status).toBe(422);
+    expect(await modulePrefs(profile.id)).toEqual({});
+    expect(await modulePrefs(guardian.id)).toEqual({});
+  });
+});
+
 describe("POST /api/onboarding/restart", () => {
+  it("clears the first result so a re-run offers the task again", async () => {
+    // M2: kept, the old result painted the re-run's first-result screen as
+    // done, "Next" skipped the write, and the step stayed pending forever.
+    const user = await makeUser("restart-first-result");
+    await signIn(user.id);
+    await answerTheQuestions();
+    expect((await postComplete()).status).toBe(200);
+    await patchAnswer({
+      step: "first-result",
+      firstResult: { task: "add-medication", target: null, completed: true },
+    });
+    expect((await readMe()).firstResult?.completedAt).not.toBeNull();
+
+    expect((await postRestart()).status).toBe(200);
+    const after = await readMe();
+    expect(after.firstResult).toBeNull();
+    expect(statusOf(after, "first-result")).toBe("pending");
+  });
+
   it("resets the steps and leaves the modules where they are", async () => {
     const user = await makeUser("restart");
     await signIn(user.id);

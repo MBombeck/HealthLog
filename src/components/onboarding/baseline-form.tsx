@@ -1,27 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
   BaselineFields,
   type BaselineFieldErrors,
 } from "@/components/onboarding/baseline-fields";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import {
-  EMPTY_HEIGHT_DRAFT,
   resolveHeightUnitAdapter,
   type HeightDraft,
 } from "@/lib/profile/height-unit-display";
 import { useTranslations } from "@/lib/i18n/context";
-import { apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
-import { queryKeys } from "@/lib/query-keys";
 import {
   AnamnesisCard,
   buildAnamnesisAboutMeBody,
@@ -33,37 +26,38 @@ import {
   describeBaselineSaveOutcome,
   putBaselineProfile,
 } from "@/components/onboarding/baseline-form-utils";
+import { StepActions } from "@/components/onboarding/step-actions";
 
 /**
- * v1.4.25 W14b-Content — onboarding step 3 (baseline).
+ * The profile half of the confirm screen: display name, height, date of
+ * birth, sex — and the optional anamnesis card.
  *
- * Captures the four profile fields the original v1.4.20 wizard
- * collected on its "About you" screen — display name, height, date of
- * birth, gender — but spread across a single mobile-friendly card
- * instead of the older grid layout. The legacy `/api/onboarding/complete`
- * endpoint is *not* used here: completion now flips on the new
- * `POST /api/onboarding/step` with `{ step: 4 }`. Profile fields are
- * persisted via `PUT /api/auth/profile`, the existing canonical write
- * path (see `applyProfileUpdate` in `src/lib/auth/profile-update.ts`).
+ * Values the account already holds are seeded into the fields, so a person
+ * confirms them once rather than typing them again (design spec §The
+ * questions: never re-ask a value the account holds). Profile fields are
+ * persisted through `PUT /api/auth/profile`, the canonical write path, and
+ * the answer is READ rather than assumed: a field the server declined is
+ * named under its own input and the flow stays put, so the account is never
+ * stamped as set up over a value that never landed (v1.38.14, iOS #97). See
+ * `baseline-form-utils.ts` for the outcome logic.
  *
- * Submit flow on "Save and continue":
- *   1. PUT profile (empty fields are skipped). The write is
- *      field-independent, so the answer is read rather than assumed:
- *      a field the server declined is named on screen and the rest
- *      still counts as saved; a submission where nothing landed keeps
- *      the person on this step with the blocking field named. See
- *      `baseline-form-utils.ts`.
- *   2. PUT /api/coach/about-me — only when the optional anamnesis card
- *      (v1.17.1) was filled; preserves any existing `aboutMe` and
- *      writes conditions / allergies encrypted at rest.
- *   3. POST step:4 — flips `onboardingCompletedAt` server-side and
- *      clears the proxy cookie.
- *   4. router.push("/onboarding/4") — the done screen.
+ * Submit flow on "Confirm and continue":
+ *   1. PUT profile (untouched fields are left out). A refusal stops here.
+ *   2. PUT /api/coach/about-me — only when the anamnesis card was filled;
+ *      preserves any existing `aboutMe` and writes conditions / allergies
+ *      encrypted at rest.
+ *   3. `onConfirmed()` — the confirm screen's own completion, which derives
+ *      the module map and moves on.
  *
- * "Skip" advances without writing profile data; the wizard still
- * completes onboarding (the user can fill profile later from
- * Settings).
+ * "Skip" runs step 3 alone: the flow still completes, the profile can be
+ * filled later from Settings.
  */
+
+interface BaselineInitialValues {
+  heightCm: number | null;
+  dateOfBirth: string | null;
+  gender: string | null;
+}
 
 interface BaselineFormState {
   displayName: string;
@@ -77,21 +71,30 @@ interface BaselineFormState {
   gender: string;
 }
 
-const EMPTY_FORM: BaselineFormState = {
-  displayName: "",
-  height: EMPTY_HEIGHT_DRAFT,
-  dateOfBirth: "",
-  gender: "",
-};
-
-export function BaselineForm() {
+export function BaselineForm({
+  initial,
+  backHref,
+  onConfirmed,
+  confirming = false,
+}: {
+  initial: BaselineInitialValues;
+  backHref?: string;
+  /** The confirm screen's completion; awaited after a clean save. */
+  onConfirmed: () => Promise<void>;
+  /** True while the completion the parent owns is in flight. */
+  confirming?: boolean;
+}) {
   const { t } = useTranslations();
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const { preference } = useUnitDisplay();
   const heightAdapter = resolveHeightUnitAdapter(preference);
 
-  const [form, setForm] = useState<BaselineFormState>(EMPTY_FORM);
+  const [form, setForm] = useState<BaselineFormState>(() => ({
+    displayName: "",
+    height: heightAdapter.toDraft(initial.heightCm),
+    // The payload's ISO instant, as the date field's YYYY-MM-DD.
+    dateOfBirth: initial.dateOfBirth ? initial.dateOfBirth.slice(0, 10) : "",
+    gender: initial.gender ?? "",
+  }));
   const [saving, setSaving] = useState(false);
   // Refusals from the last save, one sentence per field. Cleared on
   // every attempt so a slot never keeps a reason the server no longer
@@ -148,7 +151,7 @@ export function BaselineForm() {
   }
 
   async function advance(opts: { saveProfile: boolean }) {
-    if (saving) return;
+    if (saving || confirming) return;
     setSaving(true);
     setFieldErrors({});
     try {
@@ -188,9 +191,7 @@ export function BaselineForm() {
           await apiPut("/api/coach/about-me", aboutMeBody);
         }
       }
-      await apiPost("/api/onboarding/step", { step: 4 });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
-      router.push("/onboarding/4");
+      await onConfirmed();
     } catch (err) {
       toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
       setSaving(false);
@@ -199,16 +200,12 @@ export function BaselineForm() {
 
   return (
     <section aria-labelledby="onboarding-baseline-title" className="space-y-6">
-      <header className="space-y-2">
-        {/* Onboarding hero H1: intentionally semibold, not the app-wide bold PageHeader H1 (UI-STANDARDS §5 hero exception). Do not sweep to font-bold. */}
-        <h1
-          id="onboarding-baseline-title"
-          tabIndex={-1}
-          className="text-2xl font-semibold tracking-tight"
-        >
+      <header className="space-y-1">
+        {/* A section of the confirm screen, which owns the page's h1. */}
+        <h2 id="onboarding-baseline-title" className="text-base font-semibold">
           {t("onboarding.baseline.title")}
-        </h1>
-        <p className="text-muted-foreground text-base leading-relaxed">
+        </h2>
+        <p className="text-muted-foreground text-sm">
           {t("onboarding.baseline.body")}
         </p>
       </header>
@@ -226,33 +223,13 @@ export function BaselineForm() {
         disabled={saving}
       />
 
-      <div className="flex items-center justify-between gap-2 pt-2">
-        <Button asChild variant="ghost" className="min-h-11 min-w-11">
-          <Link href="/onboarding/2">{t("onboarding.shell.back")}</Link>
-        </Button>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => advance({ saveProfile: false })}
-            disabled={saving}
-            className="min-h-11 min-w-11"
-          >
-            {t("onboarding.shell.skip")}
-          </Button>
-          <Button
-            type="button"
-            onClick={() => advance({ saveProfile: true })}
-            disabled={saving}
-            className="min-h-11 min-w-11"
-          >
-            {saving ? (
-              <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-            ) : null}
-            {t("onboarding.baseline.saveCta")}
-          </Button>
-        </div>
-      </div>
+      <StepActions
+        backHref={backHref}
+        onSkip={() => void advance({ saveProfile: false })}
+        onNext={() => void advance({ saveProfile: true })}
+        nextLabel={t("onboarding.flow.confirm.cta")}
+        pending={saving || confirming}
+      />
     </section>
   );
 }

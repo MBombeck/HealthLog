@@ -1,25 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
+  Compass,
   FileUp,
   PlusCircle,
   Plug,
   Settings2,
   Sparkles,
+  UserPlus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { MedicalDisclaimer } from "@/components/common/medical-disclaimer";
 import { SampleBriefingCard } from "@/components/onboarding/sample-briefing-card";
+import { StepHeading } from "@/components/onboarding/step-heading";
+import { useOnboardingAnswer } from "@/components/onboarding/use-onboarding-flow";
 import { useAuth } from "@/hooks/use-auth";
+import { useAccountSwitch } from "@/hooks/use-account-switch";
 import { setTourReferrer } from "@/components/onboarding/tour-launcher";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
+import { markChecklistExpanded } from "@/lib/onboarding/checklist-storage";
+import type { OnboardingStateDto } from "@/lib/onboarding/needs";
+import { accountLabel } from "@/lib/sharing/account-access-view";
 
 interface AiProviderStatus {
   /** Origin of the provider that would serve this user, if any. */
@@ -27,33 +36,70 @@ interface AiProviderStatus {
 }
 
 /**
- * v1.4.25 W14b-Content — onboarding step 4 (done).
+ * v1.39 (C2) — the setup flow's exit.
  *
- * Confirms the user has finished onboarding. `onboardingCompletedAt`
- * was flipped server-side by the baseline form's `POST step:4` write,
- * so this page is purely presentational — no further mutation, no
- * cookie flips, no API calls.
+ * The dashboard is one click away, already ordered, and the checklist opens
+ * on arrival (design spec §The screens, 5). The tour is an OFFER here rather
+ * than an automatic launch: pressing "Take a short tour" sets the referrer
+ * the shell-level `<TourLauncher>` reads, and nothing else does, so somebody
+ * who wants the dashboard gets the dashboard.
  *
- * The single CTA returns the user to the dashboard. The link goes
- * through `next/link` so the regular client-side navigation kicks in
- * (the proxy redirect was cleared with the same step-API write that
- * landed the user here).
+ * Two record-shaped exits ride the answer to Q1: "both" is offered the
+ * profile for the person they look after, and "someone I look after" — whose
+ * profile was created on the confirm screen — is offered that record, through
+ * the same switch the account menu uses, so their first entry lands in the
+ * right record.
  *
- * v1.18.6 — on mount we write the per-user wizard-return marker so the
- * shell-level `<TourLauncher>` auto-opens the module tour immediately
- * on the next dashboard arrival (sequenced after the post-wizard
- * grace), instead of waiting out the 24 h fallback. Whichever exit the
- * user picks from this screen, the next `/` mount finds the marker.
+ * The step is marked done on arrival, once. Everything else on this screen
+ * is presentational: the module map was derived on confirm, the cookie
+ * cleared there too.
+ *
+ * The AI panel leads with the payoff (a static, clearly-labelled SAMPLE
+ * briefing — no model call, no egress, no consent), then the honest
+ * local-first ladder and the "useful without AI" release valve. Value-first,
+ * never a gate: every exit below stays, and setup is a single optional
+ * deep-link.
  */
 
-export function DoneScreen() {
+export function DoneScreen({ state }: { state: OnboardingStateDto }) {
   const { t } = useTranslations();
+  const router = useRouter();
   const { user } = useAuth();
   const [sampleOpen, setSampleOpen] = useState(false);
+  const answer = useOnboardingAnswer();
+  const accountSwitch = useAccountSwitch();
 
+  // Mark the step once. The write is idempotent, but a strict-mode double
+  // mount would still send it twice; the ref keeps it to one.
+  const marked = useRef(false);
+  const donePending =
+    state.steps.find((step) => step.id === "done")?.status === "pending";
   useEffect(() => {
+    if (!donePending || marked.current) return;
+    marked.current = true;
+    answer.mutate({ step: "done" });
+    // `answer` is a fresh object every render; the mutation it wraps is not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [donePending]);
+
+  const recordTarget = state.needs.recordTarget;
+  const managedRecord =
+    recordTarget === "someone-else"
+      ? (user?.accountAccess?.accounts.find(
+          (entry) => entry.recordKind === "managed",
+        ) ?? null)
+      : null;
+
+  function openDashboard() {
+    markChecklistExpanded();
+    router.push("/");
+  }
+
+  function takeTour() {
     if (user?.id) setTourReferrer(user.id);
-  }, [user?.id]);
+    markChecklistExpanded();
+    router.push("/");
+  }
 
   // The shared-key note is the ONLY honest divergence in the panel: on a
   // deployment that ships an operator key, insights already work for the
@@ -80,22 +126,16 @@ export function DoneScreen() {
         <CheckCircle2 className="size-10" />
       </span>
 
-      <header className="space-y-2">
-        {/* Onboarding hero H1: intentionally semibold, not the app-wide bold PageHeader H1 (UI-STANDARDS §5 hero exception). Do not sweep to font-bold. */}
-        <h1
+      <div className="mx-auto max-w-md space-y-2">
+        <StepHeading
           id="onboarding-done-title"
-          tabIndex={-1}
-          className="text-2xl font-semibold tracking-tight"
-        >
-          {t("onboarding.done.title")}
-        </h1>
-        <p className="text-muted-foreground mx-auto max-w-md text-base leading-relaxed">
-          {t("onboarding.done.body")}
-        </p>
-        <p className="text-muted-foreground mx-auto max-w-md text-sm leading-relaxed">
+          title={t("onboarding.done.title")}
+          description={t("onboarding.done.body")}
+        />
+        <p className="text-muted-foreground text-sm leading-relaxed">
           {t("onboarding.done.learning")}
         </p>
-      </header>
+      </div>
 
       {/* v1.28 — the flagship AI value, made reachable at the one screen
           every fresh user passes through. The daily briefing / Coach need
@@ -201,14 +241,62 @@ export function DoneScreen() {
 
         <Link
           href="/settings/ai"
-          className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+          className="text-primary text-sm font-medium underline underline-offset-4"
         >
           {t("onboarding.ai.setupCta")}
         </Link>
       </section>
 
       <div className="flex w-full max-w-xs flex-col gap-2">
-        <Button asChild size="lg">
+        <Button
+          type="button"
+          size="lg"
+          onClick={openDashboard}
+          className="min-h-11"
+          data-slot="onboarding-open-dashboard"
+        >
+          {t("onboarding.done.returnCta")}
+        </Button>
+        <Button
+          type="button"
+          size="lg"
+          variant="outline"
+          onClick={takeTour}
+          className="inline-flex min-h-11 items-center gap-2"
+          data-slot="onboarding-take-tour"
+        >
+          <Compass className="size-4" />
+          {t("onboarding.flow.done.tourCta")}
+        </Button>
+        {managedRecord ? (
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            onClick={() => accountSwitch.mutate(managedRecord.accountId)}
+            disabled={accountSwitch.isPending}
+            className="inline-flex min-h-11 items-center gap-2"
+            data-slot="onboarding-open-managed-record"
+          >
+            <UserPlus className="size-4" />
+            {t("onboarding.flow.done.openRecord", {
+              name: accountLabel(managedRecord),
+            })}
+          </Button>
+        ) : null}
+        {recordTarget === "both" ? (
+          <Button asChild size="lg" variant="outline">
+            <Link
+              href="/settings/access"
+              className="inline-flex min-h-11 items-center gap-2"
+              data-slot="onboarding-create-managed-profile"
+            >
+              <UserPlus className="size-4" />
+              {t("onboarding.flow.done.createProfile")}
+            </Link>
+          </Button>
+        ) : null}
+        <Button asChild variant="ghost">
           <Link
             href="/settings/integrations"
             className="inline-flex items-center gap-2"
@@ -217,14 +305,11 @@ export function DoneScreen() {
             {t("onboarding.done.connectCta")}
           </Link>
         </Button>
-        <Button asChild size="lg" variant="outline">
+        <Button asChild variant="ghost">
           <Link href="/measurements" className="inline-flex items-center gap-2">
             <PlusCircle className="size-4" />
             {t("onboarding.done.logCta")}
           </Link>
-        </Button>
-        <Button asChild variant="ghost">
-          <Link href="/">{t("onboarding.done.returnCta")}</Link>
         </Button>
       </div>
 
@@ -238,14 +323,14 @@ export function DoneScreen() {
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
         <Link
           href="/settings/export"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:underline"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm underline underline-offset-4"
         >
           <FileUp className="size-3.5" />
           {t("onboarding.done.importCta")}
         </Link>
         <Link
           href="/settings/modules"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:underline"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm underline underline-offset-4"
         >
           <Settings2 className="size-3.5" />
           {t("onboarding.done.modulesCta")}

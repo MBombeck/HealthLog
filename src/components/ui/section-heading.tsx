@@ -53,6 +53,12 @@ interface SectionHeadingProps {
   action?: ReactNode;
   /** Optional id on the `<h2>`, e.g. for an `aria-labelledby` link. */
   id?: string;
+  /**
+   * Stable spotlight-tour anchor, rendered as `data-tour-id` on the root.
+   * The nav model carries the same field for its entries; a stop whose
+   * anchor is a settings group heading names it here.
+   */
+  tourId?: string;
   className?: string;
 }
 
@@ -62,11 +68,13 @@ export function SectionHeading({
   subtitle,
   action,
   id,
+  tourId,
   className,
 }: SectionHeadingProps) {
   return (
     <div
       data-slot="section-heading"
+      data-tour-id={tourId}
       className={cn(
         "flex flex-wrap items-center justify-between gap-2",
         className,

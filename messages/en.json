@@ -4487,51 +4487,8 @@
       "back": "Back",
       "skip": "Skip",
       "next": "Continue",
-      "step1of4": "Step 1 of 4",
-      "step2of4": "Step 2 of 4",
-      "step3of4": "Step 3 of 4",
-      "step4of4": "Step 4 of 4"
-    },
-    "goals": {
-      "title": "What would you like to track?",
-      "body": "Pick the areas you care about — we'll surface them first on your dashboard, and they help you decide what to set up next.",
-      "helpHint": "One to three priorities tend to work best — you can always add more later.",
-      "options": {
-        "weightManagement": "Weight management",
-        "bpTracking": "Blood pressure",
-        "glucoseTracking": "Glucose",
-        "sleepImprovement": "Better sleep",
-        "medicationCompliance": "Medications",
-        "generalWellness": "General wellness"
-      }
-    },
-    "source": {
-      "title": "Connect a source",
-      "body": "Bring in measurements automatically, or stay on manual entry. Nothing here is configured for you — each card just shows where to connect it. Device sources need a free developer app registered on your own account (about 5 minutes); the setup guide on each card walks through it.",
-      "recommended": "Recommended",
-      "manual": {
-        "title": "Manual entry",
-        "body": "Log readings yourself, whenever it fits. Works on any device, no third-party account required."
-      },
-      "withings": {
-        "title": "Withings",
-        "body": "Scales, blood-pressure cuffs and trackers from Withings sync automatically once connected.",
-        "cta": "Connect Withings",
-        "setupCta": "Set up",
-        "setupHint": "Needs your own free Withings developer app first — about 5 minutes, one time."
-      },
-      "more": {
-        "title": "More sources",
-        "body": "Connect any of these in Settings whenever you're ready — most need a free developer app registered on your own account first.",
-        "appleHealth": "Apple Health",
-        "whoop": "WHOOP",
-        "oura": "Oura",
-        "polar": "Polar",
-        "nightscout": "Nightscout",
-        "fitbit": "Fitbit",
-        "appleHealthHint": "Apple Health has no web connection — finish onboarding here, then open the HealthLog app on your iPhone to complete Apple Health setup."
-      },
-      "import": "Import existing history"
+      "stepOf": "Step {current} of {total}",
+      "stepsLabel": "Setup steps"
     },
     "baseline": {
       "title": "A bit about you",
@@ -4547,8 +4504,7 @@
       "genderFemale": "Female",
       "genderOther": "Other",
       "dateOfBirthLabel": "Date of birth",
-      "dateOfBirthHint": "Used only for age-aware analytics.",
-      "saveCta": "Save and continue"
+      "dateOfBirthHint": "Used only for age-aware analytics."
     },
     "done": {
       "title": "You're all set",
@@ -4562,33 +4518,11 @@
     },
     "welcomeBack": {
       "title": "Welcome back",
-      "body": "You've already finished onboarding. To adjust anything, head to Settings — everything you set up is editable from there.",
       "cta": "Open dashboard"
     },
     "disclaimer": {
       "acknowledge": "I understand: HealthLog is a private tracking tool, not a clinical assessment or diagnosis. If I'm worried I'll talk to my doctor, not this app.",
       "learnMore": "Learn more"
-    },
-    "welcome": {
-      "title": "Welcome to HealthLog",
-      "carouselLabel": "Welcome carousel",
-      "slideOf": "Slide {current} of {total}",
-      "prevSlide": "Previous slide",
-      "nextSlide": "Next slide",
-      "gotoSlide": "Go to slide {index}",
-      "cta": "Get started",
-      "slide1": {
-        "title": "Track every signal",
-        "body": "Weight, blood pressure, glucose, sleep, mood — keep your full picture in one log you own."
-      },
-      "slide2": {
-        "title": "Connect your sources",
-        "body": "Sync with Apple Health and Withings, or add readings by hand. Your data stays on your server."
-      },
-      "slide3": {
-        "title": "See the pattern",
-        "body": "Daily summaries, trend charts, and a coach that surfaces what changed — all on your own device."
-      }
     },
     "anamnesis": {
       "title": "About your health (optional)",
@@ -4620,6 +4554,161 @@
       "keylessLine": "HealthLog is fully useful without AI. Your tiles, charts, trends and exports all work — AI only adds the plain-language read on top.",
       "setupCta": "Set it up (about a minute)",
       "sharedKeyNote": "This instance already provides a shared AI provider, so insights work for you right now — no setup needed."
+    },
+    "steps": {
+      "who": "Who this record is for",
+      "areas": "What to keep an eye on",
+      "medication": "Medication",
+      "sources": "Where readings come from",
+      "visit": "Doctor's visit",
+      "units": "Units",
+      "confirm": "Confirm",
+      "first-result": "First result",
+      "done": "Done"
+    },
+    "flow": {
+      "welcome": {
+        "title": "Welcome to HealthLog",
+        "body": "Five short questions decide what HealthLog shows you first. It takes about two minutes.",
+        "changeLater": "Nothing is final: every choice can be changed later under Settings.",
+        "setUp": "Set up",
+        "skip": "Skip for now",
+        "againBody": "Your setup is finished. Answer the questions again to change what HealthLog shows first, or go to the dashboard.",
+        "setUpAgain": "Set up again"
+      },
+      "who": {
+        "title": "Who is this record for?",
+        "body": "The answers that follow apply to this record.",
+        "options": {
+          "me": "Me",
+          "someone-else": "Someone I look after",
+          "both": "Both"
+        },
+        "hints": {
+          "someone-else": "A child or a parent, for example. Their profile is created at the end.",
+          "both": "Set up your own record now; the profile for the other person is offered at the end."
+        }
+      },
+      "areas": {
+        "title": "What do you want to keep an eye on?",
+        "body": "Pick any number. These decide which modules are switched on and what the dashboard shows first.",
+        "options": {
+          "blood-pressure": "Blood pressure",
+          "weight-body": "Weight and body",
+          "glucose": "Blood glucose",
+          "sleep": "Sleep and recovery",
+          "mood": "Mood and mental wellbeing",
+          "cycle": "Cycle",
+          "activity": "Activity and workouts",
+          "labs": "Lab results",
+          "illness": "Illnesses and symptoms"
+        }
+      },
+      "medication": {
+        "title": "Do you take medication on a schedule?",
+        "body": "A schedule switches on the medication module and reminders.",
+        "options": {
+          "yes": "Yes",
+          "no": "No",
+          "sometimes": "Sometimes"
+        }
+      },
+      "sources": {
+        "title": "Where do your readings come from today?",
+        "body": "Pick any number. One connection is offered at the end; none is required.",
+        "options": {
+          "manual": "I type them in",
+          "apple-health": "Apple Health on my iPhone",
+          "withings": "Withings",
+          "oura": "Oura",
+          "whoop": "WHOOP",
+          "polar": "Polar",
+          "fitbit": "Fitbit",
+          "strava": "Strava",
+          "nightscout": "Nightscout",
+          "file": "A file I already have"
+        },
+        "hints": {
+          "apple-health": "Synced by the iOS app, or imported from an export.",
+          "file": "Imported under Settings once you are done here."
+        }
+      },
+      "visit": {
+        "title": "Is there a doctor's visit coming up?",
+        "body": "A visit switches on the doctor report and adds preparing for it to your checklist.",
+        "options": {
+          "within-a-month": "Yes, within a month",
+          "later": "Later",
+          "no": "No"
+        }
+      },
+      "units": {
+        "title": "Which units do you use?",
+        "body": "Readings are stored once and shown in the unit you choose. You can change it later under Settings.",
+        "glucoseLegend": "Blood glucose",
+        "weightLegend": "Weight and height",
+        "options": {
+          "metric": "kg and cm",
+          "imperial": "lb and ft/in"
+        }
+      },
+      "confirm": {
+        "title": "Here is what your answers switch on",
+        "body": "One look, then HealthLog is set up. Nothing here is final.",
+        "modulesTitle": "Modules",
+        "switchedOn": "Switched on: {modules}.",
+        "nothingExtra": "Your answers switch on no extra module; the core readings are always there.",
+        "alwaysOn": "Always on: {modules}, and the core readings (weight, blood pressure, pulse).",
+        "everythingElse": "Everything else stays one click away under",
+        "modulesLink": "Settings, Modules",
+        "glucoseUnit": "Blood glucose",
+        "unitPreference": "Units",
+        "language": "Language",
+        "timezone": "Time zone",
+        "changeInSettings": "Change these under Settings, Account",
+        "cta": "Confirm and continue",
+        "managedTitle": "The person you look after",
+        "managedBody": "Their record has no login of its own; you look after it from your account. A second factor on your account is required to create it.",
+        "managedCreate": "Create the profile and finish",
+        "managedLater": "You can also create it later under Settings, Shared access.",
+        "finishWithoutProfile": "Finish without the profile"
+      },
+      "first-result": {
+        "connect-source": {
+          "title": "Connect {target}",
+          "body": "One connection, chosen from your answers. Readings then arrive on their own.",
+          "howTo": "The connection is made on the integrations page. Come back here afterwards; this screen notices when it is done.",
+          "cta": "Connect {target}",
+          "checking": "Checking the connection.",
+          "waiting": "Not connected yet.",
+          "done": "{target} is connected.",
+          "syncing": "The first sync is in progress. Readings appear on the dashboard as they arrive."
+        },
+        "add-medication": {
+          "title": "Add your first medication",
+          "body": "Name, dose and schedule; the reminder follows the schedule you set.",
+          "howTo": "The medication is added in a few short steps. You can add more later on the medications page.",
+          "cta": "Add a medication",
+          "done": "{name} is added.",
+          "doneUnnamed": "Your first medication is added.",
+          "nextDose": "Next dose: {when}.",
+          "reminders": "Reminders follow the schedule you set."
+        },
+        "log-reading": {
+          "title": "Enter one reading: {target}",
+          "body": "One reading puts the first value on your dashboard. The trend draws itself from the fifth.",
+          "done": "Your first reading is on its tile.",
+          "doneElsewhere": "Your first entry for {target} is recorded.",
+          "elsewhere": "{target} has its own page. Open it, make the first entry, then come back and mark it done.",
+          "open": "Open {target}",
+          "markDone": "I have made the entry"
+        }
+      },
+      "done": {
+        "tourCta": "Take a short tour",
+        "openRecord": "Open the record of {name}",
+        "createProfile": "Create the profile for the person you look after"
+      }
     }
   },
   "gettingStarted": {
@@ -4646,7 +4735,14 @@
       "notificationsCta": "Open notifications",
       "insightsTitle": "Turn on insights (optional)",
       "insightsDescription": "Add a local model or your own AI key to unlock the daily briefing and Coach.",
-      "insightsCta": "Turn on insights"
+      "insightsCta": "Turn on insights",
+      "visitTitle": "Prepare for the visit",
+      "visitDescription": "Put the appointment on the calendar; the doctor report bundles what to bring.",
+      "visitCta": "Open visits",
+      "dataSourceNamedTitle": "Connect {source}",
+      "managedProfileTitle": "Create the profile you look after",
+      "managedProfileDescription": "Your answers were given for another person's record; it is created under Shared access.",
+      "managedProfileCta": "Create the profile"
     }
   },
   "trendHints": {
@@ -6460,7 +6556,15 @@
     },
     "dangerZoneDetail": "Your account and the credentials you sign in with are kept.",
     "deleteAccountCardDetail": "This cannot be undone.",
-    "passkeyStepUpRequired": "For your security, sign in again before removing a passkey."
+    "passkeyStepUpRequired": "For your security, sign in again before removing a passkey.",
+    "setup": {
+      "title": "Setup",
+      "description": "The questions that decide what HealthLog shows first, and the getting-started checklist on the dashboard.",
+      "setUpAgain": "Set up again",
+      "showChecklist": "Show the checklist again",
+      "checklistShown": "The checklist is back on the dashboard.",
+      "checklistNothingHidden": "The checklist was not hidden; it opens on the dashboard."
+    }
   },
   "admin": {
     "title": "Administration",
@@ -8732,7 +8836,8 @@
     "unavailable": {
       "description": "The operator switched {module} off for every account on this server. No setting of your own can bring it back.",
       "title": "Not available on this server"
-    }
+    },
+    "openModules": "Open Settings, Modules"
   },
   "vaccinations": {
     "title": "Vaccinations",

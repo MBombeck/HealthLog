@@ -95,8 +95,16 @@ export function BaselineFields({
         />
       </FieldGroup>
 
+      {/* `min-w-0` on both cells: a grid item's automatic minimum is its
+          min-content, and the sex select's value is `whitespace-nowrap` — a
+          locale whose longest option is a third longer, or a runner whose
+          fallback fonts render two pixels wider, then pinned the track past
+          the card at 390 px (the string-headroom sweep caught it on CI). With
+          the minimum released the track takes the free space and the value
+          ellipsises, which is the select primitive's own design. */}
       <div className="grid gap-4 sm:grid-cols-2">
         <FieldGroup
+          className="min-w-0"
           htmlFor={IDS.heightCm}
           label={
             heightAdapter.usesFeetInches
@@ -116,6 +124,7 @@ export function BaselineFields({
           />
         </FieldGroup>
         <FieldGroup
+          className="min-w-0"
           htmlFor={IDS.gender}
           label={t("onboarding.baseline.genderLabel")}
           error={errors.gender}
@@ -130,7 +139,7 @@ export function BaselineFields({
           >
             <SelectTrigger
               id={IDS.gender}
-              className="w-full"
+              className="w-full min-w-0"
               data-slot="onboarding-baseline-gender"
               aria-invalid={errors.gender ? true : undefined}
               aria-describedby={

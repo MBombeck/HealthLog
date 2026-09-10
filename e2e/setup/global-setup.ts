@@ -424,6 +424,103 @@ export const SEAM_BANNERS_STORAGE_STATE_PATH = resolve(
   "e2e/setup/storageStateSeamBanners.json",
 );
 
+/**
+ * v1.39 (C2) — the setup flow's own accounts, one per journey.
+ *
+ * Each journey walks the questions from the welcome screen to the dashboard
+ * and asserts what the walk wrote: the module map, the tile order, the
+ * checklist, the reading or medication or profile the first-result step
+ * produced. Two journeys sharing an account would each read the other's
+ * answers, so every path has its own — and the two screen sweeps (axe, and
+ * the string-headroom check across every locale) have theirs, because they
+ * drive the same state through the API while a journey may be mid-walk.
+ *
+ * Seeded with `onboarding_completed_at` NULL, which is what makes the shell
+ * land them on `/onboarding` in the first place; the fixture puts each one
+ * back to that state before every test.
+ */
+export const E2E_SETUP_BP = {
+  email: "e2e-setup-bp@healthlog.test",
+  username: "e2e-setup-bp",
+  password: "Bp7!Wq3nZ9xLm2Kd",
+  role: "USER",
+} as const;
+
+export const E2E_SETUP_MEDICATION = {
+  email: "e2e-setup-medication@healthlog.test",
+  username: "e2e-setup-medication",
+  password: "Md4!Rt8vC2yPn6Hs",
+  role: "USER",
+} as const;
+
+export const E2E_SETUP_VISIT = {
+  email: "e2e-setup-visit@healthlog.test",
+  username: "e2e-setup-visit",
+  password: "Vs9!Kq2mX7bTd4Lp",
+  role: "USER",
+} as const;
+
+/**
+ * The child-profile journey's account. It creates a managed profile on the
+ * confirm screen, which resolves `requireFreshMfa`, so like the guardian it
+ * carries a confirmed factor — stamped AFTER its login capture, because the
+ * password-only capture cannot complete a TOTP login.
+ */
+export const E2E_SETUP_CHILD = {
+  email: "e2e-setup-child@healthlog.test",
+  username: "e2e-setup-child",
+  password: "Ch3!Ns6wQ8kZr5Vb",
+  role: "USER",
+} as const;
+
+export const E2E_SETUP_A11Y = {
+  email: "e2e-setup-a11y@healthlog.test",
+  username: "e2e-setup-a11y",
+  password: "Ay5!Ht9pL3cWn7Xq",
+  role: "USER",
+} as const;
+
+export const E2E_SETUP_LOCALE = {
+  email: "e2e-setup-locale@healthlog.test",
+  username: "e2e-setup-locale",
+  password: "Lc2!Vm7dR4jYs8Nt",
+  role: "USER",
+} as const;
+
+export const SETUP_BP_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateSetupBp.json",
+);
+export const SETUP_MEDICATION_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateSetupMedication.json",
+);
+export const SETUP_VISIT_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateSetupVisit.json",
+);
+export const SETUP_CHILD_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateSetupChild.json",
+);
+export const SETUP_A11Y_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateSetupA11y.json",
+);
+export const SETUP_LOCALE_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateSetupLocale.json",
+);
+
+const SETUP_FLOW_ACCOUNTS = [
+  E2E_SETUP_BP,
+  E2E_SETUP_MEDICATION,
+  E2E_SETUP_VISIT,
+  E2E_SETUP_CHILD,
+  E2E_SETUP_A11Y,
+  E2E_SETUP_LOCALE,
+] as const;
+
 async function hashPassword(password: string): Promise<string> {
   return hash(password, {
     memoryCost: 19456,
@@ -1038,6 +1135,45 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // can reuse them via `test.use({ storageState })`. This is the documented
     // Playwright pattern (`docs/auth.md`) and the only way to avoid the
     // per-spec login + rate-limit dance.
+    // v1.39 (C2) — the setup flow's accounts. `onboarding_completed_at` NULL
+    // is the whole point: it is what lands them on `/onboarding`. The tour
+    // flag stays true for the reason every other fixture sets it. Whatever a
+    // previous run wrote — the answers row, the module map, the seeded
+    // dashboard, a managed profile — is cleared by the journeys' own fixture
+    // before each test; here the row itself is made to exist.
+    for (const account of SETUP_FLOW_ACCOUNTS) {
+      await pool.query(
+        `INSERT INTO users
+          (id, username, email, password_hash, role, created_at, updated_at,
+           onboarding_completed_at, onboarding_tour_completed)
+         VALUES ($1, $2, $3, $4, 'USER', $5, $5, NULL, true)
+         ON CONFLICT (username) DO UPDATE SET
+           email = EXCLUDED.email,
+           password_hash = EXCLUDED.password_hash,
+           updated_at = EXCLUDED.updated_at,
+           onboarding_completed_at = NULL,
+           onboarding_tour_completed = true,
+           totp_confirmed_at = NULL`,
+        [
+          cuid(),
+          account.username,
+          account.email,
+          await hashPassword(account.password),
+          now,
+        ],
+      );
+    }
+    await pool.query(
+      `DELETE FROM users
+       WHERE managed_profile_at IS NOT NULL
+         AND id IN (
+           SELECT g.grantor_id FROM account_grants g
+           JOIN users u ON u.id = g.grantee_id
+           WHERE u.username = $1
+         )`,
+      [E2E_SETUP_CHILD.username],
+    );
+
     const baseURL =
       config.projects[0]?.use.baseURL ??
       process.env.E2E_BASE_URL ??
@@ -1116,6 +1252,19 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     await pool.query(
       `UPDATE users SET totp_confirmed_at = $2 WHERE username = $1`,
       [E2E_GUARDIAN.username, now],
+    );
+    // v1.39 (C2) — the setup flow's jars, one per journey and one per sweep.
+    // The child journey's factor is stamped after its capture, for the reason
+    // the guardian's is: the password-only capture cannot pass a TOTP login.
+    await capture(E2E_SETUP_BP, SETUP_BP_STORAGE_STATE_PATH);
+    await capture(E2E_SETUP_MEDICATION, SETUP_MEDICATION_STORAGE_STATE_PATH);
+    await capture(E2E_SETUP_VISIT, SETUP_VISIT_STORAGE_STATE_PATH);
+    await capture(E2E_SETUP_A11Y, SETUP_A11Y_STORAGE_STATE_PATH);
+    await capture(E2E_SETUP_LOCALE, SETUP_LOCALE_STORAGE_STATE_PATH);
+    await capture(E2E_SETUP_CHILD, SETUP_CHILD_STORAGE_STATE_PATH);
+    await pool.query(
+      `UPDATE users SET totp_confirmed_at = $2 WHERE username = $1`,
+      [E2E_SETUP_CHILD.username, now],
     );
   } finally {
     await pool.end();

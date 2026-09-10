@@ -4487,51 +4487,8 @@
       "back": "Atrás",
       "skip": "Omitir",
       "next": "Continuar",
-      "step1of4": "Paso 1 de 4",
-      "step2of4": "Paso 2 de 4",
-      "step3of4": "Paso 3 de 4",
-      "step4of4": "Paso 4 de 4"
-    },
-    "goals": {
-      "title": "¿Qué te gustaría registrar?",
-      "body": "Elige las áreas que te interesan: las mostraremos primero en tu panel y te ayudarán a decidir qué configurar a continuación.",
-      "helpHint": "Una a tres prioridades suelen funcionar mejor — siempre podrás añadir más más adelante.",
-      "options": {
-        "weightManagement": "Control del peso",
-        "bpTracking": "Presión arterial",
-        "glucoseTracking": "Glucosa",
-        "sleepImprovement": "Mejor sueño",
-        "medicationCompliance": "Medicamentos",
-        "generalWellness": "Bienestar general"
-      }
-    },
-    "source": {
-      "title": "Conectar una fuente",
-      "body": "Importa las mediciones automáticamente o sigue con la entrada manual. Aquí no se configura nada por ti: cada tarjeta solo muestra dónde conectarla. Las fuentes de dispositivo necesitan una app de desarrollador gratuita en tu propia cuenta (unos 5 minutos); la guía de cada tarjeta te lo explica.",
-      "recommended": "Recomendado",
-      "manual": {
-        "title": "Entrada manual",
-        "body": "Registra tus mediciones tú mismo cuando te venga bien. Funciona en cualquier dispositivo, sin cuenta de terceros."
-      },
-      "withings": {
-        "title": "Withings",
-        "body": "Las básculas, los tensiómetros y los trackers de Withings se sincronizan automáticamente una vez conectados.",
-        "cta": "Conectar Withings",
-        "setupCta": "Configurar",
-        "setupHint": "Necesita primero tu propia app de desarrollador de Withings, gratuita — unos 5 minutos, una sola vez."
-      },
-      "more": {
-        "title": "Más fuentes",
-        "body": "Conecta cualquiera de ellas en Ajustes cuando quieras — la mayoría necesita antes una app de desarrollador gratuita en tu propia cuenta.",
-        "appleHealth": "Apple Health",
-        "whoop": "WHOOP",
-        "oura": "Oura",
-        "polar": "Polar",
-        "nightscout": "Nightscout",
-        "fitbit": "Fitbit",
-        "appleHealthHint": "Apple Health no tiene conexión web — termina aquí la puesta en marcha y luego abre la app HealthLog en tu iPhone para completar la configuración de Apple Health."
-      },
-      "import": "Importar historial existente"
+      "stepOf": "Paso {current} de {total}",
+      "stepsLabel": "Pasos de la configuración"
     },
     "baseline": {
       "title": "Cuéntanos sobre ti",
@@ -4547,8 +4504,7 @@
       "genderFemale": "Mujer",
       "genderOther": "Otro",
       "dateOfBirthLabel": "Fecha de nacimiento",
-      "dateOfBirthHint": "Se utiliza solo para análisis sensibles a la edad.",
-      "saveCta": "Guardar y continuar"
+      "dateOfBirthHint": "Se utiliza solo para análisis sensibles a la edad."
     },
     "done": {
       "title": "Todo listo",
@@ -4562,33 +4518,11 @@
     },
     "welcomeBack": {
       "title": "Bienvenido de nuevo",
-      "body": "Ya completaste la configuración inicial. Para cambiar algo, abre Ajustes — todo lo que configuraste se puede editar desde ahí.",
       "cta": "Abrir el panel"
     },
     "disclaimer": {
       "acknowledge": "Lo entiendo: HealthLog es una herramienta privada de seguimiento, no una valoración clínica ni un diagnóstico. Si me preocupa algo, hablaré con mi médico, no con esta app.",
       "learnMore": "Más información"
-    },
-    "welcome": {
-      "title": "Bienvenido a HealthLog",
-      "carouselLabel": "Carrusel de bienvenida",
-      "slideOf": "Diapositiva {current} de {total}",
-      "prevSlide": "Diapositiva anterior",
-      "nextSlide": "Diapositiva siguiente",
-      "gotoSlide": "Ir a la diapositiva {index}",
-      "cta": "Empezar",
-      "slide1": {
-        "title": "Registra cada señal",
-        "body": "Peso, presión, glucosa, sueño, ánimo — todo en un único registro que es tuyo."
-      },
-      "slide2": {
-        "title": "Conecta tus fuentes",
-        "body": "Sincroniza con Apple Health y Withings o añade datos a mano. Tus datos se quedan en tu servidor."
-      },
-      "slide3": {
-        "title": "Descubre los patrones",
-        "body": "Resúmenes diarios, gráficas de tendencias y un coach que destaca lo que cambió — todo en tu propio dispositivo."
-      }
     },
     "anamnesis": {
       "title": "Sobre tu salud (opcional)",
@@ -4620,6 +4554,161 @@
       "keylessLine": "HealthLog es plenamente útil sin IA. Tus paneles, gráficos, tendencias y exportaciones funcionan — la IA solo añade la lectura en lenguaje claro por encima.",
       "setupCta": "Configúralo (un minuto aprox.)",
       "sharedKeyNote": "Esta instancia ya ofrece un proveedor de IA compartido, así que los insights funcionan para ti ahora mismo — sin configuración."
+    },
+    "steps": {
+      "who": "Para quién es este registro",
+      "areas": "Qué quieres vigilar",
+      "medication": "Medicación",
+      "sources": "De dónde vienen las mediciones",
+      "visit": "Visita médica",
+      "units": "Unidades",
+      "confirm": "Confirmar",
+      "first-result": "Primer resultado",
+      "done": "Listo"
+    },
+    "flow": {
+      "welcome": {
+        "title": "Bienvenido a HealthLog",
+        "body": "Cinco preguntas breves deciden qué te muestra HealthLog primero. Lleva unos dos minutos.",
+        "changeLater": "Nada es definitivo: cada elección se puede cambiar después en Ajustes.",
+        "setUp": "Configurar",
+        "skip": "Omitir por ahora",
+        "againBody": "Tu configuración está terminada. Responde de nuevo las preguntas para cambiar lo que HealthLog muestra primero, o ve al panel.",
+        "setUpAgain": "Configurar de nuevo"
+      },
+      "who": {
+        "title": "¿Para quién es este registro?",
+        "body": "Las respuestas siguientes se aplican a este registro.",
+        "options": {
+          "me": "Para mí",
+          "someone-else": "Para alguien a mi cargo",
+          "both": "Ambos"
+        },
+        "hints": {
+          "someone-else": "Un hijo o un padre, por ejemplo. Su perfil se crea al final.",
+          "both": "Configura ahora tu propio registro; el perfil de la otra persona se ofrece al final."
+        }
+      },
+      "areas": {
+        "title": "¿Qué quieres vigilar?",
+        "body": "Elige las que quieras. Deciden qué módulos se activan y qué muestra primero el panel.",
+        "options": {
+          "blood-pressure": "Presión arterial",
+          "weight-body": "Peso y cuerpo",
+          "glucose": "Glucosa en sangre",
+          "sleep": "Sueño y recuperación",
+          "mood": "Ánimo y bienestar mental",
+          "cycle": "Ciclo",
+          "activity": "Actividad y entrenamientos",
+          "labs": "Resultados de laboratorio",
+          "illness": "Enfermedades y síntomas"
+        }
+      },
+      "medication": {
+        "title": "¿Tomas medicación con un horario fijo?",
+        "body": "Un horario activa el módulo de medicación y los recordatorios.",
+        "options": {
+          "yes": "Sí",
+          "no": "No",
+          "sometimes": "A veces"
+        }
+      },
+      "sources": {
+        "title": "¿De dónde vienen hoy tus mediciones?",
+        "body": "Elige las que quieras. Al final se ofrece una conexión; ninguna es obligatoria.",
+        "options": {
+          "manual": "Las escribo a mano",
+          "apple-health": "Apple Health en mi iPhone",
+          "withings": "Withings",
+          "oura": "Oura",
+          "whoop": "WHOOP",
+          "polar": "Polar",
+          "fitbit": "Fitbit",
+          "strava": "Strava",
+          "nightscout": "Nightscout",
+          "file": "Un archivo que ya tengo"
+        },
+        "hints": {
+          "apple-health": "Sincronizado por la app de iOS o importado desde una exportación.",
+          "file": "Se importa en Ajustes cuando termines aquí."
+        }
+      },
+      "visit": {
+        "title": "¿Tienes una visita médica próximamente?",
+        "body": "Una visita activa el informe médico y añade su preparación a tu lista de tareas.",
+        "options": {
+          "within-a-month": "Sí, en menos de un mes",
+          "later": "Más adelante",
+          "no": "No"
+        }
+      },
+      "units": {
+        "title": "¿Qué unidades usas?",
+        "body": "Las mediciones se guardan una vez y se muestran en la unidad que elijas. Puedes cambiarla después en Ajustes.",
+        "glucoseLegend": "Glucosa en sangre",
+        "weightLegend": "Peso y altura",
+        "options": {
+          "metric": "kg y cm",
+          "imperial": "lb y ft/in"
+        }
+      },
+      "confirm": {
+        "title": "Esto es lo que activan tus respuestas",
+        "body": "Un vistazo y HealthLog queda configurado. Nada de esto es definitivo.",
+        "modulesTitle": "Módulos",
+        "switchedOn": "Activados: {modules}.",
+        "nothingExtra": "Tus respuestas no activan ningún módulo adicional; las mediciones básicas siempre están.",
+        "alwaysOn": "Siempre activos: {modules} y las mediciones básicas (peso, presión arterial, pulso).",
+        "everythingElse": "Todo lo demás queda a un clic en",
+        "modulesLink": "Ajustes, Módulos",
+        "glucoseUnit": "Glucosa en sangre",
+        "unitPreference": "Unidades",
+        "language": "Idioma",
+        "timezone": "Zona horaria",
+        "changeInSettings": "Cámbialo en Ajustes, Cuenta",
+        "cta": "Confirmar y continuar",
+        "managedTitle": "La persona a tu cargo",
+        "managedBody": "Su registro no tiene inicio de sesión propio; lo gestionas desde tu cuenta. Para crearlo hace falta un segundo factor en tu cuenta.",
+        "managedCreate": "Crear el perfil y terminar",
+        "managedLater": "También puedes crearlo después en Ajustes, Acceso compartido.",
+        "finishWithoutProfile": "Terminar sin el perfil"
+      },
+      "first-result": {
+        "connect-source": {
+          "title": "Conectar {target}",
+          "body": "Una conexión, elegida según tus respuestas. Después las mediciones llegan solas.",
+          "howTo": "La conexión se hace en la página de integraciones. Vuelve aquí después; esta pantalla detecta cuándo está lista.",
+          "cta": "Conectar {target}",
+          "checking": "Comprobando la conexión.",
+          "waiting": "Aún no conectado.",
+          "done": "{target} está conectado.",
+          "syncing": "La primera sincronización está en marcha. Las mediciones aparecen en el panel a medida que llegan."
+        },
+        "add-medication": {
+          "title": "Añade tu primer medicamento",
+          "body": "Nombre, dosis y horario; el recordatorio sigue el horario que fijes.",
+          "howTo": "El medicamento se añade en unos pocos pasos. Puedes añadir más después en la página de medicación.",
+          "cta": "Añadir un medicamento",
+          "done": "{name} está añadido.",
+          "doneUnnamed": "Tu primer medicamento está añadido.",
+          "nextDose": "Próxima dosis: {when}.",
+          "reminders": "Los recordatorios siguen el horario que fijaste."
+        },
+        "log-reading": {
+          "title": "Registra una medición: {target}",
+          "body": "Una medición pone el primer valor en tu panel. La tendencia se dibuja sola a partir de la quinta.",
+          "done": "Tu primera medición está en su tarjeta.",
+          "doneElsewhere": "Tu primera entrada de {target} está registrada.",
+          "elsewhere": "{target} tiene su propia página. Ábrela, haz la primera entrada y vuelve aquí para marcarla como hecha.",
+          "open": "Abrir {target}",
+          "markDone": "Ya hice la entrada"
+        }
+      },
+      "done": {
+        "tourCta": "Hacer un recorrido breve",
+        "openRecord": "Abrir el registro de {name}",
+        "createProfile": "Crear el perfil de la persona a tu cargo"
+      }
     }
   },
   "gettingStarted": {
@@ -4646,7 +4735,14 @@
       "notificationsCta": "Abrir notificaciones",
       "insightsTitle": "Activar insights (opcional)",
       "insightsDescription": "Añade un modelo local o tu propia clave de IA para desbloquear el resumen diario y Coach.",
-      "insightsCta": "Activar insights"
+      "insightsCta": "Activar insights",
+      "visitTitle": "Prepararse para la visita",
+      "visitDescription": "Anota la cita en el calendario; el informe médico reúne lo que debes llevar.",
+      "visitCta": "Abrir visitas",
+      "dataSourceNamedTitle": "Conectar {source}",
+      "managedProfileTitle": "Crear el perfil de la persona a tu cargo",
+      "managedProfileDescription": "Tus respuestas eran para el registro de otra persona; se crea en Acceso compartido.",
+      "managedProfileCta": "Crear el perfil"
     }
   },
   "trendHints": {
@@ -6460,7 +6556,15 @@
     },
     "dangerZoneDetail": "Tu cuenta y las credenciales con las que inicias sesión se conservan.",
     "deleteAccountCardDetail": "Esto no se puede deshacer.",
-    "passkeyStepUpRequired": "Por seguridad, vuelve a iniciar sesión antes de quitar una clave de acceso."
+    "passkeyStepUpRequired": "Por seguridad, vuelve a iniciar sesión antes de quitar una clave de acceso.",
+    "setup": {
+      "title": "Configuración inicial",
+      "description": "Las preguntas que deciden qué muestra HealthLog primero, y la lista de primeros pasos del panel.",
+      "setUpAgain": "Configurar de nuevo",
+      "showChecklist": "Mostrar la lista de nuevo",
+      "checklistShown": "La lista vuelve a estar en el panel.",
+      "checklistNothingHidden": "La lista no estaba oculta; se abre en el panel."
+    }
   },
   "admin": {
     "title": "Administration",
@@ -8732,7 +8836,8 @@
     "unavailable": {
       "description": "El operador ha desactivado {module} para todas las cuentas de este servidor. Ningún ajuste tuyo puede recuperarlo.",
       "title": "No disponible en este servidor"
-    }
+    },
+    "openModules": "Abrir Ajustes, Módulos"
   },
   "vaccinations": {
     "title": "Vacunas",

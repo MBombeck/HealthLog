@@ -10,7 +10,9 @@ import {
   ChevronDown,
   Pill,
   Sparkles,
+  Stethoscope,
   User2,
+  UserPlus,
   Wifi,
   X,
 } from "lucide-react";
@@ -25,14 +27,18 @@ import {
   buildChecklist,
   checklistProgress,
   shouldShowChecklist,
+  upcomingVisitCountFrom,
   visibleChecklist,
   type ChecklistItemId,
 } from "@/lib/onboarding/checklist";
 import { apiGet } from "@/lib/api/api-fetch";
-
-const DISMISSED_ITEMS_KEY = "healthlog-getting-started-dismissed";
-const DISMISSED_ALL_KEY = "healthlog-getting-started-hidden";
-const EXPANDED_KEY = "healthlog-getting-started-expanded";
+import {
+  CHECKLIST_DISMISSED_ALL_KEY as DISMISSED_ALL_KEY,
+  CHECKLIST_DISMISSED_ITEMS_KEY as DISMISSED_ITEMS_KEY,
+  CHECKLIST_EXPANDED_KEY as EXPANDED_KEY,
+} from "@/lib/onboarding/checklist-storage";
+import { questionOptionLabelKey } from "@/lib/onboarding/question-config";
+import { isBrowserConnectableSource } from "@/lib/onboarding/wizard-steps";
 
 const ITEM_ICONS: Record<ChecklistItemId, LucideIcon> = {
   profile: User2,
@@ -41,6 +47,8 @@ const ITEM_ICONS: Record<ChecklistItemId, LucideIcon> = {
   dataSource: Wifi,
   notifications: Bell,
   insights: Sparkles,
+  visit: Stethoscope,
+  managedProfile: UserPlus,
 };
 
 const ITEM_LABEL_KEYS: Record<
@@ -76,6 +84,16 @@ const ITEM_LABEL_KEYS: Record<
     title: "gettingStarted.items.insightsTitle",
     description: "gettingStarted.items.insightsDescription",
     cta: "gettingStarted.items.insightsCta",
+  },
+  visit: {
+    title: "gettingStarted.items.visitTitle",
+    description: "gettingStarted.items.visitDescription",
+    cta: "gettingStarted.items.visitCta",
+  },
+  managedProfile: {
+    title: "gettingStarted.items.managedProfileTitle",
+    description: "gettingStarted.items.managedProfileDescription",
+    cta: "gettingStarted.items.managedProfileCta",
   },
 };
 
@@ -288,6 +306,32 @@ export function GettingStartedChecklist() {
     enabled: checklistRelevant,
   });
 
+  // v1.39 (C2) — the "prepare the visit" row, only for the answer that asked
+  // for it: a visit within a month. Reads the visits list's own meta count so
+  // the row flips done the moment one is on the calendar.
+  // Answers given for somebody else's record (Q1 "someone I look after") are
+  // the child's, not this dashboard's: no visit row, no named source here.
+  const answersAreOwn = user?.onboarding?.needs.recordTarget !== "someone-else";
+  const visitAsked =
+    answersAreOwn && user?.onboarding?.needs.visit === "within-a-month";
+  const { data: upcomingVisitCount } = useQuery<number>({
+    queryKey: queryKeys.onboardingUpcomingVisits(),
+    queryFn: async () =>
+      upcomingVisitCountFrom(
+        await apiGet<{ upcoming: unknown[] }>("/api/encounters"),
+      ),
+    enabled: checklistRelevant && visitAsked,
+  });
+
+  // The named source: "Connect Oura" rather than "Connect a data source"
+  // for somebody who said their readings come from one.
+  const namedSource = answersAreOwn
+    ? (user?.onboarding?.needs.sources.find(isBrowserConnectableSource) ?? null)
+    : null;
+  const managedProfileCount = (user?.accountAccess?.accounts ?? []).filter(
+    (entry) => entry.recordKind === "managed",
+  ).length;
+
   const medicationCount = medsData?.length ?? 0;
   const dataSourceConnected = (integrationsData?.integrations ?? []).some(
     (integration) =>
@@ -312,6 +356,8 @@ export function GettingStartedChecklist() {
         notificationsConfigured,
         insightsConfigured,
         dismissedIds,
+        upcomingVisitCount: upcomingVisitCount ?? 0,
+        managedProfileCount,
         // v1.39 (C1) — the setup answers order these rows: medication first
         // for somebody who said they take one daily, the data-source row first
         // for somebody who named a wearable. The payload resolves them for the
@@ -331,6 +377,8 @@ export function GettingStartedChecklist() {
       notificationsConfigured,
       insightsConfigured,
       dismissedIds,
+      upcomingVisitCount,
+      managedProfileCount,
     ],
   );
 
@@ -473,6 +521,8 @@ export function GettingStartedChecklist() {
             return (
               <li
                 key={item.id}
+                data-item-id={item.id}
+                data-done={item.done}
                 className="hover:bg-accent/40 group flex items-center gap-3 rounded-md px-2 py-2"
               >
                 <span
@@ -497,7 +547,13 @@ export function GettingStartedChecklist() {
                         : "truncate text-sm font-medium"
                     }
                   >
-                    {t(labels.title)}
+                    {item.id === "dataSource" && namedSource
+                      ? t("gettingStarted.items.dataSourceNamedTitle", {
+                          source: t(
+                            questionOptionLabelKey("sources", namedSource),
+                          ),
+                        })
+                      : t(labels.title)}
                   </p>
                   <p className="text-muted-foreground truncate text-xs">
                     {t(labels.description)}

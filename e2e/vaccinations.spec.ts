@@ -14,7 +14,7 @@
  *      Vorsorge reminder that shows on `/checkups`; logging the next dose moves
  *      its due date forward through the real satisfy matcher.
  *   4. Module off — turning the module off in settings drops the nav entry and
- *      the direct visit lands on the module-off redirect, not a crash.
+ *      the direct visit lands on the module-off notice, not a crash.
  *   5. a11y — axe over the list and the capture form, serious/critical only.
  *
  * The flows mutate the one seeded account, so — like `visits.spec.ts` — this
@@ -248,7 +248,7 @@ test.describe("vaccinations", () => {
       .toBeGreaterThan(dueBefore);
   });
 
-  test("turning the module off drops the nav entry and the direct visit redirects", async ({
+  test("turning the module off drops the nav entry and the direct visit shows the notice", async ({
     page,
   }) => {
     await page.goto("/vaccinations");
@@ -271,10 +271,16 @@ test.describe("vaccinations", () => {
       0,
     );
 
-    // A direct visit no longer renders the surface: the page redirects home,
-    // so the hero never paints and the dashboard's own landmark does.
+    // A direct visit no longer renders the surface. It used to redirect
+    // home; since the setup flow switches modules off for a new record, a
+    // module page answers with the shared notice that names the switch and
+    // offers the Modules settings, so a bookmark or a report link explains
+    // itself instead of bouncing. The hero never paints.
     await page.goto("/vaccinations");
-    await expect(page).toHaveURL(/\/$|\/dashboard/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/vaccinations$/, { timeout: 15_000 });
+    await expect(
+      page.locator('[data-slot="module-off-open-settings"]'),
+    ).toBeVisible({ timeout: 15_000 });
     await expect(
       page.locator('[data-tour-id="vaccinations-hero"]'),
     ).toHaveCount(0);

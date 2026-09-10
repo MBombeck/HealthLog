@@ -1,14 +1,11 @@
 import type { ReactNode } from "react";
 
 /**
- * v1.4.25 W14b — onboarding route-segment layout.
+ * The setup flow's route-segment layout.
  *
- * Intentionally pass-through. The `OnboardingShell` chrome lives inside
- * each `[step]/page.tsx` so the existing `/onboarding` root page
- * (`page.tsx` — the legacy v1.4.20 single-file wizard) keeps rendering
- * unchanged while the rebuilt multi-step flow ships beside it. The
- * Content agent that follows W14b-Foundation will swap the root page's
- * redirect target once every step has real content.
+ * Pass-through on purpose: the `OnboardingShell` chrome is rendered by each
+ * page, because the shell's counter and step list depend on the flow state
+ * the page loads, and a layout cannot read what its page decided.
  */
 export default function OnboardingLayout({
   children,

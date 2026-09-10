@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 
+import type { EncounterDTO, EncounterListDTO } from "@/lib/encounters/dto";
+
 import {
   buildChecklist,
   checklistOrderFromNeeds,
   checklistProgress,
+  CHECKLIST_BASE_ITEM_IDS,
   CHECKLIST_ITEM_IDS,
   isProfileComplete,
   shouldShowChecklist,
   trendHintFor,
+  upcomingVisitCountFrom,
   visibleChecklist,
   type ChecklistItemId,
 } from "../checklist";
@@ -52,6 +56,8 @@ function inputs(
     notificationsConfigured: false,
     insightsConfigured: false,
     dismissedIds: new Set<ChecklistItemId>(),
+    upcomingVisitCount: 0,
+    managedProfileCount: 0,
     onboarding: null,
     ...overrides,
   };
@@ -141,6 +147,113 @@ describe("buildChecklist", () => {
   });
 });
 
+describe("upcomingVisitCountFrom (the visits list's wire shape)", () => {
+  it("counts the upcoming array of the body `GET /api/encounters` publishes", () => {
+    // The route answers `{ upcoming, past }` as data and publishes no meta;
+    // the row read `meta.upcoming` once and could never flip to done.
+    const body: EncounterListDTO = { upcoming: [], past: [] };
+    expect(upcomingVisitCountFrom(body)).toBe(0);
+    const two: EncounterListDTO = {
+      upcoming: [{ id: "v1" }, { id: "v2" }] as unknown as EncounterDTO[],
+      past: [],
+    };
+    expect(upcomingVisitCountFrom(two)).toBe(2);
+  });
+
+  it("reads a missing or malformed body as no visit", () => {
+    expect(upcomingVisitCountFrom(null)).toBe(0);
+    expect(upcomingVisitCountFrom(undefined)).toBe(0);
+    expect(
+      upcomingVisitCountFrom({ upcoming: 3 as unknown as unknown[] }),
+    ).toBe(0);
+  });
+});
+
+describe("answers given for somebody else's record (v1.39 C2)", () => {
+  it("adds the profile row and reads none of the child's answers as the guardian's", () => {
+    const items = buildChecklist(
+      inputs({
+        onboarding: onboardingState(
+          {},
+          {
+            recordTarget: "someone-else",
+            visit: "within-a-month",
+            sources: ["oura"],
+          },
+        ),
+      }),
+    );
+    const ids = items.map((i) => i.id);
+    expect(ids).toContain("managedProfile");
+    expect(ids).not.toContain("visit");
+    expect(items.find((i) => i.id === "managedProfile")).toMatchObject({
+      done: false,
+      href: "/settings/access",
+    });
+    expect(ids[1]).toBe("managedProfile");
+  });
+
+  it("is done once a managed profile exists, and offered to both as well", () => {
+    const both = buildChecklist(
+      inputs({
+        onboarding: onboardingState({}, { recordTarget: "both" }),
+        managedProfileCount: 1,
+      }),
+    );
+    expect(both.find((i) => i.id === "managedProfile")?.done).toBe(true);
+    const me = buildChecklist(
+      inputs({ onboarding: onboardingState({}, { recordTarget: "me" }) }),
+    );
+    expect(me.map((i) => i.id)).not.toContain("managedProfile");
+  });
+});
+
+describe("the visit row (v1.39 C2)", () => {
+  it("exists only for an answer that named a visit within a month", () => {
+    const asked = buildChecklist(
+      inputs({ onboarding: onboardingState({}, { visit: "within-a-month" }) }),
+    );
+    expect(asked.map((i) => i.id)).toContain("visit");
+    expect(asked.find((i) => i.id === "visit")).toMatchObject({
+      done: false,
+      href: "/checkups",
+    });
+    const later = buildChecklist(
+      inputs({ onboarding: onboardingState({}, { visit: "later" }) }),
+    );
+    expect(later.map((i) => i.id)).not.toContain("visit");
+    expect(buildChecklist(inputs()).map((i) => i.id)).not.toContain("visit");
+  });
+
+  it("is done once a visit is on the calendar", () => {
+    const items = buildChecklist(
+      inputs({
+        onboarding: onboardingState({}, { visit: "within-a-month" }),
+        upcomingVisitCount: 1,
+      }),
+    );
+    expect(items.find((i) => i.id === "visit")?.done).toBe(true);
+  });
+
+  it("is promoted by the answers like the other needs-shaped rows", () => {
+    expect(
+      checklistOrderFromNeeds({
+        ...emptyOnboardingNeeds(),
+        visit: "within-a-month",
+      }),
+    ).toEqual([
+      "profile",
+      "visit",
+      "measurement",
+      "medication",
+      "dataSource",
+      "notifications",
+      "insights",
+      "managedProfile",
+    ]);
+  });
+});
+
 describe("visibleChecklist + checklistProgress", () => {
   it("hides per-item dismissed rows from the visible list", () => {
     const items = buildChecklist(
@@ -180,6 +293,8 @@ describe("visibleChecklist + checklistProgress", () => {
       notificationsConfigured: false,
       insightsConfigured: false,
       dismissedIds: new Set(),
+      upcomingVisitCount: 0,
+      managedProfileCount: 0,
     });
     const progress = checklistProgress(items);
     expect(progress.percent).toBe(0);
@@ -332,7 +447,7 @@ describe("checklistOrderFromNeeds", () => {
 describe("buildChecklist, ordered by the setup answers", () => {
   it("keeps the fixed order for a record that never entered the flow", () => {
     expect(buildChecklist(inputs()).map((i) => i.id)).toEqual([
-      ...CHECKLIST_ITEM_IDS,
+      ...CHECKLIST_BASE_ITEM_IDS,
     ]);
   });
 
@@ -347,7 +462,7 @@ describe("buildChecklist, ordered by the setup answers", () => {
     );
     // Re-ordering the dashboard under somebody mid-question would be movement
     // they did not ask for.
-    expect(items.map((i) => i.id)).toEqual([...CHECKLIST_ITEM_IDS]);
+    expect(items.map((i) => i.id)).toEqual([...CHECKLIST_BASE_ITEM_IDS]);
   });
 
   it("orders the rows from the answers once the flow is confirmed", () => {
@@ -365,7 +480,7 @@ describe("buildChecklist, ordered by the setup answers", () => {
       "dataSource",
     ]);
     expect([...items.map((i) => i.id)].sort()).toEqual(
-      [...CHECKLIST_ITEM_IDS].sort(),
+      [...CHECKLIST_BASE_ITEM_IDS].sort(),
     );
   });
 

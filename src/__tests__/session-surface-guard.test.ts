@@ -129,11 +129,15 @@ describe("S1 — the direct session-resolution set is frozen", () => {
       "RSC prefetch of the session user's mood list, skipped under a switch",
     "app/page.tsx":
       "RSC prefetch of the session user's dashboard snapshot, skipped under a switch",
-    // Onboarding routing. Reads the actor's own onboarding step to redirect;
-    // renders no record data.
+    // Onboarding routing. Reads the actor's OWN setup state through
+    // `loadOnboardingFlowState` (a `getSession` wrapper, listed in the regex
+    // below) to guard the step URL and to render the screens; the three
+    // writes behind them refuse under a switch, so the pages read the same
+    // record the routes write.
     "app/onboarding/[step]/page.tsx":
-      "redirects on the actor's onboarding step",
-    "app/onboarding/page.tsx": "redirects on the actor's onboarding step",
+      "guards the step URL on the actor's own setup state",
+    "app/onboarding/page.tsx":
+      "resumes or welcomes on the actor's own setup state",
   };
 
   /**
@@ -147,10 +151,12 @@ describe("S1 — the direct session-resolution set is frozen", () => {
    * `getUnswitchedSession` (`lib/auth/acting-carrier.ts`) is listed for the
    * reason a wrapper is the easiest way to disappear from a guard: it returns
    * `getSession()`'s answer or null, so a caller of it derives an identity
-   * exactly as much as a caller of the thing it wraps.
+   * exactly as much as a caller of the thing it wraps. v1.39 (C2) —
+   * `loadOnboardingFlowState` (`lib/onboarding/load-flow-state.ts`) is the
+   * same shape: `getSession()` plus the caller's own setup row.
    */
   const SESSION_DERIVING_HELPERS =
-    /\b(getSession|getUnswitchedSession|getSessionUserLocale|validateSessionFromCookieValue|validateSessionWithCreatedAt)\s*\(/;
+    /\b(getSession|getUnswitchedSession|getSessionUserLocale|validateSessionFromCookieValue|validateSessionWithCreatedAt|loadOnboardingFlowState)\s*\(/;
 
   /**
    * Reaching for the cookie by name is the way around the helpers. Both the

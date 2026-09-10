@@ -64,6 +64,8 @@ export function IntegrationsSection({
         <SectionHeading
           icon={Link2}
           title={t("settings.sections.integrations.connectionsHeading")}
+          // The module tour's "integrations" stop anchors here.
+          tourId="integrations-hero"
         />
         <ConnectionsPanel callbackUrls={callbackUrls} />
 

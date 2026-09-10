@@ -20,9 +20,20 @@ export const CHECKLIST_ITEM_IDS = [
   "dataSource",
   "notifications",
   "insights",
+  // v1.39 (C2) — present only for an answer that named a visit within a
+  // month (design spec §After the flow: "prepare the visit").
+  "visit",
+  // v1.39 (C2) — "someone I look after" (or "both") with no managed profile
+  // yet: the answers were given for a record that does not exist, and this
+  // row is where it gets created.
+  "managedProfile",
 ] as const;
 
 export type ChecklistItemId = (typeof CHECKLIST_ITEM_IDS)[number];
+
+/** The rows every record has; the visit row joins only when asked for. */
+export const CHECKLIST_BASE_ITEM_IDS: readonly ChecklistItemId[] =
+  CHECKLIST_ITEM_IDS.filter((id) => id !== "visit" && id !== "managedProfile");
 
 export interface ChecklistItem {
   id: ChecklistItemId;
@@ -72,6 +83,17 @@ export interface ChecklistInputs {
   /** Dismissed item ids (per-item localStorage state). */
   dismissedIds: ReadonlySet<ChecklistItemId>;
   /**
+   * v1.39 (C2) — visits booked from today on, for the "prepare the visit"
+   * row. Read only while the row can exist, so a caller that never asked the
+   * question passes zero.
+   */
+  upcomingVisitCount: number;
+  /**
+   * v1.39 (C2) — managed profiles this account looks after, for the row that
+   * asks a guardian to create the one their answers were about.
+   */
+  managedProfileCount: number;
+  /**
    * v1.39 (C1) — the needs-based setup state from `GET /api/auth/me`, or null
    * for a record that never entered the flow.
    *
@@ -103,6 +125,19 @@ export function checklistOrderFromNeeds(
     if (!promoted.includes(id)) promoted.push(id);
   };
 
+  // Answers given for somebody else's record say nothing about the
+  // guardian's own dashboard: the one row they promote is the profile.
+  if (needs.recordTarget === "someone-else") {
+    promote("managedProfile");
+    return [
+      "profile",
+      ...promoted,
+      ...CHECKLIST_ITEM_IDS.filter(
+        (id) => id !== "profile" && !promoted.includes(id),
+      ),
+    ];
+  }
+
   if (needs.medication === "yes" || needs.medication === "sometimes") {
     promote("medication");
   }
@@ -112,6 +147,7 @@ export function checklistOrderFromNeeds(
     promote("dataSource");
   }
   if (needs.areas.length > 0) promote("measurement");
+  if (needs.visit === "within-a-month") promote("visit");
 
   return [
     "profile",
@@ -125,8 +161,8 @@ export function checklistOrderFromNeeds(
 /**
  * Compute the ordered checklist for the dashboard hero. Stable order:
  * profile → measurement → medication → dataSource → notifications →
- * insights. Each item carries the deep-link the row's CTA should
- * navigate to.
+ * insights, plus the visit row for an answer that named one. Each item
+ * carries the deep-link the row's CTA should navigate to.
  */
 export function buildChecklist(inputs: ChecklistInputs): ChecklistItem[] {
   const profileDone = isProfileComplete(inputs.profile);
@@ -169,6 +205,30 @@ export function buildChecklist(inputs: ChecklistInputs): ChecklistItem[] {
     },
   ];
   if (!inputs.onboarding) return items;
+  // The visit row exists only for the answer that asked for it; every other
+  // record keeps the six rows it had. Done once a visit is on the calendar.
+  const target = inputs.onboarding.needs.recordTarget;
+  if (
+    target !== "someone-else" &&
+    inputs.onboarding.needs.visit === "within-a-month"
+  ) {
+    items.push({
+      id: "visit",
+      done: inputs.upcomingVisitCount >= 1,
+      href: "/checkups",
+      dismissed: inputs.dismissedIds.has("visit"),
+    });
+  }
+  // The profile the answers were about. Offered to "both" as well, which
+  // the spec says gets the profile at the end.
+  if (target === "someone-else" || target === "both") {
+    items.push({
+      id: "managedProfile",
+      done: inputs.managedProfileCount >= 1,
+      href: "/settings/access",
+      dismissed: inputs.dismissedIds.has("managedProfile"),
+    });
+  }
   // Ordered from the answers only once the flow has been confirmed: before
   // that the answers are still being given, and re-ordering the dashboard
   // under someone mid-question would be movement they did not ask for.
@@ -249,6 +309,19 @@ export function shouldShowChecklist(args: {
 
   if (!isOnboardingSettled(onboarding)) return true;
   return visible.some((item) => !item.done);
+}
+
+/**
+ * The upcoming-visit count off the visits list's own body. `GET
+ * /api/encounters` answers `{ upcoming, past }` as DATA — there is no `meta`
+ * on that wire, and a reader that looked for one counted zero forever (the
+ * "prepare the visit" row could never flip). Pure, so the shape is pinned
+ * against the DTO the route publishes.
+ */
+export function upcomingVisitCountFrom(
+  body: { upcoming: readonly unknown[] } | null | undefined,
+): number {
+  return Array.isArray(body?.upcoming) ? body.upcoming.length : 0;
 }
 
 /**

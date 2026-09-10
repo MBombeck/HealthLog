@@ -36,6 +36,7 @@ import { medicationKeys } from "./medications";
 import { mentalHealthKeys } from "./mental-health";
 import { moodKeys } from "./mood";
 import { nutrientKeys } from "./nutrients";
+import { onboardingKeys } from "./onboarding";
 import { recordSettingsKeys } from "./record-settings";
 import { profileKeys } from "./profile";
 import { settingsKeys } from "./settings";
@@ -68,6 +69,7 @@ export const queryKeys = {
   ...encounterKeys,
   ...customMetrics,
   ...nutrientKeys,
+  ...onboardingKeys,
   ...recordSettingsKeys,
   ...profileKeys,
   ...sharingKeys,

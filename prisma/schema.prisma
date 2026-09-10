@@ -385,29 +385,9 @@ model User {
   // contract for every other self-hoster.
   documentsAutoAiRead Boolean @default(false) @map("documents_auto_ai_read")
 
-  // Onboarding
+  // Onboarding. The first-run redirect's gate; the needs-based setup flow
+  // (`OnboardingRecord`) keeps its own ledger and stamps this on confirm.
   onboardingCompletedAt   DateTime? @map("onboarding_completed_at")
-  // v1.4.25 W14b — last persisted onboarding wizard step.
-  // Encodes resume-from-where-you-left-off semantics for the rebuilt
-  // multi-step wizard at `/onboarding/[step]`. Values mirror the
-  // wizard's step indices:
-  //   0 = welcome
-  //   1 = goals
-  //   2 = source
-  //   3 = baseline
-  //   4 = done (triggers `onboardingCompletedAt` flip on the same
-  //             round-trip — the column stays at 4 for completed users)
-  // Null = legacy pre-W14b user; the wizard treats null as 0 on mount.
-  onboardingStep          Int       @default(0) @map("onboarding_step")
-  // v1.17.1 — goal slugs chosen during onboarding (GoalsChipPicker).
-  // Seeds dashboard tile pinning + reminder suggestions; NOT a clinical
-  // target store (targets are fully derived from height/age/gender +
-  // clinical refs in /api/insights/targets). Empty [] = skipped / no
-  // preference. The slug set is the closed enum
-  // `ONBOARDING_GOAL_SLUGS` in src/lib/onboarding/goals.ts; a String[]
-  // (not a relation) mirrors `insightsExcludeMetrics` precedent — the
-  // set is small and fixed, never queried relationally.
-  onboardingGoals         String[]  @default([]) @map("onboarding_goals")
   // v1.4.15 Phase B5: tracks whether the user has finished (or
   // explicitly dismissed) the spotlight tour that overlays the
   // dashboard on first arrival. Distinct from the wizard at
@@ -8380,9 +8360,9 @@ model VaccinationDocumentLink {
 /// covers free text a person wrote (`UserHealthProfile.aboutMeEncrypted`, the
 /// Coach transcript, the emergency note) and identifiers (the KVNR), and an
 /// answer drawn from nine fixed chips is neither. It is the same class of
-/// value as `modulePreferencesJson` and `onboardingGoals`, both of which sit
-/// in plaintext beside it. Readers are fail-soft rather than schema-validated
-/// at the database edge — see `src/lib/onboarding/needs.ts`.
+/// value as `modulePreferencesJson`, which sits in plaintext beside it.
+/// Readers are fail-soft rather than schema-validated at the database edge —
+/// see `src/lib/onboarding/needs.ts`.
 model OnboardingRecord {
   id     String @id @default(cuid())
   userId String @unique @map("user_id")

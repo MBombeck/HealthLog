@@ -1,19 +1,16 @@
 /**
- * OpenAPI route table — the onboarding wizard and the module tour.
+ * OpenAPI route table — the setup flow and the module tour.
  *
  * Part of the OpenAPI route table; aggregated in `./index.ts`.
- * The request schemas come from `src/lib/onboarding/tour-progress.ts` and
- * `src/lib/validations/onboarding.ts` so the wire contract stays
+ * The request schemas come from `src/lib/onboarding/tour-progress.ts`,
+ * `src/lib/validations/onboarding.ts` and
+ * `src/lib/validations/onboarding-needs.ts` so the wire contract stays
  * single-source with the runtime parsers.
  *
- * Two generations of the same flow live side by side here, and a client
- * should pick one. `POST /api/onboarding/step` is the current wizard: four
- * ordered checkpoints, the fourth of which completes. `POST
- * /api/onboarding/complete` is the older single-shot path that stamps the
- * completion and takes whatever profile fields it was given. They write the
- * same column and refuse to co-operate — the step route's conditional update
- * requires `onboardingCompletedAt: null`, so a `complete` call mid-wizard
- * makes every remaining step 409.
+ * v1.39 — one flow. The needs-based setup (`answers` → `complete` →
+ * `restart`) replaced the four-checkpoint wizard, whose `POST
+ * /api/onboarding/step` is gone with it; `complete` is the one completion
+ * write, and it now also seeds the dashboard order from the answers.
  *
  * v1.18.6 — the resumable module-tour contract the iOS client mirrors:
  * a fire-and-forget progress checkpoint plus the coarse completion
@@ -34,10 +31,7 @@ import {
 } from "@/lib/onboarding/needs";
 import { tourProgressSchema } from "@/lib/onboarding/tour-progress";
 import { ONBOARDING_AREA_KEYS } from "@/lib/modules/registry";
-import {
-  onboardingCompleteSchema,
-  onboardingStepSchema,
-} from "@/lib/validations/onboarding";
+import { onboardingCompleteSchema } from "@/lib/validations/onboarding";
 import {
   onboardingAnswerSchema,
   onboardingRestartSchema,
@@ -216,26 +210,10 @@ const disclaimerAckResponse = z
     description: "The persisted disclaimer acknowledgment version.",
   });
 
-const onboardingStepRequest = onboardingStepSchema.meta({
-  id: "OnboardingStepRequest",
-  description:
-    "The wizard step being COMPLETED, 1–4. It must equal the stored step plus one — the server does not clamp or skip. `goals` rides the step-2 submit; every slug is checked against the closed set, so one unknown slug fails the whole request rather than being dropped.",
-});
-
-const onboardingStepResponse = z
-  .object({
-    step: z.number().int().describe("The stored step after the write."),
-    onboardingCompletedAt: z.iso
-      .datetime({ offset: true })
-      .nullable()
-      .describe("Non-null once step 4 landed."),
-  })
-  .meta({ id: "OnboardingStepResponse" });
-
 const onboardingCompleteRequest = onboardingCompleteSchema.meta({
   id: "OnboardingCompleteRequest",
   description:
-    "Optional profile fields to save alongside the completion stamp. Every field is optional and only a truthy value is written — sending `heightCm: 0` or an empty `displayName` leaves the column alone rather than clearing it. There is no way to CLEAR a field through this endpoint. `dateOfBirth` is a free string parsed with `new Date(...)`: an unparseable value is silently ignored, not refused.",
+    "The completion stamp's body. `managedRecordId` (v1.39) names the managed record the answers were given for — see the field. The profile fields are the legacy half: every one optional, only a truthy value is written — sending `heightCm: 0` or an empty `displayName` leaves the column alone rather than clearing it, and there is no way to CLEAR a field through this endpoint. `dateOfBirth` is a free string parsed with `new Date(...)`: an unparseable value is silently ignored, not refused. The web flow writes its profile through `PUT /api/auth/profile` instead.",
 });
 
 export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
@@ -319,66 +297,12 @@ export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
-  "/api/onboarding/step": {
-    post: {
-      tags: ["Onboarding"],
-      summary: "Advance the onboarding wizard by one step",
-      description:
-        "Persists progress through the four-step wizard. The contract is strictly ordered: the submitted `step` must be exactly the stored step plus one, so a client cannot skip ahead or replay a step it already sent.\n\nSubmitting step 4 completes onboarding — the completion instant is stamped in the same write, the proxy-readable pending cookie is cleared so the next navigation stops redirecting to `/onboarding`, and the stored goal selection seeds the dashboard layout. That seed is ONE-TIME and conditional: it only runs while the layout column is still unset, so a person who already arranged their tiles is never clobbered, and a concurrent layout save that lands first wins.\n\nThe write is guarded on the state it validated, so two tabs submitting the same step do not both succeed — exactly one lands and the other gets 409.\n\nRate-limited to 30 writes per 10 minutes per user, which is generous for a four-step flow and tight enough to defang a stuck retry loop. Every accepted call writes an audit row. Cookie or wildcard Bearer; `userId` is never read from the body.",
-      requestBody: {
-        required: true,
-        content: { "application/json": { schema: onboardingStepRequest } },
-      },
-      responses: {
-        "200": {
-          description: "The stored step and completion stamp after the write.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                onboardingStepResponse,
-                "OnboardingStepEnvelope",
-              ),
-            },
-          },
-        },
-        "404": {
-          description:
-            "The session's user row no longer exists. `meta.errorCode` = `onboarding.user.notFound`.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "409": {
-          description:
-            "The write was refused and nothing changed. `meta.errorCode` distinguishes three cases: `onboarding.step.completed` — onboarding is already finished, so the wizard has nothing left to advance; `onboarding.step.outOfOrder` — the submitted step is not the stored step plus one, and the message names the current step; `onboarding.step.concurrent` — the row moved between the check and the write, which is what a second tab sees.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "413": {
-          description: "Body exceeds 64 KiB.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "415": {
-          description: "`Content-Type` is not `application/json`.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        ...stdResponses,
-        "422": {
-          description:
-            "The body did not validate. `meta.errorCode` = `onboarding.step.invalid`. Single-message, not the multi-issue envelope — the per-field detail is not on the wire.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "429": {
-          description:
-            "More than 30 onboarding writes in 10 minutes. `meta.errorCode` = `onboarding.step.rateLimited`.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-      },
-    },
-  },
   "/api/onboarding/complete": {
     post: {
       tags: ["Onboarding"],
       summary: "Stamp onboarding as complete, and derive the module map",
       description:
-        "Marks onboarding finished and saves whatever profile fields came with it, then clears the proxy-readable pending cookie so the next navigation stops redirecting to `/onboarding`.\n\nv1.39 — this is also the needs-based flow's confirm endpoint, and the two halves live side by side. For a record that FINISHED the questions — every one of them answered or deliberately passed — it derives that record's module map from the answers and applies it, ONCE: the derivation marker is what stops a second confirm re-applying the questionnaire over decisions taken in Settings since, and `POST /api/onboarding/restart` clears the marker when the person asks for the questions again. The merge is one-directional — a module the answers name is switched on, a module they do not name is switched off only where the record does not already carry an explicit on. The `cycle` key is not written here at all: it delegates to the cycle profile, which this route sets to `true` when the cycle area was chosen and never to `false`. A half-answered flow derives nothing and is not stamped as complete: the answers become a module map, and a flow somebody abandoned after the first screen would have every remaining question read as its conservative default. The same gate is what keeps the LEGACY wizard's completion out of the derivation, since that wizard never puts these questions.\n\nThe response then carries `onboarding` beside `completed`; a caller that never entered the needs flow gets the fixed acknowledgement it always did.\n\nThe older sibling of `POST /api/onboarding/step`. It is unconditional in a way the step route is not: it stamps the completion whatever the stored step is, it re-stamps on every call rather than refusing a second one, and it enforces no rate limit of its own. Its legacy half writes no audit row; the needs half writes one (`user.modules.update`) when it derives, because that is the same column the dedicated modules route audits. It also does NOT seed the dashboard from the goal selection — that only happens on the step route's completing call.\n\nCalling this mid-wizard makes every remaining `POST /api/onboarding/step` answer 409 `onboarding.step.completed`, because that route's guarded update requires the completion stamp to still be null.\n\nCookie or wildcard Bearer; `userId` is never read from the body.",
+        "Marks onboarding finished and saves whatever profile fields came with it, then clears the proxy-readable pending cookie so the next navigation stops redirecting to `/onboarding`.\n\nv1.39 — this is the needs-based flow's confirm endpoint. For a record that FINISHED the questions — every one of them answered or deliberately passed — it derives that record's module map from the answers and applies it, ONCE: the derivation marker is what stops a second confirm re-applying the questionnaire over decisions taken in Settings since, and `POST /api/onboarding/restart` clears the marker when the person asks for the questions again. The merge is one-directional — a module the answers name is switched on, a module they do not name is switched off only where the record does not already carry an explicit on and holds no data in that domain. The `cycle` key is not written here at all: it delegates to the cycle profile, which this route sets to `true` when the cycle area was chosen and never to `false`. In the same derivation the dashboard order is seeded from the answers — the tiles of the chosen areas (and the medication tile for a schedule) move to the front and are made visible — but only while the layout column is still unset, so a person who already arranged their tiles is never clobbered. A half-answered flow derives nothing and is not stamped as complete.\n\nThe response carries `onboarding` beside `completed`; a caller that never entered the needs flow gets the fixed acknowledgement alone — it stamps the completion whatever the answers say, re-stamps on every call rather than refusing a second one, and enforces no rate limit of its own. The legacy half writes no audit row; the needs half writes one (`user.modules.update`) when it derives, because that is the same column the dedicated modules route audits.\n\nCookie or wildcard Bearer; `userId` is never read from the body.\n\n`managedRecordId` — \"someone I look after\". The answers were given for the profile the confirm screen created, so the derivation and the seed land on THAT record through the same record-keyed write the guardian's modules route uses, its setup row is written as finished, and the caller's own record is stamped complete and latched with its map untouched. A managed record the caller does not actively guard, a record that is not a managed profile, or an id that does not exist all answer 404 with nothing stamped; a body naming a record when Q1 was not `someone-else` is a 422. With Q1 = `someone-else` and NO record id, the flow completes and latches without deriving anything onto anybody: there is no record the answers describe yet, and they never describe the guardian's.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: onboardingCompleteRequest } },
@@ -399,6 +323,11 @@ export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
+        "404": {
+          description:
+            "`managedRecordId` names no managed profile the caller actively guards — missing, not a managed record, or not theirs; one answer for all three. `meta.errorCode` = `onboarding.complete.recordNotFound`. Nothing was stamped.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         "413": {
           description: "Body exceeds 64 KiB.",
           content: { "application/json": { schema: errorEnvelope } },
@@ -410,7 +339,7 @@ export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "The body did not validate. `meta.errorCode` = `onboarding.complete.invalid`. Single-message, not the multi-issue envelope.",
+            "The body did not validate (`meta.errorCode` = `onboarding.complete.invalid`; single-message, not the multi-issue envelope), or `managedRecordId` was sent for answers that were not given for somebody else's record — Q1 was `me` or `both` (`meta.errorCode` = `onboarding.complete.recordTargetMismatch`; nothing stamped).",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
