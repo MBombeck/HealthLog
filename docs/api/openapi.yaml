@@ -29575,23 +29575,25 @@ components:
                 personal_records.invalid_query; practitioner — practitioner.invalid; profile —
                 profile.update.emailInUse, profile.update.invalidBody, profile.update.nothingSaved; report-selection —
                 report-selection.body.invalid_json, report-selection.body.invalid_shape; route — route.retired;
-                share-link — share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
-                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
-                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
-                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
-                sharing.invite.manage_browser_only, sharing.invite.refused, sharing.invite.self, sharing.not_permitted,
-                sharing.renounce.already_ended, sharing.renounce.not_found, sharing.revoke.already_ended,
-                sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
+                share-link — share-link.document.decryptFailed, share-link.document.notFound,
+                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
+                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
+                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
+                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
+                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.refused,
+                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
+                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
                 sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
                 source-priority.body.invalid_shape; tokens — tokens.measurements.ceiling_reached; vaccination —
                 vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.encounter-not-found,
                 vaccination.identity-required, vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
                 vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
                 workout.batch.too_large; (unprefixed) — about_me_conflict, ai_response_truncated, coach_prefs_conflict,
-                dashboard_layout_conflict, health_score_config_conflict, insights_layout_conflict,
-                invalid_base_updated_at, medication_layout_conflict, modules_conflict, mood_tag_layout_conflict,
-                not_configured, notification_prefs_conflict, oidc_only, private_origin_not_approved, rate_limited_self,
-                too_many_rows, upstream_invalid_json, vapid_not_configured"
+                dashboard_layout_conflict, empty_file, health_score_config_conflict, insights_layout_conflict,
+                invalid_base_updated_at, json_carries_no_intake_time, json_not_an_array, medication_layout_conflict,
+                missing_required_columns, modules_conflict, mood_tag_layout_conflict, not_configured,
+                notification_prefs_conflict, oidc_only, private_origin_not_approved, rate_limited_self, too_many_rows,
+                unreadable_json, upstream_invalid_json, vapid_not_configured"
               type: string
           additionalProperties: {}
       required:

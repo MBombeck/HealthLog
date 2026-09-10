@@ -15,62 +15,134 @@
  *     it and wait forever.
  *
  * What it reads: every `.ts` under `src/app/api` outside a `__tests__`
- * directory, plus the named library modules that build a refusal envelope of
- * their own. Comment lines are stripped first, so a code quoted in prose is not
+ * directory, and then every module those files import, transitively, so a code
+ * built one or five hops away from the route that answers with it is read
+ * where it is written. Import specifiers are resolved the way the app resolves
+ * them (`@/…` and relative paths, `.ts` / `.tsx` / `index.*`); anything that
+ * leaves `src` is not followed, and the generated Prisma client is never
+ * opened. Comment lines are stripped first, so a code quoted in prose is not
  * mistaken for one that ships.
  *
- * Its limits, stated rather than implied. A new library module that raises a
- * coded refusal has to be added to `ENVELOPE_MODULES` below — the route tree is
- * swept by rule, that list is not. A code assembled at runtime from a template
- * cannot be enumerated at all, and the one family that does so is named in the
- * catalogue's own doc comment. And `IntegrationStatus.errorCode` is a different
- * field with the same name — it records an upstream HTTP status in the sync
- * ledger and never reaches a response — which is why the sweep is scoped to
- * the modules that answer requests rather than to `src/lib` wholesale.
+ * This used to be the route tree plus a hand-kept list of library modules, and
+ * the hand-kept list is exactly what it sounds like: the dose-history import
+ * built five codes in a module nobody had thought to add, so the guard read
+ * neither the codes nor the file and agreed the catalogue was complete. The
+ * import graph is not hand-kept — a new module reached by a route is swept the
+ * first time a route imports it.
+ *
+ * Its limits, stated rather than implied. A code assembled at runtime from a
+ * template cannot be enumerated at all, and the one family that does so is
+ * named in the catalogue's own doc comment. A code that reaches the envelope
+ * through a variable is found where the values are declared, which means a
+ * literal in a constant the sweep's shapes do not cover would still be missed:
+ * a constant that holds wire codes is named `*_CODE` / `*_CODES` for that
+ * reason. And `IntegrationStatus.errorCode` is a different field with the same
+ * name — it records an upstream HTTP status in the sync ledger and never
+ * reaches a response — so the two ledger writers that take it are cut out of
+ * the text before it is matched.
  */
-import { readFileSync, readdirSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { dirname, join, relative, resolve, sep } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { ERROR_CODE_CATALOGUE } from "@/lib/openapi/error-codes";
 
-const API_ROOT = join(process.cwd(), "src", "app", "api");
+const SRC_ROOT = join(process.cwd(), "src");
+const APP_ROOT = join(SRC_ROOT, "app");
+/** Never opened: the generated Prisma client is megabytes of machine output. */
+const GENERATED_ROOT = join(SRC_ROOT, "generated");
 
 /**
- * Library modules that build a coded refusal without going through a route
- * file. Everything else under `src/lib` is out of scope on purpose — see the
- * note on `IntegrationStatus.errorCode` in the file header.
+ * The sync ledger's writers. `IntegrationStatus.errorCode` records an upstream
+ * HTTP status and never reaches a response envelope, so their arguments are cut
+ * out before a code is looked for. A third writer would surface as an
+ * undocumented code rather than as silence, which is the direction to fail in.
  */
-const ENVELOPE_MODULES = [
-  "src/lib/ai/consent-guard.ts",
-  "src/lib/api-errors.ts",
-  "src/lib/api-handler.ts",
-  "src/lib/auth/profile-update.ts",
-  "src/lib/clinician-share/report-download.ts",
-  "src/lib/cycle/gate.ts",
-  "src/lib/documents/ai-route-support.ts",
-  "src/lib/documents/attach-validate.ts",
-  "src/lib/export/backup-blob.ts",
-  "src/lib/http/retired-routes.ts",
-  "src/lib/illness/gate.ts",
-  "src/lib/modules/gate.ts",
-  "src/lib/optimistic-lock.ts",
-  "src/lib/sharing/record-session-fence-contract.ts",
-];
+const LEDGER_WRITERS = ["recordSyncFailure", "parkIntegrationAtReauth"];
 
-function apiFiles(dir: string): string[] {
+function tsFiles(dir: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
       if (entry.name === "__tests__") continue;
-      found.push(...apiFiles(full));
+      found.push(...tsFiles(full));
       continue;
     }
     if (entry.name.endsWith(".ts")) found.push(full);
   }
   return found;
+}
+
+/** Resolve one import specifier the way the app's path alias resolves it. */
+function resolveSpecifier(specifier: string, fromFile: string): string | null {
+  let base: string;
+  if (specifier.startsWith("@/")) base = join(SRC_ROOT, specifier.slice(2));
+  else if (specifier.startsWith("."))
+    base = resolve(dirname(fromFile), specifier);
+  else return null;
+  for (const candidate of [
+    `${base}.ts`,
+    `${base}.tsx`,
+    join(base, "index.ts"),
+    join(base, "index.tsx"),
+  ]) {
+    if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
+  }
+  return null;
+}
+
+/** Every module a route reaches, however many hops away it is written. */
+function modulesUnderTheRoutes(): string[] {
+  const queue = tsFiles(APP_ROOT);
+  const seen = new Set(queue);
+  for (let i = 0; i < queue.length; i++) {
+    const file = queue[i];
+    const source = readFileSync(file, "utf8");
+    const specifiers = [
+      ...source.matchAll(
+        /(?:^|\n)\s*(?:import|export)[\s\S]{0,400}?from\s*"([^"]+)"/g,
+      ),
+      ...source.matchAll(/import\(\s*"([^"]+)"\s*\)/g),
+    ];
+    for (const match of specifiers) {
+      const resolved = resolveSpecifier(match[1], file);
+      if (!resolved) continue;
+      if (resolved.startsWith(GENERATED_ROOT)) continue;
+      if (resolved.includes(`${sep}__tests__${sep}`)) continue;
+      if (seen.has(resolved)) continue;
+      seen.add(resolved);
+      queue.push(resolved);
+    }
+  }
+  return [...seen];
+}
+
+/** Cut the sync-ledger writers' arguments out, parenthesis-balanced. */
+function withoutLedgerWrites(source: string): string {
+  let text = source;
+  for (const writer of LEDGER_WRITERS) {
+    for (;;) {
+      const call = text.indexOf(`${writer}(`);
+      if (call === -1) break;
+      const open = call + writer.length;
+      let depth = 0;
+      let close = text.length;
+      for (let j = open; j < text.length; j++) {
+        if (text[j] === "(") depth++;
+        else if (text[j] === ")") {
+          depth--;
+          if (depth === 0) {
+            close = j + 1;
+            break;
+          }
+        }
+      }
+      text = text.slice(0, call) + text.slice(close);
+    }
+  }
+  return text;
 }
 
 /** Drop comment lines so a code quoted in prose is not read as one that ships. */
@@ -88,7 +160,7 @@ function withoutComments(source: string): string {
     .join("\n");
 }
 
-/** The three shapes a code is written in across the tree. */
+/** The shapes a code is written in across the tree. */
 function codesIn(source: string): string[] {
   const found: string[] = [];
   // `errorCode: "x"`, `errorCode = "x"`, `readonly errorCode = "x"`, and the
@@ -102,14 +174,22 @@ function codesIn(source: string): string[] {
   for (const m of source.matchAll(/\b[A-Z][A-Z0-9_]*_CODE\s*=\s*"([^"]+)"/g)) {
     found.push(m[1]);
   }
-  // A family in one object: `export const AUTH_ERROR_CODES = { … }`.
-  for (const m of source.matchAll(/\b[A-Z][A-Z0-9_]*_CODES\s*=\s*\{/g)) {
-    const start = source.indexOf("{", m.index);
+  // A family in one object: `export const AUTH_ERROR_CODES = { … }`, or in one
+  // tuple: `export const AUTO_EXPORT_FATAL_ERROR_CODES = [ … ] as const`. The
+  // tuple is how a union type of codes is declared, and that union is what an
+  // envelope relays when it writes `errorCode: parsed.fatal.reason`. Only the
+  // `_ERROR_CODES` spelling is read in tuple form: plenty of unrelated
+  // catalogues (nutrients, say) are lists of codes that are not error codes.
+  for (const m of source.matchAll(/\b([A-Z][A-Z0-9_]*_CODES)\s*=\s*([{[])/g)) {
+    const [, name, opener] = m;
+    if (opener === "[" && !name.endsWith("_ERROR_CODES")) continue;
+    const closer = opener === "{" ? "}" : "]";
+    const start = source.indexOf(opener, m.index);
     let depth = 0;
     let end = start;
     for (let j = start; j < source.length; j++) {
-      if (source[j] === "{") depth++;
-      else if (source[j] === "}") {
+      if (source[j] === opener) depth++;
+      else if (source[j] === closer) {
         depth--;
         if (depth === 0) {
           end = j;
@@ -117,9 +197,12 @@ function codesIn(source: string): string[] {
         }
       }
     }
-    for (const value of source.slice(start, end).matchAll(/:\s*"([^"]+)"/g)) {
-      found.push(value[1]);
-    }
+    const body = source.slice(start, end);
+    const values =
+      opener === "{"
+        ? body.matchAll(/:\s*"([^"]+)"/g)
+        : body.matchAll(/"([^"]+)"/g);
+    for (const value of values) found.push(value[1]);
   }
   return found;
 }
@@ -127,12 +210,10 @@ function codesIn(source: string): string[] {
 /** Every code the tree emits, mapped to the files that emit it. */
 function emittedCodes(): Map<string, string[]> {
   const emitted = new Map<string, string[]>();
-  const files = [
-    ...apiFiles(API_ROOT),
-    ...ENVELOPE_MODULES.map((path) => join(process.cwd(), path)),
-  ];
-  for (const file of files) {
-    const source = withoutComments(readFileSync(file, "utf8"));
+  for (const file of modulesUnderTheRoutes()) {
+    const source = withoutLedgerWrites(
+      withoutComments(readFileSync(file, "utf8")),
+    );
     for (const code of codesIn(source)) {
       const where = relative(process.cwd(), file).split(sep).join("/");
       const seen = emitted.get(code);
@@ -152,7 +233,8 @@ const published = new Set(Object.values(ERROR_CODE_CATALOGUE).flat());
 describe("the published errorCode catalogue", () => {
   it("finds the codes it is meant to judge", () => {
     // A matcher that stopped matching would otherwise agree with an empty
-    // catalogue. Two hundred and forty-two when this was written.
+    // catalogue. Two hundred and twenty-nine when this was written, read out
+    // of the fourteen hundred modules the route tree reaches.
     expect(emitted.size).toBeGreaterThan(200);
   });
 
