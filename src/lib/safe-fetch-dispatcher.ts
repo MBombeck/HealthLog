@@ -1,7 +1,9 @@
 import dns from "node:dns";
-import { isIP } from "node:net";
 import { Agent } from "undici";
-import { isPublicIp } from "@/lib/validations/notifications";
+import {
+  isOperatorGrantableIp,
+  isPublicIp,
+} from "@/lib/validations/notifications";
 
 /**
  * Custom `undici.Agent` that resolves the request hostname literally,
@@ -68,10 +70,14 @@ function pinnedLookupWithPolicy(
       callback(err, "");
       return;
     }
+    // The operator-approved policy is not "anything that parses": a listed
+    // name that resolves to loopback, link-local or the metadata range is
+    // refused here exactly as an unlisted one would be. The grant opens the
+    // operator's own network, never the container or the cloud host.
     const allowed = addresses.filter((address) =>
       policy === "public"
         ? isPublicIp(address.address)
-        : isIP(address.address) !== 0,
+        : isOperatorGrantableIp(address.address),
     );
     if (allowed.length === 0) {
       const refused = new Error(
@@ -165,10 +171,13 @@ export function getPinnedPublicDispatcher(): Agent {
 /**
  * Pinned dispatcher for an exact operator-approved origin.
  *
- * Private addresses are permitted only after the Nightscout origin policy has
- * matched the complete canonical scheme/host/port trust grant. Resolution is
- * still performed once inside Undici's connector and the vetted answer set is
+ * Private addresses are permitted only after an exact-origin policy
+ * (`NIGHTSCOUT_PRIVATE_ORIGINS`, `NOTIFICATION_PRIVATE_ORIGINS`) has matched
+ * the complete canonical scheme/host/port trust grant. Resolution is still
+ * performed once inside Undici's connector and the vetted answer set is
  * pinned to the socket, so a later DNS answer cannot replace the destination.
+ * Loopback, unspecified, link-local and metadata answers are dropped
+ * regardless of the grant (`isOperatorGrantableIp`).
  */
 export function getPinnedOperatorApprovedDispatcher(): Agent {
   cachedOperatorApproved ??= createPinnedDispatcher("operator-approved");

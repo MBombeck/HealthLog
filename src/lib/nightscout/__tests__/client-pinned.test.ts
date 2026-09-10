@@ -5,7 +5,11 @@
  * an operator-approved private origin reaches the pinned Undici connector.
  * This test keeps the Nightscout client, SafeFetch, dispatcher, socket, and
  * HTTP server real. Only DNS is deterministic: the approved test hostname is
- * resolved to the loopback server from inside the connector.
+ * resolved to the loopback server from inside the connector. Because the
+ * operator-approved dispatcher refuses a loopback answer by policy (the grant
+ * opens the operator's network, never the container), the grantable-address
+ * predicate is stubbed to admit loopback for this harness only; the policy
+ * itself is proven in `safe-fetch-dispatcher.test.ts`.
  */
 import dns from "node:dns";
 import http from "node:http";
@@ -19,6 +23,16 @@ import {
   it,
   vi,
 } from "vitest";
+
+vi.mock("@/lib/validations/notifications", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/validations/notifications")>();
+  return {
+    ...actual,
+    isOperatorGrantableIp: (ip: string) =>
+      ip === "127.0.0.1" || actual.isOperatorGrantableIp(ip),
+  };
+});
 
 import { _resetPinnedDispatcherForTests } from "@/lib/safe-fetch-dispatcher";
 

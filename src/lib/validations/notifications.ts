@@ -228,6 +228,62 @@ export function isPublicIp(ip: string): boolean {
   return false;
 }
 
+/**
+ * Decide whether a resolved address may be dialled under an operator's
+ * exact-origin grant (`NOTIFICATION_PRIVATE_ORIGINS`,
+ * `NIGHTSCOUT_PRIVATE_ORIGINS`).
+ *
+ * A grant exists so a relay on the operator's own network can be reached, so
+ * RFC1918, CGNAT (a Tailscale address) and IPv6 unique-local stay grantable.
+ * Four ranges are refused even when the operator lists a name that resolves
+ * there, because no notification relay lives on them and each one is a
+ * different admin surface: loopback is the app itself inside the container
+ * (and on host networking, every admin port of the host), the unspecified
+ * address is a resolver misfire, link-local is the cloud-metadata endpoint.
+ * The transition formats (`::ffff:`, 6to4, NAT64) are unwrapped first so an
+ * IPv6 spelling of loopback does not slip past the IPv4 verdict.
+ */
+export function isOperatorGrantableIp(ip: string): boolean {
+  if (!ip) return false;
+  const lower = ip.toLowerCase();
+
+  const family = isIP(lower);
+  if (family === 4) {
+    const parsed = parseIpv4Strict(lower);
+    if (!parsed) return false;
+    return !isNeverGrantableIpv4(parsed);
+  }
+
+  if (family === 6) {
+    const bytes = parseIpv6Bytes(lower);
+    if (!bytes) return false;
+
+    // Unspecified, loopback and link-local IPv6. Unique-local (fc00::/7)
+    // deliberately stays out of this list: it is the IPv6 analogue of
+    // RFC1918 and exactly what an operator lists.
+    if (bytesEqual(bytes, 0, Array(16).fill(0))) return false;
+    if (bytesEqual(bytes, 0, Array(15).fill(0)) && bytes[15] === 1) {
+      return false;
+    }
+    if (bytes[0] === 0xfe && (bytes[1] & 0xc0) === 0x80) return false;
+
+    const embedded = embeddedIpv4(bytes);
+    if (embedded && isNeverGrantableIpv4(embedded)) return false;
+    return true;
+  }
+
+  return false;
+}
+
+/** 127/8, 0/8 and 169.254/16: the ranges no operator grant may open. */
+function isNeverGrantableIpv4(ip: [number, number, number, number]): boolean {
+  const [a, b] = ip;
+  if (a === 127) return true;
+  if (a === 0) return true;
+  if (a === 169 && b === 254) return true;
+  return false;
+}
+
 export function isPublicUrl(url: string): boolean {
   try {
     // Pre-URL guard #1: the WHATWG URL parser interprets leading-zero IPv4
