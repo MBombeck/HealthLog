@@ -65898,11 +65898,26 @@ components:
           anyOf:
             - $ref: "#/components/schemas/RecordSessionState"
             - type: "null"
+        notificationPrefs:
+          type: object
+          properties:
+            medication:
+              type: object
+              properties:
+                clientManaged:
+                  type: boolean
+              required:
+                - clientManaged
+              additionalProperties: {}
+          required:
+            - medication
+          additionalProperties: {}
       required:
         - id
         - username
         - accountAccess
         - recordSession
+        - notificationPrefs
       additionalProperties: {}
       description: "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do.
         Additional properties are the preference fields this spec does not yet enumerate. Under an active switch this

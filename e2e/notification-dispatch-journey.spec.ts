@@ -543,27 +543,18 @@ test.describe("notification preferences drive the dispatch decision", () => {
     expect(smtp.accepted()).toEqual([EMAIL_RECIPIENT]);
   });
 
+  /**
+   * The web reflection of the opt-in, and the reason it is a test rather than a
+   * screenshot: the section reads `notificationPrefs.medication.clientManaged`
+   * off `/api/auth/me`, and that payload did not publish it until this branch.
+   * The flag was `undefined` for every account, so the chip never rendered and
+   * a person whose phone owned the reminders was shown a server-side switch
+   * that decided nothing. Both halves are asserted — the chip appears AND the
+   * switch row is gone — because either one alone passes on the wrong render.
+   */
   test("the client-managed opt-in is visible on the medication it silences", async ({
     page,
   }) => {
-    test.skip(
-      true,
-      "The chip exists and is unreachable. " +
-        "`src/components/medications/sections/notifications-section.tsx` " +
-        "decides between the reminder switch and the client-managed chip on " +
-        "`notificationPrefs.medication.clientManaged` read out of " +
-        "`/api/auth/me` — a field that payload does not carry (the prefs live " +
-        "on `/api/auth/me/notification-prefs`). So the flag reads as false for " +
-        "every account, the chip never renders, and a person whose phone owns " +
-        "the reminders is shown a server-side switch that no longer decides " +
-        "anything. The write path and the dispatch decision are correct — the " +
-        "two tests above prove both — only the web reflection is missing its " +
-        "end. The account-payload guard cannot see this: it asks that every " +
-        "field in the payload has a reader, and this is a reader with no " +
-        "field. Kept at full strength rather than relaxed to match today's " +
-        "render.",
-    );
-
     await configureChannels(page);
     await pinAccountClockToMidday(page);
     const medicationId = await createOverdueMedication(page);

@@ -1,5 +1,6 @@
 /**
- * v1.32.36 — pair guard over the account payload (`GET /api/auth/me`).
+ * v1.32.36 — pair guard over the account payload (`GET /api/auth/me`), in both
+ * directions.
  *
  * The recurring failure this exists to prevent: a two-ended feature whose ends
  * ship in different releases. The column lands with the schema change, the
@@ -33,12 +34,39 @@
  *   be allowlisted with that reason written down, and the reason is an
  *   assumption about another repository until an audit crosses over.
  *
+ * ## The other direction: a reader with no field
+ *
+ * Everything above asks that a published field has a reader. It cannot see the
+ * inverse — a client that reads a field the payload never published — and that
+ * blind spot cost a shipped feature: the medication surface decided between
+ * the server-side reminder switch and the client-managed chip on
+ * `notificationPrefs.medication.clientManaged`, read off this payload, which
+ * did not carry it. The flag was `undefined` for every account, so the chip
+ * never rendered and a person whose phone owned the reminders was shown a
+ * switch that decided nothing. Every guard was green.
+ *
+ * The last case closes it, and the shape it takes is deliberate. A typed guard
+ * — one `AccountPayload` interface, `tsc` refusing an absent property — was the
+ * first idea and does not work here: the consumers declare their own local
+ * response interfaces (`interface UserPrefsResponse { … }`), so `tsc` checks
+ * each file against its own private claim about the payload and agrees with
+ * every one of them. So the check reads those local claims instead, out of the
+ * file that makes them, and holds them against what the route publishes. It
+ * asserts a non-zero match count, because a textual guard that silently
+ * matches nothing is the failure mode this repository already has on record.
+ *
+ * Its limit, written down: it sees the response type a `/api/auth/me` read
+ * names, so a consumer that types the read as `unknown` and indexes into it, or
+ * imports its response type from another module, is invisible to it.
+ *
  * Mutation check: append a field to the response literal in
  * `src/app/api/auth/me/route.ts` and this goes red; delete the practice-name
- * read in `health-record-export-panel.tsx` and it goes red too.
+ * read in `health-record-export-panel.tsx` and it goes red too; delete
+ * `notificationPrefs` from the response literal and the last case goes red
+ * naming the medication notification section.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 
 import { describe, it, expect } from "vitest";
 
@@ -189,6 +217,31 @@ function readsField(text: string, field: string): boolean {
   return re.test(text);
 }
 
+/**
+ * Top-level member names of a locally declared `interface Name { … }`, or null
+ * when the file does not declare one under that name (the type is imported, or
+ * is a shared transport type this file only references).
+ *
+ * Members are read at one indent level, the same way the route's response
+ * literal is read above — the tree is prettier-formatted, so a nested object's
+ * keys sit deeper and are not mistaken for top-level fields.
+ */
+function declaredMembers(text: string, name: string): string[] | null {
+  const open = new RegExp(`\\binterface\\s+${name}\\s*\\{`).exec(text);
+  if (!open) return null;
+  const start = open.index + open[0].length;
+  const end = text.indexOf("\n}", start);
+  if (end === -1) return null;
+  const body = text.slice(start, end);
+  return [
+    ...new Set(
+      [...body.matchAll(/^ {2}([a-zA-Z_$][\w$]*)\??\s*[?:]/gm)].map(
+        (m) => m[1],
+      ),
+    ),
+  ];
+}
+
 describe("account payload consumer guard", () => {
   const source = readFileSync(ME_ROUTE, "utf8");
   const fields = payloadFields(source);
@@ -293,5 +346,41 @@ describe("account payload consumer guard", () => {
         `no active-record reader for account access field \`${field}\``,
       ).toMatch(new RegExp(`active\\.${field}(?![\\w$])`));
     }
+  });
+
+  it("every field a client types onto the account payload is published", () => {
+    const published = new Set(fields);
+    const offenders: string[] = [];
+    let claimsChecked = 0;
+
+    for (const file of consumerFiles) {
+      const text = stripComments(readFileSync(file, "utf8"));
+      // The type argument of a read of THIS endpoint. `/api/auth/me/...`
+      // siblings are different payloads, so the literal is anchored closed.
+      for (const call of text.matchAll(
+        /<\s*([A-Za-z_$][\w$]*)\s*>\s*\(\s*"\/api\/auth\/me"\s*\)/g,
+      )) {
+        const declared = declaredMembers(text, call[1]);
+        if (declared === null) continue; // an imported / shared type
+        claimsChecked += 1;
+        for (const member of declared) {
+          if (!published.has(member)) {
+            offenders.push(
+              `${relative(process.cwd(), file)} reads \`${member}\``,
+            );
+          }
+        }
+      }
+    }
+
+    expect(
+      claimsChecked,
+      "no client names a response type for GET /api/auth/me, so this case matched nothing rather than proving anything",
+    ).toBeGreaterThan(0);
+
+    expect(
+      offenders,
+      "these clients type a field onto the account payload that the route does not publish, so it is `undefined` for every account and whatever it decides never happens",
+    ).toEqual([]);
   });
 });
