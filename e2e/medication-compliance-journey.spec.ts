@@ -36,8 +36,12 @@
  */
 import type { Page } from "@playwright/test";
 
-import { STORAGE_STATE_PATH } from "./setup/global-setup";
-import { ageMedication, resetMedications } from "./setup/medication-fixture";
+import { MEDICATION_STORAGE_STATE_PATH } from "./setup/global-setup";
+import {
+  ageMedication,
+  resetMedications,
+  type MedicationAgeStamps,
+} from "./setup/medication-fixture";
 import { expect, test } from "./setup/test";
 import {
   clickNext,
@@ -79,7 +83,7 @@ interface CompliancePayload {
  */
 async function api<T>(
   page: Page,
-  method: "GET" | "POST" | "PUT",
+  method: "GET" | "POST" | "PUT" | "DELETE",
   path: string,
   body?: unknown,
 ): Promise<ApiResult<T>> {
@@ -129,6 +133,28 @@ async function seedMedication(
   const id = created.data?.id;
   expect(id, `created ${input.name} carries an id`).toBeTruthy();
   return id as string;
+}
+
+/**
+ * The two stamps `ageMedication` writes, computed in the browser's clock.
+ *
+ * Deliberately not in SQL: `CURRENT_DATE` resolves in the database session's
+ * zone, the plan dates every flow sends are computed here, and between
+ * midnight and 02:00 Berlin those are different calendar days.
+ */
+async function ageStamps(
+  page: Page,
+  days: number,
+): Promise<MedicationAgeStamps> {
+  return page.evaluate((days) => {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const at = new Date();
+    at.setDate(at.getDate() - days);
+    return {
+      createdAt: at.toISOString(),
+      startsOn: `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`,
+    };
+  }, days);
 }
 
 /**
@@ -207,13 +233,12 @@ async function readTileLatestRate(page: Page): Promise<number> {
 }
 
 /**
- * Open a surface the seeding calls can run from.
+ * Open a surface the reset and the seeding calls can run from.
  *
- * Deliberately NOT the medications list: every visit to it spends one call of
- * the batched compliance route's per-actor minute allowance, and a spec that
- * spends that allowance on its own setup has less of it left for the reads it
- * actually asserts on — and none left at all for a CI retry, which re-runs the
- * whole serial group inside the same minute.
+ * Both go out as the page's own `fetch`, so the page has to be on the app's
+ * origin first. Deliberately NOT the medications list: the reset that follows
+ * deletes rows, and a list mount would first fetch compliance for every one of
+ * them.
  */
 async function openSeedingSurface(page: Page): Promise<void> {
   await page.goto("/profile");
@@ -317,19 +342,24 @@ async function createTwiceDailyMedication(
   return { id: id as string, times };
 }
 
-test.beforeEach(async () => {
-  // Own every row the rates count. The dashboard tile sums the expected doses
-  // of every active medication on the account, so a leftover from a previous
-  // run would sit in its denominator.
-  await resetMedications();
-});
-
-// Serial and single-account: the reset above would race a sibling worker, and
-// two tests clearing the same cabinet would each undo the other's setup.
+// Serial: the three tests share one cabinet, and two of them clearing it at
+// once would each undo the other's setup.
 test.describe.configure({ mode: "serial" });
 
 test.describe("medication adherence journey", () => {
-  test.use({ storageState: STORAGE_STATE_PATH });
+  test.use({ storageState: MEDICATION_STORAGE_STATE_PATH });
+
+  test.beforeEach(async ({ page }) => {
+    // Own every row the rates count. The dashboard tile sums the expected
+    // doses of every active medication on the account, so a leftover from a
+    // previous run would sit in its denominator. The removal goes out as the
+    // app's own DELETE so the server's memoised medication cells go with it.
+    await openSeedingSurface(page);
+    await resetMedications(async (id) => {
+      const removed = await api(page, "DELETE", `/api/medications/${id}`);
+      expect(removed.status, "clearing a leftover medication").toBe(200);
+    });
+  });
 
   test("a taken and a skipped dose move the card, the history and the dashboard tile", async ({
     page,
@@ -346,7 +376,7 @@ test.describe("medication adherence journey", () => {
     // doses a day and nobody took any, so the starting rate is a real 0 %.
     await ageMedication(
       medicationId,
-      4,
+      await ageStamps(page, 4),
       cacheFlusher(page, medicationId, "500 mg"),
     );
 
@@ -461,7 +491,7 @@ test.describe("medication adherence journey", () => {
     });
     await ageMedication(
       medicationId,
-      4,
+      stamps,
       cacheFlusher(page, medicationId, "10 mg"),
     );
 
@@ -549,8 +579,9 @@ test.describe("medication adherence journey", () => {
       },
     });
 
+    const stamps = await ageStamps(page, 8);
     for (const id of [weekdayId, dailyId]) {
-      await ageMedication(id, 8, cacheFlusher(page, id, "5 mg"));
+      await ageMedication(id, stamps, cacheFlusher(page, id, "5 mg"));
       for (const slot of plan.slots) {
         const written = await api(
           page,

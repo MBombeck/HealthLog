@@ -93,6 +93,25 @@ export const E2E_GUARDIAN = {
   role: "USER",
 } as const;
 
+/**
+ * The medication-adherence journey's own account.
+ *
+ * The batched compliance read is capped at thirty calls a minute per ACTOR,
+ * and the journey spends that allowance twice over: it writes doses and then
+ * reads the resulting rates back off the same cabinet. On the shared account
+ * the allowance is also being spent by whichever sibling happens to be
+ * mounting `/medications` in the other worker, and the cabinet itself is
+ * shared with them — so the journey's `beforeEach` clear would take rows
+ * somebody else seeded with it. One account of its own makes the rate-limit
+ * bucket, the cabinet and the dashboard tile's denominator private at once.
+ */
+export const E2E_MEDICATION = {
+  email: "e2e-medication@healthlog.test",
+  username: "e2e-medication",
+  password: "Hj6!Tw2pV9sQ4nDx",
+  role: "USER",
+} as const;
+
 /** A separate delegate session for the eight scoped-record browser journeys. */
 export const E2E_SCOPE_DELEGATE = {
   email: "e2e-scope-delegate@healthlog.test",
@@ -207,6 +226,12 @@ export const SCOPE_A11Y_STORAGE_STATE_PATH = resolve(
 export const SCOPE_CAPABILITIES_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateScopeCapabilities.json",
+);
+
+/** The adherence journey's jar — see `E2E_MEDICATION` for why it is its own. */
+export const MEDICATION_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateMedication.json",
 );
 
 /**
@@ -406,6 +431,32 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
            WHERE u.username = $1
          )`,
       [E2E_GUARDIAN.username],
+    );
+
+    // The adherence journey's account. Modules are pinned rather than left to
+    // the defaults: the dashboard's medication tile is one of the surfaces the
+    // journey reads, and it only paints while the module is on.
+    await pool.query(
+      `INSERT INTO users
+        (id, username, email, password_hash, role, created_at, updated_at,
+         onboarding_completed_at, onboarding_tour_completed,
+         module_preferences_json)
+       VALUES ($1, $2, $3, $4, 'USER', $5, $5, $5, true, $6::jsonb)
+       ON CONFLICT (username) DO UPDATE SET
+         email = EXCLUDED.email,
+         password_hash = EXCLUDED.password_hash,
+         updated_at = EXCLUDED.updated_at,
+         onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+         onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
+         module_preferences_json = EXCLUDED.module_preferences_json`,
+      [
+        cuid(),
+        E2E_MEDICATION.username,
+        E2E_MEDICATION.email,
+        await hashPassword(E2E_MEDICATION.password),
+        now,
+        JSON.stringify({ medications: true }),
+      ],
     );
 
     // The scoped-record journey uses a dedicated delegate so its preseeded
@@ -647,7 +698,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
        WHERE key LIKE 'sharing:%'`,
     );
 
-    // The login bucket, for the same reason. This setup signs in TEN times now
+    // The login bucket, for the same reason. This setup signs in TWELVE times now
     // (the shared jar, the owner, and one jar apiece for every spec that moves
     // a session's record selector), and the ceiling is five attempts per IP per
     // quarter-hour — so two local runs in a row would otherwise end with a 429
@@ -722,7 +773,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
      * Log one account in, clearing the login bucket first.
      *
      * The ceiling is FIVE attempts per IP per quarter-hour and this setup now
-     * signs in ten times, so clearing once before the batch is no longer
+     * signs in twelve times, so clearing once before the batch is no longer
      * enough — the sixth would be answered by the fixture's own 429 rather
      * than by the product. Only the auth surfaces' buckets are touched, and
      * only between logins this setup is itself performing.
@@ -747,6 +798,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // deliberately a different session row — see DELEGATE_STORAGE_STATE_PATH
     // for what happens when the journey switches the shared row instead.
     await capture(E2E_USER, DELEGATE_STORAGE_STATE_PATH);
+
+    // The adherence journey's jar. Its own account, so nothing it writes and
+    // nothing it clears is visible to the shared one.
+    await capture(E2E_MEDICATION, MEDICATION_STORAGE_STATE_PATH);
 
     await capture(E2E_SCOPE_DELEGATE, SCOPE_DELEGATE_STORAGE_STATE_PATH);
     await capture(E2E_SCOPE_DELEGATE, SCOPE_A11Y_STORAGE_STATE_PATH);
