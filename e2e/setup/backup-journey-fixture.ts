@@ -163,6 +163,19 @@ export async function storeTamperedCopy(backupId: string): Promise<string> {
   });
 }
 
+/**
+ * Drop one stored copy again.
+ *
+ * The tampered copy the refusal control writes is the journey's own litter: it
+ * is not deleted until the next repetition's `beforeAll`, and until then it
+ * sits in the console's list for anyone who opens `/admin/backups`.
+ */
+export async function deleteStoredCopy(backupId: string): Promise<void> {
+  await withPool(async (pool) => {
+    await pool.query(`DELETE FROM data_backups WHERE id = $1`, [backupId]);
+  });
+}
+
 /** Every reading the account holds, tombstoned ones included. */
 export async function storedMeasurements(): Promise<StoredMeasurement[]> {
   const userId = await backupAccountId();
@@ -173,8 +186,12 @@ export async function storedMeasurements(): Promise<StoredMeasurement[]> {
       value: string;
       deleted_at: Date | null;
     }>(
+      // `id` after the timestamp: the journey compares two whole arrays to
+      // prove a refusal changed nothing, and two readings sharing a timestamp
+      // could otherwise come back in either order and present as a change.
       `SELECT id, type, value, deleted_at
-       FROM measurements WHERE user_id = $1 ORDER BY measured_at ASC`,
+       FROM measurements WHERE user_id = $1
+       ORDER BY measured_at ASC, id ASC`,
       [userId],
     );
     return rows.map((row) => ({
@@ -194,7 +211,7 @@ export async function storedIntakeIds(): Promise<
   return withPool(async (pool) => {
     const { rows } = await pool.query<{ id: string; deleted_at: Date | null }>(
       `SELECT id, deleted_at FROM medication_intake_events
-       WHERE user_id = $1 ORDER BY scheduled_for ASC`,
+       WHERE user_id = $1 ORDER BY scheduled_for ASC, id ASC`,
       [userId],
     );
     return rows.map((row) => ({

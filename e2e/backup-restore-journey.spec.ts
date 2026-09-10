@@ -25,6 +25,15 @@
  * nothing, and a delegate holding whole-record READ inside the account sees no
  * backup surface at all and is refused by every route behind it.
  *
+ * One act reaches past this account, and by design: "Backup now" enqueues the
+ * `data-backup` pass, which writes a `WEEKLY_AUTO` row for EVERY account on the
+ * instance. The journey reads only its own row and deletes only its own rows,
+ * but it is not true that it touches nothing else. The restore is the other
+ * direction and is confined: the transaction is scoped to the snapshot's owner,
+ * and the instance-wide settings a disaster-recovery payload also carries are
+ * written only when the dialog's opt-in is ticked, which this file never ticks
+ * and asserts it never ticks.
+ *
  * Everything the journey does, it does through the app: the readings and the
  * document ride the page's own `fetch`, the archive and the snapshot ride the
  * real buttons, the restore rides the typed-confirmation dialog. The only two
@@ -41,6 +50,8 @@ import { readFile } from "node:fs/promises";
 
 import type { Page } from "@playwright/test";
 
+import { EXPORT_ARGON2_PARAMS } from "@/lib/export/passphrase-archive";
+
 import {
   BACKUP_DELEGATE_STORAGE_STATE_PATH,
   BACKUP_STORAGE_STATE_PATH,
@@ -48,6 +59,7 @@ import {
 } from "./setup/global-setup";
 import {
   backupAccountId,
+  deleteStoredCopy,
   resetBackupJourney,
   storedIntakeIds,
   storedMeasurements,
@@ -102,6 +114,8 @@ interface SeededRecord {
 let seeded: SeededRecord | null = null;
 /** The stored snapshot the first act takes; every later act addresses it. */
 let snapshotId: string | null = null;
+/** The deliberately corrupted copy, held so the file can take it away again. */
+let tamperedCopyId: string | null = null;
 
 function requireSeeded(): SeededRecord {
   if (!seeded) throw new Error("the record was never seeded");
@@ -233,7 +247,10 @@ async function openBackupsConsole(page: Page): Promise<void> {
  *
  * Both the wide table and the narrow card list are in the tree — only CSS
  * hides one — so the `:visible` filter is what keeps this a single element
- * rather than a pair.
+ * rather than a pair. This file runs in the desktop project alone (see the
+ * `chromium-mobile` ignore list in `playwright.config.ts`), so the table row is
+ * the one that answers; the card's identical attributes are what let the same
+ * handle hold if it ever runs narrow, and are not exercised here.
  */
 function snapshotRow(page: Page, id: string) {
   return page.locator(`[data-backup-id="${id}"]:visible`);
@@ -247,6 +264,13 @@ async function restoreThroughDialog(page: Page, id: string) {
       response.request().method() === "POST",
   );
   await snapshotRow(page, id).getByTestId("backup-restore-trigger").click();
+  // The instance-wide opt-in, left exactly where the dialog puts it. Asserted
+  // rather than merely not clicked: a default that flipped would hand this
+  // journey the power to rewrite the host's settings — the document size cap
+  // among them — for every other spec sharing the server.
+  await expect(
+    page.getByTestId("backup-restore-instance-settings"),
+  ).not.toBeChecked();
   await page.getByTestId("backup-restore-prompt").fill("RESTORE");
   await page.getByTestId("backup-restore-confirm").click();
   return answered;
@@ -258,7 +282,13 @@ test.describe("Backup and restore, through the settings surfaces", () => {
   test.beforeAll(async () => {
     seeded = null;
     snapshotId = null;
+    tamperedCopyId = null;
     await resetBackupJourney();
+  });
+
+  test.afterAll(async () => {
+    if (tamperedCopyId) await deleteStoredCopy(tamperedCopyId);
+    tamperedCopyId = null;
   });
 
   test("a record is written, sealed into an HLX1 archive, and snapshotted", async ({
@@ -272,7 +302,11 @@ test.describe("Backup and restore, through the settings surfaces", () => {
     const record = seeded;
 
     // On the list, by the number the row carries rather than by the text the
-    // formatter prints for whoever is looking.
+    // formatter prints for whoever is looking. The attribute holds the
+    // DISPLAYED value, after the account's unit preference is applied — the
+    // same number as the stored one under this account's default metric
+    // preference, and deliberately not a claim about the stored row. The
+    // database-side assertions later in the file are that claim.
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(
       page
@@ -303,17 +337,46 @@ test.describe("Backup and restore, through the settings surfaces", () => {
     expect(bytes.subarray(0, 4).toString("ascii")).toBe("HLX1");
     expect(bytes[4], "HLX1 version").toBe(0x01);
     expect(bytes[5], "KDF id — Argon2id").toBe(0x01);
-    expect(bytes.readUInt32BE(6), "Argon2 memory cost, KiB").toBe(19456);
-    expect(bytes.readUInt32BE(10), "Argon2 time cost").toBe(2);
-    expect(bytes[14], "Argon2 parallelism").toBe(1);
+    // The cost travels in the file so it may change, so it is asserted against
+    // the constant the writer uses rather than against today's numbers: a
+    // legitimate cost bump is a correct product change, not a red spec.
+    expect(bytes.readUInt32BE(6), "Argon2 memory cost, KiB").toBe(
+      EXPORT_ARGON2_PARAMS.memoryCost,
+    );
+    expect(bytes.readUInt32BE(10), "Argon2 time cost").toBe(
+      EXPORT_ARGON2_PARAMS.timeCost,
+    );
+    expect(bytes[14], "Argon2 parallelism").toBe(
+      EXPORT_ARGON2_PARAMS.parallelism,
+    );
     expect(bytes[15], "salt length").toBe(16);
     // A record carrying five sections is not a header and an auth tag.
     expect(bytes.byteLength).toBeGreaterThan(1024);
 
     // ── the instance's own snapshot ──────────────────────────────────────
     await openBackupsConsole(page);
-    const clickedAt = Date.now();
-    await page.getByTestId("backup-run-now").first().click();
+    // The row this account had before the click, or none. The poll below asks
+    // "is the stored copy a different one", and the server's own clock is the
+    // only one both sides share — comparing a server timestamp against the
+    // runner's would pass on a stale row under any clock skew.
+    const previous = await readConsoleRow(page);
+    const enqueued = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/admin/backups/run") &&
+        response.request().method() === "POST",
+    );
+    // The list is populated by now, so it is the card action that runs the
+    // pass; the empty state's CTA carries its own id.
+    await page.getByTestId("backup-run-now").click();
+    // Named here rather than left to the poll: with no pg-boss instance in the
+    // process the route answers 503 and nothing is ever enqueued, and the poll
+    // would spend two minutes to report that the pass stored no copy — true,
+    // and about the wrong subsystem. 429 is the same story on a reset that
+    // stopped clearing the run bucket.
+    expect(
+      (await enqueued).status(),
+      "the manual pass was enqueued (503 = no worker in this process, 429 = rate limit)",
+    ).toBe(200);
 
     // The pass runs on pg-boss inside this process, so the console cannot know
     // when it finished — it can only be asked. Poll the endpoint the page
@@ -326,7 +389,9 @@ test.describe("Backup and restore, through the settings surfaces", () => {
           const row = await readConsoleRow(page);
           const fresh =
             row !== null &&
-            new Date(row.createdAt).getTime() >= clickedAt - 1_000;
+            (previous === null ||
+              row.id !== previous.id ||
+              row.createdAt !== previous.createdAt);
           if (fresh) found.row = row;
           return fresh;
         },
@@ -372,7 +437,10 @@ test.describe("Backup and restore, through the settings surfaces", () => {
     // A disaster-recovery copy carries document content as ciphertext, and the
     // restore refuses a file that brought only metadata — so an empty field
     // here is a snapshot nobody could restore.
-    expect(payload.documents[0]?.contentEncrypted ?? "").not.toBe("");
+    expect(
+      payload.documents.find((d) => d.id === record.documentId)
+        ?.contentEncrypted ?? "",
+    ).not.toBe("");
   });
 
   test("a stored copy with one flipped byte is refused and changes nothing", async ({
@@ -380,6 +448,10 @@ test.describe("Backup and restore, through the settings surfaces", () => {
   }) => {
     const before = await storedMeasurements();
     const tamperedId = await storeTamperedCopy(requireSnapshot());
+    // Dropped again as soon as the control is done with it, rather than at the
+    // next repetition's reset: until then it is a broken row in the console's
+    // list for anyone who opens `/admin/backups`.
+    tamperedCopyId = tamperedId;
 
     await openBackupsConsole(page);
     const response = await restoreThroughDialog(page, tamperedId);
@@ -572,8 +644,14 @@ test.describe("A read-level delegate inside the record", () => {
     // The console is not a place a non-admin lands: `AuthShell` sends them to
     // the dashboard and the admin frame paints nothing on the way.
     await page.goto("/admin/backups", { waitUntil: "domcontentloaded" });
-    await expect(page).toHaveURL(/\/$/, { timeout: 30_000 });
+    // The dashboard, by path. `/\/$/` also matches an admin URL that merely
+    // ends in a slash, which is the one outcome this assertion exists to rule
+    // out.
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 30_000 })
+      .toBe("/");
     await expect(page.getByTestId("backup-run-now")).toHaveCount(0);
+    await expect(page.getByTestId("backup-run-now-empty")).toHaveCount(0);
     await expect(page.getByTestId("backup-restore-trigger")).toHaveCount(0);
 
     // And the routes underneath, asked from the delegate's own session.

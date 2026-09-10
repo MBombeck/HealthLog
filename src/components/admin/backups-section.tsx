@@ -1017,6 +1017,11 @@ export function BackupsSection() {
         // primitive. The header already exposes "Backup now" but a
         // brand-new admin lands inside the card and benefits from a
         // duplicate CTA right next to the explanation.
+        //
+        // Its own test id, because both buttons are in the tree while the list
+        // is empty and they do the same thing: one id on two elements forces
+        // every caller to pick one blind, and a third button would join the
+        // pick without anything failing.
         <div>
           <EmptyState
             icon={<Database className="size-6" />}
@@ -1025,7 +1030,7 @@ export function BackupsSection() {
             action={
               <Button
                 size="sm"
-                data-testid="backup-run-now"
+                data-testid="backup-run-now-empty"
                 disabled={runBackup.isPending}
                 onClick={() => runBackup.mutate()}
                 className="min-h-11"
