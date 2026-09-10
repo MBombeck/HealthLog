@@ -38,6 +38,19 @@ operator's say-so, and the test button says why a private target was refused.
   open it, since telling the user to ask the operator would only send them
   in a circle.
 
+- **The second of two close doses can be logged from the card again.** On a
+  schedule whose neighbouring doses sit closer than twelve hours, 19:49 and
+  23:59 say, or 08:00 and 12:00, taking the first dose made the card offer
+  tomorrow's first dose, and a skip pressed next landed on tomorrow. A
+  taken, skipped or auto-missed row counted as resolving every occurrence
+  within six hours of its anchor, a tolerance sized for the twice-daily
+  gap, so the first row swallowed its sibling and the next-due walk went
+  past it. A row now resolves exactly one occurrence, the one nearest its
+  anchor, within that tolerance; the compliance cycle on the card follows
+  the same rule, so the due slot and the cycle state cannot disagree. The
+  tolerance still covers a row whose anchor drifted from the canonical
+  instant, a pre-snap row or a DST shift, which is what it was for.
+
 ## [1.38.16] — 2026-09-10
 
 The API says what it refused and why, on every route, and the admin page

@@ -3,8 +3,15 @@
 
 import {
   nextOccurrenceAfter,
+  type CanonicalSchedule,
   type Occurrence,
+  type RecurrenceContext,
 } from "@/lib/medications/scheduling/recurrence";
+import {
+  ADHOC_RESOLVE_EPSILON_MS,
+  anchorResolvesOccurrence,
+  RESOLVE_RADIUS_MS,
+} from "@/lib/medications/scheduling/slot-resolution";
 import {
   lastNonSkippedTakenAt,
   type ComplianceIntakeInstant,
@@ -65,39 +72,41 @@ export interface CurrentCycle {
  * percentage rows are vacuous and the card should show a neutral state.
  */
 /**
- * v1.15.10 — half-window an intake may sit from a slot's canonical instant
- * and still count as "resolving" that slot. The intake write paths snap
- * `scheduledFor` to the exact engine slot instant, so an exact (or
- * sub-minute) match is the common case; the ±6h tolerance also catches an
- * off-time take on a dense intraday cadence (e.g. a 07:00 dose logged 09:13)
- * whose snapped slot is the 07:00 row but whose raw instant we compare
- * defensively. It is the same ±half-gap radius the cadence pairer uses for a
- * 12h-gap (twice-daily) med, floored so a single-dose-a-day cadence still
- * matches its one slot.
- */
-const OPEN_DOSE_RESOLVE_RADIUS_MS = 6 * 60 * 60 * 1000;
-
-/**
  * v1.15.10 — true when an intake event has already resolved the slot at
  * `slotAt`. A resolved slot is one the user took, deliberately skipped, or
  * the auto-miss cron flagged — any of which means the card must NOT keep
- * surfacing that slot as the next dose. Matches on the snapped `scheduledFor`
- * first (the canonical, exact path) and falls back to the take/skip instant
- * within the resolve radius for rows that predate the snap or drifted.
+ * surfacing that slot as the next dose. Anchors on the snapped
+ * `scheduledFor` (the canonical, exact path), falling back to the take
+ * instant for a legacy row without one. A drifted anchor resolves its
+ * nearest occurrence only, within the shared drift radius, so a sibling
+ * slot closer than that radius is never swallowed; an ad-hoc row
+ * (`scheduledFor === takenAt`) resolves only the slot it sits on. Same rule
+ * as the list's next-due (`slot-resolution.ts`), so the cycle descriptor
+ * and the card's due slot cannot disagree.
  */
 function slotIsResolved(
   slotAt: Date,
   intakes: ComplianceIntakeInstant[],
+  schedule: CanonicalSchedule,
+  ctx: RecurrenceContext,
 ): boolean {
-  const slot = slotAt.getTime();
   for (const e of intakes) {
     const isResolved = e.skipped || e.autoMissed === true || e.takenAt !== null;
     if (!isResolved) continue;
     const ref = (e.scheduledFor ?? e.takenAt) as Date | undefined;
     if (!ref) continue;
-    if (Math.abs(ref.getTime() - slot) <= OPEN_DOSE_RESOLVE_RADIUS_MS) {
-      return true;
-    }
+    const adHoc =
+      e.scheduledFor !== undefined &&
+      e.takenAt !== null &&
+      e.scheduledFor.getTime() === e.takenAt.getTime();
+    const resolves = anchorResolvesOccurrence({
+      anchor: ref,
+      occurrenceAt: slotAt,
+      radiusMs: adHoc ? ADHOC_RESOLVE_EPSILON_MS : RESOLVE_RADIUS_MS,
+      schedule,
+      ctx,
+    });
+    if (resolves) return true;
   }
   return false;
 }
@@ -162,7 +171,7 @@ export function buildCurrentCycle(
     for (let step = 0; step < 64; step++) {
       const occ = nextOccurrenceAfter(canonical, after, recurrenceCtx);
       if (!occ) break;
-      if (!slotIsResolved(occ.at, allIntakes)) {
+      if (!slotIsResolved(occ.at, allIntakes, canonical, recurrenceCtx)) {
         picked = occ;
         break;
       }

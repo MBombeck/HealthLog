@@ -1673,6 +1673,34 @@ describe("buildComplianceDisplay — two rows, cadence-scaled windows", () => {
     expect(display.currentCycle.hasClosedCycles).toBe(true);
   });
 
+  it("currentCycle — taking the first of two close doses leaves the second due", () => {
+    // 19:49 + 23:59 Berlin (CEST): 17:49Z + 21:59Z. The 19:49 take used to
+    // resolve the 23:59 slot too (flat ±6 h radius), so the open cycle
+    // pointed at tomorrow's 19:49 while tonight's dose was still due.
+    const schedules: ComplianceSchedule[] = [
+      {
+        windowStart: "19:49",
+        windowEnd: "23:59",
+        daysOfWeek: null,
+        rollingIntervalDays: null,
+        timesOfDay: ["19:49", "23:59"],
+      },
+    ];
+    const slot = new Date("2025-06-15T17:49:00Z");
+    const takenAt = new Date("2025-06-15T17:49:12Z");
+    const events = [{ scheduledFor: slot, takenAt, skipped: false }];
+    const display = buildComplianceDisplay(
+      events,
+      schedules,
+      ctx({ lastIntakeAt: takenAt, timeZone: "Europe/Berlin" }),
+      { now: new Date("2025-06-15T18:00:00Z") },
+    );
+    expect(display.currentCycle.state).toBe("on_track");
+    expect(display.currentCycle.nextDueAt?.toISOString()).toBe(
+      "2025-06-15T21:59:00.000Z",
+    );
+  });
+
   it("currentCycle — rolling weekly overdue past grace → missed", () => {
     // v1.13.x Fix 4 — last shot ~10 days ago (cadence 7) → next due was 3
     // days ago, well past grace → the open cycle is `missed` (the only red
