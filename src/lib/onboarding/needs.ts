@@ -12,18 +12,16 @@
  * pulls it in without dragging the server graph along, and the browser reads
  * the same step ids the server writes.
  *
- * ── Coexistence with the wizard of today ───────────────────────────────────
+ * ── The completion stamp ───────────────────────────────────────────────────
  *
- * Nothing here retires anything. `User.onboardingStep`, `User.onboardingGoals`
- * and the six goal slugs in `./goals.ts` keep their meaning and keep driving
- * the four-step wizard and its one-time dashboard seed until C2 replaces that
- * surface. The two states are disjoint by construction: the goal slugs decide
- * TILE ORDER, these answers decide WHICH MODULES ARE ON, and neither reads the
- * other. `User.onboardingCompletedAt` also stays what it was — the first-run
- * redirect's gate — which is why the needs flow carries a completion stamp of
- * its own rather than borrowing that column: "set up again" has to be able to
- * re-ask the questions without pushing the person back through the first-run
- * redirect.
+ * `User.onboardingCompletedAt` stays what it was — the first-run redirect's
+ * gate — which is why the needs flow carries a completion stamp of its own
+ * rather than borrowing that column: "set up again" has to be able to re-ask
+ * the questions without pushing the person back through the first-run
+ * redirect. The five-step wizard that used to share this state is gone (C2);
+ * its step counter and goal slugs left the account row with it, and the
+ * dashboard order those slugs seeded now comes from the answers here
+ * (`./dashboard-seed.ts`).
  */
 import type {
   OnboardingAreaKey,

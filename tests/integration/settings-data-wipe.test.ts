@@ -104,7 +104,6 @@ describe("DELETE /api/settings/data leaves nothing it promised to delete", () =>
         stravaAthleteId: "12345",
         thresholdsJson: { sys: 130 },
         onboardingCompletedAt: new Date(),
-        onboardingStep: 4,
         passwordHash: "argon2-placeholder",
         locale: "en",
         unitPreference: "metric",

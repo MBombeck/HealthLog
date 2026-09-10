@@ -410,8 +410,6 @@ export const USER_RESET = {
 
   // Back to the start of the tour — the record it was built around is gone
   onboardingCompletedAt: null,
-  onboardingStep: 0,
-  onboardingGoals: [],
   onboardingTourCompleted: false,
   onboardingTourProgressJson: Prisma.DbNull,
 } satisfies Prisma.UserUpdateInput;

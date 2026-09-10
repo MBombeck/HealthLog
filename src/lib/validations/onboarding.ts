@@ -1,46 +1,26 @@
 /**
- * Request schemas for the two onboarding write endpoints.
+ * Request schema for the completion write.
  *
- * They live outside the route files for the same reason
+ * It lives outside the route file for the same reason
  * `src/lib/validations/about-me.ts` does: a route module may only export
  * handlers plus the Next.js route config, so the OpenAPI registry cannot
- * import a schema declared inside one. Keeping the shapes here lets the
+ * import a schema declared inside one. Keeping the shape here lets the
  * published contract and the runtime parser be the same object rather than
  * two hand-kept copies.
  *
- * Prisma-free by construction — `@/lib/onboarding/goals` is pure data — so
- * the generator script can pull them in without dragging the server graph
- * along.
+ * Prisma-free by construction, so the generator script can pull it in
+ * without dragging the server graph along.
  */
 import { z } from "zod/v4";
 
-import { ONBOARDING_GOAL_SLUGS } from "@/lib/onboarding/goals";
-
 /**
- * `POST /api/onboarding/step` — the step-by-step wizard checkpoint.
- *
- * `step` is the step being COMPLETED and must equal the stored step plus one;
- * the route refuses anything else with 409 rather than clamping. `goals`
- * rides the step-2 submit and is validated against the closed slug set, so an
- * unknown slug fails the whole request instead of being silently dropped.
- */
-export const onboardingStepSchema = z.object({
-  step: z.number().int().min(1).max(4),
-  goals: z
-    .array(z.enum(ONBOARDING_GOAL_SLUGS))
-    .max(ONBOARDING_GOAL_SLUGS.length)
-    .optional(),
-});
-
-export type OnboardingStepInput = z.infer<typeof onboardingStepSchema>;
-
-/**
- * `POST /api/onboarding/complete` — the legacy single-shot completion path.
+ * `POST /api/onboarding/complete` — the completion stamp.
  *
  * Every field is optional: the endpoint's job is the completion stamp, and
- * the profile fields are whatever the wizard happened to collect. A field
+ * the profile fields are whatever the caller happened to collect. A field
  * that parses but is falsy (an empty `displayName`, `heightCm: 0`) is not
- * written — the route only assigns truthy values.
+ * written — the route only assigns truthy values. The web flow sends an
+ * empty body and writes its profile through `PUT /api/auth/profile`.
  */
 export const onboardingCompleteSchema = z.object({
   displayName: z.string().trim().min(1).max(50).optional(),

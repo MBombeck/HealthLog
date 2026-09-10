@@ -385,29 +385,9 @@ model User {
   // contract for every other self-hoster.
   documentsAutoAiRead Boolean @default(false) @map("documents_auto_ai_read")
 
-  // Onboarding
+  // Onboarding. The first-run redirect's gate; the needs-based setup flow
+  // (`OnboardingRecord`) keeps its own ledger and stamps this on confirm.
   onboardingCompletedAt   DateTime? @map("onboarding_completed_at")
-  // v1.4.25 W14b — last persisted onboarding wizard step.
-  // Encodes resume-from-where-you-left-off semantics for the rebuilt
-  // multi-step wizard at `/onboarding/[step]`. Values mirror the
-  // wizard's step indices:
-  //   0 = welcome
-  //   1 = goals
-  //   2 = source
-  //   3 = baseline
-  //   4 = done (triggers `onboardingCompletedAt` flip on the same
-  //             round-trip — the column stays at 4 for completed users)
-  // Null = legacy pre-W14b user; the wizard treats null as 0 on mount.
-  onboardingStep          Int       @default(0) @map("onboarding_step")
-  // v1.17.1 — goal slugs chosen during onboarding (GoalsChipPicker).
-  // Seeds dashboard tile pinning + reminder suggestions; NOT a clinical
-  // target store (targets are fully derived from height/age/gender +
-  // clinical refs in /api/insights/targets). Empty [] = skipped / no
-  // preference. The slug set is the closed enum
-  // `ONBOARDING_GOAL_SLUGS` in src/lib/onboarding/goals.ts; a String[]
-  // (not a relation) mirrors `insightsExcludeMetrics` precedent — the
-  // set is small and fixed, never queried relationally.
-  onboardingGoals         String[]  @default([]) @map("onboarding_goals")
   // v1.4.15 Phase B5: tracks whether the user has finished (or
   // explicitly dismissed) the spotlight tour that overlays the
   // dashboard on first arrival. Distinct from the wizard at
@@ -1000,7 +980,7 @@ model User {
   // record. 1:1, and keyed by record rather than by the person at the
   // keyboard so a guardian running a managed profile's setup writes the
   // child's row, not their own. See `OnboardingRecord`.
-  onboardingRecord           OnboardingRecord?
+  onboardingRecord OnboardingRecord?
 
   // v1.15.20 — user-authored "about me" context for the AI surfaces
   // (1:1, encrypted free text). See `UserHealthProfile`.
@@ -4713,14 +4693,14 @@ model AppSettings {
   // id or an unreachable host all parse perfectly and deliver nothing.
   /// Instant the last report left successfully. Consumer: the GlitchTip card's
   /// badge, which is only green while this is inside the recent window.
-  glitchtipLastOkAt               DateTime? @map("glitchtip_last_ok_at")
+  glitchtipLastOkAt          DateTime? @map("glitchtip_last_ok_at")
   /// Instant the last attempt failed. Consumer: the GlitchTip card's status
   /// line, which names the failure rather than showing a reassuring badge.
-  glitchtipLastFailureAt          DateTime? @map("glitchtip_last_failure_at")
+  glitchtipLastFailureAt     DateTime? @map("glitchtip_last_failure_at")
   /// Short classification of that failure (`invalid_dsn`, `http_403`,
   /// `network`) — never a response body, which is a remote host's text.
   /// Consumer: the same status line.
-  glitchtipLastFailureReason      String?   @map("glitchtip_last_failure_reason")
+  glitchtipLastFailureReason String?   @map("glitchtip_last_failure_reason")
 
   // Medication reminder thresholds (minutes after windowEnd)
   reminderLateMinutes   Int @default(120) @map("reminder_late_minutes")
@@ -5340,7 +5320,7 @@ model MeasurementReminder {
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
   deletedAt          DateTime?        @map("deleted_at")
 
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// Back-relation for the appointment arm: a PLANNED `Encounter` mints
   /// exactly one ENCOUNTER-origin row and points at it. SetNull on the far
   /// side, so deleting the reminder leaves the visit intact.
@@ -5624,15 +5604,15 @@ model CustomMetric {
 /// snapshot of the metric's unit at write time (historical truth, mirroring the
 /// LabResult per-row unit). Charts read these LIVE (no rollup tier).
 model CustomMetricEntry {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  customMetricId String   @map("custom_metric_id")
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  customMetricId String    @map("custom_metric_id")
   value          Float
   /// Unit snapshot from the metric at write time.
   unit           String
-  measuredAt     DateTime @map("measured_at")
+  measuredAt     DateTime  @map("measured_at")
   note           String?
-  createdAt      DateTime @default(now()) @map("created_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
   /// v1.37.20 — soft-delete tombstone, peer parity with Measurement /
   /// MoodEntry (every other entry surface deletes recoverably with an undo
   /// toast; custom-metric entries were the one hard delete). NULL = live.
@@ -6140,28 +6120,28 @@ model CoachReminder {
 // must never land in the table as plaintext. A cleared profile keeps the
 // row with a NULL payload so `updatedAt` documents the deletion instant.
 model UserHealthProfile {
-  id                        String                   @id @default(cuid())
-  userId                    String                   @unique @map("user_id")
+  id                         String                   @id @default(cuid())
+  userId                     String                   @unique @map("user_id")
   // Free text, hard-capped at 4 000 chars by the route's Zod schema
   // BEFORE encryption. NULL = cleared / never written.
-  aboutMeEncrypted          Bytes?                   @map("about_me_encrypted")
+  aboutMeEncrypted           Bytes?                   @map("about_me_encrypted")
   // v1.16.0 — structured self-context companions to the free text.
   // Short answers (each capped at 500 chars BEFORE encryption).
   // Age/gender deliberately do NOT live here — they come from the User
   // profile and are merged into the prompt block at assembly time so
   // the data is never duplicated.
-  conditionsEncrypted       Bytes?                   @map("conditions_encrypted")
-  allergiesEncrypted        Bytes?                   @map("allergies_encrypted")
-  coachFocusEncrypted       Bytes?                   @map("coach_focus_encrypted")
+  conditionsEncrypted        Bytes?                   @map("conditions_encrypted")
+  allergiesEncrypted         Bytes?                   @map("allergies_encrypted")
+  coachFocusEncrypted        Bytes?                   @map("coach_focus_encrypted")
   // v1.16.0 — up to 3 clarifying questions the server derives after a
   // save (AI-generated when a provider + budget allow, deterministic
   // hints otherwise). Encrypted JSON string[]; the Coach composer
   // renders them as tappable suggestion chips. NULL = none pending.
-  pendingQuestionsEncrypted Bytes?                   @map("pending_questions_encrypted")
+  pendingQuestionsEncrypted  Bytes?                   @map("pending_questions_encrypted")
   // Closed inclusion list for self-context sent to Coach and briefing prompts.
   // The static default preserves every pre-existing prompt section for legacy
   // rows without automatically opting future enum members in.
-  aiIncludedSections        HealthProfileAiSection[] @default([ABOUT_ME, CONDITIONS, ALLERGIES, COACH_FOCUS, FAMILY_HISTORY, SMOKING_STATUS, ALCOHOL_PATTERN, SHIFT_SCHEDULE]) @map("ai_included_sections")
+  aiIncludedSections         HealthProfileAiSection[] @default([ABOUT_ME, CONDITIONS, ALLERGIES, COACH_FOCUS, FAMILY_HISTORY, SMOKING_STATUS, ALCOHOL_PATTERN, SHIFT_SCHEDULE]) @map("ai_included_sections")
   // Emergency ("Notfalldaten") facts, surfaced on page one of the doctor
   // report and edited in Settings -> Anamnese. Three closed-set enums are
   // plaintext (read directly by the report, like `User.gender`); three free
@@ -6169,14 +6149,14 @@ model UserHealthProfile {
   // `*Encrypted` column. All six are nullable: an unset emergency profile is
   // absent, not empty. The report page is withheld unless the EMERGENCY leaf is
   // admitted AND at least one of these holds a value.
-  emergencyBloodType     EmergencyBloodType?     @map("emergency_blood_type")
-  organDonorStatus       OrganDonorStatus?       @map("organ_donor_status")
-  advanceDirectiveStatus AdvanceDirectiveStatus? @map("advance_directive_status")
-  emergencyContactsEncrypted Bytes?              @map("emergency_contacts_encrypted")
-  emergencyImplantsEncrypted Bytes?              @map("emergency_implants_encrypted")
-  emergencyNoteEncrypted     Bytes?              @map("emergency_note_encrypted")
-  createdAt                 DateTime                 @default(now()) @map("created_at")
-  updatedAt                 DateTime                 @updatedAt @map("updated_at")
+  emergencyBloodType         EmergencyBloodType?      @map("emergency_blood_type")
+  organDonorStatus           OrganDonorStatus?        @map("organ_donor_status")
+  advanceDirectiveStatus     AdvanceDirectiveStatus?  @map("advance_directive_status")
+  emergencyContactsEncrypted Bytes?                   @map("emergency_contacts_encrypted")
+  emergencyImplantsEncrypted Bytes?                   @map("emergency_implants_encrypted")
+  emergencyNoteEncrypted     Bytes?                   @map("emergency_note_encrypted")
+  createdAt                  DateTime                 @default(now()) @map("created_at")
+  updatedAt                  DateTime                 @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -8380,9 +8360,9 @@ model VaccinationDocumentLink {
 /// covers free text a person wrote (`UserHealthProfile.aboutMeEncrypted`, the
 /// Coach transcript, the emergency note) and identifiers (the KVNR), and an
 /// answer drawn from nine fixed chips is neither. It is the same class of
-/// value as `modulePreferencesJson` and `onboardingGoals`, both of which sit
-/// in plaintext beside it. Readers are fail-soft rather than schema-validated
-/// at the database edge — see `src/lib/onboarding/needs.ts`.
+/// value as `modulePreferencesJson`, which sits in plaintext beside it.
+/// Readers are fail-soft rather than schema-validated at the database edge —
+/// see `src/lib/onboarding/needs.ts`.
 model OnboardingRecord {
   id     String @id @default(cuid())
   userId String @unique @map("user_id")

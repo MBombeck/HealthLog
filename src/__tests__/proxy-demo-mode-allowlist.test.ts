@@ -73,7 +73,7 @@ describe("proxy.ts DEMO_MODE mutation allowlist", () => {
     expect(proxy(makeRequest("/api/onboarding/answers", "DELETE")).status).toBe(
       403,
     );
-    expect(proxy(makeRequest("/api/onboarding/step", "POST")).status).toBe(403);
+    expect(proxy(makeRequest("/api/onboarding/tour", "POST")).status).toBe(403);
   });
 
   it("still blocks a health-data mutation (POST /api/measurements)", () => {

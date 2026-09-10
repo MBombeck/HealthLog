@@ -16315,85 +16315,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-  /api/onboarding/step:
-    post:
-      tags:
-        - Onboarding
-      summary: Advance the onboarding wizard by one step
-      description: >-
-        Persists progress through the four-step wizard. The contract is strictly ordered: the submitted `step` must be
-        exactly the stored step plus one, so a client cannot skip ahead or replay a step it already sent.
-
-
-        Submitting step 4 completes onboarding — the completion instant is stamped in the same write, the proxy-readable
-        pending cookie is cleared so the next navigation stops redirecting to `/onboarding`, and the stored goal
-        selection seeds the dashboard layout. That seed is ONE-TIME and conditional: it only runs while the layout
-        column is still unset, so a person who already arranged their tiles is never clobbered, and a concurrent layout
-        save that lands first wins.
-
-
-        The write is guarded on the state it validated, so two tabs submitting the same step do not both succeed —
-        exactly one lands and the other gets 409.
-
-
-        Rate-limited to 30 writes per 10 minutes per user, which is generous for a four-step flow and tight enough to
-        defang a stuck retry loop. Every accepted call writes an audit row. Cookie or wildcard Bearer; `userId` is never
-        read from the body.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/OnboardingStepRequest"
-      responses:
-        "200":
-          description: The stored step and completion stamp after the write.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OnboardingStepEnvelope"
-        "401": *a1
-        "404":
-          description: The session's user row no longer exists. `meta.errorCode` = `onboarding.user.notFound`.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "409":
-          description: "The write was refused and nothing changed. `meta.errorCode` distinguishes three cases:
-            `onboarding.step.completed` — onboarding is already finished, so the wizard has nothing left to advance;
-            `onboarding.step.outOfOrder` — the submitted step is not the stored step plus one, and the message names the
-            current step; `onboarding.step.concurrent` — the row moved between the check and the write, which is what a
-            second tab sees."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "413":
-          description: Body exceeds 64 KiB.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "415":
-          description: "`Content-Type` is not `application/json`."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "422":
-          description: The body did not validate. `meta.errorCode` = `onboarding.step.invalid`. Single-message, not the
-            multi-issue envelope — the per-field detail is not on the wire.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "429":
-          description: More than 30 onboarding writes in 10 minutes. `meta.errorCode` = `onboarding.step.rateLimited`.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
   /api/onboarding/complete:
     post:
       tags:
@@ -16404,33 +16325,24 @@ paths:
         cookie so the next navigation stops redirecting to `/onboarding`.
 
 
-        v1.39 — this is also the needs-based flow's confirm endpoint, and the two halves live side by side. For a record
-        that FINISHED the questions — every one of them answered or deliberately passed — it derives that record's
-        module map from the answers and applies it, ONCE: the derivation marker is what stops a second confirm
-        re-applying the questionnaire over decisions taken in Settings since, and `POST /api/onboarding/restart` clears
-        the marker when the person asks for the questions again. The merge is one-directional — a module the answers
-        name is switched on, a module they do not name is switched off only where the record does not already carry an
-        explicit on. The `cycle` key is not written here at all: it delegates to the cycle profile, which this route
-        sets to `true` when the cycle area was chosen and never to `false`. A half-answered flow derives nothing and is
-        not stamped as complete: the answers become a module map, and a flow somebody abandoned after the first screen
-        would have every remaining question read as its conservative default. The same gate is what keeps the LEGACY
-        wizard's completion out of the derivation, since that wizard never puts these questions.
+        v1.39 — this is the needs-based flow's confirm endpoint. For a record that FINISHED the questions — every one of
+        them answered or deliberately passed — it derives that record's module map from the answers and applies it,
+        ONCE: the derivation marker is what stops a second confirm re-applying the questionnaire over decisions taken in
+        Settings since, and `POST /api/onboarding/restart` clears the marker when the person asks for the questions
+        again. The merge is one-directional — a module the answers name is switched on, a module they do not name is
+        switched off only where the record does not already carry an explicit on and holds no data in that domain. The
+        `cycle` key is not written here at all: it delegates to the cycle profile, which this route sets to `true` when
+        the cycle area was chosen and never to `false`. In the same derivation the dashboard order is seeded from the
+        answers — the tiles of the chosen areas (and the medication tile for a schedule) move to the front and are made
+        visible — but only while the layout column is still unset, so a person who already arranged their tiles is never
+        clobbered. A half-answered flow derives nothing and is not stamped as complete.
 
 
-        The response then carries `onboarding` beside `completed`; a caller that never entered the needs flow gets the
-        fixed acknowledgement it always did.
-
-
-        The older sibling of `POST /api/onboarding/step`. It is unconditional in a way the step route is not: it stamps
-        the completion whatever the stored step is, it re-stamps on every call rather than refusing a second one, and it
-        enforces no rate limit of its own. Its legacy half writes no audit row; the needs half writes one
-        (`user.modules.update`) when it derives, because that is the same column the dedicated modules route audits. It
-        also does NOT seed the dashboard from the goal selection — that only happens on the step route's completing
-        call.
-
-
-        Calling this mid-wizard makes every remaining `POST /api/onboarding/step` answer 409
-        `onboarding.step.completed`, because that route's guarded update requires the completion stamp to still be null.
+        The response carries `onboarding` beside `completed`; a caller that never entered the needs flow gets the fixed
+        acknowledgement alone — it stamps the completion whatever the answers say, re-stamps on every call rather than
+        refusing a second one, and enforces no rate limit of its own. The legacy half writes no audit row; the needs
+        half writes one (`user.modules.update`) when it derives, because that is the same column the dedicated modules
+        route audits.
 
 
         Cookie or wildcard Bearer; `userId` is never read from the body.
@@ -28003,30 +27915,6 @@ components:
       properties: {}
       additionalProperties: false
       description: No input beyond the session. Send `{}`.
-    OnboardingStepRequest:
-      type: object
-      properties:
-        step:
-          type: integer
-          minimum: 1
-          maximum: 4
-        goals:
-          maxItems: 6
-          type: array
-          items:
-            type: string
-            enum:
-              - weight-management
-              - bp-tracking
-              - glucose-tracking
-              - sleep-improvement
-              - medication-compliance
-              - general-wellness
-      required:
-        - step
-      description: The wizard step being COMPLETED, 1–4. It must equal the stored step plus one — the server does not clamp or
-        skip. `goals` rides the step-2 submit; every slug is checked against the closed set, so one unknown slug fails
-        the whole request rather than being dropped.
     OnboardingCompleteRequest:
       type: object
       properties:
@@ -63476,42 +63364,6 @@ components:
         - completedAt
       additionalProperties: false
       description: The one task the flow offered at the end, and whether it produced its result.
-    OnboardingStepEnvelope:
-      type: object
-      properties:
-        data:
-          $ref: "#/components/schemas/OnboardingStepResponse"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    OnboardingStepResponse:
-      type: object
-      properties:
-        step:
-          type: integer
-          minimum: -9007199254740991
-          maximum: 9007199254740991
-          description: The stored step after the write.
-        onboardingCompletedAt:
-          anyOf:
-            - type: string
-              format: date-time
-              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-            - type: "null"
-          description: Non-null once step 4 landed.
-      required:
-        - step
-        - onboardingCompletedAt
-      additionalProperties: false
     OnboardingCompleteEnvelope:
       type: object
       properties:

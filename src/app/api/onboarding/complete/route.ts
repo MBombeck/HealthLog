@@ -1,4 +1,5 @@
 import { prisma, toJson } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -17,6 +18,7 @@ import {
   mergeDerivedModulePreferences,
   OWNED_MODULE_KEYS,
 } from "@/lib/modules/registry";
+import { buildNeedsSeededDashboardLayout } from "@/lib/onboarding/dashboard-seed";
 import {
   everyOnboardingQuestionSettled,
   readHeldUnitPreferences,
@@ -37,22 +39,24 @@ import { onboardingCompleteSchema } from "@/lib/validations/onboarding";
  * Complete the onboarding flow. Saves optional profile data and marks
  * onboarding as completed.
  *
- * v1.39 (C1) — this is also the confirm screen's endpoint for the needs-based
- * flow, and the two live side by side rather than one replacing the other.
- * The legacy half is unchanged: the optional profile fields, the completion
- * stamp on `User.onboardingCompletedAt`, and the cleared pending cookie. The
- * needs half runs only for a record that actually FINISHED the questions —
- * every one of them answered or deliberately passed — and is what turns them
- * into a module
- * map — ONCE, guarded by `OnboardingRecord.modulesDerivedAt`, because a
- * re-derivation would re-apply the questionnaire over decisions taken in
- * Settings since. `POST /api/onboarding/restart` clears that marker when the
- * person asks for the questions again.
+ * v1.39 — the confirm screen's endpoint for the needs-based flow, and the
+ * one completion write there is. The stamp half is what it always was: the
+ * optional profile fields, the completion stamp on
+ * `User.onboardingCompletedAt`, and the cleared pending cookie — the welcome
+ * screen's "skip for now" is this route with an empty body. The needs half
+ * runs only for a record that actually FINISHED the questions — every one
+ * of them answered or deliberately passed — and is what turns them into a
+ * module map and a dashboard order — ONCE, guarded by
+ * `OnboardingRecord.modulesDerivedAt`, because a re-derivation would
+ * re-apply the questionnaire over decisions taken in Settings since. `POST
+ * /api/onboarding/restart` clears that marker when the person asks for the
+ * questions again.
  *
- * The goal slugs of today (`src/lib/onboarding/goals.ts`, the four-step wizard
- * at `POST /api/onboarding/step`) are untouched and stay live until C2
- * replaces that surface. They decide TILE ORDER; the answers below decide
- * WHICH MODULES ARE ON. Neither reads the other.
+ * v1.39 (C2) — the dashboard order joins the derivation. The five-step
+ * wizard's goal slugs used to seed it from their own route; the answers now
+ * carry both halves of Q2 — which modules are on, and what is on top — and
+ * the seed keeps the wizard's one contract: only while the layout column is
+ * still unset.
  */
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -166,6 +170,7 @@ async function completeNeedsFlow(
   }
 
   let derived = false;
+  let dashboardSeeded = false;
   let keptForData: string[] = [];
   if (record.modulesDerivedAt === null) {
     const defaults = deriveOnboardingModuleDefaults({
@@ -230,6 +235,24 @@ async function completeNeedsFlow(
 
     keptForData = [...holdsData];
     derived = true;
+
+    // The ordering half of Q2. ONE-TIME and conditional: `updateMany` carries
+    // the `dashboardWidgetsJson IS NULL` precondition in its WHERE, so a
+    // layout somebody already arranged — or a concurrent layout save that
+    // lands first — leaves `count = 0` and the seed is skipped rather than
+    // overwriting it. An answer set that speaks to no tile builds `null` and
+    // writes nothing, which leaves the default layout in place.
+    const seededLayout = buildNeedsSeededDashboardLayout(state.needs);
+    if (seededLayout) {
+      const seeded = await prisma.user.updateMany({
+        where: {
+          id: userId,
+          dashboardWidgetsJson: { equals: Prisma.JsonNull },
+        },
+        data: { dashboardWidgetsJson: toJson(seededLayout) },
+      });
+      dashboardSeeded = seeded.count === 1;
+    }
   }
 
   const now = new Date();
@@ -256,6 +279,7 @@ async function completeNeedsFlow(
     meta: {
       outcome: derived ? "derived" : "already_derived",
       keptForData: keptForData.length,
+      dashboard_seeded: dashboardSeeded,
     },
   });
 
