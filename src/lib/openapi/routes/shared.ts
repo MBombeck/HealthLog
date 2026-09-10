@@ -6,6 +6,8 @@
  * runtime request parsing, so the wire contract stays single-source.
  */
 import { z } from "zod/v4";
+
+import { renderErrorCodeCatalogue } from "../error-codes";
 import {
   createMeasurementSchema as createMeasurementSchemaBase,
   listMeasurementsSchema as listMeasurementsSchemaBase,
@@ -82,7 +84,8 @@ export const errorEnvelope = z
           .string()
           .optional()
           .describe(
-            "Stable machine code for this refusal. Branch on it rather than on `error`, which is prose and may be reworded.",
+            "Stable machine code for this refusal. Branch on it rather than on `error`, which is prose and may be reworded. Every code the API emits today is enumerated below, grouped by the surface that emits it; four naming conventions coexist and none of them will be renamed, because a code is a wire value a shipped client branches on. Treat an unlisted code the way you would treat an unlisted enum member — as a refusal you do not recognise, not as a malformed response — since the list grows with the surfaces. Three families are outside it on purpose: `assistant.disabled.<surface>` is built from a template so the last segment is open (`assistant.disabled.coach` is the one the native client names); the integration-probe classes (`credentials_rejected`, `rate_limited`, `upstream_error`, `timeout`, `connection_failed` and the per-provider additions) are enumerated in each `/test` operation instead, where the differences can be stated; and a 401 raised by a route checking a credential of its own may carry no code at all. " +
+              renderErrorCodeCatalogue(),
           ),
       })
       .optional(),
