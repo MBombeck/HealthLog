@@ -27,6 +27,7 @@ vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn().mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 29,
     resetAt: Date.now() + 15 * 60 * 1000,
   }),
@@ -34,6 +35,7 @@ vi.mock("@/lib/rate-limit", () => ({
   // wrapper. Default to a clean per-IP result.
   checkAuthSurfaceRateLimit: vi.fn().mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 29,
     resetAt: Date.now() + 15 * 60 * 1000,
     ip: "203.0.113.1",
@@ -84,11 +86,13 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 29,
     resetAt: Date.now() + 15 * 60 * 1000,
   });
   vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 29,
     resetAt: Date.now() + 15 * 60 * 1000,
     ip: "203.0.113.1",
@@ -175,6 +179,7 @@ describe("POST /api/auth/check-user", () => {
   it("returns 429 when the per-IP rate-limit is exhausted", async () => {
     vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValueOnce({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 15 * 60 * 1000,
       ip: "203.0.113.1",

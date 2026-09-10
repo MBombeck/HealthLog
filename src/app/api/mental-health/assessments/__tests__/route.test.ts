@@ -96,6 +96,7 @@ beforeEach(() => {
   vi.mocked(requireModuleEnabled).mockResolvedValue({ enabled: true });
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 29,
     resetAt: Date.now(),
   });

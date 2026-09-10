@@ -30,6 +30,7 @@ vi.mock("@/lib/medications/route-guards", () => ({
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn().mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 59,
     resetAt: Date.now() + 60_000,
   }),
@@ -92,6 +93,7 @@ beforeEach(() => {
   vi.mocked(assertMedicationOwnership).mockResolvedValue(null);
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 59,
     resetAt: Date.now() + 60_000,
   });
@@ -134,6 +136,7 @@ describe("GET /api/medications/[id]/dose-history", () => {
   it("returns 429 when the per-user cap is exhausted", async () => {
     vi.mocked(checkRateLimit).mockResolvedValueOnce({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

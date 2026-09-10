@@ -128,6 +128,7 @@ beforeEach(() => {
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 5,
     resetAt: Date.now() + 60 * 60 * 1000,
   });
@@ -222,6 +223,7 @@ describe("POST /api/documents/inbound/[id]/index — bucket honesty", () => {
     const resetAt = Date.now() + 47 * 60_000;
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt,
     });
@@ -309,6 +311,7 @@ describe("POST /api/documents/inbound/[id]/index — staging continuation", () =
   it("does not reach staging when the index itself was refused", async () => {
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

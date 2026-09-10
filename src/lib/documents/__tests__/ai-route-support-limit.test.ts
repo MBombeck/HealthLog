@@ -77,6 +77,7 @@ describe("documentAiRateLimited", () => {
     const resetAt = Date.now() + 42 * 60_000;
     const response = documentAiRateLimited({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt,
     });

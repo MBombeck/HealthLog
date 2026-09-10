@@ -110,6 +110,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 9,
     resetAt: Date.now() + 60_000,
   });
@@ -152,6 +153,7 @@ describe("POST /api/medications/extract — rate limit", () => {
     vi.mocked(requireAuth).mockResolvedValue(AUTH_OK as never);
     vi.mocked(checkRateLimit).mockResolvedValueOnce({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

@@ -97,6 +97,7 @@ beforeEach(() => {
   vi.mocked(auditLog).mockResolvedValue(undefined as never);
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 60,
     resetAt: Date.now() + 60_000,
   });
@@ -407,6 +408,7 @@ describe("POST /api/medications/[id]/intake/import — future bound and limiter"
   it("refuses with 429 once the import limiter trips", async () => {
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

@@ -181,7 +181,8 @@ export const stdResponses = {
     content: { "application/json": { schema: errorEnvelope } },
   },
   "429": {
-    description: "Rate limit exceeded.",
+    description:
+      "Rate limit exceeded. The response carries `Retry-After` (whole seconds, rounded up — wait at least that long before retrying), `X-RateLimit-Limit` (the bucket's cap), `X-RateLimit-Remaining` and `X-RateLimit-Reset` (the reset instant, ISO-8601, not epoch seconds). Back off on `Retry-After` rather than guessing.",
     content: { "application/json": { schema: errorEnvelope } },
   },
 };

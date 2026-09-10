@@ -145,6 +145,7 @@ beforeEach(() => {
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 60,
     resetAt: Date.now() + 60_000,
   });
@@ -218,6 +219,7 @@ describe("POST /api/workouts/batch — auth + size + rate-limit", () => {
   it("returns 429 when the rate-limit gate blocks the call", async () => {
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });

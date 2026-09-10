@@ -41,6 +41,11 @@ import {
   assertRecordSessionFence,
   attachRecordContextEcho,
 } from "./sharing/record-session-fence";
+import {
+  capturedRateLimit,
+  rateLimitResponseHeaders,
+  runWithRateLimitCapture,
+} from "./rate-limit-context";
 
 /**
  * HTTP methods a read-only credential may use on the REST surface. A request
@@ -221,131 +226,161 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
         undefined,
     });
 
-    return eventStorage.run(evt, async () => {
-      let response: Response | undefined;
-      try {
-        response = await handler(...args);
-      } catch (error) {
-        if (error instanceof AssistantDisabledError) {
-          // v1.4.31 — operator has disabled the assistant surface.
-          // The 403 + `errorCode: "assistant.disabled.<surface>"`
-          // envelope is locked per
-          // `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R5.
-          // Older iOS clients that don't know the errorCode surface
-          // this as a generic 403; v1.4.31+ clients can branch on the
-          // errorCode to render an inline operator-disabled notice.
-          evt.setError(error);
-          response = NextResponse.json(
-            {
-              data: null,
-              error: error.message,
-              meta: { errorCode: error.errorCode },
-            },
-            { status: 403 },
-          );
-        } else if (error instanceof ConsentRequiredError) {
-          // v1.12.1 — server-side consent gate before external-LLM PHI
-          // egress on the operator's server-managed key. Mirrors the
-          // AssistantDisabledError envelope (403 + meta.errorCode) so the
-          // iOS client renders an inline "grant consent" notice instead of
-          // a generic failure.
-          evt.setError(error);
-          response = NextResponse.json(
-            {
-              data: null,
-              error: error.message,
-              meta: { errorCode: error.errorCode },
-            },
-            { status: 403 },
-          );
-        } else if (error instanceof StepUpRequiredError) {
-          // v1.23 — step-up gate not satisfied. Same 401 + meta.errorCode
-          // envelope shape as the assistant/consent gates so the client can
-          // branch on the stable code and launch a re-verification flow.
-          // Checked before the generic HttpError branch because
-          // StepUpRequiredError extends it.
-          evt.setError(error);
-          response = NextResponse.json(
-            {
-              data: null,
-              error: error.message,
-              meta: { errorCode: error.errorCode },
-            },
-            { status: error.statusCode },
-          );
-        } else if (error instanceof SharingAuthError) {
-          // v1.36.0 — the acting-account resolver refused. Same
-          // 403 + meta.errorCode envelope as the gates above, so a client
-          // distinguishes "you may not act as that account" from "this
-          // endpoint does not support acting on one" without parsing prose.
-          // Checked before the generic HttpError branch because it extends it.
-          evt.setError(error);
-          response = NextResponse.json(
-            {
-              data: null,
-              error: error.message,
-              meta: { errorCode: error.errorCode },
-            },
-            { status: error.statusCode },
-          );
-        } else if (error instanceof HttpError) {
-          evt.setError(error);
-          response = NextResponse.json(
-            { data: null, error: error.message },
-            { status: error.statusCode },
-          );
-        } else if (error instanceof SyntaxError) {
-          evt.setError(error);
-          response = NextResponse.json(
-            { data: null, error: "Invalid JSON body" },
-            { status: 400 },
-          );
-        } else {
-          evt.setError(error);
-          // Report to GlitchTip (fire-and-forget)
-          reportToGlitchtip(error, request, evt).catch(() => {});
-          response = NextResponse.json(
-            { data: null, error: "Interner Serverfehler" },
-            { status: 500 },
-          );
-        }
-      } finally {
-        const status = (response as Response | undefined)?.status ?? 500;
-        evt.finish(status);
+    return runWithRateLimitCapture(() =>
+      eventStorage.run(evt, async () => {
+        let response: Response | undefined;
         try {
-          emitIfSampled(evt.toJSON());
-        } catch {
-          /* logging must never crash the handler */
+          response = await handler(...args);
+        } catch (error) {
+          if (error instanceof AssistantDisabledError) {
+            // v1.4.31 — operator has disabled the assistant surface.
+            // The 403 + `errorCode: "assistant.disabled.<surface>"`
+            // envelope is locked per
+            // `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R5.
+            // Older iOS clients that don't know the errorCode surface
+            // this as a generic 403; v1.4.31+ clients can branch on the
+            // errorCode to render an inline operator-disabled notice.
+            evt.setError(error);
+            response = NextResponse.json(
+              {
+                data: null,
+                error: error.message,
+                meta: { errorCode: error.errorCode },
+              },
+              { status: 403 },
+            );
+          } else if (error instanceof ConsentRequiredError) {
+            // v1.12.1 — server-side consent gate before external-LLM PHI
+            // egress on the operator's server-managed key. Mirrors the
+            // AssistantDisabledError envelope (403 + meta.errorCode) so the
+            // iOS client renders an inline "grant consent" notice instead of
+            // a generic failure.
+            evt.setError(error);
+            response = NextResponse.json(
+              {
+                data: null,
+                error: error.message,
+                meta: { errorCode: error.errorCode },
+              },
+              { status: 403 },
+            );
+          } else if (error instanceof StepUpRequiredError) {
+            // v1.23 — step-up gate not satisfied. Same 401 + meta.errorCode
+            // envelope shape as the assistant/consent gates so the client can
+            // branch on the stable code and launch a re-verification flow.
+            // Checked before the generic HttpError branch because
+            // StepUpRequiredError extends it.
+            evt.setError(error);
+            response = NextResponse.json(
+              {
+                data: null,
+                error: error.message,
+                meta: { errorCode: error.errorCode },
+              },
+              { status: error.statusCode },
+            );
+          } else if (error instanceof SharingAuthError) {
+            // v1.36.0 — the acting-account resolver refused. Same
+            // 403 + meta.errorCode envelope as the gates above, so a client
+            // distinguishes "you may not act as that account" from "this
+            // endpoint does not support acting on one" without parsing prose.
+            // Checked before the generic HttpError branch because it extends it.
+            evt.setError(error);
+            response = NextResponse.json(
+              {
+                data: null,
+                error: error.message,
+                meta: { errorCode: error.errorCode },
+              },
+              { status: error.statusCode },
+            );
+          } else if (error instanceof HttpError) {
+            evt.setError(error);
+            response = NextResponse.json(
+              { data: null, error: error.message },
+              { status: error.statusCode },
+            );
+          } else if (error instanceof SyntaxError) {
+            evt.setError(error);
+            response = NextResponse.json(
+              { data: null, error: "Invalid JSON body" },
+              { status: 400 },
+            );
+          } else {
+            evt.setError(error);
+            // Report to GlitchTip (fire-and-forget)
+            reportToGlitchtip(error, request, evt).catch(() => {});
+            response = NextResponse.json(
+              { data: null, error: "Interner Serverfehler" },
+              { status: 500 },
+            );
+          }
+        } finally {
+          const status = (response as Response | undefined)?.status ?? 500;
+          evt.finish(status);
+          try {
+            emitIfSampled(evt.toJSON());
+          } catch {
+            /* logging must never crash the handler */
+          }
         }
-      }
-      const nr = response as NextResponse;
-      nr.headers.set("x-request-id", evt.getRequestId());
-      // v1.37.0 — echo the record context this response was actually served
-      // under, when one was decided. The value comes from the wide event and
-      // from nowhere else: the fence stamps it on every call it makes, so
-      // exactly the responses that resolved a record scope carry it and
-      // everything else — public routes, actor surfaces, admin, `/me`, static —
-      // carries nothing.
-      //
-      // Deliberately NOT derived here with a `getSession()`. That would put a
-      // session read on every public route, and it would make the echo a second
-      // derivation of the context rather than a report of the one that was
-      // used, which is the difference between "what this response served" and
-      // "what a later read thinks is true".
-      //
-      // Absence is therefore meaningful and safe: the client discards a
-      // response whose echo CONTRADICTS its adopted context, and serves one
-      // that carries no echo normally. A discard-on-absence rule would throw
-      // away the `/api/version` poll on every cycle.
-      //
-      // The two header names stay inside the fence module, which is what keeps
-      // them to four files overall (declared, read, attached client-side,
-      // published) — see `src/__tests__/record-session-fence-guard.test.ts`.
-      attachRecordContextEcho(nr.headers, evt.getRecordContext());
-      return nr;
-    });
+        const nr = response as NextResponse;
+        nr.headers.set("x-request-id", evt.getRequestId());
+        // v1.37.0 — echo the record context this response was actually served
+        // under, when one was decided. The value comes from the wide event and
+        // from nowhere else: the fence stamps it on every call it makes, so
+        // exactly the responses that resolved a record scope carry it and
+        // everything else — public routes, actor surfaces, admin, `/me`, static —
+        // carries nothing.
+        //
+        // Deliberately NOT derived here with a `getSession()`. That would put a
+        // session read on every public route, and it would make the echo a second
+        // derivation of the context rather than a report of the one that was
+        // used, which is the difference between "what this response served" and
+        // "what a later read thinks is true".
+        //
+        // Absence is therefore meaningful and safe: the client discards a
+        // response whose echo CONTRADICTS its adopted context, and serves one
+        // that carries no echo normally. A discard-on-absence rule would throw
+        // away the `/api/version` poll on every cycle.
+        //
+        // The two header names stay inside the fence module, which is what keeps
+        // them to four files overall (declared, read, attached client-side,
+        // published) — see `src/__tests__/record-session-fence-guard.test.ts`.
+        attachRecordContextEcho(nr.headers, evt.getRecordContext());
+        attachRateLimitHeaders(nr);
+        return nr;
+      }),
+    );
   };
   return wrapped as T;
+}
+
+/**
+ * Put the rate-limit headers on a refusal that left the handler without them.
+ *
+ * Only ~70 of the 199 route files that consult a limiter attach
+ * `rateLimitHeaders(rl)` by hand; the rest answer 429 with a bare prose
+ * envelope, so an offline replay queue that trips the batch ceiling has
+ * nothing to back off against but a guess. The limiter records its verdict in
+ * the request-scoped cell, so the headers can be derived here for every one of
+ * them at once instead of being threaded through each call site — and a route
+ * added tomorrow gets them without knowing this exists.
+ *
+ * `Retry-After` is the presence test rather than a flag: a handler that built
+ * its own headers already carries it (they come from the same builder), so
+ * this leaves that response exactly as it was written.
+ */
+function attachRateLimitHeaders(response: NextResponse): void {
+  if (response.status !== 429) return;
+  if (response.headers.has("Retry-After")) return;
+  const snapshot = capturedRateLimit();
+  if (!snapshot) return;
+  for (const [name, value] of Object.entries(
+    rateLimitResponseHeaders(snapshot),
+  )) {
+    response.headers.set(name, value);
+  }
 }
 
 /**

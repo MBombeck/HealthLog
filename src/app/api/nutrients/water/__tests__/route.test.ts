@@ -101,6 +101,7 @@ beforeEach(() => {
   vi.mocked(requireModuleEnabled).mockResolvedValue({ enabled: true } as never);
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
+    limit: 60,
     remaining: 59,
     resetAt: Date.now() + 60_000,
   });
@@ -137,6 +138,7 @@ describe("POST /api/nutrients/water", () => {
   it("returns 429 when the rate limit is exceeded", async () => {
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
+      limit: 60,
       remaining: 0,
       resetAt: Date.now() + 60_000,
     });
