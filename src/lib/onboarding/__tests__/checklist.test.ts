@@ -16,7 +16,9 @@ const completeProfile = {
   gender: "MALE",
 };
 
-function inputs(overrides: Partial<Parameters<typeof buildChecklist>[0]> = {}) {
+function inputs(
+  overrides: Partial<Parameters<typeof buildChecklist>[0]> = {},
+): Parameters<typeof buildChecklist>[0] {
   return {
     profile: completeProfile,
     measurementCount: 0,
@@ -25,6 +27,7 @@ function inputs(overrides: Partial<Parameters<typeof buildChecklist>[0]> = {}) {
     notificationsConfigured: false,
     insightsConfigured: false,
     dismissedIds: new Set<ChecklistItemId>(),
+    onboarding: null,
     ...overrides,
   };
 }
@@ -145,6 +148,7 @@ describe("visibleChecklist + checklistProgress", () => {
   it("returns 0% when nothing done", () => {
     const items = buildChecklist({
       profile: { heightCm: null, dateOfBirth: null, gender: null },
+      onboarding: null,
       measurementCount: 0,
       medicationCount: 0,
       dataSourceConnected: false,

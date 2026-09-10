@@ -16162,6 +16162,125 @@ paths:
         "401": *a1
         "422": *a4
         "429": *a5
+  /api/onboarding/answers:
+    patch:
+      tags:
+        - Onboarding
+      summary: Save one answer of the needs-based setup flow
+      description: >-
+        Persists one step of the setup questionnaire the moment it is answered, so leaving and returning resumes at the
+        same step. The body names the step and carries either its answer or `status: "skipped"`; the two can never ride
+        together.
+
+
+        Idempotent. The stored state is computed by a pure function of the row and the body, so sending the same step
+        twice writes the same value and the second write changes nothing a reader can see — including the first-result
+        completion instant, which is kept from the existing row rather than re-taken. There is no ordering contract:
+        steps may be answered, re-answered and passed in any order, which is what makes a back button work.
+
+
+        The `units` step is the one answer with a consequence outside this state: it writes the record's `glucoseUnit`
+        and `unitPreference`, which every display surface already reads, and records the answer beside them.
+
+
+        Cookie or wildcard Bearer, and the CALLER's own record only: a request made while the session is acting on
+        somebody else's record is refused with 403 `sharing.not_permitted` at every grant level, so a delegate can never
+        write another record's setup. Rate-limited to 120 writes per 10 minutes per account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingAnswerRequest"
+      responses:
+        "200":
+          description: The full setup state after the write.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStateEnvelope"
+        "401": *a1
+        "413":
+          description: Body exceeds 16 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "415":
+          description: "`Content-Type` is not `application/json`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: The body did not validate. `meta.errorCode` = `onboarding.answers.invalid`, with every issue on the wire.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: More than 120 answer writes in 10 minutes. `meta.errorCode` = `onboarding.answers.rateLimited`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/onboarding/restart:
+    post:
+      tags:
+        - Onboarding
+      summary: Ask the setup questions again
+      description: >-
+        "Set up again", from Settings. Puts the nine steps back to `pending`, clears the flow's own completion stamp,
+        and clears the derivation marker so the next `POST /api/onboarding/complete` may derive a module map again.
+
+
+        It writes no module state at all: the ordering-versus-removal decision says a re-run never turns off a module
+        somebody turned on by hand, and the protection against the second derivation lives in the merge rather than
+        here. It also keeps the answers, as the prefill for the re-run, keeps a first result that really happened, and
+        leaves the account payload's `onboardingCompletedAt` alone so nobody is pushed back through the first-run
+        redirect.
+
+
+        Cookie or wildcard Bearer, own record only — same refusal under a switch as the answers route. Rate-limited to
+        10 restarts per 10 minutes per account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingRestartRequest"
+      responses:
+        "200":
+          description: The reset setup state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStateEnvelope"
+        "401": *a1
+        "413":
+          description: Body exceeds 4 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "415":
+          description: "`Content-Type` is not `application/json`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: The body carried a field. `meta.errorCode` = `onboarding.restart.invalid`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: More than 10 restarts in 10 minutes. `meta.errorCode` = `onboarding.restart.rateLimited`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/onboarding/step:
     post:
       tags:
@@ -16245,10 +16364,21 @@ paths:
     post:
       tags:
         - Onboarding
-      summary: Stamp onboarding as complete (legacy single-shot path)
+      summary: Stamp onboarding as complete, and derive the module map
       description: >-
         Marks onboarding finished and saves whatever profile fields came with it, then clears the proxy-readable pending
         cookie so the next navigation stops redirecting to `/onboarding`.
+
+
+        v1.39 — this is also the needs-based flow's confirm endpoint, and the two halves live side by side. For a record
+        that answered the questions (Q1 is set), it derives that record's module map from the answers and applies it,
+        ONCE: the derivation marker is what stops a second confirm re-applying the questionnaire over decisions taken in
+        Settings since, and `POST /api/onboarding/restart` clears the marker when the person asks for the questions
+        again. The merge is one-directional — a module the answers name is switched on, a module they do not name is
+        switched off only where the record does not already carry an explicit on. The `cycle` key is not written here at
+        all: it delegates to the cycle profile, which this route sets to `true` when the cycle area was chosen and never
+        to `false`. The response then carries `onboarding` beside `completed`; a caller that never entered the needs
+        flow gets the fixed acknowledgement it always did.
 
 
         The older sibling of `POST /api/onboarding/step`. It is unconditional in a way the step route is not: it stamps
@@ -16270,8 +16400,9 @@ paths:
               $ref: "#/components/schemas/OnboardingCompleteRequest"
       responses:
         "200":
-          description: "Onboarding stamped complete. The body is the fixed `{ completed: true }` acknowledgement — it does not
-            echo what was saved."
+          description: Onboarding stamped complete. `completed` is the fixed acknowledgement — it does not echo the profile fields
+            that were saved. `onboarding` is present only for a record that entered the needs-based flow, and carries
+            the state after the derivation.
           content:
             application/json:
               schema:
@@ -27554,6 +27685,282 @@ components:
             minLength: 1
       required:
         - ids
+    OnboardingAnswerRequest:
+      anyOf:
+        - type: object
+          properties:
+            step:
+              type: string
+              const: who
+            status:
+              type: string
+              const: done
+            recordTarget:
+              type: string
+              enum:
+                - me
+                - someone-else
+                - both
+          required:
+            - step
+            - recordTarget
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: areas
+            status:
+              type: string
+              const: done
+            areas:
+              maxItems: 9
+              type: array
+              items:
+                type: string
+                enum:
+                  - blood-pressure
+                  - weight-body
+                  - glucose
+                  - sleep
+                  - mood
+                  - cycle
+                  - activity
+                  - labs
+                  - illness
+          required:
+            - step
+            - areas
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: medication
+            status:
+              type: string
+              const: done
+            medication:
+              type: string
+              enum:
+                - yes
+                - no
+                - sometimes
+          required:
+            - step
+            - medication
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: sources
+            status:
+              type: string
+              const: done
+            sources:
+              maxItems: 10
+              type: array
+              items:
+                type: string
+                enum:
+                  - manual
+                  - apple-health
+                  - withings
+                  - oura
+                  - whoop
+                  - polar
+                  - fitbit
+                  - strava
+                  - nightscout
+                  - file
+          required:
+            - step
+            - sources
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: visit
+            status:
+              type: string
+              const: done
+            visit:
+              type: string
+              enum:
+                - within-a-month
+                - later
+                - no
+          required:
+            - step
+            - visit
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: units
+            status:
+              type: string
+              const: done
+            units:
+              type: object
+              properties:
+                glucoseUnit:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - mg/dL
+                        - mmol/L
+                    - type: "null"
+                unitPreference:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - metric
+                        - imperial
+                    - type: "null"
+              additionalProperties: false
+          required:
+            - step
+            - units
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: confirm
+            status:
+              type: string
+              const: done
+          required:
+            - step
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: first-result
+            status:
+              type: string
+              const: done
+            firstResult:
+              type: object
+              properties:
+                task:
+                  type: string
+                  enum:
+                    - connect-source
+                    - add-medication
+                    - log-reading
+                target:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 64
+                    - type: "null"
+                completed:
+                  type: boolean
+              required:
+                - task
+              additionalProperties: false
+          required:
+            - step
+            - firstResult
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: done
+            status:
+              type: string
+              const: done
+          required:
+            - step
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: areas
+            status:
+              type: string
+              const: skipped
+          required:
+            - step
+            - status
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: medication
+            status:
+              type: string
+              const: skipped
+          required:
+            - step
+            - status
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: sources
+            status:
+              type: string
+              const: skipped
+          required:
+            - step
+            - status
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: visit
+            status:
+              type: string
+              const: skipped
+          required:
+            - step
+            - status
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: units
+            status:
+              type: string
+              const: skipped
+          required:
+            - step
+            - status
+          additionalProperties: false
+        - type: object
+          properties:
+            step:
+              type: string
+              const: first-result
+            status:
+              type: string
+              const: skipped
+          required:
+            - step
+            - status
+          additionalProperties: false
+      description: "One step, answered or deliberately passed. The union has an arm per step id plus a skip arm for the six
+        steps that may be passed — `who` is the one required question, and `confirm` / `done` are acknowledgements
+        rather than questions, so none of the three has a skip arm. Every arm is strict: an unknown key is a 422, and a
+        skip may never carry an answer."
+    OnboardingRestartRequest:
+      type: object
+      properties: {}
+      additionalProperties: false
+      description: No input beyond the session. Send `{}`.
     OnboardingStepRequest:
       type: object
       properties:
@@ -34603,6 +35010,62 @@ components:
               - configChangedAt
               - computedAt
             additionalProperties: {}
+        onboardingRecord:
+          default: null
+          anyOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                  minLength: 1
+                needs:
+                  default: {}
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties: {}
+                steps:
+                  default: []
+                  type: array
+                  items:
+                    type: object
+                    propertyNames:
+                      type: string
+                    additionalProperties: {}
+                firstResult:
+                  default: null
+                  anyOf:
+                    - type: object
+                      propertyNames:
+                        type: string
+                      additionalProperties: {}
+                    - type: "null"
+                modulesDerivedAt:
+                  default: null
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                    - type: "null"
+                completedAt:
+                  default: null
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                    - type: "null"
+                createdAt:
+                  type: string
+                  minLength: 1
+                updatedAt:
+                  type: string
+                  minLength: 1
+              required:
+                - needs
+                - steps
+                - firstResult
+                - modulesDerivedAt
+                - completedAt
+              additionalProperties: {}
+            - type: "null"
         practitioners:
           default: []
           type: array
@@ -35941,6 +36404,7 @@ components:
         - correlationPatterns
         - intradayProfiles
         - healthScoreRecords
+        - onboardingRecord
         - practitioners
         - encounters
         - encounterDocumentLinks
@@ -62667,6 +63131,209 @@ components:
         - data
         - error
       additionalProperties: false
+    OnboardingStateEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            onboarding:
+              $ref: "#/components/schemas/OnboardingState"
+          required:
+            - onboarding
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    OnboardingState:
+      type: object
+      properties:
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/OnboardingStepState"
+        needs:
+          $ref: "#/components/schemas/OnboardingNeeds"
+        completedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: "When the needs flow was completed. Distinct from the account payload's `onboardingCompletedAt`, which
+            stays the first-run redirect's gate: `POST /api/onboarding/restart` clears this one and leaves that one
+            alone."
+        firstResult:
+          anyOf:
+            - $ref: "#/components/schemas/OnboardingFirstResult"
+            - type: "null"
+      required:
+        - steps
+        - needs
+        - completedAt
+        - firstResult
+      additionalProperties: false
+      description: The needs-based setup flow for one record. Always present on the account payload — a record that never
+        entered the flow reads as empty answers with nine `pending` steps, so a client branches on the step statuses
+        rather than on the field's existence.
+    OnboardingStepState:
+      type: object
+      properties:
+        id:
+          type: string
+          enum:
+            - who
+            - areas
+            - medication
+            - sources
+            - visit
+            - units
+            - confirm
+            - first-result
+            - done
+        status:
+          type: string
+          enum:
+            - pending
+            - done
+            - skipped
+      required:
+        - id
+        - status
+      additionalProperties: false
+      description: One step of the setup flow. The ids are stable; a client that meets one it does not know SKIPS it rather
+        than refusing the list, so the flow may grow a screen without a client release.
+    OnboardingNeeds:
+      type: object
+      properties:
+        recordTarget:
+          anyOf:
+            - type: string
+              enum:
+                - me
+                - someone-else
+                - both
+            - type: "null"
+          description: Q1 — whose record this is. Null until answered.
+        areas:
+          type: array
+          items:
+            type: string
+            enum:
+              - blood-pressure
+              - weight-body
+              - glucose
+              - sleep
+              - mood
+              - cycle
+              - activity
+              - labs
+              - illness
+          description: Q2 — the areas to keep an eye on. Each one maps to at least one module through `ONBOARDING_AREA_MODULES`;
+            the map is the server's, and a client must not re-derive it.
+        medication:
+          anyOf:
+            - type: string
+              enum:
+                - yes
+                - no
+                - sometimes
+            - type: "null"
+          description: Q3 — medication on a schedule.
+        sources:
+          type: array
+          items:
+            type: string
+            enum:
+              - manual
+              - apple-health
+              - withings
+              - oura
+              - whoop
+              - polar
+              - fitbit
+              - strava
+              - nightscout
+              - file
+          description: Q4 — where the readings come from today.
+        visit:
+          anyOf:
+            - type: string
+              enum:
+                - within-a-month
+                - later
+                - no
+            - type: "null"
+          description: Q5 — a doctor's visit coming up.
+        units:
+          type: object
+          properties:
+            glucoseUnit:
+              anyOf:
+                - type: string
+                  enum:
+                    - mg/dL
+                    - mmol/L
+                - type: "null"
+            unitPreference:
+              anyOf:
+                - type: string
+                  enum:
+                    - metric
+                    - imperial
+                - type: "null"
+          required:
+            - glucoseUnit
+            - unitPreference
+          additionalProperties: false
+          description: "Q6 — the unit answers as given. NOT the source of truth for display: `glucoseUnit` and `unitPreference` on
+            the account payload are, and the answers step writes them. This records what the flow was told."
+      required:
+        - recordTarget
+        - areas
+        - medication
+        - sources
+        - visit
+        - units
+      additionalProperties: false
+      description: The setup answers as given. Every field is null or empty until its question is answered.
+    OnboardingFirstResult:
+      type: object
+      properties:
+        task:
+          type: string
+          enum:
+            - connect-source
+            - add-medication
+            - log-reading
+        target:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: What the task is about — a source key for a connection, an area key for a reading. Null for the medication
+            task.
+        completedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: When the offered task produced its result, or null.
+      required:
+        - task
+        - target
+        - completedAt
+      additionalProperties: false
+      description: The one task the flow offered at the end, and whether it produced its result.
     OnboardingStepEnvelope:
       type: object
       properties:
@@ -62712,6 +63379,8 @@ components:
             completed:
               type: boolean
               const: true
+            onboarding:
+              $ref: "#/components/schemas/OnboardingState"
           required:
             - completed
           additionalProperties: false
@@ -66362,6 +67031,8 @@ components:
           required:
             - medication
           additionalProperties: {}
+        onboarding:
+          $ref: "#/components/schemas/OnboardingState"
       required:
         - id
         - username
@@ -66369,6 +67040,7 @@ components:
         - moduleAccess
         - recordSession
         - notificationPrefs
+        - onboarding
       additionalProperties: {}
       description: "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do.
         Additional properties are the preference fields this spec does not yet enumerate. Under an active switch the

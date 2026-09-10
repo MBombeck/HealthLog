@@ -54,6 +54,7 @@ import {
   resolveModuleMap,
   getOperatorModuleAvailability,
 } from "@/lib/modules/gate";
+import { loadOnboardingState } from "@/lib/onboarding/needs-store";
 import { parseTourProgress } from "@/lib/onboarding/tour-progress";
 import { parseNotificationPrefs } from "@/lib/validations/notification-prefs";
 import { resolveAccountAccess } from "@/lib/sharing/account-access";
@@ -107,35 +108,50 @@ export const GET = apiHandler(async () => {
   // no switch at all, and the reason the own-record payload is untouched.
   const sections = accountAccess.active?.sections ?? null;
 
-  const [record, cycleProfile, resolvedModules, moduleAvailability] =
-    await Promise.all([
-      // The actor's own row is already in hand; a switched session needs the
-      // record's `gender`, which is the column the cycle gate derives from.
-      recordId === user.id
-        ? Promise.resolve({ gender: user.gender })
-        : prisma.user.findUnique({
-            where: { id: recordId },
-            select: { gender: true },
-          }),
-      prisma.cycleProfile.findUnique({
-        where: { userId: recordId },
-        select: { cycleTrackingEnabled: true },
-      }),
-      // v1.18.0 — resolved module enable/disable map for every toggleable
-      // module. cycle/coach reflect their real delegated state (the cycle
-      // gate / disableCoach + operator assistant flag); the rest read the
-      // disabled-allowlist `modulePreferencesJson`. Default-on. Clients
-      // hide a whole module surface end-to-end when its key is `false`.
-      resolveModuleMap(recordId),
-      // v1.18.0 — operator-layer availability map (server-wide kill-switch).
-      // The resolved `modules` map above already AND-s this in, so it cannot
-      // distinguish operator-off from user-off. The Modules hub needs that
-      // distinction to render an operator-disabled module as a read-only
-      // "disabled server-wide" row instead of a live toggle that no-ops.
-      // Server-WIDE, so it is the same map for every record and is not
-      // re-scoped here.
-      getOperatorModuleAvailability(),
-    ]);
+  const [
+    record,
+    cycleProfile,
+    resolvedModules,
+    moduleAvailability,
+    onboarding,
+  ] = await Promise.all([
+    // The actor's own row is already in hand; a switched session needs the
+    // record's `gender`, which is the column the cycle gate derives from.
+    recordId === user.id
+      ? Promise.resolve({ gender: user.gender })
+      : prisma.user.findUnique({
+          where: { id: recordId },
+          select: { gender: true },
+        }),
+    prisma.cycleProfile.findUnique({
+      where: { userId: recordId },
+      select: { cycleTrackingEnabled: true },
+    }),
+    // v1.18.0 — resolved module enable/disable map for every toggleable
+    // module. cycle/coach reflect their real delegated state (the cycle
+    // gate / disableCoach + operator assistant flag); the rest read the
+    // disabled-allowlist `modulePreferencesJson`. Default-on. Clients
+    // hide a whole module surface end-to-end when its key is `false`.
+    resolveModuleMap(recordId),
+    // v1.18.0 — operator-layer availability map (server-wide kill-switch).
+    // The resolved `modules` map above already AND-s this in, so it cannot
+    // distinguish operator-off from user-off. The Modules hub needs that
+    // distinction to render an operator-disabled module as a read-only
+    // "disabled server-wide" row instead of a live toggle that no-ops.
+    // Server-WIDE, so it is the same map for every record and is not
+    // re-scoped here.
+    getOperatorModuleAvailability(),
+    // v1.39 (C1) — the needs-based setup state, for the ACTOR's own record
+    // rather than the active one. The two module fields above answer for the
+    // record because they say what that record tracks; this one is resolved
+    // the other way because the three write routes are actor-only
+    // (`requireAuth()` refuses outright under a switch), and publishing a
+    // setup state the caller cannot write would be a read the browser could
+    // act on and never complete. A guardian's route into a managed record's
+    // flow arrives with the rest of that record's configuration (#939 / C2);
+    // the storage is already keyed by record for it.
+    loadOnboardingState(prisma, user.id),
+  ]);
 
   // The masking step, and the one place the record scoping is narrowed rather
   // than resolved. `active` is set for ANY live grant — a READ grant scoped to
@@ -186,6 +202,19 @@ export const GET = apiHandler(async () => {
     timezone: user.timezone,
     onboardingCompletedAt: user.onboardingCompletedAt,
     onboardingTourCompleted: user.onboardingTourCompleted,
+    // v1.39 (C1) — the needs-based setup flow, published additively:
+    // `steps` (the nine stable ids and their `pending | done | skipped`
+    // status), `needs` (the answers as given), `completedAt` (the flow's OWN
+    // completion, distinct from `onboardingCompletedAt` above, which keeps its
+    // meaning as the first-run redirect's gate) and `firstResult` (the one
+    // task the flow offered, and whether it produced its result).
+    //
+    // Always present, never null: a record that never entered the flow reads
+    // as empty answers with nine `pending` steps, so a client branches on the
+    // step statuses rather than on the field's existence. A client that meets
+    // a step id it does not know skips it — the list is the contract, not the
+    // client's own copy of it.
+    onboarding,
     // v1.18.6 (DISC-02) — one-time medical-disclaimer acknowledgment. Null
     // when never acknowledged; the onboarding welcome gate reads this to
     // decide whether to require the acknowledgment before "Get started".

@@ -6,6 +6,12 @@
  * status + dismissed-ids set) and renders against the result.
  */
 
+import {
+  isOnboardingSettled,
+  type OnboardingNeeds,
+  type OnboardingStateDto,
+} from "./needs";
+
 export const CHECKLIST_ITEM_IDS = [
   "profile",
   "measurement",
@@ -64,6 +70,55 @@ export interface ChecklistInputs {
   insightsConfigured: boolean;
   /** Dismissed item ids (per-item localStorage state). */
   dismissedIds: ReadonlySet<ChecklistItemId>;
+  /**
+   * v1.39 (C1) — the needs-based setup state from `GET /api/auth/me`, or null
+   * for a record that never entered the flow.
+   *
+   * Required rather than optional: the ordering below is the whole reason the
+   * answers are published, and a caller that stops passing them should fail to
+   * compile rather than quietly fall back to the fixed order.
+   */
+  onboarding: OnboardingStateDto | null;
+}
+
+/**
+ * v1.39 (C1) — the order the answers imply.
+ *
+ * The rows themselves are fixed; what the questionnaire decides is which of
+ * them a person sees first. Someone who said they take medication daily should
+ * not have to scroll past "connect a data source" to find it, and someone who
+ * named a wearable should meet that row before the manual-entry one.
+ *
+ * `profile` stays first whatever the answers say — it is the identity the
+ * clinical surfaces derive from, not a domain choice — and any row the answers
+ * do not speak to keeps its position relative to the others. The result is a
+ * reordering, never a removal: nothing here drops a row.
+ */
+export function checklistOrderFromNeeds(
+  needs: OnboardingNeeds,
+): ChecklistItemId[] {
+  const promoted: ChecklistItemId[] = [];
+  const promote = (id: ChecklistItemId) => {
+    if (!promoted.includes(id)) promoted.push(id);
+  };
+
+  if (needs.medication === "yes" || needs.medication === "sometimes") {
+    promote("medication");
+  }
+  // "I type them in" and "a file I already have" are not connections, so they
+  // say nothing about the data-source row.
+  if (needs.sources.some((s) => s !== "manual" && s !== "file")) {
+    promote("dataSource");
+  }
+  if (needs.areas.length > 0) promote("measurement");
+
+  return [
+    "profile",
+    ...promoted,
+    ...CHECKLIST_ITEM_IDS.filter(
+      (id) => id !== "profile" && !promoted.includes(id),
+    ),
+  ];
 }
 
 /**
@@ -112,7 +167,15 @@ export function buildChecklist(inputs: ChecklistInputs): ChecklistItem[] {
       dismissed: inputs.dismissedIds.has("insights"),
     },
   ];
-  return items;
+  if (!inputs.onboarding) return items;
+  // Ordered from the answers only once the flow has been confirmed: before
+  // that the answers are still being given, and re-ordering the dashboard
+  // under someone mid-question would be movement they did not ask for.
+  if (inputs.onboarding.completedAt === null) return items;
+  const order = checklistOrderFromNeeds(inputs.onboarding.needs);
+  return order
+    .map((id) => items.find((item) => item.id === id))
+    .filter((item): item is ChecklistItem => item !== undefined);
 }
 
 /**
@@ -157,10 +220,23 @@ export function shouldShowChecklist(args: {
   measurementCount: number;
   dismissedAll: boolean;
   items: ChecklistItem[];
+  /**
+   * v1.39 (C1) — the needs-based setup state. While it is unsettled — a step
+   * still pending, the flow never confirmed, or a first-result task offered
+   * and never produced — the checklist stays whatever the reading count says.
+   * That is the design spec's "it no longer disappears at five measurements":
+   * five readings are not evidence that the setup finished.
+   *
+   * Optional, and absence means nothing is outstanding: a record with no
+   * onboarding row has no unfinished flow to keep the list open for.
+   */
+  onboarding?: OnboardingStateDto | null;
 }): boolean {
   if (args.dismissedAll) return false;
   const stillInSetup =
-    args.onboardingCompletedAt == null || args.measurementCount < 5;
+    args.onboardingCompletedAt == null ||
+    args.measurementCount < 5 ||
+    !isOnboardingSettled(args.onboarding);
   if (!stillInSetup) return false;
   const visible = visibleChecklist(args.items);
   if (visible.length === 0) return false;
