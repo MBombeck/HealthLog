@@ -65871,6 +65871,8 @@ components:
           type: string
         accountAccess:
           $ref: "#/components/schemas/AccountAccess"
+        moduleAccess:
+          $ref: "#/components/schemas/ModuleAccessMap"
         recordSession:
           anyOf:
             - $ref: "#/components/schemas/RecordSessionState"
@@ -65879,6 +65881,7 @@ components:
         - id
         - username
         - accountAccess
+        - moduleAccess
         - recordSession
       additionalProperties: {}
       description: "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do.
@@ -65888,7 +65891,9 @@ components:
         `cycleTrackingEnabled` describe the ACTIVE RECORD, since every surface they gate shows the record's data — and
         they are masked to the sections the active grant opens, so a scoped grant reads `false` for a module outside it
         rather than the record's true state. With no switch — which is every native request, since the Bearer transport
-        carries none — the two are the same account and nothing is masked."
+        carries none — the two are the same account and nothing is masked. `moduleAccess` says WHY each module is or is
+        not there — the record's own switch, the edge of the grant, or the operator's instance-wide one — beside the
+        `modules` booleans it never contradicts."
     AccountAccess:
       type: object
       properties:
@@ -66093,6 +66098,191 @@ components:
         be a second program deciding one person's access to a health record, and the two answer differently the first
         time an expiry or a revocation appears. Always present — an account nobody has shared with gets an empty list,
         not a missing field."
+    ModuleAccessMap:
+      type: object
+      properties:
+        cycle:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "cycle" module is or is not available here.
+        mood:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "mood" module is or is not available here.
+        sleep:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "sleep" module is or is not available here.
+        glucose:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "glucose" module is or is not available here.
+        workouts:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "workouts" module is or is not available here.
+        recovery:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "recovery" module is or is not available here.
+        labs:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "labs" module is or is not available here.
+        illness:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "illness" module is or is not available here.
+        achievements:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "achievements" module is or is not available here.
+        coach:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "coach" module is or is not available here.
+        insights:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "insights" module is or is not available here.
+        medications:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "medications" module is or is not available here.
+        doctorReport:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "doctorReport" module is or is not available here.
+        environment:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "environment" module is or is not available here.
+        mcp:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "mcp" module is or is not available here.
+        inboundDocuments:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "inboundDocuments" module is or is not available here.
+        mentalHealth:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "mentalHealth" module is or is not available here.
+        nutrients:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "nutrients" module is or is not available here.
+        vaccinations:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "vaccinations" module is or is not available here.
+      required:
+        - cycle
+        - mood
+        - sleep
+        - glucose
+        - workouts
+        - recovery
+        - labs
+        - illness
+        - achievements
+        - coach
+        - insights
+        - medications
+        - doctorReport
+        - environment
+        - mcp
+        - inboundDocuments
+        - mentalHealth
+        - nutrients
+        - vaccinations
+      additionalProperties: false
+      description: "Why each toggleable module is or is not available for the record this session is inside. `enabled` — the
+        module is on and the client may paint it. `disabled` — the record has it switched off. `not_granted` — the
+        active grant's sections do not open the module's section, which also covers every module that reads across the
+        whole record (achievements, the assistant surfaces, the export, environment, the account's own MCP endpoint)
+        since no scoped grant opens one. `unavailable` — the operator switched the module off for the whole instance.
+        Precedence, highest first: `unavailable` > `not_granted` > `disabled` > `enabled`, so the reason published is
+        the one nothing further in can change. Own-record sessions and unscoped grants never produce `not_granted`.
+        Every key is present, and `modules[key] === (moduleAccess[key] === \"enabled\")` holds for every key — this
+        field adds a reason, never a different gate."
     RecordSessionState:
       type: object
       properties:

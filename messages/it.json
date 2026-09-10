@@ -8693,6 +8693,20 @@
       "description": "Il libretto vaccinale strutturato: dose, serie, prossimo richiamo."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} è disattivato per questi dati, quindi le sue pagine restano nascoste. Riattivalo per ritrovarle.",
+      "title": "{module} è disattivato"
+    },
+    "notGranted": {
+      "description": "{module} è fuori dalle sezioni condivise con te. Cosa comprende un accesso condiviso lo decide la persona a cui appartengono i dati.",
+      "title": "Non fa parte dell'accesso condiviso"
+    },
+    "unavailable": {
+      "description": "Chi gestisce il server ha disattivato {module} per tutti gli account. Nessuna impostazione tua può riportarlo indietro.",
+      "title": "Non disponibile su questo server"
+    }
+  },
   "vaccinations": {
     "title": "Vaccinazioni",
     "subtitle": "Il tuo libretto vaccinale, dose per dose.",
@@ -9931,7 +9945,6 @@
     "page": {
       "title": "Apporto di nutrienti",
       "description": "Idratazione e apporto di vitamine/minerali sincronizzati dall'app salute del telefono, più le voci di acqua inserite manualmente.",
-      "moduleOffTitle": "L'apporto di nutrienti è disattivato",
       "moduleOffDescription": "Attiva il modulo nutrienti per vedere qui idratazione e apporto di vitamine/minerali. I dati sincronizzati diventano parte dei dati che il Coach può leggere.",
       "moduleOffCta": "Attiva nutrienti",
       "emptyTitle": "Ancora nessun dato sui nutrienti",

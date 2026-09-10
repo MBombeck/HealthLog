@@ -57,7 +57,7 @@ import {
 import { parseTourProgress } from "@/lib/onboarding/tour-progress";
 import { resolveAccountAccess } from "@/lib/sharing/account-access";
 import {
-  maskModulesToSections,
+  buildModuleDisclosure,
   sectionsOpen,
 } from "@/lib/sharing/module-disclosure";
 import { recordSessionForPayload } from "@/lib/sharing/record-session-fence";
@@ -144,7 +144,15 @@ export const GET = apiHandler(async () => {
   // opens. A closed section reads `false`, the same answer a module that is
   // off already gives, and the navigation the client builds from it drops
   // exactly the doors `isSharedRecordPathPresentable` drops anyway.
-  const modules = maskModulesToSections(resolvedModules, sections);
+  // Two maps out of one pass: `modules` is the boolean gate map, masked
+  // exactly as it was, and `moduleAccess` is the same answer with the reason
+  // attached — the record's own switch, the grant's edge, or the operator's.
+  // Every client that only wants "paint it or not" keeps reading the boolean.
+  const { modules, moduleAccess } = buildModuleDisclosure(
+    resolvedModules,
+    moduleAvailability,
+    sections,
+  );
   // The cycle flag is masked on its own rather than read off `modules.cycle`:
   // that key also carries the operator's server-wide availability, and this
   // field never has. Same section, same answer, without borrowing a second
@@ -249,6 +257,15 @@ export const GET = apiHandler(async () => {
     // this to show a "disabled server-wide" read-only row; everywhere else
     // the already-AND-ed `modules` map is the single gate to read.
     moduleAvailability,
+    // Why each module's surfaces are or are not there, for the record this
+    // session is inside: `enabled`, `disabled` (the record's own switch),
+    // `not_granted` (the active grant does not open the module's section) or
+    // `unavailable` (the operator switched it off for the whole instance).
+    // Precedence outside-in: unavailable > not_granted > disabled > enabled.
+    // `modules[key]` stays exactly `moduleAccess[key] === "enabled"`, so this
+    // adds a reason without moving a gate; empty states read it to say the
+    // honest thing rather than offering a switch the reader cannot reach.
+    moduleAccess,
     // v1.36.0 — account sharing, resolved. `accounts` is the switcher's menu,
     // `active` is the record this session is inside (null when it is in its
     // own), `canSwitch` and per-entry `canWrite` are the booleans the UI binds

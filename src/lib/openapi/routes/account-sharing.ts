@@ -34,6 +34,7 @@ import {
   inviteManagedProfileGuardianSchema,
   updateManagedProfileSchema,
 } from "@/lib/validations/managed-profiles";
+import { moduleAccessMap } from "./profile";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 
 /**
@@ -448,12 +449,13 @@ const accountPayload = z
     id: z.string(),
     username: z.string(),
     accountAccess: accountAccessBlock,
+    moduleAccess: moduleAccessMap,
     recordSession: recordSessionState.nullable(),
   })
   .meta({
     id: "AccountPayload",
     description:
-      "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do. Additional properties are the preference fields this spec does not yet enumerate. Under an active switch the identity and preference fields still describe the CALLER, because display preferences belong to the person at the keyboard rather than to the record they are reading. Two fields are the exception (v1.38.14): `modules` and `cycleTrackingEnabled` describe the ACTIVE RECORD, since every surface they gate shows the record's data — and they are masked to the sections the active grant opens, so a scoped grant reads `false` for a module outside it rather than the record's true state. With no switch — which is every native request, since the Bearer transport carries none — the two are the same account and nothing is masked.",
+      "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do. Additional properties are the preference fields this spec does not yet enumerate. Under an active switch the identity and preference fields still describe the CALLER, because display preferences belong to the person at the keyboard rather than to the record they are reading. Two fields are the exception (v1.38.14): `modules` and `cycleTrackingEnabled` describe the ACTIVE RECORD, since every surface they gate shows the record's data — and they are masked to the sections the active grant opens, so a scoped grant reads `false` for a module outside it rather than the record's true state. With no switch — which is every native request, since the Bearer transport carries none — the two are the same account and nothing is masked. `moduleAccess` says WHY each module is or is not there — the record's own switch, the edge of the grant, or the operator's instance-wide one — beside the `modules` booleans it never contradicts.",
   });
 
 /**

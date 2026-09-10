@@ -8693,6 +8693,20 @@
       "description": "The vaccination record, structured: dose, series, next booster."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} is off for this record, so its pages stay hidden. Turn it back on to bring them back.",
+      "title": "{module} is switched off"
+    },
+    "notGranted": {
+      "description": "{module} sits outside the sections shared with you. What a shared record covers is decided by the person who owns it.",
+      "title": "Not part of the shared access"
+    },
+    "unavailable": {
+      "description": "The operator switched {module} off for every account on this server. No setting of your own can bring it back.",
+      "title": "Not available on this server"
+    }
+  },
   "vaccinations": {
     "title": "Vaccinations",
     "subtitle": "Your immunization record, dose by dose.",
@@ -9931,7 +9945,6 @@
     "page": {
       "title": "Nutrient intake",
       "description": "Hydration and vitamin/mineral intake synced from your phone's health app, plus manual water entries.",
-      "moduleOffTitle": "Nutrient intake is off",
       "moduleOffDescription": "Turn on the nutrients module to see hydration and vitamin/mineral intake here. Synced intake becomes part of the record the Coach can read.",
       "moduleOffCta": "Turn on nutrients",
       "emptyTitle": "No nutrient data yet",
