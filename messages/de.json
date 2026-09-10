@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Backups",
         "subtitle": "Wöchentliche Daten-Snapshots pro Nutzer in PostgreSQL.",
-        "description": "Jeder Nutzer hat einen rollierenden Snapshot pro Backup-Typ. Größen zeigen den verschlüsselten Blob — die Inhalte sind hier nicht herunterladbar.",
+        "description": "Jeder Nutzer hat einen rollierenden Snapshot pro Backup-Typ. Größen zeigen den verschlüsselten Blob. Download entschlüsselt den Snapshot für den anfragenden Admin; der Chiffretext bleibt in der Datenbank.",
         "runNow": "Jetzt sichern",
         "runEnqueued": "Backup-Job eingeplant",
         "runFailed": "Backup konnte nicht eingeplant werden",

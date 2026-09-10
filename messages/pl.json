@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Kopie zapasowe",
         "subtitle": "Cotygodniowe migawki danych dla każdego użytkownika przechowywane w PostgreSQL.",
-        "description": "Każdy użytkownik ma jedną przesuwaną migawkę na typ kopii. Rozmiary pokazują zaszyfrowany blob — zawartości nie można pobrać z tej strony.",
+        "description": "Każdy użytkownik ma jedną przesuwaną migawkę na typ kopii. Rozmiary pokazują zaszyfrowany blob. Pobieranie odszyfrowuje migawkę dla proszącego administratora; szyfrogram zostaje w bazie danych.",
         "runNow": "Utwórz kopię teraz",
         "runEnqueued": "Zadanie kopii zapasowej dodano do kolejki",
         "runFailed": "Nie udało się dodać kopii do kolejki",

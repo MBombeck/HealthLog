@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Copias de seguridad",
         "subtitle": "Instantáneas de datos semanales por usuario almacenadas en PostgreSQL.",
-        "description": "Cada usuario tiene una instantánea rotativa por tipo de copia. Los tamaños muestran el blob cifrado; los contenidos no se pueden descargar desde esta página.",
+        "description": "Cada usuario tiene una instantánea rotativa por tipo de copia. Los tamaños muestran el blob cifrado. Descargar descifra la instantánea para el administrador que la pide; el texto cifrado permanece en la base de datos.",
         "runNow": "Hacer copia ahora",
         "runEnqueued": "Tarea de copia de seguridad en cola",
         "runFailed": "No se pudo poner en cola la copia de seguridad",

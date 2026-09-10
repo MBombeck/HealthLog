@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Sauvegardes",
         "subtitle": "Instantanés de données hebdomadaires par utilisateur stockés dans PostgreSQL.",
-        "description": "Chaque utilisateur dispose d'un instantané glissant par type de sauvegarde. Les tailles indiquent le blob chiffré — les contenus ne sont pas téléchargeables depuis cette page.",
+        "description": "Chaque utilisateur dispose d'un instantané glissant par type de sauvegarde. Les tailles indiquent le blob chiffré. Télécharger déchiffre l'instantané pour l'administrateur qui le demande ; le texte chiffré reste dans la base de données.",
         "runNow": "Sauvegarder maintenant",
         "runEnqueued": "Tâche de sauvegarde mise en file d'attente",
         "runFailed": "Échec de la mise en file d'attente de la sauvegarde",

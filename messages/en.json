@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Backups",
         "subtitle": "Weekly per-user data snapshots stored in PostgreSQL.",
-        "description": "Each user gets one rolling snapshot per backup type. Sizes show the encrypted blob — payloads are not downloadable from this page.",
+        "description": "Each user gets one rolling snapshot per backup type. Sizes show the encrypted blob. Download decrypts the snapshot for the admin who asks; the ciphertext stays in the database.",
         "runNow": "Backup now",
         "runEnqueued": "Backup job enqueued",
         "runFailed": "Failed to enqueue backup",

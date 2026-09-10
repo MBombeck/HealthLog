@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Backup",
         "subtitle": "Istantanee settimanali dei dati per utente archiviate in PostgreSQL.",
-        "description": "Ogni utente ha un'istantanea a rotazione per tipo di backup. Le dimensioni mostrano il blob cifrato: i contenuti non sono scaricabili da questa pagina.",
+        "description": "Ogni utente ha un'istantanea a rotazione per tipo di backup. Le dimensioni mostrano il blob cifrato. Il download decifra l'istantanea per l'amministratore che la richiede; il testo cifrato resta nel database.",
         "runNow": "Esegui backup ora",
         "runEnqueued": "Processo di backup messo in coda",
         "runFailed": "Impossibile mettere in coda il backup",
