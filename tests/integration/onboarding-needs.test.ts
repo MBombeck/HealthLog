@@ -333,9 +333,12 @@ describe("POST /api/onboarding/complete", () => {
       where: { userId: user.id, action: "user.modules.update" },
     });
     expect(audit).toHaveLength(1);
-    expect(
-      (audit[0].details as { changed?: string[] } | null)?.changed,
-    ).toContain("medications");
+    const details = JSON.parse(audit[0].details ?? "{}") as {
+      changed?: string[];
+      source?: string;
+    };
+    expect(details.changed).toContain("medications");
+    expect(details.source).toBe("onboarding");
 
     // Somebody changes their mind in Settings, then the confirm screen is
     // replayed. The second call must leave that decision alone: the latch is
@@ -410,6 +413,10 @@ describe("POST /api/onboarding/complete", () => {
     await signIn(user.id);
     await patchAnswer({ step: "who", recordTarget: "me" });
     await patchAnswer({ step: "areas", areas: ["cycle"] });
+    await patchAnswer({ step: "medication", status: "skipped" });
+    await patchAnswer({ step: "sources", status: "skipped" });
+    await patchAnswer({ step: "visit", status: "skipped" });
+    await patchAnswer({ step: "units", status: "skipped" });
     await postComplete();
 
     const profile = await getPrismaClient().cycleProfile.findUniqueOrThrow({
