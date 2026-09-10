@@ -76,6 +76,13 @@ const RANGE_DAYS = 30;
  *  about the section being there, not about how a parser renders punctuation. */
 const BP_SECTION = "ESH classification";
 
+/** The refusing control's window: twenty days, starting four hundred days back.
+ *  Far outside every seeded reading and well inside the route's 1..730-day span
+ *  bounds, and named so the period line can be asserted against it rather than
+ *  the report being taken on trust. */
+const EMPTY_WINDOW_START_DAYS_BACK = 400;
+const EMPTY_WINDOW_DAYS = 20;
+
 /** Byte floor for "a real document". A cover page with charts is far above
  *  this; a truncated stream or an error body is far below it. */
 const MIN_PDF_BYTES = 10_000;
@@ -347,25 +354,69 @@ function expectRealPdf(report: GeneratedReport): void {
   expect(report.filename).toMatch(/\.pdf$/);
 }
 
+/** The three orders `DateFormatPreference` pins a rendering to. */
+type DateOrder = "DMY" | "MDY" | "YMD";
+
 /**
- * The two dates the period line names, as UTC midnights.
+ * Which field of the period line is the month, read off the account.
  *
- * The line is rendered in the account's locale (English → MM/DD/YYYY) and its
- * timezone, so the dates are read structurally and compared as a SPAN. A span
- * is timezone-proof in a way an absolute date is not: both ends move together.
+ * The rendering is the account's `dateFormat` preference, not a constant: DMY
+ * prints `10.09.2026`, YMD prints `2026-09-10`, and en-GB's MM/DD-shaped
+ * `10/09/2026` is a DMY date that an MDY reader silently mis-parses into a
+ * nonsense span. So the preference is read rather than assumed.
+ *
+ * `AUTO` resolves through the active locale and is deliberately refused here:
+ * the fixture pins `MDY` (see `E2E_REPORT_OWNER` in `global-setup.ts`), so an
+ * `AUTO` account is a drifted fixture and should say so rather than be guessed
+ * at.
  */
-function periodSpanDays(text: string): number {
+async function readDateOrder(page: Page): Promise<DateOrder> {
+  const preference = await page.evaluate(async () => {
+    const res = await fetch("/api/auth/me");
+    const payload = (await res.json()) as { data: { dateFormat?: string } };
+    return payload.data.dateFormat ?? "AUTO";
+  });
+  expect(
+    ["DMY", "MDY", "YMD"],
+    "the account pins an explicit date order for the period line",
+  ).toContain(preference);
+  return preference as DateOrder;
+}
+
+/**
+ * The period line's two dates, as a span in days.
+ *
+ * The line is rendered in the account's date order and its timezone, so the
+ * dates are read structurally and compared as a SPAN. A span is timezone-proof
+ * in a way an absolute date is not: both ends move together.
+ *
+ * The separator is captured once and back-referenced, so `10.09.2026`,
+ * `09/10/2026` and `2026-09-10` all parse and none of them can be read as the
+ * other two.
+ */
+function periodSpanDays(text: string, order: DateOrder): number {
   const match =
-    /Reporting period:\s*(\d{2})\/(\d{2})\/(\d{4})\s*\D{1,3}\s*(\d{2})\/(\d{2})\/(\d{4})/.exec(
+    /Reporting period:\s*(\d{2,4})([./-])(\d{2})\2(\d{2,4})\s*\D{1,3}\s*(\d{2,4})\2(\d{2})\2(\d{2,4})/.exec(
       text,
     );
   expect(match, "the report prints a reporting period with two dates").not.toBe(
     null,
   );
-  const [, sm, sd, sy, em, ed, ey] = match!;
-  const start = Date.UTC(Number(sy), Number(sm) - 1, Number(sd));
-  const end = Date.UTC(Number(ey), Number(em) - 1, Number(ed));
+  const start = utcMidnight(match![1], match![3], match![4], order);
+  const end = utcMidnight(match![5], match![6], match![7], order);
   return Math.round((end - start) / 86_400_000);
+}
+
+function utcMidnight(
+  first: string,
+  second: string,
+  third: string,
+  order: DateOrder,
+): number {
+  const [a, b, c] = [Number(first), Number(second), Number(third)];
+  const [year, month, day] =
+    order === "YMD" ? [a, b, c] : order === "DMY" ? [c, b, a] : [c, a, b];
+  return Date.UTC(year, month - 1, day);
 }
 
 test.describe.serial("the doctor report", () => {
@@ -404,7 +455,7 @@ test.describe.serial("the doctor report", () => {
 
     // The document says what it is about.
     expect(report.text).toContain("Reporting period");
-    const span = periodSpanDays(report.text);
+    const span = periodSpanDays(report.text, await readDateOrder(page));
     expect(span).toBeGreaterThanOrEqual(RANGE_DAYS - 1);
     expect(span).toBeLessThanOrEqual(RANGE_DAYS + 1);
 
@@ -439,9 +490,11 @@ test.describe.serial("the doctor report", () => {
       return day.toISOString().slice(0, 10);
     };
     // The field commits a clean ISO string whatever the locale's field order is.
-    await dateFields.first().fill(dayBack(400));
+    await dateFields.first().fill(dayBack(EMPTY_WINDOW_START_DAYS_BACK));
     await dateFields.first().press("Enter");
-    await dateFields.nth(1).fill(dayBack(380));
+    await dateFields
+      .nth(1)
+      .fill(dayBack(EMPTY_WINDOW_START_DAYS_BACK - EMPTY_WINDOW_DAYS));
     await dateFields.nth(1).press("Enter");
 
     const report = await generateReport(page);
@@ -449,6 +502,15 @@ test.describe.serial("the doctor report", () => {
     // truncated file and not with an error the panel swallows.
     expectRealPdf(report);
     expect(report.text).toContain("Reporting period");
+
+    // And it is the window that was typed. Two silent fallbacks sit under this
+    // line — the panel sends `{ days }` when either date field is empty, and
+    // the route falls back to the 90-day default when a bound fails to parse,
+    // neither of them a 422. Both land on a window that HOLDS the seeded
+    // readings, so without this the absence below would be the fixture's luck.
+    const emptySpan = periodSpanDays(report.text, await readDateOrder(page));
+    expect(emptySpan).toBeGreaterThanOrEqual(EMPTY_WINDOW_DAYS - 1);
+    expect(emptySpan).toBeLessThanOrEqual(EMPTY_WINDOW_DAYS + 1);
 
     // Nothing was measured in it, so the section that needs readings is gone.
     expect(report.text).not.toContain(BP_SECTION);
