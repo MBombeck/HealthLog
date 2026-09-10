@@ -366,16 +366,19 @@ export function managedProfileEditPatch(
 /**
  * The message for a refused edit.
  *
- * The same four arms creation carries, minus the rate limit it does not have,
- * and with the same reasoning: the step-up arm is a gate rather than a failure
- * and must not read as one, and a 422 is a disagreement between this form's
- * bounds and the route's rather than something the person typed — the
- * multi-issue envelope's `details.issues` never reach the browser.
+ * The arms creation carries plus the one it does not need, and with the same
+ * reasoning: the step-up arm is a gate rather than a failure and must not read
+ * as one, a 429 is a wait rather than a failure and reuses creation's own line,
+ * and a 422 is a disagreement between this form's bounds and the route's rather
+ * than something the person typed — the multi-issue envelope's `details.issues`
+ * never reach the browser. The 404 is this route's alone: the record can be
+ * ended by another Guardian while the form sits open.
  */
 export function editManagedProfileErrorKey(err: unknown): string {
   if (!(err instanceof ApiError)) return "recordSharing.managed.errorOffline";
   if (err.status === 401) return stepUpErrorKey(err);
   if (err.status === 422) return "recordSharing.managed.errorInvalid";
+  if (err.status === 429) return "recordSharing.managed.errorRateLimit";
   if (err.status === 404) return "recordSharing.managed.editErrorGone";
   return "recordSharing.managed.editErrorFailed";
 }

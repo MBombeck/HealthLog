@@ -18487,8 +18487,9 @@ paths:
       description: "Edit the record after it exists — the name that was a placeholder, the timezone that moved with the
         household, the date of birth somebody finally has, the sex that decides whether the cycle module is on. Any
         active Guardian may do it, from a cookie session with a fresh second factor: the same gate creation and deletion
-        carry, because the three acts mint, change and end an account that can never prove anything about itself.
-        Answers with the whole record, so a client re-renders from the server's version rather than from what it sent."
+        carry, because the three acts mint, change and end an account that can never prove anything about itself. Ten an
+        hour per caller, the ceiling creation carries. Answers with the whole record, so a client re-renders from the
+        server's version rather than from what it sent."
       parameters:
         - in: path
           name: id
@@ -18522,7 +18523,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
-        "429": *a5
+        "429":
+          description: More than ten edits from one caller within the hour — the ceiling creation carries. No error code; branch
+            on the status. Nothing was changed, and the refusal lands before the record named in the path is looked at.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
     delete:
       tags:
         - Account sharing

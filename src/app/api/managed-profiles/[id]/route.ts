@@ -19,6 +19,7 @@ import {
   updateManagedProfile,
 } from "@/lib/managed-profiles/lifecycle";
 import { annotate } from "@/lib/logging/context";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { updateManagedProfileSchema } from "@/lib/validations/managed-profiles";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -71,6 +72,19 @@ export const GET = apiHandler(
 );
 
 /**
+ * The ceiling the create sibling carries, on the act that changes what it
+ * created. Ten an hour per caller: a person cannot mistype their way into ten
+ * edits of a record's identity, and the number matching creation and guardian
+ * invitation keeps one family answering one way.
+ *
+ * The GET beside it stays unlimited, matching the guardian roster read next to
+ * it: both are cheap identity reads a Guardian may already make, and neither
+ * family sibling has ever carried a read bucket.
+ */
+const UPDATE_LIMIT = 10;
+const UPDATE_WINDOW_MS = 60 * 60 * 1000;
+
+/**
  * Change a managed record's identity.
  *
  * ## Why the same gate as deletion
@@ -100,6 +114,22 @@ export const GET = apiHandler(
 export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
     const { user } = await requireFreshMfa(MFA_STEP_UP_MAX_AGE_SECONDS);
+    // Before the id is read, exactly as the create sibling does it. The cheap
+    // refusal has to come first here for a second reason: `updateManagedProfile`
+    // opens a transaction and takes an advisory lock on the id it was HANDED
+    // before it decides the caller is not a Guardian of it, so an unthrottled
+    // caller can name any id they like and make the database hold a lock about
+    // it. Same ceiling as creating a record and inviting a Guardian — the three
+    // acts are one family and answering the same abuse differently is the
+    // asymmetry nobody notices until it is used.
+    const rateLimit = await checkRateLimit(
+      `managed-profile:update:${user.id}`,
+      UPDATE_LIMIT,
+      UPDATE_WINDOW_MS,
+    );
+    if (!rateLimit.allowed) {
+      return apiError("Too many profile edits, try again later", 429);
+    }
     const { id } = await params;
 
     const { data: body, error: jsonError } = await safeJson(request, {
