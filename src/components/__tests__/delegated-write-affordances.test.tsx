@@ -174,6 +174,8 @@ import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsor
 import { EpisodeDocumentsCard } from "@/components/documents/episode-documents-card";
 import { LedgerRowItem } from "@/components/medications/dose-history-ledger";
 import { VaccinationsView } from "@/components/vaccinations/vaccinations-view";
+import { VisitsSection } from "@/components/encounters/visits-section";
+import type { EncounterDTO } from "@/lib/encounters/dto";
 import { queryKeys } from "@/lib/query-keys";
 import type { DailyDigest } from "@/lib/daily/digest";
 import type { MeasurementReminder } from "@/hooks/use-measurement-reminders";
@@ -738,5 +740,84 @@ describe("the immunization log's add, edit and delete", () => {
     expect(
       render(grant("read", ["profile"]), <VaccinationsView />, seedEmpty),
     ).not.toContain('data-slot="vaccination-add-empty"');
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* The visits list                                                            */
+/* -------------------------------------------------------------------------- */
+
+describe("a visit row's edit sheet", () => {
+  const VISIT: EncounterDTO = {
+    id: "visit-1",
+    occurredAt: "2026-08-01T09:00:00.000Z",
+    status: "DONE",
+    kind: "ROUTINE",
+    practitioner: null,
+    reason: null,
+    outcome: null,
+    reminderNextDueAt: null,
+    createdAt: "2026-08-01T09:00:00.000Z",
+    updatedAt: "2026-08-01T09:00:00.000Z",
+  };
+
+  const seedList = (client: QueryClient) => {
+    client.setQueryData(
+      queryKeys.encounterList(null, null, undefined, undefined),
+      {
+        upcoming: [],
+        past: [VISIT],
+      },
+    );
+  };
+
+  /** The row's content is a button only while it opens something. */
+  const rowIsTappable = (html: string) =>
+    html.includes('data-slot="visit-card-open"');
+
+  it("opens for the owner", () => {
+    expect(rowIsTappable(render(OWN_RECORD, <VisitsSection />, seedList))).toBe(
+      true,
+    );
+  });
+
+  it("does not open for a READ or a WRITE delegate", () => {
+    // The add button was the only thing asked, and it asks the right question
+    // — `POST /api/encounters` is WRITE. The row underneath opens a sheet
+    // whose Save is `PATCH` and whose Delete is `DELETE`, both MANAGE.
+    for (const level of ["read", "write"] as const) {
+      const html = render(
+        grant(level, ["profile"]),
+        <VisitsSection />,
+        seedList,
+      );
+      expect(html, `${level} still sees the row`).toContain(
+        'data-slot="visit-card"',
+      );
+      expect(rowIsTappable(html), `${level} may open the sheet`).toBe(false);
+    }
+  });
+
+  it("keeps the add button for a WRITE delegate", () => {
+    // The two answers are different questions and must not collapse into one.
+    expect(
+      render(grant("write", ["profile"]), <VisitsSection />, seedList),
+    ).toContain('data-slot="visits-add"');
+    expect(
+      render(grant("read", ["profile"]), <VisitsSection />, seedList),
+    ).not.toContain('data-slot="visits-add"');
+  });
+
+  it("opens for a MANAGE delegate holding the section, and not one outside it", () => {
+    expect(
+      rowIsTappable(
+        render(grant("manage", ["profile"]), <VisitsSection />, seedList),
+      ),
+    ).toBe(true);
+    expect(
+      rowIsTappable(
+        render(grant("manage", ["labs"]), <VisitsSection />, seedList),
+      ),
+    ).toBe(false);
   });
 });
