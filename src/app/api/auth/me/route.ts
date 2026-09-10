@@ -54,7 +54,11 @@ import {
   resolveModuleMap,
   getOperatorModuleAvailability,
 } from "@/lib/modules/gate";
-import { loadOnboardingState } from "@/lib/onboarding/needs-store";
+import { readHeldUnitPreferences } from "@/lib/onboarding/needs";
+import {
+  loadOnboardingRecordRow,
+  toOnboardingStateDto,
+} from "@/lib/onboarding/needs-store";
 import { parseTourProgress } from "@/lib/onboarding/tour-progress";
 import { parseNotificationPrefs } from "@/lib/validations/notification-prefs";
 import { resolveAccountAccess } from "@/lib/sharing/account-access";
@@ -113,7 +117,7 @@ export const GET = apiHandler(async () => {
     cycleProfile,
     resolvedModules,
     moduleAvailability,
-    onboarding,
+    onboardingRow,
   ] = await Promise.all([
     // The actor's own row is already in hand; a switched session needs the
     // record's `gender`, which is the column the cycle gate derives from.
@@ -150,7 +154,7 @@ export const GET = apiHandler(async () => {
     // act on and never complete. A guardian's route into a managed record's
     // flow arrives with the rest of that record's configuration (#939 / C2);
     // the storage is already keyed by record for it.
-    loadOnboardingState(prisma, user.id),
+    loadOnboardingRecordRow(prisma, user.id),
   ]);
 
   // The masking step, and the one place the record scoping is narrowed rather
@@ -165,6 +169,14 @@ export const GET = apiHandler(async () => {
   // exactly as it was, and `moduleAccess` is the same answer with the reason
   // attached — the record's own switch, the grant's edge, or the operator's.
   // Every client that only wants "paint it or not" keeps reading the boolean.
+  // v1.39 (C1) — the published steps carry the Q6 resolution: an account that
+  // already holds both unit preferences reads `units` as `done`, so the flow
+  // never re-asks a value the account holds.
+  const onboarding = toOnboardingStateDto(
+    onboardingRow,
+    readHeldUnitPreferences(user),
+  );
+
   const { modules, moduleAccess } = buildModuleDisclosure(
     resolvedModules,
     moduleAvailability,

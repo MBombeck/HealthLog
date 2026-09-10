@@ -91,7 +91,7 @@ const onboardingStepResource = z
   .meta({
     id: "OnboardingStepState",
     description:
-      "One step of the setup flow. The ids are stable; a client that meets one it does not know SKIPS it rather than refusing the list, so the flow may grow a screen without a client release.",
+      "One step of the setup flow. The ids are stable; a client that meets one it does not know SKIPS it rather than refusing the list, so the flow may grow a screen without a client release.\n\n`units` carries one resolution the others do not: a record whose account already holds BOTH unit preferences reads as `done` whether or not the question was ever put, which is what stops the flow re-asking a value the account holds.",
   });
 
 const onboardingFirstResultResource = z

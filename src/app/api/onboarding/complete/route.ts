@@ -11,6 +11,11 @@ import {
   mergeDerivedModulePreferences,
 } from "@/lib/modules/registry";
 import {
+  readHeldUnitPreferences,
+  resolveOnboardingSteps,
+  type HeldUnitPreferences,
+} from "@/lib/onboarding/needs";
+import {
   ONBOARDING_RECORD_SELECT,
   readOnboardingRecordState,
   toOnboardingStateDto,
@@ -87,7 +92,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // next navigation drops the /onboarding redirect immediately.
   await setOnboardingPendingCookie(false);
 
-  const onboarding = await completeNeedsFlow(user.id);
+  const onboarding = await completeNeedsFlow(
+    user.id,
+    readHeldUnitPreferences(user),
+  );
 
   return apiSuccess({ completed: true, ...(onboarding ? { onboarding } : {}) });
 });
@@ -100,7 +108,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
  * needs flow — a legacy wizard completion then answers exactly the body it
  * always did.
  */
-async function completeNeedsFlow(userId: string) {
+async function completeNeedsFlow(userId: string, held: HeldUnitPreferences) {
   const record = await prisma.onboardingRecord.findUnique({
     where: { userId },
     select: ONBOARDING_RECORD_SELECT,
@@ -108,6 +116,10 @@ async function completeNeedsFlow(userId: string) {
   if (!record) return null;
 
   const state = readOnboardingRecordState(record);
+  // The units question answers itself for an account that already holds both
+  // preferences, so the gate and the published state read the same resolved
+  // ledger rather than the raw one.
+  const steps = resolveOnboardingSteps(state.steps, held);
   if (state.needs.recordTarget === null) {
     // The row exists but Q1 was never answered, so there is nothing to derive
     // from. Stamping a completion here would claim a setup that did not happen.
@@ -115,7 +127,7 @@ async function completeNeedsFlow(userId: string) {
       action: { name: "onboarding.needs.complete" },
       meta: { outcome: "no_answers" },
     });
-    return toOnboardingStateDto(record);
+    return toOnboardingStateDto(record, held);
   }
 
   let derived = false;
@@ -162,7 +174,7 @@ async function completeNeedsFlow(userId: string) {
   }
 
   const now = new Date();
-  const steps = state.steps.map((step) =>
+  const confirmed = steps.map((step) =>
     step.id === "confirm" && step.status === "pending"
       ? { ...step, status: "done" as const }
       : step,
@@ -170,7 +182,7 @@ async function completeNeedsFlow(userId: string) {
   const written = await prisma.onboardingRecord.update({
     where: { userId },
     data: {
-      stepsJson: toJson(steps),
+      stepsJson: toJson(confirmed),
       completedAt: now,
       ...(derived ? { modulesDerivedAt: now } : {}),
     },
@@ -182,5 +194,5 @@ async function completeNeedsFlow(userId: string) {
     meta: { outcome: derived ? "derived" : "already_derived" },
   });
 
-  return toOnboardingStateDto(written);
+  return toOnboardingStateDto(written, held);
 }

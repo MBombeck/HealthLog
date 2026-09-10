@@ -14,6 +14,7 @@ import { describe, expect, it } from "vitest";
 
 import { applyOnboardingAnswer } from "../needs-apply";
 import {
+  accountHoldsBothUnits,
   defaultOnboardingSteps,
   emptyOnboardingNeeds,
   isOnboardingSettled,
@@ -21,6 +22,8 @@ import {
   parseOnboardingFirstResult,
   parseOnboardingNeeds,
   parseOnboardingSteps,
+  readHeldUnitPreferences,
+  resolveOnboardingSteps,
   type OnboardingStateDto,
 } from "../needs";
 
@@ -258,5 +261,96 @@ describe("isOnboardingSettled", () => {
         firstResult: { task: "log-reading", target: null, completedAt: null },
       }),
     ).toBe(false);
+  });
+});
+
+describe("the unit preferences the account already holds", () => {
+  it("reads the two raw columns into the wire vocabulary", () => {
+    expect(
+      readHeldUnitPreferences({
+        glucoseUnit: "mmol/L",
+        unitPreference: "imperial",
+      }),
+    ).toEqual({ glucoseUnit: "mmol/L", unitPreference: "imperial" });
+  });
+
+  it("answers null for a column that was never chosen", () => {
+    const held = readHeldUnitPreferences({
+      glucoseUnit: null,
+      unitPreference: null,
+    });
+    expect(held).toEqual({ glucoseUnit: null, unitPreference: null });
+    expect(accountHoldsBothUnits(held)).toBe(false);
+  });
+
+  it("does not mistake a value it does not know for a chosen one", () => {
+    expect(
+      readHeldUnitPreferences({
+        glucoseUnit: "stones",
+        unitPreference: "metrick",
+      }),
+    ).toEqual({ glucoseUnit: null, unitPreference: null });
+  });
+
+  it("needs both preferences before the question answers itself", () => {
+    expect(
+      accountHoldsBothUnits({ glucoseUnit: "mg/dL", unitPreference: null }),
+    ).toBe(false);
+    expect(
+      accountHoldsBothUnits({ glucoseUnit: null, unitPreference: "metric" }),
+    ).toBe(false);
+    expect(
+      accountHoldsBothUnits({
+        glucoseUnit: "mg/dL",
+        unitPreference: "metric",
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("resolveOnboardingSteps", () => {
+  const held = {
+    glucoseUnit: "mg/dL",
+    unitPreference: "metric",
+  } as const;
+
+  it("marks units done when the account already holds both preferences", () => {
+    const resolved = resolveOnboardingSteps(defaultOnboardingSteps(), held);
+    expect(resolved.find((s) => s.id === "units")?.status).toBe("done");
+  });
+
+  it("leaves units pending while either preference is unset", () => {
+    for (const partial of [
+      { glucoseUnit: "mg/dL", unitPreference: null },
+      { glucoseUnit: null, unitPreference: "metric" },
+      { glucoseUnit: null, unitPreference: null },
+    ] as const) {
+      const resolved = resolveOnboardingSteps(
+        defaultOnboardingSteps(),
+        partial,
+      );
+      expect(resolved.find((s) => s.id === "units")?.status).toBe("pending");
+    }
+  });
+
+  it("never overwrites an answer that was actually given", () => {
+    const skipped = defaultOnboardingSteps().map((s) =>
+      s.id === "units" ? { ...s, status: "skipped" as const } : s,
+    );
+    expect(
+      resolveOnboardingSteps(skipped, held).find((s) => s.id === "units")
+        ?.status,
+    ).toBe("skipped");
+  });
+
+  it("touches no other step", () => {
+    const resolved = resolveOnboardingSteps(defaultOnboardingSteps(), held);
+    expect(
+      resolved.filter((s) => s.id !== "units").map((s) => s.status),
+    ).toEqual(
+      defaultOnboardingSteps()
+        .filter((s) => s.id !== "units")
+        .map((s) => s.status),
+    );
   });
 });

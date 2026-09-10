@@ -33,6 +33,7 @@ import {
 import { prisma, toJson } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { applyOnboardingAnswer } from "@/lib/onboarding/needs-apply";
+import { readHeldUnitPreferences } from "@/lib/onboarding/needs";
 import {
   ONBOARDING_RECORD_SELECT,
   readOnboardingRecordState,
@@ -98,18 +99,17 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   // second source of truth. What is kept beside them in `needs.units` is the
   // answer as given, so a restart can show it back without re-deriving it from
   // a column Settings may have changed since.
+  const unitData: { glucoseUnit?: string; unitPreference?: string } = {};
   if (answer.step === "units" && answer.status !== "skipped") {
-    const data: { glucoseUnit?: string; unitPreference?: string } = {};
-    if (answer.units.glucoseUnit) data.glucoseUnit = answer.units.glucoseUnit;
-    if (answer.units.unitPreference) {
-      data.unitPreference = answer.units.unitPreference;
+    if (answer.units.glucoseUnit) {
+      unitData.glucoseUnit = answer.units.glucoseUnit;
     }
-    if (Object.keys(data).length > 0) {
-      await prisma.user.update({ where: { id: user.id }, data });
+    if (answer.units.unitPreference) {
+      unitData.unitPreference = answer.units.unitPreference;
     }
   }
 
-  const written = await prisma.onboardingRecord.upsert({
+  const upsert = prisma.onboardingRecord.upsert({
     where: { userId: user.id },
     // Field-by-field, never a spread of the parsed body: the three columns are
     // the pure function's output, and nothing the client sent reaches Prisma
@@ -130,6 +130,22 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     select: ONBOARDING_RECORD_SELECT,
   });
 
+  // One transaction, because the two writes are one answer: a failure between
+  // them would leave the display columns changed with no record of the answer
+  // that changed them.
+  const [written] =
+    Object.keys(unitData).length > 0
+      ? await prisma.$transaction([
+          upsert,
+          prisma.user.update({ where: { id: user.id }, data: unitData }),
+        ])
+      : await prisma.$transaction([upsert]);
+
+  const held = readHeldUnitPreferences({
+    glucoseUnit: unitData.glucoseUnit ?? user.glucoseUnit,
+    unitPreference: unitData.unitPreference ?? user.unitPreference,
+  });
+
   annotate({
     action: { name: "onboarding.answer.save" },
     meta: {
@@ -138,5 +154,5 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     },
   });
 
-  return apiSuccess({ onboarding: toOnboardingStateDto(written) });
+  return apiSuccess({ onboarding: toOnboardingStateDto(written, held) });
 });

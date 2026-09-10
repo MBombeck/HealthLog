@@ -323,3 +323,60 @@ export function isOnboardingSettled(
   if (state.completedAt === null) return false;
   return state.firstResult === null || state.firstResult.completedAt !== null;
 }
+
+/**
+ * The unit columns an account already holds, read as the vocabulary the wire
+ * publishes.
+ *
+ * `User.unitPreference` is nullable and `null` means "default metric", which
+ * the account payload coerces away (`unitPreference === "imperial" ?
+ * "imperial" : "metric"`). That coercion is fine to compare a CHOSEN value
+ * against and useless for telling a chosen metric from an unset column, so the
+ * server reads the raw column here and answers `null` for "never chosen".
+ */
+export interface HeldUnitPreferences {
+  glucoseUnit: "mg/dL" | "mmol/L" | null;
+  unitPreference: "metric" | "imperial" | null;
+}
+
+/** Read the two raw columns into the wire vocabulary; anything else is unset. */
+export function readHeldUnitPreferences(row: {
+  glucoseUnit: string | null;
+  unitPreference: string | null;
+}): HeldUnitPreferences {
+  return {
+    glucoseUnit: member(["mg/dL", "mmol/L"] as const, row.glucoseUnit),
+    unitPreference: member(["metric", "imperial"] as const, row.unitPreference),
+  };
+}
+
+/** True once the account carries both unit preferences as deliberate values. */
+export function accountHoldsBothUnits(held: HeldUnitPreferences): boolean {
+  return held.glucoseUnit !== null && held.unitPreference !== null;
+}
+
+/**
+ * The steps as they should be READ, given what the account already holds.
+ *
+ * The spec's Q6 is "skipped when the account already holds them", and the
+ * evidence for that is the two unit columns, not the questionnaire's own
+ * memory of having asked. So a record whose account carries both preferences
+ * publishes `units` as `done` even though nobody answered it here — which is
+ * what stops the flow re-asking a value the account holds, and what stops the
+ * completion gate below waiting for an answer to a question the flow will
+ * never show.
+ *
+ * Read-side only: the stored ledger keeps saying `pending`, because the person
+ * really has not answered it, and an answer given later still lands.
+ */
+export function resolveOnboardingSteps(
+  steps: readonly OnboardingStepState[],
+  held: HeldUnitPreferences,
+): OnboardingStepState[] {
+  if (!accountHoldsBothUnits(held)) return [...steps];
+  return steps.map((step) =>
+    step.id === "units" && step.status === "pending"
+      ? { ...step, status: "done" as const }
+      : step,
+  );
+}

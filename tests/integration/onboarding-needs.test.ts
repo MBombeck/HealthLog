@@ -226,6 +226,35 @@ describe("PATCH /api/onboarding/answers", () => {
     expect(row).toEqual({ glucoseUnit: "mmol/L", unitPreference: "imperial" });
   });
 
+  it("does not re-ask the units the account already holds", async () => {
+    const user = await makeUser("units-held");
+    await signIn(user.id);
+    await getPrismaClient().user.update({
+      where: { id: user.id },
+      data: { glucoseUnit: "mg/dL", unitPreference: "metric" },
+    });
+
+    const state = await readState(
+      await patchAnswer({ step: "who", recordTarget: "me" }),
+    );
+    // Nobody answered Q6; the account's own columns did.
+    expect(statusOf(state, "units")).toBe("done");
+    expect(state.needs.units).toEqual({
+      glucoseUnit: null,
+      unitPreference: null,
+    });
+
+    // Half a preference is not an answer.
+    await getPrismaClient().user.update({
+      where: { id: user.id },
+      data: { unitPreference: null },
+    });
+    const half = await readState(
+      await patchAnswer({ step: "who", recordTarget: "me" }),
+    );
+    expect(statusOf(half, "units")).toBe("pending");
+  });
+
   it("refuses a body that names a step it does not answer", async () => {
     const user = await makeUser("invalid");
     await signIn(user.id);

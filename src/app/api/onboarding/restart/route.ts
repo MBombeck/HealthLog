@@ -37,7 +37,10 @@ import {
 import { auditLog } from "@/lib/auth/audit";
 import { prisma, toJson } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
-import { defaultOnboardingSteps } from "@/lib/onboarding/needs";
+import {
+  defaultOnboardingSteps,
+  readHeldUnitPreferences,
+} from "@/lib/onboarding/needs";
 import {
   ONBOARDING_RECORD_SELECT,
   toOnboardingStateDto,
@@ -105,5 +108,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     meta: { outcome: "reset" },
   });
 
-  return apiSuccess({ onboarding: toOnboardingStateDto(written) });
+  return apiSuccess({
+    onboarding: toOnboardingStateDto(written, readHeldUnitPreferences(user)),
+  });
 });
