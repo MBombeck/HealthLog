@@ -4643,6 +4643,82 @@
         "skip": "Skip for now",
         "againBody": "Your setup is finished. Answer the questions again to change what HealthLog shows first, or go to the dashboard.",
         "setUpAgain": "Set up again"
+      },
+      "who": {
+        "title": "Who is this record for?",
+        "body": "The answers that follow apply to this record.",
+        "options": {
+          "me": "Me",
+          "someone-else": "Someone I look after",
+          "both": "Both"
+        },
+        "hints": {
+          "someone-else": "A child or a parent, for example. Their profile is created at the end.",
+          "both": "Set up your own record now; the profile for the other person is offered at the end."
+        }
+      },
+      "areas": {
+        "title": "What do you want to keep an eye on?",
+        "body": "Pick any number. These decide which modules are switched on and what the dashboard shows first.",
+        "options": {
+          "blood-pressure": "Blood pressure",
+          "weight-body": "Weight and body",
+          "glucose": "Blood glucose",
+          "sleep": "Sleep and recovery",
+          "mood": "Mood and mental wellbeing",
+          "cycle": "Cycle",
+          "activity": "Activity and workouts",
+          "labs": "Lab results",
+          "illness": "Illnesses and symptoms"
+        }
+      },
+      "medication": {
+        "title": "Do you take medication on a schedule?",
+        "body": "A schedule switches on the medication module and reminders.",
+        "options": {
+          "yes": "Yes",
+          "no": "No",
+          "sometimes": "Sometimes"
+        }
+      },
+      "sources": {
+        "title": "Where do your readings come from today?",
+        "body": "Pick any number. One connection is offered at the end; none is required.",
+        "options": {
+          "manual": "I type them in",
+          "apple-health": "Apple Health on my iPhone",
+          "withings": "Withings",
+          "oura": "Oura",
+          "whoop": "WHOOP",
+          "polar": "Polar",
+          "fitbit": "Fitbit",
+          "strava": "Strava",
+          "nightscout": "Nightscout",
+          "file": "A file I already have"
+        },
+        "hints": {
+          "apple-health": "Synced by the iOS app, or imported from an export.",
+          "file": "Imported under Settings once you are done here."
+        }
+      },
+      "visit": {
+        "title": "Is there a doctor's visit coming up?",
+        "body": "A visit switches on the doctor report and adds preparing for it to your checklist.",
+        "options": {
+          "within-a-month": "Yes, within a month",
+          "later": "Later",
+          "no": "No"
+        }
+      },
+      "units": {
+        "title": "Which units do you use?",
+        "body": "Readings are stored once and shown in the unit you choose. You can change it later under Settings.",
+        "glucoseLegend": "Blood glucose",
+        "weightLegend": "Weight and height",
+        "options": {
+          "metric": "kg and cm",
+          "imperial": "lb and ft/in"
+        }
       }
     }
   },
