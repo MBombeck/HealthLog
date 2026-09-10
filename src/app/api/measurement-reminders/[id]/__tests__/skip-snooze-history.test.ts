@@ -303,7 +303,10 @@ describe("GET /api/measurement-reminders/[id]/history", () => {
     });
     expect(body.data.meta).toEqual({ total: 2, limit: 10, offset: 0 });
     const query = eventFindManyMock.mock.calls[0][0];
-    expect(query.orderBy).toEqual({ occurredAt: "desc" });
+    // The trailing `id` is the unique tiebreaker: several reminder events
+    // can share one `occurredAt`, and offset paging over a tied key repeats
+    // and drops rows between pages.
+    expect(query.orderBy).toEqual([{ occurredAt: "desc" }, { id: "desc" }]);
     expect(query.where).toEqual({ reminderId: "r1", userId: "u1" });
   });
 
