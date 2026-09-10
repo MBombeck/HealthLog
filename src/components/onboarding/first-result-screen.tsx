@@ -325,6 +325,7 @@ function AddMedicationTask({
         open={open}
         onOpenChange={setOpen}
         mode="create"
+        navigateOnCreate={false}
         onSuccess={(id) => {
           setOpen(false);
           void onComplete(id);

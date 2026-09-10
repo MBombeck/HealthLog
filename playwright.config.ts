@@ -222,6 +222,17 @@ export default defineConfig({
         // through stable attributes and the account's own API, not a mobile
         // layout, so it runs in one project.
         "notification-dispatch-journey.spec.ts",
+        // v1.39 (C2) — the setup-flow journeys each own one account and walk
+        // it from the welcome screen to the dashboard, resetting it first. A
+        // second project would walk the same account from a second browser
+        // and each would find the other's answers. The two sweeps set their
+        // own viewports inside the desktop project for the same reason.
+        "setup-flow-bp.spec.ts",
+        "setup-flow-medication.spec.ts",
+        "setup-flow-visit.spec.ts",
+        "setup-flow-child.spec.ts",
+        "setup-flow-a11y.spec.ts",
+        "setup-flow-locale-overflow.spec.ts",
       ],
       use: {
         // Pixel 5 — Chromium-based mobile profile so CI only needs

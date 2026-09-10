@@ -86,6 +86,12 @@ export interface MedicationWizardDialogProps {
   initial?: MedicationPayload;
   /** Fires with the medication id on a successful create / save. */
   onSuccess?: (id: string) => void;
+  /**
+   * v1.39 (C2) — whether a create lands on the new medication's page. The
+   * medications list wants that; the setup flow's first-result screen mounts
+   * the wizard inline and shows the result where it stands, so it opts out.
+   */
+  navigateOnCreate?: boolean;
 }
 
 const STEP_ICONS = {
@@ -118,6 +124,7 @@ function WizardDialogShell({
   mode,
   initial,
   onSuccess,
+  navigateOnCreate = true,
 }: MedicationWizardDialogProps) {
   const { t, locale } = useTranslations();
   const router = useRouter();
@@ -331,7 +338,7 @@ function WizardDialogShell({
         toast.success(t("common.saved"));
         onSuccess?.(json.data.id);
         onOpenChange(false);
-        if (mode === "create") {
+        if (mode === "create" && navigateOnCreate) {
           router.push(`/medications/${json.data.id}`);
         }
         return;
@@ -342,7 +349,17 @@ function WizardDialogShell({
     } finally {
       setSubmitting(false);
     }
-  }, [initial, mode, onOpenChange, onSuccess, payload, queryClient, router, t]);
+  }, [
+    initial,
+    mode,
+    navigateOnCreate,
+    onOpenChange,
+    onSuccess,
+    payload,
+    queryClient,
+    router,
+    t,
+  ]);
 
   const Icon = STEP_ICONS[step];
 
