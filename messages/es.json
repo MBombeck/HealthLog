@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Copias de seguridad",
         "subtitle": "Instantáneas de datos semanales por usuario almacenadas en PostgreSQL.",
-        "description": "Cada usuario tiene una instantánea rotativa por tipo de copia. Los tamaños muestran el blob cifrado; los contenidos no se pueden descargar desde esta página.",
+        "description": "Cada usuario tiene una instantánea rotativa por tipo de copia. Los tamaños muestran el blob cifrado. Descargar descifra la instantánea para el administrador que la pide; el texto cifrado permanece en la base de datos.",
         "runNow": "Hacer copia ahora",
         "runEnqueued": "Tarea de copia de seguridad en cola",
         "runFailed": "No se pudo poner en cola la copia de seguridad",
@@ -6960,6 +6960,8 @@
         "restoreAria": "Restaurar desde copia de seguridad de {username}",
         "restoreTitle": "Restaurar desde copia de seguridad",
         "restoreDescription": "Esto reemplazará TODOS los datos actuales de {username} con la instantánea del {when}. Se eliminarán las mediciones, los medicamentos, los eventos de toma, las entradas de ánimo, los canales de notificación, las suscripciones push y las eliminaciones de Telegram en cola existentes.",
+        "restoreInstanceSettingsLabel": "Restaurar también los ajustes de la instancia",
+        "restoreInstanceSettingsHint": "Registro, requisito de MFA, idioma predeterminado, disponibilidad de módulos, configuración de notificaciones e IA: se toman de la instantánea y se aplican a todos en esta instalación. Déjalo sin marcar para restaurar solo esta cuenta.",
         "restorePromptLabel": "Escribe RESTORE para continuar",
         "previewTitle": "Contenido de la copia",
         "previewLoading": "Leyendo el contenido…",

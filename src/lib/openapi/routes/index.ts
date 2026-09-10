@@ -28,6 +28,7 @@ import {
   recordScopeParameter,
 } from "./account-sharing";
 import { adminDiagnosticPaths, adminInvitePaths } from "./admin";
+import { adminBackupPaths } from "./admin-backups";
 import { allergyPaths } from "./allergies";
 import { analyticsPaths } from "./analytics";
 import { authPaths } from "./auth";
@@ -163,6 +164,12 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...awardsPaths,
   ...environmentPaths,
   ...ingestPaths,
+  // The two backups-console routes that open a stored copy. The rest of the
+  // family stays unpublished — it is a cookie-only console — but these two
+  // carry a refusal an operator has to be able to look up rather than
+  // discover: a copy this instance can no longer decrypt (appended, spread
+  // order is load-bearing).
+  ...adminBackupPaths,
   // The environmental-context overview. Its own module because nothing else
   // owns the surface (appended, spread order is load-bearing).
   //

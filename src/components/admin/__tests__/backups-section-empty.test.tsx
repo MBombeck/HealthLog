@@ -140,12 +140,21 @@ describe("BackupsSection — empty state", () => {
     expect(className).not.toMatch(/\b(?:opacity-\d+|text-\S+\/\d+)\b/);
   });
 
-  it("warns in both catalogs that restore overwrites instance-wide settings", () => {
-    expect(de.admin.section.backups.restoreDescription).toMatch(
+  it("names the instance-wide effect on the opt-in that carries it, in both catalogs", () => {
+    // The restore rewrites the host's own settings only when the operator
+    // ticks the box, so the warning belongs to the box rather than to the
+    // sentence above it — and the box has to say what it turns on.
+    expect(de.admin.section.backups.restoreInstanceSettingsLabel).toMatch(
       /instanzweite Einstellungen/i,
     );
-    expect(en.admin.section.backups.restoreDescription).toMatch(
-      /instance-wide settings/i,
+    expect(de.admin.section.backups.restoreInstanceSettingsHint).toMatch(
+      /Installation/,
+    );
+    expect(en.admin.section.backups.restoreInstanceSettingsLabel).toMatch(
+      /instance settings/i,
+    );
+    expect(en.admin.section.backups.restoreInstanceSettingsHint).toMatch(
+      /installation/i,
     );
   });
 });

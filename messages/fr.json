@@ -6924,7 +6924,7 @@
       "backups": {
         "title": "Sauvegardes",
         "subtitle": "Instantanés de données hebdomadaires par utilisateur stockés dans PostgreSQL.",
-        "description": "Chaque utilisateur dispose d'un instantané glissant par type de sauvegarde. Les tailles indiquent le blob chiffré — les contenus ne sont pas téléchargeables depuis cette page.",
+        "description": "Chaque utilisateur dispose d'un instantané glissant par type de sauvegarde. Les tailles indiquent le blob chiffré. Télécharger déchiffre l'instantané pour l'administrateur qui le demande ; le texte chiffré reste dans la base de données.",
         "runNow": "Sauvegarder maintenant",
         "runEnqueued": "Tâche de sauvegarde mise en file d'attente",
         "runFailed": "Échec de la mise en file d'attente de la sauvegarde",
@@ -6960,6 +6960,8 @@
         "restoreAria": "Restaurer à partir de la sauvegarde de {username}",
         "restoreTitle": "Restaurer à partir d'une sauvegarde",
         "restoreDescription": "Cette action remplacera TOUTES les données actuelles de {username} par l'instantané du {when}. Les mesures, médicaments, événements de prise, entrées d'humeur, canaux de notification, abonnements push et suppressions Telegram en file d'attente existants seront supprimés.",
+        "restoreInstanceSettingsLabel": "Restaurer aussi les paramètres de l'instance",
+        "restoreInstanceSettingsHint": "Inscription, exigence MFA, langue par défaut, disponibilité des modules, configuration des notifications et de l'IA — repris de l'instantané et appliqués à tout le monde sur cette installation. Laissez décoché pour ne restaurer que ce compte.",
         "restorePromptLabel": "Tapez RESTORE pour continuer",
         "previewTitle": "Contenu de la sauvegarde",
         "previewLoading": "Lecture du contenu…",

@@ -72,6 +72,39 @@ export const E2E_OWNER = {
 export const E2E_OWNER_FULL_NAME = "Test Full Name";
 
 /**
+ * The backup/restore journey's own account.
+ *
+ * Its own account, and an administrative one, because the restore path is
+ * admin-only by construction (`requireAdmin()` is cookie-only) and because the
+ * journey is destructive on purpose: it deletes rows, restores an earlier
+ * snapshot over them, and asserts what came back. Pointing that at an account
+ * any other spec reads would make every one of them depend on where this
+ * journey happens to be.
+ */
+export const E2E_BACKUP_ADMIN = {
+  email: "e2e-backup-admin@healthlog.test",
+  username: "e2e-backup-admin",
+  password: "Hw3!Tq7vZm2xRb8L",
+  role: "ADMIN",
+} as const;
+
+/**
+ * The read-level delegate on that account's record.
+ *
+ * The refusing half of the journey needs somebody who is inside the record and
+ * still has no business taking or replaying a copy of it. A separate account
+ * rather than one of the existing delegates: this one is granted READ over the
+ * whole record above, and reusing a delegate would change what the scoped
+ * journeys see.
+ */
+export const E2E_BACKUP_DELEGATE = {
+  email: "e2e-backup-delegate@healthlog.test",
+  username: "e2e-backup-delegate",
+  password: "Ld6!Yn4kW9pJc3Vt",
+  role: "USER",
+} as const;
+
+/**
  * v1.37.0 — the account that creates and administers managed profiles.
  *
  * Its own account, and not one of the others, for one reason: every route in
@@ -298,6 +331,23 @@ export const GUARDIAN_STORAGE_STATE_PATH = resolve(
 export const CROSS_TAB_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateCrossTab.json",
+);
+
+/** The backup/restore journey's jar, for the account it owns outright. */
+export const BACKUP_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateBackup.json",
+);
+
+/**
+ * The read-level delegate's jar for that journey. Its own session row, like
+ * every other switching spec's — the refusal control switches into the
+ * journey's record, and the switch is stamped on the row rather than held in
+ * the tab.
+ */
+export const BACKUP_DELEGATE_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateBackupDelegate.json",
 );
 
 /**
@@ -795,7 +845,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
        WHERE key LIKE 'sharing:%'`,
     );
 
-    // The login bucket, for the same reason. This setup signs in FOURTEEN times now
+    // The login bucket, for the same reason. This setup signs in SIXTEEN times now
     // (the shared jar, the owner, and one jar apiece for every spec that moves
     // a session's record selector), and the ceiling is five attempts per IP per
     // quarter-hour — so two local runs in a row would otherwise end with a 429
@@ -855,6 +905,70 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       ["e2e-level-write"],
     );
 
+    // ── the backup/restore journey's pair ────────────────────────────────
+    //
+    // The account the journey owns, with the three modules its readings need
+    // switched on, and the delegate that holds READ over the whole record.
+    // Both are re-seeded here rather than in the spec so the journey never
+    // spends a login on a surface the setup already owns.
+    for (const account of [E2E_BACKUP_ADMIN, E2E_BACKUP_DELEGATE] as const) {
+      await pool.query(
+        `INSERT INTO users
+          (id, username, email, password_hash, role, created_at, updated_at,
+           onboarding_completed_at, onboarding_tour_completed,
+           module_preferences_json)
+         VALUES ($1, $2, $3, $4, $5, $6, $6, $6, true, $7::jsonb)
+         ON CONFLICT (username) DO UPDATE SET
+           email = EXCLUDED.email,
+           password_hash = EXCLUDED.password_hash,
+           role = EXCLUDED.role,
+           updated_at = EXCLUDED.updated_at,
+           onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+           onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
+           module_preferences_json = EXCLUDED.module_preferences_json,
+           totp_confirmed_at = NULL`,
+        [
+          cuid(),
+          account.username,
+          account.email,
+          await hashPassword(account.password),
+          account.role,
+          now,
+          JSON.stringify({
+            medications: true,
+            mood: true,
+            inboundDocuments: true,
+          }),
+        ],
+      );
+    }
+
+    // Grant hygiene before the grant, for the reason the sharing fixture
+    // states above: a grant and a switch stamp both outlive a run.
+    await pool.query(
+      `DELETE FROM account_grants
+       WHERE grantor_id IN (SELECT id FROM users WHERE username = ANY($1))
+          OR grantee_id IN (SELECT id FROM users WHERE username = ANY($1))`,
+      [[E2E_BACKUP_ADMIN.username, E2E_BACKUP_DELEGATE.username]],
+    );
+    await pool.query(
+      `UPDATE sessions SET acting_as_user_id = NULL
+       WHERE user_id IN (SELECT id FROM users WHERE username = ANY($1))`,
+      [[E2E_BACKUP_ADMIN.username, E2E_BACKUP_DELEGATE.username]],
+    );
+    // Whole-record READ: `scope_json` NULL is the un-narrowed grant, which is
+    // the strongest read a delegate can hold and therefore the honest subject
+    // for "and still cannot take or replay a copy".
+    await pool.query(
+      `INSERT INTO account_grants
+        (id, grantor_id, grantee_id, access, scope_json, invited_at,
+         accepted_at, created_at)
+       SELECT $1, owner.id, delegate.id, 'READ', NULL, $2, $2, $2
+       FROM users owner, users delegate
+       WHERE owner.username = $3 AND delegate.username = $4`,
+      [cuid(), now, E2E_BACKUP_ADMIN.username, E2E_BACKUP_DELEGATE.username],
+    );
+
     // Console (instead of structured logging) is intentional here —
     // global-setup runs outside the app's logging context, and the
     // line is useful when debugging a CI failure where the seed didn't
@@ -875,7 +989,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
      * Log one account in, clearing the login bucket first.
      *
      * The ceiling is FIVE attempts per IP per quarter-hour and this setup now
-     * signs in fourteen times, so clearing once before the batch is no longer
+     * signs in sixteen times, so clearing once before the batch is no longer
      * enough — the sixth would be answered by the fixture's own 429 rather
      * than by the product. Only the auth surfaces' buckets are touched, and
      * only between logins this setup is itself performing.
@@ -922,6 +1036,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // The doctor-report journey's own account, for the reason written on
     // E2E_REPORT_OWNER: generating a report writes to the account row.
     await capture(E2E_REPORT_OWNER, REPORT_OWNER_STORAGE_STATE_PATH);
+
+    // The backup/restore journey's pair.
+    await capture(E2E_BACKUP_ADMIN, BACKUP_STORAGE_STATE_PATH);
+    await capture(E2E_BACKUP_DELEGATE, BACKUP_DELEGATE_STORAGE_STATE_PATH);
 
     // v1.37.0 — the guardian's jar, and only then its second factor.
     //

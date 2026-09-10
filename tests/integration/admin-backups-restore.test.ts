@@ -13,6 +13,9 @@
  * Plus negative paths:
  *   - 422 when `confirm` is missing.
  *   - 404 when the backup id is unknown.
+ *   - the singleton `app_settings` row stays where it is unless the request
+ *     asks for it: restoring one account is not a reason to reconfigure the
+ *     installation for everybody on it.
  *   - audit-log entries for start, success, denial.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -307,7 +310,7 @@ describe("POST /api/admin/backups/[id]/restore", () => {
 
     expect(res.status).toBe(422);
     const error = (await res.json()) as { error: string };
-    expect(error.error).toMatch(/instance-wide settings/i);
+    expect(error.error).toMatch(/confirm: 'RESTORE'/);
     const denied = await prisma.auditLog.count({
       where: {
         action: "admin.backups.restore.denied",
@@ -315,6 +318,71 @@ describe("POST /api/admin/backups/[id]/restore", () => {
       },
     });
     expect(denied).toBe(1);
+  });
+
+  it("leaves the instance settings alone unless the restore asks for them", async () => {
+    const prisma = getPrismaClient();
+    const admin = await seedAdminSession();
+
+    // What the host is configured to do today.
+    const live = await prisma.appSettings.create({
+      data: {
+        id: "singleton",
+        registrationEnabled: false,
+        documentMaxFileBytes: 1_048_576,
+      },
+    });
+
+    // What the file says, which is the other answer to both.
+    const backup = await prisma.dataBackup.create({
+      data: {
+        userId: admin.id,
+        type: "MANUAL_UPLOAD_SETTINGS_TEST",
+        data: encrypt(
+          JSON.stringify({
+            schemaVersion: "1",
+            exportedAt: "2026-05-09T00:00:00.000Z",
+            userId: admin.id,
+            measurements: [],
+            medications: [],
+            intakeEvents: [],
+            moodEntries: [],
+            appSettings: {
+              ...live,
+              documentQuotaBytes: String(live.documentQuotaBytes),
+              registrationEnabled: true,
+              documentMaxFileBytes: 4 * 1_048_576,
+            },
+          }),
+        ),
+      },
+    });
+
+    const { POST } = await import("@/app/api/admin/backups/[id]/restore/route");
+    const restore = (body: Record<string, unknown>) =>
+      POST(
+        makeRequest(backup.id, body) as unknown as Parameters<typeof POST>[0],
+        { params: Promise.resolve({ id: backup.id }) },
+      );
+
+    // The default answer: this account's data, and nobody else's settings.
+    expect((await restore({ confirm: "RESTORE" })).status).toBe(200);
+    const untouched = await prisma.appSettings.findUniqueOrThrow({
+      where: { id: "singleton" },
+    });
+    expect(untouched.registrationEnabled).toBe(false);
+    expect(untouched.documentMaxFileBytes).toBe(1_048_576);
+
+    // And the second decision, when the operator makes it.
+    expect(
+      (await restore({ confirm: "RESTORE", restoreInstanceSettings: true }))
+        .status,
+    ).toBe(200);
+    const rewritten = await prisma.appSettings.findUniqueOrThrow({
+      where: { id: "singleton" },
+    });
+    expect(rewritten.registrationEnabled).toBe(true);
+    expect(rewritten.documentMaxFileBytes).toBe(4 * 1_048_576);
   });
 
   it("returns 404 when the backup id is unknown", async () => {

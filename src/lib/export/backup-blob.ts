@@ -224,6 +224,28 @@ export async function packBackupBlobStreaming(
 }
 
 /**
+ * The refusal a caller gets when a stored copy will not open, as one string.
+ *
+ * Two causes, one answer, because the envelope cannot tell them apart and the
+ * operator's next step is the same either way: the key that wrote the copy is
+ * no longer in `ENCRYPTION_KEYS` (a rotation that dropped the legacy entry too
+ * early — the case `docs/ops/encryption-key-rotation.md` warns about), or the
+ * stored bytes are not the bytes that were written. Neither is a server fault,
+ * so neither is a 500: it is bad stored input, refused with 422 like every
+ * other bad input on these routes, and it never reaches the error reporter as
+ * if the process had broken.
+ *
+ * Shared rather than retyped, so the three routes that decrypt a stored copy —
+ * restore, download, summary — cannot drift into three different sentences for
+ * the same condition.
+ */
+export const BACKUP_UNDECRYPTABLE_ERROR =
+  "Backup payload could not be decrypted — either the key that wrote this copy is no longer in ENCRYPTION_KEYS, or the stored copy is not the one that was written. Nothing was changed.";
+
+/** The stable machine-readable half of {@link BACKUP_UNDECRYPTABLE_ERROR}. */
+export const BACKUP_UNDECRYPTABLE_CODE = "backup.payload.undecryptable";
+
+/**
  * A stored `DataBackup.data` string → the backup JSON.
  *
  * Fails closed on every arm: a bad key, a mangled ciphertext, a tag that does
