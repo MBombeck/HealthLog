@@ -89,6 +89,10 @@ describe("loadOffhostConfig", () => {
     expect(loadOffhostConfig()).toBeNull();
   });
 
+  // No `retentionDays` here on purpose: the worker cannot enforce retention
+  // (DeleteObject is kept out of its grant), so the config carries no field
+  // for it and `BACKUP_RETENTION_DAYS` stays the operator's number for the
+  // bucket's own lifecycle rule.
   it("parses a complete config", () => {
     vi.stubEnv("BACKUP_S3_ENDPOINT", "https://r2.example");
     vi.stubEnv("BACKUP_S3_BUCKET", "hl-backups");
@@ -102,7 +106,6 @@ describe("loadOffhostConfig", () => {
     expect(cfg!.endpoint).toBe("https://r2.example");
     expect(cfg!.region).toBe("auto");
     expect(cfg!.encryptionKey.length).toBe(32);
-    expect(cfg!.retentionDays).toBe(30);
   });
 });
 
