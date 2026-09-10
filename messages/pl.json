@@ -7012,7 +7012,21 @@
         "restoreMissingDocuments": "Dokumenty",
         "restoreMissingWorkouts": "Treningi",
         "restoreMissingMentalHealth": "Kwestionariusze zdrowia psychicznego",
-        "restoreMissingConsent": "Potwierdzenia zgody"
+        "restoreMissingConsent": "Potwierdzenia zgody",
+        "offhost": {
+          "title": "Kopie poza hostem",
+          "description": "Kiedy ten host ostatnio umieścił zaszyfrowaną kopię każdego konta w Twoim buckecie.",
+          "loadError": "Nie udało się wczytać stanu poza hostem.",
+          "notConfiguredTitle": "Kopia poza hostem nie jest skonfigurowana",
+          "notConfiguredDescription": "Nie ustawiono ani bucketu, ani klucza, więc nic nie opuszcza tego hosta. Ustaw BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY i BACKUP_ENCRYPTION_KEY, aby włączyć nocne wysyłanie.",
+          "stateFresh": "Świeża",
+          "stateDue": "Zaległa",
+          "stateStale": "Przeterminowana",
+          "stateNever": "Nigdy",
+          "neverDetail": "Dla tego konta żadna kopia nigdy nie trafiła do bucketu.",
+          "age": "{hours} h temu",
+          "scheduleNote": "Wysyłka działa co {hours} h. Świeża znaczy w obrębie jednego przebiegu, zaległa że jeden nic nie dał, przeterminowana że dwa."
+        }
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",

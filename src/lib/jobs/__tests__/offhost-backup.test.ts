@@ -184,6 +184,7 @@ describe("runOffhostBackup", () => {
     s3.store.set("2020-01-01/user-old.json.enc", Buffer.from([0]));
 
     const prisma = {
+      offhostBackupState: { upsert: vi.fn() },
       user: {
         findMany: vi.fn().mockResolvedValue([{ id: "u1" }, { id: "u2" }]),
       },
@@ -229,11 +230,26 @@ describe("runOffhostBackup", () => {
     // Nothing went through the whole-buffer arm.
     expect(s3.putObject).not.toHaveBeenCalled();
     expect(s3.putStream).toHaveBeenCalledTimes(2);
+
+    // Every account that got an object gets a ledger row, because the run's
+    // own counts cannot say WHICH account has a copy off-host and which one
+    // has been failing quietly since March.
+    expect(prisma.offhostBackupState.upsert).toHaveBeenCalledTimes(2);
+    const ledgered = prisma.offhostBackupState.upsert.mock.calls.map(
+      (call) => (call[0] as { where: { userId: string } }).where.userId,
+    );
+    expect(ledgered).toEqual(["u1", "u2"]);
+    const first = prisma.offhostBackupState.upsert.mock.calls[0]?.[0] as {
+      create: { sizeBytes: number; lastSuccessAt: Date };
+    };
+    expect(first.create.sizeBytes).toBe(ct.byteLength);
+    expect(first.create.lastSuccessAt).toBeInstanceOf(Date);
   });
 
   it("uploads the canonical builder output without reshaping it", async () => {
     const s3 = makeS3Mock();
     const prisma = {
+      offhostBackupState: { upsert: vi.fn() },
       user: { findMany: vi.fn().mockResolvedValue([{ id: "u1" }]) },
     };
     const canonicalPayload = {
@@ -291,6 +307,7 @@ describe("runOffhostBackup", () => {
   it("counts per-user failures without aborting the whole run", async () => {
     const s3 = makeS3Mock();
     const prisma = {
+      offhostBackupState: { upsert: vi.fn() },
       user: {
         findMany: vi.fn().mockResolvedValue([{ id: "u1" }, { id: "u2" }]),
       },
@@ -319,6 +336,7 @@ describe("runOffhostBackup", () => {
   it("refuses an account whose object outgrows one multipart upload", async () => {
     const s3 = makeS3Mock();
     const prisma = {
+      offhostBackupState: { upsert: vi.fn() },
       user: { findMany: vi.fn().mockResolvedValue([{ id: "u1" }]) },
     };
     mocks.buildFullBackupPayload.mockResolvedValue({
@@ -355,6 +373,7 @@ describe("runOffhostBackup", () => {
   it("reports the largest object it wrote", async () => {
     const s3 = makeS3Mock();
     const prisma = {
+      offhostBackupState: { upsert: vi.fn() },
       user: { findMany: vi.fn().mockResolvedValue([{ id: "u1" }]) },
     };
     const report = await runOffhostBackup(

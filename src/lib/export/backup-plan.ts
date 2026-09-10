@@ -642,6 +642,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Replay protection for requests this host already answered. Restoring it would suppress a legitimate new request.",
   DataBackup:
     "The backup catalogue itself. A backup that contains the list of backups is a recursion with no reader.",
+  OffhostBackupState:
+    "When this host last put this account's copy in this operator's bucket, and how big it was. It describes one deployment's relationship with one bucket, so restoring it elsewhere would assert an off-host copy that host has never written.",
   ImportJob:
     "A job record pointing at an uploaded file that the backup does not carry, so restoring it would resurrect a task with nothing to work on.",
   InviteToken:

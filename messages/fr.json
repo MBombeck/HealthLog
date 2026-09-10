@@ -7012,7 +7012,21 @@
         "restoreMissingDocuments": "Documents",
         "restoreMissingWorkouts": "Séances",
         "restoreMissingMentalHealth": "Questionnaires de santé mentale",
-        "restoreMissingConsent": "Preuves de consentement"
+        "restoreMissingConsent": "Preuves de consentement",
+        "offhost": {
+          "title": "Copies hors hôte",
+          "description": "Quand cet hôte a déposé pour la dernière fois la copie chiffrée de chaque compte dans votre bucket.",
+          "loadError": "Impossible de charger l'état hors hôte.",
+          "notConfiguredTitle": "La sauvegarde hors hôte n'est pas configurée",
+          "notConfiguredDescription": "Aucun bucket ni clé ne sont définis, donc rien ne quitte cet hôte. Définissez BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY et BACKUP_ENCRYPTION_KEY pour activer l'envoi nocturne.",
+          "stateFresh": "Récente",
+          "stateDue": "Attendue",
+          "stateStale": "Périmée",
+          "stateNever": "Jamais",
+          "neverDetail": "Aucune copie n'est jamais arrivée dans le bucket pour ce compte.",
+          "age": "il y a {hours} h",
+          "scheduleNote": "L'envoi tourne toutes les {hours} h. Récente signifie dans un cycle, attendue qu'un cycle n'a rien produit, périmée que deux n'ont rien produit."
+        }
       },
       "danger-zone": {
         "title": "Zone de danger",

@@ -322,7 +322,14 @@ function RestoreRowDialog({
   );
 }
 
-function formatBytes(bytes: number, fmt: ReturnType<typeof useFormatters>) {
+/**
+ * Exported for the off-host card, which reads the same sizes out of the same
+ * response and must not spell "1.25 MB" a second way two cards apart.
+ */
+export function formatBytes(
+  bytes: number,
+  fmt: ReturnType<typeof useFormatters>,
+) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) {
     return `${fmt.integer(Math.round(bytes / 1024))} KB`;

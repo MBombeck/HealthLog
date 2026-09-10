@@ -7012,7 +7012,21 @@
         "restoreMissingDocuments": "Documents",
         "restoreMissingWorkouts": "Workouts",
         "restoreMissingMentalHealth": "Mental-health screeners",
-        "restoreMissingConsent": "Consent receipts"
+        "restoreMissingConsent": "Consent receipts",
+        "offhost": {
+          "title": "Off-host copies",
+          "description": "When this host last put each account's encrypted copy in your bucket.",
+          "loadError": "Could not load the off-host status.",
+          "notConfiguredTitle": "Off-host backup is not configured",
+          "notConfiguredDescription": "No bucket and no key are set, so nothing leaves this host. Set BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY and BACKUP_ENCRYPTION_KEY to turn the nightly upload on.",
+          "stateFresh": "Fresh",
+          "stateDue": "Due",
+          "stateStale": "Stale",
+          "stateNever": "Never",
+          "neverDetail": "No copy has ever reached the bucket for this account.",
+          "age": "{hours} h ago",
+          "scheduleNote": "The upload runs every {hours} h. Fresh means inside one run, due means one run produced nothing, stale means two did not."
+        }
       },
       "danger-zone": {
         "title": "Danger Zone",

@@ -61,6 +61,27 @@ function decodeBackupKey(raw: string): Buffer {
   );
 }
 
+/**
+ * Whether this host has the five variables the nightly job needs.
+ *
+ * Separate from `loadOffhostConfig()` because a surface that only wants to say
+ * "off-host backup is not set up here" must not decode the encryption key to
+ * find out — `decodeBackupKey` throws on a malformed one, and an operator
+ * whose key has a typo should see the admin page, not a 500.
+ */
+export function offhostBackupConfigured(): boolean {
+  return OFFHOST_ENV_VARS.every((name) => Boolean(process.env[name]));
+}
+
+/** The five variables the nightly job needs, in one place. */
+const OFFHOST_ENV_VARS = [
+  "BACKUP_S3_ENDPOINT",
+  "BACKUP_S3_BUCKET",
+  "BACKUP_S3_ACCESS_KEY",
+  "BACKUP_S3_SECRET_KEY",
+  "BACKUP_ENCRYPTION_KEY",
+] as const;
+
 export function loadOffhostConfig(): OffhostBackupConfig | null {
   const endpoint = process.env.BACKUP_S3_ENDPOINT;
   const bucket = process.env.BACKUP_S3_BUCKET;
@@ -573,6 +594,21 @@ export async function runOffhostBackup(
           }),
         options,
       );
+      // The per-account ledger, written the moment the object exists. The run
+      // itself only ever reported counts, and a count cannot say WHICH account
+      // has no copy — which is the one question an operator asks about a
+      // backup. `new Date()` rather than the run's `now`, because on a large
+      // cohort the two are hours apart and the row is meant to say when this
+      // account's object landed.
+      await prisma.offhostBackupState.upsert({
+        where: { userId: user.id },
+        update: { lastSuccessAt: new Date(), sizeBytes: objectBytes },
+        create: {
+          userId: user.id,
+          lastSuccessAt: new Date(),
+          sizeBytes: objectBytes,
+        },
+      });
       largestObjectBytes = Math.max(largestObjectBytes, objectBytes);
       uploaded++;
     } catch (err) {

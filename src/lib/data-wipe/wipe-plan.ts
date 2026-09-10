@@ -210,6 +210,11 @@ export const WIPE_MODELS = [
   // just returned.
   "IdempotencyKey",
   "DataBackup",
+  // What this host last put in the operator's bucket for this account. The
+  // objects themselves stay — the worker holds no DeleteObject grant and the
+  // bucket's lifecycle rule owns their retirement — but the row saying when
+  // they were written is about this account and goes with it.
+  "OffhostBackupState",
   "AuditLog",
   "ConsentReceipt",
   "UserKnownDevice",

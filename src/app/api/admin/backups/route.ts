@@ -13,6 +13,12 @@
  * Without those two the page cannot tell a working backup from one that
  * stopped six weeks ago — every row it lists has a perfectly ordinary
  * timestamp either way.
+ *
+ * And alongside both, the off-host leg: one row per account saying when this
+ * host last put that account's encrypted copy in the operator's bucket and how
+ * stale that is against the nightly schedule. It comes from the ledger the
+ * worker writes, never from a bucket listing — the answer has to hold on a host
+ * whose worker grant is PutObject and nothing else.
  */
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
@@ -21,10 +27,19 @@ import { annotate } from "@/lib/logging/context";
 import { DATA_BACKUP_QUEUE } from "@/lib/jobs/data-backup-policy";
 import { readLastQueueRun } from "@/lib/jobs/job-failures";
 import { summariseBackupSchedule } from "@/lib/jobs/backup-schedule-status";
+import { offhostBackupConfigured } from "@/lib/jobs/offhost-backup";
+import {
+  classifyOffhostBackup,
+  OFFHOST_BACKUP_PERIOD_HOURS,
+} from "@/lib/jobs/offhost-backup-freshness";
 // v1.4.41 W-ORG — `BackupRow` / `BackupsList` moved to `src/types/backups.ts`
 // so callers (in particular `components/admin/backups-section.tsx`) don't
 // have to reach across the component → route-handler layer boundary.
-import type { BackupRow, BackupsList } from "@/types/backups";
+import type {
+  BackupRow,
+  BackupsList,
+  OffhostAccountRow,
+} from "@/types/backups";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +82,42 @@ export const GET = apiHandler(async () => {
     createdAt: row.created_at.toISOString(),
   }));
 
+  // The off-host leg, per account, read from the ledger the nightly worker
+  // writes rather than from the bucket. The page must be able to answer "which
+  // account has no recent copy off-host" on a host whose worker grant is
+  // PutObject and nothing else, and a listing call from a page render would
+  // put the operator's credentials on the request path of every page view.
+  const now = new Date();
+  const configured = offhostBackupConfigured();
+  const offhostAccounts = configured
+    ? await prisma.user.findMany({
+        select: {
+          id: true,
+          username: true,
+          offhostBackupState: {
+            select: { lastSuccessAt: true, sizeBytes: true },
+          },
+        },
+        orderBy: { username: "asc" },
+      })
+    : [];
+
+  const offhostRows: OffhostAccountRow[] = offhostAccounts.map((account) => {
+    const state = account.offhostBackupState;
+    const verdict = classifyOffhostBackup({
+      lastSuccessAt: state?.lastSuccessAt ?? null,
+      now,
+    });
+    return {
+      userId: account.id,
+      username: account.username,
+      lastSuccessAt: state?.lastSuccessAt.toISOString() ?? null,
+      sizeBytes: state?.sizeBytes ?? null,
+      ageHours: verdict.ageHours,
+      freshness: verdict.freshness,
+    };
+  });
+
   const payload: BackupsList = {
     rows: list,
     // Matches the retention window the backup-prune job enforces so the
@@ -77,8 +128,13 @@ export const GET = apiHandler(async () => {
         .filter((row) => row.type === SCHEDULED_BACKUP_TYPE)
         .map((row) => row.created_at),
       lastRun: await readLastQueueRun(DATA_BACKUP_QUEUE),
-      now: new Date(),
+      now,
     }),
+    offhost: {
+      configured,
+      periodHours: OFFHOST_BACKUP_PERIOD_HOURS,
+      rows: offhostRows,
+    },
   };
 
   return apiSuccess(payload);

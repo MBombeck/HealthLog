@@ -770,6 +770,7 @@ model User {
   notificationChannels                      NotificationChannel[]
   pushSubscriptions                         PushSubscription[]
   dataBackups                               DataBackup[]
+  offhostBackupState                        OffhostBackupState?
   achievements                              UserAchievement[]
   recommendationFeedback                    RecommendationFeedback[]
   idempotencyKeys                           IdempotencyKey[]
@@ -4935,6 +4936,34 @@ model DataBackup {
   @@unique([userId, type], map: "data_backups_user_id_type_key")
   @@index([userId])
   @@map("data_backups")
+}
+
+// ─── Off-host backup ledger ──────────────────────────────────
+//
+// One row per account, written by the nightly off-host job the moment an
+// object lands in the bucket. It exists because "the job ran" and "this
+// account has a recent copy off-host" are different facts: the run reports
+// counts, and a cohort of a hundred accounts where one has silently failed
+// every night for a month reads exactly like a healthy one.
+//
+// The admin console's off-host card is the reader, and it is the only reader
+// there will be: the page computes staleness from this timestamp rather than
+// listing the bucket, so an operator who has revoked the worker's read grant
+// still sees the truth.
+model OffhostBackupState {
+  userId String @id @map("user_id")
+
+  /// When the newest object for this account finished uploading. Consumer:
+  /// `classifyOffhostBackup()` behind `GET /api/admin/backups`.
+  lastSuccessAt DateTime @map("last_success_at")
+
+  /// Size of that object in bytes — the same number the run reports as its
+  /// largest, per account. Consumer: the off-host card's size column.
+  sizeBytes Int @map("size_bytes")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("offhost_backup_state")
 }
 
 // ─── Apple Health export.zip import (v1.4.34) ───────────────

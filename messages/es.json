@@ -7012,7 +7012,21 @@
         "restoreMissingDocuments": "Documentos",
         "restoreMissingWorkouts": "Entrenamientos",
         "restoreMissingMentalHealth": "Cuestionarios de salud mental",
-        "restoreMissingConsent": "Comprobantes de consentimiento"
+        "restoreMissingConsent": "Comprobantes de consentimiento",
+        "offhost": {
+          "title": "Copias fuera del host",
+          "description": "Cuándo puso este host por última vez la copia cifrada de cada cuenta en tu bucket.",
+          "loadError": "No se pudo cargar el estado fuera del host.",
+          "notConfiguredTitle": "La copia fuera del host no está configurada",
+          "notConfiguredDescription": "No hay bucket ni clave definidos, así que nada sale de este host. Define BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY y BACKUP_ENCRYPTION_KEY para activar la subida nocturna.",
+          "stateFresh": "Reciente",
+          "stateDue": "Pendiente",
+          "stateStale": "Obsoleta",
+          "stateNever": "Nunca",
+          "neverDetail": "Para esta cuenta nunca ha llegado una copia al bucket.",
+          "age": "hace {hours} h",
+          "scheduleNote": "La subida se ejecuta cada {hours} h. Reciente significa dentro de una ejecución, pendiente que una no produjo nada, obsoleta que fueron dos."
+        }
       },
       "danger-zone": {
         "title": "Zona de peligro",

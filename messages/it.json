@@ -7012,7 +7012,21 @@
         "restoreMissingDocuments": "Documenti",
         "restoreMissingWorkouts": "Allenamenti",
         "restoreMissingMentalHealth": "Questionari sulla salute mentale",
-        "restoreMissingConsent": "Ricevute di consenso"
+        "restoreMissingConsent": "Ricevute di consenso",
+        "offhost": {
+          "title": "Copie fuori host",
+          "description": "Quando questo host ha messo per l'ultima volta la copia cifrata di ogni account nel tuo bucket.",
+          "loadError": "Impossibile caricare lo stato fuori host.",
+          "notConfiguredTitle": "Il backup fuori host non è configurato",
+          "notConfiguredDescription": "Non sono impostati né bucket né chiave, quindi nulla lascia questo host. Imposta BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY e BACKUP_ENCRYPTION_KEY per attivare il caricamento notturno.",
+          "stateFresh": "Recente",
+          "stateDue": "Attesa",
+          "stateStale": "Obsoleta",
+          "stateNever": "Mai",
+          "neverDetail": "Per questo account nessuna copia è mai arrivata nel bucket.",
+          "age": "{hours} h fa",
+          "scheduleNote": "Il caricamento gira ogni {hours} h. Recente significa entro un giro, attesa che un giro non ha prodotto nulla, obsoleta che non lo hanno fatto due."
+        }
       },
       "danger-zone": {
         "title": "Zona pericolosa",

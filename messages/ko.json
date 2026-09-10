@@ -6992,7 +6992,21 @@
         "restoreMissingDocuments": "문서",
         "restoreMissingWorkouts": "운동",
         "restoreMissingMentalHealth": "정신 건강 선별 검사",
-        "restoreMissingConsent": "동의 기록"
+        "restoreMissingConsent": "동의 기록",
+        "offhost": {
+          "title": "외부 보관 사본",
+          "description": "이 호스트가 각 계정의 암호화 사본을 버킷에 마지막으로 올린 시점입니다.",
+          "loadError": "외부 보관 상태를 불러오지 못했습니다.",
+          "notConfiguredTitle": "외부 보관 백업이 설정되지 않았습니다",
+          "notConfiguredDescription": "버킷과 키가 모두 설정되지 않아 이 호스트를 벗어나는 것이 없습니다. 야간 업로드를 켜려면 BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY, BACKUP_ENCRYPTION_KEY를 설정하세요.",
+          "stateFresh": "최신",
+          "stateDue": "지연",
+          "stateStale": "오래됨",
+          "stateNever": "없음",
+          "neverDetail": "이 계정의 사본이 버킷에 도착한 적이 없습니다.",
+          "age": "{hours}시간 전",
+          "scheduleNote": "업로드는 {hours}시간마다 실행됩니다. 최신은 한 번의 실행 이내, 지연은 한 번이 아무것도 만들지 못한 상태, 오래됨은 두 번이 그런 상태입니다."
+        }
       },
       "danger-zone": {
         "title": "위험 구역",
