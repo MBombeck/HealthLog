@@ -23,12 +23,130 @@
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 
+import {
+  ONBOARDING_FIRST_RESULT_TASKS,
+  ONBOARDING_MEDICATION_ANSWERS,
+  ONBOARDING_RECORD_TARGETS,
+  ONBOARDING_SOURCE_KEYS,
+  ONBOARDING_STEP_IDS,
+  ONBOARDING_STEP_STATUSES,
+  ONBOARDING_VISIT_ANSWERS,
+} from "@/lib/onboarding/needs";
 import { tourProgressSchema } from "@/lib/onboarding/tour-progress";
+import { ONBOARDING_AREA_KEYS } from "@/lib/modules/registry";
 import {
   onboardingCompleteSchema,
   onboardingStepSchema,
 } from "@/lib/validations/onboarding";
+import {
+  onboardingAnswerSchema,
+  onboardingRestartSchema,
+} from "@/lib/validations/onboarding-needs";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+
+/* ── v1.39 (C1): the needs-based flow ─────────────────────────────────────── */
+
+const onboardingNeedsResource = z
+  .object({
+    recordTarget: z
+      .enum(ONBOARDING_RECORD_TARGETS)
+      .nullable()
+      .describe("Q1 — whose record this is. Null until answered."),
+    areas: z
+      .array(z.enum(ONBOARDING_AREA_KEYS))
+      .describe(
+        "Q2 — the areas to keep an eye on. Each one maps to at least one module through `ONBOARDING_AREA_MODULES`; the map is the server's, and a client must not re-derive it.",
+      ),
+    medication: z
+      .enum(ONBOARDING_MEDICATION_ANSWERS)
+      .nullable()
+      .describe("Q3 — medication on a schedule."),
+    sources: z
+      .array(z.enum(ONBOARDING_SOURCE_KEYS))
+      .describe("Q4 — where the readings come from today."),
+    visit: z
+      .enum(ONBOARDING_VISIT_ANSWERS)
+      .nullable()
+      .describe("Q5 — a doctor's visit coming up."),
+    units: z
+      .object({
+        glucoseUnit: z.enum(["mg/dL", "mmol/L"]).nullable(),
+        unitPreference: z.enum(["metric", "imperial"]).nullable(),
+      })
+      .describe(
+        "Q6 — the unit answers as given. NOT the source of truth for display: `glucoseUnit` and `unitPreference` on the account payload are, and the answers step writes them. This records what the flow was told.",
+      ),
+  })
+  .meta({
+    id: "OnboardingNeeds",
+    description:
+      "The setup answers as given. Every field is null or empty until its question is answered.",
+  });
+
+const onboardingStepResource = z
+  .object({
+    id: z.enum(ONBOARDING_STEP_IDS),
+    status: z.enum(ONBOARDING_STEP_STATUSES),
+  })
+  .meta({
+    id: "OnboardingStepState",
+    description:
+      "One step of the setup flow. The ids are stable; a client that meets one it does not know SKIPS it rather than refusing the list, so the flow may grow a screen without a client release.",
+  });
+
+const onboardingFirstResultResource = z
+  .object({
+    task: z.enum(ONBOARDING_FIRST_RESULT_TASKS),
+    target: z
+      .string()
+      .nullable()
+      .describe(
+        "What the task is about — a source key for a connection, an area key for a reading. Null for the medication task.",
+      ),
+    completedAt: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .describe("When the offered task produced its result, or null."),
+  })
+  .meta({
+    id: "OnboardingFirstResult",
+    description:
+      "The one task the flow offered at the end, and whether it produced its result.",
+  });
+
+export const onboardingStateResource = z
+  .object({
+    steps: z.array(onboardingStepResource),
+    needs: onboardingNeedsResource,
+    completedAt: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .describe(
+        "When the needs flow was completed. Distinct from the account payload's `onboardingCompletedAt`, which stays the first-run redirect's gate: `POST /api/onboarding/restart` clears this one and leaves that one alone.",
+      ),
+    firstResult: onboardingFirstResultResource.nullable(),
+  })
+  .meta({
+    id: "OnboardingState",
+    description:
+      "The needs-based setup flow for one record. Always present on the account payload — a record that never entered the flow reads as empty answers with nine `pending` steps, so a client branches on the step statuses rather than on the field's existence.",
+  });
+
+const onboardingStateEnvelope = dataEnvelope(
+  z.object({ onboarding: onboardingStateResource }),
+  "OnboardingStateEnvelope",
+);
+
+const onboardingAnswerRequest = onboardingAnswerSchema.meta({
+  id: "OnboardingAnswerRequest",
+  description:
+    "One step, answered or deliberately passed. The union has an arm per step id plus a skip arm for the six steps that may be passed — `who` is the one required question, and `confirm` / `done` are acknowledgements rather than questions, so none of the three has a skip arm. Every arm is strict: an unknown key is a 422, and a skip may never carry an answer.",
+});
+
+const onboardingRestartRequest = onboardingRestartSchema.meta({
+  id: "OnboardingRestartRequest",
+  description: "No input beyond the session. Send `{}`.",
+});
 
 const tourProgressResource = tourProgressSchema.meta({
   id: "TourProgress",
@@ -121,6 +239,84 @@ const onboardingCompleteRequest = onboardingCompleteSchema.meta({
 });
 
 export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/onboarding/answers": {
+    patch: {
+      tags: ["Onboarding"],
+      summary: "Save one answer of the needs-based setup flow",
+      description:
+        "Persists one step of the setup questionnaire the moment it is answered, so leaving and returning resumes at the same step. The body names the step and carries either its answer or `status: \"skipped\"`; the two can never ride together.\n\nIdempotent. The stored state is computed by a pure function of the row and the body, so sending the same step twice writes the same value and the second write changes nothing a reader can see — including the first-result completion instant, which is kept from the existing row rather than re-taken. There is no ordering contract: steps may be answered, re-answered and passed in any order, which is what makes a back button work.\n\nThe `units` step is the one answer with a consequence outside this state: it writes the record's `glucoseUnit` and `unitPreference`, which every display surface already reads, and records the answer beside them.\n\nCookie or wildcard Bearer, and the CALLER's own record only: a request made while the session is acting on somebody else's record is refused with 403 `sharing.not_permitted` at every grant level, so a delegate can never write another record's setup. Rate-limited to 120 writes per 10 minutes per account.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: onboardingAnswerRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The full setup state after the write.",
+          content: {
+            "application/json": { schema: onboardingStateEnvelope },
+          },
+        },
+        "413": {
+          description: "Body exceeds 16 KiB.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "415": {
+          description: "`Content-Type` is not `application/json`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "The body did not validate. `meta.errorCode` = `onboarding.answers.invalid`, with every issue on the wire.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "429": {
+          description:
+            "More than 120 answer writes in 10 minutes. `meta.errorCode` = `onboarding.answers.rateLimited`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
+  "/api/onboarding/restart": {
+    post: {
+      tags: ["Onboarding"],
+      summary: "Ask the setup questions again",
+      description:
+        "\"Set up again\", from Settings. Puts the nine steps back to `pending`, clears the flow's own completion stamp, and clears the derivation marker so the next `POST /api/onboarding/complete` may derive a module map again.\n\nIt writes no module state at all: the ordering-versus-removal decision says a re-run never turns off a module somebody turned on by hand, and the protection against the second derivation lives in the merge rather than here. It also keeps the answers, as the prefill for the re-run, keeps a first result that really happened, and leaves the account payload's `onboardingCompletedAt` alone so nobody is pushed back through the first-run redirect.\n\nCookie or wildcard Bearer, own record only — same refusal under a switch as the answers route. Rate-limited to 10 restarts per 10 minutes per account.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: onboardingRestartRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The reset setup state.",
+          content: {
+            "application/json": { schema: onboardingStateEnvelope },
+          },
+        },
+        "413": {
+          description: "Body exceeds 4 KiB.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "415": {
+          description: "`Content-Type` is not `application/json`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "The body carried a field. `meta.errorCode` = `onboarding.restart.invalid`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "429": {
+          description:
+            "More than 10 restarts in 10 minutes. `meta.errorCode` = `onboarding.restart.rateLimited`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
   "/api/onboarding/step": {
     post: {
       tags: ["Onboarding"],
@@ -178,9 +374,9 @@ export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/onboarding/complete": {
     post: {
       tags: ["Onboarding"],
-      summary: "Stamp onboarding as complete (legacy single-shot path)",
+      summary: "Stamp onboarding as complete, and derive the module map",
       description:
-        "Marks onboarding finished and saves whatever profile fields came with it, then clears the proxy-readable pending cookie so the next navigation stops redirecting to `/onboarding`.\n\nThe older sibling of `POST /api/onboarding/step`. It is unconditional in a way the step route is not: it stamps the completion whatever the stored step is, it re-stamps on every call rather than refusing a second one, and it writes no audit row and enforces no rate limit of its own. It also does NOT seed the dashboard from the goal selection — that only happens on the step route's completing call.\n\nCalling this mid-wizard makes every remaining `POST /api/onboarding/step` answer 409 `onboarding.step.completed`, because that route's guarded update requires the completion stamp to still be null.\n\nCookie or wildcard Bearer; `userId` is never read from the body.",
+        "Marks onboarding finished and saves whatever profile fields came with it, then clears the proxy-readable pending cookie so the next navigation stops redirecting to `/onboarding`.\n\nv1.39 — this is also the needs-based flow's confirm endpoint, and the two halves live side by side. For a record that answered the questions (Q1 is set), it derives that record's module map from the answers and applies it, ONCE: the derivation marker is what stops a second confirm re-applying the questionnaire over decisions taken in Settings since, and `POST /api/onboarding/restart` clears the marker when the person asks for the questions again. The merge is one-directional — a module the answers name is switched on, a module they do not name is switched off only where the record does not already carry an explicit on. The `cycle` key is not written here at all: it delegates to the cycle profile, which this route sets to `true` when the cycle area was chosen and never to `false`. The response then carries `onboarding` beside `completed`; a caller that never entered the needs flow gets the fixed acknowledgement it always did.\n\nThe older sibling of `POST /api/onboarding/step`. It is unconditional in a way the step route is not: it stamps the completion whatever the stored step is, it re-stamps on every call rather than refusing a second one, and it writes no audit row and enforces no rate limit of its own. It also does NOT seed the dashboard from the goal selection — that only happens on the step route's completing call.\n\nCalling this mid-wizard makes every remaining `POST /api/onboarding/step` answer 409 `onboarding.step.completed`, because that route's guarded update requires the completion stamp to still be null.\n\nCookie or wildcard Bearer; `userId` is never read from the body.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: onboardingCompleteRequest } },
@@ -188,11 +384,14 @@ export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       responses: {
         "200": {
           description:
-            "Onboarding stamped complete. The body is the fixed `{ completed: true }` acknowledgement — it does not echo what was saved.",
+            "Onboarding stamped complete. `completed` is the fixed acknowledgement — it does not echo the profile fields that were saved. `onboarding` is present only for a record that entered the needs-based flow, and carries the state after the derivation.",
           content: {
             "application/json": {
               schema: dataEnvelope(
-                z.object({ completed: z.literal(true) }),
+                z.object({
+                  completed: z.literal(true),
+                  onboarding: onboardingStateResource.optional(),
+                }),
                 "OnboardingCompleteEnvelope",
               ),
             },
