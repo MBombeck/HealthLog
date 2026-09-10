@@ -240,9 +240,11 @@ describe("runOffhostBackup", () => {
     );
     expect(ledgered).toEqual(["u1", "u2"]);
     const first = prisma.offhostBackupState.upsert.mock.calls[0]?.[0] as {
-      create: { sizeBytes: number; lastSuccessAt: Date };
+      create: { sizeBytes: bigint; lastSuccessAt: Date };
     };
-    expect(first.create.sizeBytes).toBe(ct.byteLength);
+    // BigInt, because the uploader permits an 80 GB object and a 32-bit
+    // column would refuse the biggest account on the host.
+    expect(first.create.sizeBytes).toBe(BigInt(ct.byteLength));
     expect(first.create.lastSuccessAt).toBeInstanceOf(Date);
   });
 

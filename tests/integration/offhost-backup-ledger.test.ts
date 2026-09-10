@@ -104,7 +104,7 @@ describe("off-host backup ledger (real Postgres)", () => {
         `${new Date().toISOString().slice(0, 10)}/user-${row.userId}.json.enc`,
       );
       expect(object).toBeDefined();
-      expect(row.sizeBytes).toBe(object?.byteLength);
+      expect(Number(row.sizeBytes)).toBe(object?.byteLength);
 
       expect(
         classifyOffhostBackup({

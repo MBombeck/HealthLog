@@ -64,7 +64,9 @@ describe("GET /api/admin/backups — off-host freshness", () => {
         username: "account-one",
         offhostBackupState: {
           lastSuccessAt: new Date(now - 3 * HOUR),
-          sizeBytes: 4096,
+          // The column is BigInt — an object may be 80 GB — and the wire type
+          // is a plain number.
+          sizeBytes: BigInt(4096),
         },
       },
       {
@@ -72,7 +74,7 @@ describe("GET /api/admin/backups — off-host freshness", () => {
         username: "account-two",
         offhostBackupState: {
           lastSuccessAt: new Date(now - 30 * HOUR),
-          sizeBytes: 8192,
+          sizeBytes: BigInt(8192),
         },
       },
       {
@@ -80,7 +82,7 @@ describe("GET /api/admin/backups — off-host freshness", () => {
         username: "account-three",
         offhostBackupState: {
           lastSuccessAt: new Date(now - 100 * HOUR),
-          sizeBytes: 128,
+          sizeBytes: BigInt(128),
         },
       },
       { id: "u4", username: "account-four", offhostBackupState: null },
@@ -99,6 +101,7 @@ describe("GET /api/admin/backups — off-host freshness", () => {
       ["account-four", "never"],
     ]);
     expect(body.offhost.rows[0]?.sizeBytes).toBe(4096);
+    expect(typeof body.offhost.rows[0]?.sizeBytes).toBe("number");
     expect(body.offhost.rows[0]?.ageHours).toBe(3);
     expect(body.offhost.rows[3]?.lastSuccessAt).toBeNull();
     expect(body.offhost.rows[3]?.sizeBytes).toBeNull();
@@ -126,7 +129,7 @@ describe("GET /api/admin/backups — off-host freshness", () => {
         username: "account-one",
         offhostBackupState: {
           lastSuccessAt: new Date(),
-          sizeBytes: 1,
+          sizeBytes: BigInt(1),
         },
       },
     ]);

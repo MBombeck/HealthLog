@@ -623,7 +623,7 @@ export async function runOffhostBackup(
     // two are hours apart and the row is meant to say when this account's
     // object landed.
     if (objectBytes !== null) {
-      const bytes = objectBytes;
+      const bytes = BigInt(objectBytes);
       try {
         await prisma.offhostBackupState.upsert({
           where: { userId: user.id },

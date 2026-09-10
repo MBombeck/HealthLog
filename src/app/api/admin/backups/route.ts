@@ -112,7 +112,10 @@ export const GET = apiHandler(async () => {
       userId: account.id,
       username: account.username,
       lastSuccessAt: state?.lastSuccessAt.toISOString() ?? null,
-      sizeBytes: state?.sizeBytes ?? null,
+      // BigInt column -> number on the wire. The value is bytes of one
+      // object, capped by the uploader at 80 GB, so it is nowhere near
+      // Number.MAX_SAFE_INTEGER and JSON has no BigInt.
+      sizeBytes: state ? Number(state.sizeBytes) : null,
       ageHours: verdict.ageHours,
       freshness: verdict.freshness,
     };
