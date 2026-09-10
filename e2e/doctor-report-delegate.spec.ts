@@ -3,15 +3,23 @@
  *
  * `POST /api/export/health-record` resolves `requireRecordAuth("manage",
  * "record")`: a prepared artefact from a declared selection is the one export an
- * invited MANAGER reaches, and READ is below that line. This spec proves both
- * halves of that refusal in a browser — the control is not offered, and the
- * route refuses the request anyway.
+ * invited MANAGER reaches, and READ is below that line. That is the statement
+ * this spec is about, and it is the ROUTE half that carries it: 403 inside the
+ * record the delegate may only read, 200 inside the one it manages.
  *
- * Why both. A missing button proves nothing about the server, and a 403 proves
- * nothing about what the person is shown; the failure mode this release family
- * keeps rediscovering is a control that renders and then 403s. So the settings
- * page is asserted to carry the shared-record refusal panel instead of the
- * export card, and the route is asserted separately, from the same session.
+ * The UI half proves something narrower, and the file says so rather than
+ * implying the route's boundary twice. `/settings/gesundheitsakte` is a
+ * PERSONAL destination: inside SOMEBODY ELSE's record the shell answers it with
+ * the "not part of shared access" panel at every adult grant level — READ,
+ * WRITE and MANAGE alike — so the export card is never rendered for a delegate
+ * to press. That is a property of the destination, not of the level, and the
+ * spec asserts it at BOTH levels for exactly that reason: the same two
+ * absences inside the MANAGE record, where the route says 200, are what stops
+ * "the control is not offered" from being a check that cannot fail.
+ *
+ * Why both halves at all. A missing button proves nothing about the server, and
+ * a 403 proves nothing about what the person is shown; the failure mode this
+ * release family keeps rediscovering is a control that renders and then 403s.
  *
  * The positive control is the same delegate, the same payload and the same
  * switched-record plumbing against the record it holds a MANAGE grant on. That
@@ -225,6 +233,14 @@ test.describe.serial("a read-level delegate and the doctor report", () => {
     expect(managed.status).toBe(200);
     expect(managed.contentType).toContain("application/pdf");
     expect(managed.magic).toBe("%PDF-");
+
+    // The destination is shut here too, and this is the arm that proves it is
+    // the DESTINATION doing it: the route answered 200 for this very record a
+    // line ago, so the two absences below cannot be the grant level talking.
+    await openGesundheitsakte(page);
+    await expect(page.getByTestId("health-record-export-panel")).toHaveCount(0);
+    await expect(page.getByTestId("health-record-generate")).toHaveCount(0);
+
     await leaveRecord(page);
 
     await enterRecord(page, readRecord.username);
@@ -235,13 +251,16 @@ test.describe.serial("a read-level delegate and the doctor report", () => {
     // shows and two below the "manage" this route requires.
     await expect(banner).toHaveAttribute("data-access-level", "view");
 
-    // The control is not offered: the health-record page inside a shared record
-    // is the refusal panel, not the export card.
+    // The same closed door, one level down. Paired with the MANAGE arm above it
+    // says the export card is offered inside NOBODY's record but your own; on
+    // its own it would say nothing about READ.
     await openGesundheitsakte(page);
     await expect(page.getByTestId("health-record-export-panel")).toHaveCount(0);
     await expect(page.getByTestId("health-record-generate")).toHaveCount(0);
 
-    // And the route refuses the request the absent control would have sent.
+    // The level-sensitive statement: the same request, the same headers and the
+    // same payload that answered 200 inside the managed record are refused
+    // here, and nothing but the grant changed.
     const shared = await attemptReport(page, SELECTION);
     expect(shared.status).toBe(403);
     expect(shared.errorCode).toBe("sharing.access.denied");
