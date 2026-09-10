@@ -24,6 +24,21 @@ const EMBEDDED_PRIVATE_DNS_ANSWERS = [
   ["RFC8215 local-use metadata", "64:ff9b:1:a9fe:0:a9fe::"],
 ] as const;
 
+/** True when the policy marker the dispatcher stamps is anywhere in the chain. */
+function hasPrivateHostMarker(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const value = error as {
+    safeFetchKind?: unknown;
+    cause?: unknown;
+    errors?: unknown[];
+  };
+  return (
+    value.safeFetchKind === "private_host" ||
+    hasPrivateHostMarker(value.cause) ||
+    (value.errors ?? []).some(hasPrivateHostMarker)
+  );
+}
+
 function errorCodes(error: unknown): string[] {
   if (!error || typeof error !== "object") return [];
   const value = error as {
@@ -306,6 +321,9 @@ describe("pinnedOperatorApprovedDispatcher", () => {
 
       expect(caught).toBeDefined();
       expect(errorCodes(caught)).toContain("ENOTFOUND");
+      // A real NXDOMAIN would also be ENOTFOUND; the policy marker is what
+      // proves the refusal came from the floor and not from the resolver.
+      expect(hasPrivateHostMarker(caught)).toBe(true);
     },
     5_000,
   );

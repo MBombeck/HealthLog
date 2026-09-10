@@ -254,14 +254,14 @@ lists it. Restart the app after changing it.
 
 What is refused where, so you know which lever to pull:
 
-| Target                                                      | Without the grant | With the exact origin listed            |
-| ----------------------------------------------------------- | ----------------- | --------------------------------------- |
-| Public name resolving to a public address                   | works             | works, public pin                       |
-| Public name with a private A record (LAN reverse proxy)     | refused at send   | works                                   |
-| `gotify.lan`, `gotify.home.arpa`, a Docker service name     | refused at send   | works                                   |
-| `gotify.local` (mDNS)                                       | refused at save   | allowed, if the container resolves mDNS |
-| Literal `192.168.x.x`, `10.x.x.x`, `100.64.x.x`, `fd00::/8` | refused at save   | works                                   |
-| `localhost`, `127.0.0.1`, `169.254.169.254`, `::1`          | refused at save   | still refused                           |
+| Target                                                      | Without the grant | With the exact origin listed                   |
+| ----------------------------------------------------------- | ----------------- | ---------------------------------------------- |
+| Public name resolving to a public address                   | works             | works, public pin                              |
+| Public name with a private A record (LAN reverse proxy)     | refused at send   | works                                          |
+| `gotify.lan`, `gotify.home.arpa`, a Docker service name     | refused at send   | works                                          |
+| `gotify.local` (mDNS)                                       | refused at save   | allowed, if the container resolves mDNS        |
+| Literal `192.168.x.x`, `10.x.x.x`, `100.64.x.x`, `fd00::/8` | refused at save   | works                                          |
+| `localhost`, `127.0.0.1`, `169.254.169.254`, `::1`          | refused at save   | still refused (`private_origin_not_grantable`) |
 
 A private target that is not listed is refused when the card is saved
 (`422`, `meta.errorCode` = `private_origin_not_approved`, the message

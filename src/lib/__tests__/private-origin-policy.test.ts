@@ -16,9 +16,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   canonicalOrigin,
+  describeGrantRejection,
   evaluateOriginGrant,
   parsePrivateOrigins,
-  PRIVATE_ORIGIN_NOT_APPROVED,
+  PRIVATE_ORIGIN_NOT_APPROVED_CODE,
+  PRIVATE_ORIGIN_NOT_GRANTABLE_CODE,
+  redactGrantEntry,
 } from "../private-origin-policy";
 
 describe("canonicalOrigin", () => {
@@ -113,7 +116,7 @@ describe("parsePrivateOrigins", () => {
     expect(onInvalid).not.toHaveBeenCalled();
   });
 
-  it("hands every malformed entry to the caller and keeps the valid ones", () => {
+  it("hands every malformed entry to the caller, with a reason, and keeps the valid ones", () => {
     const onInvalid = vi.fn();
     expect(
       parsePrivateOrigins(
@@ -126,6 +129,25 @@ describe("parsePrivateOrigins", () => {
       "http://127.0.0.1:8080",
       "not an origin",
     ]);
+    expect(onInvalid.mock.calls[1][1]).toMatch(/loopback.*cannot be granted/);
+    expect(onInvalid.mock.calls[0][1]).toMatch(/one exact http\(s\) origin/);
+  });
+
+  it("never hands a query, fragment or userinfo to the caller (M3)", () => {
+    const onInvalid = vi.fn();
+    parsePrivateOrigins(
+      "http://10.0.0.4/message?token=AbC123, http://user:pw@gotify.lan/, https://ntfy.lan/topic#frag",
+      onInvalid,
+    );
+    const seen = onInvalid.mock.calls.map(([entry]) => entry);
+    expect(seen).toEqual([
+      "http://10.0.0.4/message",
+      "http://gotify.lan/",
+      "https://ntfy.lan/topic",
+    ]);
+    expect(JSON.stringify(onInvalid.mock.calls)).not.toMatch(
+      /AbC123|token=|user:pw|#frag/,
+    );
   });
 
   it("lets the caller turn a malformed entry into a throw", () => {
@@ -160,7 +182,7 @@ describe("evaluateOriginGrant", () => {
       allowed: false,
       canonicalOrigin: origin,
       privateOriginApproved: false,
-      reasonCode: PRIVATE_ORIGIN_NOT_APPROVED,
+      reasonCode: PRIVATE_ORIGIN_NOT_APPROVED_CODE,
     });
   });
 
@@ -178,7 +200,49 @@ describe("evaluateOriginGrant", () => {
       allowed: false,
       canonicalOrigin: "http://192.168.1.9:8080",
       privateOriginApproved: false,
-      reasonCode: PRIVATE_ORIGIN_NOT_APPROVED,
+      reasonCode: PRIVATE_ORIGIN_NOT_APPROVED_CODE,
     });
+  });
+
+  it.each([
+    ["IPv4 loopback", "http://127.0.0.1:8080"],
+    ["localhost", "http://localhost:8080"],
+    ["a *.localhost name", "http://gotify.localhost"],
+    ["link-local / metadata", "http://169.254.169.254"],
+    ["IPv6 loopback", "http://[::1]:8080"],
+    ["unspecified", "http://0.0.0.0:8080"],
+  ])(
+    "answers %s with the not-grantable code, not a request to list it (M1)",
+    (_label, origin) => {
+      expect(evaluateOriginGrant(origin, grants)).toEqual({
+        allowed: false,
+        canonicalOrigin: origin,
+        privateOriginApproved: false,
+        reasonCode: PRIVATE_ORIGIN_NOT_GRANTABLE_CODE,
+      });
+    },
+  );
+});
+
+describe("redactGrantEntry / describeGrantRejection", () => {
+  it("keeps scheme and host, drops userinfo, query and fragment", () => {
+    expect(redactGrantEntry("http://user:pw@gotify.lan/?token=x#y")).toBe(
+      "http://gotify.lan/",
+    );
+    expect(redactGrantEntry("https://gotify.example.com")).toBe(
+      "https://gotify.example.com",
+    );
+    expect(redactGrantEntry("not an origin?token=x")).toBe("not an origin");
+  });
+
+  it("names the never-grantable class apart from a grammar error", () => {
+    expect(describeGrantRejection("http://localhost:1337")).toMatch(
+      /loopback.*LAN address/,
+    );
+    expect(describeGrantRejection("http://[::1]:1337")).toMatch(/loopback/);
+    expect(describeGrantRejection("https://*.lan")).toMatch(/exact http/);
+    expect(describeGrantRejection("http://10.0.0.4/path")).toMatch(
+      /exact http/,
+    );
   });
 });

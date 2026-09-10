@@ -217,4 +217,19 @@ describe("sendViaNtfy", () => {
       },
     );
   });
+
+  it("reports the not-grantable code for a loopback target, without dialling (M1)", async () => {
+    const result = await sendViaNtfy(
+      { serverUrl: "http://localhost:8080", topic: "health" },
+      payload(),
+    );
+
+    expect(safeFetchMock).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      ok: false,
+      hardReject: false,
+      reason: "ntfy_private_origin_refused",
+      errorCode: "private_origin_not_grantable",
+    });
+  });
 });

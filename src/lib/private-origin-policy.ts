@@ -17,12 +17,64 @@ import {
  * several origins.
  */
 
-export const PRIVATE_ORIGIN_NOT_APPROVED =
+export const PRIVATE_ORIGIN_NOT_APPROVED_CODE =
   "private_origin_not_approved" as const;
+/**
+ * The target is loopback, unspecified, link-local or the metadata range: no
+ * grant can ever open it, so telling the user to ask the operator would send
+ * them in a circle. On host networking the LAN address is the answer.
+ */
+export const PRIVATE_ORIGIN_NOT_GRANTABLE_CODE =
+  "private_origin_not_grantable" as const;
 export const INVALID_ORIGIN = "invalid_origin" as const;
 
 export type OriginReason =
-  typeof PRIVATE_ORIGIN_NOT_APPROVED | typeof INVALID_ORIGIN;
+  | typeof PRIVATE_ORIGIN_NOT_APPROVED_CODE
+  | typeof PRIVATE_ORIGIN_NOT_GRANTABLE_CODE
+  | typeof INVALID_ORIGIN;
+
+/**
+ * A hostname no grant may name: `localhost` / `*.localhost` (loopback by
+ * definition, RFC 6761) or a literal address outside the grantable ranges.
+ * DNS names are not judged here — a name that resolves into those ranges is
+ * dropped at dial time by the pinned dispatcher.
+ */
+export function isNeverGrantableHost(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+  if (lower === "localhost" || lower.endsWith(".localhost")) return true;
+  const literal = lower.replace(/^\[|\]$/g, "");
+  return isIP(literal) !== 0 && !isOperatorGrantableIp(literal);
+}
+
+/**
+ * The entry as it may be logged or put in an error message: scheme and host
+ * only. A malformed entry is malformed precisely when it carries the shapes
+ * that hold a secret — a query with a token, userinfo, a capability URL
+ * pasted whole — and this text goes to stdout, not through the wide-event
+ * redactors.
+ */
+export function redactGrantEntry(entry: string): string {
+  return entry
+    .split(/[?#]/, 1)[0]
+    .replace(/\/\/[^/@]*@/, "//")
+    .slice(0, 200);
+}
+
+/** Why an entry is not a grant, in operator-readable words. */
+export function describeGrantRejection(entry: string): string {
+  try {
+    const url = new URL(entry);
+    if (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      isNeverGrantableHost(url.hostname)
+    ) {
+      return "loopback, link-local and metadata addresses cannot be granted; on host networking list the LAN address of the relay instead";
+    }
+  } catch {
+    // fall through to the grammar sentence
+  }
+  return "a grant is one exact http(s) origin (scheme://host[:port]) with no path, query, credentials or wildcard";
+}
 
 export interface OriginVerdict {
   allowed: boolean;
@@ -48,17 +100,12 @@ export function canonicalOrigin(value: string): string | null {
     if (url.username || url.password) return null;
     if (url.pathname !== "/" || url.search || url.hash) return null;
     if (!url.hostname || url.hostname.includes("*")) return null;
-    // `localhost` and `*.localhost` are loopback by definition (RFC 6761);
-    // refuse them at parse time like a literal loopback address. Other
+    // Loopback, unspecified, link-local and metadata literals, and
+    // `localhost` / `*.localhost`, are refused at parse time. Other
     // reserved-looking names (`.local` mDNS, `.internal`, `.lan`) stay
     // grantable: an explicitly listed origin is what the list is for, and
     // the dial-time floor still drops a loopback or metadata answer.
-    const hostname = url.hostname.toLowerCase();
-    if (hostname === "localhost" || hostname.endsWith(".localhost")) {
-      return null;
-    }
-    const literal = hostname.replace(/^\[|\]$/g, "");
-    if (isIP(literal) !== 0 && !isOperatorGrantableIp(literal)) return null;
+    if (isNeverGrantableHost(url.hostname)) return null;
     return url.origin;
   } catch {
     return null;
@@ -102,15 +149,16 @@ function sharesApprovedPrivateHostname(
 /**
  * Parse a server-only comma-separated exact-origin allowlist.
  *
- * Every malformed non-empty entry is handed to `onInvalid`, which decides the
- * failure mode: the Nightscout list throws (a connection form can afford to
+ * Every malformed non-empty entry is handed to `onInvalid` with the entry
+ * already reduced to scheme and host (`redactGrantEntry`) and the reason in
+ * words (`describeGrantRejection`); the callback decides the failure mode: the Nightscout list throws (a connection form can afford to
  * fail loudly), the notification list logs once and skips the entry (a typo
  * must not take every public webhook down with it). Either way a malformed
  * entry grants nothing — the set only ever shrinks.
  */
 export function parsePrivateOrigins(
   raw: string | undefined,
-  onInvalid: (entry: string) => void,
+  onInvalid: (redactedEntry: string, reason: string) => void,
 ): ReadonlySet<string> {
   const origins = new Set<string>();
   for (const entry of (raw ?? "").split(",")) {
@@ -118,7 +166,7 @@ export function parsePrivateOrigins(
     if (!trimmed) continue;
     const origin = canonicalOrigin(trimmed);
     if (!origin) {
-      onInvalid(trimmed);
+      onInvalid(redactGrantEntry(trimmed), describeGrantRejection(trimmed));
       continue;
     }
     origins.add(origin);
@@ -158,7 +206,7 @@ export function evaluateOriginGrant(
       allowed: false,
       canonicalOrigin: origin,
       privateOriginApproved: false,
-      reasonCode: PRIVATE_ORIGIN_NOT_APPROVED,
+      reasonCode: PRIVATE_ORIGIN_NOT_APPROVED_CODE,
     };
   }
 
@@ -171,10 +219,14 @@ export function evaluateOriginGrant(
     };
   }
 
+  // Two refusals that read differently to the person who gets them: a
+  // private address the operator could list, and one no grant can open.
   return {
     allowed: false,
     canonicalOrigin: origin,
     privateOriginApproved: false,
-    reasonCode: PRIVATE_ORIGIN_NOT_APPROVED,
+    reasonCode: isNeverGrantableHost(new URL(origin).hostname)
+      ? PRIVATE_ORIGIN_NOT_GRANTABLE_CODE
+      : PRIVATE_ORIGIN_NOT_APPROVED_CODE,
   };
 }

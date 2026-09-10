@@ -12,8 +12,9 @@ import { stripHtml } from "@/lib/notifications/strip-html";
 import {
   annotatePrivateOriginEgress,
   evaluateNotificationTarget,
-  PRIVATE_ORIGIN_NOT_APPROVED,
+  PRIVATE_ORIGIN_NOT_APPROVED_CODE,
 } from "@/lib/notifications/egress-policy";
+import type { OriginReason } from "@/lib/private-origin-policy";
 
 /**
  * Send a notification via a generic outbound webhook (v1.17.1).
@@ -45,6 +46,10 @@ export async function sendViaWebhook(
 ): Promise<SendOutcome> {
   const userId = payload.recipientUserId ?? payload.userId;
   const start = performance.now();
+  // Set when the policy itself refuses, so the outcome can say which of the
+  // two refusals it was: an origin the operator could list, or one no grant
+  // can open.
+  let policyReason: OriginReason | null = null;
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -75,6 +80,7 @@ export async function sendViaWebhook(
 
     const policy = evaluateNotificationTarget(config.url);
     if (!policy.allowed || !policy.canonicalOrigin) {
+      policyReason = policy.reasonCode;
       throw new SafeFetchError(
         "webhook target refused by the notification origin policy",
         "private_host",
@@ -159,7 +165,9 @@ export async function sendViaWebhook(
       hardReject: false,
       reason,
       message,
-      ...(policyRefused ? { errorCode: PRIVATE_ORIGIN_NOT_APPROVED } : {}),
+      ...(policyRefused
+        ? { errorCode: policyReason ?? PRIVATE_ORIGIN_NOT_APPROVED_CODE }
+        : {}),
     };
   }
 }

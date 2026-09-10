@@ -13,8 +13,9 @@ import { isUrgentPayload } from "@/lib/notifications/types";
 import {
   annotatePrivateOriginEgress,
   evaluateNotificationTarget,
-  PRIVATE_ORIGIN_NOT_APPROVED,
+  PRIVATE_ORIGIN_NOT_APPROVED_CODE,
 } from "@/lib/notifications/egress-policy";
+import type { OriginReason } from "@/lib/private-origin-policy";
 
 /**
  * Send notification via ntfy (simple HTTP POST).
@@ -31,6 +32,10 @@ export async function sendViaNtfy(
 ): Promise<SendOutcome> {
   const userId = payload.recipientUserId ?? payload.userId;
   const start = performance.now();
+  // Set when the policy itself refuses, so the outcome can say which of the
+  // two refusals it was: an origin the operator could list, or one no grant
+  // can open.
+  let policyReason: OriginReason | null = null;
   try {
     const url = `${config.serverUrl.replace(/\/$/, "")}/${encodeURIComponent(config.topic)}`;
 
@@ -74,6 +79,7 @@ export async function sendViaNtfy(
     // the settings routes and the webhook sender.
     const policy = evaluateNotificationTarget(url);
     if (!policy.allowed || !policy.canonicalOrigin) {
+      policyReason = policy.reasonCode;
       throw new SafeFetchError(
         "ntfy server refused by the notification origin policy",
         "private_host",
@@ -156,7 +162,9 @@ export async function sendViaNtfy(
       hardReject: false,
       reason,
       message,
-      ...(policyRefused ? { errorCode: PRIVATE_ORIGIN_NOT_APPROVED } : {}),
+      ...(policyRefused
+        ? { errorCode: policyReason ?? PRIVATE_ORIGIN_NOT_APPROVED_CODE }
+        : {}),
     };
   }
 }

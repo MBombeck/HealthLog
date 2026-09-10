@@ -265,4 +265,19 @@ describe("sendViaWebhook", () => {
       expect(opts.operatorApprovedPrivateOrigin).toBe("http://10.0.0.9:8080");
     });
   });
+
+  it("reports the not-grantable code for a loopback target, without dialling (M1)", async () => {
+    const result = await sendViaWebhook(
+      { url: "http://127.0.0.1:8080/message" },
+      payload(),
+    );
+
+    expect(safeFetchMock).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      ok: false,
+      hardReject: false,
+      reason: "webhook_private_origin_refused",
+      errorCode: "private_origin_not_grantable",
+    });
+  });
 });

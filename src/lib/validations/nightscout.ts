@@ -4,13 +4,31 @@ import {
   evaluateOriginGrant,
   INVALID_ORIGIN,
   parsePrivateOrigins,
-  PRIVATE_ORIGIN_NOT_APPROVED,
+  PRIVATE_ORIGIN_NOT_APPROVED_CODE,
   type OriginReason,
   type OriginVerdict,
 } from "@/lib/private-origin-policy";
 
-export const NIGHTSCOUT_PRIVATE_ORIGIN_REASON = PRIVATE_ORIGIN_NOT_APPROVED;
+export const NIGHTSCOUT_PRIVATE_ORIGIN_REASON =
+  PRIVATE_ORIGIN_NOT_APPROVED_CODE;
 export const NIGHTSCOUT_INVALID_ORIGIN_REASON = INVALID_ORIGIN;
+
+/**
+ * Thrown when `NIGHTSCOUT_PRIVATE_ORIGINS` holds an entry that is not a
+ * grant. The message names the entry (scheme and host only) and the reason,
+ * so the sync ledger and the connect form show the operator what to edit
+ * instead of a bare "invalid entry". Loopback and `localhost` entries
+ * became invalid with the shared address floor (#947); a host-networking
+ * deployment lists the LAN address instead.
+ */
+export class NightscoutOriginConfigError extends Error {
+  constructor(redactedEntry: string, reason: string) {
+    super(
+      `Invalid NIGHTSCOUT_PRIVATE_ORIGINS entry "${redactedEntry}": ${reason}`,
+    );
+    this.name = "NightscoutOriginConfigError";
+  }
+}
 
 export type NightscoutOriginReason = OriginReason;
 
@@ -28,8 +46,8 @@ export type NightscoutOriginVerdict = OriginVerdict;
 export function parseNightscoutPrivateOrigins(
   raw: string | undefined,
 ): ReadonlySet<string> {
-  return parsePrivateOrigins(raw, () => {
-    throw new Error("Invalid NIGHTSCOUT_PRIVATE_ORIGINS entry");
+  return parsePrivateOrigins(raw, (redactedEntry, reason) => {
+    throw new NightscoutOriginConfigError(redactedEntry, reason);
   });
 }
 

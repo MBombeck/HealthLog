@@ -5991,6 +5991,7 @@
         "not_configured": "Nicht konfiguriert",
         "url_not_public": "URL ist kein öffentlicher Endpunkt",
         "private_origin_not_approved": "Ziel im privaten Netz. Der Betreiber muss diesen Origin in NOTIFICATION_PRIVATE_ORIGINS eintragen",
+        "private_origin_not_grantable": "Diese Adresse ist Loopback, Link-local oder eine Metadaten-Adresse; keine Betreiber-Freigabe kann sie öffnen. Bitte die LAN-Adresse des Relays verwenden",
         "url_invalid": "URL ist ungültig",
         "redirected": "Endpunkt leitet weiter — URL prüfen",
         "endpoint_not_found": "Endpunkt unter der URL nicht gefunden",

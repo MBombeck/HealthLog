@@ -120,4 +120,24 @@ describe("Nightscout exact-origin policy", () => {
       reasonCode: "invalid_origin",
     });
   });
+
+  it("names the entry and the reason when a loopback grant is listed, without its token (M2)", () => {
+    let caught: unknown;
+    try {
+      parseNightscoutPrivateOrigins(
+        "https://cgm.lan, http://localhost:1337/?token=SECRET123",
+      );
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeInstanceOf(Error);
+    const message = (caught as Error).message;
+    expect((caught as Error).name).toBe("NightscoutOriginConfigError");
+    expect(message).toContain(
+      'NIGHTSCOUT_PRIVATE_ORIGINS entry "http://localhost:1337/"',
+    );
+    expect(message).toMatch(/loopback.*LAN address/);
+    expect(message).not.toContain("SECRET123");
+    expect(message).not.toContain("token=");
+  });
 });

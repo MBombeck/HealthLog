@@ -334,6 +334,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "notification_prefs_conflict",
       "oidc_only",
       "private_origin_not_approved",
+      "private_origin_not_grantable",
       "rate_limited_self",
       "too_many_rows",
       "unreadable_json",

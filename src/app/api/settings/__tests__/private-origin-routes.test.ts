@@ -179,10 +179,10 @@ describe("PUT /api/settings/webhook — private targets", () => {
     expect(json.meta).toBeUndefined();
   });
 
-  it("refuses a loopback grant at save time: listing it does not open it", async () => {
-    // The parser drops a loopback or localhost grant with a warning, so the
-    // save is refused with the reason and the operator learns that the list
-    // is not the way to reach the container itself.
+  it("answers a loopback target with the not-grantable code, listed or not (M1)", async () => {
+    // This used to pin a dead end: the route said "list it", the parser
+    // dropped the listing, and the next save said "list it" again. A target
+    // no grant can open gets its own code and a message that says so.
     vi.spyOn(console, "warn").mockImplementation(() => {});
     process.env.NOTIFICATION_PRIVATE_ORIGINS =
       "http://127.0.0.1:8080, http://localhost:8080";
@@ -190,11 +190,16 @@ describe("PUT /api/settings/webhook — private targets", () => {
     for (const url of [
       "http://127.0.0.1:8080/message",
       "http://localhost:8080/message",
+      "http://169.254.169.254/latest",
+      "http://[::1]:8080/message",
     ]) {
       const response = await put("webhook", { url, enabled: true });
       expect(response.status).toBe(422);
       const json = await response.json();
-      expect(json.meta).toEqual({ errorCode: "private_origin_not_approved" });
+      expect(json.meta).toEqual({ errorCode: "private_origin_not_grantable" });
+      expect(json.error).toMatch(/LAN address/);
+      expect(json.error).not.toContain("NOTIFICATION_PRIVATE_ORIGINS");
+      expect(json.details.issues.length).toBeGreaterThan(0);
     }
     expect(prisma.notificationChannel.upsert).not.toHaveBeenCalled();
   });
@@ -295,6 +300,29 @@ describe("POST /api/settings/{webhook,ntfy}/test — the refusal names itself", 
       const json = await response.json();
       expect(json.meta).toEqual({ errorCode: "private_origin_not_approved" });
       expect(json.error).toContain("NOTIFICATION_PRIVATE_ORIGINS");
+    },
+  );
+
+  it.each([
+    ["webhook", sendViaWebhookMock],
+    ["ntfy", sendViaNtfyMock],
+  ])(
+    "%s: forwards the not-grantable code with a message that does not say list it (M1)",
+    async (path, sender) => {
+      sender.mockResolvedValue({
+        ok: false,
+        hardReject: false,
+        reason: `${path}_private_origin_refused`,
+        errorCode: "private_origin_not_grantable",
+      });
+
+      const response = await post(path);
+
+      expect(response.status).toBe(422);
+      const json = await response.json();
+      expect(json.meta).toEqual({ errorCode: "private_origin_not_grantable" });
+      expect(json.error).toMatch(/LAN address/);
+      expect(json.error).not.toContain("NOTIFICATION_PRIVATE_ORIGINS");
     },
   );
 

@@ -13,7 +13,8 @@ import {
 import {
   evaluateNotificationTarget,
   isAllowedNotificationTarget,
-  PRIVATE_ORIGIN_NOT_APPROVED,
+  PRIVATE_ORIGIN_NOT_APPROVED_CODE,
+  PRIVATE_ORIGIN_NOT_GRANTABLE_CODE,
 } from "@/lib/notifications/egress-policy";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { NextRequest } from "next/server";
@@ -32,6 +33,8 @@ const webhookSettingsSchema = webhookSettingsSchemaWith(
 
 const PRIVATE_ORIGIN_REFUSAL =
   "This address is on a private network. The operator has to list its exact origin (scheme://host:port) in NOTIFICATION_PRIVATE_ORIGINS before HealthLog can send to it.";
+const NOT_GRANTABLE_REFUSAL =
+  "This address is loopback, link-local or a metadata address, which no operator grant can open. Use the relay's LAN address instead.";
 
 /**
  * Generic-webhook channel config (v1.17.1).
@@ -139,18 +142,26 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     // adds the code and a message naming the operator's lever (#947).
     const issues = sanitiseZodIssues(parsed.error.issues);
     const candidate = (body as { url?: unknown } | null)?.url;
+    const reason =
+      typeof candidate === "string"
+        ? evaluateNotificationTarget(candidate).reasonCode
+        : null;
     if (
-      typeof candidate === "string" &&
-      evaluateNotificationTarget(candidate).reasonCode ===
-        PRIVATE_ORIGIN_NOT_APPROVED
+      reason === PRIVATE_ORIGIN_NOT_APPROVED_CODE ||
+      reason === PRIVATE_ORIGIN_NOT_GRANTABLE_CODE
     ) {
       annotate({
         action: { name: "settings.webhook.update" },
-        meta: { refused: PRIVATE_ORIGIN_NOT_APPROVED },
+        meta: { refused: reason },
       });
-      return apiValidationError(PRIVATE_ORIGIN_REFUSAL, issues, 422, {
-        errorCode: PRIVATE_ORIGIN_NOT_APPROVED,
-      });
+      return apiValidationError(
+        reason === PRIVATE_ORIGIN_NOT_GRANTABLE_CODE
+          ? NOT_GRANTABLE_REFUSAL
+          : PRIVATE_ORIGIN_REFUSAL,
+        issues,
+        422,
+        { errorCode: reason },
+      );
     }
     return apiValidationError("Invalid data", issues, 422);
   }

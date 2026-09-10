@@ -72,8 +72,20 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
         }),
       });
       if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.error || t("common.error"));
+        const json = (await res.json()) as {
+          error?: string;
+          meta?: { errorCode?: string };
+        };
+        // A coded refusal (the private-origin policy) translates like the
+        // test button's; anything else shows the server sentence.
+        const code = json.meta?.errorCode;
+        const key = code ? `settings.testConnection.errors.${code}` : null;
+        const translated = key ? t(key) : null;
+        throw new Error(
+          translated && translated !== key
+            ? translated
+            : json.error || t("common.error"),
+        );
       }
     },
     onSuccess: () => {

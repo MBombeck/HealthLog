@@ -12022,7 +12022,8 @@ paths:
         "422":
           description: Body matched neither accepted shape, or `enabled` is true while the stored config has no server URL and
             topic; or the server URL is on a private network the operator has not listed in
-            `NOTIFICATION_PRIVATE_ORIGINS` (`meta.errorCode` = `private_origin_not_approved`). Nothing was stored.
+            `NOTIFICATION_PRIVATE_ORIGINS` (`meta.errorCode` = `private_origin_not_approved`), or it is a loopback,
+            link-local or metadata address that no grant can open (`private_origin_not_grantable`). Nothing was stored.
           content:
             application/json:
               schema:
@@ -12149,7 +12150,8 @@ paths:
         "422":
           description: Body matched neither accepted shape, or `enabled` is true while no webhook URL is stored; or the URL is on
             a private network the operator has not listed in `NOTIFICATION_PRIVATE_ORIGINS` (`meta.errorCode` =
-            `private_origin_not_approved`). Nothing was stored.
+            `private_origin_not_approved`), or it is a loopback, link-local or metadata address that no grant can open
+            (`private_origin_not_grantable`). Nothing was stored.
           content:
             application/json:
               schema:
@@ -12386,7 +12388,8 @@ paths:
         "401": *a1
         "422":
           description: The saved server is on a private network the operator has not approved (`meta.errorCode` =
-            `private_origin_not_approved`). The resolved address is never echoed.
+            `private_origin_not_approved`), or is a loopback, link-local or metadata address that no grant can open
+            (`private_origin_not_grantable`). The resolved address is never echoed.
           content:
             application/json:
               schema:
@@ -12436,7 +12439,8 @@ paths:
         "401": *a1
         "422":
           description: The saved URL is on a private network the operator has not approved (`meta.errorCode` =
-            `private_origin_not_approved`). The resolved address is never echoed.
+            `private_origin_not_approved`), or is a loopback, link-local or metadata address that no grant can open
+            (`private_origin_not_grantable`). The resolved address is never echoed.
           content:
             application/json:
               schema:
@@ -30099,8 +30103,8 @@ components:
                 dashboard_layout_conflict, empty_file, health_score_config_conflict, insights_layout_conflict,
                 invalid_base_updated_at, json_carries_no_intake_time, json_not_an_array, medication_layout_conflict,
                 missing_required_columns, modules_conflict, mood_tag_layout_conflict, not_configured,
-                notification_prefs_conflict, oidc_only, private_origin_not_approved, rate_limited_self, too_many_rows,
-                unreadable_json, upstream_invalid_json, vapid_not_configured"
+                notification_prefs_conflict, oidc_only, private_origin_not_approved, private_origin_not_grantable,
+                rate_limited_self, too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
               type: string
           additionalProperties: {}
       required:

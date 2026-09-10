@@ -26,6 +26,7 @@ import {
   configuredNightscoutPrivateOrigins,
   evaluateNightscoutOrigin,
   nightscoutConnectSchema,
+  NightscoutOriginConfigError,
 } from "@/lib/validations/nightscout";
 
 /**
@@ -67,10 +68,22 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const { url, token } = result.data;
-  const policy = evaluateNightscoutOrigin(
-    url,
-    configuredNightscoutPrivateOrigins(),
-  );
+  // An operator list that holds a non-grant is an operator problem, not a
+  // user one: say which entry and why, rather than a 500 with no words.
+  let privateOrigins: ReadonlySet<string>;
+  try {
+    privateOrigins = configuredNightscoutPrivateOrigins();
+  } catch (err) {
+    if (err instanceof NightscoutOriginConfigError) {
+      annotate({
+        action: { name: "nightscout.connect" },
+        meta: { refused: "operator_origin_list_invalid" },
+      });
+      return apiError(err.message, 422);
+    }
+    throw err;
+  }
+  const policy = evaluateNightscoutOrigin(url, privateOrigins);
 
   // SSRF floor at INPUT time, not merely as a side effect of the live probe
   // below. `fetchSgvEntries` does route through `safeFetch` with the same

@@ -5991,6 +5991,7 @@
         "not_configured": "Non configurato",
         "url_not_public": "L’URL non è un endpoint pubblico",
         "private_origin_not_approved": "Destinazione su una rete privata. L’operatore deve aggiungere questa origine a NOTIFICATION_PRIVATE_ORIGINS",
+        "private_origin_not_grantable": "Questo indirizzo è di loopback, link-local o dei metadati; nessuna autorizzazione dell’operatore può aprirlo. Usa l’indirizzo LAN del relay",
         "url_invalid": "L’URL non è valido",
         "redirected": "L’endpoint reindirizza — controlla l’URL",
         "endpoint_not_found": "Endpoint non trovato all’URL",

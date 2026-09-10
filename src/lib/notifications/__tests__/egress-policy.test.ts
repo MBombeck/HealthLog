@@ -75,6 +75,21 @@ describe("configuredNotificationPrivateOrigins", () => {
     expect(lines[0]).toContain("NOTIFICATION_PRIVATE_ORIGINS");
     expect(lines[0]).toContain("https://*.lan");
     expect(lines[1]).toContain("http://127.0.0.1:8080");
+    expect(lines[1]).toMatch(/loopback.*cannot be granted/);
+  });
+
+  it("warns without echoing a query, fragment or userinfo (M3)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    process.env.NOTIFICATION_PRIVATE_ORIGINS =
+      "http://10.0.0.4/message?token=AbC123, http://user:pw@gotify.lan/, https://ntfy.lan/topic#frag";
+
+    expect(configuredNotificationPrivateOrigins()).toEqual(new Set());
+
+    const lines = warn.mock.calls.map((call) => String(call[0]));
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toContain('"http://10.0.0.4/message"');
+    expect(lines[1]).toContain('"http://gotify.lan/"');
+    expect(lines.join("\n")).not.toMatch(/AbC123|token=|user:pw|#frag/);
   });
 
   it("never widens on a wholly malformed value", () => {
@@ -137,12 +152,25 @@ describe("evaluateNotificationTarget", () => {
     });
   });
 
-  it("keeps the raw-string floor: an octal loopback spelling is refused, not parsed", () => {
+  it("keeps the raw-string floor: an octal loopback spelling is refused as never grantable", () => {
     expect(
       evaluateNotificationTarget("http://0177.0.0.1/message"),
     ).toMatchObject({
       allowed: false,
-      reasonCode: "private_origin_not_approved",
+      reasonCode: "private_origin_not_grantable",
+    });
+  });
+
+  it.each([
+    ["loopback", "http://127.0.0.1:8080/message"],
+    ["localhost", "http://localhost:8080/message"],
+    ["metadata", "http://169.254.169.254/latest"],
+    ["IPv6 loopback", "http://[::1]:8080/message"],
+  ])("answers a %s target with the not-grantable code (M1)", (_l, url) => {
+    process.env.NOTIFICATION_PRIVATE_ORIGINS = "https://gotify.example.com";
+    expect(evaluateNotificationTarget(url)).toMatchObject({
+      allowed: false,
+      reasonCode: "private_origin_not_grantable",
     });
   });
 

@@ -3,7 +3,8 @@ import {
   INVALID_ORIGIN,
   originOfUrl,
   parsePrivateOrigins,
-  PRIVATE_ORIGIN_NOT_APPROVED,
+  PRIVATE_ORIGIN_NOT_APPROVED_CODE,
+  PRIVATE_ORIGIN_NOT_GRANTABLE_CODE,
   type OriginVerdict,
 } from "@/lib/private-origin-policy";
 import { annotate, getEvent } from "@/lib/logging/context";
@@ -43,10 +44,11 @@ let cachedOrigins: ReadonlySet<string> = new Set();
 export function configuredNotificationPrivateOrigins(): ReadonlySet<string> {
   const raw = process.env.NOTIFICATION_PRIVATE_ORIGINS;
   if (raw === cachedRaw) return cachedOrigins;
-  cachedOrigins = parsePrivateOrigins(raw, (entry) => {
-    console.warn(
-      `${ENV_NAME}: ignoring entry "${entry}" — a grant is one exact http(s) origin (scheme://host[:port]) on a private network; loopback, link-local and metadata addresses cannot be granted`,
-    );
+  // The entry arrives reduced to scheme and host: this line goes to stdout,
+  // not through the wide-event redactors, and a malformed entry is where a
+  // pasted token or userinfo would sit.
+  cachedOrigins = parsePrivateOrigins(raw, (redactedEntry, reason) => {
+    console.warn(`${ENV_NAME}: ignoring entry "${redactedEntry}": ${reason}`);
   });
   cachedRaw = raw;
   return cachedOrigins;
@@ -85,7 +87,7 @@ export function isAllowedNotificationTarget(url: string): boolean {
   return evaluateNotificationTarget(url).allowed;
 }
 
-export { PRIVATE_ORIGIN_NOT_APPROVED };
+export { PRIVATE_ORIGIN_NOT_APPROVED_CODE, PRIVATE_ORIGIN_NOT_GRANTABLE_CODE };
 
 /**
  * Wide-event mark for a send that used the grant: one row per private
