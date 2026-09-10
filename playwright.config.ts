@@ -171,6 +171,11 @@ export default defineConfig({
         // through stable data attributes, not a mobile layout, so it runs in
         // one project.
         "apple-health-import.spec.ts",
+        // The backup/restore journey, for both reasons already on this list
+        // at once: it restores a snapshot over its own account, so a second
+        // project would be two browsers rewriting one record's tables in
+        // parallel, and its last act switches a session into that record.
+        "backup-restore-journey.spec.ts",
       ],
       use: {
         // Pixel 5 — Chromium-based mobile profile so CI only needs

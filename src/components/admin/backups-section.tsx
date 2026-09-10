@@ -177,6 +177,7 @@ function RestoreRowDialog({
         <Button
           size="sm"
           variant="destructive"
+          data-testid="backup-restore-trigger"
           disabled={pending}
           aria-label={t("admin.section.backups.restoreAria", {
             username: row.username,
@@ -260,6 +261,7 @@ function RestoreRowDialog({
           </Label>
           <Input
             id={`restore-prompt-${row.id}`}
+            data-testid="backup-restore-prompt"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             autoComplete="off"
@@ -270,6 +272,7 @@ function RestoreRowDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction
+            data-testid="backup-restore-confirm"
             disabled={!matched || pending}
             variant="destructive"
             onClick={() => {
@@ -986,6 +989,7 @@ export function BackupsSection() {
             action={
               <Button
                 size="sm"
+                data-testid="backup-run-now"
                 disabled={runBackup.isPending}
                 onClick={() => runBackup.mutate()}
                 className="min-h-11"
@@ -1033,7 +1037,12 @@ export function BackupsSection() {
                   it holds at any viewport. */}
               <tbody data-slot="backup-rows" className="divide-border divide-y">
                 {rows.map((row, i) => (
-                  <tr key={row.id} className={i % 2 === 0 ? "bg-muted/30" : ""}>
+                  <tr
+                    key={row.id}
+                    data-backup-id={row.id}
+                    data-backup-username={row.username}
+                    className={i % 2 === 0 ? "bg-muted/30" : ""}
+                  >
                     <td className="px-3 py-2 font-medium">{row.username}</td>
                     <td className="px-3 py-2">
                       <Badge variant="secondary" className="text-xs">
@@ -1051,6 +1060,7 @@ export function BackupsSection() {
                         <Button
                           size="sm"
                           variant="outline"
+                          data-testid="backup-download"
                           disabled={downloadingId === row.id}
                           onClick={() => handleDownload(row)}
                           aria-label={t("admin.section.backups.downloadAria", {
@@ -1095,7 +1105,7 @@ export function BackupsSection() {
                 key={row.id}
                 className="bg-muted/30 border-border"
               >
-                <li>
+                <li data-backup-id={row.id} data-backup-username={row.username}>
                   <div className="flex items-center gap-2">
                     <span className="truncate font-medium">{row.username}</span>
                     <Badge variant="secondary" className="text-xs">
@@ -1111,6 +1121,7 @@ export function BackupsSection() {
                     <Button
                       size="sm"
                       variant="outline"
+                      data-testid="backup-download"
                       disabled={downloadingId === row.id}
                       onClick={() => handleDownload(row)}
                       aria-label={t("admin.section.backups.downloadAria", {
@@ -1149,6 +1160,7 @@ export function BackupsSection() {
       <SettingsCardActions>
         <Button
           size="sm"
+          data-testid="backup-run-now"
           disabled={runBackup.isPending}
           onClick={() => runBackup.mutate()}
           className="min-h-11"
