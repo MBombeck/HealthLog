@@ -101,6 +101,31 @@ export const E2E_SCOPE_DELEGATE = {
   role: "USER",
 } as const;
 
+/**
+ * The doctor-report journey's own account.
+ *
+ * Generating a report WRITES: the route remembers the scope and the practice
+ * name on the account row, and the panel a later visit opens is therefore the
+ * "repeat run" state with the picker collapsed. `settings-export.spec.ts`
+ * asserts the opposite — an expanded picker, an empty summary, a disabled
+ * button — against the shared account, so a journey that generated there would
+ * turn nine of its assertions red the moment the two files happened to run in
+ * the wrong order, and keep them red on every later run against the same
+ * database.
+ *
+ * Its own account also keeps the seeded readings, the emergency profile and
+ * the hourly export bucket off the account sixty other specs read.
+ *
+ * `date_format` is pinned rather than left on AUTO: the spec reads the period
+ * line out of the rendered PDF and has to know which field is the month.
+ */
+export const E2E_REPORT_OWNER = {
+  email: "e2e-report-owner@healthlog.test",
+  username: "e2e-report-owner",
+  password: "Hd6!Tw3pV9nQ2xLb",
+  role: "USER",
+} as const;
+
 /** One non-personal target record per closed sharing domain. */
 export const E2E_SCOPE_RECORDS = [
   {
@@ -262,6 +287,15 @@ export const REPORT_DELEGATE_STORAGE_STATE_PATH = resolve(
 );
 
 /**
+ * The doctor-report journey's jar. Its own account, so what generating a report
+ * stamps on the account row cannot reach the shared one — see `E2E_REPORT_OWNER`.
+ */
+export const REPORT_OWNER_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateReportOwner.json",
+);
+
+/**
  * The banner-geometry spec's jar, and the reason it exists is a release-shaped
  * one rather than a load-shaped one.
  *
@@ -368,7 +402,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
          insights_cached_text = NULL,
          onboarding_completed_at = EXCLUDED.onboarding_completed_at,
          onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
-         module_preferences_json = EXCLUDED.module_preferences_json`,
+         module_preferences_json = EXCLUDED.module_preferences_json,
+         report_selection_json = NULL,
+         last_report_practice_name = NULL`,
       [
         cuid(),
         E2E_USER.username,
@@ -417,6 +453,40 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
            WHERE u.username = $1
          )`,
       [E2E_GUARDIAN.username],
+    );
+
+    // The doctor-report journey's account. Seeded like the shared one — a
+    // record with a height, a date of birth and a gender, so the report has a
+    // patient header to print — and with the two report columns cleared, which
+    // is what puts the panel back into its first-run state on every run.
+    await pool.query(
+      `INSERT INTO users
+        (id, username, email, password_hash, role, created_at, updated_at,
+         height_cm, date_of_birth, gender, date_format,
+         onboarding_completed_at, onboarding_tour_completed)
+       VALUES ($1, $2, $3, $4, 'USER', $5, $5,
+               180, $6, 'MALE', 'MDY',
+               $5, true)
+       ON CONFLICT (username) DO UPDATE SET
+         email = EXCLUDED.email,
+         password_hash = EXCLUDED.password_hash,
+         updated_at = EXCLUDED.updated_at,
+         height_cm = EXCLUDED.height_cm,
+         date_of_birth = EXCLUDED.date_of_birth,
+         gender = EXCLUDED.gender,
+         date_format = EXCLUDED.date_format,
+         onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+         onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
+         report_selection_json = NULL,
+         last_report_practice_name = NULL`,
+      [
+        cuid(),
+        E2E_REPORT_OWNER.username,
+        E2E_REPORT_OWNER.email,
+        await hashPassword(E2E_REPORT_OWNER.password),
+        now,
+        dob,
+      ],
     );
 
     // The scoped-record journey uses a dedicated delegate so its preseeded
@@ -529,7 +599,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
            managed_profile_at = EXCLUDED.managed_profile_at,
            onboarding_completed_at = EXCLUDED.onboarding_completed_at,
            onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
-           module_preferences_json = EXCLUDED.module_preferences_json`,
+           module_preferences_json = EXCLUDED.module_preferences_json,
+           report_selection_json = NULL,
+           last_report_practice_name = NULL`,
         [
           cuid(),
           record.username,
@@ -587,6 +659,20 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
          SELECT id::text FROM users WHERE username = $1
        )`,
       [E2E_USER.username],
+    );
+
+    // The export bucket, for the same reason and with the same shape. Every
+    // export route shares one 10-per-hour bucket keyed on the ACTOR, the
+    // counter outlives a run by a full hour, and the doctor-report journey
+    // spends two of it per pass — so a fourth run inside the hour would meet a
+    // 429 and report a missing artefact rather than a spent quota. Only the two
+    // accounts that generate a report are cleared.
+    await pool.query(
+      `DELETE FROM rate_limits
+       WHERE key IN (
+         SELECT 'export:' || id::text FROM users WHERE username = ANY($1)
+       )`,
+      [[E2E_REPORT_OWNER.username, E2E_SCOPE_DELEGATE.username]],
     );
 
     // Opt the seed account into cycle tracking. The user is seeded as
@@ -658,12 +744,13 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
        WHERE key LIKE 'sharing:%'`,
     );
 
-    // The login bucket, for the same reason. This setup signs in TEN times now
-    // (the shared jar, the owner, and one jar apiece for every spec that moves
-    // a session's record selector), and the ceiling is five attempts per IP per
-    // quarter-hour — so two local runs in a row would otherwise end with a 429
-    // from the fixture rather than a failure from the product. Only the auth
-    // surfaces' own buckets are cleared; nothing else in the table is touched.
+    // The login bucket, for the same reason. This setup signs in THIRTEEN
+    // times now (the shared jar, the owner, the report owner, and one jar
+    // apiece for every spec that moves a session's record selector), and the
+    // ceiling is five attempts per IP per quarter-hour — so two local runs in a
+    // row would otherwise end with a 429 from the fixture rather than a failure
+    // from the product. Only the auth surfaces' own buckets are cleared;
+    // nothing else in the table is touched.
     await pool.query(`DELETE FROM rate_limits WHERE key LIKE 'auth:%'`);
 
     // One marker weight per record. Re-seeded by delete-then-insert so a
@@ -733,7 +820,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
      * Log one account in, clearing the login bucket first.
      *
      * The ceiling is FIVE attempts per IP per quarter-hour and this setup now
-     * signs in ten times, so clearing once before the batch is no longer
+     * signs in thirteen times, so clearing once before the batch is no longer
      * enough — the sixth would be answered by the fixture's own 429 rather
      * than by the product. Only the auth surfaces' buckets are touched, and
      * only between logins this setup is itself performing.
@@ -772,6 +859,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     await capture(E2E_SCOPE_DELEGATE, CROSS_TAB_STORAGE_STATE_PATH);
     await capture(E2E_SCOPE_DELEGATE, SEAM_BANNERS_STORAGE_STATE_PATH);
     await capture(E2E_SCOPE_DELEGATE, REPORT_DELEGATE_STORAGE_STATE_PATH);
+
+    // The doctor-report journey's own account, for the reason written on
+    // E2E_REPORT_OWNER: generating a report writes to the account row.
+    await capture(E2E_REPORT_OWNER, REPORT_OWNER_STORAGE_STATE_PATH);
 
     // v1.37.0 — the guardian's jar, and only then its second factor.
     //

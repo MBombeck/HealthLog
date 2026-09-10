@@ -26,12 +26,21 @@
  * period and simply carries no blood-pressure section. An empty report is a
  * true statement about an empty window; a truncated or unopenable file is not.
  *
+ * Its own account, and not the shared one: generating a report WRITES. The
+ * route remembers the scope and the practice name on the account row, so the
+ * panel a later visit opens is the collapsed "repeat run" state — which is
+ * exactly the state `settings-export.spec.ts` asserts the opposite of, against
+ * the shared account, in nine places. See `E2E_REPORT_OWNER`.
+ *
  * The fixture is seeded through the PAGE's own `fetch` under the session the
  * spec is already authenticated as — not through a second Playwright request
  * context — so the rows are written by exactly the credential that later reads
- * them back. Seeding is idempotent: a re-post of the same reading collides on
- * the measurement's natural key and answers 409, which is why `--repeat-each`
- * and a second local run both stay green.
+ * them back. The ROWS are idempotent: a re-post of the same reading collides on
+ * the measurement's natural key and answers 409, so `--repeat-each` and a
+ * second local run write nothing twice. The export QUOTA is not idempotent —
+ * every export route shares one 10-per-hour bucket keyed on the actor, and it
+ * outlives the run — so `global-setup` clears this account's bucket before each
+ * run rather than the file pretending the press is free.
  *
  * The delegate half of the story — a READ-level delegate cannot generate the
  * owner's report — lives in `doctor-report-delegate.spec.ts`, which needs its
@@ -42,7 +51,7 @@ import { readFile } from "node:fs/promises";
 import type { Page, Response } from "@playwright/test";
 import { PDFParse } from "pdf-parse";
 
-import { STORAGE_STATE_PATH } from "./setup/global-setup";
+import { REPORT_OWNER_STORAGE_STATE_PATH } from "./setup/global-setup";
 import { expect, test } from "./setup/test";
 
 /** The allergy and the drug the report has to name. Both plain ASCII: the
@@ -360,9 +369,9 @@ function periodSpanDays(text: string): number {
 }
 
 test.describe.serial("the doctor report", () => {
-  // The seeded account owns the readings, the allergy and the drug, and the
-  // page's own `fetch` writes them under its session.
-  test.use({ storageState: STORAGE_STATE_PATH });
+  // This journey's own account owns the readings, the allergy and the drug, and
+  // the page's own `fetch` writes them under its session.
+  test.use({ storageState: REPORT_OWNER_STORAGE_STATE_PATH });
 
   test("generates a PDF that names the period, the vitals and the medication", async ({
     page,
