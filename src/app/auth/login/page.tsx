@@ -424,6 +424,7 @@ export default function LoginPage() {
                 {mode === "passkey" ? (
                   <Button
                     variant="outline"
+                    data-testid="login-use-password"
                     className="min-h-11 w-full"
                     size="lg"
                     onClick={() => setMode("password")}
@@ -472,6 +473,7 @@ export default function LoginPage() {
                     </div>
                     <Button
                       type="submit"
+                      data-testid="login-password-submit"
                       className="min-h-11 w-full"
                       size="lg"
                       disabled={loading}

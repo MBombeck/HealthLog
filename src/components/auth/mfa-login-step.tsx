@@ -129,6 +129,7 @@ export function MfaLoginStep({
             </Label>
             <Input
               id={codeFieldId}
+              data-testid="mfa-code-input"
               value={code}
               onChange={(e) =>
                 setCode(
@@ -148,6 +149,7 @@ export function MfaLoginStep({
           </div>
           <Button
             type="submit"
+            data-testid="mfa-code-submit"
             className="min-h-11 w-full"
             size="lg"
             disabled={loading || code.trim().length < 6}
@@ -196,6 +198,7 @@ export function MfaLoginStep({
       {hasTotp && (
         <button
           type="button"
+          data-testid="mfa-toggle-recovery"
           onClick={() => {
             setUseRecovery((v) => !v);
             setCode("");
@@ -212,6 +215,7 @@ export function MfaLoginStep({
       {error && (
         <div
           id={errorId}
+          data-testid="mfa-error"
           role="alert"
           aria-live="polite"
           className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"

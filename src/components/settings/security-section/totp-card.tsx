@@ -197,7 +197,7 @@ export function TotpCard({
   }
 
   return (
-    <SettingsCard>
+    <SettingsCard data-testid="totp-card">
       <SettingsCardHeader
         icon={Smartphone}
         title={t("settings.security.totp.title")}
@@ -216,6 +216,7 @@ export function TotpCard({
         {!enabled && !setup && !freshCodes && (
           <Button
             type="button"
+            data-testid="totp-setup-start"
             className="min-h-11 sm:min-h-9"
             onClick={() => beginSetup.mutate()}
             disabled={beginSetup.isPending}
@@ -291,6 +292,7 @@ export function TotpCard({
               <div className="flex gap-2">
                 <Input
                   id={codeFieldId}
+                  data-testid="totp-confirm-code"
                   value={code}
                   onChange={(e) =>
                     setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
@@ -303,6 +305,7 @@ export function TotpCard({
                 />
                 <Button
                   type="submit"
+                  data-testid="totp-confirm-submit"
                   className="min-h-11 sm:min-h-9"
                   disabled={confirm.isPending || code.length !== 6}
                 >
@@ -330,6 +333,7 @@ export function TotpCard({
             <SettingsCardActions>
               <Button
                 type="button"
+                data-testid="recovery-codes-dismiss"
                 variant="outline"
                 className="min-h-11 sm:min-h-9"
                 onClick={() => setFreshCodes(null)}
@@ -356,6 +360,7 @@ export function TotpCard({
                 <AlertDialogTrigger asChild>
                   <Button
                     type="button"
+                    data-testid="recovery-regenerate"
                     variant="outline"
                     className="min-h-11 sm:min-h-9"
                     disabled={regenerate.isPending}
@@ -378,6 +383,7 @@ export function TotpCard({
                   <AlertDialogFooter>
                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                     <AlertDialogAction
+                      data-testid="recovery-regenerate-confirm"
                       disabled={regenerate.isPending}
                       aria-busy={regenerate.isPending || undefined}
                       onClick={(e) => {
@@ -479,6 +485,7 @@ export function TotpCard({
         {error && (
           <div
             role="alert"
+            data-testid="totp-error"
             className="text-destructive mt-3 flex items-center gap-2 text-sm"
           >
             <AlertTriangle className="h-4 w-4 shrink-0" />
