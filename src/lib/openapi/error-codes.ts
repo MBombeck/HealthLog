@@ -251,6 +251,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "profile.update.invalidBody",
       "profile.update.nothingSaved",
     ],
+    record_write: ["record_write.rate_limited"],
     "report-selection": [
       "report-selection.body.invalid_json",
       "report-selection.body.invalid_shape",

@@ -312,7 +312,7 @@ export const stdResponses = {
 export const recordWriteRateLimitResponse = {
   "429": {
     description:
-      "Rate limit exceeded. This route shares one per-account bucket with the other single-record writes — `record-write:<accountId>`, 300 requests per 60 seconds — keyed on the ACTING account, so a delegate burns their own allowance rather than the record owner's. Nothing was written. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers describe that bucket; back off on `Retry-After` rather than guessing. A client with more than a handful of rows to send should use the batch endpoint for its domain instead of looping this one.",
+      "Rate limit exceeded. This route shares one per-account bucket with the other single-record writes — `record-write:<accountId>`, 300 requests per 60 seconds — keyed on the ACTING account, so a delegate burns their own allowance rather than the record owner's. Nothing was written. `meta.errorCode` is `record_write.rate_limited`, which is what tells this refusal apart from a route's own narrower bucket when both can answer 429. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers describe that bucket; back off on `Retry-After` rather than guessing. Every request counts against the bucket, refused ones included: the check runs before the body is read, so a client looping on a 422 spends the same allowance as one that writes rows. A client with more than a handful of rows to send should use the batch endpoint for its domain instead of looping this one.",
     content: { "application/json": { schema: errorEnvelope } },
     headers: stdResponses["429"].headers,
   },

@@ -392,12 +392,15 @@ paths:
         "409": *a7
         "422": *a4
         "429": &a10
-          description: Rate limit exceeded. This route shares one per-account bucket with the other single-record writes —
+          description: "Rate limit exceeded. This route shares one per-account bucket with the other single-record writes —
             `record-write:<accountId>`, 300 requests per 60 seconds — keyed on the ACTING account, so a delegate burns
-            their own allowance rather than the record owner's. Nothing was written. The `Retry-After`,
-            `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers describe that bucket; back off
-            on `Retry-After` rather than guessing. A client with more than a handful of rows to send should use the
-            batch endpoint for its domain instead of looping this one.
+            their own allowance rather than the record owner's. Nothing was written. `meta.errorCode` is
+            `record_write.rate_limited`, which is what tells this refusal apart from a route's own narrower bucket when
+            both can answer 429. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`
+            headers describe that bucket; back off on `Retry-After` rather than guessing. Every request counts against
+            the bucket, refused ones included: the check runs before the body is read, so a client looping on a 422
+            spends the same allowance as one that writes rows. A client with more than a handful of rows to send should
+            use the batch endpoint for its domain instead of looping this one."
           headers: *a8
           content:
             application/json:
@@ -29574,21 +29577,21 @@ components:
                 onboarding.step.concurrent, onboarding.step.invalid, onboarding.step.outOfOrder,
                 onboarding.step.rateLimited, onboarding.tour.invalid, onboarding.user.notFound; personal_records —
                 personal_records.invalid_query; practitioner — practitioner.invalid; profile —
-                profile.update.emailInUse, profile.update.invalidBody, profile.update.nothingSaved; report-selection —
-                report-selection.body.invalid_json, report-selection.body.invalid_shape,
-                report-selection.leaves.unknown; route — route.retired; share-link — share-link.document.decryptFailed,
-                share-link.document.notFound, share-link.document.rateLimited, share-link.documents.invalid,
-                share-link.report.notFound, share-link.report.rateLimited, share-link.selection.forbidden_leaf,
-                share-link.selection.unknown_leaf; sharing — sharing.accept.expired, sharing.accept.not_found,
-                sharing.accept.not_pending, sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate,
-                sharing.invite.invalid, sharing.invite.invalid_scope, sharing.invite.manage_browser_only,
-                sharing.invite.refused, sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended,
-                sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
-                sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
-                source-priority.body.invalid_json, source-priority.body.invalid_shape; tokens —
-                tokens.measurements.ceiling_reached; vaccination — vaccination.booster-invalid,
-                vaccination.booster-no-antigen, vaccination.encounter-not-found, vaccination.identity-required,
-                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
+                profile.update.emailInUse, profile.update.invalidBody, profile.update.nothingSaved; record_write —
+                record_write.rate_limited; report-selection — report-selection.body.invalid_json,
+                report-selection.body.invalid_shape, report-selection.leaves.unknown; route — route.retired; share-link
+                — share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
+                share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
+                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
+                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
+                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
+                sharing.invite.manage_browser_only, sharing.invite.refused, sharing.invite.self, sharing.not_permitted,
+                sharing.renounce.already_ended, sharing.renounce.not_found, sharing.revoke.already_ended,
+                sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
+                sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
+                source-priority.body.invalid_shape; tokens — tokens.measurements.ceiling_reached; vaccination —
+                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.encounter-not-found,
+                vaccination.identity-required, vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
                 vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
                 workout.batch.too_large; (unprefixed) — about_me_conflict, ai_response_truncated, coach_prefs_conflict,
                 dashboard_layout_conflict, empty_file, health_score_config_conflict, insights_layout_conflict,

@@ -807,7 +807,9 @@ async function postMeasurement(request: NextRequest) {
   // client hits were not.
   const writeRl = await checkRecordWriteRateLimit(auth.actor.id);
   if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429);
+    return apiError("Too many writes, try again later", 429, {
+      errorCode: "record_write.rate_limited",
+    });
   }
 
   const { data: body, error: jsonError } = await safeJson(request, {

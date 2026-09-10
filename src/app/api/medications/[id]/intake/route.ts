@@ -64,7 +64,9 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
   // client hits were not.
   const writeRl = await checkRecordWriteRateLimit(actor.id);
   if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429);
+    return apiError("Too many writes, try again later", 429, {
+      errorCode: "record_write.rate_limited",
+    });
   }
 
   // v1.36.1 follow-up — the sibling route `POST /api/medications/intake`

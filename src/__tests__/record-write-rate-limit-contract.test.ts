@@ -128,6 +128,18 @@ describe("the shared single-record write bucket", () => {
     expect(missing).toEqual([]);
   });
 
+  it("names the code it publishes at every site", () => {
+    // The prose is not the discriminator: two of these routes consult a second
+    // bucket of their own, and a client that can only read `error` cannot tell
+    // which one refused it.
+    const silent = ON_THE_SHARED_BUCKET.filter(([route]) => {
+      const src = readFileSync(join(process.cwd(), route), "utf8");
+      return !src.includes('errorCode: "record_write.rate_limited"');
+    }).map(([route]) => route);
+    expect(silent).toEqual([]);
+    expect(published).toContain("record_write.rate_limited");
+  });
+
   it("is published on every operation that answers it", () => {
     const doc = buildOpenApiDocument() as {
       paths: Record<
