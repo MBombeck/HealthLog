@@ -35,7 +35,6 @@ import { encounterKindLabel } from "@/lib/encounters/kind-label";
 import { toEncounterDTO, type EncounterListDTO } from "@/lib/encounters/dto";
 import {
   ENCOUNTER_INCLUDE,
-  actingDomainVisibility,
   applyEncounterLinks,
   loadEncounterLinksForMany,
   closeCheckupForVisit,
@@ -50,6 +49,7 @@ import {
   summarizeRestoreSkips,
   type RestoreSkipLog,
 } from "@/lib/export/restore-skips";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user, grantId } = await requireRecordAuth("read", "profile");

@@ -22,12 +22,12 @@ import { encounterKindLabel } from "@/lib/encounters/kind-label";
 import { toEncounterDTO } from "@/lib/encounters/dto";
 import {
   ENCOUNTER_INCLUDE,
-  actingDomainVisibility,
   loadEncounterLinks,
   resolveOwnerNotificationContext,
   shouldHaveReminder,
 } from "@/lib/encounters/service";
 import { reanchorAppointmentReminder } from "@/lib/encounters/appointment-reminder";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

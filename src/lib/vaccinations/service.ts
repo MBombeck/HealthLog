@@ -11,7 +11,6 @@ import type { Prisma } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
 import { listTargets, replaceTargets } from "@/lib/links";
-import { grantCoversDomain } from "@/lib/sharing/grants";
 import type { ShareDomain } from "@/lib/sharing/scope";
 import type { VaccinationDocumentDTO } from "@/lib/vaccinations/dto";
 import {
@@ -36,29 +35,6 @@ export const SERIES_SELECT = {
   doseNumber: true,
   seriesDoses: true,
 } as const satisfies Prisma.VaccinationRecordSelect;
-
-/**
- * Which sections of the record the caller is actually inside.
- *
- * Returns a predicate rather than a set so the owner path costs nothing: with
- * no grant there is nothing to look up and every domain is open. A grant that
- * vanished between the auth check and here answers "no" to everything, which
- * is the fail-closed direction. Same shape as the visits service, deliberately
- * — the two features sit on the same seam and a second spelling of this would
- * be a second thing to keep in step.
- */
-export async function actingDomainVisibility(
-  tx: Prisma.TransactionClient,
-  grantId: string | null,
-): Promise<(domain: ShareDomain) => boolean> {
-  if (grantId === null) return () => true;
-  const grant = await tx.accountGrant.findUnique({
-    where: { id: grantId },
-    select: { scopeJson: true },
-  });
-  if (!grant) return () => false;
-  return (domain) => grantCoversDomain(grant, domain);
-}
 
 /**
  * The whole live history for one account, in the shape the derivation wants.

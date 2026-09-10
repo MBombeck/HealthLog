@@ -16,6 +16,7 @@
  */
 import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
@@ -50,7 +51,7 @@ const WINDOW_DAYS = 365;
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireRecordAuth("read", "cycle");
+  const { user, grantId } = await requireRecordAuth("read", "cycle");
 
   const gate = await requireCycleEnabled(user.id, user.gender);
   if (!gate.enabled) return gate.response;
@@ -67,6 +68,19 @@ export const GET = apiHandler(async () => {
   const tz = user.timezone ?? DEFAULT_TIMEZONE;
   const today = moodDateKey(new Date(), tz);
   const from = addDays(today, -WINDOW_DAYS);
+
+  // The crosstab is a cycle surface that reads two other sections. The phase
+  // labels are cycle data; the outcome columns are not. `lutealAvg`,
+  // `follicularAvg` and `delta` ship resting heart rate, HRV, sleep duration,
+  // steps, weight, temperature, glucose and the mood score in display units,
+  // and a grant scoped to the cycle alone was never consent for any of them.
+  // So the two foreign channels are fenced at the query, not at the response:
+  // a section the caller is outside of is never read, so nothing downstream
+  // can leak it back — the rows simply do not exist, exactly as they do not
+  // for a record with no measurements.
+  const visible = await actingDomainVisibility(prisma, grantId);
+  const seesMeasurements = visible("measurements");
+  const seesMind = visible("mind");
 
   const [
     cycles,
@@ -116,25 +130,28 @@ export const GET = apiHandler(async () => {
       select: { measuredAt: true, value: true },
     }),
     // The outcome metrics the phase contrast compares — soft-delete-scoped,
-    // canonical-source deduped per day inside `metricDayMap`.
-    prisma.measurement.findMany({
-      where: {
-        userId: user.id,
-        deletedAt: null,
-        type: { in: PHASE_CROSSTAB_METRIC_TYPES },
-        measuredAt: {
-          gte: new Date(Date.parse(`${from}T00:00:00Z`)),
-        },
-      },
-      orderBy: { measuredAt: "asc" },
-      select: {
-        type: true,
-        value: true,
-        measuredAt: true,
-        source: true,
-        deviceType: true,
-      },
-    }),
+    // canonical-source deduped per day inside `metricDayMap`. Skipped whole
+    // for a caller outside `measurements`.
+    seesMeasurements
+      ? prisma.measurement.findMany({
+          where: {
+            userId: user.id,
+            deletedAt: null,
+            type: { in: PHASE_CROSSTAB_METRIC_TYPES },
+            measuredAt: {
+              gte: new Date(Date.parse(`${from}T00:00:00Z`)),
+            },
+          },
+          orderBy: { measuredAt: "asc" },
+          select: {
+            type: true,
+            value: true,
+            measuredAt: true,
+            source: true,
+            deviceType: true,
+          },
+        })
+      : [],
     prisma.user.findUnique({
       where: { id: user.id },
       select: { sourcePriorityJson: true },
@@ -142,15 +159,18 @@ export const GET = apiHandler(async () => {
     // MOOD outcome (QA HIGH): mood lives in MoodEntry (1–5 score), not a
     // Measurement row, so read it here and inject it into the crosstab as a
     // synthetic MOOD_CHANNEL_KEY measurement (same FDR / day-floor guards).
-    prisma.moodEntry.findMany({
-      where: {
-        userId: user.id,
-        deletedAt: null,
-        moodLoggedAt: { gte: new Date(Date.parse(`${from}T00:00:00Z`)) },
-      },
-      orderBy: { moodLoggedAt: "asc" },
-      select: { score: true, moodLoggedAt: true },
-    }),
+    // Skipped whole for a caller outside `mind`.
+    seesMind
+      ? prisma.moodEntry.findMany({
+          where: {
+            userId: user.id,
+            deletedAt: null,
+            moodLoggedAt: { gte: new Date(Date.parse(`${from}T00:00:00Z`)) },
+          },
+          orderBy: { moodLoggedAt: "asc" },
+          select: { score: true, moodLoggedAt: true },
+        })
+      : [],
   ]);
 
   // The latest open cycle runs to the predicted next-period start so the
@@ -239,6 +259,8 @@ export const GET = apiHandler(async () => {
       lagged_discovered: lagged.discovered.length,
       lagged_pairs_tested: lagged.pairsTested,
       symptom_patterns: symptomPatterns.length,
+      measurements_visible: seesMeasurements,
+      mind_visible: seesMind,
     },
   });
 
