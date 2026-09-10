@@ -6597,6 +6597,13 @@
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "Ambiente GlitchTip",
     "glitchtipEnvironmentPlaceholder": "production",
+    "glitchtipTargetOn": "Le segnalazioni di errore vanno a {host}.",
+    "glitchtipTargetOff": "Le segnalazioni di errore restano su questo host. Non viene inviato nulla.",
+    "glitchtipTargetNoTarget": "Il tracciamento degli errori è attivo, ma non c'è una destinazione, quindi non viene inviato nulla.",
+    "glitchtipUnproven": "Non confermato",
+    "glitchtipDeliveryUnproven": "Una destinazione è impostata, ma nessuna segnalazione ha ancora lasciato questo host. Premi Prova per vedere se ne accetta una.",
+    "glitchtipDeliveryStale": "Nessuna segnalazione ha lasciato questo host nelle ultime {hours} h. Premi Prova per verificare che la destinazione le accetti ancora.",
+    "glitchtipDeliveryFailed": "L'ultima segnalazione non è arrivata ({reason}).",
     "webPushVapidDescription": "Configura qui le chiavi VAPID e il subject affinché il push del browser funzioni senza variabili d'ambiente.",
     "webPushVapidPublicKey": "Chiave pubblica VAPID",
     "webPushVapidPublicKeyPlaceholder": "BElx... (Base64URL)",
@@ -7012,7 +7019,23 @@
         "restoreMissingDocuments": "Documenti",
         "restoreMissingWorkouts": "Allenamenti",
         "restoreMissingMentalHealth": "Questionari sulla salute mentale",
-        "restoreMissingConsent": "Ricevute di consenso"
+        "restoreMissingConsent": "Ricevute di consenso",
+        "offhost": {
+          "title": "Copie fuori host",
+          "description": "Quando questo host ha messo per l'ultima volta la copia cifrata di ogni account nel tuo bucket.",
+          "loadError": "Impossibile caricare lo stato fuori host.",
+          "notConfiguredTitle": "Il backup fuori host non è configurato",
+          "notConfiguredDescription": "Non sono impostati né bucket né chiave, quindi nulla lascia questo host. Imposta BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY e BACKUP_ENCRYPTION_KEY per attivare il caricamento notturno.",
+          "stateFresh": "Recente",
+          "stateDue": "Attesa",
+          "stateStale": "Obsoleta",
+          "stateNever": "Mai",
+          "stateUnknown": "Nessuna registrazione",
+          "neverDetail": "Per questo account non è arrivato nulla. Ultimo controllo {when}.",
+          "unknownDetail": "Nessun giro notturno ha ancora registrato questo account.",
+          "age": "{hours} h fa",
+          "scheduleNote": "Il caricamento gira ogni {hours} h. Recente significa entro un giro, attesa che un giro non ha prodotto nulla, obsoleta che non lo hanno fatto due."
+        }
       },
       "danger-zone": {
         "title": "Zona pericolosa",

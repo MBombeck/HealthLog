@@ -6577,6 +6577,13 @@
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "GlitchTip 환경",
     "glitchtipEnvironmentPlaceholder": "production",
+    "glitchtipTargetOn": "오류 보고서는 {host}(으)로 전송됩니다.",
+    "glitchtipTargetOff": "오류 보고서는 이 호스트에 남습니다. 아무것도 전송되지 않습니다.",
+    "glitchtipTargetNoTarget": "오류 추적은 켜져 있지만 대상이 없어 아무것도 전송되지 않습니다.",
+    "glitchtipUnproven": "미확인",
+    "glitchtipDeliveryUnproven": "대상이 설정되어 있지만 아직 이 호스트를 떠난 보고서가 없습니다. 테스트를 눌러 수락하는지 확인하세요.",
+    "glitchtipDeliveryStale": "지난 {hours}시간 동안 이 호스트를 떠난 보고서가 없습니다. 테스트를 눌러 대상이 여전히 수락하는지 확인하세요.",
+    "glitchtipDeliveryFailed": "마지막 보고서가 전달되지 않았습니다 ({reason}).",
     "webPushVapidDescription": "환경 변수 없이 브라우저 푸시가 동작하도록 VAPID 키와 subject를 여기서 설정하세요.",
     "webPushVapidPublicKey": "VAPID 공개 키",
     "webPushVapidPublicKeyPlaceholder": "BElx... (Base64URL)",
@@ -6992,7 +6999,23 @@
         "restoreMissingDocuments": "문서",
         "restoreMissingWorkouts": "운동",
         "restoreMissingMentalHealth": "정신 건강 선별 검사",
-        "restoreMissingConsent": "동의 기록"
+        "restoreMissingConsent": "동의 기록",
+        "offhost": {
+          "title": "외부 보관 사본",
+          "description": "이 호스트가 각 계정의 암호화 사본을 버킷에 마지막으로 올린 시점입니다.",
+          "loadError": "외부 보관 상태를 불러오지 못했습니다.",
+          "notConfiguredTitle": "외부 보관 백업이 설정되지 않았습니다",
+          "notConfiguredDescription": "버킷과 키가 모두 설정되지 않아 이 호스트를 벗어나는 것이 없습니다. 야간 업로드를 켜려면 BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY, BACKUP_ENCRYPTION_KEY를 설정하세요.",
+          "stateFresh": "최신",
+          "stateDue": "지연",
+          "stateStale": "오래됨",
+          "stateNever": "없음",
+          "stateUnknown": "기록 없음",
+          "neverDetail": "이 계정으로 도착한 것이 없습니다. 마지막 확인 {when}.",
+          "unknownDetail": "아직 어떤 야간 실행도 이 계정을 기록하지 않았습니다.",
+          "age": "{hours}시간 전",
+          "scheduleNote": "업로드는 {hours}시간마다 실행됩니다. 최신은 한 번의 실행 이내, 지연은 한 번이 아무것도 만들지 못한 상태, 오래됨은 두 번이 그런 상태입니다."
+        }
       },
       "danger-zone": {
         "title": "위험 구역",

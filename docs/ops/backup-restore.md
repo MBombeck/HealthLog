@@ -215,6 +215,42 @@ A run where SOME account got a copy still succeeds, with the rest counted in
 `offhost_backup_failed`. Failing the whole queue over one account's object
 would re-upload everybody's on every retry.
 
+### Which account has no copy
+
+The counts above say how many accounts were uploaded, never which. An account
+whose object has failed every night for a month reads as `99 uploaded, 1
+failed` each time, which looks like weather.
+
+**Admin console → Backups → Off-host copies** answers it per account: when this
+host last put that account's encrypted copy in the bucket, how big it was, and
+how that compares with the nightly schedule. **Fresh** is inside one run,
+**due** means one run produced nothing for that account, **stale** means two
+did not, **never** means a run walked the account and no object has ever
+landed for it, and **no record yet** means no run has recorded the account at
+all. On a host without `BACKUP_S3_*` the card says off-host backup is not
+configured and stops there.
+
+The ledger starts empty on the release that adds it, so on a host that has
+been uploading nightly for months every account reads **no record yet** until
+the first run after the upgrade. That is the ledger having no history, not the
+bucket being empty — which is why it is a separate word from **never**, and
+why the row says so rather than claiming nothing has ever reached the bucket.
+
+Each verdict carries six hours of slack on top of the schedule's own 24, and
+that slack is load-bearing on two nights. The cron runs at 02:30 Europe/Berlin,
+so on the DST fall-back Sunday two consecutive runs are 25 hours apart; and the
+timestamp is when _that account's_ object landed, so on a cohort walked one
+account at a time an account reached later tonight than last night drifts by
+hours. Without the slack a healthy host would paint its whole cohort **due**
+once a year.
+
+The verdicts come from a ledger the worker writes when the object lands
+(`offhost_backup_state`), not from a listing of the bucket. Keep the worker's
+grant as documented — PutObject, GetObject, AbortMultipartUpload — and the card
+still tells the truth. A row that goes stale while the run reports success is
+that account's object being refused, and the reason is in the run's
+`offhost_backup_failures` meta.
+
 ## The weekly in-database backup (`data-backup`)
 
 Separate from the off-host job above, and easy to confuse with it. A second

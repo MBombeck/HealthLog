@@ -47,6 +47,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ListRow } from "@/components/ui/list-row";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { formatBytes } from "@/lib/format/bytes";
 import { queryKeys } from "@/lib/query-keys";
 import { randomId } from "@/lib/random-id";
 import type { BackupRow, BackupsList } from "@/types/backups";
@@ -320,14 +321,6 @@ function RestoreRowDialog({
       </AlertDialogContent>
     </AlertDialog>
   );
-}
-
-function formatBytes(bytes: number, fmt: ReturnType<typeof useFormatters>) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) {
-    return `${fmt.integer(Math.round(bytes / 1024))} KB`;
-  }
-  return `${fmt.number(bytes / 1024 / 1024, 2)} MB`;
 }
 
 /**
