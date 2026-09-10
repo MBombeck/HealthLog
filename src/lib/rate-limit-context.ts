@@ -80,9 +80,11 @@ export function capturedRateLimit(): RateLimitSnapshot | null {
  *
  * `Retry-After` is whole seconds and rounds UP, per RFC 9110 §10.2.3: a client
  * that waits the value it is given must find the window already rolled over,
- * which flooring cannot promise. It never goes below zero — a window that
- * expired between the verdict and the response says "retry now" rather than
- * naming a time in the past.
+ * which flooring cannot promise. It never goes below one second: `resetAt`
+ * comes from the database clock and the subtraction happens on the app
+ * process's, so a window can read as already expired here while the row still
+ * refuses; and zero on a refusal means "retry now", which contradicts the
+ * status it rides on and invites a hot loop.
  *
  * `X-RateLimit-Reset` keeps the ISO-8601 instant it has always carried. It is
  * the wrong convention for the header name and every other deployment uses
@@ -96,7 +98,7 @@ export function rateLimitResponseHeaders(
 ): Record<string, string> {
   return {
     "Retry-After": String(
-      Math.max(0, Math.ceil((snapshot.resetAt - now) / 1000)),
+      Math.max(1, Math.ceil((snapshot.resetAt - now) / 1000)),
     ),
     "X-RateLimit-Limit": String(snapshot.limit),
     "X-RateLimit-Remaining": String(snapshot.remaining),

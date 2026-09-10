@@ -48,13 +48,16 @@ describe("rateLimitResponseHeaders", () => {
     expect(headers["Retry-After"]).toBe("1");
   });
 
-  it("never names a delay in the past", () => {
+  it("names at least a second even when the window already reads as expired", () => {
     const now = Date.UTC(2026, 0, 1, 12, 0, 0);
     const headers = rateLimitResponseHeaders(
       { limit: 10, remaining: 0, resetAt: now - 5_000 },
       now,
     );
-    expect(headers["Retry-After"]).toBe("0");
+    // `resetAt` is the database clock and `now` is this process's, so a row
+    // that still refuses can read as expired here. Zero would say "retry now"
+    // beside a refusal and turn the client into a hot loop.
+    expect(headers["Retry-After"]).toBe("1");
   });
 
   it("keeps X-RateLimit-Reset in the ISO form already on the wire", () => {
