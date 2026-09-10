@@ -27,9 +27,11 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
+  getClientIp,
   returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
+import { auditLog } from "@/lib/auth/audit";
 import { prisma, toJson } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { applyOnboardingAnswer } from "@/lib/onboarding/needs-apply";
@@ -145,6 +147,32 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     glucoseUnit: unitData.glucoseUnit ?? user.glucoseUnit,
     unitPreference: unitData.unitPreference ?? user.unitPreference,
   });
+
+  // Both columns have a dedicated settings route that writes an audit row, and
+  // the trail should not depend on which surface the person changed them from.
+  // Same event names, so the activity panel groups them.
+  if (unitData.glucoseUnit !== undefined) {
+    await auditLog("user.glucose-unit.update", {
+      userId: user.id,
+      ipAddress: getClientIp(request),
+      details: {
+        previous: user.glucoseUnit,
+        next: unitData.glucoseUnit,
+        source: "onboarding",
+      },
+    });
+  }
+  if (unitData.unitPreference !== undefined) {
+    await auditLog("user.unit-preference.update", {
+      userId: user.id,
+      ipAddress: getClientIp(request),
+      details: {
+        previous: user.unitPreference,
+        next: unitData.unitPreference,
+        source: "onboarding",
+      },
+    });
+  }
 
   annotate({
     action: { name: "onboarding.answer.save" },

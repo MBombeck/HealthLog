@@ -1,7 +1,13 @@
 import { prisma, toJson } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiError,
+  getClientIp,
+  safeJson,
+} from "@/lib/api-response";
+import { auditLog } from "@/lib/auth/audit";
 import { setOnboardingPendingCookie } from "@/lib/auth/session";
 import { normalisePrefs } from "@/lib/modules/gate";
 import { modulesHoldingRecordData } from "@/lib/modules/domain-data";
@@ -98,6 +104,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const onboarding = await completeNeedsFlow(
     user.id,
     readHeldUnitPreferences(user),
+    request,
   );
 
   return apiSuccess({ completed: true, ...(onboarding ? { onboarding } : {}) });
@@ -111,7 +118,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
  * needs flow — a legacy wizard completion then answers exactly the body it
  * always did.
  */
-async function completeNeedsFlow(userId: string, held: HeldUnitPreferences) {
+async function completeNeedsFlow(
+  userId: string,
+  held: HeldUnitPreferences,
+  request: NextRequest,
+) {
   const record = await prisma.onboardingRecord.findUnique({
     where: { userId },
     select: ONBOARDING_RECORD_SELECT,
@@ -193,6 +204,22 @@ async function completeNeedsFlow(userId: string, held: HeldUnitPreferences) {
       recordId: userId,
       modulePreferences: merged,
       ...(defaults.cycleTracking ? { cycleTrackingEnabled: true } : {}),
+    });
+
+    // The same trail the dedicated modules route writes, under the same event
+    // name, because it is the same column and the activity panel is where
+    // somebody goes to ask why their modules changed. The flow was writing
+    // three audited settings columns and leaving no trail at all, which made
+    // the answer to that question "nothing did it".
+    const stored = normalisePrefs(row?.modulePreferencesJson);
+    const changed = [
+      ...Object.keys(merged).filter((key) => merged[key] !== stored[key]),
+      ...(defaults.cycleTracking ? ["cycleTrackingEnabled"] : []),
+    ];
+    await auditLog("user.modules.update", {
+      userId,
+      ipAddress: getClientIp(request),
+      details: { changed, keptForData: [...holdsData], source: "onboarding" },
     });
 
     keptForData = [...holdsData];

@@ -16389,8 +16389,10 @@ paths:
 
         The older sibling of `POST /api/onboarding/step`. It is unconditional in a way the step route is not: it stamps
         the completion whatever the stored step is, it re-stamps on every call rather than refusing a second one, and it
-        writes no audit row and enforces no rate limit of its own. It also does NOT seed the dashboard from the goal
-        selection — that only happens on the step route's completing call.
+        enforces no rate limit of its own. Its legacy half writes no audit row; the needs half writes one
+        (`user.modules.update`) when it derives, because that is the same column the dedicated modules route audits. It
+        also does NOT seed the dashboard from the goal selection — that only happens on the step route's completing
+        call.
 
 
         Calling this mid-wizard makes every remaining `POST /api/onboarding/step` answer 409

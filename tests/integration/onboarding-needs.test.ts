@@ -229,6 +229,17 @@ describe("PATCH /api/onboarding/answers", () => {
       select: { glucoseUnit: true, unitPreference: true },
     });
     expect(row).toEqual({ glucoseUnit: "mmol/L", unitPreference: "imperial" });
+
+    // Same trail as the two dedicated settings routes, so it does not matter
+    // which surface the person changed the units from.
+    const actions = (
+      await getPrismaClient().auditLog.findMany({
+        where: { userId: user.id },
+        select: { action: true },
+      })
+    ).map((entry) => entry.action);
+    expect(actions).toContain("user.glucose-unit.update");
+    expect(actions).toContain("user.unit-preference.update");
   });
 
   it("does not re-ask the units the account already holds", async () => {
@@ -303,6 +314,15 @@ describe("POST /api/onboarding/complete", () => {
     const state = await readState(first);
     expect(statusOf(state, "confirm")).toBe("done");
     expect(state.completedAt).not.toBeNull();
+
+    // The activity panel has to be able to answer "why did my modules change".
+    const audit = await getPrismaClient().auditLog.findMany({
+      where: { userId: user.id, action: "user.modules.update" },
+    });
+    expect(audit).toHaveLength(1);
+    expect(
+      (audit[0].details as { changed?: string[] } | null)?.changed,
+    ).toContain("medications");
 
     // Somebody changes their mind in Settings, then the confirm screen is
     // replayed. The second call must leave that decision alone: the latch is
