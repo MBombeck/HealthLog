@@ -70,10 +70,15 @@ export const GET = apiHandler(async () => {
 
 /**
  * Wrapped in `withIdempotency`: a custom symptom is minted from the client's
- * offline outbox under the same `Idempotency-Key`, and a replay after a lost
- * success response would otherwise answer the 409 the label's unique key
- * raises rather than the 201 the first attempt produced — a create the client
- * has no record of, reported as a conflict it cannot act on.
+ * offline outbox under the same `Idempotency-Key`, and nothing else here would
+ * catch the replay. The row's key is minted fresh per request
+ * (`custom:<uuid>`), and the label it would duplicate lives in
+ * `labelEncrypted` — AES-GCM with a per-write IV, so no unique index can be
+ * put on it. A replay after a lost success response therefore wrote a SECOND
+ * row carrying the same label, up to the fifty-row cap: a silent duplicate in
+ * the person's own symptom vocabulary rather than a conflict anything refused.
+ * The wrapper answers the first attempt's 201 instead, and the in-flight 409 it
+ * defines is the only 409 this route can produce.
  */
 export const POST = apiHandler(
   withIdempotency<[NextRequest]>(postCustomSymptom),

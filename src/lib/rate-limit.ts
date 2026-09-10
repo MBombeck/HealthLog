@@ -132,9 +132,14 @@ export async function checkAnalyticsReadRateLimit(
  * `checkAnalyticsReadRateLimit` gives: a loop that rotates across ten creates
  * should still meet a cap. Three hundred a minute is five writes a second
  * sustained for a full minute — no hand-driven session and no sync burst
- * reaches it, and every one of these routes is already wrapped in
- * `withIdempotency`, so an honest retry storm is deduplicated before it is
- * counted. It exists to cut off the pathological loop, not to shape traffic.
+ * reaches it. Ten of the eleven are wrapped in `withIdempotency`, so an honest
+ * retry storm is deduplicated before it is counted; `POST
+ * /api/medications/intake` is not, because it updates a named `intakeId`
+ * rather than creating a row, so a replay writes the status that is already
+ * there. It exists to cut off the pathological loop, not to shape traffic.
+ *
+ * A refused request is counted too: the check runs before the body is read,
+ * so a client looping on a 422 spends its allowance without writing a row.
  *
  * Keyed on the ACTING account rather than the record, the frozen precedent from
  * the delegable medication routes: a delegate burns their own allowance rather
