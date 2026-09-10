@@ -63192,7 +63192,9 @@ components:
       additionalProperties: false
       description: The needs-based setup flow for one record. Always present on the account payload — a record that never
         entered the flow reads as empty answers with nine `pending` steps, so a client branches on the step statuses
-        rather than on the field's existence.
+        rather than on the field's existence. On the account payload it describes the ACTIVE record, so a client under
+        an account switch reads the same record its counts and module map describe; under a scoped grant the answers
+        come back empty.
     OnboardingStepState:
       type: object
       properties:

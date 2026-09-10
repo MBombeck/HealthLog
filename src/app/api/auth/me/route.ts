@@ -54,7 +54,10 @@ import {
   resolveModuleMap,
   getOperatorModuleAvailability,
 } from "@/lib/modules/gate";
-import { readHeldUnitPreferences } from "@/lib/onboarding/needs";
+import {
+  emptyOnboardingNeeds,
+  readHeldUnitPreferences,
+} from "@/lib/onboarding/needs";
 import {
   loadOnboardingRecordRow,
   toOnboardingStateDto,
@@ -122,10 +125,20 @@ export const GET = apiHandler(async () => {
     // The actor's own row is already in hand; a switched session needs the
     // record's `gender`, which is the column the cycle gate derives from.
     recordId === user.id
-      ? Promise.resolve({ gender: user.gender })
+      ? Promise.resolve({
+          gender: user.gender,
+          glucoseUnit: user.glucoseUnit,
+          unitPreference: user.unitPreference,
+        })
       : prisma.user.findUnique({
           where: { id: recordId },
-          select: { gender: true },
+          select: {
+            gender: true,
+            // v1.39 (C1) — the record's own unit columns, for the setup
+            // flow's "never re-ask a value the account holds" rule.
+            glucoseUnit: true,
+            unitPreference: true,
+          },
         }),
     prisma.cycleProfile.findUnique({
       where: { userId: recordId },
@@ -145,16 +158,19 @@ export const GET = apiHandler(async () => {
     // Server-WIDE, so it is the same map for every record and is not
     // re-scoped here.
     getOperatorModuleAvailability(),
-    // v1.39 (C1) — the needs-based setup state, for the ACTOR's own record
-    // rather than the active one. The two module fields above answer for the
-    // record because they say what that record tracks; this one is resolved
-    // the other way because the three write routes are actor-only
-    // (`requireAuth()` refuses outright under a switch), and publishing a
-    // setup state the caller cannot write would be a read the browser could
-    // act on and never complete. A guardian's route into a managed record's
-    // flow arrives with the rest of that record's configuration (#939 / C2);
-    // the storage is already keyed by record for it.
-    loadOnboardingRecordRow(prisma, user.id),
+    // v1.39 (C1) — the needs-based setup state for the RECORD, like the two
+    // module fields above and for the same reason: it says what that record
+    // tracks, and its only consumer reads it beside that record's reading
+    // count, medication count and integration state. Ordering a record's rows
+    // by somebody else's answers is the one thing this field must not do.
+    //
+    // The three WRITE routes stay actor-only (`requireAuth()` refuses outright
+    // under a switch) until a guardian's route into a managed record's setup
+    // arrives with the rest of that record's configuration (#939 / C2). A read
+    // that is wider than the write is the honest shape here: the storage is
+    // keyed by record already, and a delegate seeing the record's own setup
+    // state is what makes the dashboard they are looking at coherent.
+    loadOnboardingRecordRow(prisma, recordId),
   ]);
 
   // The masking step, and the one place the record scoping is narrowed rather
@@ -169,13 +185,24 @@ export const GET = apiHandler(async () => {
   // exactly as it was, and `moduleAccess` is the same answer with the reason
   // attached — the record's own switch, the grant's edge, or the operator's.
   // Every client that only wants "paint it or not" keeps reading the boolean.
-  // v1.39 (C1) — the published steps carry the Q6 resolution: an account that
-  // already holds both unit preferences reads `units` as `done`, so the flow
-  // never re-asks a value the account holds.
-  const onboarding = toOnboardingStateDto(
+  // v1.39 (C1) — the published steps carry the Q6 resolution: a record whose
+  // account already holds both unit preferences reads `units` as `done`, so
+  // the flow never re-asks a value the account holds.
+  const recordOnboarding = toOnboardingStateDto(
     onboardingRow,
-    readHeldUnitPreferences(user),
+    readHeldUnitPreferences({
+      glucoseUnit: record?.glucoseUnit ?? null,
+      unitPreference: record?.unitPreference ?? null,
+    }),
   );
+  // The answers name the domains the record tracks, which is exactly what the
+  // module map below is masked for. A SCOPED grant therefore gets the shape of
+  // the flow — how far it got, what it ended on — with the answers emptied;
+  // an unscoped grant, and the record's own session, get them whole.
+  const onboarding =
+    sections === null
+      ? recordOnboarding
+      : { ...recordOnboarding, needs: emptyOnboardingNeeds() };
 
   const { modules, moduleAccess } = buildModuleDisclosure(
     resolvedModules,
@@ -220,6 +247,11 @@ export const GET = apiHandler(async () => {
     // completion, distinct from `onboardingCompletedAt` above, which keeps its
     // meaning as the first-run redirect's gate) and `firstResult` (the one
     // task the flow offered, and whether it produced its result).
+    //
+    // Record-scoped, like `modules` and `cycleTrackingEnabled`: it says what
+    // the record tracks, and the checklist reads it beside that record's
+    // counts. Under a scoped grant the answers are emptied for the reason the
+    // module map is masked.
     //
     // Always present, never null: a record that never entered the flow reads
     // as empty answers with nine `pending` steps, so a client branches on the

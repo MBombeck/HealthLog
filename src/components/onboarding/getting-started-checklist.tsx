@@ -314,8 +314,10 @@ export function GettingStartedChecklist() {
         dismissedIds,
         // v1.39 (C1) — the setup answers order these rows: medication first
         // for somebody who said they take one daily, the data-source row first
-        // for somebody who named a wearable. Null until the account payload
-        // resolves, and for any record that never entered the flow.
+        // for somebody who named a wearable. The payload resolves them for the
+        // ACTIVE record, which is the same record the counts above describe.
+        // Null until the payload resolves, and for a record that never entered
+        // the flow.
         onboarding: user?.onboarding ?? null,
       }),
     [

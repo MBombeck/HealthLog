@@ -83,11 +83,12 @@ export interface AuthUser {
    */
   onboardingTourProgress: AuthTourProgress | null;
   /**
-   * v1.39 (C1) — the needs-based setup flow's state for this record: the nine
-   * ordered steps with their `pending | done | skipped` status, the answers as
-   * given, the flow's own completion stamp (distinct from
-   * `onboardingCompletedAt` above, which stays the first-run redirect's gate)
-   * and the one task the flow offered.
+   * v1.39 (C1) — the needs-based setup flow's state for the record the payload
+   * describes — the active one under a switch: the nine ordered steps with
+   * their `pending | done | skipped` status, the answers as given, the flow's
+   * own completion stamp (distinct from `onboardingCompletedAt` above, which
+   * stays the first-run redirect's gate) and the one task the flow offered.
+   * Under a scoped grant the answers come back empty.
    *
    * Optional in the type so a stale /me payload — an older server image, or a
    * test fixture written before the field existed — coerces to "no flow" in

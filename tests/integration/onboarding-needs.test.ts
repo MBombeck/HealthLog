@@ -52,6 +52,7 @@ vi.mock("@/lib/db-compat", () => ({
 }));
 
 import { acceptGrant, inviteGrant } from "@/lib/sharing/grants";
+import { emptyOnboardingNeeds } from "@/lib/onboarding/needs";
 import type {
   OnboardingStateDto,
   OnboardingStepId,
@@ -114,6 +115,18 @@ async function postRestart(): Promise<Response> {
   return (POST as (r: Request) => Promise<Response>)(
     jsonRequest("/api/onboarding/restart", "POST", {}),
   );
+}
+
+/** The `onboarding` field the account payload publishes for the caller. */
+async function readMe(): Promise<OnboardingStateDto> {
+  const { GET } = await import("@/app/api/auth/me/route");
+  const res = await (GET as (r: Request) => Promise<Response>)(
+    new Request("http://localhost/api/auth/me"),
+  );
+  const body = (await res.json()) as {
+    data: { onboarding: OnboardingStateDto };
+  };
+  return body.data.onboarding;
 }
 
 async function readState(res: Response): Promise<OnboardingStateDto> {
@@ -482,7 +495,18 @@ describe("POST /api/onboarding/restart", () => {
     });
     await patchAnswer({ step: "who", recordTarget: "me" });
     await patchAnswer({ step: "areas", areas: [] });
+    await patchAnswer({ step: "medication", medication: "no" });
+    await patchAnswer({ step: "sources", status: "skipped" });
+    await patchAnswer({ step: "visit", status: "skipped" });
+    await patchAnswer({ step: "units", status: "skipped" });
     await postComplete();
+    // The derivation really did run the second time round, so the survival
+    // below is the merge protecting a hand-made decision and not the gate
+    // refusing to look.
+    const reran = await getPrismaClient().onboardingRecord.findUniqueOrThrow({
+      where: { userId: user.id },
+    });
+    expect(reran.modulesDerivedAt).not.toBeNull();
     expect((await modulePrefs(user.id)).labs).toBe(true);
   });
 
@@ -540,5 +564,74 @@ describe("a delegate and somebody else's record", () => {
     });
     expect(ownerRow.modulePreferencesJson).toBeNull();
     expect(ownerRow.onboardingCompletedAt).toBeNull();
+  });
+
+  it("publishes the RECORD's setup state on the account payload, not the actor's", async () => {
+    const owner = await makeUser("scoped-owner");
+    const delegate = await makeUser("scoped-delegate");
+
+    // The owner sets up; the delegate never does.
+    await signIn(owner.id);
+    await answerTheQuestions();
+    await postComplete();
+
+    const invited = await inviteGrant({
+      grantorId: owner.id,
+      granteeId: delegate.id,
+      access: "READ",
+      scope: null,
+    });
+    await acceptGrant({ grantId: invited.id, granteeId: delegate.id });
+
+    cookieJar.clear();
+    headerJar.clear();
+    const session = await signIn(delegate.id);
+    await getPrismaClient().session.update({
+      where: { id: session.id },
+      data: { actingAsUserId: owner.id },
+    });
+    await assertCurrentContext(session.id);
+
+    // The checklist reads this beside the record's reading count and
+    // medication count, both of which answer for the record under a switch.
+    // Answering it for the actor would order one record's rows by another
+    // person's answers.
+    const state = await readMe();
+    expect(state.needs.medication).toBe("yes");
+    expect(state.needs.areas).toEqual(["blood-pressure", "labs"]);
+    expect(state.completedAt).not.toBeNull();
+    expect(statusOf(state, "confirm")).toBe("done");
+  });
+
+  it("empties the answers under a grant that opens only one section", async () => {
+    const owner = await makeUser("section-owner");
+    const delegate = await makeUser("section-delegate");
+
+    await signIn(owner.id);
+    await answerTheQuestions();
+    await postComplete();
+
+    const invited = await inviteGrant({
+      grantorId: owner.id,
+      granteeId: delegate.id,
+      access: "READ",
+      scope: ["measurements"],
+    });
+    await acceptGrant({ grantId: invited.id, granteeId: delegate.id });
+
+    cookieJar.clear();
+    headerJar.clear();
+    const session = await signIn(delegate.id);
+    await getPrismaClient().session.update({
+      where: { id: session.id },
+      data: { actingAsUserId: owner.id },
+    });
+    await assertCurrentContext(session.id);
+
+    // The answers name the domains the record tracks — the same thing the
+    // module map is masked for. The shape of the flow still comes through.
+    const state = await readMe();
+    expect(state.needs).toEqual(emptyOnboardingNeeds());
+    expect(state.completedAt).not.toBeNull();
   });
 });
