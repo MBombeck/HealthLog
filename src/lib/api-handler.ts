@@ -81,6 +81,7 @@ export function isMcpAudienceToken(permissions: readonly string[]): boolean {
 // the api-handler ↔ record-session-fence import cycle) and are re-exported
 // here so the hundreds of existing importers read exactly as before.
 import {
+  AUTH_ERROR_CODES,
   HttpError,
   SharingAuthError,
   SharingAccessDeniedError,
@@ -90,6 +91,7 @@ import {
 } from "./api-errors";
 
 export {
+  AUTH_ERROR_CODES,
   HttpError,
   SharingAuthError,
   SharingAccessDeniedError,
@@ -295,9 +297,17 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
               { status: error.statusCode },
             );
           } else if (error instanceof HttpError) {
+            // `meta.errorCode` only when the throw site named one, so every
+            // HttpError without a code serialises byte-identically to before.
             evt.setError(error);
             response = NextResponse.json(
-              { data: null, error: error.message },
+              {
+                data: null,
+                error: error.message,
+                ...(error.errorCode
+                  ? { meta: { errorCode: error.errorCode } }
+                  : {}),
+              },
               { status: error.statusCode },
             );
           } else if (error instanceof SyntaxError) {
@@ -540,7 +550,7 @@ async function authenticateCaller(
   }
 
   // 3. No credentials.
-  throw new HttpError(401, "Not authenticated");
+  throw new HttpError(401, "Not authenticated", AUTH_ERROR_CODES.missing);
 }
 
 /**
@@ -584,13 +594,15 @@ async function authenticateBearer(
             : {}),
         },
       }).catch(() => {});
-      const message =
+      // Sentence and code are decided together, so a future rewording of the
+      // prose cannot silently change what a client does with the refusal.
+      const [message, errorCode] =
         err.statusCode === 403
-          ? "Insufficient permissions"
+          ? (["Insufficient permissions", AUTH_ERROR_CODES.scope] as const)
           : err.reason === "expired"
-            ? "Token expired"
-            : "Invalid token";
-      throw new HttpError(err.statusCode, message);
+            ? (["Token expired", AUTH_ERROR_CODES.expired] as const)
+            : (["Invalid token", AUTH_ERROR_CODES.invalid] as const);
+      throw new HttpError(err.statusCode, message, errorCode);
     }
     throw err;
   }
@@ -626,7 +638,11 @@ async function authenticateBearer(
           method: method || "unknown",
         },
       }).catch(() => {});
-      throw new HttpError(403, "Insufficient permissions");
+      throw new HttpError(
+        403,
+        "Insufficient permissions",
+        AUTH_ERROR_CODES.scope,
+      );
     }
   }
 
@@ -1114,7 +1130,8 @@ async function resolveSwitchedRecord(
  */
 export async function requireAdmin(): Promise<AuthContext> {
   const sessionData = await getSession();
-  if (!sessionData) throw new HttpError(401, "Not authenticated");
+  if (!sessionData)
+    throw new HttpError(401, "Not authenticated", AUTH_ERROR_CODES.missing);
 
   const evt = getEvent();
   if (evt) {
@@ -1126,7 +1143,7 @@ export async function requireAdmin(): Promise<AuthContext> {
   }
 
   if (sessionData.user.role !== "ADMIN") {
-    throw new HttpError(403, "Admin access required");
+    throw new HttpError(403, "Admin access required", AUTH_ERROR_CODES.admin);
   }
   return { ...sessionData, authMethod: "cookie" };
 }
@@ -1143,7 +1160,8 @@ export async function requireAdmin(): Promise<AuthContext> {
  */
 export async function requireCookieAuth(): Promise<AuthContext> {
   const sessionData = await getSession();
-  if (!sessionData) throw new HttpError(401, "Not authenticated");
+  if (!sessionData)
+    throw new HttpError(401, "Not authenticated", AUTH_ERROR_CODES.missing);
 
   const evt = getEvent();
   if (evt) {
@@ -1217,7 +1235,8 @@ export async function requireFreshMfa(
   proofSource: FreshFactorProofSource = "second-factor",
 ): Promise<FreshMfaContext> {
   const sessionData = await getSession();
-  if (!sessionData) throw new HttpError(401, "Not authenticated");
+  if (!sessionData)
+    throw new HttpError(401, "Not authenticated", AUTH_ERROR_CODES.missing);
 
   const evt = getEvent();
   if (evt) {
@@ -1448,7 +1467,7 @@ export async function requireBearerAuth(): Promise<BearerAuthContext> {
     authHeader = null;
   }
   if (!authHeader?.startsWith("Bearer ")) {
-    throw new HttpError(401, "Not authenticated");
+    throw new HttpError(401, "Not authenticated", AUTH_ERROR_CODES.missing);
   }
   const raw = authHeader.slice(7);
   const auth = await authenticateBearer(raw, undefined);

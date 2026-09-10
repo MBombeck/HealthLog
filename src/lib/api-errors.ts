@@ -14,16 +14,48 @@ import { RECORD_FENCE_ERROR_CODE } from "./sharing/record-session-fence-contract
 /**
  * Custom error class for HTTP errors with status codes.
  * Throw inside apiHandler-wrapped routes to return a JSON error response.
+ *
+ * `errorCode` is optional and lands in `meta.errorCode` when set — the same
+ * field the step-up, consent, module and sharing gates already use. An
+ * HttpError without one serialises exactly as before.
  */
 export class HttpError extends Error {
   constructor(
     public statusCode: number,
     message: string,
+    public errorCode?: string,
   ) {
     super(message);
     this.name = "HttpError";
   }
 }
+
+/**
+ * The stable codes the generic auth gates refuse with.
+ *
+ * These decide the single most important branch a native client makes:
+ * refresh the token and retry, drop the session and show the login screen, or
+ * stop retrying because this credential will never work. Until they existed
+ * the only way to tell those apart was to string-match the English sentence
+ * "Token expired", so a rewording — or a localisation pass — would have turned
+ * a recoverable refresh into a forced logout for every shipped build.
+ *
+ * Dot.case, matching the majority convention and the `auth.refresh.*` /
+ * `auth.stepup.*` families already on the wire. Add to this list rather than
+ * inventing a second field.
+ */
+export const AUTH_ERROR_CODES = {
+  /** No credential at all: no session cookie and no Bearer header. */
+  missing: "auth.missing",
+  /** The Bearer token was valid once and its expiry has passed. Refresh. */
+  expired: "auth.token.expired",
+  /** Unknown, revoked, or belonging to a user that no longer exists. */
+  invalid: "auth.token.invalid",
+  /** Authenticated, but the credential's scope does not reach this route. */
+  scope: "auth.scope.insufficient",
+  /** Authenticated, but not an admin. Cookie-only surface; never a token. */
+  admin: "auth.admin.required",
+} as const;
 
 /**
  * v1.36.0 — the two refusals the acting-account resolver can raise.

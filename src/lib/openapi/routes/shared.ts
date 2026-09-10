@@ -229,7 +229,8 @@ export const invalidBaseTokenResponse = {
 
 export const stdResponses = {
   "401": {
-    description: "Authentication required or invalid credentials.",
+    description:
+      "Authentication required or invalid credentials. `meta.errorCode` says which, and it is the field to branch on — the English sentence beside it may be reworded or localised at any time. `auth.missing`: no session cookie and no Bearer header; send the user to sign in. `auth.token.expired`: the Bearer token's lifetime has passed; refresh and retry the request. `auth.token.invalid`: unknown, revoked, or the owning account is gone; discard the credential and sign in again — retrying will not help. The related 403 refusals carry `auth.scope.insufficient` (the credential is valid but its scope does not reach this route, including any Bearer token against an admin surface) and `auth.admin.required` (a cookie session that is not an admin's).",
     content: { "application/json": { schema: errorEnvelope } },
   },
   "422": {
