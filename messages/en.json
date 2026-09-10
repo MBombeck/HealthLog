@@ -10484,7 +10484,7 @@
       },
       "mind": {
         "label": "Mood and mind",
-        "detail": "Mood entries and the history of the mental-health questionnaires."
+        "detail": "Mood entries and the history of the mental-health questionnaires. A completed questionnaire also files its total score as a reading."
       },
       "cycle": {
         "label": "Cycle",
