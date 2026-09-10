@@ -178,7 +178,8 @@ function cacheFlusher(page: Page, medicationId: string, dose: string) {
 function complianceBlock(page: Page, medicationId: string) {
   return page
     .locator(`[data-medication-id="${medicationId}"]`)
-    .locator('[data-slot="medication-card-compliance"]');
+    .locator('[data-slot="medication-card-compliance"]')
+    .first();
 }
 
 /**
@@ -186,40 +187,18 @@ function complianceBlock(page: Page, medicationId: string) {
  *
  * The rate's presence is the gate: the skeleton and the quiet error fallback
  * reserve the same footprint as the loaded bars and carry no rates, so an
- * attribute that is there is a figure the card really painted.
- *
- * The reload is for one specific state. The batched compliance route allows
- * thirty reads a minute per account, one list visit spends several, and a
- * refused read paints the error fallback rather than the bars — so a repeated
- * local run, or CI retrying the whole serial group inside the same minute, can
- * meet a card with no figure on it for reasons that have nothing to do with
- * adherence. Re-reading rides that out without hiding anything: if the figure
- * never arrives, this still fails.
+ * attribute that is there is a figure the card really painted. Twenty seconds
+ * is the list's own load-plus-fetch budget and nothing more — the account is
+ * this spec's own, so a card with no figure on it is a defect rather than a
+ * neighbour's spent read allowance.
  */
 async function readCardRate(page: Page, medicationId: string): Promise<number> {
   const block = complianceBlock(page, medicationId);
-  const painted = async (): Promise<string | null> =>
-    (await block.count()) === 0
-      ? null
-      : block.first().getAttribute("data-rate-short");
-
-  await expect
-    .poll(
-      async () => {
-        const first = await painted();
-        if (first !== null) return first;
-        await page.reload();
-        return painted();
-      },
-      {
-        timeout: 70_000,
-        intervals: [500, 1_000, 2_000, 5_000, 10_000],
-        message: "the card never painted an adherence figure",
-      },
-    )
-    .toMatch(/^\d+$/);
-
-  return Number(await painted());
+  await expect(
+    block,
+    "the card never painted an adherence figure",
+  ).toHaveAttribute("data-rate-short", /^\d+$/, { timeout: 20_000 });
+  return Number(await block.getAttribute("data-rate-short"));
 }
 
 /** The dashboard tile's most recent day, as the tile itself computed it. */
@@ -368,6 +347,20 @@ test.describe("medication adherence journey", () => {
     // on a loaded runner that settle earns the tripled timeout.
     test.slow();
 
+    // The tile reads THE LATEST day, and a day boundary crossed mid-flow moves
+    // that day out from under both tile assertions: a fresh day has two doses
+    // scheduled, none taken, and answers 0 where 50 is asserted. The flow is a
+    // couple of minutes long, so declining to start in the last ten of the day
+    // is enough. The clock is the browser's, which the config pins to the zone
+    // the compliance engine falls back to.
+    const minutesLeftInDay = await page.evaluate(
+      () => 24 * 60 - (new Date().getHours() * 60 + new Date().getMinutes()),
+    );
+    test.skip(
+      minutesLeftInDay < 10,
+      "starts inside the last ten minutes of the day — the dashboard tile's latest day would change under the flow",
+    );
+
     const { id: medicationId } = await createTwiceDailyMedication(
       page,
       "E2E Adhärenz",
@@ -405,8 +398,15 @@ test.describe("medication adherence journey", () => {
     // the dose just taken instead of recording a second one. The rate leaving
     // zero is the card's own confirmation that the refetch landed.
     await expect
-      .poll(() => readCardRate(page, medicationId), { timeout: 30_000 })
-      .toBeGreaterThan(0);
+      .poll(
+        () =>
+          complianceBlock(page, medicationId).getAttribute("data-rate-short"),
+        {
+          timeout: 30_000,
+          message: "the card never re-read its schedule after the take",
+        },
+      )
+      .toMatch(/^[1-9]\d*$/);
     const skipWritten = page.waitForResponse(
       (res) =>
         new URL(res.url()).pathname === intakePath &&
@@ -526,9 +526,9 @@ test.describe("medication adherence journey", () => {
   test("a two-weekday plan does not count the other five days as missed", async ({
     page,
   }) => {
-    // Room for the reload budget in `readCardRate` (see its note).
+    // Two medications seeded, aged and dosed three times apiece before the
+    // first assertion; on a loaded runner that earns the tripled timeout.
     test.slow();
-    await openSeedingSurface(page);
 
     // Both dose days are behind us and neither is today, so the plan's whole
     // realised history is closed and the verdicts do not depend on the hour
