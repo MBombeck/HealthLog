@@ -70,13 +70,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/CycleCustomSymptomListEnvelope"
         "401": &a1
-          description: "Authentication required or invalid credentials. `meta.errorCode` says which, and it is the field to branch
-            on — the English sentence beside it may be reworded or localised at any time. `auth.missing`: no session
+          description: "Authentication required or invalid credentials. The generic auth gates — the ones every route passes
+            through before its own body runs — name the reason in `meta.errorCode`, and that is the field to branch on
+            there; the English sentence beside it may be reworded or localised at any time. `auth.missing`: no session
             cookie and no Bearer header; send the user to sign in. `auth.token.expired`: the Bearer token's lifetime has
             passed; refresh and retry the request. `auth.token.invalid`: unknown, revoked, or the owning account is
-            gone; discard the credential and sign in again — retrying will not help. The related 403 refusals carry
-            `auth.scope.insufficient` (the credential is valid but its scope does not reach this route, including any
-            Bearer token against an admin surface) and `auth.admin.required` (a cookie session that is not an admin's)."
+            gone; discard the credential and sign in again — retrying will not help. `auth.mfa.code_invalid`: a second
+            factor presented on a step-up flow did not verify; re-prompt for a code and keep the session. The related
+            403 refusals carry `auth.scope.insufficient` (the credential is valid but its scope does not reach this
+            route, including any Bearer token against an admin surface) and `auth.admin.required` (a cookie session that
+            is not an admin's). A route that checks a credential of its own — sign-in, the MFA challenge exchange, a
+            password confirmation — may still answer 401 with prose and no code, so a missing `meta.errorCode` means the
+            route refused the credential it was handed, not that the response is malformed."
           content:
             application/json:
               schema:

@@ -147,6 +147,10 @@ describe("POST /api/auth/me/mfa/disable", () => {
     } as never);
     const res = await POST(req());
     expect(res.status).toBe(401);
+    // The code is what separates "re-prompt for a digit" from "this session is
+    // gone"; a client that branches on prose here signs the user out on a typo.
+    const body = (await res.json()) as { meta?: { errorCode?: string } };
+    expect(body.meta?.errorCode).toBe("auth.mfa.code_invalid");
     expect(destroyOtherSessions).not.toHaveBeenCalled();
   });
 });

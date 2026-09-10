@@ -55,6 +55,13 @@ export const AUTH_ERROR_CODES = {
   scope: "auth.scope.insufficient",
   /** Authenticated, but not an admin. Cookie-only surface; never a token. */
   admin: "auth.admin.required",
+  /**
+   * The second factor presented on a step-up flow did not verify — a wrong
+   * TOTP digit, a replayed one, or a recovery code that is spent. The session
+   * itself is untouched: the client re-prompts for a code rather than signing
+   * the user out, which is the opposite of what the other 401 codes ask for.
+   */
+  mfaCode: "auth.mfa.code_invalid",
 } as const;
 
 /**
