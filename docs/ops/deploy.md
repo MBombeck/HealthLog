@@ -155,6 +155,15 @@ For a maintainer-operated instance, set the DSN there after the first deploy —
 it lives in the database, not in the environment, so it survives an image
 upgrade and does not need a compose change.
 
+The badge on that card tracks delivery, not intent. A DSN that is set and
+parses is not the same fact as reports arriving: a wrong public key, a wrong
+project id and a host that stopped answering all parse. So the card is green
+only while a report has actually left this host inside the last fortnight,
+amber while a target is set and nothing has come back from it, and it names the
+reason underneath when the last attempt was refused. Press **Test** to prove
+the target on demand — that send is recorded like any other, so the badge
+answers immediately.
+
 ## Verify the image signature
 
 Every release image (the multi-arch manifest **index**, covering both

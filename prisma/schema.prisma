@@ -4701,6 +4701,21 @@ model AppSettings {
   glitchtipDsn                    String? @map("glitchtip_dsn")
   glitchtipEnvironment            String? @map("glitchtip_environment")
 
+  // Delivery outcome of the last error report this host tried to send.
+  // Without it the admin card can only say a DSN is set and parses, which is
+  // not the same fact as reports arriving: a wrong public key, a wrong project
+  // id or an unreachable host all parse perfectly and deliver nothing.
+  /// Instant the last report left successfully. Consumer: the GlitchTip card's
+  /// badge, which is only green while this is inside the recent window.
+  glitchtipLastOkAt               DateTime? @map("glitchtip_last_ok_at")
+  /// Instant the last attempt failed. Consumer: the GlitchTip card's status
+  /// line, which names the failure rather than showing a reassuring badge.
+  glitchtipLastFailureAt          DateTime? @map("glitchtip_last_failure_at")
+  /// Short classification of that failure (`invalid_dsn`, `http_403`,
+  /// `network`) — never a response body, which is a remote host's text.
+  /// Consumer: the same status line.
+  glitchtipLastFailureReason      String?   @map("glitchtip_last_failure_reason")
+
   // Medication reminder thresholds (minutes after windowEnd)
   reminderLateMinutes   Int @default(120) @map("reminder_late_minutes")
   reminderMissedMinutes Int @default(240) @map("reminder_missed_minutes")

@@ -214,13 +214,34 @@ async function tryStoreHeader(
   };
 }
 
+/**
+ * Record what became of one send, in the one place every caller passes
+ * through. Dynamically imported so this module stays free of a database
+ * dependency at import time, and awaited so a test can observe it; the
+ * recorder itself never throws.
+ */
+async function record(result: GlitchtipDeliveryResult): Promise<void> {
+  try {
+    const { recordGlitchtipDelivery } =
+      await import("@/lib/monitoring/glitchtip-delivery");
+    await recordGlitchtipDelivery(result);
+  } catch {
+    // The report is the point; its bookkeeping is not worth an exception.
+  }
+}
+
 export async function sendGlitchtipEvent(params: {
   dsn: string;
   input: GlitchtipEventPayloadInput;
 }): Promise<GlitchtipDeliveryResult> {
   const config = parseGlitchtipDsn(params.dsn);
   if (!config) {
-    return { ok: false, details: "invalid_dsn" };
+    const invalid: GlitchtipDeliveryResult = {
+      ok: false,
+      details: "invalid_dsn",
+    };
+    await record(invalid);
+    return invalid;
   }
 
   const eventId = createEventId();
@@ -228,15 +249,24 @@ export async function sendGlitchtipEvent(params: {
   const envelopeBody = buildEnvelopeBody(config, eventId, payload);
 
   const envelopeResult = await tryEnvelope(config, envelopeBody);
-  if (envelopeResult.ok) return envelopeResult;
+  if (envelopeResult.ok) {
+    await record(envelopeResult);
+    return envelopeResult;
+  }
 
   const storeQueryResult = await tryStoreQuery(config, payload);
-  if (storeQueryResult.ok) return storeQueryResult;
+  if (storeQueryResult.ok) {
+    await record(storeQueryResult);
+    return storeQueryResult;
+  }
 
   const storeHeaderResult = await tryStoreHeader(config, payload);
-  if (storeHeaderResult.ok) return storeHeaderResult;
+  if (storeHeaderResult.ok) {
+    await record(storeHeaderResult);
+    return storeHeaderResult;
+  }
 
-  return {
+  const failure: GlitchtipDeliveryResult = {
     ok: false,
     method: storeHeaderResult.method,
     status:
@@ -248,4 +278,6 @@ export async function sendGlitchtipEvent(params: {
       storeQueryResult.details ??
       envelopeResult.details,
   };
+  await record(failure);
+  return failure;
 }

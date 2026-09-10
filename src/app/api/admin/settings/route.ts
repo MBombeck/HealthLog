@@ -16,8 +16,31 @@ import {
   invalidateServerDefaultTimezone,
   isValidTimezone,
 } from "@/lib/tz/resolver";
+import { summariseGlitchtipDelivery } from "@/lib/monitoring/glitchtip-delivery";
 
 export const dynamic = "force-dynamic";
+
+/** The delivery verdict, flattened onto the settings payload. */
+function summariseGlitchtipDeliveryFields(state: {
+  lastOkAt?: Date | null;
+  lastFailureAt?: Date | null;
+  lastFailureReason?: string | null;
+}) {
+  const summary = summariseGlitchtipDelivery(
+    {
+      lastOkAt: state.lastOkAt ?? null,
+      lastFailureAt: state.lastFailureAt ?? null,
+      lastFailureReason: state.lastFailureReason ?? null,
+    },
+    new Date(),
+  );
+  return {
+    glitchtipReportsDelivering: summary.reportsDelivering,
+    glitchtipEverDelivered: summary.everDelivered,
+    glitchtipLastFailureReason: summary.lastFailureReason,
+    glitchtipDeliveryWindowHours: summary.windowHours,
+  };
+}
 
 export const GET = apiHandler(async () => {
   await requireAdmin();
@@ -48,6 +71,15 @@ export const GET = apiHandler(async () => {
     glitchtipEnabled: settings?.glitchtipEnabled ?? false,
     glitchtipDsn: settings?.glitchtipDsn ?? null,
     glitchtipEnvironment: settings?.glitchtipEnvironment ?? "production",
+    // The delivery outcome, not the intent, and resolved here rather than on
+    // the client: a DSN that is set and parses says a target was typed, only
+    // this says something left the host, and whether it left recently enough
+    // is a question about a clock that belongs with the ledger.
+    ...summariseGlitchtipDeliveryFields({
+      lastOkAt: settings?.glitchtipLastOkAt ?? null,
+      lastFailureAt: settings?.glitchtipLastFailureAt ?? null,
+      lastFailureReason: settings?.glitchtipLastFailureReason ?? null,
+    }),
     reminderLateMinutes: settings?.reminderLateMinutes ?? 120,
     reminderMissedMinutes: settings?.reminderMissedMinutes ?? 240,
     // Document vault limits (per-file cap + per-user quota default). BigInt
@@ -274,6 +306,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     glitchtipEnabled: settings.glitchtipEnabled,
     glitchtipDsn: settings.glitchtipDsn,
     glitchtipEnvironment: settings.glitchtipEnvironment ?? "production",
+    ...summariseGlitchtipDeliveryFields({
+      lastOkAt: settings.glitchtipLastOkAt,
+      lastFailureAt: settings.glitchtipLastFailureAt,
+      lastFailureReason: settings.glitchtipLastFailureReason,
+    }),
     reminderLateMinutes: settings.reminderLateMinutes,
     reminderMissedMinutes: settings.reminderMissedMinutes,
     documentMaxFileBytes: settings.documentMaxFileBytes,
