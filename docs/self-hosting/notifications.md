@@ -180,10 +180,12 @@ HealthLog publishes to that topic.
    server if you self-host ntfy) and **Topic**, then save.
 
 If your ntfy server requires auth, an access token can be attached; the
-server URL is validated as a public host and dialled through the egress
-guard (`src/lib/notifications/senders/ntfy.ts`). Urgent events are sent at
-ntfy's top priority (`5` / max) so they bypass batching and surface on the
-lock screen.
+server URL is validated at save time and dialled through the egress guard
+(`src/lib/notifications/senders/ntfy.ts`). A self-hosted ntfy on your own
+network needs the operator grant described under [Notification targets on
+a private network](#notification-targets-on-a-private-network). Urgent
+events are sent at ntfy's top priority (`5` / max) so they bypass batching
+and surface on the lock screen.
 
 ## Webhook
 
@@ -197,11 +199,76 @@ optionally, one custom header (e.g. an auth token).
    **header value**.
 2. Save. A Test button fires a one-off POST so you can confirm routing.
 
-The URL is validated as a public host and dialled through
-`safeFetch({ requirePublicHost: true })` — the SSRF guard blocks private
-and loopback ranges because the target is user-supplied
-(`src/lib/notifications/senders/webhook.ts`). The webhook carries the
-event's urgency flag so you can route urgent events differently.
+The URL is validated at save time and dialled through `safeFetch` with
+the connect-time resolver pin — the SSRF guard refuses a target that
+resolves to a private or loopback address because the target is
+user-supplied (`src/lib/notifications/senders/webhook.ts`). A Gotify or
+Home Assistant on your own network needs the operator grant described in
+the next section. The webhook carries the event's urgency flag so you can
+route urgent events differently.
+
+## Notification targets on a private network
+
+Every webhook and ntfy target is resolved at send time and refused when
+the answer is a private, loopback, link-local or CGNAT address. That is
+the DNS-rebinding defence, and it applies to a public-looking name with a
+LAN A record (a Gotify behind Nginx Proxy Manager with a DNS-01
+certificate) exactly as it applies to `http://192.168.1.20`. The test
+button and the scheduled delivery take the same decision, so a test that
+fails with "Private network target" means nothing would have arrived
+either.
+
+The operator opens a target by listing its exact origin in the server
+environment:
+
+```env
+NOTIFICATION_PRIVATE_ORIGINS="https://gotify.example.com,http://ntfy.lan:8080"
+```
+
+Each entry is one `scheme://host[:port]`, the same grammar as
+`NIGHTSCOUT_PRIVATE_ORIGINS`:
+
+- only `http` and `https`; scheme, host and effective port must all match
+  what the user saves (`https://gotify.example.com:8443` and
+  `https://gotify.example.com` are two different grants);
+- no path, query, credentials, wildcard (`*.lan`) or CIDR (`10.0.0.0/8`) —
+  a range grant would let a DNS rebinding to any address in the range pass
+  the pin, so an operator with several relays lists several origins;
+- listing a host does not list its sub-hosts or sibling ports;
+- loopback (`127.0.0.0/8`, `::1`, `localhost`), the unspecified address,
+  link-local and the cloud-metadata range (`169.254.0.0/16`, `fe80::/10`)
+  cannot be granted: a literal entry is logged once and ignored, and a
+  listed name that resolves there is refused at dial time. On a
+  host-network deployment, list the LAN address of the relay instead of
+  `localhost`;
+- RFC1918, IPv6 unique-local and CGNAT (a Tailscale address or MagicDNS
+  name) are what the list is for;
+- a malformed entry is logged once at first use and grants nothing; the
+  valid entries beside it keep working.
+
+A listed origin is still dialled through the pinned resolver with
+redirects forbidden, so a relay that answers with a redirect to another
+host is refused. The variable has to be on the compose `environment:`
+whitelist to reach the container; the published `docker-compose.yml`
+lists it. Restart the app after changing it.
+
+What is refused where, so you know which lever to pull:
+
+| Target                                                      | Without the grant | With the exact origin listed |
+| ----------------------------------------------------------- | ----------------- | ---------------------------- |
+| Public name resolving to a public address                   | works             | works, public pin            |
+| Public name with a private A record (LAN reverse proxy)     | refused at send   | works                        |
+| `gotify.lan`, `gotify.home.arpa`, a Docker service name     | refused at send   | works                        |
+| `gotify.local` (mDNS)                                       | refused at save   | works                        |
+| Literal `192.168.x.x`, `10.x.x.x`, `100.64.x.x`, `fd00::/8` | refused at save   | works                        |
+| `localhost`, `127.0.0.1`, `169.254.169.254`, `::1`          | refused at save   | still refused                |
+
+A private target that is not listed is refused when the card is saved
+(`422`, `meta.errorCode` = `private_origin_not_approved`, the message
+names the variable) or, for a DNS name the save cannot classify, when the
+test button or a reminder dials it. The resolved address is never shown
+to the user. Telegram, email and Web Push are not affected: their hosts
+are not user-supplied.
 
 ## Email (SMTP)
 
