@@ -120,10 +120,12 @@ const HK_UNITS: Record<string, HkUnitSpec> = {
 
 /**
  * Apple writes molar units with the substance's molar mass inline —
- * `mmol<180.156>/L` for blood glucose. The annotation is informational;
- * strip it so the lookup sees the plain unit.
+ * `mmol<180.156>/L` for blood glucose. The annotation is a number and
+ * informational; strip exactly that shape so the lookup sees the plain
+ * unit. Anything else between angle brackets is not a unit Apple writes
+ * and stays unknown.
  */
-const MOLAR_MASS_ANNOTATION = /<[^>]*>/g;
+const MOLAR_MASS_ANNOTATION = /<\d+(?:\.\d+)?>/g;
 
 function normaliseUnitString(unit: string): string {
   return unit.trim().replace(MOLAR_MASS_ANNOTATION, "");

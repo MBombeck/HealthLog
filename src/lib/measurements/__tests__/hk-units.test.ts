@@ -30,6 +30,8 @@ describe("convertHkValue", () => {
       99.0858,
       4,
     );
+    expect(isConvertibleHkUnit("mmol<180>/L")).toBe(true);
+    expect(isConvertibleHkUnit("mmol<x>/L")).toBe(false);
   });
 
   it("keeps the small calorie apart from the large one", () => {
