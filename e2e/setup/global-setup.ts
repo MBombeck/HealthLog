@@ -251,6 +251,17 @@ export const CROSS_TAB_STORAGE_STATE_PATH = resolve(
 );
 
 /**
+ * The doctor-report delegate journey's jar. Its own session row, for the reason
+ * every switching spec has one: it opens somebody else's record to prove the
+ * report refuses a READ-level grant, and two specs driving one row from two
+ * workers would test their interference rather than the refusal.
+ */
+export const REPORT_DELEGATE_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateReportDelegate.json",
+);
+
+/**
  * The banner-geometry spec's jar, and the reason it exists is a release-shaped
  * one rather than a load-shaped one.
  *
@@ -760,6 +771,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     await capture(E2E_SCOPE_DELEGATE, FENCE_OFFLINE_STORAGE_STATE_PATH);
     await capture(E2E_SCOPE_DELEGATE, CROSS_TAB_STORAGE_STATE_PATH);
     await capture(E2E_SCOPE_DELEGATE, SEAM_BANNERS_STORAGE_STATE_PATH);
+    await capture(E2E_SCOPE_DELEGATE, REPORT_DELEGATE_STORAGE_STATE_PATH);
 
     // v1.37.0 — the guardian's jar, and only then its second factor.
     //
