@@ -1,5 +1,5 @@
 /**
- * The three medication create routes the native client replays out of its
+ * The four medication create routes the native client replays out of its
  * offline outbox, driven as routes against a real Postgres.
  *
  * Each case imports the shipped `POST` export and calls it twice with the same
@@ -10,8 +10,8 @@
  * keep passing after a route dropped it.
  *
  * The client sends the header on every replay, so a lost success response used
- * to cost the user a duplicate medication, a duplicate symptom entry, or a
- * duplicate pen in the supply count. `POST /api/medications` had a dedupe of
+ * to cost the user a duplicate medication, a duplicate symptom entry, a
+ * duplicate pen in the supply count, or a second titration step. `POST /api/medications` had a dedupe of
  * its own, but only for a MIRRORED create keyed on
  * `(externalSource, externalId)`; a manually entered medication carries
  * neither field and had nothing to collapse a retry onto — so the manual shape
@@ -224,6 +224,44 @@ describe("POST /api/medications/[id]/inventory — replayed container", () => {
 
     const rows = await getPrismaClient().medicationInventoryItem.findMany({
       where: { userId: USER_ID, medicationId },
+    });
+    expect(rows).toHaveLength(1);
+  });
+});
+
+describe("POST /api/medications/[id]/glp1 — replayed titration step", () => {
+  it("replays the first response and writes exactly one dose change", async () => {
+    const medicationId = await seedMedication();
+    const { POST } = await import("@/app/api/medications/[id]/glp1/route");
+    const body = {
+      doseChange: {
+        effectiveFrom: "2026-09-01T00:00:00Z",
+        doseValue: 2.5,
+        doseUnit: "mg",
+        note: "stepped up after four weeks",
+      },
+    };
+
+    const first = await (POST as Handler)(
+      post(`/api/medications/${medicationId}/glp1`, body, "outbox-glp1-1"),
+      { params: Promise.resolve({ id: medicationId }) },
+    );
+    expect(first.status).toBe(201);
+    const firstBody = await first.json();
+
+    const replay = await (POST as Handler)(
+      post(`/api/medications/${medicationId}/glp1`, body, "outbox-glp1-1"),
+      { params: Promise.resolve({ id: medicationId }) },
+    );
+    expect(replay.status).toBe(201);
+    expect(replay.headers.get("X-Idempotent-Replay")).toBe("true");
+    expect(await replay.json()).toEqual(firstBody);
+
+    // The titration row carries no natural key at all, so without the wrapper
+    // the replay would leave the medication with two dose changes on the same
+    // day and the runway estimate reading off the wrong one.
+    const rows = await getPrismaClient().medicationDoseChange.findMany({
+      where: { medicationId },
     });
     expect(rows).toHaveLength(1);
   });

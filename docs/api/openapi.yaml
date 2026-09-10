@@ -152,6 +152,22 @@ paths:
         burns their own allowance rather than locking the owner out and cannot collect a fresh one by switching records.
         Audits as `cycle.symptom.custom.create` with the icon only — never the label. Delegable at MANAGE level over the
         `cycle` section: the record's own symptom vocabulary is what the day-log writes need in order to say anything."
+      parameters:
+        - &a6
+          name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_\-:.]{8,128}$
+            minLength: 8
+            maxLength: 128
+          description: "Makes this write safe to retry. Send the same key again and the first response is replayed rather than the
+            work repeated, marked with `X-Idempotent-Replay: true`. A key that does not match the pattern is IGNORED
+            rather than refused — the write then proceeds unprotected and looks exactly like a request that carried no
+            key, so validate the key on your side. Scoped per user and per (method, path): the same key on a different
+            route is a different key. While a first request under this key is still in flight, a second is refused with
+            409 rather than queued."
       requestBody:
         required: true
         content:
@@ -167,6 +183,25 @@ paths:
                 $ref: "#/components/schemas/CycleCustomSymptomCreatedEnvelope"
         "401": *a1
         "403": *a2
+        "409": &a7
+          description: "A request with this `Idempotency-Key` is already in progress. Nothing was written by this call. Retry
+            after a short delay; the response carries `X-Idempotent-Replay: false` to separate it from a replay."
+          headers:
+            X-Idempotent-Replay:
+              required: true
+              description: "`true` when this response was replayed from a stored one rather than produced now; `false` on the 409 that
+                refuses a duplicate still in flight. Absent when the request carried no usable key."
+              schema:
+                type: string
+                enum:
+                  - "true"
+                  - "false"
+                description: "`true` when this response was replayed from a stored one rather than produced now; `false` on the 409 that
+                  refuses a duplicate still in flight. Absent when the request carried no usable key."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422":
           description: Either the body failed validation — the multi-issue envelope with `meta.errorCode` =
             `cycle.symptom.custom.invalid` (an empty or over-40-character label, an icon outside the allow-list, a
@@ -332,21 +367,7 @@ paths:
       description: "Upserts on `(userId, source, externalId)` when externalId present, else `(userId, date)`. `note` encrypts
         at rest. 201 on insert, 200 on update. Gated: `cycle.disabled` 403 when the feature is off."
       parameters:
-        - &a6
-          name: Idempotency-Key
-          in: header
-          required: false
-          schema:
-            type: string
-            pattern: ^[A-Za-z0-9_\-:.]{8,128}$
-            minLength: 8
-            maxLength: 128
-          description: "Makes this write safe to retry. Send the same key again and the first response is replayed rather than the
-            work repeated, marked with `X-Idempotent-Replay: true`. A key that does not match the pattern is IGNORED
-            rather than refused — the write then proceeds unprotected and looks exactly like a request that carried no
-            key, so validate the key on your side. Scoped per user and per (method, path): the same key on a different
-            route is a different key. While a first request under this key is still in flight, a second is refused with
-            409 rather than queued."
+        - *a6
       requestBody:
         required: true
         content:
@@ -368,25 +389,7 @@ paths:
                 $ref: "#/components/schemas/CycleDayLogCreatedEnvelope"
         "401": *a1
         "403": *a2
-        "409": &a7
-          description: "A request with this `Idempotency-Key` is already in progress. Nothing was written by this call. Retry
-            after a short delay; the response carries `X-Idempotent-Replay: false` to separate it from a replay."
-          headers:
-            X-Idempotent-Replay:
-              required: true
-              description: "`true` when this response was replayed from a stored one rather than produced now; `false` on the 409 that
-                refuses a duplicate still in flight. Absent when the request carried no usable key."
-              schema:
-                type: string
-                enum:
-                  - "true"
-                  - "false"
-                description: "`true` when this response was replayed from a stored one rather than produced now; `false` on the 409 that
-                  refuses a duplicate still in flight. Absent when the request carried no usable key."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
         "422": *a4
         "429": *a5
   /api/cycle/day-logs/{id}:
@@ -4550,6 +4553,7 @@ paths:
           schema:
             type: string
           required: true
+        - *a6
       requestBody:
         required: true
         content:
@@ -4613,6 +4617,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
         "422": *a4
         "429": *a5
   /api/medications/{id}/api-endpoint:

@@ -321,6 +321,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
     post: {
+      parameters: [idempotencyKeyParameter],
       tags: ["Medications"],
       summary: "Record a titration step or a legacy stock correction",
       description:
@@ -331,6 +332,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         content: { "application/json": { schema: glp1PostBodySchema } },
       },
       responses: {
+        ...idempotentWrite(),
         ...recordRefusal(),
         "201": {
           description:

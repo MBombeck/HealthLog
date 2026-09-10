@@ -516,6 +516,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
     post: {
+      parameters: [idempotencyKeyParameter],
       tags: ["Cycle"],
       summary: "Create a custom cycle symptom (v1.15.1)",
       description:
@@ -527,6 +528,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
       },
       responses: {
+        ...idempotentWrite(),
         "201": {
           description: "The created custom symptom.",
           content: {

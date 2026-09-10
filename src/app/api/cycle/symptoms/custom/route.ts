@@ -26,6 +26,7 @@ import {
 } from "@/lib/api-response";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { withIdempotency } from "@/lib/idempotency";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
@@ -67,7 +68,18 @@ export const GET = apiHandler(async () => {
   return apiSuccess({ symptoms });
 });
 
-export const POST = apiHandler(async (request: NextRequest) => {
+/**
+ * Wrapped in `withIdempotency`: a custom symptom is minted from the client's
+ * offline outbox under the same `Idempotency-Key`, and a replay after a lost
+ * success response would otherwise answer the 409 the label's unique key
+ * raises rather than the 201 the first attempt produced — a create the client
+ * has no record of, reported as a conflict it cannot act on.
+ */
+export const POST = apiHandler(
+  withIdempotency<[NextRequest]>(postCustomSymptom),
+);
+
+async function postCustomSymptom(request: NextRequest): Promise<Response> {
   // v1.37.0 — MANAGE. The record's own symptom vocabulary, which the day-log
   // writes the level admits need in order to say anything.
   const { user, actor } = await requireRecordAuth("manage", "cycle");
@@ -151,4 +163,4 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
     201,
   );
-});
+}
