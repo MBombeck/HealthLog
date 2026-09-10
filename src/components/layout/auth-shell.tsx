@@ -130,7 +130,11 @@ export function AuthShell({
     inSharedRecord &&
     !isDestinationInSharedRecord(pathname, sections) &&
     !isRecordSettingsPath;
-  const isOnboardingPage = pathname === "/onboarding";
+  // The whole setup flow, not only its front door: every screen lives under
+  // `/onboarding/<step>` (v1.39 C2), and an exact match here put the
+  // questions inside the full app chrome, sidebar and all.
+  const isOnboardingPage =
+    pathname === "/onboarding" || pathname.startsWith("/onboarding/");
   const showUnlockNotifier = isAuthenticated && !isPublicPage && !!user?.id;
 
   // v1.9.0 — the document-level scrollbar-gutter (globals.css) is reserved

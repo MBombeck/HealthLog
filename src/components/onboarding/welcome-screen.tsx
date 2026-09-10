@@ -159,7 +159,7 @@ export function WelcomeScreen({ variant }: { variant: "fresh" | "again" }) {
             href="/privacy#medical-boundary"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary underline-offset-4 hover:underline"
+            className="text-primary underline underline-offset-4"
           >
             {t("onboarding.disclaimer.learnMore")}
           </Link>

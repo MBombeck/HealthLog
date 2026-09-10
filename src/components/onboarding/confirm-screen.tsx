@@ -20,11 +20,15 @@ import { localeLabels } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 import { MODULE_REGISTRY } from "@/lib/modules/registry";
 import { confirmedModules } from "@/lib/onboarding/confirm-summary";
-import type { OnboardingStateDto } from "@/lib/onboarding/needs";
+import {
+  ONBOARDING_SKIPPABLE_STEP_IDS,
+  type OnboardingStateDto,
+} from "@/lib/onboarding/needs";
 import {
   firstResultApplies,
   nextScreen,
   previousScreen,
+  questionScreens,
 } from "@/lib/onboarding/wizard-steps";
 
 /**
@@ -71,6 +75,19 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
     if (finishing) return;
     setFinishing(true);
     try {
+      // A question this flow never showed — Q6 for somebody with no
+      // unit-bearing area — is passed on the ledger before the completion,
+      // because the route derives only once EVERY question is answered or
+      // passed, and a step nobody was asked cannot be answered.
+      const shown = new Set<string>(questionScreens(state));
+      for (const id of ONBOARDING_SKIPPABLE_STEP_IDS) {
+        if (id === "first-result") continue;
+        const pending =
+          state.steps.find((step) => step.id === id)?.status === "pending";
+        if (!shown.has(id) && pending) {
+          await answer.mutateAsync({ step: id, status: "skipped" });
+        }
+      }
       const { onboarding } = await complete.mutateAsync();
       let written = onboarding ?? state;
       if (!firstResultApplies(written)) {
@@ -122,7 +139,7 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
           {t("onboarding.flow.confirm.everythingElse")}{" "}
           <Link
             href="/settings/modules"
-            className="text-primary underline-offset-4 hover:underline"
+            className="text-primary underline underline-offset-4"
           >
             {t("onboarding.flow.confirm.modulesLink")}
           </Link>
@@ -162,7 +179,7 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
       <p className="text-sm">
         <Link
           href="/settings/account"
-          className="text-primary underline-offset-4 hover:underline"
+          className="text-primary underline underline-offset-4"
         >
           {t("onboarding.flow.confirm.changeInSettings")}
         </Link>

@@ -165,6 +165,10 @@ async function runAxe(page: Page): Promise<AxeViolation[]> {
   });
 }
 
+// Serial: every test here drives the ONE account through the API, and two
+// workers doing that at once would each find the other's answers.
+test.describe.configure({ mode: "serial" });
+
 test.describe("setup flow — axe on every screen", () => {
   test.use({ storageState: SETUP_A11Y_STORAGE_STATE_PATH });
 

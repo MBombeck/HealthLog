@@ -122,6 +122,10 @@ async function padAndMeasure(page: Page) {
   }, SHELL);
 }
 
+// Serial: every test here drives the ONE account through the API, and two
+// workers doing that at once would each find the other's answers.
+test.describe.configure({ mode: "serial" });
+
 test.describe("setup flow — every locale at 30% longer strings", () => {
   test.use({ storageState: SETUP_LOCALE_STORAGE_STATE_PATH });
 

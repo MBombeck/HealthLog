@@ -242,12 +242,15 @@ async function completeNeedsFlow(
     // lands first — leaves `count = 0` and the seed is skipped rather than
     // overwriting it. An answer set that speaks to no tile builds `null` and
     // writes nothing, which leaves the default layout in place.
+    // `AnyNull`, not `JsonNull`: an unset column is a SQL NULL, which
+    // `JsonNull` (a JSON `null` value) does not match — the retired step route
+    // carried that filter and its seed never landed on a fresh account.
     const seededLayout = buildNeedsSeededDashboardLayout(state.needs);
     if (seededLayout) {
       const seeded = await prisma.user.updateMany({
         where: {
           id: userId,
-          dashboardWidgetsJson: { equals: Prisma.JsonNull },
+          dashboardWidgetsJson: { equals: Prisma.AnyNull },
         },
         data: { dashboardWidgetsJson: toJson(seededLayout) },
       });

@@ -241,7 +241,7 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
 
         <Link
           href="/settings/ai"
-          className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+          className="text-primary text-sm font-medium underline underline-offset-4"
         >
           {t("onboarding.ai.setupCta")}
         </Link>
@@ -323,14 +323,14 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
         <Link
           href="/settings/export"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:underline"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm underline underline-offset-4"
         >
           <FileUp className="size-3.5" />
           {t("onboarding.done.importCta")}
         </Link>
         <Link
           href="/settings/modules"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:underline"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm underline underline-offset-4"
         >
           <Settings2 className="size-3.5" />
           {t("onboarding.done.modulesCta")}

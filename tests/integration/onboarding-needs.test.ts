@@ -52,6 +52,12 @@ vi.mock("@/lib/db-compat", () => ({
 }));
 
 import { acceptGrant, inviteGrant } from "@/lib/sharing/grants";
+import {
+  DEFAULT_DASHBOARD_LAYOUT,
+  resolveDashboardLayout,
+  serializeDashboardLayout,
+} from "@/lib/dashboard-layout";
+import { toJson } from "@/lib/db";
 import { emptyOnboardingNeeds } from "@/lib/onboarding/needs";
 import type {
   OnboardingStateDto,
@@ -353,6 +359,58 @@ describe("POST /api/onboarding/complete", () => {
     expect(second.status).toBe(200);
     expect((await modulePrefs(user.id)).labs).toBe(false);
     expect((await readState(second)).completedAt).toBe(state.completedAt);
+  });
+
+  it("seeds the dashboard order from the answers, and only while the layout is unset", async () => {
+    const user = await makeUser("seed");
+    await signIn(user.id);
+    await answerTheQuestions();
+    expect((await postComplete()).status).toBe(200);
+
+    const stored = async () =>
+      (
+        await getPrismaClient().user.findUniqueOrThrow({
+          where: { id: user.id },
+          select: { dashboardWidgetsJson: true },
+        })
+      ).dashboardWidgetsJson;
+
+    // Blood pressure and a daily medication were answered: their tiles lead,
+    // visible on both surfaces, and nothing is dropped.
+    const seeded = await stored();
+    expect(seeded).not.toBeNull();
+    const layout = resolveDashboardLayout(seeded);
+    const order = [...layout.widgets]
+      .sort((a, b) => a.order - b.order)
+      .map((w) => w.id);
+    expect(new Set(order.slice(0, 4))).toEqual(
+      new Set(["bp", "bpInTarget", "pulse", "medications"]),
+    );
+    for (const id of ["bp", "bpInTarget", "pulse", "medications"]) {
+      const widget = layout.widgets.find((w) => w.id === id);
+      expect(widget?.visible, id).toBe(true);
+      expect(widget?.tileVisible, id).toBe(true);
+    }
+    expect(layout.widgets.length).toBe(DEFAULT_DASHBOARD_LAYOUT.widgets.length);
+
+    // A layout somebody arranged is never clobbered: put the default back
+    // (weight first), ask the questions again, confirm again — the seed sees
+    // a set column and writes nothing.
+    await getPrismaClient().user.update({
+      where: { id: user.id },
+      data: {
+        dashboardWidgetsJson: toJson(
+          serializeDashboardLayout(DEFAULT_DASHBOARD_LAYOUT),
+        ),
+      },
+    });
+    expect((await postRestart()).status).toBe(200);
+    await answerTheQuestions();
+    expect((await postComplete()).status).toBe(200);
+    const kept = resolveDashboardLayout(await stored());
+    expect([...kept.widgets].sort((a, b) => a.order - b.order)[0]?.id).toBe(
+      "weight",
+    );
   });
 
   it("never switches off a module the person switched on by hand", async () => {

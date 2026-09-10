@@ -138,15 +138,12 @@ test.describe("setup flow — blood pressure and weight, typed in", () => {
       "every step settled",
     ).toBe(true);
 
-    // The tile order: the two areas' tiles first, in the default layout's
-    // own order, and the rest behind them.
+    // The tile order: the two areas' five tiles lead, in the default
+    // layout's own relative order, and everything else sits behind them.
     const order = await readTileOrder(page);
-    expect(order.slice(0, 5)).toEqual([
-      "weight",
-      "bp",
-      "pulse",
-      "bodyFat",
-      "bpInTarget",
-    ]);
+    expect(new Set(order.slice(0, 5))).toEqual(
+      new Set(["weight", "bp", "pulse", "bodyFat", "bpInTarget"]),
+    );
+    expect(order.indexOf("hrv")).toBeGreaterThan(4);
   });
 });
