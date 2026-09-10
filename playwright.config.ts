@@ -169,6 +169,17 @@ export default defineConfig({
         // to a question neither test asked. It proves flows through stable
         // data-slots, not a mobile layout, so it runs in one project.
         "medication-compliance-journey.spec.ts",
+        // The doctor-report journey seeds a few weeks of readings into its own
+        // account, presses Generate and reads the PDF back off the download.
+        // Two projects doing that in parallel would leave a second set of rows
+        // in the window one of them is asserting an empty report for, and would
+        // spend the shared hourly export bucket twice over. The panel's mobile
+        // layout is covered by `settings-export.spec.ts`, which measures its
+        // tap targets there; this journey is about the artefact.
+        "doctor-report.spec.ts",
+        // Its delegate half MOVES the session's record selector, so it runs in
+        // exactly one project for the reason written above the fence specs.
+        "doctor-report-delegate.spec.ts",
         // Runs only in the service-worker project.
         "v137-record-session-fence-offline.spec.ts",
         // The Apple Health import journey uploads an archive into the one
