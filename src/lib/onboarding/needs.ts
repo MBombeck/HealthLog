@@ -67,9 +67,6 @@ export const ONBOARDING_SKIPPABLE_STEP_IDS = [
   "first-result",
 ] as const;
 
-export type OnboardingSkippableStepId =
-  (typeof ONBOARDING_SKIPPABLE_STEP_IDS)[number];
-
 /**
  * Q1 — whose record this is. The vocabularies below are pinned against the
  * registry's derivation input with `satisfies`, so a value added here that the
