@@ -63,6 +63,8 @@ import { openApiPaths } from "@/lib/openapi/routes";
 import { SHARING_ACCESS_DENIED_DESCRIPTION } from "@/lib/openapi/routes/shared";
 import { RETIRED_ROUTES } from "@/lib/http/retired-routes";
 
+import { stripComments } from "./helpers/source-files";
+
 /** Published paths that deliberately have no handler behind them. */
 const retiredPaths = new Set(RETIRED_ROUTES.map((route) => route.path));
 
@@ -78,10 +80,6 @@ interface PublishedOperation {
   operation: Record<string, unknown>;
   /** The handler's own declaration plus every module-local one it names. */
   handlerSource: string;
-}
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/.*$/gm, "$1");
 }
 
 /**

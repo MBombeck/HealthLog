@@ -63,7 +63,7 @@ export default function LabsPage() {
   // absent key reads as enabled, so a direct URL hit only bounces on an
   // explicit `false`. Every `/api/labs/*` route also enforces the gate
   // server-side, so this is a UX redirect, not the security boundary.
-  const enabled = inSharedRecord || user?.modules?.labs !== false;
+  const enabled = user?.modules?.labs !== false;
   const ocrCapability = useOcrCapability(
     shouldProbeOcrCapability({
       isAuthenticated,

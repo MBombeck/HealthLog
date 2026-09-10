@@ -176,8 +176,7 @@ export default function MedicationsPageClient() {
   // gate) and the list query never fires (the API would 403 anyway).
   // Default-on: an absent key reads as enabled, so the page only hides on an
   // explicit `false`.
-  const medicationsEnabled =
-    inSharedRecord || user?.modules?.medications !== false;
+  const medicationsEnabled = user?.modules?.medications !== false;
   const router = useRouter();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();

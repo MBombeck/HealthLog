@@ -73,3 +73,70 @@ export function walkSourceFiles(
   }
   return files;
 }
+
+/**
+ * A source file with its comments removed, line comments FIRST.
+ *
+ * The order is the whole reason this is shared rather than re-spelled per
+ * guard. Every private copy in this directory strips block comments first,
+ * with one non-greedy `/\*[\s\S]*?\*\//` pass, and that pass cannot tell a
+ * real block opener from a `/*` that happens to sit inside a line comment.
+ * This tree has one: `src/app/mood/page-client.tsx` explains its gate with
+ * "Every `/api/mood-entries/*` route also enforces the gate", and the `/*` in
+ * that path opened a fake block that swallowed the next 2.2 kB of real code —
+ * the module gate three lines below it included. A guard reading that source
+ * was searching a file with a hole in it and reporting a clean sweep.
+ *
+ * So each line is walked once, left to right: whichever opener comes first
+ * wins, a line comment ends the line, and a block comment carries its state to
+ * the next one. Line-comment detection needs `//` at the start of a line or
+ * after whitespace, so a URL inside a string survives.
+ *
+ * Its honest limit: it is a scanner, not a parser. A `/*` inside a string
+ * literal still opens a block, and a guard that needs more than this needs a
+ * real parse.
+ */
+export function stripComments(source: string): string {
+  const lines: string[] = [];
+  let inBlock = false;
+
+  for (const line of source.split("\n")) {
+    let rest = line;
+    let kept = "";
+
+    while (rest.length > 0) {
+      if (inBlock) {
+        const closes = rest.indexOf("*/");
+        if (closes === -1) break;
+        rest = rest.slice(closes + 2);
+        inBlock = false;
+        continue;
+      }
+
+      const lineComment = rest.search(/(^|\s)\/\//);
+      const blockComment = rest.indexOf("/*");
+
+      if (
+        blockComment !== -1 &&
+        (lineComment === -1 || blockComment < lineComment)
+      ) {
+        kept += rest.slice(0, blockComment);
+        rest = rest.slice(blockComment + 2);
+        inBlock = true;
+        continue;
+      }
+
+      if (lineComment !== -1) {
+        kept += rest.slice(0, rest.indexOf("//", lineComment));
+        break;
+      }
+
+      kept += rest;
+      break;
+    }
+
+    lines.push(kept);
+  }
+
+  return lines.join("\n");
+}
