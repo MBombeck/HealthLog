@@ -10507,7 +10507,7 @@
       },
       "mind": {
         "label": "Nastrój i zdrowie psychiczne",
-        "detail": "Wpisy o nastroju i historia kwestionariuszy zdrowia psychicznego."
+        "detail": "Wpisy o nastroju i historia kwestionariuszy zdrowia psychicznego. Wypełniony kwestionariusz zapisuje też swój wynik łączny jako pomiar."
       },
       "cycle": {
         "label": "Cykl",

@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { PageAuthGate } from "@/components/ui/page-auth-gate";
 import { IllnessView } from "@/components/illness/illness-view";
 
@@ -21,11 +20,10 @@ import { IllnessView } from "@/components/illness/illness-view";
  */
 export default function IllnessPage() {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const { inSharedRecord } = useRecordCapabilities();
   const router = useRouter();
 
   // Born-gated: enabled ONLY when the resolved map says `true`.
-  const enabled = inSharedRecord || user?.modules?.illness === true;
+  const enabled = user?.modules?.illness === true;
 
   useEffect(() => {
     if (isLoading) return;

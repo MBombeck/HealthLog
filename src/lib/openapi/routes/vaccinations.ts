@@ -364,14 +364,17 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "Plan a booster reminder from a dose",
       description:
-        "Mints (or re-anchors) the booster reminder a logged dose suggests. The minted row is an ordinary `origin: VORSORGE` measurement reminder carrying the dose's primary antigen as a server-side match key; it lists on the preventive-care surface and rings through the same engine as every other checkup. Re-confirming re-anchors the existing reminder instead of minting a second one: 201 carries a fresh mint (`minted: true`), 200 a re-anchor. A free-text-only dose has no antigen to remind on and is refused with 422. Audits as `vaccination.booster.planned`.",
+        "Mints (or re-anchors) the booster reminder a logged dose suggests. The minted row is an ordinary `origin: VORSORGE` measurement reminder carrying the dose's primary antigen as a server-side match key; it lists on the preventive-care surface and rings through the same engine as every other checkup. Re-confirming re-anchors the existing reminder instead of minting a second one: 201 carries a fresh mint (`minted: true`), 200 a re-anchor. A free-text-only dose has no antigen to remind on and is refused with 422. Audits as `vaccination.booster.planned`.\n\n" +
+        "The operation is declared under the health background and the row it mints belongs to the measurements section, so it crosses a section boundary: a delegate whose grant does not also open `measurements` is refused with 403 `vaccination.booster-out-of-scope` and nothing is written. The dose itself still logs — only the booster does not.",
       requestParams: idPath,
       requestBody: {
         required: true,
         content: { "application/json": { schema: vaccinationBoosterRequest } },
       },
       responses: {
-        ...recordRefusal(),
+        ...recordRefusal(
+          "Refused: the caller's grant does not open this record's measurements, and the booster reminder lives there (`meta.errorCode` = `vaccination.booster-out-of-scope`). Nothing was written.",
+        ),
         "200": {
           description: "Existing booster reminder re-anchored.",
           content: {

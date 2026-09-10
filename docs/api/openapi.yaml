@@ -1789,6 +1789,20 @@ paths:
                 type: string
                 format: binary
         "401": *a1
+        "403":
+          description: >-
+            The Bearer token carries a narrow scope. The encrypted archive needs a cookie session or a full-access
+            token; the refusal happens before any second-factor proof is looked at.
+
+
+            Refused: the request was made while the session is acting on another account (`meta.errorCode` =
+            `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it
+            refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any
+            level opens it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
   /api/auth/check-user:
@@ -12237,8 +12251,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "403":
-          description: The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal
+          description: >-
+            The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal
             happens before any second-factor proof is looked at.
+
+
+            Refused: the request was made while the session is acting on another account (`meta.errorCode` =
+            `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it
+            refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any
+            level opens it.
           content:
             application/json:
               schema:
@@ -12460,8 +12481,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "403":
-          description: The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal
+          description: >-
+            The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal
             happens before any second-factor proof is looked at.
+
+
+            Refused: the request was made while the session is acting on another account (`meta.errorCode` =
+            `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it
+            refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any
+            level opens it.
           content:
             application/json:
               schema:
@@ -14201,12 +14229,19 @@ paths:
       tags:
         - Records
       summary: Plan a booster reminder from a dose
-      description: "Mints (or re-anchors) the booster reminder a logged dose suggests. The minted row is an ordinary `origin:
+      description: >-
+        Mints (or re-anchors) the booster reminder a logged dose suggests. The minted row is an ordinary `origin:
         VORSORGE` measurement reminder carrying the dose's primary antigen as a server-side match key; it lists on the
         preventive-care surface and rings through the same engine as every other checkup. Re-confirming re-anchors the
         existing reminder instead of minting a second one: 201 carries a fresh mint (`minted: true`), 200 a re-anchor. A
         free-text-only dose has no antigen to remind on and is refused with 422. Audits as
-        `vaccination.booster.planned`."
+        `vaccination.booster.planned`.
+
+
+        The operation is declared under the health background and the row it mints belongs to the measurements section,
+        so it crosses a section boundary: a delegate whose grant does not also open `measurements` is refused with 403
+        `vaccination.booster-out-of-scope` and nothing is written. The dose itself still logs — only the booster does
+        not.
       parameters:
         - in: path
           name: id
@@ -14233,7 +14268,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/MintVaccinationBoosterEnvelope"
         "401": *a1
-        "403": *a9
+        "403":
+          description: >-
+            Refused: the caller's grant does not open this record's measurements, and the booster reminder lives there
+            (`meta.errorCode` = `vaccination.booster-out-of-scope`). Nothing was written.
+
+
+            Refused: this request named a record the caller may not act on (`meta.errorCode` = `sharing.access.denied`).
+            Byte-identical for an account that does not exist, an account that granted nothing, a grant whose sections
+            do not reach this surface, and a read grant on a request that writes — the response carries no reason, so it
+            is not an account-enumeration oracle. The reason reaches the record owner's activity feed and the operator's
+            audit trail instead. On the cookie transport the same code answers one further case: a session that has
+            entered a shared record and sends a request without its record-context assertion, which is a client older
+            than the fence — leave the record and reload. A request that names no record but the caller's own never
+            reaches this response, so a client that never switches and never sends the per-request account selector will
+            not see it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "404": *a28
         "422": *a4
         "429": *a5
@@ -14720,10 +14773,17 @@ paths:
       tags:
         - Mental health
       summary: Record a completed screener
-      description: Stores one administration (item answers encrypted) and writes the derived total as a server-owned
-        PHQ9_SCORE / GAD7_SCORE / WHO5_SCORE / SCI_SCORE measurement (source COMPUTED — never client-writable). WHO-5
-        and SCI totals run HIGHER = better; their follow-up thresholds point downwards (≤ 50 / ≤ 16). On a positive
-        PHQ-9 item-9 the response carries the locale-aware crisis-resource set.
+      description: >-
+        Stores one administration (item answers encrypted) and writes the derived total as a server-owned PHQ9_SCORE /
+        GAD7_SCORE / WHO5_SCORE / SCI_SCORE measurement (source COMPUTED — never client-writable). WHO-5 and SCI totals
+        run HIGHER = better; their follow-up thresholds point downwards (≤ 50 / ≤ 16). On a positive PHQ-9 item-9 the
+        response carries the locale-aware crisis-resource set.
+
+
+        The projection row is the one write this operation makes outside its declared section: the operation is fenced
+        on `mind`, and the measurement it derives lands in `measurements`. It is deliberate and unconditional — a
+        screener whose own total is missing from the record would be an inconsistency inside the section the grant does
+        open. The consent copy for the mood-and-mind section names it.
       parameters:
         - *a6
       requestBody:

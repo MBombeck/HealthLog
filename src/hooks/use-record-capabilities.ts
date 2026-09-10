@@ -43,9 +43,8 @@ const ALWAYS = () => true;
  * server's table (`domain-write-support.ts`), published per grant as two
  * lists on `accountAccess.active`. Four answers carry that:
  *
- *   - `canAdd` — may this person add one of the admitted kinds.
  *   - `canWriteDomain(domain)` — is there a delegated write in this section
- *     the grant satisfies.
+ *     the grant satisfies. The only question a create affordance asks.
  *   - `canManageDomain(domain)` — may this person change what is already
  *     there in this section, or add what a WRITE grant does not cover.
  *   - `canManage` — the coarse switch: is there ANY section this person may
@@ -53,7 +52,11 @@ const ALWAYS = () => true;
  *     because a control belongs to one section and the answer differs per
  *     section (the vault is read-only under every grant).
  *
- * A surface that offers an admitted create asks `canAdd`. A control that
+ * A surface that offers an admitted create asks `canWriteDomain` for its own
+ * section. There is deliberately no coarse "may this person add anything":
+ * `canWrite` is the grant's level with no scope term, so a WRITE grant scoped
+ * to `["labs"]` answers true and a weight form built on that answer 403s at
+ * `grantCoversDomain`. A control that
  * edits, deletes or creates what WRITE does not cover asks `canManageDomain`
  * for its own section. A control whose route resolves the caller rather than
  * the record (settings, credentials, AI budget, chart preferences) asks
@@ -92,10 +95,13 @@ export interface RecordCapabilities {
   accessRefused?: boolean;
   /** Is this browser acting on somebody else's record right now. */
   inSharedRecord: boolean;
-  /** The grant's resolved level for the record on screen. */
+  /**
+   * The grant's resolved level for the record on screen — LEVEL ONLY, with no
+   * scope term. A WRITE grant scoped to the document vault answers true here
+   * and can write nothing anywhere. Never gate a control on it; ask
+   * {@link canWriteDomain} for the control's own section.
+   */
   canWrite: boolean;
-  /** May the caller add an entry of a kind the delegation admits. */
-  canAdd: boolean;
   /**
    * May the caller change what exists somewhere in this record, or add what
    * the delegation excludes. In one's own record, always. In a shared record,
@@ -166,7 +172,6 @@ export function resolveRecordCapabilities(
       recordSessionPending: recordSessionPending || undefined,
       inSharedRecord: true,
       canWrite: false,
-      canAdd: false,
       canManage: false,
       canWriteDomain: NEVER,
       canManageDomain: NEVER,
@@ -179,7 +184,6 @@ export function resolveRecordCapabilities(
     return {
       inSharedRecord: false,
       canWrite: false,
-      canAdd: true,
       canManage: true,
       canWriteDomain: ALWAYS,
       canManageDomain: ALWAYS,
@@ -201,7 +205,6 @@ export function resolveRecordCapabilities(
   return {
     inSharedRecord: true,
     canWrite: active.canWrite,
-    canAdd: active.canWrite,
     canManage: manageable.size > 0,
     canWriteDomain: (domain) => writable.has(domain),
     canManageDomain: (domain) => manageable.has(domain),
@@ -243,7 +246,7 @@ export function resolveRecordCapabilities(
  * opens: every delegable route will refuse, while `active` being null makes
  * this hook answer "your own record, all controls". That combination paints an
  * add button on a page whose every write is about to 403 — the exact failure
- * `canAdd` was introduced to end. So a disagreement holds instead.
+ * the per-section answers exist to end. So a disagreement holds instead.
  *
  * A null or absent `recordSession` is not a disagreement. It is the Bearer
  * transport (no session row, no switch state) or a server image that predates

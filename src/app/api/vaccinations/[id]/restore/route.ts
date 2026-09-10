@@ -20,10 +20,10 @@ import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { toVaccinationDTO } from "@/lib/vaccinations/dto";
 import {
   VACCINATION_INCLUDE,
-  actingDomainVisibility,
   loadVaccinationDocuments,
   resolveSeriesFor,
 } from "@/lib/vaccinations/service";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

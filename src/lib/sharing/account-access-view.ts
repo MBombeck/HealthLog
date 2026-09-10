@@ -96,19 +96,39 @@ export interface AccountAccessEntry {
    */
   sections: ShareDomain[] | null;
   /**
-   * May this caller ADD to that record. Resolved server-side. It does not by
-   * itself mean edit or delete — a WRITE grant adds and does nothing more, and
-   * that stayed true when a third level arrived. A MANAGE grant answers true
-   * here as well, and what it additionally admits is said by `level` rather
-   * than smuggled into this boolean.
+   * The grant's LEVEL, resolved server-side: is it at or above WRITE.
+   *
+   * It is not "may this caller add something", and reading it that way is how
+   * section-blind controls happen. There is no scope term in it: a WRITE grant
+   * scoped to the document vault answers `true` here with
+   * `writableDomains: []`, because the vault takes no delegated write at any
+   * level. Ask {@link AccountAccessEntry.writableDomains} for the section the
+   * control belongs to; this boolean answers only whether the grant is a
+   * reading one.
+   *
+   * It does not by itself mean edit or delete — a WRITE grant adds and does
+   * nothing more, and that stayed true when a third level arrived. A MANAGE
+   * grant answers true here as well, and what it additionally admits is said
+   * by `level` rather than smuggled into this boolean.
    */
   canWrite: boolean;
   /**
-   * v1.38.12 — the sections this grant can add to, resolved server-side from
-   * the grant's level and scope against the delegated write routes that
-   * exist (`domain-write-support.ts`). In the consent screen's order. Empty
-   * for a READ grant, and empty for any section whose routes accept no
-   * delegated write at all — the vault, today.
+   * v1.38.12 — the sections with AT LEAST ONE delegated write route this
+   * grant satisfies, resolved server-side from its level and scope against
+   * the routes that exist (`domain-write-support.ts`). In the consent
+   * screen's order. Empty for a READ grant, and empty for any section whose
+   * routes accept no delegated write at all — the vault, today.
+   *
+   * Existential, and the word matters: within a section the answer varies by
+   * verb, and this list cannot say which. `profile` is writable because a
+   * visit, a practitioner and a dose answer at WRITE, while an allergy and a
+   * family-history entry are MANAGE creates; `measurements` is writable
+   * because a reading is, while a water entry and a checkup reminder are
+   * MANAGE. So a control does not read "my section is writable, therefore my
+   * create is": it asks the hook for its own verb class —
+   * `canWriteDomain` for a create the WRITE level covers, `canManageDomain`
+   * for one it does not. A per-verb table would be a second place the route
+   * declarations live, and the declarations are the thing that decides.
    *
    * A list rather than a boolean because the answer differs per section, and
    * the client's per-control question is "this section", never "any".

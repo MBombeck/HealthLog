@@ -175,7 +175,7 @@ export function LedgerAddDialog({
       // confirmation names the record, because "Taken" alone is the one
       // confirmation a person acting for somebody else does not need. The
       // ledger's "+ Eintrag" button that opens this dialog is gated on
-      // `canAdd`, so a delegate reaches it.
+      // `canWriteDomain("medications")`, so a delegate reaches it.
       const toastOptions = intakeToastOptions({
         recordName,
         eventId: undefined,

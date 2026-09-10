@@ -10507,7 +10507,7 @@
       },
       "mind": {
         "label": "Stimmung und Psyche",
-        "detail": "Stimmungseinträge und der Verlauf der psychologischen Fragebögen."
+        "detail": "Stimmungseinträge und der Verlauf der psychologischen Fragebögen. Ein ausgefüllter Fragebogen legt seinen Summenwert zusätzlich als Messwert ab."
       },
       "cycle": {
         "label": "Zyklus",

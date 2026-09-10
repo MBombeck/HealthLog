@@ -35,7 +35,14 @@ export function VisitCard({
   onOpen,
 }: {
   encounter: Encounter;
-  onOpen: (encounter: Encounter) => void;
+  /**
+   * Opens the edit sheet. Omitted when the caller may not change the visit —
+   * `PATCH` and `DELETE /api/encounters/{id}` are both `("manage", "profile")`,
+   * so a READ or WRITE delegate gets the card as a card and not as a button.
+   * A row that reads as tappable and answers 403 is the affordance saying
+   * something about the grant that is not true.
+   */
+  onOpen?: (encounter: Encounter) => void;
 }) {
   const { t } = useTranslations();
   const format = useFormatters();
@@ -71,11 +78,7 @@ export function VisitCard({
       className="gap-2 py-3 md:py-4"
     >
       <CardContent className="space-y-2">
-        <button
-          type="button"
-          onClick={() => onOpen(encounter)}
-          className="focus-visible:ring-ring/50 w-full space-y-2 text-left focus-visible:ring-[3px] focus-visible:outline-none"
-        >
+        <Body onOpen={onOpen} encounter={encounter}>
           <div className="flex items-start gap-2">
             <CalendarClock
               className="text-foreground mt-0.5 size-5 shrink-0"
@@ -120,8 +123,37 @@ export function VisitCard({
               ))}
             </div>
           ) : null}
-        </button>
+        </Body>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * The row's content, tappable or not.
+ *
+ * One element either way rather than two copies of the content: the read-only
+ * form keeps the same spacing the button had, so a card that loses its edit
+ * affordance does not also change shape.
+ */
+function Body({
+  onOpen,
+  encounter,
+  children,
+}: {
+  onOpen?: (encounter: Encounter) => void;
+  encounter: Encounter;
+  children: React.ReactNode;
+}) {
+  if (!onOpen) return <div className="w-full space-y-2">{children}</div>;
+  return (
+    <button
+      type="button"
+      data-slot="visit-card-open"
+      onClick={() => onOpen(encounter)}
+      className="focus-visible:ring-ring/50 w-full space-y-2 text-left focus-visible:ring-[3px] focus-visible:outline-none"
+    >
+      {children}
+    </button>
   );
 }

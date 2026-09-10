@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { PageAuthGate } from "@/components/ui/page-auth-gate";
 import { VaccinationsView } from "@/components/vaccinations/vaccinations-view";
 
@@ -22,13 +21,13 @@ import { VaccinationsView } from "@/components/vaccinations/vaccinations-view";
  */
 export default function VaccinationsPage() {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const { inSharedRecord } = useRecordCapabilities();
   const router = useRouter();
 
-  // Default-on: hidden only when the resolved map says `false` explicitly. A
-  // shared-record session always sees it — the delegate's own module map does
-  // not govern the owner's record.
-  const enabled = inSharedRecord || user?.modules?.vaccinations !== false;
+  // Default-on: hidden only when the resolved map says `false` explicitly.
+  // The map is the RECORD's, masked to what the grant opens, so a delegate is
+  // answered about the record they are in rather than about their own — and a
+  // module the owner has switched off closes this page for them too.
+  const enabled = user?.modules?.vaccinations !== false;
 
   useEffect(() => {
     if (isLoading) return;

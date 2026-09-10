@@ -10507,7 +10507,7 @@
       },
       "mind": {
         "label": "Umore e benessere mentale",
-        "detail": "Le voci sull'umore e lo storico dei questionari sulla salute mentale."
+        "detail": "Le voci sull'umore e lo storico dei questionari sulla salute mentale. Un questionario compilato registra anche il suo punteggio totale come una misurazione."
       },
       "cycle": {
         "label": "Ciclo",

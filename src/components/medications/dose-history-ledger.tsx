@@ -173,7 +173,8 @@ export function DoseHistoryLedger({
   // v1.36.x — a delegate may record a dose, which is what "add" and the
   // inline "mark taken" do. Editing, deleting, pinning and un-skipping an
   // existing event are the owner's, so the row menu is absent for them.
-  const { canAdd } = useRecordCapabilities();
+  const { canWriteDomain } = useRecordCapabilities();
+  const canAddIntake = canWriteDomain("medications");
   // The record this ledger's writes land in, when it is not the caller's own.
   // The two sibling intake paths in `use-medication-intake.ts` already drop
   // Undo and name the record; this third one builds its own toast and missed
@@ -434,7 +435,7 @@ export function DoseHistoryLedger({
             {t("medications.detail.verlauf.summaryEmpty")}
           </p>
         )}
-        {canAdd && (
+        {canAddIntake && (
           <Button
             variant="outline"
             size="sm"
@@ -598,7 +599,8 @@ export function LedgerRowItem({
   onUnpin: (eventId: string) => void;
 }) {
   const { t } = useTranslations();
-  const { canAdd, canManageDomain } = useRecordCapabilities();
+  const { canWriteDomain, canManageDomain } = useRecordCapabilities();
+  const canAddIntake = canWriteDomain("medications");
   const canManageMedications = canManageDomain("medications");
   const fmt = useFormatters();
 
@@ -705,7 +707,7 @@ export function LedgerRowItem({
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
-        {showTakenButton && canAdd && (
+        {showTakenButton && canAddIntake && (
           <Button
             variant="outline"
             size="sm"
@@ -734,7 +736,7 @@ export function LedgerRowItem({
             items in one menu, a delegate gets skip as its own control beside
             take, which is the shape the card already uses. The owner keeps it
             where it was. */}
-        {showTakenButton && canAdd && !canManageMedications && (
+        {showTakenButton && canAddIntake && !canManageMedications && (
           <Button
             variant="outline"
             size="sm"

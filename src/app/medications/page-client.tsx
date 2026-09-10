@@ -169,14 +169,14 @@ export default function MedicationsPageClient() {
   // to tapping each card in turn — so withholding it made a caregiver with
   // five morning tablets tap five times for nothing. The customize page stays
   // withheld; sharing does not cover it at all.
-  const { canAdd, inSharedRecord } = useRecordCapabilities();
+  const { canWriteDomain, inSharedRecord } = useRecordCapabilities();
+  const canAddMedication = canWriteDomain("medications");
   // v1.18.1 (D3) — medications is an opt-out module. When the account has it
   // turned off the whole page disappears (the nav entry is hidden by the same
   // gate) and the list query never fires (the API would 403 anyway).
   // Default-on: an absent key reads as enabled, so the page only hides on an
   // explicit `false`.
-  const medicationsEnabled =
-    inSharedRecord || user?.modules?.medications !== false;
+  const medicationsEnabled = user?.modules?.medications !== false;
   const router = useRouter();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -417,7 +417,7 @@ export default function MedicationsPageClient() {
               card's own one-tap job). Calm outline variant so the primary
               Add button keeps the visual lead; same responsive 44-px
               mobile tap floor as its neighbours. */}
-            {canAdd && dueMeds.length >= 2 && (
+            {canAddMedication && dueMeds.length >= 2 && (
               <Button
                 variant="outline"
                 onClick={() => setTakeAllOpen(true)}
@@ -455,7 +455,7 @@ export default function MedicationsPageClient() {
               button's responsive tap-target floor (`min-h-11 sm:min-h-9`) so
               both primary "add" entry points clear the WCAG 2.5.5 44px mobile
               minimum identically. */}
-            {canAdd && (
+            {canAddMedication && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button className="min-h-11 sm:min-h-9">
@@ -516,7 +516,7 @@ export default function MedicationsPageClient() {
           title={t("medications.emptyTitle")}
           description={t("medications.emptyDescription")}
           action={
-            canAdd ? (
+            canAddMedication ? (
               <Button size="sm" onClick={openCreate}>
                 <Plus className="h-4 w-4" />
                 {t("medications.firstMedication")}
@@ -614,9 +614,9 @@ export default function MedicationsPageClient() {
           its own ResponsiveSheet shell with the sticky footer. */}
       {/* v1.36.x — `?new=1` (the retired `/medications/new` route redirects
           here) opens the create wizard without passing the gated Add control,
-          so the wizard asks the same `canAdd` the control asks. */}
+          so the wizard asks the same `canAddMedication` the control asks. */}
       <MedicationWizardDialog
-        open={dialogOpen && canAdd}
+        open={dialogOpen && canAddMedication}
         onOpenChange={setDialogOpen}
         mode="create"
         onSuccess={closeDialog}
@@ -632,10 +632,10 @@ export default function MedicationsPageClient() {
           attribution + inventory consumption identical to N individual
           taps — see take-all-due.ts); failed medications stay due. */}
       {/* Gated on the same answer the button is, for the first-paint reason
-          `/measurements` documents: `canAdd` reads true until `/api/auth/me`
+          `/measurements` documents: `canAddMedication` reads true until `/api/auth/me`
           settles, and a dialog opened in that frame withdraws when the answer
           lands rather than standing on a confirm the server would refuse. */}
-      {takeAllOpen && canAdd && (
+      {takeAllOpen && canAddMedication && (
         <TakeAllDueDialog
           open={takeAllOpen}
           onOpenChange={setTakeAllOpen}

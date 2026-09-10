@@ -35,7 +35,8 @@ export function resolveMeasurementReturnTo(
 
 export default function MeasurementsPage() {
   const { isAuthenticated, isLoading } = useAuth();
-  const { canAdd } = useRecordCapabilities();
+  const { canWriteDomain } = useRecordCapabilities();
+  const canAddMeasurement = canWriteDomain("measurements");
   const mounted = useMounted();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -148,7 +149,7 @@ export default function MeasurementsPage() {
         // admits, so this is the header action a delegate keeps. A read-only
         // delegate loses it entirely rather than meeting a disabled one.
         actions={
-          canAdd ? (
+          canAddMeasurement ? (
             <Button
               data-slot="measurement-add"
               className="min-h-11 sm:min-h-9"
@@ -168,12 +169,12 @@ export default function MeasurementsPage() {
           answers. `?add=<TYPE>` opens it without passing the button, and a
           deep link is the same affordance as the control that produces it, so
           it gets the same gate. Gating the open rather than only the param
-          also covers the first-paint window: `canAdd` reads true until
+          also covers the first-paint window: `canAddMeasurement` reads true until
           `/api/auth/me` settles, and a sheet opened in that frame withdraws
           when the answer lands instead of standing on a form the server
           refuses. */}
       <ResponsiveSheet
-        open={dialogOpen && canAdd}
+        open={dialogOpen && canAddMeasurement}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) {
