@@ -260,10 +260,6 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   },
   "/api/admin/provider-health": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/notifications/health": { kind: "adminConsole", methods: ["GET"] },
-  "/api/admin/notifications/reminder-check": {
-    kind: "adminConsole",
-    methods: ["POST"],
-  },
   "/api/admin/notifications/test": { kind: "adminConsole", methods: ["POST"] },
   "/api/admin/rollups/recompute": { kind: "adminConsole", methods: ["POST"] },
   "/api/admin/settings": { kind: "adminConsole", methods: ["GET", "PUT"] },
