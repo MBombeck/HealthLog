@@ -290,12 +290,9 @@ async function generateReport(page: Page): Promise<GeneratedReport> {
   const response = await responseArrived;
   const download = await downloadStarted;
 
-  // The bytes come off the DOWNLOAD, not off the response. The panel reads the
-  // response into a Blob, and a body a page has already consumed is not one
-  // Playwright can hand back — `response.body()` answers zero bytes here. The
-  // saved file is also the better subject: it is the artefact the person ends
-  // up with, so a build that produced a perfect response and saved something
-  // else would still be caught.
+  // The bytes come off the DOWNLOAD, not off the response, because the saved
+  // file is the artefact the person ends up with: a build that produced a
+  // perfect response and saved something else would still be caught.
   const saved = await download.path();
   expect(saved, "the panel saved the generated report").toBeTruthy();
   const bytes = await readFile(saved!);
@@ -351,6 +348,9 @@ function expectRealPdf(report: GeneratedReport): void {
   // The route declares the length it sent; a disagreement means the body was
   // truncated on the way out, which a magic-number check alone would miss.
   expect(report.contentLength).toBe(String(report.bytes.byteLength));
+  // The name the CLIENT anchor invents, not the route's `Content-Disposition`
+  // — the two differ by a word today. This says the panel saved a PDF, and it
+  // is not contract coverage of the header.
   expect(report.filename).toMatch(/\.pdf$/);
 }
 

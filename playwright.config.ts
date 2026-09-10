@@ -152,13 +152,13 @@ export default defineConfig({
         // through stable data-slots, not a mobile layout, so it runs in one
         // project.
         "vaccinations.spec.ts",
-        // The doctor-report journey seeds a few weeks of readings into the one
-        // shared account, presses Generate and reads the PDF back off the
-        // download. Two projects doing that in parallel would leave a second
-        // set of rows in the window one of them is asserting an empty report
-        // for — and mobile emulation emits no `download` event for the
-        // anchor click the panel makes, so the artefact would be unreachable
-        // there anyway.
+        // The doctor-report journey seeds a few weeks of readings into its own
+        // account, presses Generate and reads the PDF back off the download.
+        // Two projects doing that in parallel would leave a second set of rows
+        // in the window one of them is asserting an empty report for, and would
+        // spend the shared hourly export bucket twice over. The panel's mobile
+        // layout is covered by `settings-export.spec.ts`, which measures its
+        // tap targets there; this journey is about the artefact.
         "doctor-report.spec.ts",
         // Its delegate half MOVES the session's record selector, so it runs in
         // exactly one project for the reason written above the fence specs.
