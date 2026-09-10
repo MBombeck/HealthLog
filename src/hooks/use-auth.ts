@@ -22,6 +22,7 @@ import { isTimeFormatPreference, storeTimeFormat } from "@/lib/time-format";
 import { isDateFormatPreference, storeDateFormat } from "@/lib/date-format";
 import { storeTimezone } from "@/lib/timezone-mirror";
 import type { ModuleKey } from "@/lib/modules/registry";
+import type { ModuleAccessState } from "@/lib/sharing/module-disclosure";
 import type { TourProgress } from "@/lib/onboarding/tour-progress";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 import {
@@ -196,6 +197,22 @@ export interface AuthUser {
    * payload so a missing map reads as all-available.
    */
   moduleAvailability?: Partial<Record<ModuleKey, boolean>>;
+  /**
+   * Why each module is or is not available for the record this browser is
+   * inside — `"enabled"`, `"disabled"` (the record has it switched off),
+   * `"not_granted"` (the active grant does not open the module's section) or
+   * `"unavailable"` (the operator switched it off for the whole instance).
+   * Precedence outside-in: unavailable > not_granted > disabled > enabled.
+   *
+   * Additive beside `modules`, never instead of it: `modules[key]` is exactly
+   * `moduleAccess[key] === "enabled"`, so every gate keeps reading the boolean
+   * and only the surfaces that have to EXPLAIN a missing module read this. A
+   * client holding the boolean alone has to guess between three different
+   * reasons, which is how an empty state ends up offering a delegate a switch
+   * they cannot reach. Coerced to `{}` against a stale /me payload, and a
+   * missing key falls back to the boolean.
+   */
+  moduleAccess?: Partial<Record<ModuleKey, ModuleAccessState>>;
   /**
    * v1.36.0 — account sharing, resolved server-side. `accounts` is the
    * switcher's menu, `active` is the record this browser is inside (null when
@@ -388,6 +405,14 @@ export async function fetchMe(): Promise<AuthUser> {
     moduleAvailability:
       data.moduleAvailability && typeof data.moduleAvailability === "object"
         ? data.moduleAvailability
+        : {},
+    // The reason behind each module's boolean. Coerced against a stale /me
+    // payload to an empty map; `useModuleAccess` then falls back to the
+    // boolean, so an older server image reads "disabled" rather than
+    // inventing a reason it was never told.
+    moduleAccess:
+      data.moduleAccess && typeof data.moduleAccess === "object"
+        ? data.moduleAccess
         : {},
     accountAccess,
     accountAccessStatus,

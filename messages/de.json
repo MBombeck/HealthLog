@@ -8682,6 +8682,20 @@
       "description": "Der Impfpass in strukturierter Form: Dosis, Serie, nächste Auffrischung."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} ist für diese Akte ausgeschaltet, deshalb bleiben die Seiten verborgen. Schalte das Modul wieder ein, um sie zurückzuholen.",
+      "title": "{module} ist ausgeschaltet"
+    },
+    "notGranted": {
+      "description": "{module} liegt außerhalb der Bereiche, die mit dir geteilt wurden. Was ein geteilter Zugriff umfasst, legt die Person fest, der die Akte gehört.",
+      "title": "Gehört nicht zum geteilten Zugriff"
+    },
+    "unavailable": {
+      "description": "Der Betreiber hat {module} für alle Konten auf diesem Server ausgeschaltet. Keine eigene Einstellung holt es zurück.",
+      "title": "Auf diesem Server nicht verfügbar"
+    }
+  },
   "vaccinations": {
     "title": "Impfungen",
     "subtitle": "Dein Impfpass, Dosis für Dosis.",
@@ -9920,7 +9934,6 @@
     "page": {
       "title": "Nährstoffaufnahme",
       "description": "Flüssigkeits- und Vitamin-/Mineralstoffaufnahme aus der Gesundheits-App deines Telefons, plus manuelle Wassereinträge.",
-      "moduleOffTitle": "Nährstoffaufnahme ist aus",
       "moduleOffDescription": "Aktiviere das Nährstoffe-Modul, um Flüssigkeits- und Vitamin-/Mineralstoffaufnahme hier zu sehen. Synchronisierte Werte werden Teil der Aufzeichnung, die der Coach lesen kann.",
       "moduleOffCta": "Nährstoffe aktivieren",
       "emptyTitle": "Noch keine Nährstoffdaten",

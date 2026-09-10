@@ -84,6 +84,7 @@ async function signIn(userId: string) {
 
 interface MePayload {
   modules: Record<string, boolean>;
+  moduleAccess: Record<string, string>;
   cycleTrackingEnabled: boolean;
   accountAccess: {
     active: { accountId: string; sections: string[] | null } | null;
@@ -95,6 +96,27 @@ async function readMe(): Promise<MePayload> {
   const res = await GET();
   expect(res.status).toBe(200);
   return ((await res.json()) as { data: MePayload }).data;
+}
+
+/**
+ * The one thing that must hold between the two module maps, asserted on every
+ * payload this file reads.
+ *
+ * `moduleAccess` is additive: it says WHY, and a client that only gates a
+ * surface keeps reading the boolean. The moment the two disagree, one of the
+ * two answers is wrong and there is no way to tell which from the wire — so
+ * the pairing is checked here against the real route rather than only against
+ * the pure builder, where a wiring mistake in the route would not show.
+ */
+function expectAccessMatchesBooleans(payload: MePayload) {
+  const keys = Object.keys(payload.modules);
+  expect(keys.length).toBeGreaterThan(10);
+  for (const key of keys) {
+    expect(payload.moduleAccess[key], `a reason for ${key}`).toBeDefined();
+    expect(payload.modules[key], `modules.${key}`).toBe(
+      payload.moduleAccess[key] === "enabled",
+    );
+  }
 }
 
 async function patchModules(body: unknown) {
@@ -378,6 +400,48 @@ describe("what a SCOPED grant is told about the record's modules", () => {
     }
   });
 
+  it("says WHY the modules outside the grant are not there", async () => {
+    // The boolean above cannot tell "the owner switched it off" from "your
+    // grant does not reach it", so a delegate's empty state either says
+    // nothing or offers them a switch that is not theirs. This is the field
+    // that separates the two.
+    await delegateInside(["measurements"]);
+
+    const payload = await readMe();
+    expectAccessMatchesBooleans(payload);
+
+    for (const key of [
+      "cycle",
+      "mood",
+      "mentalHealth",
+      "illness",
+      "labs",
+      "medications",
+      "inboundDocuments",
+    ] as const) {
+      expect(payload.moduleAccess[key], `the delegate's ${key}`).toBe(
+        "not_granted",
+      );
+    }
+    // Record-spanning modules have no single section to open, so no scoped
+    // grant reaches them — the same answer the boolean mask gives.
+    for (const key of [
+      "achievements",
+      "coach",
+      "insights",
+      "doctorReport",
+    ] as const) {
+      expect(payload.moduleAccess[key], `the delegate's ${key}`).toBe(
+        "not_granted",
+      );
+    }
+    for (const key of ["sleep", "glucose", "workouts", "recovery"] as const) {
+      expect(payload.moduleAccess[key], `the delegate's ${key}`).toBe(
+        "enabled",
+      );
+    }
+  });
+
   it("leaves an unscoped grant reading the record's true map", async () => {
     // `scope: null` is the whole record, which every grant written before
     // scoping carries. Masking it would break the case the record scoping was
@@ -390,5 +454,80 @@ describe("what a SCOPED grant is told about the record's modules", () => {
     const { resolveModuleMap } = await import("@/lib/modules/gate");
     expect(payload.modules).toEqual(await resolveModuleMap(owner.id));
     expect(payload.cycleTrackingEnabled).toBe(true);
+  });
+
+  it("never tells an unscoped delegate a module is out of their grant", async () => {
+    // `not_granted` is the mask speaking, and there is no mask here. An
+    // unscoped grant that reported one would be describing a narrowing the
+    // owner never made.
+    await delegateInside(null);
+
+    const payload = await readMe();
+    expectAccessMatchesBooleans(payload);
+    // `mcp` ships opt-in, so "disabled" is expected here; what must never
+    // appear is a reason that only a narrowing could produce.
+    for (const [key, state] of Object.entries(payload.moduleAccess)) {
+      expect(["enabled", "disabled"], `${key} reads ${state}`).toContain(state);
+    }
+  });
+});
+
+describe("a module the operator switched off server-wide", () => {
+  /** The operator's instance-wide blob. Disabled allowlist: only `false` bites. */
+  async function operatorDisables(keys: string[]) {
+    await getPrismaClient().appSettings.upsert({
+      where: { id: "singleton" },
+      create: {
+        id: "singleton",
+        moduleAvailabilityJson: Object.fromEntries(keys.map((k) => [k, false])),
+      },
+      update: {
+        moduleAvailabilityJson: Object.fromEntries(keys.map((k) => [k, false])),
+      },
+    });
+  }
+
+  it("reads unavailable rather than as the record's own choice", async () => {
+    // The boolean is `false` either way, which is exactly the confusion: the
+    // account holder is told to go and turn on a switch the operator removed,
+    // and the Modules hub they are sent to has no live control to offer.
+    const user = await makeUser("own");
+    await signIn(user.id);
+    await operatorDisables(["labs"]);
+
+    const payload = await readMe();
+    expectAccessMatchesBooleans(payload);
+    expect(payload.modules.labs).toBe(false);
+    expect(payload.moduleAccess.labs).toBe("unavailable");
+    // Untouched keys stay the record's own answer.
+    expect(payload.moduleAccess.sleep).toBe("enabled");
+  });
+
+  it("outranks the grant mask for a scoped delegate", async () => {
+    // Precedence, outside-in: the switch that would have to move is the
+    // operator's whether or not the grant reaches the section.
+    const owner = await makeUser("owner");
+    const delegate = await makeUser("delegate");
+    const { acceptGrant, inviteGrant } = await import("@/lib/sharing/grants");
+    const grant = await inviteGrant({
+      grantorId: owner.id,
+      granteeId: delegate.id,
+      access: "READ",
+      scope: ["measurements"],
+    });
+    await acceptGrant({ grantId: grant.id, granteeId: delegate.id });
+    const session = await signIn(delegate.id);
+    await switchSessionTo(session.id, owner.id);
+    await operatorDisables(["labs", "sleep"]);
+
+    const payload = await readMe();
+    expectAccessMatchesBooleans(payload);
+    // Outside the grant AND off server-wide.
+    expect(payload.moduleAccess.labs).toBe("unavailable");
+    // Inside the grant, off server-wide.
+    expect(payload.moduleAccess.sleep).toBe("unavailable");
+    // Outside the grant, available server-wide.
+    expect(payload.moduleAccess.cycle).toBe("not_granted");
+    expect(payload.moduleAccess.glucose).toBe("enabled");
   });
 });

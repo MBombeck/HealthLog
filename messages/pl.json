@@ -8682,6 +8682,20 @@
       "description": "Książeczka szczepień uporządkowana: dawka, seria, następne przypomnienie."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} jest wyłączone dla tego zapisu, więc jego strony pozostają ukryte. Włącz moduł ponownie, aby je odzyskać.",
+      "title": "{module} jest wyłączone"
+    },
+    "notGranted": {
+      "description": "{module} jest poza sekcjami udostępnionymi tobie. O tym, co obejmuje udostępniony zapis, decyduje osoba, do której należy.",
+      "title": "Nie należy do udostępnionego dostępu"
+    },
+    "unavailable": {
+      "description": "Operator wyłączył {module} dla wszystkich kont na tym serwerze. Żadne twoje ustawienie tego nie przywróci.",
+      "title": "Niedostępne na tym serwerze"
+    }
+  },
   "vaccinations": {
     "title": "Szczepienia",
     "subtitle": "Twoja karta szczepień, dawka po dawce.",
@@ -9920,7 +9934,6 @@
     "page": {
       "title": "Spożycie składników odżywczych",
       "description": "Nawodnienie oraz spożycie witamin/minerałów zsynchronizowane z aplikacji zdrowia telefonu, plus ręczne wpisy wody.",
-      "moduleOffTitle": "Śledzenie składników odżywczych jest wyłączone",
       "moduleOffDescription": "Włącz moduł składników odżywczych, aby zobaczyć tu nawodnienie i spożycie witamin/minerałów. Zsynchronizowane dane staną się częścią zapisu, który może odczytać Coach.",
       "moduleOffCta": "Włącz składniki odżywcze",
       "emptyTitle": "Brak jeszcze danych o składnikach odżywczych",

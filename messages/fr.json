@@ -8682,6 +8682,20 @@
       "description": "Le carnet de vaccination structuré : dose, série, prochain rappel."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} est désactivé pour ce dossier, ses pages restent donc masquées. Réactivez le module pour les retrouver.",
+      "title": "{module} est désactivé"
+    },
+    "notGranted": {
+      "description": "{module} se trouve en dehors des sections partagées avec vous. Ce que couvre un dossier partagé est décidé par la personne à qui il appartient.",
+      "title": "Ne fait pas partie de l'accès partagé"
+    },
+    "unavailable": {
+      "description": "L'exploitant a désactivé {module} pour tous les comptes de ce serveur. Aucun réglage de votre côté ne peut le rétablir.",
+      "title": "Non disponible sur ce serveur"
+    }
+  },
   "vaccinations": {
     "title": "Vaccinations",
     "subtitle": "Votre carnet de vaccination, dose par dose.",
@@ -9920,7 +9934,6 @@
     "page": {
       "title": "Apports en nutriments",
       "description": "Hydratation et apports en vitamines/minéraux synchronisés depuis l'appli santé de votre téléphone, plus les entrées manuelles d'eau.",
-      "moduleOffTitle": "Le suivi des nutriments est désactivé",
       "moduleOffDescription": "Activez le module nutriments pour voir ici l'hydratation et les apports en vitamines/minéraux. Les données synchronisées feront partie du dossier que le Coach peut lire.",
       "moduleOffCta": "Activer les nutriments",
       "emptyTitle": "Pas encore de données nutritionnelles",

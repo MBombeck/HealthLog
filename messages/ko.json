@@ -8682,6 +8682,20 @@
       "description": "예방접종 기록을 구조화해서: 용량, 차수, 다음 추가 접종."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "이 기록에서 {module} 모듈이 꺼져 있어서 관련 페이지가 보이지 않아요. 다시 켜면 돌아와요.",
+      "title": "{module} 모듈이 꺼져 있어요"
+    },
+    "notGranted": {
+      "description": "{module} 모듈은 공유된 영역 밖에 있어요. 공유된 기록이 어디까지 포함되는지는 기록의 주인이 정해요.",
+      "title": "공유 범위에 없는 항목"
+    },
+    "unavailable": {
+      "description": "운영자가 이 서버의 모든 계정에서 {module} 모듈을 껐어요. 개인 설정으로는 되돌릴 수 없어요.",
+      "title": "이 서버에서는 사용할 수 없어요"
+    }
+  },
   "vaccinations": {
     "title": "예방접종",
     "subtitle": "접종 한 건씩 남기는 예방접종 기록이에요.",
@@ -9920,7 +9934,6 @@
     "page": {
       "title": "영양소 섭취",
       "description": "휴대폰 건강 앱에서 동기화된 수분·비타민/미네랄 섭취량과 직접 입력한 수분 기록이에요.",
-      "moduleOffTitle": "영양소 섭취가 꺼져 있어요",
       "moduleOffDescription": "영양소 모듈을 켜면 수분과 비타민/미네랄 섭취량을 여기서 볼 수 있어요. 동기화된 섭취량은 코치가 읽는 기록에 포함돼요.",
       "moduleOffCta": "영양소 켜기",
       "emptyTitle": "아직 영양소 데이터가 없어요",

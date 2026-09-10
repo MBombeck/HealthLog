@@ -8682,6 +8682,20 @@
       "description": "La cartilla de vacunación estructurada: dosis, serie, próximo refuerzo."
     }
   },
+  "moduleOff": {
+    "disabled": {
+      "description": "{module} está desactivado en este registro, así que sus páginas quedan ocultas. Vuelve a activarlo para recuperarlas.",
+      "title": "{module} está desactivado"
+    },
+    "notGranted": {
+      "description": "{module} queda fuera de las secciones que se han compartido contigo. Lo que abarca un registro compartido lo decide la persona propietaria.",
+      "title": "No forma parte del acceso compartido"
+    },
+    "unavailable": {
+      "description": "El operador ha desactivado {module} para todas las cuentas de este servidor. Ningún ajuste tuyo puede recuperarlo.",
+      "title": "No disponible en este servidor"
+    }
+  },
   "vaccinations": {
     "title": "Vacunas",
     "subtitle": "Tu registro de vacunación, dosis a dosis.",
@@ -9920,7 +9934,6 @@
     "page": {
       "title": "Ingesta de nutrientes",
       "description": "Hidratación e ingesta de vitaminas/minerales sincronizadas desde la app de salud de tu teléfono, más entradas manuales de agua.",
-      "moduleOffTitle": "La ingesta de nutrientes está desactivada",
       "moduleOffDescription": "Activa el módulo de nutrientes para ver aquí la hidratación y la ingesta de vitaminas/minerales. Los datos sincronizados pasarán a formar parte del registro que el Coach puede leer.",
       "moduleOffCta": "Activar nutrientes",
       "emptyTitle": "Aún no hay datos de nutrientes",

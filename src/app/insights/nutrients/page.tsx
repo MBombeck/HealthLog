@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
+import { ModuleDisabledNotice } from "@/components/layout/module-disabled-notice";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { HydrationCard } from "@/components/insights/nutrients/hydration-card";
 import { CaffeineCard } from "@/components/insights/nutrients/caffeine-card";
@@ -52,11 +53,12 @@ function lastAttemptReasonKey(reason: string): string {
  * (self-gates to nothing without data), micronutrients (self-gates to
  * an EmptyState without data). Degradation ladder:
  *
- *   - module off → one EmptyState with an in-context enable CTA. The
- *     module STAYS opt-in (2026-07-17 memo — the HealthKit read prompt
- *     on the device is not visible consent to a server / Coach holding
- *     a supplement pattern); this page just makes the toggle
- *     discoverable in context instead of buried in Settings.
+ *   - module off → the shared `ModuleDisabledNotice`, which names the reason
+ *     and carries the in-context enable CTA when it is the record's own
+ *     switch that is off. The module STAYS opt-in (2026-07-17 memo — the
+ *     HealthKit read prompt on the device is not visible consent to a
+ *     server / Coach holding a supplement pattern); this page just makes
+ *     the toggle discoverable in context instead of buried in Settings.
  *   - module on, the overview read failed → a `QueryErrorCard` with a
  *     retry. This branch has to sit ABOVE the empty-state check below:
  *     `overview.data` is `undefined` on a failed read exactly like it is
@@ -106,11 +108,18 @@ export default function InsightsNutrientsPage() {
   if (!nutrientsEnabled) {
     return (
       <SubPageShell title={t("nutrients.page.title")}>
-        <EmptyState
+        {/*
+          The shared notice rather than this page's own copy: "nutrients is
+          off" was three situations wearing one sentence, and only one of them
+          is fixed by the button below. A delegate whose grant does not reach
+          the measurements section, and an account on an instance where the
+          operator removed the module, both used to be handed a switch that
+          would refuse them. The notice reads the reason off `moduleAccess`
+          and drops the action for the two cases it cannot help.
+        */}
+        <ModuleDisabledNotice
+          moduleKey="nutrients"
           icon={<Leaf className="size-6" />}
-          title={t("nutrients.page.moduleOffTitle")}
-          description={t("nutrients.page.moduleOffDescription")}
-          ctaSize="lg"
           action={
             <Button
               size="sm"
