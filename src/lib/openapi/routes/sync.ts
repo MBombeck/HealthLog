@@ -236,7 +236,15 @@ const syncChangesQuery = z
   })
   .meta({ id: "SyncChangesQuery" });
 
-const syncChangesResponse = z
+/**
+ * Exported so a test can `safeParse` a real `/api/sync/changes` body against
+ * it. Nothing else checks a response SHAPE against its published schema —
+ * `openapi:check` proves the YAML matches the registry, and the route-coverage
+ * guard proves the path is listed, so a schema that disagrees with what
+ * `apiSuccess()` sends passes both. That is how this endpoint went five
+ * domains wide against a three-domain contract.
+ */
+export const syncChangesResponse = z
   .object({
     serverNow: z.iso.datetime({ offset: true }),
     cursor: z
