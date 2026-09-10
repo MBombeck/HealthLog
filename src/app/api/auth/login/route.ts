@@ -3,7 +3,12 @@ import { loginPasswordSchema } from "@/lib/validations/auth";
 import { verifyPassword } from "@/lib/auth/password";
 import { auditLog } from "@/lib/auth/audit";
 import { hashToken } from "@/lib/auth/hmac";
-import { apiError, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { NextRequest, NextResponse } from "next/server";
@@ -55,7 +60,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const parsed = loginPasswordSchema.safeParse(body);
 
   if (!parsed.success) {
-    return apiError("Invalid credentials", 422);
+    return apiValidationError(
+      "Invalid credentials",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
 
   const { email, password } = parsed.data;

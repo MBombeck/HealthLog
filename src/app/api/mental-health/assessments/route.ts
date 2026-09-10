@@ -159,6 +159,17 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   // into the record: the ordinary way this instrument is used when the person
   // it is about cannot run their own record. The row records what the person
   // in the room reported; the audit row says who typed it.
+  //
+  // It writes ONE row outside its declared section, and the crossing is
+  // deliberate rather than an oversight: the `*_SCORE` Measurement below is a
+  // projection of this administration, minted `COMPUTED`, keyed on
+  // `assessment:<id>`, and it exists only so the trend reads through the chart
+  // and rollup tier without ever touching the encrypted item content. Fencing
+  // it on `measurements` the way the booster mint is fenced would file a
+  // screener whose own total is missing from the record — an inconsistency
+  // inside the section the grant DOES open, to avoid a derived point in one it
+  // does not. The consent copy for this section says so, which is where a
+  // widening belongs.
   const { user, actor } = await requireRecordAuth("manage", "mind");
 
   // Opt-in module (default OFF) — same gate as GET.

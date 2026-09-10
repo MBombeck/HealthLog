@@ -25,6 +25,7 @@ import { CoachFeedbackSection } from "@/components/admin/coach-feedback-section"
 import { ApiTokenOverviewSection } from "@/components/admin/api-token-overview-section";
 import { AppLogPreviewSection } from "@/components/admin/app-log-preview-section";
 import { BackupsSection } from "@/components/admin/backups-section";
+import { OffhostBackupsSection } from "@/components/admin/offhost-backups-section";
 import { DangerZoneSection } from "@/components/admin/danger-zone-section";
 import { EncryptionSection } from "@/components/admin/encryption-section";
 import { GeneralSettingsSection } from "@/components/admin/general-settings-section";
@@ -144,9 +145,12 @@ export function AdminSectionRenderer({
         </SectionFrame>
       );
     case "backups":
+      // Two cards, two independent failure modes: the copies held in this
+      // database, then the copies that reached the operator's bucket.
       return (
         <SectionFrame>
           <BackupsSection />
+          <OffhostBackupsSection />
         </SectionFrame>
       );
     case "encryption":

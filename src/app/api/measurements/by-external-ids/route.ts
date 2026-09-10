@@ -38,8 +38,10 @@ import { auditLog } from "@/lib/auth/audit";
 import {
   apiError,
   apiSuccess,
+  apiValidationError,
   getClientIp,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
@@ -83,7 +85,11 @@ async function deleteByExternalIds(request: NextRequest): Promise<Response> {
 
   const parsed = payloadSchema.safeParse(rawBody);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0]?.message ?? "Invalid batch", 422);
+    return apiValidationError(
+      parsed.error.issues[0]?.message ?? "Invalid batch",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
 
   const { externalIds } = parsed.data;

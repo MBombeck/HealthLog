@@ -18,7 +18,6 @@ import {
   replaceTargets,
   type LinkTargetKind,
 } from "@/lib/links";
-import { grantCoversDomain } from "@/lib/sharing/grants";
 import type { ShareDomain } from "@/lib/sharing/scope";
 import type { EncounterLinksDTO } from "@/lib/encounters/dto";
 import {
@@ -58,27 +57,6 @@ export const ENCOUNTER_INCLUDE = {
   practitioner: true,
   reminder: { select: { nextDueAt: true } },
 } as const satisfies Prisma.EncounterInclude;
-
-/**
- * Which sections of the record the caller is actually inside.
- *
- * Returns a predicate rather than a set so the owner path costs nothing: with
- * no grant there is nothing to look up and every domain is open. A grant that
- * vanished between the auth check and here answers "no" to everything, which
- * is the fail-closed direction.
- */
-export async function actingDomainVisibility(
-  tx: Prisma.TransactionClient,
-  grantId: string | null,
-): Promise<(domain: ShareDomain) => boolean> {
-  if (grantId === null) return () => true;
-  const grant = await tx.accountGrant.findUnique({
-    where: { id: grantId },
-    select: { scopeJson: true },
-  });
-  if (!grant) return () => false;
-  return (domain) => grantCoversDomain(grant, domain);
-}
 
 /**
  * Which section of the record each link family's TARGET belongs to.

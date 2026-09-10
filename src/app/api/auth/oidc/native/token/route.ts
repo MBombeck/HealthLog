@@ -23,7 +23,12 @@
  *   `requireFreshMfa` step-up, so an SSO login can never satisfy step-up.
  */
 import { NextRequest } from "next/server";
-import { apiError, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -89,7 +94,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = oidcNativeTokenSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("Invalid request", 422);
+    return apiValidationError(
+      "Invalid request",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
   const { code, codeVerifier } = parsed.data;
 

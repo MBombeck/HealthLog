@@ -239,6 +239,8 @@ const COUNT_BACK: Record<
     p.medicationEfficacyTarget.count({ where: { medication: { userId } } }),
   MedicationScheduleRevision: (p, userId) =>
     p.medicationScheduleRevision.count({ where: { medication: { userId } } }),
+  OnboardingRecord: (p, userId) =>
+    p.onboardingRecord.count({ where: { userId } }),
 };
 
 /**
@@ -741,6 +743,35 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       pValue: 0.01,
       evidenceHash: "b2".repeat(32),
       lastComputedAt: AT("2026-07-01T00:00:00.000Z"),
+    },
+  });
+  await prisma.onboardingRecord.create({
+    data: {
+      userId: OWNER_ID,
+      needsJson: {
+        recordTarget: "me",
+        areas: ["blood-pressure", "sleep"],
+        medication: "yes",
+        sources: ["withings"],
+        visit: "within-a-month",
+        units: { glucoseUnit: "mmol/L", unitPreference: "metric" },
+      },
+      stepsJson: [
+        { id: "who", status: "done" },
+        { id: "areas", status: "done" },
+        { id: "sources", status: "skipped" },
+      ],
+      firstResultJson: {
+        task: "connect-source",
+        target: "withings",
+        completedAt: "2026-07-01T08:30:00.000Z",
+      },
+      // The once-only latch on the module derivation. Seeded non-null so the
+      // assertion after the restore can show it came back rather than
+      // defaulting — a null here would hand the next confirm permission to
+      // re-apply the questionnaire over every module decision made since.
+      modulesDerivedAt: AT("2026-07-01T08:00:00.000Z"),
+      completedAt: AT("2026-07-01T08:00:00.000Z"),
     },
   });
   await prisma.healthScoreRecord.create({
@@ -1412,6 +1443,55 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       },
       { pausedAt: "2026-07-15T08:00:00.000Z", resumedAt: null },
     ]);
+
+    // The setup answers came back as answers, not as an empty questionnaire.
+    //
+    // Asserted column by column rather than by count: the row returning proves
+    // nothing about `modulesDerivedAt`, and that field is the once-only latch
+    // on the module derivation — a restore that let it default to null would
+    // hand the next confirm permission to re-apply the questionnaire over
+    // every module decision the account has taken since, silently.
+    const restoredOnboarding = await prisma.onboardingRecord.findUniqueOrThrow({
+      where: { userId: OWNER_ID },
+    });
+    expect({
+      needs: restoredOnboarding.needsJson,
+      steps: restoredOnboarding.stepsJson,
+      firstResult: restoredOnboarding.firstResultJson,
+      modulesDerivedAt: restoredOnboarding.modulesDerivedAt?.toISOString(),
+      completedAt: restoredOnboarding.completedAt?.toISOString(),
+    }).toEqual({
+      needs: {
+        recordTarget: "me",
+        areas: ["blood-pressure", "sleep"],
+        medication: "yes",
+        sources: ["withings"],
+        visit: "within-a-month",
+        units: { glucoseUnit: "mmol/L", unitPreference: "metric" },
+      },
+      // The stored blob is a status LOOKUP, and the reader answers with the
+      // full ordered nine — a step the fixture never mentioned comes back
+      // `pending` rather than missing, which is what lets the flow grow a
+      // screen without a migration.
+      steps: [
+        { id: "who", status: "done" },
+        { id: "areas", status: "done" },
+        { id: "medication", status: "pending" },
+        { id: "sources", status: "skipped" },
+        { id: "visit", status: "pending" },
+        { id: "units", status: "pending" },
+        { id: "confirm", status: "pending" },
+        { id: "first-result", status: "pending" },
+        { id: "done", status: "pending" },
+      ],
+      firstResult: {
+        task: "connect-source",
+        target: "withings",
+        completedAt: "2026-07-01T08:30:00.000Z",
+      },
+      modulesDerivedAt: "2026-07-01T08:00:00.000Z",
+      completedAt: "2026-07-01T08:00:00.000Z",
+    });
 
     // The Coach came back able to speak, and the fence held.
     //

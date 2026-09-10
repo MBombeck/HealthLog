@@ -34,17 +34,7 @@ import type { ShareDomain } from "@/lib/sharing/scope";
 export type QuickEntryDialog =
   "measurement" | "mood" | "medicationIntake" | null;
 
-/**
- * v1.36.x — which of the three the delegation admits, and the same rule the
- * capture picker states at length.
- *
- * A WRITE grant covers entering a reading and marking a dose. A mood entry is
- * not an admitted verb and the server refuses it under a switch.
- */
-const DELEGABLE_QUICK_ENTRIES: ReadonlySet<NonNullable<QuickEntryDialog>> =
-  new Set(["measurement", "medicationIntake"]);
-
-/** v1.38.12 — the section each sheet writes to; see the capture picker. */
+/** The section each sheet writes to; see the capture picker. */
 const QUICK_ENTRY_DOMAIN: Readonly<
   Record<NonNullable<QuickEntryDialog>, ShareDomain>
 > = {
@@ -69,11 +59,10 @@ const QUICK_ENTRY_DOMAIN: Readonly<
  */
 export function admittedQuickEntry(
   open: QuickEntryDialog,
-  caps: Pick<RecordCapabilities, "canAdd" | "canManageDomain">,
+  caps: Pick<RecordCapabilities, "canWriteDomain">,
 ): QuickEntryDialog {
   if (open === null) return open;
-  if (caps.canManageDomain(QUICK_ENTRY_DOMAIN[open])) return open;
-  return caps.canAdd && DELEGABLE_QUICK_ENTRIES.has(open) ? open : null;
+  return caps.canWriteDomain(QUICK_ENTRY_DOMAIN[open]) ? open : null;
 }
 
 /**

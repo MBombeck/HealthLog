@@ -1,5 +1,11 @@
 import { prisma } from "@/lib/db";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { deleteTelegramWebhook, setTelegramWebhook } from "@/lib/telegram";
 import { telegramSettingsSchema } from "@/lib/validations/telegram";
@@ -171,7 +177,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   const result = z.safeParse(telegramSettingsSchema, body);
   if (!result.success) {
-    return apiError("Invalid input", 422);
+    return apiValidationError(
+      "Invalid input",
+      sanitiseZodIssues(result.error.issues),
+      422,
+    );
   }
 
   const { botToken, chatId, enabled } = result.data;

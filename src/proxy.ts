@@ -158,6 +158,14 @@ const DEMO_MUTATION_ALLOWLIST: ReadonlyArray<{ path: string; method: string }> =
     // Chart display-pref toggles above the charts (dashboard + insights):
     { path: "/api/dashboard/chart-overlay-prefs", method: "PUT" },
     { path: "/api/dashboard/widgets", method: "PUT" },
+    // v1.39 (C1) — the needs-based setup flow, which the demo has to be able
+    // to complete with preset answers (design spec §Principles 5). All three
+    // are user-scoped preference writes: closed enum answers, the step ledger,
+    // and the module map derived from them. No health data is created by any
+    // of them, and the demo account's own record is the only thing they touch.
+    { path: "/api/onboarding/answers", method: "PATCH" },
+    { path: "/api/onboarding/complete", method: "POST" },
+    { path: "/api/onboarding/restart", method: "POST" },
   ];
 
 // Legacy route redirects (German → English)

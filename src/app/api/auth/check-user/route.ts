@@ -37,7 +37,12 @@
  */
 import { z } from "zod/v4";
 import { prisma } from "@/lib/db";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -80,7 +85,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("identifier required", 422);
+    return apiValidationError(
+      "identifier required",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
 
   const identifier = parsed.data.identifier;

@@ -6597,6 +6597,13 @@
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "GlitchTip environment",
     "glitchtipEnvironmentPlaceholder": "production",
+    "glitchtipTargetOn": "Error reports go to {host}.",
+    "glitchtipTargetOff": "Error reports stay on this host. Nothing is sent anywhere.",
+    "glitchtipTargetNoTarget": "Error tracking is on, but no target is set, so nothing is sent.",
+    "glitchtipUnproven": "Unproven",
+    "glitchtipDeliveryUnproven": "A target is set, but no report has left this host yet. Press Test to find out whether it accepts one.",
+    "glitchtipDeliveryStale": "No report has left this host in the last {hours} h. Press Test to check the target still accepts one.",
+    "glitchtipDeliveryFailed": "The last report did not get through ({reason}).",
     "webPushVapidDescription": "Configure VAPID keys and subject here so browser push works without environment variables.",
     "webPushVapidPublicKey": "VAPID public key",
     "webPushVapidPublicKeyPlaceholder": "BElx... (Base64URL)",
@@ -7012,7 +7019,23 @@
         "restoreMissingDocuments": "Documents",
         "restoreMissingWorkouts": "Workouts",
         "restoreMissingMentalHealth": "Mental-health screeners",
-        "restoreMissingConsent": "Consent receipts"
+        "restoreMissingConsent": "Consent receipts",
+        "offhost": {
+          "title": "Off-host copies",
+          "description": "When this host last put each account's encrypted copy in your bucket.",
+          "loadError": "Could not load the off-host status.",
+          "notConfiguredTitle": "Off-host backup is not configured",
+          "notConfiguredDescription": "No bucket and no key are set, so nothing leaves this host. Set BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY and BACKUP_ENCRYPTION_KEY to turn the nightly upload on.",
+          "stateFresh": "Fresh",
+          "stateDue": "Due",
+          "stateStale": "Stale",
+          "stateNever": "Never",
+          "stateUnknown": "No record yet",
+          "neverDetail": "Nothing has landed for this account. Last checked {when}.",
+          "unknownDetail": "No nightly run has recorded this account yet.",
+          "age": "{hours} h ago",
+          "scheduleNote": "The upload runs every {hours} h. Fresh means inside one run, due means one run produced nothing, stale means two did not."
+        }
       },
       "danger-zone": {
         "title": "Danger Zone",
@@ -10484,7 +10507,7 @@
       },
       "mind": {
         "label": "Mood and mind",
-        "detail": "Mood entries and the history of the mental-health questionnaires."
+        "detail": "Mood entries and the history of the mental-health questionnaires. A completed questionnaire also files its total score as a reading."
       },
       "cycle": {
         "label": "Cycle",

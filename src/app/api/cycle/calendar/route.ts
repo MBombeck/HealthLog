@@ -18,7 +18,12 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
 import { cycleCalendarQuerySchema } from "@/lib/validations/cycle";
 import {
@@ -55,9 +60,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
     to: url.searchParams.get("to") ?? undefined,
   });
   if (!parsed.success) {
-    return apiError("Invalid calendar query", 422, {
-      errorCode: "cycle.calendar.invalid",
-    });
+    return apiValidationError(
+      "Invalid calendar query",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      {
+        errorCode: "cycle.calendar.invalid",
+      },
+    );
   }
 
   const tz = user.timezone ?? DEFAULT_TIMEZONE;
@@ -111,6 +121,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // Apple Watch wrist/skin temperature feeds the temperature-trend
     // ovulation layer. Read the WRIST_TEMPERATURE measurements as nightly
     // values; the engine derives the trailing-mean deviation itself.
+    //
+    // This is a measurements read on a route declared under `cycle`, and it
+    // needs no section predicate for one reason: no value from it reaches the
+    // response. It goes into `predictCycle` and what comes out the other side
+    // is a shifted date. The crosstab next door reads the same channel and IS
+    // fenced, because there the values are the answer.
     prisma.measurement.findMany({
       where: {
         userId: user.id,

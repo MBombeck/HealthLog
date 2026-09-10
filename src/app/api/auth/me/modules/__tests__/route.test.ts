@@ -285,7 +285,11 @@ describe("PATCH /api/auth/me/modules", () => {
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it("rejects malformed JSON with 422", async () => {
+  // 400, not the 422 this used to pin. A body that will not parse is a
+  // client-side serialisation fault, and `safeJson` plus roughly two hundred
+  // and twenty other routes have always answered 400 for it; the dotted token
+  // moved to `meta.errorCode`, which is where a machine code belongs.
+  it("rejects malformed JSON with 400", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const req = new Request("http://localhost/api/auth/me/modules", {
       method: "PATCH",
@@ -293,7 +297,11 @@ describe("PATCH /api/auth/me/modules", () => {
       headers: { "Content-Type": "application/json" },
     });
     const res = await (PATCH as (r: Request) => Promise<Response>)(req);
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({
+      error: "Invalid JSON body",
+      meta: { errorCode: "modules.body.invalid_json" },
+    });
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 

@@ -4,7 +4,12 @@ import { z } from "zod/v4";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { tourProgressSchema } from "@/lib/onboarding/tour-progress";
 import { Prisma } from "@/generated/prisma/client";
 
@@ -56,9 +61,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = z.safeParse(tourBodySchema, body);
   if (!parsed.success) {
-    return apiError("Invalid input", 422, {
-      errorCode: "onboarding.tour.invalid",
-    });
+    return apiValidationError(
+      "Invalid input",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      {
+        errorCode: "onboarding.tour.invalid",
+      },
+    );
   }
 
   // Build the update field-by-field (no mass assignment). `completed`

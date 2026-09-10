@@ -6,6 +6,8 @@
  * runtime request parsing, so the wire contract stays single-source.
  */
 import { z } from "zod/v4";
+
+import { renderErrorCodeCatalogue } from "../error-codes";
 import {
   createMeasurementSchema as createMeasurementSchemaBase,
   listMeasurementsSchema as listMeasurementsSchemaBase,
@@ -82,7 +84,8 @@ export const errorEnvelope = z
           .string()
           .optional()
           .describe(
-            "Stable machine code for this refusal. Branch on it rather than on `error`, which is prose and may be reworded.",
+            "Stable machine code for this refusal. Branch on it rather than on `error`, which is prose and may be reworded. Every code the API emits today is enumerated below, grouped by the surface that emits it; four naming conventions coexist and none of them will be renamed, because a code is a wire value a shipped client branches on. Treat an unlisted code the way you would treat an unlisted enum member — as a refusal you do not recognise, not as a malformed response — since the list grows with the surfaces. Three families are outside it on purpose: `assistant.disabled.<surface>` is built from a template so the last segment is open (`assistant.disabled.coach` is the one the native client names); the integration-probe classes (`credentials_rejected`, `rate_limited`, `upstream_error`, `timeout`, `connection_failed` and the per-provider additions) are enumerated in each `/test` operation instead, where the differences can be stated; and a 401 raised by a route checking a credential of its own may carry no code at all. " +
+              renderErrorCodeCatalogue(),
           ),
       })
       .optional(),
@@ -225,6 +228,29 @@ export const invalidBaseTokenResponse = {
   },
 };
 
+/**
+ * The 400 an unparseable JSON body earns.
+ *
+ * `safeJson` has answered 400 for a body that will not parse since it was
+ * written, and roughly two hundred and twenty routes go through it — but seven
+ * `/api/auth/me/*` writes hand-rolled the parse and answered 422, so a client's
+ * "my serializer produced garbage" branch had to accept two statuses on a
+ * subset of routes it could not predict. They answer 400 now, and this is the
+ * response that says so. The dotted token each route already carried moved to
+ * `meta.errorCode`, where a machine code belongs.
+ *
+ * Spread only on the operations that hand-rolled the parse. It is deliberately
+ * NOT folded into `stdResponses`: that set is spread onto reads as well, and a
+ * GET that accepts no body has no malformed body to refuse.
+ */
+export const malformedJsonResponse = {
+  "400": {
+    description:
+      "The request body is not parseable JSON. Nothing was read and nothing was written. `meta.errorCode` names the surface that refused it (`<surface>.body.invalid_json`). This is a client-side serialisation fault, not a validation failure — a body that parses but fails the schema is the 422 beside this.",
+    content: { "application/json": { schema: errorEnvelope } },
+  },
+};
+
 // ── Standard 401 / 422 / 429 responses ───────────────────────────────
 
 export const stdResponses = {
@@ -263,6 +289,32 @@ export const stdResponses = {
         schema: { type: "string" as const, format: "date-time" },
       },
     },
+  },
+};
+
+/**
+ * The 429 the shared single-record write bucket answers with.
+ *
+ * The batch endpoints have been capped at 60 calls a minute since they were
+ * written and the per-record siblings were not capped at all, which is exactly
+ * backwards: the batch endpoint is the one a well-behaved client uses. The
+ * eleven single-record creates now share one generous per-account bucket, and
+ * this is the response that names it — a client that meets a ceiling should be
+ * able to read which one it met without a bug report.
+ *
+ * Spread AFTER `...stdResponses` so it replaces the generic 429 on those
+ * operations. The headers block is the one the standard 429 already declares.
+ *
+ * `record-write-rate-limit-contract.test.ts` holds the numbers in this sentence
+ * to the constants in `src/lib/rate-limit.ts`, so the paragraph cannot drift
+ * away from the bucket it describes.
+ */
+export const recordWriteRateLimitResponse = {
+  "429": {
+    description:
+      "Rate limit exceeded. This route shares one per-account bucket with the other single-record writes — `record-write:<accountId>`, 300 requests per 60 seconds — keyed on the ACTING account, so a delegate burns their own allowance rather than the record owner's. Nothing was written. `meta.errorCode` is `record_write.rate_limited`, which is what tells this refusal apart from a route's own narrower bucket when both can answer 429. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers describe that bucket; back off on `Retry-After` rather than guessing. Every request counts against the bucket, refused ones included: the check runs before the body is read, so a client looping on a 422 spends the same allowance as one that writes rows. A client with more than a handful of rows to send should use the batch endpoint for its domain instead of looping this one.",
+    content: { "application/json": { schema: errorEnvelope } },
+    headers: stdResponses["429"].headers,
   },
 };
 
@@ -378,6 +430,25 @@ export function idempotentWrite(): IdempotentConflictResponse {
  */
 export const SHARING_ACCESS_DENIED_DESCRIPTION =
   "Refused: this request named a record the caller may not act on (`meta.errorCode` = `sharing.access.denied`). Byte-identical for an account that does not exist, an account that granted nothing, a grant whose sections do not reach this surface, and a read grant on a request that writes — the response carries no reason, so it is not an account-enumeration oracle. The reason reaches the record owner's activity feed and the operator's audit trail instead. On the cookie transport the same code answers one further case: a session that has entered a shared record and sends a request without its record-context assertion, which is a client older than the fence — leave the record and reload. A request that names no record but the caller's own never reaches this response, so a client that never switches and never sends the per-request account selector will not see it.";
+
+/**
+ * The OTHER sharing refusal, for a route that names no record at all.
+ *
+ * A route resolving through `requireAuth` serves the caller and only the
+ * caller, and refuses outright while the browser is inside somebody else's
+ * record rather than quietly answering with the caller's own rows. That
+ * posture matters most on the routes where being wrong is unrecoverable — the
+ * record wipe, the account deletion, the encrypted archive — and it was
+ * documented nowhere on them. A client that switches records has to know which
+ * of its calls stop working, and finding out by wiping the wrong record is not
+ * a contract.
+ *
+ * One sentence, spliced onto whatever else the operation's 403 already says,
+ * for the same reason the delegable refusal is one string: a paraphrase per
+ * path invites a client to tell them apart.
+ */
+export const SHARING_NOT_PERMITTED_DESCRIPTION =
+  "Refused: the request was made while the session is acting on another account (`meta.errorCode` = `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any level opens it.";
 
 /**
  * The 403 above, optionally sharing the status with the reasons a route already

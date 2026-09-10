@@ -26,8 +26,10 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
+  apiValidationError,
   getClientIp,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { assertDocumentEgressConsent } from "@/lib/ai/consent-guard";
@@ -154,9 +156,14 @@ async function handleTextIndex(
   const parsed = inboundTextExtractSchema.safeParse(body);
   if (!parsed.success) {
     await refundDocumentAiSlot(userId);
-    return apiError("Invalid document text payload", 422, {
-      errorCode: "documents.inbound.extractFailed",
-    });
+    return apiValidationError(
+      "Invalid document text payload",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      {
+        errorCode: "documents.inbound.extractFailed",
+      },
+    );
   }
 
   const { tokenCount } = await upsertContentIndex({

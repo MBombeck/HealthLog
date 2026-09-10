@@ -27,10 +27,8 @@ import {
 } from "@/lib/api-response";
 import { encounterLinkSchema } from "@/lib/validations/encounters";
 import { linkTargets, unlinkTargets } from "@/lib/links";
-import {
-  actingDomainVisibility,
-  loadEncounterLinks,
-} from "@/lib/encounters/service";
+import { loadEncounterLinks } from "@/lib/encounters/service";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

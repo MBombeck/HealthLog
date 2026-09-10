@@ -95,7 +95,8 @@ const READINGS_PAGE_SIZE = 200;
  */
 export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
   const { user } = useAuth();
-  const { canAdd, canManageDomain } = useRecordCapabilities();
+  const { canWriteDomain, canManageDomain } = useRecordCapabilities();
+  const canAddLab = canWriteDomain("labs");
   const canManageLabs = canManageDomain("labs");
   const { t, locale } = useTranslations();
   const router = useRouter();
@@ -378,7 +379,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
             ) : null}
             {/* v1.36.x — entering a result is an admitted delegated write;
               renaming or removing the marker is not. */}
-            {canAdd && (
+            {canAddLab && (
               <Button
                 onClick={() => setAddOpen(true)}
                 // v1.18.10 (W10) — on the narrowest phones the h1 + Edit + Delete +
@@ -436,7 +437,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
               title={t("labs.detail.emptyTitle")}
               description={t("labs.detail.emptyDescription")}
               action={
-                canAdd ? (
+                canAddLab ? (
                   <Button onClick={() => setAddOpen(true)}>
                     {t("labs.addResult")}
                   </Button>

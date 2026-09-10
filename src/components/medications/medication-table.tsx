@@ -407,7 +407,8 @@ function MedicationTableRowItem({
   const { intakeLoading, recordIntake } = useMedicationIntake({ medication });
   // v1.36.x — marking a dose is admitted; a read-only delegate sees the row
   // without its action pair.
-  const { canAdd } = useRecordCapabilities();
+  const { canWriteDomain } = useRecordCapabilities();
+  const canAddIntake = canWriteDomain("medications");
 
   // SAME batched compliance source as the cards.
   const { data: compliance } = useMedicationComplianceSummary(medication.id);
@@ -685,7 +686,7 @@ function MedicationTableRowItem({
       </TableCell>
       <TableCell className="text-sm">{stockCell}</TableCell>
       <TableCell>
-        {medication.active && canAdd ? (
+        {medication.active && canAddIntake ? (
           <div className="flex gap-1.5">
             <Button
               size="icon"

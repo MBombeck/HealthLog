@@ -2,7 +2,12 @@ import type { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { apiHandler, HttpError, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiValidationError,
+  safeJson,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { resolveProviderChain } from "@/lib/ai/provider";
 import { getLastWorkingProvider } from "@/lib/ai/provider-runner";
@@ -111,7 +116,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   const parsed = chainBodySchema.safeParse(body);
   if (!parsed.success) {
-    throw new HttpError(422, "Invalid provider chain payload");
+    return apiValidationError(
+      "Invalid provider chain payload",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
 
   // Defence-in-depth: reject duplicate provider types so a stale-tab

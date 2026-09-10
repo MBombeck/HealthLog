@@ -143,6 +143,27 @@ itself still works: it walks the journey against an in-process instance
 once per leg with that leg broken, and fails if any of them comes back
 green.
 
+## Error reporting
+
+HealthLog ships no default error-reporting target and never will: an
+operator's crash reports must not leave their host because nobody told them
+not to. Reporting starts only when someone types a DSN into **Admin →
+Integrations → GlitchTip**, and that card states plainly whether reports are
+going anywhere and which host they go to.
+
+For a maintainer-operated instance, set the DSN there after the first deploy —
+it lives in the database, not in the environment, so it survives an image
+upgrade and does not need a compose change.
+
+The badge on that card tracks delivery, not intent. A DSN that is set and
+parses is not the same fact as reports arriving: a wrong public key, a wrong
+project id and a host that stopped answering all parse. So the card is green
+only while a report has actually left this host inside the last fortnight,
+amber while a target is set and nothing has come back from it, and it names the
+reason underneath when the last attempt was refused. Press **Test** to prove
+the target on demand — that send is recorded like any other, so the badge
+answers immediately.
+
 ## Verify the image signature
 
 Every release image (the multi-arch manifest **index**, covering both

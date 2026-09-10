@@ -12,7 +12,11 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiValidationError,
+  sanitiseZodIssues,
+} from "@/lib/api-response";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
 import { cycleHistoryQuerySchema } from "@/lib/validations/cycle";
 import { toMenstrualCycleDTO } from "@/lib/cycle/dto";
@@ -39,9 +43,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
     limit: url.searchParams.get("limit") ?? undefined,
   });
   if (!parsed.success) {
-    return apiError("Invalid history query", 422, {
-      errorCode: "cycle.cycles.invalid",
-    });
+    return apiValidationError(
+      "Invalid history query",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+      {
+        errorCode: "cycle.cycles.invalid",
+      },
+    );
   }
   const limit = parsed.data.limit ?? DEFAULT_LIMIT;
 

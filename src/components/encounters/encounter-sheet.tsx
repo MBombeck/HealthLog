@@ -20,6 +20,16 @@
  * saved and a plain sentence saying the checkup stayed open. That is reported
  * rather than skipped in silence: somebody who believes a checkup was closed
  * will not look at it again.
+ *
+ * Capability note: this sheet carries no capability check of its own, by
+ * decision. Save is a create on one mount and an edit on the other, and Delete
+ * exists only in edit mode — so the question belongs to whoever opens it.
+ * `VisitsSection` hands it a record only under `canManageDomain("profile")`,
+ * and the two mounts that can only create (`EpisodeVisitsCard`,
+ * `VorsorgeSection`) pass `encounter={null}` behind their own write check. A
+ * THIRD mount that hands this sheet a record without asking the manage
+ * question reintroduces an ungated Delete, and nothing here will fail. Ask at
+ * the caller, or move the check in here for everyone.
  */
 import { useState } from "react";
 import { Trash2 } from "lucide-react";

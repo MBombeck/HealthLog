@@ -6597,6 +6597,13 @@
     "glitchtipDsnPlaceholder": "https://<public-key>@glitchtip.example.com/<project-id>",
     "glitchtipEnvironment": "GlitchTip Environment",
     "glitchtipEnvironmentPlaceholder": "production",
+    "glitchtipTargetOn": "Fehlerberichte gehen an {host}.",
+    "glitchtipTargetOff": "Fehlerberichte bleiben auf diesem Host. Es wird nichts verschickt.",
+    "glitchtipTargetNoTarget": "Fehler-Tracking ist an, aber kein Ziel gesetzt, also wird nichts verschickt.",
+    "glitchtipUnproven": "Unbestätigt",
+    "glitchtipDeliveryUnproven": "Ein Ziel ist gesetzt, aber noch kein Bericht hat diesen Host verlassen. Drücke Test, um zu sehen, ob es einen annimmt.",
+    "glitchtipDeliveryStale": "In den letzten {hours} h hat kein Bericht diesen Host verlassen. Drücke Test, um zu prüfen, ob das Ziel noch annimmt.",
+    "glitchtipDeliveryFailed": "Der letzte Bericht kam nicht durch ({reason}).",
     "webPushVapidDescription": "Konfiguriere VAPID-Schlüssel und Subject direkt hier, damit Browser-Push ohne ENV-Variablen funktioniert.",
     "webPushVapidPublicKey": "VAPID Public Key",
     "webPushVapidPublicKeyPlaceholder": "BElx... (Base64URL)",
@@ -7012,7 +7019,23 @@
         "restoreMissingDocuments": "Dokumente",
         "restoreMissingWorkouts": "Workouts",
         "restoreMissingMentalHealth": "Psychische Fragebögen",
-        "restoreMissingConsent": "Einwilligungsnachweise"
+        "restoreMissingConsent": "Einwilligungsnachweise",
+        "offhost": {
+          "title": "Kopien außer Haus",
+          "description": "Wann dieser Host zuletzt die verschlüsselte Kopie jedes Kontos in deinen Bucket gelegt hat.",
+          "loadError": "Der Status außer Haus konnte nicht geladen werden.",
+          "notConfiguredTitle": "Sicherung außer Haus ist nicht eingerichtet",
+          "notConfiguredDescription": "Es sind weder Bucket noch Schlüssel gesetzt, also verlässt nichts diesen Host. Setze BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY, BACKUP_S3_SECRET_KEY und BACKUP_ENCRYPTION_KEY, um den nächtlichen Upload einzuschalten.",
+          "stateFresh": "Frisch",
+          "stateDue": "Fällig",
+          "stateStale": "Veraltet",
+          "stateNever": "Nie",
+          "stateUnknown": "Noch kein Eintrag",
+          "neverDetail": "Für dieses Konto ist nichts angekommen. Zuletzt geprüft {when}.",
+          "unknownDetail": "Noch kein nächtlicher Lauf hat dieses Konto erfasst.",
+          "age": "vor {hours} h",
+          "scheduleNote": "Der Upload läuft alle {hours} h. Frisch heißt innerhalb eines Laufs, fällig heißt ein Lauf blieb ohne Ergebnis, veraltet heißt zwei."
+        }
       },
       "danger-zone": {
         "title": "Gefahrenzone",
@@ -10484,7 +10507,7 @@
       },
       "mind": {
         "label": "Stimmung und Psyche",
-        "detail": "Stimmungseinträge und der Verlauf der psychologischen Fragebögen."
+        "detail": "Stimmungseinträge und der Verlauf der psychologischen Fragebögen. Ein ausgefüllter Fragebogen legt seinen Summenwert zusätzlich als Messwert ab."
       },
       "cycle": {
         "label": "Zyklus",

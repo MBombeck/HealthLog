@@ -19,6 +19,28 @@ vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn() }));
 vi.mock("@/lib/integrations/status", () => ({ markDisconnected: vi.fn() }));
 
 vi.mock("@/lib/api-response", () => ({
+  // The parse-refusal pair the routes now answer with: the same envelope
+  // plus the per-field issue list.
+  sanitiseZodIssues: (
+    issues: { path: (string | number)[]; code: string; message: string }[],
+  ) =>
+    issues.map((issue) => ({
+      path: issue.path.join("."),
+      code: issue.code,
+      message: issue.message,
+    })),
+  apiValidationError: (
+    error: string,
+    issues: unknown[],
+    status: number,
+    options?: { errorCode?: string },
+  ) => ({
+    data: null,
+    error,
+    status,
+    details: { issues },
+    meta: options?.errorCode ? { errorCode: options.errorCode } : undefined,
+  }),
   apiSuccess: (data: unknown) => ({ data, error: null, status: 200 }),
   apiError: (error: string, status: number) => ({ data: null, error, status }),
   safeJson: async (req: NextRequest) => {

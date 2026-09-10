@@ -57,6 +57,7 @@ import {
 import { restoreProfileData } from "@/lib/export/profile-backup";
 import { restoreIntradayProfileData } from "@/lib/export/intraday-profile-backup";
 import { restoreHealthScoreData } from "@/lib/export/health-score-backup";
+import { restoreOnboardingData } from "@/lib/export/onboarding-backup";
 import { restoreVisitsData } from "@/lib/export/visits-backup";
 import { restoreVaccinationsData } from "@/lib/export/vaccinations-backup";
 import { restoreSensitiveData } from "@/lib/export/sensitive-backup";
@@ -111,6 +112,7 @@ interface RestoreResponse {
     correlationPatterns: number;
     intradayProfiles: number;
     healthScoreRecords: number;
+    onboardingRecords: number;
     practitioners: number;
     encounters: number;
     encounterLinks: number;
@@ -1377,6 +1379,14 @@ const handler = apiHandler(
             payload,
           );
 
+          // The needs-based setup answers. Both ends live in
+          // `src/lib/export/onboarding-backup.ts`, same as the three above.
+          const onboardingCleared = await restoreOnboardingData(
+            tx,
+            ownerId,
+            payload,
+          );
+
           const biomarkerByName = new Map<string, string>();
           const restoredBiomarkerIds = new Set<string>();
           for (const biomarker of payload.biomarkers) {
@@ -1979,6 +1989,7 @@ const handler = apiHandler(
             correlationPatterns: profileCleared.correlationPatterns,
             intradayProfiles: intradayCleared.intradayProfiles,
             healthScoreRecords: healthScoreCleared.healthScoreRecords,
+            onboardingRecords: onboardingCleared.onboardingRecords,
             practitioners: visitsCleared.practitioners,
             encounters: visitsCleared.encounters,
             encounterLinks: visitsCleared.encounterLinks,

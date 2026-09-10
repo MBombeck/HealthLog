@@ -44,7 +44,8 @@ export default function LabsPage() {
   // Scanning a report is not: it files a document and commits through the OCR
   // route, and neither is delegated. So a WRITE delegate keeps the manual add
   // and loses the choice menu around it.
-  const { canAdd, inSharedRecord } = useRecordCapabilities();
+  const { canWriteDomain, inSharedRecord } = useRecordCapabilities();
+  const canAddLab = canWriteDomain("labs");
   const mounted = useMounted();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -62,7 +63,7 @@ export default function LabsPage() {
   // absent key reads as enabled, so a direct URL hit only bounces on an
   // explicit `false`. Every `/api/labs/*` route also enforces the gate
   // server-side, so this is a UX redirect, not the security boundary.
-  const enabled = inSharedRecord || user?.modules?.labs !== false;
+  const enabled = user?.modules?.labs !== false;
   const ocrCapability = useOcrCapability(
     shouldProbeOcrCapability({
       isAuthenticated,
@@ -152,7 +153,7 @@ export default function LabsPage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : canAdd ? (
+            ) : canAddLab ? (
               <Button
                 onClick={() => setDialogOpen(true)}
                 className="min-h-11 sm:min-h-9"

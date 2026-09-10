@@ -68,7 +68,16 @@ export const SHARE_DOMAINS = [
   "profile",
   /** Illness episodes and the day logs under them. */
   "illness",
-  /** Mood entries and mental-health screener history. */
+  /**
+   * Mood entries and mental-health screener history.
+   *
+   * One write in this section lands outside it, and the consent copy names it:
+   * completing a screener also files the instrument's total as a `COMPUTED`
+   * measurement, so the trend reads through the chart and rollup tier without
+   * the encrypted item content going anywhere. It is a projection of the
+   * administration rather than a second reading, and withholding it would file
+   * a screener whose own total is missing from the record.
+   */
   "mind",
   /** Cycle tracking. */
   "cycle",

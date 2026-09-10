@@ -35,7 +35,6 @@ import { encounterKindLabel } from "@/lib/encounters/kind-label";
 import { toEncounterDTO } from "@/lib/encounters/dto";
 import {
   ENCOUNTER_INCLUDE,
-  actingDomainVisibility,
   applyEncounterLinks,
   closeCheckupForVisit,
   findOwnAppointmentReminderId,
@@ -54,6 +53,7 @@ import {
   type RestoreSkipLog,
 } from "@/lib/export/restore-skips";
 import type { Prisma } from "@/generated/prisma/client";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

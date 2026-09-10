@@ -25,8 +25,10 @@ import {
 import {
   apiError,
   apiSuccess,
+  apiValidationError,
   getClientIp,
   safeJson,
+  sanitiseZodIssues,
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -78,7 +80,11 @@ export const POST = apiHandler(async (req: Request) => {
   }
   const parsed = totpConfirmSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("Invalid code", 422);
+    return apiValidationError(
+      "Invalid code",
+      sanitiseZodIssues(parsed.error.issues),
+      422,
+    );
   }
 
   // Decrypt is fail-closed — a missing/rotated key throws rather than

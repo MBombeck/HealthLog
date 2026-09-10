@@ -13,11 +13,21 @@
  * even when a delegate is transcribing. The antigen is read from the dose's
  * catalogue entry server-side, never from the body — a client cannot key a
  * reminder onto an antigen the dose does not contain.
+ *
+ * The row it mints is a `MeasurementReminder`, and that model belongs to the
+ * `measurements` section: every direct route over it declares that domain, and
+ * creating one needs MANAGE there. So the act crosses a seam, and a grant
+ * scoped to the health background alone was never consent for the other side
+ * of it — it would produce a row on the owner's checkup list that the delegate
+ * can neither read nor change through the section that owns it. The seam is
+ * fenced the way the visits service fences a checkup closure: the mint runs
+ * only while the caller is inside `measurements`.
  */
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
@@ -36,8 +46,23 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export const POST = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireRecordAuth("write", "profile");
+    const { user, grantId } = await requireRecordAuth("write", "profile");
     const { id } = await params;
+
+    // Refused rather than skipped, and that is the difference from the visit's
+    // checkup closure: there the closure is one effect of a larger save and
+    // saying "not done" keeps the save honest, while here the reminder IS the
+    // request. Reporting success over a row that was never written would tell
+    // the person their booster is planned when nothing rings.
+    const visible = await actingDomainVisibility(prisma, grantId);
+    if (!visible("measurements")) {
+      annotate({ meta: { sharing_refusal: "booster_out_of_scope" } });
+      return apiError(
+        "Planning a booster needs access to this record's measurements",
+        403,
+        { errorCode: "vaccination.booster-out-of-scope" },
+      );
+    }
 
     const { data: rawBody, error: jsonError } = await safeJson(request, {
       maxBytes: 8 * 1024,

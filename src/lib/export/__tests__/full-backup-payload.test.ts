@@ -373,6 +373,7 @@ function makePrisma() {
       ]),
     },
     healthScoreRecord: { findMany: vi.fn().mockResolvedValue([]) },
+    onboardingRecord: { findUnique: vi.fn().mockResolvedValue(null) },
     // The visit tables. Empty here: this file asserts the sections it seeds,
     // and an account with no visits is the ordinary case the builder must
     // still answer for.

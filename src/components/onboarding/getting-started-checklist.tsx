@@ -312,11 +312,19 @@ export function GettingStartedChecklist() {
         notificationsConfigured,
         insightsConfigured,
         dismissedIds,
+        // v1.39 (C1) — the setup answers order these rows: medication first
+        // for somebody who said they take one daily, the data-source row first
+        // for somebody who named a wearable. The payload resolves them for the
+        // ACTIVE record, which is the same record the counts above describe.
+        // Null until the payload resolves, and for a record that never entered
+        // the flow.
+        onboarding: user?.onboarding ?? null,
       }),
     [
       user?.heightCm,
       user?.dateOfBirth,
       user?.gender,
+      user?.onboarding,
       measurementCount,
       medicationCount,
       dataSourceConnected,
@@ -334,6 +342,10 @@ export function GettingStartedChecklist() {
     measurementCount,
     dismissedAll,
     items,
+    // v1.39 (C1) — five readings are not evidence the setup finished. While a
+    // step is still pending, the answers were never confirmed, or the one task
+    // the flow offered never produced its result, the list stays.
+    onboarding: user?.onboarding ?? null,
   });
 
   // v1.4.15 phase-A3 fix #3 — flicker guard. Until BOTH the auth user

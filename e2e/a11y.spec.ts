@@ -707,6 +707,51 @@ async function installA11yMocks(page: Page) {
         },
       ],
       retentionDays: 30,
+      // The off-host card, with one row in each state — the scan has to reach
+      // the status washes, and a card that paints only its header proves
+      // nothing about the rows an operator actually reads.
+      offhost: {
+        configured: true,
+        periodHours: 24,
+        rows: [
+          {
+            userId: "a11y-user",
+            username: "a11y-backup-user",
+            lastAttemptAt: "2026-07-20T03:00:00.000Z",
+            lastSuccessAt: "2026-07-20T03:00:00.000Z",
+            sizeBytes: 4096,
+            ageHours: 3,
+            freshness: "fresh",
+          },
+          {
+            userId: "a11y-user-2",
+            username: "a11y-backup-user-2",
+            lastAttemptAt: "2026-07-14T03:00:00.000Z",
+            lastSuccessAt: "2026-07-14T03:00:00.000Z",
+            sizeBytes: 2048,
+            ageHours: 150,
+            freshness: "stale",
+          },
+          {
+            userId: "a11y-user-3",
+            username: "a11y-backup-user-3",
+            lastAttemptAt: "2026-07-20T03:00:00.000Z",
+            lastSuccessAt: null,
+            sizeBytes: null,
+            ageHours: null,
+            freshness: "never",
+          },
+          {
+            userId: "a11y-user-4",
+            username: "a11y-backup-user-4",
+            lastAttemptAt: null,
+            lastSuccessAt: null,
+            sizeBytes: null,
+            ageHours: null,
+            freshness: "unknown",
+          },
+        ],
+      },
     }),
   );
 }

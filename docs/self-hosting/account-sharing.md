@@ -49,16 +49,16 @@ Either the entire record, which is what sharing has always meant and what
 every grant written before v1.37.0 carries, or a set of named sections
 chosen when the invitation is written:
 
-| Section           | What it covers                                                             |
-| ----------------- | -------------------------------------------------------------------------- |
-| Readings          | Weight, blood pressure, pulse, glucose, sleep, workouts and custom metrics |
-| Medications       | The medication list, its schedules, doses taken, side effects and stock    |
-| Lab results       | Lab results and the analytes behind them                                   |
-| Health background | Allergies, family history and the facts in the health profile              |
-| Illness           | Illness episodes and the day logs kept under them                          |
-| Mood and mind     | Mood entries and the mental-health questionnaire history                   |
-| Cycle             | Cycle tracking                                                             |
-| Documents         | Everything in the document vault                                           |
+| Section           | What it covers                                                                                                               |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Readings          | Weight, blood pressure, pulse, glucose, sleep, workouts and custom metrics                                                   |
+| Medications       | The medication list, its schedules, doses taken, side effects and stock                                                      |
+| Lab results       | Lab results and the analytes behind them                                                                                     |
+| Health background | Allergies, family history, the facts in the health profile, visits and the practices behind them, and the vaccination record |
+| Illness           | Illness episodes and the day logs kept under them                                                                            |
+| Mood and mind     | Mood entries and the mental-health questionnaire history                                                                     |
+| Cycle             | Cycle tracking                                                                                                               |
+| Documents         | Everything in the document vault                                                                                             |
 
 A section that was not shared is refused exactly the way a record nobody
 shared is, so the shape of what was held back is not readable from
@@ -68,8 +68,12 @@ shared. The invitation screen says this in as many words, because a note
 or a document name inside one section can be about any other.
 
 Aggregate surfaces (the dashboard overview, the health score, the daily
-digest) appear only on a whole-record grant. A figure derived from part of
-a record reads as a figure about the person, and it would not be one.
+digest, every insight) read across sections, so a grant naming sections
+never opens one. A figure derived from part of a record reads as a figure
+about the person, and it would not be one. Whole-record grants do not all
+open them equally either: the daily digest and the dashboard's snapshot
+answer at read, while the health score, the dashboard's summary and the
+insights need manage.
 
 A stored scope never grows. A section added by a later release is not in
 a set somebody ticked before it existed.
@@ -80,11 +84,24 @@ Three levels, fixed when the invitation is written. Raising one means
 revoking and inviting again, because widening a grant in place would carry
 a consent the other person never gave.
 
-| Level  | Adds                                                                                                                                                                                 |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Read   | Read what the grant opens, and change nothing.                                                                                                                                       |
-| Write  | Add entries: a reading, a lab result, an analyte, an illness entry, a side effect, a medication, and marking a dose taken or skipped. Editing, deleting and restoring stay with you. |
-| Manage | Change and remove entries, including ones the owner wrote; record the health background; read the insights generated from the record. Always the entire record.                      |
+| Level  | Adds                                                                                                                                                                                                                          |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Read   | Read what the grant opens, and change nothing.                                                                                                                                                                                |
+| Write  | Add entries: a reading, a lab result, an analyte, an illness entry, a side effect, a medication, marking a dose taken or skipped, a visit, a practice, and a vaccination dose. Editing, deleting and restoring stay with you. |
+| Manage | Change and remove entries, including ones the owner wrote; record the health background; read the insights generated from the record. Always the entire record.                                                               |
+
+Some entries are creates only **manage** reaches, and the split runs by
+entry rather than by section: an allergy, a family-history entry, a mood
+entry, a screener, a cycle day, a water entry and a preventive-care
+reminder are all created at manage, in sections a write grant can
+otherwise add to. Nothing in the document vault is writable at any level.
+
+One entry needs two sections rather than a higher level. Planning the
+booster a vaccination suggests files it as a preventive-care reminder,
+which lives under Readings, so a grant that opens Health background alone
+logs the dose and is refused the booster. Logging the dose is unaffected
+either way, and the app does not offer the booster to a grant that cannot
+plan it.
 
 Offering **manage** asks the owner for a fresh second factor if they have
 one enrolled, which makes it a browser-only act either way: a Bearer
@@ -106,11 +123,18 @@ whole feature is built on, and it is drawn on the server:
 | API tokens, the MCP connector                                                                | A durable credential that outlives the access                            |
 | Connected services (Withings, Fitbit, WHOOP, Google Health, Polar, Oura, Strava, Nightscout) | Re-pointing a sync, or feeding somebody else's wearable into this record |
 | Notification channels and push devices                                                       | The owner's health alerts redirected to another phone or chat            |
-| Exports, the health-record archive, clinician share links                                    | A one-click copy of everything, or a new door that outlives the access   |
+| Full exports, the encrypted archive, clinician share links                                   | A one-click copy of everything, or a new door that outlives the access   |
 | Asking an AI provider anything                                                               | AI processing of the owner's data, under the owner's own consent         |
 | Modules, thresholds, units, the record's language and timezone                               | Configuration of the account, not content of the record                  |
 | Sharing itself                                                                               | Inviting somebody else, widening the access, or passing it on            |
 | Locale, theme, dashboard layout                                                              | Presentation belongs to the person, not to the record                    |
+
+One export is the exception, and it is deliberate: the doctor report
+(`POST /api/export/health-record`) answers at manage on a whole-record
+grant. It renders a prepared artefact from a selection the caller declares
+rather than handing the record over whole, which is the difference the row
+above is drawing. The full exports and the passphrase-encrypted archive
+stay with the owner.
 
 This table is about a grant between two accounts. A managed profile is
 the one place where some of it is deliberately different, because a record
