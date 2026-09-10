@@ -1,5 +1,76 @@
 # Changelog
 
+## [1.38.18] — 2026-09-10
+
+The first run asks what you need and switches on exactly that; the
+five-step wizard and the two columns it wrote are gone.
+
+### Added
+
+- **A needs-based setup flow replaces the five-step wizard.** Five questions
+  (who the record is for, the areas to watch, medication on a schedule,
+  where readings come from, an upcoming visit) and a sixth about units only
+  when an area needs one and the account does not hold it yet, then a
+  confirm screen that shows what the answers switch on, one first-result
+  task with its form inline (connect a source, add the first medication with
+  a reminder, or log one reading), and a done screen with the checklist
+  open. Every answer is saved as it is given, so leaving and returning
+  resumes at the same step; every question but the first can be skipped, and
+  "Skip for now" on the welcome leaves the app usable with nothing switched
+  on. "Set up again" and "Show the checklist again" live under Settings →
+  Account. The module map is derived by the server from the answers, once,
+  by the same function the server side shipped in v1.38.16, so the screen
+  renders the derivation and never computes one of its own; a module the
+  person switched on by hand or whose domain already holds rows is never
+  turned off by a choice.
+
+- **Answers given for someone you look after go to their record.** With
+  "someone I look after" the questions run in the guardian's own record, the
+  managed profile is created on the confirm screen, and
+  `POST /api/onboarding/complete` takes `managedRecordId` to apply the
+  derived modules to that record through the guardian's record-keyed write
+  from v1.38.15. The guardian's own map is left alone, and finishing without
+  creating the profile derives nothing onto the guardian either; a record
+  the caller does not manage is a 404, as on the managed-profile routes. The
+  checklist carries a row for the profile instead of reading those answers
+  as the guardian's.
+
+- **Module pages say which switch is off.** A page whose module is off
+  answers with an empty state that names the switch instead of a blank
+  surface, and the tour's two stops without an anchor (integrations, the
+  health record) have theirs.
+
+- **Seven locales, held to the screen.** Every setup screen is rendered once
+  more with strings 30 % longer than English and must not overflow; the axe
+  scan covers every screen in both themes.
+
+### Changed
+
+- **`POST /api/onboarding/complete` seeds the dashboard order from the
+  answers** the first time, and only while the layout is unset, so an order
+  the person has already arranged is never overwritten. The demo mutation
+  allowlist admits the disclaimer and tour writes, so the demo can finish
+  the flow; a structural test holds every onboarding write to the allowlist.
+
+### Removed
+
+- **`POST /api/onboarding/step`, the six goal slugs, and the
+  `users.onboarding_step` / `users.onboarding_goals` columns** (migration
+  `0339_retire_wizard_columns`). The native client never called the route or
+  read the columns; `POST /api/onboarding/disclaimer`,
+  `POST /api/onboarding/tour` and the disclaimer and tour fields on
+  `GET /api/auth/me` are unchanged.
+
+### Upgrade note
+
+- **Take a backup before deploying, and expect no image rollback.**
+  Migration 0339 drops two columns the v1.38.16 and v1.38.17 images select
+  on every session load, so an older image against a migrated database fails
+  at login, not only on the wizard. Rolling the image back means restoring
+  the database, or re-adding the two columns with their defaults, which is
+  loss-free because nothing at this version writes them:
+  `ALTER TABLE users ADD COLUMN onboarding_step integer NOT NULL DEFAULT 0, ADD COLUMN onboarding_goals text[] NOT NULL DEFAULT '{}';`
+
 ## [1.38.17] — 2026-09-10
 
 A webhook or ntfy target on your own network can be reached again, with the
