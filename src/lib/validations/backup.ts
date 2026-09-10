@@ -886,6 +886,33 @@ const healthScoreRecordBackupSchema = z
   })
   .passthrough();
 
+/**
+ * v1.39 (C1) — the needs-based setup state. One row per record.
+ *
+ * The three answer objects are validated loosely on purpose: the closed
+ * vocabularies live in `src/lib/onboarding/needs.ts`, and the restore reads
+ * every one of them back through the same fail-soft parsers the account
+ * payload uses. Duplicating the enums here would give the file a second,
+ * quietly divergent opinion about what an answer is, and the failure mode of
+ * being stricter here is refusing a whole account's restore over one retired
+ * chip.
+ */
+const onboardingRecordBackupSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    needs: z.record(z.string(), z.unknown()).default({}),
+    steps: z.array(z.record(z.string(), z.unknown())).default([]),
+    firstResult: z.record(z.string(), z.unknown()).nullable().default(null),
+    // The once-only latch on the module derivation. Carried rather than
+    // defaulted: a null here would hand the next confirm permission to
+    // re-apply the questionnaire over every module decision made since.
+    modulesDerivedAt: isoDateTime.nullable().default(null),
+    completedAt: isoDateTime.nullable().default(null),
+    createdAt: isoDateTime.optional(),
+    updatedAt: isoDateTime.optional(),
+  })
+  .passthrough();
+
 const appSettingsBackupSchema = z
   .object({
     id: z.string().min(1),
@@ -1668,6 +1695,10 @@ export const backupPayloadSchema = z
     // the sections above: a file written before the table existed carries no
     // key, and an account whose score never resolved writes [].
     healthScoreRecords: z.array(healthScoreRecordBackupSchema).default([]),
+    // The needs-based setup answers. Defaulted to null for the same reason as
+    // the sections above: a file written before the table existed carries no
+    // key, and a record that never entered the flow has no row.
+    onboardingRecord: onboardingRecordBackupSchema.nullable().default(null),
     // Visits, the address book behind them, and the three link tables.
     // Defaulted for the same reason as the sections above: a file written
     // before the tables existed carries no key, and an account that has never
@@ -1796,6 +1827,8 @@ export interface BackupSummary {
   intradayProfiles: number;
   /** Local days whose health score was written down as it was shown. */
   healthScoreRecords: number;
+  /** 1 when the record's setup answers ride the file, 0 otherwise. */
+  onboardingRecords: number;
   /** v1.37.19 (A6-8) — the visit address book. */
   practitioners: number;
   /** v1.37.19 (A6-8) — doctor visits, planned and past. */
@@ -1884,6 +1917,7 @@ export function summarizeBackup(payload: BackupPayload): BackupSummary {
     correlationPatterns: payload.correlationPatterns.length,
     intradayProfiles: payload.intradayProfiles.length,
     healthScoreRecords: payload.healthScoreRecords.length,
+    onboardingRecords: payload.onboardingRecord ? 1 : 0,
     // v1.37.19 (A6-8) — the sections restored since 08-01 were written and
     // restored but absent from this report, so the admin's "what did I just
     // restore" answer silently under-counted a file that carried visits or

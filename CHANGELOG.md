@@ -13,10 +13,10 @@ on every surface, and four more journeys in the gate.
   can derive from it. Both arms require the fresh second factor the create
   and delete routes already do, refuse with 404 rather than 403 for a record
   the caller does not manage, and the edit is capped at ten an hour per
-  account. Every field is documented; `rejectedFields` says which value the
-  server would not take.
+  account. Every field is documented; a value the server will not take is a
+  422 with the issue list.
 
-- **Modules are switched per record.** `GET`/`PUT /api/record-settings/modules`
+- **Modules are switched per record.** `GET`/`PATCH /api/record-settings/modules`
   read and write the module map of the record the browser is acting on, and
   `GET /api/auth/me` under an active switch reports `modules` and
   `cycleTrackingEnabled` for that record, not for the caller. Navigation

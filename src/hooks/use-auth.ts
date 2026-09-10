@@ -23,6 +23,7 @@ import { isDateFormatPreference, storeDateFormat } from "@/lib/date-format";
 import { storeTimezone } from "@/lib/timezone-mirror";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { ModuleAccessState } from "@/lib/sharing/module-disclosure";
+import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import type { TourProgress } from "@/lib/onboarding/tour-progress";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 import {
@@ -81,6 +82,19 @@ export interface AuthUser {
    * `onboardingTourCompleted` boolean, which stays the auto-launch gate.
    */
   onboardingTourProgress: AuthTourProgress | null;
+  /**
+   * v1.39 (C1) — the needs-based setup flow's state for the record the payload
+   * describes — the active one under a switch: the nine ordered steps with
+   * their `pending | done | skipped` status, the answers as given, the flow's
+   * own completion stamp (distinct from `onboardingCompletedAt` above, which
+   * stays the first-run redirect's gate) and the one task the flow offered.
+   * Under a scoped grant the answers come back empty.
+   *
+   * Optional in the type so a stale /me payload — an older server image, or a
+   * test fixture written before the field existed — coerces to "no flow" in
+   * the mapper below rather than failing the shape.
+   */
+  onboarding?: OnboardingStateDto | null;
   /**
    * v1.18.6 (DISC-02) — ISO timestamp of the one-time medical-disclaimer
    * acknowledgment, or null when never acknowledged. The onboarding welcome
@@ -386,6 +400,10 @@ export async function fetchMe(): Promise<AuthUser> {
     // v1.18.6 — coerce against a stale /me payload (older server image
     // without the field) to null so the tour starts from the top.
     onboardingTourProgress: data.onboardingTourProgress ?? null,
+    // v1.39 (C1) — coerce against a stale /me payload (an older server image
+    // without the field) to null, which every reader treats as "no flow was
+    // ever run" rather than as an unfinished one.
+    onboarding: data.onboarding ?? null,
     // v1.7.0 — coerce against a stale /me payload (older server image
     // without the field) so the display defaults to metric.
     unitPreference: data.unitPreference === "imperial" ? "imperial" : "metric",

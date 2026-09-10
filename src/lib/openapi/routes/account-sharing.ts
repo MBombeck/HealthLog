@@ -34,6 +34,7 @@ import {
   inviteManagedProfileGuardianSchema,
   updateManagedProfileSchema,
 } from "@/lib/validations/managed-profiles";
+import { onboardingStateResource } from "./onboarding";
 import { moduleAccessMap } from "./profile";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 
@@ -462,6 +463,15 @@ const accountPayload = z
     notificationPrefs: z.looseObject({
       medication: z.looseObject({ clientManaged: z.boolean() }),
     }),
+    // v1.39 (C1) — enumerated for the same reason `notificationPrefs` is: a
+    // client DECIDES on it. The getting-started checklist orders its rows from
+    // `needs` and stays on screen while the flow is unfinished, and a future
+    // native client renders the steps it knows. Always present, and resolved
+    // for the RECORD the payload describes — the same scoping as `modules`,
+    // because the checklist reads it beside that record's counts. Under a
+    // SCOPED grant the answers come back empty, for the reason the module map
+    // is masked. The three write routes stay actor-only.
+    onboarding: onboardingStateResource,
   })
   .meta({
     id: "AccountPayload",

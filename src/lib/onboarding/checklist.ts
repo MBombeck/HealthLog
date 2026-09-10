@@ -6,6 +6,13 @@
  * status + dismissed-ids set) and renders against the result.
  */
 
+import {
+  hasEnteredOnboardingFlow,
+  isOnboardingSettled,
+  type OnboardingNeeds,
+  type OnboardingStateDto,
+} from "./needs";
+
 export const CHECKLIST_ITEM_IDS = [
   "profile",
   "measurement",
@@ -64,6 +71,55 @@ export interface ChecklistInputs {
   insightsConfigured: boolean;
   /** Dismissed item ids (per-item localStorage state). */
   dismissedIds: ReadonlySet<ChecklistItemId>;
+  /**
+   * v1.39 (C1) — the needs-based setup state from `GET /api/auth/me`, or null
+   * for a record that never entered the flow.
+   *
+   * Required rather than optional: the ordering below is the whole reason the
+   * answers are published, and a caller that stops passing them should fail to
+   * compile rather than quietly fall back to the fixed order.
+   */
+  onboarding: OnboardingStateDto | null;
+}
+
+/**
+ * v1.39 (C1) — the order the answers imply.
+ *
+ * The rows themselves are fixed; what the questionnaire decides is which of
+ * them a person sees first. Someone who said they take medication daily should
+ * not have to scroll past "connect a data source" to find it, and someone who
+ * named a wearable should meet that row before the manual-entry one.
+ *
+ * `profile` stays first whatever the answers say — it is the identity the
+ * clinical surfaces derive from, not a domain choice — and any row the answers
+ * do not speak to keeps its position relative to the others. The result is a
+ * reordering, never a removal: nothing here drops a row.
+ */
+export function checklistOrderFromNeeds(
+  needs: OnboardingNeeds,
+): ChecklistItemId[] {
+  const promoted: ChecklistItemId[] = [];
+  const promote = (id: ChecklistItemId) => {
+    if (!promoted.includes(id)) promoted.push(id);
+  };
+
+  if (needs.medication === "yes" || needs.medication === "sometimes") {
+    promote("medication");
+  }
+  // "I type them in" and "a file I already have" are not connections, so they
+  // say nothing about the data-source row.
+  if (needs.sources.some((s) => s !== "manual" && s !== "file")) {
+    promote("dataSource");
+  }
+  if (needs.areas.length > 0) promote("measurement");
+
+  return [
+    "profile",
+    ...promoted,
+    ...CHECKLIST_ITEM_IDS.filter(
+      (id) => id !== "profile" && !promoted.includes(id),
+    ),
+  ];
 }
 
 /**
@@ -112,7 +168,15 @@ export function buildChecklist(inputs: ChecklistInputs): ChecklistItem[] {
       dismissed: inputs.dismissedIds.has("insights"),
     },
   ];
-  return items;
+  if (!inputs.onboarding) return items;
+  // Ordered from the answers only once the flow has been confirmed: before
+  // that the answers are still being given, and re-ordering the dashboard
+  // under someone mid-question would be movement they did not ask for.
+  if (inputs.onboarding.completedAt === null) return items;
+  const order = checklistOrderFromNeeds(inputs.onboarding.needs);
+  return order
+    .map((id) => items.find((item) => item.id === id))
+    .filter((item): item is ChecklistItem => item !== undefined);
 }
 
 /**
@@ -145,25 +209,45 @@ export function checklistProgress(items: ChecklistItem[]): ChecklistProgress {
 /**
  * Should the dashboard render the checklist at all?
  *
- * Visible while the user is still in the setup phase:
- *   - `onboardingCompletedAt` is null  OR
- *   - they have fewer than 5 measurements
+ * Never when the whole list is dismissed, and never when there is no
+ * non-dismissed row left to show.
  *
- * AND the user has not dismissed the entire checklist
- * AND there is at least one undone, non-dismissed item.
+ * For a record that ran the setup flow the design spec retires the old
+ * five-reading rule: the list goes when its rows are done or the person hides
+ * it. Five readings were never evidence that anything was set up. A record
+ * that never entered the flow keeps the pre-v1.39 rule unchanged — first-run
+ * wizard unfinished, or fewer than five readings.
+ *
+ * A list whose rows are all done still stays while the flow itself is
+ * unfinished, because the one task the flow offered is not one of the six
+ * rows: "every row done" and "the setup finished" are different statements.
  */
 export function shouldShowChecklist(args: {
   onboardingCompletedAt: string | null;
   measurementCount: number;
   dismissedAll: boolean;
   items: ChecklistItem[];
+  /**
+   * v1.39 (C1) — the needs-based setup state for this record, or null before
+   * the account payload resolves. A record that never entered the flow reads
+   * as empty answers with nine pending steps and is treated as having no
+   * unfinished setup, which is what keeps every account that predates the flow
+   * on the rule it already had.
+   */
+  onboarding?: OnboardingStateDto | null;
 }): boolean {
   if (args.dismissedAll) return false;
-  const stillInSetup =
-    args.onboardingCompletedAt == null || args.measurementCount < 5;
-  if (!stillInSetup) return false;
+  const onboarding = args.onboarding ?? null;
   const visible = visibleChecklist(args.items);
   if (visible.length === 0) return false;
+
+  const stillInSetup =
+    hasEnteredOnboardingFlow(onboarding) ||
+    args.onboardingCompletedAt == null ||
+    args.measurementCount < 5;
+  if (!stillInSetup) return false;
+
+  if (!isOnboardingSettled(onboarding)) return true;
   return visible.some((item) => !item.done);
 }
 

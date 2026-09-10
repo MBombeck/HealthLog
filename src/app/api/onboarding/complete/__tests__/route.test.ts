@@ -1,12 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    user: { update: vi.fn() },
-    auditLog: { create: vi.fn() },
-  },
-}));
+vi.mock("@/lib/db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/db")>();
+  return {
+    ...actual,
+    prisma: {
+      user: { update: vi.fn(), findUnique: vi.fn() },
+      auditLog: { create: vi.fn() },
+      // v1.39 (C1) — the needs half of the route looks for a setup row before
+      // it does anything. These cases are the LEGACY caller, which has none,
+      // so the lookup answers null and the route falls straight through to the
+      // acknowledgement it always returned.
+      onboardingRecord: { findUnique: vi.fn(), update: vi.fn() },
+    },
+  };
+});
 
 vi.mock("@/lib/auth/session", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/auth/session")>();
@@ -58,6 +67,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.user.update).mockResolvedValue({} as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
+  vi.mocked(prisma.onboardingRecord.findUnique).mockResolvedValue(null);
 });
 
 describe("POST /api/onboarding/complete", () => {

@@ -218,6 +218,12 @@ export const WIPE_MODELS = [
   "AuditLog",
   "ConsentReceipt",
   "UserKnownDevice",
+  // v1.39 — the setup answers and the step ledger. The USER_RESET block below
+  // already puts the wizard of today back to the start; this is the same
+  // decision for the needs-based flow, and it belongs on the same side of the
+  // line for the same reason: the record the answers were about is gone, so
+  // the answers describe nothing.
+  "OnboardingRecord",
 
   // ── Parents, last ───────────────────────────────────────────────────────
   "Medication",

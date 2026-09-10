@@ -14,7 +14,6 @@ import {
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import {
-  invalidateUserHealthScore,
   invalidateUserInsightsLayout,
   invalidateUserMedications,
   invalidateUserProfile,
@@ -24,6 +23,7 @@ import {
   getAllEffectiveRanges,
   type ThresholdOverridesJson,
 } from "@/lib/analytics/effective-range";
+import { writeRecordModulePreferences } from "@/lib/record-settings/modules";
 import {
   isManagedRecordSettingsFamily,
   managedModulePreferencesFrom,
@@ -31,7 +31,6 @@ import {
   resolveGuardianRecordSettingsAccess,
 } from "@/lib/record-settings";
 import { isCycleEnabled } from "@/lib/cycle/gate";
-import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
 import {
   resolveInsightsLayout,
   serializeInsightsLayout,
@@ -251,34 +250,25 @@ export const PATCH = apiHandler(
             ...managedModulePreferencesFrom(current?.modulePreferencesJson),
             ...patch.modulePreferences,
           };
-          if (patch.modulePreferences !== undefined) {
-            await prisma.user.update({
-              where: { id: access.recordId },
-              data: { modulePreferencesJson: toJson(modulePreferences) },
-            });
-          }
-          // The delegated key writes its own column. An explicit boolean is
+          // One write path, shared with the setup flow's derivation. The
+          // delegated key writes its own column there: an explicit boolean is
           // what the cycle gate honours over the sex-derived default, so a
           // guardian turning Cycle off for a record whose sex says otherwise
           // is recorded as the deliberate answer it is.
-          if (patch.cycleTrackingEnabled !== undefined) {
-            await getOrCreateCycleProfile(access.recordId);
-            await prisma.cycleProfile.update({
-              where: { userId: access.recordId },
-              data: { cycleTrackingEnabled: patch.cycleTrackingEnabled },
-            });
-          }
-          const cycleProfile = await prisma.cycleProfile.findUnique({
-            where: { userId: access.recordId },
-            select: { cycleTrackingEnabled: true },
+          const written = await writeRecordModulePreferences({
+            recordId: access.recordId,
+            ...(patch.modulePreferences !== undefined
+              ? { modulePreferences }
+              : {}),
+            ...(patch.cycleTrackingEnabled !== undefined
+              ? { cycleTrackingEnabled: patch.cycleTrackingEnabled }
+              : {}),
           });
-          invalidateUserHealthScore(access.recordId);
           settings = {
             modulePreferences,
-            cycleTrackingEnabled: isCycleEnabled(
-              current?.gender ?? null,
-              cycleProfile,
-            ),
+            cycleTrackingEnabled: isCycleEnabled(current?.gender ?? null, {
+              cycleTrackingEnabled: written.cycleTrackingEnabled,
+            }),
           };
           // The module keys themselves, not the wrapper field: the record's
           // trail should say which module moved. `cycleTrackingEnabled` is

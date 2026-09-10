@@ -176,6 +176,12 @@ export const BACKED_UP_MODELS = [
   // for a restored preference to attach to.
   "ReminderPhaseConfig",
   "ConsentReceipt",
+  // The setup answers. Nothing recomputes them: the module map they produced
+  // survives on the `User` row, but the map says what is switched on, not that
+  // the person said they take medication daily and have a visit next month. A
+  // restore without the row opens a blank questionnaire for somebody who has
+  // already answered it.
+  "OnboardingRecord",
 ] as const;
 
 /**
@@ -236,6 +242,9 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   // the reason the visits comment gives.
   "src/lib/export/awards-backup.ts",
   "src/lib/export/environment-backup.ts",
+  // The needs-based setup answers, both ends beside each other for the reason
+  // the visits comment gives.
+  "src/lib/export/onboarding-backup.ts",
   // The ECG strips, same arrangement again. The recording reads through its
   // OWN delegate here rather than riding the measurement it references,
   // because that reference is a pointer between two independently carried
@@ -257,6 +266,7 @@ export const BACKUP_RESTORE_FILES: readonly string[] = [
   "src/lib/export/document-filing-backup.ts",
   "src/lib/export/awards-backup.ts",
   "src/lib/export/environment-backup.ts",
+  "src/lib/export/onboarding-backup.ts",
   "src/lib/export/ecg-backup.ts",
   "src/lib/cycle/backup.ts",
 ];
@@ -495,6 +505,18 @@ export const TWO_ENDED_MODELS = [
   // theoretical. The reference is resolved against what the restore wrote,
   // nulled when it cannot be, and reported either way.
   "EcgRecording",
+  // The setup answers, carried from the release that introduces them. There is
+  // no debt entry to write instead: the row is one small object with no
+  // reference to resolve, so "carried" and "owed" would have cost the same
+  // afternoon and only one of them returns a record that can say "set up
+  // again" and mean it.
+  //
+  // `modulesDerivedAt` is the field that makes this more than history. It is
+  // the once-only latch on the module derivation, so a restore that let it
+  // default to null would hand the next confirm permission to re-apply the
+  // questionnaire over every module decision taken in Settings since. It is
+  // carried and asserted, not defaulted.
+  "OnboardingRecord",
 ] as const;
 
 /** One model claimed to travel both ways. */
