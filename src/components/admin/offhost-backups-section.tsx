@@ -44,9 +44,21 @@ import { formatBytes } from "@/lib/format/bytes";
 const FRESHNESS_STYLE: Record<OffhostBackupFreshness, string> = {
   fresh: "border-success/30 bg-success/10 text-success",
   due: "border-warning/30 bg-warning/10 text-warning",
-  stale: "border-destructive/30 bg-destructive/10 text-destructive",
-  never: "border-border bg-muted text-muted-foreground",
-  unknown: "border-border bg-muted text-muted-foreground",
+  stale: "border-destructive/30 bg-destructive/10 text-foreground",
+  never: "border-border bg-muted text-foreground",
+  unknown: "border-border bg-muted text-foreground",
+};
+
+/**
+ * `--destructive` as 12px badge text on its own wash measures 4.08:1 in the
+ * light theme and 3.99:1 in the dark one, and `--muted-foreground` on
+ * `bg-muted` 3.6:1 in the dark one, all under the AA floor. So the badge
+ * takes the shape the admin status rows already use: the token paints a small
+ * indicator and the wording stays in `text-foreground`. The word states the
+ * condition, so nothing hangs on the colour alone.
+ */
+const FRESHNESS_INDICATOR: Partial<Record<OffhostBackupFreshness, string>> = {
+  stale: "bg-destructive",
 };
 
 function freshnessLabel(
@@ -88,6 +100,16 @@ function AccountRow({ row }: { row: OffhostAccountRow }) {
             variant="outline"
             className={cn("shrink-0", FRESHNESS_STYLE[row.freshness])}
           >
+            {FRESHNESS_INDICATOR[row.freshness] ? (
+              <span
+                aria-hidden="true"
+                data-slot="offhost-freshness-indicator"
+                className={cn(
+                  "size-2 shrink-0 rounded-full",
+                  FRESHNESS_INDICATOR[row.freshness],
+                )}
+              />
+            ) : null}
             {freshnessLabel(row.freshness, t)}
           </Badge>
         </div>
