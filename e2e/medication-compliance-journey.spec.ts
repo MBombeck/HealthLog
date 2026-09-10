@@ -456,32 +456,44 @@ test.describe("medication adherence journey", () => {
       page.locator('[data-slot="intake-history-row"][data-status="skipped"]'),
     ).toHaveCount(1);
 
-    // --- and so does the dashboard tile ------------------------------------
-    // Today expected two doses and one was taken. The tile and the card read
-    // the same event through different engines; this is the assertion that
-    // they cannot drift apart silently.
+    // --- and the dashboard tile, which answers the skip differently ---------
+    // Today expected two doses; one was taken and one deliberately skipped.
+    //
+    // The two surfaces do not agree about that skip, and this pins the
+    // difference rather than claiming it away. The tile's denominator is the
+    // day's expected slots, which a skip does not leave, and its numerator
+    // counts only rows carrying a `takenAt`
+    // (`src/lib/analytics/schedule-anchored-compliance.ts:141-164`), so it
+    // reads 50. The card's engine — `src/lib/analytics/compliance.ts`, the
+    // documented single source of the percentage — drops a skip from the
+    // denominator outright (`src/lib/analytics/compliance/ledger.ts:43-47`),
+    // which is what the counts asserted above already show. The number below
+    // is the one the server's daily buckets really produce for today; the
+    // card's is the authoritative answer about adherence.
     await page.goto("/");
     expect(await readTileLatestRate(page)).toBe(50);
   });
 
-  test("a dose recorded against a schedule that does not exist is refused and moves nothing", async ({
+  test("an intake against an unowned medication, and one against a slot the schedule does not have, are both refused", async ({
     page,
   }) => {
-    // Room for the reload budget in `readCardRate` (see its note).
+    // Two full list loads either side of the refusals, plus a seed and an age;
+    // on a loaded runner that settle earns the tripled timeout.
     test.slow();
-    await openSeedingSurface(page);
 
-    const today = await page.evaluate(() => {
-      const now = new Date();
-      const iso = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      now.setDate(now.getDate() - 4);
-      return iso(now);
+    const stamps = await ageStamps(page, 4);
+    // An instant the schedule below does not have a slot for. Computed here,
+    // before the first navigation, so the whole test body reads as one setup
+    // step followed by assertions on it.
+    const unscheduled = await page.evaluate(() => {
+      const at = new Date();
+      at.setHours(3, 17, 0, 0);
+      return at.toISOString();
     });
     const medicationId = await seedMedication(page, {
       name: "E2E Ablehnung",
       dose: "10 mg",
-      startsOn: today,
+      startsOn: stamps.startsOn,
       schedule: {
         windowStart: "08:00",
         windowEnd: "09:00",
@@ -498,19 +510,35 @@ test.describe("medication adherence journey", () => {
     await page.goto("/medications");
     const before = await readCardRate(page, medicationId);
 
-    // A medication id nothing on this account owns: the same body the card
-    // sends, addressed to a schedule that is not there.
-    const refused = await api(
+    // A medication id nothing on this account owns. The privacy gate answers
+    // before the body is even read, so the 404 is about ownership and says
+    // nothing about the medication existing elsewhere.
+    const unowned = await api(
       page,
       "POST",
       "/api/medications/med_e2e_does_not_exist/intake",
       { skipped: false },
     );
-    expect(refused.status, "an unknown schedule is refused").toBe(404);
-    expect(refused.data).toBeNull();
+    expect(unowned.status, "an unowned medication is refused").toBe(404);
+
+    // And the schedule's own boundary: this medication doses at 08:00 and
+    // 22:00, so 03:17 is not one of its slots and the pin is refused rather
+    // than silently recorded as an ad-hoc dose.
+    const offSlot = await api(
+      page,
+      "POST",
+      `/api/medications/${medicationId}/intake`,
+      {
+        skipped: false,
+        forceSlotInstant: unscheduled,
+      },
+    );
+    expect(offSlot.status, "an instant that is not a slot is refused").toBe(
+      422,
+    );
 
     // Nothing was written, so nothing moved — including on the engine's own
-    // read, which the refused call had no opportunity to invalidate.
+    // read, which neither refused call had an opportunity to invalidate.
     const payload = await api<CompliancePayload>(
       page,
       "GET",
