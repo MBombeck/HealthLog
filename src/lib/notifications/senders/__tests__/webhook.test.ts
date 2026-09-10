@@ -26,7 +26,11 @@ vi.mock("@/lib/safe-fetch", () => ({
 
 const annotateMock = vi.fn();
 vi.mock("@/lib/logging/context", () => ({
-  getEvent: () => ({ addWarning: vi.fn(), addExternalCall: vi.fn() }),
+  getEvent: () => ({
+    addWarning: vi.fn(),
+    addExternalCall: vi.fn(),
+    hasAction: () => false,
+  }),
   annotate: (...args: unknown[]) => annotateMock(...args),
 }));
 
@@ -198,6 +202,8 @@ describe("sendViaWebhook", () => {
       );
       expect(annotateMock).toHaveBeenCalledWith({
         action: { name: "notification.egress.private_origin" },
+      });
+      expect(annotateMock).toHaveBeenCalledWith({
         meta: { channel: "webhook", origin: "https://gotify.example.com" },
       });
     });

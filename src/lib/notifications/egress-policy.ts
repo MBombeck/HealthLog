@@ -6,7 +6,7 @@ import {
   PRIVATE_ORIGIN_NOT_APPROVED,
   type OriginVerdict,
 } from "@/lib/private-origin-policy";
-import { annotate } from "@/lib/logging/context";
+import { annotate, getEvent } from "@/lib/logging/context";
 
 /**
  * `NOTIFICATION_PRIVATE_ORIGINS` (#947) — the operator grant that lets the
@@ -93,13 +93,19 @@ export { PRIVATE_ORIGIN_NOT_APPROVED };
  * an operator can see which grant is actually in use. The origin is the
  * canonical grant string, never the full target URL, which may carry a
  * token in its path or query.
+ *
+ * The action name is set only when the event has none yet: a settings route
+ * or a job that already named its action keeps it, and the meta pair still
+ * lands on the same event, so the mark is never lost and never clobbers.
  */
 export function annotatePrivateOriginEgress(
   channel: "webhook" | "ntfy",
   origin: string,
 ): void {
-  annotate({
-    action: { name: "notification.egress.private_origin" },
-    meta: { channel, origin },
-  });
+  const event = getEvent();
+  if (!event) return;
+  if (!event.hasAction()) {
+    annotate({ action: { name: "notification.egress.private_origin" } });
+  }
+  annotate({ meta: { channel, origin } });
 }

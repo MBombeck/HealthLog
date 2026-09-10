@@ -12,7 +12,11 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { eventStorage } from "@/lib/logging/context";
+import { WideEventBuilder } from "@/lib/logging/event-builder";
+
 import {
+  annotatePrivateOriginEgress,
   configuredNotificationPrivateOrigins,
   evaluateNotificationTarget,
   isAllowedNotificationTarget,
@@ -164,5 +168,44 @@ describe("evaluateNotificationTarget", () => {
       privateOriginApproved: false,
       reasonCode: null,
     });
+  });
+});
+
+describe("annotatePrivateOriginEgress", () => {
+  it("names the action when the event has none and pins the meta pair", () => {
+    const event = new WideEventBuilder("background");
+    eventStorage.run(event, () => {
+      annotatePrivateOriginEgress("webhook", "https://gotify.example.com");
+    });
+
+    const json = event.toJSON();
+    expect(json.action).toEqual({ name: "notification.egress.private_origin" });
+    expect(json.meta).toEqual({
+      channel: "webhook",
+      origin: "https://gotify.example.com",
+    });
+  });
+
+  it("keeps an action the route or job already set, and still lands the meta", () => {
+    // A settings route or a job names its own action; dashboards pin on it.
+    // The egress mark must not overwrite that name.
+    const event = new WideEventBuilder("http");
+    event.setAction({ name: "settings.webhook.test" });
+    eventStorage.run(event, () => {
+      annotatePrivateOriginEgress("ntfy", "http://ntfy.lan:8080");
+    });
+
+    const json = event.toJSON();
+    expect(json.action).toEqual({ name: "settings.webhook.test" });
+    expect(json.meta).toEqual({
+      channel: "ntfy",
+      origin: "http://ntfy.lan:8080",
+    });
+  });
+
+  it("is a no-op without an active event", () => {
+    expect(() =>
+      annotatePrivateOriginEgress("webhook", "https://gotify.example.com"),
+    ).not.toThrow();
   });
 });

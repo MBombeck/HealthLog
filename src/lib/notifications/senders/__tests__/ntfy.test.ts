@@ -25,7 +25,11 @@ vi.mock("@/lib/safe-fetch", () => ({
 }));
 
 vi.mock("@/lib/logging/context", () => ({
-  getEvent: () => ({ addWarning: vi.fn(), addExternalCall: vi.fn() }),
+  getEvent: () => ({
+    addWarning: vi.fn(),
+    addExternalCall: vi.fn(),
+    hasAction: () => false,
+  }),
   annotate: (...args: unknown[]) => annotateMock(...args),
 }));
 
@@ -165,6 +169,8 @@ describe("sendViaNtfy", () => {
       expect(opts.operatorApprovedPrivateOrigin).toBe("http://ntfy.lan:8080");
       expect(annotateMock).toHaveBeenCalledWith({
         action: { name: "notification.egress.private_origin" },
+      });
+      expect(annotateMock).toHaveBeenCalledWith({
         meta: { channel: "ntfy", origin: "http://ntfy.lan:8080" },
       });
     });

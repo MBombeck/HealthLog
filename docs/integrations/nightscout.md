@@ -28,8 +28,15 @@ Each entry is an exact normalized `scheme://host:port` trust unit:
   rejected;
 - approving one hostname does not approve subdomains, sibling hosts, or a
   different port; and
+- loopback (`127.0.0.0/8`, `::1`, `localhost`), the unspecified address,
+  link-local and the cloud-metadata range cannot be listed, and a listed
+  name that resolves there is refused at connect time — the grant opens
+  your network, never the container or the host it runs on; and
 - any malformed non-empty entry fails evaluation instead of silently
   weakening the configured policy.
+
+The grammar is shared with `NOTIFICATION_PRIVATE_ORIGINS`, the same grant
+for webhook and ntfy targets (`docs/self-hosting/notifications.md`).
 
 Do not put a Nightscout API token, capability URL, health data, or a URL
 containing credentials in the allowlist. Restart the application after
