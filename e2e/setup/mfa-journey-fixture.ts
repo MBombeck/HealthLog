@@ -138,17 +138,26 @@ export async function dropMfaAccount(
 }
 
 /**
- * Empty the anonymous auth buckets.
+ * Empty the two anonymous auth buckets this journey spends.
  *
- * Both keys are per-IP and every spec on the machine is the same IP, so this is
- * the same unconditional clear `global-setup.ts` runs between its own logins.
- * Call it before each sign-in this journey performs; the product's 429 is a
- * real answer, but it is not the answer any of these tests is about.
+ * Both keys are `${prefix}:${ip}` and every spec on the machine is the same IP,
+ * so this is the clear `global-setup.ts` runs between its own logins — narrowed
+ * to the surfaces the journey actually touches. The wider `auth:%` it used to
+ * run also swept register, passkey and reset buckets, which this file has no
+ * business emptying: a future spec measuring one of those throttles would find
+ * its evidence deleted by an unrelated sign-in and never know.
+ *
+ * Call it before each sign-in; the product's 429 is a real answer, but it is
+ * not the answer the journey's stages are about — the closing stage asks for it
+ * deliberately, and clears afterwards.
  */
 export async function clearAuthRateLimits(): Promise<void> {
   const pool = connect();
   try {
-    await pool.query(`DELETE FROM rate_limits WHERE key LIKE 'auth:%'`);
+    await pool.query(
+      `DELETE FROM rate_limits
+        WHERE key LIKE 'auth:login:%' OR key LIKE 'auth:mfa-verify:%'`,
+    );
   } finally {
     await pool.end();
   }

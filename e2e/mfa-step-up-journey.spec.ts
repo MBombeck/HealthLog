@@ -1,4 +1,9 @@
-import type { BrowserContext, Page, Response } from "@playwright/test";
+import type {
+  APIResponse,
+  BrowserContext,
+  Page,
+  Response,
+} from "@playwright/test";
 import * as OTPAuth from "otpauth";
 
 import { expect, test } from "./setup/test";
@@ -30,7 +35,7 @@ import {
  *
  * ## Controls
  *
- * Four refusals ride alongside the four positives, because a gate that has
+ * Five refusals ride alongside the four positives, because a gate that has
  * never been seen to refuse is not known to be a gate:
  *
  *   - a wrong code at the login challenge — 401, no session cookie, and the
@@ -43,7 +48,9 @@ import {
  *   - the sensitive action once the step-up stamp has aged out — 401 with
  *     `meta.errorCode = "auth.stepup.required"`, and the card's prompt;
  *   - a recovery code presented a second time — 401. The matched row is burned
- *     on first use.
+ *     on first use;
+ *   - one login past the documented per-IP cap — 429, with the bucket's own
+ *     headers. Measured in one project, for the reason written at that step.
  *
  * ## Reading the replay refusal, not guessing it
  *
@@ -73,6 +80,10 @@ import {
 const TOTP_PERIOD_SECONDS = 30;
 const RECOVERY_CODE_COUNT = 10;
 const REGENERATE_ENDPOINT = "/api/auth/me/mfa/recovery-codes/regenerate";
+/** `/api/auth/login`, per IP per 15 minutes (`src/lib/rate-limit.ts`). */
+const LOGIN_ATTEMPT_LIMIT = 5;
+/** The project that measures that cap — see the closing step for why one. */
+const THROTTLE_PROBE_PROJECT = "chromium-desktop";
 /**
  * The margin the accept→replay pair needs. A code named for step N verifies
  * until the end of step N+1 (drift −1), so generating it one step ahead leaves
@@ -184,6 +195,38 @@ async function visibleRecoveryCodes(page: Page): Promise<string[]> {
   const items = panel.locator("li");
   await expect(items).toHaveCount(RECOVERY_CODE_COUNT);
   return items.allInnerTexts();
+}
+
+/**
+ * Spend the login bucket from empty and hand back the answer that went over.
+ *
+ * The bucket is per-IP, and the sibling browser project running this same file
+ * shares it: its sign-ins clear the bucket, and its own attempts fill it. Both
+ * directions disturb a round rather than fake one — a disturbed round is
+ * retried, and a round only counts when the whole documented shape holds, the
+ * cap's worth of attempts answered normally and the next one refused. Returns
+ * null when no round came out clean, which fails loudly at the call site.
+ */
+async function reachLoginCap(
+  page: Page,
+  account: MfaJourneyAccount,
+): Promise<APIResponse | null> {
+  const attempt = () =>
+    page.request.post("/api/auth/login", {
+      data: { email: account.username, password: "not-this-account-password" },
+    });
+
+  for (let round = 0; round < 3; round += 1) {
+    await clearAuthRateLimits();
+    let clean = true;
+    for (let i = 0; i < LOGIN_ATTEMPT_LIMIT && clean; i += 1) {
+      clean = (await attempt()).status() === 401;
+    }
+    if (!clean) continue;
+    const capped = await attempt();
+    if (capped.status() === 429) return capped;
+  }
+  return null;
 }
 
 test.describe("second factor", () => {
@@ -370,5 +413,31 @@ test.describe("second factor", () => {
       expect(await sessionCookie(context)).toBeUndefined();
       expect(await latestChallengeAttempts(account)).toBe(1);
     });
+
+    // Every sign-in above clears this bucket, which makes the throttle the one
+    // auth control the journey rides on and never sees. It costs one step to
+    // see it: the account is about to be dropped and nothing else signs in
+    // from here.
+    //
+    // Measured in ONE project. The bucket is keyed per IP and every spec on
+    // the machine is that one IP, the sibling browser project running this
+    // same file included — two probes emptying and filling one bucket beside
+    // each other measure their own interference, not the limiter, and were
+    // seen to. The limit is server behaviour with no viewport in it, so the
+    // second project would only re-measure the first.
+    if (test.info().project.name === THROTTLE_PROBE_PROJECT) {
+      await test.step("refuses the login past the per-IP cap", async () => {
+        const capped = await reachLoginCap(page, account);
+        expect(
+          capped,
+          "no round of login attempts reached the cap",
+        ).not.toBeNull();
+        expect(capped?.status()).toBe(429);
+        expect(capped?.headers()["x-ratelimit-remaining"]).toBe("0");
+        expect(capped?.headers()["x-ratelimit-reset"]).toBeTruthy();
+        // Hand the bucket back to the machine — it is shared per IP.
+        await clearAuthRateLimits();
+      });
+    }
   });
 });
