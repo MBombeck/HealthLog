@@ -5,7 +5,9 @@
  * an operator-approved private origin reaches the pinned Undici connector.
  * This test keeps the Nightscout client, SafeFetch, dispatcher, socket, and
  * HTTP server real. Only DNS is deterministic: the approved test hostname is
- * resolved to the loopback server from inside the connector.
+ * resolved to the loopback server from inside the connector. Loopback is a
+ * grantable answer under the operator-approved policy (a host-networking
+ * deployment lists it), so the floor runs for real here.
  */
 import dns from "node:dns";
 import http from "node:http";

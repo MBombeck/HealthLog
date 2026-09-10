@@ -243,7 +243,7 @@ const channelEnabledOnlyRequest = notificationChannelEnabledSchema.meta({
 const ntfySettingsRequest = ntfySettingsSchema.meta({
   id: "NtfySettingsRequest",
   description:
-    "ntfy channel config. `serverUrl` must pass the SSRF floor — a URL resolving into a private range is refused at input time. An EMPTY OR OMITTED `authToken` preserves the stored one rather than clearing it: the GET never returns the secret, so a client round-tripping the form would otherwise wipe it on every unrelated save. Sending a non-empty value replaces it. There is no way to clear a stored auth token through this endpoint.",
+    "ntfy channel config. `serverUrl` must pass the SSRF floor — a URL resolving into a private range is refused at input time unless the operator listed its exact origin in `NOTIFICATION_PRIVATE_ORIGINS`. An EMPTY OR OMITTED `authToken` preserves the stored one rather than clearing it: the GET never returns the secret, so a client round-tripping the form would otherwise wipe it on every unrelated save. Sending a non-empty value replaces it. There is no way to clear a stored auth token through this endpoint.",
 });
 
 const telegramSettingsRequest = telegramSettingsSchema.meta({
@@ -255,7 +255,7 @@ const telegramSettingsRequest = telegramSettingsSchema.meta({
 const webhookSettingsRequest = webhookSettingsSchema.meta({
   id: "WebhookSettingsRequest",
   description:
-    "Generic-webhook channel config — one channel covering Gotify, Discord, Slack, a Matrix bridge, Home Assistant, or any relay accepting an inbound JSON POST. `url` must pass the SSRF floor at input time and is re-checked at dispatch time. An EMPTY OR OMITTED `headerValue` preserves the stored one, for the same reason as ntfy's `authToken`: the GET never returns it. There is no way to clear a stored header value through this endpoint.",
+    "Generic-webhook channel config — one channel covering Gotify, Discord, Slack, a Matrix bridge, Home Assistant, or any relay accepting an inbound JSON POST. `url` must pass the SSRF floor at input time and is re-checked at dispatch time; a private origin passes both only when the operator listed it in `NOTIFICATION_PRIVATE_ORIGINS`. An EMPTY OR OMITTED `headerValue` preserves the stored one, for the same reason as ntfy's `authToken`: the GET never returns it. There is no way to clear a stored header value through this endpoint.",
 });
 
 /**
@@ -400,7 +400,7 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "Body matched neither accepted shape, or `enabled` is true while the stored config has no server URL and topic.",
+            "Body matched neither accepted shape, or `enabled` is true while the stored config has no server URL and topic; or the server URL is on a private network the operator has not listed in `NOTIFICATION_PRIVATE_ORIGINS` (`meta.errorCode` = `private_origin_not_approved`), or it is a link-local, metadata or unspecified address that no grant can open (`private_origin_not_grantable`). Nothing was stored.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -516,7 +516,7 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "Body matched neither accepted shape, or `enabled` is true while no webhook URL is stored.",
+            "Body matched neither accepted shape, or `enabled` is true while no webhook URL is stored; or the URL is on a private network the operator has not listed in `NOTIFICATION_PRIVATE_ORIGINS` (`meta.errorCode` = `private_origin_not_approved`), or it is a link-local, metadata or unspecified address that no grant can open (`private_origin_not_grantable`). Nothing was stored.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -705,7 +705,7 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Notifications"],
       summary: "Send a test message to the saved ntfy topic",
       description:
-        "Publishes one message to the account's configured ntfy server and topic. Takes no body. Rate-limited 5 per 5 minutes per user. Refuses with 400 when no ntfy channel is saved or when the saved config is missing a server URL or topic; a publish failure is a 500.",
+        "Publishes one message to the account's configured ntfy server and topic. Takes no body. Rate-limited 5 per 5 minutes per user. Refuses with 400 when no ntfy channel is saved or when the saved config is missing a server URL or topic; a publish failure is a 500. A server on a private network is refused with 422 and `meta.errorCode` = `private_origin_not_approved` unless the operator listed its exact origin in `NOTIFICATION_PRIVATE_ORIGINS`; the test and the scheduled delivery take the same decision.",
       responses: {
         "200": {
           description:
@@ -717,6 +717,11 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        "422": {
+          description:
+            "The saved server is on a private network the operator has not approved (`meta.errorCode` = `private_origin_not_approved`), or is a link-local, metadata or unspecified address that no grant can open (`private_origin_not_grantable`). The resolved address is never echoed.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },
@@ -746,7 +751,7 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Notifications"],
       summary: "Send a test payload to the saved webhook",
       description:
-        "Posts one payload to the account's configured webhook URL. Takes no body. Rate-limited 5 per 5 minutes per user. Refuses with 400 when no webhook channel is saved or the saved config has no URL; a delivery failure is a 500. The URL was checked against the SSRF floor when it was saved, so a test cannot be used to reach an internal host.",
+        "Posts one payload to the account's configured webhook URL. Takes no body. Rate-limited 5 per 5 minutes per user. Refuses with 400 when no webhook channel is saved or the saved config has no URL; a delivery failure is a 500. The URL was checked against the SSRF floor when it was saved, so a test cannot be used to reach an internal host. A URL on a private network is refused with 422 and `meta.errorCode` = `private_origin_not_approved` unless the operator listed its exact origin in `NOTIFICATION_PRIVATE_ORIGINS`; the test and the scheduled delivery take the same decision.",
       responses: {
         "200": {
           description:
@@ -758,6 +763,11 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        "422": {
+          description:
+            "The saved URL is on a private network the operator has not approved (`meta.errorCode` = `private_origin_not_approved`), or is a link-local, metadata or unspecified address that no grant can open (`private_origin_not_grantable`). The resolved address is never echoed.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

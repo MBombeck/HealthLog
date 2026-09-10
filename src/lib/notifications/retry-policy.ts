@@ -35,6 +35,13 @@ export interface SendOutcome {
   reason?: string;
   /** Human-readable error fragment for logs (NOT for the disabled_reason column). */
   message?: string;
+  /**
+   * Stable machine code an API surface may forward as `meta.errorCode`. Set
+   * only for a refusal the caller can act on — today the private-origin
+   * policy (#947), which the test routes answer with 422 and a reason
+   * instead of a bare 500.
+   */
+  errorCode?: string;
 }
 
 /**

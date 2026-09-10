@@ -228,6 +228,63 @@ export function isPublicIp(ip: string): boolean {
   return false;
 }
 
+/**
+ * Decide whether a resolved address may be dialled under an operator's
+ * exact-origin grant (`NOTIFICATION_PRIVATE_ORIGINS`,
+ * `NIGHTSCOUT_PRIVATE_ORIGINS`).
+ *
+ * A grant exists so a relay on the operator's own network can be reached, so
+ * RFC1918, CGNAT (a Tailscale address), IPv6 unique-local and loopback stay
+ * grantable: an operator on host networking who lists an exact loopback
+ * origin with its port has made the same deliberate decision as one who
+ * lists a LAN origin. Two classes are refused even when the operator lists a
+ * name that resolves there, because no relay lives on them: the unspecified
+ * address is a resolver misfire, and link-local is the cloud-metadata
+ * endpoint. The transition formats (`::ffff:`, 6to4, NAT64) are unwrapped
+ * first so an IPv6 spelling of those does not slip past the IPv4 verdict.
+ */
+export function isOperatorGrantableIp(ip: string): boolean {
+  if (!ip) return false;
+  const lower = ip.toLowerCase();
+
+  const family = isIP(lower);
+  if (family === 4) {
+    const parsed = parseIpv4Strict(lower);
+    if (!parsed) return false;
+    return !isNeverGrantableIpv4(parsed);
+  }
+
+  if (family === 6) {
+    const bytes = parseIpv6Bytes(lower);
+    if (!bytes) return false;
+
+    // Unspecified and link-local IPv6. Unique-local (fc00::/7) and loopback
+    // (::1) deliberately stay out of this list: they are what an operator
+    // on a private or host network lists. `::1` is answered before the
+    // embedded-IPv4 unwrap, which would otherwise read it as the
+    // IPv4-compatible spelling of 0.0.0.1 and refuse it as unspecified.
+    if (bytesEqual(bytes, 0, Array(16).fill(0))) return false;
+    if (bytesEqual(bytes, 0, Array(15).fill(0)) && bytes[15] === 1) {
+      return true;
+    }
+    if (bytes[0] === 0xfe && (bytes[1] & 0xc0) === 0x80) return false;
+
+    const embedded = embeddedIpv4(bytes);
+    if (embedded && isNeverGrantableIpv4(embedded)) return false;
+    return true;
+  }
+
+  return false;
+}
+
+/** 0/8 and 169.254/16: the ranges no operator grant may open. */
+function isNeverGrantableIpv4(ip: [number, number, number, number]): boolean {
+  const [a, b] = ip;
+  if (a === 0) return true;
+  if (a === 169 && b === 254) return true;
+  return false;
+}
+
 export function isPublicUrl(url: string): boolean {
   try {
     // Pre-URL guard #1: the WHATWG URL parser interprets leading-zero IPv4
@@ -281,41 +338,64 @@ export function isPublicUrl(url: string): boolean {
   }
 }
 
-export const ntfySettingsSchema = z.object({
-  serverUrl: z
-    .url("Ungültige Server-URL")
-    .max(200)
-    .refine(
-      (url) => isPublicUrl(url),
-      "Server-URL darf nicht auf interne Netzwerke zeigen",
-    )
-    .optional()
-    .or(z.literal("")),
-  topic: z.string().max(100).optional().or(z.literal("")),
-  authToken: z.string().max(200).optional().or(z.literal("")),
-  enabled: z.boolean(),
-});
+/**
+ * ntfy channel settings. The server URL is user-supplied and must pass the
+ * target predicate at input time. The exported constant carries the plain
+ * public floor (`isPublicUrl`) for the OpenAPI contract; the save route
+ * builds the same shape with `isAllowedNotificationTarget`, which adds the
+ * operator's `NOTIFICATION_PRIVATE_ORIGINS` grant (#947) on top of the floor
+ * without this module having to read the environment.
+ */
+export function ntfySettingsSchemaWith(
+  isAllowedTarget: (url: string) => boolean,
+) {
+  return z.object({
+    serverUrl: z
+      .url("Ungültige Server-URL")
+      .max(200)
+      .refine(
+        isAllowedTarget,
+        "Server-URL darf nicht auf interne Netzwerke zeigen",
+      )
+      .optional()
+      .or(z.literal("")),
+    topic: z.string().max(100).optional().or(z.literal("")),
+    authToken: z.string().max(200).optional().or(z.literal("")),
+    enabled: z.boolean(),
+  });
+}
+
+export const ntfySettingsSchema = ntfySettingsSchemaWith(isPublicUrl);
 
 /**
  * Generic-webhook channel settings (v1.17.1). The URL is user-supplied and
- * must pass the SSRF floor (`isPublicUrl`) at input time; the dispatcher
- * re-checks it at fetch time via `safeFetch({ requirePublicHost: true })`. The
- * optional header name/value carry a shared secret (e.g. Gotify token).
+ * must pass the target predicate at input time; the sender re-checks it at
+ * fetch time through `safeFetch` with the connect-time pin. The exported
+ * constant carries the plain public floor for the OpenAPI contract; the save
+ * route passes `isAllowedNotificationTarget` so an origin the operator listed
+ * in `NOTIFICATION_PRIVATE_ORIGINS` (#947) saves. The optional header
+ * name/value carry a shared secret (e.g. Gotify token).
  */
-export const webhookSettingsSchema = z.object({
-  url: z
-    .url("Ungültige Webhook-URL")
-    .max(500)
-    .refine(
-      (url) => isPublicUrl(url),
-      "Webhook-URL darf nicht auf interne Netzwerke zeigen",
-    )
-    .optional()
-    .or(z.literal("")),
-  headerName: z.string().max(100).optional().or(z.literal("")),
-  headerValue: z.string().max(500).optional().or(z.literal("")),
-  enabled: z.boolean(),
-});
+export function webhookSettingsSchemaWith(
+  isAllowedTarget: (url: string) => boolean,
+) {
+  return z.object({
+    url: z
+      .url("Ungültige Webhook-URL")
+      .max(500)
+      .refine(
+        isAllowedTarget,
+        "Webhook-URL darf nicht auf interne Netzwerke zeigen",
+      )
+      .optional()
+      .or(z.literal("")),
+    headerName: z.string().max(100).optional().or(z.literal("")),
+    headerValue: z.string().max(500).optional().or(z.literal("")),
+    enabled: z.boolean(),
+  });
+}
+
+export const webhookSettingsSchema = webhookSettingsSchemaWith(isPublicUrl);
 
 /**
  * Email channel settings (v1.17.1). The SMTP transport is operator-configured;

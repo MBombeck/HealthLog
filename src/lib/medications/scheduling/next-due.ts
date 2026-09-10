@@ -19,27 +19,17 @@ import {
 import {
   advanceRollingOccurrence,
   nextOccurrenceAfter,
+  type CanonicalSchedule,
+  type RecurrenceContext,
 } from "@/lib/medications/scheduling/recurrence";
 import { buildBandsForMedication } from "@/lib/medications/scheduling/band-minter";
 import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
-
-/**
- * v1.15.10 — radius an intake may sit from a slot's canonical instant and
- * still count as resolving it. Intake writes snap `scheduledFor` to the exact
- * engine slot instant, so the match is normally exact; the ±6h tolerance is
- * the same defensive half-gap the compliance open-dose search uses (a 12h-gap
- * twice-daily med splits cleanly at ±6h).
- */
-const RESOLVE_RADIUS_MS = 6 * 60 * 60 * 1000;
-
-/**
- * v1.16.9 — exact-match slop for an AD-HOC row. An ad-hoc take anchors
- * `scheduledFor = takenAt` on its own instant, so it can only resolve a
- * slot it actually sits on (sub-minute drift absorbed); letting it use
- * the ±6h radius hid genuinely-due slots — a 14:30 ad-hoc take resolved
- * tonight's 20:00 dose while the ledger still counted that slot missed.
- */
-const ADHOC_RESOLVE_EPSILON_MS = 60 * 1000;
+import {
+  ADHOC_RESOLVE_EPSILON_MS,
+  anchorResolvesOccurrence,
+  RESOLVE_RADIUS_MS,
+  type NearestOccurrenceCache,
+} from "@/lib/medications/scheduling/slot-resolution";
 
 /**
  * A row that resolves a slot (taken / deliberately skipped /
@@ -47,17 +37,16 @@ const ADHOC_RESOLVE_EPSILON_MS = 60 * 1000;
  *
  * `slotAnchored: false` marks the ad-hoc shape (`scheduledFor ===
  * takenAt`): such a row resolves a slot only on a near-exact anchor
- * match, never across the ±6h radius. Slot-anchored rows (the write
+ * match, never across the drift radius. Slot-anchored rows (the write
  * paths snap their `scheduledFor` to the canonical slot instant) keep
- * the defensive radius.
+ * the drift radius, and within it resolve their nearest occurrence only
+ * (`anchorResolvesOccurrence`).
  */
 export interface ResolvedSlotMark {
   at: Date;
   slotAnchored: boolean;
   /** Canonical schedule owner when attribution could identify it. */
   scheduleId?: string;
-  /** When the action was made; used to isolate replacement schedule eras. */
-  actionAt?: Date;
   /** Diagnostic state carried by exact occurrence-aware callers. */
   status?: "taken" | "skipped" | "autoMissed";
 }
@@ -80,27 +69,39 @@ export function toResolvedSlotMark(row: {
   };
 }
 
+/**
+ * Predicate over the canonical occurrences of ONE schedule: true when a
+ * resolved row stands for the occurrence at `slotAt`. Each row resolves
+ * its nearest occurrence only, measured across every schedule of the
+ * medication, so a sibling slot closer than the drift radius is never
+ * swallowed (see `slot-resolution.ts` for the rule). The era floor is
+ * enforced by the band range in the overdue search and by `now` in the
+ * forward walk, not here.
+ */
 function buildIsResolved(
   resolved: ResolvedSlotMark[],
-  identity?: { scheduleId: string; eraStart?: Date | null },
+  identity: {
+    schedule: CanonicalSchedule;
+    schedules: CanonicalSchedule[];
+    ctx: RecurrenceContext;
+  },
 ): (slotAt: Date) => boolean {
+  const cache: NearestOccurrenceCache = new Map();
   return (slotAt: Date): boolean => {
-    const slot = slotAt.getTime();
     for (const r of resolved) {
-      if (r.scheduleId !== undefined && r.scheduleId !== identity?.scheduleId) {
+      if (r.scheduleId !== undefined && r.scheduleId !== identity.schedule.id) {
         continue;
       }
-      if (
-        identity?.eraStart &&
-        r.actionAt &&
-        r.actionAt.getTime() < identity.eraStart.getTime()
-      ) {
-        continue;
-      }
-      const radius = r.slotAnchored
-        ? RESOLVE_RADIUS_MS
-        : ADHOC_RESOLVE_EPSILON_MS;
-      if (Math.abs(r.at.getTime() - slot) <= radius) return true;
+      const resolves = anchorResolvesOccurrence({
+        anchor: r.at,
+        occurrenceAt: slotAt,
+        radiusMs: r.slotAnchored ? RESOLVE_RADIUS_MS : ADHOC_RESOLVE_EPSILON_MS,
+        schedule: identity.schedule,
+        schedules: identity.schedules,
+        ctx: identity.ctx,
+        cache,
+      });
+      if (resolves) return true;
     }
     return false;
   };
@@ -161,12 +162,13 @@ function computeNextDueCandidate(input: {
   if (schedules.length === 0) return null;
 
   const ctx = buildRecurrenceContext({ medication, userTz, lastIntakeAt });
+  const canonicals = schedules.map(buildCanonicalSchedule);
   let earliest: DueCandidate | null = null;
-  for (const schedule of schedules) {
-    const canonical = buildCanonicalSchedule(schedule);
+  for (const canonical of canonicals) {
     const isResolved = buildIsResolved(input.resolvedSlots ?? [], {
-      scheduleId: canonical.id,
-      eraStart: input.eraStart,
+      schedule: canonical,
+      schedules: canonicals,
+      ctx,
     });
     // Walk forward past slots the user has already resolved. Bounded so a
     // fully-logged-ahead history can't spin.
@@ -272,19 +274,22 @@ function findOpenOverdueSlot(
 
   const ctx = buildRecurrenceContext({ medication, userTz, lastIntakeAt });
   const intakeInstants = lastIntakeAt ? [lastIntakeAt] : [];
+  const canonicals = schedules.map(buildCanonicalSchedule);
   let latest: {
     at: Date;
     availableFrom: Date;
     scheduleId: string;
   } | null = null;
   for (const schedule of schedules) {
+    const canonical = buildCanonicalSchedule(schedule);
     const isResolved = buildIsResolved(input.resolvedSlots ?? [], {
-      scheduleId: schedule.id,
-      eraStart: input.eraStart,
+      schedule: canonical,
+      schedules: canonicals,
+      ctx,
     });
     const { bands } = buildBandsForMedication({
       medication,
-      schedule: buildCanonicalSchedule(schedule),
+      schedule: canonical,
       ctx,
       userTz,
       range: { from: floor, to: now },
