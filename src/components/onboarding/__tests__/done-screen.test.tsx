@@ -17,10 +17,20 @@ const aiProviderState = vi.hoisted(() => ({
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: () => ({ data: aiProviderState.data }),
+  useMutation: () => ({ mutate: () => {}, isPending: false }),
+  useQueryClient: () => ({ invalidateQueries: async () => {} }),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ user: { id: "u1" } }),
+}));
+
+vi.mock("@/hooks/use-account-switch", () => ({
+  useAccountSwitch: () => ({ mutate: () => {}, isPending: false }),
 }));
 
 vi.mock("@/components/onboarding/tour-launcher", () => ({
@@ -42,12 +52,28 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+import {
+  defaultOnboardingSteps,
+  emptyOnboardingNeeds,
+  type OnboardingStateDto,
+} from "@/lib/onboarding/needs";
 import { DoneScreen } from "../done-screen";
 
-function render() {
+function state(
+  recordTarget: OnboardingStateDto["needs"]["recordTarget"] = "me",
+): OnboardingStateDto {
+  return {
+    steps: defaultOnboardingSteps(),
+    needs: { ...emptyOnboardingNeeds(), recordTarget },
+    completedAt: "2026-09-10T08:00:00.000Z",
+    firstResult: null,
+  };
+}
+
+function render(recordTarget?: OnboardingStateDto["needs"]["recordTarget"]) {
   return renderToStaticMarkup(
     <I18nProvider initialLocale="en">
-      <DoneScreen />
+      <DoneScreen state={state(recordTarget)} />
     </I18nProvider>,
   );
 }
@@ -71,7 +97,18 @@ describe("<DoneScreen> AI panel", () => {
     const html = render();
     expect(html).toContain('href="/settings/integrations"');
     expect(html).toContain('href="/measurements"');
-    expect(html).toContain('href="/"');
+    expect(html).toContain('data-slot="onboarding-open-dashboard"');
+  });
+
+  it("offers the tour rather than launching it", () => {
+    aiProviderState.data = undefined;
+    expect(render()).toContain('data-slot="onboarding-take-tour"');
+  });
+
+  it("offers the managed profile only to an answer that asked for it later", () => {
+    aiProviderState.data = undefined;
+    expect(render("both")).toContain('href="/settings/access"');
+    expect(render("me")).not.toContain('href="/settings/access"');
   });
 
   it("shows the shared-key note only when the operator key serves the user", () => {

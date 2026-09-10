@@ -4771,6 +4771,11 @@
           "open": "Open {target}",
           "markDone": "I have made the entry"
         }
+      },
+      "done": {
+        "tourCta": "Take a short tour",
+        "openRecord": "Open the record of {name}",
+        "createProfile": "Create the profile for the person you look after"
       }
     }
   },

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { OnboardingShell } from "@/components/onboarding/onboarding-shell";
 import { ConfirmScreen } from "@/components/onboarding/confirm-screen";
+import { DoneScreen } from "@/components/onboarding/done-screen";
 import { FirstResultScreen } from "@/components/onboarding/first-result-screen";
 import { QuestionScreen } from "@/components/onboarding/question-screen";
 import { UnitsScreen } from "@/components/onboarding/units-screen";
@@ -106,5 +107,5 @@ function renderScreen(screen: OnboardingStepId, state: OnboardingStateDto) {
   if (screen === "first-result") {
     return <FirstResultScreen state={state} />;
   }
-  notFound();
+  return <DoneScreen state={state} />;
 }
