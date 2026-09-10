@@ -155,11 +155,7 @@ export function SystemStatusSection() {
                   ? t("admin.databaseConnected")
                   : t("admin.databaseError")
               }
-              className={
-                status.database === "connected"
-                  ? "text-success"
-                  : "text-destructive"
-              }
+              tone={status.database === "connected" ? "success" : "destructive"}
             />
             <StatusItem
               icon={Clock}
@@ -194,9 +190,7 @@ export function SystemStatusSection() {
                   ? t("admin.workerRunning")
                   : t("admin.workerStopped")
               }
-              className={
-                status.worker.running ? "text-success" : "text-destructive"
-              }
+              tone={status.worker.running ? "success" : "destructive"}
             />
             {status.worker.lastReminderCheck && (
               <StatusItem
@@ -214,10 +208,8 @@ export function SystemStatusSection() {
                     ? t("common.active")
                     : t("common.disabled")
                 }
-                className={
-                  status.integrations.umami.enabled
-                    ? "text-success"
-                    : "text-destructive"
+                tone={
+                  status.integrations.umami.enabled ? "success" : "destructive"
                 }
               />
             )}
@@ -230,10 +222,10 @@ export function SystemStatusSection() {
                     ? t("common.active")
                     : t("common.disabled")
                 }
-                className={
+                tone={
                   status.integrations.glitchtip.enabled
-                    ? "text-success"
-                    : "text-destructive"
+                    ? "success"
+                    : "destructive"
                 }
               />
             )}
@@ -242,7 +234,7 @@ export function SystemStatusSection() {
                 icon={BellRing}
                 label={t("admin.integrationWebPush")}
                 value={t("admin.configured")}
-                className="text-success"
+                tone="success"
               />
             )}
             {/* v1.4.27 R5 — offline GeoLite2 availability. Renders only
@@ -259,9 +251,7 @@ export function SystemStatusSection() {
                         host: version.geoProviderHost ?? "ipwho.is",
                       })
                 }
-                className={
-                  version.offlineGeoEnabled ? "text-success" : "text-warning"
-                }
+                tone={version.offlineGeoEnabled ? "success" : "warning"}
               />
             )}
           </div>
