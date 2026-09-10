@@ -3,8 +3,6 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
 import { setOnboardingPendingCookie } from "@/lib/auth/session";
-import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
-import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
 import { normalisePrefs } from "@/lib/modules/gate";
 import { modulesHoldingRecordData } from "@/lib/modules/domain-data";
 import {
@@ -23,6 +21,7 @@ import {
   readOnboardingRecordState,
   toOnboardingStateDto,
 } from "@/lib/onboarding/needs-store";
+import { writeRecordModulePreferences } from "@/lib/record-settings/modules";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { onboardingCompleteSchema } from "@/lib/validations/onboarding";
@@ -183,26 +182,19 @@ async function completeNeedsFlow(userId: string, held: HeldUnitPreferences) {
       defaults.preferences,
       holdsData,
     );
-    await prisma.user.update({
-      where: { id: userId },
-      data: { modulePreferencesJson: merged },
-    });
-
-    // `cycle` delegates to `CycleProfile.cycleTrackingEnabled`, so the module
-    // blob never owns it. Only ever switched ON here: the gate derives an
+    // The same record-keyed write the guardian's modules route uses, so the
+    // two surfaces that decide a record's modules cannot drift apart on how
+    // the decision is stored or what it invalidates. `cycle` delegates to
+    // `CycleProfile.cycleTrackingEnabled`, so the module blob never owns it,
+    // and it is only ever switched ON from here: the gate derives an
     // unanswered cycle from recorded sex, and an untick is not a request to
     // retract that.
-    if (defaults.cycleTracking) {
-      await getOrCreateCycleProfile(userId);
-      await prisma.cycleProfile.update({
-        where: { userId },
-        data: { cycleTrackingEnabled: true },
-      });
-    }
+    await writeRecordModulePreferences({
+      recordId: userId,
+      modulePreferences: merged,
+      ...(defaults.cycleTracking ? { cycleTrackingEnabled: true } : {}),
+    });
 
-    // A module toggle adds or removes a Health Score pillar, so the cached
-    // composite was computed from a composition that no longer holds.
-    invalidateUserHealthScore(userId);
     keptForData = [...holdsData];
     derived = true;
   }
