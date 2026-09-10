@@ -7,6 +7,7 @@ import {
   dropMfaAccount,
   expireStepUp,
   latestChallengeAttempts,
+  latestMfaFailure,
   mfaJourneyAccount,
   seedMfaAccount,
   type MfaJourneyAccount,
@@ -19,13 +20,13 @@ import {
  *
  * ## Why one test and not six
  *
- * Every stage here is the previous stage's output. The confirm code is the one
- * that sets the replay floor; the recovery batch the sign-in spends is the one
- * the successful regeneration issued; the expired-step-up refusal is only
- * meaningful against the session the successful one just used. Split across
- * tests, each would have to re-enrol a factor, and enrolment is exactly what
- * the first stage is testing. So it is one journey, with `test.step` marking
- * the stages in the report, and the account is thrown away afterwards.
+ * Every stage here is the previous stage's output. The code the sign-in spends
+ * is the code the next stage replays; the recovery batch that sign-in spends is
+ * the one the successful regeneration issued; the expired-step-up refusal is
+ * only meaningful against the session the successful one just used. Split
+ * across tests, each would have to re-enrol a factor, and enrolment is exactly
+ * what the first stage is testing. So it is one journey, with `test.step`
+ * marking the stages in the report, and the account is thrown away afterwards.
  *
  * ## Controls
  *
@@ -35,28 +36,49 @@ import {
  *   - a wrong code at the login challenge — 401, no session cookie, and the
  *     ticket's attempt counter moved (read from the row, since the wire's 401
  *     is deliberately identical for every reason);
- *   - the enrolment code replayed at the login challenge — 401. The server
- *     implements this as a monotonic `User.totpLastStep` floor advanced on
- *     every accept (`src/lib/auth/mfa/verify-factor.ts:57-77`), so a code
- *     already spent is refused even inside its own 30-second life;
+ *   - the code the previous sign-in just spent, replayed at the next challenge
+ *     — 401. The server implements this as a monotonic `User.totpLastStep`
+ *     floor advanced on every accept (`src/lib/auth/mfa/verify-factor.ts`), so
+ *     a code already spent is refused even inside its own 30-second life;
  *   - the sensitive action once the step-up stamp has aged out — 401 with
  *     `meta.errorCode = "auth.stepup.required"`, and the card's prompt;
  *   - a recovery code presented a second time — 401. The matched row is burned
  *     on first use.
  *
+ * ## Reading the replay refusal, not guessing it
+ *
+ * Both TOTP refusals answer with the same generic 401, so the status code
+ * cannot say WHY. A code that has drifted out of its ±1-step window is refused
+ * before the replay floor is ever consulted, which means a status-only control
+ * would stay green with the floor deleted. The route records the distinction —
+ * `auth.mfa.failed` with `details.replay`, awaited before it answers — so both
+ * refusals assert that verdict as a pair: false for the wrong code, true for
+ * the replay.
+ *
  * ## Codes without a clock
  *
  * Every code is computed from the enrolment secret with the `otpauth`
- * dependency the server itself verifies against, at an explicit timestamp — so
- * nothing here waits for a step boundary. The sign-in code is generated one
- * step AHEAD of now: the server accepts ±1 step of drift, and a future step is
- * necessarily above the replay floor the enrolment left behind, whichever side
- * of a boundary the request lands on.
+ * dependency the server itself verifies against, at an explicit timestamp. The
+ * sign-in code is generated one step AHEAD of now: the server accepts ±1 step
+ * of drift, and a future step is necessarily above the replay floor the
+ * enrolment left behind, whichever side of a boundary the request lands on.
+ *
+ * The one place the boundary matters is that code's second life as the replay:
+ * it stays in-window for two steps past the one it names, and the sign-out and
+ * sign-in between the two submissions eat into that. So the journey parks for
+ * the next step boundary — bounded by a single period, and only when the
+ * current step has too little left — instead of hoping the wall clock is kind.
  */
 
 const TOTP_PERIOD_SECONDS = 30;
 const RECOVERY_CODE_COUNT = 10;
 const REGENERATE_ENDPOINT = "/api/auth/me/mfa/recovery-codes/regenerate";
+/**
+ * The margin the accept→replay pair needs. A code named for step N verifies
+ * until the end of step N+1 (drift −1), so generating it one step ahead leaves
+ * at least two periods; below this the journey waits for the next boundary.
+ */
+const REPLAY_MARGIN_MS = 75_000;
 
 /** A code for `atMs`, built the way `src/lib/auth/mfa/totp.ts` verifies it. */
 function totpCodeAt(secretBase32: string, atMs: number): string {
@@ -68,6 +90,23 @@ function totpCodeAt(secretBase32: string, atMs: number): string {
     period: TOTP_PERIOD_SECONDS,
     secret: OTPAuth.Secret.fromBase32(secretBase32),
   }).generate({ timestamp: atMs });
+}
+
+/**
+ * Park until the next TOTP step starts, when the current one has too little
+ * left for the code about to be minted to survive its replay.
+ *
+ * Bounded by a single period and usually a no-op: it waits only for the last
+ * seconds of a step, and a step is 30 of them.
+ */
+async function alignToStepBoundary(page: Page): Promise<void> {
+  const periodMs = TOTP_PERIOD_SECONDS * 1000;
+  const now = Date.now();
+  const nextBoundary = (Math.floor(now / periodMs) + 1) * periodMs;
+  // A code minted now names the next step and verifies until two periods
+  // after that step begins.
+  if (nextBoundary + 2 * periodMs - now >= REPLAY_MARGIN_MS) return;
+  await page.waitForTimeout(nextBoundary - now);
 }
 
 async function sessionCookie(context: BrowserContext) {
@@ -117,13 +156,13 @@ async function submitFactor(page: Page, code: string): Promise<Response> {
 /**
  * Open the regeneration dialog, confirm it, and return the route's answer.
  *
- * The confirming click calls `preventDefault()`, which is what keeps the
- * dialog up while the request is in flight — and nothing takes it down again.
- * On SUCCESS that goes unnoticed, because the fresh-codes panel replaces the
- * whole branch the dialog lives in and it unmounts with it. On a REFUSAL the
- * branch stays, so the dialog is still open (`data-state="open"`, measured)
- * over a card that is now showing the step-up message underneath it. So the
- * journey dismisses it before reading anything on the card.
+ * The confirming click calls `preventDefault()` so the dialog survives the
+ * request in flight; the mutation takes it down again when the request
+ * settles, whatever the answer was. That matters on a REFUSAL, where the card
+ * behind the dialog is the only thing that says why — on a success the
+ * fresh-codes panel replaces the whole branch the dialog lives in and it would
+ * unmount either way. So the dialog being gone here is a product assertion,
+ * not housekeeping: nothing in this helper dismisses it.
  */
 async function regenerateRecoveryCodes(page: Page): Promise<Response> {
   await page.getByTestId("recovery-regenerate").click();
@@ -134,8 +173,7 @@ async function regenerateRecoveryCodes(page: Page): Promise<Response> {
   );
   await page.getByTestId("recovery-regenerate-confirm").click();
   const settled = await answer;
-  await page.keyboard.press("Escape");
-  await expect(page.locator('[data-slot="alert-dialog-content"]')).toBeHidden();
+  await expect(page.getByTestId("recovery-regenerate-dialog")).toBeHidden();
   return settled;
 }
 
@@ -157,9 +195,10 @@ test.describe("second factor", () => {
     page,
     context,
   }) => {
-    // Four sign-ins, an Argon2id verify on each, an enrolment and two
-    // regenerations. Comfortably outside the suite's 30 s default.
-    test.setTimeout(180_000);
+    // Five sign-ins, an Argon2id verify on each, an enrolment, two
+    // regenerations and a bounded park on a step boundary. Comfortably
+    // outside the suite's 30 s default.
+    test.setTimeout(240_000);
 
     // One account per project: both browser projects run this file, and the
     // journey moves the account's factor state, its replay floor and its
@@ -170,7 +209,7 @@ test.describe("second factor", () => {
     await seedMfaAccount(account);
 
     let secret = "";
-    let enrolmentCode = "";
+    let spentCode = "";
     let liveRecoveryCodes: string[] = [];
 
     await test.step("signs in with a password alone while no factor exists", async () => {
@@ -205,8 +244,9 @@ test.describe("second factor", () => {
       // up enrolled against different secrets.
       expect(setupBody.data.otpauthUri).toContain(secret);
 
-      enrolmentCode = totpCodeAt(secret, Date.now());
-      await page.getByTestId("totp-confirm-code").fill(enrolmentCode);
+      await page
+        .getByTestId("totp-confirm-code")
+        .fill(totpCodeAt(secret, Date.now()));
       const confirm = page.waitForResponse(
         (res) =>
           res.url().includes("/api/auth/me/mfa/totp/confirm") &&
@@ -244,7 +284,7 @@ test.describe("second factor", () => {
       };
       expect(body.data).toBeNull();
       expect(body.meta?.errorCode).toBe("auth.stepup.required");
-      // And the card says so rather than failing silently.
+      // And the card says so, on a card the closed dialog no longer covers.
       await expect(page.getByTestId("totp-error")).toBeVisible();
     });
 
@@ -268,40 +308,49 @@ test.describe("second factor", () => {
       expect(await sessionCookie(context)).toBeUndefined();
     });
 
-    await test.step("refuses a wrong code and counts the attempt", async () => {
+    await test.step("refuses wrong codes and counts each attempt", async () => {
       const answer = await submitFactor(page, "000000");
       expect(answer.status()).toBe(401);
       await expect(page.getByTestId("mfa-error")).toBeVisible();
       await expect(page.getByTestId("mfa-login-step")).toBeVisible();
       expect(await sessionCookie(context)).toBeUndefined();
       expect(await latestChallengeAttempts(account)).toBe(1);
-    });
+      // The negative half of the replay pair: a code that never matched the
+      // secret is not a replay, and the server says so.
+      expect((await latestMfaFailure(account)).replay).toBe(false);
 
-    await test.step("refuses the enrolment code replayed", async () => {
-      const answer = await submitFactor(page, enrolmentCode);
-      expect(answer.status()).toBe(401);
-      await expect(page.getByTestId("mfa-error")).toBeVisible();
-      expect(await sessionCookie(context)).toBeUndefined();
+      // A second refusal moves the counter again rather than resetting it.
+      expect((await submitFactor(page, "000001")).status()).toBe(401);
       expect(await latestChallengeAttempts(account)).toBe(2);
     });
 
     await test.step("accepts a current code and lands on the dashboard", async () => {
+      await alignToStepBoundary(page);
       // One step ahead of now — inside the ±1 drift window and necessarily
       // above the floor the enrolment code left. See the file header.
-      const answer = await submitFactor(
-        page,
-        totpCodeAt(secret, Date.now() + TOTP_PERIOD_SECONDS * 1000),
-      );
+      spentCode = totpCodeAt(secret, Date.now() + TOTP_PERIOD_SECONDS * 1000);
+      const answer = await submitFactor(page, spentCode);
       expect(answer.status()).toBe(200);
       await page.waitForURL("/");
       expect(await sessionCookie(context)).toBeDefined();
     });
 
-    await test.step("spends a recovery code once", async () => {
+    await test.step("refuses the code the last sign-in spent", async () => {
       expect((await page.request.post("/api/auth/logout")).status()).toBe(200);
       await submitPassword(page, account);
       await expect(page.getByTestId("mfa-login-step")).toBeVisible();
 
+      const answer = await submitFactor(page, spentCode);
+      expect(answer.status()).toBe(401);
+      await expect(page.getByTestId("mfa-error")).toBeVisible();
+      expect(await sessionCookie(context)).toBeUndefined();
+      expect(await latestChallengeAttempts(account)).toBe(1);
+      // The code is still inside its own life — the floor is what refused it,
+      // and this is the assertion that fails if the floor is removed.
+      expect((await latestMfaFailure(account)).replay).toBe(true);
+    });
+
+    await test.step("spends a recovery code once", async () => {
       await page.getByTestId("mfa-toggle-recovery").click();
       const answer = await submitFactor(page, liveRecoveryCodes[0]);
       expect(answer.status()).toBe(200);

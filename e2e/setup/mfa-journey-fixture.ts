@@ -188,6 +188,51 @@ export async function latestChallengeAttempts(
 }
 
 /**
+ * The server's own verdict on the account's most recent refused factor.
+ *
+ * `/api/auth/mfa/verify` answers every refusal with the same 401, so the wire
+ * cannot tell a replayed code from a wrong one — and that distinction is the
+ * whole subject of the replay control. The route does record it: it writes
+ * `auth.mfa.failed` with `details.replay` and AWAITS that write before
+ * responding, so the row is on disk by the time the response lands.
+ *
+ * Read it rather than inferring it. A replayed code that has drifted out of its
+ * ±1-step window is refused as out-of-window — same 401, `replay: false` — and
+ * a control that only reads the status code cannot tell the two apart, which
+ * means it would stay green with the replay floor deleted.
+ */
+export async function latestMfaFailure(
+  account: MfaJourneyAccount,
+): Promise<{ replay: boolean }> {
+  const pool = connect();
+  try {
+    const res = await pool.query<{ details: string | null }>(
+      `SELECT details FROM audit_logs
+        WHERE user_id = (SELECT id FROM users WHERE username = $1)
+          AND action = 'auth.mfa.failed'
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      [account.username],
+    );
+    const row = res.rows[0];
+    if (!row?.details) {
+      throw new Error(
+        `[mfa-journey-fixture] no refused factor recorded for ${account.username}`,
+      );
+    }
+    const details = JSON.parse(row.details) as { replay?: unknown };
+    if (typeof details.replay !== "boolean") {
+      throw new Error(
+        `[mfa-journey-fixture] refusal for ${account.username} carries no replay verdict`,
+      );
+    }
+    return { replay: details.replay };
+  } finally {
+    await pool.end();
+  }
+}
+
+/**
  * Age the session's step-up stamp past the five-minute window.
  *
  * A zero-row update means the jar the journey is driving points at no session
