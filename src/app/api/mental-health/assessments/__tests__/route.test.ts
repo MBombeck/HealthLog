@@ -15,7 +15,11 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/db", () => ({
   prisma: {
     appSettings: { findUnique: vi.fn().mockResolvedValue(null) },
-    mentalHealthAssessment: { create: vi.fn(), findFirst: vi.fn() },
+    mentalHealthAssessment: {
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+    },
     measurement: { create: vi.fn().mockResolvedValue({}) },
   },
 }));
@@ -60,7 +64,7 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-import { POST } from "../route";
+import { GET, POST } from "../route";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import { getSession } from "@/lib/auth/session";
 import { requireModuleEnabled } from "@/lib/modules/gate";
@@ -447,5 +451,27 @@ describe("POST /api/mental-health/assessments — external-id stability floor", 
     );
     expect(res.status).toBe(201);
     expect(prisma.mentalHealthAssessment.create).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("GET /api/mental-health/assessments", () => {
+  it("orders the history on a unique tiebreaker", async () => {
+    vi.mocked(prisma.mentalHealthAssessment.findMany).mockResolvedValue(
+      [] as never,
+    );
+
+    const res = await (GET as unknown as (r: NextRequest) => Promise<Response>)(
+      new NextRequest(
+        new URL("http://localhost/api/mental-health/assessments"),
+      ),
+    );
+    expect(res.status).toBe(200);
+
+    // `takenAt` is day-resolution, so two instruments answered in one sitting
+    // tie; without the unique secondary key offset paging can repeat a row on
+    // one page and drop another.
+    const findArgs = vi.mocked(prisma.mentalHealthAssessment.findMany).mock
+      .calls[0][0] as { orderBy: unknown };
+    expect(findArgs.orderBy).toEqual([{ takenAt: "desc" }, { id: "desc" }]);
   });
 });
