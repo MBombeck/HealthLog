@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.38.17] — 2026-09-10
+
+A webhook or ntfy target on your own network can be reached again, with the
+operator's say-so, and the test button says why a private target was refused.
+
+### Fixed
+
+- **A webhook or ntfy target on your own network can be reached again, with
+  the operator's say-so (#947).** Both senders resolve the target at send
+  time and refuse a private, loopback, link-local or CGNAT answer; that is
+  the DNS-rebinding defence from #217, and it stopped a Gotify behind a LAN
+  reverse proxy exactly as designed, with no way to allow it.
+  `NOTIFICATION_PRIVATE_ORIGINS` is that way: comma-separated exact origins
+  such as `https://gotify.example.com,http://ntfy.lan:8080`, read from the
+  server environment only. A listed origin is still resolved and pinned
+  inside the connector with redirects forbidden; link-local, the metadata
+  range and the unspecified address stay refused even when listed, while
+  loopback is listable for a relay on host networking; a malformed entry is
+  logged once, without its query or credentials, and grants nothing; nothing
+  not listed widens. Listing a name also refuses its sub-hosts and other
+  ports, public or not, because a private name cannot be told from a public
+  one at save time. The same grammar as `NIGHTSCOUT_PRIVATE_ORIGINS`, which
+  now shares the parser and the address floor; existing
+  `NIGHTSCOUT_PRIVATE_ORIGINS` grants, loopback ones on host networking
+  included, behave exactly as before. Reported by @sreeramachandramurthy.
+
+- **The test button says why a private target was refused.** Saving a
+  private address that is not listed is a 422 with
+  `meta.errorCode = private_origin_not_approved` and a message naming the
+  variable, and the test button answers the same code instead of a bare 500
+  that sent the operator to the log. The save, the test and the scheduled
+  delivery take one decision, held by a structural test. A granted send
+  marks the wide event as `notification.egress.private_origin` with the
+  channel and origin. A link-local, metadata or unspecified target answers
+  `private_origin_not_grantable` instead, with a message saying no grant can
+  open it, since telling the user to ask the operator would only send them
+  in a circle.
+
 ## [1.38.16] — 2026-09-10
 
 The API says what it refused and why, on every route, and the admin page
