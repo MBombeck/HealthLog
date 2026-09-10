@@ -469,22 +469,21 @@ test.describe("medication adherence journey", () => {
       page.locator('[data-slot="intake-history-row"][data-status="skipped"]'),
     ).toHaveCount(1);
 
-    // --- and the dashboard tile, which answers the skip differently ---------
+    // --- and the dashboard tile, which answers the skip the same way -------
     // Today expected two doses; one was taken and one deliberately skipped.
     //
-    // The two surfaces do not agree about that skip, and this pins the
-    // difference rather than claiming it away. The tile's denominator is the
-    // day's expected slots, which a skip does not leave, and its numerator
-    // counts only rows carrying a `takenAt`
-    // (`src/lib/analytics/schedule-anchored-compliance.ts:141-164`), so it
-    // reads 50. The card's engine — `src/lib/analytics/compliance.ts`, the
-    // documented single source of the percentage — drops a skip from the
-    // denominator outright (`src/lib/analytics/compliance/ledger.ts:43-47`),
-    // which is what the counts asserted above already show. The number below
-    // is the one the server's daily buckets really produce for today; the
-    // card's is the authoritative answer about adherence.
+    // A skip is a pause, not a miss, on every surface: the card's engine
+    // (`src/lib/analytics/compliance.ts`, the documented single source of the
+    // percentage) drops a skip from the denominator outright
+    // (`src/lib/analytics/compliance/ledger.ts`), and the tile's
+    // schedule-anchored engine (`src/lib/analytics/schedule-anchored-compliance.ts`)
+    // subtracts the day's skips from its expected slots for the same reason,
+    // so the one taken dose over the one remaining slot reads 100 here as it
+    // does on the card. The two engines are held to one figure by
+    // `src/lib/analytics/__tests__/compliance-skip-parity.test.ts`; this read
+    // proves the tile actually paints it.
     await page.goto("/");
-    expect(await readTileLatestRate(page)).toBe(50);
+    expect(await readTileLatestRate(page)).toBe(100);
   });
 
   test("an intake against an unowned medication, and one against a slot the schedule does not have, are both refused", async ({
