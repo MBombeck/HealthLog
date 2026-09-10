@@ -31,8 +31,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
-import type { AccountAccess } from "@/lib/sharing/account-access-view";
+import type {
+  AccountAccess,
+  AccountAccessEntry,
+} from "@/lib/sharing/account-access-view";
 import { delegatedDomains } from "@/lib/sharing/domain-write-support";
+import type { ShareDomain } from "@/lib/sharing/scope";
 
 const OWNER = {
   accountId: "acct-owner",
@@ -87,6 +91,35 @@ const MANAGING: AccountAccess = {
   canSwitch: true,
 };
 
+/**
+ * A grant with a SCOPE, published the way the server publishes one.
+ *
+ * Every fixture above carries `sections: null`, and that is the hole the
+ * section-blind controls lived in: a WRITE grant scoped to one section answers
+ * `canWrite: true` like any other, so a control asking the coarse question was
+ * offered in sections the grant never opened. The two lists are the level ×
+ * scope × route-table intersection, derived here by the same function the
+ * server derives them with rather than by hand.
+ */
+function grant(
+  level: AccountAccessEntry["level"],
+  sections: ShareDomain[] | null,
+): AccountAccess {
+  return {
+    accounts: [OWNER],
+    active: {
+      ...OWNER,
+      access: level === "read" ? "read" : "write",
+      level,
+      sections,
+      canWrite: level !== "read",
+      writableDomains: delegatedDomains(level, sections, "write"),
+      manageableDomains: delegatedDomains(level, sections, "manage"),
+    },
+    canSwitch: true,
+  };
+}
+
 const mockAccessRef: { value: AccountAccess } = { value: OWN_RECORD };
 
 vi.mock("@/hooks/use-auth", () => ({
@@ -140,6 +173,7 @@ import { TodayHero } from "@/components/daily/today-hero";
 import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsorge-dashboard-card";
 import { EpisodeDocumentsCard } from "@/components/documents/episode-documents-card";
 import { LedgerRowItem } from "@/components/medications/dose-history-ledger";
+import { VaccinationsView } from "@/components/vaccinations/vaccinations-view";
 import { queryKeys } from "@/lib/query-keys";
 import type { DailyDigest } from "@/lib/daily/digest";
 import type { MeasurementReminder } from "@/hooks/use-measurement-reminders";
@@ -606,5 +640,103 @@ describe("a form opened before the record answered", () => {
       expect(admittedQuickEntry(sheet, OWNER_CAPS), sheet).toBe(sheet);
     }
     expect(admittedQuickEntry(null, OWNER_CAPS)).toBe(null);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* The immunization log                                                       */
+/* -------------------------------------------------------------------------- */
+
+describe("the immunization log's add, edit and delete", () => {
+  const DOSE = {
+    id: "dose-1",
+    occurredAt: "2026-03-01T00:00:00.000Z",
+    antigenSlug: null,
+    vaccineName: "Tetanus",
+    doseNumber: null,
+    seriesDoses: null,
+    lotNumber: null,
+    site: null,
+    catalogEntry: null,
+    series: [],
+    practitioner: null,
+    encounter: null,
+    reminderId: null,
+    note: null,
+    createdAt: "2026-03-01T00:00:00.000Z",
+    updatedAt: "2026-03-01T00:00:00.000Z",
+  };
+
+  const seedList = (client: QueryClient) => {
+    client.setQueryData(queryKeys.vaccinationList(null), {
+      vaccinations: [DOSE],
+    });
+  };
+
+  it("offers all three in the caller's own record", () => {
+    const html = render(OWN_RECORD, <VaccinationsView />, seedList);
+    expect(html).toContain('data-slot="vaccination-add"');
+    // The row opens the edit sheet, which is where the delete lives.
+    expect(html).toContain('role="button"');
+  });
+
+  it("offers a read-only delegate none of them", () => {
+    // `POST /api/vaccinations` is WRITE and everything else is MANAGE, so a
+    // READ delegate was being shown three controls and refused by all three.
+    const html = render(
+      grant("read", ["profile"]),
+      <VaccinationsView />,
+      seedList,
+    );
+    expect(html).not.toContain('data-slot="vaccination-add"');
+    expect(html).not.toContain('role="button"');
+  });
+
+  it("offers a WRITE delegate the add and not the row", () => {
+    const html = render(
+      grant("write", ["profile"]),
+      <VaccinationsView />,
+      seedList,
+    );
+    expect(html).toContain('data-slot="vaccination-add"');
+    expect(html, "editing and deleting a dose are MANAGE").not.toContain(
+      'role="button"',
+    );
+  });
+
+  it("offers a MANAGE delegate holding the section both", () => {
+    const html = render(
+      grant("manage", ["profile"]),
+      <VaccinationsView />,
+      seedList,
+    );
+    expect(html).toContain('data-slot="vaccination-add"');
+    expect(html).toContain('role="button"');
+  });
+
+  it("offers a MANAGE delegate outside the section neither", () => {
+    // The page is presentable to a `profile` grant; a grant scoped elsewhere
+    // that still lands on the URL gets a log it can read and nothing else.
+    const html = render(
+      grant("manage", ["labs"]),
+      <VaccinationsView />,
+      seedList,
+    );
+    expect(html).not.toContain('data-slot="vaccination-add"');
+    expect(html).not.toContain('role="button"');
+  });
+
+  it("offers the empty state's add on the same rule", () => {
+    const seedEmpty = (client: QueryClient) => {
+      client.setQueryData(queryKeys.vaccinationList(null), {
+        vaccinations: [],
+      });
+    };
+    expect(render(OWN_RECORD, <VaccinationsView />, seedEmpty)).toContain(
+      'data-slot="vaccination-add-empty"',
+    );
+    expect(
+      render(grant("read", ["profile"]), <VaccinationsView />, seedEmpty),
+    ).not.toContain('data-slot="vaccination-add-empty"');
   });
 });
