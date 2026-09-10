@@ -160,6 +160,15 @@ export default defineConfig({
         // other one mid-navigation. It proves a flow through stable
         // data-slots, not a mobile layout, so it runs in one project.
         "glucose-journey.spec.ts",
+        // The adherence journey walks the wizard, records doses on its own
+        // account and then reads RATES back off it — and the dashboard tile
+        // sums the expected doses of every active medication that account
+        // holds. The account keeps siblings out; two PROJECTS running this
+        // same file in parallel would still write the one cabinet and each
+        // sit in the other's denominator, so the percentages would be answers
+        // to a question neither test asked. It proves flows through stable
+        // data-slots, not a mobile layout, so it runs in one project.
+        "medication-compliance-journey.spec.ts",
         // Runs only in the service-worker project.
         "v137-record-session-fence-offline.spec.ts",
         // The Apple Health import journey uploads an archive into the one

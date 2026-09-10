@@ -107,8 +107,10 @@ export function MedicationComplianceBars({
   // v1.12.2 — route the rate through the locale number formatter and round
   // so a non-integer rate (e.g. 33.333) never leaks raw into the caption,
   // matching how every other percentage renders.
-  const shortPct = fmt.number(Math.round(rate7));
-  const longPct = fmt.number(Math.round(rate30));
+  const shortRounded = Math.round(rate7);
+  const longRounded = Math.round(rate30);
+  const shortPct = fmt.number(shortRounded);
+  const longPct = fmt.number(longRounded);
 
   // v1.16.6 — both rows carry an identical, FIXED geometry: the label line
   // is pinned to one text line (`h-5` + `truncate`) and the bar to `h-2`,
@@ -117,7 +119,21 @@ export function MedicationComplianceBars({
   // is colour / text only — never geometry; the two bars on a card (and
   // across a grid row) always align.
   return (
-    <div className="space-y-2.5">
+    // Both rates ride the block as plain data attributes. The percentages
+    // themselves are locale-formatted text inside a fixed-height caption, and
+    // the bar beside them is a shadcn `Progress` that keeps its value for the
+    // indicator transform and never forwards it to the primitive — so the one
+    // number this card exists to show has, until now, been readable only by
+    // parsing a translated string. The attributes carry the ROUNDED value the
+    // caption renders, so a reader and an assertion see the same figure.
+    // Presentation is untouched; the loading and error variants below stay
+    // free of them, which is what makes their presence mean "loaded".
+    <div
+      className="space-y-2.5"
+      data-slot="medication-card-compliance"
+      data-rate-short={shortRounded}
+      data-rate-long={longRounded}
+    >
       <div className="space-y-1.5">
         <div className="flex h-5 items-center justify-between text-sm">
           <span className="text-muted-foreground flex min-w-0 items-center gap-1">

@@ -22,6 +22,11 @@ interface MedicationIntakeActionsProps {
  *
  * Extracted from the generic and GLP-1 cards so the action row is shared
  * structurally rather than kept byte-equivalent by hand.
+ *
+ * Both buttons carry a `data-slot`. They are the only controls on the card
+ * that write, and their labels are translated copy — an e2e journey
+ * addressing them by text would be asserting the translation, not the
+ * control.
  */
 export function MedicationIntakeActions({
   intakeLoading,
@@ -37,6 +42,7 @@ export function MedicationIntakeActions({
   return (
     <div className="flex gap-2">
       <Button
+        data-slot="medication-intake-take"
         className="min-h-11 flex-1"
         onClick={() => onRecordIntake(false)}
         disabled={!!intakeLoading}
@@ -49,6 +55,7 @@ export function MedicationIntakeActions({
         {t("medications.taken")}
       </Button>
       <Button
+        data-slot="medication-intake-skip"
         variant="outline"
         className="min-h-11"
         onClick={() => onRecordIntake(true)}
