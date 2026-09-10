@@ -704,6 +704,49 @@ describe("v1.15.9 — schedule-anchored compliance buckets (BUG #1)", () => {
       if (day.scheduled > 0) expect(day.taken).toBe(day.scheduled);
     }
   });
+
+  it("a deliberately skipped dose leaves the denominator — a skip is a pause, not a miss, so the tile matches the ledger rate", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const twiceDaily = activeDailyMed(new Date(Date.now() - 60 * 86_400_000));
+    twiceDaily.schedules[0].timesOfDay = ["08:00", "20:00"];
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([
+      twiceDaily,
+    ] as never);
+
+    // Yesterday: the morning dose taken, the evening dose deliberately
+    // skipped. The skipped slot must drop out of `scheduled` entirely, so the
+    // day reads 1 of 1 (100%) — the figure the medication card, the dose
+    // history and the doctor report already showed. Counting it as
+    // expected-and-missed made the same day read 1 of 2 (50%) here.
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue([
+      {
+        medicationId: "m1",
+        scheduledFor: new Date("2026-06-09T08:00:00.000Z"),
+        takenAt: new Date("2026-06-09T08:05:00.000Z"),
+        skipped: false,
+        autoMissed: false,
+      },
+      {
+        medicationId: "m1",
+        scheduledFor: new Date("2026-06-09T20:00:00.000Z"),
+        takenAt: null,
+        skipped: true,
+        autoMissed: false,
+      },
+    ] as never);
+
+    const res = await GET(
+      new NextRequest(
+        "http://localhost/api/medications/intake?scope=compliance&days=7",
+      ),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: Array<{ date: string; scheduled: number; taken: number }>;
+    };
+    const skipDay = body.data.find((d) => d.date === "2026-06-09");
+    expect(skipDay).toEqual({ date: "2026-06-09", scheduled: 1, taken: 1 });
+  });
 });
 
 describe("v1.4.43 W6 — multi-issue 422 envelope", () => {
