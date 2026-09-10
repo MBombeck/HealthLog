@@ -20,9 +20,9 @@ import {
 export const PRIVATE_ORIGIN_NOT_APPROVED_CODE =
   "private_origin_not_approved" as const;
 /**
- * The target is loopback, unspecified, link-local or the metadata range: no
- * grant can ever open it, so telling the user to ask the operator would send
- * them in a circle. On host networking the LAN address is the answer.
+ * The target is the unspecified address, link-local or the metadata range:
+ * no grant can ever open it, so telling the user to ask the operator would
+ * send them in a circle.
  */
 export const PRIVATE_ORIGIN_NOT_GRANTABLE_CODE =
   "private_origin_not_grantable" as const;
@@ -34,15 +34,14 @@ export type OriginReason =
   | typeof INVALID_ORIGIN;
 
 /**
- * A hostname no grant may name: `localhost` / `*.localhost` (loopback by
- * definition, RFC 6761) or a literal address outside the grantable ranges.
- * DNS names are not judged here — a name that resolves into those ranges is
- * dropped at dial time by the pinned dispatcher.
+ * A hostname no grant may name: a literal address outside the grantable
+ * ranges (unspecified, link-local, metadata). Loopback and `localhost` are
+ * grantable when listed exactly — a host-networking deployment lists them —
+ * and DNS names are not judged here: a name that resolves into a refused
+ * range is dropped at dial time by the pinned dispatcher.
  */
 export function isNeverGrantableHost(hostname: string): boolean {
-  const lower = hostname.toLowerCase();
-  if (lower === "localhost" || lower.endsWith(".localhost")) return true;
-  const literal = lower.replace(/^\[|\]$/g, "");
+  const literal = hostname.toLowerCase().replace(/^\[|\]$/g, "");
   return isIP(literal) !== 0 && !isOperatorGrantableIp(literal);
 }
 
@@ -68,7 +67,7 @@ export function describeGrantRejection(entry: string): string {
       (url.protocol === "http:" || url.protocol === "https:") &&
       isNeverGrantableHost(url.hostname)
     ) {
-      return "loopback, link-local and metadata addresses cannot be granted; on host networking list the LAN address of the relay instead";
+      return "the unspecified address, link-local and metadata addresses cannot be granted; list the address the relay actually listens on";
     }
   } catch {
     // fall through to the grammar sentence
@@ -88,10 +87,11 @@ export interface OriginVerdict {
  *
  * Credentials, paths, queries, and fragments are deliberately forbidden: the
  * operator grants a complete canonical scheme/host/port trust unit, never a
- * suffix, wildcard, capability URL, or prefix. A literal address in loopback,
- * the unspecified range, link-local or the metadata range is refused too —
+ * suffix, wildcard, capability URL, or prefix. A literal address in the
+ * unspecified range, link-local or the metadata range is refused too —
  * `isOperatorGrantableIp` says why — and the pinned dispatcher applies the
- * same floor when a listed DNS name resolves there.
+ * same floor when a listed DNS name resolves there. Loopback is grantable
+ * when listed exactly: an operator on host networking lists it on purpose.
  */
 export function canonicalOrigin(value: string): string | null {
   try {
@@ -100,11 +100,11 @@ export function canonicalOrigin(value: string): string | null {
     if (url.username || url.password) return null;
     if (url.pathname !== "/" || url.search || url.hash) return null;
     if (!url.hostname || url.hostname.includes("*")) return null;
-    // Loopback, unspecified, link-local and metadata literals, and
-    // `localhost` / `*.localhost`, are refused at parse time. Other
-    // reserved-looking names (`.local` mDNS, `.internal`, `.lan`) stay
-    // grantable: an explicitly listed origin is what the list is for, and
-    // the dial-time floor still drops a loopback or metadata answer.
+    // Unspecified, link-local and metadata literals are refused at parse
+    // time. Loopback, `localhost` and reserved-looking names (`.local` mDNS,
+    // `.internal`, `.lan`) stay grantable: an explicitly listed origin is
+    // what the list is for, and the dial-time floor still drops a metadata
+    // or link-local answer.
     if (isNeverGrantableHost(url.hostname)) return null;
     return url.origin;
   } catch {

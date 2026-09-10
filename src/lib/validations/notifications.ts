@@ -234,14 +234,14 @@ export function isPublicIp(ip: string): boolean {
  * `NIGHTSCOUT_PRIVATE_ORIGINS`).
  *
  * A grant exists so a relay on the operator's own network can be reached, so
- * RFC1918, CGNAT (a Tailscale address) and IPv6 unique-local stay grantable.
- * Four ranges are refused even when the operator lists a name that resolves
- * there, because no notification relay lives on them and each one is a
- * different admin surface: loopback is the app itself inside the container
- * (and on host networking, every admin port of the host), the unspecified
- * address is a resolver misfire, link-local is the cloud-metadata endpoint.
- * The transition formats (`::ffff:`, 6to4, NAT64) are unwrapped first so an
- * IPv6 spelling of loopback does not slip past the IPv4 verdict.
+ * RFC1918, CGNAT (a Tailscale address), IPv6 unique-local and loopback stay
+ * grantable: an operator on host networking who lists an exact loopback
+ * origin with its port has made the same deliberate decision as one who
+ * lists a LAN origin. Two classes are refused even when the operator lists a
+ * name that resolves there, because no relay lives on them: the unspecified
+ * address is a resolver misfire, and link-local is the cloud-metadata
+ * endpoint. The transition formats (`::ffff:`, 6to4, NAT64) are unwrapped
+ * first so an IPv6 spelling of those does not slip past the IPv4 verdict.
  */
 export function isOperatorGrantableIp(ip: string): boolean {
   if (!ip) return false;
@@ -258,12 +258,14 @@ export function isOperatorGrantableIp(ip: string): boolean {
     const bytes = parseIpv6Bytes(lower);
     if (!bytes) return false;
 
-    // Unspecified, loopback and link-local IPv6. Unique-local (fc00::/7)
-    // deliberately stays out of this list: it is the IPv6 analogue of
-    // RFC1918 and exactly what an operator lists.
+    // Unspecified and link-local IPv6. Unique-local (fc00::/7) and loopback
+    // (::1) deliberately stay out of this list: they are what an operator
+    // on a private or host network lists. `::1` is answered before the
+    // embedded-IPv4 unwrap, which would otherwise read it as the
+    // IPv4-compatible spelling of 0.0.0.1 and refuse it as unspecified.
     if (bytesEqual(bytes, 0, Array(16).fill(0))) return false;
     if (bytesEqual(bytes, 0, Array(15).fill(0)) && bytes[15] === 1) {
-      return false;
+      return true;
     }
     if (bytes[0] === 0xfe && (bytes[1] & 0xc0) === 0x80) return false;
 
@@ -275,10 +277,9 @@ export function isOperatorGrantableIp(ip: string): boolean {
   return false;
 }
 
-/** 127/8, 0/8 and 169.254/16: the ranges no operator grant may open. */
+/** 0/8 and 169.254/16: the ranges no operator grant may open. */
 function isNeverGrantableIpv4(ip: [number, number, number, number]): boolean {
   const [a, b] = ip;
-  if (a === 127) return true;
   if (a === 0) return true;
   if (a === 169 && b === 254) return true;
   return false;

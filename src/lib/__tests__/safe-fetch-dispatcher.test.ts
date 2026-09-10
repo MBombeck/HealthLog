@@ -246,6 +246,11 @@ describe("pinnedPublicDispatcher", () => {
 describe("isOperatorGrantableIp", () => {
   it("keeps the private ranges an operator may deliberately list", () => {
     expect(isOperatorGrantableIp("10.0.0.5")).toBe(true);
+    // Loopback is grantable: a host-networking deployment lists it exactly.
+    expect(isOperatorGrantableIp("127.0.0.1")).toBe(true);
+    expect(isOperatorGrantableIp("127.255.0.1")).toBe(true);
+    expect(isOperatorGrantableIp("::1")).toBe(true);
+    expect(isOperatorGrantableIp("::ffff:127.0.0.1")).toBe(true);
     expect(isOperatorGrantableIp("172.16.0.9")).toBe(true);
     expect(isOperatorGrantableIp("192.168.1.20")).toBe(true);
     expect(isOperatorGrantableIp("100.64.0.7")).toBe(true);
@@ -259,17 +264,14 @@ describe("isOperatorGrantableIp", () => {
   });
 
   it.each([
-    ["IPv4 loopback", "127.0.0.1"],
-    ["IPv4 loopback, high octet", "127.255.0.1"],
     ["IPv4 unspecified", "0.0.0.0"],
     ["IPv4 link-local / metadata", "169.254.169.254"],
-    ["IPv6 loopback", "::1"],
     ["IPv6 unspecified", "::"],
     ["IPv6 link-local", "fe80::1"],
-    ["IPv4-mapped loopback", "::ffff:127.0.0.1"],
     ["IPv4-mapped metadata", "::ffff:169.254.169.254"],
+    ["IPv4-mapped unspecified", "::ffff:0.0.0.0"],
     ["6to4 metadata", "2002:a9fe:a9fe::"],
-    ["NAT64 loopback", "64:ff9b::7f00:1"],
+    ["NAT64 metadata", "64:ff9b::a9fe:a9fe"],
     ["not an address", "gotify.lan"],
     ["empty", ""],
   ])("never grants %s, listed or not", (_label, ip) => {
@@ -297,10 +299,9 @@ describe("pinnedOperatorApprovedDispatcher", () => {
   }
 
   it.each([
-    ["loopback", { address: "127.0.0.1", family: 4 }],
     ["link-local / metadata", { address: "169.254.169.254", family: 4 }],
     ["unspecified", { address: "0.0.0.0", family: 4 }],
-    ["IPv6 loopback", { address: "::1", family: 6 }],
+    ["IPv6 unspecified", { address: "::", family: 6 }],
     ["IPv6 link-local", { address: "fe80::1", family: 6 }],
     ["IPv4-mapped metadata", { address: "::ffff:169.254.169.254", family: 6 }],
   ])(
@@ -348,11 +349,11 @@ describe("pinnedOperatorApprovedDispatcher", () => {
     expect(errorCodes(caught)).not.toContain("ENOTFOUND");
   }, 20_000);
 
-  it("drops the loopback answer from a mixed set and dials only the private one", async () => {
-    // A real server on loopback proves the point: the listed name resolves to
-    // loopback AND to an unroutable private address; the pinned lookup must
-    // hand undici only the private survivor, so the loopback server never
-    // sees a request and the dial fails at the socket, not at the resolver.
+  it("drops the metadata answer from a mixed set and dials the loopback one", async () => {
+    // A real server on loopback proves both halves: the listed name resolves
+    // to the metadata endpoint AND to loopback; the pinned lookup drops the
+    // metadata answer and hands undici the loopback survivor, which is
+    // grantable, so the server receives exactly one request.
     let requests = 0;
     const server = http.createServer((_req, res) => {
       requests += 1;
@@ -365,24 +366,18 @@ describe("pinnedOperatorApprovedDispatcher", () => {
     const port = (server.address() as AddressInfo).port;
     try {
       resolveTo([
+        { address: "169.254.169.254", family: 4 },
         { address: "127.0.0.1", family: 4 },
-        { address: "10.255.255.1", family: 4 },
       ]);
 
       const dispatcher = getPinnedOperatorApprovedDispatcher();
-      let caught: unknown;
-      try {
-        await undiciFetch(`http://gotify-listed.example.test:${port}/message`, {
-          dispatcher,
-          signal: AbortSignal.timeout(500),
-        });
-      } catch (error) {
-        caught = error;
-      }
+      const res = await undiciFetch(
+        `http://gotify-listed.example.test:${port}/message`,
+        { dispatcher, signal: AbortSignal.timeout(5_000) },
+      );
 
-      expect(caught).toBeDefined();
-      expect(errorCodes(caught)).not.toContain("ENOTFOUND");
-      expect(requests).toBe(0);
+      expect(res.status).toBe(200);
+      expect(requests).toBe(1);
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }

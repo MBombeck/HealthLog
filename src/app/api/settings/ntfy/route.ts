@@ -32,7 +32,7 @@ const ntfySettingsSchema = ntfySettingsSchemaWith(isAllowedNotificationTarget);
 const PRIVATE_ORIGIN_REFUSAL =
   "This server is on a private network. The operator has to list its exact origin (scheme://host:port) in NOTIFICATION_PRIVATE_ORIGINS before HealthLog can send to it.";
 const NOT_GRANTABLE_REFUSAL =
-  "This server is loopback, link-local or a metadata address, which no operator grant can open. Use the relay's LAN address instead.";
+  "This server is a link-local, metadata or unspecified address, which no operator grant can open. Use the address the relay actually listens on.";
 
 /**
  * Refusal for an enable attempt on a channel the operator switched off

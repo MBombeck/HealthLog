@@ -400,7 +400,7 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "Body matched neither accepted shape, or `enabled` is true while the stored config has no server URL and topic; or the server URL is on a private network the operator has not listed in `NOTIFICATION_PRIVATE_ORIGINS` (`meta.errorCode` = `private_origin_not_approved`), or it is a loopback, link-local or metadata address that no grant can open (`private_origin_not_grantable`). Nothing was stored.",
+            "Body matched neither accepted shape, or `enabled` is true while the stored config has no server URL and topic; or the server URL is on a private network the operator has not listed in `NOTIFICATION_PRIVATE_ORIGINS` (`meta.errorCode` = `private_origin_not_approved`), or it is a link-local, metadata or unspecified address that no grant can open (`private_origin_not_grantable`). Nothing was stored.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -516,7 +516,7 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "Body matched neither accepted shape, or `enabled` is true while no webhook URL is stored; or the URL is on a private network the operator has not listed in `NOTIFICATION_PRIVATE_ORIGINS` (`meta.errorCode` = `private_origin_not_approved`), or it is a loopback, link-local or metadata address that no grant can open (`private_origin_not_grantable`). Nothing was stored.",
+            "Body matched neither accepted shape, or `enabled` is true while no webhook URL is stored; or the URL is on a private network the operator has not listed in `NOTIFICATION_PRIVATE_ORIGINS` (`meta.errorCode` = `private_origin_not_approved`), or it is a link-local, metadata or unspecified address that no grant can open (`private_origin_not_grantable`). Nothing was stored.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -719,7 +719,7 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "The saved server is on a private network the operator has not approved (`meta.errorCode` = `private_origin_not_approved`), or is a loopback, link-local or metadata address that no grant can open (`private_origin_not_grantable`). The resolved address is never echoed.",
+            "The saved server is on a private network the operator has not approved (`meta.errorCode` = `private_origin_not_approved`), or is a link-local, metadata or unspecified address that no grant can open (`private_origin_not_grantable`). The resolved address is never echoed.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -765,7 +765,7 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "The saved URL is on a private network the operator has not approved (`meta.errorCode` = `private_origin_not_approved`), or is a loopback, link-local or metadata address that no grant can open (`private_origin_not_grantable`). The resolved address is never echoed.",
+            "The saved URL is on a private network the operator has not approved (`meta.errorCode` = `private_origin_not_approved`), or is a link-local, metadata or unspecified address that no grant can open (`private_origin_not_grantable`). The resolved address is never echoed.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

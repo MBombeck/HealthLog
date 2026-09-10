@@ -51,7 +51,7 @@ export const POST = apiHandler(async () => {
       });
       return apiError(
         result.errorCode === "private_origin_not_grantable"
-          ? "The target is loopback, link-local or a metadata address, which no operator grant can open. Use the relay's LAN address instead."
+          ? "The target is a link-local, metadata or unspecified address, which no operator grant can open. Use the address the relay actually listens on."
           : "The target is on a private network the operator has not approved. List its exact origin (scheme://host:port) in NOTIFICATION_PRIVATE_ORIGINS on the server.",
         422,
         { errorCode: result.errorCode },

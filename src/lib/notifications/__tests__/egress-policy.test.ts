@@ -60,7 +60,7 @@ describe("configuredNotificationPrivateOrigins", () => {
   it("logs a malformed entry once, skips it, and keeps the valid ones", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     process.env.NOTIFICATION_PRIVATE_ORIGINS =
-      "https://gotify.lan, https://*.lan, http://127.0.0.1:8080";
+      "https://gotify.lan, https://*.lan, http://169.254.169.254";
 
     expect(configuredNotificationPrivateOrigins()).toEqual(
       new Set(["https://gotify.lan"]),
@@ -74,8 +74,8 @@ describe("configuredNotificationPrivateOrigins", () => {
     const lines = warn.mock.calls.map((call) => String(call[0]));
     expect(lines[0]).toContain("NOTIFICATION_PRIVATE_ORIGINS");
     expect(lines[0]).toContain("https://*.lan");
-    expect(lines[1]).toContain("http://127.0.0.1:8080");
-    expect(lines[1]).toMatch(/loopback.*cannot be granted/);
+    expect(lines[1]).toContain("http://169.254.169.254");
+    expect(lines[1]).toMatch(/link-local.*cannot be granted/);
   });
 
   it("warns without echoing a query, fragment or userinfo (M3)", () => {
@@ -152,20 +152,36 @@ describe("evaluateNotificationTarget", () => {
     });
   });
 
-  it("keeps the raw-string floor: an octal loopback spelling is refused as never grantable", () => {
+  it("keeps the raw-string floor: an octal loopback spelling is refused, not parsed", () => {
     expect(
       evaluateNotificationTarget("http://0177.0.0.1/message"),
     ).toMatchObject({
       allowed: false,
-      reasonCode: "private_origin_not_grantable",
+      reasonCode: "private_origin_not_approved",
     });
   });
 
+  it("approves a listed loopback target and refuses an unlisted one", () => {
+    process.env.NOTIFICATION_PRIVATE_ORIGINS = "http://localhost:8080";
+    expect(
+      evaluateNotificationTarget("http://localhost:8080/message"),
+    ).toMatchObject({ allowed: true, privateOriginApproved: true });
+    for (const url of [
+      "http://127.0.0.1:8080/message",
+      "http://localhost:9090/message",
+      "http://[::1]:8080/message",
+    ]) {
+      expect(evaluateNotificationTarget(url)).toMatchObject({
+        allowed: false,
+        reasonCode: "private_origin_not_approved",
+      });
+    }
+  });
+
   it.each([
-    ["loopback", "http://127.0.0.1:8080/message"],
-    ["localhost", "http://localhost:8080/message"],
     ["metadata", "http://169.254.169.254/latest"],
-    ["IPv6 loopback", "http://[::1]:8080/message"],
+    ["unspecified", "http://0.0.0.0:8080/message"],
+    ["IPv6 link-local", "http://[fe80::1]:8080/message"],
   ])("answers a %s target with the not-grantable code (M1)", (_l, url) => {
     process.env.NOTIFICATION_PRIVATE_ORIGINS = "https://gotify.example.com";
     expect(evaluateNotificationTarget(url)).toMatchObject({

@@ -266,9 +266,9 @@ describe("sendViaWebhook", () => {
     });
   });
 
-  it("reports the not-grantable code for a loopback target, without dialling (M1)", async () => {
+  it("reports the not-grantable code for a metadata target, without dialling (M1)", async () => {
     const result = await sendViaWebhook(
-      { url: "http://127.0.0.1:8080/message" },
+      { url: "http://169.254.169.254/latest" },
       payload(),
     );
 

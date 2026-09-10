@@ -235,14 +235,14 @@ Each entry is one `scheme://host[:port]`, the same grammar as
   a range grant would let a DNS rebinding to any address in the range pass
   the pin, so an operator with several relays lists several origins;
 - listing a host does not list its sub-hosts or sibling ports;
-- loopback (`127.0.0.0/8`, `::1`, `localhost`), the unspecified address,
-  link-local and the cloud-metadata range (`169.254.0.0/16`, `fe80::/10`)
-  cannot be granted: a literal entry is logged once and ignored, and a
-  listed name that resolves there is refused at dial time. On a
-  host-network deployment, list the LAN address of the relay instead of
-  `localhost`;
-- RFC1918, IPv6 unique-local and CGNAT (a Tailscale address or MagicDNS
-  name) are what the list is for;
+- the unspecified address (`0.0.0.0`, `::`), link-local and the
+  cloud-metadata range (`169.254.0.0/16`, `fe80::/10`) cannot be granted: a
+  literal entry is logged once and ignored, and a listed name that resolves
+  there is refused at dial time;
+- RFC1918, IPv6 unique-local, CGNAT (a Tailscale address or MagicDNS name)
+  and, on a host-network deployment, loopback (`http://127.0.0.1:8080`,
+  `http://localhost:8080`, `::1`) are what the list is for — an exact
+  loopback origin with its port is as deliberate a decision as a LAN one;
 - a malformed entry is logged once at first use and grants nothing; the
   valid entries beside it keep working.
 
@@ -261,11 +261,13 @@ What is refused where, so you know which lever to pull:
 | `gotify.lan`, `gotify.home.arpa`, a Docker service name     | refused at send   | works                                          |
 | `gotify.local` (mDNS)                                       | refused at save   | allowed, if the container resolves mDNS        |
 | Literal `192.168.x.x`, `10.x.x.x`, `100.64.x.x`, `fd00::/8` | refused at save   | works                                          |
-| `localhost`, `127.0.0.1`, `169.254.169.254`, `::1`          | refused at save   | still refused (`private_origin_not_grantable`) |
+| `localhost`, `127.0.0.1`, `::1` (host networking)           | refused at save   | works                                          |
+| `0.0.0.0`, `169.254.169.254`, `fe80::…`                     | refused at save   | still refused (`private_origin_not_grantable`) |
 
 A private target that is not listed is refused when the card is saved
 (`422`, `meta.errorCode` = `private_origin_not_approved`, the message
-names the variable) or, for a DNS name the save cannot classify, when the
+names the variable; a link-local, metadata or unspecified target answers
+`private_origin_not_grantable` instead, because no grant can open it) or, for a DNS name the save cannot classify, when the
 test button or a reminder dials it. The resolved address is never shown
 to the user. Telegram, email and Web Push are not affected: their hosts
 are not user-supplied.

@@ -51,19 +51,27 @@ describe("canonicalOrigin", () => {
   });
 
   it.each([
-    ["IPv4 loopback", "http://127.0.0.1:8080"],
-    ["IPv4 loopback, non-canonical", "http://127.10.20.30"],
     ["IPv4 unspecified", "http://0.0.0.0:8080"],
     ["link-local / metadata", "http://169.254.169.254"],
-    ["IPv6 loopback", "http://[::1]:8080"],
     ["IPv6 unspecified", "http://[::]:8080"],
     ["IPv6 link-local", "http://[fe80::1]:8080"],
-    ["IPv4-mapped loopback", "http://[::ffff:127.0.0.1]:8080"],
     ["IPv4-mapped metadata", "http://[::ffff:169.254.169.254]"],
-    ["localhost", "http://localhost:8080"],
-    ["a *.localhost name", "http://gotify.localhost"],
   ])("refuses %s as a grant", (_label, value) => {
     expect(canonicalOrigin(value)).toBeNull();
+  });
+
+  it("keeps loopback grantable: an exact loopback origin is a deliberate host-networking decision", () => {
+    expect(canonicalOrigin("http://127.0.0.1:8080")).toBe(
+      "http://127.0.0.1:8080",
+    );
+    expect(canonicalOrigin("http://127.10.20.30")).toBe("http://127.10.20.30");
+    expect(canonicalOrigin("http://[::1]:8080")).toBe("http://[::1]:8080");
+    expect(canonicalOrigin("http://localhost:1337")).toBe(
+      "http://localhost:1337",
+    );
+    expect(canonicalOrigin("http://gotify.localhost")).toBe(
+      "http://gotify.localhost",
+    );
   });
 
   it("keeps mDNS and other reserved-looking names grantable when listed exactly", () => {
@@ -120,16 +128,16 @@ describe("parsePrivateOrigins", () => {
     const onInvalid = vi.fn();
     expect(
       parsePrivateOrigins(
-        "https://gotify.lan, https://*.lan, http://127.0.0.1:8080, not an origin",
+        "https://gotify.lan, https://*.lan, http://169.254.169.254, not an origin",
         onInvalid,
       ),
     ).toEqual(new Set(["https://gotify.lan"]));
     expect(onInvalid.mock.calls.map(([entry]) => entry)).toEqual([
       "https://*.lan",
-      "http://127.0.0.1:8080",
+      "http://169.254.169.254",
       "not an origin",
     ]);
-    expect(onInvalid.mock.calls[1][1]).toMatch(/loopback.*cannot be granted/);
+    expect(onInvalid.mock.calls[1][1]).toMatch(/link-local.*cannot be granted/);
     expect(onInvalid.mock.calls[0][1]).toMatch(/one exact http\(s\) origin/);
   });
 
@@ -204,13 +212,41 @@ describe("evaluateOriginGrant", () => {
     });
   });
 
+  it("approves a listed loopback origin and refuses an unlisted one", () => {
+    const loopbackGrants = new Set([
+      "http://localhost:1337",
+      "http://[::1]:8080",
+    ]);
+    expect(
+      evaluateOriginGrant("http://localhost:1337", loopbackGrants),
+    ).toEqual({
+      allowed: true,
+      canonicalOrigin: "http://localhost:1337",
+      privateOriginApproved: true,
+      reasonCode: null,
+    });
+    expect(
+      evaluateOriginGrant("http://[::1]:8080", loopbackGrants),
+    ).toMatchObject({ allowed: true, privateOriginApproved: true });
+    for (const origin of [
+      "http://localhost:1338",
+      "http://127.0.0.1:1337",
+      "http://[::1]:8081",
+    ]) {
+      expect(evaluateOriginGrant(origin, loopbackGrants)).toEqual({
+        allowed: false,
+        canonicalOrigin: origin,
+        privateOriginApproved: false,
+        reasonCode: PRIVATE_ORIGIN_NOT_APPROVED_CODE,
+      });
+    }
+  });
+
   it.each([
-    ["IPv4 loopback", "http://127.0.0.1:8080"],
-    ["localhost", "http://localhost:8080"],
-    ["a *.localhost name", "http://gotify.localhost"],
     ["link-local / metadata", "http://169.254.169.254"],
-    ["IPv6 loopback", "http://[::1]:8080"],
     ["unspecified", "http://0.0.0.0:8080"],
+    ["IPv6 link-local", "http://[fe80::1]:8080"],
+    ["IPv6 unspecified", "http://[::]:8080"],
   ])(
     "answers %s with the not-grantable code, not a request to list it (M1)",
     (_label, origin) => {
@@ -236,10 +272,12 @@ describe("redactGrantEntry / describeGrantRejection", () => {
   });
 
   it("names the never-grantable class apart from a grammar error", () => {
-    expect(describeGrantRejection("http://localhost:1337")).toMatch(
-      /loopback.*LAN address/,
+    expect(describeGrantRejection("http://169.254.169.254")).toMatch(
+      /link-local.*cannot be granted/,
     );
-    expect(describeGrantRejection("http://[::1]:1337")).toMatch(/loopback/);
+    expect(describeGrantRejection("http://[fe80::1]:1337")).toMatch(
+      /link-local/,
+    );
     expect(describeGrantRejection("https://*.lan")).toMatch(/exact http/);
     expect(describeGrantRejection("http://10.0.0.4/path")).toMatch(
       /exact http/,

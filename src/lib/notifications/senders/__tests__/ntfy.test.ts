@@ -218,9 +218,9 @@ describe("sendViaNtfy", () => {
     );
   });
 
-  it("reports the not-grantable code for a loopback target, without dialling (M1)", async () => {
+  it("reports the not-grantable code for a metadata target, without dialling (M1)", async () => {
     const result = await sendViaNtfy(
-      { serverUrl: "http://localhost:8080", topic: "health" },
+      { serverUrl: "http://169.254.169.254", topic: "health" },
       payload(),
     );
 

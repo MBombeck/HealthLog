@@ -34,7 +34,7 @@ const webhookSettingsSchema = webhookSettingsSchemaWith(
 const PRIVATE_ORIGIN_REFUSAL =
   "This address is on a private network. The operator has to list its exact origin (scheme://host:port) in NOTIFICATION_PRIVATE_ORIGINS before HealthLog can send to it.";
 const NOT_GRANTABLE_REFUSAL =
-  "This address is loopback, link-local or a metadata address, which no operator grant can open. Use the relay's LAN address instead.";
+  "This address is a link-local, metadata or unspecified address, which no operator grant can open. Use the address the relay actually listens on.";
 
 /**
  * Generic-webhook channel config (v1.17.1).

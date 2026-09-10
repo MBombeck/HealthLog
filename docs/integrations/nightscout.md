@@ -28,10 +28,10 @@ Each entry is an exact normalized `scheme://host:port` trust unit:
   rejected;
 - approving one hostname does not approve subdomains, sibling hosts, or a
   different port; and
-- loopback (`127.0.0.0/8`, `::1`, `localhost`), the unspecified address,
-  link-local and the cloud-metadata range cannot be listed, and a listed
-  name that resolves there is refused at connect time — the grant opens
-  your network, never the container or the host it runs on; and
+- the unspecified address, link-local and the cloud-metadata range cannot
+  be listed, and a listed name that resolves there is refused at connect
+  time; loopback (`http://localhost:1337`, `http://127.0.0.1:1337`) stays a
+  valid grant for a host-networking deployment, exactly as before; and
 - any malformed non-empty entry fails evaluation instead of silently
   weakening the configured policy.
 

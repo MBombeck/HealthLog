@@ -233,7 +233,7 @@
       "variables": [
         {
           "name": "NOTIFICATION_PRIVATE_ORIGINS",
-          "purpose": "Comma-separated exact origins (scheme://host[:port], no path, no wildcard, no CIDR), e.g. \"https://gotify.example.com,http://ntfy.lan:8080\". Loopback, link-local and metadata addresses stay refused even when listed; a malformed entry is logged once and grants nothing."
+          "purpose": "Comma-separated exact origins (scheme://host[:port], no path, no wildcard, no CIDR), e.g. \"https://gotify.example.com,http://ntfy.lan:8080\". Link-local, metadata and unspecified addresses stay refused even when listed; a malformed entry is logged once and grants nothing."
         }
       ]
     },

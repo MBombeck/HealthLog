@@ -5991,7 +5991,7 @@
         "not_configured": "Non configuré",
         "url_not_public": "L’URL n’est pas un point de terminaison public",
         "private_origin_not_approved": "Cible sur un réseau privé. L’opérateur doit ajouter cette origine à NOTIFICATION_PRIVATE_ORIGINS",
-        "private_origin_not_grantable": "Cette adresse est une adresse de bouclage, de lien local ou de métadonnées ; aucune autorisation de l’opérateur ne peut l’ouvrir. Utilisez l’adresse LAN du relais",
+        "private_origin_not_grantable": "Cette adresse est une adresse de lien local, de métadonnées ou non spécifiée ; aucune autorisation de l’opérateur ne peut l’ouvrir. Utilisez l’adresse sur laquelle le relais écoute",
         "url_invalid": "L’URL n’est pas valide",
         "redirected": "Le point de terminaison redirige — vérifiez l’URL",
         "endpoint_not_found": "Point de terminaison introuvable à l’URL",

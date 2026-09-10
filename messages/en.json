@@ -5991,7 +5991,7 @@
         "not_configured": "Not configured",
         "url_not_public": "URL is not a public endpoint",
         "private_origin_not_approved": "Private network target. The operator has to list this origin in NOTIFICATION_PRIVATE_ORIGINS",
-        "private_origin_not_grantable": "This address is loopback, link-local or a metadata address; no operator grant can open it. Use the relay's LAN address",
+        "private_origin_not_grantable": "This address is link-local, a metadata or an unspecified address; no operator grant can open it. Use the address the relay listens on",
         "url_invalid": "URL is invalid",
         "redirected": "Endpoint redirects — check the URL",
         "endpoint_not_found": "Endpoint not found at the URL",

@@ -24,8 +24,8 @@ import { annotate, getEvent } from "@/lib/logging/context";
  *   NOTIFICATION_PRIVATE_ORIGINS="https://gotify.example.com,http://ntfy.lan:8080"
  *
  * A listed origin is still dialled through the pinned resolver with redirects
- * forbidden; loopback, link-local and the metadata range stay refused even
- * when listed. Nothing not listed widens, and there is no `=true`, CIDR,
+ * forbidden; link-local, the metadata range and the unspecified address stay
+ * refused even when listed (loopback is grantable when listed exactly). Nothing not listed widens, and there is no `=true`, CIDR,
  * wildcard or suffix form. The grant lives in the server environment only —
  * no request field and no settings toggle can confer it.
  *

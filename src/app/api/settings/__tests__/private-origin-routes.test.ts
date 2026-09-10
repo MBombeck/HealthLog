@@ -179,25 +179,47 @@ describe("PUT /api/settings/webhook — private targets", () => {
     expect(json.meta).toBeUndefined();
   });
 
-  it("answers a loopback target with the not-grantable code, listed or not (M1)", async () => {
+  it("saves a listed loopback target and refuses an unlisted one with the listable code", async () => {
+    // Host networking: an exact loopback origin with its port is a grant like
+    // any other. Unlisted, it is refused with the code that says "list it",
+    // because listing it does open it.
+    process.env.NOTIFICATION_PRIVATE_ORIGINS = "http://localhost:8080";
+
+    const refused = await put("webhook", {
+      url: "http://127.0.0.1:8080/message",
+      enabled: true,
+    });
+    expect(refused.status).toBe(422);
+    await expect(refused.json()).resolves.toMatchObject({
+      meta: { errorCode: "private_origin_not_approved" },
+    });
+
+    const saved = await put("webhook", {
+      url: "http://localhost:8080/message",
+      enabled: true,
+    });
+    expect(saved.status).toBe(200);
+    expect(prisma.notificationChannel.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it("answers a metadata or unspecified target with the not-grantable code, listed or not (M1)", async () => {
     // This used to pin a dead end: the route said "list it", the parser
     // dropped the listing, and the next save said "list it" again. A target
     // no grant can open gets its own code and a message that says so.
     vi.spyOn(console, "warn").mockImplementation(() => {});
     process.env.NOTIFICATION_PRIVATE_ORIGINS =
-      "http://127.0.0.1:8080, http://localhost:8080";
+      "http://169.254.169.254, http://0.0.0.0:8080";
 
     for (const url of [
-      "http://127.0.0.1:8080/message",
-      "http://localhost:8080/message",
       "http://169.254.169.254/latest",
-      "http://[::1]:8080/message",
+      "http://0.0.0.0:8080/message",
+      "http://[fe80::1]:8080/message",
     ]) {
       const response = await put("webhook", { url, enabled: true });
       expect(response.status).toBe(422);
       const json = await response.json();
       expect(json.meta).toEqual({ errorCode: "private_origin_not_grantable" });
-      expect(json.error).toMatch(/LAN address/);
+      expect(json.error).toMatch(/no operator grant can open/);
       expect(json.error).not.toContain("NOTIFICATION_PRIVATE_ORIGINS");
       expect(json.details.issues.length).toBeGreaterThan(0);
     }
@@ -321,7 +343,7 @@ describe("POST /api/settings/{webhook,ntfy}/test — the refusal names itself", 
       expect(response.status).toBe(422);
       const json = await response.json();
       expect(json.meta).toEqual({ errorCode: "private_origin_not_grantable" });
-      expect(json.error).toMatch(/LAN address/);
+      expect(json.error).toMatch(/no operator grant can open/);
       expect(json.error).not.toContain("NOTIFICATION_PRIVATE_ORIGINS");
     },
   );

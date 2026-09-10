@@ -121,11 +121,28 @@ describe("Nightscout exact-origin policy", () => {
     });
   });
 
-  it("names the entry and the reason when a loopback grant is listed, without its token (M2)", () => {
+  it("keeps a loopback Nightscout grant working exactly as before", () => {
+    // A host-networking self-host lists http://localhost:1337; the shared
+    // floor must not turn that into a failed sync on upgrade.
+    expect(parseNightscoutPrivateOrigins("http://localhost:1337")).toEqual(
+      new Set(["http://localhost:1337"]),
+    );
+    expect(
+      evaluateNightscoutOrigin(
+        "http://localhost:1337",
+        parseNightscoutPrivateOrigins("http://localhost:1337"),
+      ),
+    ).toMatchObject({ allowed: true, privateOriginApproved: true });
+    expect(
+      parseNightscoutPrivateOrigins("http://127.0.0.1:1337, http://[::1]:1337"),
+    ).toEqual(new Set(["http://127.0.0.1:1337", "http://[::1]:1337"]));
+  });
+
+  it("names the entry and the reason when a metadata grant is listed, without its token (M2)", () => {
     let caught: unknown;
     try {
       parseNightscoutPrivateOrigins(
-        "https://cgm.lan, http://localhost:1337/?token=SECRET123",
+        "https://cgm.lan, http://169.254.169.254:1337/?token=SECRET123",
       );
     } catch (err) {
       caught = err;
@@ -134,9 +151,9 @@ describe("Nightscout exact-origin policy", () => {
     const message = (caught as Error).message;
     expect((caught as Error).name).toBe("NightscoutOriginConfigError");
     expect(message).toContain(
-      'NIGHTSCOUT_PRIVATE_ORIGINS entry "http://localhost:1337/"',
+      'NIGHTSCOUT_PRIVATE_ORIGINS entry "http://169.254.169.254:1337/"',
     );
-    expect(message).toMatch(/loopback.*LAN address/);
+    expect(message).toMatch(/link-local.*cannot be granted/);
     expect(message).not.toContain("SECRET123");
     expect(message).not.toContain("token=");
   });
