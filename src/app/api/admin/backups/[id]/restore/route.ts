@@ -23,7 +23,11 @@ import { prisma, toJson } from "@/lib/db";
 import { apiHandler, HttpError, requireAdmin } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
-import { unpackBackupBlob } from "@/lib/export/backup-blob";
+import {
+  BACKUP_UNDECRYPTABLE_CODE,
+  BACKUP_UNDECRYPTABLE_ERROR,
+  unpackBackupBlob,
+} from "@/lib/export/backup-blob";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
@@ -204,7 +208,14 @@ const handler = apiHandler(
           reason: err instanceof Error ? err.message : "decrypt_failed",
         },
       });
-      return apiError("Failed to decrypt backup payload", 500);
+      // Bad stored input, not a broken server: a copy written under a key the
+      // operator has since dropped, or one whose bytes have changed. Every
+      // other bad-input arm on this route answers 4xx, and a 500 here would
+      // also page the error reporter for a rotation mistake. Refused above the
+      // transaction, so nothing was touched.
+      return apiError(BACKUP_UNDECRYPTABLE_ERROR, 422, {
+        errorCode: BACKUP_UNDECRYPTABLE_CODE,
+      });
     }
 
     // Parsed once and kept, because the schema's per-section `.default([])`

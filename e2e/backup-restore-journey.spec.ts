@@ -385,12 +385,16 @@ test.describe("Backup and restore, through the settings surfaces", () => {
     const response = await restoreThroughDialog(page, tamperedId);
 
     // The envelope is AES-256-GCM and its tag covers every ciphertext byte, so
-    // the flip is caught before the transaction opens. 500 with this sentence
-    // is what the route answers on a payload it could not decrypt.
-    expect(response.status()).toBe(500);
+    // the flip is caught before the transaction opens. 422 and
+    // `backup.payload.undecryptable` are the refusal the route documents —
+    // `docs/api/openapi.yaml`, and `docs/ops/backup-restore.md` for the
+    // operator reading it after a key rotation — rather than whatever the
+    // handler happened to answer. The code is asserted and not the sentence:
+    // the sentence is prose that may be reworded, the code is the contract.
+    expect(response.status()).toBe(422);
     expect(await response.json()).toMatchObject({
       data: null,
-      error: "Failed to decrypt backup payload",
+      meta: { errorCode: "backup.payload.undecryptable" },
     });
 
     // A refusal that still wrote something would be worse than no refusal.

@@ -19817,6 +19817,119 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /api/admin/backups/{id}/download:
+    get:
+      tags:
+        - Admin
+      summary: Download one stored backup as JSON
+      description: "Decrypts one stored copy and returns the backup document itself, with `Content-Disposition: attachment`
+        and `Cache-Control: no-store`. The response is the raw document, not the standard envelope — it is the artefact
+        an operator keeps. The ciphertext stays in the database. Admin session cookie required; Bearer tokens cannot
+        reach admin endpoints."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            description: "`DataBackup.id`."
+          required: true
+          description: "`DataBackup.id`."
+      responses:
+        "200":
+          description: The decrypted backup document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBackupDocument"
+        "403": &a43
+          description: Caller is not an admin. `requireAdmin()` is cookie-only, so a Bearer token lands here whatever its scope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404": &a44
+          description: No stored copy with this id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "The stored copy could not be opened: either the key that wrote it is no longer in `ENCRYPTION_KEYS` (a
+            rotation that dropped the legacy entry too early), or the stored bytes are not the ones that were written.
+            `meta.errorCode` = `backup.payload.undecryptable`. Nothing was changed."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: The copy decrypted and then failed schema validation — a document this instance wrote and cannot parse.
+            This one genuinely is a server fault, and is reported as one.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/admin/backups/{id}/restore:
+    post:
+      tags:
+        - Admin
+      summary: Restore one stored backup over its owner's record
+      description: "Replaces the snapshot owner's data tables from the stored copy, in one transaction, under the ids the file
+        carries. Replacing is not merging: every row the account gained after the snapshot was taken is deleted with the
+        rest of its class. The target is the account the snapshot was taken for, never the admin running it, and a
+        payload declaring a different owner than the stored row is refused. Admin session cookie required; Bearer tokens
+        cannot reach admin endpoints."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            description: "`DataBackup.id`."
+          required: true
+          description: "`DataBackup.id`."
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminBackupRestoreRequest"
+      responses:
+        "200":
+          description: The restore ran.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBackupRestoreResponse"
+        "400":
+          description: Body was not JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403": *a43
+        "404": *a44
+        "409":
+          description: Either the payload declares a different owner than the stored row, or a request under the same
+            `Idempotency-Key` is still in flight. Nothing was changed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: Body exceeds 64 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "The request or the file was refused before anything was written: `confirm` missing, the copy undecryptable
+            (`meta.errorCode` = `backup.payload.undecryptable`), the payload failing schema validation, an unsupported
+            `schemaVersion`, a section the file's own manifest says it carries and does not (`meta.errorCode` =
+            `backup.section.missing`), a metadata-only document entry, or an owner who no longer exists here."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/bugreport:
     post:
       security: []
@@ -28915,6 +29028,21 @@ components:
         the same plausibility range the interactive create paths use. `idempotencyKey` is an identity, not a windowed
         replay token: it is stored on the row forever and matched by equality, so a key that rotates per client launch
         never matches its own earlier row and every re-sync logs the dose again."
+    AdminBackupRestoreRequest:
+      type: object
+      properties:
+        confirm:
+          type: string
+          const: RESTORE
+        restoreInstanceSettings:
+          type: boolean
+      required:
+        - confirm
+      description: "`confirm` is the literal typed gate; anything else is refused with 422 and nothing is read.
+        `restoreInstanceSettings` defaults to false: the restore then replaces the snapshot owner's data tables and
+        leaves the singleton instance settings — registration, MFA requirement, default locale and timezone, module
+        availability, notification and AI configuration, document cap and quota — exactly as they are. Send `true` only
+        when rebuilding a host from a snapshot, because those settings apply to every account on the installation."
     MedicationTreatmentClass:
       type: string
       enum:
@@ -68370,6 +68498,90 @@ components:
         - data
         - error
       additionalProperties: false
+    AdminBackupDocument:
+      type: object
+      propertyNames:
+        type: string
+      additionalProperties: {}
+      description: "The backup payload as the writer serialised it: `schemaVersion`, `exportedAt`, `userId`, and one array or
+        object per serialised class."
+    AdminBackupRestoreResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminBackupRestoreResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminBackupRestoreResult:
+      type: object
+      properties:
+        restored:
+          type: boolean
+          const: true
+        summary:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+        skipped:
+          type: object
+          properties:
+            catalogueKeys:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminBackupRestoreSkipEntry"
+            links:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - catalogueKeys
+            - links
+          additionalProperties: false
+        cleared:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: integer
+            minimum: -9007199254740991
+            maximum: 9007199254740991
+      required:
+        - restored
+        - summary
+        - skipped
+        - cleared
+      additionalProperties: false
+      description: What the transaction wrote. `cleared` counts the rows each class held before it was rebuilt from the file,
+        `summary` counts what the file carried, and `skipped.links` is the number of links dropped because a catalogue
+        key in the file does not exist here — zero is the normal answer.
+    AdminBackupRestoreSkipEntry:
+      type: object
+      properties:
+        catalogue:
+          type: string
+        key:
+          type: string
+        links:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - catalogue
+        - key
+        - links
+      additionalProperties: false
+      description: One catalogue key the file referenced and this instance could not resolve, with the number of links it cost.
     __schema0:
       anyOf:
         - type: string
