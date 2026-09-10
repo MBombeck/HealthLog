@@ -1764,6 +1764,15 @@ paths:
                 type: string
                 format: binary
         "401": *a1
+        "403":
+          description: "Refused: the request was made while the session is acting on another account (`meta.errorCode` =
+            `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it
+            refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any
+            level opens it."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
   /api/auth/check-user:
@@ -12203,8 +12212,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "403":
-          description: The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal
+          description: >-
+            The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal
             happens before any second-factor proof is looked at.
+
+
+            Refused: the request was made while the session is acting on another account (`meta.errorCode` =
+            `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it
+            refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any
+            level opens it.
           content:
             application/json:
               schema:
@@ -12426,8 +12442,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "403":
-          description: The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal
+          description: >-
+            The Bearer token carries a narrow scope. Erasure needs a cookie session or a full-access token; the refusal
             happens before any second-factor proof is looked at.
+
+
+            Refused: the request was made while the session is acting on another account (`meta.errorCode` =
+            `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it
+            refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any
+            level opens it.
           content:
             application/json:
               schema:

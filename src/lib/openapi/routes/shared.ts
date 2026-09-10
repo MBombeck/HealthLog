@@ -380,6 +380,25 @@ export const SHARING_ACCESS_DENIED_DESCRIPTION =
   "Refused: this request named a record the caller may not act on (`meta.errorCode` = `sharing.access.denied`). Byte-identical for an account that does not exist, an account that granted nothing, a grant whose sections do not reach this surface, and a read grant on a request that writes — the response carries no reason, so it is not an account-enumeration oracle. The reason reaches the record owner's activity feed and the operator's audit trail instead. On the cookie transport the same code answers one further case: a session that has entered a shared record and sends a request without its record-context assertion, which is a client older than the fence — leave the record and reload. A request that names no record but the caller's own never reaches this response, so a client that never switches and never sends the per-request account selector will not see it.";
 
 /**
+ * The OTHER sharing refusal, for a route that names no record at all.
+ *
+ * A route resolving through `requireAuth` serves the caller and only the
+ * caller, and refuses outright while the browser is inside somebody else's
+ * record rather than quietly answering with the caller's own rows. That
+ * posture matters most on the routes where being wrong is unrecoverable — the
+ * record wipe, the account deletion, the encrypted archive — and it was
+ * documented nowhere on them. A client that switches records has to know which
+ * of its calls stop working, and finding out by wiping the wrong record is not
+ * a contract.
+ *
+ * One sentence, spliced onto whatever else the operation's 403 already says,
+ * for the same reason the delegable refusal is one string: a paraphrase per
+ * path invites a client to tell them apart.
+ */
+export const SHARING_NOT_PERMITTED_DESCRIPTION =
+  "Refused: the request was made while the session is acting on another account (`meta.errorCode` = `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any level opens it.";
+
+/**
  * The 403 above, optionally sharing the status with the reasons a route already
  * refuses for.
  *

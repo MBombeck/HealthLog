@@ -20,7 +20,11 @@
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { backupPayloadSchema } from "@/lib/validations/backup";
-import { errorEnvelope, stdResponses } from "./shared";
+import {
+  errorEnvelope,
+  SHARING_NOT_PERMITTED_DESCRIPTION,
+  stdResponses,
+} from "./shared";
 
 const exportQuery = z
   .object({
@@ -304,6 +308,10 @@ export const exportPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: z.string().meta({ format: "binary" }),
             },
           },
+        },
+        "403": {
+          description: SHARING_NOT_PERMITTED_DESCRIPTION,
+          content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
       },
