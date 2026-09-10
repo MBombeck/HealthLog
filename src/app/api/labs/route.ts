@@ -10,6 +10,7 @@ import {
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
@@ -148,7 +149,15 @@ async function postLabResult(request: NextRequest) {
   // it mints it under `user.id`: the marker joins the record's catalogue, not
   // the caller's, which is the only reading of "add a result to your record"
   // that leaves the owner with a usable catalogue afterwards.
-  const { user } = await requireRecordAuth("write", "labs");
+  const { user, actor } = await requireRecordAuth("write", "labs");
+
+  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
+  // batch siblings have always been capped; the per-record creates a looping
+  // client hits were not.
+  const writeRl = await checkRecordWriteRateLimit(actor.id);
+  if (!writeRl.allowed) {
+    return apiError("Too many writes, try again later", 429);
+  }
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 16 * 1024,

@@ -34,6 +34,14 @@ vi.mock("@/lib/auth/audit", () => ({
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
   rateLimitHeaders: () => ({}),
+  // The shared single-record write ceiling. Allowed here: this file is about
+  // what the handler does with a body it accepted, not about the bucket.
+  checkRecordWriteRateLimit: vi.fn(async () => ({
+    allowed: true,
+    limit: 300,
+    remaining: 299,
+    resetAt: Date.now() + 60_000,
+  })),
 }));
 vi.mock("@/lib/idempotency", () => ({
   withIdempotency:

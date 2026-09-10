@@ -38,6 +38,7 @@ import {
   idempotencyKeyParameter,
   idempotentWrite,
   recordRefusal,
+  recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
 
@@ -263,6 +264,7 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...recordWriteRateLimitResponse,
       },
     },
   },

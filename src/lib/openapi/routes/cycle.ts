@@ -35,6 +35,7 @@ import {
   idempotentWrite,
   malformedJsonResponse,
   recordRefusal,
+  recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
 
@@ -710,6 +711,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...cycleDisabledOnADelegableRoute,
         ...stdResponses,
+        ...recordWriteRateLimitResponse,
       },
     },
   },

@@ -35,6 +35,7 @@ import {
   idempotentWrite,
   invalidBaseTokenResponse,
   recordRefusal,
+  recordWriteRateLimitResponse,
   stdResponses,
 } from "../shared";
 
@@ -289,7 +290,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         "401": stdResponses["401"],
-        "429": stdResponses["429"],
+        ...recordWriteRateLimitResponse,
       },
     },
   },
@@ -1153,6 +1154,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
+        ...recordWriteRateLimitResponse,
       },
     },
     get: {

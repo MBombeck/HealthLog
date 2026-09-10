@@ -289,6 +289,32 @@ export const stdResponses = {
   },
 };
 
+/**
+ * The 429 the shared single-record write bucket answers with.
+ *
+ * The batch endpoints have been capped at 60 calls a minute since they were
+ * written and the per-record siblings were not capped at all, which is exactly
+ * backwards: the batch endpoint is the one a well-behaved client uses. The
+ * eleven single-record creates now share one generous per-account bucket, and
+ * this is the response that names it — a client that meets a ceiling should be
+ * able to read which one it met without a bug report.
+ *
+ * Spread AFTER `...stdResponses` so it replaces the generic 429 on those
+ * operations. The headers block is the one the standard 429 already declares.
+ *
+ * `record-write-rate-limit-contract.test.ts` holds the numbers in this sentence
+ * to the constants in `src/lib/rate-limit.ts`, so the paragraph cannot drift
+ * away from the bucket it describes.
+ */
+export const recordWriteRateLimitResponse = {
+  "429": {
+    description:
+      "Rate limit exceeded. This route shares one per-account bucket with the other single-record writes — `record-write:<accountId>`, 300 requests per 60 seconds — keyed on the ACTING account, so a delegate burns their own allowance rather than the record owner's. Nothing was written. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers describe that bucket; back off on `Retry-After` rather than guessing. A client with more than a handful of rows to send should use the batch endpoint for its domain instead of looping this one.",
+    content: { "application/json": { schema: errorEnvelope } },
+    headers: stdResponses["429"].headers,
+  },
+};
+
 // ── Idempotent writes ────────────────────────────────────────────────
 
 /**

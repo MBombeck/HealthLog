@@ -56,6 +56,7 @@ import {
   invalidBaseTokenResponse,
   moduleDisabledResponse,
   recordRefusal,
+  recordWriteRateLimitResponse,
   stdResponses,
   updatedAtTokenField,
 } from "./shared";
@@ -1636,6 +1637,7 @@ export const moodPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...duplicateTimestampResponse,
         ...recordRefusal(),
         ...stdResponses,
+        ...recordWriteRateLimitResponse,
       },
     },
   },

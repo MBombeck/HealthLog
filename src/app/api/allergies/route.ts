@@ -15,11 +15,13 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
+  apiError,
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
+import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { withIdempotency } from "@/lib/idempotency";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
@@ -84,7 +86,15 @@ async function postAllergy(request: NextRequest): Promise<Response> {
   // A READ or WRITE delegate reaches neither: the destination is not on their
   // Settings list, and this line refuses them with `sharing.access.denied`
   // regardless.
-  const { user } = await requireRecordAuth("manage", "profile");
+  const { user, actor } = await requireRecordAuth("manage", "profile");
+
+  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
+  // batch siblings have always been capped; the per-record creates a looping
+  // client hits were not.
+  const writeRl = await checkRecordWriteRateLimit(actor.id);
+  if (!writeRl.allowed) {
+    return apiError("Too many writes, try again later", 429);
+  }
 
   const { data: rawBody, error: jsonError } = await safeJson(request, {
     maxBytes: 16 * 1024,

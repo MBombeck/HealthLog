@@ -16,6 +16,7 @@ import {
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import {
   createMeasurementSchema,
   createBatchMeasurementSchema,
@@ -800,6 +801,14 @@ async function postMeasurement(request: NextRequest) {
   });
   const { user } = auth;
   const scoped = isScopedCredential(auth);
+
+  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
+  // batch siblings have always been capped; the per-record creates a looping
+  // client hits were not.
+  const writeRl = await checkRecordWriteRateLimit(auth.actor.id);
+  if (!writeRl.allowed) {
+    return apiError("Too many writes, try again later", 429);
+  }
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 64 * 1024,

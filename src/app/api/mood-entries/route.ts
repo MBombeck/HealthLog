@@ -8,6 +8,7 @@ import {
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import {
   createMoodEntrySchema,
   listMoodEntriesSchema,
@@ -104,6 +105,14 @@ async function postMoodEntry(request: NextRequest) {
   // the delegated arm does not get is the sync client's upsert handle; see
   // the `externalId` refusal below.
   const { user, actor } = await requireRecordAuth("manage", "mind");
+
+  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
+  // batch siblings have always been capped; the per-record creates a looping
+  // client hits were not.
+  const writeRl = await checkRecordWriteRateLimit(actor.id);
+  if (!writeRl.allowed) {
+    return apiError("Too many writes, try again later", 429);
+  }
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 64 * 1024,

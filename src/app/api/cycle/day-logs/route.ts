@@ -26,6 +26,7 @@ import {
   returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
+import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { withIdempotency } from "@/lib/idempotency";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
 import {
@@ -94,10 +95,18 @@ async function postDayLog(request: NextRequest): Promise<Response> {
   // v1.37.0 — MANAGE. The upsert replaces the day, which is what edit means
   // here; the gate below resolves `user.gender` against the RECORD, so the
   // module follows the record rather than the caller.
-  const { user } = await requireRecordAuth("manage", "cycle");
+  const { user, actor } = await requireRecordAuth("manage", "cycle");
 
   const gate = await requireCycleEnabled(user.id, user.gender);
   if (!gate.enabled) return gate.response;
+
+  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
+  // batch siblings have always been capped; the per-record creates a looping
+  // client hits were not.
+  const writeRl = await checkRecordWriteRateLimit(actor.id);
+  if (!writeRl.allowed) {
+    return apiError("Too many writes, try again later", 429);
+  }
 
   const { data: rawBody, error: jsonError } = await safeJson(request, {
     maxBytes: 64 * 1024,

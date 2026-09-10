@@ -25,6 +25,7 @@ import {
   idempotencyKeyParameter,
   idempotentWrite,
   recordRefusal,
+  recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
 
@@ -125,6 +126,7 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...conflict,
         ...stdResponses,
+        ...recordWriteRateLimitResponse,
       },
     },
   },

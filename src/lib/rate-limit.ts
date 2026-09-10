@@ -118,6 +118,44 @@ export async function checkAnalyticsReadRateLimit(
 }
 
 /**
+ * Shared per-account ceiling for the single-record writes.
+ *
+ * The batch endpoints have been capped at 60 calls a minute since they were
+ * written; the per-record siblings a naive or older client loops over were not
+ * capped at all, which is backwards — the batch endpoint is the one a
+ * well-behaved client uses. This is the floor under the other direction:
+ * `POST /api/measurements`, `/api/mood-entries`, both medication-intake writes,
+ * `/api/labs`, a custom-metric entry, a cycle day-log, a vaccination, an
+ * allergy, a biomarker and an encounter.
+ *
+ * One shared bucket, not one per route, for the reason
+ * `checkAnalyticsReadRateLimit` gives: a loop that rotates across ten creates
+ * should still meet a cap. Three hundred a minute is five writes a second
+ * sustained for a full minute — no hand-driven session and no sync burst
+ * reaches it, and every one of these routes is already wrapped in
+ * `withIdempotency`, so an honest retry storm is deduplicated before it is
+ * counted. It exists to cut off the pathological loop, not to shape traffic.
+ *
+ * Keyed on the ACTING account rather than the record, the frozen precedent from
+ * the delegable medication routes: a delegate burns their own allowance rather
+ * than locking the record's owner out of their own log, and cannot collect a
+ * fresh one by switching records.
+ */
+export const RECORD_WRITE_BUCKET_PREFIX = "record-write";
+export const RECORD_WRITE_LIMIT = 300;
+export const RECORD_WRITE_WINDOW_MS = 60 * 1000;
+
+export async function checkRecordWriteRateLimit(
+  accountId: string,
+): Promise<RateLimitResult> {
+  return checkRateLimit(
+    `${RECORD_WRITE_BUCKET_PREFIX}:${accountId}`,
+    RECORD_WRITE_LIMIT,
+    RECORD_WRITE_WINDOW_MS,
+  );
+}
+
+/**
  * v1.22.0 — per-credential ceiling for the remote MCP endpoint (`/mcp`).
  * The bucket is keyed by the `<userId>:<tokenId>` binding the Bearer
  * resolver surfaces — NOT the user alone — so a single leaked / shared
