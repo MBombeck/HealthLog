@@ -133,6 +133,7 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
         className="bg-card border-border grid grid-cols-1 gap-x-3 gap-y-2 rounded-xl border p-4 text-sm sm:grid-cols-[auto_1fr] md:p-6"
         data-slot="onboarding-confirm-preferences"
       >
+        {/* Grouped dt/dd pairs only: a stray child breaks the list's semantics. */}
         {glucoseUnit ? (
           <>
             <dt className="text-muted-foreground">
@@ -157,15 +158,15 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
             <dd>{user.timezone}</dd>
           </>
         ) : null}
-        <dd className="sm:col-span-2">
-          <Link
-            href="/settings/account"
-            className="text-primary text-sm underline-offset-4 hover:underline"
-          >
-            {t("onboarding.flow.confirm.changeInSettings")}
-          </Link>
-        </dd>
       </dl>
+      <p className="text-sm">
+        <Link
+          href="/settings/account"
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          {t("onboarding.flow.confirm.changeInSettings")}
+        </Link>
+      </p>
 
       {forSomeoneElse ? (
         <div className="space-y-4" data-slot="onboarding-confirm-managed">

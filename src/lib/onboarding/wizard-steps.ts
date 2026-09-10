@@ -14,7 +14,6 @@
 import type { OnboardingSourceKey } from "./needs";
 import {
   hasEnteredOnboardingFlow,
-  ONBOARDING_STEP_IDS,
   type OnboardingFirstResultTask,
   type OnboardingNeeds,
   type OnboardingStateDto,
@@ -22,17 +21,6 @@ import {
 } from "./needs";
 
 export type OnboardingScreenId = "welcome" | OnboardingStepId;
-
-export const ONBOARDING_SCREEN_IDS: readonly OnboardingScreenId[] = [
-  "welcome",
-  ...ONBOARDING_STEP_IDS,
-];
-
-export function isOnboardingScreenId(
-  value: string,
-): value is OnboardingScreenId {
-  return (ONBOARDING_SCREEN_IDS as readonly string[]).includes(value);
-}
 
 /**
  * The Q4 sources whose connection the browser can finish on its own — an

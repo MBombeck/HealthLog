@@ -18,12 +18,12 @@ export const onboardingKeys = {
   /** `POST /api/onboarding/disclaimer` — the one-time acknowledgment. */
   onboardingDisclaimerMutation: () => ["onboarding", "disclaimer"] as const,
   /**
-   * The latest reading of one type, read back after the first-result step
+   * The latest reading of one area, read back after the first-result step
    * logged it so the screen can show the value on its tile. Rides under the
    * `["measurements"]` prefix so `measurementDependentKeys` evicts it.
    */
-  onboardingLatestReading: (type: string) =>
-    ["measurements", "onboarding-latest", type] as const,
+  onboardingLatestReading: (area: string) =>
+    ["measurements", "onboarding-latest", area] as const,
   /**
    * The upcoming-visit count the checklist's "prepare the visit" row reads
    * off the visits list's meta. Its own key under the `["encounters"]`

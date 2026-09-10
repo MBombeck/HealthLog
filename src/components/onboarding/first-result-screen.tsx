@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { MeasurementForm } from "@/components/measurements/measurement-form";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/components/measurements/measurement-list-meta";
 import { MedicationWizardDialog } from "@/components/medications/wizard/medication-wizard-dialog";
+import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import { StepActions } from "@/components/onboarding/step-actions";
 import { StepHeading } from "@/components/onboarding/step-heading";
 import {
@@ -74,9 +75,6 @@ export function FirstResultScreen({ state }: { state: OnboardingStateDto }) {
     state.firstResult?.task === offer?.task &&
       state.firstResult?.completedAt !== null,
   );
-  const [resultTarget, setResultTarget] = useState<string | null>(
-    state.firstResult?.target ?? null,
-  );
 
   async function complete(target: string | null) {
     if (!offer) return;
@@ -85,7 +83,6 @@ export function FirstResultScreen({ state }: { state: OnboardingStateDto }) {
         step: "first-result",
         firstResult: { task: offer.task, target, completed: true },
       });
-      setResultTarget(target);
       setCompleted(true);
     } catch (err) {
       toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
@@ -123,12 +120,7 @@ export function FirstResultScreen({ state }: { state: OnboardingStateDto }) {
         description={t(`onboarding.flow.first-result.${offer.task}.body`)}
       />
 
-      <TaskBody
-        offer={offer}
-        completed={completed}
-        resultTarget={resultTarget}
-        onComplete={complete}
-      />
+      <TaskBody offer={offer} completed={completed} onComplete={complete} />
 
       <StepActions
         backHref={back ? screenHref(back) : undefined}
@@ -154,12 +146,10 @@ function targetLabel(
 function TaskBody({
   offer,
   completed,
-  resultTarget,
   onComplete,
 }: {
   offer: Offer;
   completed: boolean;
-  resultTarget: string | null;
   onComplete: (target: string | null) => Promise<void>;
 }) {
   switch (offer.task) {
@@ -173,11 +163,7 @@ function TaskBody({
       ) : null;
     case "add-medication":
       return (
-        <AddMedicationTask
-          completed={completed}
-          medicationId={resultTarget}
-          onComplete={onComplete}
-        />
+        <AddMedicationTask completed={completed} onComplete={onComplete} />
       );
     case "log-reading":
       return offer.target ? (
@@ -267,16 +253,18 @@ interface MedicationDetail {
 
 function AddMedicationTask({
   completed,
-  medicationId,
   onComplete,
 }: {
   completed: boolean;
-  medicationId: string | null;
   onComplete: (target: string | null) => Promise<void>;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const [open, setOpen] = useState(false);
+  // The id stays on this screen: the ledger's `target` is a source or area
+  // key and is null for the medication task (see `OnboardingFirstResult`),
+  // so a revisit after completion shows the unnamed result.
+  const [medicationId, setMedicationId] = useState<string | null>(null);
 
   const detail = useQuery({
     queryKey: queryKeys.medicationDetail(medicationId ?? ""),
@@ -328,7 +316,8 @@ function AddMedicationTask({
         navigateOnCreate={false}
         onSuccess={(id) => {
           setOpen(false);
-          void onComplete(id);
+          setMedicationId(id);
+          void onComplete(null);
         }}
       />
     </div>
@@ -507,23 +496,24 @@ function LatestReadingTile({
 
 /* ── the result ────────────────────────────────────────────────────────── */
 
+/**
+ * What the task produced. The written-outcome line is the one success
+ * affordance the codebase renders (`src/components/outcome/`); the value
+ * itself sits under it in content colour, because it is the reading, the
+ * medication or the connection the person came for.
+ */
 function ResultTile({ title, detail }: { title: string; detail?: string }) {
   return (
     <div
-      className="bg-card border-border flex items-start gap-3 rounded-xl border p-4 md:p-6"
+      className="bg-card border-border space-y-2 rounded-xl border p-4 md:p-6"
       data-slot="onboarding-first-result-done"
-      role="status"
     >
-      <span
-        aria-hidden="true"
-        className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-full"
-      >
-        <CheckCircle2 className="size-5" />
-      </span>
-      <div className="min-w-0 space-y-1">
-        <p className="text-sm font-medium">{title}</p>
-        {detail ? <p className="text-sm">{detail}</p> : null}
-      </div>
+      <WrittenOutcomeLine
+        outcome="success"
+        message={title}
+        testId="onboarding-first-result-outcome"
+      />
+      {detail ? <p className="text-sm font-medium">{detail}</p> : null}
     </div>
   );
 }

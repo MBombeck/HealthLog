@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MedicalDisclaimer } from "@/components/common/medical-disclaimer";
 import { SampleBriefingCard } from "@/components/onboarding/sample-briefing-card";
+import { StepHeading } from "@/components/onboarding/step-heading";
 import { useOnboardingAnswer } from "@/components/onboarding/use-onboarding-flow";
 import { useAuth } from "@/hooks/use-auth";
 import { useAccountSwitch } from "@/hooks/use-account-switch";
@@ -125,22 +126,16 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
         <CheckCircle2 className="size-10" />
       </span>
 
-      <header className="space-y-2">
-        {/* Onboarding hero H1: intentionally semibold, not the app-wide bold PageHeader H1 (UI-STANDARDS §5 hero exception). Do not sweep to font-bold. */}
-        <h1
+      <div className="mx-auto max-w-md space-y-2">
+        <StepHeading
           id="onboarding-done-title"
-          tabIndex={-1}
-          className="text-2xl font-semibold tracking-tight"
-        >
-          {t("onboarding.done.title")}
-        </h1>
-        <p className="text-muted-foreground mx-auto max-w-md text-base leading-relaxed">
-          {t("onboarding.done.body")}
-        </p>
-        <p className="text-muted-foreground mx-auto max-w-md text-sm leading-relaxed">
+          title={t("onboarding.done.title")}
+          description={t("onboarding.done.body")}
+        />
+        <p className="text-muted-foreground text-sm leading-relaxed">
           {t("onboarding.done.learning")}
         </p>
-      </header>
+      </div>
 
       {/* v1.28 — the flagship AI value, made reachable at the one screen
           every fresh user passes through. The daily briefing / Coach need

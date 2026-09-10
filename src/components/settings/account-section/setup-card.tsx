@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ListChecks, Loader2 } from "lucide-react";
 
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+
 import { Button } from "@/components/ui/button";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -40,12 +42,13 @@ export function SetupCard() {
   }
 
   function showChecklist() {
-    const hadState = resetChecklistDismissals();
-    toast.success(
-      hadState
-        ? t("settings.setup.checklistShown")
-        : t("settings.setup.checklistNothingHidden"),
-    );
+    // Something was hidden and is back: a written outcome. Nothing was
+    // hidden: an empty one — there was nothing to bring back.
+    if (resetChecklistDismissals()) {
+      toastWrittenOutcome("success", t("settings.setup.checklistShown"));
+    } else {
+      toastWrittenOutcome("empty", t("settings.setup.checklistNothingHidden"));
+    }
   }
 
   return (

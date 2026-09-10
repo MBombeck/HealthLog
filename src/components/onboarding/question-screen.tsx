@@ -25,7 +25,10 @@ import {
 } from "@/components/onboarding/use-onboarding-flow";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
-import type { OnboardingStateDto } from "@/lib/onboarding/needs";
+import {
+  hasEnteredOnboardingFlow,
+  type OnboardingStateDto,
+} from "@/lib/onboarding/needs";
 import {
   QUESTIONS,
   questionAnswerBody,
@@ -95,7 +98,12 @@ export function QuestionScreen({
   };
 
   const body = questionAnswerBody(step, selected);
-  const back = previousScreen(state, step);
+  // Back from Q1 leads to the welcome screen only while the flow has not
+  // been entered: once Q1 is answered the front door resumes at the step
+  // owed, so a Back link there would bounce straight back here.
+  const previous = previousScreen(state, step);
+  const back =
+    previous === "welcome" && hasEnteredOnboardingFlow(state) ? null : previous;
 
   async function persist(input: NonNullable<typeof body>) {
     try {
