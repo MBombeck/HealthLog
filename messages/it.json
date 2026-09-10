@@ -6960,6 +6960,8 @@
         "restoreAria": "Ripristina dal backup di {username}",
         "restoreTitle": "Ripristina dal backup",
         "restoreDescription": "Questa operazione sostituirà TUTTI i dati attuali di {username} con l'istantanea del {when}. Misurazioni, farmaci, eventi di assunzione, voci dell'umore, canali di notifica, sottoscrizioni push ed eliminazioni Telegram in coda esistenti verranno eliminati.",
+        "restoreInstanceSettingsLabel": "Ripristina anche le impostazioni dell'istanza",
+        "restoreInstanceSettingsHint": "Registrazione, obbligo di MFA, lingua predefinita, disponibilità dei moduli, configurazione di notifiche e IA: presi dall'istantanea e applicati a tutti su questa installazione. Lascia deselezionato per ripristinare solo questo account.",
         "restorePromptLabel": "Digita RESTORE per continuare",
         "previewTitle": "Contenuto del backup",
         "previewLoading": "Lettura del contenuto…",

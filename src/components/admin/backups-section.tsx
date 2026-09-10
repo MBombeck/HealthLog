@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -124,13 +125,18 @@ function RestoreRowDialog({
 }: {
   row: BackupRow;
   pending: boolean;
-  onConfirm: () => void;
+  onConfirm: (options: { restoreInstanceSettings: boolean }) => void;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const matched = typed.trim() === "RESTORE";
+  // Off unless the operator says otherwise. A disaster-recovery snapshot
+  // carries the host's own settings alongside the account's data, and putting
+  // one account back is not a reason to reconfigure the installation for
+  // everybody on it — so the second effect is a second decision.
+  const [withInstanceSettings, setWithInstanceSettings] = useState(false);
 
   // v1.37.20 — restore preview: fetch what the file contains the moment the
   // dialog opens, so the typed confirmation is an informed one. Derived from
@@ -170,7 +176,10 @@ function RestoreRowDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) setTyped("");
+        if (!next) {
+          setTyped("");
+          setWithInstanceSettings(false);
+        }
       }}
     >
       <AlertDialogTrigger asChild>
@@ -255,6 +264,26 @@ function RestoreRowDialog({
             </ul>
           )}
         </div>
+        {/* The second decision, before the typed gate rather than after it:
+            the account's data comes back either way, the host's settings only
+            if this is ticked. */}
+        <label
+          className="flex items-start gap-2 text-sm"
+          data-slot="restore-instance-settings"
+        >
+          <Checkbox
+            data-testid="backup-restore-instance-settings"
+            checked={withInstanceSettings}
+            onCheckedChange={(next) => setWithInstanceSettings(next === true)}
+            className="mt-0.5"
+          />
+          <span>
+            {t("admin.section.backups.restoreInstanceSettingsLabel")}
+            <span className="text-muted-foreground block text-xs">
+              {t("admin.section.backups.restoreInstanceSettingsHint")}
+            </span>
+          </span>
+        </label>
         <div className="space-y-2">
           <Label htmlFor={`restore-prompt-${row.id}`}>
             {t("admin.section.backups.restorePromptLabel")}
@@ -279,7 +308,8 @@ function RestoreRowDialog({
               if (!matched) return;
               setOpen(false);
               setTyped("");
-              onConfirm();
+              onConfirm({ restoreInstanceSettings: withInstanceSettings });
+              setWithInstanceSettings(false);
             }}
           >
             {pending
@@ -781,14 +811,20 @@ export function BackupsSection() {
   // and used inline by `<RestoreRowDialog>` below — keeping the
   // mutation here lets the parent invalidate the list query on success.
   const restore = useMutation({
-    mutationFn: async (row: BackupRow) => {
+    mutationFn: async ({
+      row,
+      restoreInstanceSettings,
+    }: {
+      row: BackupRow;
+      restoreInstanceSettings: boolean;
+    }) => {
       // Idempotency-Key prevents a double-click from re-running the
       // destructive transaction. Include the row id so two different
       // backups can both be restored independently in the same minute.
       const idempotencyKey = `restore-${row.id}-${randomId()}`;
       return apiPost<{ restored: true; skipped?: RestoreSkipSummary }>(
         `/api/admin/backups/${row.id}/restore`,
-        { confirm: "RESTORE" },
+        { confirm: "RESTORE", restoreInstanceSettings },
         { headers: { "Idempotency-Key": idempotencyKey } },
       );
     },
@@ -1079,9 +1115,11 @@ export function BackupsSection() {
                           row={row}
                           pending={
                             restore.isPending &&
-                            restore.variables?.id === row.id
+                            restore.variables?.row.id === row.id
                           }
-                          onConfirm={() => restore.mutate(row)}
+                          onConfirm={(options) =>
+                            restore.mutate({ row, ...options })
+                          }
                         />
                       </div>
                     </td>
@@ -1139,9 +1177,12 @@ export function BackupsSection() {
                     <RestoreRowDialog
                       row={row}
                       pending={
-                        restore.isPending && restore.variables?.id === row.id
+                        restore.isPending &&
+                        restore.variables?.row.id === row.id
                       }
-                      onConfirm={() => restore.mutate(row)}
+                      onConfirm={(options) =>
+                        restore.mutate({ row, ...options })
+                      }
                     />
                   </div>
                 </li>

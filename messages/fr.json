@@ -6960,6 +6960,8 @@
         "restoreAria": "Restaurer à partir de la sauvegarde de {username}",
         "restoreTitle": "Restaurer à partir d'une sauvegarde",
         "restoreDescription": "Cette action remplacera TOUTES les données actuelles de {username} par l'instantané du {when}. Les mesures, médicaments, événements de prise, entrées d'humeur, canaux de notification, abonnements push et suppressions Telegram en file d'attente existants seront supprimés.",
+        "restoreInstanceSettingsLabel": "Restaurer aussi les paramètres de l'instance",
+        "restoreInstanceSettingsHint": "Inscription, exigence MFA, langue par défaut, disponibilité des modules, configuration des notifications et de l'IA — repris de l'instantané et appliqués à tout le monde sur cette installation. Laissez décoché pour ne restaurer que ce compte.",
         "restorePromptLabel": "Tapez RESTORE pour continuer",
         "previewTitle": "Contenu de la sauvegarde",
         "previewLoading": "Lecture du contenu…",

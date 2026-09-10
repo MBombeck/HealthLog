@@ -86,7 +86,11 @@ function makeRequest(id: string) {
   return new Request(`http://localhost/api/admin/backups/${id}/restore`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ confirm: "RESTORE" }),
+    // The disaster-recovery case, so the instance-wide half of the payload is
+    // asked for explicitly. Without the flag the restore rebuilds the account
+    // and leaves the host's own settings alone; that arm is covered in
+    // `admin-backups-restore.test.ts`.
+    body: JSON.stringify({ confirm: "RESTORE", restoreInstanceSettings: true }),
   });
 }
 
