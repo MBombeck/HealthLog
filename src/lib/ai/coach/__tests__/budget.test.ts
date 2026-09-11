@@ -4,7 +4,7 @@ import {
   buildDateKey,
   OPERATOR_COST_CAP,
   USER_PLAN_CAP,
-  JOB_SURFACE_SHARE,
+  INTERACTIVE_RESERVE_SHARE,
   resolveCostOwner,
   resolveDailyCap,
   resolveDailyCapFor,
@@ -207,20 +207,27 @@ describe("reserveBudget cap (F1 — user-plan path not locked out)", () => {
  * is the defect; the operator ceiling may only see operator-funded tokens.
  */
 /**
- * v1.38.19 — background generation gets a bounded slice of the day.
+ * v1.38.20 — the interactive surface is never locked out by background work.
  *
  * Production evidence (2026-09-11): 150–330 ledger rows a day on the
  * operator's account, 172 `insights.metric` generations by 06:42Z — the
- * automatic jobs had spent the day's ceiling before he opened the chat. A
- * background surface may reserve at most half of the interactive ceiling.
+ * automatic jobs had spent the day's ceiling before he opened the chat.
+ *
+ * The guarantee is a floor under the person waiting, NOT a quota over the
+ * jobs: background generation runs freely until the day's spend would leave
+ * less than the reserve for interactive use. That distinction is the whole
+ * design. An account doing 1.45 M tokens of background work a day on its own
+ * plan costs nobody anything and keeps all of it; what it cannot do is take
+ * the last 400 000 the chat is holding.
  */
-describe("resolveDailyCapFor — the job share", () => {
-  it("gives a background surface half the operator ceiling", () => {
+describe("resolveDailyCapFor — the interactive reserve", () => {
+  it("lets a background surface reach everything but the reserve", () => {
     expect(resolveDailyCapFor("job", [{ providerType: "admin-openai" }])).toBe(
-      OPERATOR_COST_CAP * JOB_SURFACE_SHARE,
+      OPERATOR_COST_CAP -
+        Math.floor(OPERATOR_COST_CAP * INTERACTIVE_RESERVE_SHARE),
     );
     expect(resolveDailyCapFor("job", [{ providerType: "admin-openai" }])).toBe(
-      100_000,
+      160_000,
     );
   });
 
@@ -233,37 +240,39 @@ describe("resolveDailyCapFor — the job share", () => {
     );
   });
 
-  it("does not ration a chain the operator does not pay for", () => {
-    // The share exists to protect the OPERATOR's invoice. A self-hoster on a
-    // local model, or a user on their own ChatGPT plan, costs the operator
-    // nothing — halving their background generation is a silent downgrade with
-    // no bill behind it.
+  it("holds the reserve on a chain the operator does not pay for too", () => {
+    // The earlier cut exempted these chains entirely, on the grounds that the
+    // operator's invoice is what a quota protects. True of a quota, and beside
+    // the point here: a self-hoster's chat is locked out by his own background
+    // jobs exactly as painfully, and the recommended remedy for the operator's
+    // own account — put Codex first — moves him onto this arm. The reserve is
+    // about who is waiting, not about who is billed.
     expect(resolveDailyCapFor("job", [{ providerType: "codex" }])).toBe(
-      USER_PLAN_CAP,
+      1_600_000,
     );
     expect(resolveDailyCapFor("job", [{ providerType: "local" }])).toBe(
-      USER_PLAN_CAP,
+      1_600_000,
     );
+    // ...and what is held back is the reserve, exactly.
+    expect(
+      USER_PLAN_CAP - resolveDailyCapFor("job", [{ providerType: "codex" }]),
+    ).toBe(400_000);
   });
 });
 
 describe("resolveTotalCapFor — the abuse ceiling", () => {
-  it("keeps the user-plan ceiling on the day's mixed total for both owners", () => {
+  it("keeps the user-plan ceiling on the day's mixed total", () => {
     // The operator arm compares `operator_tokens`, a counter that returns to
     // ~0 on every reconcile the user's own plan settled. Without a ceiling on
     // the total, an operator-primary chain has no ceiling at all: every job
     // reservation is admitted forever and a runaway client loop writes an
     // unbounded row.
-    expect(resolveTotalCapFor("coach", "operator")).toBe(USER_PLAN_CAP);
-    expect(resolveTotalCapFor("coach", "user")).toBe(USER_PLAN_CAP);
+    expect(resolveTotalCapFor("coach")).toBe(USER_PLAN_CAP);
   });
 
-  it("gives a background surface its share of the total ceiling too", () => {
-    expect(resolveTotalCapFor("job", "operator")).toBe(
-      USER_PLAN_CAP * JOB_SURFACE_SHARE,
-    );
-    // Nothing to ration when the operator is not paying.
-    expect(resolveTotalCapFor("job", "user")).toBe(USER_PLAN_CAP);
+  it("holds the same reserve on the total for a background surface", () => {
+    expect(resolveTotalCapFor("job")).toBe(1_600_000);
+    expect(USER_PLAN_CAP - resolveTotalCapFor("job")).toBe(400_000);
   });
 });
 
@@ -394,6 +403,111 @@ describe("reserveBudget — the cap follows the cost owner", () => {
     );
     expect(res.allowed).toBe(false);
     expect(res.limit).toBe("total-cap");
+  });
+
+  // v1.38.20 — the reserve, from the reservation's side.
+  //
+  // `resolveDailyCapFor` only answers what a surface MAY reach; these pin what
+  // actually happens at the edge of it, on both cost owners, because the claim
+  // the ceiling exists to support is behavioural: the person waiting gets a
+  // turn no matter how much background work ran first.
+  it("admits the chat on a USER-funded chain whose background work is at its limit", async () => {
+    // Nobody is billed for this egress — the user's own ChatGPT plan served
+    // every one of those tokens — so the jobs were never rationed. They still
+    // cannot take the last of the day.
+    prismaMock.$queryRaw.mockResolvedValue([
+      { total_tokens: 1_600_000 + 3_000, operator_tokens: 0 },
+    ]);
+    const { reserveBudget, resolveDailyCapFor, resolveCostOwner } =
+      await import("../budget");
+    const chain = [{ providerType: "codex" as const }];
+
+    const job = await reserveBudget(
+      "u",
+      3_000,
+      "2026-09-11",
+      resolveDailyCapFor("job", chain),
+      resolveCostOwner(chain),
+      "job",
+    );
+    expect(job.allowed).toBe(false);
+
+    const chat = await reserveBudget(
+      "u",
+      3_000,
+      "2026-09-11",
+      resolveDailyCapFor("coach", chain),
+      resolveCostOwner(chain),
+      "coach",
+    );
+    expect(chat.allowed).toBe(true);
+    expect(chat.limit).toBeNull();
+  });
+
+  it("admits the chat on an OPERATOR-funded chain whose background work is at its limit", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      { total_tokens: 160_000 + 3_000, operator_tokens: 160_000 + 3_000 },
+    ]);
+    const { reserveBudget, resolveDailyCapFor, resolveCostOwner } =
+      await import("../budget");
+    const chain = [{ providerType: "admin-openai" as const }];
+
+    const job = await reserveBudget(
+      "u",
+      3_000,
+      "2026-09-11",
+      resolveDailyCapFor("job", chain),
+      resolveCostOwner(chain),
+      "job",
+    );
+    expect(job.allowed).toBe(false);
+    expect(job.limit).toBe("owner-cap");
+
+    const chat = await reserveBudget(
+      "u",
+      3_000,
+      "2026-09-11",
+      resolveDailyCapFor("coach", chain),
+      resolveCostOwner(chain),
+      "coach",
+    );
+    expect(chat.allowed).toBe(true);
+  });
+
+  it("admits the background reservation one token below that boundary", async () => {
+    // The ledger's rule throughout is that a request is admitted when the spend
+    // BEFORE it was under the ceiling, so the boundary is exact: at the ceiling
+    // the job stops, one token below it runs.
+    const { reserveBudget, resolveDailyCapFor, resolveCostOwner } =
+      await import("../budget");
+    const chain = [{ providerType: "codex" as const }];
+    const jobCap = resolveDailyCapFor("job", chain);
+
+    prismaMock.$queryRaw.mockResolvedValue([
+      { total_tokens: jobCap - 1 + 3_000, operator_tokens: 0 },
+    ]);
+    const admitted = await reserveBudget(
+      "u",
+      3_000,
+      "2026-09-11",
+      jobCap,
+      resolveCostOwner(chain),
+      "job",
+    );
+    expect(admitted.allowed).toBe(true);
+
+    prismaMock.$queryRaw.mockResolvedValue([
+      { total_tokens: jobCap + 3_000, operator_tokens: 0 },
+    ]);
+    const refused = await reserveBudget(
+      "u",
+      3_000,
+      "2026-09-11",
+      jobCap,
+      resolveCostOwner(chain),
+      "job",
+    );
+    expect(refused.allowed).toBe(false);
   });
 
   it("names the owner cap when that is the ceiling that tripped", async () => {

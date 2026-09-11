@@ -79,16 +79,22 @@ export function resolveDailyCap(
 }
 
 /**
- * v1.38.19 — the share of a day's ceiling that BACKGROUND generation
- * may reserve, all job surfaces together.
+ * v1.38.20 — the share of a day's ceiling that stays RESERVED for whoever is
+ * waiting on an answer, whatever the automatic generators have already spent.
  *
  * Production evidence (2026-09-11): the operator's account wrote 150–330
  * ledger rows a day, 172 of them `insights.metric` generations before 06:42Z.
- * The automatic work had eaten the day before he opened the chat. Half the
- * ceiling keeps the interactive surfaces a day of their own no matter how much
- * background generation the instance schedules.
+ * The automatic work had eaten the day before he opened the chat.
+ *
+ * A reserve, deliberately, and not a quota on the jobs. The two look alike at
+ * the boundary and mean opposite things in the middle: a quota stops useful
+ * background work on a day nobody was ever going to interrupt, while a reserve
+ * costs that work nothing until the moment it would take the last of the day.
+ * An instance generating 1.45 M tokens of insights on its own plan keeps every
+ * one of them; what it cannot do is leave the chat with nothing. At 20 % of
+ * `USER_PLAN_CAP` the interactive floor is 400 000 tokens — a day of questions.
  */
-export const JOB_SURFACE_SHARE = 0.5;
+export const INTERACTIVE_RESERVE_SHARE = 0.2;
 
 /**
  * v1.38.19 — which kind of caller is asking. `"coach"` is every
@@ -100,22 +106,22 @@ export const JOB_SURFACE_SHARE = 0.5;
 export type BudgetSurface = "coach" | "job";
 
 /**
- * v1.38.19 — the job share rations the OPERATOR's
- * invoice, so it applies only when the operator is paying.
+ * v1.38.20 — how far one surface may take a ceiling. An interactive caller may
+ * reach all of it; a background caller must stop short by the reserve.
  *
- * The first cut multiplied whichever ceiling `resolveDailyCap` returned, which
- * halved background generation for a self-hoster on a local model — zero
- * marginal cost to anyone, and an unannounced downgrade for exactly the
- * audience this project is built for. The share's whole justification is the
- * operator's bill; it does not transfer to a chain the operator does not fund.
+ * Applies to BOTH cost owners. An earlier cut exempted chains the operator
+ * does not fund, reasoning that a ration exists to protect the operator's
+ * invoice — true of a ration, and beside the point for a reserve. A
+ * self-hoster's own automatic generators lock him out of his own chat exactly
+ * as effectively as the operator's do, on hardware nobody is billed for; and
+ * the recommended remedy for the operator's own lockout — put his personal
+ * Codex account first in the chain — moves him onto precisely that arm, where
+ * the exemption would have left the guarantee empty on the one configuration
+ * it was written for.
  */
-function applyJobShare(
-  surface: BudgetSurface,
-  chain: ReadonlyArray<{ providerType: ProviderChainType }>,
-  cap: number,
-): number {
-  return surface === "job" && resolveCostOwner(chain) === "operator"
-    ? Math.floor(cap * JOB_SURFACE_SHARE)
+function withInteractiveReserve(surface: BudgetSurface, cap: number): number {
+  return surface === "job"
+    ? cap - Math.floor(cap * INTERACTIVE_RESERVE_SHARE)
     : cap;
 }
 
@@ -123,20 +129,19 @@ function applyJobShare(
  * v1.38.19 — the daily ceiling for one SURFACE on a chain. `"coach"`
  * (every interactive surface: the chat, the extraction routes, the document
  * routes, the connection probe) gets the whole ceiling; `"job"` (the automatic
- * generators) gets `JOB_SURFACE_SHARE` of it. The cost owner is unchanged —
- * this only rations how much of the owner's ceiling a background surface may
- * claim.
+ * generators) must leave the interactive reserve behind. The cost owner is
+ * unchanged — this only says how much of the owner's ceiling a background
+ * surface may claim.
  */
 export function resolveDailyCapFor(
   surface: BudgetSurface,
   chain: ReadonlyArray<{ providerType: ProviderChainType }>,
 ): number {
-  return applyJobShare(surface, chain, resolveDailyCap(chain));
+  return withInteractiveReserve(surface, resolveDailyCap(chain));
 }
 
 /**
- * v1.38.19 — the ABUSE ceiling on the day's mixed total,
- * for one surface and one cost owner.
+ * v1.38.19 — the ABUSE ceiling on the day's mixed total, for one surface.
  *
  * `resolveDailyCapFor` answers "how much of the owner's ceiling may this
  * surface claim", and for an operator-funded chain that ceiling is measured
@@ -145,16 +150,12 @@ export function resolveDailyCapFor(
  * the correct answer for the operator's invoice and a useless one for the row:
  * on the 2026-09-11 evidence the operator counter never grew, so nothing
  * bounded the 1.0–1.45 M tokens a day of background generation, and nothing
- * bounded a runaway client loop either. `USER_PLAN_CAP` stays the ceiling on
- * the total in BOTH arms, and a background surface gets its share of that too.
+ * bounded a runaway client loop either. `USER_PLAN_CAP` is the ceiling on the
+ * total whoever paid, and a background surface leaves the same reserve behind
+ * here as it does on the owner's ceiling.
  */
-export function resolveTotalCapFor(
-  surface: BudgetSurface,
-  owner: BudgetCostOwner,
-): number {
-  return surface === "job" && owner === "operator"
-    ? Math.floor(USER_PLAN_CAP * JOB_SURFACE_SHARE)
-    : USER_PLAN_CAP;
+export function resolveTotalCapFor(surface: BudgetSurface): number {
+  return withInteractiveReserve(surface, USER_PLAN_CAP);
 }
 
 /**
@@ -341,7 +342,7 @@ export async function reserveBudget(
   // served — from writing an unbounded row. Dropping the second one for
   // operator chains left them with no ceiling at all, because their counter
   // returns to ~0 on every reconcile the user's own plan settled.
-  const totalCap = resolveTotalCapFor(surface, owner);
+  const totalCap = resolveTotalCapFor(surface);
   const limit: ReserveBudgetResult["limit"] =
     prior >= cap ? "owner-cap" : priorTotal >= totalCap ? "total-cap" : null;
   if (limit !== null) {

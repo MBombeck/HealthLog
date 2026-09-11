@@ -128,12 +128,12 @@ describe("runStatusCompletion — ledger accounting", () => {
     expect(ledgerTotal).toBe(1234);
   });
 
-  it("refuses a background generation at the job share while the chat still runs", async () => {
-    // The automatic status/reference generators may spend at most
-    // half the operator ceiling, so the interactive chat still has a day left
-    // when the jobs have had theirs. One token past the job share:
-    ledgerTotal = 100_001;
-    ledgerOperator = 100_001;
+  it("refuses a background generation that would eat the reserve while the chat still runs", async () => {
+    // The automatic status/reference generators must stop while the interactive
+    // reserve is still whole, so the chat has a day left when the jobs have had
+    // theirs. One token past the point where only the reserve remains:
+    ledgerTotal = 160_001;
+    ledgerOperator = 160_001;
     mockProviderReply(500);
 
     const result = await runStatusCompletion(completionArgs());
@@ -189,7 +189,7 @@ describe("runStatusCompletion — ledger accounting", () => {
           owner: "operator",
           surface: "job",
           limit: "owner-cap",
-          cap: OPERATOR_COST_CAP * 0.5,
+          cap: 160_000,
           operatorAfter: OPERATOR_COST_CAP,
         }),
       }),

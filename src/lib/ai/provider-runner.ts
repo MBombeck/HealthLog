@@ -454,7 +454,7 @@ async function runRawChain(
       const hopCap = resolveDailyCapFor(surface, [
         { providerType: candidate.providerType },
       ]);
-      const hopTotalCap = resolveTotalCapFor(surface, "operator");
+      const hopTotalCap = resolveTotalCapFor(surface);
       if (spent.operator >= hopCap || spent.total >= hopTotalCap) {
         const hop: FallbackHop = {
           providerType: candidate.providerType,

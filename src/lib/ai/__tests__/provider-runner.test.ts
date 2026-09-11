@@ -842,9 +842,9 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
   // `[codex, admin-openai]` reserves under the user-plan ceiling, `codex` 429s,
   // every job falls back onto the shared key, and background work fills the
   // operator's ceiling before the user opens the chat.
-  it("refuses a JOB's admin-* fallback hop at the job share", async () => {
-    budgetState.spent = 150_000;
-    budgetState.operatorSpent = 150_000;
+  it("refuses a JOB's admin-* fallback hop once only the reserve is left", async () => {
+    budgetState.spent = 160_000;
+    budgetState.operatorSpent = 160_000;
     const codex = new ScriptedProvider({
       type: "codex",
       script: [{ ok: false, error: err(500) }],
@@ -874,10 +874,10 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
   });
 
   it("still lets the interactive chat take that same hop", async () => {
-    // The whole point of the share: at 150 000 operator tokens the background
+    // The whole point of the reserve: at 160 000 operator tokens the background
     // work is done for the day and the person waiting is not.
-    budgetState.spent = 150_000;
-    budgetState.operatorSpent = 150_000;
+    budgetState.spent = 160_000;
+    budgetState.operatorSpent = 160_000;
     const codex = new ScriptedProvider({
       type: "codex",
       script: [{ ok: false, error: err(500) }],
