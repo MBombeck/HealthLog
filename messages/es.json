@@ -413,6 +413,11 @@
     "loginFailed": "No se ha podido iniciar sesión",
     "registerFailed": "No se ha podido completar el registro",
     "invitedBanner": "Te han invitado: crea tu cuenta aunque el registro esté cerrado.",
+    "alreadySignedIn": {
+      "title": "Ya has iniciado sesión",
+      "body": "Has iniciado sesión como {username}. Una invitación crea una cuenta nueva. Cierra la sesión para aceptarla.",
+      "signOut": "Cerrar sesión y aceptar la invitación"
+    },
     "createAccount": "Crear cuenta",
     "newAccount": "Crear cuenta nueva",
     "backToPasskey": "Volver a passkey",

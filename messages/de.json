@@ -413,6 +413,11 @@
     "loginFailed": "Anmeldung fehlgeschlagen",
     "registerFailed": "Registrierung fehlgeschlagen",
     "invitedBanner": "Du wurdest eingeladen — erstelle dein Konto, auch wenn die Registrierung sonst geschlossen ist.",
+    "alreadySignedIn": {
+      "title": "Du bist bereits angemeldet",
+      "body": "Du bist als {username} angemeldet. Eine Einladung legt ein neues Konto an. Melde dich ab, um sie anzunehmen.",
+      "signOut": "Abmelden und Einladung annehmen"
+    },
     "createAccount": "Konto erstellen",
     "newAccount": "Neues Konto erstellen",
     "backToPasskey": "Zurück zu Passkey",

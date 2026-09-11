@@ -31,8 +31,19 @@ vi.mock("@/lib/auth/login-alert", () => ({
   recordSignInDevice: vi.fn().mockResolvedValue(undefined),
 }));
 
+// The invite ledger. A refused registration must never reach it — the
+// assertion below is that `uses` is left alone, and the only way this route
+// can touch it is through `consumeInviteToken`.
+vi.mock("@/lib/auth/invite-token", () => ({
+  consumeInviteToken: vi
+    .fn()
+    .mockResolvedValue({ ok: true, inviteId: "inv-1" }),
+  recordInviteConsumer: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/lib/auth/session", () => ({
   createSession: vi.fn().mockResolvedValue(undefined),
+  getSession: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("@/lib/auth/password", () => ({
@@ -78,7 +89,8 @@ import { POST } from "../route";
 import { checkRateLimit, checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { checkPasswordStrength, hashPassword } from "@/lib/auth/password";
-import { createSession } from "@/lib/auth/session";
+import { createSession, getSession } from "@/lib/auth/session";
+import { consumeInviteToken } from "@/lib/auth/invite-token";
 import { Prisma } from "@/generated/prisma/client";
 
 function postReq(body: unknown): NextRequest {
@@ -96,6 +108,7 @@ beforeEach(() => {
     allowed: true,
     ip: "1.2.3.4",
   } as never);
+  vi.mocked(getSession).mockResolvedValue(null as never);
 });
 
 describe("POST /api/auth/register — 422 multi-issue (v1.4.43 W6)", () => {
@@ -265,5 +278,99 @@ describe("POST /api/auth/register — OIDC_ONLY server-side enforcement", () => 
     // Falls through to normal validation (422 here) rather than 403 — a
     // half-set OIDC group must never lock everyone out.
     expect(res.status).toBe(422);
+  });
+});
+
+/**
+ * v1.38.19 — an invitation creates a NEW account, so it cannot be accepted
+ * from inside somebody's live session.
+ *
+ * Until this gate the route read no session at all: a request carrying a valid
+ * `healthlog_session` was treated exactly like an anonymous one, and the
+ * unconditional `createSession` at the end overwrote the caller's cookie with
+ * the fresh account's. The admin who clicked his own invite link to check it
+ * was signed out of his admin account and into a stranger's onboarding, with
+ * his previous session row left valid server-side and unreachable.
+ */
+describe("POST /api/auth/register — refuses a live session (v1.38.19)", () => {
+  const invitedBody = {
+    email: "new@example.com",
+    username: "newuser",
+    password: "a-very-strong-password-123",
+    inviteToken: `hlv_${"a".repeat(64)}`,
+  };
+
+  // Everything the happy path needs is stubbed, so the ONLY reason this
+  // request can fail is the gate under test. Without it the same request
+  // answers 201 and mints a session over the caller's cookie.
+  beforeEach(() => {
+    vi.mocked(consumeInviteToken).mockResolvedValue({
+      ok: true,
+      inviteId: "inv-1",
+    } as never);
+    vi.mocked(prisma.user.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
+    vi.mocked(checkPasswordStrength).mockReturnValue({
+      isAcceptable: true,
+      feedback: [],
+    } as never);
+    vi.mocked(hashPassword).mockResolvedValue("hashed" as never);
+    vi.mocked(prisma.$transaction).mockImplementation(((
+      fn: (tx: typeof prisma) => unknown,
+    ) => fn(prisma)) as never);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ locked: 1 }] as never);
+    vi.mocked(prisma.user.create).mockResolvedValue({
+      id: "u1",
+      username: "newuser",
+      email: "new@example.com",
+      role: "USER",
+    } as never);
+    vi.mocked(getSession).mockResolvedValue({
+      session: { id: "sess-1", expiresAt: new Date(Date.now() + 1e6) },
+      user: { id: "u-existing", username: "admin", email: "a@example.com" },
+    } as never);
+  });
+
+  it("answers 409 already_authenticated", async () => {
+    const res = await postPathThrough(invitedBody);
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as {
+      data: null;
+      error: string;
+      meta?: { errorCode?: string };
+    };
+    expect(body.data).toBeNull();
+    expect(body.meta?.errorCode).toBe("already_authenticated");
+    expect(body.error).toMatch(/sign/i);
+  });
+
+  it("creates no account", async () => {
+    await postPathThrough(invitedBody);
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it("does not burn a use of the invitation", async () => {
+    await postPathThrough(invitedBody);
+    expect(consumeInviteToken).not.toHaveBeenCalled();
+  });
+
+  it("does not touch the caller's own session", async () => {
+    await postPathThrough(invitedBody);
+    expect(createSession).not.toHaveBeenCalled();
+  });
+
+  it("refuses before the rate-limit bucket is spent", async () => {
+    // The gate is a session read, not an attempt: a signed-in visitor
+    // clicking the link three times must not lock the door for the person
+    // the invitation is actually for, who shares the IP on a home network.
+    await postPathThrough(invitedBody);
+    expect(checkAuthSurfaceRateLimit).not.toHaveBeenCalled();
+  });
+
+  it("still registers an anonymous caller", async () => {
+    // The control. Same request, no session — the invitation works.
+    vi.mocked(getSession).mockResolvedValue(null as never);
+    const res = await postPathThrough(invitedBody);
+    expect(res.status).toBe(201);
   });
 });

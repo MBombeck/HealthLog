@@ -6,7 +6,7 @@ import {
 } from "@/lib/auth/invite-token";
 import { registerSchema } from "@/lib/validations/auth";
 import { hashPassword, checkPasswordStrength } from "@/lib/auth/password";
-import { createSession } from "@/lib/auth/session";
+import { createSession, getSession } from "@/lib/auth/session";
 import { recordSignInDevice } from "@/lib/auth/login-alert";
 import { auditLog } from "@/lib/auth/audit";
 import {
@@ -37,6 +37,31 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Registration is disabled. Sign in with SSO.", 403, {
       errorCode: "oidc_only",
     });
+  }
+
+  // v1.38.19 — an invitation creates a NEW account, so it can never be
+  // accepted from inside a live session.
+  //
+  // The route used to read no session at all: a request carrying a valid
+  // `healthlog_session` was handled exactly like an anonymous one, and the
+  // unconditional `createSession` at the end overwrote the caller's cookie
+  // with the fresh account's. An admin opening his own invite link to check it
+  // was signed out of his admin account and into a stranger's onboarding, his
+  // previous session row still valid server-side and no longer reachable.
+  //
+  // Refused BEFORE the rate limit on purpose: this is a state, not an attempt,
+  // and spending the 5-per-15-minutes bucket on it would lock the door for the
+  // person the invitation is actually for, who may well share the IP.
+  // `getSession` is the optional resolver — it answers `null` for an anonymous
+  // caller instead of throwing, which `requireAuth` would.
+  const existingSession = await getSession();
+  if (existingSession) {
+    annotate({ action: { name: "auth.register.refused_authenticated" } });
+    return apiError(
+      "Already signed in — sign out first to use an invitation",
+      409,
+      { errorCode: "already_authenticated" },
+    );
   }
 
   // v1.4.43 W13 M-4 — tighten to a global bucket when the trust chain

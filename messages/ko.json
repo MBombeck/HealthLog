@@ -413,6 +413,11 @@
     "loginFailed": "로그인 실패",
     "registerFailed": "회원가입 실패",
     "invitedBanner": "초대를 받았어요 — 회원가입이 닫혀 있어도 계정을 만들 수 있어요.",
+    "alreadySignedIn": {
+      "title": "이미 로그인되어 있습니다",
+      "body": "{username} 계정으로 로그인되어 있습니다. 초대는 새 계정을 만듭니다. 초대를 수락하려면 로그아웃하세요.",
+      "signOut": "로그아웃하고 초대 수락하기"
+    },
     "createAccount": "계정 만들기",
     "newAccount": "새 계정 만들기",
     "backToPasskey": "패스키로 돌아가기",

@@ -413,6 +413,11 @@
     "loginFailed": "Accesso non riuscito",
     "registerFailed": "Registrazione non riuscita",
     "invitedBanner": "Sei stato invitato — crea il tuo account anche se la registrazione è chiusa.",
+    "alreadySignedIn": {
+      "title": "Hai già effettuato l'accesso",
+      "body": "Hai effettuato l'accesso come {username}. Un invito crea un nuovo account. Esci per accettarlo.",
+      "signOut": "Esci e accetta l'invito"
+    },
     "createAccount": "Crea account",
     "newAccount": "Crea un nuovo account",
     "backToPasskey": "Torna a passkey",
