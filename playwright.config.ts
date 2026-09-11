@@ -234,6 +234,18 @@ export default defineConfig({
         "setup-flow-a11y.spec.ts",
         "setup-flow-connect.spec.ts",
         "setup-flow-locale-overflow.spec.ts",
+        // The shared-provider offer journey states INSTANCE-wide facts to
+        // reason about: it writes the operator key into `app_settings` and
+        // replaces every `provider_health` row for both shared tags, then
+        // puts both back. Serial mode only orders tests inside one file, so
+        // a second project would hold and clear that state underneath the
+        // first — and underneath any other spec that reads AI availability.
+        "onboarding-ai-offer.spec.ts",
+        // The invitation journey mints its token and registers from a
+        // cookie-less window. Two projects registering from one address
+        // share the five-per-fifteen-minutes budget on `auth:register`, so
+        // the second one meets a rate limit rather than the form.
+        "invite-registration.spec.ts",
       ],
       use: {
         // Pixel 5 — Chromium-based mobile profile so CI only needs
