@@ -41,6 +41,7 @@ import { isModuleEnabled } from "@/lib/modules/gate";
 import {
   buildDateKey,
   reconcileSpend,
+  reserveBudget,
   resolveCostOwner,
   resolveDailyCapFor,
   type BudgetCostOwner,
@@ -317,10 +318,11 @@ type ReactionReservation = {
   reserved: number;
   dateKey: string;
   /**
-   * v1.38.19 (Wave E) — the cost owner the reservation was booked to. A
-   * RESUMED reservation (the claim survived a crash, its tokens are on the
-   * row) recomputes it from the same chain the reservation was made under, so
-   * the reconcile reverses exactly what the reservation added.
+   * v1.38.19 (Wave E) — the cost owner the reservation was booked to. It is
+   * PERSISTED on the row (`generationCostOwner`), not recomputed: the chain is
+   * re-resolved per run and the health ledger reorders it, so a resumed
+   * reservation that asked the chain again could reverse a counter the
+   * reservation never touched — or leave one it did.
    */
   owner: BudgetCostOwner;
 };
@@ -361,32 +363,28 @@ async function reserveClaimBudget(
     });
     if (stillOwned.count !== 1) throw new ReactionClaimLostError();
 
-    const reserved = ARRIVAL_REACTION_RESERVE_TOKENS;
-    // v1.38.19 (Wave E) — this reservation is the claim-linked twin of
-    // `reserveBudget`, so it books the owner split the same way: an
-    // operator-funded chain increments `operator_tokens` inside the SAME
-    // statement as the total, and the refusal path reverses both.
-    const operatorReserved = owner === "operator" ? reserved : 0;
-    const rows = await tx.$queryRaw<{ total_tokens: number }[]>`
-      INSERT INTO coach_usage (id, user_id, date_key, total_tokens, operator_tokens, message_count, created_at, updated_at)
-      VALUES (gen_random_uuid()::text, ${userId}, ${dateKey}, ${reserved}, ${operatorReserved}, 1, NOW(), NOW())
-      ON CONFLICT (user_id, date_key) DO UPDATE SET
-        total_tokens = coach_usage.total_tokens + ${reserved},
-        operator_tokens = coach_usage.operator_tokens + ${operatorReserved},
-        message_count = coach_usage.message_count + 1,
-        updated_at = NOW()
-      RETURNING total_tokens
-    `;
-    const totalAfter = Number(rows[0]?.total_tokens ?? reserved);
-    if (totalAfter - reserved >= cap) {
-      await tx.$executeRaw`
-        UPDATE coach_usage
-        SET total_tokens = GREATEST(0, total_tokens - ${reserved}),
-            operator_tokens = GREATEST(0, operator_tokens - ${operatorReserved}),
-            message_count = GREATEST(0, message_count - 1),
-            updated_at = NOW()
-        WHERE user_id = ${userId} AND date_key = ${dateKey}
-      `;
+    // v1.38.19 (Wave E, fix round 1) — ONE reservation implementation.
+    //
+    // This surface used to carry its own copy of the upsert so the write could
+    // ride the claim transaction. The copy drifted: it learned to WRITE
+    // `operator_tokens` and kept gating on the day's mixed total, at the
+    // halved job ceiling — so on the operator's own 2026-09-11 row (1.2 M
+    // total, ~0 operator) the arrival reaction was refused all day, which is
+    // the exact defect this wave exists to remove, reproduced on the one
+    // surface the wave forgot to convert. `reserveBudget` takes the
+    // transaction client instead, so both writes still roll back together and
+    // there is no second copy left to drift.
+    const reservation = await reserveBudget(
+      userId,
+      ARRIVAL_REACTION_RESERVE_TOKENS,
+      dateKey,
+      cap,
+      owner,
+      "job",
+      tx,
+    );
+    const reserved = reservation.reserved;
+    if (!reservation.allowed) {
       await tx.arrivalReaction.updateMany({
         where: { id: rowId, userId, occurredAt: revision, generationClaimId },
         data: { generationClaimId: null, generationClaimedAt: null },
@@ -408,6 +406,11 @@ async function reserveClaimBudget(
       data: {
         generationReservedTokens: reserved,
         generationBudgetDateKey: dateKey,
+        // v1.38.19 (Wave E, fix round 1) — persist the cost owner with the
+        // amount. Two readers need it and neither can derive it: the resume
+        // path below (the chain may have been reordered since) and the
+        // supersede refund in `data-arrival.ts` (which has no chain at all).
+        generationCostOwner: owner,
       },
     });
     if (linked.count !== 1) throw new ReactionClaimLostError();
@@ -447,6 +450,7 @@ export async function runReactionLine(
       generationClaimedAt: true,
       generationReservedTokens: true,
       generationBudgetDateKey: true,
+      generationCostOwner: true,
       generationProviderInvokedAt: true,
       occurredAt: true,
       refId: true,
@@ -543,7 +547,12 @@ export async function runReactionLine(
       allowed: true,
       reserved: row.generationReservedTokens!,
       dateKey: row.generationBudgetDateKey!,
-      owner: resolveCostOwner(chain),
+      // The owner the reservation was actually booked to. Rows written before
+      // the column existed have none; the chain is the only answer left for
+      // those, and it is the answer the whole resume path used to give.
+      owner:
+        (row.generationCostOwner as BudgetCostOwner | null) ??
+        resolveCostOwner(chain),
     };
   } else {
     try {
