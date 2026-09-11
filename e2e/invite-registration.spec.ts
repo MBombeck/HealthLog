@@ -113,6 +113,6 @@ test.describe("invitation links", () => {
     });
     expect(res.status()).toBe(409);
     const body = (await res.json()) as { meta?: { errorCode?: string } };
-    expect(body.meta?.errorCode).toBe("already_authenticated");
+    expect(body.meta?.errorCode).toBe("auth.already_authenticated");
   });
 });

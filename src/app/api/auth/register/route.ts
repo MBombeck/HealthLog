@@ -60,7 +60,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError(
       "Already signed in — sign out first to use an invitation",
       409,
-      { errorCode: "already_authenticated" },
+      { errorCode: "auth.already_authenticated" },
     );
   }
 

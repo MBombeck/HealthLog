@@ -340,7 +340,7 @@ describe("POST /api/auth/register — refuses a live session (v1.38.19)", () => 
       meta?: { errorCode?: string };
     };
     expect(body.data).toBeNull();
-    expect(body.meta?.errorCode).toBe("already_authenticated");
+    expect(body.meta?.errorCode).toBe("auth.already_authenticated");
     expect(body.error).toMatch(/sign/i);
   });
 
