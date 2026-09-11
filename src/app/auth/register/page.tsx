@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, MailOpen, UserPlus } from "lucide-react";
+import { Loader2, LogOut, MailOpen, UserPlus } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,8 @@ import { PasswordStrength } from "@/components/ui/password-strength";
 import { useTranslations } from "@/lib/i18n/context";
 import { detectBrowserTimezone } from "@/lib/tz/format";
 import { queryKeys } from "@/lib/query-keys";
-import { ApiError, apiPost } from "@/lib/api/api-fetch";
+import { ApiError, apiFetchRaw, apiPost } from "@/lib/api/api-fetch";
+import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -23,6 +24,23 @@ export default function RegisterPage() {
   // admits the invited user; an open instance simply ignores it.
   const inviteToken = searchParams.get("invite");
   const queryClient = useQueryClient();
+  // v1.38.19 — an invitation creates a NEW account, so it cannot be accepted
+  // from inside a live session; `POST /api/auth/register` refuses one with
+  // 409 `already_authenticated`. Rendering the form anyway would let the
+  // visitor discover that by filling it in.
+  //
+  // The gate is the resolved account payload, not `isAuthenticated`. That
+  // flag deliberately holds the LAST-KNOWN state off a localStorage marker
+  // whenever `/api/auth/me` fails at the transport level or with a 5xx, so
+  // the shell does not sign people out on a blip — and on that path there is
+  // no `user`. Gating on it would show an invited household member behind a
+  // 502 a panel that names nobody and offers a sign-out posting to the very
+  // endpoint that is failing, with no way to register. A payload in hand is
+  // the only positive evidence of a session, and it is also absent while the
+  // probe is still in flight, so the panel cannot flash at somebody who is
+  // not signed in.
+  const { user } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -67,6 +85,83 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSignOut() {
+    setError(null);
+    setSigningOut(true);
+    try {
+      await apiFetchRaw("/api/auth/logout", { method: "POST" });
+      // Same session-end wipe the shell and the menu do: the QueryClient
+      // outlives the navigation on this SPA and the health-data families are
+      // not user-scoped, so nothing may survive into the next account.
+      clearCachesForSessionEnd(queryClient);
+      // Back to this page, invitation intact — NOT to the login screen the
+      // generic logout goes to. The point of the trip is to accept the
+      // invitation, and the token only rides the URL.
+      router.replace(
+        inviteToken
+          ? `/auth/register?invite=${encodeURIComponent(inviteToken)}`
+          : "/auth/register",
+      );
+      router.refresh();
+    } catch {
+      setError(t("common.networkError"));
+    } finally {
+      setSigningOut(false);
+    }
+  }
+
+  if (user) {
+    return (
+      <div className="w-full max-w-sm">
+        <div className="border-border bg-card rounded-xl border p-6 shadow-lg shadow-black/20 sm:p-8">
+          <div
+            className="flex flex-col items-center gap-3 text-center"
+            data-testid="register-already-signed-in"
+          >
+            <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-lg">
+              <Logo className="text-primary" size={28} />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight">
+              {t("auth.alreadySignedIn.title")}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {t("auth.alreadySignedIn.body", {
+                username: user?.username ?? "",
+              })}
+            </p>
+          </div>
+
+          {error && (
+            <div
+              role="alert"
+              aria-live="polite"
+              className="bg-destructive/10 text-destructive mt-6 rounded-lg p-3 text-sm"
+            >
+              {error}
+            </div>
+          )}
+
+          <Button
+            type="button"
+            size="lg"
+            className="mt-8 min-h-11 w-full"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            aria-busy={signingOut || undefined}
+            data-testid="register-sign-out"
+          >
+            {signingOut ? (
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+            ) : (
+              <LogOut className="h-4 w-4" />
+            )}
+            {t("auth.alreadySignedIn.signOut")}
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

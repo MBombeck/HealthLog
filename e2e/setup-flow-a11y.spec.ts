@@ -118,7 +118,14 @@ const SCREENS: ScreenCase[] = [
   {
     screen: "first-result",
     path: "/onboarding/first-result",
-    painted: (page) => page.locator('[data-slot="onboarding-task-connect"]'),
+    // v1.38.19 — wait for the tile the screen SETTLED on, not for
+    // the connect card. This sweep used to name the connect card, which is
+    // painted for the few hundred milliseconds before the status envelope
+    // resolves whatever the account's real state is — so it scanned a frame
+    // the person may never see, and passed straight through the defect that
+    // frame was hiding. `data-connect-slot` appears only once the screen has
+    // decided, and it is on every one of the four tiles.
+    painted: (page) => page.locator("[data-connect-slot]"),
     prepare: (page) => complete(page),
   },
   {

@@ -80,11 +80,15 @@ describe("questionAnswerBody", () => {
     expect(questionAnswerBody("visit", [])).toBeNull();
   });
 
-  it("sends an empty list for a many-answer question with nothing chosen", () => {
-    expect(questionAnswerBody("areas", [])).toEqual({
-      step: "areas",
-      areas: [],
-    });
+  it("is null for a many-answer question with nothing chosen", () => {
+    // An empty tick list is not an opinion. It used to be sent as an
+    // ANSWER, and an answered Q2 with no areas is what switched every
+    // optional module off for somebody who meant "no preference" — Skip is
+    // the way past, and Skip is the conservative derivation.
+    expect(questionAnswerBody("areas", [])).toBeNull();
+    expect(questionAnswerBody("sources", [])).toBeNull();
+    // A list of values none of which the step offers is just as empty.
+    expect(questionAnswerBody("areas", ["no-such-area"])).toBeNull();
   });
 
   it("drops a value the step's vocabulary does not contain", () => {
@@ -125,13 +129,22 @@ describe("units", () => {
     expect(onboardingAnswerSchema.safeParse(body).success).toBe(true);
   });
 
-  it("sends an empty answer when nothing was chosen, which leaves the columns alone", () => {
+  it("is null when nothing was chosen, so Skip is the way past", () => {
+    // An empty units answer marked Q6 done without recording a preference.
     expect(
       unitsAnswerBody({
         asked: { glucose: true, weight: true },
         glucoseUnit: null,
         unitPreference: null,
       }),
-    ).toEqual({ step: "units", units: {} });
+    ).toBeNull();
+    // One of two asked questions answered is still an answer.
+    expect(
+      unitsAnswerBody({
+        asked: { glucose: true, weight: true },
+        glucoseUnit: "mg/dL",
+        unitPreference: null,
+      }),
+    ).toEqual({ step: "units", units: { glucoseUnit: "mg/dL" } });
   });
 });

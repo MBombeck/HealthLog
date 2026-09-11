@@ -11,6 +11,13 @@ import { isPublicUrl } from "@/lib/validations/notifications";
 import { isLocalAiHostAllowed } from "@/lib/ai/local-host-allowlist";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { resolveProviderAvailability } from "@/lib/ai/provider";
+import { readServerProviderHealth } from "@/lib/ai/server-provider-health";
+import { hasActiveConsentForSurface } from "@/lib/ai/consent-guard";
+import { getAssistantFlags } from "@/lib/feature-flags";
+import {
+  providerCredentialPolicy,
+  providerWorkAuthorityForRecord,
+} from "@/lib/sharing/provider-work-authority";
 import { annotate } from "@/lib/logging/context";
 import { aiProviderPatchSchema } from "@/lib/validations/ai-provider";
 
@@ -35,6 +42,9 @@ export const GET = apiHandler(async () => {
       aiCompatModel: true,
       // v1.22 (#89)
       aiResponseTimeoutSeconds: true,
+      // v1.38.19 — a managed profile is never the party that gives
+      // consent for itself; the offer below has to know.
+      managedProfileAt: true,
     },
   });
 
@@ -44,6 +54,54 @@ export const GET = apiHandler(async () => {
   // a server-managed provider is no longer invisible to the client.
   // `managedBy` reports the origin only; no admin keys/endpoints are leaked.
   const { aiAvailable, managedBy } = await resolveProviderAvailability(user.id);
+
+  // ── v1.38.19 — the shared provider, honestly ────────────────
+  // `managedBy: "server"` says the operator configured a key. It has never
+  // said the key WORKS, and the setup flow spent three releases promising
+  // that it did. It also says nothing about the consent receipt
+  // `consent-guard.ts` demands before any PHI reaches `admin-openai` /
+  // `admin-codex`, which is the decision a fresh account is actually
+  // missing — the provider was already chosen for them by the default chain.
+  //
+  // So three additive fields, and every one of them can only ever take the
+  // offer away:
+  //   serverProviderHealth  — the instance-wide tri-state, fail closed.
+  //   serverProviderConsent — this user already holds a receipt.
+  //   serverProviderOffer   — all five preconditions hold at once.
+  //
+  // Nothing here probes a provider. The flow's rule ("nothing in the flow
+  // talks to an AI provider") holds: a probe would bill the OPERATOR for
+  // every registration on the instance.
+  const serverProviderHealth = await readServerProviderHealth();
+  const serverProviderConsent = await hasActiveConsentForSurface(
+    user.id,
+    "coach",
+  );
+  const assistantFlags = await getAssistantFlags();
+  // `personal`, not merely "not deny": a guardian's own record resolves to
+  // `personal`, while a managed profile resolves to `operator-default` —
+  // its provider is the operator's by definition, and a child's record does
+  // not consent to its own PHI egress. Both must be excluded here, and only
+  // the positive form excludes both.
+  const credentialPolicy = providerCredentialPolicy(
+    providerWorkAuthorityForRecord(user.id),
+    u?.managedProfileAt ?? null,
+  );
+  // A demo instance can show the offer but cannot honour it: the one tap
+  // posts `POST /api/consent/ai/web`, which the demo's edge allowlist
+  // refuses — and should, since the demo is one shared account and a receipt
+  // one visitor minted would turn the operator's provider on for every later
+  // one. A button that can only 403 into a generic toast is precisely the
+  // misleading failure this surface exists to remove, so there is no button.
+  const demoInstance = process.env.DEMO_MODE === "true";
+  const serverProviderOffer =
+    !demoInstance &&
+    managedBy === "server" &&
+    serverProviderHealth === "healthy" &&
+    assistantFlags.enabled &&
+    assistantFlags.coach &&
+    credentialPolicy === "personal" &&
+    !serverProviderConsent;
 
   return apiSuccess({
     provider: u?.aiProvider ?? null,
@@ -67,6 +125,11 @@ export const GET = apiHandler(async () => {
     hasCompatKey: Boolean(u?.aiCompatKeyEncrypted),
     // v1.22 (#89) — per-user response timeout, in seconds (null = default).
     responseTimeoutSeconds: u?.aiResponseTimeoutSeconds ?? null,
+    // v1.38.19 — see the block above. A tri-state and two booleans;
+    // no count, no timestamp and no other account is inferable from them.
+    serverProviderHealth,
+    serverProviderOffer,
+    serverProviderConsent,
   });
 });
 

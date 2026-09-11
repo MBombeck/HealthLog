@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -20,7 +20,14 @@ import { localeLabels } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 import { MODULE_REGISTRY } from "@/lib/modules/registry";
 import { confirmedModules } from "@/lib/onboarding/confirm-summary";
-import type { OnboardingStateDto } from "@/lib/onboarding/needs";
+import {
+  ONBOARDING_SKIPPABLE_STEP_IDS,
+  type OnboardingStateDto,
+} from "@/lib/onboarding/needs";
+
+/** A step the confirm screen may pass on the ledger without an answer. */
+type PassableStepId = (typeof ONBOARDING_SKIPPABLE_STEP_IDS)[number];
+import { isOnboardingSettled } from "@/lib/onboarding/needs";
 import {
   firstResultApplies,
   nextScreen,
@@ -51,17 +58,97 @@ import {
  * offer, otherwise done. When there is no task, the first-result step is
  * passed explicitly so the ledger reads as settled rather than owed.
  */
-export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
+/**
+ * v1.39 — the completion sequence, apart from the component so
+ * a failure partway through it can be pinned without a browser.
+ *
+ * Passes every question the flow never showed (the route derives only once
+ * EVERY question is answered or passed, and a step nobody was asked cannot be
+ * answered), completes, passes the first-result step when there is no task to
+ * offer, and navigates. It reports a failure by THROWING — the caller owns the
+ * buttons and the toast.
+ */
+export async function runConfirmFinish(args: {
+  /** The ledger as the last write left it; updated in place as steps pass. */
+  ledger: { current: OnboardingStateDto };
+  managedRecordId?: string;
+  passStep: (step: PassableStepId) => Promise<OnboardingStateDto>;
+  complete: (
+    managedRecordId?: string,
+  ) => Promise<{ onboarding?: OnboardingStateDto | null }>;
+  navigate: (href: string) => void;
+}): Promise<void> {
+  for (const id of questionsToPassBeforeConfirm(args.ledger.current)) {
+    args.ledger.current = await args.passStep(id);
+  }
+  const { onboarding } = await args.complete(args.managedRecordId);
+  let written = onboarding ?? args.ledger.current;
+  if (!firstResultApplies(written)) {
+    // Nothing to offer, so the step is passed rather than left owed: a
+    // pending step would keep the setup reading as unfinished forever.
+    written = await args.passStep("first-result");
+  }
+  args.ledger.current = written;
+  args.navigate(screenHref(nextScreen(written, "confirm") ?? "done"));
+}
+
+export function ConfirmScreen({
+  state,
+  demoMode = false,
+}: {
+  state: OnboardingStateDto;
+  /**
+   * True on a `DEMO_MODE` instance. Resolved by the page (a server
+   * component) from the server-only env var and threaded down, the way the
+   * root layout threads it into the shell — no client-side detection and no
+   * extra request. The baseline step's anamnesis card is read-only there.
+   */
+  demoMode?: boolean;
+}) {
   const { t, locale } = useTranslations();
   const router = useRouter();
   const { user } = useAuth();
   const complete = useOnboardingComplete();
   const answer = useOnboardingAnswer();
   const [finishing, setFinishing] = useState(false);
+  /**
+   * v1.39 — the ledger as the last write left it.
+   * `finish()` sends one PATCH per question the flow never showed; a failure
+   * midway used to leave a partly-passed ledger that the next attempt walked
+   * from the top again, because the `state` prop it read was the one this
+   * screen was rendered with. Every mutation answers the written state, so
+   * the ref carries the progress across attempts and
+   * `questionsToPassBeforeConfirm` — which lists pending steps only — then
+   * skips what the failed attempt already passed.
+   */
+  const ledger = useRef(state);
 
   const needs = state.needs;
+  /**
+   * v1.39 — is `hl_onboarding=pending` still set?
+   *
+   * Both of this screen's Settings links are page routes, and the cookie is
+   * cleared by the completion — which is what THIS screen calls. So on a
+   * first run the proxy 307s both straight back into the flow: two links
+   * that cannot go anywhere, under a sentence saying where things live. The
+   * words are true, the links are not, so only the links go.
+   */
+  const settingsReachable =
+    isOnboardingSettled(state) || state.completedAt !== null;
   const forSomeoneElse = needs.recordTarget === "someone-else";
-  const { chosen, alwaysOn } = confirmedModules(needs);
+  // `user.modules` is the map the navigation reads, so the screen can only
+  // name a module the person actually has today — and only when the answers
+  // are about that record. In the "someone I look after" arm they are not:
+  // `POST /api/onboarding/complete` applies the derivation to the managed
+  // record (or, when none was created, to nothing at all) and stamps the
+  // guardian's own record without deriving. Reading the actor's map there
+  // would name modules that are staying exactly where they are — the same
+  // guardian-derivation confusion v1.38.18 closed in the write, re-entering
+  // through the copy. An empty map makes the list empty.
+  const { chosen, alwaysOn, wouldSwitchOff } = confirmedModules(
+    needs,
+    forSomeoneElse ? {} : (user?.modules ?? {}),
+  );
   const back = previousScreen(state, "confirm");
 
   const glucoseUnit = needs.units.glucoseUnit ?? user?.glucoseUnit ?? null;
@@ -73,35 +160,37 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
    * after" just created: the route then applies the derivation to THAT
    * record and stamps this one complete without deriving, so the guardian's
    * own modules are never re-ordered around the child's answers.
+   *
+   * v1.39 — this RETHROWS. `<BaselineForm>` owns the two
+   * buttons and releases them in its own `finally`, and it can only do that
+   * for a failure it is told about: the previous version caught, toasted and
+   * returned normally, which left both buttons disabled until a reload.
+   * The two managed-arm callers, which have no form around them, go through
+   * `finishReporting` below.
    */
   async function finish(managedRecordId?: string) {
     if (finishing) return;
     setFinishing(true);
     try {
-      // A question this flow never showed — Q6 for somebody with no
-      // unit-bearing area — is passed on the ledger before the completion,
-      // because the route derives only once EVERY question is answered or
-      // passed, and a step nobody was asked cannot be answered.
-      for (const id of questionsToPassBeforeConfirm(state)) {
-        await answer.mutateAsync({ step: id, status: "skipped" });
-      }
-      const { onboarding } = await complete.mutateAsync(
-        managedRecordId ? { managedRecordId } : undefined,
-      );
-      let written = onboarding ?? state;
-      if (!firstResultApplies(written)) {
-        // Nothing to offer, so the step is passed rather than left owed:
-        // a pending step would keep the setup reading as unfinished forever.
-        written = await answer.mutateAsync({
-          step: "first-result",
-          status: "skipped",
-        });
-      }
-      router.push(screenHref(nextScreen(written, "confirm") ?? "done"));
+      await runConfirmFinish({
+        ledger,
+        managedRecordId,
+        passStep: (step) => answer.mutateAsync({ step, status: "skipped" }),
+        complete: (id) =>
+          complete.mutateAsync(id ? { managedRecordId: id } : undefined),
+        navigate: (href) => router.push(href),
+      });
     } catch (err) {
-      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
       setFinishing(false);
+      throw err;
     }
+  }
+
+  /** The managed arm's two buttons: nothing above them reports a failure. */
+  function finishReporting(managedRecordId?: string) {
+    void finish(managedRecordId).catch((err) => {
+      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
+    });
   }
 
   const moduleNames = (keys: readonly (keyof typeof MODULE_REGISTRY)[]) =>
@@ -129,6 +218,13 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
               })
             : t("onboarding.flow.confirm.nothingExtra")}
         </p>
+        {wouldSwitchOff.length > 0 ? (
+          <p className="text-sm" data-slot="onboarding-confirm-modules-off">
+            {t("onboarding.flow.confirm.switchesOff", {
+              modules: moduleNames(wouldSwitchOff),
+            })}
+          </p>
+        ) : null}
         <p className="text-muted-foreground text-sm">
           {t("onboarding.flow.confirm.alwaysOn", {
             modules: moduleNames(alwaysOn),
@@ -136,12 +232,18 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
         </p>
         <p className="text-sm">
           {t("onboarding.flow.confirm.everythingElse")}{" "}
-          <Link
-            href="/settings/modules"
-            className="text-primary underline underline-offset-4"
-          >
-            {t("onboarding.flow.confirm.modulesLink")}
-          </Link>
+          {settingsReachable ? (
+            <Link
+              href="/settings/modules"
+              className="text-primary underline underline-offset-4"
+            >
+              {t("onboarding.flow.confirm.modulesLink")}
+            </Link>
+          ) : (
+            <span className="font-medium">
+              {t("onboarding.flow.confirm.modulesLink")}
+            </span>
+          )}
         </p>
       </div>
 
@@ -176,12 +278,18 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
         ) : null}
       </dl>
       <p className="text-sm">
-        <Link
-          href="/settings/account"
-          className="text-primary underline underline-offset-4"
-        >
-          {t("onboarding.flow.confirm.changeInSettings")}
-        </Link>
+        {settingsReachable ? (
+          <Link
+            href="/settings/account"
+            className="text-primary underline underline-offset-4"
+          >
+            {t("onboarding.flow.confirm.changeInSettings")}
+          </Link>
+        ) : (
+          <span className="text-muted-foreground">
+            {t("onboarding.flow.confirm.changeInSettings")}
+          </span>
+        )}
       </p>
 
       {forSomeoneElse ? (
@@ -196,7 +304,7 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
           </div>
           <ManagedProfileCreateForm
             submitLabel={t("onboarding.flow.confirm.managedCreate")}
-            onCreated={(profile) => void finish(profile.id)}
+            onCreated={(profile) => finishReporting(profile.id)}
           />
           <p className="text-sm">{t("onboarding.flow.confirm.managedLater")}</p>
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
@@ -212,7 +320,7 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => void finish()}
+              onClick={() => finishReporting()}
               disabled={finishing}
               className="min-h-11"
               data-slot="onboarding-finish-without-profile"
@@ -231,6 +339,7 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
           }}
           onConfirmed={finish}
           confirming={finishing}
+          demoMode={demoMode}
         />
       )}
     </section>

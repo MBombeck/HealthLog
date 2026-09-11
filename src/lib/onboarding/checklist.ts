@@ -282,11 +282,7 @@ export function checklistProgress(items: ChecklistItem[]): ChecklistProgress {
  * unfinished, because the one task the flow offered is not one of the six
  * rows: "every row done" and "the setup finished" are different statements.
  */
-export function shouldShowChecklist(args: {
-  onboardingCompletedAt: string | null;
-  measurementCount: number;
-  dismissedAll: boolean;
-  items: ChecklistItem[];
+export interface StillInSetupInputs {
   /**
    * v1.39 (C1) — the needs-based setup state for this record, or null before
    * the account payload resolves. A record that never entered the flow reads
@@ -295,17 +291,45 @@ export function shouldShowChecklist(args: {
    * on the rule it already had.
    */
   onboarding?: OnboardingStateDto | null;
-}): boolean {
+  onboardingCompletedAt: string | null;
+  measurementCount: number;
+}
+
+/**
+ * v1.39 — "is this record still being set up?", as ONE predicate.
+ *
+ * Two places decide this: whether the card renders at all, and whether the
+ * component fetches the data its rows are about. They were two restatements of
+ * the same rule and they drifted — the visibility rule gained
+ * `hasEnteredOnboardingFlow`, the query gate kept the older half, and a
+ * wizard-run account past five readings got a permanently visible card whose
+ * every network-backed row read "not done". A record whose
+ * restarted run was abandoned is in the same state: `restart` clears the
+ * record's own `completedAt` and deliberately not the account stamp, so
+ * `hasEnteredOnboardingFlow` is what keeps its rows live.
+ *
+ * Exported so the component calls it rather than restating it.
+ */
+export function isStillInSetup(args: StillInSetupInputs): boolean {
+  return (
+    hasEnteredOnboardingFlow(args.onboarding ?? null) ||
+    args.onboardingCompletedAt == null ||
+    args.measurementCount < 5
+  );
+}
+
+export function shouldShowChecklist(
+  args: StillInSetupInputs & {
+    dismissedAll: boolean;
+    items: ChecklistItem[];
+  },
+): boolean {
   if (args.dismissedAll) return false;
   const onboarding = args.onboarding ?? null;
   const visible = visibleChecklist(args.items);
   if (visible.length === 0) return false;
 
-  const stillInSetup =
-    hasEnteredOnboardingFlow(onboarding) ||
-    args.onboardingCompletedAt == null ||
-    args.measurementCount < 5;
-  if (!stillInSetup) return false;
+  if (!isStillInSetup(args)) return false;
 
   if (!isOnboardingSettled(onboarding)) return true;
   return visible.some((item) => !item.done);

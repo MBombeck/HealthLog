@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   CheckCircle2,
   Compass,
@@ -24,7 +25,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAccountSwitch } from "@/hooks/use-account-switch";
 import { setTourReferrer } from "@/components/onboarding/tour-launcher";
 import { queryKeys } from "@/lib/query-keys";
-import { apiGet } from "@/lib/api/api-fetch";
+import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { markChecklistExpanded } from "@/lib/onboarding/checklist-storage";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
@@ -33,6 +34,16 @@ import { accountLabel } from "@/lib/sharing/account-access-view";
 interface AiProviderStatus {
   /** Origin of the provider that would serve this user, if any. */
   managedBy?: "user" | "local" | "server" | null;
+  /**
+   * v1.38.19 — the instance-wide tri-state. Fail closed for the
+   * offer: neither `unhealthy` nor `unknown` earns one. Only `unhealthy` is
+   * a verdict this screen may state out loud.
+   */
+  serverProviderHealth?: "healthy" | "unhealthy" | "unknown";
+  /** Whether the shared provider may honestly be offered in one tap. */
+  serverProviderOffer?: boolean;
+  /** Whether this user already holds an active `ai_full` / `ai_coach` receipt. */
+  serverProviderConsent?: boolean;
 }
 
 /**
@@ -101,10 +112,21 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
     router.push("/");
   }
 
-  // The shared-key note is the ONLY honest divergence in the panel: on a
-  // deployment that ships an operator key, insights already work for the
-  // user, so we say so plainly instead of pushing a BYOK/local setup they
-  // don't need. Presence-only read; no key material is exposed.
+  // ── v1.38.19 — the shared provider, offered only when it works ──
+  //
+  // This block used to be one line: `managedBy === "server"` painted a note
+  // reading "insights work for you right now — no setup needed". Both halves
+  // were wrong. `managedBy` is a PRESENCE read — it knows the operator
+  // configured a key, never that the key answers — and "no setup needed"
+  // skipped the consent receipt `consent-guard.ts` demands before any health
+  // data reaches `admin-openai` / `admin-codex`, so the person who believed
+  // the note walked into a `consent.ai.required` refusal on their first
+  // briefing. On 2026-09-11 the operator's own instance was answering HTTP
+  // 500 from its OAuth proxy while this note kept promising otherwise.
+  //
+  // The server decides now, and the four branches below only READ it. The
+  // rest of the panel — sample, ladder, the "fully useful without AI" line,
+  // the setup link — is identical in every branch; nothing here is a gate.
   const { data: aiProvider } = useQuery<AiProviderStatus>({
     queryKey: queryKeys.userAiProvider(),
     queryFn: async () => {
@@ -112,7 +134,72 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
     },
     enabled: !!user,
   });
-  const sharedKeyServes = aiProvider?.managedBy === "server";
+
+  // The tap's own outcome, held locally so the line changes the moment the
+  // receipt is minted rather than a refetch later.
+  const [justGranted, setJustGranted] = useState(false);
+  const queryClient = useQueryClient();
+  const grantConsent = useMutation({
+    mutationKey: queryKeys.aiConsentReceipt("ai_full"),
+    mutationFn: async () => {
+      // `intent: "affirmative"` marks this as the user's own consent act —
+      // the only web path allowed to supersede an earlier withdrawal. The
+      // silent mount heal posts no body and deliberately cannot.
+      const res = await apiFetchRaw("/api/consent/ai/web", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ intent: "affirmative" }),
+      });
+      if (!res.ok) throw new Error("consent grant failed");
+    },
+    onSuccess: async () => {
+      setJustGranted(true);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.userAiProvider(),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.aiConsentReceipt("ai_full"),
+      });
+    },
+    onError: () => {
+      // The button stays. A failed grant is a failed grant; the screen must
+      // not read as though consent were on file.
+      toast.error(t("onboarding.ai.offer.error"));
+    },
+  });
+
+  const operatorProvides = aiProvider?.managedBy === "server";
+  const sharedHealth = aiProvider?.serverProviderHealth;
+  const consentOnFile =
+    justGranted || aiProvider?.serverProviderConsent === true;
+  const offerShared =
+    operatorProvides &&
+    !consentOnFile &&
+    aiProvider?.serverProviderOffer === true;
+  // A receipt on file is a fact about the ACCOUNT; it says nothing about
+  // whether the provider works. This line used to promise "insights work for
+  // you right now" on the strength of the receipt alone, so somebody who had
+  // just consented was told a dead provider was serving them — the same
+  // unmeasured claim as the offer's, made at the other end of the panel. The
+  // positive sentence is now earned by health as well, and a consented
+  // account on a broken provider reads the same honest note as anybody else.
+  const sharedKeyNote =
+    operatorProvides && consentOnFile && sharedHealth === "healthy";
+  // Only a health verdict somebody EARNED paints the "not answering" card —
+  // `unhealthy`, which means the provider was tried and the last thing that
+  // happened was a failure. `unknown` is not that verdict: it is an empty
+  // ledger, which is the state of every instance until its first AI call and
+  // therefore the most common way through this screen. It falls to the
+  // neutral panel, as does every other non-health reason the offer is
+  // withheld (the assistant surfaces switched off, a managed profile whose
+  // provider is the operator's by definition). The neutral panel claims
+  // nothing either way, which is the only honest thing to say about a state
+  // nobody measured.
+  const sharedUnavailable =
+    operatorProvides &&
+    !sharedKeyNote &&
+    !offerShared &&
+    sharedHealth === "unhealthy";
 
   return (
     <section
@@ -148,6 +235,22 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
       <section
         aria-labelledby="onboarding-ai-panel-title"
         data-slot="onboarding-ai-panel"
+        /* Which of the four variants the panel SETTLED on, and absent until
+           it has settled. The panel itself is unconditional and paints
+           immediately, so without this an assertion that a variant is absent
+           passes on a status that has simply not arrived yet. The value is
+           the same tri-state decision made once, above. */
+        data-ai-state={
+          aiProvider === undefined
+            ? undefined
+            : sharedKeyNote
+              ? "consent"
+              : offerShared
+                ? "offer"
+                : sharedUnavailable
+                  ? "unavailable"
+                  : "neutral"
+        }
         className="border-border bg-card mx-auto flex w-full max-w-md flex-col gap-4 rounded-xl border p-4 text-left md:p-6"
       >
         <header className="flex items-start gap-3">
@@ -185,13 +288,53 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
           </Button>
         )}
 
-        {sharedKeyServes ? (
+        {sharedKeyNote ? (
           <p
             data-slot="onboarding-ai-shared-key"
             className="text-foreground bg-primary/5 border-primary/20 rounded-lg border px-3 py-2 text-sm leading-relaxed"
           >
-            {t("onboarding.ai.sharedKeyNote")}
+            {justGranted
+              ? t("onboarding.ai.offer.granted")
+              : t("onboarding.ai.sharedKeyNote")}
           </p>
+        ) : null}
+
+        {offerShared ? (
+          <div
+            data-slot="onboarding-ai-offer"
+            className="border-primary/20 bg-primary/5 space-y-2.5 rounded-lg border px-3 py-3"
+          >
+            <p className="text-foreground text-sm font-medium">
+              {t("onboarding.ai.offer.title")}
+            </p>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              {t("onboarding.ai.offer.body")}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              className="min-h-9 w-full"
+              data-slot="onboarding-ai-offer-grant"
+              disabled={grantConsent.isPending}
+              onClick={() => grantConsent.mutate()}
+            >
+              {t("onboarding.ai.offer.cta")}
+            </Button>
+          </div>
+        ) : null}
+
+        {sharedUnavailable ? (
+          <div
+            data-slot="onboarding-ai-unavailable"
+            className="border-border bg-muted/40 space-y-1 rounded-lg border px-3 py-3"
+          >
+            <p className="text-foreground text-sm font-medium">
+              {t("onboarding.ai.unavailable.title")}
+            </p>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              {t("onboarding.ai.unavailable.body")}
+            </p>
+          </div>
         ) : null}
 
         <div className="space-y-2.5">

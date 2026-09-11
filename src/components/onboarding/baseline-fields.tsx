@@ -60,6 +60,7 @@ export function BaselineFields({
   onChange,
   heightAdapter,
   errors,
+  readOnlyDisplayName = false,
 }: {
   value: BaselineFieldValues;
   onChange: <K extends keyof BaselineFieldValues>(
@@ -68,6 +69,15 @@ export function BaselineFields({
   ) => void;
   heightAdapter: HeightUnitAdapter;
   errors: BaselineFieldErrors;
+  /**
+   * v1.39 — the instance cannot persist a display name, so the box does not
+   * take one. True under `DEMO_MODE`, where `applyProfileUpdate` writes only
+   * height, date of birth and sex: the demo's single published account means
+   * a display name typed here would be the next visitor's. A field that
+   * accepts input and silently discards it is the same dishonesty as a save
+   * that fails, which is why it is disabled rather than merely ignored.
+   */
+  readOnlyDisplayName?: boolean;
 }) {
   const { t } = useTranslations();
 
@@ -85,6 +95,7 @@ export function BaselineFields({
           id={IDS.displayName}
           value={value.displayName}
           onChange={(e) => onChange("displayName", e.target.value)}
+          disabled={readOnlyDisplayName}
           autoComplete="nickname"
           maxLength={50}
           placeholder={t("onboarding.baseline.displayNamePlaceholder")}

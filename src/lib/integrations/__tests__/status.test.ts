@@ -48,6 +48,7 @@ vi.mock("@/lib/crypto", () => ({
 }));
 
 import {
+  getIntegrationStatus,
   recordSyncFailure,
   recordSyncSuccess,
   markReauthRequired,
@@ -1366,5 +1367,27 @@ describe("recordSyncFailure — leg set", () => {
     // An unattributed failure carries nothing to record; erasing `sleep` would
     // let the sleep leg's next success clear an error it did not fix.
     expect(writtenUpdate().failingLegs).toEqual(["sleep"]);
+  });
+});
+
+/**
+ * v1.38.19 — the synthetic "no row" snapshot.
+ *
+ * `state: "connected"` used to be the value an account with no sync history
+ * read back, which made the ledger field's default mean the opposite of its
+ * name: a provider nobody had ever connected published "connected" on the
+ * envelope, and the setup flow's connect step believed it. The honest value
+ * for "there is no history here" is `unknown`; `syncHealth.verdict` stays the
+ * only liveness truth.
+ */
+describe("getIntegrationStatus with no ledger row", () => {
+  it("reads as unknown, not as connected", async () => {
+    vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce(
+      null as never,
+    );
+    const snapshot = await getIntegrationStatus("u1", "whoop");
+    expect(snapshot.state).toBe("unknown");
+    expect(snapshot.lastSuccessAt).toBeNull();
+    expect(snapshot.lastAttemptAt).toBeNull();
   });
 });

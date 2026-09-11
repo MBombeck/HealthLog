@@ -66,3 +66,62 @@ describe("confirmedModules", () => {
     ).toContain("vaccinations");
   });
 });
+
+describe("confirmedModules — what leaves the navigation", () => {
+  const noMedication = {
+    ...emptyOnboardingNeeds(),
+    recordTarget: "me" as const,
+    areas: ["sleep" as const],
+    medication: "no" as const,
+    visit: "no" as const,
+  };
+
+  it("names a module the answers do not ask for and the record shows today", () => {
+    const { wouldSwitchOff } = confirmedModules(noMedication, {
+      medications: true,
+      doctorReport: true,
+    });
+    expect(wouldSwitchOff).toContain("medications");
+    expect(wouldSwitchOff).toContain("doctorReport");
+  });
+
+  it("never names a module the answers switch on", () => {
+    const { chosen, wouldSwitchOff } = confirmedModules(
+      { ...noMedication, medication: "yes" },
+      { medications: true },
+    );
+    expect(chosen).toContain("medications");
+    expect(wouldSwitchOff).not.toContain("medications");
+  });
+
+  it("never names a module the record does not show today", () => {
+    const { wouldSwitchOff } = confirmedModules(noMedication, {
+      medications: false,
+    });
+    expect(wouldSwitchOff).not.toContain("medications");
+    // Nothing is known about a module the payload does not carry, so the
+    // screen says nothing about it.
+    expect(confirmedModules(noMedication, {}).wouldSwitchOff).toEqual([]);
+  });
+
+  it("never names an always-on module, whatever the answers say", () => {
+    const current = Object.fromEntries(
+      ONBOARDING_ALWAYS_ON_MODULES.map((key) => [key, true]),
+    );
+    const { wouldSwitchOff } = confirmedModules(noMedication, current);
+    for (const key of ONBOARDING_ALWAYS_ON_MODULES) {
+      expect(wouldSwitchOff).not.toContain(key);
+    }
+  });
+
+  it("is in registry order, like the list beside it", () => {
+    const current = Object.fromEntries(
+      OWNED_MODULE_KEYS.map((key) => [key, true]),
+    );
+    const { wouldSwitchOff } = confirmedModules(noMedication, current);
+    expect(wouldSwitchOff).toEqual(
+      OWNED_MODULE_KEYS.filter((key) => wouldSwitchOff.includes(key)),
+    );
+    expect(wouldSwitchOff.length).toBeGreaterThan(0);
+  });
+});

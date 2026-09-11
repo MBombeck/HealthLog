@@ -413,6 +413,11 @@
     "loginFailed": "Logowanie nie powiodło się",
     "registerFailed": "Rejestracja nie powiodła się",
     "invitedBanner": "Otrzymano zaproszenie — utwórz konto, nawet jeśli rejestracja jest zamknięta.",
+    "alreadySignedIn": {
+      "title": "Masz już zalogowaną sesję",
+      "body": "Masz zalogowaną sesję jako {username}. Zaproszenie tworzy nowe konto. Wyloguj się, aby je przyjąć.",
+      "signOut": "Wyloguj się i przyjmij zaproszenie"
+    },
     "createAccount": "Utwórz konto",
     "newAccount": "Utwórz nowe konto",
     "backToPasskey": "Wróć do passkey",
@@ -4553,7 +4558,18 @@
       "ladderOauthBody": "Podłącz konto ChatGPT — bez kosztu za token, ale warunki poziomu konsumenckiego mogą wykorzystywać treści do treningu, więc to świadomy wybór, nigdy domyślny dla danych o zdrowiu.",
       "keylessLine": "HealthLog jest w pełni użyteczny bez AI. Twoje kafelki, wykresy, trendy i eksporty działają — AI dokłada tylko odczyt prostym językiem.",
       "setupCta": "Skonfiguruj (około minuty)",
-      "sharedKeyNote": "Ta instancja udostępnia już wspólnego dostawcę AI, więc insighty działają dla Ciebie od razu — bez konfiguracji."
+      "sharedKeyNote": "Ta instancja udostępnia już wspólnego dostawcę AI, więc insighty działają dla Ciebie od razu — bez konfiguracji.",
+      "offer": {
+        "title": "Ta instancja potrafi już napisać twoje podsumowanie zwykłym językiem.",
+        "body": "Operator udostępnia dostawcę, który działał po raz ostatni w ciągu ostatnich 24 godzin. Jedno dotknięcie włącza zwykły język; twoje dane trafią wtedy do tego jednego dostawcy i do nikogo więcej.",
+        "cta": "Włącz zwykły język",
+        "granted": "Włączone. Pierwsze podsumowanie pojawi się na pulpicie.",
+        "error": "Włączenie się nie powiodło. Spróbuj ponownie za chwilę."
+      },
+      "unavailable": {
+        "title": "Dostawca tej instancji w tej chwili nie odpowiada.",
+        "body": "HealthLog jest w pełni użyteczny bez zwykłego języka. Później możesz dodać w ustawieniach własnego dostawcę."
+      }
     },
     "steps": {
       "who": "Dla kogo jest ta kartoteka",
@@ -4661,6 +4677,7 @@
         "alwaysOn": "Zawsze włączone: {modules} oraz podstawowe pomiary (waga, ciśnienie, tętno).",
         "everythingElse": "Cała reszta jest o jedno kliknięcie w",
         "modulesLink": "Ustawienia, Moduły",
+        "switchesOff": "Znika z nawigacji: {modules}. W każdej chwili możesz je włączyć w Ustawienia, Moduły.",
         "glucoseUnit": "Glukoza we krwi",
         "unitPreference": "Jednostki",
         "language": "Język",
@@ -4677,12 +4694,46 @@
         "connect-source": {
           "title": "Połącz {target}",
           "body": "Jedno połączenie, wybrane na podstawie Twoich odpowiedzi. Potem pomiary przychodzą same.",
-          "howTo": "Połączenie nawiązuje się na stronie integracji. Wróć tutaj później; ten ekran zauważy, kiedy będzie gotowe.",
+          "howTo": "Połączenie z {target} nawiązuje się na stronie integracji. Wróć tutaj później; ten ekran zauważy, kiedy będzie gotowe.",
           "cta": "Połącz {target}",
           "checking": "Sprawdzanie połączenia.",
           "waiting": "Jeszcze nie połączono.",
-          "done": "{target} jest połączone.",
-          "syncing": "Trwa pierwsza synchronizacja. Pomiary pojawią się na panelu, gdy tylko nadejdą."
+          "openSettings": "Otwórz Ustawienia → Integracje",
+          "noDate": "nieznany",
+          "needsCredentials": {
+            "title": "Ta instancja nie ma jeszcze zapisanej aplikacji {target}.",
+            "detail": "Wpisz własne dane dostępowe w Ustawieniach → Integracje, wtedy połączenie będzie mogło ruszyć."
+          },
+          "state": {
+            "pending_first_sync": {
+              "title": "{target} jest połączony.",
+              "detail": "Trwa pierwsza synchronizacja. Wartości pojawią się na pulpicie, gdy tylko dotrą."
+            },
+            "fresh": {
+              "title": "{target} jest już połączony.",
+              "detail": "Ostatnia wartość {when}. Tutaj nie ma już nic do zrobienia."
+            },
+            "stale": {
+              "title": "{target} jest połączony, ale w tej chwili nic nie przychodzi.",
+              "detail": "Ostatnia wartość {when}. Samo połączenie jest w porządku."
+            },
+            "stalled": {
+              "title": "{target} jest połączony, ale synchronizacja się zatrzymała.",
+              "detail": "Ostatnia próba {when}. Sprawdź połączenie w Ustawieniach → Integracje."
+            },
+            "failing": {
+              "title": "{target} jest połączony, ale synchronizacja się nie udaje.",
+              "detail": "Od {when} nic nie dotarło. Sprawdź połączenie w Ustawieniach → Integracje."
+            },
+            "reauth_required": {
+              "title": "Połączenie z {target} wymaga odnowienia.",
+              "detail": "Zaloguj się jeszcze raz, a wartości popłyną dalej."
+            },
+            "parked": {
+              "title": "Połączenie z {target} jest wstrzymane.",
+              "detail": "Sprawdź połączenie w Ustawieniach → Integracje."
+            }
+          }
         },
         "add-medication": {
           "title": "Dodaj swój pierwszy lek",
@@ -10322,6 +10373,7 @@
     "invite": {
       "title": "Zaproś kogoś",
       "description": "Nic nie jest udostępniane, dopóki ta osoba nie zaakceptuje.",
+      "needsAccount": "Ta osoba potrzebuje własnego konta HealthLog na tej instancji i znajdzie zaproszenie w Ustawienia → Udostępniony dostęp.",
       "identifierLabel": "Nazwa użytkownika lub e-mail",
       "identifierPlaceholder": "Nazwa, którą się loguje",
       "identifierHint": "Ta osoba potrzebuje konta na tej instancji. Nie można wysłać zaproszenia na niezarejestrowany adres.",

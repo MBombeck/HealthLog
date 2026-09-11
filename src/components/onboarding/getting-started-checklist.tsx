@@ -26,6 +26,7 @@ import { queryKeys } from "@/lib/query-keys";
 import {
   buildChecklist,
   checklistProgress,
+  isStillInSetup,
   shouldShowChecklist,
   upcomingVisitCountFrom,
   visibleChecklist,
@@ -239,17 +240,27 @@ export function GettingStartedChecklist() {
   }, [snapshotData]);
 
   // v1.15.20 — only fetch the checklist's supporting data while the card
-  // can actually render: the user is still in setup (`shouldShowChecklist`'s
-  // `onboardingCompletedAt == null || measurementCount < 5` rule) and has
-  // not dismissed it. Established users used to pay this medications fetch
-  // (and, pre-v1.5, two more) on every dashboard load for a card that
-  // never mounts. Gated on the snapshot having resolved so the count is
-  // real, not the loading-default 0.
+  // can actually render: the user is still in setup and has not dismissed
+  // it. Established users used to pay this medications fetch (and, pre-v1.5,
+  // two more) on every dashboard load for a card that never mounts. Gated on
+  // the snapshot having resolved so the count is real, not the
+  // loading-default 0.
+  //
+  // v1.39 — the rule is `isStillInSetup`, the same predicate
+  // `shouldShowChecklist` applies, rather than a restatement of half of it.
+  // The two drifted apart once already: the visibility rule learned about
+  // records that ran the setup flow and this gate did not, so the card
+  // rendered for a wizard-run account past five readings with every
+  // network-backed row frozen at "not done".
   const checklistRelevant =
     !!user &&
     !dismissedAll &&
     snapshotData !== undefined &&
-    (user.onboardingCompletedAt == null || measurementCount < 5);
+    isStillInSetup({
+      onboarding: user.onboarding ?? null,
+      onboardingCompletedAt: user.onboardingCompletedAt ?? null,
+      measurementCount,
+    });
 
   const { data: medsData } = useQuery<Array<{ id: string }>>({
     queryKey: queryKeys.medications(),

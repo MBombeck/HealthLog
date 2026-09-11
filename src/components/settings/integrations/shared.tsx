@@ -36,8 +36,16 @@ export type IntegrationKey =
   // Nightscout folds onto the envelope so the card stops fetching its own
   // status and inherits the shared verdict.
   | "nightscout";
+/** Mirrors `IntegrationState` in `src/lib/integrations/status.ts`. */
 export type IntegrationState =
-  "connected" | "error_transient" | "error_reauth" | "disconnected" | "parked";
+  | "connected"
+  | "error_transient"
+  | "error_reauth"
+  | "disconnected"
+  | "parked"
+  // v1.38.19 — no ledger row: the ledger has no history for this provider.
+  // Read like `disconnected`; `syncHealth.verdict` owns liveness.
+  | "unknown";
 
 export interface IntegrationStatusViewModel {
   integration: IntegrationKey;

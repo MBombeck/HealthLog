@@ -559,6 +559,26 @@ const aiProviderResponse = z
       .describe(
         "v1.22 (#89) — per-user response timeout for AI generation, in seconds (10–600). Null = the built-in comprehensive-briefing default (~120 s). Mainly for slow local/self-hosted backends.",
       ),
+    // v1.38.19 — the setup flow's last screen used to promise
+    // that insights "work for you right away" as soon as `managedBy` read
+    // `server`. That is a presence read; it never knew whether the key
+    // worked, and it said nothing about the consent receipt the egress
+    // actually needs. These three fields make the promise checkable.
+    serverProviderHealth: z
+      .enum(["healthy", "unhealthy", "unknown"])
+      .describe(
+        "Instance-wide health of the operator's shared providers (`admin-openai` / `admin-codex`), folded across all accounts and reduced to a tri-state: `healthy` when one of them demonstrably served somebody within the last 24 h and no credential sits in its auth-failure cooldown, `unhealthy` when the last outcome somebody observed was a failure, `unknown` when nothing has been tried lately on this instance (including a brand-new instance whose ledger is still empty) or the read failed. Deliberately carries no count, no timestamp and no account identity — 'the provider of this instance last worked' is a statement about the instance, not about other people. Fails closed for the offer: neither `unhealthy` nor `unknown` may be offered. They are not interchangeable for copy, though — `unhealthy` is a verdict a client may state, `unknown` is the absence of one and must not be reported as an outage. Reading this never probes a provider.",
+      ),
+    serverProviderOffer: z
+      .boolean()
+      .describe(
+        "Whether the shared provider may honestly be offered to this caller in one tap. True only when all of: the operator's provider is the one that would serve them (`managedBy: \"server\"`), `serverProviderHealth` is `healthy`, the operator's assistant master + coach flags are on, the acting record holds its own credentials (a managed profile never does), the caller holds no receipt yet, and the instance is not running in demo mode (where the grant the tap makes is refused at the edge). Anything unknown makes it false.",
+      ),
+    serverProviderConsent: z
+      .boolean()
+      .describe(
+        "Whether this caller already holds an active `ai_full` / `ai_coach` receipt — the grant `POST /api/consent/ai/web` mints. When true there is nothing left to offer, and `serverProviderOffer` is false for that reason rather than for a bad one.",
+      ),
   })
   .meta({
     id: "AiProviderResponse",
