@@ -20416,6 +20416,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /api/auth/check-user:
+    post:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: POST /api/auth/check-user — removed in v1.38.19
+      description: >-
+        Removed in v1.38.19. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Took an email address or a username and answered, to any caller and with no credential at all, whether an
+        account existed here and whether it carried a passkey or a password. It was built to decide which field a
+        sign-in screen shows first, which is not worth telling the world who has an account. Send the credential to POST
+        /api/auth/login or run the passkey ceremony and read the answer; both refuse identically whether or not the
+        account exists.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.38.19 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/auth/me/research-mode:
     get:
       security: []
