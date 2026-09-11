@@ -9,52 +9,47 @@ step-by-step wizard and the columns it wrote are gone.
 
 - **A needs-based setup replaces the wizard.** A few questions (who the
   record is for, the areas to watch, medication on a schedule, where
-  readings come from, an upcoming visit), one about units only when an
-  area needs it and the account does not hold it yet, then a confirm
-  screen that shows what the answers switch on, one first task with its
-  form right there (connect a source, add the first medication with a
-  reminder, or log one reading), and a done screen with the checklist
-  open. Every answer is saved as it is given, so leaving and returning
-  resumes at the same step; every question but the first can be skipped,
-  and "Skip for now" on the welcome screen leaves the app usable with
-  nothing switched on. "Set up again" and "Show the checklist again" live
-  under Settings → Account. The server works out the modules from the
-  answers once, the way v1.38.16 introduced; a module the person switched
-  on by hand, or one that already holds data, is never turned off by an
-  answer.
+  readings come from, an upcoming visit), one about units only when an area
+  needs it and the account does not hold it yet, then a confirm screen that
+  shows what the answers switch on, one first task with its form right there
+  (connect a source, add the first medication with a reminder, or log one
+  reading), and a done screen with the checklist open. Every answer is saved
+  as it is given, so leaving and returning resumes at the same step; every
+  question but the first can be skipped, and "Skip for now" on the welcome
+  screen leaves the app usable with nothing switched on. "Set up again" and
+  "Show the checklist again" live under Settings → Account. The server works
+  out the modules from the answers once, the way v1.38.16 introduced; a
+  module the person switched on by hand, or one that already holds data, is
+  never turned off by an answer.
 
 - **Answers given for someone you look after go to their record.** With
-  "someone I look after" the questions run in your own record, their
-  record is created on the confirm screen, and the modules go to that
-  record while yours stay as they were. Finishing without creating it
-  changes nothing on your record either. The checklist gets a row for that
-  record instead of reading those answers as yours. If you write against
-  the API: `POST /api/onboarding/complete` takes `managedRecordId`; a
-  record the caller does not manage is a 404, as on the managed-profile
-  routes.
+  "someone I look after" the questions run in your own record, their record
+  is created on the confirm screen, and the modules go to that record while
+  yours stay as they were. Finishing without creating it changes nothing on
+  your record either. The checklist gets a row for that record instead of
+  reading those answers as yours. If you write against the API:
+  `POST /api/onboarding/complete` takes `managedRecordId`; a record the
+  caller does not manage is a 404, as on the managed-profile routes.
 
-- Module pages say which switch is off. A page whose module is off shows
-  an empty state that names the switch instead of a blank page, and the
-  two tour stops that had nothing to point at (integrations, the health
-  record) have their anchors.
+- Module pages say which switch is off. A page whose module is off shows an
+  empty state that names the switch instead of a blank page, and the two
+  tour stops that had nothing to point at (integrations, the health record)
+  have their anchors.
 
-- The setup runs in every language the app has, and every screen leaves
-  room for translations up to a third longer than the English and passes
-  the accessibility check in both themes.
+- The setup is available in every language the app has.
 
 ### Changed
 
-- **The dashboard order is seeded from the answers the first time,** and
-  only while the layout is unset, so an order the person has already
-  arranged is never overwritten. The demo instance can finish the setup
-  now; the disclaimer and tour writes are allowed there.
+- **The dashboard order is arranged from the answers the first time,** and
+  only while it has not been arranged by hand, so an order somebody set
+  themselves is never overwritten.
 
 ### Removed
 
 - **`POST /api/onboarding/step`, the goal slugs, and the
-  `users.onboarding_step` and `users.onboarding_goals` columns**
-  (migration `0339_retire_wizard_columns`). The iOS app never called the
-  route or read the columns; `POST /api/onboarding/disclaimer`,
+  `users.onboarding_step` and `users.onboarding_goals` columns** (migration
+  `0339_retire_wizard_columns`). The iOS app never called the route or read
+  the columns; `POST /api/onboarding/disclaimer`,
   `POST /api/onboarding/tour` and the disclaimer and tour fields on
   `GET /api/auth/me` are unchanged.
 
@@ -63,8 +58,8 @@ step-by-step wizard and the columns it wrote are gone.
 - **Take a backup before deploying, and expect no image rollback.** The
   migration drops the two columns the v1.38.16 and v1.38.17 images read on
   every sign-in, so an older image against a migrated database fails at
-  login, not only in the wizard. Rolling the image back means restoring
-  the database, or re-adding the columns with their defaults, which loses
+  login, not only in the wizard. Rolling the image back means restoring the
+  database, or re-adding the columns with their defaults, which loses
   nothing because nothing at this version writes them:
   `ALTER TABLE users ADD COLUMN onboarding_step integer NOT NULL DEFAULT 0, ADD COLUMN onboarding_goals text[] NOT NULL DEFAULT '{}';`
 
