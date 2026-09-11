@@ -54,9 +54,15 @@ export function UnitsScreen({ state }: { state: OnboardingStateDto }) {
 
   const back = previousScreen(state, "units");
 
+  const answerBody = unitsAnswerBody({ asked, glucoseUnit, unitPreference });
+
   async function persist(
     input:
-      ReturnType<typeof unitsAnswerBody> | { step: "units"; status: "skipped" },
+      | NonNullable<ReturnType<typeof unitsAnswerBody>>
+      | {
+          step: "units";
+          status: "skipped";
+        },
   ) {
     try {
       const written = await answer.mutateAsync(input);
@@ -121,9 +127,10 @@ export function UnitsScreen({ state }: { state: OnboardingStateDto }) {
       <StepActions
         backHref={back ? screenHref(back) : undefined}
         onSkip={() => void persist({ step: "units", status: "skipped" })}
-        onNext={() =>
-          void persist(unitsAnswerBody({ asked, glucoseUnit, unitPreference }))
-        }
+        onNext={() => {
+          if (answerBody) void persist(answerBody);
+        }}
+        nextDisabled={answerBody === null}
         pending={answer.isPending}
       />
     </section>
