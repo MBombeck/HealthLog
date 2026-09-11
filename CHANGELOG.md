@@ -2,808 +2,683 @@
 
 ## [1.38.18] — 2026-09-10
 
-The first run asks what you need and switches on exactly that; the
-five-step wizard and the two columns it wrote are gone.
+The first run asks what you need and switches on exactly that; the old
+step-by-step wizard and the columns it wrote are gone.
 
 ### Added
 
-- **A needs-based setup flow replaces the five-step wizard.** Five questions
-  (who the record is for, the areas to watch, medication on a schedule,
-  where readings come from, an upcoming visit) and a sixth about units only
-  when an area needs one and the account does not hold it yet, then a
-  confirm screen that shows what the answers switch on, one first-result
-  task with its form inline (connect a source, add the first medication with
-  a reminder, or log one reading), and a done screen with the checklist
+- **A needs-based setup replaces the wizard.** A few questions (who the
+  record is for, the areas to watch, medication on a schedule, where
+  readings come from, an upcoming visit), one about units only when an
+  area needs it and the account does not hold it yet, then a confirm
+  screen that shows what the answers switch on, one first task with its
+  form right there (connect a source, add the first medication with a
+  reminder, or log one reading), and a done screen with the checklist
   open. Every answer is saved as it is given, so leaving and returning
-  resumes at the same step; every question but the first can be skipped, and
-  "Skip for now" on the welcome leaves the app usable with nothing switched
-  on. "Set up again" and "Show the checklist again" live under Settings →
-  Account. The module map is derived by the server from the answers, once,
-  by the same function the server side shipped in v1.38.16, so the screen
-  renders the derivation and never computes one of its own; a module the
-  person switched on by hand or whose domain already holds rows is never
-  turned off by a choice.
+  resumes at the same step; every question but the first can be skipped,
+  and "Skip for now" on the welcome screen leaves the app usable with
+  nothing switched on. "Set up again" and "Show the checklist again" live
+  under Settings → Account. The server works out the modules from the
+  answers once, the way v1.38.16 introduced; a module the person switched
+  on by hand, or one that already holds data, is never turned off by an
+  answer.
 
 - **Answers given for someone you look after go to their record.** With
-  "someone I look after" the questions run in the guardian's own record, the
-  managed profile is created on the confirm screen, and
-  `POST /api/onboarding/complete` takes `managedRecordId` to apply the
-  derived modules to that record through the guardian's record-keyed write
-  from v1.38.15. The guardian's own map is left alone, and finishing without
-  creating the profile derives nothing onto the guardian either; a record
-  the caller does not manage is a 404, as on the managed-profile routes. The
-  checklist carries a row for the profile instead of reading those answers
-  as the guardian's.
+  "someone I look after" the questions run in your own record, their
+  record is created on the confirm screen, and the modules go to that
+  record while yours stay as they were. Finishing without creating it
+  changes nothing on your record either. The checklist gets a row for that
+  record instead of reading those answers as yours. If you write against
+  the API: `POST /api/onboarding/complete` takes `managedRecordId`; a
+  record the caller does not manage is a 404, as on the managed-profile
+  routes.
 
-- **Module pages say which switch is off.** A page whose module is off
-  answers with an empty state that names the switch instead of a blank
-  surface, and the tour's two stops without an anchor (integrations, the
-  health record) have theirs.
+- Module pages say which switch is off. A page whose module is off shows
+  an empty state that names the switch instead of a blank page, and the
+  two tour stops that had nothing to point at (integrations, the health
+  record) have their anchors.
 
-- **Seven locales, held to the screen.** Every setup screen is rendered once
-  more with strings 30 % longer than English and must not overflow; the axe
-  scan covers every screen in both themes.
+- The setup runs in every language the app has, and every screen leaves
+  room for translations up to a third longer than the English and passes
+  the accessibility check in both themes.
 
 ### Changed
 
-- **`POST /api/onboarding/complete` seeds the dashboard order from the
-  answers** the first time, and only while the layout is unset, so an order
-  the person has already arranged is never overwritten. The demo mutation
-  allowlist admits the disclaimer and tour writes, so the demo can finish
-  the flow; a structural test holds every onboarding write to the allowlist.
+- **The dashboard order is seeded from the answers the first time,** and
+  only while the layout is unset, so an order the person has already
+  arranged is never overwritten. The demo instance can finish the setup
+  now; the disclaimer and tour writes are allowed there.
 
 ### Removed
 
-- **`POST /api/onboarding/step`, the six goal slugs, and the
-  `users.onboarding_step` / `users.onboarding_goals` columns** (migration
-  `0339_retire_wizard_columns`). The native client never called the route or
-  read the columns; `POST /api/onboarding/disclaimer`,
+- **`POST /api/onboarding/step`, the goal slugs, and the
+  `users.onboarding_step` and `users.onboarding_goals` columns**
+  (migration `0339_retire_wizard_columns`). The iOS app never called the
+  route or read the columns; `POST /api/onboarding/disclaimer`,
   `POST /api/onboarding/tour` and the disclaimer and tour fields on
   `GET /api/auth/me` are unchanged.
 
 ### Upgrade note
 
-- **Take a backup before deploying, and expect no image rollback.**
-  Migration 0339 drops two columns the v1.38.16 and v1.38.17 images select
-  on every session load, so an older image against a migrated database fails
-  at login, not only on the wizard. Rolling the image back means restoring
-  the database, or re-adding the two columns with their defaults, which is
-  loss-free because nothing at this version writes them:
+- **Take a backup before deploying, and expect no image rollback.** The
+  migration drops the two columns the v1.38.16 and v1.38.17 images read on
+  every sign-in, so an older image against a migrated database fails at
+  login, not only in the wizard. Rolling the image back means restoring
+  the database, or re-adding the columns with their defaults, which loses
+  nothing because nothing at this version writes them:
   `ALTER TABLE users ADD COLUMN onboarding_step integer NOT NULL DEFAULT 0, ADD COLUMN onboarding_goals text[] NOT NULL DEFAULT '{}';`
 
 ## [1.38.17] — 2026-09-10
 
-A webhook or ntfy target on your own network can be reached again, with the
-operator's say-so, the test button says why a private target was refused,
-and the second of two close doses can be logged from the card again.
+The second of two close doses can be logged from the card again, and a
+webhook or ntfy target on your own network can be reached again with the
+operator's say-so.
 
 ### Fixed
 
-- **A webhook or ntfy target on your own network can be reached again, with
-  the operator's say-so (#947).** Both senders resolve the target at send
-  time and refuse a private, loopback, link-local or CGNAT answer; that is
-  the DNS-rebinding defence from #217, and it stopped a Gotify behind a LAN
-  reverse proxy exactly as designed, with no way to allow it.
-  `NOTIFICATION_PRIVATE_ORIGINS` is that way: comma-separated exact origins
-  such as `https://gotify.example.com,http://ntfy.lan:8080`, read from the
-  server environment only. A listed origin is still resolved and pinned
-  inside the connector with redirects forbidden; link-local, the metadata
-  range and the unspecified address stay refused even when listed, while
-  loopback is listable for a relay on host networking; a malformed entry is
-  logged once, without its query or credentials, and grants nothing; nothing
-  not listed widens. Listing a name also refuses its sub-hosts and other
-  ports, public or not, because a private name cannot be told from a public
-  one at save time. The same grammar as `NIGHTSCOUT_PRIVATE_ORIGINS`, which
-  now shares the parser and the address floor; existing
-  `NIGHTSCOUT_PRIVATE_ORIGINS` grants, loopback ones on host networking
-  included, behave exactly as before. Reported by @sreeramachandramurthy.
+- **The second of two close doses can be logged from the card again.** On
+  a schedule whose neighbouring doses sit closer than twelve hours (08:00
+  and 12:00, say), taking the first dose made the card offer tomorrow's
+  first dose, and a skip pressed next landed on tomorrow. A taken, skipped
+  or auto-missed dose counted as settling every scheduled time within a
+  window sized for the twice-daily gap, so the first dose swallowed its
+  neighbour and the card walked past it. A logged dose now settles exactly
+  one scheduled time, the nearest one within that window, and the
+  adherence ring on the card follows the same rule, so the due slot and
+  the ring cannot disagree. The window still covers a dose logged a little
+  off its scheduled time, or across a clock change.
 
-- **The test button says why a private target was refused.** Saving a
-  private address that is not listed is a 422 with
-  `meta.errorCode = private_origin_not_approved` and a message naming the
-  variable, and the test button answers the same code instead of a bare 500
-  that sent the operator to the log. The save, the test and the scheduled
-  delivery take one decision, held by a structural test. A granted send
-  marks the wide event as `notification.egress.private_origin` with the
-  channel and origin. A link-local, metadata or unspecified target answers
-  `private_origin_not_grantable` instead, with a message saying no grant can
-  open it, since telling the user to ask the operator would only send them
-  in a circle.
+- **You can allow a webhook or ntfy target on a private network (#947).**
+  The senders look the target up at send time and refuse a private,
+  loopback, link-local or CGNAT address; that is the DNS-rebinding
+  protection from #217, and it stopped a Gotify behind a LAN reverse proxy
+  exactly as designed, with no way to allow it.
+  `NOTIFICATION_PRIVATE_ORIGINS` is that way now: a comma-separated list
+  of exact origins such as
+  `https://gotify.example.com,http://ntfy.lan:8080`, read from the server
+  environment only. A listed origin is still looked up, the address it
+  resolved to is the one the connection uses, and redirects are forbidden.
+  Link-local, the metadata range and the unspecified address stay refused
+  even when listed; loopback can be listed for a relay on host networking.
+  A malformed entry is logged once, without its query string or
+  credentials, and allows nothing. Listing a name does not cover its
+  sub-hosts or other ports, because a private name cannot be told from a
+  public one at save time. The grammar is the same as
+  `NIGHTSCOUT_PRIVATE_ORIGINS`, which now shares the parser and the
+  address rules; existing Nightscout entries, loopback ones on host
+  networking included, behave exactly as before. Reported by
+  @sreeramachandramurthy.
 
-- **The second of two close doses can be logged from the card again.** On a
-  schedule whose neighbouring doses sit closer than twelve hours, 19:49 and
-  23:59 say, or 08:00 and 12:00, taking the first dose made the card offer
-  tomorrow's first dose, and a skip pressed next landed on tomorrow. A
-  taken, skipped or auto-missed row counted as resolving every occurrence
-  within six hours of its anchor, a tolerance sized for the twice-daily
-  gap, so the first row swallowed its sibling and the next-due walk went
-  past it. A row now resolves exactly one occurrence, the one nearest its
-  anchor, within that tolerance; the compliance cycle on the card follows
-  the same rule, so the due slot and the cycle state cannot disagree. The
-  tolerance still covers a row whose anchor drifted from the canonical
-  instant, a pre-snap row or a DST shift, which is what it was for.
+- The test button says why a private target was refused. Saving a private
+  address that is not listed, or testing it, now names the variable to set
+  instead of an internal error that sent the operator to the log. Saving,
+  testing and the scheduled delivery all take the same decision, and an
+  allowed send is marked in the request log with its channel and origin. A
+  link-local, metadata or unspecified target says that no setting can open
+  it, since telling the user to ask the operator would only send them in a
+  circle. The refused save or test is a 422 with
+  `meta.errorCode = private_origin_not_approved`, or
+  `private_origin_not_grantable` for a target no setting can open.
 
 ## [1.38.16] — 2026-09-10
 
-The API says what it refused and why, on every route, and the admin page
-says whether last night's off-host copy actually landed for each account.
+Mostly plumbing. Two things you may notice yourself: someone you gave
+cycle-only access to sees less, and the admin page tells you whether last
+night's off-site backup worked for every account. The rest is for people
+who host the app or write against its API.
 
 ### Added
 
-- **Off-host backup freshness per account.** The nightly job reported
-  counts, which cannot name the failing account. It now keeps a ledger row
-  per account (`OffhostBackupState`: last attempt, last success, size),
-  written the moment the object is durably in the bucket and under its own
-  error boundary, so a ledger write that fails cannot turn a landed backup
-  into a failure. Admin → Backups shows one row per account with a state
-  judged against the nightly schedule with six hours of grace for the Berlin
-  clock: `fresh` (within one period), `due` (within two), `stale`, `never`
-  (walked by a run, no object yet) and `unknown` (labelled "No record yet"
-  in the console; the honest answer on the first day after this release).
-  Stale first. Never a bucket listing; an empty state says so when off-host
-  backup is not configured. The row is in the wipe plan and registered as
-  not part of the backup itself. Runbook updated.
+- **If you host this for others, Admin → Backups now shows which accounts
+  have a recent off-site backup.** The nightly job used to report one
+  number, so an account that kept failing was invisible. There is a row per
+  account now with the time of its last copy and whether that copy is on
+  schedule, due, overdue or has never happened. On the first day after this
+  update every row says "No record yet"; the next night fills them in.
 
-- **The server side of the needs-based onboarding.** A record now holds its
-  onboarding answers (who the record is for, the areas to watch, medication
-  on a schedule, where readings come from, an upcoming visit, units), the
-  ordered steps with stable ids and a status each, when the flow completed
-  and which first result was offered. `GET /api/auth/me` publishes it as
-  `onboarding` for the record the payload describes;
-  `PATCH /api/onboarding/answers` takes one step at a time and is
-  idempotent, `POST /api/onboarding/complete` derives the module map from
-  the answers exactly once and only when every question is answered or
-  passed, `POST /api/onboarding/restart` re-asks the questions and keeps the
-  modules. The derivation turns on what the answers name and writes an
-  explicit off for the rest, but never turns off a module the person
-  switched on by hand and never one whose domain already holds rows, so
-  nothing is lost by a choice; the mapping from needs to modules lives in
-  the module registry next to the keys. The getting-started checklist orders
-  its items from the answers and no longer reads every account that never
-  entered the flow as unfinished. The web wizard that asks these questions
-  follows in a later release; today's first-run steps are unchanged.
-
-- **The error-reporting card tells the truth.** A green "Configured" badge
-  appeared from a DSN alone, even with sending off, and never said where
-  reports go. The forwarder now records the last successful and the last
-  failed delivery (timestamps and a short reason, never a response body);
-  the badge is green only when a report left within fourteen days, amber
-  otherwise with the reason, and the card names the target host, never the
-  key. `docs/ops/deploy.md` gains a note on setting it for an instance you
-  operate yourself; there is deliberately no default target.
+- **The server side of the new first-run setup.** Your record can store its
+  setup answers (who it is for, which areas to watch, medication on a
+  schedule, where readings come from, an upcoming visit, units), and the app
+  derives which modules to switch on from them. It never switches off a
+  module you turned on yourself or one that already holds data. The screens
+  that ask the questions come in a later release; the first run looks the
+  same for now. For API clients: the answers appear as `onboarding` on
+  `GET /api/auth/me`; `PATCH /api/onboarding/answers` saves one answer,
+  `POST /api/onboarding/complete` finishes, `POST /api/onboarding/restart`
+  starts over.
 
 ### Fixed
 
-- **A cycle-only share no longer sees the rest of the record.**
-  `GET /api/cycle/insights` was declared for the `cycle` section but
-  returned luteal and follicular averages for weight, resting heart rate,
-  HRV, sleep, steps, glucose and mood score, which are `measurements` and
-  `mind` data, to a delegate whose grant opened only the cycle. The route
-  asks the grant per section now and skips the queries it does not cover;
-  the owner and an unscoped grant get the same answer as before. One helper
-  answers "which sections does this grant open" for every route; two
-  verbatim copies of it are gone.
+- **Someone with cycle-only access no longer sees the rest of the record.**
+  The cycle insights page compared luteal and follicular averages for
+  weight, resting heart rate, HRV, sleep, steps, glucose and mood, and
+  showed them to anyone whose access covered the cycle, whether or not it
+  covered those areas. It now shows only what the access covers.
 
-- **Controls a delegate could not use are not offered.** The vaccination
-  pass showed add, edit and delete to a read-level delegate; a visit row
-  opened an editable sheet with Save and Delete for read and write levels;
-  the capture surfaces and the dashboard's quick entry offered kinds whose
-  section the grant did not open; nine pages stayed open to any delegate
-  because of a coarse "in a shared record" test. Each control asks the
-  section its own route requires (`canWriteDomain` / `canManageDomain`), the
-  coarse "may this person add" answer is retired, the nine page gates read
-  the record's own module map, and a structural guard sweeps every component
-  for the shape rather than naming files, because the first sweep found six
-  and missed three.
+- **The app no longer offers buttons that would have failed for someone with
+  limited access.** Add, edit and delete on the vaccination pass for
+  read-only access, an editable visit sheet, capture forms and the quick
+  entry on the start page suggesting kinds outside the access, and a handful
+  of pages that opened for anyone with any access at all. Each now checks
+  its own permission. A booster reminder is also no longer created for a
+  record the access does not cover, and a wipe, an account deletion and an
+  encrypted export state in the API reference that they refuse while you are
+  looking at someone else's record, which they always did.
 
-- **A wipe, an account deletion and an encrypted export refuse under an
-  active switch.** They always did (the fresh-second-factor gate opens with
-  the plain authentication that refuses any switch) but the contract did not
-  say so; the three operations now publish the refusal, and a test drives it
-  through the browser's own carrier.
-
-- **A booster reminder is not minted for a record its grant does not
-  cover.** The mint refuses rather than silently skipping, with a test that
-  no row is written.
+- **The error-reporting card on the admin page says what it actually does.**
+  It showed a green "Configured" as soon as an address was set, even with
+  sending off, and never said where reports go. It is green only when a
+  report left within the last fourteen days, amber with the reason
+  otherwise, and it names the target host. There is no default target:
+  errors never leave your server unless you point them somewhere, and
+  `docs/ops/deploy.md` says how.
 
 ### Changed
 
-- **Every shape refusal carries the issue list.** 59 refusal sites in 57
-  routes answered a schema refusal with a bare 422 and a sentence; they go
-  through the shared helper now, so `details.issues` names each field the
-  way the rest of the tree already did. `error` and `meta` are unchanged;
-  six of the eleven dotted tokens that are still the whole `error` string
-  also ride as `meta.errorCode`, the five Coach reminder tokens do not yet.
-  A structural sweep reads every `safeParse` refusal in `src/app/api` and
-  fails when one bypasses the helper; its allowlist is empty. A second sweep
-  inventories the eleven token-string 422s, each with a written reason: one
-  is a published contract, five keep the string because the status did not
-  move and the token rides in `meta.errorCode` as well, five are the Coach
-  reminder surfaces that move as one piece or not at all.
+- **If you write against the API, every validation error now lists the
+  fields it rejected** in `details.issues`. Some routes used to answer with
+  a status code and one sentence. The message and the status did not change,
+  so nothing that reads them today breaks.
 
-- **A body that is not JSON at all is a 400 everywhere.** Seven preference
-  routes answered 422 with a dotted token as the whole message; they answer
-  400 with a sentence and the same token in `meta.errorCode`, the status
-  roughly two hundred other routes already use. A body that parses but fails
-  the schema is still the 422 beside it. The native client branches on
-  `meta.errorCode`, which did not change; the health-score configuration
-  route keeps its published 422 with a written reason.
-  `PUT /api/auth/me/report-selection` also names the leaf ids it does not
-  know in `meta.unknownLeaves` instead of refusing with a bare token.
+- **A request body that is not JSON at all answers 400 on every route.**
+  Seven preference routes said 422; the `meta.errorCode` they carried is the
+  same, and the native app already handles both. A body that parses but
+  fails validation is still a 422. `PUT /api/auth/me/report-selection` names
+  the ids it does not know in `meta.unknownLeaves` instead of failing with a
+  bare code.
 
-- **Two more writes honour `Idempotency-Key`.** The GLP-1 log and the custom
-  cycle symptom, the two row-creating writes the native client's offline
-  queue is most likely to replay after a lost response, join the routes that
-  return the first answer with `X-Idempotent-Replay: true` instead of a
-  second row. Documented per route.
+- **Routes that create or edit a single row share one write limit** of 300
+  writes a minute per account. A 429 from it carries `Retry-After`, the
+  `X-RateLimit-*` headers and `meta.errorCode = record_write.rate_limited`,
+  so a client can tell it from a route's own limit. Batch endpoints keep
+  their own.
 
-- **Single-record writes share one generous per-account bucket.** Eleven
-  routes that create or edit one row had no rate limit at all; they share
-  `record-write:<accountId>` at 300 per minute, keyed on the acting account,
-  applied after authentication, with the 429 carrying `Retry-After`, the
-  `X-RateLimit-*` triple and `meta.errorCode = record_write.rate_limited` so
-  a client can tell the shared bucket from a route's own. The batch
-  endpoints keep their own buckets. A test pulls the key and the window out
-  of the limiter's query and holds the documentation to them.
+- **The GLP-1 log and the custom cycle symptom accept `Idempotency-Key`**,
+  so a retried request returns the first answer with
+  `X-Idempotent-Replay: true` instead of creating a second row.
 
-- **The error codes are a published list.** 257 `errorCode` values across 47
-  surfaces, plus a group for the handful that carry no prefix, are
-  catalogued in `src/lib/openapi/error-codes.ts` and rendered into the error
-  envelope's description, grouped by surface. A guard walks the import graph
-  from every route (about fourteen hundred modules, the generated client
-  never opened) and fails in both directions: a code emitted anywhere a
-  route can reach but absent from the catalogue, and a catalogue entry
-  nothing emits. Existing codes keep their spelling.
+- **Every error code the server can send is listed in the API reference by
+  area.** A new code cannot be added without appearing there, and no
+  existing code changed.
 
 ## [1.38.15] — 2026-09-10
 
-The rest of #939 for managed profiles, one figure for medication adherence
-on every surface, and four more journeys in the gate.
+The rest of #939 for records you keep for someone else, one adherence
+figure everywhere, and better API manners toward a client that retries.
 
 ### Added
 
-- **A guardian can edit a managed record, and record its sex (#939).**
-  `PATCH /api/managed-profiles/{id}` accepts name, date of birth, language,
-  timezone and sex; the creation form asks for sex as well, so cycle tracking
-  can derive from it. Both arms require the fresh second factor the create
-  and delete routes already do, refuse with 404 rather than 403 for a record
-  the caller does not manage, and the edit is capped at ten an hour per
-  account. Every field is documented; a value the server will not take is a
-  422 with the issue list.
+- **You can edit a record you look after now, and record its sex (#939).**
+  Name, date of birth, language, timezone and sex can be changed after
+  creation, and the creation form asks for sex so cycle tracking can
+  follow from it. Both need the fresh second factor that create and delete
+  already ask for, and edits are capped at ten an hour.
+  `PATCH /api/managed-profiles/{id}` answers 404 for a record you do not
+  manage and 422 with the field list for a bad value. Requested by
+  @sreeramachandramurthy.
 
-- **Modules are switched per record.** `GET`/`PATCH /api/record-settings/modules`
-  read and write the module map of the record the browser is acting on, and
-  `GET /api/auth/me` under an active switch reports `modules` and
-  `cycleTrackingEnabled` for that record, not for the caller. Navigation
-  follows the record's own map, so a guardian sees the doors the child's record
-  has open. Under a scoped grant the two fields are masked to the sections the
-  grant names: a delegate scoped to measurements does not learn whether the
-  owner tracks their cycle, screeners, illness episodes or supplements, and the
-  cycle flag, which derives from the owner's recorded sex, answers `false`
-  outside a grant that opens it. Own record and unscoped grants are unchanged.
-  Documented on the account payload, which now says which fields describe the
-  caller and which the record.
+- **Modules are switched per record.** The Modules card and the navigation
+  follow the record you are looking at, so while you are looking after
+  someone else's record you see what that record has open. Someone you
+  gave access to only certain sections no longer learns whether you track
+  your cycle, screeners, illness episodes or supplements. On the API side,
+  `GET` and `PATCH /api/record-settings/modules` read and write the
+  modules of the record you are acting on, and `modules` and
+  `cycleTrackingEnabled` on `GET /api/auth/me` describe that record; the
+  payload says which fields describe the caller and which the record.
 
-- **`moduleAccess` says why a module is off.** Beside the boolean map,
-  `GET /api/auth/me` carries one of `enabled`, `disabled`, `not_granted` or
-  `unavailable` per module, in that order of precedence from the bottom: the
-  operator's instance-wide switch, then the grant's sections, then the
-  record's own choice. The booleans keep their exact meaning (`modules[key]`
-  is `moduleAccess[key] === "enabled"`, asserted over every grant shape). The
-  module-off notice on the web names the reason and offers the switch only
-  when the record itself turned the module off; a native client can show the
-  same sentence instead of a silently missing row.
+- **The module-off notice says why.** It names the reason and offers the
+  switch only when it is the record's own choice. `GET /api/auth/me`
+  carries a `moduleAccess` map beside `modules`, saying per module
+  `enabled`, `disabled` (the record's choice), `not_granted` (outside the
+  access you were given) or `unavailable` (switched off for the instance);
+  `modules[key]` is `moduleAccess[key] === "enabled"`, so the booleans
+  keep their meaning.
 
 ### Fixed
 
 - **A skipped dose is a pause, not a miss, on the dashboard too.** The
-  medication card, the dose history and the doctor report have excluded a
-  deliberate skip from the denominator since v1.15.9; the dashboard tile's
-  schedule-anchored engine counted it as expected-and-missed, so the same day
-  read two different rates. The tile engine now subtracts the day's skips,
-  capped at the minted slots, and a wholly skipped day drops out of its
-  buckets exactly as it drops out of the ledger. One test feeds both engines
-  the same fixture and asserts one figure.
+  medication card, the dose history and the doctor report have left a
+  skip you chose out of the count since v1.15.9; the dashboard tile
+  counted it as missed, so one day could show two rates. They agree now.
 
-- **Saving the Modules card no longer freezes a record's cycle derivation.**
-  Every save sent `cycleTrackingEnabled`, which wrote an explicit boolean over
-  the derivation from sex; a record without a recorded sex that later got one
-  stayed off with nothing on screen saying why. The flag now rides only when
-  it moved.
+- Saving the Modules card no longer freezes a record's cycle switch
+  against a sex recorded later. Every save wrote the cycle flag over the
+  one that follows from sex; it now goes only when it changed.
 
-- **A refused second-factor action no longer hides its reason behind the
-  dialog.** Regenerating recovery codes or disabling the authenticator asked
-  for confirmation in a dialog whose confirm handler kept it open; when the
-  server refused (a stale step-up, most often) the message painted on the card
-  underneath the overlay. Both dialogs are controlled now and close when the
-  request settles, whichever way it went. Found by the second-factor journey
-  below.
+- A refused second-factor action no longer hides its reason behind the
+  dialog. Regenerating recovery codes or turning off the authenticator
+  kept its dialog open when the server said no (usually an expired
+  second-factor window); both close now.
 
-- **The managed-record edit form keeps what you typed across a refetch.** It
-  was keyed on the query's timestamp, so any invalidation of the profile list
-  remounted it and dropped the input; it is keyed on the record now. A save
-  that only moved the timezone also wrote the actor's language into a record
-  with none recorded; the language is compared against what the form seeded.
+- The edit form for a record you look after keeps what you typed when the
+  list refreshes, and a timezone-only edit no longer writes your language
+  into a record that had none.
 
-- **The admin status rows read at AA contrast in every state.** With the
-  worker absent (a split deployment serving the page from the web process,
-  or a dead worker) the status row rendered its text in the destructive
-  colour at 3.97:1 on the tile's wash, below the floor, and the
-  accessibility suite went red in exactly that state. Status text is
-  foreground now with the tone on the indicator, the pattern the medication
-  rows already use; the database and telemetry rows moved with it.
+- The chip saying your phone owns the medication reminders can appear now.
+  It could never render before. `GET /api/auth/me` publishes
+  `notificationPrefs`, including
+  `notificationPrefs.medication.clientManaged`.
 
-- **The "my phone owns the reminders" chip can render now.** The medication
-  notification settings read `notificationPrefs.medication.clientManaged`
-  from the account payload, which never carried it, so the chip that tells
-  a person the server-side switch decides nothing for their paired phone
-  could not appear; the write path and the dispatch decision were right all
-  along. `GET /api/auth/me` publishes the resolved `notificationPrefs` now.
-  The account-payload guard checked only that every published field has a
-  reader; it checks the other direction too, so a reader of a field the
-  payload does not publish fails a unit test.
+- **A restore from the admin backups page no longer rewrites instance-wide
+  settings unless you tick the box.** It used to whenever the snapshot
+  carried them; the checkbox sits next to the typed confirmation and is
+  off by default (`restoreInstanceSettings` for API clients). The runbook
+  says what a restore replaces (rows added after the snapshot are removed)
+  and describes the console path.
 
-- **The admin reminder sweep can name one account.**
-  `POST /api/admin/notifications/reminder-check` accepts an optional
-  `userId`; without it the sweep stays instance-wide as before. Documented.
+- A stored copy that will not open is refused with a clear message, not an
+  internal error, whether it was tampered with or written under a key the
+  instance no longer holds, and whether you restore, download or preview
+  it. A client sees a 422 with
+  `meta.errorCode = backup.payload.undecryptable`.
 
-- **A console restore leaves the instance's settings alone unless asked.**
-  Restoring an account's snapshot from `/admin/backups` also rewrote the
-  singleton instance settings row whenever the snapshot carried one, as a
-  side effect of a per-account action. The write is behind an explicit
-  checkbox beside the typed confirmation now (`restoreInstanceSettings`,
-  default off); the disaster-recovery case keeps the capability, the routine
-  case no longer touches what every other account shares. The runbook says
-  what a restore replaces (rows created after the snapshot are removed) and
-  describes the console path, which it did not before.
+- The admin status rows stay readable when the worker is absent or
+  crashed. The text used to switch to a colour that fell below the
+  contrast floor in exactly the state an operator most needs to read.
 
-- **A stored copy that will not open is a 422, not a 500.** A tampered
-  archive, or one written under a key the instance no longer holds, made the
-  restore, the download and the preview fail as internal errors. They answer
-  422 with `meta.errorCode = backup.payload.undecryptable` and are in the
-  API document, the restore with its `Idempotency-Key`.
+- The admin reminder check can name one account.
+  `POST /api/admin/notifications/reminder-check` takes an optional
+  `userId`; without it the check stays instance-wide as before.
 
-- **Every refused request says when to come back.** No 429 the rate limiter
-  produced carried `Retry-After`, and 129 of the 199 limited routes sent no
-  rate-limit headers at all, the four batch endpoints, `/api/sync/changes`
-  and `/api/auth/refresh` among them; an offline queue that tripped the cap
-  got prose and nothing else. The limiter's refusal is now recorded per
-  request and `apiHandler` attaches `Retry-After` (whole seconds, at least
-  one) and `X-RateLimit-Limit`, `-Remaining` and `-Reset` to exactly the
-  429s the limiter produced; a 429 relayed from an AI provider or raised by
-  a budget keeps its own shape. The 429 response in the API document lists
-  the headers.
+- **If you write against the API, every 429 now says when to come back.**
+  Most rate-limited routes, the batch endpoints, `/api/sync/changes` and
+  `/api/auth/refresh` among them, sent no rate-limit headers. Every 429
+  from the limiter carries `Retry-After` in whole seconds plus
+  `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`; a
+  429 relayed from an AI provider keeps its own shape.
 
-- **Offset pagination cannot skip or repeat a row any more.** Seven lists
-  ordered by a timestamp that ties across types (measurements, labs, the
-  measurement drill-down, custom-metric entries, medication intake in both
-  arms, mental-health assessments) now break the tie on `id`, so two pages
-  of a history pull are disjoint and complete. A test seeds ties and pulls
-  two pages.
+- Pages of a history pull never overlap or skip. Lists ordered by a
+  timestamp that can tie (measurements, labs, the measurement drill-down,
+  custom-metric entries, medication intake, mental-health assessments)
+  break the tie on `id`.
 
-- **The published error envelope allows what the server sends.**
-  `ErrorEnvelope` closed the object and omitted `details.issues`, the field
-  the multi-issue 422 was built for; `SyncChangesResponse` omitted
-  `cycleDays` and `cycles`, sent on every pull. Both corrected, and a test
-  now parses real responses of `/api/sync/changes` and a multi-issue 422
-  against the schemas that publish them, so a shape drift fails the gate.
+- The API reference allows what the server sends. The documented error
+  response allows `details.issues`, which the multi-field 422 always sent,
+  and the sync response declares `cycleDays` and `cycles`.
 
-- **Generic auth refusals carry a stable `errorCode`.** The session, Bearer,
-  admin, step-up and MFA-code refusals name their reason in `meta.errorCode`
-  (`auth.session.missing`, `auth.mfa.code_invalid`, …), documented on the
-  401 and 403 responses; a route's own credential check may still answer
-  with prose alone, and the description says so.
+- Generic authentication errors carry `meta.errorCode`
+  (`auth.session.missing`, `auth.mfa.code_invalid`, ...), documented on
+  the 401 and 403 responses; a route's own credential check may still
+  answer with prose alone.
 
 ### Changed
 
-- **Four more journeys in the gate.** Medication adherence from the wizard
-  through take and skip to the card, the history and the dashboard tile, on a
-  two-weekday plan against its daily twin; doctor-report generation with the
-  PDF's text asserted (period, blood-pressure section, medication, allergy),
-  an empty window that still names its span, and the manage boundary for a
-  delegate; the second factor from enrolment through a fresh sign-in, the
-  step-up window (accepted while fresh, refused once the stamp is aged),
-  a wrong code, a replayed code, and a recovery code that works exactly
-  once, with the server's own replay verdict read from the audit log rather
-  than inferred from a 401, and the login limiter's documented ceiling
-  asserted with its headers; backup and restore through the settings
-  surfaces, with the archive header asserted as bytes, a reading and a dose
-  deleted and restored under their original ids, a row added after the
-  snapshot gone, a tampered copy refused, and a read delegate kept out;
-  notification preferences through to the dispatch decision, read off the
-  account's own delivery ledger (one email attempt against a local mail
-  responder, none for the switched-off channel, the APNs arm skipped for
-  the documented reason, and a private-range URL refused with nothing
-  written). Each on its own account, each with a refusing control, each broken
-  deliberately once to prove it can fail.
+- New end-to-end checks run before each release. Medication adherence from
+  setup through take and skip to the card, the history and the dashboard
+  tile; the doctor report with its text read back; the second factor from
+  enrolment through step-up, a wrong code, a replayed code and a recovery
+  code that works once; backup and restore through the settings pages; and
+  notification preferences through to what was delivered. Several fixes
+  above were found while writing them.
 
 ## [1.38.14] — 2026-09-09
 
-Two reported bugs fixed at their class, and the release gate stops crying
-wolf. Both reports came from @mbreitkreuz, each traced to the line (#943,
-#944).
+Two bugs reported by @mbreitkreuz, both fixed at the root (#943, #944), a
+first-run step that used to swallow an error, and quieter checks before a
+release.
 
 ### Fixed
 
-- **Walking distance from an `export.zip` import was stored a thousand times
-  too small (#944).** Apple stamps every record in the archive with the
-  account's own display unit, and the import read the number without ever
-  reading that unit, so a 2.5 km day landed as 2.5 metres. HealthKit units
-  now convert through one shared table (`src/lib/measurements/hk-units.ts`),
-  the same conversion the workout import already used, which also caught a
-  workout archived with its energy in kilojoules. Every mapping entry that
-  keeps a fixed unit carries a written reason, enforced by a structural test.
-  Re-importing the archive repairs stored rows; for accounts without their
-  archive, `scripts/repair-apple-health-distance.ts` repairs exactly the rows
-  the export path wrote, dry-run by default, once per account. Runbook under
-  `docs/ops/apple-health-distance-repair.md`.
+- **Walking distance from an Apple Health `export.zip` import was stored a
+  thousand times too small (#944).** Apple writes every record in the
+  archive in the unit the phone displays, kilometres or miles, and the
+  import read the number without reading the unit, so a 2.5 km day landed
+  as 2.5 metres. The import now converts units the way the workout import
+  already did, which also caught a workout archived with its energy in
+  kilojoules. Importing the archive again repairs the stored rows.
 
 - **Blood glucose readings without a meal-time tag now count everywhere
-  (#943).** A meter synced through Apple Health writes no meal-time metadata,
-  so an account could hold hundreds of readings and see no Blood Glucose
-  tile, no glucose target and an empty glucose panel in the doctor report,
-  with the module on and no warning anywhere. Untagged readings are a bucket
-  of their own (`UNSPECIFIED`): they light the tile, carry its value and
-  trend, get a target card judged against the random-reading band, and reach
-  the report and the FHIR export. Tagged accounts keep their per-context
-  breakdown. A structural test refuses a dashboard tile gated on an enum
-  without an arm for the untagged case.
-
-- **Four end-to-end specs that failed through two retries had real causes.**
-  `a11y` recognised "the chart" by a library class every chart shares (now a
-  `data-slot`); `documents` maximised the drawer before the vault had booked
-  the Coach hand-off; `vaccinations` and the record-session fence spec shared
-  a socket-reuse race in Playwright's keep-alive agent against the server's
-  five-second idle timeout (seeds now go through the page's own `fetch`).
-
-- **Three unit specs had a teardown race that was a defect.** The score
-  tests' fake database was bypassed by a tail call to the real client, which
-  on a runner without Postgres failed after the test had ended and closed the
-  worker mid-write. The registration is wrapped, the settle guard covers it,
-  and the specs run in 20 ms instead of 700.
+  (#943).** A meter synced through Apple Health does not say whether a
+  reading was before or after a meal, so an account could hold hundreds of
+  readings and see no Blood Glucose tile, no glucose target and an empty
+  glucose section in the doctor report, with the module on and no hint
+  anywhere. Untagged readings are a group of their own now: they light the
+  tile with a value and a trend, get a target card judged against the
+  random-reading range, and appear in the report and in the FHIR export.
+  Tagged readings keep their per-meal breakdown.
 
 - **The first-run profile step no longer throws away what the server told
-  it.** A height outside the accepted range, or a date the server would not
-  take, was dropped on save while the wizard moved on and marked setup
-  finished; the value was gone and nothing said so. A refused field now says
-  why underneath the input that holds it, in the interface language, and the
-  step waits. The same applies to the profile card in Settings. A structural
-  test freezes every submitter of the profile route to that behaviour. The
-  iOS app has the same gap and is tracked there.
+  it.** A height outside the accepted range, or a date the server would
+  not take, was dropped on save while setup moved on and marked itself
+  finished; the value was gone and nothing said so. A refused field now
+  says why underneath the input, in the interface language, and the step
+  waits. The profile card in Settings behaves the same way. The iOS app
+  has the same gap and is tracked there.
 
-- **A retried medication write no longer lands twice.** Adding a medication,
-  logging a side effect and registering a supply container now honour
-  `Idempotency-Key`: a replay after a lost response returns the first answer
-  with `X-Idempotent-Replay: true` instead of creating a second row, which is
-  what the native client's offline queue relies on. The API contract says so.
+- **If you host this yourself and someone no longer has their Apple Health
+  archive,** `scripts/repair-apple-health-distance.ts` repairs exactly the
+  rows the import wrote, once per account; it only reports what it would
+  change unless told to write. Runbook at
+  `docs/ops/apple-health-distance-repair.md`.
+
+- **A retried medication write no longer lands twice.** Adding a
+  medication, logging a side effect and registering a supply container now
+  honour `Idempotency-Key`, so a replay after a lost response, which is
+  what the iOS app's offline queue sends, returns the first answer marked
+  `X-Idempotent-Replay: true` instead of creating a second row. Documented
+  per route.
 
 ### Changed
 
-- **Release gate hygiene.** Bundle budgets carry a measured baseline per route
-  and 20 KB of headroom instead of one; the rate-limit integration test no
-  longer expects four database round trips inside 50 ms; the geometry checks
-  fail rather than skip when no browser is present, and the dependency-bump
-  workflow installs one; the dependency audit runs on pushes to `main` and
-  daily instead of failing pull requests over advisories that changed
-  nothing.
+- `scripts/synthetic-journey.mjs` walks through an instance after a
+  deploy: it warms the instance, checks that `/api/version` matches the
+  tag just published, signs in, writes a reading, reads it back and
+  deletes it; the `synthetic-journey` workflow runs it by hand against an
+  instance of your choice, and `docs/ops/deploy.md` says what a failed
+  step means.
 
-- **A synthetic journey after a deploy.** `scripts/synthetic-journey.mjs`
-  warms an instance, checks `/api/version` against the tag just published,
-  signs in, writes a reading with an idempotency key, reads it back and
-  deletes it, one line per leg; `.github/workflows/synthetic-journey.yml`
-  runs it by hand against a chosen instance. `docs/ops/deploy.md` says how and
-  what a red leg means.
+- The off-site backup variables `BACKUP_S3_REGION` and
+  `BACKUP_RETENTION_DAYS` are in `.env.production.example`, and the backup
+  runbook no longer claims the worker deletes old copies: it never does,
+  the bucket's lifecycle rule does.
 
-- **Two more journeys in the gate.** Blood glucose in both units through the
-  capture form, the unit switch and the dashboard tiles; an Apple Health
-  `export.zip` through the import card to the measurements list with units
-  asserted. Both carry a skipped assertion that turns on with this release's
-  fixes, and both were broken deliberately once to prove they can fail.
+- `POST /api/nightscout/connect` is in the API reference, where it was
+  missing.
 
-- **`POST /api/nightscout/connect` is documented.** It sat in the route
-  coverage guard as an OAuth hand-off, which it is not; the native client's
-  reconciliation now finds it.
-
-- **Off-host backup variables documented.** `BACKUP_S3_REGION` and
-  `BACKUP_RETENTION_DAYS` are in `.env.production.example`, and the runbook no
-  longer claims the worker prunes old objects: it never deletes, the bucket
-  lifecycle rule does.
+- The checks that run before a release had been failing for reasons
+  unrelated to the app: browser tests that recognised the wrong element or
+  raced the server, bundle limits with no headroom, a dependency check
+  that failed pull requests over advisories that changed nothing. Those
+  are fixed, and new browser checks cover blood glucose in both units and
+  an Apple Health import end to end.
 
 ## [1.38.13] — 2026-09-09
 
-A guardian acting on a managed profile gets the add, edit and delete
-controls the server has accepted since v1.37, decided per domain and
+While looking after someone else's record you get the add, edit and delete
+controls the server has accepted since v1.37, decided per area and
 published by the server. Reported by @sreeramachandramurthy in #939.
 
 ### Fixed
 
-- **Managed profiles: the controls the routes accept are shown again.** A
-  person acting on a managed profile, or on a record shared with them at the
-  manage level, saw no way to add or change anything on mood, wellbeing
-  check-ins, visits, allergies, family history, labs and more, although the
-  server accepted those writes. The client hard-wired `canManage` to false for
-  every shared record, a hold-back from the release that introduced managed
-  profiles that was never lifted. It is lifted per domain: a table records
-  which share domains accept delegated writes at `write` and at `manage`,
-  frozen by a structural test that reads every API route and fails on drift;
-  every entry in the account access list on `/api/auth/me` now carries
-  `writableDomains` and `manageableDomains` (additive, existing clients
-  ignore them); and every surface asks for its own domain. Documents cannot
-  be delegated at any level, so the documents page tells a guardian that only
-  the record owner can add documents instead of showing an empty slot. Module
-  switches per managed profile, editing a profile after creation and asking
-  for sex at creation are still open in #939 and follow as one piece.
+- **Looking after someone else's record, the controls the server accepts
+  are shown again.** While looking after a record for a child, or a record
+  shared at the manage level, the pages for mood, wellbeing check-ins,
+  visits, allergies, family history and labs showed no way to add
+  anything, although the server had accepted those entries since v1.37.
+  The app had hidden every such control until the server side was
+  confirmed, and that hold was never lifted. Lifting it with one switch
+  would have been wrong too: documents cannot be handed to anyone else at
+  any level, so the documents page would have offered upload and delete
+  and refused each one. The app now asks per area, so the controls appear
+  for measurements, medications, labs, profile and illness from the write
+  level up, and for mood and cycle at the manage level; the documents page
+  says in one sentence that only the record owner can add documents. On
+  the API side, every entry in the account access list on
+  `GET /api/auth/me` carries `writableDomains` and `manageableDomains`,
+  naming the parts of the record that access may write to and may manage;
+  both are additions. Switching modules per record, editing a record after
+  creation and asking for sex at creation are still open in #939 and
+  follow as one piece.
 
 ## [1.38.12] — 2026-09-09
 
-A dependency release: the image and the lockfile stop carrying twelve
-advisories the container scanner reported, and `next build` learns to
+A dependency release: the image and the lockfile stop carrying the
+advisories a container scanner reported, and `next build` learns to
 type-check the application without the test tree.
 
 ### Security
 
-- **Twelve scanner advisories cleared, none in this code.** next 16.2.11
-  carried two critical advisories (fixed in 16.3.3) and pulled a vulnerable
-  sharp; nodemailer 9.0.3 carried one high and three medium; js-yaml 4.3.1
-  one high; hono 4.13.3, under the MCP SDK's node server, three medium; the
-  vitest mocker and baseline-browser-mapping one medium each. Dependabot
-  listed none of them. next moves to 16.3.4, nodemailer to 9.1.1 and vitest
-  to 4.1.11 as direct pins; js-yaml, hono, baseline-browser-mapping and sharp
-  move through pnpm overrides bounded to the vulnerable ranges, so exactly
+- **Scanner advisories cleared, none in this code.** next moves to 16.3.4
+  (two critical advisories, and it pulled a vulnerable sharp), nodemailer
+  to 9.1.1 (one high, three medium), js-yaml to 4.3.2 (high), hono under
+  the MCP SDK's node server to 4.13.5 (three medium), vitest to 4.1.11 and
+  baseline-browser-mapping to 2.11.0 (medium). The packages HealthLog does
+  not depend on directly (sharp, js-yaml, hono and baseline-browser-mapping)
+  move through pnpm overrides limited to the vulnerable ranges, so exactly
   the copies the scanner named change and nothing else does.
 
 ### Changed
 
-- **`next build` type-checks the application program, not the test tree.**
-  Next 16.3 checks the whole tsconfig program during the build, which reaches
-  the unit tests under `src/**/__tests__`, their fixtures under `tests/`, and
-  the test-runner configs; the image build context leaves `tests/` and `e2e/`
-  out on purpose, so the image build failed on both architectures with a
-  missing fixture module. The build now reads `tsconfig.build.json`, which
-  extends the main config without that tree. `pnpm typecheck` keeps using
-  `tsconfig.json` and still covers everything.
+- **`next build` type-checks the application, not the test tree.** Next
+  16.3 checks the whole TypeScript project during the build, which reaches
+  the unit tests and their fixtures under `tests/`; the image build leaves
+  that folder out on purpose, so it failed with a missing fixture module.
+  The build now reads `tsconfig.build.json`, which extends the main config
+  without the test tree, and `pnpm typecheck` keeps covering everything.
+  If you build your own image there is nothing to do; if you run
+  `next build` from a checkout without `tests/`, it now works.
 
 ## [1.38.11] — 2026-09-08
 
-"Sign out everywhere" now means everywhere, a refresh cannot outrun a
-revocation, and the idempotency cache can no longer answer for a credential
-the route has not seen.
+"Sign out everywhere" now means everywhere, a renewal cannot outrun a
+sign-out, and a retried request can no longer be answered from a cached
+response that a different credential earned.
 
 ### Fixed
 
 - **"Sign out everywhere" signs out the other phones, not the one pressing
-  it.** A native login is two rows: a refresh token and the access token it is
-  paired with, and the Bearer check consults only the second. Revoking the
-  refresh tokens alone, which is what the button did, left every other device
-  working until its access token ran out, up to a day on the default policy.
-  Worse, a phone pressing the button described itself to the server as a
-  browser session, so the exception meant to spare the caller matched nothing
-  and the phone revoked its own refresh token: it was the one device signed
-  out, at its next rotation. Both ends are fixed. The button revokes the paired
-  access tokens of every other device inside the same transaction, and a
-  Bearer caller is named by its access token so its own login is the one kept.
-  Long-lived API tokens from the settings page are untouched, as before.
+  it.** A phone login is two credentials, a refresh token and the access
+  token paired with it, and the server checks only the second on each
+  request. The button revoked the refresh tokens, so every other device
+  kept working until its access token ran out, up to a day. And a phone
+  pressing the button described itself to the server as a browser, so the
+  exception meant to spare the caller matched nothing: the phone revoked
+  its own refresh token and was the one device signed out, at its next
+  renewal. The button now revokes the paired access tokens of every other
+  device in the same step, and a phone is recognised by its access token,
+  so its own login is the one kept. Long-lived API tokens from the
+  settings page are untouched, as before. The iOS app's confirmation text
+  will go back to saying "everywhere else" once a build against this
+  release is out.
 
-- **A refresh that overlaps a revocation loses.** Rotation read the presented
-  refresh token as live, minted a new pair, and only then marked the old row
-  consumed with a condition that checked "not yet used" but not "not yet
+- **A renewal that overlaps a sign-out loses.** Renewal read the presented
+  refresh token as live, issued a new pair, and only then marked the old
+  one used, with a check that asked "not yet used" but not "not yet
   revoked". A sign-out-everywhere or a credential rotation landing in that
-  window was overtaken: the update still matched, and the pair minted a moment
-  after the family ended was the one live login left. The condition now
-  includes the revocation, the pair minted inside the window is retired, and
-  the client hears `revoked`, which it answers with a fresh sign-in, rather
-  than `already_used`, which it would retry. Pinned by an integration test that
-  revokes the family from inside the window against real Postgres.
+  window was overtaken: the pair issued a moment after the sign-out was
+  the one live login left. The check now includes revocation and the pair
+  issued inside the window is retired. The client hears `revoked`, which
+  it answers with a fresh sign-in, rather than `already_used`, which it
+  would retry.
 
-- **The idempotency cache is keyed by the authority a request carries.** A
-  retry that replays a cached response runs before the route's own permission
-  check, by design, so what the cache could answer had to match what the route
-  would allow. Two gaps: a delegate whose grant had been replaced by a narrower
-  one, or whose scope had been edited in place, still matched the cell they
-  filled under the wider grant, because the replay checked only that a live
-  grant existed; and a narrow-scoped API token of the same account could read
-  a cell filled by a wildcard credential on a route outside its scope.
-  Delegated cells now fold the grant's identity, level and scope into the key,
-  and a narrow token's cells are keyed by the token, so any change of authority
-  lands a retry in a fresh cell where the route decides. Cookie sessions and
-  wildcard tokens acting on their own record are keyed byte-for-byte as before;
-  no client changes.
+- **A retried request can no longer be answered from a cached response
+  that a different credential earned.** When a client retries with the
+  same idempotency key, the saved answer is returned before the route's
+  own permission check runs, so what the cache may answer has to match
+  what the route would allow. Two gaps: someone acting on a record shared
+  with them, whose access had since been narrowed or edited, still got the
+  answer cached under the wider access, because the replay checked only
+  that some live access existed; and a narrow-scoped API token could read
+  an answer cached by a full-access credential of the same account on a
+  route outside its scope. Cached answers for access to someone else's
+  record are now tied to that access, its level and its scope, and a
+  narrow token's answers to the token, so any change of authority sends a
+  retry back to the route to decide afresh. Browser logins and full-access
+  tokens acting on their own record are keyed exactly as before; no client
+  changes.
 
 ### Changed
 
-- **README: immunizations are in.** The record list still said immunization
-  records were deliberately out of scope; the vaccination record has shipped
-  since v1.37.3.
+- The README's record list still said immunization records were out of
+  scope; the vaccination record has shipped since v1.37.3.
 
 ## [1.38.10] — 2026-09-06
 
-The nightly off-host backup streams and fits a small container, and a
-busy native client is no longer signed out at the token boundary.
+A busy phone is no longer signed out at the moment it renews its
+credentials, and the nightly off-site backup streams and fits a small
+container.
 
 ### Fixed
 
-- **The nightly off-host backup no longer takes the instance down with it.**
-  Configuring an S3 target and waiting for 02:30 was, on a long-lived record,
-  a way to restart the container: the uploader built the whole backup as one
-  JSON string, gzipped that whole string, encrypted the whole result and
-  handed the finished buffer to a single upload, so four full copies of the
-  record were alive at once. On an account of 445 000 measurements the JSON
-  alone is 242 MB, and the run died of heap exhaustion seventeen seconds in —
-  taking every signed-in session on the instance with it, because the job runs
-  inside the app process. It streams now, end to end: the JSON is produced a
-  page at a time, gzip and the cipher consume it as it arrives, and the object
-  goes up in 8 MB parts. What the process holds no longer depends on how much
-  you have recorded.
+- **A busy phone could be signed out at the very moment it renewed its
+  credentials.** The app renews its access token about once a day, and the
+  old token used to be revoked the instant the renewal went through. A
+  phone with several requests in flight had sent some with the old token a
+  moment earlier; those came back as revoked, the app read that as "sign
+  in again", renewed again with the refresh token it had just spent, and
+  that looks exactly like a stolen token being replayed, so every
+  credential for that device was withdrawn and the person had to log in
+  again. The outgoing token now stays valid for fifteen seconds, or until
+  its own expiry if that is sooner: long enough for requests in flight to
+  finish, short enough to gain nothing worth having. Replay protection is
+  unchanged; a refresh token presented twice still withdraws the device's
+  credentials on the spot, and so does signing out. The iOS app tolerates
+  the race on its side too, so the two halves close it together.
 
-- **A nightly run that uploaded nothing for anybody now reports failure.** It
-  used to say it was fine. Wrong credentials, a bucket that does not exist and
-  an unreachable endpoint all fail every account rather than one, and all
-  three used to leave the jobs page reading healthy over an empty bucket. The
-  run now fails with the storage provider's own sentence as the cause. A run
-  where some account got a copy still succeeds, with the rest counted, because
-  retrying the whole cohort over one object would re-upload everybody's.
+- **The nightly off-site backup no longer takes the instance down with
+  it.** The first time it was pointed at a real destination it ran out of
+  memory within seconds and restarted the container for everyone on it,
+  because the job runs inside the app process. The weekly backup had the
+  same problem in v1.38.6, and that fix had only half reached this job:
+  the upload still built the whole backup as one piece, compressed it
+  whole, encrypted it whole and sent it whole, four full copies of the
+  record at once. Now the record goes out table by table straight into
+  compression, then encryption, then an upload in parts, so no complete
+  copy ever exists and what the process holds no longer depends on how
+  much you have recorded. Measured under the real memory ceiling with a
+  large record, the old way dies while still building the copy and the
+  new way finishes with room to spare; the stored copy for such a record
+  is about 9 MB. If you set `BACKUP_S3_ENDPOINT` and its companions on an
+  instance with a large record, you can leave them set after this.
+
+- **A nightly run that uploaded nothing for anybody now reports failure.**
+  It used to say it was fine. Bad credentials, a missing bucket or a
+  refused connection upload nothing, leave no half-finished parts behind,
+  keep the server up, and fail the run with the storage provider's own
+  reason. A run where some accounts got a copy still succeeds, with the
+  rest counted, because retrying everyone over one object would re-upload
+  everyone's. The runbook lists what the bucket grant needs, including
+  permission to abort a multipart upload.
 
 ### Changed
 
-- **Off-host objects carry their authentication tag at the end.** The tag can
-  only be produced once the last block of ciphertext is in, so a leading one
-  meant the whole object had to exist before its first byte could be sent —
-  which is the thing that could not be streamed. Nothing about the encryption
-  changes; the tag still covers every byte and is still verified before any
-  plaintext comes back. Objects already in your bucket, in either older
-  layout, restore exactly as before and the restore script needs no flag to
-  tell them apart.
-
-- **A busy phone could be signed out at the very moment it renewed its
-  credentials.** The app renews its access token about once a day, and a
-  renewal that landed while several requests were already on the wire killed
-  the token those requests were carrying. They came back "this credential was
-  withdrawn", the app read that as "sign in again", and asked for another
-  renewal using the refresh token it had just spent — which looks exactly
-  like a stolen token being replayed, so every credential for that device was
-  withdrawn and the person had to log in again. Renewal now retires the
-  outgoing token by pulling its expiry in to fifteen seconds rather than
-  withdrawing it: long enough for requests already in flight to finish, short
-  enough that the old token gains nothing worth having over the seconds it
-  was valid for anyway. A token whose own expiry falls inside that window
-  keeps its own. The replay defence is unchanged — a refresh token presented
-  twice still withdraws the device's credentials on the spot, and so does
-  signing out.
+- Off-site copies carry their authentication tag at the end. The tag can
+  only be produced once the last block is in, so a leading one meant the
+  whole object had to exist before its first byte could be sent, which is
+  the thing that could not be streamed. The encryption itself is
+  unchanged; the tag still covers every byte and is checked before any
+  plaintext comes back. Copies written by earlier versions still restore
+  without a flag: an old and a new copy of the same record came back with
+  identical row counts, deleted rows included.
 
 ## [1.38.9] — 2026-09-05
 
-The date order you choose now reaches every date on screen, a plain-HTTP
-self-host can write again, and a gateway that refuses now says why. The first
-two came from reports by @foxbcx (#922) and @arisalthaus (#492); thank you.
+The date order you choose now reaches every date on screen, a gateway that
+refuses now says why, and a plain-HTTP self-host can write again. Two of
+the reports came from @foxbcx (#922) and @arisalthaus (#492); thank you.
 
 ### Fixed
 
-- **On a self-host served over plain HTTP, picking a file to upload did
-  nothing at all.** No document appeared, no progress bar, no error — the
-  file picker closed and the page sat there, and the only way to get an
-  upload through was to reach the app over HTTPS. Browsers withhold a
-  handful of APIs from pages served over plain HTTP, and one of them is the
-  call the upload used to label each transfer so a retry could not store the
-  same file twice. That call is not a security measure here and nothing in
-  an upload needs it: the file travels the same way either way, and the
-  encryption happens on the server. It is now built from a source that plain
-  HTTP does allow, so uploads work over HTTP on a LAN, a VPN or Tailscale
-  exactly as they do over HTTPS. Passkeys, web push and installing the app
-  to a home screen still need HTTPS; browsers withhold those outright and no
-  application can hand them back.
-- **The same missing call broke every save on a plain-HTTP host, not only
-  uploads.** Recording a measurement, editing a medication, restoring a
-  backup — anything that wrote — failed from the moment the app started
-  labelling writes this way in v1.37.18. Those all work again.
+- **The date order you pick under Settings only reached the entry form.**
+  @foxbcx switched away from MM/DD/YYYY, watched the date picker follow,
+  and found the chart axes and the measurements list still spelling every
+  date the old way. The setting had reached the form and nothing else; the
+  rest fell back to the language default without saying so. It now reaches
+  the chart axes and their tooltips, the measurements list, the medication
+  charts, the doctor-report PDF, and the page a practice opens through a
+  link you gave them, which spells dates the way you read them rather than
+  the way the practice does. That page also picked up your 12- or 24-hour
+  preference, which it had been ignoring while the PDF used it. Month
+  names stay in the interface language: the setting decides the order of
+  the numbers, not the language of the words, because the alternative is a
+  German month name in an English report.
+
 - **A gateway that refused the call reported nothing but "empty content".**
-  Some OpenAI-compatible gateways, OpenRouter among them, answer a refused
-  generation with HTTP 200 and the reason inside the body. The provider health
-  card therefore recorded status 0 and "returned empty content" whether the
-  account was out of credits, blocked by its own data policy, rate-limited, or
-  pointed at a model that was down, and no excerpt survived to tell them
-  apart. The gateway's own status and message now reach the card and the
-  fallback chain, which treats each of them exactly as it treats the same
-  status on the wire. The local-endpoint provider had the same blind spot on
-  its buffered and its streaming path and got the same treatment.
-- **The import guide link under Settings → Import went the long way round.**
-  Both the CSV and the JSON card now link straight to the guide instead of
-  through a redirect.
-- **The date order you pick under Settings only reached the entry form.** A
-  reporter switched away from MM/DD/YYYY, watched the date picker follow, and
-  then found the dashboard chart axes and the measurements list still spelling
-  every date the old way. The setting now reaches every surface that renders a
-  numeric date: the health and mood chart axes and their tooltips, the
-  measurements list, the medication compliance and efficacy charts, the
-  doctor-report PDF, and the shared clinician view, which spells dates the way
-  the person who owns the record reads them rather than the way the practice
-  that opened the link does. That view also picked up the owner's 12-/24-hour
-  preference on the way; it had been ignoring that while the PDF one route
-  over already honoured it.
+  With OpenRouter as the OpenAI-compatible gateway, a refused request
+  showed up as "empty content" with no reason, because OpenRouter answers
+  with success and puts the error inside the body. The reason now comes
+  through in the gateway's own words, a missing balance as a missing
+  balance and a data-policy block as a block, and the provider health card
+  and the fallback chain treat each as they would the same answer from any
+  other provider. The local provider had the same blind spot, including
+  for an error that arrives before the first streamed token, and is closed
+  too.
 
-  Textual months are deliberately unchanged. "18 Feb" versus "Feb 18" follows
-  the app's language, because the alternative is a German month name in an
-  English report.
+- The import guide links under Settings → Import went the long way round.
+  Both the CSV card and the JSON card now link straight to the guide
+  instead of through a redirect.
 
-  The cause is worth naming, because it is a shape rather than an oversight:
-  the formatter took the preference as an optional argument with a default, so
-  the six places that never passed it compiled cleanly and silently rendered
-  the locale default. The argument is required now, which turned "who forgot
-  this" into a question the compiler answers, and a new check refuses a
-  numeric date rendered outside the preference unless the reason is written
-  down next to it.
+- **On a self-host served over plain HTTP, nothing could be saved.**
+  @arisalthaus, on a LAN, found that uploads did nothing and worked out
+  that the transport was the reason. Nothing in a save needs HTTPS, but
+  since v1.37.18 the app labelled every upload and every save with an id
+  from a browser call that is only offered on a secure page. On an http://
+  address the save failed before a request left the page, and nothing said
+  why: recording a measurement, editing a medication, restoring a backup,
+  all of it. The id now comes from a source plain HTTP allows, so writes
+  work over HTTP on a LAN, a VPN or Tailscale as they do over HTTPS. What
+  a browser still withholds from a page without HTTPS is passkey sign-in,
+  push notifications and installing the app to the home screen; no
+  application can hand those back, and the self-hosting docs now say so.
 
 ## [1.38.8] — 2026-09-03
 
-The heart-rate-variability tile now works for accounts whose HRV comes
-from a ring or a strap, and an account can no longer accumulate an
-unbounded pile of measurement tokens. Both from @Antiheld86.
+The heart-rate-variability tile now works for accounts whose HRV comes from
+a ring or a strap, and an account can no longer pile up measurement tokens
+without limit. Both from @Antiheld86.
 
 ### Changed
 
-- **You can hold up to ten measurement tokens at a time.** Past that, minting
-  another is refused until you revoke one, so a script stuck in a retry loop
-  meets a wall instead of leaving you hundreds of live credentials to clear
-  out by hand. Only tokens that are actually alive count: revoking one frees
-  a slot immediately, an expired one stops taking up space on its own, and
-  the ordinary tokens your browser and phone use to sign in are counted
-  separately and never eat into it. A household with a scale, a watch bridge
-  and a couple of scripts sits at three or four, so the limit is there to
-  catch a runaway rather than to ration.
+- **You can hold up to ten measurement tokens at a time.** Past that,
+  creating another is refused until you revoke one, so a script stuck in a
+  retry loop meets a wall instead of leaving you hundreds of live
+  credentials to clear out by hand. Only live tokens count: revoking one
+  frees a slot at once, an expired one stops counting on its own, and the
+  tokens your browser or phone uses to sign in are counted separately. A
+  household with a scale, a watch bridge and a couple of scripts sits well
+  under the limit; it is there to catch a runaway, not to ration.
 
 ### Fixed
 
-- **The heart-rate-variability tile never appeared on the dashboard for
-  people whose HRV comes from a ring or a strap.** Turning the widget on
-  under Settings → Dashboard did nothing and said nothing, while the same
-  readings charted perfectly on the HRV page — which made it look as though
-  the layout itself was broken. HRV is stored two ways: Apple Health, Fitbit
-  and Google Health record SDNN, whereas Oura, Polar and WHOOP record nightly
-  RMSSD, as does anything pushed in through a bridge from a watch that
-  reports it that way. Every other place HRV appears already accepted both;
-  the dashboard tile looked only for SDNN, so an account that had only RMSSD
-  had nothing for the tile to show. It now uses whichever series you actually
-  have, and the tile is titled "HRV (RMSSD)" when that is the one on screen,
-  so a reading of 40 is not mistaken for a collapsed SDNN figure. An account
-  with both keeps seeing SDNN, and the two are never blended — they are
-  different measures that happen to share a unit.
-- Turning the Recovery module off now takes RMSSD off the dashboard on every
-  path, not just the default one. That series belongs to Recovery everywhere
-  else in the app, and the dashboard snapshot already dropped it — but the
-  analytics endpoint that feeds the same tiles when the snapshot is switched
-  off filtered nothing at all, so a disabled module still reached the client
-  there. Both feeds now strip the same set, from the same map, so the gate no
-  longer depends on which path served the page.
+- **The heart-rate-variability tile now appears on the dashboard for
+  people whose HRV comes from a ring or a strap.** Turning it on under
+  Settings did nothing and said nothing, while the same readings charted
+  fine on the HRV page, which made it look as though the layout was
+  broken. HRV is stored two ways that happen to share a unit: Apple
+  Health, Fitbit and Google Health record SDNN, while Oura, Polar, WHOOP
+  and most watch bridges record nightly RMSSD. Every other place HRV
+  appears already accepted either one; the tile looked only for SDNN. It
+  now uses whichever series you have, titled "HRV (RMSSD)" when that is
+  the one on screen so a reading of 40 is not mistaken for a collapsed
+  SDNN figure. An account with both keeps seeing SDNN, and the two are
+  never blended. The tile's freshness caption was also read off SDNN while
+  RMSSD was displayed, which would have marked a current tile as stale; it
+  reads the series on screen now.
+
+- Turning the Recovery module off now takes RMSSD off the dashboard in
+  every case. The dashboard has two ways of loading its tiles, and the one
+  used when the snapshot is switched off did not drop the series, so a
+  disabled module still showed up there.
 
 ## [1.38.7] — 2026-09-03
 
-The weekly backup actually produces a backup again. v1.38.6 stopped it
-taking the instance down when it failed, and also stopped it succeeding.
+The weekly backup produces a backup again. v1.38.6 stopped it taking the
+instance down when it failed, and also stopped it succeeding.
 
 ### Fixed
 
-- **The weekly backup refused every account because the server had been up a
-  while.** The writer added in v1.38.6 watched the process's live heap and gave
-  up above 80 % of V8's limit. That reading is not the backup's footprint; it
-  is the whole process's, garbage included, and a long-running app sits at
-  400 MB of heap that a collection would take back. On a 1 GB container the
-  budget is 419 MB, so the pass aborted the first chunk it wrote for every
-  account: four out of four in seven seconds, one of them a demo record whose
-  entire stored copy is 1.2 MB, all of them told that their record was too
-  large and that the operator should buy memory. An affected instance can
-  sit for a month and a half with no usable copy. The heap gauge is gone. What is bounded instead
-  is the one copy the pipeline cannot stream away: the stored blob, counted in
-  the bytes it actually produced, against a fifth of this process's heap limit.
-  An account whose backup genuinely does not fit still fails as a job rather
-  than taking the instance down with it, and the message now names what was
-  measured and what it crossed.
-- **A backup pass that wrote nothing for anybody reported success.** `backed: 0`
-  came back as a completed job, so the failing-queue panel stayed empty and the
-  backups page listed the copies it already had with their perfectly ordinary
-  timestamps. A pass that protected nobody is now a failed run, which is what
-  the backups page reads back when it says the last scheduled run did not
-  finish. A pass where some accounts were written and others were not still
-  passes, with the per-account failures carried as counts, because failing the
-  queue over one record would re-run the whole cohort on every retry.
+- **The weekly backup refused every account because the server had been up
+  a while.** The check added in v1.38.6 watched how much memory the whole
+  server process was using, garbage included, and gave up above a line
+  that a long-running server sits above on uptime alone. So every account
+  was refused on the first chunk it wrote, the run finished in seconds, and
+  it reported success. Size had nothing to do with it: an account whose
+  entire stored backup is about a megabyte got the same message as one
+  holding hundreds of thousands of readings, each told its record was too
+  large and that the operator should buy memory. An instance in that state
+  can go a month and a half without a usable copy. That check is gone
+  rather than tuned. The backup is measured against the one thing that
+  really grows with a record, the encrypted copy it produces, against a
+  fifth of the server's memory limit. An account whose backup really does
+  not fit still fails as one job rather than taking the instance down, and
+  the message says what was measured and what it crossed. Measured with a
+  large record under a cap well below the default container, the backup
+  finishes with room to spare; built in one piece, the old way, the same
+  record still dies at that cap.
+
+- **A backup run that wrote nothing for anybody reported success.**
+  Accounts present and none backed up came back as a completed job, so the
+  failing-jobs panel stayed empty and the backups page listed the copies
+  it already had. A run that protected nobody is now a failed run, and the
+  backups page shows it as one. A run that writes some accounts and not
+  others still succeeds, with the failures counted per account, because
+  failing the whole run over one record would redo everyone's backup on
+  every retry. Still open: on an instance with several people, an account
+  that fails every week while the others succeed is invisible, because the
+  age shown is the newest copy across all accounts. That needs a
+  per-account view and text in every language, so it waits for a later
+  release.
 
 ## [1.38.6] — 2026-09-03
 
@@ -813,418 +688,251 @@ arrives in the language you actually read the app in.
 
 ### Changed
 
-- `greetingHour` is no longer part of the dashboard snapshot response. Any
-  client that decoded it as a required field needs the field made optional or
-  dropped; the `timezone` it sits beside is unchanged and is what the greeting
-  should be derived from.
-- The rotation script says what it did NOT look at. A zero that means "nothing
-  left" and a zero that means "never looked" read the same on a summary, and an
-  operator acts on that zero by dropping a key. Each run now ends with the
-  count of registered columns it walked, names any it skipped, and exits
-  non-zero when the two disagree. The runbook's retire-the-key step was
-  rewritten around that signal instead of around "the script ran cleanly", and
-  it tells an operator who already rotated on an older release how to get their
-  backups back.
+- The rotation tool says what it did not look at. A zero that means "nothing
+  left" and a zero that means "never looked" read the same, and an operator
+  acts on that zero by dropping a key. Each run now ends with how many
+  columns it walked out of how many exist, names any it skipped, and exits
+  with an error when the two disagree. The runbook's retire-the-key step is
+  rewritten around that count, and it tells an operator who already rotated
+  on an older release how to get their backups back.
+- `greetingHour` is no longer part of the dashboard snapshot response. A
+  client that decoded it as required needs the field made optional or
+  dropped; the `timezone` beside it is unchanged and is what the greeting
+  should come from.
 
 ### Fixed
 
-- **A misspelled field in a request is no longer accepted and thrown away.**
-  Send `disableCoachh` where the server expects `disableCoach` and the answer
-  used to be 200: the unrecognised key was dropped, whatever else the body
-  carried was saved, and the caller was told its request had been honoured.
-  Twenty-two endpoints now refuse a field they do not recognise, and the
-  422 names the key that was wrong instead of only saying the body failed. The
-  settings toggles, the restore and bulk-delete endpoints, message feedback,
-  the admin user update, the diabetes and Coach switches, the onboarding
-  acknowledgements, the provider chain, the chart overlay preferences and the
-  two client-side reporters are the ones affected. A key name is bounded and
-  stripped of anything that is not a plain identifier before it is echoed, so
-  a hostile one cannot ride the error message back out.
-- Sync, layout, import and the read filters deliberately keep accepting a field
-  they do not know, and now have a test saying so. The phone app ships optional
-  fields ahead of the servers that will eventually read them, and a self-hosted
-  install runs whichever release its operator last pulled, so a server quietly
-  ignoring a field it has never heard of is what keeps an updated app working
-  against an older install. Refusing there would turn one dropped field into a
-  refused batch: a year of history lost to a single row, a dashboard that will
-  not save, or a phone that silently stops registering for notifications. On a
-  read filter a stray query parameter discards nothing at all, the OAuth
-  endpoints are required by their specifications to ignore parameters they do
-  not recognise, and an import file comes from another version or another tool
-  by definition.
-- **The greeting could contradict the rest of the page.** Three separate
-  pieces of code answered the question "what hour is it" for the time-of-day
-  salutation. The dashboard snapshot computed one server-side and put it on
-  the payload so that clients would not have to; no client ever read it. The
-  insights hero worked it out from the profile timezone. The dashboard header
-  worked it out from a helper of its own that quietly fell back to the
-  device's clock whenever the runtime could not resolve the configured zone,
-  which is what happens to a zone the browser's timezone data does not yet
-  carry. At one instant, for one account, those three returned 20, 21 and 05,
-  so the header said good morning while the hero said good evening and every
-  date beneath them belonged to a third zone. The two greetings now read the
-  same helper, which stays on the configured zone and falls back to the same
-  default as the rest of the app rather than to the device. The server value
-  is gone: it is a clock reading, not a fact about the record, and the
-  snapshot body is served from cache for up to an hour, long enough for a
-  stored hour to name a salutation the clock had already left behind. What
-  the server resolves and every client reads is the timezone itself, which
-  travels on the same payload as before.
-- **Some accounts had their generated text written in a language they do not
-  read.** Everything the app writes without a request in front of it — the
-  nightly briefing, the Coach nudge, the reminder messages — resolves its
-  language from one column on the user row, because a background pass has no
-  cookie and no browser to ask. Everything the user looks at resolves from the
-  request instead, and the request prefers the language cookie, then the
-  column, then what the browser asked for. So the two can disagree, and while
-  they do, nothing on screen looks wrong: the menus, the buttons and the
-  labels are all correct, and the disagreement shows up as a single generated
-  paragraph in the wrong language sitting inside an otherwise correct page.
-  That is how it was reported, on a page where the sentence above the health
-  score came back in English on an account read entirely in German.
-  Keeping the column in step was the browser's job, through a best-effort
-  request sent once when a page mounted and never checked. Anything that
-  interrupts it — the paint before sign-in, an offline moment, a tab closed
-  while it was still in flight — loses the write, and the next page load makes
-  the same unchecked attempt rather than noticing the column is still wrong,
-  so the wrong language can stand for the life of the account. The server now
-  keeps the two in step itself: when a request arrives carrying a language the
-  column does not agree with, the column is corrected, once, on the spot. It
-  needs nothing from the browser, it cannot be dropped in transit, and it
-  fixes accounts that have been diverged for months on their next page load.
-  Accounts that never opened the language picker at all are covered the same
-  way. Nobody's stored preference is guessed at: only a language the app was
-  actually being read in can reach the column.
-- **The dashboard aggregate greeted some users in English on a German
-  instance.** The salutation and the streak label are translated on the
-  server for the native client, and that request carries no language cookie,
-  so the stored preference is the only signal. When an account had never
-  opened the language picker the column is empty, and the fallback stopped at
-  English instead of asking what language the instance is configured for.
-  It now follows the same order every background writer uses: the user's own
-  preference, then the operator's default, then English. This was the last
-  copy of the fallback that the nightly writers were moved off earlier.
-
-- **A failing AI provider says what came back.** The provider health card in
-  the operator console could report a provider as failing without saying
-  whose problem it was. The ledger has recorded the HTTP status of every
-  failure since v1.11 and nothing read it. The card names it beside the
-  failure it belongs to now, which is the difference between a dead key the
-  operator has to replace and a provider having a bad afternoon. Blank where
-  there was no status to record, as with a connection that never completed.
 - **Blood glucose can be shown in mmol/L. It never could before.** The
-  account has carried a glucose display unit since v1.2 and about thirty
-  places read it: the dashboard tiles, the glucose page, the targets panel,
-  the CSV and FHIR exports, the doctor report, the Coach's own notes, the
-  low-reading alert. Nothing could ever set it. There was no control, no
-  endpoint and no field on any form, so every account sat on the mg/dL
-  default and anyone who reads glucose in mmol/L got a number they had to
-  convert in their head on every screen. The unit is now a dropdown in
-  Settings under your profile, beside the metric/imperial one and
-  deliberately not folded into it, because metric countries are split on
-  which unit they read glucose in and one control would get half of them
-  wrong. Nothing already recorded changes: readings are stored in mg/dL and
-  stay stored in mg/dL, and the unit only picks how they are shown. The
-  entry form moved with it, which is the half that mattered. It now asks in
-  the unit you chose and converts on the way in, so a 5.3 typed by an mmol/L
-  reader is filed as 95 mg/dL instead of as 5.3, which is inside the
-  plausible range, passes without a word, and reads back on every surface as
-  a severe hypo. The measurements list and its edit sheet moved with it for
-  the same reason, so correcting a typo cannot rewrite a reading into the
-  other unit.
-- **The same reading converted two different ways.** A glucose value
-  imported in mmol/L was multiplied by 18.016; one displayed in mmol/L was
-  divided by 18.0182. A value imported in mmol/L therefore did not come back
-  out as the number it went in as. Both ends take the same factor now, and
-  the test names the constant rather than repeating the digits, which is how
-  the two came apart to begin with.
-- **An Apple Health import records which export it came from.** The import
-  status has always carried the instant the Health app stamped on the
-  archive, the API contract has always promised it, and it was always empty:
-  the element sat on the parser's list of things to skip. The parser reads
-  it now and writes it the moment it goes past, so a run that later fails
-  still says which export it was working from.
-- **The weekly backup no longer takes the instance down with it.** The
-  compression that went out last release was real, and it was measured in the
-  wrong place. On a development machine with a multi-gigabyte heap the pass
-  finished; the container it actually runs in is capped at 1 GB, which gives
-  Node a 524 MB heap, and there the same pass died with
-  `Reached heap limit — JavaScript heap out of memory` about fifteen seconds
-  in. Because the job shares the application process, that was not one failed
-  backup: it was a restart, and every signed-in session on the host went with
-  it. The document is now written incrementally. The three tables that grow
-  without bound — readings, doses, mood entries — are read a page at a time and
-  serialised straight into the compressor and the cipher, every other section
-  is released as soon as its own JSON exists, and nothing between the database
-  rows and the stored value is ever held whole. On a seeded account of 445 000
-  readings the pass used to exhaust a 546 MB heap; the same account doubled to
-  890 000 now finishes inside 296 MB. The writer also watches its own memory
-  and stops at 80 percent of the limit, so an account too large for its host is
-  a backup that failed for that one account and is counted in the run's meta,
-  not a restart for everybody. Backups written under either older shape still
-  restore, which is checked both ways rather than asserted.
-- **Backups were outside key rotation.** `DataBackup.data` holds every weekly
-  disaster-recovery snapshot and every uploaded pack, encrypted at rest like
-  everything else — but under a column called `data`, and the rotation registry
-  was keyed on the `*Encrypted` naming convention. So the rotation script never
-  read a backup, reported zero rows remaining, and the runbook told the
-  operator that zero meant the previous key was safe to retire. Following those
-  instructions to the letter made every stored backup permanently
-  undecryptable, which is the last thing that should break. The registry now
-  covers it, rotation walks it in bounded batches (one row is a whole
-  compressed account), and it re-seals the ciphertext without reading the
-  plaintext, so both stored envelopes — the plain JSON and the compressed one —
-  come back byte-identical, as will any later one. The same sweep found one
-  more: the idempotent-replay response cache, now rotated too.
-- **Rotation crashed a third of the way through and said nothing.** Running the
-  script against a seeded database — rather than reading it — showed it dying
-  on the mood day-context note. That table is keyed on the entry it belongs to,
-  not on an `id`, and the walk asked for a column the database does not have.
-  Everything after it in the pass, the backups included, was never reached. The
-  walk now takes the model's actual key, and a check fails the build if a
-  registered column's key does not match the schema.
+  dashboard tiles, the glucose page, the targets panel, the CSV and FHIR
+  exports, the doctor report, the Coach's notes and the low-reading alert
+  all read the setting, and nothing set it. The unit is now a dropdown in
+  Settings under your profile, beside the metric/imperial one and not folded
+  into it, because metric countries are split on which unit they read
+  glucose in. Readings are stored in mg/dL and stay that way; the unit only
+  picks how they are shown. The entry form, the measurements list and the
+  edit sheet ask in your unit and convert on the way in, so a 5.3 typed by
+  an mmol/L reader is filed correctly instead of as a number that passes
+  every check and reads back on every screen as a severe hypo. Editing a
+  value entered in mg/dL does not convert at all, so correcting a typo
+  cannot rewrite a reading into the other unit.
+- The same reading converted two different ways. Import and display used
+  slightly different factors, so a value imported in mmol/L did not come
+  back out as the number it went in as. Both ends take the same factor now.
+- **Text the server writes arrives in the language you read the app in.**
+  The interface takes its language from a cookie; the nightly briefing, the
+  Coach nudge and the reminders take it from your account. A single write on
+  page load kept the two in step, and when it was lost (a paint before
+  sign-in, an offline moment, a tab closed in flight) nothing retried, so
+  one English paragraph could sit on an otherwise German page for the life
+  of the account. That is how it was reported: the sentence above the health
+  score came back in English on an account read entirely in German. The
+  server keeps the two in step itself now, correcting the account once when
+  a request arrives in a language it does not agree with. It cannot be
+  dropped in transit, it repairs accounts that have been out of step for
+  months on their next page load, and only a language the app was actually
+  being read in can reach the account.
+- The phone app's dashboard greeting no longer falls back to English on a
+  German instance. That request carries no language cookie, so an account
+  that never opened the language picker got English instead of the
+  instance's language. It now follows the same order every background writer
+  uses: your preference, then the operator's default, then English.
+- The greeting no longer contradicts the rest of the page. Separate pieces
+  of code answered "what hour is it" for the salutation, and one of them
+  fell back to the device's clock whenever the configured timezone would not
+  resolve, so the header could say good morning while the page said good
+  evening and the dates belonged to a third zone. Both greetings read one
+  helper now, which stays on the configured zone and falls back to the app's
+  default rather than to the device. The server value is gone: it was a
+  clock reading served from a cache for up to an hour, long enough to name a
+  salutation the clock had already left behind.
+- An Apple Health import records which export it came from. The import
+  status had always promised the instant the Health app stamped on the
+  archive, and the parser had always skipped it. It reads it now and writes
+  it the moment it goes past, so a run that later fails still says which
+  export it was working from.
+- **The weekly backup no longer takes the instance down with it.** Last
+  release's compression was measured on a machine with a multi-gigabyte
+  heap; the container it runs in is capped at 1 GB, and there the same pass
+  still died, and because the job shares the application process every
+  signed-in user on the host went with it. The document is now written piece
+  by piece: the tables that grow without bound (readings, doses, mood
+  entries) are read a page at a time straight into the compressor and the
+  cipher, every other section is released as soon as its own JSON exists,
+  and nothing is held whole. A record doubled in size now finishes well
+  inside that heap, and the writer stops itself before the limit, so an
+  account too large for its host is one failed backup in the run's summary,
+  not a restart for everybody. Backups written under either older shape
+  still restore.
+- **The provider health card says what a failing AI provider sent back.**
+  The card could report a provider as failing without saying whose problem
+  it was; the status of every failure had been recorded since v1.11 and
+  nothing read it. It is shown beside the failure now, which tells a dead
+  key from a provider having a bad afternoon, and blank where there was no
+  status to record.
+- **Backups were outside key rotation.** The weekly snapshots and uploaded
+  packs are encrypted like everything else, but under a column called
+  `data`, and the rotation tool recognised encrypted columns by their name.
+  So it never read a backup, reported zero rows remaining, and the runbook
+  told you that zero meant the old key was safe to retire; following it made
+  every stored backup permanently unreadable. Rotation covers it now, in
+  bounded batches, and re-seals the ciphertext without reading the
+  plaintext, so both stored forms come back byte-identical. The
+  idempotent-replay response cache was outside rotation for the same reason
+  and is rotated too.
+- Rotation crashed part-way through and said nothing. Running the tool
+  against a seeded record showed it dying on the mood day-context note, a
+  table keyed on the entry it belongs to rather than on an `id`. Everything
+  after it, the backups included, was never reached. The walk now takes the
+  table's actual key.
 - The document index's verbatim text was rotating but never appeared in the
-  summary, so the new coverage check read it as skipped. It has its own line
-  now, with its own counts.
+  summary, so the new coverage count read it as skipped. It has its own line
+  now.
+- **A misspelled field in a request is no longer accepted and thrown away.**
+  Send `disableCoachh` where the server expects `disableCoach` and the
+  answer used to be 200 with the key dropped. The settings toggles, the
+  restore and bulk-delete endpoints, message feedback, the admin user
+  update, the diabetes and Coach switches, the onboarding acknowledgements,
+  the provider chain, the chart overlay preferences and the two client-side
+  reporters now refuse a field they do not recognise, and the 422 names the
+  key. A key name is bounded and stripped of anything that is not an
+  ordinary identifier before it is echoed.
+- Sync, layout, import and the read filters keep accepting a field they do
+  not know, on purpose. The phone app ships optional fields ahead of the
+  servers that will read them, and a self-hosted install runs whichever
+  release its operator last pulled, so a server ignoring a field it has
+  never heard of is what keeps an updated app working against an older
+  install. On a read filter a stray parameter discards nothing, the OAuth
+  endpoints are required by their standards to ignore unknown parameters,
+  and an import file comes from another version or another tool by
+  definition.
 
 ### Internal
 
 - A column holding ciphertext is now recognised by what the code writes into
-  it, not by what it is called. A new guard traces the encryption helpers
-  through their wrappers, walks every Prisma write payload, and fails when a
-  column receives ciphertext without being registered for rotation — the
-  check that would have caught the backup blob nine releases ago. It asserts a
-  non-zero, anchored match count, so a matcher that quietly stops matching
-  fails instead of passing, and it was verified by breaking it three ways.
-
-- The column-reader sweep was wrong in both directions and had been for as long as it existed. It answers "does this column have a consumer" for every column in the schema, and it is the tool this project leans on to catch a schema change that ships its writer and forgets its reader. Its idea of a write was any `field:` key anywhere, so `where: { ticketHash }` counted as writing `ticketHash`: all twelve columns it reported were a lookup key or a cron's discovery predicate being filtered on, every one a false alarm. And because it only ever reported a column that HAD a write, a column with no write at all was the one thing it could not see. It now understands which Prisma argument a key sits in, follows a payload assembled into a variable before the call, credits raw SQL against the mapped column name, and reports a column no code touches at all as its own category. Twelve false alarms became nineteen findings that each hold up, four of them worth acting on. The matcher underneath is pinned by a test that was checked by breaking it three ways.
-- **Two columns have a reader and no writer.** The glucose unit preference is read across twenty-nine files, the dashboard and both exports and the doctor report and the FHIR resources among them, and no surface anywhere writes it, so an account cannot leave mg/dL. An import job's export date is described in the schema as parsed during unpack, is returned by the import status endpoint and is in the published contract, but the parser skips Apple's `ExportDate` element outright: the field has always been null.
-- **Two columns have a writer and no reader.** The provider-health ledger records the HTTP status of a failed call and nothing reads it back, and the known-device ledger stamps a first-seen date that no query, page or export ever asks for.
+  it, not by what it is called, so a column like the backup blob cannot sit
+  outside rotation again.
+- The check that asks whether every column has both a reader and a writer
+  had been wrong in both directions: every column it reported was a lookup
+  key, and a column no code touched was the one thing it could not see. It
+  works now, and its first real run found the glucose unit and the Apple
+  Health export date (read and never written, both fixed above), the
+  provider-health status (written and never read, now shown), and the
+  known-device first-seen date, which no page or export asks for yet.
 
 ## [1.38.5] — 2026-09-03
 
-The weekly backup costs a fraction of the memory it did, the dashboard
-stops scanning the two largest tables, and several settings now do what
-they say.
+The weekly backup costs a fraction of the memory it did, the dashboard stops
+scanning the two largest tables, and several settings now do what they say.
 
 ### Security
 
-- Two advisory floors raised. A URI parser that arrives under several
-  dependencies, the connector SDK among them, was below the fix for four
-  advisories about host confusion and request forgery through percent-encoded
-  schemes, skipped internationalised-name canonicalisation, and malformed or
-  repeated authorities. A query-string parser was below the fix for an
-  array-limit bypass and a denial of service. Both are pinned past their fixes,
-  and the dependency audit reads clean again.
+- Two dependency minimums raised. A URI parser that arrives under several
+  dependencies, the connector SDK among them, was below the fix for
+  advisories about host confusion and request forgery; a query-string parser
+  was below the fix for an array-limit bypass and a denial of service. Both
+  are raised past their fixes.
 
 ### Fixed
 
-- **A large record no longer outruns the weekly backup.** On an account with a
-  few hundred thousand readings the Sunday snapshot could not finish. It was
-  never given a time limit of its own, so it inherited the queue's fifteen
-  minutes, was killed part-way through, redelivered twice against the same
-  record, and gave up three quarters of an hour later having never completed
-  once. The reason it needed so long was memory: the whole account was built in
-  memory, serialised whole, encrypted whole, and handed to the database whole,
-  which is four full copies of the record at the same moment. The stored copy
-  is now compressed before it is encrypted, which takes an order of magnitude
-  off everything after it, and the pass releases each stage before allocating
-  the next. A seeded 445 000-reading account, on a machine with
-  a generous heap, went from dying of memory to finishing in about twenty
-  seconds, with a stored copy of 25 MB instead of 322 MB. The pass also has an
-  explicit two-hour window now, so a genuinely slow disk cannot be mistaken for
-  a broken run. The nightly off-host copy is built the same way and got the
-  same treatment; files written before this still restore, and so do backups
-  already sitting in the database.
-
-  **That measurement does not carry to a small container, and this entry
-  originally over-claimed from it.** A container capped at 1 GB gives the
-  runtime a 524 MB heap, and against one of those the pass still runs out of
-  memory, roughly three times further along than before but short of the end.
-  Worse, it takes the whole process down with it, so a failed backup becomes an
-  outage for everyone else on the instance. Building the record incrementally
-  rather than whole is the actual fix and has not landed yet. Until it does, an
-  instance backing up a large record wants more than 1 GB.
-
-- **A failed backup run is now visible on the backups page.** The weekly pass
-  can stop and leave no trace: the page listed whatever copies existed, and a
-  copy from six weeks ago carries a timestamp exactly like Sunday's. The page
-  now says how old the newest scheduled copy is when it has gone past due, and
-  how the last scheduled run ended when it ended badly, with the reason the
-  queue recorded. Both are shown because they stop being available at different
-  times — a run's own record is kept for a week, the age of the newest copy for
-  as long as the copy exists.
-- **Mood correlations no longer call five days of noise a strong finding.** The
-  mood page painted a "Strong" or "Moderate" badge on a mood-versus-sleep,
-  activity, pulse, weight or blood-pressure card as soon as five days had been
-  paired, with the day count and the coefficient tucked behind an info icon.
-  Five points sloping the right way by chance is not a finding, and the rest of
-  the app has refused to call it one for a while: the weight, blood-pressure
-  and mood status surfaces all require at least twenty paired days and a result
-  that a significance test says is unlikely to be chance. The mood page now
-  requires the same. Fewer cards will show a coefficient, and the ones that do
-  mean something. A card that cannot show one says which of the two it is: how
-  many of the twenty days you have so far, or that twenty days went by and
-  nothing stood out. Those used to look identical.
-- **A medication with no schedule no longer reports perfect adherence.** If you
-  saved a medication without a dose time, the insights list, the blood-pressure
-  read and the medication-compliance summary all showed it at 100 percent and
-  folded that into your average, because nothing was expected of it so nothing
-  could be missed. It was never an adherence figure, and it made every other
-  medication's average look better than it was. Such a medication is now left
-  out of adherence entirely, which is what the doctor report has always done.
-  Add a schedule and it comes back.
-- **A day you never logged is no longer counted as a day you took nothing.** The
-  chart pairing blood-pressure medication continuity against your systolic
-  readings treated every day without an intake record as a measured zero, so a
-  week away from the app read as a week off your medication and dragged the
-  relationship between the two around. Only days that carry an intake record
-  are used now. A dose you marked as skipped is still a real zero and still
-  counts; a day you simply did not open the app is not in the chart at all.
-- **A lab note this instance cannot decrypt survives an export instead of
-  vanishing.** If your encryption key was rotated and the old one dropped
-  before every row had moved, a lab note or a biomarker context written under
-  the old key came out of a data export as empty. In the file that is
-  indistinguishable from a note you never wrote, so restoring the export
-  finished the job and the text was gone with nothing to show it had been
-  there. Both now export as a short marker saying the text was encrypted with
-  a key this instance no longer holds, and the marker survives a restore. The
-  original text is still unrecoverable without the old key; what changes is
-  that you can see something was lost.
-- **A deleted mood entry or custom-metric reading now counts as deleted in the
-  AI surfaces.** Deleting a reading left it in place with a tombstone, and
-  three reads had not been told to skip tombstones: the correlation channel
-  built from a custom metric kept using deleted readings, and the check that
-  decides whether an AI assessment is still current could not see a mood
-  deletion or a custom-metric deletion at all, so yesterday's text was re-dated
-  and served as today's over data you had removed. All three now skip deleted
-  rows.
-- **Twenty-eight settings a self-hoster could write down but not actually
-  change.** The `environment:` block in `docker-compose.yml` is a whitelist:
-  compose reads `.env` for `${VAR}` substitution, so a value set there looks
-  configured, but a variable the block does not name never reaches the app.
-  Everything below was read by the server and missing from that list, so the
-  default silently stood no matter what was in `.env`. Now forwarded, each
-  with a line in `.env.production.example` saying what it does and when to
-  reach for it: `DEMO_MODE`; the four log knobs (`LOG_LEVEL`,
-  `LOG_SAMPLE_RATE`, `LOG_SLOW_THRESHOLD_MS`, `LOG_INCLUDE_STACK`) and log
-  shipping (`LOKI_ENDPOINT`, `LOKI_USERNAME`, `LOKI_PASSWORD`);
-  `DATABASE_STATEMENT_TIMEOUT_MS`; four retention and alerting windows
-  (`COACH_MESSAGE_RETENTION_DAYS`, `HOST_METRIC_RETENTION_DAYS`,
-  `DENSE_INTRADAY_RETENTION_ENABLED`, `INTEGRATION_FAILURE_ALERT_THRESHOLD`);
-  `TELEGRAM_WEBHOOK_SECRET`; `NIGHTSCOUT_PRIVATE_ORIGINS`; the three callback
-  overrides `WITHINGS_REDIRECT_URI`, `FITBIT_REDIRECT_URI` and
-  `GOOGLE_HEALTH_REDIRECT_URI`; both Open-Meteo endpoints;
+- **The weekly backup uses far less memory.** On a real instance it had not
+  produced a copy since mid-July: the whole record sat in memory several
+  times over and the process died within seconds. The stored copy is now
+  compressed before it is encrypted, and each stage is released before the
+  next is built. A record of a few hundred thousand readings, on a generous
+  heap, finishes in under half a minute. The pass has a two-hour window of
+  its own now, so a slow disk cannot be mistaken for a broken run. The
+  nightly off-site copy is built the same way, and older backups still
+  restore.
+- **A failed backup is visible now.** It went unnoticed for five weeks
+  because on the backups page an old copy looks exactly like Sunday's. The
+  page now says how old the newest scheduled copy is once it is past due,
+  and how the last run ended when it ended badly, with the reason the queue
+  recorded.
+- **The dashboard opens faster on accounts with years of readings.** Two
+  reads behind the metric tiles scanned every row instead of using an index.
+  Both ask per metric now, and neither grows with the archive; the tiles
+  show the same numbers.
+- Mood correlations no longer call a handful of days a finding. The mood
+  page painted "Strong" or "Moderate" on a card after a few paired days. It
+  now needs the twenty paired days and the significance test the rest of the
+  app does. Fewer cards show a coefficient, and a card without one says
+  whether you are still collecting days or nothing stood out.
+- A medication with no dose time no longer reports perfect adherence. It
+  showed 100 percent in the insights list, the blood-pressure read and the
+  compliance summary, and lifted every average. It is left out until it has
+  a schedule, as the doctor report always did.
+- A day you never opened the app is no longer a skipped dose. The
+  blood-pressure medication chart counted every day without an intake record
+  as a zero, so a week away read as a week off your medication. Only days
+  with an intake record count now; a dose you marked as skipped still does.
+- A lab note this instance can no longer decrypt survives an export. Such a
+  note or biomarker context used to come out empty, and a restore finished
+  the job. Both export as a marker saying the text was encrypted under a key
+  this instance no longer holds, and the marker survives a restore. The text
+  itself is still unrecoverable without the old key; you can now see
+  something was lost.
+- A deleted mood entry or custom-metric reading counts as deleted in the AI
+  features. The correlation channel built from a custom metric kept using
+  deleted readings, and the check that decides whether an AI assessment is
+  still current could not see a deletion, so yesterday's text was re-dated
+  and served as today's. Both skip deleted rows now.
+- A dismissed correlation finding comes back when its evidence has really
+  moved. The check compared two numbers instead of the stored fingerprint,
+  so a dismissal restored from a backup that carried the fingerprint but not
+  the numbers could never be released. It reads the fingerprint now, and a
+  dismissal still survives ordinary sampling noise.
+- **If you host this yourself, settings you could set but not change.** The
+  `environment:` block in `docker-compose.yml` is a whitelist, so a value in
+  `.env` looked configured and never reached the app. Now forwarded, each
+  with a line in `.env.production.example`: `DEMO_MODE`; `LOG_LEVEL`,
+  `LOG_SAMPLE_RATE`, `LOG_SLOW_THRESHOLD_MS` and `LOG_INCLUDE_STACK`;
+  `LOKI_ENDPOINT`, `LOKI_USERNAME` and `LOKI_PASSWORD`;
+  `DATABASE_STATEMENT_TIMEOUT_MS`; `COACH_MESSAGE_RETENTION_DAYS`,
+  `HOST_METRIC_RETENTION_DAYS`, `DENSE_INTRADAY_RETENTION_ENABLED` and
+  `INTEGRATION_FAILURE_ALERT_THRESHOLD`; `TELEGRAM_WEBHOOK_SECRET`;
+  `NIGHTSCOUT_PRIVATE_ORIGINS`; `WITHINGS_REDIRECT_URI`,
+  `FITBIT_REDIRECT_URI` and `GOOGLE_HEALTH_REDIRECT_URI`;
+  `OPENMETEO_BASE_URL` and `OPENMETEO_GEOCODING_URL`;
   `ADMIN_AI_BASE_URL_ALLOWLIST`, `CODEX_MODEL`, `CODEX_MODEL_FALLBACK_CHAIN`
   and `COACH_EXPERIMENT_VERDICT`; `APNS_KEY`, `APNS_KEY_FILE` and
-  `APNS_PRODUCTION`; and `DASHBOARD_SSR_PREFETCH`. The Coach retention window
-  matters twice over — the Data & Privacy page quotes it back to the user, so
-  an instance keeping conversations for 90 days now says 90 instead of
-  repeating the default. A Codex slug rotation is likewise something an
-  operator can now ride out by pinning a model, rather than waiting for a
-  release.
-- **`APNS_KEY` and `APNS_KEY_FILE` work where the documentation always said
-  they did.** The example file and the manifest both describe a precedence
-  chain of `APNS_KEY_B64` before `APNS_KEY` before `APNS_KEY_FILE`, but only
-  the first ever reached the container, so an operator who chose either of the
-  other two got a silently disabled APNs and no explanation.
-- **The Web Push key loader no longer advertises names it cannot read.** Six
-  `WEB_PUSH_*` aliases and a `NEXT_PUBLIC_VAPID_PUBLIC_KEY` one sat behind the
-  three real `VAPID_*` variables. None was ever on the compose whitelist and
-  none appeared in any example file, so under the bundled stack a value set
-  under those names could not arrive — an escape hatch that had never been
-  open. They are gone, and the self-hosting guide no longer mentions them. The
-  VAPID section of the example file also carried a note saying the three real
-  names were absent from the whitelist; they have been on it since v1.17.1.
-- **A test now answers the question instead of a comment on each entry.** The
-  whitelist is derived from the compose file and the read set from the source
-  — including the four modules that resolve a variable name through a helper,
-  which a plain search for `process.env.` does not see at all. A variable read
-  without being forwarded fails the build unless it carries a written reason
-  why forwarding it would be wrong. Thirteen do: build stamps, values the
-  runtime supplies, two spellings of a knob that already reaches the container
-  through `DATABASE_URL`, three that only ever run in CI, and the dashboard
-  snapshot flag, which is compiled into the client bundle and so cannot be
-  steered from a running container at all. This is the second time the class
-  has shipped; v1.5.2 closed one instance of it by hand.
-- **A dismissed correlation finding comes back when its evidence has really
-  moved.** Dismissing a finding stores a fingerprint of the evidence behind it,
-  and the check that decides whether to raise it again never read that
-  fingerprint; it compared two of the numbers instead. A dismissal restored
-  from a backup that carried the fingerprint but not those numbers could not be
-  released by anything and stayed hidden for good. The fingerprint is read now:
-  evidence that has not moved at all is settled without going further, and a
-  dismissal with no numbers to measure against is released once the fingerprint
-  stops matching. A dismissal still survives ordinary sampling noise, which is
-  the whole point of it.
-- **The five assistant switches save when they are sent to the general admin
-  settings endpoint.** That endpoint accepted them, answered 200 and stored
-  nothing; sent on their own they came back as "no valid fields". An operator
-  scripting their settings over the one endpoint had no way to tell the
-  difference between a switch that was written and one that was dropped. They
-  are written now, and echoed in the response so the write reads back. The
-  dedicated endpoint the admin console uses was never affected.
+  `APNS_PRODUCTION`; and `DASHBOARD_SSR_PREFETCH`. The Data & Privacy page
+  now quotes the Coach retention window you actually set, and a Codex slug
+  rotation is something you can ride out by setting a model rather than
+  waiting for a release. A variable the server reads can no longer be left
+  off that list without a written reason.
+- `APNS_KEY` and `APNS_KEY_FILE` work where the documentation always said
+  they did. Only `APNS_KEY_B64` ever reached the container, so choosing
+  either of the other two got a silently disabled APNs and no explanation.
+- The Web Push key loader no longer advertises names it cannot read. The
+  `WEB_PUSH_*` aliases and `NEXT_PUBLIC_VAPID_PUBLIC_KEY` were never on the
+  compose whitelist or in any example file, so a value under those names
+  could not arrive. They are gone, and the self-hosting guide no longer
+  mentions them. The example file also said the real `VAPID_*` names were
+  absent from the whitelist; they have been on it since v1.17.1.
+- The AI switches save when they are sent to the general admin settings
+  endpoint. That endpoint accepted them, answered as if saved and stored
+  nothing, so a script had no way to tell a written switch from a dropped
+  one. They are written now and echoed back. The admin console's own
+  endpoint was never affected.
 
 ### Security
 
-- **A notification channel the operator switched off stops delivering.**
-  Telegram, ntfy and Web Push each carry an instance-wide switch in admin
-  settings. Switching one off only hid its setup card: every account that had
-  already configured the channel kept receiving on it, for as long as the
-  channel was configured. The switch now holds where it has to, at delivery. A
-  dispatch on a channel that is off sends nothing and writes the skip to the
-  delivery ledger with a reason, so the admin notification diagnostics name the
-  cause instead of showing a gap. Accounts keep their own channel settings
-  untouched, so switching a channel back on restores delivery without anyone
-  re-enabling anything. Turning such a channel on from the user side is now
-  refused with a message that says why, rather than a toggle that flips and
-  then delivers nothing.
-- **The dashboard opens faster on accounts with years of readings.** Two of the
-  reads behind the metric tiles were doing far more work than the handful of
-  rows they return. The first asked for the newest reading of every metric by
-  sorting the account's entire live measurement set and then keeping one row per
-  metric, which on a multi-year account means reading hundreds of thousands of
-  rows and sorting them on disk once the sort outgrows the memory Postgres gives
-  it. The second read the daily chart buckets without naming a metric, so the
-  rollup table's key could not be used and every stored bucket got scanned,
-  including the weekly, monthly and yearly ones the chart never shows. Both now
-  ask per metric, which is what the existing indexes are built for. On a fixture
-  matching the shape of a real account the first read went from 112 ms to 0.7 ms
-  and the second from 6.9 ms to 1.6 ms, and both stop growing with the size of
-  the archive. Nothing about the tiles changes: same numbers, same order, same
-  metrics.
-- **The check that watches for ungated module routes now watches every
-  module.** It walked a hand-written list of route trees, and the list had
-  stopped keeping up: the Coach tree, the environmental-context tree, the
-  mental-health screeners, the inbound-document vault and the MCP credential
-  surface all shipped an API tree the check never looked at. Nothing was
-  leaking — every route in those trees already refuses when the module is off,
-  and the doctor-report export was gated too — but a green run was saying
-  something narrower than it appeared to say, which is how the FHIR routes once
-  sat in a green bucket while serving the whole record. The trees are declared
-  per module now, so a new module cannot be added without saying where its
-  routes live, and a directory named after a module is found on disk rather
-  than remembered. For a self-hoster this changes no behaviour today; it is the
-  difference between a module switch that is enforced and one that is only
-  believed to be.
-
-### Security
-
-- **Every webhook verb that checks the shared secret is rate-limited now, not
-  just the one that carries data.** The Withings entrypoints, the Telegram bot
-  webhook and the Coolify deploy hook all limited their POST and left the
-  reachability verbs — the GET and HEAD a webhook UI sends to confirm the URL
-  before saving it — comparing the same secret with nothing in front of them.
-  Those verbs answer 200 for the right secret and 401 for a wrong one, so
-  unlimited they were a free guessing machine against the callback token of an
-  instance whose URL is known, and a free load channel besides. The comparison
-  was already constant-time, which hides how long the check took but not what
-  it answered. Each verb now runs the per-source limit its POST sibling used,
-  on the same bucket, before it looks at the secret. Nothing changes for a
-  legitimate subscription: Withings, Telegram and Coolify send one or two
-  probes, far below the limit. A new guard walks every webhook route and fails
-  the build if a verb reaches a secret comparison without the limiter in front
-  of it, so the next verb added to one of these files cannot repeat this.
+- A notification channel the operator switched off stops delivering. Turning
+  Telegram, ntfy or Web Push off instance-wide only hid the setup card while
+  every account that had configured the channel kept receiving on it. A
+  channel that is off delivers nothing now, the skip shows in the
+  notification diagnostics with its reason, and switching it back on
+  restores delivery without anyone re-enabling anything. Turning such a
+  channel on from the user side is refused with a message that says why.
+- Every module's API routes are now declared with the module itself, so a
+  module that is switched off cannot leave a route reachable by being
+  forgotten. Nothing was reachable this way before, and nothing changes for
+  you today.
+- Every webhook verb that checks the shared secret is rate-limited now. The
+  Withings, Telegram and Coolify hooks limited their POST but not the GET
+  and HEAD a webhook UI sends to confirm a URL: a free way to guess a
+  callback token. Each verb runs the same limit before it looks at the
+  secret; the real services send one or two probes.
 
 ## [1.38.4] — 2026-09-02
 
@@ -1233,41 +941,41 @@ carries no flagged dependency versions.
 
 ### Fixed
 
-- **The AI server key reaches Anthropic when the base URL points there.** An
-  operator who filled the server key with an Anthropic key and
-  `https://api.anthropic.com/v1` got a failure on every AI call and nothing
-  saying why: the request was built for OpenAI's API and posted at Anthropic's,
-  which speaks a different shape. The base URL now picks the client. Anthropic's
-  host, and any subdomain of it, is called on Anthropic's Messages API and
-  defaults to a Claude model; every other host keeps the OpenAI-compatible API
-  it had before, which is also the right one for a local server or a gateway. A
-  base URL that is not a URL at all behaves as it did. The operator card now
-  says which providers the field accepts. Found in a fork by @sweidinger.
+- **The shared AI key reaches the provider its address names.** If you
+  filled the server key with an Anthropic key and
+  `https://api.anthropic.com/v1`, every AI call failed and nothing in the
+  error said why: the request was always built for OpenAI's API and posted
+  at Anthropic's, which speaks a different shape, and the address field
+  accepted the value happily. The base URL now picks the client. Anthropic's
+  host, and any subdomain of it, is called on Anthropic's own Messages API
+  and defaults to a Claude model; every other host keeps the
+  OpenAI-compatible path, which is also the right one for a local server or
+  a gateway. A base URL that is not a URL at all behaves as it did. The
+  operator card says which providers the field accepts. Found in a fork by
+  @sweidinger, who worked around it there; this fixes it at the source.
 
 ### Security
 
-- **The published image no longer ships four flagged dependency versions.**
-  Three floors in the override block had gone stale: the sanitiser behind the
-  doctor-report PDF sat below the fix for GHSA-55q2-fjhq-7xh7, the CSS
-  processor the build runs on sat below the fix for CVE-2026-69153, and a
-  schema library that arrives through two unrelated parents had no floor at
-  all (CVE-2026-59952). All three are raised and re-resolved, each inside its
-  existing major, so nothing changes shape for anyone.
-- **The Prisma command line inside the image gets the same pins as the app.**
-  The image carries two separate installs, and only one of them reads the
-  project's override block. The other is an npm install of the Prisma CLI, and
-  it was quietly resolving an HTTP server (GHSA-frvp-7c67-39w9,
-  CVE-2026-39406) and a schema library (CVE-2026-59952) at the versions the
-  image scan flagged, while the same packages were pinned and clean in the
-  application tree. Both are now pinned on the npm side too, verified by
-  rebuilding that install both ways. This is the second time the same gap has
-  produced a finding, so the guard that compares the two files was widened: it
-  had been skipping every scoped package name, which is exactly the case that
-  went unnoticed here.
-- The Dependabot auto-merge workflow no longer hands a write token to the
-  whole run. The workflow default is read-only and the write scopes sit on the
-  one job that spends them. Nothing about which updates merge automatically
-  changes.
+- **The published image no longer ships flagged dependency versions.** Some
+  minimum versions had gone stale: the sanitiser behind the doctor-report
+  PDF sat below the fix for GHSA-55q2-fjhq-7xh7, the CSS processor the build
+  runs on sat below the fix for CVE-2026-69153, and a schema library that
+  arrives through two unrelated parents had no minimum at all
+  (CVE-2026-59952). All are raised inside their existing major, so nothing
+  changes shape for anyone.
+- **The Prisma command line inside the image gets the same versions as the
+  app.** The image carries a separate install of it, and that one does not
+  read the project's version overrides. It was quietly resolving an HTTP
+  server (GHSA-frvp-7c67-39w9, CVE-2026-39406) and the same schema library
+  (CVE-2026-59952) at the flagged versions while the application itself was
+  already safe. Both are set to the safe versions on that side too. The
+  comparison between the two files had been skipping every package whose
+  name starts with an at sign, so a version set in one place and not the
+  other went unseen; it sees them now.
+- The automatic dependency merge runs with less privilege. That workflow
+  handed a write token to every job in the run; the default is read-only now
+  and the write scopes sit on the one job that spends them. Which updates
+  merge automatically has not changed.
 
 ## [1.38.3] — 2026-09-02
 
@@ -1276,34 +984,32 @@ source is called by its name.
 
 ### Fixed
 
-- **An account with two-factor can be deleted from the app.** Deleting
-  the account, and erasing the record while keeping the account, both demand a
-  fresh second-factor proof once a factor is enrolled. That proof lived on the
-  session row, which a native client does not have, so anyone who had turned on
-  TOTP or registered a security key was refused on both endpoints from the app
-  no matter what they sent — the only way through was a browser. The app can
-  now re-prove a factor the same way it already does for second-factor
-  management: mint a single-use elevation at `POST /api/auth/step-up` with a
-  TOTP code, security key, or passkey, and send it back in the `X-Step-Up`
-  header alongside the deletion. The web path is untouched, a token on its own
-  still gets nowhere, a password-proved elevation is refused for erasure just as
-  a password login never satisfied the gate on the web, and the proof is spent
-  only when the erasure is about to run, so a mistyped confirmation does not
-  burn it. One thing to know when erasing the record over a token: API tokens
-  are part of what that request deletes, so the app signs itself out and has to
-  sign in again.
-- Settings, Sources: four of the sources in the priority ladder were listed
-  by their internal name. `GOOGLE_HEALTH`, `OURA`, `POLAR` and `STRAVA`
-  appeared exactly like that instead of Google Health, Oura, Polar and
-  Strava. The label catalogue was written when there were seven sources and
-  every provider added since fell through to the raw value. The same
-  fall-through sat in the measurement list, where the source filter offers
-  every source there is and the table paints one per row, and on the
-  medication intake history, where a dose synced from Apple Health read
-  "via APPLE_HEALTH". All three catalogues are complete in all seven
-  languages now, and a test reads the source enums out of the schema and
-  fails when a member has no label, so the next provider cannot ship
-  without its name.
+- **An account with two-factor can be deleted from the phone.** Deleting the
+  account, and erasing the record while keeping the account, both ask for a
+  fresh proof of your second factor once you have one enrolled. That proof
+  lived on the browser sign-in, which the app does not have, so anyone with
+  an authenticator app or a security key was refused from the app no matter
+  what they sent, and a browser was the only way through. The app now
+  re-proves the factor the same way it already does when you manage
+  two-factor. Nothing about the web path changed, and a mistyped
+  confirmation does not use up the proof. One thing to know when erasing the
+  record from the app: API tokens are part of what that request deletes, so
+  the app signs itself out and signs in again.
+- **Every data source is called by its name.** In Settings, Sources, some
+  entries in the priority ladder showed their internal name, `GOOGLE_HEALTH`
+  instead of Google Health, and Oura, Polar and Strava the same way. The
+  label list was written when there were far fewer sources, and every
+  provider added since fell through to the raw value. The same thing
+  happened in the measurement list's source filter and column, and in the
+  medication intake history, where a dose synced from Apple Health read "via
+  APPLE_HEALTH". Each is complete in every language now, and a new provider
+  cannot ship without its name.
+- If you write against the API, the deletion and erasure routes accept a
+  single-use elevation from `POST /api/auth/step-up` (a code, security key
+  or passkey) sent back in the `X-Step-Up` header. A token on its own still
+  gets nowhere, a password-proved elevation is refused here as a password
+  login never satisfied this check on the web, and the proof is spent only
+  when the erasure is about to run.
 
 ## [1.38.2] — 2026-09-02
 
@@ -1312,1522 +1018,1780 @@ stays in the language you read the app in.
 
 ### Fixed
 
-- **Anthropic keys work again on current Claude models.** Every JSON surface
-  on the Anthropic provider (the daily briefing, the status cards, lab and
-  document extraction, anything that asks the model for a JSON object) had
-  been failing with an HTTP 400 on the Claude 4.6, 4.7 and 4.8 family, on
-  Opus 5 and Sonnet 5, and on Fable 5 and 5.1. The client had been steering
-  the reply by starting the assistant turn with an opening brace and
-  gluing it back on afterwards. Those models reject an assistant prefill
-  outright, so a self-hoster who brought a key with a current model got a
-  provider failure on each of those calls while the plain chat path kept
-  working. The prefill is gone on every model; the request now carries a
-  plain instruction to reply with a single JSON object and nothing else,
-  and the reply is narrowed to the object body on the way out, so a fenced
-  or prefixed answer still parses. Reported independently by @sweidinger.
+- **Anthropic keys work again on current Claude models.** Everything that
+  asks the model for JSON (the daily briefing, the status cards, lab and
+  document extraction) had been failing on the Claude 4.6 family upward, on
+  Opus 5 and Sonnet 5, and on the Fable models. The app steered the answer
+  by starting the model's reply with an opening brace and gluing it back on
+  afterwards; those models reject that outright, so anyone with a current
+  model got a provider failure on each of those calls while plain chat kept
+  working. The trick is gone on every model. The request asks for a single
+  JSON object and nothing else, and an answer wrapped in backticks or
+  prefixed with text still parses. Reported independently by @sweidinger,
+  whose fork retried without the prefix.
 - **Lab and document OCR no longer refuse a current Claude model.** The
-  vision check knew the Claude 3 and 4 families by name, so a key pinned to
-  `claude-sonnet-5`, `claude-opus-5` or a Fable model was told the provider
-  cannot read images even though it can. Any Claude tier from the 4 family
-  upward, and every Fable model, now counts as vision-capable. The model
-  preset list in Settings also offers `claude-sonnet-5` and `claude-opus-5`.
-- Dashboard, Today: a self-hoster using the app in German could see the
-  dashboard lead and the Today briefing in English, and they stayed English
-  no matter how often the page was opened. The nightly briefing writer
-  resolved an account that had never picked a language to English, ignoring
-  the instance's configured default language, and the briefing cache is a
-  single slot per account that carried no record of the language it was
-  written in, so every reader was served whatever the last writer left
-  there. The request-driven refresh only replaced it once the cache was a
+  image check knew the Claude 3 and 4 families by name, so a key set to a
+  newer model was told the provider cannot read images even though it can,
+  and a lab photo was never sent. Any Claude from the 4 family upward, and
+  every Fable model, now counts. The model presets in Settings also offer
+  `claude-sonnet-5` and `claude-opus-5`.
+- **The daily briefing stays in the language you read the app in.** Someone
+  using the app in German could find the dashboard lead and the Today
+  briefing in English, and no amount of reloading changed it. The nightly
+  writer resolved an account that had never picked a language to English
+  rather than to the instance's language, and the briefing cache kept no
+  record of the language it was written in, so every reader got whatever the
+  last writer left there. The refresh only replaced it once the cache was a
   day old and the provider answered, which with a provider at its usage
-  limit was never. The cache now records the language it was generated in,
-  and a reader in another language gets the honest "preparing" state and a
-  re-warm in their own language instead of foreign prose; rows written
-  before this change are served as before until the next write tags them.
-  Every background path (nightly briefing warm, status crons, period
-  narratives, reaction lines, morning refresh, briefing push, coach nudges,
-  reminders, document and workout summaries) now resolves a missing user
-  language to the instance default, then to English, through one shared
-  helper, and a structural test keeps the job tree on it.
+  limit is never. The cache now records its language: if you read in another
+  language you get the "preparing" state and a fresh briefing in your own,
+  and briefings written before this release are served as before until the
+  next write.
+- On a server you run yourself, every background writer (the nightly
+  briefing, the status cards, period narratives, reaction lines, the morning
+  refresh, the briefing push, coach nudges, reminders, and the document and
+  workout summaries) now resolves a missing account language to your
+  instance's default first and only then to English.
 
 ## [1.38.1] — 2026-09-01
 
 You can push readings in from your own hardware again, and a lab reading
-shows where it sits against its reference range at a glance.
-
-Since v1.30.17 there was no way to push a reading in. That release made API
-tokens enforce their scope, which closed a real hole (a token issued for
-medication intake had been reaching every other endpoint, the full backup
-export included) and removed the generic "create API token" button along
-with it. What went unnoticed was that the button had been the only
-self-service route to a token that could write a measurement. A scale or a
-watch bridge piped through Home Assistant had no door left, and the OAuth
-integrations do not reach local sensors.
-
-There is now a token for exactly that job, and for nothing else.
+shows where it sits against its reference range at a glance. @Antiheld86
+built the measurement ingest token (#881, from their proposal in #878);
+@TimonBed built the reference-range bar and the lab-list alignment (#860,
+#880) and fixed lab OCR for GPT-5 models (#861).
 
 ### Added
 
-- **A measurement ingest token, minted from Settings → API & Tokens.**
-  Contributed by @Antiheld86 in #881, from their proposal in #878. It posts
-  readings to `/api/measurements` and `/api/measurements/batch`, on your own
-  record. That is the whole list. It cannot read a reading back, cannot
-  change or delete one, cannot reach the export, and cannot mint another
-  token, so a credential sitting in a container you did not write has a
-  worst case of junk in your own record, not your health history leaving
-  the building. Shown once, expires after a year, and revoked from the same
-  page as every other token.
-- **A guide for wiring one up**, with a worked Home Assistant
-  `rest_command` and automation, the measurement types a scale or a watch
-  bridge tends to report, and what each error response means.
-- The API endpoint list on that settings page now shows the two ingest
-  endpoints alongside the medication one.
-- **A reference-range bar beside every lab reading**, contributed by
-  @TimonBed in #860 and #880. The lab list, its mobile cards and the history
-  table on an analyte's page carry a compact bar: the reference window in
-  green, the reading as a marker on it, blue below the window, amber above
-  it. A range with only a minimum or only a maximum gets a bar too, with
-  the one stated bound labelled. A reading far outside its window (vitamin
-  D at 7 against a floor of 30, say) widens the bar's scale so the marker
-  stays visible instead of sitting pinned to the edge. In the list the status badge, the bar and the trend
-  sparkline line up in columns across rows, and every point on the
-  sparkline takes the colour the bar gives it. A qualitative reading, or one
-  without a range, shows no bar.
+- **A token for pushing readings in.** Since v1.30.17 API tokens keep to
+  their scope and the generic token button is gone, so a scale or a watch
+  bridge through Home Assistant had no way in. Settings → API & Tokens now
+  mints a token that adds readings to your own record and nothing else; it
+  cannot read, change, delete, export or mint another token. Shown once,
+  valid for a year, revoked like any other. Contributed by @Antiheld86 in
+  #881, from their proposal in #878.
+- The docs site has a guide for wiring one up, with a worked Home Assistant
+  example, the measurement types a scale or a watch bridge tends to report,
+  and what each error means.
+- **A range bar beside every lab reading**, from @TimonBed in #860 and #880.
+  The lab list, its mobile cards and each analyte's history carry a compact
+  bar: the window in green, the reading as a marker, blue below, amber
+  above. A one-sided range gets a bar with its one bound labelled, and a
+  reading far outside its window widens the scale so the marker stays
+  visible. Badge, bar and sparkline line up in columns and share the
+  colours. A qualitative reading, or one without a range, shows no bar.
+- The token posts to `/api/measurements` and to `/api/measurements/batch`,
+  and the settings page lists both beside the medication endpoint.
 
 ### Changed
 
-- Readings pushed with this token are recorded as manually entered, which
-  means you can correct one in the app if a sensor sends something wrong.
-  A push that claims to come from Apple Health is refused rather than
-  quietly relabelled: that label is half of how the iOS app recognises its
-  own rows, and a bridge borrowing it corrupts the phone's sync instead of
-  merely mislabelling a reading.
-- Such a push no longer moves the phone's sync checkpoint. It never should
-  have: the checkpoint records that your phone delivered what it was
-  holding, and a scale advancing it could make the phone skip a window of
-  its own samples.
-- The below-range and above-range badges on a lab reading carry a light
-  tint (blue below, amber above) instead of the neutral grey they shared;
-  in range stays neutral. Part of #860.
-- Routine dependency updates: the Prisma Postgres adapter to 7.10.0 (see
-  Fixed), and the Argon2 binding, the WebAuthn server library, Radix,
-  Lucide, the form resolvers and the dev tooling by a patch or minor each.
+- Readings pushed with the token count as manually entered, so you can
+  correct one in the app if a sensor sends something wrong.
+- The below-range and above-range badges on a lab reading carry the same
+  light tint as the bar, blue below and amber above; in range stays neutral.
+  Part of #860.
+- Routine dependency updates ride along: the Prisma Postgres adapter (see
+  Fixed), the Argon2 binding, the WebAuthn server library, Radix, Lucide,
+  the form resolvers and the dev tooling.
+- A push that claims to come from Apple Health is refused rather than
+  relabelled, because that label is half of how the iOS app recognises its
+  own rows, and such a push no longer moves the phone's sync checkpoint.
 
 ### Fixed
 
-- Settings, Integrations: the warning that the configured OAuth callback
-  origin differs from the address you are browsing on, added in v1.38.0,
-  never appeared in the published image, and the copyable callback address in
-  each setup guide showed only a path. Both read the app address inside the
-  browser bundle, where it is fixed at build time and the published image is
-  built without it. Both values now come from the server at request time and
-  reflect the `NEXT_PUBLIC_APP_URL` or `*_REDIRECT_URI` you actually set. A
-  structural test refuses a client module that reads that variable again.
-- Lab OCR with a GPT-5 model on the OpenAI provider path (your own key or
-  the operator's admin key), fixed by @TimonBed in #861. The list of models
-  the app trusts to read an image stopped at `gpt-4o`, `gpt-4.1`,
-  `gpt-4-turbo` and the full o-series, so a GPT-5 model was judged unable
-  to read a photo and never sent one; the Codex path already knew better.
-  The extraction call's completion budget doubles from 4000 to 8000 tokens,
-  because a GPT-5 model spends part of it on reasoning and a dense report's
-  JSON was being cut off before the last row. And when the provider itself
-  fails, the error now says so ("The configured AI provider could not
-  process this report") and the server log carries the upstream status,
-  model and error excerpt, where it used to blame the photo and ask for a
-  clearer one.
-- A lab report imported as a document could leave a reference window whose
-  floor sits above its ceiling on the record. The bounds come from the
-  extraction: when a report prints no range text, the two numbers the model
-  reported are the whole of the window, and a transposed pair (100 as the
-  low bound, 30 as the high) went through unchecked. Manual entry, the OCR
-  path and the biomarker endpoint all refuse such a pair; the document path
-  did not, and when the analyte was new to the record the pair was also
-  written to its freshly minted catalog marker, so every later reading of
-  that analyte was judged against a window that cannot be true. The pair is
-  now dropped rather than swapped, because a transposed range says the
-  transcription is wrong and not which of the two numbers is; the verbatim
-  range text survives, so nothing the report actually printed is lost. The
-  extraction drops it, editing a staged fact on the review screen refuses
-  it with the same message the lab forms use, and confirming a fact drops
-  it as the last gate, which is what covers facts staged before this rule
-  existed. Counted as `labs.referenceRange.transposed` in the wide events.
-  The trend sparkline had read the same pair as a minimum-only range and
-  painted a high value green; it now shows a neutral point, as the range
-  bar next to it already showed nothing (#882).
-- Bumping the Prisma Postgres adapter to 7.10.0 broke the image build on
-  both architectures, before any release carried it, with
-  `Cannot find module '/app/node_modules/pg/lib/index.js'`. `pg` had sat in
-  devDependencies, and the assertion that the standalone image can resolve
-  it (pg-boss loads it by plain Node resolution) had passed only because our
-  pin and the adapter's happened to agree on a version; the bump moved the
-  adapter's copy to 8.23.0 while ours stayed at 8.22.0, the file tracer
-  packed only the adapter's copy, and the top-level link pointed at the
-  other. `pg` is a runtime dependency now and the lockfile carries one copy,
-  so the two cannot drift apart on the next adapter release (#872).
+- Lab OCR works with a GPT-5 model on the OpenAI path, fixed by @TimonBed in
+  #861. The list of models trusted to read an image stopped at the GPT-4
+  generation, so a GPT-5 model was never sent the photo. The extraction
+  budget doubles because these models spend part of it on reasoning, and a
+  provider failure now says so instead of blaming the photo.
+- A lab report imported as a document could leave a reference range whose
+  low bound sits above its high one, and for a new analyte that pair went
+  into its catalog entry too. The pair is now dropped rather than swapped,
+  the range text as printed survives, editing or confirming a staged fact
+  applies the same rule, and the sparkline no longer paints such a reading
+  green (#882).
+- The OAuth callback warning added in v1.38.0 never appeared in the
+  published image, and the copyable callback address showed only a path;
+  both were baked in at build time. They now come from the server and
+  reflect the `NEXT_PUBLIC_APP_URL` or `*_REDIRECT_URI` you actually set.
+- A Prisma adapter update had broken the image build before any release
+  carried it, because two copies of `pg` drifted apart. It is a runtime
+  dependency now with one copy in the lockfile (#872).
 
 ### Security
 
-- `mysql2` is pinned past GHSA-3f6p-5ww8-9rcr (an auth-plugin downgrade
-  that leaks the credential) in both the application tree and the separate
-  Prisma CLI install inside the image. It reaches the tree only through
-  Prisma's MySQL driver, which this app never opens.
-- The token is confined to your own record. Pointing it at a record
-  somebody has shared with you is refused, and refused before the sharing
-  grant is even consulted, so no future change to what sharing permits can
-  widen what one of these tokens reaches.
-- Minting one requires being signed in on the web. No API token can mint
-  one of these, whatever it is allowed to do: the sign-in a phone holds
-  lasts a day and what it could mint here lasts a year, so allowing it would
-  let a credential that leaked for an afternoon leave behind one that
-  outlives cancelling it.
-- Closed a narrower gap found while building this. A repeated request
-  carrying an `Idempotency-Key` could be answered from the cache after a
-  check that asked only whether a sharing grant was live, and not which
-  credential was being presented. Nothing could be written that way, but a
-  cached response about a shared record could be returned to a token that
-  the endpoint itself would have turned away.
+- `mysql2` is updated past GHSA-3f6p-5ww8-9rcr in both the application tree
+  and the Prisma CLI install inside the image. It reaches the tree only
+  through Prisma's MySQL driver, which this app never opens.
+- The ingest token is confined to its owner's record; pointing it at a
+  record someone shared with you is refused before the sharing grant is
+  consulted.
+- Only a web sign-in can mint one. No API token can, because a phone's
+  sign-in lasts a day and this token lasts a year.
+- A repeated request with an idempotency key could be answered from the
+  cache after a check of the sharing grant alone, not of the credential
+  presented. Nothing could be written that way, but a cached answer about a
+  shared record could be returned to a token the endpoint itself would have
+  turned away.
 
 ## [1.38.0] — 2026-08-30
 
-The health score works with the record a person actually keeps.
+The health score works with the record you actually keep.
 
-Until now it demanded three separate areas of health plus one measured value before it would grade at all. Someone who tracks blood pressure and sleep, carefully, for months, got the same blank card as someone who had just signed up. The refusal was the loudest thing on the dashboard and it never said what was missing in a way you could act on.
-
-Three areas is now a recommendation. A score is worked out for one area or two the same way it is for five, and the card says what it rests on.
+Until now it needed three separate areas of health plus one measured value
+before it would grade at all. Someone who had tracked blood pressure and
+sleep for months got the same blank card as someone who had just signed up,
+and the card never said what was missing. Three areas is now a
+recommendation: one area scores, the arithmetic is the same at every width,
+and the card says what the number rests on.
 
 ### Added
 
-- The score names its own basis. Below full breadth the card carries one line, "Based on {n} of {recommended} areas of health", and the number stays at full size in its band colour at every tier. A narrower score is a smaller claim, not a worse one, and it is never dressed up as a full one. The areas themselves are one tap away in the composition list that was already there.
-- The score says when a pillar stops counting. If a window rolls past its floor or a source goes quiet, the composition changes and the card says which area left and why, in the same words the pillar uses when it is short of data. Dismissible, and it only comes back if the composition moves again. Deliberately not a notification: this is something to notice, not something to be woken for.
-- Every score response carries an optional `scoreBasis` block with the area count, the recommendation, the tier and whether a measured physiological value is among them. Additive on all three carriers, so an older client keeps working unchanged.
-- Tailscale is a documented way to serve HealthLog, from a self-hoster's suggestion in #847 (see v1.37.33).
+- **Below full breadth the card says what the number rests on.** One line,
+  "Based on {n} of {recommended} areas of health", and the number stays full
+  size in its band colour. A narrower score is a smaller claim, not a worse
+  one. The areas themselves are one tap away in the composition list.
+- **When an area stops counting, the card says which one and why.** If a
+  window runs out of recent data or a source goes quiet, the card names the
+  area that left, in the same words that area uses when it is short of data.
+  You can dismiss it, and it only comes back if the composition moves again.
+  It is not a notification: worth noticing, not worth being woken for.
+- Tailscale is a documented way to serve HealthLog, from a self-hoster's
+  suggestion in #847.
+- For anyone writing against the API, every score response carries an
+  optional `scoreBasis` block with the area count, the recommendation, the
+  tier and whether a measured physiological value is among them. It is
+  additive, so an older client keeps working.
 
 ### Changed
 
-- Refusal now means one thing only: nothing in the record can be scored yet. Every other case gets a number.
-- A pillar selection in settings saves from one pillar upward. The page still recommends three, because a one-area score is honest but thin.
-- `scoreVersion` moves from 3 to 4. Stored days keep the version they were written under; deltas suppress across the change as they always have.
-- The demo seeds every area, so a fresh demo shows the score at full breadth instead of decaying to a cardiometabolic-only view after a few weeks.
+- A blank card now means one thing: nothing in your record can be scored
+  yet. Everything else gets a number.
+- The pillar selection in settings saves from one pillar upward. The page
+  still recommends three, because a one-area score is thin.
+- The demo seeds every area, so a fresh demo shows the score at full breadth
+  instead of narrowing to a cardiometabolic view after a few weeks.
+- For API clients, `scoreVersion` moves from 3 to 4. Stored days keep the
+  version they were written under, and deltas are suppressed across the
+  change as before.
 
 ### Fixed
 
-- Warning on the integration cards when the configured OAuth callback address does not match the address the app is served from, contributed by @TimonBed in #855. Self-hosted OAuth otherwise fails with nothing on screen to explain it.
-- The coverage line no longer says the score "needs" three areas, which stopped being true with this release.
-- The panel-geometry check had never actually measured anything in CI. It needs a browser, and the job that runs it never installed one, so it caught the launch failure and reported four passing assertions. It now installs the browser, fails loudly in CI when one is missing, and skips with a stated reason locally.
+- The coverage line no longer says the score "needs" three areas.
+- The integration cards warn when the configured OAuth callback address does
+  not match the address the app is served from, from @TimonBed in #855.
+  Self-hosted OAuth otherwise fails with nothing on screen to explain it.
 
 ### Security
 
-- A structural guard pins the rule that keeps invented targets out of the score: every scored band must cite a clinical threshold or a published guideline, and nothing may be synthesised from a person's height or age beyond the guideline bands that are documented as such. The BMI-22 default that shipped before v1.34 fails this guard.
+- Every scored band cites a clinical threshold or a published guideline.
+  Nothing is made up from your height or your age beyond guideline bands
+  documented as such; the BMI-22 default that shipped before v1.34 is
+  exactly what that rule keeps out.
 
 ## [1.37.33] — 2026-08-29
 
-A community day: a contributor's first code fix, a self-hoster's suggestion turned into documentation, and the housekeeping a code-scanning tab is for.
+A community day: a contributor's first code fix, a self-hoster's suggestion
+turned into documentation, and housekeeping.
 
 ### Added
 
-- Tailscale is now a documented way to serve HealthLog, suggested by @el-abcd in #847. For a single Docker box, `tailscale serve` stands in for the reverse proxy entirely: trusted HTTPS on your tailnet, no extra container, the free plan covers it, and the iOS app with Apple Health sync works over the same path. `tailscale funnel` is covered as the deliberate public opt-in. The guide lives in the self-hosting docs and on docs.healthlog.dev, next to the reverse-proxy guide it complements.
+- Tailscale is now a documented way to serve HealthLog, suggested by
+  @el-abcd in #847. For a single Docker box, `tailscale serve` stands in for
+  the reverse proxy entirely: trusted HTTPS on your tailnet, no extra
+  container, the free plan covers it, and the iOS app with Apple Health sync
+  works over the same path. `tailscale funnel` is covered as the explicit
+  public opt-in. The guide lives in the self-hosting docs and on
+  docs.healthlog.dev, next to the reverse-proxy guide it complements.
 
 ### Fixed
 
-- A password shorter than the minimum showed its "too short" label in the strength palette's colour instead of reading as invalid. Fixed by @TimonBed in #848, their first contribution here: the label now uses the destructive colour while the bars stay muted.
-- The admin notice about login locations resolving through the online geo lookup repeated on every worker boot, because the only-once latch was a per-process boolean. The anchor now persists in the notification ledger, survives restarts and retention pruning, and resets only when the configuration state actually changes, so the notice fires once when the condition appears and once more only if it goes away and comes back (#851). A host that has disabled IP lookups outright is no longer notified at all; there is no egress to warn about.
-- Restored backups briefly wrote decrypted health data with default file permissions; the restore script now creates its output `0o600`. `TRUST_PROXY_HOPS` joined the compose `environment:` whitelist so a `.env` value reaches the container without editing the compose file.
-- The HTML stripper the notification senders share is hardened against multi-character bypasses: one helper, applied to a fixpoint, replaces five per-sender copies of a single-pass regex.
-- The operator docs went through a truth audit against the current code: stale claims corrected, invented features removed, and the OpenAPI reference brought in line, here and on docs.healthlog.dev.
+- A password shorter than the minimum showed its "too short" label in the
+  strength palette's colour instead of reading as invalid. Fixed by
+  @TimonBed in #848, their first contribution here: the label now uses the
+  destructive colour while the bars stay muted.
+- If you host this for others, the admin notice about login locations
+  resolving through the online geo lookup repeated on every worker restart,
+  because the marker that should have shown it only once lived in the
+  process's memory. The marker now lives in the notification history,
+  survives restarts and retention pruning, and resets only when the
+  configuration state changes, so the notice fires once when the condition
+  appears and once more only if it goes away and comes back (#851). A host
+  that has disabled IP lookups outright is no longer notified at all; there
+  is no egress to warn about.
+- Restored backups briefly wrote decrypted health data with default file
+  permissions; the restore script now creates its output owner-only.
+  `TRUST_PROXY_HOPS` joined the compose `environment:` whitelist so a `.env`
+  value reaches the container without editing the compose file.
+- The HTML stripper the notification senders share now withstands
+  multi-character bypasses: one helper, applied until nothing changes,
+  replaces the per-sender copies of a single-pass pattern.
+- The operator docs were checked line by line against the current code:
+  stale claims corrected, invented features removed, and the API reference
+  brought in line, here and on docs.healthlog.dev.
 
 ### Security
 
-- Dependency overrides lift `flatted`, `js-yaml` and `minimatch` past their published advisories; the Prisma CLI install in the production image is pinned to an exact version; the code-scanning backlog is triaged to zero untreated findings, with false positives dismissed in writing.
+- Dependency overrides lift `flatted`, `js-yaml` and `minimatch` past their
+  published advisories; the Prisma CLI install in the production image is
+  fixed to an exact version; every open code-scanning alert was either fixed
+  or dismissed with a written reason.
 
 ## [1.37.32] — 2026-08-28
 
-Korean joins as a seventh interface language, contributed by @aucun6352, and the three things that had to be fixed before it could actually work.
+Korean joins as a seventh interface language, contributed by @aucun6352 in
+#839, together with the fixes that had to land before it could work.
 
 ### Added
 
-- Korean (`ko`) ships as a seventh interface language, AI-initial and community-maintained alongside French, Spanish, Italian and Polish. The whole surface speaks it: dashboard, settings, share views, the clinician report, notifications and the AI prompts. The PHQ-9, GAD-7 and WHO-5 questionnaires carry their officially published Korean wording so a score stays comparable to the Korean literature; the sleep questionnaire stays in its English-validated form with an honest note. The Coach and the daily briefing take the reviewed English body with a Korean reply directive rather than a hand-curated Korean one, the same route the other community locales took.
+- Korean (`ko`) ships as a seventh interface language, community-maintained
+  alongside French, Spanish, Italian and Polish. The whole app speaks it:
+  dashboard, settings, share views, the clinician report, notifications and
+  the AI prompts. The PHQ-9, GAD-7 and WHO-5 questionnaires carry their
+  officially published Korean wording so a score stays comparable to the
+  Korean literature; the sleep questionnaire stays in its English-validated
+  form with a note saying so. The Coach and the daily briefing take the
+  reviewed English body with a Korean reply instruction rather than a
+  hand-curated Korean one, the same route the other community languages
+  took.
 
 ### Fixed
 
-- A matcher that reads app text against text a person or a lab typed matched nothing at all in Korean. The shared fold decomposes with NFD and strips the combining marks, which turns Latin accents into plain letters, but Hangul decomposes into jamo, and jamo are not combining marks, so they survived and the folded text no longer resembled any table the app carries. Both readers of that fold were affected: the normative-claim check that grades whether a recommendation needs a citation, and the parser that reads a printed reference range. The fold recomposes now, and every Latin, Polish and German fold is byte-identical to before.
-- No Korean analyte name could resolve to a LOINC code. The key normaliser kept `[a-z0-9]` and dropped everything else, so every Korean lab name in the catalogue normalised to the empty string and the derived index held none of them, and a Korean account's cholesterol result reached a FHIR export uncoded.
-- The reference-range parser now reads the tilde a Korean lab prints (`3.5~5.0`), in both the ASCII and fullwidth forms. It had the hyphen and the dashes and not the separator the reports actually use.
+- Text matching between app labels and text a person or a lab typed matched
+  nothing at all in Korean. The app normalises text by pulling accented
+  letters apart and dropping the accent marks, which turns Latin accents
+  into plain letters, but a Korean syllable pulled apart into its letters
+  was never put back together, so the normalised text no longer resembled
+  any table the app carries. Both readers of that normalisation were
+  affected: the check that decides whether a Coach recommendation needs a
+  citation, and the parser that reads a printed reference range. Korean
+  syllables are put back together now, and every other language reads
+  exactly as before.
+- No Korean analyte name could resolve to a LOINC code. The lab-name matcher
+  kept only a to z and digits and dropped everything else, so every Korean
+  lab name in the catalogue matched nothing, and a Korean account's
+  cholesterol result reached a FHIR export uncoded.
+- The reference-range parser now reads the tilde a Korean lab prints
+  (`3.5~5.0`), in both the ASCII and fullwidth forms. It had the hyphen and
+  the dashes and not the separator the reports use.
 
 ## [1.37.31] — 2026-08-27
 
-The retry ledger knew when an AI provider was failing; the operator had no way to see it.
+The server knew when an AI provider was failing; the operator had no way to
+see it.
 
 ### Added
 
-- The admin AI settings section shows a provider-health card: one row per provider type with how many users' chains touch it, how many are currently failing, the worst uninterrupted failure run, and the last success and failure times. Operator-managed providers sort first, since their failure takes the shared fallback down for everyone relying on it. The backing endpoint is admin-only and reports counts and timestamps, never individual users.
+- The admin AI settings section shows a provider-health card: one row per
+  provider type with how many users' provider chains include it, how many
+  are currently failing, the longest unbroken run of failures, and the last
+  success and failure times. Operator-managed providers sort first, since
+  their failure takes the shared fallback down for everyone relying on it.
+  The endpoint behind the card is admin-only and reports counts and
+  timestamps, never individual users.
 
 ## [1.37.30] — 2026-08-27
 
-An operator pointing the global AI provider at a private OpenAI-compatible proxy got a network refusal on every call, and nothing said why.
+An operator pointing the global AI provider at a private OpenAI-compatible
+proxy got a network error on every call, and nothing said why.
 
 ### Fixed
 
-- The operator's global AI provider can now reach a private host, provided that host is named in ALLOW_LOCAL_AI_PRIVATE_HOSTS. Its base URL is typed by the operator in the admin settings, so it now consults the same allowlist as the user-configured gateway instead of being pinned to public hosts. A private host that is not allowlisted is refused exactly as before, personal API keys keep the pinned public posture, and the ChatGPT sign-in path stays fully pinned.
+- The operator's global AI provider can now reach a private host, provided
+  that host is named in `ALLOW_LOCAL_AI_PRIVATE_HOSTS`. Its base URL is
+  typed by the operator in the admin settings, so it now consults the same
+  allowlist as the gateway a user configures for themselves, instead of
+  being restricted to public hosts. A private host that is not on the list
+  is refused exactly as before, personal API keys stay restricted to public
+  hosts, and the ChatGPT sign-in path still only talks to its built-in
+  endpoint.
 
 ## [1.37.29] — 2026-08-26
 
-The chart range selector said points and meant days. Someone who weighs in twice a week picked "7 pts", saw two, and reasonably concluded the chart was broken.
+The chart range selector said points and meant days. Someone who weighs in
+twice a week picked "7 pts", saw two, and reasonably concluded the chart was
+broken.
 
 ### Fixed
 
-- The range tabs now say what they do: 7d / 30d / 90d / All, in every locale. The selector has always fetched a calendar-day window; only the labels claimed a point count. Anyone measuring less than daily saw fewer points than the tab promised and had no way to know the tab was the lying part.
-- The "All" view no longer serves monthly means under a weekly-average caption. The server picked the aggregation tier from the requested window, and "All" always requests ten years, so every record came back in monthly buckets no matter how short its history, while the chart captioned the series from the real span. A four-month record showed four points labelled "Weekly avg". The tier now follows the span the data actually covers, and a test pins the server tier against the caption ladder for every span up to ten years so the two cannot drift apart again.
-- The same tab no longer means two different things depending on how the chart mounted. On the dashboard's preloaded data the old code showed "the last N readings" reaching arbitrarily far back; on a directly opened chart it showed a day window. Both paths now filter to the same calendar-day window, which also keeps comparison-overlay shadow data from leaking into the visible range on sparse records.
-- The mood chart windows by days like every other chart. It used to slice the last N logged days out of the whole history, so its "7" could span weeks while the weight chart's "7" meant a week.
-- The aggregation chip in the chart header reads the same grain decision the chart and its data table use, instead of re-deriving it separately.
-- The runtime image upgrades its OS packages at build time, so the published openssl fix for CVE-2026-14456 ships with this build instead of waiting for the next base-image rebuild.
+- The range tabs now say what they do: 7d / 30d / 90d / All, in every
+  language. The selector has always fetched a calendar day window; only the
+  labels claimed a point count. Anyone measuring less than daily saw fewer
+  points than the tab promised and had no way to know the tab was the lying
+  part.
+- The "All" view no longer serves monthly means under a weekly-average
+  caption. The server picked how coarsely to summarise from the requested
+  window, and "All" always asks for the longest one, so every record came
+  back in monthly buckets no matter how short its history, while the caption
+  was worked out from the span the data really covers. A short record showed
+  a handful of points labelled "Weekly avg". The summary level now follows
+  the actual span and matches the caption.
+- The same tab no longer means two different things depending on how the
+  chart opened. On the dashboard's preloaded data the old code showed "the
+  last N readings" reaching arbitrarily far back; on a directly opened chart
+  it showed a day window. Both paths now filter to the same calendar day
+  window, which also keeps comparison overlay data out of the visible range
+  on sparse records.
+- The mood chart windows by days like every other chart. It used to slice
+  the last N logged days out of the whole history, so its "7" could span
+  weeks while the weight chart's "7" meant a week.
+- The aggregation chip in the chart header reads the same summary-level
+  decision the chart and its data table use, instead of working it out
+  separately.
+- The image upgrades its OS packages at build time, so the published openssl
+  fix for CVE-2026-14456 ships with this build instead of waiting for the
+  next base image rebuild.
 
 ## [1.37.28] — 2026-08-24
 
-Eleven parts of a shared record were selectable and invisible. Ticking one and sending the link showed the recipient nothing, while the same link's PDF download carried it.
+Most parts of a shared record were selectable and invisible. Ticking one and
+sending the link showed the recipient nothing, while the same link's PDF
+download carried it.
 
 ### Fixed
 
-- A share link now renders every part of the record it carries. Eleven of the seventeen selectable sections reached the page and were never drawn: identity, emergency data, lab results, GLP-1 therapy, logged doses, illness episodes, visits, immunizations, family history, mood and cycle. The data had been arriving all along, from the same aggregator the PDF uses, so someone who ticked "Lab values" had every reason to believe they had shared them and no way to find out otherwise.
-- A section that carries nothing now says which kind of nothing it is. A part that was not selected stays absent entirely, because naming it would itself disclose something. A selected part with no records says so. A selected part whose module the account has switched off says that instead, since the recipient would otherwise read an empty card as an empty life.
-- Logged medication doses reached the FHIR download and neither the page nor the report. The one control whose effect a person could only see by opening the bundle in another program now shows the twenty most recent, with a count of what the cut left out.
-- The doctor report printed the raw translation key for a visit's kind rather than its name, and so did the daily digest's upcoming-visit line. Three surfaces built the label by interpolating an enum member into a key space whose entries are lower case, so a routine appointment read as `encounters.kind.ROUTINE` in a document a practice files and on a phone's lock screen.
-- A lab row that diverges from its reference range now names both windows it was measured against instead of one.
+- A share link now renders every part of the record it carries. Most of the
+  selectable sections reached the page and were never drawn: identity,
+  emergency data, lab results, GLP-1 therapy, logged doses, illness
+  episodes, visits, immunizations, family history, mood and cycle. The data
+  had been arriving all along, from the same place the PDF gets it, so
+  someone who ticked "Lab values" had every reason to believe they had
+  shared them and no way to find out otherwise.
+- A section that carries nothing now says which kind of nothing it is. A
+  part that was not selected stays absent entirely, because naming it would
+  itself disclose something. A selected part with no records says so. A
+  selected part whose module the record has switched off says that instead,
+  so nobody reads an empty card as an empty life.
+- Logged medication doses reached the FHIR download and neither the page nor
+  the report. The one control whose effect a person could only see by
+  opening the bundle in another program now shows the twenty most recent,
+  with a count of what the cut left out.
+- The doctor report printed the raw translation key for a visit's kind
+  rather than its name, and so did the daily digest's upcoming-visit line.
+  The label was built from the internal name of the kind, so a routine
+  appointment read as "encounters.kind.ROUTINE" in a document a practice
+  files and on a phone's lock screen.
+- A lab row that diverges from its reference range now names both windows it
+  was measured against instead of one.
 
 ### Changed
 
-- `GET /api/insights/derived` accepts a `windowDays` parameter, so a client can ask for a longer trend than the fixed fourteen days. The ceiling is ninety, which is the last day before the read leaves the bucketed rollup tier for an unbounded scan; beyond it the request is refused rather than quietly clamped. Omitting the parameter changes nothing.
-- The response already carried the two numbers that tell a caller what they actually got, and now says so in the contract: one field for the window that was asked for, another for the history that backed it. A three-week record answering a thirty-day request reports both.
-- The wellness-score value object is modelled in the published API document. It was typed as an open record with prose describing one metric, which is why a client team read the contract, built what they could see, and reported two fields as missing that were in the payload all along. The value shapes that stay opaque are named where the gap is, rather than left to be rediscovered.
-- The share link's report and FHIR downloads are published in the API document alongside their document sibling.
+- `GET /api/insights/derived` accepts a `windowDays` parameter, so a client
+  can ask for a longer trend than the fixed fourteen days. The ceiling is
+  ninety; beyond that the read would have to scan every raw reading, so a
+  larger value is refused rather than clamped. Omitting the parameter
+  changes nothing.
+- The response already carried the window asked for and the history that
+  backed it, and the API reference now says so, so a record shorter than the
+  window reports both.
+- The wellness-score value object is modelled in the API reference. It was
+  typed as an open record with prose describing one metric, which is why a
+  client team read the document, built what they could see, and reported two
+  fields as missing that were in the payload all along. The value shapes
+  that stay undocumented are named where the gap is.
+- The share link's report and FHIR downloads are published in the API
+  reference alongside their document sibling.
 
 ## [1.37.27] — 2026-08-23
 
-Five things this release fixes have the same shape: a check that was green because it was not checking.
+Several things in this release looked fine from the outside and were not,
+the ECG import most of all: it failed on every watch outside a US locale and
+never said why.
 
 ### Fixed
 
-- Importing an Apple Health archive rejected every ECG recording exported outside a US locale, and counted each one as a failure without recording why. Four separate causes, none about the recording: the file opens with a header row that has no value after it, waveform samples are written with a decimal comma, the sample rate reads `511,422 hertz` rather than `512 Hz`, and a German watch writes the column names in German. The parser had been written against a test fixture and the fixture was US-style throughout. All four forms are accepted now, and both dialects are pinned side by side so a later edit cannot narrow it back to one.
-- Three of Apple's own English verdicts were dropped as unknown. `Heart Rate Over 120` and `Heart Rate Under 50` are what the export actually writes, which matches neither the framework's documented case names nor the wording in Apple's instructions. A verdict the parser cannot represent is now told apart from one it has never heard of.
-- The Coach could not report a single environmental correlation. Four surfaces assembled the correlation matrix independently and three carried different channel sets, so asking whether air pressure related to your sleep searched a matrix that never held the pair. All four assemble from one place now. The Coach's file header had claimed for months that it ran the same scan as the insights page, which is why nobody looked.
-- A metric card's assessment received every surviving correlation in the record rather than the ones about that metric. The filter that narrows to one metric had been replaced by the dismissal filter instead of chained with it, so the name, the docstring and the early-return guard all said "one metric" while the return said otherwise. Its test passed because the fixture held one pair.
-- Reading a personal record issued the same single-row lookup once per metric. On a three-year record the dashboard did it 25 times and the analytics page 17. The comment above the helper had warned about exactly this since it was written. It resolves once per request now.
-- Citation coverage reported full coverage for four of the six languages, because it measured against an English and German word bank while the text it measured was written in the reader's language.
-- The Coach refused legitimate questions in some languages and let off-topic ones through. Its topic vocabulary was English and German, so the Italian word for "series" sat on the off-topic list while nothing recognised the Italian for "measurements".
-- A number the Coach wrote in prose could be matched against an unrelated reading. Unit words were recognised in English only, so `7,4 Stunden` carried no kind, and a value with no kind clears the gate against every entry in the ledger: a sleep figure could ground itself on a glucose result. French dates were not parsed either, so correct prose was stripped as unverifiable.
+- Importing an Apple Health archive rejected every ECG recording exported
+  outside a US locale, and counted each one as a failure without saying why.
+  Run against real Apple Watch exports, not one parsed. The causes, and only
+  one of them is about language: the file opens with a header row that has
+  no value after it, the sample values are written with a decimal comma, the
+  sample rate is written as a fractional figure with a comma rather than a
+  round number, and a German watch writes the column names in German. The
+  importer had only ever seen the US form of the file. All of these forms
+  are accepted now.
+- Two of Apple's own English verdicts were dropped as unknown. "Heart Rate
+  Over 120" and "Heart Rate Under 50" are what the export writes, which
+  matches neither the framework's documented names nor the wording in
+  Apple's instructions. A verdict the app has no category for is now
+  recorded as unrecognised, which is different from a recording that carries
+  no verdict at all.
+- The Coach could not report a single environmental correlation. Several
+  pages built the correlation list independently with different sets of
+  channels, so asking whether air pressure related to your sleep searched a
+  list that never held the pair. They all read from one place now.
+- A metric card's assessment received every surviving correlation in the
+  record rather than the ones about that metric, because the step that
+  narrows to one metric had been dropped.
+- The dashboard and the analytics page looked up the same single row once
+  per metric, dozens of times per load. It resolves once per request now.
+- The check that a Coach answer backs its claims with citations passed
+  everything outside English and German, because it looked for English and
+  German words in text written in your language.
+- The Coach refused legitimate questions in some languages and let off-topic
+  ones through. Its topic vocabulary was English and German, so the Italian
+  word for "series" sat on the off-topic list while nothing recognised the
+  Italian for "measurements".
+- A number the Coach wrote in prose could be matched against an unrelated
+  reading. Unit words were recognised in English only, so `7,4 Stunden`
+  carried no unit, and a value with no unit matched every entry it was
+  checked against: a sleep figure could be backed by a glucose result.
+  French dates were not parsed either, so correct prose was stripped as
+  unverifiable.
 - Asking Telegram for help in French, Spanish or Polish got no reply at all.
-- The mood icon picker searched only English names, so typing back the translated group header it had just displayed returned an empty grid.
+- The mood icon picker searched only English names, so typing back the
+  translated group header it had just displayed returned an empty grid.
 
 ### Changed
 
-- Deleting every threshold override at once asks first. The endpoint erased the whole set when the metric parameter was omitted, with no confirmation and, unlike its sibling, no rate limit of its own. It takes the same explicit confirmation the account deletion does. Deleting a single metric's override is unchanged.
-- Removing a passkey now needs a fresh proof of possession, the same gate that has always guarded removal of a second-factor security key. The softer gate had been sitting on the primary sign-in credential. A passkey satisfies its own gate, so an account with nothing else enrolled keeps control of its own credential list, and the app keeps the capability through the step-up it already uses.
-- A portable backup that claims a section it does not carry is refused whole rather than restored in part, and the refusal names the missing section. A section the export deliberately left out and declared as omitted still restores, which is what keeps the disaster-recovery export working.
+- Deleting every threshold override at once asks first. Leaving the metric
+  off the request used to erase the whole set, with no confirmation and,
+  unlike deleting a single override, no rate limit of its own. It takes the
+  same explicit confirmation the account deletion does. Deleting a single
+  metric's override is unchanged.
+- Removing a passkey now needs a fresh proof that you still hold it, the
+  same check that has always applied to removing a second-factor security
+  key. The softer check had been sitting on the primary sign-in credential.
+  A passkey satisfies its own check, so an account with nothing else
+  enrolled keeps control of its own credential list, and the app can still
+  do it through the re-verification step it already uses.
+- A portable backup that claims a section it does not carry is refused whole
+  rather than restored in part, and the error names the missing section. A
+  section the export left out on purpose and declared as omitted still
+  restores, which is what keeps the disaster-recovery export working.
 
 ### Internal
 
-- The read surfaces have measured budgets for the first time. Against a three-year record (29,565 measurements, 1,095 mood entries, 5,475 medication intakes, 20,688 rollup rows) the heaviest surface issues 103 statements and 77 KB, and page load does not depend on record size at all. The budgets pin query counts, payload sizes and which rollup arm was taken rather than wall-clock, because counts were identical across runs while wall-clock moved up to sevenfold on the same machine. One ratio budget asserts that counts do not grow between a 30-day record and a three-year one.
-- Every authenticated page was downloading the settings validation layer. The app shell wraps all of them and read one small function from a barrel that also re-exports the managed settings-patch schemas, so Zod, the module registry and three validation modules rode along on every page load for a check that reads a URL slug. The shell reads that function from its own module now. No page grew, a hundred of them lost 5 to 8 KB, and the Insights overview has room under its budget again after three releases pressed against it.
-- The dead-code gate had been blind to every re-export since knip 6.16. The tool changed at 6.28 and the old silence turned out to be an artefact of one setting rather than a clean tree: with that setting off, the old and new versions agree exactly. Two dead constants and 204 unimported re-exports are gone; every definition still in use stayed.
+- Page loads are measured now against a large record, and the cost of a page
+  does not grow with the size of the record.
+- Every signed-in page was downloading the settings validation code. The app
+  shell wraps all of them and borrowed one small function from a module that
+  also carries the settings schemas, so a validation library and its modules
+  rode along on every page load for a check that reads a URL slug. The shell
+  has its own copy of that function now. No page grew, most got a little
+  smaller, and the Insights overview has room under its size limit again.
+- Unused code that the dead-code check had been missing since a tool upgrade
+  is gone. Every definition still in use stayed.
 
 ## [1.37.26] — 2026-08-23
 
-The app is offered in six languages, and in seven places it was reading what you wrote as though there were two.
+The app is offered in six languages, and in several places it was reading
+what you wrote as though there were two.
 
 ### Fixed
 
-- Side effects you recorded on a GLP-1 medication contributed nothing to the timeline unless you use English or German. Tapping a chip stores the translated word, so the same symptom is `nausea` on one account and `Nudności` on another, and the timeline compared that against a hand-typed list of the English and German labels. The same list sat behind the Coach and behind the doctor report, where a clinician read an empty side-effect table over a record that had entries.
-- A lab reference range printed as `jusqu'à 5,0` was read as no range at all, so the value was never flagged as normal or out of range. Ranges in all six languages parse now, and one the parser genuinely cannot read is recorded as unreadable instead of quietly looking like a result nobody set a range for.
-- Lab analytes named in French, Spanish, Italian or Polish got no LOINC code on the FHIR export, and a qualitative result of `négatif` or `ujemny` got no SNOMED code. A lab report in one of those languages also failed the check that decides whether a document is a lab report, so it was never offered for automatic staging.
-- Analyte names written with German umlauts never matched either, which is the older half of the same defect and affected the language most people here use. The key normaliser deleted any character outside a to z, so `Hämoglobin` became `hmoglobin` and never met the alias written as `hamoglobin`. It only ever worked for people who left the umlaut off. `Nüchternglukose` and `Harnsäure` were the same.
-- Over the assistant connection, `Fer`, `Żelazo`, `poids` and `Sommeil` resolved to nothing, and asking about `Puls` answered with pulse-wave velocity, because a fallback pass matched English display names by substring. Medication names written as `Metformina` or `Lewotyroksyna` missed the class that connects a dose to a symptom.
+- Side effects you recorded on a GLP-1 medication contributed nothing to the
+  timeline unless you use English or German. Tapping a chip stores the
+  translated word, so the same symptom is `nausea` on one account and
+  `Nudności` on another, and the timeline compared that against a hand-typed
+  list of the English and German labels. The same list sat behind the Coach
+  and behind the doctor report, where a clinician read an empty side-effect
+  table over a record that had entries.
+- A lab reference range printed as `jusqu'à 5,0` was read as no range at
+  all, so the value was never flagged as normal or out of range. Ranges in
+  all six languages parse now, and one the parser cannot read is recorded as
+  unreadable rather than looking like a result nobody set a range for.
+- Lab analytes named in French, Spanish, Italian or Polish got no LOINC code
+  on the FHIR export, and a qualitative result of `négatif` or `ujemny` got
+  no SNOMED code. A lab report in one of those languages also failed the
+  check that decides whether a document is a lab report, so it was never
+  offered for automatic staging.
+- Analyte names with German umlauts never matched either, which is the older
+  half of the same defect and affected the language most people here use.
+  The matcher deleted any character outside a to z, so `Hämoglobin` lost its
+  ä and never met its own entry. It only ever worked for people who left the
+  umlaut off. `Nüchternglukose` and `Harnsäure` were the same.
+- Over the assistant connection, `Fer`, `Żelazo`, `poids` and `Sommeil`
+  resolved to nothing, and asking about `Puls` answered with "Pulse-wave
+  velocity", because a fallback matched English display names by substring.
+  Medication names written as `Metformina` or `Lewotyroksyna` missed the
+  class that connects a dose to a symptom.
 
 ### Changed
 
-- A route that has been removed now answers `410 Gone` with a machine-readable code, the version that removed it, and its replacement where there is one, rather than the bare `404` it used to. A `404` is indistinguishable from a broken deployment, which is why a client that met one kept retrying a route that was never coming back. The same list is published in the API document and on the capability endpoint, so a client can learn about a retirement without comparing versions.
-- Removing a route now has two legal answers rather than one, and a test enforces the choice: drop it from the published contract, or register it as retired. Doing neither, which is how a client finds out by rendering an error, no longer passes.
+- A route that has been removed now answers `410 Gone` with a
+  machine-readable code, the version that removed it, and its replacement
+  where there is one, rather than the bare `404` it used to. A `404` is
+  indistinguishable from a broken deployment, which is why a client that met
+  one kept retrying a route that was never coming back. The retirements are
+  listed in the API reference and on the capability endpoint, so a client
+  can learn about one without comparing versions.
+- A route can no longer disappear without a trace: it is either dropped from
+  the API reference or listed there as retired.
 
 ## [1.37.25] — 2026-08-22
 
-Two things this release is about. The Coach could state a figure your record does not support, in exactly the situation where it was most likely to: when you asked about something you have never recorded. And a backup you cannot fully restore is not a backup, so the register of what a restore left behind went from twenty-seven tables to two.
+Two things this release is about. The Coach could state a figure your record
+does not support, in exactly the situation where it was most likely to: when
+you asked about something you have never recorded. And a backup you cannot
+fully restore is not a backup, so most of what a restore used to leave
+behind comes back now.
 
 ### Fixed
 
-- The Coach checks its own numbers against a record of what it looked up, and rewrites any figure that record cannot account for. That check did not run when every lookup came back empty. Ask about a metric you have never tracked, and an invented number was passed straight through, with no note that anything went unchecked, so the answer read exactly like a verified one. The check now runs on a turn where the lookups found nothing, and because removing only the digits would leave the sentence still claiming a trend that does not exist, such an answer is replaced with a plain statement that nothing is recorded.
-- The Coach could also narrate a weight history that no longer exists. Syncing a body-composition provider replaces your rows, but the monthly summaries folded from the old ones stayed behind, so the same block could show a year at 95 kg beside an all-time range that peaked at 80. A summary is an average of real readings and cannot fall outside their own extremes; when it does, the history band is dropped and the Coach is told it was withheld rather than shown a number nobody can account for.
-- The Insights page promised "based on your last 90 days" whether or not there was a briefing behind it, and the pulse page promised a personalised Karvonen target band while computing population percentiles by age and sex, or a flat 60 to 100 when your age is unknown. Both now say what they do, in every language. The Coach's "all time" window was 365 days, the same as the option beside it called "year so far"; both labels tell the truth now.
-- An account that had grouped its own mood factors could not be restored at all. Not partially: the restore hit a foreign key on a custom category the file never carried, rolled the whole transaction back, and answered with a constraint name and an empty account. The categories a person creates travel now, and they are written before the tags that point at them.
-- Signing in from the iOS app failed behind a reverse proxy that does not pass the host through. The redirect was built from the address the server process bound to, so it came back as `https://0.0.0.0:3000/...`, which iOS refuses outright. Redirects to this same deployment no longer name a host at all. Seven places had the same bug; all seven are fixed, and a test fails if the pattern comes back.
-- The Prisma CLI in the published image still resolved the vulnerable deepmerge-ts. The application tree had been pinned already, but that install is a separate one with its own resolution, so the image carried the advisory while every dependency check read clean. A test holds the two pins in step now.
-- The demo instance resets its published credentials on every migration run, so the account named on the site keeps working.
-- Turning the API off used to lock people out of their own tokens. The operator switch was checked on the read as well as the revoke, so a user could neither see nor clean up tokens that were still live. It stops tokens from working; it no longer stops you tidying them.
-- A preference update read its request body with no size limit at all, where its two neighbours cap at one kilobyte. Four more routes threw away the detail of why they refused a value, so a name that was empty and a name that was too long came back as the same sentence.
-- Someone managing a shared record could write a titration step onto a medication and then be refused that medication's history. The read is fenced at the same level as its siblings now.
-- Disconnecting a Withings account left the connection state reading "connected" until something else refreshed it, because the teardown neither wrote its audit row nor parked the ledger the way every sibling does. Two more teardowns wrote no audit trail at all when there was nothing connected.
-- Two sync routes had no rate limit where their siblings carry two each, and every sync route read its request body inside a swallowing catch, so a typo in the body reported a successful run. A body that is absent still means an incremental sync; a body that is present and wrong is refused now.
-- The integrations page could not tell "nothing delivered yet" from "the freshness query failed": both arrived as an empty list. The failure says so.
-- Two list endpoints widened their result on a typo instead of refusing it: an unknown metric type was dropped and the read came back unfiltered, and a nonsense page size reverted to the default.
-- The medication ingest endpoint counted its rate limit per client address, so several bridges behind one router starved each other. It counts per token now.
+- The Coach checks its own figures against a record of what it looked up,
+  and edits out anything that record cannot account for. That check did not
+  run when every lookup came back empty. Ask about a metric you have never
+  tracked, and an invented number was passed straight through, with no note
+  that anything went unchecked, so the answer read exactly like a verified
+  one. The check now runs on a turn where the lookups found nothing, and
+  because removing only the digits would leave the sentence still claiming a
+  trend that does not exist, such an answer is replaced with a statement
+  that nothing is recorded.
+- The Coach could also describe a weight history that no longer exists.
+  Syncing a body-composition provider replaces your rows, but the monthly
+  summaries built from the old ones stayed behind, so one screen could show
+  a year at 95 kg beside an all-time range that never got there. A summary
+  is an average of real readings and cannot sit outside their own extremes;
+  when it does, that band is dropped rather than narrated.
+- The Insights hero said "based on your last 90 days" whether or not there
+  was a briefing behind it, and the pulse page offered a personalised
+  Karvonen target band while returning population percentiles by age and
+  sex, or a flat range when your age is unknown. Both say what they do now,
+  in every language. The Coach's "all time" window was the same length as
+  the option beside it called "year so far"; both labels tell the truth now.
+- An account that had grouped its own mood factors could not be restored at
+  all. The restore hit a category the file never carried, rolled the whole
+  thing back, and handed you a database error and an empty account. The
+  categories you create travel now, and they are written before the tags
+  that point at them.
+- Someone managing a record you gave them access to could write a titration
+  step onto a medication and then be refused that medication's history. The
+  read now uses the same access rule as its siblings.
+- Disconnecting a Withings account left the connection state reading
+  "connected" until something else refreshed it, because the disconnect
+  neither logged itself nor marked the connection as gone the way every
+  other provider does. Two more disconnects wrote no log entry at all when
+  there was nothing connected.
+- The integrations page could not tell "nothing delivered yet" from "the
+  freshness query failed": both arrived as an empty list. The failure says
+  so.
+- On a self-hosted instance behind a reverse proxy that does not pass the
+  host through, signing in from the iOS app failed. The redirect was built
+  from the address the server process bound to, so it came back naming an
+  address iOS refuses outright. Redirects to this same deployment no longer
+  name a host at all. The same bug sat in several places and all of them are
+  fixed.
+- The Prisma CLI in the published image still resolved a dependency with a
+  published advisory. The application itself had been updated already, but
+  that install is a separate one with its own resolution, so the image
+  carried the advisory while every dependency check read clean. The two are
+  kept in step now.
+- The demo instance resets its published credentials on every migration run,
+  so the account named on the site keeps working.
+- Turning the API off used to lock people out of their own tokens. The
+  switch was checked on the read as well as the revoke, so a user could
+  neither see nor clean up tokens that were still live. It stops tokens from
+  working; it no longer stops you tidying them.
+- A preference update read its request body with no size limit at all, where
+  its neighbours cap at one kilobyte. Several more routes threw away the
+  detail of why they refused a value, so a name that was empty and a name
+  that was too long came back as the same sentence.
+- Two sync routes had no rate limit where their siblings have one, and every
+  sync route read its request body inside a catch that swallowed errors, so
+  a typo in the body reported a successful run. A body that is absent still
+  means an incremental sync; a body that is present and wrong is refused
+  now.
+- Two list endpoints widened their result on a typo instead of refusing it:
+  an unknown metric type was dropped and the read came back unfiltered, and
+  a nonsense page size reverted to the default.
+- The medication ingest endpoint counted its rate limit per client address,
+  so several bridges behind one router starved each other. It counts per
+  token now.
 
 ### Added
 
-The restore now returns your conversation history with the Coach: every thread, every turn in it, the record of which documents a thread was grounded in, and the facts, plans and reminders it carries between threads. Until now a restored account had a Coach that had never spoken to it and had to be told its own history again.
-
-It also returns the medication history: pause periods, the titration steps behind today's dose, the packs on the shelf, and the ledger of refills and consumption behind their counts. The remaining count comes back exactly as recorded rather than recalculated from the ledger, because that number is what the low-stock reminders were computed from. Per-drug reminder phase timings travel too, so a restored drug turns orange when it did before instead of falling back to the defaults. Archived schedule eras come back with their succession chain intact, and what a medication was meant to move comes back with the analyte it pointed at.
-
-The rest, in short: ECG strips with their waveform, their classification and the reading they were filed against, where a restore into a populated account used to leave the old strips behind. Which conditions a document was filed under, and the facts extracted from it, including which of those were reviewed and committed to the record. The mood taxonomy an account shaped for itself: the groupings it created and the seeded factors it chose to hide. Personal bests, badges, and the per-day environment readings with the location periods that explain them.
-
-Screener history and the consent record come back in the disaster-recovery export only. Completed WHO-5, PHQ and GAD administrations include the PHQ-9 self-harm item, which is not written into a portable file that can be opened anywhere. The portable export says in its own manifest that they are absent rather than leaving you to notice.
+- The restore now returns your conversation history with the Coach: every
+  thread, every turn in it, the record of which documents a thread was
+  grounded in, and the facts, plans and reminders it carries between
+  threads. Until now a restored account had a Coach that had never spoken to
+  it and had to be told its own history again.
+- It also returns the medication history: pause periods, the titration steps
+  behind today's dose, the packs on the shelf, and the ledger of refills and
+  consumption behind their counts. The remaining count comes back exactly as
+  recorded rather than recalculated from the ledger, because that number is
+  what the low-stock reminders were computed from. The per-drug reminder
+  timings travel too, so a restored drug turns orange when it did before
+  instead of falling back to the defaults. Archived schedules come back with
+  their succession chain intact, and what a medication was meant to move
+  comes back with the analyte it pointed at.
+- The rest, in short: ECG strips with their trace, their classification and
+  the reading they were filed against, where a restore into a populated
+  account used to leave the old strips behind. Which conditions a document
+  was filed under, and the facts extracted from it, including which of those
+  were reviewed and committed to the record. The mood taxonomy you shaped
+  for yourself: the groupings you created and the seeded factors you chose
+  to hide. Personal bests, badges, and the per-day environment readings with
+  the location periods that explain them.
+- Screener history and the consent record come back in the disaster-recovery
+  export only. Completed WHO-5, PHQ and GAD administrations include the
+  PHQ-9 self-harm item, which is not written into a portable file that can
+  be opened anywhere. The portable export says in its own manifest that they
+  are absent rather than leaving you to notice.
 
 ### Changed
 
-The published API document listed 262 paths. The application answers on 410.
-
-The drift check compares the registry against the committed document and fails when they disagree. It has never compared the routes on disk against the registry, so a route that was never registered produced no drift and no failure: the document stayed internally consistent while going quietly incomplete. Forty-three of the missing paths are ones the iOS app calls every day.
-
-Every route is now either published or named in a list with a reason for its absence. Seventy-three are deliberately outside, and the reasons say which kind: the admin console cannot be reached by an API client at all, OAuth callbacks are driven by the provider, webhooks authenticate by a shared secret, and three discovery documents have their format fixed by somebody else's specification.
-
-The document also says how to authenticate, which it never did. Both schemes were defined and neither was referenced, so anyone generating a client from the contract got one that sends no credentials and treats the whole surface as open.
-
-Two tests keep it that way. One walks the route tree and fails on a verb that is neither published nor excused. The other fails on an operation that names no scheme.
-
-- The idempotency contract is in the published API document. Thirty-four write operations declare the `Idempotency-Key` header they honour and the `X-Idempotent-Replay` header they answer with, including the detail that a malformed key is ignored rather than refused.
-- Per-event notification preferences are recorded as deliberately outside the backup rather than as an unpaid debt. Each one addresses a single notification channel by a foreign key, the channel itself is excluded for carrying secrets, and the restore deletes every channel it finds, so a carried preference would point at a row that cannot exist.
-- Dependency updates: pg-boss, Playwright, Testcontainers, Prettier, and two workflow actions.
+- Per-event notification preferences are recorded as outside the backup on
+  purpose, not as something still to do. Each one addresses a single
+  notification channel, the channel itself is excluded for carrying secrets,
+  and the restore deletes every channel it finds, so a carried preference
+  would point at a row that cannot exist.
+- Dependency updates: pg-boss, Playwright, Testcontainers, Prettier, and two
+  workflow actions.
+- The API reference now describes the whole API. A large part of the routes,
+  including many the iOS app calls every day, had never been written into
+  it, and nothing compared the document against the routes that exist. Every
+  route is now either published or named in a list with a reason for its
+  absence, and the reasons say which kind: the admin console cannot be
+  reached by an API client at all, OAuth callbacks are driven by the
+  provider, webhooks authenticate by a shared secret, and the discovery
+  documents have their format fixed by somebody else's specification.
+- The API reference also says how to authenticate, which it never did. Both
+  schemes were defined and neither was referenced, so anyone generating a
+  client from the document got one that sends no credentials and treats
+  every route as open.
+- The idempotency rules are in the API reference. The write operations that
+  honour the `Idempotency-Key` header now declare it, together with the
+  `X-Idempotent-Replay` header they answer with, including the detail that a
+  malformed key is ignored rather than refused.
 
 ## [1.37.24] — 2026-08-16
 
 ### Fixed
 
-- The hero card on the start page no longer says last night's sleep is still missing when no sleep reaches the record at all. It used to check only whether last night had arrived, so anyone without a tracker read the note every morning about a delay that was never going to end. The note now needs a night within the last week: a flat battery or a few nights without the device keeps it, a week of silence retires it, and someone who has never recorded sleep never sees it.
-- The same rule settles the day itself. Records with no sleep source used to sit on "provisional" indefinitely, which the daily push line reads too, so the notification carried the same untrue aside.
+- The hero card on the start page no longer says last night's sleep is still
+  missing when no sleep reaches the record at all. It used to check only
+  whether last night had arrived, so anyone without a tracker read the note
+  every morning about a delay that was never going to end. The note now
+  needs a night within the last week: a flat battery or a few nights without
+  the device keeps it, a week of silence retires it, and someone who has
+  never recorded sleep never sees it.
+- The same rule settles the day itself. Records with no sleep source used to
+  sit on "provisional" indefinitely, which the daily push line reads too, so
+  the notification carried the same untrue aside.
 
 ## [1.37.23] — 2026-08-15
 
 ### Changed
 
-- Postponing a checkup is a button on the card now, beside "erledigt" or "jetzt messen", instead of a row inside the overflow menu. That is the shape the medication card has always had, where "genommen" and "übersprungen" sit next to each other, and it puts the action one tap away rather than three. The compact list view carries the same action as an icon button. Edit, measurements and delete stay in the menu.
+- Postponing a checkup is a button on the card now, beside "erledigt" or
+  "jetzt messen", instead of a row inside the overflow menu. That is the
+  shape the medication card has always had, where "genommen" and
+  "übersprungen" sit next to each other, and it puts the action one tap away
+  rather than three. The compact list view carries the same action as an
+  icon button. Edit, measurements and delete stay in the menu.
 
 ### Fixed
 
-- The quick options in the postpone sheet ("+7 Tage" and its siblings) fill in the day they name even when a daylight-saving change falls inside the span. They used to add a fixed number of hours, which shifts the clock past midnight in the week a country moves its offset, so the option could write the day before or after the one on its label.
+- The quick options in the postpone sheet ("+7 Tage" and its siblings) fill
+  in the day they name even when a daylight-saving change falls inside the
+  span. They used to add a fixed number of hours, which shifts the clock
+  past midnight in the week a country moves its offset, so the option could
+  write the day before or after the one on its label.
 
 ## [1.37.22] — 2026-08-15
 
 ### Fixed
 
-- The doctor-report export refuses a selection that includes nothing instead of rendering an empty document. The selection panel already disabled its own button in that state, so this only ever reached the server through a hand-built request, and it spent an export slot on a file with no content in it.
-- A lab value in the FHIR export no longer names UCUM as its unit system when it carries no UCUM code. That combination told a receiving system the unit was coded when it was not, which is worse than saying nothing: the unit still travels as a display string, and the coded form appears only when the analyte and unit actually resolve to one.
+- The doctor-report export refuses a selection that includes nothing instead
+  of rendering an empty document. The selection panel already disabled its
+  own button in that state, so this only ever reached the server through a
+  hand-built request, and it spent an export slot on a file with no content
+  in it.
+- A lab value in the FHIR export no longer names UCUM as its unit system
+  when it carries no UCUM code. That combination told a receiving system the
+  unit was coded when it was not, which is worse than saying nothing: the
+  unit still travels as a display string, and the coded form appears only
+  when the analyte and unit actually resolve to one.
 
 ## [1.37.21] — 2026-08-14
 
 ### Fixed
 
-- A dose that reaches the server through the batch route, the path a phone's offline queue drains through, now quiets an active snooze the same way a directly logged dose always has. Before, a take synced in later kept counting as snoozed and the reminder kept ringing.
-- Marking a dose through the single-medication intake route now also closes the still-pending dose-due reminder in the web app and refreshes its badge. The other intake paths have done this since v1.18.4; this one, which is exactly the route a phone's offline replay uses, left the web reminder standing.
+- A dose that reaches the server through the batch route, the path a phone's
+  offline queue drains through, now quiets an active snooze the same way a
+  directly logged dose always has. Before, a take synced in later kept
+  counting as snoozed and the reminder kept ringing.
+- Marking a dose through the single-medication intake route now also closes
+  the still-pending dose-due reminder in the web app and refreshes its
+  badge. The other intake paths have done this since v1.18.4; this one,
+  which is exactly the route a phone's offline replay uses, left the web
+  reminder standing.
 
 ## [1.37.20] — 2026-08-14
 
 ### Added
 
-- A checkup reminder can now be postponed or skipped. Postponing moves the next due date to a day you pick; skipping closes the current cycle and restarts the interval from today, without pretending the checkup happened. Every completion and every skip lands in a new history, kept per reminder, including whether it happened on time, so the checkups page and the API can show how a reminder has actually been handled over the years.
-- The dashboard hero can show the reminder rail instead of the health score. The choice lives in the dashboard settings and does nothing until you change it.
-- The restore dialog shows what a backup contains before you confirm: per-type counts read from the stored file, with an honest note when the preview cannot be computed.
-- A mental-health screening shows its per-item answers on the detail view, so you can see which questions carried the score, not only the total.
-- Document search understands German and English medical synonyms: searching for "Blutdruck" finds a report that says "blood pressure", and the other way round.
-- A deleted custom-metric entry can be brought back with one tap for a short while instead of being gone the moment you tap.
+- A checkup reminder can now be postponed or skipped. Postponing moves the
+  next due date to a day you pick; skipping closes the current cycle and
+  restarts the interval from today, without pretending the checkup happened.
+  Every completion and every skip lands in a new history, kept per reminder,
+  including whether it happened on time, so the checkups page and the API
+  can show how a reminder has actually been handled over the years.
+- The dashboard hero can show the reminder rail instead of the health score.
+  The choice lives in the dashboard settings and does nothing until you
+  change it. Thanks @tarantila for pushing for this one.
+- The restore dialog shows what a backup contains before you confirm:
+  per-type counts read from the stored file, with a note when the preview
+  cannot be computed.
+- A mental-health screening shows its per-item answers on the detail view,
+  so you can see which questions carried the score, not only the total.
+- Document search understands German and English medical synonyms: searching
+  for "Blutdruck" finds a report that says "blood pressure", and the other
+  way round.
+- A deleted custom-metric entry can be brought back with one tap for a short
+  while instead of being gone the moment you tap.
 
 ### Changed
 
-- Onboarding says plainly that Apple Health data arrives through the iPhone app, and the Apple Health card reports the backfill progress the server actually sees: accepted counts, the oldest reading, and how recently data last arrived.
-- The measurements and mood pages keep their filters in the address bar, so a filtered view survives a reload and can be shared as a link, the way documents already worked.
-- The sleep-stage tooltip labels one night's figures as main sleep, naps and total sleep instead of an averaged label that fit none of them.
-- The daily digest is available offline like the rest of the app shell.
-- Backups carry the checkup reminders and their new completion history end to end, and an appointment or vaccination that references a reminder keeps that link across a restore.
+- Onboarding says plainly that Apple Health data arrives through the iPhone
+  app, and the Apple Health card reports the backfill progress the server
+  actually sees: accepted counts, the oldest reading, and how recently data
+  last arrived. Reported by @HercoGC in #778.
+- The measurements and mood pages keep their filters in the address bar, so
+  a filtered view survives a reload and can be shared as a link, the way
+  documents already worked.
+- The sleep-stage tooltip labels one night's figures as main sleep, naps and
+  total sleep instead of an averaged label that fit none of them.
+- The daily digest is available offline like the rest of the app.
+- Backups carry the checkup reminders and their new completion history end
+  to end, and an appointment or vaccination that references a reminder keeps
+  that link across a restore.
 
 ### Fixed
 
-- Apple Health ECG exports in the single-column layout import correctly. Apple writes two CSV shapes; the importer understood only the paired one and skipped every recording in the other, reporting each row as malformed. Both layouts parse now, and the declared unit is converted before validation.
+- Apple Health ECG exports in the single-column layout import correctly.
+  Apple writes two CSV shapes; the importer understood only the paired one
+  and skipped every recording in the other, reporting each row as malformed.
+  Both layouts parse now, and the declared unit is converted before
+  validation. Reported by @HercoGC in #794.
 
 ## [1.37.19] — 2026-08-14
 
 ### Changed
 
-- Medication stock understands per-slot doses everywhere now. The remaining-doses figure weighs each scheduled slot by its own dose, the API carries the resolved dose per slot plus a runway in days, and the low-stock notification runs on the same arithmetic, so the app, the API and the push can no longer disagree about how long a supply lasts.
-- A document whose summary job died no longer says "being generated" forever. After an hour the detail view says honestly that no summary is available and offers the manual action, and an hourly sweep repairs stuck documents in the background.
-- The daily coach reminder sweep counts how often it has surfaced an ignored reminder and quietly dismisses it after three mornings instead of nagging indefinitely.
-- Accepting an updated disclaimer is now tracked by version, so a future revision can actually ask again.
-- The restore report lists practitioners, appointments, vaccinations and their links, and states what was written, not only what was cleared. The portable export names any field that could not be decrypted instead of exporting it as if it were never set.
-- Changing your timezone re-folds the medication compliance statistics so the day boundaries match your new zone.
-- Long health histories are honest again in two places: the all-time summary includes readings older than five years instead of silently truncating, and the AI context falls back to live data when a pre-computed band is missing.
-- A cleaner copy voice across all six languages: shorter consent buttons, a source-neutral workouts empty state, consistent toast punctuation, "Navigations-Chips" instead of "Pills" in German, and a medication reminder chip that no longer clips mid-sentence.
-- Settings pages that had been permanently redirected are no longer built, the retired placeholder is gone, and the about page is reachable from the privacy page and the settings.
+- Medication stock understands per-slot doses everywhere now. Every schedule
+  carries its resolved dose, the remaining-doses figure weighs each slot by
+  what it consumes, there is a runway in days on the list and the detail,
+  and the low-stock notification runs on the same numbers, so the card, the
+  API and the push can no longer disagree about how long a supply lasts.
+  Refs #767.
+- A document whose summary job died no longer says "being generated"
+  forever. After an hour it says that no summary is available and offers the
+  manual button, and an hourly background job repairs stuck documents on its
+  own.
+- The morning reminder run gives up after bringing up an ignored Coach
+  reminder three mornings in a row, because a reminder that nags forever is
+  worse than none.
+- Accepting an updated disclaimer is tracked by version now, so a future
+  revision can ask again.
+- A restore now tells you what it wrote, not just what it cleared, and the
+  report covers practitioners, appointments, vaccinations and their links.
+  The portable export names a field it could not decrypt instead of
+  exporting it as if it were never set.
+- If you move timezones, the medication compliance statistics are recomputed
+  on your new day boundaries.
+- Long histories got two fixes: the all-time summary includes readings older
+  than five years instead of silently cutting them off, and the AI context
+  falls back to live data when a pre-computed band is missing.
+- The copy got a pass in all six languages: shorter consent buttons, a
+  workouts empty state that no longer assumes everyone owns an iPhone,
+  consistent toast punctuation, a medication reminder chip that no longer
+  clips mid-sentence, and the navigation chips lost their unfortunate German
+  name ("Navigations-Chips" instead of "Pills").
+- Settings pages that had been permanently redirected are no longer built,
+  the retired placeholder is gone, and the about page is reachable from the
+  privacy page and the settings.
 
 ### Fixed
 
-- A measurement reminder claims its notification slot before sending, so a crash mid-send can no longer deliver the same reminder twice.
-- A simultaneous double-submit of the same mood entry reports "duplicate" with the winning entry instead of a confusing error.
-- The intake-event API description now documents every field the server actually returns, and the workout list description matches the real nullability, so generated clients decode without surprises.
+- A measurement reminder claims its notification slot before sending, so a
+  crash in the wrong moment cannot deliver it twice.
+- Submitting the same mood entry twice at once reports "duplicate" with the
+  entry that won instead of a confusing error.
+- For anyone writing against the API, the intake-event description now
+  documents every field the server returns, and the workout list description
+  matches the real nullability, so generated clients decode without
+  surprises.
 
 ## [1.37.18] — 2026-08-14
 
 ### Fixed
 
-- Coach reminders tied to a moment ("remind me when I next log blood pressure", "next time I open the app") now actually fire. The app has offered these since v1.22 and confirmed them, but nothing ever evaluated them; a matching measurement or the next app open now surfaces the reminder, and the daily sweep backs it up.
-- The Apple Health import tells you what it skipped and why. Every dropped sample class is now listed on the import card: unknown types, out-of-range values, deferred records, and cycle samples that were read while cycle tracking is switched off, which previously vanished without a trace. A cycle write that fails halfway also reports the failure instead of claiming zero samples.
-- Deleting a measurement now reaches the pre-computed aggregates. Before, a deleted reading stayed inside day, week, month and year statistics forever; the freshness probe can now see tombstones, and the WHOOP deletion webhook recomputes the affected days.
-- The sleep history repair job only deletes what it can restore. It used to clear a provider's entire sleep history and re-import just 30 days; the delete is now bounded to the same window.
-- The connector token settings said tokens are read-only while offering a write toggle on the same card. The copy now tells the truth in all six languages.
-- A lab report cannot smuggle instructions into the AI layer through a biomarker name anymore; document-derived names are cleaned before they reach any prompt, and the assistant tools fence checkup labels and lab analyte names the same way.
-- Google Health and Withings syncs now refresh the server-side caches like every other integration, so analytics pick up synced data on the next read instead of waiting out the cache lifetime.
-- The vaccination booster and suggestion endpoints are published in the API description, as the contract notes already claimed.
-- On phones, the Medications tab no longer appears in the bottom bar when the medications module is switched off; tapping it used to open an empty page.
-- The import guide links point at the documentation site instead of a page that does not exist.
-- A caregiver settings toggle that has had no effect since its feature was retired is gone.
-- Every create and update request from the app now carries an idempotency key, so a network retry cannot write a vaccination or an appointment twice.
-- The service worker's offline fallback version is anchored to the release version again; it had silently stayed behind for two releases.
+- Coach reminders tied to a moment ("remind me when I next log blood
+  pressure", "next time I open the app") now fire. The app has offered and
+  confirmed these since v1.22, but nothing ever evaluated them; a matching
+  measurement or the next app open brings the reminder up, and the morning
+  reminder run catches anything left over.
+- The Apple Health import tells you what it skipped and why. Every kind of
+  dropped sample is listed on the import card: unknown types, out-of-range
+  values, deferred records, and cycle samples read while cycle tracking is
+  switched off, which used to vanish without a trace. A cycle write that
+  fails halfway also reports the failure instead of claiming zero samples.
+- Deleting a measurement now reaches the pre-computed statistics. Before, a
+  deleted reading stayed inside the day, week, month and year figures
+  forever; those figures notice a deletion now, and a deletion reported by
+  WHOOP recomputes the affected days.
+- The sleep history repair job only deletes what it can restore. It used to
+  clear a provider's entire sleep history and re-import just 30 days; the
+  delete is now limited to the same window.
+- The connector token settings said tokens are read-only while offering a
+  write toggle on the same card. The text now tells the truth in all six
+  languages.
+- A lab report cannot smuggle instructions into the AI through a biomarker
+  name anymore; names read out of documents are cleaned before they reach
+  any prompt, and the assistant tools treat checkup labels and lab analyte
+  names as data in the same way.
+- Google Health and Withings syncs now tell the server that new data
+  arrived, like every other integration, so analytics pick up synced data on
+  the next read instead of waiting out the cache.
+- On phones, the Medications tab no longer appears in the bottom bar when
+  the medications module is switched off; tapping it used to open an empty
+  page.
+- The import guide links point at the documentation site instead of a page
+  that does not exist.
+- A caregiver settings toggle that has had no effect since its feature was
+  retired is gone.
+- Every create and update request from the app now carries an idempotency
+  key, so a network retry cannot write a vaccination or an appointment
+  twice.
+- The offline page the app shows when the server is unreachable is stamped
+  with the release version again; it had stayed two releases behind.
+- The vaccination booster and suggestion endpoints are now in the API
+  reference, as the API notes already claimed.
 
 ## [1.37.17] — 2026-08-13
 
 ### Changed
 
-- The correlations discovery reads its measurement series from the pre-aggregated daily tier instead of walking every raw reading over 180 days. For a dense record, glucose from a continuous sensor most of all, this turns tens of thousands of rows into at most one row per day and source. Values stay the same: the daily figures are composed to match the previous per-reading averages exactly, a channel without aggregate coverage falls back to the raw path on its own, and sleep duration, steps and daylight time keep their raw reads because their daily figures depend on session reconstruction and device de-duplication that the aggregates cannot express. Profiles far from UTC also stay on the raw path so day boundaries keep matching their timezone.
+- The correlations page reads one figure per day and source from the daily
+  summaries the server already keeps, instead of walking every raw reading
+  over 180 days. For a dense record, glucose from a continuous sensor most
+  of all, that is one row per day and source instead of every reading.
+  Values stay the same: the daily figures are combined to match the previous
+  per-reading averages exactly, a channel that has no daily summary yet
+  falls back to the raw readings on its own, and sleep duration, steps and
+  daylight time keep their raw reads because their daily figures depend on
+  stitching a night together and removing duplicate device readings, which
+  the summaries cannot express. Profiles far from UTC also stay on the raw
+  path so day boundaries keep matching their timezone.
 
 ## [1.37.16] — 2026-08-13
 
 ### Changed
 
-- The correlations page no longer recomputes its full 180-day discovery on every visit. The first request computes and caches the result server-side; repeat visits within the hour answer from the cache, and any new measurement, mood entry, illness episode or custom metric refreshes it. Accepting or dismissing a pattern still takes effect immediately.
-- Switching a chart's time range keeps the previous chart visible, slightly dimmed, while the new range loads instead of dropping to a placeholder. The dimming is deliberate: what you see during the switch is marked as the old range, not passed off as the new one.
-- The checkups and mood pages send their first page of data along with the page itself, so they render with content instead of a loading skeleton. Self-hosters can switch this off with the existing `DASHBOARD_SSR_PREFETCH` flag.
-- Two background checks are calmer now. The achievement check runs every five minutes instead of every two, since anything you do in the app updates instantly anyway and the poll only exists for data arriving from a device. The Coach plan-proposal check stops on its own instead of polling an open conversation forever.
+- The correlations page no longer recomputes its full discovery on every
+  visit. The first request computes the result and keeps it on the server;
+  repeat visits within the hour answer from that copy, and any new
+  measurement, mood entry, illness episode or custom metric refreshes it.
+  Accepting or dismissing a pattern still takes effect immediately.
+- Switching a chart's time range keeps the previous chart visible, slightly
+  dimmed, while the new range loads, instead of dropping to a placeholder.
+  The dimming is on purpose: what you see during the switch is the old
+  range, not passed off as the new one.
+- The checkups and mood pages send their first page of data along with the
+  page itself, so they open with content instead of a loading skeleton.
+- Two background checks are calmer. The achievement check runs every five
+  minutes now, less often than before, since anything you do in the app
+  updates instantly anyway and the poll only exists for data arriving from a
+  device. The Coach plan-proposal check stops on its own instead of polling
+  an open conversation forever.
+- On your own server, the existing `DASHBOARD_SSR_PREFETCH` flag switches
+  the preloaded first page off.
 
 ### Fixed
 
-- A checkup accepted from a Coach suggestion appears on the checkups page and the Today rail immediately. Before, it stayed invisible for up to five minutes.
-- Changing a target, a threshold or the health score configuration is reflected on the dashboard right away, including the hero bands and score context. Before, the dashboard kept showing the old configuration until its next background refresh.
-- Starting or ending an illness episode updates the dashboard's rest mode immediately, booking an appointment puts it on the Today rail immediately, and logging a vaccination dose updates the booster reminder on the rail immediately.
-- Completing a mental-health screening refreshes the checkup list right away, and changing a source priority refreshes the affected charts right away.
-- Background syncs from Fitbit, Oura, Polar, WHOOP, Strava and Nightscout now tell the server-side caches that new data arrived, so analytics and workout views pick the data up on the next read instead of waiting out the cache lifetime. The same applies to illness, cycle and appointment changes.
-- A structural test now enforces that every place that writes data a daily view reads also triggers that view's refresh, so this class of stale display cannot quietly return.
+- A checkup accepted from a Coach suggestion appears on the checkups page
+  and the Today rail immediately. Before, it stayed invisible for up to five
+  minutes.
+- Changing a target, a threshold or the health score configuration shows on
+  the dashboard right away, including the hero bands and score context.
+  Before, the dashboard kept the old configuration until its next background
+  refresh.
+- Starting or ending an illness episode updates the dashboard's rest mode
+  immediately, booking an appointment puts it on the Today rail immediately,
+  and logging a vaccination dose updates the booster reminder on the rail
+  immediately.
+- Completing a mental-health screening refreshes the checkup list right
+  away, and changing a source priority refreshes the affected charts right
+  away.
+- Background syncs from Fitbit, Oura, Polar, WHOOP, Strava and Nightscout
+  now tell the server that new data arrived, so analytics and workout views
+  pick it up on the next read instead of waiting out the cache. The same
+  applies to illness, cycle and appointment changes, and to every other
+  place that writes what a daily view reads.
 
 ## [1.37.15] — 2026-08-13
 
 ### Fixed
 
-- Re-running the assessment no longer reports a failure while the server is still writing the result. When a refresh takes longer than the browser is willing to wait, the page now keeps watching quietly until the new assessment lands, then swaps it in and confirms. Only a refresh that provably failed says so. Before, a slow refresh showed an error toast and the page held on to the old assessment until the next day.
-- Document previews show again. The security policy the app sends to the browser did not cover the way previews load since the sharing fence, so PDF previews were blocked outright and image thumbnails quietly fell back to their icons. The policy now admits exactly the app's own decrypted documents and nothing else.
-- A document uploaded while automatic AI reading is switched off no longer claims a summary is being generated forever. The upload stopped queueing summary work it is not allowed to do, a stale claim heals itself on the next pass, and documents already stuck in that state are repaired by the update. The manual summary action is offered instead, as it should have been.
-- When reading a document for search fails, the document now says why, in plain words: a scan with no readable text, a PDF whose pages would not render (scanned fax compression formats are a known cause), a provider error, or a provider that cannot take PDF files. Before, a failed read looked identical to one that never happened. An AI answer with no text in it also no longer counts as a successful read.
-- The "index all documents" confirmation shows the real number of documents queued instead of the word "true".
+- Re-running the assessment no longer reports a failure while the server is
+  still writing the result. When a refresh takes longer than the browser is
+  willing to wait, the page says it is still working, keeps checking until
+  the new assessment lands, then swaps it in. Only a refresh that really
+  failed says so. Before, a slow refresh showed an error and kept the old
+  assessment until a reload. (#786)
+- Stored PDFs preview inline again. Since the sharing changes, previews load
+  through copies the page decrypts itself, and the security policy the app
+  sends to the browser had never been told about them, so PDF previews were
+  blocked and the vault's image thumbnails fell back to their icons. The
+  policy now admits the app's own decrypted documents and nothing else.
+  (#787)
+- A document uploaded while automatic AI reading is switched off no longer
+  claims a summary is being prepared forever. The upload stopped queueing
+  work it is not allowed to do, a stale claim heals itself on the next
+  background pass, and documents already stuck are repaired by this update.
+  The manual summary action is offered instead. (#788)
+- When reading a document for search fails, the document now says why: a
+  scan with no readable text, a PDF whose pages would not render (scanned
+  fax compression formats are a known cause), a provider error, or a
+  provider that cannot take PDF files. Before, a failed read looked
+  identical to one that never happened. An AI answer with no text in it also
+  no longer counts as a successful read. (#776)
+- The "index all documents" confirmation shows the real number of documents
+  queued instead of the word "true".
 
 ## [1.37.14] — 2026-08-13
 
 ### Fixed
 
-- The Today rail no longer announces a weekly medication as due up to a day early. A weekly dose becomes takeable a day ahead by design, and the rail treated takeable as due, so on Friday the Saturday slot already sat there as "Medication due". The rail now keeps a non-overdue dose off the list until its actual day in your own timezone; taking it early stays possible on the medication card, which says which day it belongs to. Overdue doses appear regardless, as before.
-- A dose logged through the quick-add button updates the home page immediately. The quick-add is reachable from every page, but it only refreshed the reads of the page you were on, so coming back to the home page showed the dose as still due for up to two minutes. Logging from anywhere now refreshes the home page's daily reads the same way logging from the home page always did.
+- The Today rail no longer announces a weekly medication as due up to a day
+  early. A weekly dose becomes takeable a day ahead by design, and the rail
+  treated takeable as due, so on Friday the Saturday slot already sat there
+  as "Medication due". The rail now keeps a dose that is not overdue off the
+  list until its actual day in your own timezone. Taking it early stays
+  possible on the medication card, which says which day it belongs to, and
+  overdue doses appear regardless, as before.
+- A dose logged through the quick-add button updates the home page
+  immediately. The quick-add is reachable from every page, but it only
+  refreshed the page you were on, so coming back to the home page could show
+  the dose as still due for up to two minutes. Logging from anywhere now
+  refreshes the home page the same way logging from the home page always
+  did.
 
 ## [1.37.13] — 2026-08-13
 
 ### Added
 
-- A read lab document offers its values for your lab record, right on the document. When a document is classified as a lab report, the detail view shows a review step with each extracted value, its unit and its date, and you approve or reject them one by one before anything is written. Nothing is committed without your confirmation, and a value the reader was unsure about is marked for a closer look first. Reading a document again by hand now stages values the same way the automatic path does, so a report that arrived before automatic reading was switched on is no longer stuck.
-- The hourly limit for reading documents with AI is an operator setting now, not a fixed number. Self-hosters set `DOCUMENT_AI_LIMIT_PER_HOUR` to match their provider budget. The limit message tells you when the next read is actually possible instead of a vague "try again in a few minutes", and a read that never reached the provider no longer uses up one of your slots.
-- The web AI settings can grant consent again after a withdrawal. Revoking AI consent stays a standing decision that no page visit can quietly undo; what is new is an explicit control that lets you, and only you, opt back in when you want the AI features again.
-- The Coach keeps an answer you walked away from. Navigating off the page still stops the reply, deliberately, but the conversation now shows the interrupted turn instead of losing it, coming back opens that conversation rather than a fresh chat, and a retry control asks the same question again in place.
+- A lab report the app has read offers its values for your lab record, right
+  on the document. When a document is classified as a lab report, its page
+  shows each extracted value with its unit and date, and you approve or
+  reject them one by one. Nothing is saved without your confirmation, and a
+  value the reader was unsure about is marked for a closer look. Reading a
+  document again by hand offers values the same way, so a report that
+  arrived before automatic reading was switched on is no longer stuck.
+  (#779)
+- The AI settings can grant consent again after a withdrawal. Revoking
+  consent stays a standing decision that no page visit can quietly undo;
+  what is new is a control that lets you, and only you, opt back in.
+- The Coach keeps an answer you walked away from. Leaving the page still
+  stops the reply, but the conversation shows the interrupted turn, coming
+  back opens that conversation rather than a fresh chat, and a retry control
+  asks the same question again in place. (#781)
+- If you host this for others, the hourly limit for reading documents with
+  AI is your setting now: `DOCUMENT_AI_LIMIT_PER_HOUR`, matched to your
+  provider budget. The limit message says when the next read is possible
+  instead of "try again in a few minutes", and a read that never reached the
+  provider no longer uses up a slot. (#776)
 
 ### Fixed
 
-- The health score could not read lab-based pillars. A column-name mismatch made every glycaemia and lipids read fail, so the score treated accounts with lab results as unreadable and the two pillars never scored. The reader uses the real columns now, and an account without lab results shows the pillar as not tracked rather than as an error.
-- Reading a large Apple Health export no longer exhausts the server's memory. The archive streams through the parser in bounded batches instead of accumulating in memory, so a multi-hundred-megabyte export with millions of records imports on a default self-host setup. An import the available memory genuinely cannot carry is refused up front with a message that says what to raise, and an import that was interrupted mid-run shows up as failed with a retry, rather than spinning forever.
-- Automatic document reading no longer hides the manual read action on a document that has not actually been read yet, so a single failed or skipped document has a way back.
-- Read-everything now includes PDFs for providers that accept images. The pages are rendered to images for those providers, the same way a single manual read already did, so a Codex-style setup no longer skips every PDF in the vault.
-- The About-me note and the free-text allergy notes moved from Account settings into Anamnese. The free-text notes sit directly under the structured allergy list they supplement, labelled as the place for what the structured list cannot hold, and the account page keeps to account matters.
+- The health score could not read the two lab-based pillars. A mismatch in
+  column names made every glycaemia and lipids read fail, so anyone with lab
+  results saw both pillars as unreadable. They score now, and a record
+  without lab results shows the pillar as not tracked rather than as an
+  error. (#780)
+- Importing a large Apple Health export no longer exhausts the server's
+  memory. The archive is read in batches, so an export with millions of
+  records imports on a default setup. An import the available memory cannot
+  carry is refused up front with a message that says what to raise, and an
+  import that was interrupted shows up as failed with a retry rather than
+  spinning forever. (#775)
+- Automatic document reading no longer hides the manual read action on a
+  document that has not been read yet, so a single failed or skipped
+  document has a way back. (#777)
+- Read-everything now includes PDFs for providers that accept images; the
+  pages are rendered to images the same way a single manual read already
+  did, so such a setup no longer skips every PDF in the vault. (#776)
+- The About-me note and the free-text allergy notes moved from Account
+  settings into Anamnese, next to the structured allergy list they
+  supplement.
+- The temporary folder an Apple Health archive is unpacked into has an
+  unguessable name now.
 
 ## [1.37.12] — 2026-08-11
 
 ### Changed
 
-- The public privacy policy now matches the current app and server data flow in German and English. It explains the in-app account-deletion route and MFA handoff, optional server-managed and bring-your-own assistant providers, on-device processing, document and OCR use, consent revocation, Apple Health sync versus HealthLog storage, retention rules, heart-rate representation, the full App Store data categories, and that HealthLog does not track you.
+- The public privacy page matches the app again, in German and English. It
+  describes how you delete your account from inside the app and how a second
+  factor is handed over, what each way of running the assistant does with
+  your text, whether that is the one this server manages, your own key,
+  another endpoint or your own device, what happens to a document you upload
+  and to the text read out of it, how to withdraw consent, what Apple Health
+  sync stores here and what it does not, how long things are kept, how heart
+  rate is represented, the App Store data categories, and that nothing here
+  tracks you.
+- The documentation site has a page for getting in touch: bug reports, usage
+  questions, privacy and account requests, and private security reports.
 
 ## [1.37.11] — 2026-08-10
 
 ### Changed
 
-- The lifestyle-context card in Anamnese saves in one action. Smoking, alcohol and shift-work each had their own save button; now you set what you want across all three and one Save writes them together, with a single confirmation. If one of them cannot be saved, that entry stays unsaved and says so while the others go through, rather than a single message hiding which one failed.
+- The lifestyle-context card in Anamnese saves in one action. Smoking,
+  alcohol and shift work each had their own save button; now you set what
+  you want across all three and one Save writes them together, with a single
+  confirmation. If one of them cannot be saved, that entry stays unsaved and
+  says so while the others go through, rather than a single message hiding
+  which one failed.
+- The mood chart picks up the same header as every other card, which changes
+  nothing you do with it.
 
 ## [1.37.10] — 2026-08-10
 
 ### Added
 
-- A medication can take a different dose at each time of day, all from the one supply. If you take one tablet in the morning and half a tablet at noon and at night, that is one medication with three times now, not two separate entries that split your stock in two. Each time slot carries its own dose and its own count of units consumed, so the supply counts down by the right amount at each one. An occasional as-needed dose is a slot on the same medication too, drawing from the same box, rather than a third phantom entry. Existing medications are unchanged, and one that does not set a per-slot amount keeps counting down exactly as before.
+- A medication can take a different dose at each time of day, all from the
+  one supply. If you take one tablet in the morning and half a tablet at
+  noon and at night, that is one medication with three times now, not two
+  separate entries that split your stock in two. Each time slot carries its
+  own dose and its own count of units consumed, so the supply counts down by
+  the right amount at each one. An occasional as-needed dose is a slot on
+  the same medication too, drawing from the same box, rather than a third
+  entry. Existing medications are unchanged, and one that does not set a
+  per-slot amount keeps counting down exactly as before.
 
 ## [1.37.9] — 2026-08-10
 
 ### Added
 
-- You can record the data that matters in an emergency: blood type, an organ-donor and an advance-directive status, plus emergency contacts, implants or devices, and a free note. Enter it under Anamnese, the same place the allergies and family history live. The contacts, implants and note are encrypted at rest like the rest of your sensitive record, and every field carries through backup and restore.
-- The doctor report can open with a one-page emergency summary a clinician can read at a glance: blood type, severe allergies, current medications, chronic conditions, implants, the advance-directive and organ-donor lines, contacts and the note. The page only appears when you have recorded something for it, and it is part of the report you choose to share, so it travels with the report to the practice rather than sitting somewhere separate.
+- **You can record the data that matters in an emergency:** blood type, an
+  organ-donor and an advance-directive status, plus emergency contacts,
+  implants or devices, and a free note. Enter it under Anamnese, the same
+  place the allergies and family history live. The contacts, implants and
+  note are encrypted at rest like the rest of your sensitive record, and
+  every field carries through backup and restore.
+- The doctor report can open with a one-page emergency summary a clinician
+  can read at a glance: blood type, severe allergies, current medications,
+  chronic conditions, implants, the advance-directive and organ-donor lines,
+  contacts and the note. The page appears only when you have recorded
+  something for it, and it is part of the report you choose to share, so it
+  travels to the practice with the rest of the report rather than sitting
+  somewhere separate.
 
 ## [1.37.8] — 2026-08-10
 
 ### Added
 
-- The assistant can answer questions about your practice visits now, both what happened and what is coming up. A new reading over the assistant wire returns your visit history for a window you ask about, with the practitioner, the reason and the outcome, and it says plainly when you have never recorded a visit rather than reading an empty list as if nothing exists. Upcoming appointments arrive alongside the preventive-care due-list rather than as a separate question, so "what is coming up" has one answer. The Coach carries a small visits note as well, so it knows an appointment is near and which practice you last saw without being handed your whole visit archive.
+- **The assistant answers questions about your practice visits now,** both
+  what happened and what is coming up. Ask about your visit history over a
+  window and you get the practitioner, the reason and the outcome back, and
+  when you have never recorded a visit it says so rather than reading an
+  empty list as if nothing exists. Upcoming appointments arrive alongside
+  the preventive-care due-list rather than as a separate question, so "what
+  is coming up" has one answer. The Coach carries a small visits note as
+  well, so it knows an appointment is near and which practice you last saw
+  without being handed your whole visit archive.
 
 ### Security
 
-- A warning written to the server log is scrubbed of secrets on the way in now, the same as an error message or a request path already was. A warning often carries an outbound error string, and for a few integrations that string is a request URL with a credential in it, so closing this entry point removes the last place a secret could reach the log unredacted.
+- If you host this yourself, a warning written to the server log is scrubbed
+  of secrets on the way in now, the same as an error message or a request
+  path already was. A warning often carries an outbound error string, and
+  for a few integrations that string is a request address with a credential
+  in it, so closing this entry point removes the last place a secret could
+  reach the log unredacted.
 
 ## [1.37.7] — 2026-08-09
 
 ### Added
 
-- A self-hoster running the published image can now set MAXMIND_LICENSE_KEY as a runtime environment variable and the app fetches the GeoLite2 City and ASN databases itself, so login locations resolve offline without a rebuild or a manual database mount. It fetches once on worker boot when the key is set and the databases are absent, refreshes monthly, and never blocks anything: any download error leaves the previous databases in place and the online lookup keeps answering. A read-only mounted database still wins. Documented as the third way to supply GeoLite2 in the self-hosting guide. Refs #659.
+- **If you run the published image, you can now set `MAXMIND_LICENSE_KEY` as
+  a runtime environment variable** and the app fetches the GeoLite2 City and
+  ASN databases itself, so login locations resolve offline without a rebuild
+  or a manual database mount. It fetches once on worker boot when the key is
+  set and the databases are absent, refreshes monthly, and never blocks
+  anything: any download error leaves the previous databases in place and
+  the online lookup keeps answering. A read-only mounted database still
+  wins. Documented as the third way to supply GeoLite2 in the self-hosting
+  guide. Refs #659, reported by @mathewcsims.
 
 ### Security
 
-- The MaxMind licence key no longer appears in a log line when the runtime GeoLite2 fetch fails. The download URL carries the key in its query string, and the failure path used to print the full URL; it now reports only the edition and the kind of error, and the central log redactor also masks a license_key parameter wherever one might otherwise slip through.
-
-### Security
-
-- A mental-wellbeing screening reminder (PHQ-9, GAD-7, WHO-5, SCI) can no longer be marked done through a crafted request. A screening resolves only from the score a completed check-in produces, so the satisfy and complete routes now refuse a screening reminder outright rather than trusting that the app never offers that action for one.
+- The MaxMind licence key no longer appears in a log line when that fetch
+  fails. The download address carries the key in its query string, and the
+  failure path used to print the whole address; it reports only the edition
+  and the kind of error now, and the central log redactor masks a
+  `license_key` parameter wherever one might otherwise slip through.
+- A mental-wellbeing screening reminder (PHQ-9, GAD-7, WHO-5, SCI) can no
+  longer be marked done through a hand-built request. A screening resolves
+  only from the score a completed check-in produces, so the server turns
+  down a request to satisfy or complete a screening reminder outright now,
+  which is the rule the apps already followed.
 
 ### Changed
 
-- Editing a custom mood tag, a custom tag group or a custom cycle symptom now records an audit entry, the same way deleting one already did. Removing a custom tag or symptom together with its history leaves a trace of the change. Hiding a catalogue tag and reordering the layout stay out of the audit log by design, since those are display preferences rather than a change to your record.
+- Editing a custom mood tag, a custom tag group or a custom cycle symptom
+  now leaves an entry in the audit log, the same way deleting one already
+  did. The two display-only actions on that screen, hiding a catalogue tag
+  and reordering the layout, stay out of it, since those are display
+  preferences rather than a change to your record.
 
 ## [1.37.5] — 2026-08-09
 
 ### Changed
 
-- Copy across several screens reads tighter. The insight-page metric explainers now open on a one-line definition rather than a paragraph of general guidance, with the longer background staying behind the knowledge disclosure where it already lived; the measurements subtitle and the daily-briefing setup prompt each drop a redundant sentence, and the mood self-rating card takes a short title so it stops wrapping and stops reusing a word from the assessment beside it. Wording that had drifted between neighbouring screens is settled too, so the measurement delete prompts, the practitioner label on the visit and vaccination forms, and the visit-saved toasts all match the screens they ship with.
-- The settings for a managed profile now use the same controls as the rest of the app. The forms for a delegated profile carry the shared date picker, dropdowns, text fields and switches instead of a plainer set of their own, so the birth date reads and saves in your own date order rather than depending on the browser, and each form keeps its save button at the end with any error shown just above it.
-- Spacing and tap targets read more evenly across settings, the dashboard and the charts. A handful of off-scale gaps are back on the spacing scale, the document upload buttons meet the mobile tap size their neighbours already set, the revoke on a share link is a right-aligned row action rather than a full-width red bar on every row, and a few empty and loading states now use the shared components so they match their siblings.
+- **Copy across several screens reads tighter.** The insight-page metric
+  explainers open on a one-line definition now rather than a paragraph of
+  general guidance, with the longer background staying behind the knowledge
+  disclosure where it already lived. The measurements subtitle and the
+  daily-briefing setup prompt each drop a redundant sentence, and the mood
+  self-rating card takes a short title so it stops wrapping. Wording that
+  had drifted between neighbouring screens is settled too, so the
+  measurement delete prompts, the practitioner label on the visit and
+  vaccination forms, and the visit-saved toasts all match the screens they
+  ship with.
+- The settings for a record you look after use the same controls as the
+  rest of the app. They carry the shared date picker, dropdowns, text fields
+  and switches instead of a plainer set of their own, so the birth date
+  reads and saves in your own date order rather than depending on the
+  browser, and each form keeps its save button at the end with any error
+  shown just above it.
+- Spacing and tap targets read more evenly across settings, the dashboard
+  and the charts. A handful of off-scale gaps are back on the spacing scale,
+  the document upload buttons meet the mobile tap size their neighbours
+  already set, the revoke on a share link is a right-aligned row action
+  rather than a full-width red bar on every row, and a few empty and loading
+  states use the shared components now so they match their siblings.
 
 ## [1.37.4] — 2026-08-09
 
 ### Fixed
 
-- The connector-token note in Settings no longer claims a token is read-only in every case, which the write toggle right below it disproved. It now states the real model: read-only by default, write access an opt-in you turn on per token, and no token ever reaches admin functions.
-- A failed load of your share links now says so, with a way to retry, instead of quietly showing "no active share links" as if you had never shared anything. The same held for the API and connector token lists on the security screens.
-- A read that fails now shows a clear, recoverable error across the app instead of an empty list or a silent gap. The sharing and token screens, the ECG detail and list, the cycle and mood insights, the dashboard preventive-care tile, the checkups list, and the admin console all say when a read failed and offer a retry, rather than reading as "nothing here".
-- The AI consent and connector notes in Settings render as normal text now, not faint fine print, so the copy you are meant to read before turning a feature on is legible.
-- The record-a-visit action on the checkups list now appears only where there is a real practice visit behind the reminder. A reminder you satisfy yourself in the app, like weighing in or a mood check-in, no longer offers to file a visit it never involved.
-- The practices and doctors address book searches by specialty now, so typing "Zahnmedizin" finds the dentist even when the name and practice hold nothing of the sort. The list groups its entries under their specialty, with the ones you left unspecified gathered at the end, and the visit form's picker shows each contact's field beside the practice.
-- Linking documents, lab results and illnesses to a visit is searchable now instead of a flat list you had to scroll. Each link block shows what you have picked as removable chips over an add button that opens a searchable sheet; lab results gather under their panel and sample date so you can attach a whole day's panel in one tap, and documents gather by month. The vaccination form uses the same picker for its document link.
-- The respiratory-rate tile on the dashboard shows its unit in your own language instead of a fixed English label, and the personalized greeting carries its comma.
+- **A read that fails now shows a clear, recoverable error instead of an
+  empty list.** That mattered most on the share-link list, where a failed
+  load read as "no active share links", the same as having shared nothing.
+  It is fixed there and across the app: the API and connector token lists,
+  the ECG detail and list, the cycle and mood insights, the dashboard
+  preventive-care tile, the checkups list and the admin console all say when
+  a read failed and offer a retry.
+- The connector-token note in Settings claimed a token was read-only in
+  every case, printed right above the toggle that turns write access on. It
+  describes the real model now: read by default, write an opt-in per token,
+  and never admin.
+- The assistant consent and connector notes in Settings render as normal
+  text rather than faint fine print, so the copy you are meant to read
+  before turning a feature on is legible.
+- The record-a-visit action on the checkups list appears only where a real
+  practice visit is behind the reminder. A reminder you satisfy yourself,
+  like weighing in or a mood check-in, no longer offers to file a visit it
+  never involved.
+- The practice address book searches by specialty, so you can find the
+  dentist by field even when the name and practice hold nothing of the sort.
+  The list groups its entries under their specialty, and the visit form's
+  picker shows each contact's field beside the practice.
+- Linking documents, lab results and illnesses to a visit is searchable
+  instead of a flat list you had to scroll. Lab results gather under their
+  panel and sample date so a whole day's panel attaches in one tap,
+  documents gather by month, and the vaccination form uses the same picker.
+- The respiratory-rate tile on the dashboard shows its unit in your own
+  language instead of a fixed English label, and the personalized greeting
+  carries its comma.
 
 ### Removed
 
-- Logging water by hand inside the app is gone. The water entry on the capture menu, the dashboard quick-add and the hydration card have all been removed. Water that syncs in from another app through Apple Health still arrives and still shows on the hydration card with its daily total, history and reference line.
+- **Logging water by hand inside the app is gone.** The water entry on the
+  capture menu, the dashboard quick-add and the hydration card have all been
+  removed. Water that syncs in from another app through Apple Health still
+  arrives and still shows on the hydration card with its daily total,
+  history and reference line.
 
 ## [1.37.3] — 2026-08-09
 
 ### Added
 
-- An immunization record. A new Vaccinations module, switched on under Settings then Modules, keeps a lifetime Impfpass. Each dose sits under the disease it protects against, with its place in the series worked out on the server, so a combination shot appears under every component it covers. You add a dose by picking from a catalogue of around thirty entries, searched by disease or antigen name, or by typing it the way your pass reads; a date plus one of those two is all that is required, and the lot number, the injection site, the practice, a link to a visit and an encrypted note are each optional. Where the catalogue knows a schedule it shows it with its source, as information rather than advice. A dose that carries a booster interval offers a prefilled reminder you can edit or decline, and confirming it writes an ordinary preventive-care reminder that appears on the checkups page and moves itself forward when you log the next dose. A vaccination scan in the document vault can attach to its record, the record can link documents it already holds, and the doctor report gains an immunization section you can leave out. The module rides the record-sharing model, so a parent can keep a child's Impfpass under a managed profile. Six languages throughout, including the catalogue names, and never a brand name.
+- **A new Vaccinations module keeps a lifetime Impfpass.** Switched on under
+  Settings then Modules. Each dose sits under the disease it protects
+  against, with its place in the series worked out on the server, so a
+  combination shot appears under every component it covers. You add a dose
+  by picking from a catalogue searched by disease or antigen name, or by
+  typing it the way your pass reads; a date plus one of those two is all it
+  takes, and the lot number, the injection site, the practice, a visit link
+  and an encrypted note are optional. Where the catalogue knows a schedule
+  it shows it with its source, as information rather than advice. A dose
+  with a booster interval offers a prefilled reminder you can edit or
+  decline, and confirming it writes an ordinary preventive-care reminder
+  that shows on the checkups page and moves forward when you log the next
+  dose. Scans in the document vault attach to their record, the doctor
+  report gains an immunization section you can leave out, and the whole
+  module follows record sharing, so a parent can keep a child's Impfpass
+  under a record they look after. Every language the app has, including the
+  catalogue names, and never a brand name.
 
 ### Fixed
 
-- The mood sliders no longer read their value fused with the reset control, so a
-  slider set to 4 shows the number on its own instead of "4 leeren". The reset
-  is a small icon beside the value now.
-- Date and time fields wear the same focus highlight as every other input. The
-  ring hugs the field instead of painting wider than it or jumping to the left
-  when you click in, and the fields no longer set off the zoom on iOS.
-- The add-mood sheet keeps its scrollbar clear of the endpoint labels, so the
-  longest wording is never clipped by the scroll track.
-- The health-score configuration lists its topics as one flat set with dividers
-  instead of grouping them under headings.
-- In Settings, under Security, password reset now sits last, after the
+- A preventive-care reminder set to the longest interval the app allows no
+  longer loses its next date when you log the dose meant to push it forward.
+  It moves a full cycle ahead now instead of falling silent.
+- The mood sliders show their value on its own instead of fused with the
+  reset control, which is a small icon beside the value now.
+- Date and time fields wear the same focus ring as every other input, so it
+  hugs the field instead of painting wide or jumping left, and they no
+  longer set off the zoom on iOS.
+- The add-mood sheet keeps its scrollbar clear of the endpoint labels, so
+  the longest wording is never clipped.
+- The catalogue and practice pickers carry a name for a screen reader; a
+  control that only showed an icon was unnamed before.
+- The health-score configuration lists its topics as one flat set with
+  dividers instead of grouping them under headings.
+- In Settings, under Security, password reset sits last, after the
   authenticator app, security keys and passkeys.
-- Sharing a record again with someone whose access had expired works. The old
-  lapsed grant no longer blocks a fresh invitation with a false report that the
-  person still has access.
-- The scope options when inviting someone start with nothing preselected, so the
-  choice between the whole record and single sections is one you make rather than
-  one already made for you.
-- The write and manage descriptions on the invite form are one line each now,
-  with the full detail behind the info icon instead of a wall of text.
-- A preventive-care reminder set to the longest interval the engine allows no longer loses its next date when a dose is logged against it. The reminder now moves a full cycle forward instead of falling silent.
-- The catalogue and practice pickers now carry a name for a screen reader; a control that only showed an icon was unnamed before.
+- Inviting someone to a shared record starts with nothing preselected, so
+  the choice between the whole record and single sections is one you make,
+  and each scope description is one line with the detail behind an info
+  icon.
+- Sharing a record again with someone whose access had expired works. The
+  lapsed invitation no longer blocks a fresh one with a false report that
+  the person still has access.
 
 ## [1.37.2] — 2026-08-08
 
 ### Added
 
-- Doctor visits and the practices behind them have a home now. A visit records
-  what kind it was, when it happened, its status, an optional practice from a
-  contact list you keep, an encrypted note, and links to the lab results,
-  documents and illness episodes it concerned — linked, never copied, so a
-  correction in the source shows through. Visits and their checkups live under
-  a segmented view; a preventive-care checkup can be closed by recording the
-  visit that fulfilled it, and a due checkup can carry a planned appointment.
-  A planned visit sets a reminder that the server re-anchors when you move it
-  and clears when the visit happens or is cancelled; it fires once and never
-  nags, and it carries no "done" button, because the appointment is not a task
-  you tick off. The whole thing rides the record-sharing model as its own
-  section, and it shows up in the doctor report as a visit list you can leave
-  out.
+- **The mood record answers a second question next to your own check-in:
+  what this day would have looked like on your own past patterns.** Your
+  self-assessment leads and is never overwritten. The comparison sits beside
+  it with the number of days it rests on and a range rather than a single
+  figure, and it stays silent until there is enough of your own history to
+  stand on. It describes a connection, never a cause.
 
-- The mood module can now say what a day would have looked like on your own
-  past patterns, and how far the day you recorded sits from that. It is a
-  second, separate reading: your own rating stays the leading one, it is
-  stored exactly as you gave it, and nothing overwrites it. The comparison
-  appears only once there are enough days to say anything honest, it always
-  carries the number of days it was built from and a range rather than a
-  single figure, and it names which of the things you recorded weighed most on
-  that day. It describes a connection between things you wrote down. It never
-  claims a cause.
+  The rework grew from a concept Kai worked out in detail, from the
+  split between how you feel and the day around it to the idea that the app
+  should learn your own patterns instead of scoring you against fixed
+  weights. Thanks, Kai.
 
-  The rework this reading sits on grew from a concept Kai worked out in detail. Thanks, Kai.
+- **A mood entry can hold the shape of the day around it.** Four optional
+  sections cover work, contacts, leisure and one thing that stood out, each
+  folded away until you open it, so a quick check-in is still a face and
+  Save. Sleep, activity and vitals come from the modules that already hold
+  them and appear beside the entry instead of being asked for again, so a
+  correction at the source carries through. A figure nobody recorded reads
+  as not recorded rather than as zero, and a module you have switched off
+  leaves its block out.
 
-  Below fifteen days there is nothing at all. Between fifteen and thirty the
-  page says how far along it is instead of guessing. Between thirty and sixty
-  the comparison is there and is labelled as provisional. Where the days are
-  there but nothing in them is steady enough to compare against, it says that
-  too, rather than producing a number to fill the space. The comparison is
-  rebuilt overnight from your entries, and if you delete enough of them it
-  goes away again instead of standing there with a fresh date on it.
+  If you write against the API, a mood entry carries the five values and the
+  day context as optional fields. An app that posts only the five-point
+  label still writes a complete entry, because the server derives the first
+  scale from that label.
 
-- A mood entry can now carry the shape of the day around it. Four sections sit
-  below the sliders — work, contacts, leisure, and one notable event — and
-  every one of them is closed until you open it, so a quick check-in is still
-  a face and Save. What you fill in is counted on the closed section's header,
-  so nothing you wrote is out of sight without a hint that it is there. The
-  work section asks how the day went and how long it ran, the contacts section
-  asks who and how it felt rather than how many people, the leisure section
-  asks what the free time went into, and the event section holds one thing
-  that happened with a note beside it. That note is encrypted at rest like
-  every other free-text field.
-
-- Sleep, activity and vitals are not asked for a second time. They are read
-  from the modules that already hold them and shown read-only beside the
-  entry, with the source of each figure named and a way in to correct it
-  there. Correct a sleep session in the sleep module and the mood entry shows
-  the corrected figure the next time you open it, because nothing was copied.
-  A figure nobody recorded reads as not recorded rather than as zero, and a
-  module you have switched off leaves its block out entirely instead of
-  showing empty rows: sleep answers to the sleep module, resting heart rate
-  and heart-rate variability to recovery, the body line to the illness
-  journal. Steps and active energy have no module of their own and are always
-  shown, which is how the rest of the app already treats them. Body symptoms
-  stay in the illness journal, linked rather than duplicated.
-
-  Where two devices reported the same day, the figures follow the source order
-  you set rather than adding both together. A phone and a watch both counting
-  your steps is the ordinary case, and summing the pair would have shown a day
-  you did not walk.
-
-- Where the app compares the day's context to the day's mood, it names how
-  many days each side of the comparison rests on, right beside the sentence,
-  and it describes a connection rather than a cause. The comparison runs the
-  same statistics the tag board already uses, including the correction that
-  keeps a wide sweep from turning one-in-twenty noise into a finding.
-
-- The iOS contract now carries both the five mood values and the day context.
-  Everything is optional and nothing an existing build sends has changed
-  meaning: an app that posts only a five-point label still writes a complete
-  entry, because the server derives the pleasantness value from that label.
-
-- Workouts recorded before the phone learned to send heart-rate detail can
-  pick that detail up afterwards. When the app sends a session the server
-  already holds and the payload carries the reading-by-reading heart rate
-  this time, the curve is attached to the workout that is already there and
-  shows up on its detail page. The session itself is untouched: duration,
-  calories, the average and maximum heart rate, the times, all stay as they
-  were first recorded. A workout that already has its curve is left alone,
-  so the phone can walk back through years of history as often as it likes
-  without anything being written twice. If one session's readings arrive
-  unusable, that session alone is reported back and the rest of the batch
-  still lands.
+- **Doctor visits have a place of their own.** A visit records its kind,
+  when it happened, its status, an optional practice from a contact list you
+  keep, an encrypted note, and links to the lab results, documents and
+  illness episodes it concerned. Those are links, not copies. A
+  preventive-care checkup can be closed by recording the visit that
+  fulfilled it, and a planned visit sets a reminder the server moves when
+  you move it and clears when the visit happens. It fires once and never
+  nags, and it carries no "done" button, because an appointment is not a
+  task you tick off. The visit list appears in the doctor report, and you
+  can leave it out.
+- A workout recorded before the phone learned to send its heart-rate detail
+  can gain that curve later. When the phone re-sends a workout the server
+  already holds, the reading-by-reading heart rate attaches to the workout
+  that is already there, and nothing else about it changes.
 
 ### Fixed
 
-- Marking an older missed dose as taken from the intake history now records
-  the dose at the slot's own date and time. Marking Tuesday 09:00 from a
-  Thursday evening used to land on the right slot but stamp the intake with
-  the current moment; the recorded time now matches the claim being made. The
-  optimistic paint had promised this all along, and the skipped-to-taken flip
-  in the same view already behaved this way.
-
-- The Appearance list in Settings had a strip of dead space above every row
-  that the first row did not have — 24 px on a desktop, 16 px on a phone,
-  unclickable, sitting between one module and the next. The rows read a step
-  apart from the top of their own list. They now sit the same distance from
-  the line above them, and the geometry sweep measures it so it cannot drift
-  back.
-
-- The Account settings page is the profile again. Cycle tracking is a module
-  and its switch lives in the Modules hub, so the second on-ramp here is gone
-  along with the "manage in Account" link beside that switch, which pointed at
-  an anchor nothing rendered. Changing the password moved to Security, where
-  the second factors and the passkeys already are, and it leads that page.
-
-- Five module rows ran two to three times longer than their thirteen
-  neighbours: environment, external assistant access, documents, mental
-  wellbeing and nutrient intake. Every one of them ended in "off by default",
-  restating what the switch beside the row already shows. They are one
-  sentence now, like the rest. The mental-wellbeing row also named two
-  screeners where the module ships four, and what happens to your answers is
-  now said on the mental-wellbeing page itself, where you are about to give
-  them.
-
-- Research Mode is retired. It was an opt-in for the estimated GLP-1 level
-  curve, but that chart stopped consulting the flag several releases ago and
-  has been visible to everyone since — so the switch on the Advanced page
-  changed no screen in either position. The curve is simply part of the
-  medication page, and the switch, its acknowledgment dialog, and the stored
-  acknowledgment are gone. Advanced is now what it reads as: reset the data,
-  delete the account.
-
-- The ECG page opened with three lines about what HealthLog does not do
-  before showing a single recording, two of them saying the same thing. They
-  are gone; the recording's own page still states that the result shown is
-  the device's. The device's verdict now rides the timestamp as a tag instead
-  of taking a line of its own. The overview teaser shows the five most recent
-  strips rather than every one ever recorded, while the ECG page itself still
-  lists them all, so nothing is hidden where you go to look. A recording has
-  its own address now, with the back link above the heading, so a strip can be
-  linked to and the browser's own Back works.
-
-- An entry in the record switcher no longer carries the access level on a
-  line of its own. In a menu that narrow it was truncated more often than it
-  was read, and the banner states it in full once you are inside the record.
-
-- The record owner's name reads in full on the switcher and the banner when
-  they have set one, ahead of the greeting name — so a delegate entering
-  somebody's record sees whose it is by who they are.
+- Marking an older missed dose as taken records it at the slot's own time
+  rather than the current moment.
+- Cycle tracking leaves the Account page, since it is a module and one place
+  is enough, and changing your password moves to Security, where the second
+  factors and the passkeys already are.
+- The dead space above each row in the Appearance list is gone, and the
+  module descriptions that ran far longer than their neighbours are back in
+  line.
+- Research Mode is retired. The chart it gated stopped consulting it several
+  releases ago and has been visible to everyone since, so the switch changed
+  no screen in either position.
+- The EKG page drops its lines about what the app does not do, shows the
+  device's own reading as a tag beside the date, opens a recording on its
+  own page with the back link above the heading, and shows the most recent
+  handful instead of every strip ever recorded.
+- A shared record shows its owner's full name where the profile has one, and
+  the record switcher no longer gives the access level a line of its own,
+  where it was truncated more often than it was read.
 
 ## [1.37.1] — 2026-08-08
 
 ### Added
 
-- A mood entry now records five separate values instead of one. The quick
-  check-in is unchanged: pick a face, save, done in a tap, and its answer maps
-  onto a new pleasantness scale so nothing about that entry is second class.
-  Underneath it, a section that stays closed until you open it holds five
-  sliders running 0 to 10, each with wording at both ends: how the day felt,
-  how much strain it carried, how much energy there was, how connected you
-  were, and how able to act you felt. Anything you leave alone stays empty
-  rather than landing in the middle, and clearing a slider takes the answer
-  back. Entries you have already logged carry the mapped value for the first
-  scale and nothing invented for the other four.
-
-- The mood page trends all five, over seven, thirty or ninety days, each drawn
-  the way you answered it. A scale you have never filled in is named as not
-  recorded rather than drawn flat through the middle. The daily briefing and
-  the assistant read all five as well, each with its own age, so a value from
-  last week is stated with its date instead of as today's.
-
-- Factor ratings are no longer offered on a new entry. A one-to-five score for
-  work stress and a nought-to-ten stress scale are two answers to the same
-  question, and only the second is asked now. Nothing was removed: ratings
-  already logged still show, still edit, and still feed the breakdowns that
-  read them.
-
-- A lab result now keeps the reference range printed on its report. The
-  document reading used to extract the value and discard the range beside it,
-  and for any analyte already tracked, the general catalog band was stamped
-  over what the report said, although the physician evaluates against the
-  printed range. Extraction now captures that range, through a parser that
-  understands the common German report forms: two-sided windows with dash or
-  "bis", one-sided bounds in a dozen spellings, thousands separators in both
-  conventions, and text verdicts like "negativ". Anything it cannot parse with
-  confidence lands verbatim in a text field instead of being guessed at. For a
-  value that carries a source range, that range decides the verdict
-  everywhere: the API, insights, the assistant, the doctor report and its PDF,
-  FHIR, backup and restore. The chart shows the source window as a second
-  band and marks a divergence from the catalog. Values without a printed range
-  keep the catalog as their net.
-
-- Three scheduled security workflows join the pipeline, all additive. CodeQL
-  analyses the TypeScript tree on pull requests and weekly. Trivy scans both
-  the filesystem, with development dependencies included, and the published
-  container image on a schedule; the dev-dependency flag exists because the
-  recent PDF-renderer advisory was invisible to a production-only audit.
-  Scorecard publishes to the OpenSSF API weekly. The blocking pre-publish
-  image scan keeps its job; these add what it structurally cannot see.
+- **A mood entry now records five separate values instead of one.** The
+  quick check-in is unchanged: pick a face, save, done in a tap. Underneath
+  it, a section that stays closed until you open it holds five sliders, each
+  with wording at both ends: how the day felt, how much strain it carried,
+  how much energy there was, how connected you were, and how able to act you
+  felt. Anything you leave alone stays empty rather than landing in the
+  middle. The mood page trends all five over a week, a month or three
+  months, and the daily briefing and the assistant read them with their own
+  age, so a value from last week is stated with its date instead of as
+  today's.
+- **A lab result keeps the range its report printed.** A lab report prints
+  its own reference range next to every value, and your physician reads the
+  value against that range, not against a general catalogue. Until now the
+  document reading extracted the value and discarded the range beside it. It
+  captures the printed range now, and that range decides the verdict
+  everywhere: the API, insights, the assistant, the doctor report and its
+  PDF, FHIR, backup and restore. The chart shows the printed window as a
+  second band and marks where it differs from the catalogue. Values without
+  a printed range keep the catalogue, and anything the reader cannot parse
+  with confidence lands verbatim in a text field instead of being guessed
+  at.
 
 ### Changed
 
-- The settings pages and the admin console are one design now. They had
-  drifted apart wherever no primitive held them: three techniques for the
-  header-to-body gap, body indents alternating between an icon column and the
-  card edge, buttons in four placements and five variants, and descriptions
-  that had grown into paragraphs. One page header serves both shells, one
-  action-row shape, one connect-button variant, and a card description is one
-  sentence, enforced by a check that fails on the next paragraph; 36
-  descriptions were shortened or moved into the body across all six
-  languages. The geometry is measured rather than asserted by eye, across 41
-  routes, two locales and two viewports, and the measurement found what
-  reading could not: one card variant sat a step tighter than its neighbors
-  on every desktop width, and the layout child pages never mounted their way
-  back to the settings hub.
+- Factor ratings are no longer offered on a new entry. A separate score for
+  work stress and the strain slider are two answers to the same question,
+  and only the slider is asked now. Ratings already logged still show, still
+  edit, and still feed the breakdowns that read them.
+- **Sync refuses readings the app itself calls impossible now.** A provider
+  could store a pulse in the millions, and one recently did. Every sync path
+  checks, and an implausible sample is dropped and counted, never clamped
+  and never allowed to fail the batch. The insights baseline applies the
+  same ranges before averaging, so an impossible stored reading no longer
+  skews its own comparison.
+- The settings pages and the admin console had drifted apart wherever
+  nothing held them together. They share one page header, one action-row
+  shape, one card rhythm, and a rule that a card description is one
+  sentence, in every language the app has.
 
 ### Fixed
 
-- Mood entries now survive a restore whole. The disaster-recovery backup was
-  carrying only the rated factors of an entry, so every tag ticked present or
-  absent was missing from the file, and it was dropping the note, the entry's
-  own timezone and the sync counter as well. A restored entry came back without
-  its text, read its day boundaries under the old Berlin assumption whatever
-  zone it had been logged in, and could lose the next sync round to a paired
-  phone still holding a higher counter. The backup carries every column now,
-  both halves of the tag taxonomy come back, and a structural check fails the
-  build if a future column goes missing the same way. Backup files written
-  before this restore exactly as they did.
-
-- The workout detail draws the whole heart-rate profile. The curve used to
-  stop at the moving-time mark, so a ride with twenty minutes of stops lost
-  twenty minutes of curve with no gap and no marker; it now runs to the
-  session end. The min-to-max band no longer drags the y-axis to zero, which
-  had squashed the effort shape into the top quarter of the chart on exactly
-  the dense sessions with the most shape to show. The peak marker renders
-  again instead of being discarded whenever the peak sat above the bucket
-  means. And a session with heart-rate figures but no profile behind them is
-  named as such, distinct from one where nothing was measured.
-
-- Marking an older missed dose as taken no longer lands on the wrong slot.
-  The route resolved the target only by time window around "now", so a
-  backfilled dose fell through to a standalone row at the current minute, the
-  named slot stayed missed, and the refetch wiped the optimistic tick. The
-  route now honours the named slot for backfills, and the history read binds
-  each row to its slot.
-
-- The insights baseline no longer compares an impossible stored reading
-  against a band built from the same reading. Values the app itself refuses
-  at every write surface, such as a pulse in the millions, still sat in the
-  table from older syncs and skewed both ends of the comparison. The read
-  side now applies the app's own declared plausibility ranges before
-  averaging or banding.
-
-- Sync writers now refuse readings the app itself calls impossible. Every
-  person-driven write path enforces the plausibility bands, but a provider
-  sync could still store a pulse in the millions, and one recently did. The
-  gate now sits at the shared reconciler and at the five writers that hold
-  the database directly, ahead of the insert-or-overwrite decision, because
-  the overwrite branch was the dangerous one: an impossible reading could
-  replace a good stored value. An implausible sample is dropped and counted,
-  never clamped and never allowed to fail the batch, and a read-only
-  diagnostic lists any stored rows outside the declared bands.
-
-- The hero card and the day's signals no longer say "today" about a reading
-  that is five days old. Deviations carry their age now, today-claims are
-  bounded to one day, and a stale value stays visible as what it is: a last
-  reading from N days ago.
-
-- A hand-entered night of sleep is no longer stored as minutes when the field
-  asks for hours; 7.5 had become seven and a half minutes and nothing
-  objected. The submit path converts at the boundary and the field accepts a
-  decimal comma.
-
-- An overdue period can say so now. The phase builder ended the open cycle at
-  the predicted next start, so from that day on the verdict read
-  "insufficient data" instead of "overdue". The open cycle runs through
-  today, with the ovulation anchor pinned to the predicted length so a
-  growing window cannot walk the estimate.
-
-- Deleting a period start no longer leaves the previous cycle as a closed
-  torso that stops all forecasting. Neighbour boundaries are re-derived from
-  the rows that remain, on both delete paths, and the sheet's delete now
-  actually removes the cycle rather than only the day log.
-
-- A backdated period saved fine on the server and painted nothing in the
-  calendar, because the view read a fixed ninety-day window. The month grid
-  now loads its own month, and every save reports success or names its error.
-
-- A period logged only as flow now opens a cycle, under a conservative rule:
-  no spotting, no intermenstrual bleeding, nothing within the minimum cycle
-  distance of an existing start. Until now such a period never created a
-  cycle row, so charts and verdicts saw no first period; this covered the
-  whole Apple Health import path. The cold-start prompt also counts real
-  periods now instead of asking for a first period beside three logged ones,
-  and the day-of-cycle number no longer depends on how wide the read window
-  happened to be.
-
-- Dialogs no longer scroll sideways on a phone. Two primitives conspired: the
-  date and time fields wrap a text input whose intrinsic size demands more
-  width than a phone dialog has, and the dialog scroll body promoted the
-  horizontal axis to auto, turning every intentional focus ring into
-  sideways panning. Both fixed once in the primitives, and sixty
-  width-by-dialog combinations measure clean.
-
-- The coach launcher no longer shows a dot with an empty conversation behind
-  it. A reminder sweep flipped reminders to due without writing anything into
-  the thread, and the flag that should mark them surfaced had no writer
-  anywhere, so opening the coach could not clear it. The sweep now writes the
-  reminder into the conversation and marks it surfaced in one step; the dot
-  means a message you can read.
-
-- Smaller surface fixes in the same pass: the empty delivery-status card
-  names the integrations page instead of pointing "below", in all six
-  languages; the lab-comparison card ages out on the data instead of asking
-  to be dismissed, with the comparison window now a year for web and the
-  native client alike; the mental-wellbeing intro is shorter; the lifestyle
-  entries in the anamnesis settings get a proper action row; the coach
-  composer text sits centred in its pill.
-
-- The admin "wipe all data" action wiped nine tables of 122. The list lived
-  inline in the route, a snapshot of the schema from the day it was written,
-  and its result line read identically however much was cleared. The route
-  now derives from the same wipe plan as the per-account wipe, in one
-  transaction: 88 tables cleared, and every survivor is either a sign-in
-  credential, instance configuration, or the single deliberate exemption of
-  account grants. A build-time rule fails if the route ever names a table
-  inline again.
-
-- The geo resolver read the mounted GeoLite2 databases only after asking the
-  online provider, while every operator-facing document promised the
-  reverse. A self-hoster who mounted the databases specifically to keep login
-  addresses on the host kept none of them there, silently. The order is now
-  offline first, online only when the local databases cannot place the
-  address.
-
-- SECURITY.md claimed the publish workflow runs on every push to main; that
-  trigger was removed in v1.4.34. The sentence now matches the workflow.
+- Mood entries survive a restore whole. The backup carried only part of an
+  entry, so a restored one came back without its note, its tags and its own
+  timezone. Backup files written before this restore as they did.
+- The workout detail draws the whole heart-rate curve: it runs to the end of
+  the workout instead of stopping at the moving-time mark, the min-to-max
+  band no longer squashes the shape by dragging the axis to zero, and the
+  peak marker renders again.
+- The cycle module says "overdue" instead of "insufficient data" when a
+  period is late, deleting a period start no longer strands the previous
+  cycle in a state that stops all forecasting, a backdated period shows up
+  in the calendar month it belongs to, and a period logged only as flow
+  opens a cycle, which covers the whole Apple Health import path.
+- Marking an older missed dose as taken lands on the slot it names instead
+  of a standalone row at the current minute.
+- The top card no longer says "today" about a reading that is five days old.
+- A hand-entered night of sleep is stored as hours, not minutes.
+- Dialogs no longer scroll sideways on a phone, and the coach launcher no
+  longer shows a dot with an empty conversation behind it.
+- **If you host this for others, the admin "wipe all data" action left most
+  tables standing.** It clears everything the per-account wipe clears now,
+  keeping only sign-in credentials, instance configuration and the grants
+  that keep a record without a login reachable.
+- The geo resolver reads mounted GeoLite2 databases first and asks the
+  online provider only when they cannot place an address, which is what the
+  documentation promised all along. If you mounted the databases to keep
+  login addresses on your host, they do that now.
+- SECURITY.md no longer claims the publish workflow runs on every push to
+  main; that trigger went away in v1.4.34.
 
 ### Security
 
-- The PDF renderer behind the document vault moves to a release that closes a
-  script-execution flaw. A crafted PDF could get JavaScript to run inside the
-  renderer, and the vault feeds it every PDF that is uploaded. Two things
-  limited what that reached, and neither is a substitute for the fix: the
-  renderer runs server-side only, because a PDF is displayed through the
-  browser's own viewer rather than this library, and it already ran with font
-  evaluation turned off. A second copy of the same library, pulled in by a
-  development dependency, is pinned past the flaw as well, since the runtime
-  image ships every copy it finds rather than only the one that gets used.
-
-- The container image now runs the version of the PDF renderer the project
-  pins. The build had been taking whichever copy the filesystem listed first,
-  and more than one copy reaches the image, so the pinned version was not
-  reliably the one that ran. It is selected by name now, and a copy that never
-  arrived fails the build instead of quietly leaving another one in its place.
-
-- A dependency advisory names nanoid below 3.3.17, reached through the
-  framework toolchain; a bounded override floats it past the flaw, and the
-  audit is clean again.
+- The PDF renderer behind the document vault moves past a script-execution
+  advisory, and the image build selects that renderer by name instead of
+  taking whichever copy the filesystem listed first.
+- A dependency advisory on a small helper library reached through the
+  framework toolchain is closed, and scheduled scans of the source tree and
+  the published image now run alongside the blocking one.
 
 ## [1.37.0] — 2026-08-07
 
 ### Added
 
-- Sharing a record no longer has to mean sharing the whole of it. An invitation
-  can name the parts it opens: readings, medications, lab results, health
-  background, illness, mood and mind, cycle, documents. Everything you do not
-  pick stays closed, and a section you kept back is refused the same way a
-  record nobody shared with you is, so what you held back is not visible from
-  the outside.
+- **An invitation can name the sections it opens rather than handing over
+  everything:** readings, medications, lab results, health background,
+  illness, mood and mind, cycle, documents. Anything you do not pick stays
+  closed, and a section you kept back looks exactly like a record nobody
+  shared with you.
 
-  Two things the invitation screen says out loud rather than leaving you to
-  work them out. A section can mention the rest of your health in its notes and
-  its names, so sharing a section shares whatever was written in it. And the
-  dashboard overview, the health score and the daily digest appear only when
-  the entire record is shared, because a figure computed from part of a record
+  The invitation screen says two things out loud: a section can mention the
+  rest of your health in its notes, so sharing a section shares whatever was
+  written in it, and the dashboard overview, the health score and the daily
+  digest need the entire record, because a figure computed from part of one
   would read as a figure about the person.
 
-  Every grant written before this release opens the entire record and is
-  untouched. Nobody has to agree to anything again.
+  Invitations you have already sent or accepted open the entire record and
+  are untouched.
 
-- A third level of access. Read access looks at the record. Write access adds
-  to it. Manage access can also change and remove what is already there,
-  including entries you made yourself, and can read the insights generated from
-  the record. The line it stops at is the account around the record: your
-  login, your second factor, your connected services, your API tokens, where
-  your notifications go, which modules and thresholds are on, and who else has
-  access.
+- **A third level of access.** Read access looks. Write access adds. Manage
+  access can also change and remove what is already there, including entries
+  you made yourself, and can read the insights generated from the record. It
+  stops at the account around the record: sign-in, second factor, connected
+  services, tokens, where notifications go, which modules are on, and who
+  else has access. Offering it asks for your second factor, so it happens in
+  a browser, and it always covers the entire record, because a note in one
+  section can be about any other. Everything a manager does is recorded
+  under their own name.
 
-  Offering manage access asks for your second factor, so it can only be done in
-  a browser. Accepting it can be done anywhere. It always covers the entire
-  record. There is no way to hand somebody everything about part of you, because
-  a note in one section can be about any other.
+- **A record for somebody who does not sign in.** @balajiv113 asked in #360
+  for a way to look after a family member's record. Access between two
+  accounts covered half of that; the other half is a person with no account
+  at all, a child or somebody you care for. Such a record has no login and
+  no e-mail address. You give it a name, optionally a date of birth, and the
+  language and timezone its days and reminders are measured in. Creating one
+  asks for your second factor and puts you on it in the same step. You can
+  invite somebody else to look after it with you, and it can never be left
+  with nobody: the last person on it cannot hand it back and cannot be
+  removed. The way out is to add somebody else, or to delete the record.
 
-  Everything a manager does is recorded under their own name, with a verb that
-  says what it was rather than "made a change".
+  Its reminders reach the people looking after it. A record with no login
+  has no phone of its own, so its medication, measurement, safety-floor and
+  low-stock reminders go to them, each in their own language and over the
+  channels they had already chosen. The message names whose record it is
+  about and carries no buttons; opening the app takes you into that record.
+  One of you turning off their own reminders does not silence anybody else.
 
-- A health record for somebody who does not sign in. @balajiv113 asked in #360
-  for a way to look after a family member, and a grant between two accounts only
-  ever covered half of that. The other half is the person who has no account to
-  begin with: a child, or somebody you care for.
+  You can keep that record's settings too, from modules and units to
+  thresholds and notification preferences, while your own screens stay in
+  your own language. Connected services show a status and nothing more for
+  now.
 
-  A managed profile has no login and no e-mail address. You give it a name,
-  optionally a real date of birth, and the language and timezone its own days
-  and reminders are measured in. Nothing is invented from a year you did not
-  give. Creating one asks for your second factor, and you become its first
-  guardian in the same transaction, so there is no moment where the record
-  exists and nobody is looking after it.
-
-  You can invite a second guardian, who accepts the invitation the way any
-  other is accepted. The record can never be left with nobody: the last
-  guardian cannot hand it back and cannot be removed, and the screen says so
-  where the refusal happens. The way out is to add somebody else, or to delete
-  the profile.
-
-- The reminders a managed profile produces reach the people looking after it. A
-  record with no login has no phone and no chat of its own, so medication
-  reminders, measurement reminders, safety-floor alerts and low-stock alerts go
-  to its guardians, each in their own language and over the channels they had
-  already chosen. The message names whose record it is about. It carries no
-  buttons: opening the app takes you through the ordinary switch into that
-  record rather than acting on it from a lock screen.
-
-  One guardian turning off their own reminders on their own phone does not
-  silence the others.
-
-- A guardian can keep a managed profile's settings. Its modules, its units, its
-  language and timezone, its thresholds and its notification preferences, read
-  and written as that record's settings rather than as yours. Your own screens
-  stay in your own language while you do it. Connected services show a status
-  and nothing else for now: connecting, syncing and disconnecting a wearable on
-  somebody else's behalf is not part of this release.
-
-- The document vault opens inside a shared record. `/documents` was offered in
-  the navigation of somebody else's record and then refused every read behind
-  it, so the page rendered an error card and the illness view rendered another
-  one beside it. A clinical letter is health data belonging to the record, and
-  reading it is much of the reason to hand somebody the record in the first
-  place. The list, a document and its file, the preview tiles and the filter
-  bar all answer now. Uploading, retyping, deleting, linking a document to an
-  illness and every AI action stay with the owner.
-
-- "Take all due" is offered to somebody with write access. Marking a dose is
-  one of the things that access admits, and the sweep records exactly the doses
-  the individual cards would. It was withheld on a note about a different
-  endpoint that it does not use. A helper with five morning tablets to confirm
-  taps once.
-
-- Marking a dose skipped is offered wherever marking it taken is. The dose
-  history offered a delegate one of the pair and not the other, though both are
-  the same admitted verb and the medication card already offered both.
+- Inside a shared record the document vault opens, and "take all due" and
+  marking a dose skipped are offered to somebody with write access.
 
 ### Changed
 
-- Write access no longer covers logging a value on a metric you track
-  yourself. The capability shipped named on the consent screen with nothing
-  behind it: the only form that records one sits on a page a shared record does
-  not open, so nobody could have used it. The consent copy now lists what the
-  level actually admits. Reading those values stays.
+- Write access no longer lists logging a value on a metric you track
+  yourself, since no page a shared record opens could record one. Reading
+  those values stays.
 
 ### Fixed
 
-- Switching records with more than one tab open could leave every tab on a
-  spinner for half a minute. While a switch is in flight the other tabs hold,
-  and they are released by the answer the server gives afterwards. A tab that
-  reloaded during the switch was mistaken for somebody else starting a second
-  one, which quietly detached the hold from the switch it belonged to, so no
-  answer could release it and the tabs waited out the timeout instead. The
-  release now stays attached to the switch that opened it.
+- **Two tabs of one browser could disagree about which record they were
+  in.** Switching records applies to your whole sign-in, so a tab left open
+  on the record you just left went on reading and writing there until it was
+  reloaded. Every request says which record the tab believes it is in now,
+  and one naming a record you have left is turned down in a way the tab
+  recovers from on its own. Switching with several tabs open could also
+  leave every tab on a spinner for half a minute; that is fixed too. The
+  phone app was never affected.
+- Somebody with write access can no longer overturn a dose you had already
+  recorded, on either path that reaches it. Re-sending the same decision
+  still works.
+- Closing a document could leave it named in the address bar, so a reload or
+  a shared link re-opened the sheet you had just closed. The close checks
+  that the browser stepped back now, and tidies the address bar when it did
+  not.
+- A control tapped before the app knew whose record was on screen no longer
+  strands you in a form the server would turn down.
+- A dose recorded from the dashboard quick-add says which record it landed
+  in and no longer offers an Undo only the owner may use.
+- The access-level options on the invitation screen are visible when reached
+  by keyboard.
+- The customise link on the mood page no longer leads someone you gave
+  access to onto a page that tells them it was not shared.
 
-- Closing a document could leave it named in the address bar. Opening a
-  document from a card adds a step to the browser's history so that Back closes
-  it again, and closing it asks the browser to consume that step. The browser
-  can decline, and when it did the sheet closed while the address bar went on
-  naming the document, so a reload or a shared link re-opened the one you had
-  just closed. The close now checks that the step was consumed and tidies the
-  address bar itself when it was not.
+### Internal
 
-- Two tabs of one browser could disagree about which record they were in.
-  Switching records moves a session rather than a tab, so a tab left open on
-  the record you just left went on reading and writing there until somebody
-  reloaded it. Every request now carries the record the tab believes it is in,
-  and one naming the record it has left is refused with an answer the tab
-  recovers from by re-reading who it is. A session that has never opened
-  somebody else's record is unaffected, and so is the phone app, which carries
-  the record on the request itself and never held a selector to go stale.
-
-- Somebody with write access could still overturn a dose you had already
-  recorded. The rule that keeps that with the owner was on one request and the
-  medication card reaches the same entry through another, where an explicit
-  "skipped" was applied rather than refused, and the stock the dose had used
-  was credited back on the way. Both now refuse a decision that disagrees with
-  the one already there. Re-sending the same decision still works, because a
-  second tap, a phone catching up after no signal and a retry after a partial
-  sweep all look like that, and somebody standing over a pill box hits all
-  three.
-
-- A control could be tapped in the moment before the app knew whose record was
-  on screen, leaving somebody stranded in a form the server would refuse. The
-  capture sheet and the dashboard's quick-entry sheets now withdraw the form
-  when the answer arrives rather than standing on it, which is what the
-  measurements page and the medication wizard already did.
-
-- Recording a dose from the dashboard quick-add says which record it landed in
-  and no longer offers an Undo that only the owner may use.
-
-- The access-level options on the invitation screen are visible when reached by
-  keyboard. The radio itself is hidden by design and its label carried no focus
-  ring, so tabbing through the one screen where write access is granted moved
-  an invisible selection.
-
-- The customise link on the mood page no longer leads a delegate to a page that
-  tells them it is not part of what was shared.
+- On a server you run yourself, migrations run on start and there is nothing
+  to configure. Neither feature does anything until one account invites
+  another. The account-sharing page in the self-hosting guide is rewritten
+  for all of the above.
 
 ## [1.36.1] — 2026-08-04
 
 ### Added
 
-- Somebody you have given access to can now write into your record, not only
-  read it. The point of sharing a record is usually that another person is
+- **Somebody you have given access to can now write into your record, not
+  only read it.** Usually the point of sharing is that another person is
   doing something about it: a partner logging the blood pressure they just
   took, someone recording that the evening dose went down. Read-only access
   made them watch that happen and then ask you to type it in.
 
-  A grant now carries a level. Read access is exactly what it was. Write access
-  admits a short, closed list of things a second person may add: a reading, a
-  lab result, a biomarker to the catalogue, an illness entry, a value on a
-  metric you track yourself, a side effect against a drug, a medication, and
-  marking a dose taken or skipped. It admits nothing else. Editing, deleting,
-  restoring and importing stay with you, including on an entry the other person
-  added a minute ago.
+  A grant carries a level now. Read access is exactly what it was. Write
+  access admits a short, closed list of things a second person may add: a
+  reading, a lab result, a biomarker to the catalogue, an illness entry, a
+  value on a metric you track yourself, a side effect against a drug, a
+  medication, and marking a dose taken or skipped. Editing, deleting,
+  restoring and importing stay with you, including on an entry the other
+  person added a minute ago.
 
-  Every entry a delegate makes is stored as yours, because it is a fact about
-  your body and belongs in your record whoever wrote it down. Who wrote it is
-  in the trail rather than in the row, so the record reads the same either way
-  and the question "who put this here" still has an answer months later.
+  Every entry the other person makes is stored as yours, because it is a
+  fact about your body and belongs in your record whoever wrote it down. Who
+  wrote it is in the activity trail, so "who put this here" still has an
+  answer months later. The access panel gained a feed of what has been
+  contributed, and you are told when somebody marks one of your doses.
 
-  The access panel gained a feed of what has actually been contributed, and you
-  are told when somebody marks one of your doses.
-
-- A control the record refuses is now simply absent rather than present and
-  broken. Before this, a delegate opened a page inside somebody else's record,
-  saw the button, filled the form, and was refused by the server. Nothing
-  leaked, because the refusal was right. It still taught them the product was
-  broken. A greyed-out button says "this exists and does not work for you"; a
-  control that is not there says "this is not part of what you were given",
-  which is the truth.
-
+- **A control the record will not accept is now absent rather than present
+  and broken.** Before, someone opened a page inside your record, saw the
+  button, filled the form, and the server said no. Nothing leaked, but it
+  taught them the product was broken. A control that is not there says "this
+  is not part of what you were given", which is the truth.
 - An invitation can name the day the access lapses, set when it is sent.
 
 ### Fixed
 
-- The first page a delegate landed on was the worst page in the feature. Ten
-  requests behind the dashboard refused, so the tile strip had no numbers and
-  the hero rendered an error card, while every feature page underneath worked
-  perfectly. Each of those ten has been decided rather than waved through: eight
-  read the record, and the two that describe the person reading the screen — the
-  interface language and the deployment's own switches — keep answering about
-  them.
-
-- The dashboard drew blood-pressure targets, the weight range and every shaded
-  band on a chart from the date of birth, sex and height of whoever was looking
-  rather than whose record was open. Inside somebody else's record that meant a
-  stranger's reference ranges painted over their readings, and because the page
-  could not load the record's own bands it stayed that way for the whole visit.
-
-- Deleting a medication's dose history removed the rows outright. A mis-tap was
-  final, and a phone that was offline at the time kept every deleted dose
-  forever, because a row that no longer exists has nothing to tell anyone about.
-  The history is now retired the way every other deletion in the app already
+- **The first page someone with access landed on was the worst page in the
+  feature.** Most of the requests behind the dashboard were turned down
+  inside somebody else's record, so the tile strip had no numbers and the
+  top card showed an error while every page underneath worked. They answer
+  now, except the ones that describe the person reading the screen, such as
+  the interface language, which keep answering about you.
+- **The reference ranges were the wrong person's.** The dashboard drew
+  blood-pressure targets, the weight range and every shaded band on a chart
+  from the date of birth, sex and height of whoever was looking rather than
+  whose record was open, so a stranger's ranges were painted over their
+  readings for the whole visit. It uses the record's own now. The BMI chart
+  had the same problem, dividing their weights by your height; it draws
+  nothing there now rather than a number belonging to two different people.
+- Deleting a medication's dose history removed the rows outright. A mis-tap
+  was final, and a phone that was offline at the time kept every deleted
+  dose forever, because a row that no longer exists has nothing to tell
+  anyone. The history is retired now the way every other deletion in the app
   works.
-
-- Recording a side effect against a medication and then restoring from a backup
-  lost it. The rows travel with their medication now, and a round trip through
-  the real backup and the real restore proves it rather than a list asserting it.
-
-- Adding water by hand and undoing a deleted lab result both wrote health data
-  and left no durable record of who did it. Both write one now, like every
-  neighbouring action.
-
-- The activity feed showed a blank line when a delegate marked a dose, because
-  the sentence was keyed on a name the route does not use.
-
-- Marking a dose and deferring a reminder went through the same request, so
-  somebody with write access could postpone one of your medication reminders
-  rather than only record a dose. There was no upper bound on how far, you were
-  not told, and the activity feed described it as marking a dose. Deferring a
-  reminder is yours alone now, and so is changing a dose you already recorded.
-
-- Inside somebody else's record the BMI chart divided their weights by the
-  height of whoever was looking. It draws nothing there now rather than a
-  number belonging to two different people.
+- Recording a side effect against a medication and then restoring from a
+  backup lost it. Side effects travel with their medication now.
+- Adding water by hand and undoing a deleted lab result both wrote health
+  data and left no durable record of who did it. Both leave one now, like
+  every neighbouring action, and the activity feed names the action when
+  someone with access marks a dose instead of showing a blank line.
+- Marking a dose and postponing a reminder went through the same request, so
+  somebody with write access could postpone one of your medication
+  reminders, with no upper bound and without you being told, and the
+  activity feed called it marking a dose. Postponing a reminder is yours
+  alone now, and so is changing a dose you already recorded.
 
 ### Internal
 
-- Three high-severity advisories on the outbound HTTP path, published after the
-  last release, are closed. One of them is in the client that backs the
-  application's single documented egress boundary, so the dispatcher's own suite
-  was re-run against the new version rather than assumed.
-
-- A journey test clicked a menu after waiting for the network to go quiet, which
-  is not the same as waiting for the page to become interactive. The click
-  landed on markup the browser had not wired up yet and was lost, and the test
-  then spent thirty seconds waiting for a menu that was never going to open. It
-  waits for the control to report itself open now.
+- For anyone self-hosting, the library the server uses for outgoing requests
+  moves past high-severity advisories published since the last release, and
+  the notification senders were run against the new version rather than
+  assumed to work.
 
 ## [1.36.0] — 2026-08-02
 
 ### Added
 
-- You can give another account read access to your record. @balajiv113 asked for
-  a way to look after a family member's record in #360, and this is the shape it
-  took: everyone keeps their own account, their own password, their own second
-  factor. Sharing is a grant from one account to another, and it is only ever a
-  grant. Nobody logs in as anybody.
+- **You can give another account read access to your record.** @balajiv113
+  asked for a way to look after a family member's record in #360, and this
+  is the shape it took: everyone keeps their own account, their own
+  password, their own second factor. Nobody logs in as anybody.
 
-  The owner sends an invitation and it confers nothing until the other person
-  accepts. Either side can end it at any time, and it ends on the delegate's very
-  next request rather than at their next login. An invitation can also carry a
-  date it lapses on, checked live, so access that was meant to be temporary does
-  not quietly become permanent because nobody remembered.
+  The owner sends an invitation, and it opens nothing until the other person
+  accepts. Either side can end it at any time, and it ends on the other
+  person's very next request rather than at their next sign-in. An
+  invitation can also carry a date it lapses on, so access that was meant to
+  be temporary does not quietly become permanent because nobody remembered.
 
-  While you are inside somebody else's record the whole application says so.
-  There is a strip across the top naming whose record you are reading, the
-  navigation drops what does not belong to them, and everything that would let a
-  delegate widen their own reach is simply not there: no credentials, no
-  integrations, no notification channels, no ability to hand the access on. Read
-  access is read access, and the server refuses a write under one regardless of
-  what the screen offers.
+- **While you are looking at somebody else's record the whole app says so,
+  and it opens that record and nothing else.** A strip across the top names
+  whose record you are reading, and the navigation drops what does not
+  belong to them. Every write, and everything around the account, is turned
+  down by the server rather than merely hidden from the screen: credentials,
+  integrations, notification channels, share links, and handing the access
+  on. A few reads that look harmless stay closed too, because they sit next
+  to something that would widen access.
 
-  The owner can see what the access is being used for. A panel lists who has
-  access, when they accepted, when they last opened the record, and a day by day
-  view of which days somebody else was in it.
+  Two of those limits are permanent rather than pending. Someone you gave
+  access to can never create a clinician share link, because that would be a
+  door surviving their own revocation, and can never reach anything that
+  would widen their own access.
 
-- The grant row is also the consent record. One row carries who offered the
-  access, who accepted and when, when it lapses, when it was last used, and who
-  ended it. Revoking stamps the row rather than deleting it, so the history of
-  who had access and between which dates survives the access itself.
+- **The owner can see what the access is being used for.** A panel lists who
+  has access, when they accepted, when they last opened the record, and
+  which days somebody else was in it. The invitation is also the consent
+  record: who offered the access, who accepted and when, when it lapses,
+  when it was last used, and who ended it. Revoking marks it rather than
+  deleting it, so the history of who had access between which dates survives
+  the access itself. The address the other person accepted from is not
+  stored; a consent record has to say who and when, and where adds nothing.
 
 ### Fixed
 
-- A backup with a symptom key this instance no longer recognises now restores.
-  It used to fail the whole file over one retired key, so a single renamed entry
-  cost the entire account. The unresolvable link is dropped, and the restore says
-  exactly which keys it dropped and how many entries each one cost, rather than
-  quietly losing them or refusing everything.
-
-- The About page said the project is licensed under the GNU Affero General Public
-  License. It has been PolyForm Noncommercial 1.0.0 since v1.15.19, which the same
-  page's own footer said correctly. It also described the GeoLite2 terms as
-  CC BY-SA 4.0 alone; those databases ship under MaxMind's own end user licence,
-  which incorporates CC BY-SA 4.0 and takes precedence where the two disagree.
-  Both are now named.
+- **A backup holding a symptom name this instance no longer recognises now
+  restores.** It used to refuse the whole file over one retired name, so a
+  single renamed entry cost the entire account. The entry that cannot be
+  matched is dropped, and the restore says which names it dropped and how
+  many entries each one cost, rather than quietly losing them or refusing
+  everything.
+- The About page said the project is licensed under the GNU Affero General
+  Public License. It has been PolyForm Noncommercial 1.0.0 since v1.15.19,
+  as the same page's footer said correctly. It also described the GeoLite2
+  terms as CC BY-SA 4.0 alone; those databases ship under MaxMind's own end
+  user licence, which incorporates CC BY-SA 4.0 and takes precedence where
+  the two disagree. Both are named now.
+- The line under the top bar and the line under the sidebar header came
+  apart whenever a banner was showing, because the banners sat inside the
+  content column while the sidebar is beside it. The banners span the window
+  now, so both lines start below them.
+- Chart cards on the dashboard and in Insights titled themselves one heading
+  level below where they sit, so a screen reader walking the page heard the
+  level jump. They sit at the right level now.
 
 ### Internal
 
-- The line under the top bar and the line under the sidebar header come apart
-  whenever a banner is showing. They are meant to form one continuous seam across
-  the window; a stack of banners pushed one of them down by as much as 184 pixels,
-  because the banners sat inside the content column while the sidebar is beside it.
-  The banners now span the window, so both bands start below them.
-
-- Chart cards on the dashboard and in Insights titled themselves one heading level
-  below where they sit. Their neighbours in the same grid already titled themselves
-  correctly, and nothing contained the difference, so a screen reader walking the
-  page heard the level jump. For an account with no daily summary the page went
-  straight from its title to a chart card with nothing in between.
-
-- Several accessibility checks looked at pages that had not finished arriving and
-  reported problems the app does not have. One of them waited for a heading and
-  then checked that the heading exists, which is a check that could never fail.
-  They wait for real content now, and separately, the dashboard's chart cards were
-  outside the accessibility tree until they finished revealing, so nothing had been
-  checking them at all.
-
-- Fourteen checks that compare the source tree against a frozen list were walking
-  it with a pattern that never matches a directory beginning with a dot. Three
-  live routes under `.well-known`, including both discovery documents the machine
-  interface publishes, sat outside all fourteen while every one reported success.
-  They now share one walker, and that walker refuses to run if it finds
-  implausibly few files, because a sweep that finds nothing agrees with a list
-  that contains nothing.
-
-- The address a delegate accepted an invitation from is no longer stored. A
-  consent record has to say who and when, and this one does. Where adds nothing
-  and would have been kept for as long as both accounts exist.
-
-- Local development worktrees were excluded from git, the linter and the test
-  runner under a directory name that is no longer the one in use, so all three
-  were walking eleven copies of the source tree. Linting took ten minutes and
-  reported findings from unrelated commits.
-
-- The backup and restore runbook now states what a backup deliberately does not
-  carry, and what that means depending on whether you restore onto the same
-  instance or a fresh one.
-
-### What a delegate can and cannot reach
-
-Forty-four read routes serve a shared record. Every one of them was reviewed
-against five questions before it was admitted, and a route that could not answer
-all five stayed out. Of a hundred and twenty candidates, seventy-six did. Four
-that look harmless are among the refusals: one returns two numbers and no secret
-but shares a file with the endpoint that mints an ingest token, one differs from
-the list beside it by a single conditional paragraph about the owner, one reads
-as pure vocabulary and quietly pulls a layout preference, and three return a
-timestamp that doubles as the write credential for the same path.
-
-Nothing else. Every write in those same files, and every route that was not
-admitted, refuses outright while somebody is inside another record. Credentials,
-integrations, notification channels, share links and grant management are not
-merely hidden from the screen; the server will not serve them.
-
-Two of the refusals are worth naming because they are permanent rather than
-pending. A delegate cannot mint a clinician share link, because that would be a
-door surviving their own revocation. And a delegate cannot reach anything that
-would widen their own access, which is the property the whole feature rests on.
+- The backup and restore runbook now says what a backup does not carry, and
+  what that means depending on whether you restore onto the same instance or
+  a fresh one.
 
 ## [1.35.6] — 2026-08-02
 
 ### Fixed
 
-- The line under the top bar and the line under the sidebar header now meet.
-  They were one pixel apart, because the two carried the same height but painted
-  their border on different elements. Both now take height and border from one
-  place, so they cannot come apart again without a check failing.
+- **The line under the top bar and the line under the sidebar header now
+  meet.** They were one pixel apart, because the two carried the same height
+  but painted their border on different elements. Both take height and
+  border from one place now, so they cannot come apart again. Still open, if
+  you host this with an offline, demo or unmaintained-language banner
+  showing: those banners push the top bar's line down without moving the
+  sidebar's, which needs the page shell rearranged rather than the bars
+  adjusted.
 
 ### Internal
 
-- A resolver that worked out a headline verdict for the dashboard is gone. Its
-  consumer was removed a while ago and it was never wired to anything else, so
-  it had been computing an answer nobody read. Every signal it covered already
-  has a live owner elsewhere.
-- Two waits in the browser-test helper could never time out, which turned a
-  stalled asset into a confusing error at the following step instead of a clear
-  one at the stall. They are bounded now.
-- A browser check waited for a marker that the loading placeholders also carry,
-  so it could inspect a page that had not finished arriving and report a problem
-  that was not there. It waits for real content now.
+- A piece of code that worked out a headline verdict for the dashboard is
+  gone. What read it was removed a while ago and nothing else was ever
+  connected to it, so it had been computing an answer nobody read. Every
+  signal it covered already has a live owner elsewhere.
 
 ## [1.35.5] — 2026-08-02
 
 ### Fixed
 
-- Cycle reminders no longer depend on whether you happened to open the calendar.
-  The prediction a reminder is sent from was written only while that page was
-  being viewed, so an account that never opened it had nothing for the reminder
-  job to read. The prediction is now refreshed nightly for every account that
-  tracks a cycle, whether or not anyone looks at the page.
-- A failed prediction write is no longer silent. It used to be discarded, so
-  nothing anywhere recorded that it had not happened.
-- The sync handshake no longer marks an account as synced. Asking the server
-  where to resume is not the same as sending anything, and treating it as a sync
-  moved the resume point past data the app had not fetched yet. The mark is now
-  set by the three paths that actually receive data, so it can only trail a real
-  sync rather than run ahead of one.
-- Badges are awarded whether or not you open the app. The date a badge was
-  earned was recorded only when the achievements screen was loaded, so an
-  account that earned one and did not look never had it written down, and the
-  date is the part that cannot be reconstructed later. A nightly pass now
-  records it, using the date it was actually earned rather than the date it was
-  noticed.
+- **Cycle reminders no longer depend on whether you happened to open the
+  calendar.** The prediction a reminder is sent from was written only while
+  that page was being viewed, so an account that never opened it had nothing
+  for the reminder job to read. The prediction is refreshed nightly now for
+  every account that tracks a cycle, whether or not anyone looks at the
+  page. A prediction that fails to save is no longer discarded in silence
+  either.
+- **The sync handshake no longer marks an account as synced.** Asking the
+  server where to resume is not the same as sending anything, and treating
+  it as a sync moved the resume point past data the app had not fetched yet.
+  The mark is set only by the paths that actually receive data now, so it
+  can only trail a real sync rather than run ahead of one.
+- **Badges are recorded whether or not you open the app.** The date a badge
+  was earned was written only when the achievements screen was loaded, so an
+  account that earned one and did not look never had it written down, and
+  the date is the part that cannot be worked out again later. A nightly pass
+  records it now, with the date it was actually earned rather than the date
+  it was noticed.
 
 ### Internal
 
-- Three read endpoints no longer write. A read that writes widens what a
-  read-only credential can reach, which the code says plainly at the place the
-  rule is enforced, and it had drifted at three routes. A check now watches
-  those three.
+- Three reads no longer write. A read that writes widens what a read-only
+  token can reach. One such read stays for now: opening the cycle pages
+  creates a cycle profile for an account that has none.
 
 ## [1.35.4] — 2026-08-02
 
 ### Fixed
 
-- A checkup due later today is no longer described as overdue. Two places
-  counted the distance to a checkup in hours and rounded, which is a different
-  question from how many calendar days away it is. On a Friday evening,
-  something due Saturday morning is fourteen hours away and something due Sunday
-  morning is thirty-eight, and rounding turned both into tomorrow. Both now
-  count calendar days in the timezone on your profile.
-- The assistant and the screen beside it now agree about when a checkup is due.
-  The list the assistant reads flipped to overdue the moment the clock time
-  passed, while the page still said today until midnight. One appointment could
-  produce two different answers depending on which one you asked.
+- **A checkup due later today is no longer described as overdue.** Two
+  places counted the distance to a checkup in hours and rounded, which is a
+  different question from how many calendar days away it is. On a Friday
+  evening, a checkup on Saturday morning and one on Sunday morning both
+  rounded to tomorrow. Both count calendar days now, in the timezone on your
+  profile.
+- **The assistant and the screen beside it agree about when a checkup is
+  due.** The list the assistant reads flipped to overdue the moment the
+  clock time passed, while the page still said today until midnight. One
+  appointment could produce two different answers depending on which one you
+  asked.
 
 ### Internal
 
-- The set of places that can work out who is calling is now frozen by a check.
-  It covers surfaces that read a session and surfaces that authenticate by a
-  credential in the address rather than a session, which no earlier check
-  watched at all. Adding one now fails the check until it is listed with a
-  reason.
-- One place that turns an access token into an account was outside the previous
-  check's reach, because the check looked for a phrase the file happens to write
-  across two lines. It matched nothing and reported success. It now tolerates
-  the formatting and fails when it finds nothing to match, so an empty result
-  can no longer read as a pass.
-- Test fixtures that stated the score version by hand now read it from the same
-  place the application does, so a future change to it cannot leave them behind.
+- The places in the server that work out who is calling are one fixed list,
+  including the ones that identify a caller by a credential in the address
+  rather than a login. A new one cannot be added without being listed with a
+  reason, and the one that turns an access token into an account had been
+  missing from it.
 
 ## [1.35.3] — 2026-08-01
 
 ### Added
 
-- Apple Watch ECG recordings can now be sent directly by the iOS app, through a
-  new endpoint at `POST /api/insights/ecg`, instead of only arriving inside an
-  export archive. One recording travels per request, and the endpoint is gated
-  by the same module and status switches that already govern reading ECGs, so an
-  account with the surface switched off is unaffected.
+- **Apple Watch ECG recordings can be sent directly by the phone app** now
+  instead of only arriving inside an export archive, so a strip you recorded
+  this morning no longer waits for your next export. For anyone writing
+  against the API, that is one recording per request at
+  `POST /api/insights/ecg`, behind the same module and status switches that
+  already govern reading ECGs, so an account with ECGs switched off is
+  unaffected. The limits are 32768 samples, a 2 MB body and 60 recordings a
+  minute, and an unknown field in the body is rejected by name rather than
+  ignored.
 
 ### Changed
 
-- A recording carries its own identity, so sending the same one again resolves
-  to the same record. A strip that arrives once inside an export archive and
-  again from the app ends up as a single entry rather than a duplicate or an
-  error.
+- A recording carries its own identity, so sending the same one twice ends
+  up as the same entry rather than a duplicate or an error, and a retry
+  after a dropped connection is safe.
 
 ### Fixed
 
-- A page no longer grows a second scrollbar for the moment between appearing and
-  becoming interactive. Every screen with a toggle briefly rendered a hidden form
-  control that sat outside the scrolling area, so the whole document became
-  scrollable to roughly twice the height of the screen until the page finished
-  loading. On a slow connection or a busy device the window was long enough to
-  flick past the end of a settings page and land on nothing. The scrolling area
-  now contains its own children, which closes the whole class rather than the one
-  page it was noticed on.
+- **A page no longer grows a second scrollbar** for the moment between
+  appearing and becoming usable. Every screen with a toggle briefly drew a
+  hidden form control outside the scrolling area, so the whole window became
+  scrollable to about twice the height of the screen until the page finished
+  loading. On a slow connection or a busy phone the moment was long enough
+  to flick past the end of a settings page and land on nothing. It is fixed
+  for every page at once rather than the one it was noticed on.
 
 ### Migration
 
-- This release removes duplicate ECG recordings. An existing database can hold
-  more than one row for the same recording, because the export archive and a
-  live client name the same strip differently. A uniqueness rule now prevents
-  that, and the migration resolves what is already stored before applying it.
-  Where two rows describe the same recording, it keeps the one holding the actual
-  waveform over one holding only a verdict, and it carries a removed row's link
-  to its rhythm event onto the row that is kept, so resolving a duplicate never
-  costs the recording its place in the timeline. Rows that lose are deleted, and
-  they cannot be recovered. Back up the database before deploying if that matters
-  for your instance.
+- **Back up before you update if your server has ECG recordings stored.**
+  Your database can hold more than one row for the same recording,
+  because an export archive and the app name the same strip differently. A
+  rule now prevents that, and the migration resolves what is already stored
+  before applying it. Where two rows describe the same recording it keeps
+  the one holding the curve over one holding only a verdict, and it carries
+  the removed row's link to its rhythm event across so the recording keeps
+  its place in the timeline. The rows that lose are deleted and cannot be
+  recovered. The migration runs on boot; if it fails, the container stops
+  with the migration named in the log and never serves traffic.
 
 ## [1.35.2] — 2026-08-01
 
 ### Added
 
-- The cycle ring now reads its verdict from the server: which day of the cycle
-  you are on, how many days until the next one is expected, and whether a period
-  is late, with the number of days. Both clients read the same answer instead of
-  each working one out.
+- **The cycle ring gets its verdict from the server:** which day of the
+  cycle you are on, when the next period is expected, and whether one is
+  late and by how many days. The web app and the phone app each worked it
+  out from the raw dates and did not always agree. There is one answer now,
+  and both show it.
 
 ### Changed
 
-- The Health Score turns green at 70, the same threshold the readiness and sleep
-  scores already used. A weak pillar still holds the band down no matter how good
-  the average is, so a single poor area cannot be averaged out of sight.
-- The score settings page was rebuilt to match the other settings cards: one
-  reading edge, no separator lines, the save button where the other cards keep it.
-- The Fitness pillar is gone. It could never produce a value, because the record
-  cannot tell a measured fitness test from a device estimate, so it was offering a
-  choice that did nothing.
-- The arrival line under the greeting is gone. It never said what had arrived.
+- **Green on the Health Score starts at 70,** the same threshold the
+  readiness and sleep scores already used. A weak area still holds the band
+  down whatever the average says, so one poor pillar cannot hide behind good
+  ones.
+- **The Fitness pillar is gone.** It could never produce a value, because
+  the record cannot tell a measured fitness test from a device estimate and
+  the pillar would not score on an estimate. It was a switch that did
+  nothing.
+- The score settings page lines up with the other settings cards: same left
+  edge, no lines inside the card, and the save button where every other card
+  keeps it.
+- The line on the Today card saying that something had arrived, with a time
+  but never what, is gone.
 
 ### Fixed
 
-- A saved score selection now comes back exactly as it was sent. One pillar was
-  quietly stripped on the way to the server, so the page could never agree with
-  what it had saved and the save button stayed lit for good.
-- The cycle wheel follows the timezone on your profile rather than the one your
-  browser happens to be in.
+- A saved score selection comes back exactly as you sent it. One pillar was
+  dropped on the way to the server, so the page could never agree with what
+  it had just saved and the save button stayed lit as if there were unsaved
+  work.
+- The cycle ring follows the timezone on your profile instead of the one
+  your browser happens to be in, so the day of your cycle no longer shifts
+  when you travel.
 
-### Contract
+### API
 
-- Two share-link fields that were agreed for retirement are no longer served.
-- A conflict on a repeated request now returns its error the way every other
-  route does. One place in the whole codebase answered with a different shape.
-- Five gaps in the published specification are closed, including a route that
-  shipped with the score settings and was never described at all, and one that
-  had been promised for months.
+- The share-link fields announced for retirement are no longer served.
+- A repeated request that conflicts returns its error in the same shape as
+  every other route. One endpoint answered differently.
+- The score settings route, which shipped in the previous release without
+  being described at all, is in the API reference.
 
 ## [1.35.1] — 2026-08-01
 
@@ -2893,48 +2857,50 @@ to you.
 
 ## [1.34.5] — 2026-07-31
 
-A release about the score explaining itself, and about sentences arriving in the
-language you read.
+A release about the score explaining itself, and about sentences arriving in
+the language you read.
 
 ### Added
 
-- The health score sits beside the greeting again, at the top of the insights page,
-  instead of on a separate card pinned underneath it. It has one place on the page.
-- Every pillar inside the score takes its own colour. A pillar doing well was painted
-  in the overall score's colour, so a good result inside a weak week looked like a bad
-  one.
-- A blood pressure score says how it came about. The pillar's detail now opens with
-  which of the two values set the number and how far it sat from its boundary, what
-  the scale means at that boundary, and that the pair it works from is a weighted
-  average over the window rather than a reading anyone took.
+- The health score sits beside the greeting again, at the top of the
+  insights page, instead of on a separate card pinned underneath it. It has
+  one place on the page.
+- Every pillar inside the score takes its own colour. A pillar doing well
+  was painted in the overall score's colour, so a good result inside a weak
+  week looked like a bad one.
+- A blood pressure score says how it came about. The pillar's detail now
+  opens with which of the two values set the number and how far it sat from
+  its boundary, what the scale means at that boundary, and that the pair it
+  works from is a weighted average over the window rather than a reading
+  anyone took.
 
 ### Fixed
 
-- The Coach read strip writes both of its lines in the language you use. The summary
-  was translated and the line directly beneath it stayed English. The translations
-  existed the whole time. The request simply never named a language, and the code
-  behind it chose English whenever nobody did.
-- The cycle insights read carried the same silence and the same English line.
-- Switching language reloads those lines instead of showing the previous language out
-  of the browser cache.
-- Anything in the score that is not contributing is one quiet line instead of a block
-  of its own. A read that failed is named once for every pillar it took down and keeps
-  its retry. Safety guidance is shown in full. Anything not recorded yet is counted,
-  with the names one tap away.
+- The Coach read strip writes both of its lines in the language you use. The
+  summary was translated and the line directly beneath it stayed English.
+  The translations existed the whole time. The request simply never named a
+  language, and the code behind it chose English whenever nobody did.
+- The cycle insights read carried the same silence and the same English
+  line.
+- Switching language reloads those lines instead of showing the previous
+  language out of the browser cache.
+- Anything in the score that is not contributing is one quiet line instead
+  of a block of its own. A read that failed is named once for every pillar
+  it took down and keeps its retry. Safety guidance is shown in full.
+  Anything not recorded yet is counted, with the names one tap away.
 
 ### Internal
 
-- A function that writes a sentence for a person has to be told the language, and none
-  of them may fall back to English on their own. A guard reads the types rather than
-  the parameter names, so renaming the parameter or moving the default onto the
-  destructuring pattern does not get past it.
-- The space the score holds open while it loads is measured against the built panel
-  instead of estimated. The declared minimum was smaller than the blocks inside it, so
-  it never bound anything, and a short score was pushed further down the page than it
-  needed to be.
-- A widening of the pillar label column was taken back out. The measurement behind it
-  did not hold: the longest label in five of the six languages overruns any column
-  this panel can afford, so the extra width would have come off the bar.
+- A function that writes a sentence for a person has to be told the
+  language, and none of them may fall back to English on their own.
+- The space the score holds open while it loads is measured against the
+  built panel instead of estimated. The declared minimum was smaller than
+  the blocks inside it, so it never bound anything, and a short score was
+  pushed further down the page than it needed to be.
+- A widening of the pillar label column was taken back out. The measurement
+  behind it did not hold: the longest label in five of the six languages
+  overruns any column this panel can afford, so the extra width would have
+  come off the bar.
 
 ## [1.34.4] — 2026-07-31
 
@@ -2942,47 +2908,49 @@ A release about two places in the code answering one question differently.
 
 ### Added
 
-- An inferred nap is now shown as its own band in the sleep stage view instead of
-  being blended into that night. A nap used to be counted into the night's stages,
-  so a day with a long afternoon sleep read as a longer and shallower night than
-  it was. Nights without a nap look exactly as they did, with no empty band and no
-  legend entry for something that is not there.
+- An inferred nap is now shown as its own band in the sleep stage view
+  instead of being blended into that night. A nap used to be counted into
+  the night's stages, so a day with a long afternoon sleep read as a longer
+  and shallower night than it was. Nights without a nap look exactly as they
+  did, with no empty band and no legend entry for something that is not
+  there.
 
 ### Fixed
 
-- A checkup that is due tomorrow says tomorrow. The dashboard card worked its due
-  line out in rolling 24-hour steps while the checkups page used calendar days, so
-  the same appointment could read as due tomorrow on one screen and in two days on
-  the other. Both now read one shared rule.
-- The due line and the date printed beside it are worked out on the same clock.
-  One used the device's timezone and the other the profile's, which disagree by a
-  day for anyone travelling or on a machine set to another zone.
-- Recording something no longer takes minutes to appear on the home page. The page
-  render and the API were each holding their own copy of the server cache, so a
-  write emptied one and left the other serving the state from before it. They now
-  share one.
-- Returning to the dashboard no longer answers a refresh with a reading fetched
-  before your last entry.
+- A checkup that is due tomorrow says tomorrow. The dashboard card worked
+  its due line out in rolling 24-hour steps while the checkups page used
+  calendar days, so the same appointment could read as due tomorrow on one
+  screen and in two days on the other. Both now read one shared rule.
+- The due line and the date printed beside it are worked out on the same
+  clock. One used the device's timezone and the other the profile's, which
+  disagree by a day for anyone travelling or on a machine set to another
+  zone.
+- Recording something no longer takes minutes to appear on the home page.
+  The page render and the API were each holding their own copy of the server
+  cache, so a write emptied one and left the other serving the state from
+  before it. They now share one.
+- Returning to the dashboard no longer answers a refresh with a reading
+  fetched before your last entry.
 - The onboarding profile step says when the server could not accept a field.
-  Valid answers are kept, rejected ones are named, and if nothing could be saved
-  the message says which field blocked it.
-- A cycle symptom's intensity survives a backup and restore. It was recorded and
-  shown, and every export quietly dropped it. Older backup files still restore,
-  with the intensity honestly absent rather than filled in with a zero.
+  Valid answers are kept, rejected ones are named, and if nothing could be
+  saved the message says which field blocked it.
+- A cycle symptom's intensity survives a backup and restore. It was recorded
+  and shown, and every export quietly dropped it. Older backup files still
+  restore, with the intensity honestly absent rather than filled in with a
+  zero.
 
 ### Removed
 
-- The Health-Score explainer switch in the operator settings. It promised a control
-  that was deliberately removed two releases ago, so it had been switching nothing
-  for months.
+- The Health-Score explainer switch in the operator settings. It promised a
+  control that was deliberately removed two releases ago, so it had been
+  switching nothing for months.
 
 ### Internal
 
-- The sleep composition and the single-night view now agree about which session is
-  the night, because they ask the same function rather than each deciding.
-- A test that was meant to prove a dose taken before midnight stops reminding could
-  not fail: the stand-in for the database ignored the time window it was asked for.
-  It now honours it, and both directions are pinned, so a genuinely missed dose
+- The sleep composition and the single-night view now agree about which
+  session is the night, because they ask the same function rather than each
+  deciding.
+- A dose taken before midnight stops reminding, and a genuinely missed dose
   still escalates.
 
 ## [1.34.3] — 2026-07-31
@@ -3125,136 +3093,133 @@ Security and reliability point release.
 
 Two things this release keeps saying to itself. A job, a sync, or a write
 that fails can no longer report success by falling off the end of a
-function. And a number the app grades you against is either yours or it
-says plainly that it is not.
+function. And a number the app grades you against is either yours or it says
+plainly that it is not.
 
 ### A failure now looks like a failure
 
 Every background job in this codebase, all 104 of them across five queues,
-used to signal success by returning nothing. A handler that caught an
-error, logged a warning, and returned was indistinguishable from one that
-finished its work, so a queue could fail quietly for as long as it liked.
-Every handler now has to construct and return the outcome of what it did,
-and the type system enforces it: a handler that falls off the end no
-longer compiles. Retry behaviour was reviewed queue by queue rather than
-flipped in bulk, because a rethrow changes what runs, not only what shows
-up on a screen.
+used to signal success by returning nothing. A handler that caught an error,
+logged a warning, and returned was indistinguishable from one that finished
+its work, so a queue could fail quietly for as long as it liked. Every
+handler now has to construct and return the outcome of what it did, and the
+type system enforces it: a handler that falls off the end no longer
+compiles. Retry behaviour was reviewed queue by queue rather than flipped in
+bulk, because a rethrow changes what runs, not only what shows up on a
+screen.
 
-The same fix reached the surfaces you actually watch. Six integration
-cards and the lab import dialog used to key their tone off whether the
-network call itself succeeded, so a sync that imported nothing because
-every reading was refused still rendered a green tick, and a re-scan
-where every row turned out to be a duplicate raised a success toast for
-zero saved readings. They now render the outcome the server actually
-resolved: a tick only when everything landed, a warning when part of it
-did not, an error when none of it did.
+The same fix reached the surfaces you actually watch. Six integration cards
+and the lab import dialog used to key their tone off whether the network
+call itself succeeded, so a sync that imported nothing because every reading
+was refused still rendered a green tick, and a re-scan where every row
+turned out to be a duplicate raised a success toast for zero saved readings.
+They now render the outcome the server actually resolved: a tick only when
+everything landed, a warning when part of it did not, an error when none of
+it did.
 
 ### Grading you against your own numbers
 
 The Health Score graded your weight against a target nobody set, silently
-computed from your height and never shown anywhere. If you had entered
-your own weight target on the targets page, the score ignored it. Both
-the targets page and the score now read the same target you actually
-set, and an account with no target of its own gets a plain trend reading
-instead of a number graded against a hidden goal. The score's weight row
-now says outright which of the two it used.
+computed from your height and never shown anywhere. If you had entered your
+own weight target on the targets page, the score ignored it. Both the
+targets page and the score now read the same target you actually set, and an
+account with no target of its own gets a plain trend reading instead of a
+number graded against a hidden goal. The score's weight row now says
+outright which of the two it used.
 
-The Health Score itself is rebuilt on the same coverage-and-provenance
-contract the rest of the app's derived metrics already use. Every pillar
-now says what went into it and what did not, weights redistribute openly
-when a pillar has nothing to grade instead of quietly changing what the
-number means, and the card explains itself the way the other Insights
-cards do. Because both of these changes move the same number, they are
-explained once: the score carries a version marker, and the first delta
-you see after updating is suppressed rather than reported as a real
+The Health Score itself is rebuilt on the same rules about coverage and
+where a value came from that the rest of the app's derived metrics already
+use. Every pillar now says what went into it and what did not, weights
+redistribute openly when a pillar has nothing to grade instead of quietly
+changing what the number means, and the card explains itself the way the
+other Insights cards do. Because both of these changes move the same number,
+they are explained once: the score carries a version marker, and the first
+delta you see after updating is suppressed rather than reported as a real
 day-to-day change, with a note on the card saying why.
 
 Steps, active energy, distance, and flights now compare today's running
-total against what is typical for you at this same hour, not just
-against your latest reading, which never meant anything for a metric
-that only makes sense as a full day. It needs at least two weeks of your
-own history before it says anything, and until then it says so honestly
-instead of guessing from three days of data.
+total against what is typical for you at this same hour, not just against
+your latest reading, which never meant anything for a metric that only makes
+sense as a full day. It needs at least two weeks of your own history before
+it says anything, and until then it says so honestly instead of guessing
+from three days of data.
 
 ### What was asked for, and built
 
 An account-defined custom metric can now feed the same correlation engine
 your built-in metrics already run through, so a value nothing else in the
-app tracks can be checked against your own outcomes rather than sitting
-in its own silo. Caffeine and nicotine join alcohol as taggable factors in
-that same engine. A correlation or crosstab finding can be dismissed once
-it has been looked at, and stays dismissed instead of recomputing itself
-back into view on every run.
+app tracks can be checked against your own outcomes rather than sitting in
+its own silo. Caffeine and nicotine join alcohol as taggable factors in that
+same engine. A correlation or crosstab finding can be dismissed once it has
+been looked at, and stays dismissed instead of recomputing itself back into
+view on every run.
 
 Three facts about you, smoking status, alcohol pattern, and shift or
 rotating-schedule work, can now be recorded as dated, correctable entries
 rather than buried in free text, with their own switch for whether they
 reach the Coach's prompt at all.
 
-The "worth a look" rail on the dashboard can now be trimmed to the kinds
-of item you actually want to see there. Turning a tile off there only
-hides it; it does not touch the medication reminder itself, which keeps
-firing on its own channel regardless of what the hero card shows.
+The "worth a look" rail on the dashboard can now be trimmed to the kinds of
+item you actually want to see there. Turning a tile off there only hides it;
+it does not touch the medication reminder itself, which keeps firing on its
+own channel regardless of what the hero card shows.
 
 ### Two defects, found by people who read the code and the numbers
 
 A workout synced from Google Health with a sport type the app's mapping
-table did not recognise lost that type outright and rendered as
-"Other," identical to a workout that genuinely had no category. The
-original label is now kept on the row, the same way three other
-providers already keep theirs; a full re-sync repairs workouts already
-written under the old behaviour.
+table did not recognise lost that type outright and rendered as "Other,"
+identical to a workout that genuinely had no category. The original label is
+now kept on the row, the same way three other providers already keep theirs;
+a full re-sync repairs workouts already written under the old behaviour.
 
-A same-time baseline band for a metric that cannot go negative, such as
-step count, could report a lower edge below zero. One call site is now
-required to name which metric it is drawing a band for, so the floor
-comes from that metric's own declared range rather than being patched in
-by hand at each caller.
+A same-time baseline band for a metric that cannot go negative, such as step
+count, could report a lower edge below zero. One call site is now required
+to name which metric it is drawing a band for, so the floor comes from that
+metric's own declared range rather than being patched in by hand at each
+caller.
 
 **Reminders for a multi-dose schedule stopped matching the dose they were
 meant for.** The reminder tick computed one window length for a whole
-schedule and applied it to every time slot in it, so a twice-daily
-schedule gave its first dose a ten-hour grace period nobody configured
-while a single-dose schedule with a narrow window escalated correctly but
-then had almost no room to register a dose logged late. Each slot now
-resolves its own window: an explicit per-dose override first, then the
-schedule's own grace setting, then the same default every other
-unconfigured dose gets, bounded so two doses in one day can never share a
-window.
+schedule and applied it to every time slot in it, so a twice-daily schedule
+gave its first dose a ten-hour grace period nobody configured while a
+single-dose schedule with a narrow window escalated correctly but then had
+almost no room to register a dose logged late. Each slot now resolves its
+own window: an explicit per-dose override first, then the schedule's own
+grace setting, then the same default every other unconfigured dose gets,
+bounded so two doses in one day can never share a window.
 
-A Fitbit workout kept only its canonical category and dropped the raw
-activity name and type id it arrived with, unlike every other provider
-this app syncs from. An unrecognised Fitbit activity had nothing left to
-diagnose it by. Both are now kept on the row, and carried through backup
-and restore the same way.
+A Fitbit workout kept only the category this app sorted it into and dropped
+the raw activity name and type id it arrived with, unlike every other
+provider this app syncs from. An unrecognised Fitbit activity had nothing
+left to diagnose it by. Both are now kept on the row, and carried through
+backup and restore the same way.
 
 ### The backup
 
 Your custom metrics and their readings, and the encrypted health-profile
-facts above, are now carried by export and restore. Neither was before;
-a restore silently rebuilt an account without either and reported
-success. The hourly shape behind the same-time baseline is also carried,
-because past a short grace window it is the only copy of that curve
-anywhere. And the summary shown after uploading a backup now counts every
-record class it restores, including the nutrient day totals it was
-quietly leaving out of its own total.
+facts above, are now carried by export and restore. Neither was before; a
+restore silently rebuilt an account without either and reported success. The
+hourly shape behind the same-time baseline is also carried, because past a
+short grace window it is the only copy of that curve anywhere. And the
+summary shown after uploading a backup now counts every record class it
+restores, including the nutrient day totals it was quietly leaving out of
+its own total.
 
 ### For operators
 
-Four migrations. `0283` adds the intraday cumulative profile table,
-`0284` adds the effective-dated health-profile fact table and its
-inclusion enum, `0285` adds correlation-pattern identity, `0286` seeds
-the caffeine and nicotine mood tags. None deletes or rewrites a
-measurement.
+Four migrations. `0283` adds the intraday cumulative profile table, `0284`
+adds the effective-dated health-profile fact table and its inclusion enum,
+`0285` adds correlation-pattern identity, `0286` seeds the caffeine and
+nicotine mood tags. None deletes or rewrites a measurement.
 
 ### Credit
 
 Reported by @lutzkind (#613, #614, #616, #617, #649, and a long run of
-earlier reports this release also carries forward). Reported by
-@tarantila, directly rather than on the tracker: the Google workout-type
-loss, and a below-zero baseline reading that turned out to affect
-other metrics once someone went looking. Built by @mathewcsims
-(Refs #662): the per-slot reminder window fix.
+earlier reports this release also carries forward). Reported by @tarantila,
+directly rather than on the tracker: the Google workout-type loss, and a
+below-zero baseline reading that turned out to affect other metrics once
+someone went looking. Built by @mathewcsims (Refs #662): the per-slot
+reminder window fix.
 
 ### Dedication
 
@@ -3262,32 +3227,30 @@ This release is dedicated to the people who reported something, asked for
 something, or noticed something and said so: @balajiv113, @ChaosExAnima,
 @doenke, @DrGithubble, @Flieger37, @k-nacion, @kevinpapst, @livelylinux,
 @lutzkind, @Manschk3rl, @mathewcsims, @muhdusama, @Nazza01, @nhemnt,
-@StefanIndustries, @TalesFromTheStack, @tarantila, @Uvenstedt, and
-@zet1200. None of you owe this project anything, and all of you gave it
-time anyway.
+@StefanIndustries, @TalesFromTheStack, @tarantila, @Uvenstedt, and @zet1200.
+None of you owe this project anything, and all of you gave it time anyway.
 
-@lutzkind gets a line of his own. Twenty-four issues so far, several of
-them arriving with the broken code path already traced, and a habit of
-pushing back on a design decision until it actually gets better. More
-than one feature in this release started as his idea, not mine, and I
-did not expect that from a project I built to track my own blood
-pressure.
+@lutzkind gets a line of his own. Twenty-four issues so far, several of them
+arriving with the broken code path already traced, and a habit of pushing
+back on a design decision until it actually gets better. More than one
+feature in this release started as his idea, not mine, and I did not expect
+that from a project I built to track my own blood pressure.
 
-@StefanIndustries was the first person to send this project money. What
-was sent stays between us; the amount was never the point. Deciding
-this was worth paying for, and saying so out loud, was not something I
-expected from a self-hosted app nobody asked me to charge for.
+@StefanIndustries was the first person to send this project money. What was
+sent stays between us; the amount was never the point. Deciding this was
+worth paying for, and saying so out loud, was not something I expected from
+a self-hosted app nobody asked me to charge for.
 
-This release carries a good part of what came out of that list, among
-other things a workout category that two providers were silently
-dropping, a below-zero reading nobody else had caught, and a reminder
-window that ignored half its own schedule. It does not carry all of it.
-What is still open stays open because it is waiting its turn, not
-because it got set aside.
+This release carries a good part of what came out of that list, among other
+things a workout category that two providers were silently dropping, a
+below-zero reading nobody else had caught, and a reminder window that
+ignored half its own schedule. It does not carry all of it. What is still
+open stays open because it is waiting its turn, not because it got set
+aside.
 
-More is welcome, from anyone: an idea, a rough thought about how
-something ought to work, a screenshot of a number that looks wrong.
-Especially the number that looks wrong.
+More is welcome, from anyone: an idea, a rough thought about how something
+ought to work, a screenshot of a number that looks wrong. Especially the
+number that looks wrong.
 
 ## [1.33.2] — 2026-07-28
 
@@ -3330,29 +3293,29 @@ app knew something and said something else.
 
 ### Two that change what you receive
 
-**Medication reminders arrived every fifteen minutes.** The rule that decides
-whether a reminder has already been sent was keyed on a ledger that could not
-tell one dose slot from another, so an overdue dose kept re-announcing itself
-for as long as it stayed overdue. One account was getting roughly fifty mails
-a day. A reminder now goes out once per dose, per escalation step, per local
-day, and two doses due at the same time no longer replace each other on the
-lock screen.
+**Medication reminders arrived every fifteen minutes.** The rule that
+decides whether a reminder has already been sent was keyed on a ledger that
+could not tell one dose slot from another, so an overdue dose kept
+re-announcing itself for as long as it stayed overdue. One account was
+getting roughly fifty mails a day. A reminder now goes out once per dose,
+per escalation step, per local day, and two doses due at the same time no
+longer replace each other on the lock screen.
 
-**"Handled by the app" now silences only the app.** The setting that lets the
-iOS client take over medication reminders was suppressing every channel, so
-switching it on quietly turned off Telegram, ntfy, webhooks, email and web
-push as well. That was never what it said it did. If you have been using it as
-a general mute, those channels will start delivering again, and the setting
-does what its name says.
+**"Handled by the app" now silences only the app.** The setting that lets
+the iOS client take over medication reminders was suppressing every channel,
+so switching it on quietly turned off Telegram, ntfy, webhooks, email and
+web push as well. That was never what it said it did. If you have been using
+it as a general mute, those channels will start delivering again, and the
+setting does what its name says.
 
 ### Three that were reported
 
 Someone self-hosting could not use an OpenAI-compatible gateway. LiteLLM,
 OpenRouter and vLLM all speak the OpenAI wire, but the provider list had no
-entry that honoured a base URL of your own, and an earlier answer from us said
-otherwise. There is now a provider for exactly this, with its own key, model
-and endpoint. The plain OpenAI entry stays pinned to OpenAI, which a test
-enforces, so a key meant for one never travels to the other.
+entry that honoured a base URL of your own, and an earlier answer from us
+said otherwise. There is now a provider for exactly this, with its own key,
+model and endpoint. The plain OpenAI entry stays pinned to OpenAI, so a key
+meant for one never travels to the other.
 
 Timestamps followed the browser rather than the profile in four places. The
 worst of them: a shared report downloaded as a PDF could carry a different
@@ -3360,14 +3323,14 @@ date than the page it was downloaded from, for the same reading. Charts also
 drew their week and month boundaries in one fixed timezone, so an evening
 reading landed in the wrong bar for anyone living elsewhere.
 
-Some dashboard tiles could be seen and not switched off. The mobile app draws
-a handful of widgets the web has no render path for, and it writes them into
-the same stored layout, so an account ended up holding rows it never set and
-could not change from anywhere. `bmi` was one of them. They now appear in the
-dashboard settings in their own labelled group, with the same show and hide
-controls as everything else and no reordering, because placement stays the
-mobile app's. The group only shows up for widgets your layout actually holds,
-so an account with no phone client sees nothing new.
+Some dashboard tiles could be seen and not switched off. The mobile app
+draws a handful of widgets the web has no render path for, and it writes
+them into the same stored layout, so an account ended up holding rows it
+never set and could not change from anywhere. `bmi` was one of them. They
+now appear in the dashboard settings in their own labelled group, with the
+same show and hide controls as everything else and no reordering, because
+placement stays the mobile app's. The group only shows up for widgets your
+layout actually holds, so an account with no phone client sees nothing new.
 
 ### The backup
 
@@ -3398,8 +3361,8 @@ integration ledger's single failing-part slot into a set. Neither deletes or
 rewrites a measurement.
 
 A provider that syncs several things separately can now remember every part
-that is failing at once. Until now the last one to report overwrote the rest,
-which is the limit named in the v1.33.0 notes and not fixed then.
+that is failing at once. Until now the last one to report overwrote the
+rest, which is the limit named in the v1.33.0 notes and not fixed then.
 
 Self-hosters can point `GEOLITE2_DIR` at their own GeoLite2 databases. The
 variable was read by the code and missing from the compose whitelist, so it
@@ -3412,8 +3375,8 @@ can do.
 Reported by @k-nacion (the OpenAI-compatible gateway and the timezone
 rendering), @mathewcsims (the unreachable GeoLite2 setting, found by reading
 the strings inside a running container), @Nazza01 (the dose-history import),
-@doenke (the table under the chart, and for narrowing his own request until it
-fit one release) and @lutzkind (the dashboard layout).
+@doenke (the table under the chart, and for narrowing his own request until
+it fit one release) and @lutzkind (the dashboard layout).
 
 ## [1.33.0] — 2026-07-26
 
@@ -3423,99 +3386,103 @@ reliably, the code recorded it precisely, and no person ever found out.
 **"Delete All Data" deleted 13 tables out of 92 and reported success.** What
 survived included mental-health questionnaires, lab results, the menstrual
 record, allergies, family history, the whole document vault, every AI
-conversation, and clinician share links that kept working. On the account row
-itself, 11 of 119 columns were cleared, so name, insurer, insurance number, home
-coordinates, profile photo and every integration credential stayed. The wipe now
-covers everything the account owns except what is needed to sign in again, the
-list is derived from the schema so a newly added table cannot quietly survive,
-and the confirmation says what will go before you agree rather than after.
+conversation, and clinician share links that kept working. On the account
+row itself, 11 of 119 columns were cleared, so name, insurer, insurance
+number, home coordinates, profile photo and every integration credential
+stayed. The wipe now covers everything the account owns except what is
+needed to sign in again, the list is derived from the schema so a newly
+added table cannot quietly survive, and the confirmation says what will go
+before you agree rather than after.
 
-**A device sync failed 1149 times without anyone being told.** The escalation
-had no rung above "temporary", so a connection could fail hourly for weeks while
-the card read "connected". Worse, providers that sync several things separately
-had one healthy part erase the error recorded by a broken one, twice an hour,
-including a connection that had already been parked for a dead credential. A
-failing connection now shows how long it has been failing, escalates after a
-day, and stops retrying after two with a reconnect button.
+**A device sync failed 1149 times without anyone being told.** The
+escalation had no rung above "temporary", so a connection could fail hourly
+for weeks while the card read "connected". Worse, providers that sync
+several things separately had one healthy part erase the error recorded by a
+broken one, twice an hour, including a connection that had already been
+parked for a dead credential. A failing connection now shows how long it has
+been failing, escalates after a day, and stops retrying after two with a
+reconnect button.
 
 One limit worth naming rather than leaving to be discovered: the ledger
-remembers a single failing part per provider. If two parts fail at overlapping
-times, the recovery of the later one still clears the error of the earlier. That
-is narrower than the case this fixes, and it is not closed.
+remembers a single failing part per provider. If two parts fail at
+overlapping times, the recovery of the later one still clears the error of
+the earlier. That is narrower than the case this fixes, and it is not
+closed.
 
 **The Environment module had never once saved a row, for anyone.** One
-declaration in 49 was missing the line that maps it to the database, so every
-write referred to a type that does not exist. The job failed every night and
-recorded that failure faithfully, and no code anywhere reads a failed job. Both
-halves are fixed: the module writes, and a failing background job now names
-itself on the admin page and on the affected screen. Past days can be fetched
-from the weather source; the nightly job fills the last week by itself and the
-backfill button covers the rest.
+declaration in 49 was missing the line that maps it to the database, so
+every write referred to a type that does not exist. The job failed every
+night and recorded that failure faithfully, and no code anywhere reads a
+failed job. Both halves are fixed: the module writes, and a failing
+background job now names itself on the admin page and on the affected
+screen. Past days can be fetched from the weather source; the nightly job
+fills the last week by itself and the backfill button covers the rest.
 
-**Sleep was counted twice.** A device that re-exports a night it already sent
-left two overlapping in-bed periods, and both were added. One night read ten
-hours in the headline and twenty in the legend. The same fault inflated the
-time-asleep figure itself. Every stage total is now the measure of its own
-period rather than the sum of overlapping ones.
+**Sleep was counted twice.** A device that re-exports a night it already
+sent left two overlapping in-bed periods, and both were added. One night
+read ten hours in the headline and twenty in the legend. The same fault
+inflated the time-asleep figure itself. Every stage total is now the measure
+of its own period rather than the sum of overlapping ones.
 
 **Twenty-two controls could destroy something without asking.** Among them a
-single tap that cleared the allergy list along with a text note, and a switch
-labelled "Custom range" that deleted the stored range when switched off. Every
-destructive control is now registered, and a new one cannot ship without being
-classified.
+single tap that cleared the allergy list along with a text note, and a
+switch labelled "Custom range" that deleted the stored range when switched
+off. Every destructive control is now registered, and a new one cannot ship
+without being classified.
 
-**Medication stock was written off that had not expired.** The thirty-day clock
-that applies to an opened injection pen was being applied to a blister of
-tablets, so pressing out the first tablet started a countdown and a month later
-the rest were declared unusable. The container kind was recorded and never read.
-Pens and ampoules keep the clock; blisters, bottles and inhalers do not. A
-repair returns stock that was written off, and the dates that drive it can now
-be seen and corrected on the item itself.
+**Medication stock was written off that had not expired.** The thirty-day
+clock that applies to an opened injection pen was being applied to a blister
+of tablets, so pressing out the first tablet started a countdown and a month
+later the rest were declared unusable. The container kind was recorded and
+never read. Pens and ampoules keep the clock; blisters, bottles and inhalers
+do not. A repair returns stock that was written off, and the dates that
+drive it can now be seen and corrected on the item itself.
 
-**Insights scrolled sideways on every phone.** Two guards were watching for
-exactly that and both measured the document, while the app scrolls inside an
-inner area that absorbed the overflow. They now measure what actually moves.
+**Insights scrolled sideways on every phone.** The app scrolls inside an
+inner area that absorbed the overflow, which is why it went unnoticed for so
+long. It is gone now.
 
 **A third value for gender was accepted by the app and missing from the
-published contract in five places, and dropped or coerced in nine more.** A
-fitness calculation scored anyone without a recorded gender using the male
-coefficients, and the doctor report labelled any unrecognised value as
-non-binary. Every place the field is read, written, documented or displayed was
-gone through.
+published API reference in five places, and dropped or coerced in nine
+more.** A fitness calculation scored anyone without a recorded gender using
+the male coefficients, and the doctor report labelled any unrecognised value
+as non-binary. Every place the field is read, written, documented or
+displayed was gone through.
 
 ### Four additions
 
-Medication history from a widely used iOS export tool can now be read directly,
-as the file actually is, rather than converted by hand. The scheduled time and
-the time taken stay two separate facts, which is what a hand-mapped file
-destroys. Every column is either used, reported, or named as not read, and you
-see which before you import. Seven status values are ruled on individually: only
-"taken" and "skipped" become doses, and a snoozed reminder or an unanswered
-notification is counted and named rather than turned into a decision you never
-made.
+Medication history from a widely used iOS export tool can now be read
+directly, as the file actually is, rather than converted by hand. The
+scheduled time and the time taken stay two separate facts, which is what a
+hand-mapped file destroys. Every column is either used, reported, or named
+as not read, and you see which before you import. Seven status values are
+ruled on individually: only "taken" and "skipped" become doses, and a
+snoozed reminder or an unanswered notification is counted and named rather
+than turned into a decision you never made.
 
-The Coach can tell "you never recorded this" apart from "you recorded it, but
-outside the range I looked at". Someone with 1,597 imported glucose readings
-from April 2024 was told there was no glucose data at all, and the Coach then
-changed the subject, because one reason code covered both situations and the
-instruction to move on fired on both. It now says what is actually true and
-offers to look further back.
+The Coach can tell "you never recorded this" apart from "you recorded it,
+but outside the range I looked at". Someone with 1,597 imported glucose
+readings from April 2024 was told there was no glucose data at all, and the
+Coach then changed the subject, because one reason code covered both
+situations and the instruction to move on fired on both. It now says what is
+actually true and offers to look further back.
 
-A mood tag can now be paired against the next morning's resting heart rate and
-heart-rate variability. Until now a tag such as alcohol had three channels to
-land in, and the only one that looked at the following day needed a wearable
-recovery score that plenty of accounts never record, so the question of what a
-tagged evening does overnight had no path at all. The difference is printed
-without a colour verdict, because a rise reads as worse on one row and better
-on the next, and an association cannot carry that judgement.
+A mood tag can now be paired against the next morning's resting heart rate
+and heart-rate variability. Until now a tag such as alcohol had three
+channels to land in, and the only one that looked at the following day
+needed a wearable recovery score that plenty of accounts never record, so
+the question of what a tagged evening does overnight had no path at all. The
+difference is printed without a colour verdict, because a rise reads as
+worse on one row and better on the next, and an association cannot carry
+that judgement.
 
 Every chart on the metric pages now carries the points it drew as a table
-underneath, collapsed by default with the count in the button. It is handed the
-same points the chart draws and the same formatter the tooltip uses, so a cell
-and a tooltip cannot print two different numbers for one reading. The caption
-names the grain, so a weekly row says it is a weekly average, and units sit in
-the header rather than in every cell, which is what you want when the rows go
-into a spreadsheet.
+underneath, collapsed by default with the count in the button. It is handed
+the same points the chart draws and the same formatter the tooltip uses, so
+a cell and a tooltip cannot print two different numbers for one reading. The
+caption names the grain, so a weekly row says it is a weekly average, and
+units sit in the header rather than in every cell, which is what you want
+when the rows go into a spreadsheet.
 
 ### For operators
 
@@ -3525,16 +3492,16 @@ inventory that was wrongly expired. None deletes or rewrites a measurement.
 
 ### Credit
 
-Reported by @lutzkind (sleep double-counting, the gender contract, the
-Environment enum, the Coach retrieval window, the next-day pairing for mood tags
-in #616, and a run of earlier reports), @Nazza01 (the intake import, plus the
-export file and the format documentation that made reading it possible),
-@doenke (#636, the table under the chart) and @DrGithubble (the unit and
-precision work that led here).
+Reported by @lutzkind (sleep double-counting, the gender field, the
+Environment enum, the Coach retrieval window, the next-day pairing for mood
+tags in #616, and a run of earlier reports), @Nazza01 (the intake import,
+plus the export file and the format documentation that made reading it
+possible), @doenke (#636, the table under the chart) and @DrGithubble (the
+unit and precision work that led here).
 
-Two of these defects were found because someone outside this project read the
-code and said what was wrong. The Environment module had been broken for every
-user since it shipped and nobody inside noticed.
+Two of these defects were found because someone outside this project read
+the code and said what was wrong. The Environment module had been broken for
+every user since it shipped and nobody inside noticed.
 
 ## [1.32.39] — 2026-07-26
 
@@ -3661,31 +3628,33 @@ so they need a fresh import from the source.
 
 Two ways a record could quietly lose data, both closed.
 
-An identifier that a client sends along with a reading is meant to say "this is
-the same reading you already have". One client was sending a value that changed
-every time the app restarted, so nothing ever matched, and every sync created a
-fresh copy. On one instance that produced 23 medications nobody had ever taken,
-none of them with a dose or a single logged intake, because the doses were
-looking for a medication under an identifier that no longer existed.
+An identifier that a client sends along with a reading is meant to say "this
+is the same reading you already have". One client was sending a value that
+changed every time the app restarted, so nothing ever matched, and every
+sync created a fresh copy. On one instance that produced 23 medications
+nobody had ever taken, none of them with a dose or a single logged intake,
+because the doses were looking for a medication under an identifier that no
+longer existed.
 
-The server now refuses an identifier that cannot possibly be stable, with a 422
-that says what is wrong instead of quietly making duplicates. A batch rejects
-only the offending entry and still accepts the rest, so one bad row cannot stop
-a sync. Twelve entry points check it. The identifier shapes that real apps and
-devices actually send are pinned by tests, so a future rule cannot get greedy
-and start dropping valid data.
+The server now refuses an identifier that cannot possibly be stable, with a
+422 that says what is wrong instead of quietly making duplicates. A batch
+rejects only the offending entry and still accepts the rest, so one bad row
+cannot stop a sync. Twelve entry points check it. The identifier shapes that
+real apps and devices actually send all still go through, so the new rule
+cannot get greedy and start dropping valid data.
 
-The second one was worse and had no symptom at all. The repeat-protection key
-on a medication intake was unique across the whole database rather than per
-account. Two people generating the same key independently meant the second one
-could not save their dose at all. The database refused it, and the intake was
-gone. The key is now unique per account, and every lookup asks who it belongs
-to. Recording an intake through the automation interface without sending a key
-had a related problem: the first one saved and every one after it was discarded
-as a repeat. Also fixed.
+The second one was worse and had no symptom at all. The repeat-protection
+key on a medication intake was unique across the whole database rather than
+per account. Two people generating the same key independently meant the
+second one could not save their dose at all. The database refused it, and
+the intake was gone. The key is now unique per account, and every lookup
+asks who it belongs to. Recording an intake through the automation interface
+without sending a key had a related problem: the first one saved and every
+one after it was discarded as a repeat. Also fixed.
 
-The migration does not touch any existing intake. It relaxes a rule rather than
-tightening one, so nothing that was allowed before becomes disallowed now.
+The migration does not touch any existing intake. It relaxes a rule rather
+than tightening one, so nothing that was allowed before becomes disallowed
+now.
 
 ## [1.32.36] — 2026-07-25
 
@@ -3788,43 +3757,46 @@ app and import it once; the entries land in the same place they always did.
 ## [1.32.31] — 2026-07-25
 
 The integrations page could tell you a connection was failing. It could not
-tell you a connection had stopped trying. Those look the same from the outside:
-the page keeps showing whatever error was recorded last, and it keeps showing
-it for as long as nobody looks, because nothing anywhere read how old the last
-attempt actually was. This release adds that reading, and every status on the
-page now comes from it.
+tell you a connection had stopped trying. Those look the same from the
+outside: the page keeps showing whatever error was recorded last, and it
+keeps showing it for as long as nobody looks, because nothing anywhere read
+how old the last attempt actually was. This release adds that reading, and
+every status on the page now comes from it.
 
-- **A sync that has stopped running is labelled as stopped.** When a connection
-  has not even attempted to sync for a day, it says so, with how long it has
-  been. Previously it kept displaying the last error it managed to record, which
-  reads like something that is still retrying.
-- **Per data type, when a value last arrived.** Each connected card now opens a
-  short list: every data type that connection has ever delivered, and how long
-  ago the newest one came in. A type that has gone quiet for two weeks while the
-  rest of the connection is healthy is called out, which is the shape a single
-  broken pipe takes: one revoked permission, one endpoint that started returning
-  nothing, while the sync itself keeps reporting success. Types the connection
-  has never delivered are simply not listed. Nothing is invented.
-- **Apple Health has a staleness threshold.** Any timestamp at all used to paint
-  the green "data received" badge, so a phone that stopped delivering three
-  weeks ago looked exactly like one that delivered this morning. After a week of
-  silence the card now says so and points you at the app's Apple Health
-  permissions. It also lists the same per data type detail as the others.
+- **A sync that has stopped running is labelled as stopped.** When a
+  connection has not even attempted to sync for a day, it says so, with how
+  long it has been. Previously it kept displaying the last error it managed
+  to record, which reads like something that is still retrying.
+- **Per data type, when a value last arrived.** Each connected card now
+  opens a short list: every data type that connection has ever delivered,
+  and how long ago the newest one came in. A type that has gone quiet for
+  two weeks while the rest of the connection is healthy is called out, which
+  is the shape a single broken pipe takes: one revoked permission, one
+  endpoint that started returning nothing, while the sync itself keeps
+  reporting success. Types the connection has never delivered are simply not
+  listed. Nothing is invented.
+- **Apple Health has a staleness threshold.** Any timestamp at all used to
+  paint the green "data received" badge, so a phone that stopped delivering
+  three weeks ago looked exactly like one that delivered this morning. After
+  a week of silence the card now says so and points you at the app's Apple
+  Health permissions. It also lists the same per data type detail as the
+  others.
 - **A configured connection with no card of its own now appears.** If your
-  account has a connection set up that the page has no card for, it gets a plain
-  status row instead of being left off entirely. That is a structural fix: a
-  connection can no longer be running, failing and invisible at the same time.
-- **The status colours mean one consistent thing.** Red is now reserved for the
-  cases your own action fixes, which is reconnecting or resuming. An upstream
-  outage or a rate limit carries the amber tone instead, because clicking
-  reconnect against a server error has never helped anyone. Every card uses the
-  same mapping. Three of them used to disagree with each other on the same page.
+  account has a connection set up that the page has no card for, it gets a
+  plain status row instead of being left off entirely. A connection can no
+  longer be running, failing and invisible at the same time.
+- **The status colours mean one consistent thing.** Red is now reserved for
+  the cases your own action fixes, which is reconnecting or resuming. An
+  upstream outage or a rate limit carries the amber tone instead, because
+  clicking reconnect against a server error has never helped anyone. Every
+  card uses the same mapping. Three of them used to disagree with each other
+  on the same page.
 - **Nightscout reads the same status source as everything else.** It was the
   last card fetching its own status separately, which is why it could show a
   different colour for the same condition.
 
-The assistant tools report the new verdict too, so asking why your data looks
-stale gets the real answer instead of "connected".
+The assistant tools report the new verdict too, so asking why your data
+looks stale gets the real answer instead of "connected".
 
 ## [1.32.30] — 2026-07-25
 
@@ -3908,22 +3880,22 @@ as a sync that worked.
 
 ## [1.32.27] — 2026-07-25
 
-Target and threshold panels now follow the metric and imperial preference. The
-previous release listed this as the one place still reading in kilograms and
-Celsius: with imperial selected a weight chart read in pounds while the target
-reference right below it read in kilograms.
+Target and threshold panels now follow the metric and imperial preference.
+The previous release listed this as the one place still reading in kilograms
+and Celsius: with imperial selected a weight chart read in pounds while the
+target reference right below it read in kilograms.
 
 - **Target ranges read in your unit.** On the weight insight page the target
   band, the range bar, the status pill, and the 30 day average all read in
   pounds when imperial is selected. Body water and bone mass follow the same
   rule in the threshold settings.
 - **Editing a target works in the unit you see.** The target editor and the
-  threshold settings seed their fields from the stored value converted to your
-  unit, check what you type against limits expressed in that same unit, and
-  convert back before saving. A value typed at the displayed limit is accepted
-  instead of being rejected against a kilogram bound you never saw. Saving and
-  reopening shows the number you typed.
-- **Storage is unchanged.** Targets are still kept in canonical SI, and a metric
+  threshold settings seed their fields from the stored value converted to
+  your unit, check what you type against limits expressed in that same unit,
+  and convert back before saving. A value typed at the displayed limit is
+  accepted instead of being rejected against a kilogram bound you never saw.
+  Saving and reopening shows the number you typed.
+- **Storage is unchanged.** Targets are still kept in SI units, and a metric
   account's saved values are untouched by this release.
 - **Known remaining.** Height is still entered in centimetres.
 
@@ -3932,35 +3904,35 @@ This finishes the job @DrGithubble started in #627.
 ## [1.32.26] — 2026-07-25
 
 The metric and imperial display preference is now applied everywhere your
-weight, body composition, waist, and temperature readings appear. Until now the
-setting was saved but almost nothing read it, so the numbers stayed in
+weight, body composition, waist, and temperature readings appear. Until now
+the setting was saved but almost nothing read it, so the numbers stayed in
 kilograms and Celsius regardless of the choice. Thanks to @DrGithubble, who
-reported this in #627 and traced it himself, down to the hardcoded kilograms in
-the entry form and the missing imperial branch in the display transform. His
-follow-up was the more useful half: a reading genuinely tagged in another unit
-was being relabelled by any surface that printed the type's canonical unit. That
-is what turned a one-screen fix into a proper one.
+reported this in #627 and traced it himself, down to the hardcoded kilograms
+in the entry form and the missing imperial branch in the display transform.
+His follow-up was the more useful half: a reading genuinely tagged in
+another unit was being relabelled by any surface that printed the type's
+standard unit. That is what turned a one-screen fix into a proper one.
 
 - **Weight and body composition follow the preference.** With imperial
   selected, weight, muscle mass, body water, bone mass, fat mass, and grip
   strength read in pounds across the dashboard tiles, the charts, the record
-  list, the insight pages, and the coach read strip. Body temperature, skin and
-  wrist temperature read in degrees Fahrenheit, and waist reads in inches.
-  Storage is unchanged: every reading is still kept in canonical SI, and a
-  metric user sees exactly the same numbers as before.
-- **Manual entry converts at the point of entry.** When you log or edit a value
-  with imperial selected, the field is labelled in your unit and the number you
-  type is converted back to canonical on save, so a pound reading is stored as
-  the correct kilogram value rather than a mislabelled one.
-- **A logging tool can no longer store a foreign unit.** The measurement logging
-  tool used by connected assistants now converts a recognised unit hint (such as
-  pounds or Fahrenheit) to canonical, and refuses anything it does not
-  recognise, so a reading is never saved under the wrong unit.
+  list, the insight pages, and the coach read strip. Body temperature, skin
+  and wrist temperature read in degrees Fahrenheit, and waist reads in
+  inches. Storage is unchanged: every reading is still kept in SI units, and
+  a metric user sees exactly the same numbers as before.
+- **Manual entry converts at the point of entry.** When you log or edit a
+  value with imperial selected, the field is labelled in your unit and the
+  number you type is converted back to SI on save, so a pound reading is
+  stored as the correct kilogram value rather than a mislabelled one.
+- **A logging tool can no longer store a foreign unit.** The measurement
+  logging tool used by connected assistants now converts a recognised unit
+  hint (such as pounds or Fahrenheit) to SI, and refuses anything it does
+  not recognise, so a reading is never saved under the wrong unit.
 - **Known remaining.** Height is entered in centimetres for now. Target and
-  threshold panels also still read in kilograms and Celsius, so with imperial
-  selected a weight chart reads in pounds while its target reference below it
-  reads in kilograms. The stored values are correct either way; both are
-  separate follow-ups.
+  threshold panels also still read in kilograms and Celsius, so with
+  imperial selected a weight chart reads in pounds while its target
+  reference below it reads in kilograms. The stored values are correct
+  either way; both are separate follow-ups.
 
 ## [1.32.25] — 2026-07-24
 
@@ -4035,64 +4007,66 @@ complete, and a couple of sources start pulling data sooner.
 
 ## [1.32.22] — 2026-07-24
 
-The concurrent-edit protection that reached the layout surfaces now covers the
-rest of the preference records too. Notification preferences, module toggles,
-coach preferences, and the mood-tag layout all get the same guard, so a save
-based on an older read stops and reloads instead of quietly reverting a change
-another writer just made. Two more races are closed on the server side: a stock
-correction can no longer overwrite a dose consumption that ran at the same
-moment, and a privacy-mode change is now respected by an insight generation that
-was already running. Older clients that do not send the new marker keep working
-exactly as before.
+The concurrent-edit protection that reached the layout surfaces now covers
+the rest of the preference records too. Notification preferences, module
+toggles, coach preferences, and the mood-tag layout all get the same
+protection, so a save based on an older read stops and reloads instead of
+quietly reverting a change another writer just made. Two more races are
+closed on the server side: a stock correction can no longer overwrite a dose
+consumption that ran at the same moment, and a privacy-mode change is now
+respected by an insight generation that was already running. Older clients
+that do not send the new marker keep working exactly as before.
 
 - **Notification preferences no longer clobber a concurrent change.** The
-  server merges each category into one stored record. A save based on an older
-  read now reloads instead of writing the whole record back without the change
-  another device just made. This is what closes the case where a web save could
-  silently switch off the app-managed medication reminder flag and bring back a
-  duplicate reminder.
+  server merges each category into one stored record. A save based on an
+  older read now reloads instead of writing the whole record back without
+  the change another device just made. This is what closes the case where a
+  web save could silently switch off the app-managed medication reminder
+  flag and bring back a duplicate reminder.
 - **Module toggles, coach preferences, and the mood-tag layout get the same
-  guard.** Each is one stored record that more than one surface can write; a
-  stale save is now stopped and reloaded rather than reverting a newer one. The
-  coach-preferences save covers both the tuning options and the excluded-metric
-  list together, so a conflict leaves both untouched.
-- **A stock correction can no longer race a dose consumption.** Correcting the
-  remaining count on a container now runs under the same per-medication lock a
-  logged dose takes, so the two serialize instead of one overwriting the other.
-- **A privacy-mode change is respected by an in-flight insight generation.** A
-  briefing that was already generating when you switch the privacy mode no
-  longer writes its old-scope output over the cache the switch cleared. It stops
-  short of the write and the next run regenerates under the new mode.
-- **Older clients are unaffected.** A request that does not carry the new base
-  marker keeps the previous save behavior, so nothing needs updating to keep
-  working. The new contract is documented in the published API spec.
+  protection.** Each is one stored record that more than one surface can
+  write; a stale save is now stopped and reloaded rather than reverting a
+  newer one. The coach-preferences save covers both the tuning options and
+  the excluded-metric list together, so a conflict leaves both untouched.
+- **A stock correction can no longer race a dose consumption.** Correcting
+  the remaining count on a container now runs under the same per-medication
+  lock a logged dose takes, so the two serialize instead of one overwriting
+  the other.
+- **A privacy-mode change is respected by an in-flight insight generation.**
+  A briefing that was already generating when you switch the privacy mode no
+  longer writes its old-scope output over the cache the switch cleared. It
+  stops short of the write and the next run regenerates under the new mode.
+- **Older clients are unaffected.** A request that does not carry the new
+  base marker keeps the previous save behavior, so nothing needs updating to
+  keep working. The new marker is documented in the published API spec.
 
 ## [1.32.21] — 2026-07-24
 
 Insights and medications layout saves, and the coach about-me note, are now
-protected against a concurrent edit overwriting a newer one. This is the same
-protection the dashboard layout already had. If you save a layout in one place
-while something else saved a change to the same record a moment earlier, your
-save now stops and reloads the current state instead of quietly reverting that
-other change. Older clients that do not send the new marker keep working exactly
-as before.
+protected against a concurrent edit overwriting a newer one. This is the
+same protection the dashboard layout already had. If you save a layout in
+one place while something else saved a change to the same record a moment
+earlier, your save now stops and reloads the current state instead of
+quietly reverting that other change. Older clients that do not send the new
+marker keep working exactly as before.
 
 - **Insights layout saves no longer clobber a concurrent edit.** Saving the
-  overview arrangement and saving the pill order are two separate surfaces that
-  write the same record. If one lands while the other was based on an older
-  read, the later save now reloads and asks you to redo it rather than reverting
-  the first.
-- **Medications layout saves get the same guard.** The card/table view toggle
-  and the manual order both write one record, so a stale toggle can no longer
-  resurrect an order you just saved, and the reverse holds too.
-- **The coach about-me note is guarded as well.** A save based on an older read
-  is stopped and reloaded instead of overwriting a newer version of the note.
-- **Older clients are unaffected.** A request that does not carry the new base
-  marker keeps the previous save behavior unchanged, so nothing needs updating
-  to keep working.
-- **The dashboard layout contract is now in the published API spec.** It was
-  missing from the OpenAPI file even though it was the first surface to get this
-  protection.
+  overview arrangement and saving the pill order are two separate surfaces
+  that write the same record. If one lands while the other was based on an
+  older read, the later save now reloads and asks you to redo it rather than
+  reverting the first.
+- **Medications layout saves get the same protection.** The card/table view
+  toggle and the manual order both write one record, so a stale toggle can
+  no longer resurrect an order you just saved, and the reverse holds too.
+- **The coach about-me note is protected as well.** A save based on an older
+  read is stopped and reloaded instead of overwriting a newer version of the
+  note.
+- **Older clients are unaffected.** A request that does not carry the new
+  base marker keeps the previous save behavior unchanged, so nothing needs
+  updating to keep working.
+- **The dashboard layout save is now documented in the published API spec.**
+  It was missing from the OpenAPI file even though it was the first surface
+  to get this protection.
 
 ## [1.32.20] — 2026-07-24
 
@@ -4119,29 +4093,31 @@ card shows when no model is set up.
 ## [1.32.19] — 2026-07-24
 
 After you logged a dose, the Today view could keep showing it as still due
-until you reloaded the page. The Today hero and the dashboard read from a cache
-that refreshes on a timer, and a write made from another screen marked that
-cache stale without actually re-reading it. The change reached the server, but
-the screen you came back to still showed the old state for up to two minutes,
-or until a hard refresh.
+until you reloaded the page. The Today hero and the dashboard read from a
+cache that refreshes on a timer, and a write made from another screen marked
+that cache stale without actually re-reading it. The change reached the
+server, but the screen you came back to still showed the old state for up to
+two minutes, or until a hard refresh.
 
-- **A dose you take now clears from Today at once.** This covers the "Take all
-  due" button on the medications page, editing or deleting a logged dose, and
-  importing intake history. The Today view and the dashboard now re-read the
-  moment the write lands instead of waiting for the timer.
-- **A preventive-care reminder marked done leaves the Today rail immediately.**
-  Marking one off, editing it, or deleting it updates the Today view straight
-  away rather than after a refresh.
+- **A dose you take now clears from Today at once.** This covers the "Take
+  all due" button on the medications page, editing or deleting a logged
+  dose, and importing intake history. The Today view and the dashboard now
+  re-read the moment the write lands instead of waiting for the timer.
+- **A preventive-care reminder marked done leaves the Today rail
+  immediately.** Marking one off, editing it, or deleting it updates the
+  Today view straight away rather than after a refresh.
 - **A lab reading you add updates its cards right away.** Adding a reading
   refreshes that marker's assessment on the same page and the "what changed
-  since your last panel" card, instead of leaving them on their earlier text.
+  since your last panel" card, instead of leaving them on their earlier
+  text.
 - **A briefing you regenerate shows up on Today without a reload.** The new
-  briefing now reaches the Today hero and the dashboard as soon as it is ready.
-- **Saving a dashboard layout keeps its safeguard against a conflicting edit.**
-  A visit to the home page could leave the layout editor without the token that
-  guards a save, which quietly turned off the protection added in v1.32.16
-  against two edits overwriting each other. The editor now always loads its own
-  copy, so the guard stays on.
+  briefing now reaches the Today hero and the dashboard as soon as it is
+  ready.
+- **Saving a dashboard layout keeps its safeguard against a conflicting
+  edit.** A visit to the home page could leave the layout editor without the
+  token that protects a save, which quietly turned off the protection added
+  in v1.32.16 against two edits overwriting each other. The editor now
+  always loads its own copy, so the protection stays on.
 
 Thanks to @lutzkind, whose run of reports surfaced the stale Today view.
 
@@ -4260,24 +4236,26 @@ now reads clearly and tells you what happened.
 
 ## [1.32.13] — 2026-07-24
 
-An Insights assessment card no longer shows the raw model output when a response
-comes back incomplete. If the underlying text was cut off, the card now falls
-back to its computed summary instead of printing the unfinished data.
+An Insights assessment card no longer shows the raw model output when a
+response comes back incomplete. If the underlying text was cut off, the card
+now falls back to its computed summary instead of printing the unfinished
+data.
 
-- **A cut-off assessment stays hidden.** The per-metric assessment cards, like
-  the one for resting pulse, ask the model for a small structured reply and then
-  read the summary out of it. When that reply arrived truncated, the reader
-  could see the whole envelope on the card, including the property name, the
-  braces, the quotes, and the escaped line breaks. The card now recognises an
-  incomplete or malformed reply and serves the deterministic summary it already
-  falls back to when no model text is available, so the raw output never reaches
-  you.
-- **Plain-text assessments are untouched.** A model that answers in an ordinary
-  sentence rather than the structured shape is still shown as written, so this
-  change only affects broken replies and leaves normal ones exactly as before.
-- **The same guard covers the other cards.** Medication compliance and the
-  derived-score assessments read their summary the same way, so they now hold
-  back a broken reply too rather than persisting it as the day's text.
+- **A cut-off assessment stays hidden.** The per-metric assessment cards,
+  like the one for resting pulse, ask the model for a small structured reply
+  and then read the summary out of it. When that reply arrived truncated,
+  the reader could see the whole raw reply on the card, including the
+  property name, the braces, the quotes, and the escaped line breaks. The
+  card now recognises an incomplete or malformed reply and serves the
+  deterministic summary it already falls back to when no model text is
+  available, so the raw output never reaches you.
+- **Plain-text assessments are untouched.** A model that answers in an
+  ordinary sentence rather than the structured shape is still shown as
+  written, so this change only affects broken replies and leaves normal ones
+  exactly as before.
+- **The other cards behave the same way.** Medication compliance and the
+  derived-score assessments read their summary the same way, so they now
+  hold back a broken reply too rather than persisting it as the day's text.
 
 Thanks to @lutzkind for reporting this one.
 
@@ -4325,29 +4303,31 @@ login, so saved passwords and passkeys behave the way they should.
 
 ## [1.32.9] — 2026-07-23
 
-The Coach output guard now remembers the numbers you were actually shown across
-a whole conversation, so figures you legitimately carry forward stop getting
-marked unverified while an invented one still gets caught.
+The Coach's numeric verifier now remembers the numbers you were actually
+shown across a whole conversation, so figures you legitimately carry forward
+stop getting marked unverified while an invented one still gets caught.
 
 - **A figure from earlier in the chat is no longer flagged when you bring it
-  back up.** The guard now keeps a running record of every number the Coach was
-  given this turn and in earlier turns, plus your goal figures, your medication
-  doses, and the reference bands it was shown. A value it can trace to one of
-  those is left alone even a few turns later. A value the Coach only wrote in an
-  earlier reply is never trusted on that basis, so a number that once slipped
-  through cannot quietly become authoritative later.
-- **An educational sentence keeps its numbers.** A line that states a general
-  guideline, like the note that adults usually need seven to nine hours of
-  sleep, is recognised as a reference and left intact instead of having its
-  numbers stripped. This works in every supported language.
+  back up.** It now keeps a running record of every number the Coach was
+  given this turn and in earlier turns, plus your goal figures, your
+  medication doses, and the reference bands it was shown. A value it can
+  trace to one of those is left alone even a few turns later. A value the
+  Coach only wrote in an earlier reply is never trusted on that basis, so a
+  number that once slipped through cannot quietly become authoritative
+  later.
+- **An educational sentence keeps its numbers.** A line that states a
+  general guideline, like the note that adults usually need seven to nine
+  hours of sleep, is recognised as a reference and left intact instead of
+  having its numbers stripped. This works in every supported language.
 - **A dose you are actually on reads as a restatement, a different one does
-  not.** When the Coach says to keep taking a dose, the reminder is allowed only
-  when the amount matches a dose on your schedule. A wrong maintenance amount, or
-  any wording that nudges the dose up or down, is still held back.
+  not.** When the Coach says to keep taking a dose, the reminder is allowed
+  only when the amount matches a dose on your schedule. A wrong maintenance
+  amount, or any wording that nudges the dose up or down, is still held
+  back.
 - **Fabricated risk numbers are caught in more languages.** The screen that
   blocks an invented clinical risk figure or a named risk-engine result now
-  reads French, Spanish, Italian, and Polish to the same depth it already read
-  English and German, including a percentage written out in words.
+  reads French, Spanish, Italian, and Polish to the same depth it already
+  read English and German, including a percentage written out in words.
 
 ## [1.32.8] — 2026-07-23
 
@@ -4373,25 +4353,26 @@ HealthKit sync can say what set it off.
 
 ## [1.32.7] — 2026-07-23
 
-The Coach output guard now reads numbers the way you actually write them, so a
-correct figure stops getting marked unverified while an invented one still gets
-caught.
+The Coach's numeric verifier now reads numbers the way you actually write
+them, so a correct figure stops getting marked unverified while an invented
+one still gets caught.
 
-- **A number you reformatted is no longer flagged.** The guard recognises a
-  rounded restatement, a delta narrated as a drop, an adherence rate written as
-  a percent, minutes read back as hours, a reformatted date, and a
+- **A number you reformatted is no longer flagged.** It recognises a rounded
+  restatement, a delta narrated as a drop, an adherence rate written as a
+  percent, minutes read back as hours, a reformatted date, and a
   thousands-separated step count, each checked against the figure the server
-  actually gave the Coach. A drifted number, like an average of 128 quoted back
-  as 138, is still caught.
-- **A blood-pressure claim can no longer borrow a weight number.** Every figure
-  is matched inside its own unit family, and a raw reading never earns the
-  looser rounding reserved for a headline average, so a fabricated average
-  cannot slip through on a nearby sample.
-- **A correct clinical-risk refusal streams through untouched.** Naming ASCVD or
-  a ten-year risk to explain that a clinician computes it now passes. What still
-  blocks is an asserted figure or a categorical verdict, whether it carries
-  digits ("your risk is about 14%"), spelled-out words ("roughly twelve
-  percent"), or no number at all ("SCORE2 would put you in the high-risk band").
+  actually gave the Coach. A drifted number, like an average of 128 quoted
+  back as 138, is still caught.
+- **A blood-pressure claim can no longer borrow a weight number.** Every
+  figure is matched inside its own unit family, and a raw reading never
+  earns the looser rounding reserved for a headline average, so a fabricated
+  average cannot slip through on a nearby sample.
+- **A correct clinical-risk answer streams through untouched.** Naming ASCVD
+  or a ten-year risk to explain that a clinician computes it now passes.
+  What still blocks is an asserted figure or a categorical verdict, whether
+  it carries digits ("your risk is about 14%"), spelled-out words ("roughly
+  twelve percent"), or no number at all ("SCORE2 would put you in the
+  high-risk band").
 - **A dose you already take reads as support.** "Keep taking your 7.5 mg as
   prescribed" passes, while anything that moves the dose stays blocked.
 - **A figure removed as unverifiable leaves the sentence intact.** The strip
@@ -4402,30 +4383,29 @@ Refs #587, #591.
 
 ## [1.32.6] — 2026-07-23
 
-Hardening and data-integrity fixes that were reviewed earlier and are now folded
-into the trunk.
+Hardening and data-integrity fixes that were reviewed earlier and are now
+folded into the trunk.
 
-- **Outbound Web Push dials through the guarded network path.** A push endpoint
-  now goes through the same safeFetch wrapper the rest of the app uses, so an
-  operator-configured endpoint cannot be pointed at an internal address.
-- **A bulk mood edit saves all at once.** The mood rows and their tag links are
-  written in one transaction, so a failure part way through no longer leaves a
-  partial save.
-- **Nutrient entries are bounded on write and included in the backup.** Values
-  are range-checked when saved, and the per-day nutrient records now travel with
-  the full backup and restore.
-- **Every response path carries the baseline security headers**, including the
-  early returns that used to skip them.
-- **Provider re-sync tolerates an empty token-refresh body.** Oura, Polar, and
-  Fitbit treat an empty body as transient rather than a hard failure, so a
-  reconnect is not lost to a blank response.
+- **Outbound Web Push dials through the protected network path.** A push
+  endpoint now goes through the same safeFetch wrapper the rest of the app
+  uses, so an operator-configured endpoint cannot be pointed at an internal
+  address.
+- **A bulk mood edit saves all at once.** The mood rows and their tag links
+  are written in one transaction, so a failure part way through no longer
+  leaves a partial save.
+- **Nutrient entries are bounded on write and included in the backup.**
+  Values are range-checked when saved, and the per-day nutrient records now
+  travel with the full backup and restore.
+- **Every response path carries the baseline security headers**, including
+  the early returns that used to skip them.
+- **Provider re-sync tolerates an empty token-refresh body.** Oura, Polar,
+  and Fitbit treat an empty body as transient rather than a hard failure, so
+  a reconnect is not lost to a blank response.
 - **The Coach reply stream aborts cleanly when you navigate away**, and the
   daily metric series carries its own min and max.
-- Also folded in: the WebAuthn relying-party origin gating (localhost only in
-  development), the medication-compliance point-window bound, a request-time
-  future-date bound on the medication-intake import, and pinned regression tests
-  for the snapshot-cache tenant key, the GlitchTip path-secret redaction, and the
-  Withings credentials delete.
+- Also folded in: the WebAuthn relying-party origin gating (localhost only
+  in development), the medication-compliance point-window bound, and a
+  request-time future-date bound on the medication-intake import.
 
 No migrations. No breaking changes.
 
@@ -4505,31 +4485,31 @@ beyond what 1.32.1 declared (none). No breaking changes.
   An account with records that do not yet meet any score pillar's minimum
   (for example a single mood entry, no paired blood pressure, one weight
   reading) showed a red 0 rather than an honest absence. The score is now
-  withheld until at least one pillar is computable; a genuinely computed 0 is
-  still shown.
+  withheld until at least one pillar is computable; a genuinely computed 0
+  is still shown.
 - **The Coach stops refusing ordinary questions about your own scores.** A
-  question about a Sleep Score or Health Score no longer trips the
-  fabricated-clinical-risk refusal; the guard now matches the specific risk
-  calculator it was meant to catch, not the plain word "score", and still
-  blocks a genuinely invented risk figure.
-- **The Apple Health import no longer stalls at "unpacking".** A large export
-  is now unpacked as a stream rather than decompressed whole into memory on
-  the shared event loop, and a job left mid-unpack by a restart is picked up
-  by a periodic reconcile instead of sitting stuck with no error. A byte
-  ceiling still guards against a decompression bomb.
+  question about a Sleep Score or Health Score no longer trips the block on
+  a fabricated clinical risk; it now matches the specific risk calculator it
+  was meant to catch, not the plain word "score", and still blocks a
+  genuinely invented risk figure.
+- **The Apple Health import no longer stalls at "unpacking".** A large
+  export is now unpacked as a stream rather than decompressed whole into
+  memory on the shared event loop, and a job left mid-unpack by a restart is
+  picked up by a periodic reconcile instead of sitting stuck with no error.
+  A byte ceiling still guards against a decompression bomb.
 - **The Pulse insights page shows pulse, not resting heart rate.** It no
-  longer silently swaps its main chart to resting heart rate when any resting
-  data exists; resting heart rate appears as a clearly labelled second series
-  when present, and the resting-calibrated target band no longer paints
-  behind raw pulse readings.
+  longer silently swaps its main chart to resting heart rate when any
+  resting data exists; resting heart rate appears as a clearly labelled
+  second series when present, and the resting-calibrated target band no
+  longer paints behind raw pulse readings.
 - **Dashboard layout changes can no longer be reverted by a concurrent
   score-ring save.** The instant score-ring toggle now sends only the ring
   fields instead of resending a cached snapshot of the whole layout, closing
-  a race where an in-flight ring update could land after a tile or chart Save
-  and silently restore the older layout.
+  a race where an in-flight ring update could land after a tile or chart
+  Save and silently restore the older layout.
 - **Measurement-reminder cadence edits recompute against the cadence that
-  was actually saved.** Clearing an interval or a recurrence rule to switch a
-  reminder's schedule no longer leaves the next-due date computed from the
+  was actually saved.** Clearing an interval or a recurrence rule to switch
+  a reminder's schedule no longer leaves the next-due date computed from the
   just-replaced value for one cycle.
 - **ntfy notification settings keep a saved auth token across unrelated
   edits.** Toggling the channel, or editing the server URL or topic, no
@@ -4543,42 +4523,44 @@ Apple Health import stall). These fixes came straight from their reports._
 
 ## [1.32.0] — 2026-07-22
 
-- **Provider ingestion and daily reactions now preserve the correct identity.**
-  Arrival reactions are bound to the exact marker revision, workout selection
-  matches field donors to the correct surviving session, long-range buckets
-  honor the user's timezone, MCP pages stay stable, and one Withings
-  subscription repair can no longer block fallback polling for other users.
-- **Large reads and writes are bounded end to end.** Measurement exports stream
-  in pages without splitting sleep sessions, oversized projections cannot evict
-  the shared cache, dense reports and metric series use database aggregation,
-  upload reads have byte, time, and concurrency limits, full-history backfills
-  share admission control, and medication imports use durable chunks with
-  resumable, bounded final rollups.
+- **Provider ingestion and daily reactions now preserve the correct
+  identity.** Arrival reactions are bound to the exact marker revision,
+  workout selection matches field donors to the correct surviving session,
+  long-range buckets honor the user's timezone, MCP pages stay stable, and
+  one Withings subscription repair can no longer block fallback polling for
+  other users.
+- **Large reads and writes are bounded end to end.** Measurement exports
+  stream in pages without splitting sleep sessions, oversized projections
+  cannot evict the shared cache, dense reports and metric series use
+  database aggregation, upload reads have byte, time, and concurrency
+  limits, full-history backfills share admission control, and medication
+  imports use durable chunks with resumable, bounded final rollups.
 - **Capture and history flows are complete on mobile and desktop.** Workout
   history loads beyond the first page, metric pages open preselected capture
-  forms and return to their origin, failed water submissions retain their draft,
-  and confirmed discards clear it.
-- **Interactive forms share one safe dismissal contract.** Dirty forms require
-  confirmation across tracked Back and Forward traversals, Apple Health setup
-  exposes successful native syncs, document selection is consumed on Coach
-  dismissal but preserved across full-page Coach navigation, conversation
-  titles can be renamed with rollback, and hidden tabs refresh meaningful
-  server state.
-- **Accessibility coverage now exercises representative authenticated routes,
-  themes, dialogs, and sheets.** Small text keeps compliant contrast, OCR uses a
-  visible labeled control, workout sections use real headings, and compact
-  actions retain 44-pixel touch targets.
-- **Client and API boundaries are explicit.** Localized stable error codes cover
-  measurement, mood, lab, and onboarding failures; client fetches and query
-  keys are lint-enforced; AI overrides are documented; and large Coach,
-  report, target, and provider modules now use one-way focused builders.
+  forms and return to their origin, failed water submissions retain their
+  draft, and confirmed discards clear it.
+- **Interactive forms share one safe dismissal rule.** Dirty forms require
+  confirmation across tracked Back and Forward traversals, Apple Health
+  setup exposes successful native syncs, document selection is consumed on
+  Coach dismissal but preserved across full-page Coach navigation,
+  conversation titles can be renamed with rollback, and hidden tabs refresh
+  meaningful server state.
+- **Accessibility coverage now exercises representative authenticated
+  routes, themes, dialogs, and sheets.** Small text keeps compliant
+  contrast, OCR uses a visible labeled control, workout sections use real
+  headings, and compact actions retain 44-pixel touch targets.
+- **Client and API boundaries are explicit.** Localized stable error codes
+  cover measurement, mood, lab, and onboarding failures; client fetches and
+  query keys are lint-enforced; AI overrides are documented; and large
+  Coach, report, target, and provider modules now use one-way focused
+  builders.
 
 - **Production image processing uses the patched Sharp 0.35 runtime.** This
   closes the current high-severity libvips advisory chain inherited through
   Next.js while retaining verified production-build compatibility.
 
-Migrations `0264_whoop_owner_identity`, `0265_withings_subscription_state`, and
-`0266_medication_intake_import_jobs`. No breaking changes.
+Migrations `0264_whoop_owner_identity`, `0265_withings_subscription_state`,
+and `0266_medication_intake_import_jobs`. No breaking changes.
 
 ## [1.31.8] — 2026-07-21
 
@@ -4593,19 +4575,21 @@ No migrations. No breaking changes.
 
 ## [1.31.7] — 2026-07-20
 
-- **Current OpenAI reasoning models use their supported request contract.**
+- **Current OpenAI reasoning models use the request fields they support.**
   Official GPT-5, o1, o3, and o4 models receive `max_completion_tokens`
   without unsupported `temperature` or `seed` fields; compatible custom
   gateways retain the legacy parameters they advertise.
 - **Apple Health XML cumulative totals no longer add overlapping sources.**
   Imports aggregate each source/day independently and select the highest
-  source subtotal, while explicit provenance prevents XML estimates or late
-  legacy samples from overwriting authoritative native HealthKit statistics.
-  Existing legacy aggregates can be repaired by re-uploading their archive.
-- **Every currently actionable medication reaches Today.** Equal-time doses no
-  longer collapse to one row, overdue doses win deterministic ties, and weekly
-  or custom intake windows use the scheduling engine's real availability
-  boundary. The shared digest fixes both the web start page and iOS Home.
+  source subtotal, while recording where each figure came from prevents XML
+  estimates or late legacy samples from overwriting authoritative native
+  HealthKit statistics. Existing legacy aggregates can be repaired by
+  re-uploading their archive.
+- **Every currently actionable medication reaches Today.** Equal-time doses
+  no longer collapse to one row, overdue doses win deterministic ties, and
+  weekly or custom intake windows use the scheduling engine's real
+  availability boundary. The shared digest fixes both the web start page and
+  iOS Home.
 
 Migration `0263_apple_health_aggregate_authority`. No breaking changes.
 
@@ -4697,24 +4681,24 @@ No migrations. No breaking changes.
 
 ## [1.31.1] — 2026-07-19
 
-- **Arrival events now follow committed inserts across every writer.** Provider
-  re-sync updates stay silent, partial Apple Health imports retain arrivals
-  from earlier committed batches, all newly inserted workouts emit, and sleep
-  refreshes distinguish new stages from updates. Web-only processes now retry
-  their bounded send-only queue connection instead of permanently losing
-  arrival jobs after one transient startup failure.
+- **Arrival events now follow committed inserts across every writer.**
+  Provider re-sync updates stay silent, partial Apple Health imports retain
+  arrivals from earlier committed batches, all newly inserted workouts emit,
+  and sleep refreshes distinguish new stages from updates. Web-only
+  processes now retry their bounded send-only queue connection instead of
+  permanently losing arrival jobs after one transient startup failure.
 - **Reaction and workout generation are single-spend operations.** Durable
   database claims close worker races and provider-retry gaps, daily token
   reservations are atomic and reconciled on every terminal path, and both
-  generation and display honor the user's Insights and Workouts module choices
-  plus server-managed consent.
+  generation and display honor the user's Insights and Workouts module
+  choices plus server-managed consent.
 - **AI context is narrower and more accurate.** Arrival reactions use the
   record that actually landed, completed sleep uses the reconstructed night
-  rather than one stage segment, user-authored lab fields are fenced as data,
-  workout comparisons use canonical sessions and dates, and every metric and
-  derived-score coach entry carries its exact supported scope.
-- **Dashboard state survives old and partial clients.** Saved comparison range
-  points and newly supported metric widgets are preserved, while Today
+  rather than one stage segment, user-authored lab fields are fenced as
+  data, workout comparisons use one agreed session and date, and every
+  metric and derived-score coach entry carries its exact supported scope.
+- **Dashboard state survives old and partial clients.** Saved comparison
+  range points and newly supported metric widgets are preserved, while Today
   freshness remains aligned across local-day boundaries, DST, tab focus, and
   split web/worker deployments.
 
@@ -4789,36 +4773,36 @@ No migrations. No breaking changes.
 
 ## [1.30.34] — 2026-07-19
 
-- **Rearranging your dashboard no longer wipes the comparison baseline.**
-  A layout save from a client that does not know about that setting — the
+- **Rearranging your dashboard no longer wipes the comparison baseline.** A
+  layout save from a client that does not know about that setting — the
   app never sends it — silently reset it to "none". Every field of the
   layout now has to declare whether an absent value means "clear it" or
   "leave it alone", so the next field added cannot repeat this.
-- **Four clinical widgets stopped disappearing from a saved layout.**
-  Pain, grip strength, waist and waist-to-height were dropped by the save
-  as unknown, so a placed widget was lost every time.
-- **Mood and BMI reach the app's home screen.** Both existed in the
-  record but were absent from the summary the app reads, so those two
-  tiles could not be shown while every other one worked.
+- **Four clinical widgets stopped disappearing from a saved layout.** Pain,
+  grip strength, waist and waist-to-height were dropped by the save as
+  unknown, so a placed widget was lost every time.
+- **Mood and BMI reach the app's home screen.** Both existed in the record
+  but were absent from the summary the app reads, so those two tiles could
+  not be shown while every other one worked.
 - **A pen carries its manufacturer and printed strength.** Without them,
   containers entered on the web could not be shown in the app's pen list.
 - **Destructive controls ask first.** Signing every other device out,
-  revoking a session, and revoking a trusted device fired on a single
-  tap. A sweep found two more with neither a confirmation nor an undo: a
-  Coach reminder and a travel entry. Deleting a document still does not
-  ask — it can be undone, which covers the mis-tap.
+  revoking a session, and revoking a trusted device fired on a single tap.
+  Two more had neither a confirmation nor an undo: a Coach reminder and a
+  travel entry. Deleting a document still does not ask — it can be undone,
+  which covers the mis-tap.
 - **Delete confirmations stop overclaiming.** Four of them promised the
   deletion could not be undone while the same screen offered an undo.
   Warnings that are wrong make the ones that are right easier to ignore.
 - **The sleep-debt figure is described correctly again.** The calculation
   changed to a running balance that credits surplus in v1.19.0; the label
-  still said "cumulative shortfall". The wrong description had spread to
-  the Coach, which was reasoning about the number on the old definition,
-  and to the published API description.
+  still said "cumulative shortfall". The wrong description had spread to the
+  Coach, which was reasoning about the number on the old definition, and to
+  the published API description.
 - **The glucose reference band can be chosen on the web.** The setting
-  already worked and already fed the Coach — nothing on the web set it.
-  It selects a reference range; it is not a diagnosis and is never
-  inferred from a reading.
+  already worked and already fed the Coach — nothing on the web set it. It
+  selects a reference range; it is not a diagnosis and is never inferred
+  from a reading.
 
 One migration (0256), additive. No breaking changes.
 
@@ -4857,42 +4841,42 @@ session, not just API tokens. One migration (0255), additive.
 ## [1.30.32] — 2026-07-19
 
 - **A withdrawn AI consent stays withdrawn.** Opening the AI settings
-  granted consent again if you had taken it back, and recorded it as
-  though you had done it yourself. A withdrawal is now a standing
-  decision that only an explicit act can lift.
-- **The web can withdraw AI consent at all.** Until now only the app
-  could; on the web, consent could be given and never taken back. The AI
-  settings show what currently stands and offer the control that changes
-  it. Withdrawing takes effect immediately and deletes nothing you have
+  granted consent again if you had taken it back, and recorded it as though
+  you had done it yourself. A withdrawal is now a standing decision that
+  only an explicit act can lift.
+- **The web can withdraw AI consent at all.** Until now only the app could;
+  on the web, consent could be given and never taken back. The AI settings
+  show what currently stands and offer the control that changes it.
+  Withdrawing takes effect immediately and deletes nothing you have
   recorded.
-- **Documents get read after you switch automatic reading on.** Reading
-  was only ever started at upload, so documents already in your vault
-  stayed unread no matter what the setting said. Turning it on now works
-  through what is already there, in batches, asking the same permission
-  as any other read.
-- **A quoted passage in a document review is the document's own text.**
-  The quote shown for a finding was the wording that came back from the
-  read, not the line it was taken from — so it could be a paraphrase of
-  your own record presented as a verbatim quote. The passage is now
-  looked up in the document itself, and a finding whose source cannot be
-  located says so instead of showing a quote you cannot check.
+- **Documents get read after you switch automatic reading on.** Reading was
+  only ever started at upload, so documents already in your vault stayed
+  unread no matter what the setting said. Turning it on now works through
+  what is already there, in batches, asking the same permission as any other
+  read.
+- **A quoted passage in a document review is the document's own text.** The
+  quote shown for a finding was the wording that came back from the read,
+  not the line it was taken from — so it could be a paraphrase of your own
+  record presented as a verbatim quote. The passage is now looked up in the
+  document itself, and a finding whose source cannot be located says so
+  instead of showing a quote you cannot check.
 - **Pages that arrive with your data pre-loaded now say so on the wire.**
   They were never cacheable in practice, but nothing stated it. Anything
-  behind the sign-in wall is now marked private and uncacheable at the
-  edge, so no proxy or future change can hold one person's record and
-  hand it to someone else.
+  behind the sign-in wall is now marked private and uncacheable at the edge,
+  so no proxy or future change can hold one person's record and hand it to
+  someone else.
 - **Deleting your last reading of a kind no longer leaves stale weekly,
-  monthly and yearly figures.** The daily figure went; the longer spans
-  kept the old aggregate indefinitely.
+  monthly and yearly figures.** The daily figure went; the longer spans kept
+  the old aggregate indefinitely.
 - **The documented API matches what the endpoints return.** Twenty
   corrections, including a total that the measurements list reports in a
   different place than the specification claimed, four medication figures
-  named wrongly, a missing intake source, and eleven error codes that
-  were never written down.
+  named wrongly, a missing intake source, and eleven error codes that were
+  never written down.
 - **A retry after an unusable AI answer asks for the right shape.** The
-  correction prompt demanded fields that do not exist and named none of
-  the ones actually required, so the one corrective attempt steered away
-  from the contract instead of towards it.
+  correction prompt demanded fields that do not exist and named none of the
+  ones actually required, so the one corrective attempt steered away from
+  the right shape instead of towards it.
 
 No migrations. No breaking changes.
 
@@ -5106,8 +5090,18 @@ No breaking changes.
 
 The workouts page joins the pages that paint on first load.
 
-- **The workouts list opens with the sessions already there.** It was the last high-traffic surface still fetching its rows after the page mounted, so it showed a loading skeleton first and filled in a moment later. The list is now read on the server and handed to the page populated, the same way the dashboard, insights, medications, and coach pages already work. The list logic moved into a shared read so the page and the API endpoint go through one cached, deduplicated pass instead of two.
-- **API docs: the heart-rate bucket example matches what the server accepts.** The aggregated heart-rate `externalId` was documented with an hourly example from its first version; the contract has been 10-minute buckets since v1.30.7. The description, the example timestamp, and the min/max field notes now describe the shipped contract.
+- **The workouts list opens with the sessions already there.** It was the
+  last high-traffic surface still fetching its rows after the page mounted,
+  so it showed a loading skeleton first and filled in a moment later. The
+  list is now read on the server and handed to the page populated, the same
+  way the dashboard, insights, medications, and coach pages already work.
+  The list logic moved into a shared read so the page and the API endpoint
+  go through one cached, deduplicated pass instead of two.
+- **API docs: the heart-rate bucket example matches what the server
+  accepts.** The aggregated heart-rate `externalId` was documented with an
+  hourly example from its first version; the server has taken 10-minute
+  buckets since v1.30.7. The description, the example timestamp, and the
+  min/max field notes now describe what the server actually accepts.
 
 No breaking changes.
 
@@ -5211,12 +5205,20 @@ No breaking changes.
 
 ## [1.30.2] — 2026-07-18
 
-More audit-backlog fixes.
-
-- **Coach history is fully reachable.** The conversation list pages through your whole history and search runs on the server (by title), instead of only the first ~20 loaded chats.
-- **Navigation and flows.** A document links to the lab values it produced; the two "Recovery" pages are named distinctly and cross-linked; mood, mental wellbeing, and mood insights link to each other; the nutrients card moved out of "Source priority"; the onboarding checklist and tour no longer point at dead ends; asking the coach from a metric or a plan carries that context in.
-- **Correctness.** Correlations, the intraday chart, achievements, and the nutrients overview now bucket days by your own timezone and lead with the most recent data; a multi-source day is no longer counted twice.
-- **Performance.** The workouts list caches its de-duplication per filter, so paging through a long history is quick.
+- **Coach history is fully reachable.** The conversation list pages through
+  your whole history and search runs on the server (by title), instead of
+  only the first ~20 loaded chats.
+- **Navigation and flows.** A document links to the lab values it produced;
+  the two "Recovery" pages are named distinctly and cross-linked; mood,
+  mental wellbeing, and mood insights link to each other; the nutrients card
+  moved out of "Source priority"; the onboarding checklist and tour no
+  longer point at dead ends; asking the coach from a metric or a plan
+  carries that context in.
+- **Correctness.** Correlations, the intraday chart, achievements, and the
+  nutrients overview now bucket days by your own timezone and lead with the
+  most recent data; a multi-source day is no longer counted twice.
+- **Performance.** The workouts list caches its de-duplication per filter,
+  so paging through a long history is quick.
 
 No migration. No breaking changes.
 
@@ -5276,23 +5278,22 @@ Two migrations (0250, 0251). No breaking changes.
 
 ### Security
 
-- **Hardened the same-origin redirect guard.** A crafted relative
-  post-login `next` path (e.g. `/..//evil.com`) passed the same-origin
-  check but left a protocol-relative pathname that could re-resolve to a
-  foreign origin when re-used in a redirect or client navigation. The
-  guard now re-verifies the reconstructed path resolves on-origin and
-  rejects it otherwise. Covers the OIDC callback and the password/passkey
-  login redirect.
+- **Hardened the same-origin redirect check.** A crafted relative post-login
+  `next` path (e.g. `/..//evil.com`) passed the same-origin check but left a
+  protocol-relative pathname that could re-resolve to a foreign origin when
+  re-used in a redirect or client navigation. The check now re-verifies the
+  reconstructed path resolves on-origin and rejects it otherwise. Covers the
+  OIDC callback and the password/passkey login redirect.
 
 ### Fixed
 
 - **OIDC login redirects use the operator app URL, not the request URL.**
-  Behind a reverse proxy that does not forward the original host, the
-  login and callback routes built their browser redirects from the
-  address the app was reached at inside the container, sending users to
-  an unreachable internal URL after login. Every OIDC redirect is now
-  built from the operator-set `NEXT_PUBLIC_APP_URL`, matching the
-  convention the other integrations already use.
+  Behind a reverse proxy that does not forward the original host, the login
+  and callback routes built their browser redirects from the address the app
+  was reached at inside the container, sending users to an unreachable
+  internal URL after login. Every OIDC redirect is now built from the
+  operator-set `NEXT_PUBLIC_APP_URL`, matching the convention the other
+  integrations already use.
 
 ## [1.29.4] — 2026-07-17
 
@@ -5325,20 +5326,22 @@ One migration (0249). No breaking changes.
 - **WHOOP workouts carry their real sport.** WHOOP was the only source that
   didn't translate its activity into the app's own sport names, so
   WHOOP-tracked rides and runs landed unlabelled instead of as cycling or
-  running. New and existing WHOOP workouts are now mapped, so your bike rides
-  show up as cycling — history included. When the same session comes in from two
-  sources, the canonical row now keeps the richest reading (heart rate, energy,
-  distance) instead of dropping it.
+  running. New and existing WHOOP workouts are now mapped, so your bike
+  rides show up as cycling — history included. When the same session comes
+  in from two sources, the surviving row now keeps the richest reading
+  (heart rate, energy, distance) instead of dropping it.
 - **Scroll back through the day's heart rate.** The intraday heart-rate view
-  gains a day navigator to step through previous days. The fine-grained history
-  now stays for 90 days (was 14); older days show the coarser hourly shape.
-- **Clear a card from Today.** A milestone, a new ECG, or a tension note can be
-  dismissed from the Today rail once you've seen it; the section tightens when
-  the last one is gone. The cards that need an action stay until you act.
-- **Vitals context moves into an info tap.** The vitals tiles carry an (i) with
-  the context — your reading against your personal range, and against your age
-  where that applies — instead of a permanent caption. The VO₂ max heading no
-  longer gets cut off.
+  gains a day navigator to step through previous days. The fine-grained
+  history now stays for 90 days (was 14); older days show the coarser hourly
+  shape.
+- **Clear a card from Today.** A milestone, a new ECG, or a tension note can
+  be dismissed from the Today rail once you've seen it; the section tightens
+  when the last one is gone. The cards that need an action stay until you
+  act.
+- **Vitals context moves into an info tap.** The vitals tiles carry an (i)
+  with the context — your reading against your personal range, and against
+  your age where that applies — instead of a permanent caption. The VO₂
+  max heading no longer gets cut off.
 - **Oura cycle phases feed the cycle tracker.** Where your Oura connection
   provides cycle-phase data, it now fills the cycle tracker as a background
   source; your own entries always win.
@@ -5563,22 +5566,23 @@ any number means:
   settings page that doesn't exist and returned a 404; it now opens the
   integrations settings.
 - Six endpoints the iOS app already uses were missing from the published API
-  contract (`docs/api/openapi.yaml`); they are now documented, so the contract
-  is complete again.
-- A few module pages didn't redirect away when their module was turned off, the
-  way the others do; they now behave consistently.
+  reference (`docs/api/openapi.yaml`); they are now documented, so the
+  reference is complete again.
+- A few module pages didn't redirect away when their module was turned off,
+  the way the others do; they now behave consistently.
 
 ## [1.28.43] — 2026-07-16 — Visual consistency polish
 
-A pass over small visual inconsistencies the design audit surfaced:
+A pass over small visual inconsistencies:
 
-- The insights header now uses the standard heading weight and spacing scale.
+- The insights header now uses the standard heading weight and spacing
+  scale.
 - Two dashboard tiles that hand-rolled a dimmer header now use the same tile
   header as their neighbours, so the cards read as one family.
 - A few tiles sat a step denser than their siblings; they now match.
 - Two header icons that used the accent colour are back to the standard.
-- Several edit dialogs on phone-reachable surfaces now open as the same bottom
-  sheet the rest of the app uses.
+- Several edit dialogs on phone-reachable surfaces now open as the same
+  bottom sheet the rest of the app uses.
 
 A new lint rule keeps card spacing on the standard scale so this drift can't
 quietly return.
@@ -5600,27 +5604,26 @@ Performance and correctness fixes:
 
 ## [1.28.41] — 2026-07-16 — Complete the translations, and guard the gap
 
-One reminder-adjacent label — the recovery-driver "functional impact" track on
-the illness insights card — was showing its internal name instead of a
-translation in every language; it is now translated in all six. The class of
-bug behind it (a label resolved through a computed key the static check can't
-see, so a missing translation ships silently — the same seam as the well-being
-labels fixed a release ago) is now closed structurally: a new test walks each
-such key space against every language bundle, so a missing translation fails
-the build instead of reaching a user.
+One reminder-adjacent label — the recovery-driver "functional impact"
+track on the illness insights card — was showing its internal name instead
+of a translation in every language; it is now translated in all six. The
+class of bug behind it (a label resolved through a computed key, so a
+missing translation ships silently, the same seam as the well-being labels
+fixed a release ago) is now closed: a translation missing from one of these
+labels can no longer reach a user.
 
 ## [1.28.40] — 2026-07-16 — Insight assessments lead with meaning, not a number
 
-The per-metric insight assessments read like a data readout — they opened on
-the current value. The overview texts already lead with the day's verdict in
-plain words and land the warm, motivating tone; the per-metric cards were told
-the opposite (name the level with a number first) and never received the
-opener-variation the other insight surfaces use. Now every metric assessment
-opens with what the reading MEANS and brings the number in right after as
-support, in the same warm register as the overview. A shared opening-shape
-contract keeps the surfaces from drifting apart again, and the deterministic
-first-paint fallbacks lead with the verdict too. No change to what the numbers
-say — only how the sentence is built.
+The per-metric insight assessments read like a data readout — they opened
+on the current value. The overview texts already lead with the day's verdict
+in plain words and land the warm, motivating tone; the per-metric cards were
+told the opposite (name the level with a number first) and never received
+the opener-variation the other insight surfaces use. Now every metric
+assessment opens with what the reading MEANS and brings the number in right
+after as support, in the same warm register as the overview. A shared
+opening shape keeps the surfaces from drifting apart again, and the
+deterministic first-paint fallbacks lead with the verdict too. No change to
+what the numbers say — only how the sentence is built.
 
 ## [1.28.39] — 2026-07-16 — Sync data-loss hardening
 
@@ -5690,35 +5693,36 @@ explicitly, with a matching note in the scaling guide.
 ## [1.28.35] — 2026-07-14 — Timestamps honor the profile timezone
 
 Client-rendered times previously fell back to a hardcoded display zone
-(Europe/Berlin) no matter what the profile timezone said; a user in Manila saw
-Berlin clock times on every card, chart, and table. Display now follows the
-profile timezone everywhere, with a strict fallback to the legacy display zone
-— never the browser zone, so screen, PDF, and export can no longer disagree.
-An invalid stored timezone can never break rendering; it falls back safely.
+(Europe/Berlin) no matter what the profile timezone said; a user in Manila
+saw Berlin clock times on every card, chart, and table. Display now follows
+the profile timezone everywhere, with a strict fallback to the legacy
+display zone — never the browser zone, so screen, PDF, and export can no
+longer disagree. An invalid stored timezone can never break rendering; it
+falls back safely.
 
-The same pass closed the latent inconsistencies the audit surfaced: the
-"Updated today" cards no longer mix one zone for the day boundary and another
-for the clock; calendar-date fields no longer shift a day for profiles west of
-UTC; the dose-history day headings and weekday labels render in the display
-zone; chart day/month labels stay correct for every zone (bucket math is
+The same pass closed the remaining inconsistencies: the "Updated today"
+cards no longer mix one zone for the day boundary and another for the clock;
+calendar-date fields no longer shift a day for profiles west of UTC; the
+dose-history day headings and weekday labels render in the display zone;
+chart day/month labels stay correct for every zone (bucket math is
 untouched); and the clinician share view renders in the patient's timezone
 instead of the server container's. Day groupings, schedules, and aggregates
 were already timezone-correct server-side and are byte-identical.
 
 ## [1.28.34] — 2026-07-14 — Nutrient intake lands as quiet context (server side)
 
-Supplement-style intake written to Apple Health by nutrition apps — vitamins,
-minerals, water, caffeine — can now sync to HealthLog as daily totals. This is
-deliberately not a nutrition feature: no food diary, no calorie tracking, no
-dashboard tile. The data lands in a dedicated store (26 nutrients with EFSA
-reference values), is visible on a read-only card under Settings → Sources,
-and will feed the Coach as context in a later release.
+Supplement-style intake written to Apple Health by nutrition apps —
+vitamins, minerals, water, caffeine — can now sync to HealthLog as daily
+totals. This is deliberately not a nutrition feature: no food diary, no
+calorie tracking, no dashboard tile. The data lands in a dedicated store (26
+nutrients with EFSA reference values), is visible on a read-only card under
+Settings → Sources, and will feed the Coach as context in a later release.
 
 The module is opt-in and off by default; with it off, the server refuses the
 data entirely. Re-posting a day replaces it, units are guarded against
-µg/mg mix-ups, and implausible values are skipped per entry. This release is
-inert until the iOS companion app ships its reading side (coordination ticket
-filed); the wire contract is in the OpenAPI spec.
+µg/mg mix-ups, and implausible values are skipped per entry. This release
+is inert until the iOS companion app ships its reading side (coordination
+ticket filed); the request format is in the OpenAPI spec.
 
 ## [1.28.33] — 2026-07-14 — Re-importing a cumulative Apple Health export works again
 
@@ -5793,15 +5797,15 @@ build); scaling and admin-endpoint references corrected.
 
 Changing the dashboard tile selection now shows up immediately when you
 navigate back — the third and final layer of this bug. Saving marked the
-dashboard's cached data stale but, with the dashboard page unmounted, nothing
-re-read it until the next poll or a window-focus flick. The save now refreshes
-that cache directly, mounted or not.
+dashboard's cached data stale but, with the dashboard page unmounted,
+nothing re-read it until the next poll or a window-focus flick. The save now
+refreshes that cache directly, mounted or not.
 
 The settings pages with sortable lists (dashboard layout, medication order,
 modules, mood tags) showed a second page scrollbar: an invisible
 screen-reader hint below each list escaped its container and silently
-lengthened the document. All five editors are fixed and the overscroll guard
-now covers these routes.
+lengthened the document. All five editors are fixed, and these pages no
+longer scroll past their end.
 
 ## [1.28.28] — 2026-07-11 — OpenAI-compatible gateways work; a re-keyed night can no longer vanish
 
@@ -5847,10 +5851,10 @@ No user-facing change. Eight of the largest source files were split along
 their natural seams into focused modules — mood analytics calculators, the
 insight status-invalidation machinery, feature extraction blocks, the doctor
 report's types and helpers, the Google Health mapping layer, the coach chat
-bubbles and read-aloud controls, the Telegram webhook handlers (the route now
-holds only auth and dispatch), and the coach snapshot's cache, series helpers
-and largest per-metric blocks. Every move is verbatim with stable import
-paths; behavior is pinned by the full test suite.
+bubbles and read-aloud controls, the Telegram webhook handlers (the route
+now holds only auth and dispatch), and the coach snapshot's cache, series
+helpers and largest per-metric blocks. Every move is verbatim with stable
+import paths, and behavior is unchanged.
 
 ## [1.28.25] — 2026-07-11 — Every integration held to the same standard
 
@@ -6143,19 +6147,19 @@ name, and you can override which metric a medication is tracked against.
 
 ## [1.28.3] — 2026-07-09 — Consistent spacing and alignment
 
-A consistency pass across the app, driven by a layout audit. Insight cards now
-share one left edge — headings and body text line up instead of drifting from
-card to card (worst on mobile). Settings and admin pages no longer scroll past
-their content into empty space. On mobile, Settings and Notifications live only
-in the account menu instead of being duplicated in the overflow menu. The
-dashboard greeting keeps its action beside the text rather than pushing it onto
-its own line. Preventive-care, cycle, and onboarding cards adopt the shared card
-anatomy. The spacing and alignment rules behind these are written down so they
-hold going forward.
+A consistency pass across the app. Insight cards now share one left edge —
+headings and body text line up instead of drifting from card to card (worst
+on mobile). Settings and admin pages no longer scroll past their content
+into empty space. On mobile, Settings and Notifications live only in the
+account menu instead of being duplicated in the overflow menu. The dashboard
+greeting keeps its action beside the text rather than pushing it onto its
+own line. Preventive-care, cycle, and onboarding cards adopt the shared card
+anatomy. The spacing and alignment rules behind these are written down so
+they hold going forward.
 
 Also folds in the document PDF rasterization runtime: the image renderer now
-loads in the container, so a scanned PDF is read on an image-only AI provider
-(previously it quietly fell back to text-only).
+loads in the container, so a scanned PDF is read on an image-only AI
+provider (previously it quietly fell back to text-only).
 
 ## [1.28.2] — 2026-07-09 — Automatic AI document reading (opt-in)
 
@@ -6179,39 +6183,41 @@ unchanged.
 
 ## [1.28.0] — 2026-07-09 — Document intelligence
 
-A milestone that closes the document line end to end. The vault stopped being a
-place to _store_ files and became a place to _understand_ them — read,
-searched, shared, and answered — with the privacy posture held at every step.
-The document capabilities shipped incrementally across v1.27.17–v1.27.33; this
-release marks them, together with a full correctness/resilience/quality pass, as
-one coherent whole.
+A milestone that closes the document line end to end. The vault stopped
+being a place to _store_ files and became a place to _understand_ them —
+read, searched, shared, and answered — with the privacy posture held at
+every step. The document capabilities shipped incrementally across
+v1.27.17–v1.27.33; this release marks them, together with a full
+correctness/resilience/quality pass, as one coherent whole.
 
 ### The document intelligence era
 
-- **Vault** — every letter, report, and scan in one place, encrypted at rest,
-  byte-classified serving (inline vs download), opt-in.
+- **Vault** — every letter, report, and scan in one place, encrypted at
+  rest, byte-classified serving (inline vs download), opt-in.
 - **AI reading + automatic search** — documents are read and indexed
-  automatically on upload; a local reader keeps the file on the machine, an AI
-  provider reads richer (including scans) with consent. Content search matches
-  whole words _inside_ documents over an encrypted blind token index — nothing
-  readable is ever stored.
-- **Sharing** — hand a clinician a time-boxed, revocable link with a mobile QR
-  code; camera metadata (EXIF/GPS) stripped on the way out.
+  automatically on upload; a local reader keeps the file on the machine, an
+  AI provider reads richer (including scans) with consent. Content search
+  matches whole words _inside_ documents over an encrypted blind token index
+  — nothing readable is ever stored.
+- **Sharing** — hand a clinician a time-boxed, revocable link with a
+  mobile QR code; camera metadata (EXIF/GPS) stripped on the way out.
 - **Chat about a document** — ask a document questions in plain language,
   grounded and cited, with a security model that treats the document as
-  untrusted: fenced as data, no tools, no health-record context, numeric-grounded,
-  never a diagnosis.
-- **AI provider governance** — for documents, a local-first / no-training-API /
-  subscription-last provider order, explicit consent for any external egress,
-  and a vendor-blind notice before a document leaves the machine.
+  untrusted: fenced as data, no tools, no health-record context,
+  numeric-grounded, never a diagnosis.
+- **AI provider governance** — for documents, a local-first /
+  no-training-API / subscription-last provider order, explicit consent for
+  any external egress, and a vendor-blind notice before a document leaves
+  the machine.
 
 ### Correctness, resilience and polish
 
-The same line carried a broad correctness sweep: DST-safe medication windows and
-user-timezone compliance; graceful degradation (worker timeouts, per-metric sync
-freshness, offline-write safety, per-source isolation, honest "unreadable"
-markers); no more dashboard dead-ends and honest error/empty states; accessibility
-contrast and semantics; and cold-start + performance fixes.
+The same line carried broad correctness work: DST-safe medication windows
+and user-timezone compliance; graceful degradation (worker timeouts,
+per-metric sync freshness, offline-write safety, per-source isolation,
+honest "unreadable" markers); no more dashboard dead-ends and honest
+error/empty states; accessibility contrast and semantics; and cold-start +
+performance fixes.
 
 ## [1.27.33] — 2026-07-09 — Chat about a document
 
@@ -6228,18 +6234,35 @@ contrast and semantics; and cold-start + performance fixes.
 
 ### Changed
 
-- **No more dead-ends:** the dashboard metric tiles (weight, blood pressure, pulse, glucose, mood, sleep, steps, VO₂max) now link to their Insights detail; the daily-briefing finding rows are tappable again; the "no notification channels" prompt points to where channels actually live now; and Coach Plans are reachable from the conversations header.
-- **Honest states:** the Achievements, Coach-conversations, Notifications, custom-metrics and Insights surfaces render a retryable error card on a failed load instead of a confident empty state, and auth-gated pages show a layout-reserving skeleton instead of a bare spinner.
-- **Medication dialogs** move to the bottom-sheet pattern on phones (consistent with the rest of the app), and secret/config inputs suppress password-manager autofill.
+- **No more dead-ends:** the dashboard metric tiles (weight, blood pressure,
+  pulse, glucose, mood, sleep, steps, VO₂max) now link to their Insights
+  detail; the daily-briefing finding rows are tappable again; the "no
+  notification channels" prompt points to where channels actually live now;
+  and Coach Plans are reachable from the conversations header.
+- **Honest states:** the Achievements, Coach-conversations, Notifications,
+  custom-metrics and Insights surfaces render a retryable error card on a
+  failed load instead of a confident empty state, and auth-gated pages show
+  a layout-reserving skeleton instead of a bare spinner.
+- **Medication dialogs** move to the bottom-sheet pattern on phones
+  (consistent with the rest of the app), and secret/config inputs suppress
+  password-manager autofill.
 
 ### Accessibility
 
-- Fixed several contrast shortfalls (muted text/icons below AA, phantom colour utilities that emitted no rule), added an accessible name to the admin toggle, and `aria-pressed` to the chart range switches.
+- Fixed several contrast shortfalls (muted text/icons below AA, phantom
+  colour utilities that emitted no rule), added an accessible name to the
+  admin toggle, and `aria-pressed` to the chart range switches.
 
 ### Fixed
 
-- Documentation now matches the actual compose contract for `DATABASE_URL`; a `SESSION_COOKIE_SECURE` transport mismatch is diagnosed (was a silent login loop); a boot readiness summary prints per-secret status before fail-closed loaders throw; and a nudge appears while public registration is open.
-- CSV import batches its writes; the off-host backup pages its large reads; the theme provider closes a hydration seam; and hot per-row Intl formatters are cached.
+- Documentation now matches what compose actually expects for
+  `DATABASE_URL`; a `SESSION_COOKIE_SECURE` transport mismatch is diagnosed
+  (was a silent login loop); a boot readiness summary prints per-secret
+  status before fail-closed loaders throw; and a nudge appears while public
+  registration is open.
+- CSV import batches its writes; the off-host backup pages its large reads;
+  the theme provider closes a hydration seam; and hot per-row Intl
+  formatters are cached.
 
 ## [1.27.31] — 2026-07-09 — Document AI provider governance
 
@@ -6345,7 +6368,15 @@ contrast and semantics; and cold-start + performance fixes.
 
 ### Fixed
 
-- Recording a dose late — after its catch-up window has closed, when the card has already advanced to the next scheduled time — no longer binds the intake to that later slot. Previously a morning dose taken in the early afternoon could be recorded against the evening slot, which then made the evening dose look already taken, dropped it from the day, and pushed the next reminder to tomorrow. A late intake now records on its own, leaving both the missed and the upcoming slot intact, and the taken-count reflects only real intakes. The same guard applies to the bulk-intake path.
+- Recording a dose late — after its catch-up window has closed, when the
+  card has already advanced to the next scheduled time — no longer binds
+  the intake to that later slot. Previously a morning dose taken in the
+  early afternoon could be recorded against the evening slot, which then
+  made the evening dose look already taken, dropped it from the day, and
+  pushed the next reminder to tomorrow. A late intake now records on its
+  own, leaving both the missed and the upcoming slot intact, and the
+  taken-count reflects only real intakes. The same rule applies to the
+  bulk-intake path.
 
 ## [1.27.17] — 2026-07-07 — The document vault
 
@@ -6361,43 +6392,101 @@ contrast and semantics; and cold-start + performance fixes.
 
 ### Fixed
 
-- The installable app now survives being offline. A network failure on the auth probe was treated as a logged-out session — it wiped the offline caches and redirected to the login page, defeating the entire offline layer. Offline relaunches now render the dashboard from cache with the offline banner; only a real 401/403 or an explicit logout clears anything.
-- Chart text is readable in the light theme again — 23 chart surfaces drew their ticks and axis text in colours measuring near-invisible contrast; they now use the semantic text tokens (measured 13.2:1 in light, dark byte-identical).
-- On the mood insights page, correlation captions no longer escape their tiles on phone widths; the density guard now covers that route too. Row checkboxes gained a 32 px touch target at unchanged visual size.
-- The dashboard hero breathes: the score rings space at 24 px on desktop, on phones the four rings spread evenly across the full width instead of clustering in the centre, and the briefing section separates from the greeting row at the same rhythm as the card padding.
+- The installable app now survives being offline. A network failure on the
+  auth probe was treated as a logged-out session — it wiped the offline
+  caches and redirected to the login page, defeating the entire offline
+  layer. Offline relaunches now render the dashboard from cache with the
+  offline banner; only a real 401/403 or an explicit logout clears anything.
+- Chart text is readable in the light theme again — 23 chart surfaces drew
+  their ticks and axis text in colours measuring near-invisible contrast;
+  they now use the semantic text tokens (measured 13.2:1 in light, dark
+  byte-identical).
+- On the mood insights page, correlation captions no longer escape their
+  tiles on phone widths. Row checkboxes gained a 32 px touch target at
+  unchanged visual size.
+- The dashboard hero breathes: the score rings space at 24 px on desktop, on
+  phones the four rings spread evenly across the full width instead of
+  clustering in the centre, and the briefing section separates from the
+  greeting row at the same rhythm as the card padding.
 
 ### Changed
 
-- Every page sheds roughly 100 KB of compressed JavaScript: the translation catalog no longer ships twice (once per route bundle, once inlined into the page document — the dashboard document alone shrinks from 139 KB to 25 KB compressed); catalogs now load once as a cached static asset. All sixteen charts share a single chart runtime chunk instead of up to eight copies.
-- The dashboard's first paint carries real tile values straight from the server (measured −25 % largest-contentful-paint), and a new bundle-size budget gate in CI keeps route weights from regressing silently.
+- Every page sheds roughly 100 KB of compressed JavaScript: the translation
+  catalog no longer ships twice (once per route bundle, once inlined into
+  the page document — the dashboard document alone shrinks from 139 KB to
+  25 KB compressed); catalogs now load once as a cached static asset. All
+  sixteen charts share a single chart runtime chunk instead of up to eight
+  copies.
+- The dashboard's first paint carries real tile values straight from the
+  server (measured −25 % largest-contentful-paint), and a new bundle-size
+  budget gate in CI keeps route weights from regressing silently.
 
 ## [1.27.15] — 2026-07-07 — Complete Google Health coverage
 
 ### Fixed
 
-- HRV, resting heart rate, SpO₂, respiratory rate, and VO₂max now import from Google Health. All five daily-summary types filtered with a field-name style the live service never matches — the requests returned 200 with zero rows while the data sat visibly in the Google app. The reference documentation contradicts itself on the style; the sync now sends the form the documentation's own worked example uses and falls back to the alternative automatically, and the connection test reports which one the service accepted.
-- Respiratory rate additionally read a response field that does not exist, and height parsed metres where the API sends millimetres — both silent zero-imports since the integration launched.
-- Workout recognition covers the full documented exercise catalogue (~35 additional activity types — trail runs, pool swims, rowing machines, and the like no longer land as "other").
+- HRV, resting heart rate, SpO₂, respiratory rate, and VO₂max now import
+  from Google Health. All five daily-summary types filtered with a
+  field-name style the live service never matches — the requests returned
+  200 with zero rows while the data sat visibly in the Google app. The
+  reference documentation contradicts itself on the style; the sync now
+  sends the form the documentation's own worked example uses and falls back
+  to the alternative automatically, and the connection test reports which
+  one the service accepted.
+- Respiratory rate additionally read a response field that does not exist,
+  and height parsed metres where the API sends millimetres — both silent
+  zero-imports since the integration launched.
+- Workout recognition covers the full documented exercise catalogue (~35
+  additional activity types — trail runs, pool swims, rowing machines, and
+  the like no longer land as "other").
 
 ### Added
 
-- Three more Google Health data types import into existing measurements: blood glucose, core body temperature, and the nightly wrist temperature Fitbit bands record during sleep.
-- A full audit of all 40 API data types is documented alongside the integration — every type is now either imported or an explicitly reasoned skip.
+- Three more Google Health data types import into existing measurements:
+  blood glucose, core body temperature, and the nightly wrist temperature
+  Fitbit bands record during sleep.
+- All 40 API data types are documented alongside the integration: every type
+  is now either imported or an explicitly reasoned skip.
 
 ## [1.27.14] — 2026-07-07 — Cross-device dose sync and phone-width polish
 
 ### Fixed
 
-- Marking a dose on one device now wakes the others within seconds: every intake mutation — logging, editing, undoing, bulk actions, imports — dispatches a silent sync push to the user's other iPhones, so a lock-screen Live Activity no longer keeps counting down after the dose was taken on the web. Rapid mutations coalesce into one ping (a five-dose bulk action sends one push, not five), the originating device is skipped, and the payload carries no health data — previously it leaked the medication id, and five of the seven mutation routes sent nothing at all.
-- On phone widths, the dashboard's briefing-signal rows and the health-score delta stack vertically instead of squeezing a wrapping headline beside its value — a signal headline measured seven lines tall at a third of the tile width before, and on narrow phones the delta spilled past the tile edge. A permanent guard test now pins zero horizontal overflow and no element escaping its tile on the dashboard and insights at 390 px and 360 px widths.
+- Marking a dose on one device now wakes the others within seconds: every
+  intake mutation — logging, editing, undoing, bulk actions, imports —
+  dispatches a silent sync push to the user's other iPhones, so a
+  lock-screen Live Activity no longer keeps counting down after the dose was
+  taken on the web. Rapid mutations coalesce into one ping (a five-dose bulk
+  action sends one push, not five), the originating device is skipped, and
+  the payload carries no health data — previously it leaked the medication
+  id, and five of the seven mutation routes sent nothing at all.
+- On phone widths, the dashboard's briefing-signal rows and the health-score
+  delta stack vertically instead of squeezing a wrapping headline beside its
+  value — a signal headline measured seven lines tall at a third of the
+  tile width before, and on narrow phones the delta spilled past the tile
+  edge.
 
 ## [1.27.13] — 2026-07-07 — Assessments that interpret
 
 ### Changed
 
-- The per-metric AI assessments now interpret values instead of enumerating them: where the current value sits on guideline reference bands (resting heart rate, SpO₂, respiratory rate, body temperature, sleep duration, waist measures, pulse-wave velocity, BMI, visceral-fat rating — each derived from cited primary sources), what that band means in plain words, and a trend judged by its position — a shift deep inside a healthy band reads as a footnote, the same shift near a boundary leads the text. Metrics without an established general reference band say so honestly and interpret against the person's own baseline.
-- Two contract rules now bind every AI text surface: measurement counts and logging cadence are not insights (they may only appear when they carry a consequence), and the tone standard is encouraging and dignified — celebrates what is genuinely good, names what deserves attention, never alarms or moralises.
-- Band positions are computed server-side and handed to the model as context — the model states them, it never computes them; no diagnosis language anywhere.
+- The per-metric AI assessments now interpret values instead of enumerating
+  them: where the current value sits on guideline reference bands (resting
+  heart rate, SpO₂, respiratory rate, body temperature, sleep duration,
+  waist measures, pulse-wave velocity, BMI, visceral-fat rating — each
+  derived from cited primary sources), what that band means in plain words,
+  and a trend judged by its position — a shift deep inside a healthy band
+  reads as a footnote, the same shift near a boundary leads the text.
+  Metrics without an established general reference band say so honestly and
+  interpret against the person's own baseline.
+- Two rules now bind every AI text surface: measurement counts and logging
+  cadence are not insights (they may only appear when they carry a
+  consequence), and the tone standard is encouraging and dignified —
+  celebrates what is genuinely good, names what deserves attention, never
+  alarms or moralises.
+- Band positions are computed server-side and handed to the model as context
+  — the model states them, it never computes them; no diagnosis language
+  anywhere.
 
 ## [1.27.12] — 2026-07-06 — Google Health daily totals
 
@@ -6411,14 +6500,28 @@ contrast and semantics; and cold-start + performance fixes.
 
 ### Fixed
 
-- An explicitly chosen display language now sticks on every device, permanently. Two causes were fixed together: the server never consulted the profile's language when the locale cookie was missing, and Safari deletes script-written cookies after seven days — which silently flipped the UI back to the system language every week. The cookie is now set server-side and the profile choice wins whenever the cookie is gone.
-- Every insights and dashboard card now shares one measured geometry: the same text edge, the same header-to-body distance, the same foreground colour for body prose. A measurement pass over all pages found and fixed a dozen drifted surfaces, including the "usual range" strip (rebuilt on the standard card) and the blood-pressure explainer.
-- The dose ring on the dashboard paints in the medication hue used across the insights instead of green.
+- An explicitly chosen display language now sticks on every device,
+  permanently. Two causes were fixed together: the server never consulted
+  the profile's language when the locale cookie was missing, and Safari
+  deletes script-written cookies after seven days — which silently flipped
+  the UI back to the system language every week. The cookie is now set
+  server-side and the profile choice wins whenever the cookie is gone.
+- Every insights and dashboard card now shares one measured geometry: the
+  same text edge, the same header-to-body distance, the same foreground
+  colour for body prose. A measurement pass over all pages found and fixed a
+  dozen drifted surfaces, including the "usual range" strip (rebuilt on the
+  standard card) and the blood-pressure explainer.
+- The dose ring on the dashboard paints in the medication hue used across
+  the insights instead of green.
 
 ### Changed
 
-- The last raw theme-palette colour utilities are gone — every surface reads from semantic tokens now, and the lint rule that guards this is set to error. A small brand token covers the few places that genuinely carry the brand accent, with computed AA contrast in both themes.
-- Card slots are guarded against padding overrides by a new lint rule, keeping the spacing scale uniform going forward.
+- The last raw theme-palette colour utilities are gone — every surface
+  reads from semantic tokens now. A small brand token covers the few places
+  that genuinely carry the brand accent, with computed AA contrast in both
+  themes.
+- Card padding stays on the standard spacing scale, so per-card overrides
+  cannot drift back in.
 
 ## [1.27.10] — 2026-07-05 — Two new check-ins: wellbeing and sleep
 
@@ -6444,19 +6547,37 @@ contrast and semantics; and cold-start + performance fixes.
 
 ### Changed
 
-- The hero's medication ring now shows today's doses — "1/3 taken" as a filling ring — instead of a seven-day percentage. No doses scheduled today means no ring.
-- Ring choices under Settings → Dashboard apply immediately when toggled and the selection can be reordered; the order carries over to the hero. Ring colours match the Insights rings exactly.
-- The "daily briefing" heading on the dashboard is itself the link to the full briefing (no underline), the verdict sentence links to the metric it talks about when it has no action button, and the separate "open Insights" text link is gone.
-- The light theme now tunes all remaining highlight colours to readable contrast on light cards — admin pages, the Coach thread, and confidence meters no longer render neon-on-white.
-- Failed data loads show the same retry card everywhere; a dozen surfaces previously showed a bare error line without a retry.
-- Insights tiles share one header anatomy (icon and title in the standard size and colour) — the sleep, glucose, cycle, and correlation tiles had drifted into hand-rolled variants.
-- Card paddings across ~20 surfaces now come from the card primitive alone, removing stale per-card overrides from an older spacing era.
+- The hero's medication ring now shows today's doses — "1/3 taken" as a
+  filling ring — instead of a seven-day percentage. No doses scheduled
+  today means no ring.
+- Ring choices under Settings → Dashboard apply immediately when toggled
+  and the selection can be reordered; the order carries over to the hero.
+  Ring colours match the Insights rings exactly.
+- The "daily briefing" heading on the dashboard is itself the link to the
+  full briefing (no underline), the verdict sentence links to the metric it
+  talks about when it has no action button, and the separate "open Insights"
+  text link is gone.
+- The light theme now tunes all remaining highlight colours to readable
+  contrast on light cards — admin pages, the Coach thread, and confidence
+  meters no longer render neon-on-white.
+- Failed data loads show the same retry card everywhere; a dozen surfaces
+  previously showed a bare error line without a retry.
+- Insights tiles share one header anatomy (icon and title in the standard
+  size and colour) — the sleep, glucose, cycle, and correlation tiles had
+  drifted into hand-rolled variants.
+- Card paddings across ~20 surfaces now come from the card primitive alone,
+  removing stale per-card overrides from an older spacing era.
 
 ### Added
 
-- The doctor report can include structured allergies and family history as toggleable sections, and the Coach considers both in its picture of you.
-- The PHQ-9 check-in regained its optional closing question ("how difficult have these problems made daily life?") as a regular tenth question — answering is optional.
-- A guard test pins the settings pages against the recurring scroll-past-the-end class, and the lint rule against raw palette colours now also catches theme utilities, colour props, and arbitrary values.
+- The doctor report can include structured allergies and family history as
+  toggleable sections, and the Coach considers both in its picture of you.
+- The PHQ-9 check-in regained its optional closing question ("how difficult
+  have these problems made daily life?") as a regular tenth question —
+  answering is optional.
+- The settings pages no longer scroll past their end, and raw palette
+  colours can no longer come back through theme utilities, colour props, or
+  arbitrary values.
 
 ## [1.27.7] — 2026-07-05 — Score rings on the dashboard
 
