@@ -246,12 +246,12 @@ export function GettingStartedChecklist() {
   // the snapshot having resolved so the count is real, not the
   // loading-default 0.
   //
-  // v1.39 (Wave C, C1) — the rule is `isStillInSetup`, the same predicate
+  // v1.39 — the rule is `isStillInSetup`, the same predicate
   // `shouldShowChecklist` applies, rather than a restatement of half of it.
   // The two drifted apart once already: the visibility rule learned about
   // records that ran the setup flow and this gate did not, so the card
   // rendered for a wizard-run account past five readings with every
-  // network-backed row frozen at "not done" (research I9, M-p).
+  // network-backed row frozen at "not done".
   const checklistRelevant =
     !!user &&
     !dismissedAll &&

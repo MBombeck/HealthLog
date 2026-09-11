@@ -1371,7 +1371,7 @@ describe("recordSyncFailure — leg set", () => {
 });
 
 /**
- * v1.38.19 (wave B / I5) — the synthetic "no row" snapshot.
+ * v1.38.19 — the synthetic "no row" snapshot.
  *
  * `state: "connected"` used to be the value an account with no sync history
  * read back, which made the ledger field's default mean the opposite of its

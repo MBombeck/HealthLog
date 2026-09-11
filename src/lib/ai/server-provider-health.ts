@@ -1,5 +1,5 @@
 /**
- * v1.38.19 (wave D) — "does the shared provider of THIS instance work?",
+ * v1.38.19 — "does the shared provider of THIS instance work?",
  * answered for a user who has never made a single AI call.
  *
  * The question comes from the end of the setup flow. The done screen used

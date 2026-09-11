@@ -1,5 +1,5 @@
 /**
- * v1.38.19 (wave D) — the instance state the shared-provider offer reads.
+ * v1.38.19 — the instance state the shared-provider offer reads.
  *
  * Two rows decide what the setup flow's last screen may say, and neither has
  * a product endpoint that writes them the way this journey needs:

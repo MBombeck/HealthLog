@@ -1,5 +1,5 @@
 /**
- * v1.39 (Wave C, C3) — Q6 cannot be answered with nothing chosen (M-k).
+ * v1.39 — Q6 cannot be answered with nothing chosen.
  *
  * "Weiter" used to be live on an untouched units screen: it wrote
  * `{ units: {} }`, which marked the step DONE without recording a preference,

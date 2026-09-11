@@ -1,5 +1,5 @@
 /**
- * v1.38.19 (wave D) — the AI offer at the end of the setup flow.
+ * v1.38.19 — the AI offer at the end of the setup flow.
  *
  * The screen used to promise that insights "work for you right now" the
  * moment the operator had configured a key. It never knew whether the key

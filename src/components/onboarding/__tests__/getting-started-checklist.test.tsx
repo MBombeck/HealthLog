@@ -1,5 +1,5 @@
 /**
- * v1.39 (Wave C, C1) — the checklist's data queries follow the same rule as
+ * v1.39 — the checklist's data queries follow the same rule as
  * its visibility.
  *
  * `shouldShowChecklist` gained `hasEnteredOnboardingFlow` as a third
@@ -7,7 +7,7 @@
  * half of the rule, so a wizard-run account past five readings still saw the
  * card while every supporting query was `enabled: false` — the medication,
  * data-source, notification and insights rows read "not done" for things the
- * account had already done (research I9).
+ * account had already done.
  *
  * Rendered SSR-only, per this repo's component-test convention. `useQuery` is
  * mocked to honour `enabled` exactly the way tanstack does — a disabled query

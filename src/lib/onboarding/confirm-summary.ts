@@ -29,11 +29,10 @@ export interface ConfirmedModules {
   /** On whatever the answers say. */
   alwaysOn: ModuleKey[];
   /**
-   * v1.39 (Wave C, C4) — what the derivation takes OUT of the navigation:
-   * modules this record shows today that the answers do not ask for
-   * (research I6). Empty until the account payload has resolved, because a
-   * module the payload says nothing about is a module this screen knows
-   * nothing about.
+   * v1.39 — what the derivation takes OUT of the navigation:
+   * modules this record shows today that the answers do not ask for. Empty
+   * until the account payload has resolved, because a module the payload
+   * says nothing about is a module this screen knows nothing about.
    */
   wouldSwitchOff: ModuleKey[];
 }

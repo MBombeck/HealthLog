@@ -1,5 +1,5 @@
 /**
- * v1.38.19 (wave D) — the instance-wide health of the operator's shared
+ * v1.38.19 — the instance-wide health of the operator's shared
  * provider, as a tri-state a FRESH account is allowed to read.
  *
  * The ledger itself is per-user and fails OPEN (an optimisation, never a

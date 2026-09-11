@@ -1,5 +1,5 @@
 /**
- * v1.38.19 (wave B / C1, C2) — the setup flow, path 5: a wearable on Q4.
+ * v1.38.19 — the setup flow, path 5: a wearable on Q4.
  *
  * The connect arm is the only place in the flow that renders a claim about
  * real account state, and until this file no journey reached it: bp answers

@@ -118,7 +118,7 @@ const SCREENS: ScreenCase[] = [
   {
     screen: "first-result",
     path: "/onboarding/first-result",
-    // v1.38.19 (wave B) — wait for the tile the screen SETTLED on, not for
+    // v1.38.19 — wait for the tile the screen SETTLED on, not for
     // the connect card. This sweep used to name the connect card, which is
     // painted for the few hundred milliseconds before the status envelope
     // resolves whatever the account's real state is — so it scanned a frame

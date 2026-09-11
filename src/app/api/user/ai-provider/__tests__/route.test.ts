@@ -43,7 +43,7 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
 }));
 
-// v1.38.19 (wave D) — the four preconditions the honest offer rides on.
+// v1.38.19 — the four preconditions the honest offer rides on.
 vi.mock("@/lib/ai/server-provider-health", () => ({
   readServerProviderHealth: vi.fn(),
 }));
@@ -441,7 +441,7 @@ describe("GET /api/user/ai-provider — the gateway's fields (#470)", () => {
 });
 
 /**
- * v1.38.19 (wave D) — the honest shared-provider offer.
+ * v1.38.19 — the honest shared-provider offer.
  *
  * The setup flow's last screen used to promise that insights "work for you
  * right away" whenever `managedBy` said `server`. That is a presence read:

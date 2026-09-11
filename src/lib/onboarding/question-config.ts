@@ -114,8 +114,8 @@ function only<T extends string>(
  * vocabulary is dropped rather than sent, so the strict server schema never
  * sees a chip this file did not offer.
  *
- * v1.39 (Wave C, C3) — an empty tick list is not an answer either (research
- * I4). The many-answer arms used to send `[]` and mark the step DONE, and an
+ * v1.39 — an empty tick list is not an answer either. The many-answer arms
+ * used to send `[]` and mark the step DONE, and an
  * answered Q2 with no areas is what switched every optional module off for
  * somebody whose click meant "no preference". Skip is the way past a question
  * nobody wants to answer, and Skip is the conservative derivation.
@@ -192,7 +192,7 @@ export function unitsAnswerBody(input: {
   if (input.asked.weight && input.unitPreference) {
     units.unitPreference = input.unitPreference;
   }
-  // v1.39 (Wave C, C3) — nothing chosen is not an answer (M-k): an empty
+  // v1.39 — nothing chosen is not an answer: an empty
   // units body marked Q6 done while recording no preference at all.
   return Object.keys(units).length > 0 ? { step: "units", units } : null;
 }

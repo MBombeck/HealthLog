@@ -80,7 +80,7 @@ describe("questionAnswerBody", () => {
     expect(questionAnswerBody("visit", [])).toBeNull();
   });
 
-  it("is null for a many-answer question with nothing chosen (I4)", () => {
+  it("is null for a many-answer question with nothing chosen", () => {
     // An empty tick list is not an opinion. It used to be sent as an
     // ANSWER, and an answered Q2 with no areas is what switched every
     // optional module off for somebody who meant "no preference" — Skip is
@@ -129,7 +129,7 @@ describe("units", () => {
     expect(onboardingAnswerSchema.safeParse(body).success).toBe(true);
   });
 
-  it("is null when nothing was chosen, so Skip is the way past (M-k)", () => {
+  it("is null when nothing was chosen, so Skip is the way past", () => {
     // An empty units answer marked Q6 done without recording a preference.
     expect(
       unitsAnswerBody({

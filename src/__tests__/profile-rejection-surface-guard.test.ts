@@ -35,7 +35,7 @@ function sourceFiles(): string[] {
     walkSourceFiles(SRC, { floor: 3000 })
       .filter((p) => !p.startsWith("generated/"))
       .filter((p) => !p.startsWith("app/api/"))
-      // v1.39 (Wave C, C6) — the edge proxy names routes and methods as DATA
+      // v1.39 — the edge proxy names routes and methods as DATA
       // (the demo-mode mutation allowlist is a list of path/method pairs), and
       // a pair reads to the matcher below exactly like a request expression. It
       // submits nothing and has no answer to read.

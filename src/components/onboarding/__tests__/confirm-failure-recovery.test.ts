@@ -1,16 +1,16 @@
 /**
- * v1.39 (Wave C, C2) — a failed completion leaves the confirm screen usable.
+ * v1.39 — a failed completion leaves the confirm screen usable.
  *
  * Two defects, one symptom. `advance()` in the baseline form set its pending
  * flag and never reset it on the success path, and `finish()` on the confirm
  * screen caught its own error and returned normally — so a failed
  * `POST /api/onboarding/complete` (or a 429 on the answer PATCHes before it)
  * left "Überspringen" and "Bestätigen und weiter" disabled for the rest of the
- * page's life and only a reload recovered (research I10).
+ * page's life and only a reload recovered.
  *
  * The second defect is the retry itself: `finish()` fires one PATCH per
  * question the flow never showed, and a failure midway left a partly-passed
- * ledger that the next attempt walked from the top again (M-j).
+ * ledger that the next attempt walked from the top again.
  *
  * Both are pinned at the seam the component drives, because this repo's
  * component tests render server-side and cannot click.
@@ -127,7 +127,7 @@ describe("runConfirmFinish", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it("does not pass a step the failed attempt already passed (M-j)", async () => {
+  it("does not pass a step the failed attempt already passed", async () => {
     const ledger = { current: state() };
     const passed: PassableStep[] = [];
     const passStep = async (step: PassableStep) => {

@@ -59,7 +59,7 @@ import {
  * passed explicitly so the ledger reads as settled rather than owed.
  */
 /**
- * v1.39 (Wave C, C2) — the completion sequence, apart from the component so
+ * v1.39 — the completion sequence, apart from the component so
  * a failure partway through it can be pinned without a browser.
  *
  * Passes every question the flow never showed (the route derives only once
@@ -112,7 +112,7 @@ export function ConfirmScreen({
   const answer = useOnboardingAnswer();
   const [finishing, setFinishing] = useState(false);
   /**
-   * v1.39 (Wave C, C2) — the ledger as the last write left it (M-j).
+   * v1.39 — the ledger as the last write left it.
    * `finish()` sends one PATCH per question the flow never showed; a failure
    * midway used to leave a partly-passed ledger that the next attempt walked
    * from the top again, because the `state` prop it read was the one this
@@ -125,7 +125,7 @@ export function ConfirmScreen({
 
   const needs = state.needs;
   /**
-   * v1.39 (Wave C, C5) — is `hl_onboarding=pending` still set? (research M-l)
+   * v1.39 — is `hl_onboarding=pending` still set?
    *
    * Both of this screen's Settings links are page routes, and the cookie is
    * cleared by the completion — which is what THIS screen calls. So on a
@@ -161,12 +161,12 @@ export function ConfirmScreen({
    * record and stamps this one complete without deriving, so the guardian's
    * own modules are never re-ordered around the child's answers.
    *
-   * v1.39 (Wave C, C2) — this RETHROWS. `<BaselineForm>` owns the two
+   * v1.39 — this RETHROWS. `<BaselineForm>` owns the two
    * buttons and releases them in its own `finally`, and it can only do that
    * for a failure it is told about: the previous version caught, toasted and
-   * returned normally, which left both buttons disabled until a reload
-   * (research I10). The two managed-arm callers, which have no form around
-   * them, go through `finishReporting` below.
+   * returned normally, which left both buttons disabled until a reload.
+   * The two managed-arm callers, which have no form around them, go through
+   * `finishReporting` below.
    */
   async function finish(managedRecordId?: string) {
     if (finishing) return;

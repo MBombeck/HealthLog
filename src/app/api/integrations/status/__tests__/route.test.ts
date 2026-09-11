@@ -347,7 +347,7 @@ describe("/api/integrations/status — the freshness read failed", () => {
 });
 
 /**
- * v1.38.19 (wave B / I5) — the never-connected provider on the wire.
+ * v1.38.19 — the never-connected provider on the wire.
  *
  * The ledger's synthetic "no row" snapshot reads `unknown`, and the envelope
  * publishes it verbatim. A client that reads `state` must see a value that

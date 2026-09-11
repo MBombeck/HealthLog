@@ -1,13 +1,13 @@
 /**
- * v1.39 (Wave C) — what the confirm screen is allowed to claim.
+ * v1.39 — what the confirm screen is allowed to claim.
  *
- * C5 (research M-l): both of the screen's own Settings links are page routes,
+ * Both of the screen's own Settings links are page routes,
  * and `hl_onboarding=pending` is still set while this screen is on — the
  * completion is what clears it, and this screen is what calls the completion.
  * The proxy sends both straight back to the flow, so on a first run they are
  * dead links under a sentence that is not yet true.
  *
- * C4 (research I6): the screen listed what the answers switch ON and said
+ * The screen listed what the answers switch ON and said
  * everything else "stays one click away under Settings, Modules" — true of
  * reachability, false of the navigation entry. A module the answers do not
  * ask for leaves the navigation, and nothing said so.
@@ -75,7 +75,7 @@ function render(
   );
 }
 
-describe("<ConfirmScreen> — modules leaving the navigation (C4)", () => {
+describe("<ConfirmScreen> — modules leaving the navigation", () => {
   it("names them when the answers do not ask for what the record shows", () => {
     const html = render(state({}, { areas: ["sleep"], medication: "no" }), {
       medications: true,
@@ -111,7 +111,7 @@ describe("<ConfirmScreen> — modules leaving the navigation (C4)", () => {
   });
 });
 
-describe("<ConfirmScreen> — Settings links on a first run (C5)", () => {
+describe("<ConfirmScreen> — Settings links on a first run", () => {
   it("renders both as plain text while the completion has not run", () => {
     const html = render(state());
     expect(html).not.toContain('href="/settings/modules"');

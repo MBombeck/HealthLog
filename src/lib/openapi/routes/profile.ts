@@ -559,7 +559,7 @@ const aiProviderResponse = z
       .describe(
         "v1.22 (#89) — per-user response timeout for AI generation, in seconds (10–600). Null = the built-in comprehensive-briefing default (~120 s). Mainly for slow local/self-hosted backends.",
       ),
-    // v1.38.19 (wave D) — the setup flow's last screen used to promise
+    // v1.38.19 — the setup flow's last screen used to promise
     // that insights "work for you right away" as soon as `managedBy` read
     // `server`. That is a presence read; it never knew whether the key
     // worked, and it said nothing about the consent receipt the egress

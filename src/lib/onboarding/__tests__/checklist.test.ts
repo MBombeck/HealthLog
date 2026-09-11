@@ -613,7 +613,7 @@ describe("shouldShowChecklist and the setup flow", () => {
 describe("isStillInSetup", () => {
   // The one predicate both the visibility rule and the component's query gate
   // read, so the card can never render with its supporting queries switched
-  // off (research I9).
+  // off.
   it("is true for a record that ran the flow, whatever its reading count", () => {
     expect(
       isStillInSetup({
@@ -624,7 +624,7 @@ describe("isStillInSetup", () => {
     ).toBe(true);
   });
 
-  it("is true for a restarted run nobody finished (M-p)", () => {
+  it("is true for a restarted run nobody finished", () => {
     const restarted = onboardingState({ completedAt: null });
     expect(
       isStillInSetup({

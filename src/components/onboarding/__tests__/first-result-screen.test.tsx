@@ -1,5 +1,5 @@
 /**
- * v1.38.19 (wave B / C1, C2, I1, I2, I3) — the connect arm of the one task
+ * v1.38.19 — the connect arm of the one task
  * the flow ends on.
  *
  * This arm is the only place in the flow that renders a claim about real
@@ -202,7 +202,7 @@ describe("<FirstResultScreen> — the connect arm", () => {
   });
 
   /**
-   * v1.38.19 (wave B / I1) — the heading is chosen from the answers alone on
+   * v1.38.19 — the heading is chosen from the answers alone on
    * the server, because no status is in hand there. Once the envelope has
    * resolved the screen re-picks: a source that is already delivering is not
    * a task, and "Connect WHOOP" over a WHOOP that has been feeding the

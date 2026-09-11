@@ -296,15 +296,15 @@ export interface StillInSetupInputs {
 }
 
 /**
- * v1.39 (Wave C, C1) — "is this record still being set up?", as ONE predicate.
+ * v1.39 — "is this record still being set up?", as ONE predicate.
  *
  * Two places decide this: whether the card renders at all, and whether the
  * component fetches the data its rows are about. They were two restatements of
  * the same rule and they drifted — the visibility rule gained
  * `hasEnteredOnboardingFlow`, the query gate kept the older half, and a
  * wizard-run account past five readings got a permanently visible card whose
- * every network-backed row read "not done" (research I9). A record whose
- * restarted run was abandoned is in the same state (M-p): `restart` clears the
+ * every network-backed row read "not done". A record whose
+ * restarted run was abandoned is in the same state: `restart` clears the
  * record's own `completedAt` and deliberately not the account stamp, so
  * `hasEnteredOnboardingFlow` is what keeps its rows live.
  *

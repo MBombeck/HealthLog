@@ -35,7 +35,7 @@ interface AiProviderStatus {
   /** Origin of the provider that would serve this user, if any. */
   managedBy?: "user" | "local" | "server" | null;
   /**
-   * v1.38.19 (wave D) — the instance-wide tri-state. Fail closed for the
+   * v1.38.19 — the instance-wide tri-state. Fail closed for the
    * offer: neither `unhealthy` nor `unknown` earns one. Only `unhealthy` is
    * a verdict this screen may state out loud.
    */
@@ -112,7 +112,7 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
     router.push("/");
   }
 
-  // ── v1.38.19 (wave D) — the shared provider, offered only when it works ──
+  // ── v1.38.19 — the shared provider, offered only when it works ──
   //
   // This block used to be one line: `managedBy === "server"` painted a note
   // reading "insights work for you right now — no setup needed". Both halves

@@ -481,7 +481,7 @@ export const E2E_SETUP_A11Y = {
 } as const;
 
 /**
- * v1.38.19 (wave B) — the connect-source journey's account.
+ * v1.38.19 — the connect-source journey's account.
  *
  * The one arm of the flow that renders a claim about real account state had
  * no journey that reached it: bp answers `manual`, visit answers `file`, and
@@ -503,7 +503,7 @@ export const E2E_SETUP_LOCALE = {
 } as const;
 
 /**
- * v1.38.19 (wave D) — the shared-provider offer's own account.
+ * v1.38.19 — the shared-provider offer's own account.
  *
  * Its journey seeds INSTANCE-wide state (the operator key's presence and the
  * provider-health ledger the tri-state folds) and mints a consent receipt on

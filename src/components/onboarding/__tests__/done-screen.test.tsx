@@ -150,7 +150,7 @@ describe("<DoneScreen> AI panel", () => {
 });
 
 /**
- * v1.38.19 (wave D) — the shared provider, offered only when it works.
+ * v1.38.19 — the shared provider, offered only when it works.
  *
  * The card used to read `managedBy === "server"` and promise that insights
  * "work for you right now". That is a presence read: it knew a key was

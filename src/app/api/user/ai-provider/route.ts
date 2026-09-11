@@ -42,7 +42,7 @@ export const GET = apiHandler(async () => {
       aiCompatModel: true,
       // v1.22 (#89)
       aiResponseTimeoutSeconds: true,
-      // v1.38.19 (wave D) — a managed profile is never the party that gives
+      // v1.38.19 — a managed profile is never the party that gives
       // consent for itself; the offer below has to know.
       managedProfileAt: true,
     },
@@ -55,7 +55,7 @@ export const GET = apiHandler(async () => {
   // `managedBy` reports the origin only; no admin keys/endpoints are leaked.
   const { aiAvailable, managedBy } = await resolveProviderAvailability(user.id);
 
-  // ── v1.38.19 (wave D) — the shared provider, honestly ────────────────
+  // ── v1.38.19 — the shared provider, honestly ────────────────
   // `managedBy: "server"` says the operator configured a key. It has never
   // said the key WORKS, and the setup flow spent three releases promising
   // that it did. It also says nothing about the consent receipt
@@ -125,7 +125,7 @@ export const GET = apiHandler(async () => {
     hasCompatKey: Boolean(u?.aiCompatKeyEncrypted),
     // v1.22 (#89) — per-user response timeout, in seconds (null = default).
     responseTimeoutSeconds: u?.aiResponseTimeoutSeconds ?? null,
-    // v1.38.19 (wave D) — see the block above. A tri-state and two booleans;
+    // v1.38.19 — see the block above. A tri-state and two booleans;
     // no count, no timestamp and no other account is inferable from them.
     serverProviderHealth,
     serverProviderOffer,

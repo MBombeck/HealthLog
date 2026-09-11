@@ -45,7 +45,7 @@ describe("first-result targets", () => {
 });
 
 /**
- * v1.38.19 (wave B / C1, I2, I3) — what the connect step is allowed to say.
+ * v1.38.19 — what the connect step is allowed to say.
  *
  * The screen used to decide "connected" from the ledger's `state` field, whose
  * default meant the opposite of its name, and had one piece of copy for every
@@ -222,7 +222,7 @@ describe("connect-source state copy", () => {
 });
 
 /**
- * v1.38.19 (wave B / I1) — which sources the flow must stop offering.
+ * v1.38.19 — which sources the flow must stop offering.
  *
  * Only a connection that is actually delivering, or one whose data has merely
  * gone quiet: both are real connections the person made, and offering to make

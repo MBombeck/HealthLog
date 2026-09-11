@@ -67,7 +67,7 @@ describe("confirmedModules", () => {
   });
 });
 
-describe("confirmedModules — what leaves the navigation (I6)", () => {
+describe("confirmedModules — what leaves the navigation", () => {
   const noMedication = {
     ...emptyOnboardingNeeds(),
     recordTarget: "me" as const,

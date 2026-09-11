@@ -72,7 +72,7 @@ interface BaselineFormState {
 }
 
 /**
- * v1.39 (Wave C, C2) — one attempt at confirming, with the buttons always
+ * v1.39 — one attempt at confirming, with the buttons always
  * handed back.
  *
  * `advance()` used to raise its own pending flag and lower it again on two of
@@ -81,7 +81,7 @@ interface BaselineFormState {
  * `onConfirmed` is the confirm screen's completion, which caught its own
  * error and returned normally. So a failed completion disabled "Skip" and
  * "Confirm and continue" for the rest of the page's life and only a reload
- * recovered (research I10).
+ * recovered.
  *
  * The reset lives in a `finally` here, which is the one place it cannot be
  * forgotten on a new exit, and the component has no other way to move the

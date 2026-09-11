@@ -169,7 +169,7 @@ describe("chooseFirstResultTask", () => {
   });
 
   /**
-   * v1.38.19 (wave B / I1) — the choice used to read the answers alone, so an
+   * v1.38.19 — the choice used to read the answers alone, so an
    * account whose WHOOP had been delivering for months was told to go and
    * connect WHOOP. A source that is already delivering is not a task; the
    * priority falls through to the next one the person's answers name.
