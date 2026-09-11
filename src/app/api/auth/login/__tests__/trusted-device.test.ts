@@ -8,7 +8,7 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-vi.mock("@/lib/auth/password", () => ({ verifyPassword: vi.fn() }));
+vi.mock("@/lib/auth/password", () => ({ verifyPasswordOrDummy: vi.fn() }));
 
 vi.mock("@/lib/auth/login-response", () => ({
   finishLogin: vi.fn(async () => new Response(null, { status: 200 })),
@@ -58,7 +58,7 @@ vi.mock("next/headers", () => ({
 
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
-import { verifyPassword } from "@/lib/auth/password";
+import { verifyPasswordOrDummy } from "@/lib/auth/password";
 import { finishLogin } from "@/lib/auth/login-response";
 import { createMfaChallenge } from "@/lib/auth/mfa/challenge";
 import { consumeTrustedDevice } from "@/lib/auth/trusted-device";
@@ -88,7 +88,7 @@ beforeEach(() => {
 
 describe("POST /api/auth/login — trusted device", () => {
   it("skips the second factor when the device is trusted (no challenge minted)", async () => {
-    vi.mocked(verifyPassword).mockResolvedValue(true);
+    vi.mocked(verifyPasswordOrDummy).mockResolvedValue(true);
     vi.mocked(consumeTrustedDevice).mockResolvedValue(true);
 
     const res = await POST(req());
@@ -103,7 +103,7 @@ describe("POST /api/auth/login — trusted device", () => {
   });
 
   it("falls back to the MFA challenge when the device is not trusted", async () => {
-    vi.mocked(verifyPassword).mockResolvedValue(true);
+    vi.mocked(verifyPasswordOrDummy).mockResolvedValue(true);
     vi.mocked(consumeTrustedDevice).mockResolvedValue(false);
 
     const res = await POST(req());
@@ -115,7 +115,7 @@ describe("POST /api/auth/login — trusted device", () => {
   });
 
   it("still requires the password — a wrong password never consults the trusted device", async () => {
-    vi.mocked(verifyPassword).mockResolvedValue(false);
+    vi.mocked(verifyPasswordOrDummy).mockResolvedValue(false);
 
     const res = await POST(req());
     expect(res.status).toBe(401);

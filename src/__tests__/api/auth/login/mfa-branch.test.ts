@@ -12,7 +12,7 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 vi.mock("@/lib/auth/password", () => ({
-  verifyPassword: vi.fn().mockResolvedValue(true),
+  verifyPasswordOrDummy: vi.fn().mockResolvedValue(true),
 }));
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
@@ -142,8 +142,8 @@ describe("login MFA branch", () => {
   });
 
   it("wrong password never reaches the MFA branch", async () => {
-    const { verifyPassword } = await import("@/lib/auth/password");
-    vi.mocked(verifyPassword).mockResolvedValueOnce(false);
+    const { verifyPasswordOrDummy } = await import("@/lib/auth/password");
+    vi.mocked(verifyPasswordOrDummy).mockResolvedValueOnce(false);
     vi.mocked(prisma.user.findFirst).mockResolvedValue({
       ...BASE_USER,
       totpConfirmedAt: new Date(),
