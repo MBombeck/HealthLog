@@ -89,6 +89,25 @@ describe("<ConfirmScreen> — modules leaving the navigation (C4)", () => {
     });
     expect(html).not.toContain('data-slot="onboarding-confirm-modules-off"');
   });
+
+  it("says nothing to a guardian, whose own record the answers never touch", () => {
+    // These answers describe the record being set up for somebody else. The
+    // completion applies the derivation to THAT record and stamps the
+    // guardian's own without deriving, so no module of the guardian's is
+    // going anywhere — and the sentence must not say one is.
+    const html = render(
+      state(
+        {},
+        {
+          recordTarget: "someone-else",
+          areas: ["blood-pressure"],
+          medication: "no",
+        },
+      ),
+      { medications: true, workouts: true, documents: true },
+    );
+    expect(html).not.toContain('data-slot="onboarding-confirm-modules-off"');
+  });
 });
 
 describe("<ConfirmScreen> — Settings links on a first run (C5)", () => {

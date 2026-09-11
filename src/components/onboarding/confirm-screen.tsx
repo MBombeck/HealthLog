@@ -124,11 +124,18 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
   const settingsReachable =
     isOnboardingSettled(state) || state.completedAt !== null;
   const forSomeoneElse = needs.recordTarget === "someone-else";
-  // v1.39 (Wave C, C4) — `user.modules` is the map the navigation reads, so
-  // the screen can only name a module the person actually has today.
+  // `user.modules` is the map the navigation reads, so the screen can only
+  // name a module the person actually has today — and only when the answers
+  // are about that record. In the "someone I look after" arm they are not:
+  // `POST /api/onboarding/complete` applies the derivation to the managed
+  // record (or, when none was created, to nothing at all) and stamps the
+  // guardian's own record without deriving. Reading the actor's map there
+  // would name modules that are staying exactly where they are — the same
+  // guardian-derivation confusion v1.38.18 closed in the write, re-entering
+  // through the copy. An empty map makes the list empty.
   const { chosen, alwaysOn, wouldSwitchOff } = confirmedModules(
     needs,
-    user?.modules ?? {},
+    forSomeoneElse ? {} : (user?.modules ?? {}),
   );
   const back = previousScreen(state, "confirm");
 
