@@ -142,13 +142,21 @@ function isPublicPath(pathname: string): boolean {
  * PUT must not drag in the layout-reset DELETE on the same path).
  *
  * The login family is the historical baseline — a demo visitor still has
- * to authenticate. The two dashboard entries are display-only preference
- * writes: idempotent, user-scoped, Zod-validated, and touching nothing but
- * the caller's own `User.dashboardWidgetsJson` blob (chart-overlay toggles
- * + comparison-baseline selector). They carry no health data and are safe
- * to exercise in the demo so the above-chart toggles work there. This whole
- * block only runs under `DEMO_MODE=true`, so production (apps01) is
- * unaffected by construction.
+ * to authenticate. The rest are idempotent, Zod-validated writes that carry
+ * no health data and no free text, and that land only on the acting record:
+ * the two dashboard display-preference blobs (chart-overlay toggles +
+ * comparison-baseline selector), the setup flow's closed-enum answers, its
+ * step ledger and disclaimer/tour checkpoints, and the baseline profile
+ * fields the confirm screen submits.
+ *
+ * The demo is ONE published account that every visitor signs into, so
+ * "user-scoped" is not privacy here — whatever one visitor writes is what
+ * the next one finds until the instance is reseeded. That is tolerable for
+ * a unit toggle and a date of birth, and it is why free text, anything that
+ * reaches an AI prompt, and anything creating a second record are refused.
+ *
+ * This whole block only runs under `DEMO_MODE=true`, so production (apps01)
+ * is unaffected by construction.
  */
 const DEMO_MUTATION_ALLOWLIST: ReadonlyArray<{ path: string; method: string }> =
   [
@@ -174,19 +182,27 @@ const DEMO_MUTATION_ALLOWLIST: ReadonlyArray<{ path: string; method: string }> =
     // Neither creates health data.
     { path: "/api/onboarding/disclaimer", method: "POST" },
     { path: "/api/onboarding/tour", method: "POST" },
-    // v1.39 (Wave C, C6) — the three writes the confirm screen makes. Without
-    // them a demo visitor who typed a height got a 403 and a generic toast,
-    // and the "someone I look after" arm could only take "Finish without the
-    // profile" — only the empty-form/Skip path completed, so the demo did not
-    // in fact walk the same flow (design spec §Principles 5). None of the
-    // three creates health data: the caller's own profile fields, the
-    // encrypted self-context behind the optional anamnesis card, and the
-    // managed record the guardian arm of the flow exists to create. The
-    // per-profile routes (`/api/managed-profiles/{id}`, its guardians) are
-    // different paths and stay closed.
+    // v1.39 — the baseline write the confirm screen makes. Without it a demo
+    // visitor who typed a height got a 403 and a generic toast, so only the
+    // empty-form/Skip path completed and the demo did not in fact walk the
+    // same flow (design spec §Principles 5). Date of birth, height and sex
+    // are closed, validated fields on the caller's own record and no health
+    // data.
+    //
+    // Two neighbours of it are deliberately NOT here. The demo is one shared,
+    // published account, so "the caller's own" is every visitor at once:
+    //   `PUT /api/coach/about-me` is free text that persists for the next
+    //   visitor AND is fed into the Coach prompt — an anonymous prompt-
+    //   injection surface on a public instance. The flow's anamnesis card
+    //   renders read-only under `DEMO_MODE` instead, so no visitor meets it
+    //   as a failed save.
+    //   `POST /api/managed-profiles` opens with `requireFreshMfa`, and the
+    //   demo account has no second factor, so admitting it here would buy
+    //   the guardian arm nothing — the call is refused a layer later either
+    //   way, and the confirm screen already says so.
+    // The per-profile routes (`/api/managed-profiles/{id}`, its guardians)
+    // are different paths and stay closed too.
     { path: "/api/auth/profile", method: "PUT" },
-    { path: "/api/coach/about-me", method: "PUT" },
-    { path: "/api/managed-profiles", method: "POST" },
   ];
 
 // Legacy route redirects (German → English)

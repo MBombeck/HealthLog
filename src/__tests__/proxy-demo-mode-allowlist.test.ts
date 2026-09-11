@@ -5,11 +5,16 @@ import { join, sep } from "node:path";
 
 /**
  * Demo-mode mutation allowlist. On a `DEMO_MODE=true` deploy the proxy
- * 403s every non-GET `/api/*` request except a narrow allowlist. Login
- * is the historical baseline; the two dashboard display-pref writes
- * (chart-overlay toggles + comparison-baseline selector) were added so
- * the above-chart toggles work in the demo. They touch nothing but the
- * caller's own `User.dashboardWidgetsJson` blob.
+ * 403s every non-GET `/api/*` request except a narrow allowlist. Login is
+ * the historical baseline; the rest are the writes the demo has to make to
+ * walk its own flows — the two dashboard display-pref blobs, the setup
+ * flow's closed-enum answers and checkpoints, and the baseline profile
+ * fields. None carries health data or free text.
+ *
+ * The demo is one published account every visitor signs into, so what a
+ * visitor writes is what the next visitor finds. The refusals below are as
+ * much of the contract as the admissions: free text that reaches the Coach
+ * prompt, and anything that creates a second record, stay out.
  *
  * This guard locks the allowlist shape in place so a refactor can't
  * silently widen it (admitting a data-bearing mutation) or narrow it
@@ -106,23 +111,36 @@ describe("proxy.ts DEMO_MODE mutation allowlist", () => {
     expect(missing, "onboarding writes the demo cannot make").toEqual([]);
   });
 
-  it("permits the baseline writes the confirm screen makes (M-m)", () => {
-    // v1.39 (Wave C, C6) — a demo visitor who typed a height got a 403 and a
-    // generic toast, and "someone I look after" could only take "Finish
-    // without the profile": the three writes the confirm screen makes were
-    // not on the list. None of them is health data — the account's own
-    // profile fields, the encrypted self-context the anamnesis card writes,
-    // and the managed record the flow's guardian arm creates.
-    for (const [path, method] of [
-      ["/api/auth/profile", "PUT"],
-      ["/api/coach/about-me", "PUT"],
-      ["/api/managed-profiles", "POST"],
-    ] as const) {
-      expect(
-        proxy(makeRequest(path, method)).status,
-        `${method} ${path} is blocked in the demo`,
-      ).not.toBe(403);
-    }
+  it("permits the profile write the baseline step makes", () => {
+    // v1.39 — a demo visitor who typed a height got a 403 and a generic
+    // toast, because the confirm screen's own write was not on the list.
+    // Date of birth, height and sex are closed, validated fields on the
+    // account's own record and no health data, so the step can complete.
+    expect(
+      proxy(makeRequest("/api/auth/profile", "PUT")).status,
+      "PUT /api/auth/profile is blocked in the demo",
+    ).not.toBe(403);
+  });
+
+  it("refuses the free-text self-context write, which the demo shares", () => {
+    // The demo is ONE published account every visitor signs into. Free text
+    // that persists for the next visitor is not a demo affordance, and this
+    // particular text is fed into the Coach prompt — an anonymous write into
+    // an LLM prompt on a public instance, held until the next reseed. The
+    // anamnesis card renders read-only in the demo instead, so nothing here
+    // reaches a visitor as a failed save.
+    expect(proxy(makeRequest("/api/coach/about-me", "PUT")).status).toBe(403);
+  });
+
+  it("refuses the managed-profile create, which needs a factor the demo has not got", () => {
+    // `POST /api/managed-profiles` opens with `requireFreshMfa`. The demo
+    // account has no second factor, so admitting it at the edge buys the
+    // guardian arm nothing: the call is refused a layer later either way,
+    // and the confirm screen already says the profile could not be created
+    // without one.
+    expect(proxy(makeRequest("/api/managed-profiles", "POST")).status).toBe(
+      403,
+    );
   });
 
   it("does not drag in a sibling verb on the baseline paths", () => {

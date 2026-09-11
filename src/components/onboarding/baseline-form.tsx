@@ -107,6 +107,7 @@ export function BaselineForm({
   backHref,
   onConfirmed,
   confirming = false,
+  demoMode = false,
 }: {
   initial: BaselineInitialValues;
   backHref?: string;
@@ -114,6 +115,12 @@ export function BaselineForm({
   onConfirmed: () => Promise<void>;
   /** True while the completion the parent owns is in flight. */
   confirming?: boolean;
+  /**
+   * True on a `DEMO_MODE` instance, where the shared account's self-context
+   * write is off the edge allowlist. Makes the anamnesis card read-only so
+   * the refusal never reaches a visitor as a failed confirm.
+   */
+  demoMode?: boolean;
 }) {
   const { t } = useTranslations();
   const { preference } = useUnitDisplay();
@@ -252,6 +259,7 @@ export function BaselineForm({
         value={anamnesis}
         onChange={setAnamnesis}
         disabled={saving}
+        readOnly={demoMode}
       />
 
       <StepActions

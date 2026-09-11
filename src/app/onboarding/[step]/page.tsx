@@ -102,7 +102,16 @@ function renderScreen(screen: OnboardingStepId, state: OnboardingStateDto) {
     return <UnitsScreen state={state} />;
   }
   if (screen === "confirm") {
-    return <ConfirmScreen state={state} />;
+    // `DEMO_MODE` is a server-only env var; resolved here and threaded in,
+    // as the root layout does for the shell. The confirm screen's anamnesis
+    // card takes no input on a demo instance, whose account is shared and
+    // whose self-context write is off the edge allowlist.
+    return (
+      <ConfirmScreen
+        state={state}
+        demoMode={process.env.DEMO_MODE === "true"}
+      />
+    );
   }
   if (screen === "first-result") {
     return <FirstResultScreen state={state} />;

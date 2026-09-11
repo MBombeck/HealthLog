@@ -92,7 +92,19 @@ export async function runConfirmFinish(args: {
   args.navigate(screenHref(nextScreen(written, "confirm") ?? "done"));
 }
 
-export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
+export function ConfirmScreen({
+  state,
+  demoMode = false,
+}: {
+  state: OnboardingStateDto;
+  /**
+   * True on a `DEMO_MODE` instance. Resolved by the page (a server
+   * component) from the server-only env var and threaded down, the way the
+   * root layout threads it into the shell — no client-side detection and no
+   * extra request. The baseline step's anamnesis card is read-only there.
+   */
+  demoMode?: boolean;
+}) {
   const { t, locale } = useTranslations();
   const router = useRouter();
   const { user } = useAuth();
@@ -327,6 +339,7 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
           }}
           onConfirmed={finish}
           confirming={finishing}
+          demoMode={demoMode}
         />
       )}
     </section>

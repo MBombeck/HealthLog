@@ -55,6 +55,7 @@ function state(
 function render(
   flow: OnboardingStateDto,
   modules: Partial<Record<string, boolean>> = {},
+  demoMode = false,
 ): string {
   currentUser = {
     id: "u1",
@@ -68,7 +69,7 @@ function render(
   return renderToStaticMarkup(
     <QueryClientProvider client={new QueryClient()}>
       <I18nProvider initialLocale="en">
-        <ConfirmScreen state={flow} />
+        <ConfirmScreen state={flow} demoMode={demoMode} />
       </I18nProvider>
     </QueryClientProvider>,
   );
@@ -124,5 +125,23 @@ describe("<ConfirmScreen> — Settings links on a first run (C5)", () => {
     const html = render(state({ completedAt: "2026-09-10T08:00:00.000Z" }), {});
     expect(html).toContain('href="/settings/modules"');
     expect(html).toContain('href="/settings/account"');
+  });
+});
+
+describe("<ConfirmScreen> — the anamnesis card on a shared demo account", () => {
+  it("takes free text on an ordinary instance", () => {
+    const html = render(state());
+    expect(html).toContain('data-slot="onboarding-anamnesis"');
+    expect(html).not.toContain('data-readonly="true"');
+  });
+
+  it("is read-only in the demo, whose account every visitor shares", () => {
+    // `PUT /api/coach/about-me` is off the demo allowlist: the text persists
+    // for the next visitor and is fed into the Coach prompt. Offering the
+    // box and refusing the save would be the generic-failure toast this
+    // flow exists to remove, so the box does not take input at all.
+    const html = render(state(), {}, true);
+    expect(html).toContain('data-slot="onboarding-anamnesis"');
+    expect(html).toContain('data-readonly="true"');
   });
 });
