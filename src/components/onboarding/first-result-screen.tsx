@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -34,6 +34,7 @@ import {
   AREA_PAGE_HREF,
   AREA_READING_TARGETS,
   connectSourceView,
+  deliveringSources,
   SOURCE_INTEGRATION,
   type ConnectSourceSlot,
 } from "@/lib/onboarding/first-result-config";
@@ -70,7 +71,23 @@ export function FirstResultScreen({ state }: { state: OnboardingStateDto }) {
   const { t } = useTranslations();
   const router = useRouter();
   const answer = useOnboardingAnswer();
-  const offer = chooseFirstResultTask(state.needs);
+  // The server picked the order from the answers alone — it had no status in
+  // hand. Re-pick here once the envelope resolves: a source that is already
+  // delivering is not a task, and offering to connect it is the flow talking
+  // past an account it can see. The same query key the task body reads, so
+  // this costs no second request.
+  const statuses = useIntegrationStatuses(true);
+  const delivering = useMemo(
+    () => deliveringSources(statuses.data?.integrations),
+    [statuses.data],
+  );
+  // …but only where there is somewhere to fall to. A person whose one answer
+  // is a source that is already delivering still gets an end to the flow: the
+  // screen acknowledges the connection it found rather than dropping the step
+  // and ending on nothing.
+  const offer =
+    chooseFirstResultTask(state.needs, delivering) ??
+    chooseFirstResultTask(state.needs);
   const back = previousScreen(state, "first-result");
 
   // Completed only when the LEDGER says so as well: a restart puts the step

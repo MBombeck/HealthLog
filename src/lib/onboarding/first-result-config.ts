@@ -10,7 +10,10 @@
 import type { SyncVerdict } from "@/lib/integrations/sync-verdict";
 import type { OnboardingAreaKey } from "@/lib/modules/registry";
 
-import type { BrowserConnectableSource } from "./wizard-steps";
+import {
+  BROWSER_CONNECTABLE_SOURCES,
+  type BrowserConnectableSource,
+} from "./wizard-steps";
 
 export interface AreaReadingTarget {
   /** The `defaultType` the measurement form opens on. */
@@ -175,4 +178,31 @@ function canStartConnection(
     case "self-hosted":
       return true;
   }
+}
+
+/**
+ * The sources the flow must stop offering to connect: the ones whose
+ * connection is already delivering (`fresh`), and the ones whose data has
+ * merely gone quiet (`stale`) — both are connections the person made, and
+ * both would be "connect it" a second time.
+ *
+ * `pending_first_sync` is deliberately NOT in the set: that is a connection
+ * made moments ago, and it is exactly the result this step exists to show.
+ * Neither is anything on the attention arm — there is still something to say.
+ */
+export function deliveringSources(
+  entries:
+    ReadonlyArray<ConnectSourceStatus & { integration: string }> | undefined,
+): ReadonlySet<BrowserConnectableSource> {
+  const delivering = new Set<BrowserConnectableSource>();
+  if (!entries) return delivering;
+  for (const source of BROWSER_CONNECTABLE_SOURCES) {
+    const entry = entries.find(
+      (candidate) =>
+        candidate.integration === SOURCE_INTEGRATION[source].statusKey,
+    );
+    const verdict = connectSourceView(source, entry)?.verdict;
+    if (verdict === "fresh" || verdict === "stale") delivering.add(source);
+  }
+  return delivering;
 }

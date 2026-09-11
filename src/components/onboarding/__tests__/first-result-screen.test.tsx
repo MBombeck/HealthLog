@@ -19,6 +19,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import type { SyncVerdict } from "@/lib/integrations/sync-verdict";
@@ -101,25 +102,33 @@ function statuses(overrides: StatusOverrides | null) {
         };
 }
 
-function state(): OnboardingStateDto {
+function state(
+  needs: Partial<OnboardingStateDto["needs"]> = {},
+): OnboardingStateDto {
   return {
     steps: defaultOnboardingSteps(),
     needs: {
       ...emptyOnboardingNeeds(),
       recordTarget: "me",
       sources: ["whoop"],
+      ...needs,
     },
     completedAt: null,
     firstResult: null,
   };
 }
 
-function render(overrides: StatusOverrides | null) {
+function render(
+  overrides: StatusOverrides | null,
+  needs: Partial<OnboardingStateDto["needs"]> = {},
+) {
   statuses(overrides);
   return renderToStaticMarkup(
-    <I18nProvider initialLocale="en">
-      <FirstResultScreen state={state()} />
-    </I18nProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <I18nProvider initialLocale="en">
+        <FirstResultScreen state={state(needs)} />
+      </I18nProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -190,5 +199,45 @@ describe("<FirstResultScreen> — the connect arm", () => {
     const html = render(null);
     expect(html).not.toContain("data-connect-slot=");
     expect(html).toContain('data-slot="onboarding-task-checking"');
+  });
+
+  /**
+   * v1.38.19 (wave B / I1) — the heading is chosen from the answers alone on
+   * the server, because no status is in hand there. Once the envelope has
+   * resolved the screen re-picks: a source that is already delivering is not
+   * a task, and "Connect WHOOP" over a WHOOP that has been feeding the
+   * dashboard for months is the flow talking past the account it can see.
+   */
+  it("stops offering a source that is already delivering", () => {
+    const html = render(
+      {
+        connected: true,
+        verdict: "fresh",
+        lastSuccessAt: "2026-09-10T06:35:00.000Z",
+      },
+      { medication: "yes" },
+    );
+    expect(html).toContain('data-task="add-medication"');
+    expect(html).not.toContain("Connect WHOOP");
+  });
+
+  it("acknowledges the connection when there is nothing to fall through to", () => {
+    // The whole answer is one already-connected source. Dropping the step
+    // would end the flow on nothing at all, so the screen keeps it and says
+    // what it found — and that is the result it records.
+    const html = render({
+      connected: true,
+      verdict: "fresh",
+      lastSuccessAt: "2026-09-10T06:35:00.000Z",
+    });
+    expect(html).toContain('data-task="connect-source"');
+    expect(html).toContain('data-connect-state="fresh"');
+    expect(html).toContain("WHOOP is already connected");
+  });
+
+  it("keeps the answer's heading while the envelope is in flight", () => {
+    const html = render(null, { medication: "yes" });
+    expect(html).toContain('data-task="connect-source"');
+    expect(html).toContain("Connect WHOOP");
   });
 });

@@ -15,6 +15,7 @@ import {
   AREA_PAGE_HREF,
   AREA_READING_TARGETS,
   connectSourceView,
+  deliveringSources,
   SOURCE_INTEGRATION,
 } from "../first-result-config";
 import { BROWSER_CONNECTABLE_SOURCES } from "../wizard-steps";
@@ -218,4 +219,40 @@ describe("connect-source state copy", () => {
       expect(block.noDate).toBeTruthy();
     },
   );
+});
+
+/**
+ * v1.38.19 (wave B / I1) — which sources the flow must stop offering.
+ *
+ * Only a connection that is actually delivering, or one whose data has merely
+ * gone quiet: both are real connections the person made, and offering to make
+ * them again is the wizard talking past the account it can see. Everything
+ * else — never connected, first sync running, needs repairing — stays in the
+ * priority, because there is still something to do or something to say.
+ */
+describe("deliveringSources", () => {
+  function entry(integration: string, verdict: string) {
+    return {
+      integration,
+      connected: verdict !== "disconnected",
+      configured: true,
+      syncHealth: { verdict, since: null },
+      lastSuccessAt: null,
+    };
+  }
+
+  it("names the sources that are delivering or merely quiet", () => {
+    const set = deliveringSources([
+      entry("whoop", "fresh"),
+      entry("oura", "stale"),
+      entry("polar", "pending_first_sync"),
+      entry("fitbit", "reauth_required"),
+      entry("withings", "disconnected"),
+    ] as never);
+    expect([...set].sort()).toEqual(["oura", "whoop"]);
+  });
+
+  it("names nothing while the envelope has not resolved", () => {
+    expect(deliveringSources(undefined).size).toBe(0);
+  });
 });
