@@ -413,6 +413,11 @@
     "loginFailed": "Échec de la connexion",
     "registerFailed": "Échec de l’inscription",
     "invitedBanner": "Vous avez été invité — créez votre compte même si les inscriptions sont fermées.",
+    "alreadySignedIn": {
+      "title": "Tu es déjà connecté",
+      "body": "Tu es connecté en tant que {username}. Une invitation crée un nouveau compte. Déconnecte-toi pour l'accepter.",
+      "signOut": "Se déconnecter et accepter l'invitation"
+    },
     "createAccount": "Créer un compte",
     "newAccount": "Créer un nouveau compte",
     "backToPasskey": "Revenir à la passkey",
@@ -4553,7 +4558,18 @@
       "ladderOauthBody": "Reliez un compte ChatGPT — sans coût par jeton, mais les conditions du niveau grand public peuvent utiliser le contenu pour l'entraînement : c'est donc un choix délibéré, jamais l'option par défaut pour vos données de santé.",
       "keylessLine": "HealthLog est pleinement utile sans IA. Vos tuiles, graphiques, tendances et exports fonctionnent tous — l'IA n'ajoute que la lecture en langage clair par-dessus.",
       "setupCta": "Configurez-le (environ une minute)",
-      "sharedKeyNote": "Cette instance fournit déjà un fournisseur d'IA partagé : les insights fonctionnent pour vous dès maintenant — aucune configuration nécessaire."
+      "sharedKeyNote": "Cette instance fournit déjà un fournisseur d'IA partagé : les insights fonctionnent pour vous dès maintenant — aucune configuration nécessaire.",
+      "offer": {
+        "title": "Cette instance peut rédiger votre résumé en langage clair.",
+        "body": "L’exploitant met à disposition un fournisseur qui a fonctionné au cours des dernières 24 heures. Une seule touche active le langage clair ; vos données partent alors vers ce seul fournisseur et vers personne d’autre.",
+        "cta": "Activer le langage clair",
+        "granted": "Activé. Le premier résumé apparaîtra sur votre tableau de bord.",
+        "error": "L’activation n’a pas abouti. Réessayez dans un instant."
+      },
+      "unavailable": {
+        "title": "Le fournisseur de cette instance ne répond pas pour le moment.",
+        "body": "HealthLog reste pleinement utile sans le langage clair. Vous pourrez ajouter votre propre fournisseur plus tard dans les paramètres."
+      }
     },
     "steps": {
       "who": "À qui appartient ce dossier",
@@ -4661,6 +4677,7 @@
         "alwaysOn": "Toujours actifs : {modules}, et les mesures de base (poids, tension, pouls).",
         "everythingElse": "Tout le reste reste à un clic dans",
         "modulesLink": "Réglages, Modules",
+        "switchesOff": "Hors de la navigation : {modules}. Tu peux les réactiver à tout moment dans Réglages, Modules.",
         "glucoseUnit": "Glycémie",
         "unitPreference": "Unités",
         "language": "Langue",
@@ -4677,12 +4694,46 @@
         "connect-source": {
           "title": "Connecter {target}",
           "body": "Une seule connexion, choisie d'après vos réponses. Les mesures arrivent ensuite d'elles-mêmes.",
-          "howTo": "La connexion se fait sur la page des intégrations. Revenez ici ensuite ; cet écran détecte quand elle est établie.",
+          "howTo": "La connexion à {target} se fait sur la page des intégrations. Revenez ici ensuite ; cet écran détecte quand elle est établie.",
           "cta": "Connecter {target}",
           "checking": "Vérification de la connexion.",
           "waiting": "Pas encore connecté.",
-          "done": "{target} est connecté.",
-          "syncing": "La première synchronisation est en cours. Les mesures apparaissent sur le tableau de bord au fur et à mesure."
+          "openSettings": "Ouvrir Paramètres → Intégrations",
+          "noDate": "inconnue",
+          "needsCredentials": {
+            "title": "Cette instance n’a pas encore d’application {target} enregistrée.",
+            "detail": "Saisissez vos propres identifiants dans Paramètres → Intégrations, la connexion pourra alors démarrer."
+          },
+          "state": {
+            "pending_first_sync": {
+              "title": "{target} est connecté.",
+              "detail": "La première synchronisation est en cours. Les valeurs apparaîtront sur le tableau de bord dès leur arrivée."
+            },
+            "fresh": {
+              "title": "{target} est déjà connecté.",
+              "detail": "Dernière valeur {when}. Il n’y a plus rien à faire ici."
+            },
+            "stale": {
+              "title": "{target} est connecté, mais rien n’arrive en ce moment.",
+              "detail": "Dernière valeur {when}. La connexion elle-même est en ordre."
+            },
+            "stalled": {
+              "title": "{target} est connecté, mais la synchronisation ne tourne plus.",
+              "detail": "Dernière tentative {when}. Vérifiez la connexion dans Paramètres → Intégrations."
+            },
+            "failing": {
+              "title": "{target} est connecté, mais la synchronisation échoue.",
+              "detail": "Plus rien n’est arrivé depuis {when}. Vérifiez la connexion dans Paramètres → Intégrations."
+            },
+            "reauth_required": {
+              "title": "La connexion à {target} doit être renouvelée.",
+              "detail": "Reconnectez-vous une fois et les valeurs reprendront."
+            },
+            "parked": {
+              "title": "La connexion à {target} est en pause.",
+              "detail": "Vérifiez la connexion dans Paramètres → Intégrations."
+            }
+          }
         },
         "add-medication": {
           "title": "Ajoutez votre premier médicament",
@@ -10322,6 +10373,7 @@
     "invite": {
       "title": "Inviter quelqu'un",
       "description": "Rien n'est partagé avant son acceptation.",
+      "needsAccount": "La personne a besoin de son propre compte HealthLog sur cette instance et trouvera l'invitation dans Paramètres → Accès partagé.",
       "identifierLabel": "Nom d'utilisateur ou e-mail",
       "identifierPlaceholder": "Le nom avec lequel elle se connecte",
       "identifierHint": "Cette personne a besoin d'un compte sur cette instance. Une invitation ne peut pas être envoyée à une adresse non inscrite.",

@@ -79,6 +79,12 @@ describe("S1 — the direct session-resolution set is frozen", () => {
     // the freshness comparison, which `requireAuth` does not project.
     "app/api/auth/native/complete/route.ts":
       "reads createdAt for the handoff freshness check",
+    // Anonymous self-registration. Probes for an already-valid session so an
+    // invitation opened from inside one is refused instead of minting a second
+    // account over the caller's own cookie. `requireAuth` is the wrong gate
+    // here twice over: it would throw 401 at the anonymous caller the route
+    // exists for, and this route wants the ABSENCE of a session.
+    "app/api/auth/register/route.ts": "refuses to register over a live session",
     // Anonymous IdP callback. Probes for an already-valid session so a
     // replayed callback redirects instead of minting a second identity.
     "app/api/auth/oidc/callback/route.ts":

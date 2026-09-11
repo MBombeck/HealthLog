@@ -171,6 +171,33 @@ describe("record settings contract", () => {
     ).toBe("error_reauth");
   });
 
+  it("reports a real credential with no ledger row as connected", () => {
+    // The connection map is the credential: this branch is only reached once
+    // it says a pipe exists. `unknown` on top of it means the sync ledger
+    // holds no row yet — an hourly provider connected minutes ago — and this
+    // projection's `state` is documented as "a pipe exists", not as liveness.
+    // Calling it "Not connected" invites a guardian to revoke the grant they
+    // just made.
+    const connected = {
+      withings: true,
+      whoop: false,
+      fitbit: false,
+      nightscout: false,
+      polar: false,
+      oura: false,
+      "google-health": false,
+      strava: false,
+    } as const;
+
+    expect(
+      resolveManagedIntegrationState("unknown", connected, "withings"),
+    ).toBe("connected");
+    // No credential still outranks it.
+    expect(resolveManagedIntegrationState("unknown", connected, "oura")).toBe(
+      "disconnected",
+    );
+  });
+
   it("rejects a late response for another record in a second tab", () => {
     expect(() =>
       assertRecordSettingsResponseForRecord(

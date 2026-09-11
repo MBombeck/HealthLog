@@ -93,6 +93,8 @@ export function questionScreens(state: FlowState): OnboardingStepId[] {
     : [...FIXED_QUESTIONS];
 }
 
+const EMPTY_CONNECTED: ReadonlySet<string> = new Set<string>();
+
 export interface FirstResultOffer {
   task: OnboardingFirstResultTask;
   /** A source key for a connection, an area key for a reading, else null. */
@@ -104,11 +106,21 @@ export interface FirstResultOffer {
  * the browser can complete → the first medication with a reminder, if the
  * answer to Q3 was a daily schedule → one reading for the first Q2 area.
  * Everything the priority passes over goes to the checklist instead.
+ *
+ * `connected` names the sources whose connection is already delivering. It is
+ * optional because the server picks the order from the answers alone, before
+ * any status is in hand; the screen re-picks once the envelope resolves. A
+ * source in the set is not a task — an account whose WHOOP had been feeding
+ * the dashboard for months was told to go and connect WHOOP, which is the
+ * wizard talking past the account it can already see.
  */
 export function chooseFirstResultTask(
   needs: OnboardingNeeds,
+  connected: ReadonlySet<string> = EMPTY_CONNECTED,
 ): FirstResultOffer | null {
-  const connectable = needs.sources.find(isBrowserConnectableSource);
+  const connectable = needs.sources.find(
+    (source) => isBrowserConnectableSource(source) && !connected.has(source),
+  );
   if (connectable) return { task: "connect-source", target: connectable };
   if (needs.medication === "yes")
     return { task: "add-medication", target: null };

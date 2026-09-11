@@ -49,6 +49,28 @@ const extendedProfileSchema = profileSchema.extend({
 type ExtendedProfileInput = z.infer<typeof extendedProfileSchema>;
 
 /**
+ * The only profile fields a demo instance may write: the three the setup
+ * flow's baseline step collects.
+ *
+ * `PUT /api/auth/profile` sits on the proxy's `DEMO_MUTATION_ALLOWLIST` so
+ * that step can complete. That list is an EDGE control — it admits a path and
+ * a method, and it cannot see that the handler behind the path also writes
+ * this account's contact email, its display name, its full name and its
+ * insurer fields. On an ordinary instance those are the caller's own record;
+ * on the demo, which is ONE published account every visitor signs into, each
+ * of them is the record the next visitor arrives at, until a reseed.
+ *
+ * So the narrowing is here and not in the client. The web form sends only
+ * these three plus a display name, but a form is not a control: the whole
+ * reason the allowlist exists is that the caller is not trusted.
+ */
+export const DEMO_WRITABLE_PROFILE_FIELDS = [
+  "heightCm",
+  "dateOfBirth",
+  "gender",
+] as const;
+
+/**
  * The profile schema has no cross-field `.refine()` — every field is an
  * independent scalar column. That means a rejected `gender` has no
  * bearing on whether `heightCm` is safe to write, so a single bad field
@@ -200,6 +222,17 @@ export async function applyProfileUpdate(
         issues: rejectedFields,
       };
     }
+  }
+
+  // Ahead of the conflict check below, deliberately: that check answers 409
+  // when another account holds the address, which on a public demo is an
+  // existence oracle over the instance's accounts. Dropping the field first
+  // closes the write and the question in one move.
+  if (process.env.DEMO_MODE === "true") {
+    const writable = DEMO_WRITABLE_PROFILE_FIELDS as readonly string[];
+    data = Object.fromEntries(
+      Object.entries(data).filter(([key]) => writable.includes(key)),
+    ) as Partial<ExtendedProfileInput>;
   }
 
   const normalizedEmail = data.email ? data.email.trim().toLowerCase() : null;

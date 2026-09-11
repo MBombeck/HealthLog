@@ -413,6 +413,11 @@
     "loginFailed": "No se ha podido iniciar sesión",
     "registerFailed": "No se ha podido completar el registro",
     "invitedBanner": "Te han invitado: crea tu cuenta aunque el registro esté cerrado.",
+    "alreadySignedIn": {
+      "title": "Ya has iniciado sesión",
+      "body": "Has iniciado sesión como {username}. Una invitación crea una cuenta nueva. Cierra la sesión para aceptarla.",
+      "signOut": "Cerrar sesión y aceptar la invitación"
+    },
     "createAccount": "Crear cuenta",
     "newAccount": "Crear cuenta nueva",
     "backToPasskey": "Volver a passkey",
@@ -4553,7 +4558,18 @@
       "ladderOauthBody": "Conecta una cuenta de ChatGPT — sin coste por token, pero los términos del nivel de consumo pueden usar el contenido para entrenamiento, así que es una elección deliberada, nunca la opción por defecto para tus datos de salud.",
       "keylessLine": "HealthLog es plenamente útil sin IA. Tus paneles, gráficos, tendencias y exportaciones funcionan — la IA solo añade la lectura en lenguaje claro por encima.",
       "setupCta": "Configúralo (un minuto aprox.)",
-      "sharedKeyNote": "Esta instancia ya ofrece un proveedor de IA compartido, así que los insights funcionan para ti ahora mismo — sin configuración."
+      "sharedKeyNote": "Esta instancia ya ofrece un proveedor de IA compartido, así que los insights funcionan para ti ahora mismo — sin configuración.",
+      "offer": {
+        "title": "Esta instancia ya puede escribir tu resumen en lenguaje claro.",
+        "body": "El operador ofrece un proveedor que funcionó por última vez en las últimas 24 horas. Con un toque activas el lenguaje claro; tus datos irán entonces a ese único proveedor y a nadie más.",
+        "cta": "Activar el lenguaje claro",
+        "granted": "Activado. El primer resumen aparecerá en tu panel.",
+        "error": "No se pudo activar. Vuelve a intentarlo en un momento."
+      },
+      "unavailable": {
+        "title": "El proveedor de esta instancia no responde en este momento.",
+        "body": "HealthLog es plenamente útil sin el lenguaje claro. Más adelante puedes añadir tu propio proveedor en los ajustes."
+      }
     },
     "steps": {
       "who": "Para quién es este registro",
@@ -4661,6 +4677,7 @@
         "alwaysOn": "Siempre activos: {modules} y las mediciones básicas (peso, presión arterial, pulso).",
         "everythingElse": "Todo lo demás queda a un clic en",
         "modulesLink": "Ajustes, Módulos",
+        "switchesOff": "Fuera de la navegación: {modules}. Puedes volver a activarlos cuando quieras en Ajustes, Módulos.",
         "glucoseUnit": "Glucosa en sangre",
         "unitPreference": "Unidades",
         "language": "Idioma",
@@ -4677,12 +4694,46 @@
         "connect-source": {
           "title": "Conectar {target}",
           "body": "Una conexión, elegida según tus respuestas. Después las mediciones llegan solas.",
-          "howTo": "La conexión se hace en la página de integraciones. Vuelve aquí después; esta pantalla detecta cuándo está lista.",
+          "howTo": "La conexión con {target} se hace en la página de integraciones. Vuelve aquí después; esta pantalla detecta cuándo está lista.",
           "cta": "Conectar {target}",
           "checking": "Comprobando la conexión.",
           "waiting": "Aún no conectado.",
-          "done": "{target} está conectado.",
-          "syncing": "La primera sincronización está en marcha. Las mediciones aparecen en el panel a medida que llegan."
+          "openSettings": "Abrir Ajustes → Integraciones",
+          "noDate": "desconocido",
+          "needsCredentials": {
+            "title": "Esta instancia aún no tiene una aplicación de {target} registrada.",
+            "detail": "Introduce tus propias credenciales en Ajustes → Integraciones y la conexión podrá empezar."
+          },
+          "state": {
+            "pending_first_sync": {
+              "title": "{target} está conectado.",
+              "detail": "La primera sincronización está en marcha. Los valores aparecerán en el panel en cuanto lleguen."
+            },
+            "fresh": {
+              "title": "{target} ya está conectado.",
+              "detail": "Último valor {when}. Aquí no queda nada por hacer."
+            },
+            "stale": {
+              "title": "{target} está conectado, pero ahora mismo no llega nada.",
+              "detail": "Último valor {when}. La conexión en sí está bien."
+            },
+            "stalled": {
+              "title": "{target} está conectado, pero ha dejado de sincronizar.",
+              "detail": "Último intento {when}. Revisa la conexión en Ajustes → Integraciones."
+            },
+            "failing": {
+              "title": "{target} está conectado, pero la sincronización falla.",
+              "detail": "No ha llegado nada desde {when}. Revisa la conexión en Ajustes → Integraciones."
+            },
+            "reauth_required": {
+              "title": "Hay que renovar la conexión con {target}.",
+              "detail": "Inicia sesión una vez más y los valores seguirán llegando."
+            },
+            "parked": {
+              "title": "La conexión con {target} está en pausa.",
+              "detail": "Revisa la conexión en Ajustes → Integraciones."
+            }
+          }
         },
         "add-medication": {
           "title": "Añade tu primer medicamento",
@@ -10322,6 +10373,7 @@
     "invite": {
       "title": "Invitar a alguien",
       "description": "No se comparte nada hasta que acepte.",
+      "needsAccount": "La persona necesita su propia cuenta de HealthLog en esta instancia y encontrará la invitación en Ajustes → Acceso compartido.",
       "identifierLabel": "Usuario o correo electrónico",
       "identifierPlaceholder": "El nombre con el que inicia sesión",
       "identifierHint": "Necesita una cuenta en esta instancia. No se pueden enviar invitaciones a una dirección que no se haya registrado.",

@@ -71,11 +71,43 @@ interface BaselineFormState {
   gender: string;
 }
 
+/**
+ * v1.39 — one attempt at confirming, with the buttons always
+ * handed back.
+ *
+ * `advance()` used to raise its own pending flag and lower it again on two of
+ * the three exits: the refused-field return and its catch. The third exit —
+ * the success path, `await onConfirmed()` — never lowered it, and
+ * `onConfirmed` is the confirm screen's completion, which caught its own
+ * error and returned normally. So a failed completion disabled "Skip" and
+ * "Confirm and continue" for the rest of the page's life and only a reload
+ * recovered.
+ *
+ * The reset lives in a `finally` here, which is the one place it cannot be
+ * forgotten on a new exit, and the component has no other way to move the
+ * flag.
+ */
+export async function runBaselineAttempt(
+  setPending: (pending: boolean) => void,
+  attempt: () => Promise<void>,
+  onError: (err: unknown) => void,
+): Promise<void> {
+  setPending(true);
+  try {
+    await attempt();
+  } catch (err) {
+    onError(err);
+  } finally {
+    setPending(false);
+  }
+}
+
 export function BaselineForm({
   initial,
   backHref,
   onConfirmed,
   confirming = false,
+  demoMode = false,
 }: {
   initial: BaselineInitialValues;
   backHref?: string;
@@ -83,6 +115,14 @@ export function BaselineForm({
   onConfirmed: () => Promise<void>;
   /** True while the completion the parent owns is in flight. */
   confirming?: boolean;
+  /**
+   * True on a `DEMO_MODE` instance, where the shared account's self-context
+   * write is off the edge allowlist and its profile write is narrowed to the
+   * three baseline fields. Makes the anamnesis card and the display-name box
+   * read-only, so neither refusal reaches a visitor as a failed confirm or as
+   * an answer that silently vanished.
+   */
+  demoMode?: boolean;
 }) {
   const { t } = useTranslations();
   const { preference } = useUnitDisplay();
@@ -152,50 +192,50 @@ export function BaselineForm({
 
   async function advance(opts: { saveProfile: boolean }) {
     if (saving || confirming) return;
-    setSaving(true);
     setFieldErrors({});
-    try {
-      if (opts.saveProfile) {
-        const profileBody = buildBaselineProfileBody(
-          form,
-          heightAdapter.toCanonicalCm(form.height),
-        );
-        if (Object.keys(profileBody).length > 0) {
-          const outcome = describeBaselineSaveOutcome(
-            await putBaselineProfile(profileBody),
-            t,
-            baselineFieldLabelKeys(heightAdapter.usesFeetInches),
+    await runBaselineAttempt(
+      setSaving,
+      async () => {
+        if (opts.saveProfile) {
+          const profileBody = buildBaselineProfileBody(
+            form,
+            heightAdapter.toCanonicalCm(form.height),
           );
-          if (outcome.notice) {
-            const show =
-              outcome.notice.tone === "warning" ? toast.warning : toast.error;
-            show(outcome.notice.message);
+          if (Object.keys(profileBody).length > 0) {
+            const outcome = describeBaselineSaveOutcome(
+              await putBaselineProfile(profileBody),
+              t,
+              baselineFieldLabelKeys(heightAdapter.usesFeetInches),
+            );
+            if (outcome.notice) {
+              const show =
+                outcome.notice.tone === "warning" ? toast.warning : toast.error;
+              show(outcome.notice.message);
+            }
+            if (!outcome.advance) {
+              // A field was refused. Staying on the step is the point —
+              // each refused input now says why under itself, the values
+              // the person typed are still in front of them, and the
+              // account is not stamped as set up over a value that never
+              // landed.
+              setFieldErrors(outcome.fieldErrors);
+              return;
+            }
           }
-          if (!outcome.advance) {
-            // A field was refused. Staying on the step is the point —
-            // each refused input now says why under itself, the values
-            // the person typed are still in front of them, and the
-            // account is not stamped as set up over a value that never
-            // landed.
-            setFieldErrors(outcome.fieldErrors);
-            setSaving(false);
-            return;
-          }
-        }
 
-        // Anamnesis — only write when the user actually filled a field
-        // (the helper returns null for an untouched card, so a
-        // collapsed card never round-trips).
-        const aboutMeBody = buildAnamnesisAboutMeBody(baseAboutMe, anamnesis);
-        if (aboutMeBody) {
-          await apiPut("/api/coach/about-me", aboutMeBody);
+          // Anamnesis — only write when the user actually filled a field
+          // (the helper returns null for an untouched card, so a
+          // collapsed card never round-trips).
+          const aboutMeBody = buildAnamnesisAboutMeBody(baseAboutMe, anamnesis);
+          if (aboutMeBody) {
+            await apiPut("/api/coach/about-me", aboutMeBody);
+          }
         }
-      }
-      await onConfirmed();
-    } catch (err) {
-      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
-      setSaving(false);
-    }
+        await onConfirmed();
+      },
+      (err) =>
+        toast.error(localizedApiError(err, t, "onboarding.errorGeneric")),
+    );
   }
 
   return (
@@ -215,12 +255,14 @@ export function BaselineForm({
         onChange={patch}
         heightAdapter={heightAdapter}
         errors={fieldErrors}
+        readOnlyDisplayName={demoMode}
       />
 
       <AnamnesisCard
         value={anamnesis}
         onChange={setAnamnesis}
         disabled={saving}
+        readOnly={demoMode}
       />
 
       <StepActions

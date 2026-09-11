@@ -413,6 +413,11 @@
     "loginFailed": "Login failed",
     "registerFailed": "Registration failed",
     "invitedBanner": "You have been invited — create your account even while registration is otherwise closed.",
+    "alreadySignedIn": {
+      "title": "You are already signed in",
+      "body": "You are signed in as {username}. An invitation creates a new account — sign out to accept it.",
+      "signOut": "Sign out and accept the invitation"
+    },
     "createAccount": "Create account",
     "newAccount": "Create new account",
     "backToPasskey": "Back to Passkey",
@@ -4553,7 +4558,18 @@
       "ladderOauthBody": "Connect a ChatGPT account — no per-token cost, but the consumer tier's terms may use content for training, so it's a deliberate choice, never the default for your health data.",
       "keylessLine": "HealthLog is fully useful without AI. Your tiles, charts, trends and exports all work — AI only adds the plain-language read on top.",
       "setupCta": "Set it up (about a minute)",
-      "sharedKeyNote": "This instance already provides a shared AI provider, so insights work for you right now — no setup needed."
+      "sharedKeyNote": "This instance already provides a shared AI provider, so insights work for you right now — no setup needed.",
+      "offer": {
+        "title": "This instance can write your summary in plain language.",
+        "body": "The operator provides a provider that last worked within the past 24 hours. One tap turns the plain-language read on; your data then goes to that one provider and to nobody else.",
+        "cta": "Turn on plain language",
+        "granted": "Turned on. The first summary appears on your dashboard.",
+        "error": "Turning it on did not work. Give it another try in a moment."
+      },
+      "unavailable": {
+        "title": "This instance’s provider is not answering right now.",
+        "body": "HealthLog is fully useful without the plain-language read. You can add a provider of your own later under Settings."
+      }
     },
     "steps": {
       "who": "Who this record is for",
@@ -4661,6 +4677,7 @@
         "alwaysOn": "Always on: {modules}, and the core readings (weight, blood pressure, pulse).",
         "everythingElse": "Everything else stays one click away under",
         "modulesLink": "Settings, Modules",
+        "switchesOff": "Out of the navigation: {modules}. You can switch any of them back on under Settings, Modules.",
         "glucoseUnit": "Blood glucose",
         "unitPreference": "Units",
         "language": "Language",
@@ -4677,12 +4694,46 @@
         "connect-source": {
           "title": "Connect {target}",
           "body": "One connection, chosen from your answers. Readings then arrive on their own.",
-          "howTo": "The connection is made on the integrations page. Come back here afterwards; this screen notices when it is done.",
+          "howTo": "The connection to {target} is made on the integrations page. Come back here afterwards; this screen notices when it is done.",
           "cta": "Connect {target}",
           "checking": "Checking the connection.",
           "waiting": "Not connected yet.",
-          "done": "{target} is connected.",
-          "syncing": "The first sync is in progress. Readings appear on the dashboard as they arrive."
+          "openSettings": "Open Settings → Integrations",
+          "noDate": "unknown",
+          "needsCredentials": {
+            "title": "This instance has no {target} app on file yet.",
+            "detail": "Enter your own credentials under Settings → Integrations, then the connection can start."
+          },
+          "state": {
+            "pending_first_sync": {
+              "title": "{target} is connected.",
+              "detail": "The first sync is in progress. Readings appear on the dashboard as they arrive."
+            },
+            "fresh": {
+              "title": "{target} is already connected.",
+              "detail": "Last reading {when}. Nothing left to do here."
+            },
+            "stale": {
+              "title": "{target} is connected, but nothing is arriving right now.",
+              "detail": "Last reading {when}. The connection itself is fine."
+            },
+            "stalled": {
+              "title": "{target} is connected, but it has stopped syncing.",
+              "detail": "Last attempt {when}. Check the connection under Settings → Integrations."
+            },
+            "failing": {
+              "title": "{target} is connected, but the sync keeps failing.",
+              "detail": "Nothing has come through since {when}. Check the connection under Settings → Integrations."
+            },
+            "reauth_required": {
+              "title": "The connection to {target} needs renewing.",
+              "detail": "Sign in once more and the readings carry on."
+            },
+            "parked": {
+              "title": "The connection to {target} is paused.",
+              "detail": "Check the connection under Settings → Integrations."
+            }
+          }
         },
         "add-medication": {
           "title": "Add your first medication",
@@ -10322,6 +10373,7 @@
     "invite": {
       "title": "Invite someone",
       "description": "Nothing is shared until they accept.",
+      "needsAccount": "The person needs their own HealthLog account on this instance and will find the invitation under Settings → Shared access.",
       "identifierLabel": "Username or e-mail",
       "identifierPlaceholder": "The name they sign in with",
       "identifierHint": "They need an account on this instance. Invitations cannot be sent to an e-mail address that has not registered.",

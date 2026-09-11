@@ -58,6 +58,16 @@ export interface AnamnesisCardProps {
   value: AnamnesisValue;
   onChange: (next: AnamnesisValue) => void;
   disabled?: boolean;
+  /**
+   * v1.39 — the instance cannot persist what is typed here, so nothing may
+   * be typed. True under `DEMO_MODE`: the demo is one published account
+   * every visitor signs into, and `PUT /api/coach/about-me` is off the
+   * demo's edge allowlist because this text persists for the next visitor
+   * and is fed into the Coach prompt. The card still shows what it asks —
+   * the demo walks the same screen — it just does not take an answer, which
+   * is honest where a refused save on Confirm would not be.
+   */
+  readOnly?: boolean;
 }
 
 /** Per-field cap mirrors ABOUT_ME_FIELD_MAX_CHARS on the server. */
@@ -67,6 +77,7 @@ export function AnamnesisCard({
   value,
   onChange,
   disabled,
+  readOnly = false,
 }: AnamnesisCardProps) {
   const { t } = useTranslations();
   const [expanded, setExpanded] = useState(false);
@@ -75,7 +86,11 @@ export function AnamnesisCard({
   const panelId = useId();
 
   return (
-    <div className="bg-card border-border rounded-xl border">
+    <div
+      className="bg-card border-border rounded-xl border"
+      data-slot="onboarding-anamnesis"
+      data-readonly={readOnly ? "true" : undefined}
+    >
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
@@ -122,7 +137,7 @@ export function AnamnesisCard({
               onChange={(e) =>
                 onChange({ ...value, conditions: e.target.value })
               }
-              disabled={disabled}
+              disabled={disabled || readOnly}
               maxLength={FIELD_MAX}
               rows={2}
               placeholder={t("onboarding.anamnesis.conditionsPlaceholder")}
@@ -142,7 +157,7 @@ export function AnamnesisCard({
               onChange={(e) =>
                 onChange({ ...value, allergies: e.target.value })
               }
-              disabled={disabled}
+              disabled={disabled || readOnly}
               maxLength={FIELD_MAX}
               rows={2}
               placeholder={t("onboarding.anamnesis.allergiesPlaceholder")}
