@@ -31,10 +31,10 @@ export async function verifyPassword(
  * password. Verifying against this hash on the empty arms makes the work
  * comparable.
  *
- * Minted once per process from `ARGON2_HASH_OPTIONS`, the same parameters
- * every real hash carries, because Argon2 encodes its cost in the hash
- * string and the verifier pays whatever the string says. A dummy minted at
- * cheaper settings would leave the gap it was added to close.
+ * Minted from `ARGON2_HASH_OPTIONS`, the same parameters every real hash
+ * carries, because Argon2 encodes its cost in the hash string and the
+ * verifier pays whatever the string says. A dummy minted at cheaper settings
+ * would leave the gap it was added to close.
  *
  * The input is a fixed constant rather than a random string so the module
  * has no hidden state, and it is never compared to anything: the arm that
@@ -42,13 +42,33 @@ export async function verifyPassword(
  * path on which a caller can make this hash accept.
  */
 const DUMMY_VERIFY_INPUT = "healthlog: not a credential, never accepted";
-const DUMMY_PASSWORD_HASH: Promise<string> = hash(
-  DUMMY_VERIFY_INPUT,
-  ARGON2_HASH_OPTIONS,
-);
-// Keep a mint failure from surfacing as an unhandled rejection at import
-// time; `verifyPasswordOrDummy` still awaits and still sees it.
-void DUMMY_PASSWORD_HASH.catch(() => undefined);
+
+let dummyHashPromise: Promise<string> | null = null;
+
+/**
+ * The dummy hash, minted on first use and kept for the process afterwards.
+ *
+ * Lazy rather than minted at import: every process that imports this module
+ * would otherwise spend 19 MiB and a thread-pool slot at boot, including the
+ * queue worker and each build worker, none of which ever authenticates
+ * anybody. From the second refusal onward the cost profile is identical
+ * either way.
+ *
+ * A rejected promise stays rejected for the life of the process, so caching
+ * one would degrade every later refusal back to the cheap path and leave the
+ * timing channel open with no way to notice. A failed mint is therefore
+ * dropped and the next call mints again.
+ */
+function dummyHash(): Promise<string> {
+  if (!dummyHashPromise) {
+    const pending = hash(DUMMY_VERIFY_INPUT, ARGON2_HASH_OPTIONS);
+    dummyHashPromise = pending;
+    pending.catch(() => {
+      if (dummyHashPromise === pending) dummyHashPromise = null;
+    });
+  }
+  return dummyHashPromise;
+}
 
 /**
  * Verify `password` against `storedHash`, or against the dummy hash when
@@ -68,11 +88,19 @@ export async function verifyPasswordOrDummy(
   password: string,
 ): Promise<boolean> {
   if (storedHash) return verify(storedHash, password);
-  // Same verifier, same cost profile, verdict discarded. A throw here (a
-  // malformed dummy, a mint that failed) must not turn into a 500 that only
-  // the unknown-account arm can produce — that would be the oracle again,
-  // in the status code this time.
-  await verify(await DUMMY_PASSWORD_HASH, password).catch(() => false);
+  try {
+    // Same verifier, same cost profile, verdict discarded.
+    await verify(await dummyHash(), password);
+  } catch (error) {
+    // Both the mint and the verify are inside the guard, and the mint has to
+    // be: an unguarded `await` on a rejected mint would throw out of here and
+    // answer 500 on exactly the arm this function exists to make ordinary —
+    // an unknown identifier answering 500 while a real account answers 401 is
+    // the oracle again, in the status code, and cheaper to read than the
+    // timing gap was. The breadcrumb makes a degraded instance visible; the
+    // answer below is the same either way.
+    console.error("[auth] dummy password verification failed", error);
+  }
   return false;
 }
 

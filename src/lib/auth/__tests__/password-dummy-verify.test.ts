@@ -19,8 +19,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Hoisted: `password.ts` mints the dummy hash at module load, so the mock
-// has to exist before the import below runs.
+// Hoisted so the mock is in place before `password.ts` is imported.
 const { hashMock, verifyMock } = vi.hoisted(() => ({
   hashMock: vi.fn(async (input: string) => `hashed:${input}`),
   verifyMock: vi.fn(async (_hash: string, _password: string) => false),
@@ -28,21 +27,43 @@ const { hashMock, verifyMock } = vi.hoisted(() => ({
 
 vi.mock("@node-rs/argon2", () => ({ hash: hashMock, verify: verifyMock }));
 
-import { verifyPasswordOrDummy } from "@/lib/auth/password";
 import { ARGON2_HASH_OPTIONS } from "@/lib/auth/argon2-params.mjs";
 
-beforeEach(() => {
+/**
+ * The dummy hash is minted once per module instance, so each test gets a
+ * fresh instance — otherwise the first successful mint is cached and the
+ * mint-failure cases could never reach the mint at all.
+ */
+let verifyPasswordOrDummy: (
+  storedHash: string | null | undefined,
+  password: string,
+) => Promise<boolean>;
+
+beforeEach(async () => {
   verifyMock.mockReset();
   verifyMock.mockResolvedValue(false);
+  hashMock.mockReset();
+  hashMock.mockImplementation(async (input: string) => `hashed:${input}`);
+  vi.resetModules();
+  ({ verifyPasswordOrDummy } = await import("@/lib/auth/password"));
 });
 
 describe("verifyPasswordOrDummy", () => {
-  it("mints the dummy hash under the same Argon2id parameters real hashes use", () => {
-    // The module mints it once at load, so the call has already happened.
+  it("mints the dummy hash under the same Argon2id parameters real hashes use", async () => {
+    await verifyPasswordOrDummy(null, "anything");
     expect(hashMock).toHaveBeenCalledWith(
       expect.any(String),
       ARGON2_HASH_OPTIONS,
     );
+  });
+
+  it("mints once and reuses it for every later refusal", async () => {
+    await verifyPasswordOrDummy(null, "anything");
+    await verifyPasswordOrDummy(null, "anything");
+    await verifyPasswordOrDummy(undefined, "anything");
+    // Three refusals, three verifications, one mint.
+    expect(verifyMock).toHaveBeenCalledTimes(3);
+    expect(hashMock).toHaveBeenCalledTimes(1);
   });
 
   it("verifies against the stored hash when the account has one", async () => {
@@ -61,9 +82,7 @@ describe("verifyPasswordOrDummy", () => {
     await expect(verifyPasswordOrDummy(null, "anything")).resolves.toBe(false);
     expect(verifyMock).toHaveBeenCalledTimes(1);
     // Against the dummy, not against nothing.
-    expect(verifyMock.mock.calls[0][0]).toBe(
-      await hashMock.mock.results[0].value,
-    );
+    expect(verifyMock.mock.calls[0][0]).toMatch(/^hashed:/);
   });
 
   it("still verifies for a passkey-only account (undefined hash)", async () => {
@@ -87,7 +106,54 @@ describe("verifyPasswordOrDummy", () => {
   it("swallows a throw from the dummy arm rather than answering differently", async () => {
     // A 500 only the unknown-account arm can produce is the same oracle in
     // a different field.
-    verifyMock.mockRejectedValueOnce(new Error("malformed hash"));
-    await expect(verifyPasswordOrDummy(null, "anything")).resolves.toBe(false);
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      verifyMock.mockRejectedValueOnce(new Error("malformed hash"));
+      await expect(verifyPasswordOrDummy(null, "anything")).resolves.toBe(
+        false,
+      );
+      expect(logged).toHaveBeenCalled();
+    } finally {
+      logged.mockRestore();
+    }
+  });
+
+  it("swallows a failed MINT too, not only a failed verify", async () => {
+    // The mint is awaited as an argument to the verifier, so an unguarded
+    // `await` on a rejected mint throws before the verifier is reached and
+    // before any `.catch` on it can apply. That answers 500 on exactly the
+    // arm that must look ordinary — and a passkey-only account could not
+    // sign in at all.
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      hashMock.mockRejectedValueOnce(new Error("out of memory"));
+      await expect(verifyPasswordOrDummy(null, "anything")).resolves.toBe(
+        false,
+      );
+      expect(verifyMock).not.toHaveBeenCalled();
+      expect(logged).toHaveBeenCalled();
+    } finally {
+      logged.mockRestore();
+    }
+  });
+
+  it("re-mints after a failure instead of caching the rejection forever", async () => {
+    // A rejected promise stays rejected for the life of the process. Caching
+    // one would send every later refusal back down the cheap path with the
+    // timing channel reopened and nothing to notice it by.
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      hashMock.mockRejectedValueOnce(new Error("out of memory"));
+      await verifyPasswordOrDummy(null, "anything");
+      expect(verifyMock).not.toHaveBeenCalled();
+
+      await expect(verifyPasswordOrDummy(null, "anything")).resolves.toBe(
+        false,
+      );
+      expect(hashMock).toHaveBeenCalledTimes(2);
+      expect(verifyMock).toHaveBeenCalledTimes(1);
+    } finally {
+      logged.mockRestore();
+    }
   });
 });
