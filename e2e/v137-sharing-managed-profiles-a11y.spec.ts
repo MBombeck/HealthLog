@@ -200,10 +200,52 @@ async function openProfileRecord(page: Page) {
   await expect(page).toHaveURL(/\/profile$/);
 }
 
+/**
+ * Run an act that swaps the document out, and wait until it has.
+ *
+ * Exiting a record is a full navigation. A token stamped on the window before
+ * the click is gone the moment the new document exists, which is the only
+ * signal that the old one is not still the page under test.
+ */
+async function withDocumentReplacement(
+  page: Page,
+  act: () => Promise<void>,
+): Promise<void> {
+  await page.evaluate(() => {
+    (window as Window & { __hlNavToken?: true }).__hlNavToken = true;
+  });
+  await act();
+  await page.waitForFunction(
+    () =>
+      (window as Window & { __hlNavToken?: true }).__hlNavToken === undefined,
+    undefined,
+    { timeout: 30_000 },
+  );
+}
+
+/**
+ * Leave the record and prove the own-record shell is back.
+ *
+ * Leaving replaces the document, and the protected shell renders its
+ * hydration gate — no nav, no banner, no page body — until `/api/auth/me`
+ * resolves. "The banner is gone" is true of that gate as well, so on its own
+ * it is satisfied by the document on its way out and is not a wait at all.
+ * The top bar only exists past the gate, so it is the anchor the absence
+ * hangs on.
+ */
 async function leaveRecord(page: Page) {
-  await page.locator('[data-slot="shared-record-banner-exit"]').click();
+  await withDocumentReplacement(page, () =>
+    page.locator('[data-slot="shared-record-banner-exit"]').click(),
+  );
+  await expect(
+    page.locator('[data-slot="record-scope-hydration-gate"]'),
+  ).toHaveCount(0, { timeout: 30_000 });
+  await expect(page.locator('[data-slot="top-bar"]')).toBeVisible({
+    timeout: 30_000,
+  });
   await expect(page.locator('[data-slot="shared-record-banner"]')).toHaveCount(
     0,
+    { timeout: 30_000 },
   );
 }
 

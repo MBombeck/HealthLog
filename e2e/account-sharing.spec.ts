@@ -491,12 +491,16 @@ test.describe("account sharing", () => {
     // than on a wall of refusals: the revoke cleared their acting session in
     // the same transaction that stamped the row.
     await page.goto("/measurements");
+    // Their own record, back. This goes first: the protected shell holds
+    // every child — nav, banner, page body — behind its hydration gate until
+    // `/api/auth/me` resolves, so "no banner" straight after a navigation is
+    // satisfied by the page still loading and would stay green if the revoke
+    // had left the acting session standing. The delegate's own marker only
+    // exists once the record really resolved to theirs.
+    await expect(page.getByText(DELEGATE_MARKER).first()).toBeVisible();
     await expect(
       page.locator('[data-slot="shared-record-banner"]'),
     ).toHaveCount(0);
-    // Their own record, back — which is also the proof that the page did not
-    // simply fail to load.
-    await expect(page.getByText(DELEGATE_MARKER).first()).toBeVisible();
   });
 
   test("the ended grant stays on the record as history", async () => {

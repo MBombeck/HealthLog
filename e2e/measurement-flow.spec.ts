@@ -114,25 +114,23 @@ test.describe("add measurement flow", () => {
     );
 
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    // Past the route-level skeleton first. `networkidle` says nothing about
-    // whether the suspended segment resolved, and every locator below lives
-    // inside the content that replaces it.
-    await expect(page.locator('[data-slot="dashboard-loading"]')).toHaveCount(
-      0,
-      { timeout: 60_000 },
-    );
-    await page.waitForLoadState("networkidle");
 
     // Open the "Add" dropdown — the dashboard's quick-entry trigger sits
     // at the top-right of `<main>`. Scope the locator there so we don't
     // accidentally match an "Add" button on the sidebar.
     const main = page.locator("main");
-    await openMenu(
-      page,
-      main
-        .getByRole("button", { name: /^add$|hinzufügen|hinzufuegen/i })
-        .first(),
-    );
+    const addTrigger = main
+      .getByRole("button", { name: /^add$|hinzufügen|hinzufuegen/i })
+      .first();
+    // Wait for the trigger itself rather than for the route-level skeleton to
+    // go. The skeleton is also absent while the protected shell holds the
+    // whole page behind its hydration gate, so its disappearance is not a
+    // statement about the suspended segment having resolved; the control the
+    // next line clicks is. `networkidle` says nothing about either.
+    await expect(addTrigger).toBeVisible({ timeout: 60_000 });
+    await page.waitForLoadState("networkidle");
+
+    await openMenu(page, addTrigger);
 
     // v1.5 phase-5: the menu items now have distinct labels — the
     // measurement entry says "Measurement" / "Messung" instead of "Add",

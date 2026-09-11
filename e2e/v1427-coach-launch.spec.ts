@@ -136,17 +136,20 @@ test.describe("Coach launch surfaces on insights sub-pages", () => {
 
       await page.goto(`/insights/${slug}`, { waitUntil: "domcontentloaded" });
 
-      // CCH-04 — the per-metric inline launch icon is retired; no header
-      // launcher renders on the sub-page.
-      await expect(page.locator('[data-slot="coach-launch-icon"]')).toHaveCount(
-        0,
-      );
-
-      // The FAB is the permanent launcher; with no unread nudge it
+      // The FAB is the permanent launcher, and it is also the proof that the
+      // shell got past its hydration gate: nothing — header, FAB, page body —
+      // exists until `/api/auth/me` resolves, so an absence asserted above
+      // this line is a statement about the gate. With no unread nudge the FAB
       // renders without the unread dot.
       const fab = page.locator('[data-slot="coach-fab"]');
       await expect(fab).toBeVisible({ timeout: 10_000 });
       await expect(page.locator('[data-slot="coach-fab-unread"]')).toHaveCount(
+        0,
+      );
+
+      // The per-metric inline launch icon is retired; no header launcher
+      // renders on the sub-page.
+      await expect(page.locator('[data-slot="coach-launch-icon"]')).toHaveCount(
         0,
       );
     });
@@ -161,13 +164,16 @@ test.describe("Coach launch surfaces on insights sub-pages", () => {
 
       await page.goto(`/insights/${slug}`, { waitUntil: "domcontentloaded" });
 
-      await expect(page.locator('[data-slot="coach-launch-icon"]')).toHaveCount(
-        0,
-      );
-
+      // Same order as the mobile branch, for the same reason: the FAB is the
+      // marker that the shell finished hydrating, so the retired header
+      // launcher is claimed absent only after something has rendered.
       const fab = page.locator('[data-slot="coach-fab"]');
       await expect(fab).toBeVisible({ timeout: 10_000 });
       await expect(page.locator('[data-slot="coach-fab-unread"]')).toHaveCount(
+        0,
+      );
+
+      await expect(page.locator('[data-slot="coach-launch-icon"]')).toHaveCount(
         0,
       );
     });

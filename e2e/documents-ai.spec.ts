@@ -373,6 +373,15 @@ test.describe("document vault — AI assist + content search", () => {
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
 
+    // The sheet shell paints skeletons while the detail query is pending, so
+    // its own visibility says nothing about the body having rendered. The
+    // footer download action belongs to the resolved document, so waiting on
+    // it is what keeps the two absences below from passing against a
+    // skeleton that never had the line to begin with.
+    await expect(
+      sheet.locator('[data-slot="document-download"]'),
+    ).toBeVisible();
+
     await expect(
       sheet.locator('[data-slot="document-detail-ai-read"]'),
     ).toHaveCount(0);

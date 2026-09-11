@@ -101,9 +101,29 @@ export async function truncateAllTables(client: PrismaClient): Promise<void> {
   }
 
   const quoted = tables.map((t) => `"${t}"`).join(", ");
-  await client.$executeRawUnsafe(
-    `TRUNCATE TABLE ${quoted} RESTART IDENTITY CASCADE;`,
-  );
+  // A truncate takes the strictest lock there is on every table at once, so it
+  // loses to anything still holding a row lock. Thirty-nine places in the
+  // server write without awaiting the result (a last-used stamp, a delivery
+  // record, an audit row), and one of those can land after the test that
+  // triggered it has returned. Postgres then reports a deadlock and kills the
+  // truncate, which fails an unrelated file and passes on the next run.
+  // Retrying is the honest answer: a deadlock means somebody else got there
+  // first, and by the next attempt the stray write has finished. Only 40P01 is
+  // retried, so a lock held for good still fails as it should.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await client.$executeRawUnsafe(
+        `TRUNCATE TABLE ${quoted} RESTART IDENTITY CASCADE;`,
+      );
+      break;
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+      const deadlock =
+        code === "40P01" || /deadlock detected/i.test(String(error));
+      if (!deadlock || attempt >= 4) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
+    }
+  }
 
   // Categories first — the tag rows FK into them.
   if (categorySnapshot.length > 0) {
