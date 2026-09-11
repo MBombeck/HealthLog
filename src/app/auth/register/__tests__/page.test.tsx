@@ -11,9 +11,8 @@
  * the page rendered. The sign-out click itself is driven in
  * `e2e/invite-registration.spec.ts`.
  *
- * Mutation check, run: drop the `isAuthenticated` branch → the two signed-in
- * cases go red naming the form inputs they found, the anonymous case stays
- * green.
+ * Mutation check, run: drop the signed-in branch → the two signed-in cases go
+ * red naming the form inputs they found, the anonymous case stays green.
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -111,5 +110,19 @@ describe("register page — an invitation cannot be accepted from a live session
     inviteRef.value = TOKEN;
     const markup = render();
     expect(markup).not.toContain('data-testid="register-already-signed-in"');
+  });
+
+  it("renders the form when the auth probe failed and only a stale marker says otherwise", () => {
+    // `useAuth` deliberately holds the LAST-KNOWN state when `/api/auth/me`
+    // fails at the transport level or with a 5xx, so the shell does not sign
+    // people out on a blip. There is no account payload on that path, so the
+    // panel would name nobody ("You are signed in as .") and offer a sign-out
+    // that posts to the endpoint the same failure is affecting. An invited
+    // household member on a flaky connection could not register at all.
+    authRef.value = { user: null, isAuthenticated: true, isLoading: false };
+    inviteRef.value = TOKEN;
+    const markup = render();
+    expect(markup).not.toContain('data-testid="register-already-signed-in"');
+    expect(markup).toContain('id="username"');
   });
 });

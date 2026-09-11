@@ -27,11 +27,19 @@ export default function RegisterPage() {
   // v1.38.19 — an invitation creates a NEW account, so it cannot be accepted
   // from inside a live session; `POST /api/auth/register` refuses one with
   // 409 `already_authenticated`. Rendering the form anyway would let the
-  // visitor discover that by filling it in. `isLoading` holds the panel back
-  // until the session question is actually answered — failing closed the
-  // other way round would flash "you are already signed in" at somebody who
-  // is not.
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  // visitor discover that by filling it in.
+  //
+  // The gate is the resolved account payload, not `isAuthenticated`. That
+  // flag deliberately holds the LAST-KNOWN state off a localStorage marker
+  // whenever `/api/auth/me` fails at the transport level or with a 5xx, so
+  // the shell does not sign people out on a blip — and on that path there is
+  // no `user`. Gating on it would show an invited household member behind a
+  // 502 a panel that names nobody and offers a sign-out posting to the very
+  // endpoint that is failing, with no way to register. A payload in hand is
+  // the only positive evidence of a session, and it is also absent while the
+  // probe is still in flight, so the panel cannot flash at somebody who is
+  // not signed in.
+  const { user } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -104,7 +112,7 @@ export default function RegisterPage() {
     }
   }
 
-  if (isAuthenticated && !authLoading) {
+  if (user) {
     return (
       <div className="w-full max-w-sm">
         <div className="border-border bg-card rounded-xl border p-6 shadow-lg shadow-black/20 sm:p-8">
