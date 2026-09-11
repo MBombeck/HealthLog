@@ -5509,6 +5509,7 @@
       "invalidValue": "To nie jest jedna z odpowiedzi, które przyjmuje to pole.",
       "invalidFormat": "To nie jest zapisane w formacie, który to pole może odczytać.",
       "invalidType": "Wartość nie dotarła w formacie, który to pole może zapisać.",
+      "rateLimited": "Zmieniane zbyt często. Odczekaj chwilę i spróbuj ponownie.",
       "other": "Ta wartość nie została przyjęta. Sprawdź ją i spróbuj ponownie."
     },
     "avatar": {

@@ -115,6 +115,14 @@ describe("the profile email-address bucket", () => {
     );
   });
 
+  it("says this response is only for a request that asked for nothing else", () => {
+    // The refusal narrows to the field when the request carries other
+    // fields, so a client reading the 429 as "the whole save failed" would
+    // be wrong. The sentence has to carry that or it is worse than silence.
+    expect(published).toContain("rejectedFields");
+    expect(published).toContain("rate_limited");
+  });
+
   it("is published on both operations that answer it", () => {
     const doc = buildOpenApiDocument() as unknown as {
       paths: Record<

@@ -527,7 +527,7 @@ const authProfileUpdateResponse = z
       )
       .optional()
       .describe(
-        "Present only on a PARTIAL success: the fields that failed validation and were skipped while the rest of the patch was written. A 200 carrying this key means the save was incomplete — surface it, do not treat the response as a clean save.",
+        "Present only on a PARTIAL success: the fields that were skipped while the rest of the patch was written. A 200 carrying this key means the save was incomplete — surface it, do not treat the response as a clean save. `code` is the validator code for a field that failed validation, or `rate_limited` for an email-address change that has spent the account's hourly budget; that one is not a bad value and the same address will be accepted once the window rolls over.",
       ),
   })
   .meta({

@@ -483,6 +483,18 @@ const profileUpdateResponse = z
     hasInsuranceNumber: z
       .boolean()
       .describe("Whether a KVNR is on file (the value itself is not echoed)."),
+    rejectedFields: z
+      .array(
+        z.object({
+          path: z.string(),
+          code: z.string(),
+          message: z.string(),
+        }),
+      )
+      .optional()
+      .describe(
+        "Present only on a PARTIAL success: the fields that were skipped while the rest of the patch was written. A 200 carrying this key means the save was incomplete — surface it, do not treat the response as a clean save. `code` is the validator code for a field that failed validation, or `rate_limited` for an email-address change that has spent the account's hourly budget; that one is not a bad value and the same address will be accepted once the window rolls over. The handler has always been able to answer with this key on this path; it was published only on PUT /api/auth/profile.",
+      ),
   })
   .meta({
     id: "ProfileUpdateResponse",

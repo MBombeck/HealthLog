@@ -5509,6 +5509,7 @@
       "invalidValue": "Das ist keine der Antworten, die dieses Feld annimmt.",
       "invalidFormat": "Das ist nicht in einer Form geschrieben, die dieses Feld lesen kann.",
       "invalidType": "Der Wert kam nicht in einer Form an, die dieses Feld speichern kann.",
+      "rateLimited": "Zu oft geändert. Warte kurz und versuche es dann erneut.",
       "other": "Dieser Wert wurde nicht angenommen. Bitte prüfen und erneut versuchen."
     },
     "avatar": {

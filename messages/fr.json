@@ -5509,6 +5509,7 @@
       "invalidValue": "Ce n'est pas une des réponses acceptées par ce champ.",
       "invalidFormat": "Ce n'est pas écrit dans un format que ce champ peut lire.",
       "invalidType": "La valeur n'est pas arrivée dans un format que ce champ peut enregistrer.",
+      "rateLimited": "Modifié trop souvent. Patientez un peu et réessayez.",
       "other": "Cette valeur n'a pas été acceptée. Vérifiez-la et réessayez."
     },
     "avatar": {

@@ -73,6 +73,11 @@ export function describeRejectedProfileField(
  * degrade to something honest instead of to silence.
  */
 const REJECTION_REASON_KEYS: Record<string, string> = {
+  // Not a Zod code: the profile helper refuses an email-address change that
+  // has spent the account's hourly budget this way, so the rest of the save
+  // still lands. Without an entry it would fall back to "check it and try
+  // again", which is wrong — the value was fine, the timing was not.
+  rate_limited: "settings.profileRejection.rateLimited",
   too_big: "settings.profileRejection.tooBig",
   too_small: "settings.profileRejection.tooSmall",
   invalid_value: "settings.profileRejection.invalidValue",

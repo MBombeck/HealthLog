@@ -180,8 +180,11 @@ export async function checkRecordWriteRateLimit(
  * address actually differs from the one on file, so re-saving a settings
  * form that carries the unchanged address never spends the budget. What it
  * ends is the unbounded sweep: two hundred and forty questions a day per
- * account, each with an audit row beside it, instead of as many as the
- * network will carry.
+ * account instead of as many as the network will carry. Both answers worth
+ * detecting write an audit row of their own — `profile.email.conflict` when
+ * an address turns out to be taken, `profile.email.rate_limited` when the
+ * budget runs out. The ordinary `profile.update` row is written after the
+ * save, which neither of those paths reaches.
  */
 export const PROFILE_EMAIL_BUCKET_PREFIX = "profile-email";
 export const PROFILE_EMAIL_LIMIT = 10;

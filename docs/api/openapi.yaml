@@ -3099,13 +3099,16 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": &a14
-          description: "Too many email-address changes. The address change shares one per-account bucket across both profile
-            routes — `profile-email:<accountId>`, 10 requests per 3600 seconds — keyed on the ACTING account, so an
-            account cannot collect a fresh allowance by probing a different address. Nothing was written.
+          description: "Too many email-address changes, and the request asked for nothing else. The address change shares one
+            per-account bucket across both profile routes — `profile-email:<accountId>`, 10 requests per 3600 seconds —
+            keyed on the ACTING account, so an account cannot collect a fresh allowance by probing a different address.
             `meta.errorCode` is `profile.update.emailRateLimited`. Only a request whose `email` actually differs from
             the address on file is counted: re-saving a form that carries the unchanged address is free, and so is any
-            update that does not touch `email` at all. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`
-            and `X-RateLimit-Reset` headers describe that bucket; back off on `Retry-After` rather than guessing."
+            update that does not touch `email` at all. A request that carries other fields beside the refused address
+            does NOT get this response — it answers 200, saves those fields, and names `email` in `rejectedFields` with
+            code `rate_limited`, so one spent budget cannot block an unrelated profile edit for an hour. The
+            `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers describe that
+            bucket; back off on `Retry-After` rather than guessing."
           headers: *a8
           content:
             application/json:
@@ -37916,9 +37919,11 @@ components:
           description: Whether an insurance number is stored. The number itself is encrypted at rest and is never returned — only
             its presence.
         rejectedFields:
-          description: "Present only on a PARTIAL success: the fields that failed validation and were skipped while the rest of
-            the patch was written. A 200 carrying this key means the save was incomplete — surface it, do not treat the
-            response as a clean save."
+          description: "Present only on a PARTIAL success: the fields that were skipped while the rest of the patch was written. A
+            200 carrying this key means the save was incomplete — surface it, do not treat the response as a clean save.
+            `code` is the validator code for a field that failed validation, or `rate_limited` for an email-address
+            change that has spent the account's hourly budget; that one is not a bad value and the same address will be
+            accepted once the window rolls over."
           type: array
           items:
             type: object
@@ -46812,6 +46817,28 @@ components:
         hasInsuranceNumber:
           type: boolean
           description: Whether a KVNR is on file (the value itself is not echoed).
+        rejectedFields:
+          description: "Present only on a PARTIAL success: the fields that were skipped while the rest of the patch was written. A
+            200 carrying this key means the save was incomplete — surface it, do not treat the response as a clean save.
+            `code` is the validator code for a field that failed validation, or `rate_limited` for an email-address
+            change that has spent the account's hourly budget; that one is not a bad value and the same address will be
+            accepted once the window rolls over. The handler has always been able to answer with this key on this path;
+            it was published only on PUT /api/auth/profile."
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              code:
+                type: string
+              message:
+                type: string
+            required:
+              - path
+              - code
+              - message
+            additionalProperties: false
       required:
         - username
         - email
