@@ -309,6 +309,7 @@ export async function streamFencedReply(
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     annotate({ action: { name: "documents.chat.budget.exceeded" } });
@@ -371,6 +372,7 @@ Reply now as the assistant, grounded ONLY in the documents above, in ${
     let result;
     try {
       const fallback = await runStreamingRawCompletionWithFallback({
+        surface: "coach",
         userId,
         // Single-provider — the document-ordered pick, no cascade.
         providers: [pick!.entry],

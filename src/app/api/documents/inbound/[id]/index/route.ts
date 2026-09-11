@@ -251,6 +251,7 @@ async function handleVisionIndex(
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);

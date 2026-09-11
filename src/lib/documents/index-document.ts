@@ -236,6 +236,7 @@ async function tryProviderIndex(
     dateKey,
     provider.dailyCap,
     provider.costOwner,
+    "coach",
   );
   // Budget exhausted → fall through to the free local path rather than stall;
   // a text-layer PDF stays searchable even once the AI allowance is spent.

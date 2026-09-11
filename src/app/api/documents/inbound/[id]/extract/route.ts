@@ -256,6 +256,7 @@ async function handleTextExtract(
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);
@@ -359,6 +360,7 @@ async function handleStoredExtract(
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);
@@ -479,6 +481,7 @@ async function handleVisionExtract(
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);

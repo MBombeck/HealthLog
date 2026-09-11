@@ -185,6 +185,7 @@ async function handleTextExtract(
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     annotate({
@@ -289,6 +290,7 @@ async function handleVisionExtract(
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     annotate({

@@ -151,6 +151,7 @@ describe("runStatusCompletion — ledger accounting", () => {
       "2026-09-11",
       resolveDailyCap(chatChain),
       resolveCostOwner(chatChain),
+      "coach",
     );
     expect(chat.allowed).toBe(true);
   });
@@ -176,9 +177,21 @@ describe("runStatusCompletion — ledger accounting", () => {
     // "no provider configured" assessment, which a budget refusal is not.
     expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
     expect(result.kind).toBe("error");
+    // v1.38.19 (Wave E, fix round 1) — the refusal has to SAY which ceiling it
+    // hit and whose. `{ totalAfter }` alone was the day's mixed total, which on
+    // an operator refusal is not the counter that tripped; and the shared
+    // `error` outcome cannot distinguish an exhausted background share from a
+    // dead provider, so the annotation is the only place that can.
     expect(annotate).toHaveBeenCalledWith(
       expect.objectContaining({
         action: { name: "insights.status.budget_exceeded" },
+        meta: expect.objectContaining({
+          owner: "operator",
+          surface: "job",
+          limit: "owner-cap",
+          cap: OPERATOR_COST_CAP * 0.5,
+          operatorAfter: OPERATOR_COST_CAP,
+        }),
       }),
     );
     // The refused reservation was refunded, not left on the row.

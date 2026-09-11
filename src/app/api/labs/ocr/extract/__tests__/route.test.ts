@@ -122,6 +122,8 @@ describe("POST /api/labs/ocr/extract — text mode budget", () => {
       200_000,
       // Wave E — and the cost owner that cap is enforced against as the 5th.
       "operator",
+      // Wave E fix round 1 — the surface the ceiling is rationed for, 6th.
+      "coach",
     );
   });
 

@@ -53,6 +53,7 @@ describe("coach_usage.operator_tokens (real Postgres)", () => {
       dateKey,
       OPERATOR_COST_CAP,
       "operator",
+      "coach",
     );
     expect(res.allowed).toBe(true);
     await reconcileSpend(userId, res.reserved, 3_000, dateKey, 0, {
@@ -80,6 +81,7 @@ describe("coach_usage.operator_tokens (real Postgres)", () => {
       dateKey,
       OPERATOR_COST_CAP,
       "operator",
+      "coach",
     );
     await reconcileSpend(userId, res.reserved, 3_000, dateKey, 0, {
       servedBy: "codex",
@@ -114,6 +116,7 @@ describe("coach_usage.operator_tokens (real Postgres)", () => {
       dateKey,
       USER_PLAN_CAP,
       "user",
+      "coach",
     );
     await reconcileSpend(userId, res.reserved, 4_000, dateKey, 0, {
       servedBy: "codex",
@@ -142,6 +145,7 @@ describe("coach_usage.operator_tokens (real Postgres)", () => {
       dateKey,
       USER_PLAN_CAP,
       "user",
+      "coach",
     );
     await reconcileSpend(userId, res.reserved, 2_500, dateKey, 0, {
       servedBy: "admin-openai",
@@ -178,6 +182,7 @@ describe("coach_usage.operator_tokens (real Postgres)", () => {
       dateKey,
       OPERATOR_COST_CAP,
       "operator",
+      "coach",
     );
     expect(res.allowed).toBe(true);
     expect(res.operatorAfter).toBe(153_000);
@@ -205,12 +210,105 @@ describe("coach_usage.operator_tokens (real Postgres)", () => {
       dateKey,
       OPERATOR_COST_CAP,
       "operator",
+      "coach",
     );
     expect(res.allowed).toBe(false);
 
     const row = await readRow(userId, dateKey);
     expect(row?.totalTokens).toBe(1_200_000);
     expect(row?.operatorTokens).toBe(OPERATOR_COST_CAP);
+  });
+
+  // v1.38.19 (Wave E, fix round 1) — the incident, end to end.
+  //
+  // The 06:42Z row verbatim: 1.2 M tokens on the day, none of them the
+  // operator's, on the chain `[admin-openai, codex, openai-compatible]`. The
+  // chat must open. Before the wave it was refused because the ledger had no
+  // owner dimension; this pins that the refusal cannot come back.
+  it("does not refuse the chat for a day of background spend on the user's own plan", async () => {
+    const { reserveBudget, resolveDailyCap, resolveCostOwner } =
+      await import("@/lib/ai/coach/budget");
+    const userId = await seedUser();
+    const dateKey = "2026-09-11";
+    const chain = [
+      { providerType: "admin-openai" as const },
+      { providerType: "codex" as const },
+      { providerType: "openai-compatible" as const },
+    ];
+
+    await getPrismaClient().coachUsage.create({
+      data: {
+        userId,
+        dateKey,
+        totalTokens: 1_200_000,
+        operatorTokens: 0,
+        messageCount: 240,
+      },
+    });
+
+    const chat = await reserveBudget(
+      userId,
+      3_000,
+      dateKey,
+      resolveDailyCap(chain),
+      resolveCostOwner(chain),
+      "coach",
+    );
+    expect(chat.allowed).toBe(true);
+    expect(chat.limit).toBeNull();
+  });
+
+  it("refuses the BACKGROUND generation on that same day", async () => {
+    // The other half of the promise: the interactive day is protected, and the
+    // automatic work that filled the row is the thing that stops. The operator
+    // counter is empty, so only the abuse ceiling on the total can say no —
+    // which is the ceiling the first cut dropped for operator chains.
+    const { reserveBudget, resolveDailyCapFor, resolveCostOwner } =
+      await import("@/lib/ai/coach/budget");
+    const userId = await seedUser();
+    const dateKey = "2026-09-11";
+    const chain = [
+      { providerType: "admin-openai" as const },
+      { providerType: "codex" as const },
+    ];
+
+    await getPrismaClient().coachUsage.create({
+      data: {
+        userId,
+        dateKey,
+        totalTokens: 1_900_000,
+        operatorTokens: 0,
+        messageCount: 380,
+      },
+    });
+
+    const job = await reserveBudget(
+      userId,
+      3_000,
+      dateKey,
+      resolveDailyCapFor("job", chain),
+      resolveCostOwner(chain),
+      "job",
+    );
+    expect(job.allowed).toBe(false);
+    expect(job.limit).toBe("total-cap");
+
+    // Refused means refunded: the row is exactly as it was.
+    const row = await readRow(userId, dateKey);
+    expect(row?.totalTokens).toBe(1_900_000);
+    expect(row?.operatorTokens).toBe(0);
+    expect(row?.messageCount).toBe(380);
+
+    // ...and the person waiting still gets their turn.
+    const chat = await reserveBudget(
+      userId,
+      3_000,
+      dateKey,
+      200_000,
+      "operator",
+      "coach",
+    );
+    expect(chat.allowed).toBe(true);
   });
 
   it("refunds both counters when a refused reservation is rolled back", async () => {
@@ -235,6 +333,7 @@ describe("coach_usage.operator_tokens (real Postgres)", () => {
       dateKey,
       OPERATOR_COST_CAP,
       "operator",
+      "coach",
     );
     expect(res.allowed).toBe(false);
 

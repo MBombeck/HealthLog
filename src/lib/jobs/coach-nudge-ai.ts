@@ -202,6 +202,7 @@ export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
       dateKey,
       dailyCap,
       resolveCostOwner(chain),
+      "job",
     );
     if (!reservation.allowed) {
       annotate({ action: { name: "coach.nudge.ai.budget_exceeded" } });

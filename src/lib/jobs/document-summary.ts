@@ -194,6 +194,7 @@ export async function runDocumentSummaryJob(
     // v1.38.19 (Wave E) — a background surface: half the day's ceiling.
     resolveDailyCapFor("job", [{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "job",
   );
   // Budget exhausted → skip (no local fallback for a summary).
   if (!reservation.allowed) {

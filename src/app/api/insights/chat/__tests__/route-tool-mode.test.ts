@@ -326,6 +326,7 @@ describe("coach chat — tool-mode routing (F1)", () => {
       "2026-06-21",
       2_000_000,
       "user",
+      "coach",
     );
   });
 
@@ -569,6 +570,7 @@ describe("coach chat — tool-mode routing (F1)", () => {
       "2026-06-21",
       2_000_000,
       "user",
+      "coach",
     );
     // The legacy path ships the snapshot figures in the user turn.
     const params = (

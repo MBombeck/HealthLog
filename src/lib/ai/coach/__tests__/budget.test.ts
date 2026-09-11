@@ -8,6 +8,7 @@ import {
   resolveCostOwner,
   resolveDailyCap,
   resolveDailyCapFor,
+  resolveTotalCapFor,
 } from "../budget";
 
 vi.mock("@/lib/db", () => ({
@@ -69,6 +70,7 @@ describe("reserveBudget — ledger clamps", () => {
       "2026-05-10",
       OPERATOR_COST_CAP,
       "operator",
+      "coach",
     );
     expect(res.reserved).toBe(0);
   });
@@ -81,6 +83,7 @@ describe("reserveBudget — ledger clamps", () => {
       "2026-05-10",
       OPERATOR_COST_CAP,
       "operator",
+      "coach",
     );
     expect(res.reserved).toBe(0);
   });
@@ -93,6 +96,7 @@ describe("reserveBudget — ledger clamps", () => {
       "2026-05-10",
       OPERATOR_COST_CAP,
       "operator",
+      "coach",
     );
     expect(res.reserved).toBe(12);
   });
@@ -165,6 +169,7 @@ describe("reserveBudget cap (F1 — user-plan path not locked out)", () => {
       "2026-05-10",
       resolveDailyCap([{ providerType: "codex" }]),
       resolveCostOwner([{ providerType: "codex" }]),
+      "coach",
     );
     expect(res.allowed).toBe(true);
     // The reservation upsert ran; no refund executeRaw fired.
@@ -184,6 +189,7 @@ describe("reserveBudget cap (F1 — user-plan path not locked out)", () => {
       "2026-05-10",
       resolveDailyCap([{ providerType: "admin-openai" }]),
       resolveCostOwner([{ providerType: "admin-openai" }]),
+      "coach",
     );
     expect(res.allowed).toBe(false);
     // Refund of the reservation fired on refusal.
@@ -227,10 +233,37 @@ describe("resolveDailyCapFor (Wave E — the job share)", () => {
     );
   });
 
-  it("shares the user-plan ceiling the same way", () => {
+  it("does not ration a chain the operator does not pay for", () => {
+    // The share exists to protect the OPERATOR's invoice. A self-hoster on a
+    // local model, or a user on their own ChatGPT plan, costs the operator
+    // nothing — halving their background generation is a silent downgrade with
+    // no bill behind it.
     expect(resolveDailyCapFor("job", [{ providerType: "codex" }])).toBe(
+      USER_PLAN_CAP,
+    );
+    expect(resolveDailyCapFor("job", [{ providerType: "local" }])).toBe(
+      USER_PLAN_CAP,
+    );
+  });
+});
+
+describe("resolveTotalCapFor (Wave E, fix round 1 — the abuse ceiling)", () => {
+  it("keeps the user-plan ceiling on the day's mixed total for both owners", () => {
+    // The operator arm compares `operator_tokens`, a counter that returns to
+    // ~0 on every reconcile the user's own plan settled. Without a ceiling on
+    // the total, an operator-primary chain has no ceiling at all: every job
+    // reservation is admitted forever and a runaway client loop writes an
+    // unbounded row.
+    expect(resolveTotalCapFor("coach", "operator")).toBe(USER_PLAN_CAP);
+    expect(resolveTotalCapFor("coach", "user")).toBe(USER_PLAN_CAP);
+  });
+
+  it("gives a background surface its share of the total ceiling too", () => {
+    expect(resolveTotalCapFor("job", "operator")).toBe(
       USER_PLAN_CAP * JOB_SURFACE_SHARE,
     );
+    // Nothing to ration when the operator is not paying.
+    expect(resolveTotalCapFor("job", "user")).toBe(USER_PLAN_CAP);
   });
 });
 
@@ -260,6 +293,7 @@ describe("reserveBudget cap by cost owner (Wave E)", () => {
       "2026-09-11",
       OPERATOR_COST_CAP,
       "operator",
+      "coach",
     );
     expect(res.allowed).toBe(true);
     expect(res.operatorAfter).toBe(151_200);
@@ -280,6 +314,7 @@ describe("reserveBudget cap by cost owner (Wave E)", () => {
       "2026-09-11",
       OPERATOR_COST_CAP,
       "operator",
+      "coach",
     );
     expect(res.allowed).toBe(false);
     expect(prismaMock.$executeRaw).toHaveBeenCalled();
@@ -296,8 +331,90 @@ describe("reserveBudget cap by cost owner (Wave E)", () => {
       "2026-09-11",
       USER_PLAN_CAP,
       "user",
+      "coach",
     );
     expect(res.allowed).toBe(false);
+  });
+
+  // v1.38.19 (Wave E, fix round 1) — the abuse ceiling survives the owner split.
+  //
+  // The first cut compared `operator_tokens` and NOTHING else for an
+  // operator-funded chain. On the 2026-09-11 shape that counter never grows:
+  // `admin-openai` 500s, `codex` serves, and every reconcile moves the
+  // reservation back out of the operator's column. So an operator-primary chain
+  // had no ceiling at all — every job reservation admitted forever, and a
+  // runaway client loop free to write an unbounded row.
+  it("refuses a JOB on an operator chain once the day's TOTAL fills its share", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      { total_tokens: 1_900_000 + 1_200, operator_tokens: 0 },
+    ]);
+    const { reserveBudget, resolveDailyCapFor } = await import("../budget");
+    const res = await reserveBudget(
+      "u",
+      1_200,
+      "2026-09-11",
+      resolveDailyCapFor("job", [{ providerType: "admin-openai" }]),
+      "operator",
+      "job",
+    );
+    expect(res.allowed).toBe(false);
+    expect(res.limit).toBe("total-cap");
+    expect(prismaMock.$executeRaw).toHaveBeenCalled();
+  });
+
+  it("still admits the interactive chat on that same day", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      { total_tokens: 1_900_000 + 1_200, operator_tokens: 0 },
+    ]);
+    const { reserveBudget } = await import("../budget");
+    const res = await reserveBudget(
+      "u",
+      1_200,
+      "2026-09-11",
+      OPERATOR_COST_CAP,
+      "operator",
+      "coach",
+    );
+    expect(res.allowed).toBe(true);
+    expect(res.limit).toBeNull();
+  });
+
+  it("refuses an operator chain once the TOTAL reaches the abuse ceiling", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      { total_tokens: USER_PLAN_CAP + 1_200, operator_tokens: 0 },
+    ]);
+    const { reserveBudget } = await import("../budget");
+    const res = await reserveBudget(
+      "u",
+      1_200,
+      "2026-09-11",
+      OPERATOR_COST_CAP,
+      "operator",
+      "coach",
+    );
+    expect(res.allowed).toBe(false);
+    expect(res.limit).toBe("total-cap");
+  });
+
+  it("names the owner cap when that is the ceiling that tripped", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      {
+        total_tokens: 300_000 + 1_200,
+        operator_tokens: OPERATOR_COST_CAP + 1_200,
+      },
+    ]);
+    const { reserveBudget } = await import("../budget");
+    const res = await reserveBudget(
+      "u",
+      1_200,
+      "2026-09-11",
+      OPERATOR_COST_CAP,
+      "operator",
+      "coach",
+    );
+    expect(res.allowed).toBe(false);
+    expect(res.limit).toBe("owner-cap");
+    expect(res.operatorAfter).toBe(OPERATOR_COST_CAP);
   });
 });
 

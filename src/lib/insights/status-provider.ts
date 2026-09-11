@@ -219,13 +219,16 @@ export async function runStatusCompletion(
   const dateKey = buildDateKey();
   const estimatedTokens =
     maxTokens + Math.ceil((systemPrompt.length + userPrompt.length) / 4);
+  // v1.38.19 (Wave E) — a background surface: half the day's ceiling when the
+  // operator funds the chain.
+  const jobCap = resolveDailyCapFor("job", chain);
   const reservation = await reserveBudget(
     userId,
     estimatedTokens,
     dateKey,
-    // v1.38.19 (Wave E) — a background surface: half the day's ceiling.
-    resolveDailyCapFor("job", chain),
+    jobCap,
     resolveCostOwner(chain),
+    "job",
   );
   if (!reservation.allowed) {
     // Over the day's ceiling. Reported as `error` — a TRANSIENT miss the caller
@@ -233,9 +236,22 @@ export async function runStatusCompletion(
     // which callers cache as the settled "no provider configured" assessment.
     // The distinct annotation keeps the refusal observable even though the
     // result shape is shared.
+    // v1.38.19 (Wave E, fix round 1) — the shared `error` outcome cannot say
+    // WHY the generation stopped, so the annotation has to. `surface: "job"`
+    // plus `cap` separates "this job used up the background share" from "the
+    // whole day is spent", and `limit` says which counter tripped. The operator
+    // sees the same split on the admin provider-health card.
     annotate({
       action: { name: "insights.status.budget_exceeded" },
-      meta: { cacheAction, totalAfter: reservation.totalAfter },
+      meta: {
+        cacheAction,
+        owner: reservation.owner,
+        surface: "job",
+        limit: reservation.limit,
+        cap: jobCap,
+        totalAfter: reservation.totalAfter,
+        operatorAfter: reservation.operatorAfter,
+      },
     });
     return { kind: "error" };
   }
@@ -245,6 +261,9 @@ export async function runStatusCompletion(
       runRawCompletionWithFallback({
         userId,
         providers: chain,
+        // A background generator: an operator-funded fallback hop is rationed
+        // at the job share, exactly as the reservation above was.
+        surface: "job",
         params: singleUserTurn({
           system: systemPrompt,
           user: userPrompt,

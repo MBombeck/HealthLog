@@ -606,11 +606,25 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     reqDateKey,
     dailyCap,
     resolveCostOwner(chain),
+    "coach",
   );
   if (!reservation.allowed) {
+    // v1.38.19 (Wave E, fix round 1) — say WHICH ceiling refused and WHOSE.
+    // `totalAfter` alone is the day's mixed total; on an operator refusal that
+    // is not the counter that tripped, and reading `totalAfter: 1200000`
+    // against a 200 000 ceiling is what turned the 06:42Z incident into a
+    // production log dig. Integers and two small enums — no key, host or model
+    // name is added.
     annotate({
       action: { name: "coach.budget.exceeded" },
-      meta: { totalAfter: reservation.totalAfter },
+      meta: {
+        owner: reservation.owner,
+        surface: "coach",
+        limit: reservation.limit,
+        cap: dailyCap,
+        totalAfter: reservation.totalAfter,
+        operatorAfter: reservation.operatorAfter,
+      },
     });
     return streamProviderError({ code: "coach.budget.exceeded" });
   }
@@ -748,6 +762,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
         // returned in full so every guard below still runs on the complete text.
         let streamedDeltas = 0;
         const fallback = await runStreamingRawCompletionWithFallback({
+          surface: "coach",
           userId,
           providers: chain,
           onDelta: () => {

@@ -118,18 +118,29 @@ export async function runBriefingCompletion(
     args.maxTokens +
     Math.ceil((args.systemPrompt.length + args.userPrompt.length) / 4);
 
+  // v1.38.19 (Wave E) — a background surface: half the day's ceiling when the
+  // operator funds the chain.
+  const jobCap = resolveDailyCapFor("job", args.chain);
   const reservation = await reserveBudget(
     args.userId,
     estimatedTokens,
     dateKey,
-    // v1.38.19 (Wave E) — a background surface: half the day's ceiling.
-    resolveDailyCapFor("job", args.chain),
+    jobCap,
     resolveCostOwner(args.chain),
+    "job",
   );
   if (!reservation.allowed) {
     annotate({
       action: { name: "insights.briefing.budget_exceeded" },
-      meta: { stage: args.stage, totalAfter: reservation.totalAfter },
+      meta: {
+        stage: args.stage,
+        owner: reservation.owner,
+        surface: "job",
+        limit: reservation.limit,
+        cap: jobCap,
+        totalAfter: reservation.totalAfter,
+        operatorAfter: reservation.operatorAfter,
+      },
     });
     throw new BriefingBudgetExceededError(args.stage, reservation.totalAfter);
   }
@@ -138,6 +149,9 @@ export async function runBriefingCompletion(
   try {
     outcome = await runRawCompletionWithFallback({
       userId: args.userId,
+      // A background generator: an operator-funded fallback hop is rationed at
+      // the job share, exactly as the reservation above was.
+      surface: "job",
       providers: args.chain,
       params: singleUserTurn({
         system: args.systemPrompt,

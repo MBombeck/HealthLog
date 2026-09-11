@@ -212,6 +212,7 @@ async function handleExtract(request: NextRequest): Promise<Response> {
     dateKey,
     resolveDailyCap(chain),
     resolveCostOwner(chain),
+    "coach",
   );
   if (!reservation.allowed) {
     annotate({
@@ -224,6 +225,7 @@ async function handleExtract(request: NextRequest): Promise<Response> {
   let completion;
   try {
     completion = await runRawCompletionWithFallback({
+      surface: "coach",
       userId,
       providers: chain,
       params: singleUserTurn({

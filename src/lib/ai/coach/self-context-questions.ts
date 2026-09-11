@@ -237,6 +237,7 @@ export async function deriveClarifyingQuestions(
       dateKey,
       resolveDailyCap(chain),
       resolveCostOwner(chain),
+      "coach",
     );
     if (!reservation.allowed) return fallback();
 

@@ -168,6 +168,7 @@ async function handleTextSuggest(
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);
@@ -263,6 +264,7 @@ async function handleVisionSuggest(
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);

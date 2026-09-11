@@ -236,6 +236,7 @@ export async function runContentIndexBackfillForUser(
         dateKey,
         dailyCap,
         resolveCostOwner([{ providerType: pick.entry.providerType }]),
+        "job",
       );
       if (!reservation.allowed) {
         reason = "budget-reached";

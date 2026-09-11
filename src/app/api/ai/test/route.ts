@@ -119,6 +119,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         providerType: provider.type === "admin-key" ? "admin-openai" : "local",
       },
     ]),
+    "coach",
   );
   if (!reservation.allowed) {
     annotate({ action: { name: "ai.test.budget_exceeded" } });

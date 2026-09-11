@@ -246,6 +246,7 @@ describe("deriveClarifyingQuestions — atomic budget", () => {
       "2026-07-18",
       200_000,
       "operator",
+      "coach",
     );
     expect(budgetMocks.reconcileSpend).toHaveBeenCalledWith(
       "user-1",

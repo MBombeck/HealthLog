@@ -122,6 +122,7 @@ beforeEach(() => {
     totalAfter: 700,
     owner: "user",
     operatorAfter: 0,
+    limit: null,
   });
   vi.mocked(resolveDailyCap).mockReturnValue(1_234_567);
   vi.mocked(resolveProviderChain).mockResolvedValue([
@@ -279,6 +280,7 @@ describe("POST /api/medications/extract — daily budget", () => {
       "2026-05-28",
       1_234_567,
       "user",
+      "coach",
     );
   });
 
@@ -290,6 +292,7 @@ describe("POST /api/medications/extract — daily budget", () => {
       totalAfter: 9_999_999,
       owner: "user",
       operatorAfter: 0,
+      limit: "owner-cap",
     });
 
     const res = await POST(postReq({ text: "Mounjaro 5mg weekly" }) as never);

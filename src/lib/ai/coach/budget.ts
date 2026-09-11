@@ -18,6 +18,16 @@ import { prisma } from "@/lib/db";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 
 /**
+ * v1.38.19 (Wave E, fix round 1) — the two raw statements the ledger owns can
+ * run on the singleton client OR inside an open transaction. The arrival
+ * reaction reserves its tokens in the same transaction that links the
+ * reservation to the claimed marker, and used to carry its own copy of the
+ * upsert to do it; that copy drifted twice. One implementation, an executor
+ * argument, no second copy to drift.
+ */
+export type BudgetExecutor = Pick<typeof prisma, "$queryRaw" | "$executeRaw">;
+
+/**
  * Operator-cost daily ceiling — the cap that protects the OPERATOR's LLM bill.
  *
  * It applies ONLY to the operator-managed-key path (`admin-openai`): the
@@ -81,6 +91,35 @@ export function resolveDailyCap(
 export const JOB_SURFACE_SHARE = 0.5;
 
 /**
+ * v1.38.19 (Wave E) — which kind of caller is asking. `"coach"` is every
+ * interactive surface (the chat, the extraction routes, the document routes,
+ * the connection probe): a person is waiting. `"job"` is the automatic
+ * generators, which run with nobody waiting and must leave the interactive
+ * surfaces a day of their own.
+ */
+export type BudgetSurface = "coach" | "job";
+
+/**
+ * v1.38.19 (Wave E, fix round 1) — the job share rations the OPERATOR's
+ * invoice, so it applies only when the operator is paying.
+ *
+ * The first cut multiplied whichever ceiling `resolveDailyCap` returned, which
+ * halved background generation for a self-hoster on a local model — zero
+ * marginal cost to anyone, and an unannounced downgrade for exactly the
+ * audience this project is built for. The share's whole justification is the
+ * operator's bill; it does not transfer to a chain the operator does not fund.
+ */
+function applyJobShare(
+  surface: BudgetSurface,
+  chain: ReadonlyArray<{ providerType: ProviderChainType }>,
+  cap: number,
+): number {
+  return surface === "job" && resolveCostOwner(chain) === "operator"
+    ? Math.floor(cap * JOB_SURFACE_SHARE)
+    : cap;
+}
+
+/**
  * v1.38.19 (Wave E) — the daily ceiling for one SURFACE on a chain. `"coach"`
  * (every interactive surface: the chat, the extraction routes, the document
  * routes, the connection probe) gets the whole ceiling; `"job"` (the automatic
@@ -89,11 +128,33 @@ export const JOB_SURFACE_SHARE = 0.5;
  * claim.
  */
 export function resolveDailyCapFor(
-  surface: "coach" | "job",
+  surface: BudgetSurface,
   chain: ReadonlyArray<{ providerType: ProviderChainType }>,
 ): number {
-  const cap = resolveDailyCap(chain);
-  return surface === "job" ? Math.floor(cap * JOB_SURFACE_SHARE) : cap;
+  return applyJobShare(surface, chain, resolveDailyCap(chain));
+}
+
+/**
+ * v1.38.19 (Wave E, fix round 1) — the ABUSE ceiling on the day's mixed total,
+ * for one surface and one cost owner.
+ *
+ * `resolveDailyCapFor` answers "how much of the owner's ceiling may this
+ * surface claim", and for an operator-funded chain that ceiling is measured
+ * against `operator_tokens` — a counter that stays near zero whenever the
+ * operator's key fails and the user's own plan serves the fallback. That is
+ * the correct answer for the operator's invoice and a useless one for the row:
+ * on the 2026-09-11 evidence the operator counter never grew, so nothing
+ * bounded the 1.0–1.45 M tokens a day of background generation, and nothing
+ * bounded a runaway client loop either. `USER_PLAN_CAP` stays the ceiling on
+ * the total in BOTH arms, and a background surface gets its share of that too.
+ */
+export function resolveTotalCapFor(
+  surface: BudgetSurface,
+  owner: BudgetCostOwner,
+): number {
+  return surface === "job" && owner === "operator"
+    ? Math.floor(USER_PLAN_CAP * JOB_SURFACE_SHARE)
+    : USER_PLAN_CAP;
 }
 
 /**
@@ -211,6 +272,17 @@ export interface ReserveBudgetResult {
   owner: BudgetCostOwner;
   /** The day's operator-funded spend AFTER this reservation. */
   operatorAfter: number;
+  /**
+   * v1.38.19 (Wave E, fix round 1) — which ceiling refused this reservation,
+   * `null` when it was admitted. `"owner-cap"` is the cost owner's daily
+   * ceiling (the operator's invoice, or the user's own plan); `"total-cap"` is
+   * the abuse ceiling on the day's mixed total. The refusal annotations carry
+   * it: before this, every refusal printed one number, and on an operator
+   * refusal that number was the day's mixed total rather than the counter that
+   * tripped — the same unreadable signal that made the 06:42Z diagnosis a
+   * production log dig.
+   */
+  limit: "owner-cap" | "total-cap" | null;
 }
 
 export async function reserveBudget(
@@ -219,6 +291,8 @@ export async function reserveBudget(
   dateKey: string,
   cap: number,
   owner: BudgetCostOwner,
+  surface: BudgetSurface,
+  db: BudgetExecutor = prisma,
 ): Promise<ReserveBudgetResult> {
   const reserved =
     Number.isFinite(estimatedTokens) && estimatedTokens > 0
@@ -234,7 +308,7 @@ export async function reserveBudget(
   // requests serialise on the row's unique (user_id, date_key) constraint, so
   // each observes a distinct post-increment total — they cannot both read a
   // sub-cap value and both proceed.
-  const rows = await prisma.$queryRaw<
+  const rows = await db.$queryRaw<
     { total_tokens: number; operator_tokens: number }[]
   >`
     INSERT INTO coach_usage (id, user_id, date_key, total_tokens, operator_tokens, message_count, created_at, updated_at)
@@ -261,20 +335,37 @@ export async function reserveBudget(
   const priorTotal = totalAfter - reserved;
   const priorOperator = operatorAfter - operatorReserved;
   const prior = owner === "operator" ? priorOperator : priorTotal;
-  if (prior >= cap) {
+  // v1.38.19 (Wave E, fix round 1) — BOTH ceilings, always. The owner's cap
+  // protects whoever pays; the total cap is the abuse ceiling that keeps a
+  // runaway loop — or a day of background generation the operator's key never
+  // served — from writing an unbounded row. Dropping the second one for
+  // operator chains left them with no ceiling at all, because their counter
+  // returns to ~0 on every reconcile the user's own plan settled.
+  const totalCap = resolveTotalCapFor(surface, owner);
+  const limit: ReserveBudgetResult["limit"] =
+    prior >= cap ? "owner-cap" : priorTotal >= totalCap ? "total-cap" : null;
+  if (limit !== null) {
     // Already over before this request — refund the reservation + the
     // message-count bump and refuse.
-    await refundReservation(userId, reserved, operatorReserved, dateKey);
+    await refundReservation(userId, reserved, operatorReserved, dateKey, db);
     return {
       allowed: false,
       reserved,
       totalAfter: priorTotal,
       owner,
       operatorAfter: priorOperator,
+      limit,
     };
   }
 
-  return { allowed: true, reserved, totalAfter, owner, operatorAfter };
+  return {
+    allowed: true,
+    reserved,
+    totalAfter,
+    owner,
+    operatorAfter,
+    limit: null,
+  };
 }
 
 /**
@@ -357,8 +448,9 @@ async function refundReservation(
   reserved: number,
   operatorReserved: number,
   dateKey: string,
+  db: BudgetExecutor = prisma,
 ): Promise<void> {
-  await prisma.$executeRaw`
+  await db.$executeRaw`
     UPDATE coach_usage
     SET total_tokens = GREATEST(0, total_tokens - ${reserved}),
         operator_tokens = GREATEST(0, operator_tokens - ${operatorReserved}),

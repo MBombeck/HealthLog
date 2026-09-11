@@ -347,6 +347,7 @@ async function handleTextSummary(
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);
@@ -438,6 +439,7 @@ async function handleVisionSummary(
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);

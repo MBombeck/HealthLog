@@ -289,6 +289,7 @@ export async function maybeAutoStageLabFacts(
       { providerType: provider.pick.entry.providerType },
     ]),
     provider.costOwner,
+    "job",
   );
   if (!reservation.allowed) return { staged: false, reason: "budget" };
 
