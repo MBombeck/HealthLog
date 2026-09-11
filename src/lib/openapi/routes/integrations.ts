@@ -326,9 +326,10 @@ const integrationLedgerState = z
     "error_reauth",
     "disconnected",
     "parked",
+    "unknown",
   ])
   .describe(
-    "Last recorded ledger state for this provider. `connected` is also the value a user who has never synced sees — the ledger row is created on the first attempt, and its absence reads as `connected`, not as an error.",
+    "Last recorded ledger state for this provider. `unknown` (added v1.38.19) is what a user who has never synced sees: the ledger row is created on the first attempt, and its absence is no claim about the connection in either direction — it used to read as `connected`, which is why a client must never treat this field as liveness. Read `syncHealth.verdict` for that, and treat `unknown` as `disconnected` anywhere a ledger state is painted.",
   );
 
 const nightscoutConnectRequest = nightscoutConnectSchema.meta({

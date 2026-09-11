@@ -63,6 +63,7 @@ import {
   IntegrationErrorMessage,
   pillFailurePropsFor,
   pillStateForVerdict,
+  type IntegrationState,
 } from "./shared";
 import {
   CallbackMismatchNotice,
@@ -78,12 +79,12 @@ export interface OAuthProviderStatus {
   available: boolean;
   /** Whether the user has stored their own BYO client id/secret pair. */
   hasOwnCredentials?: boolean;
-  state?:
-    | "connected"
-    | "error_transient"
-    | "error_reauth"
-    | "disconnected"
-    | "parked";
+  /**
+   * The raw ledger state, carried for shape parity with the envelope. The
+   * card paints from `syncHealth.verdict`, never from this — which is why
+   * v1.38.19's `unknown` member needs no arm here.
+   */
+  state?: IntegrationState;
   lastSuccessAt?: string | null;
   lastAttemptAt?: string | null;
   lastError?: string | null;

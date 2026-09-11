@@ -60,6 +60,7 @@ const whoopFind = prisma.whoopConnection.findUnique as ReturnType<typeof vi.fn>;
 
 type Entry = {
   integration: string;
+  state?: string;
   connected?: boolean;
   configured?: boolean;
   available?: boolean;
@@ -342,5 +343,43 @@ describe("/api/integrations/status — the freshness read failed", () => {
     for (const entry of envelope.integrations) {
       expect(entry.metricFreshness).toEqual([]);
     }
+  });
+});
+
+/**
+ * v1.38.19 (wave B / I5) — the never-connected provider on the wire.
+ *
+ * The ledger's synthetic "no row" snapshot reads `unknown`, and the envelope
+ * publishes it verbatim. A client that reads `state` must see a value that
+ * cannot be mistaken for a live connection, while `syncHealth.verdict` keeps
+ * saying `disconnected` for the same entry.
+ */
+describe("/api/integrations/status — a provider with no ledger row", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    for (const key of Object.keys(perIntegrationLedger)) {
+      delete perIntegrationLedger[key];
+    }
+    polarAvailable.mockResolvedValue(true);
+    ouraAvailable.mockResolvedValue(false);
+  });
+
+  it("publishes state unknown beside connected false and a disconnected verdict", async () => {
+    perIntegrationLedger.whoop = {
+      state: "unknown",
+      lastSuccessAt: null,
+      lastAttemptAt: null,
+      lastError: null,
+      failingSince: null,
+    };
+    userFind.mockResolvedValue({});
+    whoopFind.mockResolvedValue(null);
+
+    const whoop = (await fetchEntries()).find(
+      (e) => e.integration === "whoop",
+    )!;
+    expect(whoop.state).toBe("unknown");
+    expect(whoop.connected).toBe(false);
+    expect(whoop.syncHealth?.verdict).toBe("disconnected");
   });
 });
