@@ -360,7 +360,19 @@ function ConnectNoticeTile({
     >
       <p className="text-sm font-medium">{title}</p>
       <p className="text-muted-foreground text-sm">{detail}</p>
-      <Button asChild variant="outline" className="min-h-11">
+      {/* This CTA names a PATH — "Settings → Integrations" — which is the
+          longest label shape in the flow and the only button in the tree that
+          carries one. The button base is `whitespace-nowrap` with a fixed
+          height and `shrink-0`, so at 390 px a German or French rendering ran
+          27 px past the viewport instead of shrinking or breaking. It is
+          bounded to the card (`w-full`), allowed to break between the words
+          of the path (`whitespace-normal`) and allowed to grow for the second
+          line (`h-auto`, with the 44 px tap target kept by `min-h-11`). */}
+      <Button
+        asChild
+        variant="outline"
+        className="h-auto min-h-11 w-full py-2 text-center whitespace-normal"
+      >
         <Link href={href}>{cta}</Link>
       </Button>
     </div>
