@@ -4677,12 +4677,46 @@
         "connect-source": {
           "title": "{target} verbinden",
           "body": "Eine Verbindung, aus deinen Antworten gewählt. Danach kommen die Werte von selbst.",
-          "howTo": "Die Verbindung wird auf der Integrationsseite hergestellt. Komm danach hierher zurück; dieser Bildschirm merkt, wenn sie steht.",
+          "howTo": "Die Verbindung zu {target} wird auf der Integrationsseite hergestellt. Komm danach hierher zurück; dieser Bildschirm merkt, wenn sie steht.",
           "cta": "{target} verbinden",
           "checking": "Verbindung wird geprüft.",
           "waiting": "Noch nicht verbunden.",
-          "done": "{target} ist verbunden.",
-          "syncing": "Die erste Synchronisierung läuft. Die Werte erscheinen auf dem Dashboard, sobald sie ankommen."
+          "openSettings": "Einstellungen → Integrationen öffnen",
+          "noDate": "unbekannt",
+          "needsCredentials": {
+            "title": "Diese Instanz hat noch keine {target}-App hinterlegt.",
+            "detail": "Trage deine eigenen Zugangsdaten unter Einstellungen → Integrationen ein, dann kann die Verbindung starten."
+          },
+          "state": {
+            "pending_first_sync": {
+              "title": "{target} ist verbunden.",
+              "detail": "Die erste Synchronisierung läuft. Die Werte erscheinen auf dem Dashboard, sobald sie ankommen."
+            },
+            "fresh": {
+              "title": "{target} ist schon verbunden.",
+              "detail": "Letzter Wert {when}. Hier gibt es nichts mehr zu tun."
+            },
+            "stale": {
+              "title": "{target} ist verbunden, aber es kommt gerade nichts an.",
+              "detail": "Letzter Wert {when}. Die Verbindung selbst ist in Ordnung."
+            },
+            "stalled": {
+              "title": "{target} ist verbunden, aber es wird nicht mehr synchronisiert.",
+              "detail": "Letzter Versuch {when}. Prüfe die Verbindung unter Einstellungen → Integrationen."
+            },
+            "failing": {
+              "title": "{target} ist verbunden, aber die Synchronisierung schlägt fehl.",
+              "detail": "Ohne Erfolg seit {when}. Prüfe die Verbindung unter Einstellungen → Integrationen."
+            },
+            "reauth_required": {
+              "title": "Die Verbindung zu {target} muss erneuert werden.",
+              "detail": "Einmal neu anmelden, dann laufen die Werte weiter."
+            },
+            "parked": {
+              "title": "Die Verbindung zu {target} ist pausiert.",
+              "detail": "Prüfe die Verbindung unter Einstellungen → Integrationen."
+            }
+          }
         },
         "add-medication": {
           "title": "Dein erstes Medikament hinzufügen",

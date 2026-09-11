@@ -4677,12 +4677,46 @@
         "connect-source": {
           "title": "Connecter {target}",
           "body": "Une seule connexion, choisie d'après vos réponses. Les mesures arrivent ensuite d'elles-mêmes.",
-          "howTo": "La connexion se fait sur la page des intégrations. Revenez ici ensuite ; cet écran détecte quand elle est établie.",
+          "howTo": "La connexion à {target} se fait sur la page des intégrations. Revenez ici ensuite ; cet écran détecte quand elle est établie.",
           "cta": "Connecter {target}",
           "checking": "Vérification de la connexion.",
           "waiting": "Pas encore connecté.",
-          "done": "{target} est connecté.",
-          "syncing": "La première synchronisation est en cours. Les mesures apparaissent sur le tableau de bord au fur et à mesure."
+          "openSettings": "Ouvrir Paramètres → Intégrations",
+          "noDate": "inconnue",
+          "needsCredentials": {
+            "title": "Cette instance n’a pas encore d’application {target} enregistrée.",
+            "detail": "Saisissez vos propres identifiants dans Paramètres → Intégrations, la connexion pourra alors démarrer."
+          },
+          "state": {
+            "pending_first_sync": {
+              "title": "{target} est connecté.",
+              "detail": "La première synchronisation est en cours. Les valeurs apparaîtront sur le tableau de bord dès leur arrivée."
+            },
+            "fresh": {
+              "title": "{target} est déjà connecté.",
+              "detail": "Dernière valeur {when}. Il n’y a plus rien à faire ici."
+            },
+            "stale": {
+              "title": "{target} est connecté, mais rien n’arrive en ce moment.",
+              "detail": "Dernière valeur {when}. La connexion elle-même est en ordre."
+            },
+            "stalled": {
+              "title": "{target} est connecté, mais la synchronisation ne tourne plus.",
+              "detail": "Dernière tentative {when}. Vérifiez la connexion dans Paramètres → Intégrations."
+            },
+            "failing": {
+              "title": "{target} est connecté, mais la synchronisation échoue.",
+              "detail": "Plus rien n’est arrivé depuis {when}. Vérifiez la connexion dans Paramètres → Intégrations."
+            },
+            "reauth_required": {
+              "title": "La connexion à {target} doit être renouvelée.",
+              "detail": "Reconnectez-vous une fois et les valeurs reprendront."
+            },
+            "parked": {
+              "title": "La connexion à {target} est en pause.",
+              "detail": "Vérifiez la connexion dans Paramètres → Intégrations."
+            }
+          }
         },
         "add-medication": {
           "title": "Ajoutez votre premier médicament",

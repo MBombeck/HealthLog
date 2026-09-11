@@ -33,7 +33,9 @@ import type { OnboardingAreaKey } from "@/lib/modules/registry";
 import {
   AREA_PAGE_HREF,
   AREA_READING_TARGETS,
+  connectSourceView,
   SOURCE_INTEGRATION,
+  type ConnectSourceSlot,
 } from "@/lib/onboarding/first-result-config";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import { questionOptionLabelKey } from "@/lib/onboarding/question-config";
@@ -193,32 +195,92 @@ function ConnectSourceTask({
   onComplete: (target: string | null) => Promise<void>;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const { anchor, statusKey } = SOURCE_INTEGRATION[source];
   const label = t(questionOptionLabelKey("sources", source));
   // Refetches on window focus, so coming back from the integrations tab
   // after the handshake picks the fresh verdict up on its own.
   const statuses = useIntegrationStatuses(true);
   const status = pickStatus(statuses.data, statusKey as IntegrationKey);
-  const connected = status?.connected === true || status?.state === "connected";
+  // The liveness truth is the server-resolved verdict and nothing else. The
+  // ledger's `state` is what the last ATTEMPT did, and its "no row" default
+  // read as `connected` until v1.38.19 — which is how a brand-new account was
+  // told its wearable was connected, and had this step stamped as achieved on
+  // its behalf. `null` means the envelope has not resolved: no claim, no tile.
+  const view = connectSourceView(source, status);
+  const settled = view?.settled ?? false;
 
-  // Record the result once the connection is there — once. `completed` flips
-  // only after the write resolves, and the status envelope can re-render this
-  // in between, so a ref latches the first call.
+  // Record the result once the connection is really there — once. `completed`
+  // flips only after the write resolves, and the status envelope can re-render
+  // this in between, so a ref latches the first call.
   const recorded = useRef(completed);
   useEffect(() => {
-    if (connected && !recorded.current) {
+    if (settled && !recorded.current) {
       recorded.current = true;
       void onComplete(source);
     }
-  }, [connected, onComplete, source]);
+  }, [settled, onComplete, source]);
 
-  if (completed || connected) {
+  const settingsHref = `/settings/integrations#${anchor}`;
+
+  if (!view) {
+    // Nothing is known yet. The heading is the person's own answer, so it
+    // stays; the body says only that the check is running.
+    return (
+      <p
+        className="text-muted-foreground text-sm"
+        role="status"
+        data-slot="onboarding-task-checking"
+      >
+        {t("onboarding.flow.first-result.connect-source.checking")}
+      </p>
+    );
+  }
+
+  const key = `onboarding.flow.first-result.connect-source.state.${view.verdict}`;
+  const when = view.when
+    ? fmt.dateTime(view.when)
+    : t("onboarding.flow.first-result.connect-source.noDate");
+
+  if (view.slot === "result") {
     return (
       <ResultTile
-        title={t("onboarding.flow.first-result.connect-source.done", {
-          target: label,
-        })}
-        detail={t("onboarding.flow.first-result.connect-source.syncing")}
+        title={t(`${key}.title`, { target: label })}
+        detail={t(`${key}.detail`, { when })}
+        connect={{ slot: view.slot, state: view.verdict }}
+      />
+    );
+  }
+
+  if (view.slot === "attention") {
+    return (
+      <ConnectNoticeTile
+        slot={view.slot}
+        state={view.verdict}
+        testSlot="onboarding-task-attention"
+        title={t(`${key}.title`, { target: label })}
+        detail={t(`${key}.detail`, { when })}
+        href={settingsHref}
+        cta={t("onboarding.flow.first-result.connect-source.openSettings")}
+      />
+    );
+  }
+
+  if (view.slot === "credentials") {
+    return (
+      <ConnectNoticeTile
+        slot={view.slot}
+        state={view.verdict}
+        testSlot="onboarding-task-credentials"
+        title={t(
+          "onboarding.flow.first-result.connect-source.needsCredentials.title",
+          { target: label },
+        )}
+        detail={t(
+          "onboarding.flow.first-result.connect-source.needsCredentials.detail",
+        )}
+        href={settingsHref}
+        cta={t("onboarding.flow.first-result.connect-source.openSettings")}
       />
     );
   }
@@ -227,6 +289,8 @@ function ConnectSourceTask({
     <div
       className="bg-card border-border space-y-4 rounded-xl border p-4 md:p-6"
       data-slot="onboarding-task-connect"
+      data-connect-slot={view.slot}
+      data-connect-state={view.verdict}
     >
       <p className="text-sm">
         {t("onboarding.flow.first-result.connect-source.howTo", {
@@ -234,17 +298,54 @@ function ConnectSourceTask({
         })}
       </p>
       <Button asChild className="min-h-11">
-        <Link href={`/settings/integrations#${anchor}`}>
+        <Link href={settingsHref}>
           {t("onboarding.flow.first-result.connect-source.cta", {
             target: label,
           })}
         </Link>
       </Button>
       <p className="text-muted-foreground text-xs" aria-live="polite">
-        {statuses.isLoading
-          ? t("onboarding.flow.first-result.connect-source.checking")
-          : t("onboarding.flow.first-result.connect-source.waiting")}
+        {t("onboarding.flow.first-result.connect-source.waiting")}
       </p>
+    </div>
+  );
+}
+
+/**
+ * A connection the flow cannot treat as its result: one that needs repairing
+ * (`attention`) or one the instance cannot start at all (`credentials`). Both
+ * say which state it is in and link at the one page that can change it —
+ * never a "Connect" button onto a card that has none.
+ */
+function ConnectNoticeTile({
+  slot,
+  state,
+  testSlot,
+  title,
+  detail,
+  href,
+  cta,
+}: {
+  slot: ConnectSourceSlot;
+  state: string;
+  testSlot: string;
+  title: string;
+  detail: string;
+  href: string;
+  cta: string;
+}) {
+  return (
+    <div
+      className="bg-card border-border space-y-3 rounded-xl border p-4 md:p-6"
+      data-slot={testSlot}
+      data-connect-slot={slot}
+      data-connect-state={state}
+    >
+      <p className="text-sm font-medium">{title}</p>
+      <p className="text-muted-foreground text-sm">{detail}</p>
+      <Button asChild variant="outline" className="min-h-11">
+        <Link href={href}>{cta}</Link>
+      </Button>
     </div>
   );
 }
@@ -508,11 +609,22 @@ function LatestReadingTile({
  * itself sits under it in content colour, because it is the reading, the
  * medication or the connection the person came for.
  */
-function ResultTile({ title, detail }: { title: string; detail?: string }) {
+function ResultTile({
+  title,
+  detail,
+  connect,
+}: {
+  title: string;
+  detail?: string;
+  /** Set by the connect arm so a journey can read which verdict it painted. */
+  connect?: { slot: ConnectSourceSlot; state: string };
+}) {
   return (
     <div
       className="bg-card border-border space-y-2 rounded-xl border p-4 md:p-6"
       data-slot="onboarding-first-result-done"
+      data-connect-slot={connect?.slot}
+      data-connect-state={connect?.state}
     >
       <WrittenOutcomeLine
         outcome="success"
