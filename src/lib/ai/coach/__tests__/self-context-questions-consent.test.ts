@@ -41,9 +41,13 @@ const budgetMocks = vi.hoisted(() => ({
     allowed: true,
     reserved: 300,
     totalAfter: 300,
+    owner: "operator" as const,
+    operatorAfter: 300,
   })),
   reconcileSpend: vi.fn(async () => {}),
   resolveDailyCap: vi.fn(() => 200_000),
+  resolveDailyCapFor: vi.fn(() => 200_000),
+  resolveCostOwner: vi.fn(() => "operator" as const),
 }));
 vi.mock("@/lib/ai/coach/budget", () => budgetMocks);
 
@@ -87,6 +91,8 @@ beforeEach(() => {
     allowed: true,
     reserved: 300,
     totalAfter: 300,
+    owner: "operator" as const,
+    operatorAfter: 300,
   });
   buildCoachSnapshot.mockResolvedValue({ snapshotJson: '{"weight":[]}' });
 });
@@ -239,6 +245,8 @@ describe("deriveClarifyingQuestions — atomic budget", () => {
       300,
       "2026-07-18",
       200_000,
+      "operator",
+      "coach",
     );
     expect(budgetMocks.reconcileSpend).toHaveBeenCalledWith(
       "user-1",
@@ -246,6 +254,7 @@ describe("deriveClarifyingQuestions — atomic budget", () => {
       120,
       "2026-07-18",
       0,
+      { servedBy: "openai", reservedOwner: "operator" },
     );
   });
 
@@ -254,6 +263,8 @@ describe("deriveClarifyingQuestions — atomic budget", () => {
       allowed: false,
       reserved: 300,
       totalAfter: 200_000,
+      owner: "operator" as const,
+      operatorAfter: 200_000,
     });
 
     const out = await deriveClarifyingQuestions("user-1", ctx, "en");
@@ -273,6 +284,8 @@ describe("deriveClarifyingQuestions — atomic budget", () => {
       300,
       0,
       "2026-07-18",
+      0,
+      { servedBy: null, reservedOwner: "operator" },
     );
   });
 });

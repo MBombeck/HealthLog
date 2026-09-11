@@ -266,6 +266,110 @@ describe("ArrivalReaction — the day claim", () => {
     expect(usage).toMatchObject({ totalTokens: 280, messageCount: 1 });
   });
 
+  // v1.38.19 — the refund reverses BOTH counters.
+  //
+  // The reservation booked `operator_tokens` whenever the chain's primary was
+  // operator-funded. The supersede refund reversed only the total, and nothing
+  // else in the codebase ever subtracts that share — so every superseded
+  // reaction (any second measurement of the same kind on the same local date
+  // before the worker runs) walked the operator's ceiling upward against spend
+  // that never happened. Twenty of them is 28 000 tokens of a 100 000 job share
+  // gone for nothing, until the UTC day rolls.
+  it("refunds the operator share of a superseded reservation too", async () => {
+    const prisma = getPrismaClient();
+    const user = await createUser("arrival-operator-refund");
+    const early = new Date("2026-07-14T06:00:00Z");
+    const late = new Date("2026-07-14T18:00:00Z");
+    await prisma.arrivalReaction.create({
+      data: {
+        ...marker(user.id, "weight", early),
+        generationClaimId: "pre-provider-claim",
+        generationClaimedAt: new Date("2026-07-14T06:01:00Z"),
+        generationReservedTokens: 220,
+        generationBudgetDateKey: "2026-07-14",
+        generationCostOwner: "operator",
+      },
+    });
+    await prisma.coachUsage.create({
+      data: {
+        userId: user.id,
+        dateKey: "2026-07-14",
+        totalTokens: 500,
+        operatorTokens: 300,
+        messageCount: 2,
+      },
+    });
+
+    const { runDataArrival } = await import("@/lib/jobs/data-arrival");
+    await runDataArrival(prisma as never, {
+      userId: user.id,
+      kind: "weight",
+      salience: "salient",
+      localDate: LOCAL_DATE,
+      occurredAt: late.toISOString(),
+      count: 1,
+      source: "withings",
+    });
+
+    const usage = await prisma.coachUsage.findUniqueOrThrow({
+      where: { userId_dateKey: { userId: user.id, dateKey: "2026-07-14" } },
+    });
+    expect(usage).toMatchObject({
+      totalTokens: 280,
+      operatorTokens: 80,
+      messageCount: 1,
+    });
+
+    // The advanced marker carries no stale owner into the next attempt.
+    const advanced = await prisma.arrivalReaction.findFirstOrThrow({
+      where: { userId: user.id },
+    });
+    expect(advanced.generationCostOwner).toBeNull();
+  });
+
+  it("leaves the operator counter alone when the user's own plan reserved", async () => {
+    const prisma = getPrismaClient();
+    const user = await createUser("arrival-user-refund");
+    const early = new Date("2026-07-14T06:00:00Z");
+    const late = new Date("2026-07-14T18:00:00Z");
+    await prisma.arrivalReaction.create({
+      data: {
+        ...marker(user.id, "weight", early),
+        generationClaimId: "pre-provider-claim",
+        generationClaimedAt: new Date("2026-07-14T06:01:00Z"),
+        generationReservedTokens: 220,
+        generationBudgetDateKey: "2026-07-14",
+        generationCostOwner: "user",
+      },
+    });
+    await prisma.coachUsage.create({
+      data: {
+        userId: user.id,
+        dateKey: "2026-07-14",
+        totalTokens: 500,
+        operatorTokens: 300,
+        messageCount: 2,
+      },
+    });
+
+    const { runDataArrival } = await import("@/lib/jobs/data-arrival");
+    await runDataArrival(prisma as never, {
+      userId: user.id,
+      kind: "weight",
+      salience: "salient",
+      localDate: LOCAL_DATE,
+      occurredAt: late.toISOString(),
+      count: 1,
+      source: "withings",
+    });
+
+    const usage = await prisma.coachUsage.findUniqueOrThrow({
+      where: { userId_dateKey: { userId: user.id, dateKey: "2026-07-14" } },
+    });
+    // Another request's operator balance is not this reservation's to spend.
+    expect(usage).toMatchObject({ totalTokens: 280, operatorTokens: 300 });
+  });
+
   it("stores the line as encrypted bytes, and tolerates its absence", async () => {
     const prisma = getPrismaClient();
     const user = await createUser("arrival-crypto");

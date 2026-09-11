@@ -70,6 +70,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import {
@@ -210,6 +211,8 @@ async function handleExtract(request: NextRequest): Promise<Response> {
     estimatedTokens,
     dateKey,
     resolveDailyCap(chain),
+    resolveCostOwner(chain),
+    "coach",
   );
   if (!reservation.allowed) {
     annotate({
@@ -222,6 +225,7 @@ async function handleExtract(request: NextRequest): Promise<Response> {
   let completion;
   try {
     completion = await runRawCompletionWithFallback({
+      surface: "coach",
       userId,
       providers: chain,
       params: singleUserTurn({
@@ -241,9 +245,10 @@ async function handleExtract(request: NextRequest): Promise<Response> {
   } catch (err) {
     // Nothing was generated — refund the whole reservation rather than bill an
     // invented figure. Best-effort: a failed refund must not mask the 503.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey).catch(
-      () => {},
-    );
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    }).catch(() => {});
     if (err instanceof AllProvidersFailedError) {
       annotate({
         action: { name: "medications.extract.provider-failed" },
@@ -260,7 +265,10 @@ async function handleExtract(request: NextRequest): Promise<Response> {
   // a free retry loop. Falls back to the reservation when the provider reports
   // no count, so an unreported generation is never billed as zero.
   const actualTokens = completion.result.tokensUsed ?? reservation.reserved;
-  await reconcileSpend(userId, reservation.reserved, actualTokens, dateKey);
+  await reconcileSpend(userId, reservation.reserved, actualTokens, dateKey, 0, {
+    servedBy: completion.workingProvider.providerType,
+    reservedOwner: reservation.owner,
+  });
 
   const reply = completion.result.content?.trim() ?? "";
   if (!reply) {

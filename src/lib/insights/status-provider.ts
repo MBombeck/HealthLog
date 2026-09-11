@@ -13,7 +13,8 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
-  resolveDailyCap,
+  resolveCostOwner,
+  resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
 import { AI_BUDGETS, REFERENCE_AI_SEED } from "@/lib/ai/ai-budgets";
 import { singleUserTurn } from "@/lib/ai/types";
@@ -210,7 +211,7 @@ export async function runStatusCompletion(
   // prompt we are about to send — and reconcile against the provider's reported
   // count afterwards, refunding in full when nothing was generated.
   //
-  // The cap follows the COST OWNER, not the surface: `resolveDailyCap` charges
+  // The cap follows the COST OWNER: `resolveDailyCapFor` charges
   // the operator ceiling only when the chain's primary is the operator's own
   // credential (`admin-openai` / `admin-codex`). A self-hoster on their own key
   // or a local model is measured against the generous user-plan ceiling, so
@@ -218,11 +219,16 @@ export async function runStatusCompletion(
   const dateKey = buildDateKey();
   const estimatedTokens =
     maxTokens + Math.ceil((systemPrompt.length + userPrompt.length) / 4);
+  // v1.38.19 — a background surface: half the day's ceiling when the
+  // operator funds the chain.
+  const jobCap = resolveDailyCapFor("job", chain);
   const reservation = await reserveBudget(
     userId,
     estimatedTokens,
     dateKey,
-    resolveDailyCap(chain),
+    jobCap,
+    resolveCostOwner(chain),
+    "job",
   );
   if (!reservation.allowed) {
     // Over the day's ceiling. Reported as `error` — a TRANSIENT miss the caller
@@ -230,9 +236,22 @@ export async function runStatusCompletion(
     // which callers cache as the settled "no provider configured" assessment.
     // The distinct annotation keeps the refusal observable even though the
     // result shape is shared.
+    // v1.38.19 — the shared `error` outcome cannot say
+    // WHY the generation stopped, so the annotation has to. `surface: "job"`
+    // plus `cap` separates "this job used up the background share" from "the
+    // whole day is spent", and `limit` says which counter tripped. The operator
+    // sees the same split on the admin provider-health card.
     annotate({
       action: { name: "insights.status.budget_exceeded" },
-      meta: { cacheAction, totalAfter: reservation.totalAfter },
+      meta: {
+        cacheAction,
+        owner: reservation.owner,
+        surface: "job",
+        limit: reservation.limit,
+        cap: jobCap,
+        totalAfter: reservation.totalAfter,
+        operatorAfter: reservation.operatorAfter,
+      },
     });
     return { kind: "error" };
   }
@@ -242,6 +261,9 @@ export async function runStatusCompletion(
       runRawCompletionWithFallback({
         userId,
         providers: chain,
+        // A background generator: an operator-funded fallback hop is rationed
+        // at the job share, exactly as the reservation above was.
+        surface: "job",
         params: singleUserTurn({
           system: systemPrompt,
           user: userPrompt,
@@ -264,11 +286,17 @@ export async function runStatusCompletion(
     // A timed-out generation may still have burned upstream tokens, but we have
     // no reported count to charge — refund the reservation rather than bill an
     // invented figure.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     return { kind: "timeout" };
   }
   if (raced.errored || raced.value === null) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     return { kind: "error" };
   }
 
@@ -279,7 +307,10 @@ export async function runStatusCompletion(
   // into a free retry loop. Falls back to the reservation when the provider
   // reports no count, so an unreported generation is never billed as zero.
   const actualTokens = result.tokensUsed ?? reservation.reserved;
-  await reconcileSpend(userId, reservation.reserved, actualTokens, dateKey);
+  await reconcileSpend(userId, reservation.reserved, actualTokens, dateKey, 0, {
+    servedBy: workingProvider.providerType,
+    reservedOwner: reservation.owner,
+  });
 
   const content = result.content;
   if (typeof content !== "string" || content.trim().length === 0) {

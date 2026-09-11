@@ -280,6 +280,7 @@ describe("the chain runner and the health ledger", () => {
 
     const failure = (await runRawCompletionWithFallback({
       userId: "u1",
+      surface: "coach",
       providers: [
         {
           providerType: "openai-compatible",
@@ -318,6 +319,7 @@ describe("the chain runner and the health ledger", () => {
 
     const failure = (await runRawCompletionWithFallback({
       userId: "u2",
+      surface: "coach",
       providers: [
         {
           providerType: "openai-compatible",
@@ -350,6 +352,7 @@ describe("the chain runner and the health ledger", () => {
 
     const outcome = await runRawCompletionWithFallback({
       userId: "u3",
+      surface: "coach",
       providers: [
         {
           providerType: "openai-compatible",

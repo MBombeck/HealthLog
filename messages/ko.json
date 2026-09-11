@@ -7292,7 +7292,8 @@
       "typeAnthropic": "Anthropic 키 (개인)",
       "typeCodex": "ChatGPT 로그인 (개인)",
       "typeLocal": "로컬 모델 (개인)",
-      "typeGateway": "OpenAI 호환 게이트웨이 (개인)"
+      "typeGateway": "OpenAI 호환 게이트웨이 (개인)",
+      "spendToday": "오늘({date}): 토큰 {total}개, 그중 {operator}개는 운영자 키에서 사용되었습니다."
     }
   },
   "achievements": {

@@ -6685,7 +6685,8 @@
       "typeAnthropic": "Chiave Anthropic (personale)",
       "typeCodex": "Accesso ChatGPT (personale)",
       "typeLocal": "Modello locale (personale)",
-      "typeGateway": "Gateway compatibile OpenAI (personale)"
+      "typeGateway": "Gateway compatibile OpenAI (personale)",
+      "spendToday": "Oggi ({date}): {total} token, di cui {operator} sulla chiave dell'operatore."
     },
     "aiQuality": {
       "title": "Qualità delle analisi",

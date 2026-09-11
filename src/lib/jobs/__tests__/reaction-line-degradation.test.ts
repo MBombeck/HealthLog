@@ -88,6 +88,9 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   reserveBudget: (...a: unknown[]) => reserveBudget(...a),
   reconcileSpend: (...a: unknown[]) => reconcileSpend(...a),
   resolveDailyCap: () => 200_000,
+  // A background surface on an operator-funded chain: half the ceiling.
+  resolveDailyCapFor: () => 100_000,
+  resolveCostOwner: () => "operator" as const,
 }));
 
 const loadDailyDigest = vi.fn();
@@ -173,7 +176,7 @@ function expectSurfaceStillWorks() {
   expect(digest.line.length).toBeGreaterThan(0);
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   findUnique.mockResolvedValue({
     id: "r1",
@@ -191,16 +194,22 @@ beforeEach(() => {
   measurementFindMany.mockResolvedValue([]);
   workoutFindFirst.mockResolvedValue(null);
   labResultFindMany.mockResolvedValue([]);
-  queryRaw.mockResolvedValue([{ total_tokens: 1_400 }]);
+  queryRaw.mockResolvedValue([{ total_tokens: 1_400, operator_tokens: 1_400 }]);
   executeRaw.mockResolvedValue(1);
   isModuleEnabled.mockResolvedValue(true);
   chainRequiresServerManagedConsent.mockReturnValue(false);
   hasActiveConsentForSurface.mockResolvedValue(true);
-  reserveBudget.mockResolvedValue({
-    allowed: true,
-    reserved: 1_400,
-    totalAfter: 1_400,
-  });
+  // v1.38.19 — the claim reservation is no longer a
+  // second copy of the upsert; it calls the shared `reserveBudget` with the
+  // transaction client. The spy therefore runs the REAL gate against the
+  // mocked `$queryRaw`, so the rows a test hands back are the ledger the gate
+  // reads — which is the only way this file can pin which counter it compares.
+  const actualBudget = await vi.importActual<
+    typeof import("@/lib/ai/coach/budget")
+  >("@/lib/ai/coach/budget");
+  reserveBudget.mockImplementation(
+    actualBudget.reserveBudget as unknown as (...a: unknown[]) => unknown,
+  );
   reconcileSpend.mockResolvedValue(undefined);
   loadDailyDigest.mockResolvedValue({
     score: { value: 82, band: "good", delta: 3 },
@@ -467,6 +476,7 @@ describe("reaction line — degradation", () => {
       1_400,
       "2026-07-16",
       0,
+      { servedBy: expect.any(String), reservedOwner: "operator" },
     );
   });
 
@@ -501,13 +511,55 @@ describe("reaction line — degradation", () => {
     resolveProviderChain.mockResolvedValue([
       { providerType: "openai", instance: {} },
     ]);
-    queryRaw.mockResolvedValue([{ total_tokens: 201_400 }]);
+    // The OPERATOR-funded share of the day is spent — the counter the job's
+    // ceiling is about.
+    queryRaw.mockResolvedValue([
+      { total_tokens: 101_400, operator_tokens: 101_400 },
+    ]);
 
     const outcome = await runReactionLine(JOB);
 
     expect(outcome).toEqual({ status: "skipped", reason: "budget_exceeded" });
     expect(update).not.toHaveBeenCalled();
     expectSurfaceStillWorks();
+  });
+
+  it("a day the user's own plan paid for still admits the reaction", async () => {
+    // The 2026-09-11 shape: the operator's shared key answered 500 all
+    // morning and `codex` — his own ChatGPT plan — served everything, so the
+    // day's total is large and the operator's counter is empty. The
+    // reservation used to compare that total against the operator's ceiling
+    // and refuse, locking the surface out over money the operator never spent
+    // — and at HALF the old ceiling, because this is a background surface.
+    resolveProviderChain.mockResolvedValue([
+      {
+        providerType: "openai",
+        instance: {
+          generateCompletion: vi.fn().mockResolvedValue({
+            content: "Logged and steady.",
+            tokensUsed: 90,
+          }),
+        },
+      },
+    ]);
+    queryRaw.mockResolvedValue([
+      { total_tokens: 901_400, operator_tokens: 1_400 },
+    ]);
+
+    const outcome = await runReactionLine(JOB);
+
+    expect(outcome).not.toMatchObject({ reason: "budget_exceeded" });
+    // One implementation, not two: the claim transaction reserves through the
+    // shared gate, with the job ceiling and the transaction client.
+    expect(reserveBudget).toHaveBeenCalledWith(
+      "u1",
+      1_400,
+      "2026-07-16",
+      100_000,
+      "operator",
+      "job",
+      expect.anything(),
+    );
   });
 
   it("provider invocation is terminal even when the provider throws", async () => {
@@ -528,6 +580,8 @@ describe("reaction line — degradation", () => {
       1_400,
       1_400,
       "2026-07-16",
+      0,
+      { servedBy: expect.any(String), reservedOwner: "operator" },
     );
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -623,6 +677,7 @@ describe("reaction line — degradation", () => {
       900,
       "2026-07-16",
       0,
+      { servedBy: expect.any(String), reservedOwner: "operator" },
     );
     expect(update).not.toHaveBeenCalled();
     expectSurfaceStillWorks();
@@ -683,6 +738,108 @@ describe("reaction line — degradation", () => {
       1_100,
       "2026-07-16",
       100,
+      { servedBy: expect.any(String), reservedOwner: "operator" },
+    );
+  });
+});
+
+/**
+ * v1.38.19 — a reservation is never stranded.
+ *
+ * Every path that crosses the provider boundary has to settle the ledger, and
+ * settle it against the owner the reservation was actually booked to. Nothing
+ * outside `data-arrival.ts` reverses an arrival reservation, and there is no
+ * retention job on `coach_usage`, so a path that forgets leaves those tokens
+ * counted until the UTC day rolls — and under an operator-funded chain it
+ * leaves them counted against the operator's ceiling.
+ *
+ * The supersede path (a newer arrival replacing a pre-provider reservation) is
+ * the fourth exit and lives in the database, so it is pinned in
+ * `tests/integration/arrival-reaction-claim.test.ts` instead.
+ */
+describe("reaction line — every exit settles the reservation", () => {
+  const settled = {
+    servedBy: expect.any(String),
+    reservedOwner: "operator",
+  };
+
+  it("settles on a provider error", async () => {
+    resolveProviderChain.mockResolvedValue([
+      {
+        providerType: "openai",
+        instance: {
+          generateCompletion: vi.fn().mockRejectedValue(new Error("boom")),
+        },
+      },
+    ]);
+
+    const outcome = await runReactionLine(JOB);
+
+    expect(outcome).toEqual({ status: "skipped", reason: "provider_failed" });
+    expect(reconcileSpend).toHaveBeenCalledTimes(1);
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      1_400,
+      1_400,
+      "2026-07-16",
+      0,
+      settled,
+    );
+  });
+
+  it("settles on a timeout", async () => {
+    const timeout = Object.assign(new Error("The operation was aborted"), {
+      name: "TimeoutError",
+    });
+    resolveProviderChain.mockResolvedValue([
+      {
+        providerType: "openai",
+        instance: {
+          generateCompletion: vi.fn().mockRejectedValue(timeout),
+        },
+      },
+    ]);
+
+    const outcome = await runReactionLine(JOB);
+
+    expect(outcome).toEqual({ status: "skipped", reason: "provider_failed" });
+    // A timed-out call may still have burned the tokens upstream, so the
+    // conservative reservation is CHARGED rather than refunded — but it is
+    // settled either way, and against the right owner.
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      1_400,
+      1_400,
+      "2026-07-16",
+      0,
+      settled,
+    );
+  });
+
+  it("settles on an empty reply", async () => {
+    resolveProviderChain.mockResolvedValue([
+      {
+        providerType: "openai",
+        instance: {
+          generateCompletion: vi
+            .fn()
+            .mockResolvedValue({ content: "   ", tokensUsed: 640 }),
+        },
+      },
+    ]);
+
+    const outcome = await runReactionLine(JOB);
+
+    expect(outcome).toEqual({ status: "skipped", reason: "unusable_output" });
+    // Burned upstream even though the reply was unusable: recorded, not
+    // refunded into a free retry loop.
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      1_400,
+      640,
+      "2026-07-16",
+      0,
+      settled,
     );
   });
 });

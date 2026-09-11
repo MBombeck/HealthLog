@@ -61,6 +61,13 @@ interface LockedReaction {
   occurredAt: Date;
   generationReservedTokens: number | null;
   generationBudgetDateKey: string | null;
+  /**
+   * v1.38.19 — `"operator"` when the reservation below was booked to
+   * the operator's counter, `"user"` otherwise, null on a row reserved before
+   * the column existed. The refund has to reverse the SAME counters the
+   * reservation moved, and there is no chain here to ask.
+   */
+  generationCostOwner: string | null;
   generationProviderInvokedAt: Date | null;
 }
 
@@ -100,6 +107,7 @@ async function claimReaction(
         occurred_at AS "occurredAt",
         generation_reserved_tokens AS "generationReservedTokens",
         generation_budget_date_key AS "generationBudgetDateKey",
+        generation_cost_owner AS "generationCostOwner",
         generation_provider_invoked_at AS "generationProviderInvokedAt"
       FROM arrival_reactions
       WHERE user_id = ${arrival.userId}
@@ -117,12 +125,25 @@ async function claimReaction(
       current.generationBudgetDateKey != null &&
       current.generationProviderInvokedAt == null
     ) {
+      // v1.38.19 — reverse BOTH counters, or neither.
+      //
+      // The reservation booked `operator_tokens` too whenever the chain's
+      // primary was operator-funded. Refunding only the total left that share
+      // stranded: nothing else in the codebase ever subtracts it, so every
+      // supersede — a routine event, any second measurement of the same kind on
+      // the same local date before the worker runs — walked the operator's
+      // ceiling upward against spend that never happened.
+      const operatorReserved =
+        current.generationCostOwner === "operator"
+          ? current.generationReservedTokens
+          : 0;
       await tx.$executeRaw`
         UPDATE coach_usage
         SET total_tokens = GREATEST(
               0,
               total_tokens - ${current.generationReservedTokens}
             ),
+            operator_tokens = GREATEST(0, operator_tokens - ${operatorReserved}),
             message_count = GREATEST(0, message_count - 1),
             updated_at = NOW()
         WHERE user_id = ${arrival.userId}
@@ -142,6 +163,7 @@ async function claimReaction(
         generationClaimedAt: null,
         generationReservedTokens: null,
         generationBudgetDateKey: null,
+        generationCostOwner: null,
         generationProviderInvokedAt: null,
       },
     });

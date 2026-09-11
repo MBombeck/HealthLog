@@ -14,12 +14,12 @@
  *
  * This is the same accounting the status tier uses, not a second mechanism:
  * `reserveBudget` (one atomic upsert-increment, no read-then-write window) +
- * `resolveDailyCap(chain)` for the cost owner + `reconcileSpend` against the
+ * `resolveDailyCapFor("job", chain)` for the cost owner + `reconcileSpend` against the
  * provider's reported count. Every provider call on the briefing path routes
  * through here, so a retry is reserved and charged like any other call — a
  * user at the ceiling does not get a free correction pass.
  *
- * The cap follows the COST OWNER, not the surface. `resolveDailyCap` charges
+ * The cap follows the COST OWNER. `resolveDailyCapFor` charges
  * the operator ceiling only when the chain's primary is the operator's own
  * credential (`admin-openai` / `admin-codex`); a self-hoster on their own key,
  * their own ChatGPT plan, or a local model is measured against the generous
@@ -39,7 +39,8 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
-  resolveDailyCap,
+  resolveCostOwner,
+  resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
 import { singleUserTurn } from "@/lib/ai/types";
 import { annotate } from "@/lib/logging/context";
@@ -117,16 +118,29 @@ export async function runBriefingCompletion(
     args.maxTokens +
     Math.ceil((args.systemPrompt.length + args.userPrompt.length) / 4);
 
+  // v1.38.19 — a background surface: half the day's ceiling when the
+  // operator funds the chain.
+  const jobCap = resolveDailyCapFor("job", args.chain);
   const reservation = await reserveBudget(
     args.userId,
     estimatedTokens,
     dateKey,
-    resolveDailyCap(args.chain),
+    jobCap,
+    resolveCostOwner(args.chain),
+    "job",
   );
   if (!reservation.allowed) {
     annotate({
       action: { name: "insights.briefing.budget_exceeded" },
-      meta: { stage: args.stage, totalAfter: reservation.totalAfter },
+      meta: {
+        stage: args.stage,
+        owner: reservation.owner,
+        surface: "job",
+        limit: reservation.limit,
+        cap: jobCap,
+        totalAfter: reservation.totalAfter,
+        operatorAfter: reservation.operatorAfter,
+      },
     });
     throw new BriefingBudgetExceededError(args.stage, reservation.totalAfter);
   }
@@ -135,6 +149,9 @@ export async function runBriefingCompletion(
   try {
     outcome = await runRawCompletionWithFallback({
       userId: args.userId,
+      // A background generator: an operator-funded fallback hop is rationed at
+      // the job share, exactly as the reservation above was.
+      surface: "job",
       providers: args.chain,
       params: singleUserTurn({
         system: args.systemPrompt,
@@ -153,12 +170,13 @@ export async function runBriefingCompletion(
     // invented figure. A partially-burned upstream call is possible here, but
     // we have no reported count to charge, and over-charging a failed
     // generation would ration the retry the user is entitled to.
-    await reconcileSpend(args.userId, reservation.reserved, 0, dateKey).catch(
-      () => {
-        // Best-effort: a failed refund leaves the conservative reservation in
-        // place (never an undercount) and must not mask the provider error.
-      },
-    );
+    await reconcileSpend(args.userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    }).catch(() => {
+      // Best-effort: a failed refund leaves the conservative reservation in
+      // place (never an undercount) and must not mask the provider error.
+    });
     throw err;
   }
 
@@ -169,6 +187,10 @@ export async function runBriefingCompletion(
     actualTokens,
     dateKey,
     outcome.result.cachedInputTokens ?? 0,
+    {
+      servedBy: outcome.workingProvider.providerType,
+      reservedOwner: reservation.owner,
+    },
   ).catch(() => {
     // Ledger reconcile is best-effort; a failure leaves the reservation in
     // place and never breaks a generation that already succeeded.

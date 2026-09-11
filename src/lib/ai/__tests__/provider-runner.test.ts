@@ -13,13 +13,16 @@ import {
 // v1.37.19 (A7-2) — the runner consults the day's recorded spend before an
 // operator-funded hop. These pure chain tests do not stand up a DB, so the
 // ledger read is swapped for a controllable in-memory figure.
-const budgetState = vi.hoisted(() => ({ spent: 0 }));
+const budgetState = vi.hoisted(() => ({ spent: 0, operatorSpent: 0 }));
 vi.mock("../coach/budget", async () => {
   const actual =
     await vi.importActual<typeof import("../coach/budget")>("../coach/budget");
   return {
     ...actual,
-    readDailySpend: vi.fn(async () => budgetState.spent),
+    readDailySpend: vi.fn(async () => ({
+      total: budgetState.spent,
+      operator: budgetState.operatorSpent,
+    })),
   };
 });
 
@@ -111,6 +114,7 @@ function err(status: number, msg = "boom"): Error & { httpStatus: number } {
 beforeEach(() => {
   clearLastWorkingProviderCache();
   budgetState.spent = 0;
+  budgetState.operatorSpent = 0;
 });
 
 afterEach(() => {
@@ -169,6 +173,7 @@ describe("runRawCompletionWithFallback — last-working cache", () => {
     // First call: codex fails, openai succeeds.
     await runRawCompletionWithFallback({
       userId: "u-cache",
+      surface: "coach",
       providers: [
         { providerType: "codex", instance: codex },
         { providerType: "openai", instance: openai },
@@ -182,6 +187,7 @@ describe("runRawCompletionWithFallback — last-working cache", () => {
     // never re-invoked even though it appears first in the input chain.
     await runRawCompletionWithFallback({
       userId: "u-cache",
+      surface: "coach",
       providers: [
         { providerType: "codex", instance: codex },
         { providerType: "openai", instance: openai },
@@ -212,6 +218,7 @@ describe("runRawCompletionWithFallback — last-working cache", () => {
     // First call: codex fails, openai succeeds, cache = openai.
     await runRawCompletionWithFallback({
       userId: "u-ttl",
+      surface: "coach",
       providers: [
         { providerType: "codex", instance: codex },
         { providerType: "openai", instance: openai },
@@ -228,6 +235,7 @@ describe("runRawCompletionWithFallback — last-working cache", () => {
     // and this time codex's second scripted entry succeeds).
     await runRawCompletionWithFallback({
       userId: "u-ttl",
+      surface: "coach",
       providers: [
         { providerType: "codex", instance: codex },
         { providerType: "openai", instance: openai },
@@ -244,6 +252,7 @@ describe("runRawCompletionWithFallback — last-working cache", () => {
     });
     await runRawCompletionWithFallback({
       userId: "u-clear",
+      surface: "coach",
       providers: [{ providerType: "openai", instance: ok }],
       params: singleUserTurn({ system: "s", user: "u" }),
     });
@@ -265,6 +274,7 @@ describe("runRawCompletionWithFallback — legacy route shim", () => {
     });
     const result = await runRawCompletionWithFallback({
       userId: "u-raw",
+      surface: "coach",
       providers: [
         { providerType: "codex", instance: codex },
         { providerType: "admin-openai", instance: openai },
@@ -292,6 +302,7 @@ describe("runRawCompletionWithFallback — legacy route shim", () => {
     });
     const result = await runRawCompletionWithFallback({
       userId: "u-raw-auth-advance",
+      surface: "coach",
       providers: [
         { providerType: "codex", instance: codex },
         { providerType: "openai", instance: openai },
@@ -320,6 +331,7 @@ describe("runRawCompletionWithFallback — legacy route shim", () => {
     try {
       await runRawCompletionWithFallback({
         userId: "u-raw-allfail",
+        surface: "coach",
         providers: [
           { providerType: "codex", instance: a },
           { providerType: "admin-openai", instance: b },
@@ -357,6 +369,7 @@ describe("runRawCompletionWithFallback — legacy route shim", () => {
     try {
       await runRawCompletionWithFallback({
         userId: "u-raw-codex400",
+        surface: "coach",
         providers: [{ providerType: "codex", instance: codex }],
         params: singleUserTurn({ system: "s", user: "u" }),
       });
@@ -379,6 +392,7 @@ describe("runRawCompletionWithFallback — empty input", () => {
     try {
       await runRawCompletionWithFallback({
         userId: "u-empty",
+        surface: "coach",
         providers: [],
         params: singleUserTurn({ system: "s", user: "u" }),
       });
@@ -413,6 +427,7 @@ describe("provider-health ledger — auth-failure negative cache", () => {
     // First call: codex 401 → openai succeeds. Ledger now benches codex.
     await runRawCompletionWithFallback({
       userId: "u-neg",
+      surface: "coach",
       providers,
       params: singleUserTurn({ system: "s", user: "u" }),
       ledger,
@@ -430,6 +445,7 @@ describe("provider-health ledger — auth-failure negative cache", () => {
     const codexCallsBefore = codex.callCount;
     await runRawCompletionWithFallback({
       userId: "u-neg",
+      surface: "coach",
       providers,
       params: singleUserTurn({ system: "s", user: "u" }),
       ledger,
@@ -449,6 +465,7 @@ describe("provider-health ledger — auth-failure negative cache", () => {
     // A direct success on codex (e.g. user re-linked) clears the row.
     await runRawCompletionWithFallback({
       userId: "u-clear-neg",
+      surface: "coach",
       providers: [{ providerType: "codex", instance: codex }],
       params: singleUserTurn({ system: "s", user: "u" }),
       ledger,
@@ -484,6 +501,7 @@ describe("provider-health ledger — local model as guaranteed floor", () => {
 
     const result = await runRawCompletionWithFallback({
       userId: "u-floor",
+      surface: "coach",
       providers: [
         { providerType: "codex", instance: dead("codex") },
         { providerType: "openai", instance: dead("admin-key") },
@@ -513,6 +531,7 @@ describe("provider-health ledger — local model as guaranteed floor", () => {
     try {
       await runRawCompletionWithFallback({
         userId: "u-local-hard",
+        surface: "coach",
         providers: [{ providerType: "local", instance: local }],
         params: singleUserTurn({ system: "s", user: "u" }),
         ledger,
@@ -527,6 +546,7 @@ describe("provider-health ledger — local model as guaranteed floor", () => {
     clearLastWorkingProviderCache();
     const result = await runRawCompletionWithFallback({
       userId: "u-local-hard",
+      surface: "coach",
       providers: [{ providerType: "local", instance: local }],
       params: singleUserTurn({ system: "s", user: "u" }),
       ledger,
@@ -550,6 +570,7 @@ describe("AllProvidersFailedError — primaryCredentialExpired", () => {
     try {
       await runRawCompletionWithFallback({
         userId: "u-primary-auth",
+        surface: "coach",
         providers: [
           { providerType: "codex", instance: codex },
           { providerType: "admin-openai", instance: openai },
@@ -578,6 +599,7 @@ describe("AllProvidersFailedError — primaryCredentialExpired", () => {
     try {
       await runRawCompletionWithFallback({
         userId: "u-primary-5xx",
+        surface: "coach",
         providers: [
           { providerType: "codex", instance: codex },
           { providerType: "admin-openai", instance: openai },
@@ -633,6 +655,7 @@ describe("runStreamingRawCompletionWithFallback", () => {
     const deltas: string[] = [];
     const result = await runStreamingRawCompletionWithFallback({
       userId: "u-stream",
+      surface: "coach",
       providers: [{ providerType: "local", instance: provider }],
       params: singleUserTurn({ system: "s", user: "u", timeoutMs: 12345 }),
       onDelta: (d) => deltas.push(d),
@@ -655,6 +678,7 @@ describe("runStreamingRawCompletionWithFallback", () => {
     const deltas: string[] = [];
     const result = await runStreamingRawCompletionWithFallback({
       userId: "u-nostream",
+      surface: "coach",
       providers: [{ providerType: "local", instance: provider }],
       params: singleUserTurn({ system: "s", user: "u" }),
       onDelta: (d) => deltas.push(d),
@@ -673,6 +697,7 @@ describe("runStreamingRawCompletionWithFallback", () => {
     const good = new StreamingProvider("ok");
     const result = await runStreamingRawCompletionWithFallback({
       userId: "u-cascade",
+      surface: "coach",
       providers: [
         { providerType: "openai", instance: broken },
         { providerType: "local", instance: good },
@@ -697,6 +722,7 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
 
   it("refuses the admin-* fallback hop once the operator cap is exhausted", async () => {
     budgetState.spent = 200_000; // OPERATOR_COST_CAP
+    budgetState.operatorSpent = 200_000;
     const codex = new ScriptedProvider({
       type: "codex",
       script: [{ ok: false, error: err(500) }],
@@ -706,6 +732,7 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
     await expect(
       runRawCompletionWithFallback({
         userId: "u-cap",
+        surface: "coach",
         providers: [
           { providerType: "codex", instance: codex },
           { providerType: "admin-openai", instance: adminOpenai },
@@ -727,6 +754,7 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
 
   it("lets the admin-* fallback run while the operator cap has headroom", async () => {
     budgetState.spent = 100;
+    budgetState.operatorSpent = 100;
     const codex = new ScriptedProvider({
       type: "codex",
       script: [{ ok: false, error: err(500) }],
@@ -735,6 +763,7 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
 
     const outcome = await runRawCompletionWithFallback({
       userId: "u-headroom",
+      surface: "coach",
       providers: [
         { providerType: "codex", instance: codex },
         { providerType: "admin-openai", instance: adminOpenai },
@@ -745,11 +774,170 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
     expect(adminOpenai.callCount).toBe(1);
   });
 
+  // v1.38.19 — the guard reads the OPERATOR-funded share.
+  //
+  // Production evidence (2026-09-11): the operator's day held ~1.2 M tokens,
+  // nearly all served by `codex` on his own ChatGPT plan. Comparing the day's
+  // TOTAL against the operator ceiling closed the operator's own fallback hop
+  // on money he had never spent.
+  it("lets the admin-* hop run on a big day the user's own plan paid for", async () => {
+    budgetState.spent = 1_200_000;
+    budgetState.operatorSpent = 150_000;
+    const codex = new ScriptedProvider({
+      type: "codex",
+      script: [{ ok: false, error: err(500) }],
+    });
+    const adminOpenai = new ScriptedProvider({ script: [{ ok: true }] });
+
+    const outcome = await runRawCompletionWithFallback({
+      userId: "u-owner-split",
+      surface: "coach",
+      providers: [
+        { providerType: "codex", instance: codex },
+        { providerType: "admin-openai", instance: adminOpenai },
+      ],
+      params,
+    });
+    expect(outcome.workingProvider.providerType).toBe("admin-openai");
+    expect(adminOpenai.callCount).toBe(1);
+  });
+
+  it("refuses the admin-* hop once the OPERATOR-funded share is exhausted", async () => {
+    budgetState.spent = 1_200_000;
+    budgetState.operatorSpent = 250_000;
+    const codex = new ScriptedProvider({
+      type: "codex",
+      script: [{ ok: false, error: err(500) }],
+    });
+    const adminOpenai = new ScriptedProvider({ script: [{ ok: true }] });
+
+    await expect(
+      runRawCompletionWithFallback({
+        userId: "u-owner-exhausted",
+        surface: "coach",
+        providers: [
+          { providerType: "codex", instance: codex },
+          { providerType: "admin-openai", instance: adminOpenai },
+        ],
+        params,
+      }),
+    ).rejects.toMatchObject({
+      attempts: [
+        expect.objectContaining({ providerType: "codex" }),
+        expect.objectContaining({
+          providerType: "admin-openai",
+          failureReason: "operator-cost-cap-exhausted",
+        }),
+      ],
+    });
+    expect(adminOpenai.callCount).toBe(0);
+  });
+
+  // v1.38.19 — the hop guard knows which SURFACE asked.
+  //
+  // Without this the job share was enforced at reservation time only: a
+  // background reservation admitted under `resolveDailyCapFor("job", …)` could
+  // then reach an operator-funded FALLBACK hop and spend against the full
+  // 200 000. That is the original defect by another route — chain
+  // `[codex, admin-openai]` reserves under the user-plan ceiling, `codex` 429s,
+  // every job falls back onto the shared key, and background work fills the
+  // operator's ceiling before the user opens the chat.
+  it("refuses a JOB's admin-* fallback hop once only the reserve is left", async () => {
+    budgetState.spent = 160_000;
+    budgetState.operatorSpent = 160_000;
+    const codex = new ScriptedProvider({
+      type: "codex",
+      script: [{ ok: false, error: err(500) }],
+    });
+    const adminOpenai = new ScriptedProvider({ script: [{ ok: true }] });
+
+    await expect(
+      runRawCompletionWithFallback({
+        userId: "u-job-share",
+        surface: "job",
+        providers: [
+          { providerType: "codex", instance: codex },
+          { providerType: "admin-openai", instance: adminOpenai },
+        ],
+        params,
+      }),
+    ).rejects.toMatchObject({
+      attempts: [
+        expect.objectContaining({ providerType: "codex" }),
+        expect.objectContaining({
+          providerType: "admin-openai",
+          failureReason: "operator-cost-cap-exhausted",
+        }),
+      ],
+    });
+    expect(adminOpenai.callCount).toBe(0);
+  });
+
+  it("still lets the interactive chat take that same hop", async () => {
+    // The whole point of the reserve: at 160 000 operator tokens the background
+    // work is done for the day and the person waiting is not.
+    budgetState.spent = 160_000;
+    budgetState.operatorSpent = 160_000;
+    const codex = new ScriptedProvider({
+      type: "codex",
+      script: [{ ok: false, error: err(500) }],
+    });
+    const adminOpenai = new ScriptedProvider({ script: [{ ok: true }] });
+
+    const outcome = await runRawCompletionWithFallback({
+      userId: "u-job-share-chat",
+      surface: "coach",
+      providers: [
+        { providerType: "codex", instance: codex },
+        { providerType: "admin-openai", instance: adminOpenai },
+      ],
+      params,
+    });
+    expect(outcome.workingProvider.providerType).toBe("admin-openai");
+    expect(adminOpenai.callCount).toBe(1);
+  });
+
+  it("bounds the operator hop on the day's mixed total as well", async () => {
+    // `operator_tokens` returns to ~0 on every reconcile the user's own plan
+    // settled, so the operator arm alone leaves a runaway loop unbounded. The
+    // abuse ceiling on the total is checked at the hop for the same reason it
+    // is checked at reservation time.
+    budgetState.spent = 2_000_000;
+    budgetState.operatorSpent = 0;
+    const codex = new ScriptedProvider({
+      type: "codex",
+      script: [{ ok: false, error: err(500) }],
+    });
+    const adminOpenai = new ScriptedProvider({ script: [{ ok: true }] });
+
+    await expect(
+      runRawCompletionWithFallback({
+        userId: "u-total-ceiling",
+        surface: "coach",
+        providers: [
+          { providerType: "codex", instance: codex },
+          { providerType: "admin-openai", instance: adminOpenai },
+        ],
+        params,
+      }),
+    ).rejects.toMatchObject({
+      attempts: [
+        expect.objectContaining({ providerType: "codex" }),
+        expect.objectContaining({
+          providerType: "admin-openai",
+          failureReason: "operator-cost-cap-exhausted",
+        }),
+      ],
+    });
+    expect(adminOpenai.callCount).toBe(0);
+  });
+
   it("never consults the ledger for a user-funded chain", async () => {
     budgetState.spent = 999_999_999;
     const openai = new ScriptedProvider({ script: [{ ok: true }] });
     const outcome = await runRawCompletionWithFallback({
       userId: "u-own-key",
+      surface: "coach",
       providers: [{ providerType: "openai", instance: openai }],
       params,
     });

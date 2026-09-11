@@ -8,8 +8,10 @@ import {
 import { annotate } from "@/lib/logging/context";
 import {
   isOperatorFundedProvider,
-  OPERATOR_COST_CAP,
   readDailySpend,
+  resolveDailyCapFor,
+  resolveTotalCapFor,
+  type BudgetSurface,
 } from "@/lib/ai/coach/budget";
 
 /**
@@ -399,6 +401,7 @@ async function runRawChain(
     userId: string;
     providers: ProviderChainResolved[];
     params: CompletionParams;
+    surface: BudgetSurface;
     ledger?: ProviderHealthLedger;
   },
   invoke: (candidate: ProviderChainResolved) => Promise<CompletionResult>,
@@ -406,7 +409,7 @@ async function runRawChain(
     candidate: ProviderChainResolved,
   ) => Record<string, string | number | boolean | null>,
 ): Promise<RunRawWithFallbackResult> {
-  const { userId, providers } = args;
+  const { userId, providers, surface } = args;
   const ledger = args.ledger ?? postgresProviderHealthLedger;
 
   if (providers.length === 0) {
@@ -431,8 +434,28 @@ async function runRawChain(
       // Fail OPEN on a ledger read error: the reservation layer still
       // meters every call against the same ledger, so a transient read
       // failure here must not take the whole fallback chain down with it.
-      const spent = await readDailySpend(userId).catch(() => 0);
-      if (spent >= OPERATOR_COST_CAP) {
+      const spent = await readDailySpend(userId).catch(() => ({
+        total: 0,
+        operator: 0,
+      }));
+      // v1.38.19 — the OPERATOR-funded share, not the day's total: a
+      // day filled by the user's own plan must not close the operator's
+      // fallback hop on money the operator never spent.
+      //
+      // v1.38.19 — and at the SURFACE's ceiling, not the
+      // full one. A background reservation is rationed at the job share when it
+      // is taken; without this the hop it reaches by fallback could still spend
+      // against the whole operator cap, which is how the original defect stayed
+      // reachable. Chain `[codex, admin-openai]` reserves under the user-plan
+      // ceiling, `codex` 429s all morning, every job falls back onto the shared
+      // key, and background work walks `operator_tokens` to 200 000 before the
+      // user opens the chat. The abuse ceiling on the day's mixed total is
+      // checked here for the same reason it is checked at reservation time.
+      const hopCap = resolveDailyCapFor(surface, [
+        { providerType: candidate.providerType },
+      ]);
+      const hopTotalCap = resolveTotalCapFor(surface);
+      if (spent.operator >= hopCap || spent.total >= hopTotalCap) {
         const hop: FallbackHop = {
           providerType: candidate.providerType,
           attempt: i + 1,
@@ -445,7 +468,9 @@ async function runRawChain(
           meta: {
             [`ai_chain_hop_${i + 1}_provider`]: candidate.providerType,
             [`ai_chain_hop_${i + 1}_reason`]: "operator-cost-cap-exhausted",
-            operator_cap_spent: spent,
+            operator_cap_spent: spent.operator,
+            operator_cap_limit: hopCap,
+            ai_chain_surface: surface,
           },
         });
         continue;
@@ -514,6 +539,12 @@ export async function runStreamingRawCompletionWithFallback(args: {
   userId: string;
   providers: ProviderChainResolved[];
   params: CompletionParams;
+  /**
+   * v1.38.19 — which ceiling an operator-funded FALLBACK
+   * hop is rationed against. `"job"` gets the background share, exactly as the
+   * reservation did; `"coach"` gets the whole ceiling.
+   */
+  surface: BudgetSurface;
   /** Called once per streamed token/chunk for providers that stream. */
   onDelta: (delta: string) => void;
   /** See `RunWithFallbackParams.ledger`. */
@@ -560,6 +591,8 @@ export async function runRawCompletionWithFallback(args: {
   userId: string;
   providers: ProviderChainResolved[];
   params: CompletionParams;
+  /** See {@link runStreamingRawCompletionWithFallback}'s `surface`. */
+  surface: BudgetSurface;
   /** See `RunWithFallbackParams.ledger`. */
   ledger?: ProviderHealthLedger;
 }): Promise<RunRawWithFallbackResult> {

@@ -45,6 +45,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import {
@@ -235,6 +236,8 @@ export async function deriveClarifyingQuestions(
       QUESTIONS_MAX_TOKENS,
       dateKey,
       resolveDailyCap(chain),
+      resolveCostOwner(chain),
+      "coach",
     );
     if (!reservation.allowed) return fallback();
 
@@ -266,9 +269,10 @@ export async function deriveClarifyingQuestions(
     } catch (err) {
       // Reconcile the reservation down to zero actual spend before the
       // failure lands on the deterministic fallback.
-      await reconcileSpend(userId, reservation.reserved, 0, dateKey).catch(
-        () => {},
-      );
+      await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      }).catch(() => {});
       throw err;
     }
 
@@ -278,6 +282,7 @@ export async function deriveClarifyingQuestions(
       result.tokensUsed ?? 0,
       dateKey,
       result.cachedInputTokens ?? 0,
+      { servedBy: chain[0].providerType, reservedOwner: reservation.owner },
     ).catch(() => {});
 
     const questions = parseQuestionsReply(result.content);

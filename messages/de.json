@@ -6685,7 +6685,8 @@
       "typeAnthropic": "Anthropic-Schlüssel (persönlich)",
       "typeCodex": "ChatGPT-Anmeldung (persönlich)",
       "typeLocal": "Lokales Modell (persönlich)",
-      "typeGateway": "OpenAI-kompatibles Gateway (persönlich)"
+      "typeGateway": "OpenAI-kompatibles Gateway (persönlich)",
+      "spendToday": "Heute ({date}): {total} Tokens, davon {operator} auf dem Schlüssel des Betreibers."
     },
     "aiQuality": {
       "title": "Auswertungs-Qualität",

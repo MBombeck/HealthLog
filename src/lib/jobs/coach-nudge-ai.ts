@@ -43,7 +43,8 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
-  resolveDailyCap,
+  resolveCostOwner,
+  resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { singleUserTurn } from "@/lib/ai/types";
@@ -190,7 +191,8 @@ export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
 
     const budget = AI_BUDGETS.coachNudge;
     const maxTokens = budget.maxTokens ?? 160;
-    const dailyCap = resolveDailyCap(chain);
+    // v1.38.19 — a background surface: half the day's ceiling.
+    const dailyCap = resolveDailyCapFor("job", chain);
     const dateKey = buildDateKey();
 
     // Per-user budget gate (atomic reserve; refunds itself on refusal).
@@ -199,6 +201,8 @@ export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
       maxTokens,
       dateKey,
       dailyCap,
+      resolveCostOwner(chain),
+      "job",
     );
     if (!reservation.allowed) {
       annotate({ action: { name: "coach.nudge.ai.budget_exceeded" } });
@@ -224,12 +228,10 @@ export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
     } catch {
       // Timeout / network / provider error → refund what wasn't spent and
       // fall back to the template.
-      await reconcileSpend(
-        params.userId,
-        reservation.reserved,
-        0,
-        dateKey,
-      ).catch(() => {});
+      await reconcileSpend(params.userId, reservation.reserved, 0, dateKey, 0, {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      }).catch(() => {});
       annotate({ action: { name: "coach.nudge.ai.fallback" } });
       return null;
     }
@@ -240,6 +242,7 @@ export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
       result.tokensUsed ?? 0,
       dateKey,
       result.cachedInputTokens ?? 0,
+      { servedBy: chain[0].providerType, reservedOwner: reservation.owner },
     ).catch(() => {});
 
     const body = sanitiseAiBody(result.content, params.locale);

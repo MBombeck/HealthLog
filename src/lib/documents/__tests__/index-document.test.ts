@@ -45,6 +45,8 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   reserveBudget: vi.fn(),
   reconcileSpend: vi.fn().mockResolvedValue(undefined),
   resolveDailyCap: vi.fn(() => 1000),
+  resolveDailyCapFor: vi.fn(() => 1000),
+  resolveCostOwner: vi.fn(() => "operator" as const),
 }));
 vi.mock("@/lib/ai/ai-budgets", () => ({
   AI_BUDGETS: { documentTranscribe: { temperature: 0, maxTokens: 4000 } },
@@ -106,6 +108,7 @@ beforeEach(() => {
   vi.mocked(reserveBudget).mockResolvedValue({
     allowed: true,
     reserved: 1,
+    owner: "operator",
   } as never);
   vi.mocked(localExtractText).mockResolvedValue({
     ok: true,
@@ -132,7 +135,14 @@ describe("indexDocumentContent — provider-first path", () => {
       expect.objectContaining({ source: "vision", providerType: "anthropic" }),
     );
     // Budget reserved then reconciled at the full reserved amount (charged).
-    expect(reconcileSpend).toHaveBeenCalledWith("user-1", 1, 1, "2026-07-07");
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "user-1",
+      1,
+      1,
+      "2026-07-07",
+      0,
+      { servedBy: expect.any(String), reservedOwner: "operator" },
+    );
     // The local path is never touched when the provider succeeds.
     expect(localExtractText).not.toHaveBeenCalled();
   });
@@ -222,7 +232,14 @@ describe("indexDocumentContent — local fallback path", () => {
     const outcome = await indexDocumentContent("user-1", "doc-1");
     expect(outcome).toMatchObject({ indexed: true, source: "local-pdf" });
     // Reservation refunded to zero spend.
-    expect(reconcileSpend).toHaveBeenCalledWith("user-1", 1, 0, "2026-07-07");
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "user-1",
+      1,
+      0,
+      "2026-07-07",
+      0,
+      { servedBy: null, reservedOwner: "operator" },
+    );
     expect(localExtractText).toHaveBeenCalledTimes(1);
   });
 

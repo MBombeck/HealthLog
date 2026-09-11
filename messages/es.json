@@ -6685,7 +6685,8 @@
       "typeAnthropic": "Clave de Anthropic (personal)",
       "typeCodex": "Inicio de sesión de ChatGPT (personal)",
       "typeLocal": "Modelo local (personal)",
-      "typeGateway": "Pasarela compatible con OpenAI (personal)"
+      "typeGateway": "Pasarela compatible con OpenAI (personal)",
+      "spendToday": "Hoy ({date}): {total} tokens, {operator} de ellos en la clave del operador."
     },
     "aiQuality": {
       "title": "Calidad de los análisis",

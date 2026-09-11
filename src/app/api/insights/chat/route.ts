@@ -52,6 +52,7 @@ import {
   runStreamingRawCompletionWithFallback,
 } from "@/lib/ai/provider-runner";
 import { resolveProviderChain, resolveProvider } from "@/lib/ai/provider";
+import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import { assertConsentForChain } from "@/lib/ai/consent-guard";
 import { singleUserTurn, type CompletionResult } from "@/lib/ai/types";
 import { PROMPT_VERSION } from "@/lib/ai/prompts/insight-generator";
@@ -74,6 +75,7 @@ import {
   buildDateKey,
   reserveBudget,
   reconcileSpend,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import { detectRefusal } from "@/lib/ai/coach/refusal";
@@ -603,11 +605,26 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       : AI_BUDGETS.coach.maxTokens,
     reqDateKey,
     dailyCap,
+    resolveCostOwner(chain),
+    "coach",
   );
   if (!reservation.allowed) {
+    // v1.38.19 — say WHICH ceiling refused and WHOSE.
+    // `totalAfter` alone is the day's mixed total; on an operator refusal that
+    // is not the counter that tripped, and reading `totalAfter: 1200000`
+    // against a 200 000 ceiling is what turned the 06:42Z incident into a
+    // production log dig. Integers and two small enums — no key, host or model
+    // name is added.
     annotate({
       action: { name: "coach.budget.exceeded" },
-      meta: { totalAfter: reservation.totalAfter },
+      meta: {
+        owner: reservation.owner,
+        surface: "coach",
+        limit: reservation.limit,
+        cap: dailyCap,
+        totalAfter: reservation.totalAfter,
+        operatorAfter: reservation.operatorAfter,
+      },
     });
     return streamProviderError({ code: "coach.budget.exceeded" });
   }
@@ -637,7 +654,10 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
 
   async function produceReply(): Promise<ReplyOutcome> {
     let result: CompletionResult;
-    let workingProviderType: string;
+    // v1.38.19 — typed as the chain's provider union, not a bare
+    // string: the budget reconcile attributes the turn's tokens to the cost
+    // owner of the hop named here.
+    let workingProviderType: ProviderChainType;
     let toolTrace: CoachToolTrace[] = [];
     // v1.21.0 (P6) — the present tool-result payloads this turn, for the post-hoc
     // prose number-verifier. Empty on the no-tools path.
@@ -702,7 +722,9 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
           timeoutMs: aiResponseTimeoutMs,
         });
         result = loop.result;
-        workingProviderType = loop.workingProviderType;
+        // The loop reports the hop it landed on as a bare string; it is
+        // assigned from `workingProvider.providerType` one frame up.
+        workingProviderType = loop.workingProviderType as ProviderChainType;
         toolTrace = loop.toolTrace;
         // v1.32.1 — the numeric verifier ACTIVATES only when this turn actually
         // delivered figures the model was told to ground against: a pinned
@@ -740,6 +762,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
         // returned in full so every guard below still runs on the complete text.
         let streamedDeltas = 0;
         const fallback = await runStreamingRawCompletionWithFallback({
+          surface: "coach",
           userId,
           providers: chain,
           onDelta: () => {
@@ -784,9 +807,10 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     } catch (err) {
       // The provider chain failed outright — no tokens were billed, so refund
       // the full reservation before surfacing the error frame.
-      await reconcileSpend(userId, reservation.reserved, 0, reqDateKey).catch(
-        () => {},
-      );
+      await reconcileSpend(userId, reservation.reserved, 0, reqDateKey, 0, {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      }).catch(() => {});
       // #781 — the client walked away mid-generation. The request's abort
       // signal is threaded into every provider call, so the teardown surfaces
       // here as an abort-shaped failure with `request.signal` already flipped.
@@ -887,6 +911,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
       totalTokensSpent,
       reqDateKey,
       cachedTokensSpent,
+      { servedBy: workingProviderType, reservedOwner: reservation.owner },
     ).catch(() => {
       // Ledger reconcile is best-effort; a failure leaves the conservative
       // reservation in place (never an undercount) and never breaks the turn.

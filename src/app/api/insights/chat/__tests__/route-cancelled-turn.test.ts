@@ -93,7 +93,11 @@ vi.mock("@/lib/ai/coach/facts", () => ({
 }));
 
 const { reserveBudget, reconcileSpend } = vi.hoisted(() => ({
-  reserveBudget: vi.fn(async () => ({ allowed: true, reserved: 3000 })),
+  reserveBudget: vi.fn(async () => ({
+    allowed: true,
+    reserved: 3000,
+    owner: "user" as const,
+  })),
   reconcileSpend: vi.fn(async () => undefined),
 }));
 vi.mock("@/lib/ai/coach/budget", () => ({
@@ -101,6 +105,8 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   reserveBudget,
   reconcileSpend,
   resolveDailyCap: vi.fn(() => 2_000_000),
+  resolveDailyCapFor: vi.fn(() => 2_000_000),
+  resolveCostOwner: vi.fn(() => "user" as const),
 }));
 
 vi.mock("@/lib/ai/coach/refusal", () => ({
@@ -205,7 +211,11 @@ function abortError(): Error {
 describe("coach chat — client abort mid-generation (#781)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    reserveBudget.mockResolvedValue({ allowed: true, reserved: 3000 });
+    reserveBudget.mockResolvedValue({
+      allowed: true,
+      reserved: 3000,
+      owner: "user" as const,
+    });
     // No-tools chain so the turn runs the streaming runner (which rejects
     // with the abort the torn-down connection produces).
     resolveProviderChain.mockResolvedValue([
@@ -236,7 +246,16 @@ describe("coach chat — client abort mid-generation (#781)", () => {
     await post(abortedChatReq({ message: "How is my BP?" }));
     await sse.done;
 
-    expect(reconcileSpend).toHaveBeenCalledWith("u1", 3000, 0, "2026-08-13");
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      3000,
+      0,
+      "2026-08-13",
+      0,
+      // No hop served the cancelled turn, so nothing is attributed to an
+      // owner — the reservation is reversed on both counters.
+      { servedBy: null, reservedOwner: "user" },
+    );
     const actions = annotate.mock.calls
       .map((c) => (c[0] as { action?: { name?: string } }).action?.name)
       .filter(Boolean);
