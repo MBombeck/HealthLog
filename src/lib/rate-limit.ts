@@ -240,7 +240,7 @@ const TIGHT_ANON_WINDOW_MS = 15 * 60 * 1000;
 
 /**
  * Rate-limit helper for anonymous auth surfaces (login, register,
- * passkey-login-{options,verify}, refresh, check-user).
+ * passkey-login-{options,verify}, refresh).
  *
  * Per-IP path: when the trust chain resolves cleanly, route the request
  * to a bucket keyed by `{prefix}:{ip ?? "unknown"}` with the caller's

@@ -1809,31 +1809,6 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-  /api/auth/check-user:
-    post:
-      tags:
-        - Auth
-      summary: Resolve the next sign-in step for a typed identifier
-      description: Given an email or username, returns which onboarding branch the iOS client should render plus the
-        `hasPasskey` / `hasPassword` booleans so it can offer a Passkey affordance alongside a password field without a
-        second round-trip. Anonymous surface; per-IP rate-limited (30 requests / 15 min). The response is the same
-        whether or not the identifier matched, and the identifier is never echoed back.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CheckUserRequest"
-      responses:
-        "200":
-          description: Discovery result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CheckUserEnvelope"
-        "401": *a1
-        "422": *a4
-        "429": *a5
   /api/auth/login:
     post:
       security: []
@@ -21129,17 +21104,6 @@ components:
             server-side recovery.
       required:
         - passphrase
-    CheckUserRequest:
-      type: object
-      properties:
-        identifier:
-          type: string
-          minLength: 1
-          maxLength: 254
-          description: The typed identifier — either an email or a username. Queried verbatim (no case-folding), never echoed back.
-      required:
-        - identifier
-      description: "Discovery lookup for the iOS onboarding flow: given a typed email or username, resolve the next sign-in step."
     LoginPasswordRequest:
       type: object
       properties:
@@ -36587,49 +36551,6 @@ components:
         omissions there is a real, undeclared gap: roughly thirty of the models the backup plan marks as backed up have
         neither a reader here nor a restore branch yet, and `src/lib/export/backup-plan.ts` is the enumeration of which.
         `schemaVersion` is `2` on everything written today; the parser still accepts `1`."
-    CheckUserEnvelope:
-      type: object
-      properties:
-        data:
-          $ref: "#/components/schemas/CheckUserResponse"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    CheckUserResponse:
-      type: object
-      properties:
-        branch:
-          type: string
-          enum:
-            - not_found
-            - passkey_only
-            - email_fallback
-            - exists
-          description: "Next UX step: `not_found` (show sign-up), `passkey_only` (Sign in with Passkey), `email_fallback`
-            (password field, with a Passkey affordance when applicable), `exists` (account with no usable credential —
-            recovery path)."
-        hasPasskey:
-          type: boolean
-          description: The account has at least one registered passkey.
-        hasPassword:
-          type: boolean
-          description: The account has a password hash.
-      required:
-        - branch
-        - hasPasskey
-        - hasPassword
-      additionalProperties: false
-      description: Account-existence + credential shape. The response is identical whether or not the identifier matched
-        (account-existence is the explicit contract iOS needs); the identifier is never echoed.
     LoginResponse:
       type: object
       properties:

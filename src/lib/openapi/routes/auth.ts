@@ -304,43 +304,6 @@ const successFlagResponse = z
   .object({ success: z.boolean() })
   .meta({ id: "AuthSuccessFlagResponse" });
 
-// ── iOS onboarding discovery (check-user) ────────────────────────────
-
-const checkUserRequest = z
-  .object({
-    identifier: z
-      .string()
-      .trim()
-      .min(1)
-      .max(254)
-      .describe(
-        "The typed identifier — either an email or a username. Queried verbatim (no case-folding), never echoed back.",
-      ),
-  })
-  .meta({
-    id: "CheckUserRequest",
-    description:
-      "Discovery lookup for the iOS onboarding flow: given a typed email or username, resolve the next sign-in step.",
-  });
-
-const checkUserResponse = z
-  .object({
-    branch: z
-      .enum(["not_found", "passkey_only", "email_fallback", "exists"])
-      .describe(
-        "Next UX step: `not_found` (show sign-up), `passkey_only` (Sign in with Passkey), `email_fallback` (password field, with a Passkey affordance when applicable), `exists` (account with no usable credential — recovery path).",
-      ),
-    hasPasskey: z
-      .boolean()
-      .describe("The account has at least one registered passkey."),
-    hasPassword: z.boolean().describe("The account has a password hash."),
-  })
-  .meta({
-    id: "CheckUserResponse",
-    description:
-      "Account-existence + credential shape. The response is identical whether or not the identifier matched (account-existence is the explicit contract iOS needs); the identifier is never echoed.",
-  });
-
 /**
  * Shared tail for every route the step-up elevation can unlock. Kept in one
  * place so the published contract cannot describe the set inconsistently.
@@ -620,29 +583,6 @@ const codexDevicePollResponse = z
   .meta({ id: "CodexDevicePollResponse" });
 
 export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
-  "/api/auth/check-user": {
-    post: {
-      tags: ["Auth"],
-      summary: "Resolve the next sign-in step for a typed identifier",
-      description:
-        "Given an email or username, returns which onboarding branch the iOS client should render plus the `hasPasskey` / `hasPassword` booleans so it can offer a Passkey affordance alongside a password field without a second round-trip. Anonymous surface; per-IP rate-limited (30 requests / 15 min). The response is the same whether or not the identifier matched, and the identifier is never echoed back.",
-      requestBody: {
-        required: true,
-        content: { "application/json": { schema: checkUserRequest } },
-      },
-      responses: {
-        "200": {
-          description: "Discovery result.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(checkUserResponse, "CheckUserEnvelope"),
-            },
-          },
-        },
-        ...stdResponses,
-      },
-    },
-  },
   "/api/auth/login": {
     post: {
       // No credential: this operation is reachable before one exists.

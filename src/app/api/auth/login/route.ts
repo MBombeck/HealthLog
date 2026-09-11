@@ -69,11 +69,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const { email, password } = parsed.data;
   const identifier = email.trim();
-  // HMAC of the typed identifier — keyed by `API_TOKEN_HMAC_KEY`,
-  // mirrors the `/api/auth/check-user` pattern. The raw identifier
-  // stays out of the audit row (H-1 contract); the hash gives a
-  // future spray-detector a forensic anchor it can correlate across
-  // IPs without having to look up users by email.
+  // HMAC of the typed identifier — keyed by `API_TOKEN_HMAC_KEY`. The
+  // raw identifier stays out of the audit row (H-1 contract); the hash
+  // gives a future spray-detector a forensic anchor it can correlate
+  // across IPs without having to look up users by email.
   const identifierHash = hashToken(identifier);
 
   const user = await prisma.user.findFirst({
