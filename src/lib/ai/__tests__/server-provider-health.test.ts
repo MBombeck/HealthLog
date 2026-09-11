@@ -67,16 +67,29 @@ describe("readServerProviderHealth", () => {
     await expect(readServerProviderHealth(NOW)).resolves.toBe("healthy");
   });
 
-  it("is unhealthy when the last success is older than the window", async () => {
+  it("is unknown when the last outcome was a success, just not a recent one", async () => {
+    // A quiet single-person instance nobody asked anything for two days has
+    // not observed a failure. "It is not working" would be a claim about
+    // something that was never measured; the offer is withheld either way.
     rows({
       lastResult: "ok",
       lastOkAt: ago(SERVER_PROVIDER_FRESH_WINDOW_MS + 60_000),
     });
-    await expect(readServerProviderHealth(NOW)).resolves.toBe("unhealthy");
+    await expect(readServerProviderHealth(NOW)).resolves.toBe("unknown");
   });
 
   it("is unhealthy when rows exist but none ever succeeded", async () => {
     rows({ lastResult: "hard_failed", lastOkAt: null });
+    await expect(readServerProviderHealth(NOW)).resolves.toBe("unhealthy");
+  });
+
+  it("is unhealthy when a stale success is the only thing beside a failure", async () => {
+    // Somebody tried and it failed, and no success has contradicted that
+    // since. That verdict was earned and the card may state it.
+    rows(
+      { lastResult: "ok", lastOkAt: ago(SERVER_PROVIDER_FRESH_WINDOW_MS * 2) },
+      { lastResult: "hard_failed", lastOkAt: null },
+    );
     await expect(readServerProviderHealth(NOW)).resolves.toBe("unhealthy");
   });
 

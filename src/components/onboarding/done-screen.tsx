@@ -35,8 +35,9 @@ interface AiProviderStatus {
   /** Origin of the provider that would serve this user, if any. */
   managedBy?: "user" | "local" | "server" | null;
   /**
-   * v1.38.19 (wave D) — the instance-wide tri-state. Fail closed: `unknown`
-   * is treated exactly like `unhealthy`, here and everywhere.
+   * v1.38.19 (wave D) — the instance-wide tri-state. Fail closed for the
+   * offer: neither `unhealthy` nor `unknown` earns one. Only `unhealthy` is
+   * a verdict this screen may state out loud.
    */
   serverProviderHealth?: "healthy" | "unhealthy" | "unknown";
   /** Whether the shared provider may honestly be offered in one tap. */
@@ -174,17 +175,21 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
     operatorProvides &&
     !consentOnFile &&
     aiProvider?.serverProviderOffer === true;
-  // Only a health verdict paints the "not answering" card. When the offer is
-  // refused for a reason that is not health — the operator switched the
-  // assistant surfaces off, or this is a managed profile whose provider is
-  // the operator's by definition — the panel falls back to its neutral form
-  // and claims nothing either way.
+  // Only a health verdict somebody EARNED paints the "not answering" card —
+  // `unhealthy`, which means the provider was tried and the last thing that
+  // happened was a failure. `unknown` is not that verdict: it is an empty
+  // ledger, which is the state of every instance until its first AI call and
+  // therefore the most common way through this screen. It falls to the
+  // neutral panel, as does every other non-health reason the offer is
+  // withheld (the assistant surfaces switched off, a managed profile whose
+  // provider is the operator's by definition). The neutral panel claims
+  // nothing either way, which is the only honest thing to say about a state
+  // nobody measured.
   const sharedUnavailable =
     operatorProvides &&
     !consentOnFile &&
     !offerShared &&
-    (aiProvider?.serverProviderHealth === "unhealthy" ||
-      aiProvider?.serverProviderHealth === "unknown");
+    aiProvider?.serverProviderHealth === "unhealthy";
 
   return (
     <section

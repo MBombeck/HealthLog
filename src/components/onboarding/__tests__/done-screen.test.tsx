@@ -186,24 +186,41 @@ describe("<DoneScreen> shared-provider offer", () => {
     expect(html).not.toContain('data-slot="onboarding-ai-unavailable"');
   });
 
-  it.each(["unhealthy", "unknown"] as const)(
-    "says the provider is not answering on %s, and offers no button",
-    (health) => {
-      aiProviderState.data = {
-        managedBy: "server",
-        serverProviderHealth: health,
-        serverProviderOffer: false,
-        serverProviderConsent: false,
-      };
-      const html = render();
-      expect(html).toContain('data-slot="onboarding-ai-unavailable"');
-      expect(html).not.toContain('data-slot="onboarding-ai-offer-grant"');
-      expect(html).not.toContain('data-slot="onboarding-ai-shared-key"');
-      // The rest of the panel is untouched in every branch.
-      expect(html).toContain('data-slot="onboarding-ai-keyless"');
-      expect(html).toContain('href="/settings/ai"');
-    },
-  );
+  it("says the provider is not answering only when a failure earned it", () => {
+    aiProviderState.data = {
+      managedBy: "server",
+      serverProviderHealth: "unhealthy",
+      serverProviderOffer: false,
+      serverProviderConsent: false,
+    };
+    const html = render();
+    expect(html).toContain('data-slot="onboarding-ai-unavailable"');
+    expect(html).not.toContain('data-slot="onboarding-ai-offer-grant"');
+    expect(html).not.toContain('data-slot="onboarding-ai-shared-key"');
+    // The rest of the panel is untouched in every branch.
+    expect(html).toContain('data-slot="onboarding-ai-keyless"');
+    expect(html).toContain('href="/settings/ai"');
+  });
+
+  it("claims nothing either way when nobody has measured the provider", () => {
+    // `unknown` is an empty `provider_health` table — the state of every
+    // instance until its first AI call, and the most common way through this
+    // screen. Saying "not answering" there is a claim about something nobody
+    // measured, which is the one thing this panel exists not to do.
+    aiProviderState.data = {
+      managedBy: "server",
+      serverProviderHealth: "unknown",
+      serverProviderOffer: false,
+      serverProviderConsent: false,
+    };
+    const html = render();
+    expect(html).not.toContain('data-slot="onboarding-ai-unavailable"');
+    expect(html).not.toContain('data-slot="onboarding-ai-offer-grant"');
+    expect(html).not.toContain('data-slot="onboarding-ai-shared-key"');
+    // The neutral panel is the whole panel, minus any claim about a provider.
+    expect(html).toContain('data-slot="onboarding-ai-keyless"');
+    expect(html).toContain('href="/settings/ai"');
+  });
 
   it("keeps the shared-key note for the one state it was ever true of", () => {
     aiProviderState.data = {
