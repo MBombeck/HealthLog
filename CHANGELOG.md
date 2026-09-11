@@ -1,5 +1,69 @@
 # Changelog
 
+## [1.38.19] — 2026-09-11
+
+The first run tells you what is actually true about your account, an
+invitation link behaves, and the AI you ask a question to has budget left
+when you ask it.
+
+### Fixed
+
+- **An invitation link opened while you are already signed in no longer
+  offers to register.** It showed a registration form, and completing it
+  quietly swapped the session you were in for a brand new account. The link
+  now says you are signed in and what you can do about it, and the server
+  refuses the registration outright rather than relying on the screen to
+  hide the button.
+
+- **The setup step that connects a device says what is true about it.**
+  Every provider was described as "connected, first sync running", including
+  ones that had never synced and ones nobody had connected. A provider with
+  no history of its own says so now, and the step offers to connect it.
+
+- **The last screen of the setup no longer claims the AI works when nobody
+  has asked it anything.** The offer appeared, and said insights were ready,
+  as soon as an instance had a provider configured. It appears only when
+  that provider has actually answered, and a freshly installed instance says
+  its provider has not been tried yet instead of announcing a failure.
+
+- **A page whose module is switched off says which switch it is** instead of
+  showing an empty page, and the getting-started checklist no longer asks
+  for things that are already done.
+
+- **Background insights can no longer use up the day before you ask a
+  question.** The daily AI limit counted every request against one number,
+  whoever was paying for the model behind it, so a day of automatic insights
+  could leave your own question refused. It is counted per payer now, and a
+  fifth of it is held back for what you do by hand: on a plan you bring
+  yourself the automatic work runs up to 1 600 000 tokens a day and your
+  questions keep 400 000. Nothing changes for an instance whose AI is only
+  used by hand.
+
+### Security
+
+- **The demo account can no longer be taken over through the setup step.**
+  The step that asks for date of birth, height and sex went through a route
+  that accepts eleven fields, including the contact address of the account
+  everyone shares. It writes those three and nothing else now, refused on
+  the server rather than left out of the form.
+
+### Changed
+
+- **`GET /api/integrations/status` can answer `unknown`** for a provider
+  with no sync history, next to the existing values; that case used to be
+  reported as `connected`. The native client does not read this field.
+
+- **`GET /api/user/ai-provider` gains three fields** describing the
+  instance's shared AI: whether it is healthy, untried or failing, whether
+  it may be offered, and whether the person already agreed to it.
+
+- **When the AI limit stops a request, the answer says which ceiling was
+  reached** and whose budget it was.
+
+- **Two migrations run on start** (`0340_coach_usage_operator_tokens`,
+  `0341_arrival_reaction_cost_owner`), both adding one column with a
+  default.
+
 ## [1.38.18] — 2026-09-10
 
 The first run asks what you need and switches on exactly that; the old
