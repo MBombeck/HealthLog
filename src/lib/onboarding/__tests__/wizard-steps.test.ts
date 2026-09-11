@@ -167,6 +167,46 @@ describe("chooseFirstResultTask", () => {
     ).toEqual({ task: "log-reading", target: "weight-body" });
     expect(chooseFirstResultTask(emptyOnboardingNeeds())).toBeNull();
   });
+
+  /**
+   * v1.38.19 (wave B / I1) — the choice used to read the answers alone, so an
+   * account whose WHOOP had been delivering for months was told to go and
+   * connect WHOOP. A source that is already delivering is not a task; the
+   * priority falls through to the next one the person's answers name.
+   */
+  it("passes over a source that is already delivering", () => {
+    const needs: OnboardingNeeds = {
+      ...emptyOnboardingNeeds(),
+      sources: ["whoop", "oura"],
+      medication: "yes",
+      areas: ["sleep"],
+    };
+    expect(chooseFirstResultTask(needs, new Set(["whoop"]))).toEqual({
+      task: "connect-source",
+      target: "oura",
+    });
+    expect(chooseFirstResultTask(needs, new Set(["whoop", "oura"]))).toEqual({
+      task: "add-medication",
+      target: null,
+    });
+    expect(
+      chooseFirstResultTask(
+        { ...needs, medication: "no" },
+        new Set(["whoop", "oura"]),
+      ),
+    ).toEqual({ task: "log-reading", target: "sleep" });
+  });
+
+  it("is unchanged when nothing is known about the connections", () => {
+    const needs: OnboardingNeeds = {
+      ...emptyOnboardingNeeds(),
+      sources: ["whoop"],
+      medication: "yes",
+    };
+    expect(chooseFirstResultTask(needs)).toEqual(
+      chooseFirstResultTask(needs, new Set()),
+    );
+  });
 });
 
 describe("firstResultApplies", () => {

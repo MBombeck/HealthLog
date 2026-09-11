@@ -159,7 +159,22 @@ export function isSyncFailureRecorded(err: unknown): boolean {
  * trail.
  */
 export type IntegrationState =
-  "connected" | "error_transient" | "error_reauth" | "disconnected" | "parked";
+  | "connected"
+  | "error_transient"
+  | "error_reauth"
+  | "disconnected"
+  | "parked"
+  /**
+   * v1.38.19 — no ledger row exists for this (user, provider) pair, so the
+   * ledger has nothing to say. It is NOT a claim about the connection either
+   * way: `connected` used to be the synthetic default here, which made the
+   * field's default read as the opposite of the truth for every account that
+   * had never connected anything — the setup flow's connect step believed it
+   * and told a brand-new account its wearable was connected. Consumers treat
+   * `unknown` the way they treat `disconnected`; `syncHealth.verdict` stays
+   * the only liveness truth.
+   */
+  | "unknown";
 
 /**
  * The ladder at which a streak of failures escalates from "user-visible
@@ -323,9 +338,11 @@ function zeroBuckets(): ConsecutiveFailuresByKind {
 }
 
 /**
- * Read the current snapshot. Returns a synthetic "connected, never
- * attempted" record when no row exists yet — the UI treats this as
- * "no sync history" without a special case.
+ * Read the current snapshot. Returns a synthetic "unknown, never attempted"
+ * record when no row exists yet — the ledger holds no history, and says so
+ * rather than guessing a state. `resolveSyncVerdict` reads the same absence
+ * off the null timestamps and answers `pending_first_sync` for a live
+ * connection, `disconnected` for one that is not there.
  */
 export async function getIntegrationStatus(
   userId: string,
@@ -337,7 +354,7 @@ export async function getIntegrationStatus(
   if (!row) {
     return {
       integration,
-      state: "connected",
+      state: "unknown",
       lastSuccessAt: null,
       lastAttemptAt: null,
       lastError: null,

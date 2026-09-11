@@ -14,5 +14,10 @@ export function resolveManagedIntegrationState(
   connected: Record<IntegrationKey, boolean>,
   integration: IntegrationKey,
 ): IntegrationState {
-  return connected[integration] ? state : "disconnected";
+  if (!connected[integration]) return "disconnected";
+  // v1.38.19 — `unknown` is the ledger saying it holds no row. The managed
+  // projection publishes a closed vocabulary its card paints from, and
+  // "no history" is not one of its states, so it reads as `disconnected`
+  // here exactly as it does everywhere else.
+  return state === "unknown" ? "disconnected" : state;
 }

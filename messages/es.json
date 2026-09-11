@@ -4683,12 +4683,46 @@
         "connect-source": {
           "title": "Conectar {target}",
           "body": "Una conexión, elegida según tus respuestas. Después las mediciones llegan solas.",
-          "howTo": "La conexión se hace en la página de integraciones. Vuelve aquí después; esta pantalla detecta cuándo está lista.",
+          "howTo": "La conexión con {target} se hace en la página de integraciones. Vuelve aquí después; esta pantalla detecta cuándo está lista.",
           "cta": "Conectar {target}",
           "checking": "Comprobando la conexión.",
           "waiting": "Aún no conectado.",
-          "done": "{target} está conectado.",
-          "syncing": "La primera sincronización está en marcha. Las mediciones aparecen en el panel a medida que llegan."
+          "openSettings": "Abrir Ajustes → Integraciones",
+          "noDate": "desconocido",
+          "needsCredentials": {
+            "title": "Esta instancia aún no tiene una aplicación de {target} registrada.",
+            "detail": "Introduce tus propias credenciales en Ajustes → Integraciones y la conexión podrá empezar."
+          },
+          "state": {
+            "pending_first_sync": {
+              "title": "{target} está conectado.",
+              "detail": "La primera sincronización está en marcha. Los valores aparecerán en el panel en cuanto lleguen."
+            },
+            "fresh": {
+              "title": "{target} ya está conectado.",
+              "detail": "Último valor {when}. Aquí no queda nada por hacer."
+            },
+            "stale": {
+              "title": "{target} está conectado, pero ahora mismo no llega nada.",
+              "detail": "Último valor {when}. La conexión en sí está bien."
+            },
+            "stalled": {
+              "title": "{target} está conectado, pero ha dejado de sincronizar.",
+              "detail": "Último intento {when}. Revisa la conexión en Ajustes → Integraciones."
+            },
+            "failing": {
+              "title": "{target} está conectado, pero la sincronización falla.",
+              "detail": "No ha llegado nada desde {when}. Revisa la conexión en Ajustes → Integraciones."
+            },
+            "reauth_required": {
+              "title": "Hay que renovar la conexión con {target}.",
+              "detail": "Inicia sesión una vez más y los valores seguirán llegando."
+            },
+            "parked": {
+              "title": "La conexión con {target} está en pausa.",
+              "detail": "Revisa la conexión en Ajustes → Integraciones."
+            }
+          }
         },
         "add-medication": {
           "title": "Añade tu primer medicamento",

@@ -4683,12 +4683,46 @@
         "connect-source": {
           "title": "Połącz {target}",
           "body": "Jedno połączenie, wybrane na podstawie Twoich odpowiedzi. Potem pomiary przychodzą same.",
-          "howTo": "Połączenie nawiązuje się na stronie integracji. Wróć tutaj później; ten ekran zauważy, kiedy będzie gotowe.",
+          "howTo": "Połączenie z {target} nawiązuje się na stronie integracji. Wróć tutaj później; ten ekran zauważy, kiedy będzie gotowe.",
           "cta": "Połącz {target}",
           "checking": "Sprawdzanie połączenia.",
           "waiting": "Jeszcze nie połączono.",
-          "done": "{target} jest połączone.",
-          "syncing": "Trwa pierwsza synchronizacja. Pomiary pojawią się na panelu, gdy tylko nadejdą."
+          "openSettings": "Otwórz Ustawienia → Integracje",
+          "noDate": "nieznany",
+          "needsCredentials": {
+            "title": "Ta instancja nie ma jeszcze zapisanej aplikacji {target}.",
+            "detail": "Wpisz własne dane dostępowe w Ustawieniach → Integracje, wtedy połączenie będzie mogło ruszyć."
+          },
+          "state": {
+            "pending_first_sync": {
+              "title": "{target} jest połączony.",
+              "detail": "Trwa pierwsza synchronizacja. Wartości pojawią się na pulpicie, gdy tylko dotrą."
+            },
+            "fresh": {
+              "title": "{target} jest już połączony.",
+              "detail": "Ostatnia wartość {when}. Tutaj nie ma już nic do zrobienia."
+            },
+            "stale": {
+              "title": "{target} jest połączony, ale w tej chwili nic nie przychodzi.",
+              "detail": "Ostatnia wartość {when}. Samo połączenie jest w porządku."
+            },
+            "stalled": {
+              "title": "{target} jest połączony, ale synchronizacja się zatrzymała.",
+              "detail": "Ostatnia próba {when}. Sprawdź połączenie w Ustawieniach → Integracje."
+            },
+            "failing": {
+              "title": "{target} jest połączony, ale synchronizacja się nie udaje.",
+              "detail": "Od {when} nic nie dotarło. Sprawdź połączenie w Ustawieniach → Integracje."
+            },
+            "reauth_required": {
+              "title": "Połączenie z {target} wymaga odnowienia.",
+              "detail": "Zaloguj się jeszcze raz, a wartości popłyną dalej."
+            },
+            "parked": {
+              "title": "Połączenie z {target} jest wstrzymane.",
+              "detail": "Sprawdź połączenie w Ustawieniach → Integracje."
+            }
+          }
         },
         "add-medication": {
           "title": "Dodaj swój pierwszy lek",

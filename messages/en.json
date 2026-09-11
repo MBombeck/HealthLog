@@ -4683,12 +4683,46 @@
         "connect-source": {
           "title": "Connect {target}",
           "body": "One connection, chosen from your answers. Readings then arrive on their own.",
-          "howTo": "The connection is made on the integrations page. Come back here afterwards; this screen notices when it is done.",
+          "howTo": "The connection to {target} is made on the integrations page. Come back here afterwards; this screen notices when it is done.",
           "cta": "Connect {target}",
           "checking": "Checking the connection.",
           "waiting": "Not connected yet.",
-          "done": "{target} is connected.",
-          "syncing": "The first sync is in progress. Readings appear on the dashboard as they arrive."
+          "openSettings": "Open Settings → Integrations",
+          "noDate": "unknown",
+          "needsCredentials": {
+            "title": "This instance has no {target} app on file yet.",
+            "detail": "Enter your own credentials under Settings → Integrations, then the connection can start."
+          },
+          "state": {
+            "pending_first_sync": {
+              "title": "{target} is connected.",
+              "detail": "The first sync is in progress. Readings appear on the dashboard as they arrive."
+            },
+            "fresh": {
+              "title": "{target} is already connected.",
+              "detail": "Last reading {when}. Nothing left to do here."
+            },
+            "stale": {
+              "title": "{target} is connected, but nothing is arriving right now.",
+              "detail": "Last reading {when}. The connection itself is fine."
+            },
+            "stalled": {
+              "title": "{target} is connected, but it has stopped syncing.",
+              "detail": "Last attempt {when}. Check the connection under Settings → Integrations."
+            },
+            "failing": {
+              "title": "{target} is connected, but the sync keeps failing.",
+              "detail": "Nothing has come through since {when}. Check the connection under Settings → Integrations."
+            },
+            "reauth_required": {
+              "title": "The connection to {target} needs renewing.",
+              "detail": "Sign in once more and the readings carry on."
+            },
+            "parked": {
+              "title": "The connection to {target} is paused.",
+              "detail": "Check the connection under Settings → Integrations."
+            }
+          }
         },
         "add-medication": {
           "title": "Add your first medication",
