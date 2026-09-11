@@ -32,6 +32,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   buildDateKey: vi.fn(() => "2026-07-16"),
   reserveBudget: vi.fn(),
   reconcileSpend: vi.fn().mockResolvedValue(undefined),
+  resolveDailyCapFor: vi.fn(() => 100_000),
 }));
 vi.mock("@/lib/ai/ai-budgets", () => ({
   AI_BUDGETS: { ocrExtractText: { temperature: 0, maxTokens: 2000 } },
@@ -99,6 +100,8 @@ beforeEach(() => {
     allowed: true,
     reserved: 10,
     totalAfter: 10,
+    owner: "operator",
+    operatorAfter: 10,
   } as Awaited<ReturnType<typeof reserveBudget>>);
   mockExtract.mockResolvedValue({
     reportDate: "2026-07-10",

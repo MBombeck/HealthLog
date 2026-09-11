@@ -44,6 +44,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   // returns a distinctive figure so an accidental default-cap regression is
   // visible in the assertion rather than silently passing.
   resolveDailyCap: vi.fn(() => 1_234_567),
+  resolveDailyCapFor: vi.fn(() => 1_234_567),
   resolveCostOwner: vi.fn(() => "user" as const),
 }));
 

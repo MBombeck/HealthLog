@@ -29,6 +29,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   reserveBudget: vi.fn().mockResolvedValue({ allowed: true, reserved: 600 }),
   reconcileSpend: vi.fn().mockResolvedValue(undefined),
   resolveDailyCap: vi.fn(() => 100000),
+  resolveDailyCapFor: vi.fn(() => 100000),
   resolveCostOwner: vi.fn(() => "operator" as const),
 }));
 vi.mock("@/lib/ai/provider-runner", () => ({

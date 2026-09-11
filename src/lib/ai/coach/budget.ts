@@ -69,6 +69,34 @@ export function resolveDailyCap(
 }
 
 /**
+ * v1.38.19 (Wave E) — the share of a day's ceiling that BACKGROUND generation
+ * may reserve, all job surfaces together.
+ *
+ * Production evidence (2026-09-11): the operator's account wrote 150–330
+ * ledger rows a day, 172 of them `insights.metric` generations before 06:42Z.
+ * The automatic work had eaten the day before he opened the chat. Half the
+ * ceiling keeps the interactive surfaces a day of their own no matter how much
+ * background generation the instance schedules.
+ */
+export const JOB_SURFACE_SHARE = 0.5;
+
+/**
+ * v1.38.19 (Wave E) — the daily ceiling for one SURFACE on a chain. `"coach"`
+ * (every interactive surface: the chat, the extraction routes, the document
+ * routes, the connection probe) gets the whole ceiling; `"job"` (the automatic
+ * generators) gets `JOB_SURFACE_SHARE` of it. The cost owner is unchanged —
+ * this only rations how much of the owner's ceiling a background surface may
+ * claim.
+ */
+export function resolveDailyCapFor(
+  surface: "coach" | "job",
+  chain: ReadonlyArray<{ providerType: ProviderChainType }>,
+): number {
+  const cap = resolveDailyCap(chain);
+  return surface === "job" ? Math.floor(cap * JOB_SURFACE_SHARE) : cap;
+}
+
+/**
  * v1.37.19 (A7-2) — does this provider spend the OPERATOR's money?
  * `admin-openai` (the server's own API key) and `admin-codex` (the
  * server's shared ChatGPT account) do; everything else is the user's own

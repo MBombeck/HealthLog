@@ -128,6 +128,33 @@ describe("runStatusCompletion — ledger accounting", () => {
     expect(ledgerTotal).toBe(1234);
   });
 
+  it("refuses a background generation at the job share while the chat still runs", async () => {
+    // Wave E — the automatic status/reference generators may spend at most
+    // half the operator ceiling, so the interactive chat still has a day left
+    // when the jobs have had theirs. One token past the job share:
+    ledgerTotal = 100_001;
+    ledgerOperator = 100_001;
+    mockProviderReply(500);
+
+    const result = await runStatusCompletion(completionArgs());
+
+    expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
+    expect(result.kind).toBe("error");
+
+    // The same spend, reserved by the interactive coach ceiling, is admitted.
+    const { reserveBudget, resolveDailyCap, resolveCostOwner } =
+      await import("@/lib/ai/coach/budget");
+    const chatChain = [{ providerType: "admin-openai" as const }];
+    const chat = await reserveBudget(
+      "u1",
+      3_000,
+      "2026-09-11",
+      resolveDailyCap(chatChain),
+      resolveCostOwner(chatChain),
+    );
+    expect(chat.allowed).toBe(true);
+  });
+
   it("charges the reservation when the provider reports no token count", async () => {
     mockProviderReply(null);
 

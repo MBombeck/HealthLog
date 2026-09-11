@@ -42,7 +42,7 @@ import {
   buildDateKey,
   reconcileSpend,
   resolveCostOwner,
-  resolveDailyCap,
+  resolveDailyCapFor,
   type BudgetCostOwner,
 } from "@/lib/ai/coach/budget";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
@@ -553,7 +553,8 @@ export async function runReactionLine(
         job.userId,
         revision,
         buildDateKey(),
-        resolveDailyCap(chain),
+        // v1.38.19 (Wave E) — a background surface: half the day's ceiling.
+        resolveDailyCapFor("job", chain),
         resolveCostOwner(chain),
       );
     } catch (err) {

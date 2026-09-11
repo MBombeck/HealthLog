@@ -31,7 +31,7 @@ import {
   reconcileSpend,
   reserveBudget,
   resolveCostOwner,
-  resolveDailyCap,
+  resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
 import {
   loadOwnedDocument,
@@ -191,7 +191,8 @@ export async function runDocumentSummaryJob(
     userId,
     AI_BUDGETS.documentSummary.maxTokens,
     dateKey,
-    resolveDailyCap([{ providerType: pick.entry.providerType }]),
+    // v1.38.19 (Wave E) — a background surface: half the day's ceiling.
+    resolveDailyCapFor("job", [{ providerType: pick.entry.providerType }]),
     resolveCostOwner([{ providerType: pick.entry.providerType }]),
   );
   // Budget exhausted → skip (no local fallback for a summary).

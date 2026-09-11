@@ -88,6 +88,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   reserveBudget: (...a: unknown[]) => reserveBudget(...a),
   reconcileSpend: (...a: unknown[]) => reconcileSpend(...a),
   resolveDailyCap: () => 200_000,
+  resolveDailyCapFor: () => 200_000,
   resolveCostOwner: () => "operator" as const,
 }));
 

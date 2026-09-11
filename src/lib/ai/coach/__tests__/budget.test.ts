@@ -4,8 +4,10 @@ import {
   buildDateKey,
   OPERATOR_COST_CAP,
   USER_PLAN_CAP,
+  JOB_SURFACE_SHARE,
   resolveCostOwner,
   resolveDailyCap,
+  resolveDailyCapFor,
 } from "../budget";
 
 vi.mock("@/lib/db", () => ({
@@ -198,6 +200,40 @@ describe("reserveBudget cap (F1 — user-plan path not locked out)", () => {
  * `totalAfter: 513539` against the 200 k operator ceiling. Comparing the total
  * is the defect; the operator ceiling may only see operator-funded tokens.
  */
+/**
+ * v1.38.19 (Wave E) — background generation gets a bounded slice of the day.
+ *
+ * Production evidence (2026-09-11): 150–330 ledger rows a day on the
+ * operator's account, 172 `insights.metric` generations by 06:42Z — the
+ * automatic jobs had spent the day's ceiling before he opened the chat. A
+ * background surface may reserve at most half of the interactive ceiling.
+ */
+describe("resolveDailyCapFor (Wave E — the job share)", () => {
+  it("gives a background surface half the operator ceiling", () => {
+    expect(resolveDailyCapFor("job", [{ providerType: "admin-openai" }])).toBe(
+      OPERATOR_COST_CAP * JOB_SURFACE_SHARE,
+    );
+    expect(resolveDailyCapFor("job", [{ providerType: "admin-openai" }])).toBe(
+      100_000,
+    );
+  });
+
+  it("leaves the interactive surfaces the whole ceiling", () => {
+    expect(
+      resolveDailyCapFor("coach", [{ providerType: "admin-openai" }]),
+    ).toBe(OPERATOR_COST_CAP);
+    expect(resolveDailyCapFor("coach", [{ providerType: "codex" }])).toBe(
+      USER_PLAN_CAP,
+    );
+  });
+
+  it("shares the user-plan ceiling the same way", () => {
+    expect(resolveDailyCapFor("job", [{ providerType: "codex" }])).toBe(
+      USER_PLAN_CAP * JOB_SURFACE_SHARE,
+    );
+  });
+});
+
 describe("reserveBudget cap by cost owner (Wave E)", () => {
   let prismaMock: {
     $queryRaw: ReturnType<typeof vi.fn>;

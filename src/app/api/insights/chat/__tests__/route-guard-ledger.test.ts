@@ -127,6 +127,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   reserveBudget,
   reconcileSpend,
   resolveDailyCap: vi.fn(() => 2_000_000),
+  resolveDailyCapFor: vi.fn(() => 2_000_000),
   resolveCostOwner: vi.fn(() => "user" as const),
 }));
 

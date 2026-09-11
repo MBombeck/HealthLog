@@ -46,6 +46,7 @@ const budgetMocks = vi.hoisted(() => ({
   })),
   reconcileSpend: vi.fn(async () => {}),
   resolveDailyCap: vi.fn(() => 200_000),
+  resolveDailyCapFor: vi.fn(() => 200_000),
   resolveCostOwner: vi.fn(() => "operator" as const),
 }));
 vi.mock("@/lib/ai/coach/budget", () => budgetMocks);

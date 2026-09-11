@@ -14,12 +14,12 @@
  *
  * This is the same accounting the status tier uses, not a second mechanism:
  * `reserveBudget` (one atomic upsert-increment, no read-then-write window) +
- * `resolveDailyCap(chain)` for the cost owner + `reconcileSpend` against the
+ * `resolveDailyCapFor("job", chain)` for the cost owner + `reconcileSpend` against the
  * provider's reported count. Every provider call on the briefing path routes
  * through here, so a retry is reserved and charged like any other call — a
  * user at the ceiling does not get a free correction pass.
  *
- * The cap follows the COST OWNER, not the surface. `resolveDailyCap` charges
+ * The cap follows the COST OWNER. `resolveDailyCapFor` charges
  * the operator ceiling only when the chain's primary is the operator's own
  * credential (`admin-openai` / `admin-codex`); a self-hoster on their own key,
  * their own ChatGPT plan, or a local model is measured against the generous
@@ -40,7 +40,7 @@ import {
   reconcileSpend,
   reserveBudget,
   resolveCostOwner,
-  resolveDailyCap,
+  resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
 import { singleUserTurn } from "@/lib/ai/types";
 import { annotate } from "@/lib/logging/context";
@@ -122,7 +122,8 @@ export async function runBriefingCompletion(
     args.userId,
     estimatedTokens,
     dateKey,
-    resolveDailyCap(args.chain),
+    // v1.38.19 (Wave E) — a background surface: half the day's ceiling.
+    resolveDailyCapFor("job", args.chain),
     resolveCostOwner(args.chain),
   );
   if (!reservation.allowed) {

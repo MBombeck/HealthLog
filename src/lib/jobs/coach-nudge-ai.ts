@@ -44,7 +44,7 @@ import {
   reconcileSpend,
   reserveBudget,
   resolveCostOwner,
-  resolveDailyCap,
+  resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { singleUserTurn } from "@/lib/ai/types";
@@ -191,7 +191,8 @@ export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
 
     const budget = AI_BUDGETS.coachNudge;
     const maxTokens = budget.maxTokens ?? 160;
-    const dailyCap = resolveDailyCap(chain);
+    // v1.38.19 (Wave E) — a background surface: half the day's ceiling.
+    const dailyCap = resolveDailyCapFor("job", chain);
     const dateKey = buildDateKey();
 
     // Per-user budget gate (atomic reserve; refunds itself on refusal).

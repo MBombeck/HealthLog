@@ -14,7 +14,7 @@ import {
   reconcileSpend,
   reserveBudget,
   resolveCostOwner,
-  resolveDailyCap,
+  resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
 import { AI_BUDGETS, REFERENCE_AI_SEED } from "@/lib/ai/ai-budgets";
 import { singleUserTurn } from "@/lib/ai/types";
@@ -211,7 +211,7 @@ export async function runStatusCompletion(
   // prompt we are about to send — and reconcile against the provider's reported
   // count afterwards, refunding in full when nothing was generated.
   //
-  // The cap follows the COST OWNER, not the surface: `resolveDailyCap` charges
+  // The cap follows the COST OWNER: `resolveDailyCapFor` charges
   // the operator ceiling only when the chain's primary is the operator's own
   // credential (`admin-openai` / `admin-codex`). A self-hoster on their own key
   // or a local model is measured against the generous user-plan ceiling, so
@@ -223,7 +223,8 @@ export async function runStatusCompletion(
     userId,
     estimatedTokens,
     dateKey,
-    resolveDailyCap(chain),
+    // v1.38.19 (Wave E) — a background surface: half the day's ceiling.
+    resolveDailyCapFor("job", chain),
     resolveCostOwner(chain),
   );
   if (!reservation.allowed) {

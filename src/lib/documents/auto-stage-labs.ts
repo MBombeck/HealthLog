@@ -32,6 +32,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
 import { loadDocumentChatText } from "@/lib/documents/content-index";
 import { resolveIndexProvider } from "@/lib/documents/index-document";
@@ -276,13 +277,17 @@ export async function maybeAutoStageLabFacts(
   }
 
   // A text-structuring pass, not a vision call — reserve the proportionate
-  // ceiling under the same daily cap the auto-index resolved.
+  // ceiling under the cost owner the auto-index resolved.
+  // v1.38.19 (Wave E) — auto-staging runs off the upload, with no one waiting
+  // on it: a background surface, so half the day's ceiling.
   const dateKey = buildDateKey();
   const reservation = await reserveBudget(
     userId,
     AI_BUDGETS.ocrExtractText.maxTokens,
     dateKey,
-    provider.dailyCap,
+    resolveDailyCapFor("job", [
+      { providerType: provider.pick.entry.providerType },
+    ]),
     provider.costOwner,
   );
   if (!reservation.allowed) return { staged: false, reason: "budget" };
