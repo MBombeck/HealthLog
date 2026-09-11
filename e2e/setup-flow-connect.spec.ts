@@ -94,10 +94,22 @@ async function seedDeliveringOura(): Promise<void> {
   }
 }
 
-/** Walk the questions through the API, then open the screen under test. */
-async function reachFirstResult(page: Page): Promise<void> {
+/**
+ * Walk the questions through the API, then open the screen under test.
+ *
+ * `areas` decides whether the priority has anywhere to fall to when the Q4
+ * source turns out to be connected already: a Q2 area is a `log-reading` task,
+ * an empty Q2 is nothing.
+ */
+async function reachFirstResult(
+  page: Page,
+  areas: readonly string[],
+): Promise<void> {
   await answer(page, { step: "who", recordTarget: "me" });
-  await answer(page, { step: "areas", areas: ["sleep"] });
+  await answer(page, {
+    step: "areas",
+    ...(areas.length > 0 ? { areas } : { status: "skipped" }),
+  });
   await answer(page, { step: "medication", medication: "no" });
   await answer(page, { step: "sources", sources: ["oura"] });
   await answer(page, { step: "visit", visit: "no" });
@@ -112,6 +124,10 @@ async function reachFirstResult(page: Page): Promise<void> {
   // Every assertion below is about what the screen says once it KNOWS.
   await settled;
 }
+
+// The three cases drive the one account, each setting up a different
+// connection state. Run in parallel they would each walk the others' state.
+test.describe.configure({ mode: "serial" });
 
 test.describe("setup flow — a wearable on Q4", () => {
   test.use({ storageState: SETUP_CONNECT_STORAGE_STATE_PATH });
@@ -130,7 +146,7 @@ test.describe("setup flow — a wearable on Q4", () => {
   }) => {
     test.setTimeout(90_000);
     await page.goto("/onboarding");
-    await reachFirstResult(page);
+    await reachFirstResult(page, ["sleep"]);
 
     // The tile the screen settled on: either the connect card, or — on an
     // instance with no Oura app configured — the credentials note. Never a
@@ -149,20 +165,39 @@ test.describe("setup flow — a wearable on Q4", () => {
     expect(me.onboarding.firstResult?.completedAt ?? null).toBeNull();
   });
 
+  test("offers the next task instead of a connection that already works", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await seedDeliveringOura();
+    await page.goto("/onboarding");
+    await reachFirstResult(page, ["sleep"]);
+
+    // The answers name one area as well, so the priority has somewhere to
+    // fall to and the flow ends on something the person can actually do.
+    await expect(page.locator("section[data-task]")).toHaveAttribute(
+      "data-task",
+      "log-reading",
+    );
+    await expect(
+      page.locator('[data-slot="onboarding-task-connect"]'),
+    ).toHaveCount(0);
+  });
+
   test("acknowledges a connection that is already delivering", async ({
     page,
   }) => {
     test.setTimeout(90_000);
     await seedDeliveringOura();
     await page.goto("/onboarding");
-    await reachFirstResult(page);
+    // Q2 passed over, so the connection is the only task the answers name.
+    await reachFirstResult(page, []);
 
     const tile = page.locator('[data-connect-slot="result"]');
     await expect(tile).toBeVisible({ timeout: 15_000 });
     await expect(tile).toHaveAttribute("data-connect-state", "fresh");
 
-    // The heading is the acknowledgment, not an offer: the connect CTA that
-    // used to sit under "Oura verbinden" is gone.
+    // The acknowledgment replaces the offer: the connect CTA is gone.
     await expect(
       page.locator('[data-slot="onboarding-task-connect"]'),
     ).toHaveCount(0);
