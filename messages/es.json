@@ -125,7 +125,8 @@
       "update": {
         "nothingSaved": "No se guardó nada. Revisa el campo marcado e inténtalo de nuevo.",
         "invalidBody": "No se pudo leer la actualización del perfil.",
-        "emailInUse": "Esta dirección de correo ya está en uso."
+        "emailInUse": "Esta dirección de correo ya está en uso.",
+        "emailRateLimited": "Demasiados cambios de dirección de correo. Inténtalo más tarde."
       }
     }
   },

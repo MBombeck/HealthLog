@@ -13,6 +13,7 @@ import {
   invalidateUserProfile,
 } from "@/lib/cache/invalidate";
 import { sanitiseZodIssues, type SanitisedZodIssue } from "@/lib/api-response";
+import { checkProfileEmailRateLimit } from "@/lib/rate-limit";
 import { z } from "zod/v4";
 
 const extendedProfileSchema = profileSchema.extend({
@@ -238,17 +239,45 @@ export async function applyProfileUpdate(
   const normalizedEmail = data.email ? data.email.trim().toLowerCase() : null;
 
   if (data.email !== undefined && normalizedEmail) {
-    const existing = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true },
+    // A settings form re-posts the whole profile, so the address arrives
+    // with every save whether or not it changed. Those saves ask nothing
+    // about anyone else's account — the address on file already belongs to
+    // this caller — so they skip both the uniqueness probe and the budget.
+    // Charging them would spend an honest afternoon of edits on the
+    // ceiling and lock the account out of its own settings page.
+    const current = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
     });
-    if (existing && existing.id !== userId) {
-      return {
-        ok: false,
-        status: 409,
-        message: "Email already in use",
-        errorCode: "profile.update.emailInUse",
-      };
+
+    if (current?.email !== normalizedEmail) {
+      // Charged BEFORE the probe, not after: a refused request must not
+      // learn the answer it was refused for. The 409 below tells any
+      // signed-in caller whether an address is registered here, and until
+      // this bucket existed neither route that reaches it had a ceiling of
+      // any kind — `apiHandler` supplies no default.
+      const rl = await checkProfileEmailRateLimit(userId);
+      if (!rl.allowed) {
+        return {
+          ok: false,
+          status: 429,
+          message: "Too many email-address changes. Try again later.",
+          errorCode: "profile.update.emailRateLimited",
+        };
+      }
+
+      const existing = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+        select: { id: true },
+      });
+      if (existing && existing.id !== userId) {
+        return {
+          ok: false,
+          status: 409,
+          message: "Email already in use",
+          errorCode: "profile.update.emailInUse",
+        };
+      }
     }
   }
 

@@ -125,7 +125,8 @@
       "update": {
         "nothingSaved": "Rien n'a été enregistré. Corrigez le champ signalé et réessayez.",
         "invalidBody": "La mise à jour du profil n'a pas pu être lue.",
-        "emailInUse": "Cette adresse e-mail est déjà utilisée."
+        "emailInUse": "Cette adresse e-mail est déjà utilisée.",
+        "emailRateLimited": "Trop de changements d'adresse e-mail. Réessayez plus tard."
       }
     }
   },

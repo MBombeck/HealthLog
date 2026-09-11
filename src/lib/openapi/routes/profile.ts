@@ -46,6 +46,7 @@ import {
   errorEnvelope,
   invalidBaseTokenResponse,
   malformedJsonResponse,
+  profileEmailRateLimitResponse,
   recordRefusal,
   stdResponses,
   updatedAtTokenField,
@@ -1476,7 +1477,13 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
+        "409": {
+          description:
+            "The requested email belongs to another account (`meta.errorCode` = `profile.update.emailInUse`). Nothing was written. Shared with PUT /api/auth/profile, which runs the same handler.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         ...stdResponses,
+        ...profileEmailRateLimitResponse,
       },
     },
   },

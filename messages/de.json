@@ -125,7 +125,8 @@
       "update": {
         "nothingSaved": "Es wurde nichts gespeichert. Korrigiere das markierte Feld und versuche es erneut.",
         "invalidBody": "Die Profilaktualisierung konnte nicht gelesen werden.",
-        "emailInUse": "Diese E-Mail-Adresse wird bereits verwendet."
+        "emailInUse": "Diese E-Mail-Adresse wird bereits verwendet.",
+        "emailRateLimited": "Zu viele Änderungen der E-Mail-Adresse. Versuche es später erneut."
       }
     }
   },

@@ -6,6 +6,9 @@ vi.mock("@/lib/db", () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    // The email-address change is metered before it asks whether another
+    // account holds the address; the limiter talks to Postgres directly.
+    $queryRaw: vi.fn(),
   },
 }));
 
@@ -34,6 +37,10 @@ const STUB_USER = {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.user.update).mockResolvedValue(STUB_USER as never);
+  // A bucket with room left, unless a test says otherwise.
+  vi.mocked(prisma.$queryRaw).mockResolvedValue([
+    { count: 1, reset_at: new Date(Date.now() + 60_000) },
+  ] as never);
 });
 
 describe("applyProfileUpdate timezone validation", () => {

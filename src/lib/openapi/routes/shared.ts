@@ -318,6 +318,32 @@ export const recordWriteRateLimitResponse = {
   },
 };
 
+/**
+ * The 429 the profile email-address bucket answers with.
+ *
+ * Changing the address asks whether another account already holds it, and the
+ * answer is a 409 versus a 200 — an existence check over every address on the
+ * instance, available to any signed-in caller. Neither route that reaches it
+ * had a ceiling of any kind, and `apiHandler` supplies no default, so the
+ * sweep was bounded only by the network. This is the response that names the
+ * bucket now capping it.
+ *
+ * Spread AFTER `...stdResponses` so it replaces the generic 429 on those two
+ * operations. The headers block is the one the standard 429 already declares.
+ *
+ * `profile-email-rate-limit-contract.test.ts` holds the numbers in this
+ * sentence to the constants in `src/lib/rate-limit.ts`, so the paragraph
+ * cannot drift away from the bucket it describes.
+ */
+export const profileEmailRateLimitResponse = {
+  "429": {
+    description:
+      "Too many email-address changes. The address change shares one per-account bucket across both profile routes — `profile-email:<accountId>`, 10 requests per 3600 seconds — keyed on the ACTING account, so an account cannot collect a fresh allowance by probing a different address. Nothing was written. `meta.errorCode` is `profile.update.emailRateLimited`. Only a request whose `email` actually differs from the address on file is counted: re-saving a form that carries the unchanged address is free, and so is any update that does not touch `email` at all. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers describe that bucket; back off on `Retry-After` rather than guessing.",
+    content: { "application/json": { schema: errorEnvelope } },
+    headers: stdResponses["429"].headers,
+  },
+};
+
 // ── Idempotent writes ────────────────────────────────────────────────
 
 /**

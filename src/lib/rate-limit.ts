@@ -161,6 +161,43 @@ export async function checkRecordWriteRateLimit(
 }
 
 /**
+ * Per-account ceiling for the profile email-address change.
+ *
+ * Changing the address means asking whether another account already holds
+ * it, and the answer to that question is 409 versus 200 — an existence check
+ * over every address on the instance, available to any signed-in caller. The
+ * two routes that reach it (`PUT /api/auth/profile`, `PATCH
+ * /api/user/profile`) had no ceiling at all and `apiHandler` supplies none,
+ * so a single account could walk an address book at whatever rate it liked.
+ *
+ * Keyed on the acting account rather than on the address, the frozen
+ * precedent from the record writes: an attacker cannot collect a fresh
+ * allowance by switching the address they probe, and one account's sweep
+ * cannot lock a stranger out of their own settings page.
+ *
+ * Ten an hour is far above honest use — an address is changed once in a
+ * while, not ten times a day — and it is only charged when the submitted
+ * address actually differs from the one on file, so re-saving a settings
+ * form that carries the unchanged address never spends the budget. What it
+ * ends is the unbounded sweep: two hundred and forty questions a day per
+ * account, each with an audit row beside it, instead of as many as the
+ * network will carry.
+ */
+export const PROFILE_EMAIL_BUCKET_PREFIX = "profile-email";
+export const PROFILE_EMAIL_LIMIT = 10;
+export const PROFILE_EMAIL_WINDOW_MS = 60 * 60 * 1000;
+
+export async function checkProfileEmailRateLimit(
+  accountId: string,
+): Promise<RateLimitResult> {
+  return checkRateLimit(
+    `${PROFILE_EMAIL_BUCKET_PREFIX}:${accountId}`,
+    PROFILE_EMAIL_LIMIT,
+    PROFILE_EMAIL_WINDOW_MS,
+  );
+}
+
+/**
  * v1.22.0 — per-credential ceiling for the remote MCP endpoint (`/mcp`).
  * The bucket is keyed by the `<userId>:<tokenId>` binding the Bearer
  * resolver surfaces — NOT the user alone — so a single leaked / shared

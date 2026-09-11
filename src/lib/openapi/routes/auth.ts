@@ -38,6 +38,7 @@ import {
 } from "@/lib/validations/step-up";
 import {
   dataEnvelope,
+  profileEmailRateLimitResponse,
   stdResponses,
   errorEnvelope,
   loginPasswordSchema,
@@ -1766,6 +1767,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
+        ...profileEmailRateLimitResponse,
         "422": {
           description:
             "Either the body was not a usable object (`meta.errorCode` = `profile.update.invalidBody`) or every supplied field was rejected (`profile.update.nothingSaved`). Both carry the per-field issue list. A body where SOME fields validate never reaches this response — it succeeds with `rejectedFields`.",
