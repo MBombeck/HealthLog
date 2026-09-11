@@ -9,6 +9,7 @@ import {
   CHECKLIST_BASE_ITEM_IDS,
   CHECKLIST_ITEM_IDS,
   isProfileComplete,
+  isStillInSetup,
   shouldShowChecklist,
   trendHintFor,
   upcomingVisitCountFrom,
@@ -606,5 +607,77 @@ describe("shouldShowChecklist and the setup flow", () => {
         onboarding: untouched,
       }),
     ).toBe(false);
+  });
+});
+
+describe("isStillInSetup", () => {
+  // The one predicate both the visibility rule and the component's query gate
+  // read, so the card can never render with its supporting queries switched
+  // off (research I9).
+  it("is true for a record that ran the flow, whatever its reading count", () => {
+    expect(
+      isStillInSetup({
+        onboarding: onboardingState(),
+        onboardingCompletedAt: "2026-01-01T00:00:00Z",
+        measurementCount: 120,
+      }),
+    ).toBe(true);
+  });
+
+  it("is true for a restarted run nobody finished (M-p)", () => {
+    const restarted = onboardingState({ completedAt: null });
+    expect(
+      isStillInSetup({
+        onboarding: restarted,
+        // `restart` deliberately leaves the account stamp alone.
+        onboardingCompletedAt: "2026-01-01T00:00:00Z",
+        measurementCount: 120,
+      }),
+    ).toBe(true);
+  });
+
+  it("keeps the pre-flow rule for a record that never entered the flow", () => {
+    const untouched: OnboardingStateDto = {
+      steps: defaultOnboardingSteps(),
+      needs: emptyOnboardingNeeds(),
+      completedAt: null,
+      firstResult: null,
+    };
+    expect(
+      isStillInSetup({
+        onboarding: untouched,
+        onboardingCompletedAt: "2026-01-01T00:00:00Z",
+        measurementCount: 10,
+      }),
+    ).toBe(false);
+    expect(
+      isStillInSetup({
+        onboarding: untouched,
+        onboardingCompletedAt: "2026-01-01T00:00:00Z",
+        measurementCount: 4,
+      }),
+    ).toBe(true);
+    expect(
+      isStillInSetup({
+        onboarding: null,
+        onboardingCompletedAt: null,
+        measurementCount: 10,
+      }),
+    ).toBe(true);
+  });
+
+  it("is the rule `shouldShowChecklist` itself applies", () => {
+    const args = {
+      onboarding: onboardingState(),
+      onboardingCompletedAt: "2026-01-01T00:00:00Z",
+      measurementCount: 120,
+    };
+    expect(
+      shouldShowChecklist({
+        ...args,
+        dismissedAll: false,
+        items: buildChecklist(inputs({ measurementCount: 120 })),
+      }),
+    ).toBe(isStillInSetup(args));
   });
 });

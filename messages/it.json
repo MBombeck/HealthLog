@@ -4666,6 +4666,7 @@
         "alwaysOn": "Sempre attivi: {modules} e le misurazioni di base (peso, pressione, polso).",
         "everythingElse": "Tutto il resto resta a un clic in",
         "modulesLink": "Impostazioni, Moduli",
+        "switchesOff": "Fuori dalla navigazione: {modules}. Puoi riattivarli quando vuoi in Impostazioni, Moduli.",
         "glucoseUnit": "Glicemia",
         "unitPreference": "Unità",
         "language": "Lingua",

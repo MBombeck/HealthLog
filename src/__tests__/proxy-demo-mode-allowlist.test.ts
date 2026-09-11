@@ -106,6 +106,36 @@ describe("proxy.ts DEMO_MODE mutation allowlist", () => {
     expect(missing, "onboarding writes the demo cannot make").toEqual([]);
   });
 
+  it("permits the baseline writes the confirm screen makes (M-m)", () => {
+    // v1.39 (Wave C, C6) — a demo visitor who typed a height got a 403 and a
+    // generic toast, and "someone I look after" could only take "Finish
+    // without the profile": the three writes the confirm screen makes were
+    // not on the list. None of them is health data — the account's own
+    // profile fields, the encrypted self-context the anamnesis card writes,
+    // and the managed record the flow's guardian arm creates.
+    for (const [path, method] of [
+      ["/api/auth/profile", "PUT"],
+      ["/api/coach/about-me", "PUT"],
+      ["/api/managed-profiles", "POST"],
+    ] as const) {
+      expect(
+        proxy(makeRequest(path, method)).status,
+        `${method} ${path} is blocked in the demo`,
+      ).not.toBe(403);
+    }
+  });
+
+  it("does not drag in a sibling verb on the baseline paths", () => {
+    expect(proxy(makeRequest("/api/auth/profile", "DELETE")).status).toBe(403);
+    expect(proxy(makeRequest("/api/managed-profiles", "DELETE")).status).toBe(
+      403,
+    );
+    // The per-profile routes are a different path and stay closed.
+    expect(
+      proxy(makeRequest("/api/managed-profiles/abc", "DELETE")).status,
+    ).toBe(403);
+  });
+
   it("still blocks a health-data mutation (POST /api/measurements)", () => {
     const res = proxy(makeRequest("/api/measurements", "POST"));
     expect(res.status).toBe(403);

@@ -4666,6 +4666,7 @@
         "alwaysOn": "Immer an: {modules} und die Kernwerte (Gewicht, Blutdruck, Puls).",
         "everythingElse": "Alles andere bleibt einen Klick entfernt unter",
         "modulesLink": "Einstellungen, Module",
+        "switchesOff": "Nicht mehr in der Navigation: {modules}. Jederzeit unter Einstellungen, Module wieder einschaltbar.",
         "glucoseUnit": "Blutzucker",
         "unitPreference": "Einheiten",
         "language": "Sprache",

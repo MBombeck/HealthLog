@@ -174,6 +174,19 @@ const DEMO_MUTATION_ALLOWLIST: ReadonlyArray<{ path: string; method: string }> =
     // Neither creates health data.
     { path: "/api/onboarding/disclaimer", method: "POST" },
     { path: "/api/onboarding/tour", method: "POST" },
+    // v1.39 (Wave C, C6) — the three writes the confirm screen makes. Without
+    // them a demo visitor who typed a height got a 403 and a generic toast,
+    // and the "someone I look after" arm could only take "Finish without the
+    // profile" — only the empty-form/Skip path completed, so the demo did not
+    // in fact walk the same flow (design spec §Principles 5). None of the
+    // three creates health data: the caller's own profile fields, the
+    // encrypted self-context behind the optional anamnesis card, and the
+    // managed record the guardian arm of the flow exists to create. The
+    // per-profile routes (`/api/managed-profiles/{id}`, its guardians) are
+    // different paths and stay closed.
+    { path: "/api/auth/profile", method: "PUT" },
+    { path: "/api/coach/about-me", method: "PUT" },
+    { path: "/api/managed-profiles", method: "POST" },
   ];
 
 // Legacy route redirects (German → English)

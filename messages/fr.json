@@ -4666,6 +4666,7 @@
         "alwaysOn": "Toujours actifs : {modules}, et les mesures de base (poids, tension, pouls).",
         "everythingElse": "Tout le reste reste à un clic dans",
         "modulesLink": "Réglages, Modules",
+        "switchesOff": "Hors de la navigation : {modules}. Tu peux les réactiver à tout moment dans Réglages, Modules.",
         "glucoseUnit": "Glycémie",
         "unitPreference": "Unités",
         "language": "Langue",

@@ -31,12 +31,19 @@ const SRC = join(process.cwd(), "src");
 const PROFILE_ROUTES = ["/api/auth/profile", "/api/user/profile"];
 
 function sourceFiles(): string[] {
-  return walkSourceFiles(SRC, { floor: 3000 })
-    .filter((p) => !p.startsWith("generated/"))
-    .filter((p) => !p.startsWith("app/api/"))
-    .filter((p) => !p.includes("__tests__"))
-    .filter((p) => !p.endsWith(".test.ts") && !p.endsWith(".test.tsx"))
-    .sort();
+  return (
+    walkSourceFiles(SRC, { floor: 3000 })
+      .filter((p) => !p.startsWith("generated/"))
+      .filter((p) => !p.startsWith("app/api/"))
+      // v1.39 (Wave C, C6) — the edge proxy names routes and methods as DATA
+      // (the demo-mode mutation allowlist is a list of path/method pairs), and
+      // a pair reads to the matcher below exactly like a request expression. It
+      // submits nothing and has no answer to read.
+      .filter((p) => p !== "proxy.ts")
+      .filter((p) => !p.includes("__tests__"))
+      .filter((p) => !p.endsWith(".test.ts") && !p.endsWith(".test.tsx"))
+      .sort()
+  );
 }
 
 function read(rel: string): string {

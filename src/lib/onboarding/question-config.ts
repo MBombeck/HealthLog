@@ -110,9 +110,15 @@ function only<T extends string>(
 
 /**
  * The body for one answered step, or null when the selection cannot be an
- * answer (Q1 with nothing chosen). Every arm names its field; a value that is
- * not in the step's vocabulary is dropped rather than sent, so the strict
- * server schema never sees a chip this file did not offer.
+ * answer. Every arm names its field; a value that is not in the step's
+ * vocabulary is dropped rather than sent, so the strict server schema never
+ * sees a chip this file did not offer.
+ *
+ * v1.39 (Wave C, C3) — an empty tick list is not an answer either (research
+ * I4). The many-answer arms used to send `[]` and mark the step DONE, and an
+ * answered Q2 with no areas is what switched every optional module off for
+ * somebody whose click meant "no preference". Skip is the way past a question
+ * nobody wants to answer, and Skip is the conservative derivation.
  */
 export function questionAnswerBody(
   step: QuestionStepId,
@@ -123,14 +129,18 @@ export function questionAnswerBody(
       const [recordTarget] = only(ONBOARDING_RECORD_TARGETS, selected);
       return recordTarget ? { step, recordTarget } : null;
     }
-    case "areas":
-      return { step, areas: only(ONBOARDING_AREA_KEYS, selected) };
+    case "areas": {
+      const areas = only(ONBOARDING_AREA_KEYS, selected);
+      return areas.length > 0 ? { step, areas } : null;
+    }
     case "medication": {
       const [medication] = only(ONBOARDING_MEDICATION_ANSWERS, selected);
       return medication ? { step, medication } : null;
     }
-    case "sources":
-      return { step, sources: only(ONBOARDING_SOURCE_KEYS, selected) };
+    case "sources": {
+      const sources = only(ONBOARDING_SOURCE_KEYS, selected);
+      return sources.length > 0 ? { step, sources } : null;
+    }
     case "visit": {
       const [visit] = only(ONBOARDING_VISIT_ANSWERS, selected);
       return visit ? { step, visit } : null;
@@ -171,7 +181,7 @@ export function unitsAnswerBody(input: {
   asked: { glucose: boolean; weight: boolean };
   glucoseUnit: "mg/dL" | "mmol/L" | null;
   unitPreference: "metric" | "imperial" | null;
-}): OnboardingAnswerInput {
+}): OnboardingAnswerInput | null {
   const units: {
     glucoseUnit?: "mg/dL" | "mmol/L";
     unitPreference?: "metric" | "imperial";
@@ -182,5 +192,7 @@ export function unitsAnswerBody(input: {
   if (input.asked.weight && input.unitPreference) {
     units.unitPreference = input.unitPreference;
   }
-  return { step: "units", units };
+  // v1.39 (Wave C, C3) — nothing chosen is not an answer (M-k): an empty
+  // units body marked Q6 done while recording no preference at all.
+  return Object.keys(units).length > 0 ? { step: "units", units } : null;
 }
