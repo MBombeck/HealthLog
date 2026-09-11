@@ -262,6 +262,74 @@ describe("<DoneScreen> shared-provider offer", () => {
     expect(html).not.toContain('data-slot="onboarding-ai-unavailable"');
   });
 
+  /**
+   * The whole decision table, in one place.
+   *
+   * Three arms the screen can be in — the offer is available, the offer is
+   * withheld for a reason that is not health (the assistant surfaces switched
+   * off, a managed profile), a receipt is already on file — crossed with the
+   * three health states. The point of the cross is that HEALTH decides the
+   * claim in every arm: the consent arm used to promise "insights work for
+   * you right now" without reading health at all, which told somebody who had
+   * consented that a dead provider was working. That is the same unmeasured
+   * claim as the `unknown` case at the other end of the panel.
+   */
+  const TABLE = [
+    { arm: "offerable", consent: false, health: "healthy", state: "offer" },
+    {
+      arm: "offerable",
+      consent: false,
+      health: "unhealthy",
+      state: "unavailable",
+    },
+    { arm: "offerable", consent: false, health: "unknown", state: "neutral" },
+    { arm: "withheld", consent: false, health: "healthy", state: "neutral" },
+    {
+      arm: "withheld",
+      consent: false,
+      health: "unhealthy",
+      state: "unavailable",
+    },
+    { arm: "withheld", consent: false, health: "unknown", state: "neutral" },
+    { arm: "consented", consent: true, health: "healthy", state: "consent" },
+    {
+      arm: "consented",
+      consent: true,
+      health: "unhealthy",
+      state: "unavailable",
+    },
+    { arm: "consented", consent: true, health: "unknown", state: "neutral" },
+  ] as const;
+
+  it.each(TABLE)(
+    "settles on $state when the offer is $arm and the provider is $health",
+    ({ arm, consent, health, state }) => {
+      aiProviderState.data = {
+        managedBy: "server",
+        serverProviderHealth: health,
+        // The server only ever offers on `healthy`, and never with a receipt
+        // on file; the withheld arm is the flags-off / managed-profile case.
+        serverProviderOffer: arm === "offerable" && health === "healthy",
+        serverProviderConsent: consent,
+      };
+      const html = render();
+      expect(html).toContain(`data-ai-state="${state}"`);
+      // The positive sentence appears in exactly one of the nine cells.
+      expect(html.includes('data-slot="onboarding-ai-shared-key"')).toBe(
+        state === "consent",
+      );
+      expect(html.includes('data-slot="onboarding-ai-unavailable"')).toBe(
+        state === "unavailable",
+      );
+      expect(html.includes('data-slot="onboarding-ai-offer-grant"')).toBe(
+        state === "offer",
+      );
+      // The rest of the panel is untouched in every cell.
+      expect(html).toContain('data-slot="onboarding-ai-keyless"');
+      expect(html).toContain('href="/settings/ai"');
+    },
+  );
+
   it("grants through the affirmative web intent — the only path that may lift a revocation", async () => {
     mutations.length = 0;
     apiFetchRaw.mockReset();

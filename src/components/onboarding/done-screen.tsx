@@ -169,12 +169,22 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
   });
 
   const operatorProvides = aiProvider?.managedBy === "server";
+  const sharedHealth = aiProvider?.serverProviderHealth;
   const consentOnFile =
     justGranted || aiProvider?.serverProviderConsent === true;
   const offerShared =
     operatorProvides &&
     !consentOnFile &&
     aiProvider?.serverProviderOffer === true;
+  // A receipt on file is a fact about the ACCOUNT; it says nothing about
+  // whether the provider works. This line used to promise "insights work for
+  // you right now" on the strength of the receipt alone, so somebody who had
+  // just consented was told a dead provider was serving them — the same
+  // unmeasured claim as the offer's, made at the other end of the panel. The
+  // positive sentence is now earned by health as well, and a consented
+  // account on a broken provider reads the same honest note as anybody else.
+  const sharedKeyNote =
+    operatorProvides && consentOnFile && sharedHealth === "healthy";
   // Only a health verdict somebody EARNED paints the "not answering" card —
   // `unhealthy`, which means the provider was tried and the last thing that
   // happened was a failure. `unknown` is not that verdict: it is an empty
@@ -187,9 +197,9 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
   // nobody measured.
   const sharedUnavailable =
     operatorProvides &&
-    !consentOnFile &&
+    !sharedKeyNote &&
     !offerShared &&
-    aiProvider?.serverProviderHealth === "unhealthy";
+    sharedHealth === "unhealthy";
 
   return (
     <section
@@ -233,7 +243,7 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
         data-ai-state={
           aiProvider === undefined
             ? undefined
-            : consentOnFile && operatorProvides
+            : sharedKeyNote
               ? "consent"
               : offerShared
                 ? "offer"
@@ -278,7 +288,7 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
           </Button>
         )}
 
-        {consentOnFile && operatorProvides ? (
+        {sharedKeyNote ? (
           <p
             data-slot="onboarding-ai-shared-key"
             className="text-foreground bg-primary/5 border-primary/20 rounded-lg border px-3 py-2 text-sm leading-relaxed"
