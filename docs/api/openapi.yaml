@@ -20425,9 +20425,9 @@ paths:
       deprecated: true
       tags:
         - Retired
-      summary: POST /api/auth/check-user — removed in v1.38.19
+      summary: POST /api/auth/check-user — removed in v1.38.20
       description: >-
-        Removed in v1.38.19. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        Removed in v1.38.20. Every request to this path answers 410 Gone, whatever the method and whatever credential it
         carries. There is no replacement; the capability is gone rather than moved.
 
 
@@ -20443,7 +20443,7 @@ paths:
         do not offer a retry.
       responses:
         "410":
-          description: The path was removed in v1.38.19 and will not answer again. `meta.errorCode` = `route.retired`,
+          description: The path was removed in v1.38.20 and will not answer again. `meta.errorCode` = `route.retired`,
             `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
           content:
             application/json:

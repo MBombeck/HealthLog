@@ -146,7 +146,7 @@ export const RETIRED_ROUTES: readonly RetiredRoute[] = [
   },
   {
     path: "/api/auth/check-user",
-    removedIn: "1.38.19",
+    removedIn: "1.38.20",
     replacedBy: null,
     reason:
       "Took an email address or a username and answered, to any caller and with no credential at all, whether an account existed here and whether it carried a passkey or a password. It was built to decide which field a sign-in screen shows first, which is not worth telling the world who has an account. Send the credential to POST /api/auth/login or run the passkey ceremony and read the answer; both refuse identically whether or not the account exists.",
