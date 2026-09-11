@@ -193,6 +193,21 @@ test.describe("delegated writes", () => {
     // And the row it created is not theirs to change. Absent, not disabled:
     // a `toBeDisabled()` assertion here would pass against the exact design
     // this release exists to avoid.
+    //
+    // The list has to have painted the reading first. Both layouts stamp
+    // `measurement-row` and only the mounted one exists, so this holds at
+    // either viewport and says the rows really arrived — without it every
+    // count below is a statement about an empty or still-loading list.
+    const rows = page.getByTestId("measurement-row");
+    await expect(rows.first()).toBeVisible({ timeout: 30_000 });
+
+    // The selection column is the gate. `canManage` is false below MANAGE, so
+    // no row carries a checkbox — which is what makes the bulk bar
+    // unreachable rather than merely unrendered. The bar on its own proved
+    // nothing here: it renders on `count > 0`, and with nothing selected an
+    // owner meets no bar either, so that assertion could not fail for the
+    // reason this comment gives.
+    await expect(rows.getByRole("checkbox")).toHaveCount(0);
     await expect(
       page.locator('[data-slot="selection-action-bar"]'),
     ).toHaveCount(0);

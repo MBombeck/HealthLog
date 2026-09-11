@@ -51,6 +51,14 @@ test.describe("medication wizard — one-shot", () => {
       (url) => url.pathname === "/medications" && !url.searchParams.has("new"),
     );
 
+    // The replay this guards against can only happen once the client shell is
+    // live and the URL effect has run, and until `/api/auth/me` resolves the
+    // protected shell paints nothing at all — so the absence has to hang on
+    // the hydrated page. The hero title is the medications page's own
+    // heading, and it renders only in the settled branch.
+    await expect(page.locator('[data-tour-id="medications-hero"]')).toBeVisible(
+      { timeout: 30_000 },
+    );
     await expect(
       page.locator('[data-slot="medication-wizard-dialog"]'),
     ).toHaveCount(0);

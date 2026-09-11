@@ -145,13 +145,26 @@ async function openRecord(page: Page, username: string) {
   return { accountId, accessLevel, recordKind };
 }
 
+/**
+ * Leave the record and prove the own-record shell is back.
+ *
+ * Leaving replaces the document, and the protected shell renders its
+ * hydration gate — no nav, no banner, no page body — until `/api/auth/me`
+ * resolves. "The banner is gone" is true of that gate as well, so on its own
+ * it is satisfied by the document on its way out and is not a wait at all.
+ * The top bar only exists past the gate, so it is the anchor the absence
+ * hangs on.
+ */
 async function leaveRecord(page: Page) {
-  // Leaving is the same act pointed the other way, and it has the same gap.
-  // The banner being gone is satisfied by the document that is on its way out,
-  // so on its own it is not a wait at all.
   await withDocumentReplacement(page, () =>
     page.locator('[data-slot="shared-record-banner-exit"]').click(),
   );
+  await expect(
+    page.locator('[data-slot="record-scope-hydration-gate"]'),
+  ).toHaveCount(0, { timeout: 30_000 });
+  await expect(page.locator('[data-slot="top-bar"]')).toBeVisible({
+    timeout: 30_000,
+  });
   await expect(page.locator('[data-slot="shared-record-banner"]')).toHaveCount(
     0,
     { timeout: 30_000 },
@@ -432,6 +445,19 @@ test.describe.serial("scoped sharing browser journeys", () => {
     await expect(banner).toContainText(record.username);
 
     await page.goto("/measurements");
+    // Two gates stand between the navigation and the page: the shell's own
+    // hold on `/api/auth/me`, and the route's own `PageAuthGate`. Both paint
+    // a page with no header action on it, so the absence has to hang on the
+    // header the button would have sat in. The hero title renders in the same
+    // `PageHeader` whose `actions` slot the button fills, and only in the
+    // settled branch, so it says the header really rendered without the
+    // button rather than not having rendered yet.
+    await expect(banner).toBeVisible({ timeout: 30_000 });
+    await expect(
+      page.locator('[data-tour-id="measurements-hero"]'),
+    ).toBeVisible({
+      timeout: 30_000,
+    });
     await expect(page.locator('[data-slot="measurement-add"]')).toHaveCount(0);
 
     await page.goto("/settings/account");
@@ -569,8 +595,13 @@ test.describe.serial("scoped sharing browser journeys", () => {
       data?: { recordId?: string };
     };
     expect(integrationPayload.data?.recordId).toBe(accountId);
+    // The loading branch of this card emits the same family attribute with
+    // `aria-busy="true"` on it, and a skeleton holds zero controls — so the
+    // read-only claim below passes against a card that never arrived. The
+    // settled card is the one that labels itself by its own title id, so the
+    // locator names that instead of the family alone.
     const integrations = page.locator(
-      '[data-record-settings-family="integrations"]',
+      '[data-record-settings-family="integrations"][aria-labelledby="managed-integration-status-title"]',
     );
     await expect(integrations).toBeVisible();
     await expect(integrations).toHaveAttribute("data-record-id", accountId);

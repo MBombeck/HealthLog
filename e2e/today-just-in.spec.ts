@@ -204,9 +204,10 @@ test("a fresh arrival flips the day in place", async ({ page }) => {
     // mean something: a note that was never rendered is also absent at the
     // end, and a day that was already final also reads final at the end.
     await page.goto("/");
-    await expect(page.locator('[data-slot="today-hero-skeleton"]')).toHaveCount(
-      0,
-    );
+    // No wait on the skeleton being gone: it is also gone while the protected
+    // shell holds the whole page behind its hydration gate, so it resolves
+    // before the digest has rendered anything. The hero count below is the
+    // wait, and it is a wait on the content itself.
     const hero = page.locator('[data-slot="today-hero"]');
     // Counts rather than visibility, matching the AFTER block: the two are
     // then the same assertion with the expected number flipped, and neither
