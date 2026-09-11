@@ -125,7 +125,8 @@
       "update": {
         "nothingSaved": "Nic nie zostało zapisane. Sprawdź oznaczone pole i spróbuj ponownie.",
         "invalidBody": "Nie udało się odczytać aktualizacji profilu.",
-        "emailInUse": "Ten adres e-mail jest już używany."
+        "emailInUse": "Ten adres e-mail jest już używany.",
+        "emailRateLimited": "Zbyt wiele zmian adresu e-mail. Spróbuj ponownie później."
       }
     }
   },
@@ -5508,6 +5509,7 @@
       "invalidValue": "To nie jest jedna z odpowiedzi, które przyjmuje to pole.",
       "invalidFormat": "To nie jest zapisane w formacie, który to pole może odczytać.",
       "invalidType": "Wartość nie dotarła w formacie, który to pole może zapisać.",
+      "rateLimited": "Zmieniane zbyt często. Odczekaj chwilę i spróbuj ponownie.",
       "other": "Ta wartość nie została przyjęta. Sprawdź ją i spróbuj ponownie."
     },
     "avatar": {

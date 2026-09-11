@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { loginPasswordSchema } from "@/lib/validations/auth";
-import { verifyPassword } from "@/lib/auth/password";
+import { verifyPasswordOrDummy } from "@/lib/auth/password";
 import { auditLog } from "@/lib/auth/audit";
 import { hashToken } from "@/lib/auth/hmac";
 import {
@@ -69,11 +69,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const { email, password } = parsed.data;
   const identifier = email.trim();
-  // HMAC of the typed identifier — keyed by `API_TOKEN_HMAC_KEY`,
-  // mirrors the `/api/auth/check-user` pattern. The raw identifier
-  // stays out of the audit row (H-1 contract); the hash gives a
-  // future spray-detector a forensic anchor it can correlate across
-  // IPs without having to look up users by email.
+  // HMAC of the typed identifier — keyed by `API_TOKEN_HMAC_KEY`. The
+  // raw identifier stays out of the audit row (H-1 contract); the hash
+  // gives a future spray-detector a forensic anchor it can correlate
+  // across IPs without having to look up users by email.
   const identifierHash = hashToken(identifier);
 
   const user = await prisma.user.findFirst({
@@ -84,6 +83,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
       ],
     },
   });
+
+  // One verification for every outcome. An unknown identifier and an
+  // account carrying no password hash (a passkey-only account) used to
+  // return here before any hashing, so the three answers cost one indexed
+  // SELECT, one indexed SELECT, and a full Argon2id verification
+  // respectively — identical bodies, three different durations, which is a
+  // readable answer to "is this address registered, and does it have a
+  // password". `verifyPasswordOrDummy` verifies against a fixed dummy hash
+  // minted at the same cost parameters when there is no stored hash, and
+  // returns false. Keep the call ahead of the branch: moving it back under
+  // an `if` restores the channel.
+  const valid = await verifyPasswordOrDummy(user?.passwordHash, password);
 
   if (!user || !user.passwordHash) {
     // v1.4.43 W3-SECURITY (H-1): never write the typed identifier into
@@ -99,7 +110,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Invalid credentials", 401);
   }
 
-  const valid = await verifyPassword(user.passwordHash, password);
   if (!valid) {
     await auditLog("auth.login.failed", {
       userId: user.id,

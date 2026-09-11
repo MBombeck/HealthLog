@@ -125,7 +125,8 @@
       "update": {
         "nothingSaved": "Es wurde nichts gespeichert. Korrigiere das markierte Feld und versuche es erneut.",
         "invalidBody": "Die Profilaktualisierung konnte nicht gelesen werden.",
-        "emailInUse": "Diese E-Mail-Adresse wird bereits verwendet."
+        "emailInUse": "Diese E-Mail-Adresse wird bereits verwendet.",
+        "emailRateLimited": "Zu viele Änderungen der E-Mail-Adresse. Versuche es später erneut."
       }
     }
   },
@@ -5508,6 +5509,7 @@
       "invalidValue": "Das ist keine der Antworten, die dieses Feld annimmt.",
       "invalidFormat": "Das ist nicht in einer Form geschrieben, die dieses Feld lesen kann.",
       "invalidType": "Der Wert kam nicht in einer Form an, die dieses Feld speichern kann.",
+      "rateLimited": "Zu oft geändert. Warte kurz und versuche es dann erneut.",
       "other": "Dieser Wert wurde nicht angenommen. Bitte prüfen und erneut versuchen."
     },
     "avatar": {

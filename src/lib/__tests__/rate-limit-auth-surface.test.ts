@@ -146,7 +146,6 @@ describe("checkAuthSurfaceRateLimit — trust-violation tightening", () => {
         ["auth:passkey-login-options", 10],
         ["auth:passkey-verify", 10],
         ["auth:refresh", 60],
-        ["auth:check-user", 30],
       ];
       const seenKeys = new Set<string>();
       for (const [prefix, limit] of surfaces) {

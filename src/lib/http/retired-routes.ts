@@ -55,14 +55,17 @@
  * client's repository, not in this one, and an inference drawn from this side
  * would be a guess wearing a citation. Nothing below is a claim about a caller.
  *
- * How the set was found: every route path under `src/app` at every release tag,
- * unioned, then differenced against the current tree. Twenty-seven paths have
- * been removed across the project's history. The five here are the ones that
- * were published or client-facing. The other twenty-two are admin-console
- * routes, operator diagnostics, aggregators superseded in place, and the
- * moodLog bridge — surfaces reachable only from the operator's own browser,
- * which ships with the server and reads no contract to find out what it talks
- * to. `moodlog-removal-guard.test.ts` separately holds that bridge removed.
+ * How the set was seeded: every route path under `src/app` at every release
+ * tag, unioned, then differenced against the current tree. Twenty-seven paths
+ * had been removed across the project's history up to that point. Five of them
+ * were published or client-facing and are the first five entries below; the
+ * other twenty-two are admin-console routes, operator diagnostics, aggregators
+ * superseded in place, and the moodLog bridge — surfaces reachable only from
+ * the operator's own browser, which ships with the server and reads no
+ * contract to find out what it talks to. `moodlog-removal-guard.test.ts`
+ * separately holds that bridge removed. Every entry after those five was
+ * written by the release that removed the path, which is where a tombstone
+ * belongs.
  *
  * Sample tags instead of all of them and this undercounts badly: six evenly
  * spaced tags find fourteen of the twenty-seven, because a path added and
@@ -140,6 +143,14 @@ export const RETIRED_ROUTES: readonly RetiredRoute[] = [
     reason:
       "The whole-record operation moved under the resource type it operates on, which is where FHIR R4 defines it and where the capability statement points.",
     methods: ["GET"],
+  },
+  {
+    path: "/api/auth/check-user",
+    removedIn: "1.38.20",
+    replacedBy: null,
+    reason:
+      "Took an email address or a username and answered, to any caller and with no credential at all, whether an account existed here and whether it carried a passkey or a password. It was built to decide which field a sign-in screen shows first, which is not worth telling the world who has an account. Send the credential to POST /api/auth/login or run the passkey ceremony and read the answer; both refuse identically whether or not the account exists.",
+    methods: ["POST"],
   },
   {
     path: "/api/auth/me/research-mode",

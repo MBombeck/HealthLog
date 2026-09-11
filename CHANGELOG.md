@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.38.20] — 2026-09-11
+
+Signing in no longer tells anybody which addresses have an account here.
+
+### Security
+
+- **Signing in now takes the same time whether or not the account exists.**
+  A wrong password and an address nobody has registered here have always
+  given you the same answer on screen, but the server used to reach that
+  answer much faster when there was no account to check, and the same when
+  the account signs in with a passkey and has no password at all. Someone
+  probing the sign-in page could read that difference and learn which
+  addresses are registered, and which of those have a password. Every
+  refusal now does the same work before it answers.
+- **Changing your email address is limited to ten changes an hour.** The
+  server tells you when the address you typed already belongs to another
+  account, which is the only sensible thing to say to someone who typed one.
+  Nothing stopped a signed-in caller from asking that question over and over
+  about addresses that were not theirs. Ten an hour per account is far above
+  any real use of the field, and a save that leaves your address as it is
+  does not count against it. If you hit the limit while saving other things
+  on the settings page, those are saved and only the address is held back,
+  with a note under the field. If you write against the API, a request that
+  asked for nothing but the address gets a 429 on `PUT /api/auth/profile`
+  and `PATCH /api/user/profile` with `meta.errorCode` set to
+  `profile.update.emailRateLimited` and a `Retry-After` header saying how
+  long to wait; a request that carried other fields gets 200 with `email`
+  listed in `rejectedFields` under the code `rate_limited`.
+
+### Removed
+
+- **The endpoint that answered whether an address has an account here is
+  gone.** `POST /api/auth/check-user` took an email address or a username
+  and said, to anyone who asked and without any sign-in, whether an account
+  existed and whether it had a passkey or a password. It was built to decide
+  which field a sign-in screen shows first, which is not worth telling the
+  world who has an account here. The path now answers 410 and says so in the
+  API reference rather than disappearing, so anything still calling it gets
+  a clear "this is gone, stop retrying" instead of a 404 that looks like a
+  broken server. If you wrote something against it, the sign-in request
+  itself is the replacement: send the credential and read the answer.
+
 ## [1.38.19] — 2026-09-11
 
 The first run tells you what is actually true about your account, an

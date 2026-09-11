@@ -250,6 +250,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     practitioner: ["practitioner.invalid"],
     profile: [
       "profile.update.emailInUse",
+      "profile.update.emailRateLimited",
       "profile.update.invalidBody",
       "profile.update.nothingSaved",
     ],

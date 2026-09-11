@@ -13,6 +13,8 @@ import {
   invalidateUserProfile,
 } from "@/lib/cache/invalidate";
 import { sanitiseZodIssues, type SanitisedZodIssue } from "@/lib/api-response";
+import { checkProfileEmailRateLimit } from "@/lib/rate-limit";
+import { annotate } from "@/lib/logging/context";
 import { z } from "zod/v4";
 
 const extendedProfileSchema = profileSchema.extend({
@@ -238,17 +240,95 @@ export async function applyProfileUpdate(
   const normalizedEmail = data.email ? data.email.trim().toLowerCase() : null;
 
   if (data.email !== undefined && normalizedEmail) {
-    const existing = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true },
+    // A settings form re-posts the whole profile, so the address arrives
+    // with every save whether or not it changed. Those saves ask nothing
+    // about anyone else's account — the address on file already belongs to
+    // this caller — so they skip both the uniqueness probe and the budget.
+    // Charging them would spend an honest afternoon of edits on the
+    // ceiling and lock the account out of its own settings page.
+    //
+    // The stored side is normalised for the comparison too. Registration
+    // writes the address exactly as typed, so an account registered as
+    // `MixedCase@Example.com` would otherwise fail to match its own address
+    // and pay for its first ordinary save.
+    const current = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
     });
-    if (existing && existing.id !== userId) {
-      return {
-        ok: false,
-        status: 409,
-        message: "Email already in use",
-        errorCode: "profile.update.emailInUse",
-      };
+    const addressOnFile = current?.email?.trim().toLowerCase() ?? null;
+
+    if (addressOnFile !== normalizedEmail) {
+      // Charged BEFORE the probe, not after: a refused request must not
+      // learn the answer it was refused for. The 409 below tells any
+      // signed-in caller whether an address is registered here, and until
+      // this bucket existed neither route that reaches it had a ceiling of
+      // any kind — `apiHandler` supplies no default.
+      const rl = await checkProfileEmailRateLimit(userId);
+      if (!rl.allowed) {
+        annotate({ action: { name: "profile.email.throttled" } });
+        await auditLog("profile.email.rate_limited", {
+          userId,
+          ipAddress: ipAddress ?? null,
+        });
+
+        // Narrow the refusal to the field, the way the demo narrowing above
+        // does: the web form posts the whole profile in one request, so
+        // failing all of it would stop somebody setting their timezone for
+        // an hour and tell them it was about email addresses. The address is
+        // dropped, everything else is saved, and `rejectedFields` says which
+        // field did not go through.
+        const { email: _refusedAddress, ...keepable } = data;
+        if (Object.keys(keepable).length > 0) {
+          data = keepable;
+          rejectedFields = [
+            ...rejectedFields,
+            {
+              path: "email",
+              code: "rate_limited",
+              message: "Too many email-address changes.",
+            },
+          ];
+        } else {
+          // Nothing else was asked for, so there is nothing to salvage and a
+          // partial success would be a lie — the same rule the all-fields-
+          // rejected 422 above follows. This is the arm the published 429
+          // describes.
+          return {
+            ok: false,
+            status: 429,
+            message: "Too many email-address changes. Try again later.",
+            errorCode: "profile.update.emailRateLimited",
+          };
+        }
+      } else {
+        // Case-sensitive, because the column is: registration writes the
+        // address as typed, so `Mixed@Example.com` and `mixed@example.com`
+        // are two rows this probe cannot see as one. Pre-existing and not
+        // widened here — the fix is a normalisation pass on the register
+        // write, which is where the two spellings are created.
+        const existing = await prisma.user.findUnique({
+          where: { email: normalizedEmail },
+          select: { id: true },
+        });
+        if (existing && existing.id !== userId) {
+          // The informative answer is the one worth recording: it says an
+          // account holds that address. The ordinary save's `profile.update`
+          // row is written further down and this path never reaches it, so
+          // without a row here the only probes in the ledger would be the
+          // ones that came back negative.
+          annotate({ action: { name: "profile.email.conflict" } });
+          await auditLog("profile.email.conflict", {
+            userId,
+            ipAddress: ipAddress ?? null,
+          });
+          return {
+            ok: false,
+            status: 409,
+            message: "Email already in use",
+            errorCode: "profile.update.emailInUse",
+          };
+        }
+      }
     }
   }
 

@@ -125,7 +125,8 @@
       "update": {
         "nothingSaved": "Nothing was saved. Check the highlighted field and try again.",
         "invalidBody": "The profile update could not be read.",
-        "emailInUse": "This email address is already in use."
+        "emailInUse": "This email address is already in use.",
+        "emailRateLimited": "Too many email-address changes. Try again later."
       }
     }
   },
@@ -5508,6 +5509,7 @@
       "invalidValue": "That is not one of the answers this field accepts.",
       "invalidFormat": "That is not written in a form this field can read.",
       "invalidType": "That value did not arrive in a form this field can store.",
+      "rateLimited": "Changed too often. Wait a little and try again.",
       "other": "This value was not accepted. Check it and try again."
     },
     "avatar": {

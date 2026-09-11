@@ -14,7 +14,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/auth/password", () => ({
-  verifyPassword: vi.fn(),
+  verifyPasswordOrDummy: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/mfa-enrollment", () => ({
@@ -73,7 +73,7 @@ vi.mock("next/headers", () => ({
 
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
-import { verifyPassword } from "@/lib/auth/password";
+import { verifyPasswordOrDummy } from "@/lib/auth/password";
 import {
   checkRateLimit,
   checkAuthSurfaceRateLimit,
@@ -108,7 +108,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.user.findFirst).mockResolvedValue(FAKE_USER as never);
   vi.mocked(prisma.webauthnMfaCredential.count).mockResolvedValue(0 as never);
-  vi.mocked(verifyPassword).mockResolvedValue(true);
+  vi.mocked(verifyPasswordOrDummy).mockResolvedValue(true);
   vi.mocked(prisma.apiToken.create).mockResolvedValue({ id: "tok-1" } as never);
   vi.mocked(prisma.refreshToken.create).mockResolvedValue({
     id: "rt-1",

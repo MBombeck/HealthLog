@@ -125,7 +125,8 @@
       "update": {
         "nothingSaved": "Rien n'a été enregistré. Corrigez le champ signalé et réessayez.",
         "invalidBody": "La mise à jour du profil n'a pas pu être lue.",
-        "emailInUse": "Cette adresse e-mail est déjà utilisée."
+        "emailInUse": "Cette adresse e-mail est déjà utilisée.",
+        "emailRateLimited": "Trop de changements d'adresse e-mail. Réessayez plus tard."
       }
     }
   },
@@ -5508,6 +5509,7 @@
       "invalidValue": "Ce n'est pas une des réponses acceptées par ce champ.",
       "invalidFormat": "Ce n'est pas écrit dans un format que ce champ peut lire.",
       "invalidType": "La valeur n'est pas arrivée dans un format que ce champ peut enregistrer.",
+      "rateLimited": "Modifié trop souvent. Patientez un peu et réessayez.",
       "other": "Cette valeur n'a pas été acceptée. Vérifiez-la et réessayez."
     },
     "avatar": {

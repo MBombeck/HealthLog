@@ -17,7 +17,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/auth/password", () => ({
-  verifyPassword: vi.fn(),
+  verifyPasswordOrDummy: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
@@ -71,7 +71,7 @@ vi.mock("next/headers", () => ({
 
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
-import { verifyPassword } from "@/lib/auth/password";
+import { verifyPasswordOrDummy } from "@/lib/auth/password";
 import { auditLog } from "@/lib/auth/audit";
 import {
   checkRateLimit,
@@ -93,7 +93,7 @@ function makeRequest(): NextRequest {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.user.findFirst).mockResolvedValue(null as never);
-  vi.mocked(verifyPassword).mockResolvedValue(false);
+  vi.mocked(verifyPasswordOrDummy).mockResolvedValue(false);
   vi.mocked(auditLog).mockResolvedValue(undefined as never);
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
@@ -175,7 +175,7 @@ describe("POST /api/auth/login — OIDC_ONLY server-side enforcement", () => {
 
     const res = await POST(makeRequest());
     // Falls through to normal password verification (which fails here
-    // since verifyPassword is mocked to return false) rather than 403 —
+    // since verifyPasswordOrDummy is mocked to return false) rather than 403 —
     // a half-set OIDC group must never lock everyone out.
     expect(res.status).toBe(401);
   });
