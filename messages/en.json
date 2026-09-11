@@ -4661,6 +4661,7 @@
         "alwaysOn": "Always on: {modules}, and the core readings (weight, blood pressure, pulse).",
         "everythingElse": "Everything else stays one click away under",
         "modulesLink": "Settings, Modules",
+        "switchesOff": "Out of the navigation: {modules}. You can switch any of them back on under Settings, Modules.",
         "glucoseUnit": "Blood glucose",
         "unitPreference": "Units",
         "language": "Language",

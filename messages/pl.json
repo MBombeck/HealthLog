@@ -4661,6 +4661,7 @@
         "alwaysOn": "Zawsze włączone: {modules} oraz podstawowe pomiary (waga, ciśnienie, tętno).",
         "everythingElse": "Cała reszta jest o jedno kliknięcie w",
         "modulesLink": "Ustawienia, Moduły",
+        "switchesOff": "Znika z nawigacji: {modules}. W każdej chwili możesz je włączyć w Ustawienia, Moduły.",
         "glucoseUnit": "Glukoza we krwi",
         "unitPreference": "Jednostki",
         "language": "Język",

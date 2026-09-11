@@ -4661,6 +4661,7 @@
         "alwaysOn": "항상 켜짐: {modules}, 그리고 기본 측정값(체중, 혈압, 맥박).",
         "everythingElse": "나머지는 한 번의 클릭으로 열 수 있습니다:",
         "modulesLink": "설정, 모듈",
+        "switchesOff": "탐색에서 빠집니다: {modules}. 설정, 모듈에서 언제든 다시 켤 수 있습니다.",
         "glucoseUnit": "혈당",
         "unitPreference": "단위",
         "language": "언어",

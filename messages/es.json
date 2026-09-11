@@ -4661,6 +4661,7 @@
         "alwaysOn": "Siempre activos: {modules} y las mediciones básicas (peso, presión arterial, pulso).",
         "everythingElse": "Todo lo demás queda a un clic en",
         "modulesLink": "Ajustes, Módulos",
+        "switchesOff": "Fuera de la navegación: {modules}. Puedes volver a activarlos cuando quieras en Ajustes, Módulos.",
         "glucoseUnit": "Glucosa en sangre",
         "unitPreference": "Unidades",
         "language": "Idioma",

@@ -112,7 +112,12 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
 
   const needs = state.needs;
   const forSomeoneElse = needs.recordTarget === "someone-else";
-  const { chosen, alwaysOn } = confirmedModules(needs);
+  // v1.39 (Wave C, C4) — `user.modules` is the map the navigation reads, so
+  // the screen can only name a module the person actually has today.
+  const { chosen, alwaysOn, wouldSwitchOff } = confirmedModules(
+    needs,
+    user?.modules ?? {},
+  );
   const back = previousScreen(state, "confirm");
 
   const glucoseUnit = needs.units.glucoseUnit ?? user?.glucoseUnit ?? null;
@@ -182,6 +187,13 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
               })
             : t("onboarding.flow.confirm.nothingExtra")}
         </p>
+        {wouldSwitchOff.length > 0 ? (
+          <p className="text-sm" data-slot="onboarding-confirm-modules-off">
+            {t("onboarding.flow.confirm.switchesOff", {
+              modules: moduleNames(wouldSwitchOff),
+            })}
+          </p>
+        ) : null}
         <p className="text-muted-foreground text-sm">
           {t("onboarding.flow.confirm.alwaysOn", {
             modules: moduleNames(alwaysOn),
