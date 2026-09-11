@@ -43,11 +43,33 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
 }));
 
+// v1.38.19 (wave D) — the four preconditions the honest offer rides on.
+vi.mock("@/lib/ai/server-provider-health", () => ({
+  readServerProviderHealth: vi.fn(),
+}));
+
+vi.mock("@/lib/feature-flags", () => ({
+  getAssistantFlags: vi.fn(),
+}));
+
+vi.mock("@/lib/sharing/provider-work-authority", () => ({
+  providerWorkAuthorityForRecord: vi.fn(() => ({ origin: "owner" })),
+  providerCredentialPolicy: vi.fn(() => "personal"),
+}));
+
+vi.mock("@/lib/ai/consent-guard", () => ({
+  hasActiveConsentForSurface: vi.fn(),
+}));
+
 import { GET, PATCH } from "../route";
 import { prisma } from "@/lib/db";
 import { resolveProviderAvailability } from "@/lib/ai/provider";
 import { isPublicUrl } from "@/lib/validations/notifications";
 import { isLocalAiHostAllowed } from "@/lib/ai/local-host-allowlist";
+import { readServerProviderHealth } from "@/lib/ai/server-provider-health";
+import { getAssistantFlags } from "@/lib/feature-flags";
+import { providerCredentialPolicy } from "@/lib/sharing/provider-work-authority";
+import { hasActiveConsentForSurface } from "@/lib/ai/consent-guard";
 
 function patchRequest(body: unknown): Request {
   return new Request("http://localhost/api/user/ai-provider", {
@@ -70,6 +92,18 @@ interface AiProviderResponse {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // The shape every GET needs before a case narrows it: an owning caller on
+  // an instance whose assistant surfaces are on, who has not consented yet.
+  vi.mocked(readServerProviderHealth).mockResolvedValue("unknown");
+  vi.mocked(getAssistantFlags).mockResolvedValue({
+    enabled: true,
+    coach: true,
+    briefing: true,
+    insightStatus: true,
+    correlations: true,
+  });
+  vi.mocked(providerCredentialPolicy).mockReturnValue("personal");
+  vi.mocked(hasActiveConsentForSurface).mockResolvedValue(false);
 });
 
 describe("GET /api/user/ai-provider availability", () => {
@@ -403,5 +437,130 @@ describe("GET /api/user/ai-provider — the gateway's fields (#470)", () => {
     expect(body.data.compatModel).toBe("anthropic/claude-sonnet-4-6");
     expect(body.data.hasCompatKey).toBe(true);
     expect(JSON.stringify(body)).not.toContain("enc-gateway");
+  });
+});
+
+/**
+ * v1.38.19 (wave D) — the honest shared-provider offer.
+ *
+ * The setup flow's last screen used to promise that insights "work for you
+ * right away" whenever `managedBy` said `server`. That is a presence read:
+ * it knows a key is configured, never that it works, and it says nothing
+ * about the consent receipt the egress actually needs. These three fields
+ * are what makes the promise checkable — and every one of the five
+ * preconditions below can only ever take the offer AWAY.
+ */
+describe("GET /api/user/ai-provider — the shared-provider offer", () => {
+  function serverManaged(): void {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProvider: null,
+      aiModel: null,
+      aiBaseUrl: null,
+      aiAnthropicKeyEncrypted: null,
+      aiLocalKeyEncrypted: null,
+      aiOpenaiKeyEncrypted: null,
+      managedProfileAt: null,
+    } as never);
+    vi.mocked(resolveProviderAvailability).mockResolvedValue({
+      aiAvailable: true,
+      managedBy: "server",
+    });
+  }
+
+  async function read(): Promise<{
+    serverProviderHealth: string;
+    serverProviderOffer: boolean;
+    serverProviderConsent: boolean;
+  }> {
+    const res = await (GET as () => Promise<Response>)();
+    const body = (await res.json()) as {
+      data: {
+        serverProviderHealth: string;
+        serverProviderOffer: boolean;
+        serverProviderConsent: boolean;
+      };
+    };
+    return body.data;
+  }
+
+  it("offers the shared provider when it is demonstrably healthy and nothing forbids it", async () => {
+    serverManaged();
+    vi.mocked(readServerProviderHealth).mockResolvedValue("healthy");
+    await expect(read()).resolves.toMatchObject({
+      serverProviderHealth: "healthy",
+      serverProviderOffer: true,
+      serverProviderConsent: false,
+    });
+  });
+
+  it.each(["unhealthy", "unknown"] as const)(
+    "never offers on %s health — unknown is not a maybe",
+    async (health) => {
+      serverManaged();
+      vi.mocked(readServerProviderHealth).mockResolvedValue(health);
+      await expect(read()).resolves.toMatchObject({
+        serverProviderHealth: health,
+        serverProviderOffer: false,
+      });
+    },
+  );
+
+  it("never offers when the operator switched the assistant surfaces off", async () => {
+    serverManaged();
+    vi.mocked(readServerProviderHealth).mockResolvedValue("healthy");
+    vi.mocked(getAssistantFlags).mockResolvedValue({
+      enabled: true,
+      coach: false,
+      briefing: true,
+      insightStatus: true,
+      correlations: true,
+    });
+    await expect(read()).resolves.toMatchObject({
+      serverProviderHealth: "healthy",
+      serverProviderOffer: false,
+    });
+  });
+
+  it("never offers to a managed profile — a child's record does not consent for itself", async () => {
+    serverManaged();
+    vi.mocked(readServerProviderHealth).mockResolvedValue("healthy");
+    vi.mocked(providerCredentialPolicy).mockReturnValue("operator-default");
+    await expect(read()).resolves.toMatchObject({ serverProviderOffer: false });
+  });
+
+  it("stops offering once the user holds a receipt, and says the consent is on file", async () => {
+    serverManaged();
+    vi.mocked(readServerProviderHealth).mockResolvedValue("healthy");
+    vi.mocked(hasActiveConsentForSurface).mockResolvedValue(true);
+    await expect(read()).resolves.toMatchObject({
+      serverProviderOffer: false,
+      serverProviderConsent: true,
+    });
+  });
+
+  it("never offers a provider the operator does not manage", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProvider: "OPENAI",
+      aiModel: null,
+      aiBaseUrl: null,
+      aiAnthropicKeyEncrypted: null,
+      aiLocalKeyEncrypted: null,
+      aiOpenaiKeyEncrypted: "enc-openai",
+      managedProfileAt: null,
+    } as never);
+    vi.mocked(resolveProviderAvailability).mockResolvedValue({
+      aiAvailable: true,
+      managedBy: "user",
+    });
+    vi.mocked(readServerProviderHealth).mockResolvedValue("healthy");
+    await expect(read()).resolves.toMatchObject({ serverProviderOffer: false });
+  });
+
+  it("reads the health without probing anything", async () => {
+    serverManaged();
+    vi.mocked(readServerProviderHealth).mockResolvedValue("healthy");
+    await read();
+    expect(vi.mocked(readServerProviderHealth)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(readServerProviderHealth)).toHaveBeenCalledWith();
   });
 });

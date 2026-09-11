@@ -4558,7 +4558,18 @@
       "ladderOauthBody": "Connect a ChatGPT account — no per-token cost, but the consumer tier's terms may use content for training, so it's a deliberate choice, never the default for your health data.",
       "keylessLine": "HealthLog is fully useful without AI. Your tiles, charts, trends and exports all work — AI only adds the plain-language read on top.",
       "setupCta": "Set it up (about a minute)",
-      "sharedKeyNote": "This instance already provides a shared AI provider, so insights work for you right now — no setup needed."
+      "sharedKeyNote": "This instance already provides a shared AI provider, so insights work for you right now — no setup needed.",
+      "offer": {
+        "title": "This instance can write your summary in plain language.",
+        "body": "The operator provides a provider that last worked within the past 24 hours. One tap turns the plain-language read on; your data then goes to that one provider and to nobody else.",
+        "cta": "Turn on plain language",
+        "granted": "Turned on. The first summary appears on your dashboard.",
+        "error": "Turning it on did not work. Give it another try in a moment."
+      },
+      "unavailable": {
+        "title": "This instance’s provider is not answering right now.",
+        "body": "HealthLog is fully useful without the plain-language read. You can add a provider of your own later under Settings."
+      }
     },
     "steps": {
       "who": "Who this record is for",

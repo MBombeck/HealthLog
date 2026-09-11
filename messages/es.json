@@ -4558,7 +4558,18 @@
       "ladderOauthBody": "Conecta una cuenta de ChatGPT — sin coste por token, pero los términos del nivel de consumo pueden usar el contenido para entrenamiento, así que es una elección deliberada, nunca la opción por defecto para tus datos de salud.",
       "keylessLine": "HealthLog es plenamente útil sin IA. Tus paneles, gráficos, tendencias y exportaciones funcionan — la IA solo añade la lectura en lenguaje claro por encima.",
       "setupCta": "Configúralo (un minuto aprox.)",
-      "sharedKeyNote": "Esta instancia ya ofrece un proveedor de IA compartido, así que los insights funcionan para ti ahora mismo — sin configuración."
+      "sharedKeyNote": "Esta instancia ya ofrece un proveedor de IA compartido, así que los insights funcionan para ti ahora mismo — sin configuración.",
+      "offer": {
+        "title": "Esta instancia ya puede escribir tu resumen en lenguaje claro.",
+        "body": "El operador ofrece un proveedor que funcionó por última vez en las últimas 24 horas. Con un toque activas el lenguaje claro; tus datos irán entonces a ese único proveedor y a nadie más.",
+        "cta": "Activar el lenguaje claro",
+        "granted": "Activado. El primer resumen aparecerá en tu panel.",
+        "error": "No se pudo activar. Vuelve a intentarlo en un momento."
+      },
+      "unavailable": {
+        "title": "El proveedor de esta instancia no responde en este momento.",
+        "body": "HealthLog es plenamente útil sin el lenguaje claro. Más adelante puedes añadir tu propio proveedor en los ajustes."
+      }
     },
     "steps": {
       "who": "Para quién es este registro",

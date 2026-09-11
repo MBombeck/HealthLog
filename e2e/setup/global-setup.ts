@@ -502,6 +502,21 @@ export const E2E_SETUP_LOCALE = {
   role: "USER",
 } as const;
 
+/**
+ * v1.38.19 (wave D) — the shared-provider offer's own account.
+ *
+ * Its journey seeds INSTANCE-wide state (the operator key's presence and the
+ * provider-health ledger the tri-state folds) and mints a consent receipt on
+ * the account, so it cannot share one with a journey that asserts a module
+ * map or a tile order.
+ */
+export const E2E_SETUP_AI_OFFER = {
+  email: "e2e-setup-ai-offer@healthlog.test",
+  username: "e2e-setup-ai-offer",
+  password: "Ao6!Zd3fB9qMv2Rk",
+  role: "USER",
+} as const;
+
 export const SETUP_BP_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateSetupBp.json",
@@ -530,6 +545,10 @@ export const SETUP_LOCALE_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateSetupLocale.json",
 );
+export const SETUP_AI_OFFER_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateSetupAiOffer.json",
+);
 
 const SETUP_FLOW_ACCOUNTS = [
   E2E_SETUP_BP,
@@ -538,6 +557,7 @@ const SETUP_FLOW_ACCOUNTS = [
   E2E_SETUP_CHILD,
   E2E_SETUP_A11Y,
   E2E_SETUP_LOCALE,
+  E2E_SETUP_AI_OFFER,
   E2E_SETUP_CONNECT,
 ] as const;
 
@@ -1282,6 +1302,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     await capture(E2E_SETUP_A11Y, SETUP_A11Y_STORAGE_STATE_PATH);
     await capture(E2E_SETUP_LOCALE, SETUP_LOCALE_STORAGE_STATE_PATH);
     await capture(E2E_SETUP_CONNECT, SETUP_CONNECT_STORAGE_STATE_PATH);
+    await capture(E2E_SETUP_AI_OFFER, SETUP_AI_OFFER_STORAGE_STATE_PATH);
     await capture(E2E_SETUP_CHILD, SETUP_CHILD_STORAGE_STATE_PATH);
     await pool.query(
       `UPDATE users SET totp_confirmed_at = $2 WHERE username = $1`,
