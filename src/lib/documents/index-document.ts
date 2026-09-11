@@ -131,7 +131,7 @@ export interface ResolvedIndexProvider {
   consentOk: boolean;
   dailyCap: number;
   /**
-   * v1.38.19 (Wave E) — whose budget `dailyCap` rations. The reservation books
+   * v1.38.19 — whose budget `dailyCap` rations. The reservation books
    * `operator_tokens` only for an operator-funded pick, so the cap and the
    * counter it is compared against are resolved from one place.
    */
@@ -168,7 +168,7 @@ export async function resolveIndexProvider(
     pick && consentOk
       ? resolveDailyCap([{ providerType: pick.entry.providerType }])
       : 0;
-  // v1.38.19 (Wave E) — the cap and its cost owner are resolved from the SAME
+  // v1.38.19 — the cap and its cost owner are resolved from the SAME
   // pick, so the reservation books the counter the cap is enforced against.
   const costOwner: BudgetCostOwner =
     pick && consentOk

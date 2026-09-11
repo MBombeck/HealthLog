@@ -266,7 +266,7 @@ describe("ArrivalReaction — the day claim", () => {
     expect(usage).toMatchObject({ totalTokens: 280, messageCount: 1 });
   });
 
-  // v1.38.19 (Wave E, fix round 1) — the refund reverses BOTH counters.
+  // v1.38.19 — the refund reverses BOTH counters.
   //
   // The reservation booked `operator_tokens` whenever the chain's primary was
   // operator-funded. The supersede refund reversed only the total, and nothing

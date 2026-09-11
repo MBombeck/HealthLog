@@ -1,5 +1,5 @@
 /**
- * v1.38.19 (Wave E) — the daily coach ledger attributes tokens to the COST
+ * v1.38.19 — the daily coach ledger attributes tokens to the COST
  * OWNER of the hop that actually served them.
  *
  * Production evidence (operator instance, 2026-09-11): the chat refused with
@@ -219,12 +219,13 @@ describe("coach_usage.operator_tokens (real Postgres)", () => {
     expect(row?.operatorTokens).toBe(OPERATOR_COST_CAP);
   });
 
-  // v1.38.19 (Wave E, fix round 1) — the incident, end to end.
+  // v1.38.19 — the incident, end to end.
   //
   // The 06:42Z row verbatim: 1.2 M tokens on the day, none of them the
   // operator's, on the chain `[admin-openai, codex, openai-compatible]`. The
-  // chat must open. Before the wave it was refused because the ledger had no
-  // owner dimension; this pins that the refusal cannot come back.
+  // chat must open. It was refused while the ledger had no owner dimension and
+  // counted every token against the operator's ceiling; this pins that the
+  // refusal cannot come back.
   it("does not refuse the chat for a day of background spend on the user's own plan", async () => {
     const { reserveBudget, resolveDailyCap, resolveCostOwner } =
       await import("@/lib/ai/coach/budget");

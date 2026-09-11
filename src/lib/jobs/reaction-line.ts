@@ -318,7 +318,7 @@ type ReactionReservation = {
   reserved: number;
   dateKey: string;
   /**
-   * v1.38.19 (Wave E) — the cost owner the reservation was booked to. It is
+   * v1.38.19 — the cost owner the reservation was booked to. It is
    * PERSISTED on the row (`generationCostOwner`), not recomputed: the chain is
    * re-resolved per run and the health ledger reorders it, so a resumed
    * reservation that asked the chain again could reverse a counter the
@@ -363,15 +363,15 @@ async function reserveClaimBudget(
     });
     if (stillOwned.count !== 1) throw new ReactionClaimLostError();
 
-    // v1.38.19 (Wave E, fix round 1) — ONE reservation implementation.
+    // v1.38.19 — ONE reservation implementation.
     //
     // This surface used to carry its own copy of the upsert so the write could
     // ride the claim transaction. The copy drifted: it learned to WRITE
     // `operator_tokens` and kept gating on the day's mixed total, at the
-    // halved job ceiling — so on the operator's own 2026-09-11 row (1.2 M
-    // total, ~0 operator) the arrival reaction was refused all day, which is
-    // the exact defect this wave exists to remove, reproduced on the one
-    // surface the wave forgot to convert. `reserveBudget` takes the
+    // halved job ceiling — so on a row holding 1.2 M tokens of which almost
+    // none were the operator's (2026-09-11, the shared key answering 500 while
+    // the user's own plan served), the arrival reaction was refused all day
+    // over money the operator never spent. `reserveBudget` takes the
     // transaction client instead, so both writes still roll back together and
     // there is no second copy left to drift.
     const reservation = await reserveBudget(
@@ -406,7 +406,7 @@ async function reserveClaimBudget(
       data: {
         generationReservedTokens: reserved,
         generationBudgetDateKey: dateKey,
-        // v1.38.19 (Wave E, fix round 1) — persist the cost owner with the
+        // v1.38.19 — persist the cost owner with the
         // amount. Two readers need it and neither can derive it: the resume
         // path below (the chain may have been reordered since) and the
         // supersede refund in `data-arrival.ts` (which has no chain at all).
@@ -562,7 +562,7 @@ export async function runReactionLine(
         job.userId,
         revision,
         buildDateKey(),
-        // v1.38.19 (Wave E) — a background surface: half the day's ceiling.
+        // v1.38.19 — a background surface: half the day's ceiling.
         resolveDailyCapFor("job", chain),
         resolveCostOwner(chain),
       );

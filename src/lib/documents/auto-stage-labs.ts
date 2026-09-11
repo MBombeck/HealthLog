@@ -278,7 +278,7 @@ export async function maybeAutoStageLabFacts(
 
   // A text-structuring pass, not a vision call — reserve the proportionate
   // ceiling under the cost owner the auto-index resolved.
-  // v1.38.19 (Wave E) — auto-staging runs off the upload, with no one waiting
+  // v1.38.19 — auto-staging runs off the upload, with no one waiting
   // on it: a background surface, so half the day's ceiling.
   const dateKey = buildDateKey();
   const reservation = await reserveBudget(

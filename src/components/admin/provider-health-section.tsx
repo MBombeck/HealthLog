@@ -27,7 +27,7 @@ import { formatDateTime } from "@/lib/format";
  */
 
 /**
- * v1.38.19 (Wave E) — the day's spend, split by who pays for it. The operator
+ * v1.38.19 — the day's spend, split by who pays for it. The operator
  * opens this card when a surface refuses on budget, and one mixed number could
  * not answer the question that raises: a day at 1.24 M tokens is alarming until
  * you see that 151 200 of them were the instance's own key and the rest ran on

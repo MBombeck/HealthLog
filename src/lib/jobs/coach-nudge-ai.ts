@@ -191,7 +191,7 @@ export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
 
     const budget = AI_BUDGETS.coachNudge;
     const maxTokens = budget.maxTokens ?? 160;
-    // v1.38.19 (Wave E) — a background surface: half the day's ceiling.
+    // v1.38.19 — a background surface: half the day's ceiling.
     const dailyCap = resolveDailyCapFor("job", chain);
     const dateKey = buildDateKey();
 

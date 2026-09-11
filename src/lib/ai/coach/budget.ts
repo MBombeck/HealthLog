@@ -18,7 +18,7 @@ import { prisma } from "@/lib/db";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 
 /**
- * v1.38.19 (Wave E, fix round 1) — the two raw statements the ledger owns can
+ * v1.38.19 — the two raw statements the ledger owns can
  * run on the singleton client OR inside an open transaction. The arrival
  * reaction reserves its tokens in the same transaction that links the
  * reservation to the claimed marker, and used to carry its own copy of the
@@ -79,7 +79,7 @@ export function resolveDailyCap(
 }
 
 /**
- * v1.38.19 (Wave E) — the share of a day's ceiling that BACKGROUND generation
+ * v1.38.19 — the share of a day's ceiling that BACKGROUND generation
  * may reserve, all job surfaces together.
  *
  * Production evidence (2026-09-11): the operator's account wrote 150–330
@@ -91,7 +91,7 @@ export function resolveDailyCap(
 export const JOB_SURFACE_SHARE = 0.5;
 
 /**
- * v1.38.19 (Wave E) — which kind of caller is asking. `"coach"` is every
+ * v1.38.19 — which kind of caller is asking. `"coach"` is every
  * interactive surface (the chat, the extraction routes, the document routes,
  * the connection probe): a person is waiting. `"job"` is the automatic
  * generators, which run with nobody waiting and must leave the interactive
@@ -100,7 +100,7 @@ export const JOB_SURFACE_SHARE = 0.5;
 export type BudgetSurface = "coach" | "job";
 
 /**
- * v1.38.19 (Wave E, fix round 1) — the job share rations the OPERATOR's
+ * v1.38.19 — the job share rations the OPERATOR's
  * invoice, so it applies only when the operator is paying.
  *
  * The first cut multiplied whichever ceiling `resolveDailyCap` returned, which
@@ -120,7 +120,7 @@ function applyJobShare(
 }
 
 /**
- * v1.38.19 (Wave E) — the daily ceiling for one SURFACE on a chain. `"coach"`
+ * v1.38.19 — the daily ceiling for one SURFACE on a chain. `"coach"`
  * (every interactive surface: the chat, the extraction routes, the document
  * routes, the connection probe) gets the whole ceiling; `"job"` (the automatic
  * generators) gets `JOB_SURFACE_SHARE` of it. The cost owner is unchanged —
@@ -135,7 +135,7 @@ export function resolveDailyCapFor(
 }
 
 /**
- * v1.38.19 (Wave E, fix round 1) — the ABUSE ceiling on the day's mixed total,
+ * v1.38.19 — the ABUSE ceiling on the day's mixed total,
  * for one surface and one cost owner.
  *
  * `resolveDailyCapFor` answers "how much of the owner's ceiling may this
@@ -169,14 +169,14 @@ export function isOperatorFundedProvider(type: ProviderChainType): boolean {
 }
 
 /**
- * v1.38.19 (Wave E) — who pays for a turn. `"operator"` means the tokens land
+ * v1.38.19 — who pays for a turn. `"operator"` means the tokens land
  * on the operator's invoice (`admin-openai` / `admin-codex`), `"user"` means
  * the user's own plan, key or hardware carries them.
  */
 export type BudgetCostOwner = "operator" | "user";
 
 /**
- * v1.38.19 (Wave E) — the cost owner a chain RESERVES under: the primary is
+ * v1.38.19 — the cost owner a chain RESERVES under: the primary is
  * the provider that will be tried first, so it is the expected payer. An empty
  * chain defaults to the operator — the conservative side. `resolveDailyCap`
  * and `reserveBudget` must agree on this classification, so both read it here.
@@ -204,7 +204,7 @@ export interface DailySpend {
   /** Every token recorded for the day, whoever paid for it. */
   total: number;
   /**
-   * v1.38.19 (Wave E) — the share of `total` served by an operator-funded
+   * v1.38.19 — the share of `total` served by an operator-funded
    * provider. The hop guard compares THIS against `OPERATOR_COST_CAP`: a day
    * full of turns the user's own plan paid for must not close the operator's
    * fallback hop.
@@ -264,7 +264,7 @@ export interface ReserveBudgetResult {
   /** The day's total AFTER this reservation (for observability). */
   totalAfter: number;
   /**
-   * v1.38.19 (Wave E) — the owner this reservation was charged to. The
+   * v1.38.19 — the owner this reservation was charged to. The
    * reconcile needs it: only a reservation booked to the operator has an
    * amount to move back OUT of `operator_tokens` when a user-funded hop ends
    * up serving the turn.
@@ -273,7 +273,7 @@ export interface ReserveBudgetResult {
   /** The day's operator-funded spend AFTER this reservation. */
   operatorAfter: number;
   /**
-   * v1.38.19 (Wave E, fix round 1) — which ceiling refused this reservation,
+   * v1.38.19 — which ceiling refused this reservation,
    * `null` when it was admitted. `"owner-cap"` is the cost owner's daily
    * ceiling (the operator's invoice, or the user's own plan); `"total-cap"` is
    * the abuse ceiling on the day's mixed total. The refusal annotations carry
@@ -298,7 +298,7 @@ export async function reserveBudget(
     Number.isFinite(estimatedTokens) && estimatedTokens > 0
       ? Math.floor(estimatedTokens)
       : 0;
-  // v1.38.19 (Wave E) — a reservation is booked to `operator_tokens` only when
+  // v1.38.19 — a reservation is booked to `operator_tokens` only when
   // the chain's primary is operator-funded. The counter moves inside the SAME
   // statement as the total, so two concurrent requests can never observe one
   // counter without the other.
@@ -328,14 +328,14 @@ export async function reserveBudget(
   // PRIOR to its reservation was under the cap. So compare the post-increment
   // figure minus this reservation against the cap.
   //
-  // v1.38.19 (Wave E) — and compare the counter the cap is ABOUT. An
+  // v1.38.19 — and compare the counter the cap is ABOUT. An
   // operator-funded chain is measured against the day's operator-funded spend,
   // never against a total that the user's own plan inflated; a user-plan chain
   // keeps its abuse ceiling on the total.
   const priorTotal = totalAfter - reserved;
   const priorOperator = operatorAfter - operatorReserved;
   const prior = owner === "operator" ? priorOperator : priorTotal;
-  // v1.38.19 (Wave E, fix round 1) — BOTH ceilings, always. The owner's cap
+  // v1.38.19 — BOTH ceilings, always. The owner's cap
   // protects whoever pays; the total cap is the abuse ceiling that keeps a
   // runaway loop — or a day of background generation the operator's key never
   // served — from writing an unbounded row. Dropping the second one for
@@ -412,7 +412,7 @@ export async function reconcileSpend(
   // (shouldn't happen, but the wire is untrusted) can't drive a negative charge.
   const actual = Math.max(0, grossActual - cached);
   const delta = actual - reserved;
-  // v1.38.19 (Wave E) — settle the operator's counter against the hop that
+  // v1.38.19 — settle the operator's counter against the hop that
   // SERVED, not the one the chain expected. Book the actual tokens when an
   // operator-funded provider answered, and take back whatever this
   // reservation had put there (nothing, when the reservation was the user's

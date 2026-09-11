@@ -18,7 +18,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /** In-memory stand-in for the day's `coach_usage.total_tokens`. */
 let ledgerTotal = 0;
-/** …and of `coach_usage.operator_tokens` (Wave E). */
+/** …and of `coach_usage.operator_tokens`. */
 let ledgerOperator = 0;
 
 vi.mock("@/lib/db", () => ({
@@ -27,7 +27,7 @@ vi.mock("@/lib/db", () => ({
     // (strings, userId, dateKey, reserved, reserved).
     $queryRaw: vi.fn(
       async (_strings: TemplateStringsArray, ...v: unknown[]) => {
-        // Wave E — (userId, dateKey, reserved, operatorReserved, …).
+        // (userId, dateKey, reserved, operatorReserved, …).
         ledgerTotal += Number(v[2] ?? 0);
         ledgerOperator += Number(v[3] ?? 0);
         return [{ total_tokens: ledgerTotal, operator_tokens: ledgerOperator }];
@@ -38,7 +38,7 @@ vi.mock("@/lib/db", () => ({
       async (strings: TemplateStringsArray, ...v: unknown[]) => {
         const sql = strings.join("?");
         const amount = Number(v[0] ?? 0);
-        // Wave E — the operator-funded share moves in the same statement.
+        // The operator-funded share moves in the same statement.
         const operatorAmount = Number(v[1] ?? 0);
         if (sql.includes("total_tokens + ")) {
           ledgerTotal += amount;
@@ -129,7 +129,7 @@ describe("runStatusCompletion — ledger accounting", () => {
   });
 
   it("refuses a background generation at the job share while the chat still runs", async () => {
-    // Wave E — the automatic status/reference generators may spend at most
+    // The automatic status/reference generators may spend at most
     // half the operator ceiling, so the interactive chat still has a day left
     // when the jobs have had theirs. One token past the job share:
     ledgerTotal = 100_001;
@@ -177,7 +177,7 @@ describe("runStatusCompletion — ledger accounting", () => {
     // "no provider configured" assessment, which a budget refusal is not.
     expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
     expect(result.kind).toBe("error");
-    // v1.38.19 (Wave E, fix round 1) — the refusal has to SAY which ceiling it
+    // v1.38.19 — the refusal has to SAY which ceiling it
     // hit and whose. `{ totalAfter }` alone was the day's mixed total, which on
     // an operator refusal is not the counter that tripped; and the shared
     // `error` outcome cannot distinguish an exhausted background share from a

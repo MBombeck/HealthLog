@@ -199,7 +199,7 @@ beforeEach(async () => {
   isModuleEnabled.mockResolvedValue(true);
   chainRequiresServerManagedConsent.mockReturnValue(false);
   hasActiveConsentForSurface.mockResolvedValue(true);
-  // v1.38.19 (Wave E, fix round 1) — the claim reservation is no longer a
+  // v1.38.19 — the claim reservation is no longer a
   // second copy of the upsert; it calls the shared `reserveBudget` with the
   // transaction client. The spy therefore runs the REAL gate against the
   // mocked `$queryRaw`, so the rows a test hands back are the ledger the gate
@@ -525,12 +525,12 @@ describe("reaction line — degradation", () => {
   });
 
   it("a day the user's own plan paid for still admits the reaction", async () => {
-    // The 2026-09-11 shape, on the surface the wave forgot to convert: the
-    // operator's shared key answered 500 all morning and `codex` — his own
-    // ChatGPT plan — served everything, so the day's total is large and the
-    // operator's counter is empty. The reservation used to compare that total
-    // against the operator's ceiling and refuse, which is the exact defect the
-    // wave exists to remove, reproduced at HALF the old ceiling.
+    // The 2026-09-11 shape: the operator's shared key answered 500 all
+    // morning and `codex` — his own ChatGPT plan — served everything, so the
+    // day's total is large and the operator's counter is empty. The
+    // reservation used to compare that total against the operator's ceiling
+    // and refuse, locking the surface out over money the operator never spent
+    // — and at HALF the old ceiling, because this is a background surface.
     resolveProviderChain.mockResolvedValue([
       {
         providerType: "openai",
@@ -744,7 +744,7 @@ describe("reaction line — degradation", () => {
 });
 
 /**
- * v1.38.19 (Wave E, fix round 1) — a reservation is never stranded.
+ * v1.38.19 — a reservation is never stranded.
  *
  * Every path that crosses the provider boundary has to settle the ledger, and
  * settle it against the owner the reservation was actually booked to. Nothing

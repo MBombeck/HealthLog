@@ -438,11 +438,11 @@ async function runRawChain(
         total: 0,
         operator: 0,
       }));
-      // v1.38.19 (Wave E) — the OPERATOR-funded share, not the day's total: a
+      // v1.38.19 — the OPERATOR-funded share, not the day's total: a
       // day filled by the user's own plan must not close the operator's
       // fallback hop on money the operator never spent.
       //
-      // v1.38.19 (Wave E, fix round 1) — and at the SURFACE's ceiling, not the
+      // v1.38.19 — and at the SURFACE's ceiling, not the
       // full one. A background reservation is rationed at the job share when it
       // is taken; without this the hop it reaches by fallback could still spend
       // against the whole operator cap, which is how the original defect stayed
@@ -540,7 +540,7 @@ export async function runStreamingRawCompletionWithFallback(args: {
   providers: ProviderChainResolved[];
   params: CompletionParams;
   /**
-   * v1.38.19 (Wave E, fix round 1) — which ceiling an operator-funded FALLBACK
+   * v1.38.19 — which ceiling an operator-funded FALLBACK
    * hop is rationed against. `"job"` gets the background share, exactly as the
    * reservation did; `"coach"` gets the whole ceiling.
    */

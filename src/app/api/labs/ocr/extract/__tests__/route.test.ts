@@ -120,9 +120,9 @@ describe("POST /api/labs/ocr/extract — text mode budget", () => {
       "2026-06-26",
       // F1 — the provider-aware daily cap (mocked) is threaded as the 4th arg.
       200_000,
-      // Wave E — and the cost owner that cap is enforced against as the 5th.
+      // ...the cost owner that cap is enforced against as the 5th...
       "operator",
-      // Wave E fix round 1 — the surface the ceiling is rationed for, 6th.
+      // ...and the surface the ceiling is rationed for as the 6th.
       "coach",
     );
   });

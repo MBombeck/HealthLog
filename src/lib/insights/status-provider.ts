@@ -219,7 +219,7 @@ export async function runStatusCompletion(
   const dateKey = buildDateKey();
   const estimatedTokens =
     maxTokens + Math.ceil((systemPrompt.length + userPrompt.length) / 4);
-  // v1.38.19 (Wave E) — a background surface: half the day's ceiling when the
+  // v1.38.19 — a background surface: half the day's ceiling when the
   // operator funds the chain.
   const jobCap = resolveDailyCapFor("job", chain);
   const reservation = await reserveBudget(
@@ -236,7 +236,7 @@ export async function runStatusCompletion(
     // which callers cache as the settled "no provider configured" assessment.
     // The distinct annotation keeps the refusal observable even though the
     // result shape is shared.
-    // v1.38.19 (Wave E, fix round 1) — the shared `error` outcome cannot say
+    // v1.38.19 — the shared `error` outcome cannot say
     // WHY the generation stopped, so the annotation has to. `surface: "job"`
     // plus `cap` separates "this job used up the background share" from "the
     // whole day is spent", and `limit` says which counter tripped. The operator

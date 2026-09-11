@@ -111,7 +111,7 @@ export const GET = apiHandler(async () => {
     return a.providerType.localeCompare(b.providerType);
   });
 
-  // v1.38.19 (Wave E) — the day's spend, split by who pays for it.
+  // v1.38.19 — the day's spend, split by who pays for it.
   //
   // The operator opens this card when a surface refuses on budget. One mixed
   // number could not answer the question it raised: a day at 1.24 M tokens is

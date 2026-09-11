@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * v1.38.19 (Wave E) — the day's spend, split by who paid for it.
+ * v1.38.19 — the day's spend, split by who paid for it.
  *
  * `/api/admin/provider-health` answers `spendToday` and nothing rendered it,
  * which is the "the reader is the follow-up" shape the two-ended rule exists to

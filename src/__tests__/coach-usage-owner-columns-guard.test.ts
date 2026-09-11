@@ -2,7 +2,7 @@
  * Structural guard — `coach_usage.total_tokens` and `coach_usage.operator_tokens`
  * move together in EVERY raw statement.
  *
- * v1.38.19 (Wave E) gave the daily ledger a second counter: `operator_tokens`
+ * v1.38.19 gave the daily ledger a second counter: `operator_tokens`
  * is the share of `total_tokens` an operator-funded provider served, and the
  * operator ceiling is enforced against it. The counters are only meaningful
  * while they stay in step. A statement that writes the total and forgets the
@@ -10,7 +10,8 @@
  * reverses the total and forgets the operator share leaks budget permanently
  * toward the operator cap, because nothing else ever subtracts it; a statement
  * that RETURNS the total alone forces its caller to gate on the wrong number,
- * which is the exact defect the wave exists to fix.
+ * which is how an operator-funded chain ends up refused over tokens the user's
+ * own plan paid for.
  *
  * Two of the three writers shipped with precisely those bugs, and both were a
  * grep away. This guard is that grep, executable: every INSERT column list,

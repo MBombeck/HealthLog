@@ -38,7 +38,7 @@ describe("reserveBudget (real Postgres)", () => {
     // Pre-spend 900 so a single 600-token reservation stays under the cap
     // but two concurrent ones cannot both be admitted.
     //
-    // v1.38.19 (Wave E) — the 900 sits on BOTH counters. The ledger grew a cost
+    // v1.38.19 — the 900 sits on BOTH counters. The ledger grew a cost
     // dimension: an operator-owned reservation is measured against
     // `operator_tokens`, so a fixture that pre-spends only the mixed total no
     // longer states its own premise ("900 already spent under this cap") and

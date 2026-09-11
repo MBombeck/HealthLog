@@ -609,7 +609,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     "coach",
   );
   if (!reservation.allowed) {
-    // v1.38.19 (Wave E, fix round 1) — say WHICH ceiling refused and WHOSE.
+    // v1.38.19 — say WHICH ceiling refused and WHOSE.
     // `totalAfter` alone is the day's mixed total; on an operator refusal that
     // is not the counter that tripped, and reading `totalAfter: 1200000`
     // against a 200 000 ceiling is what turned the 06:42Z incident into a
@@ -654,7 +654,7 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
 
   async function produceReply(): Promise<ReplyOutcome> {
     let result: CompletionResult;
-    // v1.38.19 (Wave E) — typed as the chain's provider union, not a bare
+    // v1.38.19 — typed as the chain's provider union, not a bare
     // string: the budget reconcile attributes the turn's tokens to the cost
     // owner of the hop named here.
     let workingProviderType: ProviderChainType;

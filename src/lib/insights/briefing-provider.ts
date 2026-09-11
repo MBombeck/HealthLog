@@ -118,7 +118,7 @@ export async function runBriefingCompletion(
     args.maxTokens +
     Math.ceil((args.systemPrompt.length + args.userPrompt.length) / 4);
 
-  // v1.38.19 (Wave E) — a background surface: half the day's ceiling when the
+  // v1.38.19 — a background surface: half the day's ceiling when the
   // operator funds the chain.
   const jobCap = resolveDailyCapFor("job", args.chain);
   const reservation = await reserveBudget(

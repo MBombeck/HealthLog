@@ -1,4 +1,4 @@
--- v1.38.19 (Wave E, fix round 1) — the arrival reaction remembers who paid for
+-- v1.38.19 — the arrival reaction remembers who paid for
 -- its reservation.
 --
 -- The row persisted the reserved amount and the date key but not the cost

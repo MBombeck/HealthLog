@@ -200,7 +200,7 @@ export async function runContentIndexBackfillForUser(
   // leaves every PDF out of "index all documents".
   const candidateMimes = [...IMAGE_MIMES, "application/pdf"];
 
-  // v1.38.19 (Wave E) — a background surface: half the day's ceiling.
+  // v1.38.19 — a background surface: half the day's ceiling.
   const dailyCap = resolveDailyCapFor("job", [
     { providerType: pick.entry.providerType },
   ]);

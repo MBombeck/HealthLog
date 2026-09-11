@@ -1,4 +1,4 @@
--- v1.38.19 (Wave E) — the daily coach ledger gains a cost-owner dimension.
+-- v1.38.19 — the daily coach ledger gains a cost-owner dimension.
 --
 -- `coach_usage` counted one number per (user, day), so tokens the USER's own
 -- plan paid for (a `codex` fallback hop after the operator's shared key

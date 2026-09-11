@@ -207,7 +207,7 @@ describe("GET /api/admin/provider-health", () => {
   });
 
   /**
-   * v1.38.19 (Wave E) — the two spend figures side by side.
+   * v1.38.19 — the two spend figures side by side.
    *
    * The operator reads this card when the chat refuses. Until now it showed
    * delivery health only, and the day's token figure was one number that mixed

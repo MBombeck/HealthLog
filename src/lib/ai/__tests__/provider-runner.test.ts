@@ -774,7 +774,7 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
     expect(adminOpenai.callCount).toBe(1);
   });
 
-  // v1.38.19 (Wave E) — the guard reads the OPERATOR-funded share.
+  // v1.38.19 — the guard reads the OPERATOR-funded share.
   //
   // Production evidence (2026-09-11): the operator's day held ~1.2 M tokens,
   // nearly all served by `codex` on his own ChatGPT plan. Comparing the day's
@@ -833,7 +833,7 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
     expect(adminOpenai.callCount).toBe(0);
   });
 
-  // v1.38.19 (Wave E, fix round 1) — the hop guard knows which SURFACE asked.
+  // v1.38.19 — the hop guard knows which SURFACE asked.
   //
   // Without this the job share was enforced at reservation time only: a
   // background reservation admitted under `resolveDailyCapFor("job", …)` could

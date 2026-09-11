@@ -62,7 +62,7 @@ interface LockedReaction {
   generationReservedTokens: number | null;
   generationBudgetDateKey: string | null;
   /**
-   * v1.38.19 (Wave E) — `"operator"` when the reservation below was booked to
+   * v1.38.19 — `"operator"` when the reservation below was booked to
    * the operator's counter, `"user"` otherwise, null on a row reserved before
    * the column existed. The refund has to reverse the SAME counters the
    * reservation moved, and there is no chain here to ask.
@@ -125,7 +125,7 @@ async function claimReaction(
       current.generationBudgetDateKey != null &&
       current.generationProviderInvokedAt == null
     ) {
-      // v1.38.19 (Wave E, fix round 1) — reverse BOTH counters, or neither.
+      // v1.38.19 — reverse BOTH counters, or neither.
       //
       // The reservation booked `operator_tokens` too whenever the chain's
       // primary was operator-funded. Refunding only the total left that share

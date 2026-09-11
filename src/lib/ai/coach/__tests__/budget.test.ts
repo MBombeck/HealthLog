@@ -198,7 +198,7 @@ describe("reserveBudget cap (F1 — user-plan path not locked out)", () => {
 });
 
 /**
- * v1.38.19 (Wave E) — the cap is enforced against the counter it is ABOUT.
+ * v1.38.19 — the cap is enforced against the counter it is ABOUT.
  *
  * Production evidence (2026-09-11): the operator's day held 1.0–1.45 M tokens,
  * almost all served by `codex` on his own ChatGPT plan after the shared
@@ -207,14 +207,14 @@ describe("reserveBudget cap (F1 — user-plan path not locked out)", () => {
  * is the defect; the operator ceiling may only see operator-funded tokens.
  */
 /**
- * v1.38.19 (Wave E) — background generation gets a bounded slice of the day.
+ * v1.38.19 — background generation gets a bounded slice of the day.
  *
  * Production evidence (2026-09-11): 150–330 ledger rows a day on the
  * operator's account, 172 `insights.metric` generations by 06:42Z — the
  * automatic jobs had spent the day's ceiling before he opened the chat. A
  * background surface may reserve at most half of the interactive ceiling.
  */
-describe("resolveDailyCapFor (Wave E — the job share)", () => {
+describe("resolveDailyCapFor — the job share", () => {
   it("gives a background surface half the operator ceiling", () => {
     expect(resolveDailyCapFor("job", [{ providerType: "admin-openai" }])).toBe(
       OPERATOR_COST_CAP * JOB_SURFACE_SHARE,
@@ -247,7 +247,7 @@ describe("resolveDailyCapFor (Wave E — the job share)", () => {
   });
 });
 
-describe("resolveTotalCapFor (Wave E, fix round 1 — the abuse ceiling)", () => {
+describe("resolveTotalCapFor — the abuse ceiling", () => {
   it("keeps the user-plan ceiling on the day's mixed total for both owners", () => {
     // The operator arm compares `operator_tokens`, a counter that returns to
     // ~0 on every reconcile the user's own plan settled. Without a ceiling on
@@ -267,7 +267,7 @@ describe("resolveTotalCapFor (Wave E, fix round 1 — the abuse ceiling)", () =>
   });
 });
 
-describe("reserveBudget cap by cost owner (Wave E)", () => {
+describe("reserveBudget — the cap follows the cost owner", () => {
   let prismaMock: {
     $queryRaw: ReturnType<typeof vi.fn>;
     $executeRaw: ReturnType<typeof vi.fn>;
@@ -336,7 +336,7 @@ describe("reserveBudget cap by cost owner (Wave E)", () => {
     expect(res.allowed).toBe(false);
   });
 
-  // v1.38.19 (Wave E, fix round 1) — the abuse ceiling survives the owner split.
+  // v1.38.19 — the abuse ceiling survives the owner split.
   //
   // The first cut compared `operator_tokens` and NOTHING else for an
   // operator-funded chain. On the 2026-09-11 shape that counter never grows:
