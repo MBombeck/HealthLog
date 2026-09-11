@@ -59,9 +59,28 @@ async function dispatch() {
   });
 }
 
-/** The ledger write is fire-and-forget; let its microtask land. */
-async function settleLedger(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 50));
+/**
+ * The ledger write is fire-and-forget, so the row appears some time after the
+ * dispatch returns. This used to wait a flat 50 ms, which is enough on a warm
+ * machine and not enough on a cold container: the suite failed here once with
+ * an empty ledger while nothing about the dispatch had changed. It waits for
+ * the rows instead, and gives up loudly rather than letting the assertion
+ * below report the absence as a product defect.
+ */
+async function settleLedger(expected: number): Promise<void> {
+  const deadline = Date.now() + 5_000;
+  for (;;) {
+    const seen = await getPrismaClient().pushAttempt.count({
+      where: { userId: TEST_USER_ID },
+    });
+    if (seen >= expected) return;
+    if (Date.now() > deadline) {
+      throw new Error(
+        `the delivery ledger still holds ${seen} of ${expected} rows after five seconds`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
 }
 
 beforeEach(async () => {
@@ -82,7 +101,7 @@ describe("instance-wide notification channel switch", () => {
     await setNtfyGlobal(false);
 
     const outcome = await dispatch();
-    await settleLedger();
+    await settleLedger(1);
 
     expect(ntfySendMock).not.toHaveBeenCalled();
     expect(outcome).toEqual({
