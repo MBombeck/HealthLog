@@ -1,6 +1,12 @@
 /**
  * v1.39 (Wave C) — what the confirm screen is allowed to claim.
  *
+ * C5 (research M-l): both of the screen's own Settings links are page routes,
+ * and `hl_onboarding=pending` is still set while this screen is on — the
+ * completion is what clears it, and this screen is what calls the completion.
+ * The proxy sends both straight back to the flow, so on a first run they are
+ * dead links under a sentence that is not yet true.
+ *
  * C4 (research I6): the screen listed what the answers switch ON and said
  * everything else "stays one click away under Settings, Modules" — true of
  * reachability, false of the navigation entry. A module the answers do not
@@ -82,5 +88,22 @@ describe("<ConfirmScreen> — modules leaving the navigation (C4)", () => {
       medications: true,
     });
     expect(html).not.toContain('data-slot="onboarding-confirm-modules-off"');
+  });
+});
+
+describe("<ConfirmScreen> — Settings links on a first run (C5)", () => {
+  it("renders both as plain text while the completion has not run", () => {
+    const html = render(state());
+    expect(html).not.toContain('href="/settings/modules"');
+    expect(html).not.toContain('href="/settings/account"');
+    // The words stay: they say where the thing lives, which is true.
+    expect(html).toContain("Settings, Modules");
+    expect(html).toContain("Settings, Account");
+  });
+
+  it("renders them as links once the flow has been completed once", () => {
+    const html = render(state({ completedAt: "2026-09-10T08:00:00.000Z" }), {});
+    expect(html).toContain('href="/settings/modules"');
+    expect(html).toContain('href="/settings/account"');
   });
 });

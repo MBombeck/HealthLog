@@ -27,6 +27,7 @@ import {
 
 /** A step the confirm screen may pass on the ledger without an answer. */
 type PassableStepId = (typeof ONBOARDING_SKIPPABLE_STEP_IDS)[number];
+import { isOnboardingSettled } from "@/lib/onboarding/needs";
 import {
   firstResultApplies,
   nextScreen,
@@ -111,6 +112,17 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
   const ledger = useRef(state);
 
   const needs = state.needs;
+  /**
+   * v1.39 (Wave C, C5) — is `hl_onboarding=pending` still set? (research M-l)
+   *
+   * Both of this screen's Settings links are page routes, and the cookie is
+   * cleared by the completion — which is what THIS screen calls. So on a
+   * first run the proxy 307s both straight back into the flow: two links
+   * that cannot go anywhere, under a sentence saying where things live. The
+   * words are true, the links are not, so only the links go.
+   */
+  const settingsReachable =
+    isOnboardingSettled(state) || state.completedAt !== null;
   const forSomeoneElse = needs.recordTarget === "someone-else";
   // v1.39 (Wave C, C4) — `user.modules` is the map the navigation reads, so
   // the screen can only name a module the person actually has today.
@@ -201,12 +213,18 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
         </p>
         <p className="text-sm">
           {t("onboarding.flow.confirm.everythingElse")}{" "}
-          <Link
-            href="/settings/modules"
-            className="text-primary underline underline-offset-4"
-          >
-            {t("onboarding.flow.confirm.modulesLink")}
-          </Link>
+          {settingsReachable ? (
+            <Link
+              href="/settings/modules"
+              className="text-primary underline underline-offset-4"
+            >
+              {t("onboarding.flow.confirm.modulesLink")}
+            </Link>
+          ) : (
+            <span className="font-medium">
+              {t("onboarding.flow.confirm.modulesLink")}
+            </span>
+          )}
         </p>
       </div>
 
@@ -241,12 +259,18 @@ export function ConfirmScreen({ state }: { state: OnboardingStateDto }) {
         ) : null}
       </dl>
       <p className="text-sm">
-        <Link
-          href="/settings/account"
-          className="text-primary underline underline-offset-4"
-        >
-          {t("onboarding.flow.confirm.changeInSettings")}
-        </Link>
+        {settingsReachable ? (
+          <Link
+            href="/settings/account"
+            className="text-primary underline underline-offset-4"
+          >
+            {t("onboarding.flow.confirm.changeInSettings")}
+          </Link>
+        ) : (
+          <span className="text-muted-foreground">
+            {t("onboarding.flow.confirm.changeInSettings")}
+          </span>
+        )}
       </p>
 
       {forSomeoneElse ? (
