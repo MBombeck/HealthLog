@@ -26,6 +26,20 @@ import { formatDateTime } from "@/lib/format";
  * failure, which never had a status to record.
  */
 
+/**
+ * v1.38.19 (Wave E) — the day's spend, split by who pays for it. The operator
+ * opens this card when a surface refuses on budget, and one mixed number could
+ * not answer the question that raises: a day at 1.24 M tokens is alarming until
+ * you see that 151 200 of them were the instance's own key and the rest ran on
+ * the users' own plans. The operator ceiling is enforced against the second
+ * figure, so both belong on screen.
+ */
+interface SpendToday {
+  dateKey: string;
+  totalTokens: number;
+  operatorTokens: number;
+}
+
 interface ProviderHealthRow {
   providerType: string;
   tracked: number;
@@ -37,12 +51,18 @@ interface ProviderHealthRow {
 }
 
 export function ProviderHealthSection() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  // Seven-digit token counts are the point of this readout; ungrouped digits
+  // are what made the mixed figure unreadable in the first place.
+  const groupDigits = (value: number): string =>
+    new Intl.NumberFormat(locale).format(value);
 
   const { data, isPending, isError } = useQuery({
     queryKey: queryKeys.adminProviderHealth(),
     queryFn: () =>
-      apiGet<{ providers: ProviderHealthRow[] }>("/api/admin/provider-health"),
+      apiGet<{ providers: ProviderHealthRow[]; spendToday: SpendToday }>(
+        "/api/admin/provider-health",
+      ),
   });
 
   const typeLabel = (type: string): string => {
@@ -67,6 +87,7 @@ export function ProviderHealthSection() {
   };
 
   const providers = data?.providers ?? [];
+  const spendToday = data?.spendToday ?? null;
 
   return (
     <SettingsCard>
@@ -75,6 +96,15 @@ export function ProviderHealthSection() {
         title={t("admin.providerHealth.title")}
         description={t("admin.providerHealth.description")}
       />
+      {spendToday ? (
+        <p className="text-muted-foreground text-sm" data-slot="ai-spend-today">
+          {t("admin.providerHealth.spendToday", {
+            date: spendToday.dateKey,
+            total: groupDigits(spendToday.totalTokens),
+            operator: groupDigits(spendToday.operatorTokens),
+          })}
+        </p>
+      ) : null}
       {isPending ? (
         <p className="text-muted-foreground text-sm">
           {t("admin.providerHealth.loading")}

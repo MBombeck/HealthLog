@@ -6632,7 +6632,8 @@
       "typeAnthropic": "Anthropic key (personal)",
       "typeCodex": "ChatGPT sign-in (personal)",
       "typeLocal": "Local model (personal)",
-      "typeGateway": "OpenAI-compatible gateway (personal)"
+      "typeGateway": "OpenAI-compatible gateway (personal)",
+      "spendToday": "Today ({date}): {total} tokens, {operator} of them on the operator's own key."
     },
     "aiQuality": {
       "title": "Insights Quality",

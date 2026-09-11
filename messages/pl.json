@@ -6632,7 +6632,8 @@
       "typeAnthropic": "Klucz Anthropic (osobisty)",
       "typeCodex": "Logowanie ChatGPT (osobiste)",
       "typeLocal": "Model lokalny (osobisty)",
-      "typeGateway": "Brama zgodna z OpenAI (osobista)"
+      "typeGateway": "Brama zgodna z OpenAI (osobista)",
+      "spendToday": "Dzisiaj ({date}): {total} tokenów, w tym {operator} na kluczu operatora."
     },
     "aiQuality": {
       "title": "Jakość analiz",
