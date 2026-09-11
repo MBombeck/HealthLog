@@ -19,6 +19,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import { aiTestOverrideSchema } from "@/lib/validations/ai-provider";
@@ -113,6 +114,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
         providerType: provider.type === "admin-key" ? "admin-openai" : "local",
       },
     ]),
+    resolveCostOwner([
+      {
+        providerType: provider.type === "admin-key" ? "admin-openai" : "local",
+      },
+    ]),
   );
   if (!reservation.allowed) {
     annotate({ action: { name: "ai.test.budget_exceeded" } });
@@ -137,6 +143,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
       reservation.reserved,
       result.tokensUsed ?? reservation.reserved,
       dateKey,
+      0,
+      {
+        servedBy: provider.type === "admin-key" ? "admin-openai" : "local",
+        reservedOwner: reservation.owner,
+      },
     );
 
     return apiSuccess({
@@ -155,7 +166,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     // A failed probe produced no reported usage — refund the reservation so a
     // provider that is simply misconfigured doesn't burn the caller's ledger
     // while they fix it.
-    await reconcileSpend(user.id, reservation.reserved, 0, dateKey);
+    await reconcileSpend(user.id, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     annotate({
       meta: {
         ai_test_error: err.message.slice(0, 500),

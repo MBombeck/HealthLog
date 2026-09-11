@@ -38,6 +38,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import { prisma } from "@/lib/db";
@@ -231,6 +232,7 @@ export async function runContentIndexBackfillForUser(
         AI_BUDGETS.documentTranscribe.maxTokens,
         dateKey,
         dailyCap,
+        resolveCostOwner([{ providerType: pick.entry.providerType }]),
       );
       if (!reservation.allowed) {
         reason = "budget-reached";
@@ -239,7 +241,10 @@ export async function runContentIndexBackfillForUser(
 
       const document = await loadOwnedDocument(userId, id);
       if (!document) {
-        await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+        await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+          servedBy: null,
+          reservedOwner: reservation.owner,
+        });
         skipped += 1;
         continue;
       }
@@ -249,7 +254,10 @@ export async function runContentIndexBackfillForUser(
         // or a PDF the rasteriser could not render) — refund and move on so
         // the walk keeps converging. Counted as skipped, not failed: no
         // provider call happened.
-        await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+        await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+          servedBy: null,
+          reservedOwner: reservation.owner,
+        });
         skipped += 1;
         continue;
       }
@@ -266,6 +274,11 @@ export async function runContentIndexBackfillForUser(
           reservation.reserved,
           reservation.reserved,
           dateKey,
+          0,
+          {
+            servedBy: pick.entry.providerType,
+            reservedOwner: reservation.owner,
+          },
         );
         await upsertContentIndex({
           userId,
@@ -278,7 +291,10 @@ export async function runContentIndexBackfillForUser(
       } catch {
         // A provider miss on one document must not abort the batch — refund and
         // leave it un-indexed (a later run retries it).
-        await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+        await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+          servedBy: null,
+          reservedOwner: reservation.owner,
+        });
         failed += 1;
       }
     }

@@ -39,6 +39,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import { singleUserTurn } from "@/lib/ai/types";
@@ -122,6 +123,7 @@ export async function runBriefingCompletion(
     estimatedTokens,
     dateKey,
     resolveDailyCap(args.chain),
+    resolveCostOwner(args.chain),
   );
   if (!reservation.allowed) {
     annotate({
@@ -153,12 +155,13 @@ export async function runBriefingCompletion(
     // invented figure. A partially-burned upstream call is possible here, but
     // we have no reported count to charge, and over-charging a failed
     // generation would ration the retry the user is entitled to.
-    await reconcileSpend(args.userId, reservation.reserved, 0, dateKey).catch(
-      () => {
-        // Best-effort: a failed refund leaves the conservative reservation in
-        // place (never an undercount) and must not mask the provider error.
-      },
-    );
+    await reconcileSpend(args.userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    }).catch(() => {
+      // Best-effort: a failed refund leaves the conservative reservation in
+      // place (never an undercount) and must not mask the provider error.
+    });
     throw err;
   }
 
@@ -169,6 +172,10 @@ export async function runBriefingCompletion(
     actualTokens,
     dateKey,
     outcome.result.cachedInputTokens ?? 0,
+    {
+      servedBy: outcome.workingProvider.providerType,
+      reservedOwner: reservation.owner,
+    },
   ).catch(() => {
     // Ledger reconcile is best-effort; a failure leaves the reservation in
     // place and never breaks a generation that already succeeded.

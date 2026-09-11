@@ -42,8 +42,8 @@ describe("reserveBudget (real Postgres)", () => {
     });
 
     const [a, b] = await Promise.all([
-      reserveBudget(userId, 600, dateKey, cap),
-      reserveBudget(userId, 600, dateKey, cap),
+      reserveBudget(userId, 600, dateKey, cap, "operator"),
+      reserveBudget(userId, 600, dateKey, cap, "operator"),
     ]);
 
     // Exactly one is admitted: the first to commit sees prior 900 (< cap) and
@@ -65,7 +65,7 @@ describe("reserveBudget (real Postgres)", () => {
     const userId = await seedUser();
     const dateKey = "2026-06-20";
 
-    const res = await reserveBudget(userId, 600, dateKey, 25_000);
+    const res = await reserveBudget(userId, 600, dateKey, 25_000, "operator");
     expect(res.allowed).toBe(true);
 
     const row = await getPrismaClient().coachUsage.findUnique({
@@ -81,8 +81,11 @@ describe("reserveBudget (real Postgres)", () => {
     const userId = await seedUser();
     const dateKey = "2026-06-21";
 
-    const res = await reserveBudget(userId, 600, dateKey, 25_000);
-    await reconcileSpend(userId, res.reserved, 120, dateKey);
+    const res = await reserveBudget(userId, 600, dateKey, 25_000, "operator");
+    await reconcileSpend(userId, res.reserved, 120, dateKey, 0, {
+      servedBy: "admin-openai",
+      reservedOwner: res.owner,
+    });
 
     const row = await getPrismaClient().coachUsage.findUnique({
       where: { userId_dateKey: { userId, dateKey } },
@@ -99,8 +102,11 @@ describe("reserveBudget (real Postgres)", () => {
 
     // Provider returned 450 tokens but the reply was empty/sentinel: the
     // reconcile must still record the 450 burned, not zero.
-    const res = await reserveBudget(userId, 600, dateKey, 25_000);
-    await reconcileSpend(userId, res.reserved, 450, dateKey);
+    const res = await reserveBudget(userId, 600, dateKey, 25_000, "operator");
+    await reconcileSpend(userId, res.reserved, 450, dateKey, 0, {
+      servedBy: "admin-openai",
+      reservedOwner: res.owner,
+    });
 
     const row = await getPrismaClient().coachUsage.findUnique({
       where: { userId_dateKey: { userId, dateKey } },

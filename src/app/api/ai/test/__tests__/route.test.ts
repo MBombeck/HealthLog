@@ -30,9 +30,12 @@ vi.mock("@/lib/ai/coach/budget", () => ({
     allowed: true,
     reserved: 32,
     totalAfter: 32,
+    owner: "operator" as const,
+    operatorAfter: 32,
   })),
   reconcileSpend: vi.fn(async () => undefined),
   resolveDailyCap: () => 200_000,
+  resolveCostOwner: () => "operator" as const,
 }));
 
 vi.mock("@/lib/logging/context", () => ({
@@ -376,6 +379,8 @@ describe("POST /api/ai/test — daily ceiling + ledger", () => {
       32,
       expect.any(Number),
       "2026-01-01",
+      0,
+      { servedBy: expect.any(String), reservedOwner: "operator" },
     );
   });
 });

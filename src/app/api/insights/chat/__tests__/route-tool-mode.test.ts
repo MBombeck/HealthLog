@@ -123,8 +123,9 @@ const { reserveBudget, reconcileSpend } = vi.hoisted(() => ({
       allowed: boolean;
       reserved: number;
       totalAfter?: number;
+      owner?: "operator" | "user";
     }>
-  >(async () => ({ allowed: true, reserved: 3000 })),
+  >(async () => ({ allowed: true, reserved: 3000, owner: "user" as const })),
   reconcileSpend: vi.fn(async () => undefined),
 }));
 vi.mock("@/lib/ai/coach/budget", () => ({
@@ -132,6 +133,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   reserveBudget,
   reconcileSpend,
   resolveDailyCap: vi.fn(() => 2_000_000),
+  resolveCostOwner: vi.fn(() => "user" as const),
 }));
 
 const { detectRefusal } = vi.hoisted(() => ({
@@ -266,7 +268,11 @@ function chatReq(body: Record<string, unknown>): Request {
 describe("coach chat — tool-mode routing (F1)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    reserveBudget.mockResolvedValue({ allowed: true, reserved: 3000 });
+    reserveBudget.mockResolvedValue({
+      allowed: true,
+      reserved: 3000,
+      owner: "user" as const,
+    });
     detectRefusal.mockReturnValue({ refuse: false });
     checkRateLimit.mockResolvedValue({ allowed: true });
     assertConsentForChain.mockResolvedValue(undefined);
@@ -318,6 +324,7 @@ describe("coach chat — tool-mode routing (F1)", () => {
       4500,
       "2026-06-21",
       2_000_000,
+      "user",
     );
   });
 
@@ -347,6 +354,8 @@ describe("coach chat — tool-mode routing (F1)", () => {
       3000,
       0,
       expect.anything(),
+      0,
+      { servedBy: null, reservedOwner: "user" },
     );
   });
 
@@ -558,6 +567,7 @@ describe("coach chat — tool-mode routing (F1)", () => {
       1500,
       "2026-06-21",
       2_000_000,
+      "user",
     );
     // The legacy path ships the snapshot figures in the user turn.
     const params = (

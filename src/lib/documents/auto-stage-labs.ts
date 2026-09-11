@@ -283,6 +283,7 @@ export async function maybeAutoStageLabFacts(
     AI_BUDGETS.ocrExtractText.maxTokens,
     dateKey,
     provider.dailyCap,
+    provider.costOwner,
   );
   if (!reservation.allowed) return { staged: false, reason: "budget" };
 
@@ -298,9 +299,17 @@ export async function maybeAutoStageLabFacts(
       reservation.reserved,
       reservation.reserved,
       dateKey,
+      0,
+      {
+        servedBy: provider.pick.entry.providerType,
+        reservedOwner: reservation.owner,
+      },
     );
   } catch (err) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     if (!(err instanceof InboundExtractError)) {
       annotate({
         action: { name: "documents.autoStage.failed" },

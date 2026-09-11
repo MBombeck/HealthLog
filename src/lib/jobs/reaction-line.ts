@@ -41,7 +41,9 @@ import { isModuleEnabled } from "@/lib/modules/gate";
 import {
   buildDateKey,
   reconcileSpend,
+  resolveCostOwner,
   resolveDailyCap,
+  type BudgetCostOwner,
 } from "@/lib/ai/coach/budget";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { screenCoachReply } from "@/lib/ai/coach/outbound-guard";
@@ -314,6 +316,13 @@ type ReactionReservation = {
   allowed: boolean;
   reserved: number;
   dateKey: string;
+  /**
+   * v1.38.19 (Wave E) — the cost owner the reservation was booked to. A
+   * RESUMED reservation (the claim survived a crash, its tokens are on the
+   * row) recomputes it from the same chain the reservation was made under, so
+   * the reconcile reverses exactly what the reservation added.
+   */
+  owner: BudgetCostOwner;
 };
 
 class ReactionClaimLostError extends Error {
@@ -334,6 +343,7 @@ async function reserveClaimBudget(
   revision: Date,
   dateKey: string,
   cap: number,
+  owner: BudgetCostOwner,
 ): Promise<ReactionReservation> {
   return prisma.$transaction(async (tx) => {
     const stillOwned = await tx.arrivalReaction.updateMany({
@@ -352,11 +362,17 @@ async function reserveClaimBudget(
     if (stillOwned.count !== 1) throw new ReactionClaimLostError();
 
     const reserved = ARRIVAL_REACTION_RESERVE_TOKENS;
+    // v1.38.19 (Wave E) — this reservation is the claim-linked twin of
+    // `reserveBudget`, so it books the owner split the same way: an
+    // operator-funded chain increments `operator_tokens` inside the SAME
+    // statement as the total, and the refusal path reverses both.
+    const operatorReserved = owner === "operator" ? reserved : 0;
     const rows = await tx.$queryRaw<{ total_tokens: number }[]>`
-      INSERT INTO coach_usage (id, user_id, date_key, total_tokens, message_count, created_at, updated_at)
-      VALUES (gen_random_uuid()::text, ${userId}, ${dateKey}, ${reserved}, 1, NOW(), NOW())
+      INSERT INTO coach_usage (id, user_id, date_key, total_tokens, operator_tokens, message_count, created_at, updated_at)
+      VALUES (gen_random_uuid()::text, ${userId}, ${dateKey}, ${reserved}, ${operatorReserved}, 1, NOW(), NOW())
       ON CONFLICT (user_id, date_key) DO UPDATE SET
         total_tokens = coach_usage.total_tokens + ${reserved},
+        operator_tokens = coach_usage.operator_tokens + ${operatorReserved},
         message_count = coach_usage.message_count + 1,
         updated_at = NOW()
       RETURNING total_tokens
@@ -366,6 +382,7 @@ async function reserveClaimBudget(
       await tx.$executeRaw`
         UPDATE coach_usage
         SET total_tokens = GREATEST(0, total_tokens - ${reserved}),
+            operator_tokens = GREATEST(0, operator_tokens - ${operatorReserved}),
             message_count = GREATEST(0, message_count - 1),
             updated_at = NOW()
         WHERE user_id = ${userId} AND date_key = ${dateKey}
@@ -374,7 +391,7 @@ async function reserveClaimBudget(
         where: { id: rowId, userId, occurredAt: revision, generationClaimId },
         data: { generationClaimId: null, generationClaimedAt: null },
       });
-      return { allowed: false, reserved, dateKey };
+      return { allowed: false, reserved, dateKey, owner };
     }
 
     const linked = await tx.arrivalReaction.updateMany({
@@ -395,7 +412,7 @@ async function reserveClaimBudget(
     });
     if (linked.count !== 1) throw new ReactionClaimLostError();
 
-    return { allowed: true, reserved, dateKey };
+    return { allowed: true, reserved, dateKey, owner };
   });
 }
 
@@ -526,6 +543,7 @@ export async function runReactionLine(
       allowed: true,
       reserved: row.generationReservedTokens!,
       dateKey: row.generationBudgetDateKey!,
+      owner: resolveCostOwner(chain),
     };
   } else {
     try {
@@ -536,6 +554,7 @@ export async function runReactionLine(
         revision,
         buildDateKey(),
         resolveDailyCap(chain),
+        resolveCostOwner(chain),
       );
     } catch (err) {
       if (err instanceof ReactionClaimLostError) {
@@ -625,6 +644,8 @@ export async function runReactionLine(
       reservation.reserved,
       reservation.reserved,
       reservation.dateKey,
+      0,
+      { servedBy: chain[0].providerType, reservedOwner: reservation.owner },
     ).catch(() => {});
     await finishTerminalAttempt().catch(() => {});
     workerLog("error", "[reaction-line] generation failed", err);
@@ -638,6 +659,7 @@ export async function runReactionLine(
       result.tokensUsed ?? reservation.reserved,
       reservation.dateKey,
       result.cachedInputTokens ?? 0,
+      { servedBy: chain[0].providerType, reservedOwner: reservation.owner },
     );
   } catch (err) {
     // Do not publish a line whose spend was not durably reconciled. The

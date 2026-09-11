@@ -49,6 +49,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   reserveBudget: vi.fn(),
   reconcileSpend: vi.fn().mockResolvedValue(undefined),
   resolveDailyCap: vi.fn(() => 1000),
+  resolveCostOwner: vi.fn(() => "operator" as const),
 }));
 vi.mock("@/lib/jobs/boss-instance", () => ({ getGlobalBoss: vi.fn() }));
 

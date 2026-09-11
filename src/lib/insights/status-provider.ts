@@ -13,6 +13,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import { AI_BUDGETS, REFERENCE_AI_SEED } from "@/lib/ai/ai-budgets";
@@ -223,6 +224,7 @@ export async function runStatusCompletion(
     estimatedTokens,
     dateKey,
     resolveDailyCap(chain),
+    resolveCostOwner(chain),
   );
   if (!reservation.allowed) {
     // Over the day's ceiling. Reported as `error` — a TRANSIENT miss the caller
@@ -264,11 +266,17 @@ export async function runStatusCompletion(
     // A timed-out generation may still have burned upstream tokens, but we have
     // no reported count to charge — refund the reservation rather than bill an
     // invented figure.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     return { kind: "timeout" };
   }
   if (raced.errored || raced.value === null) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     return { kind: "error" };
   }
 
@@ -279,7 +287,10 @@ export async function runStatusCompletion(
   // into a free retry loop. Falls back to the reservation when the provider
   // reports no count, so an unreported generation is never billed as zero.
   const actualTokens = result.tokensUsed ?? reservation.reserved;
-  await reconcileSpend(userId, reservation.reserved, actualTokens, dateKey);
+  await reconcileSpend(userId, reservation.reserved, actualTokens, dateKey, 0, {
+    servedBy: workingProvider.providerType,
+    reservedOwner: reservation.owner,
+  });
 
   const content = result.content;
   if (typeof content !== "string" || content.trim().length === 0) {

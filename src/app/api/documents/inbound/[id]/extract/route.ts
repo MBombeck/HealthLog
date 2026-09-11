@@ -41,6 +41,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import { auditLog } from "@/lib/auth/audit";
@@ -254,6 +255,7 @@ async function handleTextExtract(
     AI_BUDGETS.ocrExtractText.maxTokens,
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
+    resolveCostOwner([{ providerType: pick.entry.providerType }]),
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);
@@ -273,6 +275,8 @@ async function handleTextExtract(
       reservation.reserved,
       reservation.reserved,
       dateKey,
+      0,
+      { servedBy: pick.entry.providerType, reservedOwner: reservation.owner },
     );
 
     const updated = await stageExtraction(document.id, userId, result);
@@ -289,7 +293,10 @@ async function handleTextExtract(
 
     return apiSuccess(serialiseDocumentDetail(updated, updated.facts));
   } catch (err) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     if (err instanceof InboundExtractError) {
       return apiError("Couldn't read the document. Try a clearer copy.", 422, {
         errorCode: "documents.inbound.extractFailed",
@@ -351,6 +358,7 @@ async function handleStoredExtract(
     AI_BUDGETS.ocrExtractText.maxTokens,
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
+    resolveCostOwner([{ providerType: pick.entry.providerType }]),
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);
@@ -370,6 +378,8 @@ async function handleStoredExtract(
       reservation.reserved,
       reservation.reserved,
       dateKey,
+      0,
+      { servedBy: pick.entry.providerType, reservedOwner: reservation.owner },
     );
 
     const updated = await stageExtraction(document.id, userId, result);
@@ -386,7 +396,10 @@ async function handleStoredExtract(
 
     return apiSuccess(serialiseDocumentDetail(updated, updated.facts));
   } catch (err) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     if (err instanceof InboundExtractError) {
       return apiError("Couldn't read the document. Try a clearer copy.", 422, {
         errorCode: "documents.inbound.extractFailed",
@@ -465,6 +478,7 @@ async function handleVisionExtract(
     AI_BUDGETS.ocrExtract.maxTokens,
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
+    resolveCostOwner([{ providerType: pick.entry.providerType }]),
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);
@@ -493,6 +507,8 @@ async function handleVisionExtract(
       reservation.reserved,
       reservation.reserved,
       dateKey,
+      0,
+      { servedBy: pick.entry.providerType, reservedOwner: reservation.owner },
     );
 
     const updated = await stageExtraction(document.id, userId, result);
@@ -509,7 +525,10 @@ async function handleVisionExtract(
 
     return apiSuccess(serialiseDocumentDetail(updated, updated.facts));
   } catch (err) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     if (err instanceof InboundExtractError) {
       return apiError("Couldn't read the document. Try a clearer copy.", 422, {
         errorCode: "documents.inbound.extractFailed",

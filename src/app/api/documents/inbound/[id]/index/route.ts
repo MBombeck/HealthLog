@@ -37,6 +37,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import { auditLog } from "@/lib/auth/audit";
@@ -249,6 +250,7 @@ async function handleVisionIndex(
     AI_BUDGETS.documentTranscribe.maxTokens,
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
+    resolveCostOwner([{ providerType: pick.entry.providerType }]),
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);
@@ -269,6 +271,8 @@ async function handleVisionIndex(
       reservation.reserved,
       reservation.reserved,
       dateKey,
+      0,
+      { servedBy: pick.entry.providerType, reservedOwner: reservation.owner },
     );
     // Refs #776 — the empty-transcription guard, same contract as the auto
     // path (`tryProviderIndex`): a provider answer with no text must never
@@ -295,7 +299,10 @@ async function handleVisionIndex(
     });
     return finishIndex(request, userId, document.id, "vision", tokenCount);
   } catch (err) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     await recordIndexAttempt(userId, document.id, {
       indexed: false,
       reason: "provider-error",

@@ -29,6 +29,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import { auditLog } from "@/lib/auth/audit";
@@ -166,6 +167,7 @@ async function handleTextSuggest(
     AI_BUDGETS.documentAssist.maxTokens,
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
+    resolveCostOwner([{ providerType: pick.entry.providerType }]),
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);
@@ -185,10 +187,15 @@ async function handleTextSuggest(
       reservation.reserved,
       reservation.reserved,
       dateKey,
+      0,
+      { servedBy: pick.entry.providerType, reservedOwner: reservation.owner },
     );
     return finishSuggest(request, userId, document.id, "text", suggestion);
   } catch (err) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     if (err instanceof DocumentAssistError) {
       return apiError("Couldn't read the document. Try a clearer copy.", 422, {
         errorCode: "documents.inbound.extractFailed",
@@ -255,6 +262,7 @@ async function handleVisionSuggest(
     AI_BUDGETS.documentAssist.maxTokens,
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
+    resolveCostOwner([{ providerType: pick.entry.providerType }]),
   );
   if (!reservation.allowed) {
     await refundDocumentAiSlot(userId);
@@ -275,10 +283,15 @@ async function handleVisionSuggest(
       reservation.reserved,
       reservation.reserved,
       dateKey,
+      0,
+      { servedBy: pick.entry.providerType, reservedOwner: reservation.owner },
     );
     return finishSuggest(request, userId, document.id, "vision", suggestion);
   } catch (err) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     if (err instanceof DocumentAssistError) {
       return apiError("Couldn't read the document. Try a clearer copy.", 422, {
         errorCode: "documents.inbound.extractFailed",

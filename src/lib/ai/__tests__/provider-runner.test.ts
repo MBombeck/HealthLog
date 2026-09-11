@@ -13,13 +13,16 @@ import {
 // v1.37.19 (A7-2) — the runner consults the day's recorded spend before an
 // operator-funded hop. These pure chain tests do not stand up a DB, so the
 // ledger read is swapped for a controllable in-memory figure.
-const budgetState = vi.hoisted(() => ({ spent: 0 }));
+const budgetState = vi.hoisted(() => ({ spent: 0, operatorSpent: 0 }));
 vi.mock("../coach/budget", async () => {
   const actual =
     await vi.importActual<typeof import("../coach/budget")>("../coach/budget");
   return {
     ...actual,
-    readDailySpend: vi.fn(async () => budgetState.spent),
+    readDailySpend: vi.fn(async () => ({
+      total: budgetState.spent,
+      operator: budgetState.operatorSpent,
+    })),
   };
 });
 

@@ -4,6 +4,7 @@ import {
   buildDateKey,
   OPERATOR_COST_CAP,
   USER_PLAN_CAP,
+  resolveCostOwner,
   resolveDailyCap,
 } from "../budget";
 
@@ -60,19 +61,37 @@ describe("reserveBudget — ledger clamps", () => {
 
   it("clamps a non-finite reservation to 0", async () => {
     const { reserveBudget } = await import("../budget");
-    const res = await reserveBudget("u", Number.NaN, "2026-05-10");
+    const res = await reserveBudget(
+      "u",
+      Number.NaN,
+      "2026-05-10",
+      OPERATOR_COST_CAP,
+      "operator",
+    );
     expect(res.reserved).toBe(0);
   });
 
   it("clamps a negative reservation to 0", async () => {
     const { reserveBudget } = await import("../budget");
-    const res = await reserveBudget("u", -42, "2026-05-10");
+    const res = await reserveBudget(
+      "u",
+      -42,
+      "2026-05-10",
+      OPERATOR_COST_CAP,
+      "operator",
+    );
     expect(res.reserved).toBe(0);
   });
 
   it("floors a fractional reservation", async () => {
     const { reserveBudget } = await import("../budget");
-    const res = await reserveBudget("u", 12.7, "2026-05-10");
+    const res = await reserveBudget(
+      "u",
+      12.7,
+      "2026-05-10",
+      OPERATOR_COST_CAP,
+      "operator",
+    );
     expect(res.reserved).toBe(12);
   });
 });
@@ -143,6 +162,7 @@ describe("reserveBudget cap (F1 — user-plan path not locked out)", () => {
       1_200,
       "2026-05-10",
       resolveDailyCap([{ providerType: "codex" }]),
+      resolveCostOwner([{ providerType: "codex" }]),
     );
     expect(res.allowed).toBe(true);
     // The reservation upsert ran; no refund executeRaw fired.
@@ -161,6 +181,7 @@ describe("reserveBudget cap (F1 — user-plan path not locked out)", () => {
       1_200,
       "2026-05-10",
       resolveDailyCap([{ providerType: "admin-openai" }]),
+      resolveCostOwner([{ providerType: "admin-openai" }]),
     );
     expect(res.allowed).toBe(false);
     // Refund of the reservation fired on refusal.
@@ -181,7 +202,10 @@ describe("reconcileSpend cached-token subtraction (F3)", () => {
   it("bills total_tokens minus cached input as the signed delta", async () => {
     const { reconcileSpend } = await import("../budget");
     // reserved 1200, gross 20000, cached 13000 → net actual 7000 → delta 5800.
-    await reconcileSpend("u", 1_200, 20_000, "2026-05-10", 13_000);
+    await reconcileSpend("u", 1_200, 20_000, "2026-05-10", 13_000, {
+      servedBy: "admin-openai",
+      reservedOwner: "operator",
+    });
     expect(prismaMock.$executeRaw).toHaveBeenCalledTimes(1);
     // The tagged-template interpolations carry the delta; assert it is 5800.
     const interpolations = prismaMock.$executeRaw.mock.calls[0].slice(1);
@@ -190,7 +214,10 @@ describe("reconcileSpend cached-token subtraction (F3)", () => {
 
   it("clamps a cached count larger than gross to a zero charge (delta = -reserved)", async () => {
     const { reconcileSpend } = await import("../budget");
-    await reconcileSpend("u", 1_200, 5_000, "2026-05-10", 9_999);
+    await reconcileSpend("u", 1_200, 5_000, "2026-05-10", 9_999, {
+      servedBy: "admin-openai",
+      reservedOwner: "operator",
+    });
     const interpolations = prismaMock.$executeRaw.mock.calls[0].slice(1);
     // net actual clamped to 0 → delta = 0 - 1200 = -1200.
     expect(interpolations).toContain(-1_200);
@@ -198,7 +225,10 @@ describe("reconcileSpend cached-token subtraction (F3)", () => {
 
   it("defaults cachedTokens to 0 (back-compat) — bills gross", async () => {
     const { reconcileSpend } = await import("../budget");
-    await reconcileSpend("u", 1_000, 4_000, "2026-05-10");
+    await reconcileSpend("u", 1_000, 4_000, "2026-05-10", 0, {
+      servedBy: "admin-openai",
+      reservedOwner: "operator",
+    });
     const interpolations = prismaMock.$executeRaw.mock.calls[0].slice(1);
     expect(interpolations).toContain(3_000);
   });

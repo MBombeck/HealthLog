@@ -88,6 +88,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   reserveBudget: (...a: unknown[]) => reserveBudget(...a),
   reconcileSpend: (...a: unknown[]) => reconcileSpend(...a),
   resolveDailyCap: () => 200_000,
+  resolveCostOwner: () => "operator" as const,
 }));
 
 const loadDailyDigest = vi.fn();
@@ -467,6 +468,7 @@ describe("reaction line — degradation", () => {
       1_400,
       "2026-07-16",
       0,
+      { servedBy: expect.any(String), reservedOwner: "operator" },
     );
   });
 
@@ -528,6 +530,8 @@ describe("reaction line — degradation", () => {
       1_400,
       1_400,
       "2026-07-16",
+      0,
+      { servedBy: expect.any(String), reservedOwner: "operator" },
     );
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -623,6 +627,7 @@ describe("reaction line — degradation", () => {
       900,
       "2026-07-16",
       0,
+      { servedBy: expect.any(String), reservedOwner: "operator" },
     );
     expect(update).not.toHaveBeenCalled();
     expectSurfaceStillWorks();
@@ -683,6 +688,7 @@ describe("reaction line — degradation", () => {
       1_100,
       "2026-07-16",
       100,
+      { servedBy: expect.any(String), reservedOwner: "operator" },
     );
   });
 });

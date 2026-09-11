@@ -100,6 +100,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   })),
   reconcileSpend: vi.fn(),
   resolveDailyCap: vi.fn(() => 200_000),
+  resolveCostOwner: vi.fn(() => "operator" as const),
 }));
 vi.mock("@/lib/ai/coach/refusal", () => ({ detectRefusal: vi.fn() }));
 vi.mock("@/lib/ai/coach/system-prompt", () => ({

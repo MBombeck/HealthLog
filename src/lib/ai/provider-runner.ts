@@ -431,8 +431,11 @@ async function runRawChain(
       // Fail OPEN on a ledger read error: the reservation layer still
       // meters every call against the same ledger, so a transient read
       // failure here must not take the whole fallback chain down with it.
-      const spent = await readDailySpend(userId).catch(() => 0);
-      if (spent >= OPERATOR_COST_CAP) {
+      const spent = await readDailySpend(userId).catch(() => ({
+        total: 0,
+        operator: 0,
+      }));
+      if (spent.total >= OPERATOR_COST_CAP) {
         const hop: FallbackHop = {
           providerType: candidate.providerType,
           attempt: i + 1,
@@ -445,7 +448,7 @@ async function runRawChain(
           meta: {
             [`ai_chain_hop_${i + 1}_provider`]: candidate.providerType,
             [`ai_chain_hop_${i + 1}_reason`]: "operator-cost-cap-exhausted",
-            operator_cap_spent: spent,
+            operator_cap_spent: spent.total,
           },
         });
         continue;

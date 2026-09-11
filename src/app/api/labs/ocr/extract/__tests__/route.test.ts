@@ -45,6 +45,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   reserveBudget: vi.fn(),
   reconcileSpend: vi.fn().mockResolvedValue(undefined),
   resolveDailyCap: vi.fn(() => 200_000),
+  resolveCostOwner: vi.fn(() => "operator" as const),
 }));
 vi.mock("@/lib/labs/ocr-extract", async () => {
   const actual = await vi.importActual<typeof import("@/lib/labs/ocr-extract")>(
@@ -95,6 +96,8 @@ beforeEach(() => {
     allowed: true,
     reserved: AI_BUDGETS.ocrExtractText.maxTokens ?? 0,
     totalAfter: AI_BUDGETS.ocrExtractText.maxTokens ?? 0,
+    owner: "operator",
+    operatorAfter: AI_BUDGETS.ocrExtractText.maxTokens ?? 0,
   } as never);
 });
 
@@ -116,6 +119,8 @@ describe("POST /api/labs/ocr/extract — text mode budget", () => {
       "2026-06-26",
       // F1 — the provider-aware daily cap (mocked) is threaded as the 4th arg.
       200_000,
+      // Wave E — and the cost owner that cap is enforced against as the 5th.
+      "operator",
     );
   });
 
@@ -134,6 +139,8 @@ describe("POST /api/labs/ocr/extract — text mode budget", () => {
       AI_BUDGETS.ocrExtractText.maxTokens,
       0,
       "2026-06-26",
+      0,
+      { servedBy: null, reservedOwner: "operator" },
     );
   });
 
@@ -182,6 +189,8 @@ describe("POST /api/labs/ocr/extract — vision PDF rasterization", () => {
       allowed: true,
       reserved: AI_BUDGETS.ocrExtract.maxTokens ?? 0,
       totalAfter: AI_BUDGETS.ocrExtract.maxTokens ?? 0,
+      owner: "operator",
+      operatorAfter: AI_BUDGETS.ocrExtract.maxTokens ?? 0,
     } as never);
   });
 
@@ -222,6 +231,8 @@ describe("POST /api/labs/ocr/extract — vision PDF rasterization", () => {
       AI_BUDGETS.ocrExtract.maxTokens,
       0,
       "2026-06-26",
+      0,
+      { servedBy: null, reservedOwner: "operator" },
     );
   });
 });

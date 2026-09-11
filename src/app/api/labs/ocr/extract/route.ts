@@ -41,6 +41,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import { prisma } from "@/lib/db";
@@ -183,6 +184,7 @@ async function handleTextExtract(
     AI_BUDGETS.ocrExtractText.maxTokens,
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
+    resolveCostOwner([{ providerType: pick.entry.providerType }]),
   );
   if (!reservation.allowed) {
     annotate({
@@ -208,12 +210,17 @@ async function handleTextExtract(
       reservation.reserved,
       reservation.reserved,
       dateKey,
+      0,
+      { servedBy: pick.entry.providerType, reservedOwner: reservation.owner },
     );
     return apiSuccess(result);
   } catch (err) {
     // A failed structuring call produced no usable rows; mirror the vision
     // path and refund the reservation in full rather than charging it.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     if (err instanceof OcrExtractError) {
       return apiError("Couldn't read the report. Try a clearer photo.", 422, {
         errorCode: "labs.ocr.extractFailed",
@@ -281,6 +288,7 @@ async function handleVisionExtract(
     AI_BUDGETS.ocrExtract.maxTokens,
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
+    resolveCostOwner([{ providerType: pick.entry.providerType }]),
   );
   if (!reservation.allowed) {
     annotate({
@@ -303,7 +311,10 @@ async function handleVisionExtract(
         action: { name: "labs.ocr.fileRejected" },
         meta: { reason: "content_length_exceeded" },
       });
-      await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+      await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      });
       return apiError("File is too large (max 12 MB).", 413, {
         errorCode: "labs.ocr.fileTooLarge",
       });
@@ -316,7 +327,10 @@ async function handleVisionExtract(
         headers: { "content-type": request.headers.get("content-type") ?? "" },
       }).formData();
     } catch (err) {
-      await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+      await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      });
       if (err instanceof BodyTooLargeError) {
         annotate({
           action: { name: "labs.ocr.fileRejected" },
@@ -331,7 +345,10 @@ async function handleVisionExtract(
 
     const file = formData.get("file");
     if (!(file instanceof File)) {
-      await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+      await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      });
       return apiError("Field 'file' must be a file", 422);
     }
 
@@ -339,7 +356,10 @@ async function handleVisionExtract(
     try {
       buffer = Buffer.from(await file.arrayBuffer());
     } catch {
-      await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+      await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      });
       return apiError("Failed to read uploaded file", 400);
     }
 
@@ -350,7 +370,10 @@ async function handleVisionExtract(
         action: { name: "labs.ocr.fileRejected" },
         meta: { reason: "unsupported_mime" },
       });
-      await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+      await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      });
       return apiError("Upload a JPEG, PNG, WebP, or PDF.", 415, {
         errorCode: "labs.ocr.fileType",
       });
@@ -388,7 +411,10 @@ async function handleVisionExtract(
             action: { name: "labs.ocr.fileRejected" },
             meta: { reason: "pdf_rasterize_failed" },
           });
-          await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+          await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+            servedBy: null,
+            reservedOwner: reservation.owner,
+          });
           return apiError(
             "Couldn't read this PDF; upload a photo instead.",
             422,
@@ -416,12 +442,26 @@ async function handleVisionExtract(
       // The orchestration does not surface token counts; reconcile against the
       // reserved estimate as the spend ceiling (the provider already billed it).
       actualTokens = reservation.reserved;
-      await reconcileSpend(userId, reservation.reserved, actualTokens, dateKey);
+      await reconcileSpend(
+        userId,
+        reservation.reserved,
+        actualTokens,
+        dateKey,
+        0,
+        { servedBy: pick.entry.providerType, reservedOwner: reservation.owner },
+      );
       return apiSuccess(result);
     } catch (err) {
       // Provider/extraction failure — the call may still have burned tokens, so
       // reconcile against the reserved estimate rather than refunding in full.
-      await reconcileSpend(userId, reservation.reserved, actualTokens, dateKey);
+      await reconcileSpend(
+        userId,
+        reservation.reserved,
+        actualTokens,
+        dateKey,
+        0,
+        { servedBy: pick.entry.providerType, reservedOwner: reservation.owner },
+      );
       if (err instanceof OcrExtractError) {
         return apiError("Couldn't read the report. Try a clearer photo.", 422, {
           errorCode: "labs.ocr.extractFailed",
@@ -439,9 +479,10 @@ async function handleVisionExtract(
     }
   } catch (err) {
     // A guard threw after the reservation (e.g. consent races) — refund fully.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey).catch(
-      () => {},
-    );
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    }).catch(() => {});
     throw err;
   }
 }

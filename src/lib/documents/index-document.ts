@@ -36,7 +36,9 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
+  type BudgetCostOwner,
 } from "@/lib/ai/coach/budget";
 import {
   loadOwnedDocument,
@@ -128,6 +130,12 @@ export interface ResolvedIndexProvider {
   pick: Awaited<ReturnType<typeof resolveDocumentVisionProvider>>["pick"];
   consentOk: boolean;
   dailyCap: number;
+  /**
+   * v1.38.19 (Wave E) — whose budget `dailyCap` rations. The reservation books
+   * `operator_tokens` only for an operator-funded pick, so the cap and the
+   * counter it is compared against are resolved from one place.
+   */
+  costOwner: BudgetCostOwner;
 }
 
 /**
@@ -160,7 +168,13 @@ export async function resolveIndexProvider(
     pick && consentOk
       ? resolveDailyCap([{ providerType: pick.entry.providerType }])
       : 0;
-  return { chain, pick, consentOk, dailyCap };
+  // v1.38.19 (Wave E) — the cap and its cost owner are resolved from the SAME
+  // pick, so the reservation books the counter the cap is enforced against.
+  const costOwner: BudgetCostOwner =
+    pick && consentOk
+      ? resolveCostOwner([{ providerType: pick.entry.providerType }])
+      : "operator";
+  return { chain, pick, consentOk, dailyCap, costOwner };
 }
 
 /**
@@ -221,6 +235,7 @@ async function tryProviderIndex(
     AI_BUDGETS.documentTranscribe.maxTokens,
     dateKey,
     provider.dailyCap,
+    provider.costOwner,
   );
   // Budget exhausted → fall through to the free local path rather than stall;
   // a text-layer PDF stays searchable even once the AI allowance is spent.
@@ -238,6 +253,8 @@ async function tryProviderIndex(
       reservation.reserved,
       reservation.reserved,
       dateKey,
+      0,
+      { servedBy: pick.entry.providerType, reservedOwner: reservation.owner },
     );
     // Refs #776 — the empty-transcription guard: a provider answer with no
     // text must NEVER become a "successful" empty index (it would mark the
@@ -261,7 +278,10 @@ async function tryProviderIndex(
   } catch {
     // Refund the reservation and let the caller fall through to local — a
     // transient provider miss must never leave a text-layer PDF unsearchable.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     return { outcome: null, note: "provider-error" };
   }
 }

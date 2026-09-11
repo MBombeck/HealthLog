@@ -6267,13 +6267,19 @@ model HealthProfileFactRevision {
 // secondary signal used by the frontend to render a "≈ N replies left"
 // hint without exposing raw token figures.
 model CoachUsage {
-  id           String   @id @default(cuid())
-  userId       String   @map("user_id")
-  dateKey      String   @map("date_key")
-  totalTokens  Int      @default(0) @map("total_tokens")
-  messageCount Int      @default(0) @map("message_count")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id          String @id @default(cuid())
+  userId      String @map("user_id")
+  dateKey     String @map("date_key")
+  totalTokens Int    @default(0) @map("total_tokens")
+  /// v1.38.19 (Wave E) — the share of `totalTokens` served by a provider the
+  /// OPERATOR funds (`admin-openai` / `admin-codex`). The operator-cost cap is
+  /// enforced against this counter and the user-plan cap against
+  /// `totalTokens`, so background work served by the user's own plan can no
+  /// longer lock the interactive chat out of the operator's ceiling.
+  operatorTokens Int      @default(0) @map("operator_tokens")
+  messageCount   Int      @default(0) @map("message_count")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
