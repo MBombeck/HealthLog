@@ -13,7 +13,7 @@ import {
  * compose healthcheck rely on it. `/api/health` stays public for the same
  * reason.
  */
-const PUBLIC_PATHS = [
+export const PUBLIC_PATHS = [
   "/auth/",
   "/api/auth/login",
   "/api/auth/register",

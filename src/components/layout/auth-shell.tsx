@@ -40,8 +40,12 @@ import { TopBar } from "./top-bar";
 // both lists must agree or the route round-trips through the
 // sign-in redirect.
 const PUBLIC_PATHS = [
-  "/auth/login",
-  "/auth/register",
+  // The whole `/auth/` family, exactly as `proxy.ts` admits it. Listed as the
+  // prefix rather than as `/auth/login` + `/auth/register`: the edge already
+  // lets every path under it through without a session, so a future auth page
+  // that the shell did not know about would mount the protected branch and
+  // bounce its own visitor to the sign-in it is trying to replace.
+  "/auth/",
   "/privacy",
   "/about",
   // v1.11.0 — the public clinician view renders its own standalone chrome
@@ -49,6 +53,12 @@ const PUBLIC_PATHS = [
   // bare; the route is also in `proxy.ts` PUBLIC_PATHS so it never round-trips
   // the sign-in redirect.
   "/c/",
+  // v1.17.0 — the invite universal-link landing is a server redirect onto
+  // `/auth/register?invite=…`. It is public in `proxy.ts`, and it must be
+  // public here too: Next streams this shell before the redirect resolves,
+  // so without the entry the shell classifies the route as protected and
+  // `router.replace("/auth/login")` wins the race against the redirect.
+  "/invite/",
 ];
 
 export function AuthShell({
