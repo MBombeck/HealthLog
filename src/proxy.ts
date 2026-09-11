@@ -185,9 +185,17 @@ const DEMO_MUTATION_ALLOWLIST: ReadonlyArray<{ path: string; method: string }> =
     // v1.39 — the baseline write the confirm screen makes. Without it a demo
     // visitor who typed a height got a 403 and a generic toast, so only the
     // empty-form/Skip path completed and the demo did not in fact walk the
-    // same flow (design spec §Principles 5). Date of birth, height and sex
-    // are closed, validated fields on the caller's own record and no health
-    // data.
+    // same flow (design spec §Principles 5).
+    //
+    // Read the HANDLER's field list, not the caller's. This route writes
+    // `email`, `displayName`, `fullName`, `insurerName`, `insurerIkNumber`,
+    // `insuranceNumber`, `locale`, `timezone`, `timeFormat`, `dateFormat` and
+    // `moodReminderEnabled` as well as the three the baseline step collects —
+    // admitting the path admits all of them, and on one shared published
+    // account each is the next visitor's starting state. So the write is
+    // narrowed on the SERVER: `applyProfileUpdate` drops everything outside
+    // `DEMO_WRITABLE_PROFILE_FIELDS` (height, date of birth, sex) while
+    // `DEMO_MODE` is set. What this entry admits is those three fields.
     //
     // Two neighbours of it are deliberately NOT here. The demo is one shared,
     // published account, so "the caller's own" is every visitor at once:

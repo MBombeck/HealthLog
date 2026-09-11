@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -280,5 +280,86 @@ describe("applyProfileUpdate email conflict", () => {
       expect(result.issues).toBeUndefined();
     }
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * v1.39 — what a demo instance may write through this helper.
+ *
+ * `PUT /api/auth/profile` is on the proxy's demo mutation allowlist so the
+ * setup flow's baseline step can complete. That allowlist admits a path and a
+ * method; it cannot see that the route behind the path also writes the
+ * account's email, display name, full name and insurer fields. The demo is
+ * one published account every visitor signs into, so each of those lands on
+ * the record the next visitor meets.
+ *
+ * The narrowing is therefore here, on the server, and not in the client that
+ * happens to send only three fields — the allowlist exists precisely because
+ * the caller is not trusted. `tests/integration/demo-mode-profile-write.test.ts`
+ * proves the same contract against real Postgres by reading the row back; this
+ * pins the written payload so the default suite catches a regression too.
+ */
+describe("applyProfileUpdate under DEMO_MODE", () => {
+  const ORIGINAL = process.env.DEMO_MODE;
+
+  afterEach(() => {
+    if (ORIGINAL === undefined) delete process.env.DEMO_MODE;
+    else process.env.DEMO_MODE = ORIGINAL;
+  });
+
+  const HOSTILE_AND_BASELINE = {
+    email: "attacker@example.test",
+    displayName: "Owned",
+    fullName: "Attacker",
+    insurerName: "Attacker Insurance",
+    timezone: "America/New_York",
+    heightCm: 181,
+    dateOfBirth: "1988-04-12",
+    gender: "FEMALE",
+  };
+
+  it("writes the three baseline fields and nothing else", async () => {
+    process.env.DEMO_MODE = "true";
+
+    const result = await applyProfileUpdate(USER_ID, HOSTILE_AND_BASELINE);
+
+    expect(result.ok).toBe(true);
+    const written = vi.mocked(prisma.user.update).mock.calls[0]![0]!.data;
+    expect(Object.keys(written as object).sort()).toEqual([
+      "dateOfBirth",
+      "gender",
+      "heightCm",
+    ]);
+  });
+
+  it("never reaches the email conflict check, which is an existence oracle", async () => {
+    // The check 409s when another account holds the address. On a public
+    // demo that answers "does this person have an account here?" to anybody,
+    // so the narrowing has to happen ahead of it rather than after.
+    process.env.DEMO_MODE = "true";
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "someone-else",
+    } as never);
+
+    const result = await applyProfileUpdate(USER_ID, {
+      email: "taken@example.test",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("writes every field on an ordinary instance", async () => {
+    delete process.env.DEMO_MODE;
+
+    await applyProfileUpdate(USER_ID, HOSTILE_AND_BASELINE);
+
+    const written = vi.mocked(prisma.user.update).mock.calls[0]![0]!
+      .data as Record<string, unknown>;
+    expect(written.email).toBe("attacker@example.test");
+    expect(written.displayName).toBe("Owned");
+    expect(written.fullName).toBe("Attacker");
+    expect(written.insurerName).toBe("Attacker Insurance");
+    expect(written.heightCm).toBe(181);
   });
 });

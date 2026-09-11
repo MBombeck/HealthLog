@@ -117,8 +117,10 @@ export function BaselineForm({
   confirming?: boolean;
   /**
    * True on a `DEMO_MODE` instance, where the shared account's self-context
-   * write is off the edge allowlist. Makes the anamnesis card read-only so
-   * the refusal never reaches a visitor as a failed confirm.
+   * write is off the edge allowlist and its profile write is narrowed to the
+   * three baseline fields. Makes the anamnesis card and the display-name box
+   * read-only, so neither refusal reaches a visitor as a failed confirm or as
+   * an answer that silently vanished.
    */
   demoMode?: boolean;
 }) {
@@ -253,6 +255,7 @@ export function BaselineForm({
         onChange={patch}
         heightAdapter={heightAdapter}
         errors={fieldErrors}
+        readOnlyDisplayName={demoMode}
       />
 
       <AnamnesisCard

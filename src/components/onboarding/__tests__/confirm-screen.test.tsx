@@ -144,4 +144,21 @@ describe("<ConfirmScreen> — the anamnesis card on a shared demo account", () =
     expect(html).toContain('data-slot="onboarding-anamnesis"');
     expect(html).toContain('data-readonly="true"');
   });
+
+  it("takes no display name in the demo either", () => {
+    // `PUT /api/auth/profile` is allowlisted for the demo, but the server
+    // drops every field outside height / date of birth / sex — the display
+    // name would otherwise be the next visitor's. A box that accepts input
+    // and silently discards it is the same dishonesty as a failed save, so
+    // it does not accept input.
+    const html = render(state(), {}, true);
+    expect(html).toMatch(/id="ob-baseline-display-name"[^>]*disabled/);
+    // The three the step exists for still take their answers.
+    expect(html).not.toMatch(/id="ob-baseline-height"[^>]*disabled/);
+  });
+
+  it("takes a display name on an ordinary instance", () => {
+    const html = render(state());
+    expect(html).not.toMatch(/id="ob-baseline-display-name"[^>]*disabled/);
+  });
 });
