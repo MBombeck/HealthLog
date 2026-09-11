@@ -435,7 +435,10 @@ async function runRawChain(
         total: 0,
         operator: 0,
       }));
-      if (spent.total >= OPERATOR_COST_CAP) {
+      // v1.38.19 (Wave E) — the OPERATOR-funded share, not the day's total: a
+      // day filled by the user's own plan must not close the operator's
+      // fallback hop on money the operator never spent.
+      if (spent.operator >= OPERATOR_COST_CAP) {
         const hop: FallbackHop = {
           providerType: candidate.providerType,
           attempt: i + 1,
@@ -448,7 +451,7 @@ async function runRawChain(
           meta: {
             [`ai_chain_hop_${i + 1}_provider`]: candidate.providerType,
             [`ai_chain_hop_${i + 1}_reason`]: "operator-cost-cap-exhausted",
-            operator_cap_spent: spent.total,
+            operator_cap_spent: spent.operator,
           },
         });
         continue;

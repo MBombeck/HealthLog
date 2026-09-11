@@ -114,6 +114,7 @@ function err(status: number, msg = "boom"): Error & { httpStatus: number } {
 beforeEach(() => {
   clearLastWorkingProviderCache();
   budgetState.spent = 0;
+  budgetState.operatorSpent = 0;
 });
 
 afterEach(() => {
@@ -700,6 +701,7 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
 
   it("refuses the admin-* fallback hop once the operator cap is exhausted", async () => {
     budgetState.spent = 200_000; // OPERATOR_COST_CAP
+    budgetState.operatorSpent = 200_000;
     const codex = new ScriptedProvider({
       type: "codex",
       script: [{ ok: false, error: err(500) }],
@@ -730,6 +732,7 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
 
   it("lets the admin-* fallback run while the operator cap has headroom", async () => {
     budgetState.spent = 100;
+    budgetState.operatorSpent = 100;
     const codex = new ScriptedProvider({
       type: "codex",
       script: [{ ok: false, error: err(500) }],
@@ -746,6 +749,63 @@ describe("runRawCompletionWithFallback — operator-cost cap at hop time", () =>
     });
     expect(outcome.workingProvider.providerType).toBe("admin-openai");
     expect(adminOpenai.callCount).toBe(1);
+  });
+
+  // v1.38.19 (Wave E) — the guard reads the OPERATOR-funded share.
+  //
+  // Production evidence (2026-09-11): the operator's day held ~1.2 M tokens,
+  // nearly all served by `codex` on his own ChatGPT plan. Comparing the day's
+  // TOTAL against the operator ceiling closed the operator's own fallback hop
+  // on money he had never spent.
+  it("lets the admin-* hop run on a big day the user's own plan paid for", async () => {
+    budgetState.spent = 1_200_000;
+    budgetState.operatorSpent = 150_000;
+    const codex = new ScriptedProvider({
+      type: "codex",
+      script: [{ ok: false, error: err(500) }],
+    });
+    const adminOpenai = new ScriptedProvider({ script: [{ ok: true }] });
+
+    const outcome = await runRawCompletionWithFallback({
+      userId: "u-owner-split",
+      providers: [
+        { providerType: "codex", instance: codex },
+        { providerType: "admin-openai", instance: adminOpenai },
+      ],
+      params,
+    });
+    expect(outcome.workingProvider.providerType).toBe("admin-openai");
+    expect(adminOpenai.callCount).toBe(1);
+  });
+
+  it("refuses the admin-* hop once the OPERATOR-funded share is exhausted", async () => {
+    budgetState.spent = 1_200_000;
+    budgetState.operatorSpent = 250_000;
+    const codex = new ScriptedProvider({
+      type: "codex",
+      script: [{ ok: false, error: err(500) }],
+    });
+    const adminOpenai = new ScriptedProvider({ script: [{ ok: true }] });
+
+    await expect(
+      runRawCompletionWithFallback({
+        userId: "u-owner-exhausted",
+        providers: [
+          { providerType: "codex", instance: codex },
+          { providerType: "admin-openai", instance: adminOpenai },
+        ],
+        params,
+      }),
+    ).rejects.toMatchObject({
+      attempts: [
+        expect.objectContaining({ providerType: "codex" }),
+        expect.objectContaining({
+          providerType: "admin-openai",
+          failureReason: "operator-cost-cap-exhausted",
+        }),
+      ],
+    });
+    expect(adminOpenai.callCount).toBe(0);
   });
 
   it("never consults the ledger for a user-funded chain", async () => {

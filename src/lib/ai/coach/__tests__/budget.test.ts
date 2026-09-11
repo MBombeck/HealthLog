@@ -172,7 +172,7 @@ describe("reserveBudget cap (F1 — user-plan path not locked out)", () => {
   it("the operator-key path STILL trips once prior spend reaches the operator cap", async () => {
     const priorSpend = OPERATOR_COST_CAP;
     prismaMock.$queryRaw.mockResolvedValue([
-      { total_tokens: priorSpend + 1_200 },
+      { total_tokens: priorSpend + 1_200, operator_tokens: priorSpend + 1_200 },
     ]);
     prismaMock.$executeRaw.mockResolvedValue(0);
     const { reserveBudget } = await import("../budget");
@@ -186,6 +186,82 @@ describe("reserveBudget cap (F1 — user-plan path not locked out)", () => {
     expect(res.allowed).toBe(false);
     // Refund of the reservation fired on refusal.
     expect(prismaMock.$executeRaw).toHaveBeenCalled();
+  });
+});
+
+/**
+ * v1.38.19 (Wave E) — the cap is enforced against the counter it is ABOUT.
+ *
+ * Production evidence (2026-09-11): the operator's day held 1.0–1.45 M tokens,
+ * almost all served by `codex` on his own ChatGPT plan after the shared
+ * `admin-openai` key answered 500 — and the chat refused at
+ * `totalAfter: 513539` against the 200 k operator ceiling. Comparing the total
+ * is the defect; the operator ceiling may only see operator-funded tokens.
+ */
+describe("reserveBudget cap by cost owner (Wave E)", () => {
+  let prismaMock: {
+    $queryRaw: ReturnType<typeof vi.fn>;
+    $executeRaw: ReturnType<typeof vi.fn>;
+  };
+
+  beforeEach(async () => {
+    const dbModule = await import("@/lib/db");
+    prismaMock = dbModule.prisma as unknown as typeof prismaMock;
+    prismaMock.$queryRaw.mockReset();
+    prismaMock.$executeRaw.mockReset();
+    prismaMock.$executeRaw.mockResolvedValue(0);
+  });
+
+  it("admits an operator turn on a day the user's own plan filled", async () => {
+    // 1.2 M tokens on the day, but only 150 k of them on the operator's key.
+    prismaMock.$queryRaw.mockResolvedValue([
+      { total_tokens: 1_200_000 + 1_200, operator_tokens: 150_000 + 1_200 },
+    ]);
+    const { reserveBudget } = await import("../budget");
+    const res = await reserveBudget(
+      "u",
+      1_200,
+      "2026-09-11",
+      OPERATOR_COST_CAP,
+      "operator",
+    );
+    expect(res.allowed).toBe(true);
+    expect(res.operatorAfter).toBe(151_200);
+    expect(prismaMock.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it("refuses an operator turn once the OPERATOR-funded share reaches the cap", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      {
+        total_tokens: 1_200_000 + 1_200,
+        operator_tokens: OPERATOR_COST_CAP + 1_200,
+      },
+    ]);
+    const { reserveBudget } = await import("../budget");
+    const res = await reserveBudget(
+      "u",
+      1_200,
+      "2026-09-11",
+      OPERATOR_COST_CAP,
+      "operator",
+    );
+    expect(res.allowed).toBe(false);
+    expect(prismaMock.$executeRaw).toHaveBeenCalled();
+  });
+
+  it("keeps the user-plan ceiling on the TOTAL, not on the operator share", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      { total_tokens: USER_PLAN_CAP + 1_200, operator_tokens: 0 },
+    ]);
+    const { reserveBudget } = await import("../budget");
+    const res = await reserveBudget(
+      "u",
+      1_200,
+      "2026-09-11",
+      USER_PLAN_CAP,
+      "user",
+    );
+    expect(res.allowed).toBe(false);
   });
 });
 

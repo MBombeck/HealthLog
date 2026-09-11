@@ -153,6 +153,66 @@ describe("coach_usage.operator_tokens (real Postgres)", () => {
     expect(row?.operatorTokens).toBe(2_500);
   });
 
+  it("admits the operator's chat on a day his own plan filled", async () => {
+    const { reserveBudget, OPERATOR_COST_CAP } =
+      await import("@/lib/ai/coach/budget");
+    const userId = await seedUser();
+    const dateKey = "2026-09-11";
+
+    // The operator's 06:42Z lockout, reproduced: 1.2 M tokens on the day, of
+    // which only 150 k were served by the operator-funded key — the rest by
+    // `codex` on his own ChatGPT plan.
+    await getPrismaClient().coachUsage.create({
+      data: {
+        userId,
+        dateKey,
+        totalTokens: 1_200_000,
+        operatorTokens: 150_000,
+        messageCount: 240,
+      },
+    });
+
+    const res = await reserveBudget(
+      userId,
+      3_000,
+      dateKey,
+      OPERATOR_COST_CAP,
+      "operator",
+    );
+    expect(res.allowed).toBe(true);
+    expect(res.operatorAfter).toBe(153_000);
+  });
+
+  it("refuses once the operator-funded share reaches the operator cap", async () => {
+    const { reserveBudget, OPERATOR_COST_CAP } =
+      await import("@/lib/ai/coach/budget");
+    const userId = await seedUser();
+    const dateKey = "2026-09-11";
+
+    await getPrismaClient().coachUsage.create({
+      data: {
+        userId,
+        dateKey,
+        totalTokens: 1_200_000,
+        operatorTokens: OPERATOR_COST_CAP,
+        messageCount: 240,
+      },
+    });
+
+    const res = await reserveBudget(
+      userId,
+      3_000,
+      dateKey,
+      OPERATOR_COST_CAP,
+      "operator",
+    );
+    expect(res.allowed).toBe(false);
+
+    const row = await readRow(userId, dateKey);
+    expect(row?.totalTokens).toBe(1_200_000);
+    expect(row?.operatorTokens).toBe(OPERATOR_COST_CAP);
+  });
+
   it("refunds both counters when a refused reservation is rolled back", async () => {
     const { reserveBudget, OPERATOR_COST_CAP } =
       await import("@/lib/ai/coach/budget");

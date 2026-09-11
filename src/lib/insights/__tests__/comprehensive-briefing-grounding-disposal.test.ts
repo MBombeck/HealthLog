@@ -24,7 +24,7 @@ const extractFeatures = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    $queryRaw: vi.fn(async () => [{ total_tokens: 0 }]),
+    $queryRaw: vi.fn(async () => [{ total_tokens: 0, operator_tokens: 0 }]),
     $executeRaw: vi.fn(async () => 0),
     user: {
       findUnique: (...a: unknown[]) => findUnique(...a),

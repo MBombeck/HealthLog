@@ -223,11 +223,17 @@ export async function reserveBudget(
 
   // The cap is a ceiling on tokens already spent BEFORE this request, matching
   // the prior `spent >= cap` semantics: a request is allowed when the spend
-  // PRIOR to its reservation was under the cap. So compare `totalAfter -
-  // reserved` (the prior total) against the cap.
+  // PRIOR to its reservation was under the cap. So compare the post-increment
+  // figure minus this reservation against the cap.
+  //
+  // v1.38.19 (Wave E) — and compare the counter the cap is ABOUT. An
+  // operator-funded chain is measured against the day's operator-funded spend,
+  // never against a total that the user's own plan inflated; a user-plan chain
+  // keeps its abuse ceiling on the total.
   const priorTotal = totalAfter - reserved;
   const priorOperator = operatorAfter - operatorReserved;
-  if (priorTotal >= cap) {
+  const prior = owner === "operator" ? priorOperator : priorTotal;
+  if (prior >= cap) {
     // Already over before this request — refund the reservation + the
     // message-count bump and refuse.
     await refundReservation(userId, reserved, operatorReserved, dateKey);

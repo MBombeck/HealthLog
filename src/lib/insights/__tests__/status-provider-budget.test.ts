@@ -18,6 +18,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /** In-memory stand-in for the day's `coach_usage.total_tokens`. */
 let ledgerTotal = 0;
+/** …and of `coach_usage.operator_tokens` (Wave E). */
+let ledgerOperator = 0;
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -25,8 +27,10 @@ vi.mock("@/lib/db", () => ({
     // (strings, userId, dateKey, reserved, reserved).
     $queryRaw: vi.fn(
       async (_strings: TemplateStringsArray, ...v: unknown[]) => {
+        // Wave E — (userId, dateKey, reserved, operatorReserved, …).
         ledgerTotal += Number(v[2] ?? 0);
-        return [{ total_tokens: ledgerTotal }];
+        ledgerOperator += Number(v[3] ?? 0);
+        return [{ total_tokens: ledgerTotal, operator_tokens: ledgerOperator }];
       },
     ),
     // `reconcileSpend` (+delta) and `refundReservation` (-reserved).
@@ -34,9 +38,17 @@ vi.mock("@/lib/db", () => ({
       async (strings: TemplateStringsArray, ...v: unknown[]) => {
         const sql = strings.join("?");
         const amount = Number(v[0] ?? 0);
-        if (sql.includes("total_tokens + ")) ledgerTotal += amount;
-        else if (sql.includes("total_tokens - ")) ledgerTotal -= amount;
+        // Wave E — the operator-funded share moves in the same statement.
+        const operatorAmount = Number(v[1] ?? 0);
+        if (sql.includes("total_tokens + ")) {
+          ledgerTotal += amount;
+          ledgerOperator += operatorAmount;
+        } else if (sql.includes("total_tokens - ")) {
+          ledgerTotal -= amount;
+          ledgerOperator -= operatorAmount;
+        }
         ledgerTotal = Math.max(0, ledgerTotal);
+        ledgerOperator = Math.max(0, ledgerOperator);
         return 1;
       },
     ),
@@ -98,6 +110,7 @@ function mockProviderReply(tokensUsed: number | null) {
 beforeEach(() => {
   vi.clearAllMocks();
   ledgerTotal = 0;
+  ledgerOperator = 0;
   resolveProviderChain.mockResolvedValue(OPERATOR_CHAIN);
   resolveProvider.mockResolvedValue({ type: "none" });
 });
@@ -126,6 +139,7 @@ describe("runStatusCompletion — ledger accounting", () => {
 
   it("refuses a generation once the day's cap is already spent", async () => {
     ledgerTotal = OPERATOR_COST_CAP;
+    ledgerOperator = OPERATOR_COST_CAP;
     mockProviderReply(500);
 
     const result = await runStatusCompletion(completionArgs());
@@ -158,6 +172,7 @@ describe("runStatusCompletion — cost owner decides the ceiling", () => {
   it("measures an operator-key chain against the operator ceiling", async () => {
     // Just under the operator ceiling: an operator-key user is refused here.
     ledgerTotal = OPERATOR_COST_CAP;
+    ledgerOperator = OPERATOR_COST_CAP;
     mockProviderReply(100);
 
     const result = await runStatusCompletion(completionArgs());
@@ -172,6 +187,7 @@ describe("runStatusCompletion — cost owner decides the ceiling", () => {
     // category error for them — they must still be served.
     resolveProviderChain.mockResolvedValue(BYOK_CHAIN);
     ledgerTotal = OPERATOR_COST_CAP;
+    ledgerOperator = OPERATOR_COST_CAP;
     runRawCompletionWithFallback.mockResolvedValue({
       result: { content: '{"summary":"ok"}', model: "m", tokensUsed: 100 },
       workingProvider: { providerType: "anthropic" },
@@ -186,6 +202,9 @@ describe("runStatusCompletion — cost owner decides the ceiling", () => {
   it("still bounds a BYOK chain at the user-plan ceiling", async () => {
     resolveProviderChain.mockResolvedValue(BYOK_CHAIN);
     ledgerTotal = USER_PLAN_CAP;
+    // Not one of those tokens was the operator's: the abuse ceiling on the
+    // total is what must still refuse this generation.
+    ledgerOperator = 0;
     mockProviderReply(100);
 
     const result = await runStatusCompletion(completionArgs());
