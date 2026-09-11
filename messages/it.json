@@ -413,6 +413,11 @@
     "loginFailed": "Accesso non riuscito",
     "registerFailed": "Registrazione non riuscita",
     "invitedBanner": "Sei stato invitato — crea il tuo account anche se la registrazione è chiusa.",
+    "alreadySignedIn": {
+      "title": "Hai già effettuato l'accesso",
+      "body": "Hai effettuato l'accesso come {username}. Un invito crea un nuovo account. Esci per accettarlo.",
+      "signOut": "Esci e accetta l'invito"
+    },
     "createAccount": "Crea account",
     "newAccount": "Crea un nuovo account",
     "backToPasskey": "Torna a passkey",
@@ -10322,6 +10327,7 @@
     "invite": {
       "title": "Invita qualcuno",
       "description": "Nulla viene condiviso finché non accetta.",
+      "needsAccount": "La persona ha bisogno di un proprio account HealthLog su questa istanza e troverà l'invito in Impostazioni → Accesso condiviso.",
       "identifierLabel": "Nome utente o e-mail",
       "identifierPlaceholder": "Il nome con cui accede",
       "identifierHint": "Serve un account su questa istanza. Non è possibile inviare inviti a un indirizzo non registrato.",

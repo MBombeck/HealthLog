@@ -413,6 +413,11 @@
     "loginFailed": "Échec de la connexion",
     "registerFailed": "Échec de l’inscription",
     "invitedBanner": "Vous avez été invité — créez votre compte même si les inscriptions sont fermées.",
+    "alreadySignedIn": {
+      "title": "Tu es déjà connecté",
+      "body": "Tu es connecté en tant que {username}. Une invitation crée un nouveau compte. Déconnecte-toi pour l'accepter.",
+      "signOut": "Se déconnecter et accepter l'invitation"
+    },
     "createAccount": "Créer un compte",
     "newAccount": "Créer un nouveau compte",
     "backToPasskey": "Revenir à la passkey",
@@ -10322,6 +10327,7 @@
     "invite": {
       "title": "Inviter quelqu'un",
       "description": "Rien n'est partagé avant son acceptation.",
+      "needsAccount": "La personne a besoin de son propre compte HealthLog sur cette instance et trouvera l'invitation dans Paramètres → Accès partagé.",
       "identifierLabel": "Nom d'utilisateur ou e-mail",
       "identifierPlaceholder": "Le nom avec lequel elle se connecte",
       "identifierHint": "Cette personne a besoin d'un compte sur cette instance. Une invitation ne peut pas être envoyée à une adresse non inscrite.",

@@ -413,6 +413,11 @@
     "loginFailed": "No se ha podido iniciar sesión",
     "registerFailed": "No se ha podido completar el registro",
     "invitedBanner": "Te han invitado: crea tu cuenta aunque el registro esté cerrado.",
+    "alreadySignedIn": {
+      "title": "Ya has iniciado sesión",
+      "body": "Has iniciado sesión como {username}. Una invitación crea una cuenta nueva. Cierra la sesión para aceptarla.",
+      "signOut": "Cerrar sesión y aceptar la invitación"
+    },
     "createAccount": "Crear cuenta",
     "newAccount": "Crear cuenta nueva",
     "backToPasskey": "Volver a passkey",
@@ -10322,6 +10327,7 @@
     "invite": {
       "title": "Invitar a alguien",
       "description": "No se comparte nada hasta que acepte.",
+      "needsAccount": "La persona necesita su propia cuenta de HealthLog en esta instancia y encontrará la invitación en Ajustes → Acceso compartido.",
       "identifierLabel": "Usuario o correo electrónico",
       "identifierPlaceholder": "El nombre con el que inicia sesión",
       "identifierHint": "Necesita una cuenta en esta instancia. No se pueden enviar invitaciones a una dirección que no se haya registrado.",

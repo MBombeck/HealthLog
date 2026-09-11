@@ -413,6 +413,11 @@
     "loginFailed": "Login failed",
     "registerFailed": "Registration failed",
     "invitedBanner": "You have been invited — create your account even while registration is otherwise closed.",
+    "alreadySignedIn": {
+      "title": "You are already signed in",
+      "body": "You are signed in as {username}. An invitation creates a new account — sign out to accept it.",
+      "signOut": "Sign out and accept the invitation"
+    },
     "createAccount": "Create account",
     "newAccount": "Create new account",
     "backToPasskey": "Back to Passkey",
@@ -10322,6 +10327,7 @@
     "invite": {
       "title": "Invite someone",
       "description": "Nothing is shared until they accept.",
+      "needsAccount": "The person needs their own HealthLog account on this instance and will find the invitation under Settings → Shared access.",
       "identifierLabel": "Username or e-mail",
       "identifierPlaceholder": "The name they sign in with",
       "identifierHint": "They need an account on this instance. Invitations cannot be sent to an e-mail address that has not registered.",

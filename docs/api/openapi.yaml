@@ -29943,19 +29943,19 @@ components:
                 carry no code at all. ai_provider — ai_provider.invalid, ai_provider.no_fields; allergy —
                 allergy.invalid; analytics — analytics.invalid_query; anamnesis — anamnesis.fact.conflict,
                 anamnesis.fact.currentExists, anamnesis.fact.invalidValue; auth — auth.admin.required,
-                auth.mfa.code_invalid, auth.missing, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
-                auth.scope.insufficient, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
-                backup.payload.undecryptable, backup.section.missing; coach — coach.conversation.invalidTitle,
-                coach.conversation.notFound, coach.fenced.attachmentConflict, coach.fenced.attachmentLimit,
-                coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired,
-                coach.fenced.attachmentUnavailable, coach.fenced.invalid, coach.request.invalid; coach-prefs —
-                coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape; consent — consent.ai.required; cycle —
-                cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range,
-                cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled,
-                cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs —
-                cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json;
-                documents — documents.chat.conversationNotFound, documents.chat.invalid,
-                documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
+                auth.already_authenticated, auth.mfa.code_invalid, auth.missing, auth.refresh.invalid,
+                auth.refresh.reuse, auth.refresh.revoked, auth.scope.insufficient, auth.stepup.required,
+                auth.token.expired, auth.token.invalid; backup — backup.payload.undecryptable, backup.section.missing;
+                coach — coach.conversation.invalidTitle, coach.conversation.notFound, coach.fenced.attachmentConflict,
+                coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed,
+                coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable, coach.fenced.invalid,
+                coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape;
+                consent — consent.ai.required; cycle — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid,
+                cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
+                cycle.disabled, cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit;
+                cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach —
+                disable-coach.body.invalid_json; documents — documents.chat.conversationNotFound,
+                documents.chat.invalid, documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
                 documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
                 documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
                 documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,

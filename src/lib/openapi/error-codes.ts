@@ -46,6 +46,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     auth: [
       "auth.admin.required",
+      "auth.already_authenticated",
       "auth.mfa.code_invalid",
       "auth.missing",
       "auth.refresh.invalid",

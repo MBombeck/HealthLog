@@ -13,7 +13,7 @@ import {
  * compose healthcheck rely on it. `/api/health` stays public for the same
  * reason.
  */
-const PUBLIC_PATHS = [
+export const PUBLIC_PATHS = [
   "/auth/",
   "/api/auth/login",
   "/api/auth/register",
@@ -328,6 +328,45 @@ export function proxy(request: NextRequest) {
         ),
       );
     }
+  }
+
+  // v1.38.19 — the invite universal-link landing answers at the EDGE.
+  //
+  // `src/app/invite/[token]/page.tsx` has always redirected onto
+  // `/auth/register?invite=…`, but Next does not deliver that as a server 307:
+  // it streams the root layout first and puts the redirect in the RSC flight
+  // payload. `<AuthShell>` therefore mounted on the pathname `/invite/…`, and
+  // before the entry added beside this one it read the route as protected,
+  // took a 401 from `/api/auth/me` and raced its own
+  // `router.replace("/auth/login")` against the redirect — logged out the
+  // login bounce won, and the visitor held a one-time invite on a page that
+  // cannot use it. Answering here means no HTML, no hydration, no race.
+  //
+  // The page stays as the fallback for any path that bypasses the matcher.
+  // The shape gate is the twin of `looksLikeInviteToken` in
+  // `src/lib/auth/invite-token.ts`, restated rather than imported: that module
+  // pulls the Prisma client, which has no business in the proxy bundle. A
+  // segment that fails it is dropped rather than reflected, so the target can
+  // never echo attacker-controlled text.
+  if (pathname.startsWith("/invite/")) {
+    const token = pathname.slice("/invite/".length).split("/")[0] ?? "";
+    const target = new URL("/auth/register", request.url);
+    if (/^hlv_[0-9a-f]{64}$/.test(token)) {
+      target.searchParams.set("invite", token);
+    }
+    const redirected = applyBaselineSecurityHeaders(
+      NextResponse.redirect(target, 307),
+    );
+    // The secret rides in the path of the request that produced this hop, so
+    // the hop itself carries the same defence the landing page earned in
+    // v1.17.0: uncacheable, unindexable, and never leaked as a `Referer`.
+    redirected.headers.set(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate",
+    );
+    redirected.headers.set("X-Robots-Tag", "noindex, nofollow");
+    redirected.headers.set("Referrer-Policy", "no-referrer");
+    return redirected;
   }
 
   // Server-side route protection for pages (not API routes — those have their own getSession checks)

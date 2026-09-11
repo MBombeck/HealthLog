@@ -413,6 +413,11 @@
     "loginFailed": "로그인 실패",
     "registerFailed": "회원가입 실패",
     "invitedBanner": "초대를 받았어요 — 회원가입이 닫혀 있어도 계정을 만들 수 있어요.",
+    "alreadySignedIn": {
+      "title": "이미 로그인되어 있습니다",
+      "body": "{username} 계정으로 로그인되어 있습니다. 초대는 새 계정을 만듭니다. 초대를 수락하려면 로그아웃하세요.",
+      "signOut": "로그아웃하고 초대 수락하기"
+    },
     "createAccount": "계정 만들기",
     "newAccount": "새 계정 만들기",
     "backToPasskey": "패스키로 돌아가기",
@@ -10322,6 +10327,7 @@
     "invite": {
       "title": "다른 사람 초대",
       "description": "상대가 수락하기 전에는 아무것도 공유되지 않아요.",
+      "needsAccount": "상대방에게는 이 인스턴스의 HealthLog 계정이 필요하며, 초대는 설정 → 공유 접근에서 확인할 수 있습니다.",
       "identifierLabel": "사용자 이름 또는 이메일",
       "identifierPlaceholder": "로그인에 쓰는 이름",
       "identifierHint": "이 인스턴스에 계정이 있어야 해요. 가입하지 않은 이메일 주소로는 초대를 보낼 수 없어요.",
