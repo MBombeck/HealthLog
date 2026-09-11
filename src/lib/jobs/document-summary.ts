@@ -30,7 +30,8 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
-  resolveDailyCap,
+  resolveCostOwner,
+  resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
 import {
   loadOwnedDocument,
@@ -190,7 +191,10 @@ export async function runDocumentSummaryJob(
     userId,
     AI_BUDGETS.documentSummary.maxTokens,
     dateKey,
-    resolveDailyCap([{ providerType: pick.entry.providerType }]),
+    // v1.38.19 — a background surface: half the day's ceiling.
+    resolveDailyCapFor("job", [{ providerType: pick.entry.providerType }]),
+    resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "job",
   );
   // Budget exhausted → skip (no local fallback for a summary).
   if (!reservation.allowed) {
@@ -224,6 +228,8 @@ export async function runDocumentSummaryJob(
       reservation.reserved,
       reservation.reserved,
       dateKey,
+      0,
+      { servedBy: pick.entry.providerType, reservedOwner: reservation.owner },
     );
     // WITHHOLD policy, v1.30.31. The model's prose still never lands — a
     // summary that tripped the outbound screen must never be shown as if it
@@ -273,7 +279,10 @@ export async function runDocumentSummaryJob(
     // Refund the reservation on a provider miss; the document keeps no summary
     // (the on-demand route remains the manual fallback). Never rethrow — a
     // transient provider error must not retry-loop or fail the queue.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      servedBy: null,
+      reservedOwner: reservation.owner,
+    });
     await markSummaryState(userId, documentId, "UNAVAILABLE");
     annotate({
       action: { name: "documents.summary.autoFailed" },

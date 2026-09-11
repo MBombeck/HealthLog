@@ -43,6 +43,7 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
+  resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import { detectRefusal, type CoachRefusalReason } from "@/lib/ai/coach/refusal";
@@ -307,6 +308,8 @@ export async function streamFencedReply(
     AI_BUDGETS.documentChat.maxTokens,
     dateKey,
     resolveDailyCap([{ providerType: pick.entry.providerType }]),
+    resolveCostOwner([{ providerType: pick.entry.providerType }]),
+    "coach",
   );
   if (!reservation.allowed) {
     annotate({ action: { name: "documents.chat.budget.exceeded" } });
@@ -369,6 +372,7 @@ Reply now as the assistant, grounded ONLY in the documents above, in ${
     let result;
     try {
       const fallback = await runStreamingRawCompletionWithFallback({
+        surface: "coach",
         userId,
         // Single-provider — the document-ordered pick, no cascade.
         providers: [pick!.entry],
@@ -383,9 +387,10 @@ Reply now as the assistant, grounded ONLY in the documents above, in ${
       });
       result = fallback.result;
     } catch (err) {
-      await reconcileSpend(userId, reservation.reserved, 0, dateKey).catch(
-        () => {},
-      );
+      await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      }).catch(() => {});
       if (err instanceof AllProvidersFailedError) {
         const allRateLimited =
           err.attempts.length > 0 &&
@@ -425,6 +430,7 @@ Reply now as the assistant, grounded ONLY in the documents above, in ${
       totalTokens,
       dateKey,
       cachedTokens,
+      { servedBy: pick!.entry.providerType, reservedOwner: reservation.owner },
     ).catch(() => {});
 
     let replyText = (result.content ?? "").trim();

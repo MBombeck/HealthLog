@@ -44,6 +44,8 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   // returns a distinctive figure so an accidental default-cap regression is
   // visible in the assertion rather than silently passing.
   resolveDailyCap: vi.fn(() => 1_234_567),
+  resolveDailyCapFor: vi.fn(() => 1_234_567),
+  resolveCostOwner: vi.fn(() => "user" as const),
 }));
 
 vi.mock("@/lib/ai/provider", () => ({
@@ -118,6 +120,9 @@ beforeEach(() => {
     allowed: true,
     reserved: 700,
     totalAfter: 700,
+    owner: "user",
+    operatorAfter: 0,
+    limit: null,
   });
   vi.mocked(resolveDailyCap).mockReturnValue(1_234_567);
   vi.mocked(resolveProviderChain).mockResolvedValue([
@@ -274,6 +279,8 @@ describe("POST /api/medications/extract — daily budget", () => {
       expect.any(Number),
       "2026-05-28",
       1_234_567,
+      "user",
+      "coach",
     );
   });
 
@@ -283,6 +290,9 @@ describe("POST /api/medications/extract — daily budget", () => {
       allowed: false,
       reserved: 700,
       totalAfter: 9_999_999,
+      owner: "user",
+      operatorAfter: 0,
+      limit: "owner-cap",
     });
 
     const res = await POST(postReq({ text: "Mounjaro 5mg weekly" }) as never);
@@ -307,6 +317,8 @@ describe("POST /api/medications/extract — daily budget", () => {
       700,
       120,
       "2026-05-28",
+      0,
+      { servedBy: "openai", reservedOwner: "user" },
     );
   });
 
@@ -323,6 +335,8 @@ describe("POST /api/medications/extract — daily budget", () => {
       700,
       700,
       "2026-05-28",
+      0,
+      { servedBy: "openai", reservedOwner: "user" },
     );
   });
 
@@ -335,7 +349,14 @@ describe("POST /api/medications/extract — daily budget", () => {
     const res = await POST(postReq({ text: "5mg weekly" }) as never);
 
     expect(res.status).toBe(503);
-    expect(reconcileSpend).toHaveBeenCalledWith("user-1", 700, 0, "2026-05-28");
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "user-1",
+      700,
+      0,
+      "2026-05-28",
+      0,
+      { servedBy: null, reservedOwner: "user" },
+    );
   });
 });
 

@@ -39,7 +39,7 @@ vi.mock("@/lib/db", () => ({
     // egress and reconciles after (`reserveBudget` / `reconcileSpend`), both
     // over raw SQL. A zero prior total keeps every generation under the cap,
     // so these suites keep testing what they were written to test.
-    $queryRaw: vi.fn(async () => [{ total_tokens: 0 }]),
+    $queryRaw: vi.fn(async () => [{ total_tokens: 0, operator_tokens: 0 }]),
     $executeRaw: vi.fn(async () => 0),
     user: {
       findUnique: vi.fn(async () => ({
@@ -183,7 +183,7 @@ beforeEach(() => {
   // `clearAllMocks` does not undo a `mockImplementation`, so the ledger stub is
   // re-seeded per test — otherwise the over-cap case below leaks into the rest.
   vi.mocked(prisma.$queryRaw).mockImplementation((async () => [
-    { total_tokens: 0 },
+    { total_tokens: 0, operator_tokens: 0 },
   ]) as never);
   selfContextText.mockResolvedValue(null);
   vi.mocked(checkRateLimit).mockResolvedValue({
@@ -254,8 +254,8 @@ describe("POST /api/insights/generate — daily token ceiling", () => {
       strings: TemplateStringsArray,
     ) =>
       String(strings[0]).includes("coach_usage")
-        ? [{ total_tokens: 10_000_000 }]
-        : [{ total_tokens: 0 }]) as never);
+        ? [{ total_tokens: 10_000_000, operator_tokens: 10_000_000 }]
+        : [{ total_tokens: 0, operator_tokens: 0 }]) as never);
     makeWorkingProvider();
 
     const res = await POST(jsonRequest({ force: true }) as never);

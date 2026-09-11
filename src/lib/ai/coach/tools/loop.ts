@@ -141,6 +141,8 @@ export async function runCoachToolLoop(args: {
     const fallback = await runRawCompletionWithFallback({
       userId,
       providers,
+      // The tool loop IS the Coach chat: a person is waiting on every round.
+      surface: "coach",
       ledger,
       params: {
         system,

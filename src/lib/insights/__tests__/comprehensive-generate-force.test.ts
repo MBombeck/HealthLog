@@ -31,7 +31,7 @@ vi.mock("@/lib/db", () => ({
     // egress and reconciles after (`reserveBudget` / `reconcileSpend`), both
     // over raw SQL. A zero prior total keeps every generation under the cap,
     // so these suites keep testing what they were written to test.
-    $queryRaw: vi.fn(async () => [{ total_tokens: 0 }]),
+    $queryRaw: vi.fn(async () => [{ total_tokens: 0, operator_tokens: 0 }]),
     $executeRaw: vi.fn(async () => 0),
     user: {
       findUnique: (...a: unknown[]) => findUnique(...a),

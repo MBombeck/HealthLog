@@ -50,6 +50,8 @@ vi.mock("@/lib/ai/coach/budget", () => ({
   reserveBudget: vi.fn(),
   reconcileSpend: vi.fn().mockResolvedValue(undefined),
   resolveDailyCap: vi.fn(() => 1000),
+  resolveDailyCapFor: vi.fn(() => 1000),
+  resolveCostOwner: vi.fn(() => "operator" as const),
 }));
 vi.mock("@/lib/ai/ai-budgets", () => ({
   AI_BUDGETS: { documentSummary: { temperature: 0.3, maxTokens: 600 } },
@@ -124,6 +126,7 @@ beforeEach(() => {
   vi.mocked(reserveBudget).mockResolvedValue({
     allowed: true,
     reserved: 5,
+    owner: "operator",
   } as never);
 });
 
@@ -151,7 +154,14 @@ describe("runDocumentSummaryJob — gating", () => {
       "A lab report from a clinic listing routine blood values.",
     );
     // Budget reserved then reconciled at the full reserved amount (charged).
-    expect(reconcileSpend).toHaveBeenCalledWith("user-1", 5, 5, "2026-07-17");
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "user-1",
+      5,
+      5,
+      "2026-07-17",
+      0,
+      { servedBy: expect.any(String), reservedOwner: "operator" },
+    );
     // Write is scoped to the still-null column so a re-run cannot clobber it.
     expect(prisma.inboundDocument.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -216,7 +226,14 @@ describe("runDocumentSummaryJob — gating", () => {
     await runDocumentSummaryJob({ userId: "user-1", documentId: "doc-1" });
 
     // Reservation refunded to zero spend; no summary written, state recorded.
-    expect(reconcileSpend).toHaveBeenCalledWith("user-1", 5, 0, "2026-07-17");
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "user-1",
+      5,
+      0,
+      "2026-07-17",
+      0,
+      { servedBy: null, reservedOwner: "operator" },
+    );
     expect(prisma.inboundDocument.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ data: { summaryState: "UNAVAILABLE" } }),
     );

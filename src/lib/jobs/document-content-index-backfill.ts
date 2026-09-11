@@ -38,7 +38,8 @@ import {
   buildDateKey,
   reconcileSpend,
   reserveBudget,
-  resolveDailyCap,
+  resolveCostOwner,
+  resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
 import { prisma } from "@/lib/db";
 import {
@@ -199,7 +200,10 @@ export async function runContentIndexBackfillForUser(
   // leaves every PDF out of "index all documents".
   const candidateMimes = [...IMAGE_MIMES, "application/pdf"];
 
-  const dailyCap = resolveDailyCap([{ providerType: pick.entry.providerType }]);
+  // v1.38.19 — a background surface: half the day's ceiling.
+  const dailyCap = resolveDailyCapFor("job", [
+    { providerType: pick.entry.providerType },
+  ]);
   let indexed = 0;
   let skipped = 0;
   let failed = stale.failed;
@@ -231,6 +235,8 @@ export async function runContentIndexBackfillForUser(
         AI_BUDGETS.documentTranscribe.maxTokens,
         dateKey,
         dailyCap,
+        resolveCostOwner([{ providerType: pick.entry.providerType }]),
+        "job",
       );
       if (!reservation.allowed) {
         reason = "budget-reached";
@@ -239,7 +245,10 @@ export async function runContentIndexBackfillForUser(
 
       const document = await loadOwnedDocument(userId, id);
       if (!document) {
-        await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+        await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+          servedBy: null,
+          reservedOwner: reservation.owner,
+        });
         skipped += 1;
         continue;
       }
@@ -249,7 +258,10 @@ export async function runContentIndexBackfillForUser(
         // or a PDF the rasteriser could not render) — refund and move on so
         // the walk keeps converging. Counted as skipped, not failed: no
         // provider call happened.
-        await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+        await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+          servedBy: null,
+          reservedOwner: reservation.owner,
+        });
         skipped += 1;
         continue;
       }
@@ -266,6 +278,11 @@ export async function runContentIndexBackfillForUser(
           reservation.reserved,
           reservation.reserved,
           dateKey,
+          0,
+          {
+            servedBy: pick.entry.providerType,
+            reservedOwner: reservation.owner,
+          },
         );
         await upsertContentIndex({
           userId,
@@ -278,7 +295,10 @@ export async function runContentIndexBackfillForUser(
       } catch {
         // A provider miss on one document must not abort the batch — refund and
         // leave it un-indexed (a later run retries it).
-        await reconcileSpend(userId, reservation.reserved, 0, dateKey);
+        await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+          servedBy: null,
+          reservedOwner: reservation.owner,
+        });
         failed += 1;
       }
     }

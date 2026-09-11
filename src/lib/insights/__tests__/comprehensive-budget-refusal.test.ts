@@ -15,6 +15,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 let ledgerTotal = 0;
+/** …and of `coach_usage.operator_tokens`. */
+let ledgerOperator = 0;
 
 const findUnique = vi.fn();
 const userUpdate = vi.fn();
@@ -29,17 +31,27 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     $queryRaw: vi.fn(
       async (_strings: TemplateStringsArray, ...v: unknown[]) => {
+        // (userId, dateKey, reserved, operatorReserved, …).
         ledgerTotal += Number(v[2] ?? 0);
-        return [{ total_tokens: ledgerTotal }];
+        ledgerOperator += Number(v[3] ?? 0);
+        return [{ total_tokens: ledgerTotal, operator_tokens: ledgerOperator }];
       },
     ),
     $executeRaw: vi.fn(
       async (strings: TemplateStringsArray, ...v: unknown[]) => {
         const sql = strings.join("?");
         const amount = Number(v[0] ?? 0);
-        if (sql.includes("total_tokens + ")) ledgerTotal += amount;
-        else if (sql.includes("total_tokens - ")) ledgerTotal -= amount;
+        // The operator-funded share moves in the same statement.
+        const operatorAmount = Number(v[1] ?? 0);
+        if (sql.includes("total_tokens + ")) {
+          ledgerTotal += amount;
+          ledgerOperator += operatorAmount;
+        } else if (sql.includes("total_tokens - ")) {
+          ledgerTotal -= amount;
+          ledgerOperator -= operatorAmount;
+        }
         ledgerTotal = Math.max(0, ledgerTotal);
+        ledgerOperator = Math.max(0, ledgerOperator);
         return 1;
       },
     ),
@@ -110,6 +122,7 @@ const VALID = JSON.stringify({ dailyBriefing: { paragraph: "ok" } });
 beforeEach(() => {
   vi.clearAllMocks();
   ledgerTotal = 0;
+  ledgerOperator = 0;
   resolveProviderChain.mockResolvedValue([
     { providerType: "admin-openai", instance: {} },
   ]);
@@ -145,6 +158,7 @@ describe("generateComprehensiveInsight — daily token ceiling", () => {
 
   it("refuses over-cap as `skipped: budget` without contacting a provider", async () => {
     ledgerTotal = OPERATOR_COST_CAP;
+    ledgerOperator = OPERATOR_COST_CAP;
 
     const outcome = await generateComprehensiveInsight("u1", { locale: "de" });
 
@@ -166,6 +180,7 @@ describe("generateComprehensiveInsight — daily token ceiling", () => {
       { providerType: "anthropic", instance: {} },
     ]);
     ledgerTotal = OPERATOR_COST_CAP;
+    ledgerOperator = OPERATOR_COST_CAP;
 
     const outcome = await generateComprehensiveInsight("u1", { locale: "de" });
 
@@ -178,6 +193,7 @@ describe("generateComprehensiveInsight — daily token ceiling", () => {
       { providerType: "anthropic", instance: {} },
     ]);
     ledgerTotal = USER_PLAN_CAP;
+    ledgerOperator = USER_PLAN_CAP;
 
     const outcome = await generateComprehensiveInsight("u1", { locale: "de" });
 

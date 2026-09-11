@@ -6267,13 +6267,19 @@ model HealthProfileFactRevision {
 // secondary signal used by the frontend to render a "≈ N replies left"
 // hint without exposing raw token figures.
 model CoachUsage {
-  id           String   @id @default(cuid())
-  userId       String   @map("user_id")
-  dateKey      String   @map("date_key")
-  totalTokens  Int      @default(0) @map("total_tokens")
-  messageCount Int      @default(0) @map("message_count")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id          String @id @default(cuid())
+  userId      String @map("user_id")
+  dateKey     String @map("date_key")
+  totalTokens Int    @default(0) @map("total_tokens")
+  /// v1.38.19 — the share of `totalTokens` served by a provider the
+  /// OPERATOR funds (`admin-openai` / `admin-codex`). The operator-cost cap is
+  /// enforced against this counter and the user-plan cap against
+  /// `totalTokens`, so background work served by the user's own plan can no
+  /// longer lock the interactive chat out of the operator's ceiling.
+  operatorTokens Int      @default(0) @map("operator_tokens")
+  messageCount   Int      @default(0) @map("message_count")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -6755,6 +6761,12 @@ model ArrivalReaction {
   /// `coach_usage` increment. A reclaimed pre-provider attempt reuses it.
   generationReservedTokens    Int?      @map("generation_reserved_tokens")
   generationBudgetDateKey     String?   @map("generation_budget_date_key")
+  /// v1.38.19 — who the reservation above was booked to, `"operator"`
+  /// or `"user"`. Persisted rather than recomputed: the supersede refund in
+  /// `data-arrival.ts` has no chain to ask, and the resume path's chain may
+  /// have been reordered by the health ledger since the reservation was made.
+  /// Null on rows written before the column existed.
+  generationCostOwner         String?   @map("generation_cost_owner")
   /// Durable provider boundary. Once set, this marker is terminal unless the
   /// encrypted line is committed; no retry may invoke a provider again.
   generationProviderInvokedAt DateTime? @map("generation_provider_invoked_at")

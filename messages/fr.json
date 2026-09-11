@@ -6683,7 +6683,8 @@
       "typeAnthropic": "Clé Anthropic (personnelle)",
       "typeCodex": "Connexion ChatGPT (personnelle)",
       "typeLocal": "Modèle local (personnel)",
-      "typeGateway": "Passerelle compatible OpenAI (personnelle)"
+      "typeGateway": "Passerelle compatible OpenAI (personnelle)",
+      "spendToday": "Aujourd'hui ({date}) : {total} jetons, dont {operator} sur la clé de l'opérateur."
     },
     "aiQuality": {
       "title": "Qualité des analyses",
