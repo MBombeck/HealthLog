@@ -619,7 +619,10 @@ export function InviteTokensSection() {
                     height={176}
                     className="rounded-lg bg-white p-2"
                   />
-                  <p className="bg-muted w-full overflow-x-auto rounded-md p-2 text-center font-mono text-xs break-all select-all">
+                  <p
+                    className="bg-muted w-full overflow-x-auto rounded-md p-2 text-center font-mono text-xs break-all select-all"
+                    data-testid="admin-invites-minted-url"
+                  >
                     {minted.url}
                   </p>
                   <Button
