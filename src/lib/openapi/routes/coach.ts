@@ -1604,7 +1604,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "List the caller's Coach goal / if-then plans",
       description:
-        'v1.21.3 (B1) — returns the durable plans the Coach has proposed for the caller, newest first, each decrypted on the fly. A plan is an "if-then" implementation intention tied to one metric, with an optional target. The Coach extractor writes a plan as `proposed`; only `PATCH /api/coach/plans/{id}` activates it. Pass `?status=` to filter to one lifecycle status, or `?scope=` for a named group (open = proposed + active + review_due, past = met + abandoned + reviewed, all = every non-deleted plan) — mutually exclusive. Both omitted returns the non-terminal set (proposed + active). Coach-gated (`requireModuleEnabled("coach")`); a disabled surface 403s. Auth via cookie or Bearer; the owner is always narrowed from the session, never the body. Undecryptable rows are omitted rather than failing the read.',
+        'v1.21.3 — returns the durable plans the Coach has proposed for the caller, newest first, each decrypted on the fly. A plan is an "if-then" implementation intention tied to one metric, with an optional target. The Coach extractor writes a plan as `proposed`; only `PATCH /api/coach/plans/{id}` activates it. Pass `?status=` to filter to one lifecycle status, or `?scope=` for a named group (open = proposed + active + review_due, past = met + abandoned + reviewed, all = every non-deleted plan) — mutually exclusive. Both omitted returns the non-terminal set (proposed + active). Coach-gated (`requireModuleEnabled("coach")`); a disabled surface 403s. Auth via cookie or Bearer; the owner is always narrowed from the session, never the body. Undecryptable rows are omitted rather than failing the read.',
       parameters: [
         {
           name: "status",
@@ -1645,7 +1645,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Confirm or update a Coach plan's lifecycle",
       description:
-        "v1.21.3 (B1) — confirm a proposed plan (status proposed → active) or mark it met / abandoned, and optionally set / clear a review date. The body carries ONLY lifecycle fields — never the metric or the encrypted free text — so a client can change a plan's status but never inject or overwrite its prose. A foreign / unknown / already-deleted id maps to 404 (never 403) so the existence channel does not leak across accounts. Coach-gated. Auth via cookie or Bearer; the owner is narrowed from the session.",
+        "v1.21.3 — confirm a proposed plan (status proposed → active) or mark it met / abandoned, and optionally set / clear a review date. The body carries ONLY lifecycle fields — never the metric or the encrypted free text — so a client can change a plan's status but never inject or overwrite its prose. A foreign / unknown / already-deleted id maps to 404 (never 403) so the existence channel does not leak across accounts. Coach-gated. Auth via cookie or Bearer; the owner is narrowed from the session.",
       parameters: [
         {
           name: "id",
@@ -1688,7 +1688,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Soft-delete one Coach plan",
       description:
-        "v1.21.3 (B1) — soft-deletes a single plan owned by the caller. An unknown / cross-user / already-deleted id is an idempotent no-op returning `{ deleted: false }`, never revealing whether the id exists under another account. Coach-gated. Auth via cookie or Bearer.",
+        "v1.21.3 — soft-deletes a single plan owned by the caller. An unknown / cross-user / already-deleted id is an idempotent no-op returning `{ deleted: false }`, never revealing whether the id exists under another account. Coach-gated. Auth via cookie or Bearer.",
       parameters: [
         {
           name: "id",
@@ -1760,7 +1760,7 @@ export const coachReminderPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Create a Coach reminder manually",
       description:
-        "v1.22 (B6) — create a reminder from the ledger. `note` is the only writable content; `when` is the closed grammar (ISO date | +Nd / +Nw | a context cue) resolved into the trigger server-side; `metric` optional. The per-user cap returns 409 when the non-terminal set is full. Coach-gated. Auth via cookie or Bearer; the owner is narrowed from the session.",
+        "v1.22 — create a reminder from the ledger. `note` is the only writable content; `when` is the closed grammar (ISO date | +Nd / +Nw | a context cue) resolved into the trigger server-side; `metric` optional. The per-user cap returns 409 when the non-terminal set is full. Coach-gated. Auth via cookie or Bearer; the owner is narrowed from the session.",
       requestBody: {
         required: true,
         content: {
@@ -1796,7 +1796,7 @@ export const coachReminderPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Confirm or update a Coach reminder's lifecycle",
       description:
-        "v1.22 (B6) — confirm a proposed reminder (→ active), mark it done / dismissed, or re-schedule via the closed `when` grammar (null clears the due moment). The body never carries the note text. A foreign / unknown / already-deleted id maps to 404 (never 403) so the existence channel does not leak. Coach-gated. Auth via cookie or Bearer.",
+        "v1.22 — confirm a proposed reminder (→ active), mark it done / dismissed, or re-schedule via the closed `when` grammar (null clears the due moment). The body never carries the note text. A foreign / unknown / already-deleted id maps to 404 (never 403) so the existence channel does not leak. Coach-gated. Auth via cookie or Bearer.",
       parameters: [
         {
           name: "id",
@@ -1839,7 +1839,7 @@ export const coachReminderPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Soft-delete one Coach reminder",
       description:
-        "v1.22 (B6) — soft-deletes a single reminder owned by the caller. An unknown / cross-user / already-deleted id is an idempotent no-op returning `{ deleted: false }`. Coach-gated. Auth via cookie or Bearer.",
+        "v1.22 — soft-deletes a single reminder owned by the caller. An unknown / cross-user / already-deleted id is an idempotent no-op returning `{ deleted: false }`. Coach-gated. Auth via cookie or Bearer.",
       parameters: [
         {
           name: "id",
