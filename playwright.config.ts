@@ -232,6 +232,7 @@ export default defineConfig({
         "setup-flow-visit.spec.ts",
         "setup-flow-child.spec.ts",
         "setup-flow-a11y.spec.ts",
+        "setup-flow-connect.spec.ts",
         "setup-flow-locale-overflow.spec.ts",
       ],
       use: {
