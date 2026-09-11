@@ -4553,7 +4553,18 @@
       "ladderOauthBody": "Collega un account ChatGPT — nessun costo per token, ma i termini del piano consumer possono usare i contenuti per l'addestramento, quindi è una scelta deliberata, mai l'impostazione predefinita per i tuoi dati sanitari.",
       "keylessLine": "HealthLog è pienamente utile anche senza IA. Le tue schede, i grafici, i trend e le esportazioni funzionano tutti — l'IA aggiunge solo la lettura in linguaggio chiaro.",
       "setupCta": "Configuralo (circa un minuto)",
-      "sharedKeyNote": "Questa istanza fornisce già un provider IA condiviso, quindi gli insight funzionano per te fin da subito — nessuna configurazione necessaria."
+      "sharedKeyNote": "Questa istanza fornisce già un provider IA condiviso, quindi gli insight funzionano per te fin da subito — nessuna configurazione necessaria.",
+      "offer": {
+        "title": "Questa istanza può già scrivere il tuo riepilogo in parole semplici.",
+        "body": "Il gestore mette a disposizione un fornitore che ha funzionato nelle ultime 24 ore. Con un tocco attivi le parole semplici; i tuoi dati andranno allora a quell’unico fornitore e a nessun altro.",
+        "cta": "Attiva le parole semplici",
+        "granted": "Attivato. Il primo riepilogo comparirà sulla tua dashboard.",
+        "error": "L’attivazione non è riuscita. Riprova tra un momento."
+      },
+      "unavailable": {
+        "title": "Il fornitore di questa istanza al momento non risponde.",
+        "body": "HealthLog resta pienamente utile senza le parole semplici. Potrai aggiungere un fornitore tuo più avanti nelle impostazioni."
+      }
     },
     "steps": {
       "who": "A chi appartiene questa cartella",

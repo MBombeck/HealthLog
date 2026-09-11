@@ -4553,7 +4553,18 @@
       "ladderOauthBody": "Verbinde ein ChatGPT-Konto — keine Kosten pro Token, aber die Bedingungen der Verbraucherstufe können Inhalte fürs Training nutzen. Deshalb eine bewusste Wahl, nie der Standard für deine Gesundheitsdaten.",
       "keylessLine": "HealthLog ist auch ohne KI vollständig nutzbar. Deine Kacheln, Diagramme, Trends und Exporte funktionieren alle — KI ergänzt nur den Klartext obendrauf.",
       "setupCta": "Einrichten (etwa eine Minute)",
-      "sharedKeyNote": "Diese Instanz stellt bereits einen gemeinsamen KI-Anbieter bereit, deshalb funktionieren Insights für dich sofort — keine Einrichtung nötig."
+      "sharedKeyNote": "Diese Instanz stellt bereits einen gemeinsamen KI-Anbieter bereit, deshalb funktionieren Insights für dich sofort — keine Einrichtung nötig.",
+      "offer": {
+        "title": "Die Zusammenfassung dieser Instanz ist bereit.",
+        "body": "Der Betreiber stellt einen Anbieter bereit, der zuletzt innerhalb der letzten 24 Stunden funktioniert hat. Mit einem Tipp schaltest du den Klartext ein; deine Daten gehen dann an diesen einen Anbieter, an niemanden sonst.",
+        "cta": "Klartext einschalten",
+        "granted": "Eingeschaltet. Die erste Zusammenfassung erscheint auf dem Dashboard.",
+        "error": "Das Einschalten hat nicht geklappt. Versuch es gleich noch einmal."
+      },
+      "unavailable": {
+        "title": "Der Anbieter dieser Instanz antwortet gerade nicht.",
+        "body": "HealthLog funktioniert ohne Klartext vollständig. Du kannst später in den Einstellungen einen eigenen Anbieter hinterlegen."
+      }
     },
     "steps": {
       "who": "Für wen diese Akte ist",

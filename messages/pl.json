@@ -4553,7 +4553,18 @@
       "ladderOauthBody": "Podłącz konto ChatGPT — bez kosztu za token, ale warunki poziomu konsumenckiego mogą wykorzystywać treści do treningu, więc to świadomy wybór, nigdy domyślny dla danych o zdrowiu.",
       "keylessLine": "HealthLog jest w pełni użyteczny bez AI. Twoje kafelki, wykresy, trendy i eksporty działają — AI dokłada tylko odczyt prostym językiem.",
       "setupCta": "Skonfiguruj (około minuty)",
-      "sharedKeyNote": "Ta instancja udostępnia już wspólnego dostawcę AI, więc insighty działają dla Ciebie od razu — bez konfiguracji."
+      "sharedKeyNote": "Ta instancja udostępnia już wspólnego dostawcę AI, więc insighty działają dla Ciebie od razu — bez konfiguracji.",
+      "offer": {
+        "title": "Ta instancja potrafi już napisać twoje podsumowanie zwykłym językiem.",
+        "body": "Operator udostępnia dostawcę, który działał po raz ostatni w ciągu ostatnich 24 godzin. Jedno dotknięcie włącza zwykły język; twoje dane trafią wtedy do tego jednego dostawcy i do nikogo więcej.",
+        "cta": "Włącz zwykły język",
+        "granted": "Włączone. Pierwsze podsumowanie pojawi się na pulpicie.",
+        "error": "Włączenie się nie powiodło. Spróbuj ponownie za chwilę."
+      },
+      "unavailable": {
+        "title": "Dostawca tej instancji w tej chwili nie odpowiada.",
+        "body": "HealthLog jest w pełni użyteczny bez zwykłego języka. Później możesz dodać w ustawieniach własnego dostawcę."
+      }
     },
     "steps": {
       "who": "Dla kogo jest ta kartoteka",
