@@ -112,10 +112,26 @@ async function enterRecord(page: Page, username: string): Promise<void> {
   });
 }
 
+/**
+ * Leave the record and prove the own-record shell is back.
+ *
+ * Leaving replaces the document, and the protected shell renders its
+ * hydration gate — no nav, no banner, no page body — until `/api/auth/me`
+ * resolves. "The banner is gone" is true of that gate as well, so on its own
+ * it is satisfied by the document on its way out and is not a wait at all.
+ * The top bar only exists past the gate, so it is the anchor the absence
+ * hangs on.
+ */
 async function leaveRecord(page: Page): Promise<void> {
   await withDocumentReplacement(page, () =>
     page.locator('[data-slot="shared-record-banner-exit"]').click(),
   );
+  await expect(
+    page.locator('[data-slot="record-scope-hydration-gate"]'),
+  ).toHaveCount(0, { timeout: 30_000 });
+  await expect(page.locator('[data-slot="top-bar"]')).toBeVisible({
+    timeout: 30_000,
+  });
   await expect(page.locator('[data-slot="shared-record-banner"]')).toHaveCount(
     0,
     { timeout: 30_000 },

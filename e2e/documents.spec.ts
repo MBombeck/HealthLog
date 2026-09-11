@@ -311,10 +311,15 @@ test.describe("document vault", () => {
     await expect(detail).not.toBeVisible();
 
     await page.reload();
+    // A reload replaces the document, and the protected shell holds every
+    // child until `/api/auth/me` resolves, so "the sheet is not visible"
+    // right here would be a statement about the hold, not about the handoff
+    // having been consumed. The list row is the first thing that exists only
+    // once the page really rendered, so it goes first.
+    await expect(openButton(page, "MRT Knie")).toBeVisible();
     await expect(detail).not.toBeVisible();
     expect(new URL(page.url()).searchParams.get("doc")).toBeNull();
 
-    await expect(openButton(page, "MRT Knie")).toBeVisible();
     await openButton(page, "MRT Knie").click();
     await expect(detail).toBeVisible();
     await detail.locator('[data-slot="document-chat-open"]').click();

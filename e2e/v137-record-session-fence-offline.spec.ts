@@ -433,8 +433,16 @@ test.describe.serial("FENCE-AC-07 record-fence disk layers", () => {
         return res.status;
       });
       expect(left).toBe(200);
-      const me = await context.request.get("/api/auth/me");
-      const now = (await me.json()).data.recordSession as {
+      // Read back through the page for the same reason the switch above goes
+      // that way. This was the last call in the file still using the shared
+      // API context, and it duly failed with `read ECONNRESET` on all three
+      // attempts once the pooled socket had gone stale. The browser opens its
+      // own connection, and a GET for the caller's own session is outside the
+      // app either way.
+      const now = (await page.evaluate(async () => {
+        const res = await fetch("/api/auth/me");
+        return (await res.json()).data.recordSession;
+      })) as {
         epoch: number;
         scope: string | null;
       };
