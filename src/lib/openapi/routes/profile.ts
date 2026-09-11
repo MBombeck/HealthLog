@@ -572,7 +572,7 @@ const aiProviderResponse = z
     serverProviderOffer: z
       .boolean()
       .describe(
-        "Whether the shared provider may honestly be offered to this caller in one tap. True only when all of: the operator's provider is the one that would serve them (`managedBy: \"server\"`), `serverProviderHealth` is `healthy`, the operator's assistant master + coach flags are on, the acting record holds its own credentials (a managed profile never does), and the caller holds no receipt yet. Anything unknown makes it false.",
+        "Whether the shared provider may honestly be offered to this caller in one tap. True only when all of: the operator's provider is the one that would serve them (`managedBy: \"server\"`), `serverProviderHealth` is `healthy`, the operator's assistant master + coach flags are on, the acting record holds its own credentials (a managed profile never does), the caller holds no receipt yet, and the instance is not running in demo mode (where the grant the tap makes is refused at the edge). Anything unknown makes it false.",
       ),
     serverProviderConsent: z
       .boolean()

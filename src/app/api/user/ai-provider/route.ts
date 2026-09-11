@@ -87,7 +87,15 @@ export const GET = apiHandler(async () => {
     providerWorkAuthorityForRecord(user.id),
     u?.managedProfileAt ?? null,
   );
+  // A demo instance can show the offer but cannot honour it: the one tap
+  // posts `POST /api/consent/ai/web`, which the demo's edge allowlist
+  // refuses — and should, since the demo is one shared account and a receipt
+  // one visitor minted would turn the operator's provider on for every later
+  // one. A button that can only 403 into a generic toast is precisely the
+  // misleading failure this surface exists to remove, so there is no button.
+  const demoInstance = process.env.DEMO_MODE === "true";
   const serverProviderOffer =
+    !demoInstance &&
     managedBy === "server" &&
     serverProviderHealth === "healthy" &&
     assistantFlags.enabled &&

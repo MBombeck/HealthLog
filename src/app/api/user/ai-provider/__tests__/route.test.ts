@@ -563,4 +563,26 @@ describe("GET /api/user/ai-provider — the shared-provider offer", () => {
     expect(vi.mocked(readServerProviderHealth)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(readServerProviderHealth)).toHaveBeenCalledWith();
   });
+
+  it("never offers on a demo instance, where the grant cannot be made", async () => {
+    // The one tap posts `POST /api/consent/ai/web`, which the demo's edge
+    // allowlist refuses — and should: the demo is one shared account, so a
+    // receipt minted by one visitor would turn the operator's provider on
+    // for every later one. Offering a button that can only 403 into a
+    // generic toast is the misleading failure this screen exists to remove,
+    // so the offer is withheld and the screen falls to its neutral panel.
+    const previous = process.env.DEMO_MODE;
+    process.env.DEMO_MODE = "true";
+    try {
+      serverManaged();
+      vi.mocked(readServerProviderHealth).mockResolvedValue("healthy");
+      await expect(read()).resolves.toMatchObject({
+        serverProviderHealth: "healthy",
+        serverProviderOffer: false,
+      });
+    } finally {
+      if (previous === undefined) delete process.env.DEMO_MODE;
+      else process.env.DEMO_MODE = previous;
+    }
+  });
 });
