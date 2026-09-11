@@ -225,6 +225,22 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
       <section
         aria-labelledby="onboarding-ai-panel-title"
         data-slot="onboarding-ai-panel"
+        /* Which of the four variants the panel SETTLED on, and absent until
+           it has settled. The panel itself is unconditional and paints
+           immediately, so without this an assertion that a variant is absent
+           passes on a status that has simply not arrived yet. The value is
+           the same tri-state decision made once, above. */
+        data-ai-state={
+          aiProvider === undefined
+            ? undefined
+            : consentOnFile && operatorProvides
+              ? "consent"
+              : offerShared
+                ? "offer"
+                : sharedUnavailable
+                  ? "unavailable"
+                  : "neutral"
+        }
         className="border-border bg-card mx-auto flex w-full max-w-md flex-col gap-4 rounded-xl border p-4 text-left md:p-6"
       >
         <header className="flex items-start gap-3">

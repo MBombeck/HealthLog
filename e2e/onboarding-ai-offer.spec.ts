@@ -8,11 +8,12 @@
  * on their first briefing. On 2026-09-11 the operator's own instance was
  * answering HTTP 500 from its OAuth proxy while the screen kept promising.
  *
- * Two runs, one account, and the only difference between them is a row in
+ * Three runs, one account, and the only difference between them is a row in
  * `provider_health`:
  *
  *   a success inside the freshness window  → the offer, and one tap grants
  *   a dead credential inside its cooldown  → "not answering", and no button
+ *   no row at all                          → neither: the panel says nothing
  *
  * What is deliberately absent: any call to a provider. The flow's rule holds
  * — nothing in it talks to one — and a probe here would bill the operator for
@@ -28,6 +29,7 @@ import {
 import {
   clearAiConsent,
   clearOperatorProvider,
+  clearSharedProviderResult,
   seedOperatorProvider,
   seedSharedProviderResult,
 } from "./setup/ai-offer-fixture";
@@ -44,6 +46,9 @@ const OFFER = '[data-slot="onboarding-ai-offer"]';
 const GRANT = '[data-slot="onboarding-ai-offer-grant"]';
 const UNAVAILABLE = '[data-slot="onboarding-ai-unavailable"]';
 const SHARED_KEY = '[data-slot="onboarding-ai-shared-key"]';
+/** The panel once it knows which variant it is; absent while the status is in
+ *  flight, so an assertion of absence cannot pass on an unanswered question. */
+const SETTLED = '[data-slot="onboarding-ai-panel"][data-ai-state]';
 
 /** Walk the account to the done screen through the API, then open it. */
 async function openDoneScreen(page: import("@playwright/test").Page) {
@@ -102,7 +107,12 @@ test.describe("the setup flow's AI offer follows the shared provider's health", 
 
     await openDoneScreen(page);
 
-    await expect(page.locator(OFFER)).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(SETTLED)).toHaveAttribute(
+      "data-ai-state",
+      "offer",
+      { timeout: 15_000 },
+    );
+    await expect(page.locator(OFFER)).toBeVisible();
     await expect(page.locator(UNAVAILABLE)).toHaveCount(0);
 
     // No provider was called to decide this. The flow reads a projection.
@@ -141,7 +151,12 @@ test.describe("the setup flow's AI offer follows the shared provider's health", 
 
     await openDoneScreen(page);
 
-    await expect(page.locator(UNAVAILABLE)).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(SETTLED)).toHaveAttribute(
+      "data-ai-state",
+      "unavailable",
+      { timeout: 15_000 },
+    );
+    await expect(page.locator(UNAVAILABLE)).toBeVisible();
     await expect(page.locator(GRANT)).toHaveCount(0);
     await expect(page.locator(OFFER)).toHaveCount(0);
     // The unproven promise is not shown to somebody who has not consented.
@@ -165,6 +180,41 @@ test.describe("the setup flow's AI offer follows the shared provider's health", 
       }
     ).data;
     expect(data.serverProviderHealth).toBe("unhealthy");
+    expect(data.serverProviderOffer).toBe(false);
+  });
+
+  test("claims nothing on an instance whose provider nobody has used yet", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    // The operator has configured a key and nothing has been asked of it —
+    // the state of every deployment until its first AI call, and so the most
+    // common way through this screen. The panel may not offer (nothing is
+    // known to work) and may not report an outage (nothing failed).
+    await clearSharedProviderResult();
+
+    await openDoneScreen(page);
+
+    await expect(page.locator(SETTLED)).toHaveAttribute(
+      "data-ai-state",
+      "neutral",
+      { timeout: 15_000 },
+    );
+    await expect(
+      page.locator('[data-slot="onboarding-ai-keyless"]'),
+    ).toBeVisible();
+    await expect(page.locator(UNAVAILABLE)).toHaveCount(0);
+    await expect(page.locator(OFFER)).toHaveCount(0);
+    await expect(page.locator(GRANT)).toHaveCount(0);
+    await expect(page.locator(SHARED_KEY)).toHaveCount(0);
+
+    const status = await page.request.get("/api/user/ai-provider");
+    const data = (
+      (await status.json()) as {
+        data: { serverProviderHealth: string; serverProviderOffer: boolean };
+      }
+    ).data;
+    expect(data.serverProviderHealth).toBe("unknown");
     expect(data.serverProviderOffer).toBe(false);
   });
 });

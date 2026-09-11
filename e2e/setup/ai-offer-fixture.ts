@@ -117,6 +117,23 @@ export async function seedSharedProviderResult(
   }
 }
 
+/**
+ * The ledger holds nothing for either shared tag, with the operator's key
+ * still in place: a brand-new instance before its first AI call, which is
+ * what every deployment looks like until somebody makes one.
+ */
+export async function clearSharedProviderResult(): Promise<void> {
+  const pool = connect();
+  try {
+    await pool.query(
+      `DELETE FROM provider_health
+        WHERE provider_type IN ('admin-openai', 'admin-codex')`,
+    );
+  } finally {
+    await pool.end();
+  }
+}
+
 /** No receipt on file — the state a fresh account reaches the screen in. */
 export async function clearAiConsent(username: string): Promise<void> {
   const pool = connect();

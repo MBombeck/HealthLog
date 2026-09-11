@@ -179,6 +179,7 @@ describe("<DoneScreen> shared-provider offer", () => {
       serverProviderConsent: false,
     };
     const html = render();
+    expect(html).toContain('data-ai-state="offer"');
     expect(html).toContain('data-slot="onboarding-ai-offer"');
     expect(html).toContain('data-slot="onboarding-ai-offer-grant"');
     // The unproven promise is gone from this branch.
@@ -194,6 +195,7 @@ describe("<DoneScreen> shared-provider offer", () => {
       serverProviderConsent: false,
     };
     const html = render();
+    expect(html).toContain('data-ai-state="unavailable"');
     expect(html).toContain('data-slot="onboarding-ai-unavailable"');
     expect(html).not.toContain('data-slot="onboarding-ai-offer-grant"');
     expect(html).not.toContain('data-slot="onboarding-ai-shared-key"');
@@ -214,6 +216,7 @@ describe("<DoneScreen> shared-provider offer", () => {
       serverProviderConsent: false,
     };
     const html = render();
+    expect(html).toContain('data-ai-state="neutral"');
     expect(html).not.toContain('data-slot="onboarding-ai-unavailable"');
     expect(html).not.toContain('data-slot="onboarding-ai-offer-grant"');
     expect(html).not.toContain('data-slot="onboarding-ai-shared-key"');
@@ -230,6 +233,7 @@ describe("<DoneScreen> shared-provider offer", () => {
       serverProviderConsent: true,
     };
     const html = render();
+    expect(html).toContain('data-ai-state="consent"');
     expect(html).toContain('data-slot="onboarding-ai-shared-key"');
     expect(html).not.toContain('data-slot="onboarding-ai-offer-grant"');
     expect(html).not.toContain('data-slot="onboarding-ai-unavailable"');
@@ -252,6 +256,8 @@ describe("<DoneScreen> shared-provider offer", () => {
   it("says nothing at all while the status is still in flight", () => {
     aiProviderState.data = undefined;
     const html = render();
+    // Not even the settled marker: the question is genuinely unanswered.
+    expect(html).not.toContain("data-ai-state");
     expect(html).not.toContain('data-slot="onboarding-ai-offer"');
     expect(html).not.toContain('data-slot="onboarding-ai-unavailable"');
   });
