@@ -1,4 +1,5 @@
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
+import { buildDateKey } from "@/lib/ai/coach/budget";
 import { prisma } from "@/lib/db";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
@@ -48,6 +49,9 @@ const CENTRAL_TYPES = ["admin-openai", "admin-codex"];
 export const GET = apiHandler(async () => {
   await requireAdmin();
   annotate({ action: { name: "admin.provider-health.get" } });
+
+  // The UTC day the ledger buckets by — the same key every reservation writes.
+  const dateKey = buildDateKey();
 
   const groups = await prisma.providerHealth.groupBy({
     // `lastStatus` joins the grouping key rather than an aggregate: the
@@ -107,5 +111,24 @@ export const GET = apiHandler(async () => {
     return a.providerType.localeCompare(b.providerType);
   });
 
-  return apiSuccess({ providers });
+  // v1.38.19 (Wave E) — the day's spend, split by who pays for it.
+  //
+  // The operator opens this card when a surface refuses on budget. One mixed
+  // number could not answer the question it raised: a day at 1.24 M tokens is
+  // alarming until you see that 151 200 of them were the instance's own key
+  // and the rest ran on the users' plans. The operator ceiling is enforced
+  // against the second figure, so both belong on screen.
+  const spend = await prisma.coachUsage.aggregate({
+    where: { dateKey },
+    _sum: { totalTokens: true, operatorTokens: true },
+  });
+
+  return apiSuccess({
+    providers,
+    spendToday: {
+      dateKey,
+      totalTokens: spend._sum.totalTokens ?? 0,
+      operatorTokens: spend._sum.operatorTokens ?? 0,
+    },
+  });
 });

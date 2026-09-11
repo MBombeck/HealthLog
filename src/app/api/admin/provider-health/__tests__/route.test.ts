@@ -18,6 +18,9 @@ vi.mock("@/lib/db", () => ({
     providerHealth: {
       groupBy: vi.fn(),
     },
+    coachUsage: {
+      aggregate: vi.fn(),
+    },
   },
 }));
 
@@ -45,6 +48,7 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/api-handler";
 
 const groupBy = vi.mocked(prisma.providerHealth.groupBy);
+const aggregate = vi.mocked(prisma.coachUsage.aggregate);
 
 function group(
   providerType: string,
@@ -75,6 +79,9 @@ describe("GET /api/admin/provider-health", () => {
     vi.clearAllMocks();
     vi.mocked(requireAdmin).mockResolvedValue({
       user: { id: "admin1" },
+    } as never);
+    aggregate.mockResolvedValue({
+      _sum: { totalTokens: 0, operatorTokens: 0 },
     } as never);
   });
 
@@ -197,6 +204,49 @@ describe("GET /api/admin/provider-health", () => {
     expect(
       body.data.providers.map((p: { providerType: string }) => p.providerType),
     ).toEqual(["admin-openai", "admin-codex", "anthropic", "local"]);
+  });
+
+  /**
+   * v1.38.19 (Wave E) — the two spend figures side by side.
+   *
+   * The operator reads this card when the chat refuses. Until now it showed
+   * delivery health only, and the day's token figure was one number that mixed
+   * his own ChatGPT plan with the instance's key — so a refusal at 513 539
+   * tokens looked like his own doing. The split is what tells him which
+   * ceiling he hit.
+   */
+  it("reports the day's spend split by who paid for it", async () => {
+    groupBy.mockResolvedValue([] as never);
+    aggregate.mockResolvedValue({
+      _sum: { totalTokens: 1_240_000, operatorTokens: 151_200 },
+    } as never);
+
+    const res = await GET();
+    const body = await res.json();
+
+    expect(body.data.spendToday).toEqual({
+      dateKey: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      totalTokens: 1_240_000,
+      operatorTokens: 151_200,
+    });
+    // Today only, across every account — the operator's ceiling is per day.
+    expect(aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { dateKey: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) },
+      }),
+    );
+  });
+
+  it("reports a day with no spend as zero, not null", async () => {
+    groupBy.mockResolvedValue([] as never);
+    aggregate.mockResolvedValue({
+      _sum: { totalTokens: null, operatorTokens: null },
+    } as never);
+
+    const res = await GET();
+    const body = await res.json();
+    expect(body.data.spendToday.totalTokens).toBe(0);
+    expect(body.data.spendToday.operatorTokens).toBe(0);
   });
 
   it("answers an empty ledger with an empty list, not an error", async () => {
