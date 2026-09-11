@@ -143,6 +143,16 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   // Check if email or username already taken (unified message to prevent enumeration)
+  //
+  // The ordering is deliberate and load-bearing. This runs BEFORE the password
+  // strength check, the breach lookup and the Argon2id hash below, so a taken
+  // address answers after one indexed SELECT and a free one answers after
+  // zxcvbn plus an outbound round-trip plus tens of milliseconds of hashing.
+  // The status code already gives the answer away, so today the gap tells a
+  // caller nothing extra. It would be the whole answer the moment somebody
+  // unified the 409 into the success shape to close the oracle: the clock
+  // would then say what the status code no longer does. Anyone doing that has
+  // to move this block after the hash in the same change.
   const [existingEmail, existingUsername] = await Promise.all([
     prisma.user.findUnique({ where: { email } }),
     prisma.user.findUnique({ where: { username } }),
