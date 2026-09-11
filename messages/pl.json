@@ -10327,6 +10327,7 @@
     "invite": {
       "title": "Zaproś kogoś",
       "description": "Nic nie jest udostępniane, dopóki ta osoba nie zaakceptuje.",
+      "needsAccount": "Ta osoba potrzebuje własnego konta HealthLog na tej instancji i znajdzie zaproszenie w Ustawienia → Udostępniony dostęp.",
       "identifierLabel": "Nazwa użytkownika lub e-mail",
       "identifierPlaceholder": "Nazwa, którą się loguje",
       "identifierHint": "Ta osoba potrzebuje konta na tej instancji. Nie można wysłać zaproszenia na niezarejestrowany adres.",

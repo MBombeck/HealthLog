@@ -10327,6 +10327,7 @@
     "invite": {
       "title": "Invite someone",
       "description": "Nothing is shared until they accept.",
+      "needsAccount": "The person needs their own HealthLog account on this instance and will find the invitation under Settings → Shared access.",
       "identifierLabel": "Username or e-mail",
       "identifierPlaceholder": "The name they sign in with",
       "identifierHint": "They need an account on this instance. Invitations cannot be sent to an e-mail address that has not registered.",

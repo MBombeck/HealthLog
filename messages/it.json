@@ -10327,6 +10327,7 @@
     "invite": {
       "title": "Invita qualcuno",
       "description": "Nulla viene condiviso finché non accetta.",
+      "needsAccount": "La persona ha bisogno di un proprio account HealthLog su questa istanza e troverà l'invito in Impostazioni → Accesso condiviso.",
       "identifierLabel": "Nome utente o e-mail",
       "identifierPlaceholder": "Il nome con cui accede",
       "identifierHint": "Serve un account su questa istanza. Non è possibile inviare inviti a un indirizzo non registrato.",

@@ -10327,6 +10327,7 @@
     "invite": {
       "title": "Invitar a alguien",
       "description": "No se comparte nada hasta que acepte.",
+      "needsAccount": "La persona necesita su propia cuenta de HealthLog en esta instancia y encontrará la invitación en Ajustes → Acceso compartido.",
       "identifierLabel": "Usuario o correo electrónico",
       "identifierPlaceholder": "El nombre con el que inicia sesión",
       "identifierHint": "Necesita una cuenta en esta instancia. No se pueden enviar invitaciones a una dirección que no se haya registrado.",

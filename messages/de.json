@@ -10327,6 +10327,7 @@
     "invite": {
       "title": "Jemanden einladen",
       "description": "Vor der Zustimmung wird nichts geteilt.",
+      "needsAccount": "Die Person braucht ein eigenes HealthLog-Konto auf dieser Instanz und findet die Einladung dort unter Einstellungen → Geteilter Zugriff.",
       "identifierLabel": "Benutzername oder E-Mail",
       "identifierPlaceholder": "Der Name, mit dem sie sich anmeldet",
       "identifierHint": "Die Person braucht ein Konto auf dieser Instanz. An eine E-Mail-Adresse ohne Registrierung lässt sich keine Einladung schicken.",
