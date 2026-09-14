@@ -42,7 +42,6 @@ import {
 } from "@/lib/api-response";
 import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { requireAssistantSurface } from "@/lib/feature-flags";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
@@ -113,7 +112,8 @@ export const GET = apiHandler(async () => {
   const { user } = await requireRecordAuth("manage", "record");
   const m = await requireModuleEnabled(user.id, "insights");
   if (!m.enabled) return m.response;
-  await requireAssistantSurface("insightStatus");
+  // A pure read of the device's own recordings, so no assistant-surface
+  // gate.
 
   const rows = await prisma.ecgRecording.findMany({
     where: { userId: user.id },
@@ -181,7 +181,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
   const m = await requireModuleEnabled(user.id, "insights");
   if (!m.enabled) return m.response;
-  await requireAssistantSurface("insightStatus");
+  // A device ingest carries no assistant prose, so switching the assistant
+  // off must not refuse a recording.
 
   const rl = await checkRateLimit(
     `insights:ecg:ingest:${user.id}`,

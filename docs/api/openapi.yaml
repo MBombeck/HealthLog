@@ -10997,8 +10997,8 @@ paths:
         NEVER decrypts or returns the waveform — the per-recording strip is fetched on demand from GET
         /api/insights/ecg/{id}. Reflects only the recording device's certified on-device classification, verbatim;
         HealthLog never re-classifies an ECG or produces a diagnosis. Data-availability-gated: an empty account returns
-        `hasRecordings: false`. Module-gated on `insights` and the operator `insightStatus` assistant surface; no LLM
-        call. Auth via cookie or Bearer."
+        `hasRecordings: false`. Module-gated on `insights`; no assistant-surface gate and no LLM call. Auth via cookie
+        or Bearer."
       responses:
         "200":
           description: The ECG recording list (possibly empty).
@@ -11022,8 +11022,8 @@ paths:
         or revise one. `source` accepts `APPLE_HEALTH` only; `userId` comes from the session and is never a body field.
         Unknown body keys are rejected with a 422 naming them. No `Idempotency-Key` is needed: the recording carries its
         own identity, so a retry resolves to the same row by construction — see `status` for what a re-post reports.
-        Limits: 32 768 samples, 2 MB body, 60 recordings per minute per user. Module-gated on `insights` and the
-        operator `insightStatus` assistant surface; no LLM call. Auth via cookie or Bearer."
+        Limits: 32 768 samples, 2 MB body, 60 recordings per minute per user. Module-gated on `insights`; no
+        assistant-surface gate and no LLM call. Auth via cookie or Bearer."
       requestBody:
         required: true
         content:
@@ -11058,8 +11058,8 @@ paths:
         foreign or unknown id 404s (existence sealed). The waveform is AES-256-GCM at rest, decrypted through the
         fail-closed codec. By default the ~9000-sample strip is min/max-decimated to ~2500 display points so R-wave
         peaks survive; `?full=1` returns the raw array. HealthLog does not interpret the trace, measure intervals,
-        annotate beats, or emit a verdict of its own. Module-gated on `insights` and the operator `insightStatus`
-        assistant surface; no LLM call. `no-store`. Auth via cookie or Bearer.
+        annotate beats, or emit a verdict of its own. Module-gated on `insights`; no assistant-surface gate and no LLM
+        call. `no-store`. Auth via cookie or Bearer.
       parameters:
         - in: path
           name: id
@@ -11107,8 +11107,8 @@ paths:
         it never re-classifies and never produces a HealthLog diagnosis. `classification` carries the full six-value
         verdict set (the three ECG verdicts plus the two walking-steadiness severities plus the neutral FIRED verdict) —
         a distinct, wider enum than the three-value one on GET /api/insights/ecg. Data-availability-gated: an account
-        with no event rows returns `hasEvents: false`. Module-gated on `insights` and the operator `insightStatus`
-        assistant surface; no LLM call. Auth via cookie or Bearer."
+        with no event rows returns `hasEvents: false`. Module-gated on `insights`; no assistant-surface gate and no LLM
+        call. Auth via cookie or Bearer."
       responses:
         "200":
           description: The device-flagged event timeline (possibly empty).

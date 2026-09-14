@@ -27,7 +27,6 @@
 import { apiSuccess } from "@/lib/api-response";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { requireAssistantSurface } from "@/lib/feature-flags";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { prisma } from "@/lib/db";
 import { EVENT_MEASUREMENT_TYPES } from "@/lib/validations/measurement";
@@ -49,7 +48,7 @@ export const GET = apiHandler(async () => {
   const { user } = await requireRecordAuth("manage", "record");
   const m = await requireModuleEnabled(user.id, "insights");
   if (!m.enabled) return m.response;
-  await requireAssistantSurface("insightStatus");
+  // A pure read of the device's own verdicts, so no assistant-surface gate.
 
   const rows = await prisma.measurement.findMany({
     where: {

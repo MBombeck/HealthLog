@@ -28,8 +28,8 @@ import {
   requireRecordAuth,
   type AuthContext,
 } from "@/lib/api-handler";
+import { requireModuleEnabled } from "@/lib/modules/gate";
 import { annotate } from "@/lib/logging/context";
-import { requireAssistantSurface } from "@/lib/feature-flags";
 import { checkAnalyticsReadRateLimit } from "@/lib/rate-limit";
 import {
   cachedSwrWithMeta,
@@ -49,6 +49,8 @@ export const GET = apiHandler(async () => {
   // v1.37.0 — MANAGE-level read: computed over the whole record, with no
   // provider anywhere on the path.
   const { user } = await requireRecordAuth("manage", "record");
+  const m = await requireModuleEnabled(user.id, "insights");
+  if (!m.enabled) return m.response;
 
   // v1.15.20 — shared analytics-read budget (generous; caps runaway loops).
   const rl = await checkAnalyticsReadRateLimit(user.id);
@@ -56,9 +58,10 @@ export const GET = apiHandler(async () => {
     return apiError("Too many analytics requests. Please retry later.", 429);
   }
 
-  // v1.4.31 — comprehensive feeds the hero strip narration and the
-  // recommendations grid that share the Coach gate.
-  await requireAssistantSurface("coach");
+  // No assistant-surface gate. Every field is computed from the record
+  // (the provider chain is only probed for `hasProvider`), and this is the
+  // main read of the Insights overview: an operator who switches the
+  // assistant off still gets the overview.
 
   // v1.4.35 — read-through the analytics cache keyed on
   // (userId, "comprehensive"). The /insights page mount routinely

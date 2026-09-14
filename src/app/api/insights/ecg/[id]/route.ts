@@ -28,7 +28,6 @@ import { NextRequest } from "next/server";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { requireAssistantSurface } from "@/lib/feature-flags";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { prisma } from "@/lib/db";
 import { decryptWaveformFromBytes } from "@/lib/withings/ecg-waveform-codec";
@@ -48,7 +47,7 @@ export const GET = apiHandler(
     const { user } = await requireRecordAuth("manage", "record");
     const m = await requireModuleEnabled(user.id, "insights");
     if (!m.enabled) return m.response;
-    await requireAssistantSurface("insightStatus");
+    // The waveform is never interpreted, so no assistant-surface gate.
 
     const { id } = await params;
     const full = request.nextUrl.searchParams.get("full") === "1";
