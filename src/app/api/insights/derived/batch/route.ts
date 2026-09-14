@@ -28,7 +28,6 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
-import { requireAssistantSurface } from "@/lib/feature-flags";
 import { prisma } from "@/lib/db";
 import { MeasurementType } from "@/generated/prisma/client";
 import {
@@ -120,7 +119,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const { user, actor } = await requireRecordAuth("manage", "record");
   const m = await requireModuleEnabled(user.id, "insights");
   if (!m.enabled) return m.response;
-  await requireAssistantSurface("insightStatus");
+  // Same deterministic compute as the single route, so no
+  // assistant-surface gate.
 
   // Per-caller limiter, same posture as the compliance routes: the cold
   // build fans out up to 24 rollup walks, so an unthrottled caller could

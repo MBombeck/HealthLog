@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- **Insights loads with the assistant switched off.** An operator who turned
+  the assistant off on the server got an error in place of the whole Insights
+  overview. Its main read and several tiles were tied to the assistant switch
+  even though none of them uses a model, so the derived tiles, the ECG list and
+  the device-flagged rhythm events stayed dark, and a watch ECG sent from the
+  phone was refused. These reads follow the Insights module now, and the parts
+  a model writes still disappear when the assistant is off. Thanks to
+  @CritLoren for the log in #975 that showed which requests failed.
+- **The trends row leaves mood out when the mood module is off.** Switching
+  the mood module off already hid the Mood tab on Insights, but the overview
+  still drew a mood chart in its trends row. It skips mood now, the same way
+  the tab strip does.
+
 ## [1.38.22] — 2026-09-13
 
 A channel test no longer runs on settings you have not saved.

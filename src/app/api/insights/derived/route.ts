@@ -24,7 +24,6 @@ import { apiError, apiSuccess, returnAllZodIssues } from "@/lib/api-response";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { checkAnalyticsReadRateLimit } from "@/lib/rate-limit";
-import { requireAssistantSurface } from "@/lib/feature-flags";
 import { requireModuleEnabled, type ModuleKey } from "@/lib/modules/gate";
 import { prisma } from "@/lib/db";
 import {
@@ -98,7 +97,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return apiError("Too many analytics requests. Please retry later.", 429);
   }
 
-  await requireAssistantSurface("insightStatus");
+  // Pure compute over the rollup tier, so no assistant-surface gate:
+  // switching the assistant off does not blank the derived tiles.
 
   const parsed = derivedQuerySchema.safeParse({
     metric: request.nextUrl.searchParams.get("metric"),

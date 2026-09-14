@@ -88,8 +88,18 @@ vi.mock("@/lib/medication-category", () => ({
   getMedicationCategories: vi.fn(async () => ({})),
 }));
 
+// The route gates on the `insights` module. Mock it default-enabled so the
+// envelope assertions ride through; the module-off coverage lives in the
+// module route-gate inventory test.
+vi.mock("@/lib/modules/gate", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/modules/gate")>()),
+  requireModuleEnabled: vi.fn().mockResolvedValue({ enabled: true }),
+  resolveModuleMap: vi.fn().mockResolvedValue({}),
+}));
+
 import { GET } from "../route";
 import { getSession } from "@/lib/auth/session";
+import { requireModuleEnabled } from "@/lib/modules/gate";
 import { prisma } from "@/lib/db";
 import { buildComprehensiveAggregate } from "@/lib/insights/comprehensive-aggregator";
 import { checkAnalyticsReadRateLimit } from "@/lib/rate-limit";
@@ -113,6 +123,8 @@ function makeReq(): NextRequest {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // resetAllMocks drops the module gate's default; restore it.
+  vi.mocked(requireModuleEnabled).mockResolvedValue({ enabled: true } as never);
   __resetAllCachesForTests();
   // v1.15.20 — default to an allowing analytics-read budget.
   vi.mocked(checkAnalyticsReadRateLimit).mockResolvedValue({
@@ -121,7 +133,7 @@ beforeEach(() => {
     remaining: 119,
     resetAt: Date.now() + 60_000,
   });
-  // Default to assistant-on so the gate doesn't 403 every test.
+  // No stored settings row: the provider probe falls back to defaults.
   (prisma.appSettings.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(
     null,
   );
@@ -208,6 +220,34 @@ describe("GET /api/insights/comprehensive — envelope shape", () => {
     expect(Array.isArray(body.data.alerts)).toBe(true);
     expect(body.data.totalMeasurements).toBe(0);
     expect(body.data.dataSpanDays).toBe(0);
+  });
+
+  it("answers with the assistant switched off on the server", async () => {
+    // The overview's main read carries no assistant prose, so an operator who
+    // switches the assistant off (master flag) must still get the overview.
+    (
+      prisma.appSettings.findUnique as ReturnType<typeof vi.fn>
+    ).mockResolvedValue({
+      assistantEnabled: false,
+      assistantCoachEnabled: false,
+      assistantBriefingEnabled: false,
+      assistantInsightStatusEnabled: false,
+      assistantCorrelationsEnabled: false,
+    });
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    (buildComprehensiveAggregate as ReturnType<typeof vi.fn>).mockResolvedValue(
+      {
+        summaries: {},
+        bpRawRows: { sys: [], dia: [] },
+        weightRawRows: [],
+        dailyByType: {},
+        firstMeasurementAt: null,
+        totalMeasurements: 0,
+      },
+    );
+
+    const res = await callGet(makeReq());
+    expect(res.status).toBe(200);
   });
 
   it("computes BMI from aggregate WEIGHT.latest and user heightCm", async () => {

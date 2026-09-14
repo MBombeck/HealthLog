@@ -42,13 +42,6 @@ const NON_COACH_GATED_ROUTES: ReadonlyArray<string> = [
   "src/app/api/insights/bmi-status/route.ts",
   "src/app/api/insights/cards/route.ts",
   "src/app/api/insights/correlations/route.ts",
-  // v1.10.0 — generic derived-wellness-metric route. Pure compute over
-  // the rollup tier; gates on the same `insightStatus` sub-flag as the
-  // assessment routes (no Coach prose).
-  "src/app/api/insights/derived/route.ts",
-  // v1.10.0 — batched derived-metric route (the dashboard fan-out fix).
-  // Same pure compute + `insightStatus` sub-flag as the single route.
-  "src/app/api/insights/derived/batch/route.ts",
   "src/app/api/insights/medication-compliance-status/route.ts",
   // v1.8.7.1 — generic per-HealthKit-metric assessment. Gated on the
   // same `insightStatus` sub-flag as the seven specialised status routes.
@@ -62,17 +55,6 @@ const NON_COACH_GATED_ROUTES: ReadonlyArray<string> = [
   // `coach`: a user with assessments enabled but Coach disabled can warm.
   "src/app/api/insights/pregenerate/route.ts",
   "src/app/api/insights/pulse-status/route.ts",
-  // v1.10.0 — device-flagged event awareness timeline (categorical
-  // events, WX-B). Pure DB read of the device's own verdicts; gates on
-  // the same `insightStatus` sub-flag as the assessment routes (no Coach
-  // prose).
-  "src/app/api/insights/rhythm-events/route.ts",
-  // v1.28.50 — ECG recording surface (list + per-recording waveform). Pure
-  // DB read of the device's own recordings + verdicts; gates on the same
-  // `insightStatus` sub-flag as the assessment routes (no Coach prose — the
-  // waveform is never interpreted).
-  "src/app/api/insights/ecg/route.ts",
-  "src/app/api/insights/ecg/[id]/route.ts",
   "src/app/api/insights/weight-status/route.ts",
 ];
 
@@ -133,6 +115,18 @@ const NOT_COACH_OWNED_ROUTES: ReadonlyArray<string> = [
   "src/app/api/insights/chat/fenced/route.ts",
   "src/app/api/insights/chat/[id]/attachments/route.ts",
   "src/app/api/insights/chat/[id]/attachments/[documentId]/route.ts",
+  // Deterministic reads behind the Insights overview: the comprehensive
+  // overview query, the derived-metric tiles, the ECG list, strip and live
+  // ingest, and the device-flagged rhythm events. None of them carries
+  // assistant prose or calls a provider; they gate on the `insights` module
+  // only. Switching the assistant off, the master or a sub-flag, must not
+  // refuse them, or the overview fails to load.
+  "src/app/api/insights/comprehensive/route.ts",
+  "src/app/api/insights/derived/route.ts",
+  "src/app/api/insights/derived/batch/route.ts",
+  "src/app/api/insights/ecg/route.ts",
+  "src/app/api/insights/ecg/[id]/route.ts",
+  "src/app/api/insights/rhythm-events/route.ts",
 ];
 
 const COACH_GATE_NEEDLE = 'requireAssistantSurface("coach")';
