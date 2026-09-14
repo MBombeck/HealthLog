@@ -12,6 +12,10 @@
   phone was refused. These reads follow the Insights module now, and the parts
   a model writes still disappear when the assistant is off. Thanks to
   @CritLoren for the log in #975 that showed which requests failed.
+- **The trends row leaves mood out when the mood module is off.** Switching
+  the mood module off already hid the Mood tab on Insights, but the overview
+  still drew a mood chart in its trends row. It skips mood now, the same way
+  the tab strip does.
 
 ## [1.38.22] — 2026-09-13
 

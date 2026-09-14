@@ -74,6 +74,9 @@ function BlockSkeleton({
   );
 }
 
+/** Stable reference so the trends row does not re-select on every render. */
+const HIDDEN_MOOD = ["mood"] as const;
+
 const DailyBriefing = dynamic(
   () =>
     import("@/components/insights/daily-briefing").then((mod) => ({
@@ -513,6 +516,9 @@ export default function InsightsPageClient() {
     trends: (
       <TrendsRow
         briefing={briefingPayload}
+        // Same module gate the tab strip applies to the Mood pill: with
+        // the mood module off, the trends row does not chart mood either.
+        hiddenMetrics={user?.modules?.mood === false ? HIDDEN_MOOD : undefined}
         annotations={advisor.payload?.trendAnnotations ?? null}
         loading={advisor.isLoading || advisor.isRegenerating}
       />

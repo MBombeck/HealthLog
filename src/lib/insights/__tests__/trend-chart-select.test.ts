@@ -157,3 +157,24 @@ describe("selectTrendCharts", () => {
     expect(TREND_CHART_CONFIG.steps?.detailHref).toBe("/insights/steps");
   });
 });
+
+describe("selectTrendCharts — hidden metrics", () => {
+  it("drops mood from the fallback triple when the mood module is off", () => {
+    const charts = selectTrendCharts(null, { hiddenMetrics: ["mood"] });
+    expect(charts.map((c) => c.metric)).not.toContain("mood");
+    expect(charts).toHaveLength(2);
+  });
+
+  it("skips a hidden metric the briefing flags", () => {
+    const charts = selectTrendCharts(briefing(["mood", "weight"]), {
+      hiddenMetrics: ["mood"],
+    });
+    expect(charts.map((c) => c.metric)).not.toContain("mood");
+    expect(charts).toHaveLength(1);
+  });
+
+  it("keeps mood when nothing is hidden", () => {
+    const charts = selectTrendCharts(null, { hiddenMetrics: [] });
+    expect(charts.map((c) => c.metric)).toContain("mood");
+  });
+});

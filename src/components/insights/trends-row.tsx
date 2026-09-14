@@ -13,6 +13,7 @@ import {
   selectTrendCharts,
   type TrendAnnotationKey,
   type TrendChartConfig,
+  type SelectTrendChartsOptions,
 } from "@/lib/insights/trend-chart-select";
 import {
   TrendAnnotation,
@@ -65,6 +66,11 @@ const MoodChart = dynamic(
 );
 
 interface TrendsRowProps {
+  /**
+   * Metrics to leave out because their module is switched off (for
+   * example `mood`). Passed straight to `selectTrendCharts`.
+   */
+  hiddenMetrics?: SelectTrendChartsOptions["hiddenMetrics"];
   /**
    * Daily briefing payload. Drives the chart set: the row charts the
    * metrics the briefing flags, in order, deduped + capped. `null` /
@@ -132,13 +138,14 @@ export function TrendsRow({
   annotations,
   confidence,
   loading = false,
+  hiddenMetrics,
 }: TrendsRowProps) {
   const { t } = useTranslations();
 
   // v1.8.5 — derive the chart set from the briefing. No new fetch: the
   // briefing payload is already on the page (advisor cache), so this is
   // a pure read that respects the v1.8.3 anti-freeze contract.
-  const charts = selectTrendCharts(briefing);
+  const charts = selectTrendCharts(briefing, { hiddenMetrics });
 
   // v1.4.36 W2 T3 — derive the tri-state status per metric from the
   // advisor's loading flag + the annotation presence. Pending wins

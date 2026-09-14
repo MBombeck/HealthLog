@@ -267,16 +267,24 @@ export const DEFAULT_TREND_CHART_CAP = 3;
 export interface SelectTrendChartsOptions {
   /** Max number of charts to return. Defaults to {@link DEFAULT_TREND_CHART_CAP}. */
   cap?: number;
+  /**
+   * Metrics whose module is switched off. They are skipped on both the
+   * briefing path and the fallback triple, so a disabled module never
+   * charts on the overview.
+   */
+  hiddenMetrics?: ReadonlyArray<DailyBriefingKeyFinding["sourceMetric"]>;
 }
 
 function configsFor(
   metrics: ReadonlyArray<DailyBriefingKeyFinding["sourceMetric"]>,
   cap: number,
+  hidden: ReadonlySet<string>,
 ): TrendChartConfig[] {
   const seen = new Set<string>();
   const out: TrendChartConfig[] = [];
   for (const metric of metrics) {
     if (out.length >= cap) break;
+    if (hidden.has(metric)) continue; // module switched off
     const config = TREND_CHART_CONFIG[metric];
     if (!config) continue; // metric has no standalone trend chart
     if (seen.has(config.metric)) continue; // dedupe
@@ -301,14 +309,15 @@ export function selectTrendCharts(
   options: SelectTrendChartsOptions = {},
 ): TrendChartConfig[] {
   const cap = Math.max(1, options.cap ?? DEFAULT_TREND_CHART_CAP);
+  const hidden = new Set<string>(options.hiddenMetrics ?? []);
 
   const findingMetrics =
     briefing?.keyFindings?.map((f) => f.sourceMetric) ?? [];
-  const fromBriefing = configsFor(findingMetrics, cap);
+  const fromBriefing = configsFor(findingMetrics, cap, hidden);
 
   if (fromBriefing.length > 0) {
     return fromBriefing;
   }
 
-  return configsFor(DEFAULT_TREND_METRICS, cap);
+  return configsFor(DEFAULT_TREND_METRICS, cap, hidden);
 }
