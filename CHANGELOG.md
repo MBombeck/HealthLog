@@ -1186,38 +1186,6 @@ scanning the two largest tables, and several settings now do what they say.
 The shared AI key reaches the provider its address names, and the image
 carries no flagged dependency versions.
 
-### Changed
-
-- **Readings pushed in with a measurement token are now marked as coming
-  from an external device**, instead of being recorded as if you had typed
-  them in by hand. They show a badge in the measurements list and can be
-  picked out with the source filter there, so months later you can still
-  tell which readings came off the scale and which are your own. You can
-  still correct one if a sensor sends something wrong — readings owned by a
-  connected provider stay read-only, because the number is the provider's,
-  but these come off your own hardware.
-
-  Readings pushed in before this change stay marked as manually entered.
-  There is no way to sort them out after the fact: nothing recorded which
-  ones arrived through a token, and that is the gap this closes. If you want
-  a clean split, the readings from here on will have it.
-
-  One thing to check if you push through the batch endpoint: a re-push of
-  entries you had already sent may land a second copy, because a reading's
-  identity now includes where it came from. Delete the older pair if you see
-  duplicates.
-
-- **A push must not claim a source of its own.** Saying where a reading came
-  from is the server's job now, so a payload that names one — Apple Health,
-  manual, anything — is refused with a 422 rather than quietly relabelled,
-  and you find out on the first call instead of discovering later that your
-  rows say something you did not ask for. **If your automation sends a
-  `source` field, drop it**; the example in the Home Assistant guide never
-  did, so a setup copied from there needs no change. Apple Health is the one
-  that would have done real damage: that label is half of how the iOS app
-  recognises its own rows, and a bridge borrowing it corrupts the phone's
-  sync instead of merely mislabelling a reading.
-
 ### Fixed
 
 - **The shared AI key reaches the provider its address names.** If you
