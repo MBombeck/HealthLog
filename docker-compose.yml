@@ -491,7 +491,7 @@ services:
     # `.github/dependabot.yml` now raises a PR for each new minor;
     # `src/__tests__/database-pin-is-watched.test.ts` keeps both halves
     # (concrete pin, active watch) from being dropped.
-    image: postgres:16.15-alpine
+    image: postgres:18.6-alpine
     container_name: healthlog-db
     # cap_drop: [ALL] is deliberately NOT applied here (unlike `app`): the
     # official Postgres entrypoint starts as root, chowns the data
