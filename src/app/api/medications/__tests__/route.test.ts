@@ -526,6 +526,28 @@ describe("POST /api/medications — Apple Health mirror (v1.28)", () => {
       .data;
   }
 
+  it("admits a scheduled Apple Health mirror without a HealthLog-owned schedule", async () => {
+    vi.mocked(prisma.medication.findFirst).mockResolvedValue(null as never);
+    vi.mocked(prisma.medication.count).mockResolvedValue(0 as never);
+
+    const res = await POST(
+      postReq({
+        name: "Telmisartan",
+        dose: "1 count",
+        externalSource: "APPLE_HEALTH",
+        externalId: "hk-concept-scheduled",
+        asNeeded: false,
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    const data = lastCreateData();
+    expect(data.externalSource).toBe("APPLE_HEALTH");
+    expect(data.externalId).toBe("hk-concept-scheduled");
+    expect(data.asNeeded).toBe(false);
+    expect(data.schedules).toEqual({ create: [] });
+  });
+
   it("persists externalSource + externalId field-by-field on create", async () => {
     vi.mocked(prisma.medication.findFirst).mockResolvedValue(null as never);
     const res = await POST(postReq(MIRROR_BODY));

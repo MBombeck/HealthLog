@@ -228,7 +228,10 @@ export const createMedicationSchema = z
     path: ["asNeeded"],
   })
   .refine(
-    (b) => b.asNeeded === true || (!!b.schedules && b.schedules.length >= 1),
+    (b) =>
+      b.externalSource === "APPLE_HEALTH" ||
+      b.asNeeded === true ||
+      (!!b.schedules && b.schedules.length >= 1),
     {
       message: "Mindestens ein Zeitfenster",
       path: ["schedules"],
