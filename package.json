@@ -100,7 +100,7 @@
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
     "tesseract.js": "^7.0.0",
-    "undici": "^8.10.0",
+    "undici": "^8.10.2",
     "web-push": "^3.6.7",
     "yaml": "^2.8.4",
     "zod": "^4.4.3",
