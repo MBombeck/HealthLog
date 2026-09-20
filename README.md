@@ -28,19 +28,16 @@
 <p align="center">
   <img src="docs/assets/Insights.png"
        alt="Insights"
-       width="240">
-  &nbsp;
+       width="23%">
   <img src="docs/assets/resting-pulse.png"
        alt="Insights RHR"
-       width="240">
-  &nbsp;
+       width="23%">
   <img src="docs/assets/Medications.png"
        alt="Medications"
-       width="240">
-  &nbsp;
+       width="23%">
   <img src="docs/assets/Coach.png"
        alt="Coach Chat"
-       width="240">
+       width="23%">
 </p>
 
 ## Why HealthLog
