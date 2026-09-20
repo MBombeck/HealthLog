@@ -65,7 +65,7 @@
     "@parse/node-apn": "^8.1.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
-    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/browser": "^14.0.0",
     "@simplewebauthn/server": "^13.3.3",
     "@tanstack/react-query": "5.102.8",
     "@tanstack/react-virtual": "^3.14.12",
