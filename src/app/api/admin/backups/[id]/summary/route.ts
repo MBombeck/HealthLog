@@ -19,8 +19,12 @@ import { apiError, apiSuccess } from "@/lib/api-response";
 import {
   BACKUP_UNDECRYPTABLE_CODE,
   BACKUP_UNDECRYPTABLE_ERROR,
-  unpackBackupBlob,
+  openBackupBlob,
 } from "@/lib/export/backup-blob";
+import {
+  readStreamedBackup,
+  type BackupSource,
+} from "@/lib/export/streamed-backup";
 import { annotate } from "@/lib/logging/context";
 import {
   isCompatibleSchemaVersion,
@@ -46,9 +50,11 @@ export const GET = apiHandler(
       throw new HttpError(404, "Backup not found");
     }
 
-    let plaintext: string;
+    // Opened and read as a stream: a large record's JSON is longer than any
+    // string V8 can hold (#1031).
+    let source: BackupSource;
     try {
-      plaintext = unpackBackupBlob(backup.data);
+      source = openBackupBlob(backup.data);
     } catch {
       // Same refusal the restore and the download give, for the same reason:
       // a copy this instance cannot open is bad stored input, and the preview
@@ -59,8 +65,11 @@ export const GET = apiHandler(
     }
 
     let payload;
+    let measurementCount: number;
     try {
-      payload = parseBackupPayload(plaintext);
+      const streamed = await readStreamedBackup(source);
+      measurementCount = streamed.measurementCount;
+      payload = parseBackupPayload(streamed.raw);
     } catch {
       return apiError("Backup payload failed schema validation", 422);
     }
@@ -72,7 +81,10 @@ export const GET = apiHandler(
       );
     }
 
-    const summary = summarizeBackup(payload);
+    const summary = {
+      ...summarizeBackup(payload),
+      measurements: measurementCount,
+    };
 
     annotate({
       action: { name: "admin.backups.summary" },

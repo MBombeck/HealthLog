@@ -132,7 +132,7 @@ export async function handleDataBackup(
           // assembles into the row (`storeBackupBlob`). The stored copy used
           // to be built here as one string first, which on a large record
           // added several hundred megabytes to a container capped at 1 GB.
-          const storedBytes = await storeBackupBlob(
+          const { bytes: storedBytes } = await storeBackupBlob(
             prisma,
             { userId: user.id, type: "WEEKLY_AUTO" },
             (write) =>

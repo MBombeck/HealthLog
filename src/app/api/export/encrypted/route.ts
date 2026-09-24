@@ -42,12 +42,43 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
+import { randomBytes } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { readdir, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import type { FullBackupCounts } from "@/lib/export/full-backup-payload";
+import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import {
-  encryptArchive,
+  encryptArchiveToFile,
   MIN_EXPORT_PASSPHRASE_LENGTH,
+  type SpooledArchive,
 } from "@/lib/export/passphrase-archive";
+import { streamToResponseBody } from "@/lib/export/response-stream";
 import { NextRequest, NextResponse } from "next/server";
+
+const SPOOL_PREFIX = "healthlog-export-";
+
+/**
+ * Remove spool files an earlier export left behind: a process that died
+ * mid-export never reached its cleanup. An hour is far longer than any export
+ * takes, so nothing still being written or sent is touched.
+ */
+async function removeStaleSpools(): Promise<void> {
+  try {
+    const dir = tmpdir();
+    const cutoff = Date.now() - 60 * 60 * 1000;
+    for (const name of await readdir(dir)) {
+      if (!name.startsWith(SPOOL_PREFIX)) continue;
+      const path = join(dir, name);
+      const info = await stat(path).catch(() => null);
+      if (info && info.mtimeMs < cutoff) await rm(path, { force: true });
+    }
+  } catch {
+    // Housekeeping only; an export must not fail over it.
+  }
+}
 
 const encryptedExportSchema = z
   .object({
@@ -89,10 +120,31 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
   const { passphrase } = parsed.data;
 
-  const { payload, counts } = await buildFullBackupPayload(prisma, user.id);
-
-  // Encrypt the JSON bytes. The passphrase goes no further than the KDF.
-  const archive = await encryptArchive(JSON.stringify(payload), passphrase);
+  // Sealed as it is produced and spooled to a temporary file, then sent: the
+  // format puts the tag in front of the ciphertext, so the archive cannot go
+  // out before its last byte is encrypted, and holding it in memory is what
+  // took the app down on an account of 1.25 million measurements (#1031). Only
+  // ciphertext touches the disk, and the file is removed once it is sent or
+  // the client leaves.
+  let counts: FullBackupCounts | undefined;
+  await removeStaleSpools();
+  const bodyPath = join(
+    tmpdir(),
+    `${SPOOL_PREFIX}${randomBytes(12).toString("hex")}.hlx.part`,
+  );
+  let archive: SpooledArchive;
+  try {
+    archive = await encryptArchiveToFile(
+      async (write) => {
+        counts = await streamFullBackupJson(prisma, user.id, write);
+      },
+      passphrase,
+      bodyPath,
+    );
+  } catch (err) {
+    await rm(bodyPath, { force: true });
+    throw err;
+  }
 
   await auditLog("user.export.encrypted", {
     userId: user.id,
@@ -102,38 +154,36 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   annotate({
     meta: {
-      export_measurements_count: counts.measurements,
-      export_medications_count: counts.medications,
-      export_intake_count: counts.intakeEvents,
-      export_medication_side_effect_count: counts.medicationSideEffects,
-      export_mood_count: counts.moodEntries,
-      export_cycle_count: counts.cycles,
-      export_cycle_day_log_count: counts.cycleDayLogs,
-      export_lab_result_count: counts.labResults,
-      export_biomarker_count: counts.biomarkers,
-      export_illness_episode_count: counts.illnessEpisodes,
-      export_illness_day_log_count: counts.illnessDayLogs,
-      export_allergy_count: counts.allergies,
-      export_family_history_count: counts.familyHistory,
-      export_workout_count: counts.workouts,
-      export_document_count: counts.documents,
-      export_nutrient_day_count: counts.nutrientDays,
-      export_health_profile_count: counts.healthProfile,
-      export_custom_metric_count: counts.customMetrics,
-      export_custom_metric_entry_count: counts.customMetricEntries,
-      export_intraday_profile_count: counts.intradayProfiles,
+      export_measurements_count: counts?.measurements,
+      export_medications_count: counts?.medications,
+      export_intake_count: counts?.intakeEvents,
+      export_mood_count: counts?.moodEntries,
       export_archive_bytes: archive.byteLength,
     },
   });
+
+  const archiveBody = streamToResponseBody(
+    async (write) => {
+      await write(archive.prefix);
+      for await (const chunk of createReadStream(archive.bodyPath)) {
+        await write(chunk as Buffer);
+      }
+    },
+    {
+      onComplete: () => rm(archive.bodyPath, { force: true }),
+      onError: () => rm(archive.bodyPath, { force: true }),
+    },
+  );
 
   const stamp = new Date().toISOString().slice(0, 10);
   // Return the raw binary archive (NOT the apiSuccess envelope). The file is a
   // self-contained `.hlx` archive openable with the user's passphrase via
   // scripts/decrypt-export.ts.
-  return new NextResponse(new Uint8Array(archive), {
+  return new NextResponse(archiveBody, {
     status: 200,
     headers: {
       "Content-Type": "application/octet-stream",
+      "Content-Length": String(archive.byteLength),
       "Content-Disposition": `attachment; filename="healthlog-backup-${user.id}-${stamp}.hlx"`,
       "Cache-Control": "no-store",
     },

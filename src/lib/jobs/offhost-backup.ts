@@ -23,8 +23,8 @@
  */
 import { Buffer } from "node:buffer";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { Transform, type Readable } from "node:stream";
-import { createGzip, gunzipSync, gzipSync } from "node:zlib";
+import { Readable, Transform } from "node:stream";
+import { createGunzip, createGzip, gunzipSync, gzipSync } from "node:zlib";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { createRawStreamEncryptor, decryptRawStream } from "@/lib/crypto";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
@@ -191,6 +191,48 @@ export function decryptBackup(buf: Buffer, key: Buffer): string {
   return version === BACKUP_ENVELOPE_GZIP
     ? gunzipSync(plaintext).toString("utf8")
     : plaintext.toString("utf8");
+}
+
+/**
+ * An off-host object → a source of its JSON as byte chunks, openable as often
+ * as needed. `decryptBackup` answers one string, which the JSON of a large
+ * record cannot be: 662 MB for an account of 1.25 million measurements, past
+ * the longest string V8 allows (#1031). The tag is verified whole on the
+ * compressed ciphertext before a source exists, exactly as `decryptBackup`
+ * does; only the decompression is streamed.
+ */
+export function openBackupObject(
+  buf: Buffer,
+  key: Buffer,
+): () => AsyncIterable<Buffer> {
+  const magic = buf.subarray(0, 4).toString("binary");
+  const version = buf[PREAMBLE_LENGTH - 1];
+  if (
+    magic !== MAGIC ||
+    (version !== BACKUP_ENVELOPE_PLAIN &&
+      version !== BACKUP_ENVELOPE_GZIP &&
+      version !== BACKUP_ENVELOPE_STREAM)
+  ) {
+    throw new Error("Invalid backup envelope (bad magic or version)");
+  }
+  let plaintext: Buffer;
+  if (version === BACKUP_ENVELOPE_STREAM) {
+    plaintext = decryptRawStream(buf.subarray(PREAMBLE_LENGTH), key);
+  } else {
+    const iv = buf.subarray(PREAMBLE_LENGTH, PREAMBLE_LENGTH + IV_LENGTH);
+    const tag = buf.subarray(
+      PREAMBLE_LENGTH + IV_LENGTH,
+      PREAMBLE_LENGTH + IV_LENGTH + TAG_LENGTH,
+    );
+    const ct = buf.subarray(PREAMBLE_LENGTH + IV_LENGTH + TAG_LENGTH);
+    const dec = createDecipheriv(ALGORITHM, key, iv);
+    dec.setAuthTag(tag);
+    plaintext = Buffer.concat([dec.update(ct), dec.final()]);
+  }
+  if (version === BACKUP_ENVELOPE_PLAIN) {
+    return () => Readable.from([plaintext]);
+  }
+  return () => Readable.from([plaintext]).pipe(createGunzip());
 }
 
 /**

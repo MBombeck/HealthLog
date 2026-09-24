@@ -26,8 +26,17 @@ import { auditLog } from "@/lib/auth/audit";
 import {
   BACKUP_UNDECRYPTABLE_CODE,
   BACKUP_UNDECRYPTABLE_ERROR,
-  unpackBackupBlob,
+  openBackupBlob,
 } from "@/lib/export/backup-blob";
+import {
+  insertMeasurementRows,
+  type MeasurementInsertRow,
+} from "@/lib/export/measurement-bulk-insert";
+import {
+  readStreamedBackup,
+  type BackupSource,
+  type StreamedBackup,
+} from "@/lib/export/streamed-backup";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
@@ -38,6 +47,7 @@ import {
   parseBackupPayload,
   isCompatibleSchemaVersion,
   summarizeBackup,
+  type BackupMeasurement,
   type BackupSummary,
 } from "@/lib/validations/backup";
 import { recomputeUserMoodRollups } from "@/lib/rollups/mood-rollups";
@@ -137,6 +147,19 @@ interface RestoreResponse {
   };
 }
 
+/**
+ * How long the restore transaction may run. Two minutes was the whole budget
+ * when a record was a few hundred thousand rows; deleting and rewriting 1.25
+ * million measurements in one transaction takes longer than that (#1031). On
+ * the test host the whole restore of that account, reading the file twice
+ * included, took 94 s. The budget grows by a second per 5 000 measurements,
+ * which gives that account six minutes, about four times what it needed, and
+ * never drops below the old two minutes.
+ */
+function restoreTransactionTimeoutMs(measurementCount: number): number {
+  return 120_000 + Math.ceil(measurementCount / 5);
+}
+
 function decodeEncryptedBytes(encoded: string): Uint8Array<ArrayBuffer> {
   const decoded = Buffer.from(encoded, "base64");
   const bytes = new Uint8Array(new ArrayBuffer(decoded.byteLength));
@@ -198,9 +221,12 @@ const handler = apiHandler(
       throw new HttpError(404, "Backup not found");
     }
 
-    let plaintext: string;
+    // Opened, not unpacked: the JSON of a large record is longer than any
+    // string V8 can hold (#1031), so it is read as a stream below. Opening
+    // authenticates the whole ciphertext first, as unpacking did.
+    let source: BackupSource;
     try {
-      plaintext = unpackBackupBlob(backup.data);
+      source = openBackupBlob(backup.data);
     } catch (err) {
       await auditLog("admin.backups.restore.failed", {
         userId: admin.id,
@@ -224,10 +250,16 @@ const handler = apiHandler(
     // Parsed once and kept, because the schema's per-section `.default([])`
     // erases the difference between a section that is absent and one that is
     // empty — and that difference is what the completeness check below reads.
+    //
+    // The measurements are the exception: `readStreamedBackup` checks each one
+    // against the element schema as it goes and keeps only their count, and
+    // the transaction reads them a second time, in batches, as it writes them.
     let raw: unknown;
     let payload;
+    let streamed: StreamedBackup;
     try {
-      raw = JSON.parse(plaintext);
+      streamed = await readStreamedBackup(source);
+      raw = streamed.raw;
       payload = parseBackupPayload(raw);
     } catch (err) {
       await auditLog("admin.backups.restore.failed", {
@@ -548,7 +580,7 @@ const handler = apiHandler(
           }
 
           const toRestoredMeasurementData = (
-            measurement: (typeof payload.measurements)[number],
+            measurement: BackupMeasurement,
           ) => ({
             type: measurement.type,
             value: measurement.value,
@@ -600,55 +632,80 @@ const handler = apiHandler(
               : {}),
           });
 
-          const stableRows = payload.measurements.flatMap((measurement) =>
-            measurement.id
-              ? [
-                  {
-                    id: measurement.id,
-                    userId: ownerId,
-                    ...toRestoredMeasurementData(measurement),
-                  },
-                ]
-              : [],
-          );
-          const measurementBatchSize = 1_000;
-          for (
-            let offset = 0;
-            offset < stableRows.length;
-            offset += measurementBatchSize
-          ) {
-            await tx.measurement.createMany({
-              data: stableRows.slice(offset, offset + measurementBatchSize),
-            });
-          }
-
-          // v1 payloads did not require stable ids. Preserve their historical
-          // natural-key reconciliation without routing canonical v2 rows
-          // through it.
-          for (const measurement of payload.measurements) {
-            if (measurement.id) continue;
-            const restoredData = toRestoredMeasurementData(measurement);
-            const existing = await tx.measurement.findFirst({
-              where: {
-                userId: ownerId,
-                type: measurement.type,
-                source: restoredData.source,
-                measuredAt: restoredData.measuredAt,
-                sleepStage: restoredData.sleepStage,
-              },
-              select: { id: true },
-            });
-            if (existing) {
-              await tx.measurement.update({
-                where: { id: existing.id, userId: ownerId },
-                data: restoredData,
-              });
-            } else {
-              await tx.measurement.create({
-                data: { userId: ownerId, ...restoredData },
-              });
+          // The measurements, a batch at a time from a second read of the
+          // file, so the restore never holds more than one batch of them.
+          //
+          // Two later sections point INTO the measurements (a record's
+          // `sourceMeasurementId`, an ECG strip's `measurementId`) and have
+          // to know which of those ids this transaction actually wrote. They
+          // used to be handed every written id; they only ever ask about the
+          // ones they reference, so only those are collected.
+          const referencedMeasurementIds = new Set<string>();
+          for (const record of payload.personalRecords) {
+            if (record.sourceMeasurementId) {
+              referencedMeasurementIds.add(record.sourceMeasurementId);
             }
           }
+          for (const recording of payload.ecgRecordings) {
+            if (recording.measurementId) {
+              referencedMeasurementIds.add(recording.measurementId);
+            }
+          }
+          const writtenReferencedIds = new Set<string>();
+          const measurementBatchSize = 1_000;
+          await streamed.forEachMeasurementBatch(
+            measurementBatchSize,
+            async (batch) => {
+              const stableRows = batch.flatMap(
+                (measurement): MeasurementInsertRow[] =>
+                  measurement.id
+                    ? [
+                        {
+                          id: measurement.id,
+                          userId: ownerId,
+                          ...toRestoredMeasurementData(measurement),
+                        },
+                      ]
+                    : [],
+              );
+              // One statement per batch, not `createMany`: see
+              // `insertMeasurementRows` for what the latter cost here.
+              await insertMeasurementRows(tx, stableRows);
+              for (const row of stableRows) {
+                if (referencedMeasurementIds.has(row.id)) {
+                  writtenReferencedIds.add(row.id);
+                }
+              }
+
+              // v1 payloads did not require stable ids. Preserve their
+              // historical natural-key reconciliation without routing
+              // canonical v2 rows through it.
+              for (const measurement of batch) {
+                if (measurement.id) continue;
+                const restoredData = toRestoredMeasurementData(measurement);
+                const existing = await tx.measurement.findFirst({
+                  where: {
+                    userId: ownerId,
+                    type: measurement.type,
+                    source: restoredData.source,
+                    measuredAt: restoredData.measuredAt,
+                    sleepStage: restoredData.sleepStage,
+                  },
+                  select: { id: true },
+                });
+                if (existing) {
+                  await tx.measurement.update({
+                    where: { id: existing.id, userId: ownerId },
+                    data: restoredData,
+                  });
+                } else {
+                  await tx.measurement.create({
+                    data: { userId: ownerId, ...restoredData },
+                  });
+                }
+              }
+            },
+          );
 
           const medByName = new Map<string, string>();
           const restoredMedicationIds = new Set<string>();
@@ -1932,7 +1989,7 @@ const handler = apiHandler(
             tx,
             ownerId,
             payload,
-            new Set(stableRows.map((row) => row.id)),
+            writtenReferencedIds,
             skips,
           );
 
@@ -1949,7 +2006,7 @@ const handler = apiHandler(
             tx,
             ownerId,
             payload,
-            new Set(stableRows.map((row) => row.id)),
+            writtenReferencedIds,
             skips,
           );
 
@@ -2024,7 +2081,7 @@ const handler = apiHandler(
         },
         {
           maxWait: 10_000,
-          timeout: 120_000,
+          timeout: restoreTransactionTimeoutMs(streamed.measurementCount),
         },
       );
     } catch (err) {
@@ -2071,7 +2128,7 @@ const handler = apiHandler(
     // outside the transaction (the 5-year fold would otherwise hold a
     // long write lock) and is best-effort so a populator hiccup never
     // undoes the restore. The boot-time backfill is the safety net.
-    if (payload.measurements.length > 0) {
+    if (streamed.measurementCount > 0) {
       try {
         await recomputeUserRollups(ownerId);
       } catch (err) {
@@ -2131,7 +2188,10 @@ const handler = apiHandler(
       }
     }
 
-    const summary = summarizeBackup(payload);
+    const summary = {
+      ...summarizeBackup(payload),
+      measurements: streamed.measurementCount,
+    };
 
     await auditLog("admin.backups.restore", {
       userId: admin.id,

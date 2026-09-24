@@ -14,6 +14,8 @@
  * at-rest contract: the ciphertext stays in the DB, the plaintext is only
  * materialised inside the request handler and streamed to the admin.
  */
+import { Readable } from "node:stream";
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, HttpError, requireAdmin } from "@/lib/api-handler";
@@ -22,8 +24,13 @@ import { auditLog } from "@/lib/auth/audit";
 import {
   BACKUP_UNDECRYPTABLE_CODE,
   BACKUP_UNDECRYPTABLE_ERROR,
-  unpackBackupBlob,
+  openBackupBlob,
 } from "@/lib/export/backup-blob";
+import {
+  readStreamedBackup,
+  type BackupSource,
+  type StreamedBackup,
+} from "@/lib/export/streamed-backup";
 import { annotate } from "@/lib/logging/context";
 import { parseBackupPayload } from "@/lib/validations/backup";
 
@@ -54,9 +61,11 @@ export const GET = apiHandler(
       throw new HttpError(404, "Backup not found");
     }
 
-    let plaintext: string;
+    // Opened and streamed, never unpacked into one string: a large record's
+    // JSON is longer than any string V8 can hold (#1031).
+    let source: BackupSource;
     try {
-      plaintext = unpackBackupBlob(backup.data);
+      source = openBackupBlob(backup.data);
     } catch (err) {
       // A rotated or dropped key, or a stored copy that is no longer the one
       // that was written. Both are bad stored input rather than a fault in
@@ -80,8 +89,10 @@ export const GET = apiHandler(
     // pathological case where the worker wrote something the upload
     // route would later reject — better to fail loudly here than to ship
     // a junk file that breaks an admin's restore plan.
+    let streamed: StreamedBackup;
     try {
-      parseBackupPayload(plaintext);
+      streamed = await readStreamedBackup(source);
+      parseBackupPayload(streamed.raw);
     } catch (err) {
       await auditLog("admin.backups.download.failed", {
         userId: admin.id,
@@ -107,22 +118,26 @@ export const GET = apiHandler(
         ownerId: backup.userId,
         ownerUsername: backup.user.username,
         type: backup.type,
-        sizeBytes: Buffer.byteLength(plaintext, "utf8"),
+        sizeBytes: streamed.bytes,
       },
     });
 
-    // Returning the plaintext as-is keeps the response a faithful copy of
+    // Returning the stored bytes as-is keeps the response a faithful copy of
     // what the worker wrote (formatting, key order). The file is the
     // canonical artefact admins will store / re-upload.
-    return new NextResponse(plaintext, {
-      status: 200,
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-        "content-disposition": `attachment; filename="${filename}"`,
-        // Backups contain sensitive health data — keep them out of any
-        // shared cache (CDN, browser disk cache).
-        "cache-control": "no-store, max-age=0",
+    return new NextResponse(
+      Readable.toWeb(Readable.from(source())) as ReadableStream<Uint8Array>,
+      {
+        status: 200,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "content-disposition": `attachment; filename="${filename}"`,
+          // Backups contain sensitive health data — keep them out of any
+          // shared cache (CDN, browser disk cache).
+          "cache-control": "no-store, max-age=0",
+          "content-length": String(streamed.bytes),
+        },
       },
-    });
+    );
   },
 );

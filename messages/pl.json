@@ -7167,7 +7167,7 @@
         "uploadTitle": "Prześlij kopię zapasową",
         "uploadDescription": "Sprawdź plik kopii zapasowej i zapisz go jako ręczną migawkę. Przywracanie to osobny krok.",
         "uploadButton": "Prześlij plik",
-        "uploadHelp": "Plik JSON zgodny z bieżącym schematem kopii zapasowej. Maks. 10 MB.",
+        "uploadHelp": "Kopia zapasowa HealthLog w formacie .json lub .json.gz. Plik jest kompresowany przed wysłaniem; po kompresji może mieć do 512 MB.",
         "uploadSuccess": "Przesłano kopię zapasową ({count} rekordów)",
         "uploadFailed": "Przesyłanie nie powiodło się",
         "restore": "Przywróć",

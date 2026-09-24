@@ -214,7 +214,7 @@ describe("storeBackupBlob (#1031)", () => {
 
   it("stores a copy that reads back as exactly the JSON produced", async () => {
     const prisma = getPrismaClient();
-    const bytes = await storeBackupBlob(
+    const { bytes } = await storeBackupBlob(
       prisma,
       { userId: RUN_A, type: "WEEKLY_AUTO" },
       producer(20_000),

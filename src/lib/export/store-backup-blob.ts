@@ -57,14 +57,18 @@ export interface StoreBackupBlobInput {
 
 /**
  * Pack `producer`'s JSON into the stored envelope and upsert it as the
- * account's `(userId, type)` backup. Resolves to the stored size in bytes.
+ * `(userId, type)` backup. Resolves to the row's id and the stored size.
+ *
+ * `input` may be a function, read once the producer has finished: an
+ * uploaded file names its owner somewhere inside itself, and the upload
+ * route only knows who that is once it has read the file through.
  */
 export async function storeBackupBlob(
   prisma: PrismaClient,
-  input: StoreBackupBlobInput,
+  input: StoreBackupBlobInput | (() => StoreBackupBlobInput),
   producer: BackupJsonProducer,
   options: PackBackupBlobOptions = {},
-): Promise<number> {
+): Promise<{ id: string; bytes: number }> {
   return prisma.$transaction(
     async (tx) => {
       await tx.$executeRawUnsafe(
@@ -91,22 +95,24 @@ export async function storeBackupBlob(
         options,
       );
 
+      const target = typeof input === "function" ? input() : input;
       // The row first, through Prisma, so a new account's backup gets its id
       // the same way every other row does; the data it briefly carries is
       // never visible outside this transaction.
-      await tx.dataBackup.upsert({
-        where: { userId_type: { userId: input.userId, type: input.type } },
+      const row = await tx.dataBackup.upsert({
+        where: { userId_type: { userId: target.userId, type: target.type } },
         update: { createdAt: new Date() },
-        create: { userId: input.userId, type: input.type, data: "" },
+        create: { userId: target.userId, type: target.type, data: "" },
+        select: { id: true },
       });
       await tx.$executeRaw`
         UPDATE data_backups
         SET data = (
           SELECT string_agg(piece, '' ORDER BY seq) FROM backup_blob_parts
         )
-        WHERE user_id = ${input.userId} AND type = ${input.type}
+        WHERE id = ${row.id}
       `;
-      return bytes;
+      return { id: row.id, bytes };
     },
     { timeout: STORE_TRANSACTION_TIMEOUT_MS, maxWait: 60_000 },
   );

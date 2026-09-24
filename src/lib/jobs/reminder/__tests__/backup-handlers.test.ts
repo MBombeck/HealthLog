@@ -34,7 +34,7 @@ vi.mock("@/lib/export/store-backup-blob", () => ({
       out += chunk;
     });
     await mocks.store(input, out);
-    return out.length;
+    return { id: "backup-row", bytes: out.length };
   },
 }));
 

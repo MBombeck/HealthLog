@@ -44,6 +44,11 @@ vi.mock("@/lib/validations/backup", () => ({
   parseBackupPayload: (...a: unknown[]) => parseMock(...a),
   summarizeBackup: (...a: unknown[]) => summarizeMock(...a),
   isCompatibleSchemaVersion: vi.fn(() => true),
+  // The measurements are read as a stream and counted one by one.
+  BACKUP_SCHEMA_VERSION: "2",
+  backupMeasurementSchema: {
+    safeParse: (value: unknown) => ({ success: true, data: value }),
+  },
 }));
 
 import { GET } from "../route";
@@ -62,9 +67,14 @@ beforeEach(() => {
     createdAt: new Date("2026-08-01T00:00:00Z"),
     user: { id: "u1", username: "self-hoster" },
   });
-  decryptMock.mockReturnValue("{}");
+  // Twelve measurements in the file: the preview counts them from the stream.
+  decryptMock.mockReturnValue(
+    JSON.stringify({
+      measurements: Array.from({ length: 12 }, (_, i) => ({ id: `m${i}` })),
+    }),
+  );
   parseMock.mockReturnValue({ schemaVersion: 3 });
-  summarizeMock.mockReturnValue({ measurements: 12, moodEntries: 3 });
+  summarizeMock.mockReturnValue({ measurements: 0, moodEntries: 3 });
 });
 
 describe("GET /api/admin/backups/[id]/summary", () => {

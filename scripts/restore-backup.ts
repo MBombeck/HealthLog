@@ -15,12 +15,23 @@
  *   BACKUP_S3_REGION=auto         \
  *   BACKUP_ENCRYPTION_KEY=<hex64> \
  *   pnpm dlx tsx scripts/restore-backup.ts 2026-05-08/user-clx123.json.enc /tmp/restored.json
+ *
+ * An output name ending in `.gz` writes the JSON compressed, which is the
+ * form to hand to the admin upload for a large account: the JSON of 1.25
+ * million measurements is 662 MB, the compressed file about a tenth of it.
+ * The file is written as a stream in either case and never held whole.
  */
-import { writeFileSync } from "node:fs";
+import { createWriteStream } from "node:fs";
+import { rename } from "node:fs/promises";
+import { PassThrough, Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import { createGzip } from "node:zlib";
+
+import { scanBackupJson } from "@/lib/export/backup-json-scan";
 import {
   loadOffhostConfig,
   getS3Client,
-  decryptBackup,
+  openBackupObject,
   OffhostBackupNotConfiguredError,
 } from "@/lib/jobs/offhost-backup";
 
@@ -98,28 +109,43 @@ async function main() {
     `Downloading s3://${cfg.bucket}/${key} from ${cfg.endpoint} (region=${cfg.region})`,
   );
   const ciphertext = await s3.getObject(key);
-  const plaintext = decryptBackup(ciphertext, cfg.encryptionKey);
+  const source = openBackupObject(ciphertext, cfg.encryptionKey);
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(plaintext);
-  } catch (err) {
-    throw new Error(
-      `Decrypted payload is not valid JSON: ${(err as Error).message}`,
-    );
-  }
-  const body = validateBackupShape(parsed);
+  // Checked first, in one streamed pass that keeps only the small sections,
+  // so nothing is written for an object that is not a backup.
+  const { document, streamedCounts } = await scanBackupJson(source(), {
+    streamKeys: new Set(["measurements", "intakeEvents", "moodEntries"]),
+  });
+  const body = validateBackupShape({
+    ...document,
+    measurements: [],
+    intakeEvents: [],
+    moodEntries: [],
+  });
   if (expectedUserId && body.userId !== expectedUserId) {
     throw new Error(
       `Refusing to write: backup.userId='${body.userId}' does not match --user-id='${expectedUserId}'`,
     );
   }
 
-  // The restored file is decrypted PHI in plaintext. Write it 0o600 so it is
-  // not world-readable on the operator's disk while it sits there.
-  writeFileSync(out, plaintext, { encoding: "utf8", mode: 0o600 });
+  // The restored file is decrypted PHI in plaintext. Written 0o600 so it is
+  // not world-readable on the operator's disk, to a temporary name first so
+  // an interrupted run never leaves a truncated file under the real one.
+  const partial = `${out}.part`;
+  let bytes = 0;
+  const counter = new PassThrough();
+  counter.on("data", (chunk: Buffer) => {
+    bytes += chunk.length;
+  });
+  await pipeline(
+    Readable.from(source()),
+    counter,
+    ...(out.endsWith(".gz") ? [createGzip()] : []),
+    createWriteStream(partial, { mode: 0o600 }),
+  );
+  await rename(partial, out);
   console.log(
-    `Restored userId=${body.userId} (${plaintext.length} bytes) -> ${out}`,
+    `Restored userId=${body.userId} (${bytes} bytes of JSON, ${streamedCounts.measurements ?? 0} measurements) -> ${out}`,
   );
 }
 

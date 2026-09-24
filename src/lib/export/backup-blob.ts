@@ -37,7 +37,8 @@
  */
 import { Buffer } from "node:buffer";
 import v8 from "node:v8";
-import { createGzip, gunzipSync, gzipSync } from "node:zlib";
+import { Readable } from "node:stream";
+import { createGunzip, createGzip, gunzipSync, gzipSync } from "node:zlib";
 
 import {
   createStreamEncryptor,
@@ -125,7 +126,7 @@ export class BackupBlobTooLargeError extends Error {
  * counts) is the caller's business, not the envelope's.
  */
 export type BackupJsonProducer = (
-  write: (chunk: string) => Promise<void>,
+  write: (chunk: string | Buffer) => Promise<void>,
 ) => Promise<unknown>;
 
 export interface PackBackupBlobOptions {
@@ -236,7 +237,7 @@ export async function packBackupBlobInto(
     await sink(piece);
   };
 
-  const write = async (chunk: string): Promise<void> => {
+  const write = async (chunk: string | Buffer): Promise<void> => {
     if (failure) throw failure;
     await flush(false);
     if (gzip.write(chunk, "utf8")) return;
@@ -312,4 +313,35 @@ export function unpackBackupBlob(stored: string): string {
   return gunzipSync(
     Buffer.from(plaintext.slice(GZIP_MARKER.length), "base64"),
   ).toString("utf8");
+}
+
+/**
+ * A stored `DataBackup.data` string → a source of its JSON as byte chunks,
+ * which can be opened as many times as the caller needs to read it.
+ *
+ * `unpackBackupBlob` returns the JSON as one string, and a string is what a
+ * large record cannot be: the disaster-recovery JSON of an account with 1.25
+ * million measurements is 662 MB, past the 536 870 888 characters V8 allows
+ * in any string, so that call threw on every such backup (#1031). Here the
+ * authentication happens first and whole, on the compressed ciphertext, which
+ * stays small (48 MB for that record): no plaintext byte is released before
+ * the tag has verified. Only the decompression is streamed, on every open.
+ *
+ * Fail-closed exactly like `unpackBackupBlob`: a bad key or a tag that does
+ * not verify throws here, before a source exists; a truncated gzip member
+ * errors the stream.
+ */
+export function openBackupBlob(stored: string): () => AsyncIterable<Buffer> {
+  if (isStreamCiphertext(stored)) {
+    const gz = decryptStream(stored);
+    return () => Readable.from([gz]).pipe(createGunzip());
+  }
+  const plaintext = decrypt(stored);
+  if (!plaintext.startsWith(GZIP_MARKER)) {
+    // A pre-envelope copy was written from one string, so it is one.
+    const bytes = Buffer.from(plaintext, "utf8");
+    return () => Readable.from([bytes]);
+  }
+  const gz = Buffer.from(plaintext.slice(GZIP_MARKER.length), "base64");
+  return () => Readable.from([gz]).pipe(createGunzip());
 }

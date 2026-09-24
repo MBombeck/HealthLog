@@ -47,6 +47,9 @@ vi.mock("@/lib/validations/backup", () => ({
   parseBackupPayload: vi.fn(),
   isCompatibleSchemaVersion: vi.fn(() => true),
   summarizeBackup: vi.fn(() => ({})),
+  // The streamed reader checks measurements one at a time; this file has none.
+  BACKUP_SCHEMA_VERSION: "2",
+  backupMeasurementSchema: { safeParse: vi.fn() },
 }));
 vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn() }));
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));

@@ -66,6 +66,29 @@ const RELATION_ENVELOPE = new Set([
  */
 const NOT_ROTATED: ReadonlySet<string> = new Set<string>();
 
+/**
+ * Ciphertext written by raw SQL, which the Prisma-call walk below cannot see.
+ *
+ * `DataBackup.data` is the case: the stored backup is produced as ciphertext
+ * pieces (`packBackupBlobInto`) and assembled into the row by one SQL
+ * statement, because holding it as one string in the process is what a large
+ * record could not afford (#1031). Each entry names the file and the
+ * statement, and the scan fails if the statement is no longer there, so a
+ * moved or removed raw write cannot leave a stale entry that still passes.
+ */
+const RAW_CIPHERTEXT_WRITES: ReadonlyArray<{
+  key: string;
+  file: string;
+  statement: RegExp;
+}> = [
+  {
+    key: "DataBackup.data",
+    file: "src/lib/export/store-backup-blob.ts",
+    statement:
+      /UPDATE\s+data_backups\s+SET\s+data\s*=\s*\(\s*SELECT\s+string_agg/,
+  },
+];
+
 function sourceFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const p = join(dir, entry);
@@ -388,6 +411,12 @@ function scanCiphertextWrites(): Map<string, Set<string>> {
       `\\b(?:prisma|tx|db)\\s*\\.\\s*(\\w+)\\s*\\.\\s*(?:${WRITE_METHODS})\\s*\\(`,
       "g",
     );
+    for (const raw of RAW_CIPHERTEXT_WRITES) {
+      if (rel !== raw.file) continue;
+      const hit = raw.statement.exec(src);
+      if (hit) record(...(raw.key.split(".") as [string, string]), hit.index);
+    }
+
     for (const m of src.matchAll(writes)) {
       const model = m[1][0].toUpperCase() + m[1].slice(1);
       if (!schema.models.has(model)) continue;
@@ -422,6 +451,17 @@ describe("ciphertext columns derived from the code", () => {
       "encryptCachedBody",
     ]) {
       expect([...producers]).toContain(wrapper);
+    }
+  });
+
+  it("still finds every raw-SQL ciphertext write it was told about", () => {
+    for (const raw of RAW_CIPHERTEXT_WRITES) {
+      expect(
+        [...(written.get(raw.key) ?? [])].some((at) =>
+          at.startsWith(`${raw.file}:`),
+        ),
+        `${raw.key}: no matching statement left in ${raw.file}`,
+      ).toBe(true);
     }
   });
 

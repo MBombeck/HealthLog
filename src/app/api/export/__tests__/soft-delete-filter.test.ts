@@ -64,6 +64,29 @@ vi.mock("@/lib/db", () => ({
     documentConditionLink: { findMany: vi.fn() },
     extractedFact: { findMany: vi.fn() },
     ecgRecording: { findMany: vi.fn() },
+    onboardingRecord: { findUnique: vi.fn().mockResolvedValue(null) },
+    environmentTravelLocation: { findMany: vi.fn().mockResolvedValue([]) },
+    environmentContext: { findMany: vi.fn().mockResolvedValue([]) },
+    personalRecord: { findMany: vi.fn().mockResolvedValue([]) },
+    coachReminder: { findMany: vi.fn().mockResolvedValue([]) },
+    coachPlan: { findMany: vi.fn().mockResolvedValue([]) },
+    coachFact: { findMany: vi.fn().mockResolvedValue([]) },
+    coachConversation: { findMany: vi.fn().mockResolvedValue([]) },
+    measurementReminderEvent: { findMany: vi.fn().mockResolvedValue([]) },
+    measurementReminder: { findMany: vi.fn().mockResolvedValue([]) },
+    vaccinationDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    vaccinationRecord: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterLabLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounter: { findMany: vi.fn().mockResolvedValue([]) },
+    practitioner: { findMany: vi.fn().mockResolvedValue([]) },
+    healthScoreRecord: { findMany: vi.fn().mockResolvedValue([]) },
+    intradayCumulativeProfile: { findMany: vi.fn().mockResolvedValue([]) },
+    correlationPattern: { findMany: vi.fn().mockResolvedValue([]) },
+    healthProfileFactRevision: { findMany: vi.fn().mockResolvedValue([]) },
+    customMetric: { findMany: vi.fn().mockResolvedValue([]) },
+    cycleSymptom: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
 
@@ -177,6 +200,7 @@ beforeEach(() => {
   );
   vi.mocked(prisma.extractedFact.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.ecgRecording.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.userAchievement.findMany).mockResolvedValue([] as never);
 });
 
 describe("v1.4.41 W-DELETED-2 — soft-delete invisibility", () => {
@@ -192,7 +216,13 @@ describe("v1.4.41 W-DELETED-2 — soft-delete invisibility", () => {
 
   it("/api/export/full-backup scopes the measurement read to deletedAt: null", async () => {
     const { GET } = await import("../full-backup/route");
-    await GET(mkReq("http://localhost/api/export/full-backup"));
+    // The file is written into the response as it is produced, so the reads
+    // happen while the body is consumed. The mocked client does not cover
+    // every section the builder reads, so the body errors part-way (as the
+    // whole response did before it streamed); the reads asserted here have
+    // been issued by then.
+    const res = await GET(mkReq("http://localhost/api/export/full-backup"));
+    await res.text();
     expect(prisma.measurement.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ deletedAt: null }),
@@ -202,7 +232,10 @@ describe("v1.4.41 W-DELETED-2 — soft-delete invisibility", () => {
 
   it("/api/export/full-backup scopes every v1.28 records domain to userId + deletedAt: null", async () => {
     const { GET } = await import("../full-backup/route");
-    await GET(mkReq("http://localhost/api/export/full-backup"));
+    // The file is written into the response as it is produced, so the reads
+    // happen while the body is consumed.
+    const res = await GET(mkReq("http://localhost/api/export/full-backup"));
+    await res.text();
 
     expect(prisma.labResult.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
