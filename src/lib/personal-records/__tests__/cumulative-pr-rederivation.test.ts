@@ -8,12 +8,20 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const deleteMany = vi.fn();
 const findMany = vi.fn();
+// The delete and the re-derivation share one transaction; the stub hands the
+// callback a client that routes to the same spies.
+const txClient = {
+  personalRecord: {
+    deleteMany: (a: unknown) => deleteMany(a),
+  },
+};
 vi.mock("@/lib/db", () => ({
   prisma: {
     personalRecord: {
       deleteMany: (a: unknown) => deleteMany(a),
       findMany: (a: unknown) => findMany(a),
     },
+    $transaction: (fn: (tx: unknown) => Promise<unknown>) => fn(txClient),
   },
 }));
 
@@ -68,8 +76,10 @@ describe("runCumulativePrRederivationForUser", () => {
     });
     // Re-derivation always runs silent — this is data hygiene, not a new
     // achievement, so no push should fire for it.
+    // It reads through the transaction, so it sees the deletion.
     expect(detectPersonalRecordsForUser).toHaveBeenCalledWith("u1", {
       silent: true,
+      prisma: txClient,
     });
     expect(summary).toEqual({ rowsDeleted: 1, rowsReinserted: 1 });
   });
