@@ -284,6 +284,30 @@ describe("reconstructDoseHistory", () => {
       expect(morning?.pinned).toBe(true);
     });
 
+    // The pin confirm dialog promises exactly this split: on time inside the
+    // slot's on-time window (also ahead of the slot's clock time), late
+    // otherwise.
+    it("an early pin inside the on-time window reads on time, one before it reads late", () => {
+      const early = reconstructDoseHistory(
+        bands,
+        [intake({ takenAt: at(6, 15), scheduledFor: at(7, 0), pinned: true })],
+        nowEvening,
+        null,
+      );
+      expect(early.find((r) => r.timeOfDay === "07:00")?.status).toBe(
+        "taken_on_time",
+      );
+      const tooEarly = reconstructDoseHistory(
+        bands,
+        [intake({ takenAt: at(5, 30), scheduledFor: at(7, 0), pinned: true })],
+        nowEvening,
+        null,
+      );
+      expect(tooEarly.find((r) => r.timeOfDay === "07:00")?.status).toBe(
+        "taken_late",
+      );
+    });
+
     it("a pin inside the late tail reads taken_late, never flattered", () => {
       const rows = reconstructDoseHistory(
         bands,
