@@ -125,6 +125,11 @@ export interface ImportJobResult {
     /** Estimated `(measurement type, local day)` aggregate rows considered. */
     rows: number;
   };
+  /**
+   * Oldest and newest instant this import wrote a measurement at (ISO), or
+   * null when it wrote none. What the rollup fold after the import covers.
+   */
+  measuredSpan: { from: string; to: string } | null;
   /** Bounded auxiliary ECG outcomes. Never contains filenames or waveform data. */
   ecg: {
     discovered: number;
@@ -396,6 +401,14 @@ export async function streamParseExportXml(
   let rowsUpserted = 0;
   const cumulativeEstimatedDays = new Set<string>();
   let cumulativeEstimatedRows = 0;
+  // The instants this import wrote measurements at, oldest and newest. The
+  // worker folds the rollup table over exactly this span afterwards.
+  let spanFrom: Date | null = null;
+  let spanTo: Date | null = null;
+  const widenSpan = (at: Date) => {
+    if (spanFrom === null || at < spanFrom) spanFrom = at;
+    if (spanTo === null || at > spanTo) spanTo = at;
+  };
   // Per R-1 §8 the percent stays best-effort and may remain null
   // until the parser sees the closing `</HealthData>` tag. We don't
   // currently mutate this in v1.4.34 — the iOS app keeps polling on
@@ -438,6 +451,7 @@ export async function streamParseExportXml(
   const flushSpotBatch = async (): Promise<void> => {
     if (spotBatch.length === 0) return;
     const chunk = spotBatch.splice(0, spotBatch.length);
+    for (const row of chunk) widenSpan(row.measuredAt);
     const insertedArrivals: Array<{
       id: string;
       type: MeasurementType;
@@ -731,6 +745,7 @@ export async function streamParseExportXml(
         }
         const externalId = dailyStatsExternalId(mapping.hkIdentifier, dayKey);
         const measuredAt = canonicalDailyTimestamp(dayKey, userTimezone);
+        widenSpan(measuredAt);
         const rowStart = Date.now();
         const verdict = await prisma.$transaction((tx) =>
           reconcileExternalMeasurement(
@@ -1202,6 +1217,13 @@ export async function streamParseExportXml(
       days: cumulativeEstimatedDays.size,
       rows: cumulativeEstimatedRows,
     },
+    measuredSpan:
+      spanFrom !== null && spanTo !== null
+        ? {
+            from: (spanFrom as Date).toISOString(),
+            to: (spanTo as Date).toISOString(),
+          }
+        : null,
     ecg: {
       discovered: 0,
       imported: 0,

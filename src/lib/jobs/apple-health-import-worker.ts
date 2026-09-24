@@ -41,7 +41,10 @@ import {
   type ImportJobProgress,
   type ImportJobResult,
 } from "@/lib/measurements/import-apple-health-export";
-import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
+import {
+  recomputeUserRollups,
+  ROLLUP_FOLD_WINDOW_MS,
+} from "@/lib/rollups/measurement-rollups";
 import { withBackgroundEvent } from "@/lib/logging/background";
 
 /**
@@ -502,19 +505,23 @@ export async function handleAppleHealthImport(
     // contradict the row the status poll surfaces to the operator.
     let rollupFailed = false;
     try {
-      const span = await prisma.measurement.aggregate({
-        where: { userId },
-        _min: { measuredAt: true },
-        _max: { measuredAt: true },
-      });
-      if (span._min.measuredAt && span._max.measuredAt) {
-        // Add a small tail buffer to `to` so the upper bound is
-        // exclusive-safe under the rollup aggregator's `< to` filter.
-        const to = new Date(span._max.measuredAt.getTime() + 1);
-        await recomputeUserRollups(userId, {
-          from: span._min.measuredAt,
-          to,
-        });
+      // Folded over what this import wrote, not over the account's whole
+      // history, and never further back than the fold window every other
+      // path keeps to: buckets older than `ROLLUP_FOLD_WINDOW_MS` are by
+      // design never written, so reads there fall back to live SQL. The old
+      // span ran from the account's first measurement, whatever the import
+      // carried, and folded any history older than the window as well.
+      const span = result.measuredSpan;
+      if (span) {
+        const windowStart = new Date(Date.now() - ROLLUP_FOLD_WINDOW_MS);
+        const spanFrom = new Date(span.from);
+        const from = spanFrom > windowStart ? spanFrom : windowStart;
+        // `to` is exclusive in the aggregator, so one millisecond past the
+        // newest row.
+        const to = new Date(new Date(span.to).getTime() + 1);
+        if (to > from) {
+          await recomputeUserRollups(userId, { from, to });
+        }
       }
     } catch (rollupErr) {
       // Rollup failure is non-fatal — the next read falls through to
