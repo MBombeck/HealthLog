@@ -19,7 +19,7 @@
  *       day's local window (the fold's soft-deleted inputs).
  *
  * Per qualifying day: compute per-local-hour means from the tombstoned raw
- * rows (same `meanBucketValue` reducer + `adoptOrMintHourlyRow`
+ * rows (same `meanBucketValue` reducer + `adoptOrMintHourlyRows`
  * adopt-in-place slot logic as the live fold, so a re-run converges), then
  * tombstone the daily row IN THE SAME TRANSACTION as the hourly mint — at
  * no instant are the daily row and its hourly rows both live, so an
@@ -73,7 +73,7 @@ import { meanBucketValue } from "./consolidate-daily-mean";
 import {
   DENSE_INTRADAY_RETENTION_DAYS,
   DENSE_INTRADAY_RETENTION_TYPES,
-  adoptOrMintHourlyRow,
+  adoptOrMintHourlyRows,
   bucketRowsByLocalHour,
   hourlyStatsExternalId,
 } from "./dense-intraday-retention";
@@ -318,11 +318,11 @@ async function rebuildDay(
   const rebuildOnce = async (): Promise<{ dailyRetired: boolean }> => {
     let dailyRetired = false;
     await prismaClient.$transaction(async (tx) => {
-      const canonicalRowIds: string[] = [];
-      for (const [hour, hourRows] of byHour) {
-        const rowId = await adoptOrMintHourlyRow(tx, {
-          userId: input.userId,
-          type: input.type,
+      const canonicalRowIds = await adoptOrMintHourlyRows(tx, {
+        userId: input.userId,
+        type: input.type,
+        unit,
+        slots: byHour.map(([hour, hourRows]) => ({
           externalId: hourlyStatsExternalId(
             input.hkIdentifier,
             input.dateKey,
@@ -330,10 +330,8 @@ async function rebuildDay(
           ),
           anchor: canonicalHourlyTimestamp(input.dateKey, hour, input.tz),
           value: meanBucketValue(hourRows),
-          unit,
-        });
-        canonicalRowIds.push(rowId);
-      }
+        })),
+      });
 
       // Retire the daily row in the SAME transaction — at no instant are
       // the daily row and the hourly rows both live (an AVG-over-live-rows
@@ -359,7 +357,7 @@ async function rebuildDay(
     if (!isUniqueConstraintViolation(err)) throw err;
     // A concurrent writer (the nightly fold racing this rebuild) won a slot
     // mid-transaction. Retry once: the deterministic lookup inside
-    // `adoptOrMintHourlyRow` now resolves the winning row and adopts it.
+    // `adoptOrMintHourlyRows` now resolves the winning row and adopts it.
     outcome = await rebuildOnce();
   }
 

@@ -32,6 +32,7 @@ import {
   DENSE_INTRADAY_RETENTION_DAYS,
 } from "../dense-intraday-retention";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
+import { candidateLookup, createManyVia } from "./hourly-mint-mock";
 
 /** A day well outside the retention window, so the fold definitely runs. */
 const FOLD_DAY = new Date(
@@ -76,7 +77,15 @@ function buildPrismaMock(existingResting: Array<{ source: string }>) {
   );
 
   const tx = {
-    measurement: { create, update, findFirst: txFindFirst, updateMany, upsert },
+    measurement: {
+      create,
+      update,
+      findFirst: txFindFirst,
+      updateMany,
+      upsert,
+      findMany: candidateLookup(),
+      createManyAndReturn: createManyVia(create),
+    },
   };
 
   return {

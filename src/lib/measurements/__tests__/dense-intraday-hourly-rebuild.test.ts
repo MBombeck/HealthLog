@@ -30,6 +30,7 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
 
 import { runDenseIntradayHourlyRebuild } from "../dense-intraday-hourly-rebuild";
 import type { PrismaClient } from "@/generated/prisma/client";
+import { candidateLookup, createManyVia } from "./hourly-mint-mock";
 
 const HRV_DAILY_ID =
   "stats:HKQuantityTypeIdentifierHeartRateVariabilitySDNN:2026-05-01";
@@ -79,6 +80,8 @@ function buildPrismaMock(opts: {
       create: txCreate,
       update: txUpdate,
       findFirst: txFindFirst,
+      findMany: candidateLookup(),
+      createManyAndReturn: createManyVia(txCreate),
     },
   };
 
@@ -444,6 +447,10 @@ describe("runDenseIntradayHourlyRebuild — rebuild flow", () => {
             create: vi.fn().mockResolvedValue({ id: "minted" }),
             update: vi.fn().mockResolvedValue({}),
             findFirst: vi.fn().mockResolvedValue(null),
+            findMany: candidateLookup(),
+            createManyAndReturn: createManyVia(
+              vi.fn().mockResolvedValue({ id: "minted" }),
+            ),
           },
         });
       },
