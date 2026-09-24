@@ -1795,7 +1795,7 @@
           "unpinnedToast": "Przypisanie usunięte",
           "dueContext": "termin: {time} ({delta})",
           "confirmTitle": "Przypisać do slotu {time}?",
-          "confirmBody": "Dawka zostanie policzona dla tego slotu: jako przyjęta na czas, jeśli mieści się w oknie punktualności slotu, a w przeciwnym razie jako przyjęta z opóźnieniem, więc wskaźnik nie jest zawyżany. Przypisanie można w każdej chwili usunąć.",
+          "confirmBody": "Dawka zostanie policzona dla tego slotu tak, jakby została w nim zapisana: jako przyjęta na czas lub z opóźnieniem, zależnie od tego, kiedy ją przyjęto, więc wskaźnik nie jest zawyżany. Przypisanie można w każdej chwili usunąć.",
           "confirmCancel": "Anuluj",
           "confirmAction": "Przypisz"
         }

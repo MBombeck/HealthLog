@@ -22,8 +22,9 @@
  *     `attributionSource = USER_PIN`) binds by its `scheduledFor` anchor like
  *     a skip, NOT by takenAt-band membership, so a pin outside the late tail
  *     never degrades back to ad-hoc. Status is `taken_late` unless the
- *     takenAt happens to sit inside the slot's on-time band — a pin can
- *     never flatter the timing;
+ *     takenAt sits where the take would read on time on its own (the
+ *     on-time band plus its bounded early grace) — a pin never changes the
+ *     timing;
  *   - a RELEASED pin (v1.16.0 — "Zuordnung lösen" persists `USER_PIN` with
  *     `scheduledFor === takenAt`) is a deliberately ad-hoc take: it never
  *     anchor-binds (not even when its instant sits within epsilon of a slot
@@ -237,8 +238,9 @@ export function reconstructDoseHistory(
   // v1.15.20 — pinned takes bind by their stored slot anchor, NOT by
   // takenAt-band membership: the whole point of a pin is that the take sits
   // outside (or past the tail of) the band it belongs to. Status never
-  // flatters: taken_late, unless the takenAt happens to sit inside the
-  // slot's own on-time band anyway. A pin whose slot is gone (schedule
+  // flatters: taken_late, unless the takenAt sits where band attribution
+  // would read it on time anyway, the early grace included, so the same
+  // take reads the same pinned or not. A pin whose slot is gone (schedule
   // changed) or already claimed falls through to ad-hoc so nothing vanishes.
   for (const i of pinnedTaken) {
     // v1.16.0 — a released pin ("Zuordnung lösen") persists USER_PIN with
@@ -254,7 +256,8 @@ export function reconstructDoseHistory(
     if (band && !claim.has(band)) {
       const t = (i.takenAt as Date).getTime();
       const onTime =
-        t >= band.onTimeStart.getTime() && t <= band.onTimeEnd.getTime();
+        t >= (band.earlyStart ?? band.onTimeStart).getTime() &&
+        t <= band.onTimeEnd.getTime();
       claim.set(band, {
         intake: i,
         status: onTime ? "taken_on_time" : "taken_late",

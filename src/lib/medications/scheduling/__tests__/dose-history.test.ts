@@ -15,7 +15,11 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { buildSlotBands, type SlotWindowInput } from "../attribution";
+import {
+  attributeIntakeToSlot,
+  buildSlotBands,
+  type SlotWindowInput,
+} from "../attribution";
 import {
   reconstructDoseHistory,
   suggestNearestSlot,
@@ -284,28 +288,36 @@ describe("reconstructDoseHistory", () => {
       expect(morning?.pinned).toBe(true);
     });
 
-    // The pin confirm dialog promises exactly this split: on time inside the
-    // slot's on-time window (also ahead of the slot's clock time), late
-    // otherwise.
-    it("an early pin inside the on-time window reads on time, one before it reads late", () => {
-      const early = reconstructDoseHistory(
-        bands,
-        [intake({ takenAt: at(6, 15), scheduledFor: at(7, 0), pinned: true })],
-        nowEvening,
-        null,
-      );
-      expect(early.find((r) => r.timeOfDay === "07:00")?.status).toBe(
-        "taken_on_time",
-      );
-      const tooEarly = reconstructDoseHistory(
-        bands,
-        [intake({ takenAt: at(5, 30), scheduledFor: at(7, 0), pinned: true })],
-        nowEvening,
-        null,
-      );
-      expect(tooEarly.find((r) => r.timeOfDay === "07:00")?.status).toBe(
-        "taken_late",
-      );
+    // A pinned take reads exactly as the same take attributed on its own:
+    // on time from the early grace before the on-time window through the
+    // window's end, late otherwise. Pinning never changes the timing.
+    it("a pinned early take reads the same as the unpinned take", () => {
+      for (const [h, m] of [
+        [6, 15],
+        [5, 30],
+        [4, 30],
+      ] as const) {
+        const takenAt = at(h, m);
+        const pinned = reconstructDoseHistory(
+          bands,
+          [intake({ takenAt, scheduledFor: at(7, 0), pinned: true })],
+          nowEvening,
+          null,
+        ).find((r) => r.timeOfDay === "07:00")?.status;
+        const unpinned = attributeIntakeToSlot(takenAt, bands);
+        const expected =
+          unpinned?.band.timeOfDay === "07:00"
+            ? unpinned.status === "on_time"
+              ? "taken_on_time"
+              : "taken_late"
+            : // Outside every capture band on its own: a pin can only make
+              // it late, never on time.
+              "taken_late";
+        expect(pinned, `${h}:${m}`).toBe(expected);
+      }
+      // 05:30 lies in the early grace (on time either way), 04:30 before it.
+      expect(attributeIntakeToSlot(at(5, 30), bands)?.status).toBe("on_time");
+      expect(attributeIntakeToSlot(at(4, 30), bands)).toBeNull();
     });
 
     it("a pin inside the late tail reads taken_late, never flattered", () => {

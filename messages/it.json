@@ -1795,7 +1795,7 @@
           "unpinnedToast": "Attribuzione rimossa",
           "dueContext": "prevista alle {time} ({delta})",
           "confirmTitle": "Attribuire allo slot delle {time}?",
-          "confirmBody": "L'assunzione conterà per questo slot: puntuale se è avvenuta nella finestra puntuale dello slot, altrimenti in ritardo, quindi la percentuale non viene abbellita. L'attribuzione può essere rimossa in qualsiasi momento.",
+          "confirmBody": "L'assunzione conterà per questo slot esattamente come se fosse stata registrata lì: puntuale o in ritardo a seconda di quando è stata presa, quindi la percentuale non viene abbellita. L'attribuzione può essere rimossa in qualsiasi momento.",
           "confirmCancel": "Annulla",
           "confirmAction": "Attribuisci"
         }
