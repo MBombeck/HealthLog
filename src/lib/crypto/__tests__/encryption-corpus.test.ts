@@ -214,4 +214,45 @@ describe("encryption-corpus scan + rotate", () => {
     expect(col.legacy).toBe(1);
     expect(col.byKeyId[LEGACY_BUCKET]).toBe(1);
   });
+
+  it("reads every column in bounded pages and counts only rows that hold ciphertext (#1031)", async () => {
+    // A notes column is read for every row of its table, 1.25 million on a
+    // large account, and was read in one findMany. 12 000 measurements, one
+    // in ten with a note written under the old key.
+    const measurements: Row[] = Array.from({ length: 12_000 }, (_, i) => ({
+      id: `m-${String(i).padStart(5, "0")}`,
+      notesEncrypted:
+        i % 10 === 0
+          ? new Uint8Array(Buffer.from(activeUnder("v1", `note ${i}`), "utf8"))
+          : null,
+    }));
+    const { client } = makeClient({ Measurement: measurements });
+    const takes: Array<number | undefined> = [];
+    const measurement = client.measurement!;
+    const findMany = measurement.findMany;
+    measurement.findMany = (args) => {
+      takes.push(args.take);
+      return findMany(args);
+    };
+
+    const scan = await scanCorpus(client);
+    const col = scan.columns.find(
+      (c) => c.model === "Measurement" && c.field === "notesEncrypted",
+    )!;
+    expect(col.total).toBe(1_200);
+    expect(col.byKeyId.v1).toBe(1_200);
+
+    const rotation = await rotateCorpus(client);
+    const result = rotation.results.find(
+      (r) => r.model === "Measurement" && r.field === "notesEncrypted",
+    )!;
+    expect(result.scanned).toBe(1_200);
+    expect(result.rotated).toBe(1_200);
+
+    expect(takes.length).toBeGreaterThan(2);
+    for (const take of takes) {
+      expect(take).toBeDefined();
+      expect(take!).toBeLessThanOrEqual(5_000);
+    }
+  });
 });
