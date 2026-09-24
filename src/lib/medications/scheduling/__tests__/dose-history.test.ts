@@ -657,3 +657,55 @@ describe("reconstructDoseHistory — slots before the medication existed (#1028)
     expect(rows.map((r) => r.timeOfDay)).toEqual(["07:00", "19:00"]);
   });
 });
+
+/**
+ * #1028 — history recorded before the medication was created (an import, a
+ * restore from an older file). Only what the history records counts: a slot
+ * no row names stays absent rather than being invented as missed, and a miss
+ * the history does record is not hidden. The projector's placeholders on the
+ * creation day are the one pre-creation auto-miss that records nothing.
+ */
+describe("reconstructDoseHistory — history from before the creation (#1028)", () => {
+  // Created two days after `day`, so both of `day`'s slots predate it.
+  const createdAt = new Date(at(12, 0).getTime() + 2 * 24 * 60 * MIN);
+  const statusRows = (rows: ReturnType<typeof reconstructDoseHistory>) =>
+    rows.map((r) => [r.kind, r.timeOfDay, r.status, r.intake?.id ?? null]);
+
+  it("keeps a carried-in auto-miss as the miss it records", () => {
+    const rows = reconstructDoseHistory(
+      bands,
+      [
+        intake({ id: "taken", scheduledFor: at(7, 0), takenAt: at(7, 10) }),
+        intake({ id: "missed", scheduledFor: at(19, 0), autoMissed: true }),
+      ],
+      nowEvening,
+      createdAt,
+    );
+    expect(statusRows(rows)).toEqual([
+      ["slot", "07:00", "taken_on_time", "taken"],
+      ["slot", "19:00", "missed", "missed"],
+    ]);
+  });
+
+  it("never invents a miss for a slot the history does not name", () => {
+    const rows = reconstructDoseHistory(
+      bands,
+      [intake({ id: "taken", scheduledFor: at(7, 0), takenAt: at(7, 10) })],
+      nowEvening,
+      createdAt,
+    );
+    expect(statusRows(rows)).toEqual([
+      ["slot", "07:00", "taken_on_time", "taken"],
+    ]);
+  });
+
+  it("still drops a pending row carried in from before the creation", () => {
+    const rows = reconstructDoseHistory(
+      bands,
+      [intake({ id: "pending", scheduledFor: at(19, 0) })],
+      nowEvening,
+      createdAt,
+    );
+    expect(rows).toEqual([]);
+  });
+});
