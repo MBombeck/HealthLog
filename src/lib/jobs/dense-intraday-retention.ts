@@ -89,10 +89,13 @@ export interface DenseIntradayRetentionPayload {
  */
 export async function runDenseIntradayRetentionForUser(
   userId: string,
+  shouldStop?: () => boolean,
 ): Promise<{
   daysConsolidated: number;
   perSampleRowsSoftDeleted: number;
   derivedRestingRowsUpserted: number;
+  /** The job's budget ran out first; the next run continues from here. */
+  stoppedEarly: boolean;
 }> {
   // Kill-switch: when an operator opts out, no-op so any already-queued
   // backlog completes cleanly (drains the queue) instead of running the fold.
@@ -101,10 +104,12 @@ export async function runDenseIntradayRetentionForUser(
       daysConsolidated: 0,
       perSampleRowsSoftDeleted: 0,
       derivedRestingRowsUpserted: 0,
+      stoppedEarly: false,
     };
   }
   const summary = await runDenseIntradayRetention(prisma, {
     userId,
+    shouldStop,
     log: () => {
       // Silent inside the queue handler — the worker logs the totals.
     },
@@ -121,6 +126,7 @@ export async function runDenseIntradayRetentionForUser(
         // days for proxy users, preserving the resting signal post-fold.
         derived_resting_rows_upserted:
           summary.totals.derivedRestingRowsUpserted,
+        stopped_early: summary.stoppedEarly,
       },
     },
   });
@@ -128,6 +134,7 @@ export async function runDenseIntradayRetentionForUser(
     daysConsolidated: summary.totals.daysConsolidated,
     perSampleRowsSoftDeleted: summary.totals.perSampleRowsSoftDeleted,
     derivedRestingRowsUpserted: summary.totals.derivedRestingRowsUpserted,
+    stoppedEarly: summary.stoppedEarly,
   };
 }
 

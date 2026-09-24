@@ -110,6 +110,11 @@ import {
   type ScheduleEntry,
 } from "./registrar-shared";
 import { jobDone, jobFailed } from "@/lib/jobs/job-outcome";
+import { jobBudget } from "@/lib/jobs/job-budget";
+import {
+  DRAIN_CONTINUATION_DELAY_SECONDS,
+  nextDrainContinuation,
+} from "@/lib/jobs/drain-continuation";
 // v1.4.37 W7c — nightly drain of per-sample APPLE_HEALTH cumulative rows.
 // Collapses each user × cumulative-type × calendar-day bucket into one
 // `stats:…` row so the list view stops painting hundreds of step chunks per
@@ -123,7 +128,12 @@ const DRAIN_CUMULATIVE_QUEUE = "drain-per-sample-cumulative";
 const DRAIN_CUMULATIVE_CRON = "45 3 * * *";
 
 interface DrainCumulativePayload {
-  triggeredAt: string;
+  triggeredAt?: string;
+  /**
+   * How many times this tick has already handed itself on. Absent on the
+   * cron's own job. See `nextDrainContinuation`.
+   */
+  continuation?: number;
 }
 
 const allQueues = [
@@ -437,12 +447,15 @@ export async function registerRollupQueues(
     MEAN_CONSOLIDATION_QUEUE,
     { localConcurrency: MEAN_CONSOLIDATION_CONCURRENCY },
     async (jobs) => {
+      const shouldStop = jobBudget(jobs);
       let daysTotal = 0;
       let perSampleRowsTotal = 0;
+      let stoppedEarly = false;
       for (const job of jobs) {
         const { userId } = job.data;
-        const { daysConsolidated, perSampleRowsSoftDeleted } =
-          await runMeanConsolidationForUser(userId);
+        const summary = await runMeanConsolidationForUser(userId, shouldStop);
+        const { daysConsolidated, perSampleRowsSoftDeleted } = summary;
+        stoppedEarly ||= summary.stoppedEarly;
         daysTotal += daysConsolidated;
         perSampleRowsTotal += perSampleRowsSoftDeleted;
         workerLog(
@@ -450,10 +463,14 @@ export async function registerRollupQueues(
           `[mean-consolidation] user=${userId} days=${daysConsolidated} perSampleRowsSoftDeleted=${perSampleRowsSoftDeleted}`,
         );
       }
+      // Out of budget is a completed run, not a failed one: the folded days
+      // are committed, and the nightly tick carries on from the first day
+      // this run did not reach.
       return jobDone({
         users: jobs.length,
         days_consolidated: daysTotal,
         per_sample_rows_soft_deleted: perSampleRowsTotal,
+        stopped_early: stoppedEarly,
       });
     },
   );
@@ -470,17 +487,24 @@ export async function registerRollupQueues(
     DENSE_INTRADAY_RETENTION_QUEUE,
     { localConcurrency: DENSE_INTRADAY_RETENTION_CONCURRENCY },
     async (jobs) => {
+      const shouldStop = jobBudget(jobs);
       let daysTotal = 0;
       let perSampleRowsTotal = 0;
       let derivedRestingRowsTotal = 0;
+      let stoppedEarly = false;
       for (const job of jobs) {
         const { userId } = job.data;
         try {
+          const summary = await runDenseIntradayRetentionForUser(
+            userId,
+            shouldStop,
+          );
           const {
             daysConsolidated,
             perSampleRowsSoftDeleted,
             derivedRestingRowsUpserted,
-          } = await runDenseIntradayRetentionForUser(userId);
+          } = summary;
+          stoppedEarly ||= summary.stoppedEarly;
           daysTotal += daysConsolidated;
           perSampleRowsTotal += perSampleRowsSoftDeleted;
           derivedRestingRowsTotal += derivedRestingRowsUpserted;
@@ -503,6 +527,10 @@ export async function registerRollupQueues(
         days_consolidated: daysTotal,
         per_sample_rows_soft_deleted: perSampleRowsTotal,
         derived_resting_rows_upserted: derivedRestingRowsTotal,
+        // Out of budget completes the job: the folded days are committed and
+        // the nightly tick, which hands itself on while work remains,
+        // continues from the first day this run did not reach.
+        stopped_early: stoppedEarly,
       });
     },
   );
@@ -679,6 +707,9 @@ export async function registerRollupQueues(
     DRAIN_CUMULATIVE_QUEUE,
     { localConcurrency: 1 },
     async (jobs) => {
+      // One budget shared by all three passes, run in turn.
+      const shouldStop = jobBudget(jobs);
+      let stoppedEarly = false;
       // The three drains below are independent passes sharing one nightly
       // tick, so one failing pass must not stop the other two from running.
       // The first failure is held back and reported once the tick is over —
@@ -699,8 +730,10 @@ export async function registerRollupQueues(
           const summary = await drainPerSampleCumulative(getWorkerPrisma(), {
             dryRun: false,
             cutoffHours: DRAIN_CUMULATIVE_CUTOFF_HOURS,
+            shouldStop,
             log: (line) => workerLog("info", line),
           });
+          stoppedEarly ||= summary.stoppedEarly;
           bucketsCollapsed += summary.totals.bucketsCollapsed;
           perSampleRowsDeleted += summary.totals.perSampleRowsDeleted;
           workerLog(
@@ -729,8 +762,10 @@ export async function registerRollupQueues(
           const meanSummary = await consolidateDailyMean(getWorkerPrisma(), {
             dryRun: false,
             cutoffHours: MEAN_CONSOLIDATION_CUTOFF_HOURS,
+            shouldStop,
             log: (line) => workerLog("info", line),
           });
+          stoppedEarly ||= meanSummary.stoppedEarly;
           meanDaysConsolidated += meanSummary.totals.daysConsolidated;
           meanRowsSoftDeleted += meanSummary.totals.perSampleRowsSoftDeleted;
           workerLog(
@@ -769,9 +804,11 @@ export async function registerRollupQueues(
               getWorkerPrisma(),
               {
                 dryRun: false,
+                shouldStop,
                 log: (line) => workerLog("info", line),
               },
             );
+            stoppedEarly ||= denseSummary.stoppedEarly;
             denseDaysConsolidated += denseSummary.totals.daysConsolidated;
             denseRowsSoftDeleted +=
               denseSummary.totals.perSampleRowsSoftDeleted;
@@ -790,7 +827,41 @@ export async function registerRollupQueues(
         }
       }
 
+      // Hand the remaining work to a follow-up job when this one ran out of
+      // budget (bounded; see `nextDrainContinuation`).
+      const continuation = Math.max(
+        0,
+        ...jobs.map((job) => job.data.continuation ?? 0),
+      );
+      const next = nextDrainContinuation({
+        stoppedEarly,
+        daysFolded:
+          bucketsCollapsed + meanDaysConsolidated + denseDaysConsolidated,
+        continuation,
+      });
+      let continued = false;
+      if (next !== null) {
+        try {
+          const followUp: DrainCumulativePayload = {
+            triggeredAt: new Date().toISOString(),
+            continuation: next,
+          };
+          continued =
+            (await boss.send(DRAIN_CUMULATIVE_QUEUE, followUp, {
+              ...cronIsTheRetry,
+              startAfter: DRAIN_CONTINUATION_DELAY_SECONDS,
+            })) !== null;
+        } catch (err) {
+          // The next nightly tick picks the work up regardless; a lost
+          // follow-up only delays it.
+          workerLog("error", "[drain-cumulative] follow-up send failed", err);
+        }
+      }
+
       const did = {
+        stopped_early: stoppedEarly,
+        continuation,
+        continued,
         passes_failed: passesFailed,
         buckets_collapsed: bucketsCollapsed,
         per_sample_rows_deleted: perSampleRowsDeleted,
