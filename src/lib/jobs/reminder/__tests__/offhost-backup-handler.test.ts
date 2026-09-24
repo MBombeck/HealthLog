@@ -53,6 +53,8 @@ function report(over: Partial<Record<string, unknown>> = {}) {
     totalUsers: 2,
     largestObjectBytes: 9_000,
     oversized: 0,
+    alreadyUploaded: 0,
+    stoppedEarly: false,
     ...over,
   };
 }
@@ -67,6 +69,8 @@ describe("handleOffhostBackup", () => {
     const outcome = await handleOffhostBackup([]);
     expect(outcome.ok).toBe(true);
     expect(outcome.ok && outcome.did).toEqual({
+      offhost_backup_already_uploaded: 0,
+      stopped_early: false,
       offhost_backup_uploaded: 2,
       offhost_backup_failed: 0,
       offhost_backup_total_users: 2,
@@ -137,5 +141,24 @@ describe("handleOffhostBackup", () => {
     expect(outcome.ok && outcome.did).toEqual({
       offhost_backup_configured: false,
     });
+  });
+
+  it("fails an attempt that ran out of budget, so pg-boss retries and the retry resumes (#1031)", async () => {
+    mocks.runOffhostBackup.mockResolvedValue(
+      report({ uploaded: 1, totalUsers: 3, stoppedEarly: true }),
+    );
+    const outcome = await handleOffhostBackup([]);
+    expect(outcome).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining("retry resumes"),
+    });
+  });
+
+  it("passes a retry whose accounts an earlier attempt had all uploaded", async () => {
+    mocks.runOffhostBackup.mockResolvedValue(
+      report({ uploaded: 0, alreadyUploaded: 2, totalUsers: 2 }),
+    );
+    const outcome = await handleOffhostBackup([]);
+    expect(outcome.ok).toBe(true);
   });
 });

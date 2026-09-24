@@ -4,7 +4,8 @@
  * Extracted from reminder-worker.ts, which owns the queue names, cron
  * schedules, and boss.work registrations.
  */
-import { type Job } from "pg-boss";
+import { type Job, type JobWithMetadata } from "pg-boss";
+import { jobBudget } from "@/lib/jobs/job-budget";
 import { recordError } from "@/lib/jobs/worker-status";
 import { BackupBlobTooLargeError } from "@/lib/export/backup-blob";
 import { storeBackupBlob } from "@/lib/export/store-backup-blob";
@@ -27,13 +28,18 @@ export interface OffhostBackupPayload {
 }
 
 export async function handleOffhostBackup(
-  jobs: Job<OffhostBackupPayload>[],
+  jobs: JobWithMetadata<OffhostBackupPayload>[],
 ): Promise<JobOutcome> {
-  void jobs;
   return withBackgroundEvent("job.offhost_backup", async (evt) => {
     const p = getWorkerPrisma();
     try {
-      const report = await runOffhostBackup(p);
+      // A retry of this job carries the same creation time, so it resumes
+      // after the accounts an earlier attempt uploaded, and the run stops
+      // between accounts before the job's expiry would cut one off.
+      const report = await runOffhostBackup(p, undefined, new Date(), {
+        runStartedAt: jobs[0]?.createdOn,
+        shouldStop: jobBudget(jobs),
+      });
       evt.addMeta("offhost_backup_uploaded", report.uploaded);
       evt.addMeta("offhost_backup_failed", report.failed);
       evt.addMeta("offhost_backup_total_users", report.totalUsers);
@@ -55,6 +61,8 @@ export async function handleOffhostBackup(
       }
 
       const did = {
+        offhost_backup_already_uploaded: report.alreadyUploaded,
+        stopped_early: report.stoppedEarly,
         offhost_backup_uploaded: report.uploaded,
         offhost_backup_failed: report.failed,
         offhost_backup_total_users: report.totalUsers,
@@ -69,7 +77,20 @@ export async function handleOffhostBackup(
       // than one. Per-account failures still ride out as counts when SOME
       // account got a copy: that is the fan-out rule, and retrying the whole
       // cohort over one object would re-upload everybody's.
-      if (report.totalUsers > 0 && report.uploaded === 0) {
+      // Out of budget before every account: fail, so pg-boss retries the job,
+      // and the retry resumes after the accounts this attempt uploaded.
+      if (report.stoppedEarly) {
+        return jobFailed(
+          "stopped before every account was uploaded; the retry resumes",
+          undefined,
+          did,
+        );
+      }
+
+      if (
+        report.totalUsers > 0 &&
+        report.uploaded + report.alreadyUploaded === 0
+      ) {
         // The SDK's own words, not a stack: `runJob` puts the cause message in
         // the reported meta, and "SignatureDoesNotMatch" is the sentence an
         // operator can act on.

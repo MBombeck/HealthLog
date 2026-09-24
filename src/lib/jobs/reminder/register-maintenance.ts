@@ -724,10 +724,11 @@ export async function registerMaintenanceQueues(
     { localConcurrency: 1 },
     handleStepUpElevationCleanup,
   );
+  // With metadata: the handler resumes a retry from the job's creation time.
   await createAndWork<OffhostBackupPayload>(
     boss,
     OFFHOST_BACKUP_QUEUE,
-    { localConcurrency: 1 },
+    { localConcurrency: 1, includeMetadata: true },
     handleOffhostBackup,
   );
   await createAndWork(
