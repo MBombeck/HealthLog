@@ -34,7 +34,17 @@
  *   * `auto_missed = false` AND
  *   * `takenAt IS NULL` AND
  *   * `deletedAt IS NULL` AND
- *   * `scheduledFor < NOW() - <per-medication auto-miss delay>`
+ *   * `scheduledFor < NOW() - <per-medication auto-miss delay>` AND
+ *   * `scheduledFor >= medication.createdAt`
+ *
+ * The last clause (#1028): the today projector mints a pending placeholder
+ * for every slot of the current day, so a medication added at 16:00 carries
+ * placeholders for its 09:00 and 14:00 slots. Those slots were never
+ * expected, and a placeholder on one records nothing. Stamping it a miss
+ * put a forgotten dose into every reader that counts raw rows (the miss-free
+ * streak, the Coach snapshot) for a day before the medication existed. It
+ * stays pending instead: the dose history drops it, and a dose the person
+ * does record for that slot still converges onto it.
  *
  * The 24 h floor is intentional: a slightly late mark (user took the
  * morning dose at noon when the schedule was 09:00) shouldn't be flipped
@@ -228,6 +238,7 @@ export async function runIntakeAutoSkipPass(
     where: { id: { in: [...usersByMedication.keys()] } },
     select: {
       id: true,
+      createdAt: true,
       schedules: {
         select: { rrule: true, rollingIntervalDays: true, doseWindows: true },
       },
@@ -236,22 +247,28 @@ export async function runIntakeAutoSkipPass(
 
   // Group medications by their derived delay so one `updateMany` covers
   // each distinct cutoff instead of one query per medication.
-  const medsByDelay = new Map<number, string[]>();
+  const medsByDelay = new Map<number, Array<{ id: string; createdAt: Date }>>();
   for (const medication of medications) {
     const delayMs = medicationAutoMissDelayMs(medication.schedules);
     const group = medsByDelay.get(delayMs) ?? [];
-    group.push(medication.id);
+    group.push({ id: medication.id, createdAt: medication.createdAt });
     medsByDelay.set(delayMs, group);
   }
 
   let skippedCount = 0;
   const invalidatedUserIds = new Set<string>();
-  for (const [delayMs, medicationIds] of medsByDelay) {
+  for (const [delayMs, group] of medsByDelay) {
+    const medicationIds = group.map((m) => m.id);
     const { count } = await prisma.medicationIntakeEvent.updateMany({
       where: {
         ...pendingWhere,
-        medicationId: { in: medicationIds },
         scheduledFor: { lt: new Date(nowMs - delayMs) },
+        // Per medication, only slots from its creation on: a placeholder
+        // for a slot before it was never an expected dose (see above).
+        OR: group.map((m) => ({
+          medicationId: m.id,
+          scheduledFor: { gte: m.createdAt },
+        })),
       },
       // `syncVersion` bumps so delta-sync clients pick up the terminal
       // state instead of holding a stale pending row forever.
