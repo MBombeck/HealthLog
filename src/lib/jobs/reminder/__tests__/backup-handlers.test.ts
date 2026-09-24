@@ -4,9 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   buildFullBackupPayload: vi.fn(),
-  packBlob: vi.fn((value: string) => value),
   getWorkerPrisma: vi.fn(),
-  upsert: vi.fn(),
+  store: vi.fn(),
 }));
 
 // Only the payload builder is stubbed. The REAL streaming writer runs on top
@@ -19,27 +18,25 @@ vi.mock("@/lib/export/full-backup-payload", () => ({
   isDeferredRows: () => false,
 }));
 
-// The envelope is exercised end-to-end in
-// `src/lib/export/__tests__/backup-blob.test.ts`; here it stays transparent so
-// the stored bytes can be read back as JSON. The size error is the real class
-// so the handler's `instanceof` arm is the one that runs.
-vi.mock("@/lib/export/backup-blob", async () => {
-  const actual = await vi.importActual<
-    typeof import("@/lib/export/backup-blob")
-  >("@/lib/export/backup-blob");
-  return {
-    BackupBlobTooLargeError: actual.BackupBlobTooLargeError,
-    packBackupBlobStreaming: async (
-      produce: (write: (chunk: string) => Promise<void>) => Promise<void>,
-    ) => {
-      let out = "";
-      await produce(async (chunk) => {
-        out += chunk;
-      });
-      return mocks.packBlob(out);
-    },
-  };
-});
+// The envelope and the piecewise store are exercised end-to-end in
+// `src/lib/export/__tests__/backup-blob.test.ts` and the integration suite;
+// here the store stays transparent so the stored bytes can be read back as
+// JSON. `mocks.store` receives what would have been stored and decides
+// whether the write succeeds.
+vi.mock("@/lib/export/store-backup-blob", () => ({
+  storeBackupBlob: async (
+    _prisma: unknown,
+    input: { userId: string; type: string },
+    produce: (write: (chunk: string) => Promise<void>) => Promise<void>,
+  ) => {
+    let out = "";
+    await produce(async (chunk) => {
+      out += chunk;
+    });
+    await mocks.store(input, out);
+    return out.length;
+  },
+}));
 
 vi.mock("@/lib/logging/background", () => ({
   withBackgroundEvent: vi.fn(
@@ -70,7 +67,6 @@ function buildPrismaMock(
 ) {
   return {
     user: { findMany: vi.fn().mockResolvedValue(users) },
-    dataBackup: { upsert: mocks.upsert },
   };
 }
 
@@ -78,7 +74,7 @@ describe("handleDataBackup canonical DR payload", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getWorkerPrisma.mockReturnValue(buildPrismaMock());
-    mocks.upsert.mockResolvedValue({});
+    mocks.store.mockResolvedValue(undefined);
     mocks.buildFullBackupPayload.mockResolvedValue({
       payload: {
         schemaVersion: "1",
@@ -117,8 +113,12 @@ describe("handleDataBackup canonical DR payload", () => {
         deferBulk: true,
       }),
     );
-    expect(mocks.upsert).toHaveBeenCalledOnce();
-    const encrypted = mocks.upsert.mock.calls[0]![0].create.data as string;
+    expect(mocks.store).toHaveBeenCalledOnce();
+    expect(mocks.store.mock.calls[0]![0]).toEqual({
+      userId: "user-dr",
+      type: "WEEKLY_AUTO",
+    });
+    const encrypted = mocks.store.mock.calls[0]![1] as string;
     const payload = JSON.parse(encrypted) as {
       moodEntries: Array<{
         id: string;
@@ -155,7 +155,7 @@ describe("handleDataBackup canonical DR payload", () => {
 describe("handleDataBackup outcome", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.upsert.mockResolvedValue({});
+    mocks.store.mockResolvedValue(undefined);
     mocks.buildFullBackupPayload.mockResolvedValue({
       payload: { schemaVersion: "1", userId: "user-dr" },
       counts: {},
@@ -164,7 +164,7 @@ describe("handleDataBackup outcome", () => {
 
   it("fails the run when not one account got a copy", async () => {
     mocks.getWorkerPrisma.mockReturnValue(buildPrismaMock());
-    mocks.upsert.mockRejectedValue(new Error("write failed"));
+    mocks.store.mockRejectedValue(new Error("write failed"));
 
     const outcome = await handleDataBackup([]);
 
@@ -178,7 +178,7 @@ describe("handleDataBackup outcome", () => {
 
   it("counts an oversized record as the reason it could not", async () => {
     mocks.getWorkerPrisma.mockReturnValue(buildPrismaMock());
-    mocks.upsert.mockRejectedValue(new BackupBlobTooLargeError(9_000, 4_096));
+    mocks.store.mockRejectedValue(new BackupBlobTooLargeError(9_000, 4_096));
 
     const outcome = await handleDataBackup([]);
 
@@ -198,9 +198,9 @@ describe("handleDataBackup outcome", () => {
         { id: "user-b", username: "b" },
       ]),
     );
-    mocks.upsert
+    mocks.store
       .mockRejectedValueOnce(new Error("write failed"))
-      .mockResolvedValueOnce({});
+      .mockResolvedValueOnce(undefined);
 
     const outcome = await handleDataBackup([]);
 

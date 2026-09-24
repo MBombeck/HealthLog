@@ -6,10 +6,8 @@
  */
 import { type Job } from "pg-boss";
 import { recordError } from "@/lib/jobs/worker-status";
-import {
-  BackupBlobTooLargeError,
-  packBackupBlobStreaming,
-} from "@/lib/export/backup-blob";
+import { BackupBlobTooLargeError } from "@/lib/export/backup-blob";
+import { storeBackupBlob } from "@/lib/export/store-backup-blob";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
@@ -18,6 +16,7 @@ import {
   runOffhostBackup,
 } from "@/lib/jobs/offhost-backup";
 import { getWorkerPrisma } from "./shared";
+import { reportJobProgress } from "@/lib/jobs/job-observer";
 
 export interface DataBackupPayload {
   triggeredAt: string;
@@ -118,38 +117,30 @@ export async function handleDataBackup(
       // six weeks in.
       let lastError: unknown;
       for (const user of users) {
+        reportJobProgress({
+          backup_user: user.id,
+          backup_users_done: backed + usersFailed,
+          backup_users_total: users.length,
+        });
         try {
           // Streamed, compressed, then encrypted (the record contains
-          // sensitive health information). Nothing between the database rows
-          // and this string exists as a whole: the payload goes into gzip a
-          // page at a time and the cipher consumes gzip's output as it comes,
-          // because a materialised copy of a large record is what used to take
-          // the process down. Both legs live in `packBackupBlobStreaming`,
-          // which is also what the restore path reads back through.
-          const encryptedBackup = await packBackupBlobStreaming((write) =>
-            streamFullBackupJson(prisma, user.id, write, {
-              purpose: "disaster-recovery",
-            }),
+          // sensitive health information), and stored a piece at a time.
+          // Nothing between the database rows and the stored row exists as a
+          // whole in this process: the payload goes into gzip a page at a
+          // time, the cipher consumes gzip's output as it comes, and the
+          // ciphertext goes back to Postgres in pieces that one statement
+          // assembles into the row (`storeBackupBlob`). The stored copy used
+          // to be built here as one string first, which on a large record
+          // added several hundred megabytes to a container capped at 1 GB.
+          const storedBytes = await storeBackupBlob(
+            prisma,
+            { userId: user.id, type: "WEEKLY_AUTO" },
+            (write) =>
+              streamFullBackupJson(prisma, user.id, write, {
+                purpose: "disaster-recovery",
+              }),
           );
-          largestBlobBytes = Math.max(
-            largestBlobBytes,
-            Buffer.byteLength(encryptedBackup, "utf8"),
-          );
-
-          await prisma.dataBackup.upsert({
-            where: {
-              userId_type: { userId: user.id, type: "WEEKLY_AUTO" },
-            },
-            update: {
-              data: encryptedBackup,
-              createdAt: new Date(),
-            },
-            create: {
-              userId: user.id,
-              type: "WEEKLY_AUTO",
-              data: encryptedBackup,
-            },
-          });
+          largestBlobBytes = Math.max(largestBlobBytes, storedBytes);
           backed++;
         } catch (err) {
           // One user's payload failing is that user's problem, not the pass's:

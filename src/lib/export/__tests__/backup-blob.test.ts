@@ -17,6 +17,7 @@
 process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
+import { randomBytes } from "node:crypto";
 import v8 from "node:v8";
 
 import { describe, expect, it } from "vitest";
@@ -26,6 +27,7 @@ import {
   BackupBlobTooLargeError,
   defaultBackupBlobLimit,
   packBackupBlob,
+  packBackupBlobInto,
   packBackupBlobStreaming,
   unpackBackupBlob,
 } from "../backup-blob";
@@ -211,5 +213,68 @@ describe("backup blob envelope", () => {
     expect(defaultBackupBlobLimit()).toBe(before);
     expect(held).toHaveLength(40);
     expect(limit).toBeGreaterThan(16 * 1024 * 1024);
+  });
+});
+
+/**
+ * Issue #1031: the weekly and manual backup kept the stored copy as one string
+ * before writing it, and at 1.25 million measurements that string and the
+ * driver's copies of it added about 640 MB to the process. `packBackupBlobInto`
+ * hands the stored copy on in bounded pieces instead, as it is produced.
+ */
+describe("piecewise envelope", () => {
+  /** JSON that gzip cannot shrink much, so the stored copy is several MB. */
+  function incompressibleJson(bytes: number): string {
+    return JSON.stringify({
+      noise: randomBytes(Math.ceil((bytes * 3) / 4)).toString("base64"),
+    });
+  }
+
+  it("delivers pieces that concatenate to a blob reading back the exact JSON", async () => {
+    const json = sampleJson(3_000);
+    const pieces: string[] = [];
+    await packBackupBlobInto(
+      (piece) => {
+        pieces.push(piece);
+      },
+      async (write) => {
+        for (let at = 0; at < json.length; at += 4_096) {
+          await write(json.slice(at, at + 4_096));
+        }
+      },
+    );
+    expect(unpackBackupBlob(pieces.join(""))).toBe(json);
+  });
+
+  it("hands pieces on while the producer is still writing, each one bounded", async () => {
+    const json = incompressibleJson(12 * 1024 * 1024);
+    const pieces: number[] = [];
+    let producing = false;
+    let piecesWhileProducing = 0;
+    const chunks: string[] = [];
+
+    await packBackupBlobInto(
+      (piece) => {
+        pieces.push(piece.length);
+        chunks.push(piece);
+        if (producing) piecesWhileProducing += 1;
+      },
+      async (write) => {
+        producing = true;
+        for (let at = 0; at < json.length; at += 64 * 1024) {
+          await write(json.slice(at, at + 64 * 1024));
+        }
+        producing = false;
+      },
+      { maxBytes: Number.MAX_SAFE_INTEGER },
+    );
+
+    expect(pieces.length).toBeGreaterThan(2);
+    expect(piecesWhileProducing).toBeGreaterThan(1);
+    // The flush threshold is 4 MB; one gzip chunk's worth of slack on top.
+    for (const length of pieces) {
+      expect(length).toBeLessThan(4 * 1024 * 1024 + 256 * 1024);
+    }
+    expect(unpackBackupBlob(chunks.join(""))).toBe(json);
   });
 });
