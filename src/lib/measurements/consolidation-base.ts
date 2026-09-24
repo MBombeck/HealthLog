@@ -315,12 +315,14 @@ const CONSOLIDATION_SCAN_PAGE_SIZE = 5000;
  * The caller's `baseWhere` is AND-combined, so the scope / soft-delete /
  * grace filters always still apply.
  */
-export async function* iterateSourcePages(
+export async function* iterateSourcePages<
+  Row extends { id: string; measuredAt: Date } = PerSampleRow,
+>(
   prismaClient: PrismaClient,
   baseWhere: Prisma.MeasurementWhereInput,
   scanSelect: Prisma.MeasurementSelect,
   pageSize: number = CONSOLIDATION_SCAN_PAGE_SIZE,
-): AsyncGenerator<PerSampleRow[], void, void> {
+): AsyncGenerator<Row[], void, void> {
   let cursor: { measuredAt: Date; id: string } | null = null;
 
   for (;;) {
@@ -344,7 +346,7 @@ export async function* iterateSourcePages(
       select: scanSelect,
       orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
       take: pageSize,
-    })) as PerSampleRow[];
+    })) as unknown as Row[];
 
     if (page.length === 0) return;
 
@@ -364,22 +366,29 @@ export async function* iterateSourcePages(
  *
  * The rows arrive in `measuredAt` order and a local calendar day is one
  * contiguous span of instants, so a day is complete the moment a row from a
- * later day shows up. Rows already in the daily-stats shape are skipped, the
- * same as `bucketRowsByDay`. `onRow` sees every scanned row, stats rows
- * included, for the scan-count log line.
+ * later day shows up. Rows whose externalId starts with `statsPrefix` (the
+ * daily-stats shape) are skipped, the same as `bucketRowsByDay`; pass `null`
+ * to keep every row. `onRow` sees every scanned row, skipped ones included,
+ * for the scan-count log line.
  */
-export async function* iterateDayBuckets(
-  pages: AsyncIterable<readonly PerSampleRow[]>,
+export async function* iterateDayBuckets<
+  Row extends { measuredAt: Date; externalId: string | null } = PerSampleRow,
+>(
+  pages: AsyncIterable<readonly Row[]>,
   tz: string,
-  statsPrefix: string,
+  statsPrefix: string | null,
   onRow?: () => void,
-): AsyncGenerator<[dateKey: string, rows: PerSampleRow[]], void, void> {
+): AsyncGenerator<[dateKey: string, rows: Row[]], void, void> {
   let currentKey: string | null = null;
-  let current: PerSampleRow[] = [];
+  let current: Row[] = [];
   for await (const page of pages) {
     for (const row of page) {
       onRow?.();
-      if (row.externalId !== null && row.externalId.startsWith(statsPrefix)) {
+      if (
+        statsPrefix !== null &&
+        row.externalId !== null &&
+        row.externalId.startsWith(statsPrefix)
+      ) {
         continue;
       }
       const key = dayKeyForUserTz(row.measuredAt, tz);
