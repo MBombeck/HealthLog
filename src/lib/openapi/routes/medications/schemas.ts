@@ -571,7 +571,7 @@ export const complianceResult = z
       .int()
       .nonnegative()
       .describe(
-        "Full denominator over the window: `taken + skipped + missed`. Cadence-aware and clamped to the medication's `createdAt`.",
+        "Full denominator over the window: `taken + skipped + missed`. Cadence-aware. A slot from before the medication's `createdAt` counts only when a recorded dose (a take or a skip) claims it, so the days before the medication existed are never missed.",
       ),
     taken: z.number().int().nonnegative(),
     skipped: z
@@ -911,7 +911,7 @@ export const doseHistoryQuery = z.object({
     .datetime({ offset: true })
     .optional()
     .describe(
-      "Window start (inclusive). Defaults to 90 days before `to`; clamped to a 366-day span floor. Recorded doses are returned from this instant; expected slots are not minted before the medication's `createdAt`.",
+      "Window start (inclusive). Defaults to 90 days before `to`; clamped to a 366-day span floor. Recorded doses are returned from this instant. A slot from before the medication's `createdAt` appears only when a recorded dose (a take or a skip) claims it; the pending placeholder of such a slot is not returned.",
     ),
   to: z.iso
     .datetime({ offset: true })

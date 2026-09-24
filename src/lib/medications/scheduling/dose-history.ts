@@ -30,7 +30,13 @@
  *     anchor) and surfaces as an ad-hoc row carrying `pinned`, never as
  *     `taken_late`;
  *   - each slot is claimed by at most one intake (first/best wins); extra
- *     intakes near a filled slot fall through to ad-hoc.
+ *     intakes near a filled slot fall through to ad-hoc;
+ *   - a slot anchored before `expectedFrom` (the medication's creation) was
+ *     never expected: it appears only when a recorded dose claims it (a
+ *     take by band or pin, or a skip). A pending or auto-missed row on such
+ *     a slot is the placeholder the today projector mints for every slot of
+ *     the creation day, not a user action, so it is dropped rather than
+ *     read as a miss or an off-schedule row (#1028).
  *
  * Pure / synchronous / instant-based — the caller mints the bands DST-correctly
  * via `localHmAsUtc` and supplies the per-dose window.
@@ -136,7 +142,16 @@ export function reconstructDoseHistory(
   bands: SlotBand[],
   intakes: HistoryIntake[],
   now: Date,
+  /**
+   * The instant from which slots are expected, the medication's creation.
+   * Bands anchored earlier appear only when a recorded dose claims them.
+   * `null` treats every band as expected (a caller that already minted from
+   * the creation instant, or a pure-math fixture).
+   */
+  expectedFrom: Date | null,
 ): DoseHistoryRow[] {
+  const expectedFromMs = expectedFrom?.getTime() ?? -Infinity;
+  const beforeExpected = (at: Date): boolean => at.getTime() < expectedFromMs;
   // Per-band claim: the intake attributed to it + the resolved status.
   const claim = new Map<
     SlotBand,
@@ -155,6 +170,9 @@ export function reconstructDoseHistory(
   const taken = intakes.filter((i) => i.takenAt !== null && !i.pinned);
 
   for (const i of anchored) {
+    // A pending or auto-missed row before the medication existed records
+    // nothing: drop it whether or not its slot was minted.
+    if (!i.skipped && beforeExpected(i.scheduledFor)) continue;
     const band = nearestAnchorBand(i.scheduledFor, bands);
     if (band && !claim.has(band)) {
       // Status is time-aware for a pending row: the projector / reminder
@@ -224,7 +242,13 @@ export function reconstructDoseHistory(
     }
   }
 
-  const rows: DoseHistoryRow[] = bands.map((band) => {
+  // A slot before the medication existed stays absent unless a recorded
+  // dose claimed it above.
+  const visibleBands = bands.filter(
+    (band) => claim.has(band) || !beforeExpected(band.at),
+  );
+
+  const rows: DoseHistoryRow[] = visibleBands.map((band) => {
     const c = claim.get(band);
     if (c) {
       return {
@@ -257,7 +281,7 @@ export function reconstructDoseHistory(
     // Orphaned skips (no takenAt) carry no take to attribute, so no context.
     const nearestSlot =
       i.takenAt !== null
-        ? suggestNearestSlot(i.takenAt, bands, (band) => claim.has(band))
+        ? suggestNearestSlot(i.takenAt, visibleBands, (band) => claim.has(band))
         : null;
     rows.push({
       kind: "ad_hoc",

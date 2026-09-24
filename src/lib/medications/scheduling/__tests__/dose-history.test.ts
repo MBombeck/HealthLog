@@ -60,7 +60,7 @@ const nowEvening = at(23, 59);
 
 describe("reconstructDoseHistory", () => {
   it("emits one row per expected slot even with no intakes", () => {
-    const rows = reconstructDoseHistory(bands, [], nowEvening);
+    const rows = reconstructDoseHistory(bands, [], nowEvening, null);
     expect(rows.map((r) => r.timeOfDay)).toEqual(["07:00", "19:00"]);
     expect(rows.every((r) => r.kind === "slot")).toBe(true);
     expect(rows.map((r) => r.status)).toEqual(["missed", "missed"]);
@@ -71,6 +71,7 @@ describe("reconstructDoseHistory", () => {
       bands,
       [intake({ takenAt: at(7, 0), scheduledFor: at(7, 0) })],
       nowEvening,
+      null,
     );
     const morning = rows.find((r) => r.timeOfDay === "07:00");
     expect(morning?.status).toBe("taken_on_time");
@@ -84,6 +85,7 @@ describe("reconstructDoseHistory", () => {
       bands,
       [intake({ takenAt: at(8, 30), scheduledFor: at(7, 0) })],
       nowEvening,
+      null,
     );
     expect(rows.find((r) => r.timeOfDay === "07:00")?.status).toBe(
       "taken_late",
@@ -97,6 +99,7 @@ describe("reconstructDoseHistory", () => {
       bands,
       [intake({ takenAt: at(11, 29), scheduledFor: at(7, 0) })],
       nowEvening,
+      null,
     );
     const adhoc = rows.find((r) => r.kind === "ad_hoc");
     expect(adhoc?.status).toBe("ad_hoc");
@@ -109,6 +112,7 @@ describe("reconstructDoseHistory", () => {
       bands,
       [intake({ skipped: true, scheduledFor: at(7, 0) })],
       nowEvening,
+      null,
     );
     expect(rows.find((r) => r.timeOfDay === "07:00")?.status).toBe("skipped");
   });
@@ -118,13 +122,14 @@ describe("reconstructDoseHistory", () => {
       bands,
       [intake({ autoMissed: true, scheduledFor: at(7, 0) })],
       nowEvening,
+      null,
     );
     expect(rows.find((r) => r.timeOfDay === "07:00")?.status).toBe("missed");
   });
 
   it("marks a future slot upcoming, not missed", () => {
     const earlyMorning = at(5, 0); // before every slot's miss cutoff
-    const rows = reconstructDoseHistory(bands, [], earlyMorning);
+    const rows = reconstructDoseHistory(bands, [], earlyMorning, null);
     expect(rows.find((r) => r.timeOfDay === "07:00")?.status).toBe("upcoming");
     expect(rows.find((r) => r.timeOfDay === "19:00")?.status).toBe("upcoming");
   });
@@ -137,6 +142,7 @@ describe("reconstructDoseHistory", () => {
         intake({ id: "b", takenAt: at(7, 20), scheduledFor: at(7, 0) }),
       ],
       nowEvening,
+      null,
     );
     expect(rows.find((r) => r.timeOfDay === "07:00")?.status).toBe(
       "taken_on_time",
@@ -159,6 +165,7 @@ describe("reconstructDoseHistory", () => {
         bands,
         [intake({ scheduledFor: at(7, 0) })],
         at(8, 30),
+        null,
       );
       const morning = rows.find((r) => r.timeOfDay === "07:00");
       expect(morning?.status).toBe("upcoming");
@@ -172,6 +179,7 @@ describe("reconstructDoseHistory", () => {
         bands,
         [intake({ scheduledFor: at(7, 0) })],
         at(12, 0),
+        null,
       );
       expect(rows.find((r) => r.timeOfDay === "07:00")?.status).toBe("missed");
     });
@@ -195,6 +203,7 @@ describe("reconstructDoseHistory", () => {
         weeklyBands,
         [intake({ scheduledFor: weeklyAt })],
         twoDaysLater,
+        null,
       );
       expect(rows).toHaveLength(1);
       expect(rows[0].status).toBe("upcoming");
@@ -210,6 +219,7 @@ describe("reconstructDoseHistory", () => {
         morningOnly,
         [intake({ scheduledFor: at(19, 0) })],
         at(14, 0),
+        null,
       );
       expect(rows.filter((r) => r.kind === "ad_hoc")).toHaveLength(0);
       expect(rows.map((r) => r.timeOfDay)).toEqual(["07:00"]);
@@ -221,6 +231,7 @@ describe("reconstructDoseHistory", () => {
         morningOnly,
         [intake({ skipped: true, scheduledFor: at(19, 0) })],
         at(14, 0),
+        null,
       );
       expect(rows.filter((r) => r.kind === "ad_hoc")).toHaveLength(1);
     });
@@ -231,6 +242,7 @@ describe("reconstructDoseHistory", () => {
         bands,
         [intake({ autoMissed: true, scheduledFor: at(7, 0) })],
         at(8, 30),
+        null,
       );
       expect(rows.find((r) => r.timeOfDay === "07:00")?.status).toBe("missed");
     });
@@ -249,6 +261,7 @@ describe("reconstructDoseHistory", () => {
         bands,
         [intake({ takenAt: at(13, 0), scheduledFor: at(7, 0), pinned: true })],
         nowEvening,
+        null,
       );
       const morning = rows.find((r) => r.timeOfDay === "07:00");
       expect(morning?.status).toBe("taken_late");
@@ -264,6 +277,7 @@ describe("reconstructDoseHistory", () => {
         bands,
         [intake({ takenAt: at(7, 30), scheduledFor: at(7, 0), pinned: true })],
         nowEvening,
+        null,
       );
       const morning = rows.find((r) => r.timeOfDay === "07:00");
       expect(morning?.status).toBe("taken_on_time");
@@ -275,6 +289,7 @@ describe("reconstructDoseHistory", () => {
         bands,
         [intake({ takenAt: at(9, 0), scheduledFor: at(7, 0), pinned: true })],
         nowEvening,
+        null,
       );
       expect(rows.find((r) => r.timeOfDay === "07:00")?.status).toBe(
         "taken_late",
@@ -294,6 +309,7 @@ describe("reconstructDoseHistory", () => {
           }),
         ],
         nowEvening,
+        null,
       );
       const morning = rows.find((r) => r.timeOfDay === "07:00");
       expect(morning?.intake?.id).toBe("pin");
@@ -315,6 +331,7 @@ describe("reconstructDoseHistory", () => {
           }),
         ],
         nowEvening,
+        null,
       );
       expect(rows.find((r) => r.timeOfDay === "07:00")?.status).toBe("skipped");
       const adhoc = rows.filter((r) => r.kind === "ad_hoc");
@@ -332,6 +349,7 @@ describe("reconstructDoseHistory", () => {
           }),
         ],
         nowEvening,
+        null,
       );
       const adhoc = rows.filter((r) => r.kind === "ad_hoc");
       expect(adhoc).toHaveLength(1);
@@ -345,6 +363,7 @@ describe("reconstructDoseHistory", () => {
         bands,
         [intake({ takenAt: at(9, 0), scheduledFor: at(9, 0), pinned: true })],
         nowEvening,
+        null,
       );
       const adhoc = rows.filter((r) => r.kind === "ad_hoc");
       expect(adhoc).toHaveLength(1);
@@ -364,6 +383,7 @@ describe("reconstructDoseHistory", () => {
         bands,
         [intake({ takenAt: t, scheduledFor: t, pinned: true })],
         nowEvening,
+        null,
       );
       const adhoc = rows.filter((r) => r.kind === "ad_hoc");
       expect(adhoc).toHaveLength(1);
@@ -381,6 +401,7 @@ describe("reconstructDoseHistory", () => {
         bands,
         [intake({ takenAt: at(11, 29), scheduledFor: at(7, 0) })],
         nowEvening,
+        null,
       );
       const adhoc = rows.find((r) => r.kind === "ad_hoc");
       expect(adhoc?.nearestSlot?.timeOfDay).toBe("07:00");
@@ -394,6 +415,7 @@ describe("reconstructDoseHistory", () => {
         bands,
         [intake({ takenAt: at(12, 45), scheduledFor: at(7, 0) })],
         nowEvening,
+        null,
       );
       const adhoc = rows.find((r) => r.kind === "ad_hoc");
       expect(adhoc?.nearestSlot?.timeOfDay).toBe("07:00");
@@ -408,6 +430,7 @@ describe("reconstructDoseHistory", () => {
           intake({ id: "b", takenAt: at(7, 20), scheduledFor: at(7, 0) }),
         ],
         nowEvening,
+        null,
       );
       const adhoc = rows.find((r) => r.kind === "ad_hoc");
       expect(adhoc?.intake?.id).toBe("b");
@@ -421,6 +444,7 @@ describe("reconstructDoseHistory", () => {
         morningOnly,
         [intake({ skipped: true, scheduledFor: at(19, 0) })],
         at(14, 0),
+        null,
       );
       const adhoc = rows.find((r) => r.kind === "ad_hoc");
       expect(adhoc).toBeDefined();
@@ -458,6 +482,7 @@ describe("reconstructDoseHistory", () => {
       bands,
       [intake({ id: "x", takenAt: at(13, 0), scheduledFor: at(13, 0) })],
       nowEvening,
+      null,
     );
     const times = rows.map((r) => r.at.getTime());
     expect(times).toEqual([...times].sort((a, b) => a - b));
@@ -492,5 +517,119 @@ describe("suggestNearestSlot fallback cap", () => {
       () => false,
     );
     expect(near?.timeOfDay).toBe("09:00");
+  });
+});
+
+/**
+ * #1028 — a medication created between its 07:00 and 19:00 slots. The 07:00
+ * slot predates it: it shows only when a recorded dose claims it, and a
+ * pending or auto-missed placeholder on it never reads as missed or as an
+ * off-schedule row.
+ */
+describe("reconstructDoseHistory — slots before the medication existed (#1028)", () => {
+  const createdAt = at(12, 0);
+  const statusRows = (rows: ReturnType<typeof reconstructDoseHistory>) =>
+    rows.map((r) => [r.kind, r.timeOfDay, r.status, r.intake?.id ?? null]);
+
+  it("omits an unclaimed pre-creation slot and keeps the later one", () => {
+    const rows = reconstructDoseHistory(bands, [], nowEvening, createdAt);
+    expect(statusRows(rows)).toEqual([["slot", "19:00", "missed", null]]);
+  });
+
+  it("drops an auto-missed placeholder on a pre-creation slot", () => {
+    const rows = reconstructDoseHistory(
+      bands,
+      [intake({ id: "placeholder", scheduledFor: at(7, 0), autoMissed: true })],
+      nowEvening,
+      createdAt,
+    );
+    expect(statusRows(rows)).toEqual([["slot", "19:00", "missed", null]]);
+  });
+
+  it("drops a pending placeholder on a pre-creation slot", () => {
+    const rows = reconstructDoseHistory(
+      bands,
+      [intake({ id: "pending", scheduledFor: at(7, 0) })],
+      nowEvening,
+      createdAt,
+    );
+    expect(statusRows(rows)).toEqual([["slot", "19:00", "missed", null]]);
+  });
+
+  it("drops an auto-missed placeholder whose pre-creation slot was not minted", () => {
+    const rows = reconstructDoseHistory(
+      bands,
+      [intake({ id: "orphan", scheduledFor: at(3, 0), autoMissed: true })],
+      nowEvening,
+      createdAt,
+    );
+    expect(rows.some((r) => r.intake?.id === "orphan")).toBe(false);
+  });
+
+  it("materialises a pre-creation slot a take claims by its stored slot instant", () => {
+    const rows = reconstructDoseHistory(
+      bands,
+      [intake({ id: "t", scheduledFor: at(7, 0), takenAt: at(7, 0) })],
+      nowEvening,
+      createdAt,
+    );
+    expect(statusRows(rows)).toEqual([
+      ["slot", "07:00", "taken_on_time", "t"],
+      ["slot", "19:00", "missed", null],
+    ]);
+  });
+
+  it("materialises a pre-creation slot a take claims by band membership", () => {
+    // Stored as an unanchored take (scheduledFor === takenAt), late.
+    const rows = reconstructDoseHistory(
+      bands,
+      [intake({ id: "t", scheduledFor: at(9, 30), takenAt: at(9, 30) })],
+      nowEvening,
+      createdAt,
+    );
+    expect(statusRows(rows)[0]).toEqual(["slot", "07:00", "taken_late", "t"]);
+  });
+
+  it("materialises a pre-creation slot a pin or a skip claims", () => {
+    const pinned = reconstructDoseHistory(
+      bands,
+      [
+        intake({
+          id: "p",
+          scheduledFor: at(7, 0),
+          takenAt: at(11, 30),
+          pinned: true,
+        }),
+      ],
+      nowEvening,
+      createdAt,
+    );
+    expect(statusRows(pinned)[0]).toEqual(["slot", "07:00", "taken_late", "p"]);
+
+    const skipped = reconstructDoseHistory(
+      bands,
+      [intake({ id: "s", scheduledFor: at(7, 0), skipped: true })],
+      nowEvening,
+      createdAt,
+    );
+    expect(statusRows(skipped)[0]).toEqual(["slot", "07:00", "skipped", "s"]);
+  });
+
+  it("does not offer an absent pre-creation slot as due-context", () => {
+    // A take far outside every band, before the creation.
+    const rows = reconstructDoseHistory(
+      bands,
+      [intake({ id: "x", scheduledFor: at(1, 0), takenAt: at(1, 0) })],
+      nowEvening,
+      createdAt,
+    );
+    const adHoc = rows.find((r) => r.intake?.id === "x");
+    expect(adHoc?.kind).toBe("ad_hoc");
+    expect(adHoc?.nearestSlot?.timeOfDay).not.toBe("07:00");
+  });
+
+  it("treats every band as expected when no floor is given", () => {
+    const rows = reconstructDoseHistory(bands, [], nowEvening, null);
+    expect(rows.map((r) => r.timeOfDay)).toEqual(["07:00", "19:00"]);
   });
 });
