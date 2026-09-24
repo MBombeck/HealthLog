@@ -107,10 +107,14 @@ export function complianceCacheKey(
  * Slot rows contribute to `expected` / `expectedCount` (the day's due-slot
  * count): a taken slot adds to `taken` and its timing bucket; a missed slot
  * stays uncounted in `taken`; a skipped slot lands in `skipped`; an upcoming
- * slot is still due but not yet acted on. An ad-hoc row is a real off-schedule
- * take — it counts as `taken` AND adds its own `expected` slot (so the
- * heatmap's `missed = expected − taken − skipped` math stays non-negative) and
- * reads on-time (a logged dose colours green).
+ * slot is still due but not yet acted on. An ad-hoc row with a taken time is
+ * a real off-schedule take — it counts as `taken` AND adds its own `expected`
+ * slot (so the heatmap's `missed = expected − taken − skipped` math stays
+ * non-negative) and reads on-time (a logged dose colours green). An ad-hoc row
+ * without a taken time is an orphaned skip or auto-miss on an instant that is
+ * no slot of the schedule: it records no dose, so it never counts as taken. A
+ * skip still reads as skipped; an orphaned auto-miss has no slot to have
+ * missed and counts nothing, as it does in the rate.
  */
 function bucketLedgerRow(
   entry: DailyComplianceEntry,
@@ -145,12 +149,19 @@ function bucketLedgerRow(
       entry.expectedCount++;
       break;
     case "ad_hoc":
-      // An off-schedule take: a real taken dose with no scheduled slot. Count
-      // it as taken + its own expected slot so the heatmap missed math holds.
-      entry.expected++;
-      entry.expectedCount++;
-      entry.taken++;
-      entry.onTime++;
+      if (row.intake?.takenAt) {
+        // An off-schedule take: a real taken dose with no scheduled slot.
+        // Count it as taken + its own expected slot so the heatmap missed
+        // math holds.
+        entry.expected++;
+        entry.expectedCount++;
+        entry.taken++;
+        entry.onTime++;
+      } else if (row.intake?.skipped) {
+        entry.expected++;
+        entry.expectedCount++;
+        entry.skipped++;
+      }
       break;
   }
 }
