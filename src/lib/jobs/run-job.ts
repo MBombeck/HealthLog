@@ -28,6 +28,7 @@ import {
   type SerializedJobOutcome,
 } from "./job-outcome";
 import { reportWorkerError } from "./report-worker-error";
+import { observeJob } from "./job-observer";
 
 /** A converted handler: it says what it did instead of just finishing. */
 export type JobHandler<T> = (jobs: Job<T>[]) => Promise<JobOutcome>;
@@ -80,7 +81,13 @@ export function runJob<J>(
   handler: (jobs: J[]) => Promise<JobOutcome>,
 ): (jobs: J[]) => Promise<SerializedJobOutcome> {
   return async (jobs: J[]): Promise<SerializedJobOutcome> => {
-    const outcome = await handler(jobs);
+    // Observed, so a long run, an expiry and a cut-off leave a line in the
+    // log naming the queue and how far it got (see `job-observer.ts`).
+    const outcome = await observeJob(
+      queue,
+      jobs as ReadonlyArray<{ id?: string; expireInSeconds?: number }>,
+      () => handler(jobs),
+    );
     if (outcome.ok) return serializeJobOutcome(outcome);
 
     const failure = new JobFailure(queue, outcome.reason, outcome.cause);
