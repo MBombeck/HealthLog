@@ -47,6 +47,7 @@ import {
   TRACKED_INTAKE_EVENT_WHERE,
   TRACKED_INTAKE_WHERE,
 } from "@/lib/medications/intake-tracking";
+import { liveEraStartsByMedication } from "@/lib/medications/scheduling/live-era";
 
 export interface MedsTodayDueCandidate {
   medicationId: string;
@@ -198,11 +199,8 @@ export async function buildMedsTodayBlock(
     if (list) list.push(mark);
     else resolvedSlotsByMedId.set(e.medicationId, [mark]);
   }
-  const eraStartByMedId = new Map<string, Date>();
-  for (const f of eraFloors) {
-    if (f._max.validUntil)
-      eraStartByMedId.set(f.medicationId, f._max.validUntil);
-  }
+  // The live era start per medication (see `live-era.ts`).
+  const eraStartByMedId = liveEraStartsByMedication(eraFloors);
 
   const dueCandidates: MedsTodayDueCandidate[] = [];
   for (const m of medications) {

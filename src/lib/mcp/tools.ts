@@ -73,6 +73,7 @@ import { listTargetsBySource } from "@/lib/links";
 import { encounterKindEnum } from "@/lib/validations/encounters";
 import type { McpAuthContext } from "./auth";
 import { dueSchedules } from "@/lib/medications/intake-tracking";
+import { liveEraStartsByMedication } from "@/lib/medications/scheduling/live-era";
 
 /**
  * Tool annotations (MCP 2025-11-25). The cloud connectors REQUIRE these on every
@@ -1532,11 +1533,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         if (list) list.push(mark);
         else resolvedSlotsByMedId.set(e.medicationId, [mark]);
       }
-      const eraStartByMedId = new Map<string, Date>();
-      for (const f of eraFloors) {
-        if (f._max.validUntil)
-          eraStartByMedId.set(f.medicationId, f._max.validUntil);
-      }
+      // The live era start per medication (see `live-era.ts`).
+      const eraStartByMedId = liveEraStartsByMedication(eraFloors);
 
       const rows = medications.map((m) => {
         const display = computeDisplayDue({

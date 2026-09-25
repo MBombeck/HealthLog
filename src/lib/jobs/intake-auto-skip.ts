@@ -67,6 +67,10 @@ import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
 import { normaliseDoseWindows } from "@/lib/medications/scheduling/worker-helpers";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import {
+  LIVE_ERA_REVISION_ARGS,
+  liveEraStart,
+} from "@/lib/medications/scheduling/live-era";
 
 export const INTAKE_AUTO_SKIP_QUEUE = "intake-auto-skip";
 
@@ -249,16 +253,24 @@ export async function runIntakeAutoSkipPass(
       schedules: {
         select: { rrule: true, rollingIntervalDays: true, doseWindows: true },
       },
+      scheduleRevisions: LIVE_ERA_REVISION_ARGS,
     },
   });
 
   // Group medications by their derived delay so one `updateMany` covers
   // each distinct cutoff instead of one query per medication.
-  const medsByDelay = new Map<number, Array<{ id: string; createdAt: Date }>>();
+  const medsByDelay = new Map<
+    number,
+    Array<{ id: string; createdAt: Date; eraStart: Date | null }>
+  >();
   for (const medication of medications) {
     const delayMs = medicationAutoMissDelayMs(medication.schedules);
     const group = medsByDelay.get(delayMs) ?? [];
-    group.push({ id: medication.id, createdAt: medication.createdAt });
+    group.push({
+      id: medication.id,
+      createdAt: medication.createdAt,
+      eraStart: liveEraStart(medication.scheduleRevisions),
+    });
     medsByDelay.set(delayMs, group);
   }
 
@@ -272,9 +284,22 @@ export async function runIntakeAutoSkipPass(
         scheduledFor: { lt: new Date(nowMs - delayMs) },
         // Per medication, only slots from its creation on: a placeholder
         // for a slot before it was never an expected dose (see above).
+        //
+        // And only slots the schedule in force at the time expected: a
+        // placeholder anchored before the live era start but minted after it
+        // came from the NEW schedule projected back over the part of the
+        // day that belonged to the previous era (or to none, while intake
+        // tracking was off). Earlier placeholders minted before the switch
+        // were real expectations of the old era and still resolve.
         OR: group.map((m) => ({
           medicationId: m.id,
           scheduledFor: { gte: m.createdAt },
+          ...(m.eraStart && {
+            NOT: {
+              scheduledFor: { lt: m.eraStart },
+              createdAt: { gte: m.eraStart },
+            },
+          }),
         })),
       },
       // `syncVersion` bumps so delta-sync clients pick up the terminal

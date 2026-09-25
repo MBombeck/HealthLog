@@ -33,6 +33,7 @@ import {
   isRecordOnly,
   scheduleWireFields,
 } from "@/lib/medications/intake-tracking";
+import { liveEraStartsByMedication } from "@/lib/medications/scheduling/live-era";
 
 export type MedicationsListResult = Array<Record<string, unknown>>;
 
@@ -164,11 +165,8 @@ export async function buildMedicationsList(
     else resolvedSlotsByMedId.set(e.medicationId, [mark]);
   }
 
-  const eraStartByMedId = new Map<string, Date>();
-  for (const f of eraFloors) {
-    if (f._max.validUntil)
-      eraStartByMedId.set(f.medicationId, f._max.validUntil);
-  }
+  // The live era start per medication (see `live-era.ts`).
+  const eraStartByMedId = liveEraStartsByMedication(eraFloors);
 
   const lastTakenAtByMedicationId = Object.fromEntries(
     latestIntakes.map((entry) => [
