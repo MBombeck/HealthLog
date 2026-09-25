@@ -1,5 +1,211 @@
 # Changelog
 
+## [1.39.1] — 2026-09-25
+
+Medication history stops counting misses from before a medication existed,
+and large accounts can run their nightly jobs, export and restore again. A
+restore now runs in the background with progress. New: a procedure
+history, medications kept as a record without tracking intake, and
+readings from home-automation bridges marked as coming from an external
+device.
+
+### Added
+
+- **Keep a medication as a record.** Every medication has a new Track
+  intake switch at the top of its Schedule tab and on the last page of the
+  medication form. With it off, the medication keeps its dose, start and
+  end dates and schedule, and you can still read and change them, but
+  nothing is due: no reminder on any channel, no dose on the doses card or
+  in the today list, no Taken and Skip buttons. It is left out of
+  adherence on the medication card, the dashboard, the doctor report and
+  in the Coach, and the list marks it "Record only". Doses you logged
+  before stay in its history. Switched back on, it is tracked from that
+  moment and the days it was off never count as missed. Every medication
+  starts with tracking on. Thanks to @Cnote43 for #1033.
+- **A history of procedures and surgeries.** A visit can be of the new
+  kind "Procedure or surgery", with a body site in your own words and an
+  optional side (left, right or both). The body site is stored encrypted.
+  Checkups has a third tab, Procedures, listing every procedure newest
+  first, with a search by body site that also looks at the reason, so an
+  operation recorded earlier as a general visit still turns up. An
+  existing visit can be switched to the new kind without typing anything
+  again. The doctor report has a new Surgical history section covering
+  your whole history; the standard selection includes it, while a
+  selection you saved earlier keeps what you chose. A share link shows it
+  when the link includes it. Thanks to @Cnote43 for #1025.
+- **Sleep stages can be sent by name.** A bridge such as Tasker or Home
+  Assistant can post one stage to `POST /api/measurements` with
+  `type: "SLEEP_DURATION"`, a `sleepStage` of `IN_BED`, `ASLEEP`,
+  `AWAKE`, `CORE`, `DEEP` or `REM`, and either `startDate` and `endDate`
+  or `measuredAt` (the end) and `value` (minutes). It is stored and
+  deduplicated like the stages the iPhone app sends, and a repeat answers
+  `200` with `status: duplicate`. Sent with the ingest token, the stage is
+  stored with the source `EXTERNAL`. Thanks to @ocurero for #972.
+- **Long background jobs show up in the app log.** A job that runs for
+  more than a minute writes a line naming its queue when it finishes, and
+  one every two minutes while it runs, with how far it has got and how
+  much memory the app uses. A job past its time limit writes a warning,
+  and after a restart the log names every job the restart cut off.
+- **Out-of-range upload entries say which limit applied.** An entry in
+  `/api/measurements/batch` skipped as `value_out_of_range` now carries
+  `convertedValue` and `range` (`min`, `max`, `unit`), so a value sent as
+  a fraction where a percentage was expected is easy to spot.
+- **A rejected measurement upload names its reason.** The validation
+  `422` from `/api/measurements/batch` carries
+  `meta.errorCode: "measurement.batch.invalid"`, so a client can tell the
+  batch will never be accepted as sent.
+
+- **Units per dose like 1½.** Units per dose used to take a whole number
+  or one of ¼, ⅓, ½, ⅔ and ¾, so one and a half tablets could not be
+  saved. Any value above 0 and up to 100 with up to four decimal places
+  now works, for the medication, for a single dose time and for the
+  packaging settings on the supply tab, which before could not be saved
+  for a medication taken as half a tablet. The form keeps its buttons and
+  adds Other, which reads 1.5, 1,5, 1 1/2 or 1½ and shows what will be
+  saved. The card shows 1½. Thanks to @gesus14 for asking in #1034.
+
+### Changed
+
+- **Readings sent with the ingest token are marked as coming from an
+  external device.** They used to be stored as manually entered, so later
+  nobody could tell a reading from the scale from one typed in by hand.
+  They now carry the source `EXTERNAL`, show an "External device" badge
+  and can be picked out with the source filter in the measurements list.
+  You can still correct them. A request that names any `source` at all is
+  refused with `422`; the server decides the source from the token, and
+  the Home Assistant example sends none. Readings pushed before this
+  update stay manual, because nothing tells them apart. On a day with both
+  a typed and a bridged reading, the daily totals, charts, health score
+  and doctor report count the typed one; before, both counted and could
+  inflate a running total. A re-push of entries sent before the update can
+  create duplicates once. Thanks to @Antiheld86 for #892.
+- **A restore runs in the background.** Restoring a large account takes a
+  few minutes, and a reverse proxy that closes a request after 60 seconds
+  (nginx does by default) showed an error while the restore finished on
+  the server. After you confirm a restore, the backups page shows the
+  current step and how many readings have been written, and the progress
+  survives leaving or reloading the page. The account shows its current
+  data until the restored data is written in one go. Only one restore per
+  account runs at a time. A failure says why and what to do next, and the
+  backup stays on the list so you can start again without uploading the
+  file. A restore interrupted by a server restart before its data is
+  written starts again once by itself; a second interruption is left for
+  you to restart. A failure after the data is written, while charts are
+  rebuilt, is never run again: the data is restored and the charts catch
+  up by the next night.
+- **A job that runs out of time says more on the admin page.** It names
+  how long the job had and that it was either too slow for that limit or
+  the app restarted while it ran, instead of only "job timed out".
+- **Backups of several hundred megabytes can be uploaded.** The admin page
+  compresses the file before sending it, `.json.gz` files are accepted as
+  they are, and the limit is 512 MB. The off-host restore script can write
+  a compressed file for this.
+
+### Fixed
+
+- **Medication history before a medication was added.** If you added a
+  medication at 4 pm and then logged the 2 pm dose, "Last 90 days" showed
+  it as off-schedule and due at the evening slot, and listed a morning slot
+  from before the medication existed. The dose now counts for its own slot,
+  and slots from before you added the medication appear only if you logged
+  something for them. The adherence rate, the calendar, the doctor report
+  and the Coach follow the same rule; the doctor report and the Coach
+  used to count those earlier slots as missed. The morning slot no longer
+  turns into a forgotten dose a day later and breaks your miss-free
+  streak, and migration `0350` puts back the ones already marked that way.
+  Thanks to @sreeramachandramurthy for the report and the screenshots
+  (#1028).
+- **A portable restore keeps when a medication was created.** It used to
+  date every medication to the day of the restore, and missed doses in the
+  restored history dropped out of the adherence rate. Backups exported
+  from 1.39.1 on carry the date. For older ones the restore uses the
+  earliest date the backup records for that medication, such as its first
+  dose or the start of its first schedule, and never a date after the
+  restore.
+- **The adherence calendar no longer counts a skipped or missed entry
+  that belongs to no scheduled time as a dose taken.**
+- **A dose attributed to a slot by hand reads the same as one logged
+  there.** A dose taken shortly before the slot's window counted as on
+  time on its own but as late once attributed. The confirmation now says
+  what attributing does.
+- **Nightly jobs finish on large accounts.** On an account with more than
+  a million readings, for example after a multi-year Apple Health import,
+  the nightly clean-up of heart-rate, HRV, blood-oxygen, step and energy
+  samples and the backup could fail with "job timed out": the clean-up
+  loaded a type's whole history into memory and the backup built its whole
+  copy in memory, and the app ran out of memory and restarted. The
+  clean-up now works one day at a time with about a third of the memory,
+  and when it runs short of time it stops and continues where it left off.
+  The backup saves its copy piece by piece and keeps the previous one if a
+  run fails. On an account of 1.25 million readings in the standard 1 GB
+  container both finish in a few minutes while the app keeps answering.
+  Thanks to @mills1975 for the report (#1031).
+- **Large accounts can export and restore.** Downloading the full export
+  of such an account, with or without a passphrase, ran the app out of
+  memory, and its weekly backup could not be restored, opened or
+  downloaded; the admin page wrongly said it "could not be decrypted".
+  Exports now stream out as they are written and backups are read in small
+  parts. On the same account the export takes about 25 seconds and a
+  restore about two and a half minutes, and the restored readings match
+  the backup.
+- **An Apple Health export import needs much less memory.** An import of
+  300,000 readings held 12 MB instead of 53 MB and ran in 35 seconds
+  instead of 55. After an import, chart summaries are rebuilt only for the
+  period the import covered.
+- **Smaller memory fixes for large accounts.** The half-hourly check for
+  personal records no longer loads a type's whole history. Rotating the
+  encryption key no longer reads every measurement at once, and its report
+  counts only rows that hold encrypted data. The one-time repair of step,
+  energy and distance records can no longer lose them when interrupted.
+  A retried off-host backup continues with the accounts it has not reached
+  yet.
+- **The cycle calendar shows intercourse and other logged entries.** A day
+  with intercourse carries a small diamond, explained in the legend. A
+  pregnancy, progesterone or ovulation result, contraception, spotting, a
+  temperature, a mucus or cervix reading or a note shows as a small ring,
+  so such a day no longer looks empty. Screen readers name each entry.
+  Someone who sees your cycle through a shared account sees these marks
+  only if they could already open the day. Thanks to @Nazza01 for the
+  report and the screenshot (#1032).
+- **Editing a vaccination dose no longer removes its documents.** Ever
+  since documents could be linked to doses (1.37.3), a dose opened for
+  editing did not know its linked documents: it showed "Link a document"
+  with nothing under it, and saving any change, such as a batch number,
+  quietly unlinked every document. That was our bug. The dose now shows
+  its linked pages and saving leaves them in place.
+- **Document links are easier to tell apart and harder to remove by
+  accident.** On a document, each linked dose or visit shows its date, so
+  three COVID-19 doses no longer read as three identical chips. Clicking a
+  chip opens that dose, visit, condition or document; only the small x
+  removes a link, and you can undo right after. Thanks to @Cnote43 for
+  writing up every step (#1024).
+- **`/api/user/profile` reports the time zone the server uses.** When the
+  stored zone is unusable it shows the instance default, as `/api/auth/me`
+  already did.
+- **`upsert_failed` in the nutrient and cycle uploads means "send it
+  again".** The API description said to drop such an entry. A retry with
+  the same `Idempotency-Key` now writes again instead of getting the
+  earlier failure back.
+
+### Upgrade notes
+
+- Take a database backup before upgrading.
+- Migrations: `0346` adds the `EXTERNAL` measurement source, `0347` adds
+  the table that tracks restore jobs, `0349` adds body site and side to
+  visits, `0350` returns misses wrongly stamped on slots before a
+  medication's creation to pending (nothing is deleted), and `0351` adds
+  the Track intake switch, on for every medication.
+- `POST /api/admin/backups/{id}/restore` now answers `202` with a `jobId`
+  and a `statusUrl`. `GET /api/admin/backups/restores/{jobId}` returns the
+  job's status and result, `GET /api/admin/backups/restores` lists recent
+  restores, and a second restore of the same account answers `409` with
+  `meta.errorCode: backup.restore.active`.
+- Everything else in the API is additive, and iPhone app 1.0.3 and 1.0.4
+  keep working. For a record-only medication the shipped app stops
+  reminding, but its card still shows Taken and Skip, and a schedule
+  change made on the phone is not applied. Change that schedule on the
+  web for now.
+
 ## [1.39.0] — 2026-09-25
 
 AI is optional everywhere now: your data loads whatever the AI settings
