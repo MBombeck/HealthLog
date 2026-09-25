@@ -101,34 +101,6 @@ export type MedicationTreatmentClass =
   (typeof MEDICATION_TREATMENT_CLASS_VALUES)[number];
 
 /**
- * v1.16.12 (#316) — fractional dosing. A dose may consume a sub-unit
- * fraction of a tablet (split pills). The UI offers a CURATED set of
- * common fractions (¼ ⅓ ½ ⅔ ¾), stored as their decimal value; thirds
- * are inexact in decimal (⅓ ≈ 0.3333, ⅔ ≈ 0.6667) — the @db.Decimal(10,4)
- * column and the runway floor absorb the sub-0.0001 drift. Whole numbers
- * 1..100 (multi-tablet doses, the pre-v1.16.12 contract) stay valid
- * alongside the fractions. One source of truth — the UI selector and the
- * tests import this set so the allowed values can never drift from the
- * validator.
- */
-export const UNITS_PER_DOSE_FRACTIONS = [
-  0.25, 0.3333, 0.5, 0.6667, 0.75,
-] as const;
-export const UNITS_PER_DOSE_MAX_WHOLE = 100;
-
-export function isSupportedUnitsPerDose(value: number): boolean {
-  if ((UNITS_PER_DOSE_FRACTIONS as readonly number[]).includes(value)) {
-    return true;
-  }
-  return (
-    Number.isInteger(value) && value >= 1 && value <= UNITS_PER_DOSE_MAX_WHOLE
-  );
-}
-
-export const UNITS_PER_DOSE_MESSAGE =
-  "unitsPerDose must be a whole number 1–100 or a supported fraction (¼, ⅓, ½, ⅔, ¾)";
-
-/**
  * v1.6.0 — route of administration. Decoupled from `treatmentClass`:
  * the injection-site picker surfaces for any `INJECTION` dose, and a
  * one-time injection is `oneShot: true` + `deliveryForm: "INJECTION"`.

@@ -82,6 +82,10 @@ import {
   organDonorStatusSchema,
 } from "@/lib/validations/emergency-profile";
 import { REMINDER_EVENT_SOURCES } from "@/lib/measurement-reminders/satisfy";
+import {
+  UNITS_PER_DOSE_MESSAGE,
+  isSupportedUnitsPerDose,
+} from "@/lib/medications/units-per-dose";
 
 export const BACKUP_SCHEMA_VERSION = "2" as const;
 const LEGACY_BACKUP_SCHEMA_VERSION = "1" as const;
@@ -132,6 +136,15 @@ const measurementSchema = z
   })
   .passthrough();
 
+// #1034 — the restore applies the write routes' units-per-dose rule. A
+// backup carries the Decimal column as a string ("1.5"); a hand-authored
+// file may carry a number. `Number("")` is 0, so an empty string fails too.
+const unitsPerDoseValue = z
+  .union([z.string(), z.number()])
+  .refine((v) => isSupportedUnitsPerDose(Number(v)), {
+    message: UNITS_PER_DOSE_MESSAGE,
+  });
+
 const medicationScheduleSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -141,7 +154,7 @@ const medicationScheduleSchema = z
     dose: z.string().nullable().optional(),
     // #219 — per-schedule units per dose. Serialised as a Decimal string in a
     // DR file (or a number in a hand-authored one); NULL means inherit.
-    unitsPerDose: z.union([z.string(), z.number()]).nullable().optional(),
+    unitsPerDose: unitsPerDoseValue.nullable().optional(),
     daysOfWeek: z.string().nullable().optional(),
     timesOfDay: z.array(z.string()).optional(),
     reminderGraceMinutes: z.number().int().nullable().optional(),
@@ -321,7 +334,13 @@ const medicationSchema = z
     dose: z.string(),
     treatmentClass: z.enum(MedicationCategory).optional(),
     dosesPerUnit: z.number().int().nullable().optional(),
-    unitsPerDose: z.string().min(1).optional(),
+    unitsPerDose: z
+      .string()
+      .min(1)
+      .refine((v) => isSupportedUnitsPerDose(Number(v)), {
+        message: UNITS_PER_DOSE_MESSAGE,
+      })
+      .optional(),
     active: z.boolean().optional(),
     notificationsEnabled: z.boolean().optional(),
     pausedAt: isoDateTime.nullable().optional(),

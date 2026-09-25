@@ -5,10 +5,9 @@ import { Moon, Sun, Sunrise, Sunset } from "lucide-react";
 import { TimesOfDayChips } from "@/components/medications/scheduling/times-of-day-chips";
 import { DoseWindowEditor } from "@/components/medications/scheduling/dose-window-editor";
 import type { DoseWindowScale } from "@/components/medications/scheduling/dose-window";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UNITS_PER_DOSE_OPTIONS } from "@/components/medications/units-per-dose";
+import { UnitsPerDoseField } from "@/components/medications/units-per-dose-field";
 import { useTranslations } from "@/lib/i18n/context";
 
 import type { StepProps } from "./step1-name";
@@ -141,43 +140,16 @@ export function Step7Times({ payload, applyPartial }: StepProps) {
           <Label id="wizard-schedule-units-label" className="text-sm">
             {t("medications.wizard.steps.step7.unitsOverrideLabel")}
           </Label>
-          <div
-            role="group"
-            aria-labelledby="wizard-schedule-units-label"
-            data-slot="wizard-schedule-units"
-            className="flex flex-wrap gap-1.5"
-          >
-            <Button
-              type="button"
-              size="sm"
-              variant={
-                payload.scheduleUnitsPerDose === "" ? "default" : "outline"
-              }
-              aria-pressed={payload.scheduleUnitsPerDose === ""}
-              className="min-w-10"
-              onClick={() => applyPartial({ scheduleUnitsPerDose: "" })}
-            >
-              {t("medications.wizard.steps.step7.unitsOverrideInherit")}
-            </Button>
-            {UNITS_PER_DOSE_OPTIONS.map((opt) => {
-              const selected = payload.scheduleUnitsPerDose === opt.raw;
-              return (
-                <Button
-                  key={opt.raw}
-                  type="button"
-                  size="sm"
-                  variant={selected ? "default" : "outline"}
-                  aria-pressed={selected}
-                  className="min-w-10 tabular-nums"
-                  onClick={() =>
-                    applyPartial({ scheduleUnitsPerDose: opt.raw })
-                  }
-                >
-                  {opt.label}
-                </Button>
-              );
-            })}
-          </div>
+          <UnitsPerDoseField
+            value={payload.scheduleUnitsPerDose}
+            onChange={(next) => applyPartial({ scheduleUnitsPerDose: next })}
+            labelId="wizard-schedule-units-label"
+            inputId="wizard-schedule-units-other"
+            dataSlot="wizard-schedule-units"
+            inherit={{
+              label: t("medications.wizard.steps.step7.unitsOverrideInherit"),
+            }}
+          />
         </div>
       </div>
     </div>

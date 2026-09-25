@@ -23,7 +23,7 @@ import { apiGet, apiPost } from "@/lib/api/api-fetch";
 import { formatDateTime, formatTime } from "@/lib/format";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { formatDose } from "@/lib/medications/format-dose";
-import { formatUnitsPerDose } from "@/components/medications/units-per-dose";
+import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
 import { getDayOfWeekInTz } from "@/lib/tz/local-day";
 import { type InjectionSiteKey } from "@/lib/medications/injection-sites";
 import { LogInjectionSiteDialog } from "@/components/medications/log-injection-site-dialog";
@@ -198,7 +198,7 @@ export function Glp1MedicationCard({
   highlighted = false,
 }: Glp1MedicationCardProps) {
   const queryClient = useQueryClient();
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   // v1.16.9 — the card reasons in the PROFILE timezone; Berlin stays the
   // last-resort fallback for logged-out mounts and legacy fixtures.
   const { user } = useAuth();
@@ -506,7 +506,7 @@ export function Glp1MedicationCard({
                 {" "}
                 ·{" "}
                 {t("medications.perSlotUnits", {
-                  units: formatUnitsPerDose(schedule.unitsPerDose),
+                  units: formatUnitsPerDose(schedule.unitsPerDose, locale),
                 })}
               </span>
             )}

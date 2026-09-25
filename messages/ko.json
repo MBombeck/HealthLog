@@ -2016,7 +2016,7 @@
         "packagingEdit": "편집",
         "packagingDescription": "1회분에 몇 개를 쓰는지, 새 포장이 보통 몇 개인지 설정해요 — 예를 들어 제조사가 바뀌어 포장 크기가 달라졌을 때요.",
         "packagingUnitsPerDoseLabel": "1회분당 개수",
-        "packagingUnitsPerDoseHelper": "예: 4mg 복용에 2mg 정제 2개 (1–100). 이미 기록된 복용은 그대로예요.",
+        "packagingUnitsPerDoseHelper": "예: 4mg 복용에 2mg 정제 2개, 한 알 반이면 1.5 (0 초과, 100 이하). 이미 기록된 복용은 그대로예요.",
         "packagingDefaultPackLabel": "기본 포장 크기 (개)",
         "packagingDefaultPackHelper": "새 포장을 등록할 때 수량을 미리 채워요 (1–1000). 해당 없으면 비워 두세요.",
         "packagingSuccess": "포장 정보를 저장했어요",
@@ -2214,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "파일에 그 복용에 대한 기록이 없어요 — 응답도 없었고 기록된 것도 없어요",
       "reasonStatusReminderEvent": "행이 미뤄 둔 알림에 관한 내용이라 복용에 대해 알려주는 게 없어요",
       "reasonStatusNotificationNotSent": "행은 알림이 발송되지 않았다는 기록이라 복용이 아니라 앱에 관한 내용이에요"
+    },
+    "unitsPerDoseField": {
+      "other": "기타…",
+      "inputLabel": "1회분 단위 수, 다른 값",
+      "placeholder": "예: 1.5 또는 1 1/2",
+      "invalid": "0보다 크고 100 이하인 숫자를 입력하세요. 예: 1.5 또는 1 1/2",
+      "preview": "1회분당 {value}(으)로 계산돼요"
     }
   },
   "charts": {

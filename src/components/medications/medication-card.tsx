@@ -13,7 +13,7 @@ import { formatDateTime, formatTime } from "@/lib/format";
 import { getDateTimeFormat } from "@/lib/intl/formatter-cache";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { formatDose } from "@/lib/medications/format-dose";
-import { formatUnitsPerDose } from "@/components/medications/units-per-dose";
+import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
 import { reduceCurrentWindowStatus } from "@/lib/medications/window-status";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
 import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
@@ -471,7 +471,7 @@ export function MedicationCard({
                   {" "}
                   ·{" "}
                   {t("medications.perSlotUnits", {
-                    units: formatUnitsPerDose(s.unitsPerDose),
+                    units: formatUnitsPerDose(s.unitsPerDose, locale),
                   })}
                 </span>
               )}

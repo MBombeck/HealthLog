@@ -2016,7 +2016,7 @@
         "packagingEdit": "Bearbeiten",
         "packagingDescription": "Lege fest, wie viele Einheiten eine Dosis verbraucht und wie groß eine neue Packung üblicherweise ist — z. B. nach einem Herstellerwechsel mit anderer Blistergröße.",
         "packagingUnitsPerDoseLabel": "Einheiten pro Dosis",
-        "packagingUnitsPerDoseHelper": "Z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis (1–100). Bereits erfasste Einnahmen bleiben unverändert.",
+        "packagingUnitsPerDoseHelper": "Z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis oder 1,5 für anderthalb (über 0, bis 100). Bereits erfasste Einnahmen bleiben unverändert.",
         "packagingDefaultPackLabel": "Standard-Packungsgröße (Einheiten)",
         "packagingDefaultPackHelper": "Vorbefüllung beim Erfassen neuer Packungen (1–1000). Leer lassen, wenn keine üblich ist.",
         "packagingSuccess": "Packungsangaben gespeichert",
@@ -2214,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "die Datei hält zu dieser Dosis nichts fest — niemand hat reagiert und nichts wurde eingetragen",
       "reasonStatusReminderEvent": "die Zeile betrifft eine verschobene Erinnerung und sagt nichts über die Dosis",
       "reasonStatusNotificationNotSent": "die Zeile hält fest, dass keine Benachrichtigung gesendet wurde — das betrifft die App, nicht die Dosis"
+    },
+    "unitsPerDoseField": {
+      "other": "Andere…",
+      "inputLabel": "Einheiten pro Dosis, anderer Wert",
+      "placeholder": "z. B. 1,5 oder 1 1/2",
+      "invalid": "Gib eine Zahl über 0 und bis 100 ein, zum Beispiel 1,5 oder 1 1/2.",
+      "preview": "Zählt als {value} pro Dosis"
     }
   },
   "charts": {

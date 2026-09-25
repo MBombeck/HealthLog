@@ -1,33 +1,20 @@
 /**
- * v1.16.12 (#316) — fractional-dosing UI mapping.
+ * Units-per-dose buttons ↔ server rule.
  *
- * The wizard's fraction buttons must never offer a value the server's
- * validator would 422. This pins that contract: the selector's fraction
- * values equal {@link UNITS_PER_DOSE_FRACTIONS}, every offered option
- * passes {@link isSupportedUnitsPerDose}, the glyph formatting round-trips,
- * and a legacy / non-curated value is preserved as an extra option.
+ * The editor's buttons must never offer a value the server's validator
+ * would 422, and a value outside the buttons is recognised as such so the
+ * editor opens the "Other" field for it instead of dropping it.
  */
 import { describe, expect, it } from "vitest";
 
-import {
-  UNITS_PER_DOSE_FRACTIONS,
-  isSupportedUnitsPerDose,
-} from "@/lib/validations/medication";
+import { isSupportedUnitsPerDose } from "@/lib/medications/units-per-dose";
 import {
   UNITS_PER_DOSE_OPTIONS,
-  UNITS_PER_DOSE_FRACTION_VALUES,
-  formatUnitsPerDose,
   formatUnitCount,
-  unitsPerDoseOptionsFor,
+  isCuratedUnitsPerDose,
 } from "@/components/medications/units-per-dose";
 
-describe("units-per-dose selector ↔ validator alignment", () => {
-  it("offers exactly the validator's fraction set", () => {
-    expect([...UNITS_PER_DOSE_FRACTION_VALUES].sort()).toEqual(
-      [...UNITS_PER_DOSE_FRACTIONS].sort(),
-    );
-  });
-
+describe("units-per-dose buttons ↔ validator alignment", () => {
   it("offers only server-accepted values", () => {
     for (const opt of UNITS_PER_DOSE_OPTIONS) {
       expect(isSupportedUnitsPerDose(opt.value)).toBe(true);
@@ -35,21 +22,33 @@ describe("units-per-dose selector ↔ validator alignment", () => {
       expect(Number(opt.raw)).toBe(opt.value);
     }
   });
+
+  it("labels the fractions with their glyph", () => {
+    expect(UNITS_PER_DOSE_OPTIONS.map((o) => o.label)).toEqual([
+      "¼",
+      "⅓",
+      "½",
+      "⅔",
+      "¾",
+      "1",
+      "2",
+      "3",
+      "4",
+    ]);
+  });
 });
 
-describe("formatUnitsPerDose", () => {
-  it("renders curated fractions as glyphs", () => {
-    expect(formatUnitsPerDose(0.25)).toBe("¼");
-    expect(formatUnitsPerDose(0.3333)).toBe("⅓");
-    expect(formatUnitsPerDose(0.5)).toBe("½");
-    expect(formatUnitsPerDose(0.6667)).toBe("⅔");
-    expect(formatUnitsPerDose(0.75)).toBe("¾");
+describe("isCuratedUnitsPerDose", () => {
+  it("recognises a button value", () => {
+    expect(isCuratedUnitsPerDose("0.5")).toBe(true);
+    expect(isCuratedUnitsPerDose("2")).toBe(true);
   });
 
-  it("renders whole / uncurated values as the plain number", () => {
-    expect(formatUnitsPerDose(1)).toBe("1");
-    expect(formatUnitsPerDose(2)).toBe("2");
-    expect(formatUnitsPerDose(10)).toBe("10");
+  it("does not claim a value only the Other field can hold", () => {
+    expect(isCuratedUnitsPerDose("1.5")).toBe(false);
+    expect(isCuratedUnitsPerDose("10")).toBe(false);
+    expect(isCuratedUnitsPerDose("1,5")).toBe(false);
+    expect(isCuratedUnitsPerDose("")).toBe(false);
   });
 });
 
@@ -61,22 +60,5 @@ describe("formatUnitCount — display rounding", () => {
 
   it("rounds the float noise a third-dose leaves", () => {
     expect(formatUnitCount(29.6667)).toBe(29.67);
-  });
-});
-
-describe("unitsPerDoseOptionsFor", () => {
-  it("returns the curated set for a curated current value", () => {
-    expect(unitsPerDoseOptionsFor("0.5")).toBe(UNITS_PER_DOSE_OPTIONS);
-    expect(unitsPerDoseOptionsFor("2")).toBe(UNITS_PER_DOSE_OPTIONS);
-  });
-
-  it("appends a legacy / non-curated current value so an edit never drops it", () => {
-    const opts = unitsPerDoseOptionsFor("10");
-    expect(opts).toHaveLength(UNITS_PER_DOSE_OPTIONS.length + 1);
-    expect(opts.at(-1)).toEqual({ value: 10, raw: "10", label: "10" });
-  });
-
-  it("ignores an empty / invalid current value", () => {
-    expect(unitsPerDoseOptionsFor("")).toBe(UNITS_PER_DOSE_OPTIONS);
   });
 });

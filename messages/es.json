@@ -2016,7 +2016,7 @@
         "packagingEdit": "Editar",
         "packagingDescription": "Define cuántas unidades consume una dosis y el tamaño habitual de un envase nuevo, p. ej. tras un cambio de fabricante con otro tamaño de blíster.",
         "packagingUnitsPerDoseLabel": "Unidades por dosis",
-        "packagingUnitsPerDoseHelper": "P. ej. dos comprimidos de 2 mg para una dosis de 4 mg (1–100). Las tomas ya registradas no cambian.",
+        "packagingUnitsPerDoseHelper": "P. ej. dos comprimidos de 2 mg para una dosis de 4 mg, o 1,5 para uno y medio (más de 0, hasta 100). Las tomas ya registradas no cambian.",
         "packagingDefaultPackLabel": "Tamaño de envase predeterminado (unidades)",
         "packagingDefaultPackHelper": "Rellena la cantidad al registrar envases nuevos (1–1000). Déjalo vacío si no aplica.",
         "packagingSuccess": "Datos del envase guardados",
@@ -2214,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "el archivo no registra nada sobre esa dosis: nadie respondió y nada se anotó",
       "reasonStatusReminderEvent": "la fila trata de un recordatorio postergado, que no dice nada sobre la dosis",
       "reasonStatusNotificationNotSent": "la fila registra que no se envió ninguna notificación, lo cual habla de la aplicación y no de la dosis"
+    },
+    "unitsPerDoseField": {
+      "other": "Otro…",
+      "inputLabel": "Unidades por dosis, otro valor",
+      "placeholder": "p. ej., 1,5 o 1 1/2",
+      "invalid": "Introduce un número mayor que 0 y hasta 100, por ejemplo 1,5 o 1 1/2.",
+      "preview": "Cuenta como {value} por dosis"
     }
   },
   "charts": {

@@ -23029,9 +23029,10 @@ components:
           minimum: 1
           maximum: 1000
         unitsPerDose:
-          description: Inventory units consumed per dose. A whole number 1–100 (e.g. 2 tablets of 2 mg for a 4 mg dose) or a
-            supported fraction for a split pill (¼ / ⅓ / ½ / ⅔ / ¾). Default 1. The intake consumption hook decrements
-            this many units per taken dose; dose-derived readouts divide unit counts by it.
+          description: "Inventory units consumed per dose: above 0 and at most 100, with at most 4 decimal places. A whole number
+            (2 tablets of 2 mg for a 4 mg dose), a split pill (0.5, thirds as 0.3333 / 0.6667), a whole number plus a
+            fraction (1.5, 2.25) or a measured amount (0.8). Default 1. The intake consumption hook decrements this many
+            units per taken dose; dose-derived readouts divide unit counts by it."
           type: number
         reorderLeadDays:
           description: Per-medication reorder lead time in days (0–60). The low-stock alert fires the supply early enough to
@@ -23184,10 +23185,10 @@ components:
           type: string
           maxLength: 50
         unitsPerDose:
-          description: Per-schedule inventory units consumed per dose (#219). A whole number 1-100 or a supported fraction (¼ / ⅓
-            / ½ / ⅔ / ¾) for a split pill. Omitted / NULL means the schedule inherits `Medication.unitsPerDose`. Lets
-            one medication decrement a different tablet count at different times of day (a whole tablet in the morning,
-            a half at noon).
+          description: Per-schedule inventory units consumed per dose (#219). Above 0 and at most 100 with at most 4 decimal
+            places (1, 0.5, 1.5). Omitted / NULL means the schedule inherits `Medication.unitsPerDose`. Lets one
+            medication decrement a different tablet count at different times of day (a whole tablet in the morning, a
+            half at noon).
           type: number
         daysOfWeek:
           description: Legacy day-of-week filter (0=Sunday..6=Saturday). v1.5 reads new writes through `rrule` first; this field
@@ -23366,9 +23367,9 @@ components:
               maximum: 1000
             - type: "null"
         unitsPerDose:
-          description: Inventory units consumed per dose — a whole number 1–100 or a supported split-pill fraction (¼ / ⅓ / ½ / ⅔
-            / ¾). The intake consumption hook decrements this many units per taken dose; already-stamped intake events
-            keep their recorded consumption.
+          description: "Inventory units consumed per dose: above 0 and at most 100, with at most 4 decimal places (1, 0.5, 1.5,
+            2.25). The intake consumption hook decrements this many units per taken dose; already-stamped intake events
+            keep their recorded consumption."
           type: number
         reorderLeadDays:
           description: Per-medication reorder lead time in days (0–60). null clears the override and reverts to the user-level
@@ -42577,8 +42578,10 @@ components:
         unitsPerDose:
           type: number
           description: v1.16.10 — inventory units one dose consumes (e.g. 2 tablets of 2 mg for a 4 mg dose). v1.16.12 — may be a
-            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. Default 1. The intake consumption
-            hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.
+            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. v1.39.1 (#1034) — any value above
+            0 and at most 100 with at most 4 decimal places, so also a whole number plus a fraction (1.5, 2.25, 1.3333)
+            or a measured amount (0.8). Default 1. The intake consumption hook decrements this many units per taken
+            dose; dose-derived readouts divide unit counts by it.
         reorderLeadDays:
           anyOf:
             - type: integer
@@ -42833,8 +42836,10 @@ components:
         unitsPerDose:
           type: number
           description: v1.16.10 — inventory units one dose consumes (e.g. 2 tablets of 2 mg for a 4 mg dose). v1.16.12 — may be a
-            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. Default 1. The intake consumption
-            hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.
+            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. v1.39.1 (#1034) — any value above
+            0 and at most 100 with at most 4 decimal places, so also a whole number plus a fraction (1.5, 2.25, 1.3333)
+            or a measured amount (0.8). Default 1. The intake consumption hook decrements this many units per taken
+            dose; dose-derived readouts divide unit counts by it.
         reorderLeadDays:
           anyOf:
             - type: integer
@@ -72142,8 +72147,10 @@ components:
         unitsPerDose:
           type: number
           description: v1.16.10 — inventory units one dose consumes (e.g. 2 tablets of 2 mg for a 4 mg dose). v1.16.12 — may be a
-            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. Default 1. The intake consumption
-            hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.
+            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. v1.39.1 (#1034) — any value above
+            0 and at most 100 with at most 4 decimal places, so also a whole number plus a fraction (1.5, 2.25, 1.3333)
+            or a measured amount (0.8). Default 1. The intake consumption hook decrements this many units per taken
+            dose; dose-derived readouts divide unit counts by it.
         reorderLeadDays:
           anyOf:
             - type: integer

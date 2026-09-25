@@ -2016,7 +2016,7 @@
         "packagingEdit": "Modifier",
         "packagingDescription": "Définis combien d’unités consomme une dose et la taille habituelle d’une nouvelle boîte — p. ex. après un changement de fabricant avec une autre taille de plaquette.",
         "packagingUnitsPerDoseLabel": "Unités par dose",
-        "packagingUnitsPerDoseHelper": "P. ex. deux comprimés de 2 mg pour une dose de 4 mg (1–100). Les prises déjà enregistrées restent inchangées.",
+        "packagingUnitsPerDoseHelper": "P. ex. deux comprimés de 2 mg pour une dose de 4 mg, ou 1,5 pour un et demi (plus de 0, jusqu’à 100). Les prises déjà enregistrées restent inchangées.",
         "packagingDefaultPackLabel": "Taille de boîte par défaut (unités)",
         "packagingDefaultPackHelper": "Préremplit la quantité lors de l’enregistrement de nouvelles boîtes (1–1000). Laisse vide si aucune ne s’applique.",
         "packagingSuccess": "Conditionnement enregistré",
@@ -2214,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "le fichier ne consigne rien sur cette dose : personne n'a répondu et rien n'a été noté",
       "reasonStatusReminderEvent": "la ligne concerne un rappel reporté, ce qui ne dit rien de la dose",
       "reasonStatusNotificationNotSent": "la ligne consigne qu'aucune notification n'a été envoyée, ce qui parle de l'application et non de la dose"
+    },
+    "unitsPerDoseField": {
+      "other": "Autre…",
+      "inputLabel": "Unités par dose, autre valeur",
+      "placeholder": "p. ex. 1,5 ou 1 1/2",
+      "invalid": "Saisissez un nombre supérieur à 0 et jusqu’à 100, par exemple 1,5 ou 1 1/2.",
+      "preview": "Compte comme {value} par dose"
     }
   },
   "charts": {

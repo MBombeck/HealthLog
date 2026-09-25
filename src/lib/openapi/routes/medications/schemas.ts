@@ -152,7 +152,7 @@ export const medicationResource = z
     unitsPerDose: z
       .number()
       .describe(
-        "v1.16.10 — inventory units one dose consumes (e.g. 2 tablets of 2 mg for a 4 mg dose). v1.16.12 — may be a split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. Default 1. The intake consumption hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.",
+        "v1.16.10 — inventory units one dose consumes (e.g. 2 tablets of 2 mg for a 4 mg dose). v1.16.12 — may be a split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. v1.39.1 (#1034) — any value above 0 and at most 100 with at most 4 decimal places, so also a whole number plus a fraction (1.5, 2.25, 1.3333) or a measured amount (0.8). Default 1. The intake consumption hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.",
       ),
     reorderLeadDays: z
       .number()

@@ -123,3 +123,22 @@ describe("scheduleSchema doseWindows", () => {
     expect(r.success).toBe(true);
   });
 });
+
+// #1034 — the per-slot override follows the medication-level rule.
+describe("scheduleSchema unitsPerDose", () => {
+  it("accepts a whole number plus a fraction and a free decimal", () => {
+    for (const v of [1.5, 2.25, 1.3333, 0.8]) {
+      expect(
+        scheduleSchema.safeParse(baseSchedule({ unitsPerDose: v })).success,
+      ).toBe(true);
+    }
+  });
+
+  it("refuses zero, above 100, and more than four decimal places", () => {
+    for (const v of [0, 100.5, 1.23456]) {
+      expect(
+        scheduleSchema.safeParse(baseSchedule({ unitsPerDose: v })).success,
+      ).toBe(false);
+    }
+  });
+});

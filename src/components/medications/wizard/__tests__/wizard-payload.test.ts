@@ -481,6 +481,68 @@ describe("buildCreateBody", () => {
     expect(hydrated.schedules[0].unitsPerDose).toBe("0.5");
   });
 
+  it("reads a typed units-per-dose value with a comma, a slash or a glyph (#1034)", () => {
+    const p: WizardPayload = {
+      ...withCadence("daily"),
+      treatmentRow: "bloodPressure",
+      timesOfDay: ["08:00"],
+      startsOn: new Date(Date.UTC(2026, 4, 28)),
+      endsOn: null,
+    };
+    // parseFloat("1,5") is 1; the body must carry 1.5.
+    expect(buildCreateBody({ ...p, unitsPerDose: "1,5" }).unitsPerDose).toBe(
+      1.5,
+    );
+    expect(buildCreateBody({ ...p, unitsPerDose: "1 1/2" }).unitsPerDose).toBe(
+      1.5,
+    );
+    expect(buildCreateBody({ ...p, unitsPerDose: "2¼" }).unitsPerDose).toBe(
+      2.25,
+    );
+    // The per-slot override goes through the same reader.
+    expect(
+      buildCreateBody({ ...p, scheduleUnitsPerDose: "1,5" }).schedules[0]
+        .unitsPerDose,
+    ).toBe(1.5);
+    // Edit-hydrate keeps a mixed value.
+    const hydrated = hydrateWizardPayload({
+      id: "m1",
+      name: "Foo",
+      dose: "5 mg",
+      category: "BLOOD_PRESSURE",
+      unitsPerDose: 1.5,
+      notificationsEnabled: true,
+      startsOn: null,
+      endsOn: null,
+      oneShot: false,
+      schedules: [],
+    });
+    expect(hydrated.unitsPerDose).toBe("1.5");
+  });
+
+  it("holds the dose and times steps while a typed units-per-dose value is invalid (#1034)", () => {
+    const p: WizardPayload = {
+      ...withCadence("daily"),
+      name: "Foo",
+      doseAmount: "5",
+      treatmentRow: "bloodPressure",
+      timesOfDay: ["08:00"],
+      startsOn: new Date(Date.UTC(2026, 4, 28)),
+      endsOn: null,
+    };
+    expect(validateStep({ ...p, unitsPerDose: "1,5" }, 3)).toBe(true);
+    expect(validateStep({ ...p, unitsPerDose: "abc" }, 3)).toBe(false);
+    expect(validateStep({ ...p, unitsPerDose: "0" }, 3)).toBe(false);
+    expect(validateStep({ ...p, unitsPerDose: "101" }, 3)).toBe(false);
+    expect(validateStep({ ...p, unitsPerDose: "" }, 3)).toBe(false);
+    // Step 7: blank means "inherit"; anything typed must be valid.
+    expect(validateStep({ ...p, scheduleUnitsPerDose: "" }, 7)).toBe(true);
+    expect(validateStep({ ...p, scheduleUnitsPerDose: "1 1/2" }, 7)).toBe(true);
+    expect(validateStep({ ...p, scheduleUnitsPerDose: "1,2,3" }, 7)).toBe(
+      false,
+    );
+  });
+
   it("emits DIABETES category for the diabetes row", () => {
     const p: WizardPayload = {
       ...withCadence("daily"),
