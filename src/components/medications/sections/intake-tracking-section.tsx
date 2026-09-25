@@ -16,7 +16,11 @@ import { toast } from "sonner";
 
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/lib/i18n/context";
-import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
+import {
+  invalidateKeys,
+  medicationDependentKeys,
+  refetchInactiveDailyReads,
+} from "@/lib/query-keys";
 import { apiPut } from "@/lib/api/api-fetch";
 
 const SWITCH_ID = "medication-detail-track-intake-switch";
@@ -43,6 +47,9 @@ export function IntakeTrackingBody({
     try {
       await apiPut(`/api/medications/${medicationId}`, { trackIntake: next });
       await invalidateKeys(queryClient, medicationDependentKeys);
+      // The doses card and the Today digest read this medication's due
+      // state; they are usually unmounted here, so refetch them now.
+      await refetchInactiveDailyReads(queryClient);
       toast.success(
         next
           ? t("medications.trackIntake.enabledToast")
