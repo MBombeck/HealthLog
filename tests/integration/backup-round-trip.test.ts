@@ -823,6 +823,10 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       byteSize: documentBytes.byteLength,
       contentEncrypted,
       contentCodec: "binary2",
+      // Imported (#1038): the source key has to survive the trip, or a
+      // re-run of the importer after a restore stores the page twice.
+      sourceSystem: "PAPERLESS",
+      sourceId: "4711",
     },
   });
 
@@ -1505,6 +1509,10 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     const vaultDocument = await prisma.inboundDocument.findFirstOrThrow({
       where: { userId: OWNER_ID },
     });
+    expect({
+      sourceSystem: vaultDocument.sourceSystem,
+      sourceId: vaultDocument.sourceId,
+    }).toEqual({ sourceSystem: "PAPERLESS", sourceId: "4711" });
     const threads = await prisma.coachConversation.findMany({
       where: { userId: OWNER_ID },
       orderBy: { createdAt: "asc" },

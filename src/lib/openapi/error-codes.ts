@@ -312,7 +312,10 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "source-priority.body.invalid_json",
       "source-priority.body.invalid_shape",
     ],
-    tokens: ["tokens.measurements.ceiling_reached"],
+    tokens: [
+      "tokens.documents.ceiling_reached",
+      "tokens.measurements.ceiling_reached",
+    ],
     vaccination: [
       "vaccination.booster-invalid",
       "vaccination.booster-no-antigen",

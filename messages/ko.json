@@ -6140,7 +6140,14 @@
       "scopeNote": "본인 기록에 새 측정값을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값은 외부 기기에서 온 것으로 표시되니 나중에 구분할 수 있고, 언제든 고칠 수 있어요.",
       "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요."
     },
-    "tokenMintMovedDescription": "토큰은 쓰이는 곳에서 발급돼요. 측정값은 위에서, 특정 약은 그 약의 API 엔드포인트에서 만들 수 있어요.",
+    "documentsToken": {
+      "title": "문서 토큰",
+      "description": "Paperless-ngx, Papra 또는 가져오기 스크립트가 문서함에 문서를 추가할 수 있도록 토큰을 만들어요.",
+      "detail": "토큰은 한 번만 표시돼요.",
+      "scopeNote": "본인 문서함에 새 문서를 추가하는 것만 할 수 있어요. 목록을 보거나, 열거나, 내려받거나, 고치거나 지울 수 없고, 다른 토큰을 만들 수도 없어요. 파일이 저장됐는지만 알 수 있고, 어떻게 정리했는지는 알 수 없어요.",
+      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요."
+    },
+    "tokenMintMovedDescription": "토큰은 쓰이는 곳에서 발급돼요. 측정값과 문서는 위에서, 특정 약은 그 약의 API 엔드포인트에서 만들 수 있어요.",
     "tokenNamePlaceholder": "토큰 이름 (예: iPhone 단축어)",
     "tokenCreated": "토큰을 만들었어요 — 지금 복사하세요! 다시 보여주지 않아요.",
     "tokenCopy": "토큰 복사",
@@ -9984,6 +9991,9 @@
       "noConditions": "질환에 연결되지 않음",
       "previewUnavailable": "이 파일 형식은 미리보기를 지원하지 않아요",
       "uploadedMeta": "추가 {date} · {size}",
+      "importedFrom": "{system}에서 가져옴",
+      "importedFromWithId": "{system}에서 가져옴 · ID {id}",
+      "sourceOther": "다른 시스템",
       "share": "공유",
       "labValuesLink": "검사 수치 {count}개 보기",
       "visitsLabel": "연결된 진료",

@@ -89,6 +89,8 @@ function doc(
     lastIndexAttemptAt: null,
     lastIndexOutcome: null,
     hasThumbnail: false,
+    sourceSystem: null,
+    sourceId: null,
     createdAt: "2026-08-01T10:00:00.000Z",
     updatedAt: "2026-08-01T10:00:00.000Z",
     facts: [fact()],

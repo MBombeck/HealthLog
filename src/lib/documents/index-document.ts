@@ -383,9 +383,22 @@ export async function indexLoadedDocument(
 export async function indexDocumentContent(
   userId: string,
   documentId: string,
+  options: { localOnly?: boolean } = {},
 ): Promise<IndexOutcome> {
   const document = await loadOwnedDocument(userId, documentId);
   if (!document) return { indexed: false, reason: "not-found" };
-  const provider = await resolveIndexProvider(userId);
+  // v1.39.2 (#1038) — an import that asked for `aiRead=defer` gets the
+  // provider-free text layer only. An empty context is the same shape "no
+  // provider configured" already produces, so the tree falls straight to the
+  // local path without resolving a chain it would not use.
+  const provider: ResolvedIndexProvider = options.localOnly
+    ? {
+        chain: [],
+        pick: null,
+        consentOk: false,
+        dailyCap: 0,
+        costOwner: "operator",
+      }
+    : await resolveIndexProvider(userId);
   return indexLoadedDocument(userId, document, provider);
 }

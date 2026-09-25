@@ -6140,7 +6140,14 @@
       "scopeNote": "It can only add new readings to your own record — it cannot read your data, change or delete anything, or create another token. Readings are marked as coming from an external device, so you can tell them apart later, and you can still correct them yourself.",
       "createFailed": "The token could not be created. Please try again."
     },
-    "tokenMintMovedDescription": "Tokens are issued where they apply: above for measurements, or in a medication's own API endpoint for that one medication.",
+    "documentsToken": {
+      "title": "Document tokens",
+      "description": "Mint a token so Paperless-ngx, Papra or the import script can add documents to your vault.",
+      "detail": "The token is shown once.",
+      "scopeNote": "It can only add new documents to your own vault. It cannot list, open, download, change or delete anything, and it cannot create another token. What it gets back is whether a file was stored, not how you filed it.",
+      "createFailed": "The token could not be created. Please try again."
+    },
+    "tokenMintMovedDescription": "Tokens are issued where they apply: above for measurements and documents, or in a medication's own API endpoint for that one medication.",
     "tokenNamePlaceholder": "Token name (e.g., iPhone Shortcut)",
     "tokenCreated": "Token created — copy it now! It won't be shown again.",
     "tokenCopy": "Copy token",
@@ -9984,6 +9991,9 @@
       "noConditions": "Not linked to a condition",
       "previewUnavailable": "No inline preview for this file type",
       "uploadedMeta": "Added {date} · {size}",
+      "importedFrom": "Imported from {system}",
+      "importedFromWithId": "Imported from {system} · ID {id}",
+      "sourceOther": "another system",
       "share": "Share",
       "labValuesLink": "View {count} lab values",
       "visitsLabel": "Belongs to visit",

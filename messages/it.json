@@ -6140,7 +6140,14 @@
       "scopeNote": "Può soltanto aggiungere nuove misurazioni alla tua cartella: non può leggere i tuoi dati, modificare o eliminare nulla, né creare un altro token. Le misurazioni vengono contrassegnate come provenienti da un dispositivo esterno, così le riconosci in seguito, e puoi comunque correggerle.",
       "createFailed": "Non è stato possibile creare il token. Riprova."
     },
-    "tokenMintMovedDescription": "I token vengono emessi dove si applicano: qui sopra per le misurazioni, oppure nell'endpoint API di un farmaco per quel singolo farmaco.",
+    "documentsToken": {
+      "title": "Token per documenti",
+      "description": "Crea un token perché Paperless-ngx, Papra o lo script di importazione aggiungano documenti al tuo archivio.",
+      "detail": "Il token viene mostrato una sola volta.",
+      "scopeNote": "Può soltanto aggiungere nuovi documenti al tuo archivio. Non può elencare, aprire, scaricare, modificare o eliminare nulla, né creare un altro token. Riceve solo l'informazione se un file è stato salvato, non come l'hai archiviato.",
+      "createFailed": "Non è stato possibile creare il token. Riprova."
+    },
+    "tokenMintMovedDescription": "I token vengono emessi dove si applicano: qui sopra per le misurazioni e i documenti, oppure nell'endpoint API di un farmaco per quel singolo farmaco.",
     "tokenNamePlaceholder": "Nome del token (ad es. Comando rapido iPhone)",
     "tokenCreated": "Token creato — copialo ora! Non verrà mostrato di nuovo.",
     "tokenCopy": "Copia token",
@@ -9984,6 +9991,9 @@
       "noConditions": "Non collegato a una patologia",
       "previewUnavailable": "Nessuna anteprima integrata per questo tipo di file",
       "uploadedMeta": "Aggiunto il {date} · {size}",
+      "importedFrom": "Importato da {system}",
+      "importedFromWithId": "Importato da {system} · ID {id}",
+      "sourceOther": "un altro sistema",
       "share": "Condividi",
       "labValuesLink": "Vedi {count} valori di laboratorio",
       "visitsLabel": "Appartiene all'appuntamento",

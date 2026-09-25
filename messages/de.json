@@ -6140,7 +6140,14 @@
       "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen — deine Daten nicht lesen, nichts ändern oder löschen und kein weiteres Token erstellen. Werte werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst, und lassen sich jederzeit korrigieren.",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut."
     },
-    "tokenMintMovedDescription": "Tokens werden dort ausgestellt, wo sie gelten: oben für Messwerte, oder im API-Endpoint eines Medikaments für genau dieses Medikament.",
+    "documentsToken": {
+      "title": "Dokument-Tokens",
+      "description": "Erzeuge ein Token, damit Paperless-ngx, Papra oder das Import-Skript Dokumente in deine Ablage legen können.",
+      "detail": "Das Token wird nur einmal angezeigt.",
+      "scopeNote": "Es kann ausschließlich neue Dokumente in deine eigene Ablage legen. Es kann nichts auflisten, öffnen, herunterladen, ändern oder löschen und kein weiteres Token erstellen. Zurück bekommt es nur, ob eine Datei gespeichert wurde, nicht wie du sie abgelegt hast.",
+      "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut."
+    },
+    "tokenMintMovedDescription": "Tokens werden dort ausgestellt, wo sie gelten: oben für Messwerte und Dokumente, oder im API-Endpoint eines Medikaments für genau dieses Medikament.",
     "tokenNamePlaceholder": "Token-Name (z.B. iPhone Shortcut)",
     "tokenCreated": "Token erstellt — kopiere ihn jetzt! Er wird nicht erneut angezeigt.",
     "tokenCopy": "Token kopieren",
@@ -9984,6 +9991,9 @@
       "noConditions": "Mit keiner Erkrankung verknüpft",
       "previewUnavailable": "Keine Inline-Vorschau für diesen Dateityp",
       "uploadedMeta": "Hinzugefügt am {date} · {size}",
+      "importedFrom": "Importiert aus {system}",
+      "importedFromWithId": "Importiert aus {system} · ID {id}",
+      "sourceOther": "einem anderen System",
       "share": "Teilen",
       "labValuesLink": "{count} Laborwerte ansehen",
       "visitsLabel": "Gehört zu Termin",

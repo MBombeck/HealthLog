@@ -23,6 +23,8 @@ import {
   documentUpdateSchema,
   inboundConfirmSchema,
   inboundFactEditSchema,
+  DOCUMENT_SOURCE_ID_MAX,
+  DOCUMENT_SOURCE_SYSTEMS,
   DOCUMENT_SUMMARY_STATES,
   INBOUND_DOCUMENT_KINDS,
   INBOUND_DOCUMENT_STATUSES,
@@ -204,13 +206,15 @@ const inboundDocument = z
       ])
       .nullable(),
     hasThumbnail: z.boolean(),
+    sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS).nullable(),
+    sourceId: z.string().nullable(),
     createdAt: z.string(),
     updatedAt: z.string(),
   })
   .meta({
     id: "InboundDocument",
     description:
-      "A stored document. The raw bytes are stored encrypted at rest and never returned; this is the metadata + staging summary. `status` is STORED for a freshly uploaded file (no extraction run). `title` is the user label (plaintext); `documentDate` is the user filing date; `reportDate` is the model-transcribed date (null until extraction runs). `servingClass` says how `/original` delivers the file — render inline (`inline`) or download-only (`attachment`); render/download by it, never by MIME guess. `hasContentIndex` is true when the document has a content-search index (auto-indexed on upload); `contentIndexSource` says how that index was produced — `vision` means an AI provider read the original, the other values are provider-free local extractions, and it is null when `hasContentIndex` is false. `lastIndexAttemptAt` is when the most recent index attempt finished (successful or not; null when none ran); `lastIndexOutcome` says why that attempt produced no index, and is null when the attempt succeeded or none ran. `hasThumbnail` is true when a preview thumbnail has been rendered in the background (fetch it from `/api/documents/inbound/{id}/thumbnail`); false means no preview yet or an unsupported type — show a placeholder. Treat an unknown `kind` value as OTHER when decoding.",
+      "A stored document. The raw bytes are stored encrypted at rest and never returned; this is the metadata + staging summary. `status` is STORED for a freshly uploaded file (no extraction run). `title` is the user label (plaintext); `documentDate` is the user filing date; `reportDate` is the model-transcribed date (null until extraction runs). `servingClass` says how `/original` delivers the file — render inline (`inline`) or download-only (`attachment`); render/download by it, never by MIME guess. `hasContentIndex` is true when the document has a content-search index (auto-indexed on upload); `contentIndexSource` says how that index was produced — `vision` means an AI provider read the original, the other values are provider-free local extractions, and it is null when `hasContentIndex` is false. `lastIndexAttemptAt` is when the most recent index attempt finished (successful or not; null when none ran); `lastIndexOutcome` says why that attempt produced no index, and is null when the attempt succeeded or none ran. `hasThumbnail` is true when a preview thumbnail has been rendered in the background (fetch it from `/api/documents/inbound/{id}/thumbnail`); false means no preview yet or an unsupported type — show a placeholder. `sourceSystem` / `sourceId` say where an imported document came from and its id there (both null for a document added in HealthLog); treat an unknown `sourceSystem` as OTHER when decoding. Treat an unknown `kind` value as OTHER when decoding.",
   });
 
 const inboundDocumentDetail = inboundDocument
@@ -262,11 +266,23 @@ const confirmResponse = z
 
 const kindValues = [...INBOUND_DOCUMENT_KINDS];
 
+const documentUploadReceipt = z
+  .object({
+    id: z.string().nullable(),
+    duplicate: z.boolean(),
+    deleted: z.literal(true).optional(),
+  })
+  .meta({
+    id: "DocumentUploadReceipt",
+    description:
+      "What an upload answers instead of the stored row. A narrow `documents:write` token always gets this shape (`duplicate: false` on 201, `true` on 200): a credential that can only add files learns whether a file is stored, not its title, filename or links. Every caller gets it when the upload's source key belongs to a document the owner DELETED (`deleted: true`, 200, nothing stored); `id` is the tombstoned row, or null once the 30-day purge removed it.",
+  });
+
 // Shared by the POST 200 (duplicate) and 201 (created) responses — the
 // envelope id must be registered exactly once.
-const inboundDocumentEnvelope = dataEnvelope(
-  inboundDocument,
-  "InboundDocumentEnvelope",
+const documentUploadEnvelope = dataEnvelope(
+  z.union([inboundDocument, documentUploadReceipt]),
+  "DocumentUploadEnvelope",
 );
 
 export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
@@ -387,7 +403,9 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Store a document (no extraction)",
       description:
-        'STORE-ONLY upload. Stores the raw document ENCRYPTED at rest with `status: STORED` and runs NO extraction — provider-free, no AI consent / budget / egress. A file is always filable, even with no document-scan provider configured. `multipart/form-data`: a `file` plus optional `title`, `kind`, `documentDate` (YYYY-MM-DD), and repeated `episodeIds` form fields (pre-link to the caller\'s illness/condition episodes). Accepted types (magic-byte sniffed, never the wire Content-Type): PDF/JPEG/PNG/WebP/GIF render inline; Office (docx/xlsx/pptx/doc/xls/ppt), text/CSV/Markdown/RTF, TIFF, HEIC/HEIF, XML/JSON are stored verbatim and served download-only. HEIC is stored as-is but attachment-only — prefer transcoding to JPEG client-side for inline preview parity. Error contract: `413` with `meta.reason = "fileTooLarge"` (+ `maxFileBytes`) or `"quotaExceeded"` (+ `quotaBytes`, `usedBytes`); `415` with `meta.reason = "unsupportedType"`. A same-user duplicate (same bytes) returns 200 + `meta.duplicate: true` with the existing row — not an error. `Idempotency-Key` honoured. Read `GET /api/documents/inbound/usage` for the effective limits before offering an upload. AI extraction is a separate opt-in action — see `POST /api/documents/inbound/{id}/extract`.',
+        'STORE-ONLY upload. Stores the raw document ENCRYPTED at rest with `status: STORED` and runs NO extraction — provider-free, no AI consent / budget / egress. A file is always filable, even with no document-scan provider configured. `multipart/form-data`: a `file` plus optional `title`, `kind`, `documentDate` (YYYY-MM-DD), and repeated `episodeIds` form fields (pre-link to the caller\'s illness/condition episodes). Accepted types (magic-byte sniffed, never the wire Content-Type): PDF/JPEG/PNG/WebP/GIF render inline; Office (docx/xlsx/pptx/doc/xls/ppt), text/CSV/Markdown/RTF, TIFF, HEIC/HEIF, XML/JSON are stored verbatim and served download-only. HEIC is stored as-is but attachment-only — prefer transcoding to JPEG client-side for inline preview parity. Error contract: `413` with `meta.reason = "fileTooLarge"` (+ `maxFileBytes`) or `"quotaExceeded"` (+ `quotaBytes`, `usedBytes`); `415` with `meta.reason = "unsupportedType"`. A same-user duplicate (same bytes) returns 200 + `meta.duplicate: true` with the existing row — not an error. `Idempotency-Key` honoured. Read `GET /api/documents/inbound/usage` for the effective limits before offering an upload. AI extraction is a separate opt-in action — see `POST /api/documents/inbound/{id}/extract`.\n\n' +
+        "**Importing from another system (v1.39.2).** Optional `sourceSystem` (`PAPERLESS`, `PAPRA`, `OTHER`) and `sourceId` (its id there, printable, up to 128 characters; needs `sourceSystem`) key the upload. A re-send with a known key is a duplicate: 200 with the live row (`meta.duplicate: true`), or, when the owner DELETED that document, 200 with `data.deleted: true` and `meta.deleted: true` and nothing stored; this holds after the 30-day purge too. `aiRead=defer` holds back automatic AI reading for this upload: the thumbnail and a local text index still run, the summary and lab staging do not, so the document waits for the person to read it deliberately. Absent, behaviour is unchanged.\n\n" +
+        "**Narrow token.** Also reachable with a `documents:write` Bearer (minted at `POST /api/tokens/documents`), and it is the only route that scope reaches. Such a caller draws on a bucket of its own, keyed on the token (default 120 an hour, `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`, clamped 1-1000; the 429 carries `Retry-After` and `X-RateLimit-*`), and gets a `DocumentUploadReceipt` instead of the stored row. A cookie or wildcard caller keeps the 60-an-hour per-user bucket and the full row. With the vault module off the answer is 403 `module.disabled` for every caller.",
       requestBody: {
         required: true,
         content: {
@@ -417,6 +435,18 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                 description:
                   "Optional visit pre-links (repeat the field per id). Every id must be a live visit of the caller; an unknown one refuses the upload rather than dropping the link the person asked for.",
               }),
+              sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS).optional().meta({
+                description:
+                  "Optional. The system an imported document comes from. Shown on the detail view.",
+              }),
+              sourceId: z.string().max(DOCUMENT_SOURCE_ID_MAX).optional().meta({
+                description:
+                  "Optional. The document's id in `sourceSystem`; requires it. Unique per account across live and deleted documents.",
+              }),
+              aiRead: z.enum(["defer"]).optional().meta({
+                description:
+                  "Optional. `defer` holds back automatic AI reading for this upload (local index and thumbnail only).",
+              }),
             }),
           },
         },
@@ -425,18 +455,19 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...idempotentWrite(),
         "200": {
           description:
-            "Duplicate — the same bytes are already stored: the existing row, with `meta.duplicate: true` at the envelope level.",
+            "Duplicate — the same bytes, or the same source key, are already stored: the existing row (a `DocumentUploadReceipt` for a `documents:write` token), with `meta.duplicate: true` at the envelope level. When the source key belongs to a document the owner deleted: a receipt with `deleted: true` and `meta.deleted: true`, nothing stored.",
           content: {
             "application/json": {
-              schema: inboundDocumentEnvelope,
+              schema: documentUploadEnvelope,
             },
           },
         },
         "201": {
-          description: "The stored document.",
+          description:
+            "The stored document (a `DocumentUploadReceipt` for a `documents:write` token).",
           content: {
             "application/json": {
-              schema: inboundDocumentEnvelope,
+              schema: documentUploadEnvelope,
             },
           },
         },

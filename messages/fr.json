@@ -6140,7 +6140,14 @@
       "scopeNote": "Il peut uniquement ajouter de nouvelles mesures à votre propre dossier : il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les mesures sont signalées comme provenant d'un appareil externe, ce qui vous permet de les reconnaître plus tard, et vous pouvez toujours les corriger.",
       "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer."
     },
-    "tokenMintMovedDescription": "Les jetons sont émis là où ils s'appliquent : ci-dessus pour les mesures, ou dans le point de terminaison API d'un médicament pour ce seul médicament.",
+    "documentsToken": {
+      "title": "Jetons de documents",
+      "description": "Créez un jeton pour que Paperless-ngx, Papra ou le script d'import ajoutent des documents à votre coffre.",
+      "detail": "Le jeton n'est affiché qu'une fois.",
+      "scopeNote": "Il peut uniquement ajouter de nouveaux documents à votre propre coffre. Il ne peut rien lister, ouvrir, télécharger, modifier ou supprimer, ni créer un autre jeton. Il apprend seulement si un fichier a été enregistré, pas comment vous l'avez classé.",
+      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer."
+    },
+    "tokenMintMovedDescription": "Les jetons sont émis là où ils s'appliquent : ci-dessus pour les mesures et les documents, ou dans le point de terminaison API d'un médicament pour ce seul médicament.",
     "tokenNamePlaceholder": "Nom du jeton (par exemple Raccourci iPhone)",
     "tokenCreated": "Jeton créé — copiez-le maintenant ! Il ne sera plus affiché.",
     "tokenCopy": "Copier le jeton",
@@ -9984,6 +9991,9 @@
       "noConditions": "Lié à aucune affection",
       "previewUnavailable": "Pas d'aperçu intégré pour ce type de fichier",
       "uploadedMeta": "Ajouté le {date} · {size}",
+      "importedFrom": "Importé depuis {system}",
+      "importedFromWithId": "Importé depuis {system} · ID {id}",
+      "sourceOther": "un autre système",
       "share": "Partager",
       "labValuesLink": "Voir {count} valeurs de laboratoire",
       "visitsLabel": "Rattaché au rendez-vous",

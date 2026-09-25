@@ -2807,10 +2807,11 @@ paths:
         is no GENERIC mint any more — the POST at this exact path issued `["medication:ingest"]` and was removed,
         because that scope reached no ingest route while the pre-fail-closed default let it reach everything else. The
         credentials that work are minted where they are scoped: the per-medication API-endpoint toggle, `POST
-        /api/mcp/tokens` for a connector, and the sibling `POST /api/tokens/measurements` for third-party measurement
-        ingest. And unlike the revoke, this read is NOT gated on the operator's instance-wide API switch: that switch
-        governs the surfaces a token is for, not a token's ability to authenticate, so tokens stay live while it is off
-        and their owner has to be able to see them.
+        /api/mcp/tokens` for a connector, the sibling `POST /api/tokens/measurements` for third-party measurement
+        ingest, and `POST /api/tokens/documents` for document upload from another system. And unlike the revoke, this
+        read is NOT gated on the operator's instance-wide API switch: that switch governs the surfaces a token is for,
+        not a token's ability to authenticate, so tokens stay live while it is off and their owner has to be able to see
+        them.
       responses:
         "200":
           description: The caller's tokens, newest first.
@@ -2906,6 +2907,91 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
           description: Validation failed. The envelope carries every offending issue, not just the first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: More than 10 mints from this account in a minute. Nothing was minted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/tokens/documents:
+    post:
+      tags:
+        - Auth
+      summary: Mint a document-upload token
+      description: >-
+        Mints a Bearer scoped to exactly `documents:write` and audits the mint. THE RESPONSE CARRIES THE RAW TOKEN,
+        once; it is stored as an HMAC and no path re-reveals it.
+
+
+        **What it can do.** `POST /api/documents/inbound` on its owner's own record, and nothing else. It is the door
+        another document system pushes through: a Paperless-ngx workflow posting a newly tagged document, or an import
+        script copying an archive. Uploads through it draw on a bucket of their own, keyed on the token (default 120 an
+        hour, operator-tunable via `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`), and get back a receipt (`id`, `duplicate`, and
+        `deleted` when the source key belongs to a document the owner deleted) rather than the stored row.
+
+
+        **What it cannot do.** List, read, download, preview, edit, delete or bulk-act on a document, reach the
+        document-AI routes, act on a shared record, or mint another token. Every other route names no scope and refuses
+        it 403.
+
+
+        Minting requires a COOKIE SESSION, for the reason the measurement mint gives: a day-lived native access token
+        must not be able to leave behind a year-lived credential. Gated by the operator's instance-wide API switch. Body
+        capped at 16 KiB; 10 mints per user per minute, and at most 10 live document tokens held at once. Tokens appear
+        in `GET /api/tokens` and are revoked at `DELETE /api/tokens/{id}`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDocumentTokenRequest"
+      responses:
+        "201":
+          description: Token minted. The `token` field is the only copy of the secret.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateDocumentTokenEnvelope"
+        "400":
+          description: Body is not parseable JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401": *a1
+        "403":
+          description: The operator has switched the API off instance-wide. Nothing was minted. A Bearer caller is refused 401
+            before the switch is read.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: The account already holds 10 live document tokens (`meta.errorCode` = `tokens.documents.ceiling_reached`).
+            Nothing was minted. Revoke one at `DELETE /api/tokens/{id}`; only live tokens carrying `documents:write`
+            count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: Body exceeds 16 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "415":
+          description: Content-Type is not `application/json`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: Validation failed. The envelope carries every offending issue.
           content:
             application/json:
               schema:
@@ -15572,18 +15658,36 @@ paths:
       tags:
         - Documents
       summary: Store a document (no extraction)
-      description: "STORE-ONLY upload. Stores the raw document ENCRYPTED at rest with `status: STORED` and runs NO extraction
-        — provider-free, no AI consent / budget / egress. A file is always filable, even with no document-scan provider
+      description: >-
+        STORE-ONLY upload. Stores the raw document ENCRYPTED at rest with `status: STORED` and runs NO extraction —
+        provider-free, no AI consent / budget / egress. A file is always filable, even with no document-scan provider
         configured. `multipart/form-data`: a `file` plus optional `title`, `kind`, `documentDate` (YYYY-MM-DD), and
         repeated `episodeIds` form fields (pre-link to the caller's illness/condition episodes). Accepted types
         (magic-byte sniffed, never the wire Content-Type): PDF/JPEG/PNG/WebP/GIF render inline; Office
         (docx/xlsx/pptx/doc/xls/ppt), text/CSV/Markdown/RTF, TIFF, HEIC/HEIF, XML/JSON are stored verbatim and served
         download-only. HEIC is stored as-is but attachment-only — prefer transcoding to JPEG client-side for inline
-        preview parity. Error contract: `413` with `meta.reason = \"fileTooLarge\"` (+ `maxFileBytes`) or
-        `\"quotaExceeded\"` (+ `quotaBytes`, `usedBytes`); `415` with `meta.reason = \"unsupportedType\"`. A same-user
+        preview parity. Error contract: `413` with `meta.reason = "fileTooLarge"` (+ `maxFileBytes`) or
+        `"quotaExceeded"` (+ `quotaBytes`, `usedBytes`); `415` with `meta.reason = "unsupportedType"`. A same-user
         duplicate (same bytes) returns 200 + `meta.duplicate: true` with the existing row — not an error.
         `Idempotency-Key` honoured. Read `GET /api/documents/inbound/usage` for the effective limits before offering an
-        upload. AI extraction is a separate opt-in action — see `POST /api/documents/inbound/{id}/extract`."
+        upload. AI extraction is a separate opt-in action — see `POST /api/documents/inbound/{id}/extract`.
+
+
+        **Importing from another system (v1.39.2).** Optional `sourceSystem` (`PAPERLESS`, `PAPRA`, `OTHER`) and
+        `sourceId` (its id there, printable, up to 128 characters; needs `sourceSystem`) key the upload. A re-send with
+        a known key is a duplicate: 200 with the live row (`meta.duplicate: true`), or, when the owner DELETED that
+        document, 200 with `data.deleted: true` and `meta.deleted: true` and nothing stored; this holds after the 30-day
+        purge too. `aiRead=defer` holds back automatic AI reading for this upload: the thumbnail and a local text index
+        still run, the summary and lab staging do not, so the document waits for the person to read it deliberately.
+        Absent, behaviour is unchanged.
+
+
+        **Narrow token.** Also reachable with a `documents:write` Bearer (minted at `POST /api/tokens/documents`), and
+        it is the only route that scope reaches. Such a caller draws on a bucket of its own, keyed on the token (default
+        120 an hour, `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`, clamped 1-1000; the 429 carries `Retry-After` and
+        `X-RateLimit-*`), and gets a `DocumentUploadReceipt` instead of the stored row. A cookie or wildcard caller
+        keeps the 60-an-hour per-user bucket and the full row. With the vault module off the answer is 403
+        `module.disabled` for every caller.
       parameters:
         - *a6
       requestBody:
@@ -15628,22 +15732,41 @@ paths:
                   type: array
                   items:
                     type: string
+                sourceSystem:
+                  description: Optional. The system an imported document comes from. Shown on the detail view.
+                  type: string
+                  enum:
+                    - PAPERLESS
+                    - PAPRA
+                    - OTHER
+                sourceId:
+                  description: Optional. The document's id in `sourceSystem`; requires it. Unique per account across live and deleted
+                    documents.
+                  type: string
+                  maxLength: 128
+                aiRead:
+                  description: Optional. `defer` holds back automatic AI reading for this upload (local index and thumbnail only).
+                  type: string
+                  enum:
+                    - defer
               required:
                 - file
       responses:
         "200":
-          description: "Duplicate — the same bytes are already stored: the existing row, with `meta.duplicate: true` at the
-            envelope level."
+          description: "Duplicate — the same bytes, or the same source key, are already stored: the existing row (a
+            `DocumentUploadReceipt` for a `documents:write` token), with `meta.duplicate: true` at the envelope level.
+            When the source key belongs to a document the owner deleted: a receipt with `deleted: true` and
+            `meta.deleted: true`, nothing stored."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InboundDocumentEnvelope"
+                $ref: "#/components/schemas/DocumentUploadEnvelope"
         "201":
-          description: The stored document.
+          description: The stored document (a `DocumentUploadReceipt` for a `documents:write` token).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InboundDocumentEnvelope"
+                $ref: "#/components/schemas/DocumentUploadEnvelope"
         "401": *a1
         "409": *a7
         "413":
@@ -21981,6 +22104,21 @@ components:
         permission array is a literal, so no request can widen it. `name` is what the token is listed under — name it
         after the thing you are pasting it into, because that is what you will be reading when you decide whether to
         revoke it. `expiresInDays` defaults to 365."
+    CreateDocumentTokenRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        expiresInDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+      required:
+        - name
+      description: "Mint a document-upload Bearer. No `scope` field: the endpoint mints one shape. `name` is what the token is
+        listed under; name it after the system it is pasted into. `expiresInDays` defaults to 365."
     RegisterRequest:
       type: object
       properties:
@@ -30586,16 +30724,17 @@ components:
                 sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
                 sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
                 source-priority.body.invalid_json, source-priority.body.invalid_shape; tokens —
-                tokens.measurements.ceiling_reached; vaccination — vaccination.booster-invalid,
-                vaccination.booster-no-antigen, vaccination.booster-out-of-scope, vaccination.encounter-not-found,
-                vaccination.identity-required, vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
-                vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
-                workout.batch.too_large; (unprefixed) — about_me_conflict, ai_response_truncated, coach_prefs_conflict,
-                dashboard_layout_conflict, empty_file, health_score_config_conflict, insights_layout_conflict,
-                invalid_base_updated_at, json_carries_no_intake_time, json_not_an_array, medication_layout_conflict,
-                missing_required_columns, modules_conflict, mood_tag_layout_conflict, not_configured,
-                notification_prefs_conflict, oidc_only, private_origin_not_approved, private_origin_not_grantable,
-                rate_limited_self, too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
+                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached; vaccination —
+                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
+                vaccination.encounter-not-found, vaccination.identity-required, vaccination.invalid,
+                vaccination.link.invalid, vaccination.not-found, vaccination.practitioner-not-found; workout —
+                workout.batch.invalid, workout.batch.payload_too_large, workout.batch.too_large; (unprefixed) —
+                about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
+                health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
+                json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
+                modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
+                private_origin_not_approved, private_origin_not_grantable, rate_limited_self, too_many_rows,
+                unreadable_json, upstream_invalid_json, vapid_not_configured"
               type: string
             capability:
               description: "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`,
@@ -35068,6 +35207,19 @@ components:
                 anyOf:
                   - type: string
                   - type: "null"
+              sourceSystem:
+                anyOf:
+                  - type: string
+                    enum:
+                      - PAPERLESS
+                      - PAPRA
+                      - OTHER
+                  - type: "null"
+              sourceId:
+                anyOf:
+                  - type: string
+                    maxLength: 128
+                  - type: "null"
               summary:
                 anyOf:
                   - type: string
@@ -38407,6 +38559,42 @@ components:
         - expiresAt
       additionalProperties: false
       description: The one response that carries a usable measurement-ingest Bearer value.
+    CreateDocumentTokenEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateDocumentTokenResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CreateDocumentTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: The raw `hlk_` Bearer, RETURNED EXACTLY ONCE. It is stored only as an HMAC-SHA256 hash and cannot be
+            retrieved later. Treat it as a secret.
+        name:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - token
+        - name
+        - expiresAt
+      additionalProperties: false
+      description: The one response that carries a usable document-upload Bearer value.
     ApiTokenRevokeEnvelope:
       type: object
       properties:
@@ -63326,6 +63514,18 @@ components:
             - type: "null"
         hasThumbnail:
           type: boolean
+        sourceSystem:
+          anyOf:
+            - type: string
+              enum:
+                - PAPERLESS
+                - PAPRA
+                - OTHER
+            - type: "null"
+        sourceId:
+          anyOf:
+            - type: string
+            - type: "null"
         createdAt:
           type: string
         updatedAt:
@@ -63352,6 +63552,8 @@ components:
         - lastIndexAttemptAt
         - lastIndexOutcome
         - hasThumbnail
+        - sourceSystem
+        - sourceId
         - createdAt
         - updatedAt
       additionalProperties: false
@@ -63366,7 +63568,9 @@ components:
         attempt finished (successful or not; null when none ran); `lastIndexOutcome` says why that attempt produced no
         index, and is null when the attempt succeeded or none ran. `hasThumbnail` is true when a preview thumbnail has
         been rendered in the background (fetch it from `/api/documents/inbound/{id}/thumbnail`); false means no preview
-        yet or an unsupported type — show a placeholder. Treat an unknown `kind` value as OTHER when decoding.
+        yet or an unsupported type — show a placeholder. `sourceSystem` / `sourceId` say where an imported document came
+        from and its id there (both null for a document added in HealthLog); treat an unknown `sourceSystem` as OTHER
+        when decoding. Treat an unknown `kind` value as OTHER when decoding.
     DocumentConditionLink:
       type: object
       properties:
@@ -63399,11 +63603,13 @@ components:
         visit-kind ENUM CONSTANT rather than a rendered name: unlike a condition label, which is the person's own words,
         a visit kind is one of eight closed values whose human name the reader's own bundle owns, so publishing the
         constant is what lets a German reader and an English one each see it named correctly."
-    InboundDocumentEnvelope:
+    DocumentUploadEnvelope:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/InboundDocument"
+          anyOf:
+            - $ref: "#/components/schemas/InboundDocument"
+            - $ref: "#/components/schemas/DocumentUploadReceipt"
         error:
           type: "null"
         meta:
@@ -63416,6 +63622,27 @@ components:
         - data
         - error
       additionalProperties: false
+    DocumentUploadReceipt:
+      type: object
+      properties:
+        id:
+          anyOf:
+            - type: string
+            - type: "null"
+        duplicate:
+          type: boolean
+        deleted:
+          type: boolean
+          const: true
+      required:
+        - id
+        - duplicate
+      additionalProperties: false
+      description: "What an upload answers instead of the stored row. A narrow `documents:write` token always gets this shape
+        (`duplicate: false` on 201, `true` on 200): a credential that can only add files learns whether a file is
+        stored, not its title, filename or links. Every caller gets it when the upload's source key belongs to a
+        document the owner DELETED (`deleted: true`, 200, nothing stored); `id` is the tombstoned row, or null once the
+        30-day purge removed it."
     DocumentAiCapabilityEnvelope:
       type: object
       properties:
@@ -63700,6 +63927,18 @@ components:
             - type: "null"
         hasThumbnail:
           type: boolean
+        sourceSystem:
+          anyOf:
+            - type: string
+              enum:
+                - PAPERLESS
+                - PAPRA
+                - OTHER
+            - type: "null"
+        sourceId:
+          anyOf:
+            - type: string
+            - type: "null"
         createdAt:
           type: string
         updatedAt:
@@ -63755,6 +63994,8 @@ components:
         - lastIndexAttemptAt
         - lastIndexOutcome
         - hasThumbnail
+        - sourceSystem
+        - sourceId
         - createdAt
         - updatedAt
         - facts

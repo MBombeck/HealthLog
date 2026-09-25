@@ -670,6 +670,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "The record of a restore this host ran from one of its own stored copies. It names a backup row that exists only in this database, so carrying it would describe a restore the receiving host never performed.",
   OffhostBackupState:
     "When this host last put this account's copy in this operator's bucket, and how big it was. It describes one deployment's relationship with one bucket, so restoring it elsewhere would assert an off-host copy that host has never written.",
+  DocumentImportKey:
+    "The source keys of imported documents the person deleted and the purge then removed, kept so a re-run of the importer does not store them again. The backup carries only live documents, so the tombstones that hold the same memory before the purge do not travel either; carrying the ledger alone would restore half of one decision. After a restore, a deliberate re-import can bring such a document back, and the person deletes it again.",
   ImportJob:
     "A job record pointing at an uploaded file that the backup does not carry, so restoring it would resurrect a task with nothing to work on.",
   InviteToken:

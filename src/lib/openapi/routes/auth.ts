@@ -30,7 +30,10 @@ import {
   mfaWebauthnLoginVerifySchema,
 } from "@/lib/validations/mfa";
 import { oidcNativeTokenSchema } from "@/lib/validations/oidc-native";
-import { createMeasurementTokenSchema } from "@/lib/validations/tokens";
+import {
+  createDocumentTokenSchema,
+  createMeasurementTokenSchema,
+} from "@/lib/validations/tokens";
 import { nativeHandoffTokenSchema } from "@/lib/validations/native-handoff";
 import {
   stepUpMintSchema,
@@ -434,6 +437,28 @@ const createMeasurementTokenResponse = z
     id: "CreateMeasurementTokenResponse",
     description:
       "The one response that carries a usable measurement-ingest Bearer value.",
+  });
+
+const createDocumentTokenRequest = createDocumentTokenSchema.meta({
+  id: "CreateDocumentTokenRequest",
+  description:
+    "Mint a document-upload Bearer. No `scope` field: the endpoint mints one shape. `name` is what the token is listed under; name it after the system it is pasted into. `expiresInDays` defaults to 365.",
+});
+
+const createDocumentTokenResponse = z
+  .object({
+    token: z
+      .string()
+      .describe(
+        "The raw `hlk_` Bearer, RETURNED EXACTLY ONCE. It is stored only as an HMAC-SHA256 hash and cannot be retrieved later. Treat it as a secret.",
+      ),
+    name: z.string(),
+    expiresAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({
+    id: "CreateDocumentTokenResponse",
+    description:
+      "The one response that carries a usable document-upload Bearer value.",
   });
 
 // ── Registration, credential rotation, Codex device-auth ─────────────
@@ -1536,7 +1561,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "List the caller's API tokens",
       description:
         "Every `ApiToken` row belonging to the caller, newest first, revoked ones included — presence in this list is not validity, `revoked` is. The hash is never returned and there is no path that re-reveals a token's plaintext.\n\n" +
-        "Three things the name understates. The list is not limited to tokens a person minted from the settings surface: a native login mints a wildcard access token as an `ApiToken` row, so a signed-in phone shows up here too. There is no GENERIC mint any more — the POST at this exact path issued `[\"medication:ingest\"]` and was removed, because that scope reached no ingest route while the pre-fail-closed default let it reach everything else. The credentials that work are minted where they are scoped: the per-medication API-endpoint toggle, `POST /api/mcp/tokens` for a connector, and the sibling `POST /api/tokens/measurements` for third-party measurement ingest. And unlike the revoke, this read is NOT gated on the operator's instance-wide API switch: that switch governs the surfaces a token is for, not a token's ability to authenticate, so tokens stay live while it is off and their owner has to be able to see them.",
+        "Three things the name understates. The list is not limited to tokens a person minted from the settings surface: a native login mints a wildcard access token as an `ApiToken` row, so a signed-in phone shows up here too. There is no GENERIC mint any more — the POST at this exact path issued `[\"medication:ingest\"]` and was removed, because that scope reached no ingest route while the pre-fail-closed default let it reach everything else. The credentials that work are minted where they are scoped: the per-medication API-endpoint toggle, `POST /api/mcp/tokens` for a connector, the sibling `POST /api/tokens/measurements` for third-party measurement ingest, and `POST /api/tokens/documents` for document upload from another system. And unlike the revoke, this read is NOT gated on the operator's instance-wide API switch: that switch governs the surfaces a token is for, not a token's ability to authenticate, so tokens stay live while it is off and their owner has to be able to see them.",
       responses: {
         "200": {
           description: "The caller's tokens, newest first.",
@@ -1615,6 +1640,70 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "409": {
           description:
             "The account already holds 10 live measurement tokens (`meta.errorCode` = `tokens.measurements.ceiling_reached`). Nothing was minted. Distinct from the 429 above: that one is a rate and clears by waiting, this one is a conflict with the account's current state and clears by revoking a token at `DELETE /api/tokens/{id}`. Only LIVE tokens count — revoked and expired rows do not occupy a slot — and only those carrying `measurements:write`, so the wildcard tokens a sign-in mints never consume the budget.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
+  "/api/tokens/documents": {
+    post: {
+      tags: ["Auth"],
+      summary: "Mint a document-upload token",
+      description:
+        "Mints a Bearer scoped to exactly `documents:write` and audits the mint. THE RESPONSE CARRIES THE RAW TOKEN, once; it is stored as an HMAC and no path re-reveals it.\n\n" +
+        "**What it can do.** `POST /api/documents/inbound` on its owner's own record, and nothing else. It is the door another document system pushes through: a Paperless-ngx workflow posting a newly tagged document, or an import script copying an archive. Uploads through it draw on a bucket of their own, keyed on the token (default 120 an hour, operator-tunable via `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`), and get back a receipt (`id`, `duplicate`, and `deleted` when the source key belongs to a document the owner deleted) rather than the stored row.\n\n" +
+        "**What it cannot do.** List, read, download, preview, edit, delete or bulk-act on a document, reach the document-AI routes, act on a shared record, or mint another token. Every other route names no scope and refuses it 403.\n\n" +
+        "Minting requires a COOKIE SESSION, for the reason the measurement mint gives: a day-lived native access token must not be able to leave behind a year-lived credential. Gated by the operator's instance-wide API switch. Body capped at 16 KiB; 10 mints per user per minute, and at most 10 live document tokens held at once. Tokens appear in `GET /api/tokens` and are revoked at `DELETE /api/tokens/{id}`.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: createDocumentTokenRequest },
+        },
+      },
+      responses: {
+        "201": {
+          description:
+            "Token minted. The `token` field is the only copy of the secret.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                createDocumentTokenResponse,
+                "CreateDocumentTokenEnvelope",
+              ),
+            },
+          },
+        },
+        "400": {
+          description: "Body is not parseable JSON.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "403": {
+          description:
+            "The operator has switched the API off instance-wide. Nothing was minted. A Bearer caller is refused 401 before the switch is read.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "413": {
+          description: "Body exceeds 16 KiB.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "415": {
+          description: "Content-Type is not `application/json`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "Validation failed. The envelope carries every offending issue.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "429": {
+          description:
+            "More than 10 mints from this account in a minute. Nothing was minted.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "The account already holds 10 live document tokens (`meta.errorCode` = `tokens.documents.ceiling_reached`). Nothing was minted. Revoke one at `DELETE /api/tokens/{id}`; only live tokens carrying `documents:write` count.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

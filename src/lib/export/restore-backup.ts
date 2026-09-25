@@ -2019,6 +2019,10 @@ export async function restoreBackup(
                 ? new Date(document.lastIndexAttemptAt)
                 : null,
               lastIndexOutcome: document.lastIndexOutcome ?? null,
+              sourceSystem: document.sourceSystem ?? null,
+              sourceId: document.sourceSystem
+                ? (document.sourceId ?? null)
+                : null,
               createdAt: new Date(document.createdAt!),
               updatedAt: new Date(document.updatedAt!),
             })),

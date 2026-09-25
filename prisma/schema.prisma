@@ -922,6 +922,9 @@ model User {
   // (ExtractedFact) and only reach the structured stores on explicit
   // approval. Opt-in module, off by default.
   inboundDocuments                          InboundDocument[]
+  // v1.39.2 — source keys of imported documents that the tombstone purge
+  // removed, so a re-run of an importer cannot bring a deleted document back.
+  documentImportKeys                        DocumentImportKey[]
   extractedFacts                            ExtractedFact[]
   documentConditionLinks                    DocumentConditionLink[]
   documentContentIndexes                    DocumentContentIndex[]
@@ -7938,6 +7941,22 @@ model InboundDocument {
   /// from "tried and here is why it failed" instead of showing a bare
   /// not-indexed state for both.
   lastIndexOutcome   String?               @map("last_index_outcome")
+  /// v1.39.2 (#1038) — where an imported document came from: a closed string
+  /// enum (`DOCUMENT_SOURCE_SYSTEMS` in
+  /// `src/lib/validations/inbound-documents.ts`): PAPERLESS | PAPRA | OTHER.
+  /// Null for a document added in HealthLog itself. Sent by the import script
+  /// and the Paperless workflow recipe; shown on the detail sheet.
+  sourceSystem       String?               @map("source_system") @db.VarChar(16)
+  /// v1.39.2 (#1038) — the document's id in `sourceSystem`. Together with
+  /// `userId` + `sourceSystem` it is unique across live AND tombstoned rows
+  /// (raw SQL in migration 0353, not expressible in Prisma):
+  ///   CREATE UNIQUE INDEX inbound_documents_user_source_key
+  ///     ON inbound_documents (user_id, source_system, source_id)
+  ///     WHERE source_id IS NOT NULL;
+  /// Including tombstones is the point: re-running an importer must not bring
+  /// back a document the person deleted. The purge carries the key over to
+  /// `DocumentImportKey` when it removes the row.
+  sourceId           String?               @map("source_id") @db.VarChar(128)
 
   facts           ExtractedFact[]
   conditionLinks  DocumentConditionLink[]
@@ -7982,6 +8001,26 @@ model InboundDocument {
   // boot-discovery (which anti-joins document_thumbnails for the missing
   // preview). Raw SQL only (partial predicate not expressible in Prisma).
   @@map("inbound_documents")
+}
+
+/// v1.39.2 (#1038) — the source key of an imported document that the daily
+/// tombstone purge has physically removed. While the tombstone exists the key
+/// lives on the document row itself; once the purge takes the row, this is the
+/// only memory that the person deleted it, so a re-run of the importer answers
+/// "deleted" instead of storing the document again. Written by the purge only;
+/// read by the upload route's source-key check. Holds no document content.
+model DocumentImportKey {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  /// Same closed vocabulary as `InboundDocument.sourceSystem`.
+  sourceSystem String   @map("source_system") @db.VarChar(16)
+  sourceId     String   @map("source_id") @db.VarChar(128)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceSystem, sourceId])
+  @@map("document_import_keys")
 }
 
 model ExtractedFact {

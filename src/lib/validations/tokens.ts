@@ -24,3 +24,13 @@ export const createMeasurementTokenSchema = z.object({
 export type CreateMeasurementTokenInput = z.infer<
   typeof createMeasurementTokenSchema
 >;
+
+/**
+ * Body of `POST /api/tokens/documents` — mint a Bearer that can upload
+ * documents and nothing else. The same shape as the measurement mint and for
+ * the same reasons: no scope field, a bounded lifetime.
+ */
+export const createDocumentTokenSchema = z.object({
+  name: z.string().min(1, "Name required").max(100),
+  expiresInDays: z.number().int().min(1).max(365).optional(),
+});
