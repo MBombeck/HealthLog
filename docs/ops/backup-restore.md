@@ -285,13 +285,35 @@ copy, or a copy that stops short of its last piece is refused with
 `backup.payload.undecryptable`, and the account is left as it was.
 
 The write is one transaction. Until the new copy is complete the previous one
-stays in place and readable; a run that fails halfway leaves it untouched.
+stays in place and readable; a run that fails halfway leaves it untouched. A
+second backup of the same account started while one is running (a manual run
+during the weekly one, say) waits for the first to finish and then replaces
+its copy; neither leaves a partial copy behind.
+
+While a restore of an account's copy is queued or running, the weekly and
+manual backup leave that account's copy alone and back up everyone else. The
+run's `users_skipped_restoring` meta counts such accounts; the next run
+replaces the copy as usual. If a copy is replaced anyway while it is being
+read (a download or preview in progress when the weekly run finishes), the
+reader answers `409` with `backup_changed` and "The backup was replaced by a
+newer one while it was being read", not the undecryptable error, and a restore
+rolls back with nothing changed. Start it again to use the new copy. A
+download already sending when this happens stops partway; download again.
 
 Copies written before v1.39.2 are a single value in `data_backups.data` and
-still restore, preview and download as they did. Nothing converts them: the
-next weekly run replaces the weekly copy in the new form, and an uploaded copy
-keeps its old form. Those older copies were limited by the app's memory when
-they were written, and reading one still needs that much.
+still restore, preview and download as they did. The next weekly run replaces
+the weekly copy in the new form, and a key rotation (below) converts every
+remaining one, including uploaded copies. Until then those older copies are
+read as one value, as before, which needs the memory they needed when they were
+written.
+
+Migration 0352 cannot be undone by going back to v1.39.1. That release reads
+only the single value, so it finds a copy in pieces empty, and if it writes a
+weekly copy into a row that has pieces, the row holds both forms. v1.39.2 then
+refuses to read that row, because nothing says which of the two is current
+("This backup holds both a single stored value and pieces ..."); the next
+weekly backup replaces it. If you must go back, restore the database backup
+you took before upgrading.
 
 ### The size limit
 
@@ -321,11 +343,19 @@ in seconds having backed up nothing is that defect and not your record.
 
 ### Key rotation
 
-`scripts/rotate-encryption-key.ts` re-seals every piece under the active key,
-in small batches, without reading the backup inside. The link between a piece,
-its copy and its position is inside the encryption, so it comes through
-rotation unchanged. Copies in the older single-value form, including the
-`~hlgcm1.` form v1.39.x wrote, are re-sealed in their own form.
+`scripts/rotate-encryption-key.ts` and the rotation in the admin console
+re-seal every piece under the active key, in small batches, without reading
+the backup inside. The link between a piece, its copy and its position is
+inside the encryption, so it comes through rotation unchanged.
+
+A copy still in the older single-value form (any of them, including the
+`~hlgcm1.` form v1.38.6 to v1.39.1 wrote) is not re-sealed in place, which would need the
+whole copy in memory several times over. Rotation converts it into pieces
+under the active key instead, one copy at a time, reading the stored value a
+few megabytes at a time; the copy keeps its date. The conversion of a copy is
+one transaction, so a copy that fails its check is left exactly as it was and
+counted as an error. Rotation up to v1.39.1 counted every `~hlgcm1.` copy
+as an error; run it again after updating before retiring the old key.
 
 ### What a restore replaces
 
