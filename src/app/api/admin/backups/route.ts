@@ -63,14 +63,22 @@ export const GET = apiHandler(async () => {
   // Metadata only, and the size read as `octet_length` in the database rather
   // than by pulling every blob into this process to measure it. The listing
   // needs a number, not the ciphertext, and on an instance with large records
-  // fetching them all was its own way of running out of memory. Base64 is
-  // ASCII, so the column's byte length is exactly what the wire reports.
+  // fetching them all was its own way of running out of memory. A copy is
+  // either one value in `data` (written before v1.39.2) or a run of pieces in
+  // `data_backup_chunks`, so the size is whichever of the two it has: what
+  // the copy occupies in the database.
   const rows = await prisma.$queryRaw<BackupMetaRow[]>`
     SELECT b.id, b.user_id, u.username, b.type,
-           octet_length(b.data) AS size_bytes,
+           COALESCE(octet_length(b.data), 0)
+             + COALESCE(c.bytes, 0) AS size_bytes,
            b.created_at
     FROM data_backups b
     JOIN users u ON u.id = b.user_id
+    LEFT JOIN (
+      SELECT backup_id, SUM(octet_length(data)) AS bytes
+      FROM data_backup_chunks
+      GROUP BY backup_id
+    ) c ON c.backup_id = b.id
     ORDER BY b.created_at DESC
   `;
 

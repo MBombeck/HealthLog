@@ -34,8 +34,11 @@ import { auditLog } from "@/lib/auth/audit";
 import {
   BACKUP_UNDECRYPTABLE_CODE,
   BACKUP_UNDECRYPTABLE_ERROR,
-  openBackupBlob,
 } from "@/lib/export/backup-blob";
+import {
+  openStoredBackup,
+  type StoredBackupRef,
+} from "@/lib/export/stored-backup";
 import {
   insertMeasurementRows,
   type MeasurementInsertRow,
@@ -244,8 +247,8 @@ export type RestoreFailureCode =
   | "unexpected";
 
 export interface RestoreBackupInput {
-  /** The stored copy, as read from `data_backups`. */
-  backup: { id: string; userId: string; data: string };
+  /** The stored copy, as read from `data_backups` (`STORED_BACKUP_SELECT`). */
+  backup: StoredBackupRef;
   /** The admin who asked for the restore; the audit rows name them. */
   actorUserId: string;
   /** Where the request came from, when there was one. */
@@ -333,10 +336,11 @@ export async function restoreBackup(
 
   // Opened, not unpacked: the JSON of a large record is longer than any
   // string V8 can hold (#1031), so it is read as a stream below. Opening
-  // authenticates the whole ciphertext first, as unpacking did.
+  // authenticates every stored piece first, and checks they add up to the
+  // copy that was written, before anything is read or deleted.
   let source: BackupSource;
   try {
-    source = openBackupBlob(backup.data);
+    source = await openStoredBackup(prisma, backup);
   } catch (err) {
     await auditLog("admin.backups.restore.failed", {
       userId: input.actorUserId,
@@ -768,11 +772,19 @@ export async function restoreBackup(
           // their cumulative dailies too (Fitbit, Google Health) and have
           // never carried provenance — marking those would invent a state
           // they were never in. Ordinary point rows keep NULL honestly.
-          aggregationProvenance: (measurement.aggregationProvenance ??
-            (measurement.source === "APPLE_HEALTH" &&
-            measurement.externalId?.startsWith("stats:")
+          //
+          // Only an ABSENT field is the old-backup case. A current backup
+          // writes the field for every row, and an explicit null is the row's
+          // real state: the nightly daily-mean fold writes Apple Health
+          // `stats:` rows with no provenance. Treating that null as absent
+          // turned every such row into LEGACY_UNKNOWN on restore (#1031).
+          aggregationProvenance: (measurement.aggregationProvenance !==
+          undefined
+            ? measurement.aggregationProvenance
+            : measurement.source === "APPLE_HEALTH" &&
+                measurement.externalId?.startsWith("stats:")
               ? "LEGACY_UNKNOWN"
-              : null)) as never,
+              : null) as never,
           glucoseContext: (measurement.glucoseContext ?? null) as never,
           sleepStage: (measurement.sleepStage ?? null) as never,
           rhythmClassification: (measurement.rhythmClassification ??

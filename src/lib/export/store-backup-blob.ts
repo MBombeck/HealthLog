@@ -1,35 +1,36 @@
 /**
- * Write one account's stored backup (`data_backups.data`) without ever
- * holding the stored copy in this process.
+ * Write one account's stored backup without ever holding the stored copy in
+ * this process.
  *
- * Why. `packBackupBlobStreaming` streams the JSON through gzip and the cipher,
- * but its answer is one string, because the column takes one value. Measured
- * on a seeded account of 1.25 million measurements: the answer is 64 MB of
- * base64, and between the pieces, the joined string and the copies the
- * database driver makes to bind it, the backup grew the process by about
- * 640 MB of resident memory (309 MB → 946 MB). The default compose stack runs
- * the web server and the worker in one container capped at 1 GB, so on a
- * record of that size the weekly or manual backup is the thing that takes the
- * container down; a killed worker leaves its job `active` until pg-boss
- * expires it two hours later as `job timed out`.
+ * The copy goes into `data_backup_chunks` as sealed pieces of about a
+ * megabyte (`packBackupChunks`, the piece format in `backup-chunks.ts`), so
+ * this process holds one piece at a time and the size of a copy has nothing to
+ * do with the memory of the process that writes it. Up to v1.39.1 the pieces
+ * were joined into one value in `data_backups.data`, which every reader then
+ * had to take whole; that capped a copy at a fifth of the heap, 105 MB in the
+ * default 1 GB container, and an account with 1.75 million readings was past
+ * it (#1031).
  *
- * What instead. The pieces go to Postgres as they come, a few megabytes at a
- * time, into a temporary table on the transaction's own connection, and one
- * statement assembles them into the row with `string_agg`. The process never
- * holds more than one piece; Postgres builds the value it was going to store
- * anyway.
+ * All of it is one transaction, so the account's previous copy stays in place,
+ * readable, until the new one is complete: a failure halfway through rolls
+ * back to it.
  *
- * All of it is one transaction, so the account's previous copy stays in place
- * until the new one is complete: a failure halfway through rolls back to it,
- * and the temporary table goes with the transaction either way.
+ * The pieces are written through the model API, never through a raw query.
+ * Prisma caches the plan of every raw query keyed by its parameter values, the
+ * last hundred of them, so a raw INSERT carrying a one-megabyte piece keeps
+ * that piece alive after the statement: measured, a hundred such inserts left
+ * 160 MB of heap behind that no collection frees, which is the memory bound
+ * this module exists to remove. A model create is planned once for its shape
+ * and keeps nothing.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 
 import {
-  packBackupBlobInto,
+  packBackupChunks,
   type BackupJsonProducer,
-  type PackBackupBlobOptions,
+  type PackBackupOptions,
 } from "@/lib/export/backup-blob";
+import { newChunkStreamId } from "@/lib/export/backup-chunks";
 
 /**
  * How long the storing transaction may stay open. The job around it expires
@@ -53,66 +54,66 @@ export interface StoreBackupBlobInput {
   userId: string;
   /** `DataBackup.type`: `WEEKLY_AUTO` for the scheduled and manual pass. */
   type: string;
+  /**
+   * The account the copy belongs to, when it is known only once the producer
+   * has finished: an uploaded file names its owner inside itself. The row is
+   * written under `userId` meanwhile (the uploading admin) and moved to this
+   * account before the transaction commits, so nothing outside it ever sees
+   * the row under the wrong owner.
+   */
+  ownerAfterRead?: () => string;
 }
 
 /**
- * Pack `producer`'s JSON into the stored envelope and upsert it as the
- * `(userId, type)` backup. Resolves to the row's id and the stored size.
- *
- * `input` may be a function, read once the producer has finished: an
- * uploaded file names its owner somewhere inside itself, and the upload
- * route only knows who that is once it has read the file through.
+ * Pack `producer`'s JSON into sealed pieces and store them as the
+ * `(userId, type)` backup, replacing that backup's previous copy. Resolves to
+ * the row's id, the stored size in bytes and the number of pieces.
  */
 export async function storeBackupBlob(
   prisma: PrismaClient,
-  input: StoreBackupBlobInput | (() => StoreBackupBlobInput),
+  input: StoreBackupBlobInput,
   producer: BackupJsonProducer,
-  options: PackBackupBlobOptions = {},
-): Promise<{ id: string; bytes: number }> {
+  options: PackBackupOptions = {},
+): Promise<{ id: string; bytes: number; chunks: number }> {
   return prisma.$transaction(
     async (tx) => {
       await tx.$executeRawUnsafe(
         `SET LOCAL idle_in_transaction_session_timeout = '${STORE_IDLE_TIMEOUT}'`,
       );
-      await tx.$executeRaw`
-        CREATE TEMP TABLE backup_blob_parts (
-          seq integer PRIMARY KEY,
-          piece text NOT NULL
-        ) ON COMMIT DROP
-      `;
+      // The row first, so the pieces have something to belong to. An existing
+      // copy is cleared here, inside the transaction: outside it the previous
+      // copy stays whole and readable until this one commits.
+      const row = await tx.dataBackup.upsert({
+        where: { userId_type: { userId: input.userId, type: input.type } },
+        update: { data: null },
+        create: { userId: input.userId, type: input.type, data: null },
+        select: { id: true },
+      });
+      await tx.dataBackupChunk.deleteMany({ where: { backupId: row.id } });
 
-      let seq = 0;
-      let bytes = 0;
-      await packBackupBlobInto(
-        async (piece) => {
-          await tx.$executeRaw`
-            INSERT INTO backup_blob_parts (seq, piece) VALUES (${seq}, ${piece})
-          `;
-          seq += 1;
-          bytes += piece.length;
+      const streamId = newChunkStreamId();
+      const { chunks, bytes } = await packBackupChunks(
+        async (sealed, seq) => {
+          await tx.dataBackupChunk.create({
+            data: { backupId: row.id, seq, data: new Uint8Array(sealed) },
+            select: { id: true },
+          });
         },
+        streamId,
         producer,
         options,
       );
 
-      const target = typeof input === "function" ? input() : input;
-      // The row first, through Prisma, so a new account's backup gets its id
-      // the same way every other row does; the data it briefly carries is
-      // never visible outside this transaction.
-      const row = await tx.dataBackup.upsert({
-        where: { userId_type: { userId: target.userId, type: target.type } },
-        update: { createdAt: new Date() },
-        create: { userId: target.userId, type: target.type, data: "" },
-        select: { id: true },
+      await tx.dataBackup.update({
+        where: { id: row.id },
+        data: {
+          ...(input.ownerAfterRead ? { userId: input.ownerAfterRead() } : {}),
+          chunkCount: chunks,
+          chunkStreamId: streamId,
+          createdAt: new Date(),
+        },
       });
-      await tx.$executeRaw`
-        UPDATE data_backups
-        SET data = (
-          SELECT string_agg(piece, '' ORDER BY seq) FROM backup_blob_parts
-        )
-        WHERE id = ${row.id}
-      `;
-      return { id: row.id, bytes };
+      return { id: row.id, bytes, chunks };
     },
     { timeout: STORE_TRANSACTION_TIMEOUT_MS, maxWait: 60_000 },
   );

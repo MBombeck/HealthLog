@@ -220,7 +220,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   try {
     created = await storeBackupBlob(
       prisma,
-      () => ({ userId: owner!.id, type: uploadType }),
+      {
+        userId: admin.id,
+        type: uploadType,
+        ownerAfterRead: () => owner!.id,
+      },
       async (write) => {
         // One pass: every chunk is stored as it is checked, and a check that
         // fails throws, which rolls the store back.
@@ -336,9 +340,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
       await denied(err.details.reason as string, err.details);
       return apiError(err.answer, err.status, err.meta);
     }
-    // The file was fine; its encrypted copy is larger than one stored backup
-    // may be on this host (a fifth of the heap limit). That is the operator's
-    // to act on, with the numbers in the message, and not a server fault for
+    // The file was fine; its encrypted copy is larger than the stored-copy
+    // limit (`BACKUP_MAX_STORED_MB`). That is the operator's to act on, with
+    // the numbers and the setting in the message, and not a server fault for
     // the error reporter. The store rolled back, so nothing was kept.
     if (err instanceof BackupBlobTooLargeError) {
       await denied("stored_copy_too_large", {

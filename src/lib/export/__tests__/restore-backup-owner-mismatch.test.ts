@@ -61,7 +61,13 @@ import { auditLog } from "@/lib/auth/audit";
  */
 async function restore(): Promise<{ status: number }> {
   const outcome = await restoreBackup({
-    backup: { id: "b-1", userId: "user-A", data: "cipher" },
+    backup: {
+      id: "b-1",
+      userId: "user-A",
+      data: "cipher",
+      chunkCount: null,
+      chunkStreamId: null,
+    },
     actorUserId: "admin-1",
     ipAddress: null,
     restoreInstanceSettings: false,

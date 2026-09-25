@@ -471,7 +471,13 @@ async function roundTrip(
  */
 async function restore(): Promise<{ status: number }> {
   const outcome = await restoreBackup({
-    backup: { id: "b-1", userId: OWNER, data: "cipher" },
+    backup: {
+      id: "b-1",
+      userId: OWNER,
+      data: "cipher",
+      chunkCount: null,
+      chunkStreamId: null,
+    },
     actorUserId: "admin-1",
     ipAddress: null,
     restoreInstanceSettings: false,

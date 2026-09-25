@@ -131,6 +131,9 @@ x-healthlog-env: &healthlog_env
   BACKUP_S3_SECRET_KEY: "${BACKUP_S3_SECRET_KEY:-}"
   BACKUP_S3_REGION: "${BACKUP_S3_REGION:-auto}"
   BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-30}"
+  # Largest stored backup of one account, in MB of encrypted copy (default
+  # 2048). A storage limit, not a memory one; see .env.production.example.
+  BACKUP_MAX_STORED_MB: "${BACKUP_MAX_STORED_MB:-}"
   # How long the audit trail is kept, in days. Default 365, floor 7 (a value
   # below the floor is ignored rather than obeyed, so a window set in seconds
   # by mistake cannot empty a fresh table). It is not only a retention knob:

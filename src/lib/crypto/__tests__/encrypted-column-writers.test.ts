@@ -67,14 +67,16 @@ const RELATION_ENVELOPE = new Set([
 const NOT_ROTATED: ReadonlySet<string> = new Set<string>();
 
 /**
- * Ciphertext written by raw SQL, which the Prisma-call walk below cannot see.
+ * Ciphertext written where the Prisma-call walk below cannot see it: by raw
+ * SQL, or through a write whose value arrives as a callback parameter.
  *
- * `DataBackup.data` is the case: the stored backup is produced as ciphertext
- * pieces (`packBackupBlobInto`) and assembled into the row by one SQL
- * statement, because holding it as one string in the process is what a large
- * record could not afford (#1031). Each entry names the file and the
- * statement, and the scan fails if the statement is no longer there, so a
- * moved or removed raw write cannot leave a stale entry that still passes.
+ * `DataBackupChunk.data` is the second case: the stored backup is sealed in
+ * pieces by `packBackupChunks`, which hands each sealed piece to a callback
+ * that creates the row (#1031). The value is ciphertext, but the walk only
+ * follows values it can trace back to an encryption call at the call site.
+ * Each entry names the file and the statement, and the scan fails if the
+ * statement is no longer there, so a moved or removed write cannot leave a
+ * stale entry that still passes.
  */
 const RAW_CIPHERTEXT_WRITES: ReadonlyArray<{
   key: string;
@@ -82,10 +84,10 @@ const RAW_CIPHERTEXT_WRITES: ReadonlyArray<{
   statement: RegExp;
 }> = [
   {
-    key: "DataBackup.data",
+    key: "DataBackupChunk.data",
     file: "src/lib/export/store-backup-blob.ts",
     statement:
-      /UPDATE\s+data_backups\s+SET\s+data\s*=\s*\(\s*SELECT\s+string_agg/,
+      /tx\.dataBackupChunk\.create\(\s*\{\s*data:\s*\{\s*backupId:\s*row\.id,\s*seq,\s*data:\s*new Uint8Array\(sealed\)/,
   },
 ];
 
@@ -471,7 +473,7 @@ describe("ciphertext columns derived from the code", () => {
     // columns whose only signal is the write and not the column's name.
     expect(written.size).toBeGreaterThan(30);
     for (const anchor of [
-      "DataBackup.data",
+      "DataBackupChunk.data",
       "IdempotencyKey.responseBody",
       "NotificationChannel.config",
       "PushSubscription.p256dh",

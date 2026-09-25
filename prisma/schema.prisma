@@ -4970,17 +4970,43 @@ model PushSubscription {
 // ─── Data Backups ────────────────────────────────────────────
 
 model DataBackup {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  type      String   @default("WEEKLY_AUTO") // WEEKLY_AUTO, MANUAL
-  data      String // JSON export blob
-  createdAt DateTime @default(now()) @map("created_at")
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  type          String   @default("WEEKLY_AUTO") // WEEKLY_AUTO, MANUAL_UPLOAD_<ms>
+  /// The whole encrypted copy as one value: how every backup was stored up
+  /// to v1.39.1. NULL for a copy stored in pieces (`chunks`), which is how
+  /// every backup is written from v1.39.2 on. A row carries one or the other.
+  data          String?
+  /// How many pieces a chunked copy has, and the random id sealed into every
+  /// one of them (`src/lib/export/backup-chunks.ts`). The reader checks both
+  /// against the pieces before it releases a byte; NULL on a single-value copy.
+  chunkCount    Int?     @map("chunk_count")
+  chunkStreamId String?  @map("chunk_stream_id")
+  createdAt     DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chunks DataBackupChunk[]
 
   @@unique([userId, type], map: "data_backups_user_id_type_key")
   @@index([userId])
   @@map("data_backups")
+}
+
+/// One piece of a stored backup, in order. Each is sealed on its own with
+/// AES-256-GCM (the binary codec in `src/lib/crypto.ts`), and the sealed
+/// plaintext names the copy it belongs to, its position and whether it is
+/// the last, so a piece that is missing, moved, altered or borrowed from
+/// another copy is refused. Deleted with its backup.
+model DataBackupChunk {
+  id       String @id @default(cuid())
+  backupId String @map("backup_id")
+  seq      Int
+  data     Bytes
+
+  backup DataBackup @relation(fields: [backupId], references: [id], onDelete: Cascade)
+
+  @@unique([backupId, seq])
+  @@map("data_backup_chunks")
 }
 
 // ─── Backup restore jobs (v1.39.1) ──────────────────────────

@@ -55,6 +55,12 @@ export interface EncryptedColumn {
    */
   readonly codecField?: string;
   /**
+   * The codec every row of the column uses, for a column with one layout and
+   * no sibling column recording it. "binary2" is the binary `encryptBytes()`
+   * layout. Like `codecField`, it implies batching.
+   */
+  readonly codec?: "binary2";
+  /**
    * Walk this column in bounded id-cursor batches instead of one `findMany`.
    * Set it on any column whose rows are blobs rather than short strings — a
    * whole-account backup compresses to megabytes, and pulling every row of
@@ -380,11 +386,23 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // when nothing else works.
   //
   // Rotation re-encrypts the ciphertext WITHOUT touching the plaintext, so it
-  // is blind to the envelope inside: today a row is either the plain backup
-  // JSON or the `HLZ1:`-prefixed gzip form, and any further shape a future
-  // writer introduces rotates unchanged for the same reason. Batched, because
-  // a single row is megabytes.
+  // is blind to the envelope inside: a row is the plain backup JSON, the
+  // `HLZ1:`-prefixed gzip form, or the single `~hlgcm1.` stream v1.39.1 wrote
+  // (re-sealed as a stream). Batched, because a single row is megabytes.
   { model: "DataBackup", field: "data", kind: "string", batched: true },
+
+  // ───── Whole-account backup, in pieces (Bytes, binary2, batched) ─────
+  // How every backup is stored from v1.39.2: ordered pieces of about a
+  // megabyte, each sealed with `encryptBytes()` (`backup-chunks.ts`). The
+  // column above keeps only copies written before that. Rotation re-seals a
+  // piece without reading what it holds; the header that binds it to its copy
+  // and position is inside the ciphertext, so it survives unchanged.
+  {
+    model: "DataBackupChunk",
+    field: "data",
+    kind: "bytes",
+    codec: "binary2",
+  },
 
   // ───── Idempotent-replay response cache (String, disposable) ─────
   // The cached response body, encrypted because the PHI-returning creates echo

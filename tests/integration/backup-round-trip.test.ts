@@ -66,7 +66,7 @@ import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
 import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
 import { decryptNoteFromBytes } from "@/lib/labs/store";
 import { decryptContextFromBytes } from "@/lib/labs/biomarker-store";
-import { packBackupBlobStreaming } from "@/lib/export/backup-blob";
+import { legacyStreamedBlobFrom } from "@/__tests__/helpers/legacy-backup-blob";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { TWO_ENDED_MODELS, type TwoEndedModel } from "@/lib/export/backup-plan";
 import { POST } from "./restore-job-driver";
@@ -1366,7 +1366,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         // form, which is what every row written before any of this existed
         // looks like — an operator's newest usable copy may well be one of
         // those, so every arm has to reach the restore route.
-        data: await packBackupBlobStreaming(async (write) => {
+        data: await legacyStreamedBlobFrom(async (write) => {
           await write(streamedJson);
         }),
       },

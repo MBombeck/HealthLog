@@ -24,8 +24,11 @@ import { auditLog } from "@/lib/auth/audit";
 import {
   BACKUP_UNDECRYPTABLE_CODE,
   BACKUP_UNDECRYPTABLE_ERROR,
-  openBackupBlob,
 } from "@/lib/export/backup-blob";
+import {
+  openStoredBackup,
+  STORED_BACKUP_SELECT,
+} from "@/lib/export/stored-backup";
 import {
   readStreamedBackup,
   type BackupSource,
@@ -47,7 +50,12 @@ export const GET = apiHandler(
 
     const backup = await prisma.dataBackup.findUnique({
       where: { id },
-      include: { user: { select: { id: true, username: true } } },
+      select: {
+        ...STORED_BACKUP_SELECT,
+        type: true,
+        createdAt: true,
+        user: { select: { id: true, username: true } },
+      },
     });
 
     if (!backup) {
@@ -62,10 +70,11 @@ export const GET = apiHandler(
     }
 
     // Opened and streamed, never unpacked into one string: a large record's
-    // JSON is longer than any string V8 can hold (#1031).
+    // JSON is longer than any string V8 can hold (#1031). Opening checks
+    // every stored piece first.
     let source: BackupSource;
     try {
-      source = openBackupBlob(backup.data);
+      source = await openStoredBackup(prisma, backup);
     } catch (err) {
       // A rotated or dropped key, or a stored copy that is no longer the one
       // that was written. Both are bad stored input rather than a fault in

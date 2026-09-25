@@ -146,13 +146,11 @@ export async function handleDataBackup(
         try {
           // Streamed, compressed, then encrypted (the record contains
           // sensitive health information), and stored a piece at a time.
-          // Nothing between the database rows and the stored row exists as a
-          // whole in this process: the payload goes into gzip a page at a
-          // time, the cipher consumes gzip's output as it comes, and the
-          // ciphertext goes back to Postgres in pieces that one statement
-          // assembles into the row (`storeBackupBlob`). The stored copy used
-          // to be built here as one string first, which on a large record
-          // added several hundred megabytes to a container capped at 1 GB.
+          // Nothing between the database rows and the stored copy exists as
+          // a whole in this process: the payload goes into gzip a page at a
+          // time, and gzip's output is sealed and stored in pieces of about a
+          // megabyte (`storeBackupBlob`). The copy is kept as those pieces,
+          // so its size does not depend on this process's memory (#1031).
           const { bytes: storedBytes } = await storeBackupBlob(
             prisma,
             { userId: user.id, type: "WEEKLY_AUTO" },
@@ -168,11 +166,9 @@ export async function handleDataBackup(
           // it rides out as a count so the weekly run is not retried for the
           // whole cohort.
           //
-          // A record whose stored copy does not fit this process lands here
-          // too, and that is the point of the size limit the envelope writer
-          // enforces: before it existed the same condition was an uncatchable
-          // V8 abort that restarted the instance, so one account's size was a
-          // denial of service on every other account on the host.
+          // A copy over the stored-copy limit (`BACKUP_MAX_STORED_MB`) lands
+          // here too, counted as oversized, with the setting to raise named
+          // in the message.
           usersFailed++;
           lastError = err;
           if (err instanceof BackupBlobTooLargeError) oversized++;
@@ -183,8 +179,8 @@ export async function handleDataBackup(
       // The stored size is the one number that says whether this pass is
       // heading back towards the wall it hit before: it tracks the record.
       evt.addMeta("data_backup_largest_blob_bytes", largestBlobBytes);
-      // How many accounts the envelope writer stopped rather than let the
-      // process die. Non-zero means this host needs more memory, not a retry.
+      // How many accounts' copies passed the stored-copy limit. Non-zero
+      // means raising `BACKUP_MAX_STORED_MB`, not a retry.
       evt.addMeta("data_backup_records_oversized", oversized);
       evt.setBackground({
         task_name: "job.data_backup",

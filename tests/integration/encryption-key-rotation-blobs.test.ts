@@ -40,7 +40,11 @@ import {
   type CorpusClient,
 } from "@/lib/crypto/encryption-corpus";
 import { packBackupBlob, unpackBackupBlob } from "@/lib/export/backup-blob";
+import { extractKeyIdFromBytes } from "@/lib/crypto";
+import { storeBackupBlob } from "@/lib/export/store-backup-blob";
+import { legacyStreamedBlob } from "@/__tests__/helpers/legacy-backup-blob";
 import { getPrismaClient, truncateAllTables } from "./setup";
+import { readStoredBackup } from "./stored-backup-read";
 
 const TEST_USER_ID = "user-rotation-blobs";
 const BACKUP_JSON = JSON.stringify({
@@ -116,8 +120,8 @@ describe("key rotation over the non-suffixed ciphertext columns", () => {
 
     for (const id of [gzipped.id, plainEnvelope.id]) {
       const row = await prisma.dataBackup.findUniqueOrThrow({ where: { id } });
-      expect(extractKeyId(row.data)).toBe("v2");
-      expect(unpackBackupBlob(row.data)).toBe(BACKUP_JSON);
+      expect(extractKeyId(row.data!)).toBe("v2");
+      expect(unpackBackupBlob(row.data!)).toBe(BACKUP_JSON);
     }
 
     // Idempotent: a second pass finds nothing left to do.
@@ -150,7 +154,82 @@ describe("key rotation over the non-suffixed ciphertext columns", () => {
     const row = await prisma.dataBackup.findUniqueOrThrow({
       where: { id: backup.id },
     });
-    expect(unpackBackupBlob(row.data)).toBe(BACKUP_JSON);
+    expect(unpackBackupBlob(row.data!)).toBe(BACKUP_JSON);
+  });
+
+  it("rotates the single stream v1.39.1 stored, and it stays readable", async () => {
+    // The `~hlgcm1.` form carries its key id behind a marker the string
+    // codec's parser does not read, so the walk used to file it as legacy
+    // and fail to decrypt it: the one copy form every v1.39.x host had was
+    // counted as an error on every rotation.
+    const prisma = getPrismaClient();
+    const previous = process.env.ENCRYPTION_ACTIVE_KEY_ID;
+    process.env.ENCRYPTION_ACTIVE_KEY_ID = "v1";
+    _resetCryptoCacheForTests();
+    const stored = legacyStreamedBlob(BACKUP_JSON);
+    process.env.ENCRYPTION_ACTIVE_KEY_ID = previous;
+    _resetCryptoCacheForTests();
+    const row = await prisma.dataBackup.create({
+      data: { userId: TEST_USER_ID, type: "WEEKLY_AUTO", data: stored },
+    });
+
+    const result = await rotateColumn(
+      { dataBackup: prisma.dataBackup } as unknown as CorpusClient,
+      column("DataBackup", "data"),
+    );
+    expect(result).toMatchObject({ scanned: 1, rotated: 1, errors: 0 });
+
+    process.env.ENCRYPTION_KEYS = JSON.stringify({ v2: "2".repeat(64) });
+    _resetCryptoCacheForTests();
+    const after = await prisma.dataBackup.findUniqueOrThrow({
+      where: { id: row.id },
+    });
+    expect(after.data!.startsWith("~hlgcm1.v2.")).toBe(true);
+    expect(unpackBackupBlob(after.data!)).toBe(BACKUP_JSON);
+  });
+
+  it("rotates every piece of a chunked copy, which reads back once the old key is gone", async () => {
+    const prisma = getPrismaClient();
+    process.env.ENCRYPTION_ACTIVE_KEY_ID = "v1";
+    _resetCryptoCacheForTests();
+    const { id, chunks } = await storeBackupBlob(
+      prisma,
+      { userId: TEST_USER_ID, type: "WEEKLY_AUTO" },
+      async (write) => {
+        await write('{"rows":[');
+        for (let i = 0; i < 20_000; i++) {
+          await write(`${i ? "," : ""}{"i":${i},"r":${Math.random()}}`);
+        }
+        await write("]}");
+      },
+      { chunkBytes: 4 * 1024 },
+    );
+    expect(chunks).toBeGreaterThan(3);
+    const expected = await readStoredBackup(prisma, id);
+
+    process.env.ENCRYPTION_ACTIVE_KEY_ID = "v2";
+    _resetCryptoCacheForTests();
+    const client = {
+      dataBackupChunk: prisma.dataBackupChunk,
+    } as unknown as CorpusClient;
+    const result = await rotateColumn(
+      client,
+      column("DataBackupChunk", "data"),
+    );
+    expect(result).toMatchObject({
+      scanned: chunks,
+      rotated: chunks,
+      errors: 0,
+    });
+    const again = await rotateColumn(client, column("DataBackupChunk", "data"));
+    expect(again.rotated).toBe(0);
+
+    process.env.ENCRYPTION_KEYS = JSON.stringify({ v2: "2".repeat(64) });
+    _resetCryptoCacheForTests();
+    for (const piece of await prisma.dataBackupChunk.findMany()) {
+      expect(extractKeyIdFromBytes(Buffer.from(piece.data))).toBe("v2");
+    }
+    expect(await readStoredBackup(prisma, id)).toBe(expected);
   });
 
   it("drops an unreadable idempotency row instead of failing the run", async () => {
@@ -191,6 +270,7 @@ describe("key rotation over the non-suffixed ciphertext columns", () => {
   it("keeps both columns in the registry the script and the job read", () => {
     const keys = ENCRYPTED_COLUMNS.map(encryptedColumnKey);
     expect(keys).toContain("DataBackup.data");
+    expect(keys).toContain("DataBackupChunk.data");
     expect(keys).toContain("IdempotencyKey.responseBody");
   });
 });
