@@ -12,6 +12,7 @@ import type { CalendarDay } from "./types";
 import {
   FERTILE_HUE,
   FLOW_HUE,
+  INTERCOURSE_HUE,
   OVULATION_HUE,
   flowOpacity,
 } from "./phase-tokens";
@@ -25,7 +26,11 @@ import {
  * single dated dot); the fertile window (already goal-gated server-side — the
  * API nulls it unless TRYING_TO_CONCEIVE) renders as a green ring; the
  * predicted-ovulation day gets an amber marker; per-day symptom presence
- * shows a small dot. Selecting a day calls `onSelectDay` (the log-day sheet).
+ * shows a small dot; intercourse shows a diamond; anything else logged that
+ * day (a test, contraception, spotting, a temperature, a mucus or cervix
+ * reading, a note) shows a hollow ring, so a day with only one of those
+ * logged no longer looks like a day with nothing logged. Selecting a day
+ * calls `onSelectDay` (the log-day sheet).
  *
  * a11y: each day is a real `<button>` with an aria-label restating the date
  * + its markers; the colour markers are paired with the aria text so the
@@ -58,6 +63,64 @@ function ymd(d: Date): string {
 /** 0=Mon … 6=Sun (Monday-first grid). */
 function mondayIndex(d: Date): number {
   return (d.getDay() + 6) % 7;
+}
+
+type Translate = ReturnType<typeof useTranslations>["t"];
+
+/** `LABEL (VALUE)`, or the bare label when there is no value to name. */
+function named(t: Translate, labelKey: string, valueKey?: string): string {
+  return valueKey ? `${t(labelKey)} (${t(valueKey)})` : t(labelKey);
+}
+
+/**
+ * The entries a day holds beyond flow, symptoms, intercourse and the
+ * predictions, each spelled out for the cell's aria-label. Empty means the
+ * other-entries ring stays off. Every field here is one the day log can hold
+ * and the grid has no marker of its own for.
+ */
+export function otherEntryLabels(day: CalendarDay, t: Translate): string[] {
+  const out: string[] = [];
+  if (day.intermenstrualBleeding)
+    out.push(t("cycle.sheet.intermenstrualBleeding"));
+  if (day.basalBodyTempC != null) out.push(t("cycle.sheet.temperature"));
+  if (day.ovulationTest)
+    out.push(
+      named(
+        t,
+        "cycle.sheet.ovulationTest",
+        `cycle.ovulationTest.${day.ovulationTest}`,
+      ),
+    );
+  if (day.cervicalMucus)
+    out.push(named(t, "cycle.sheet.mucus", `cycle.mucus.${day.cervicalMucus}`));
+  if (day.cervixPosition || day.cervixFirmness || day.cervixOpening)
+    out.push(t("cycle.sheet.cervix"));
+  if (day.pregnancyTest)
+    out.push(
+      named(
+        t,
+        "cycle.sheet.pregnancyTest",
+        `cycle.testResult.${day.pregnancyTest}`,
+      ),
+    );
+  if (day.progesteroneTest)
+    out.push(
+      named(
+        t,
+        "cycle.sheet.progesteroneTest",
+        `cycle.testResult.${day.progesteroneTest}`,
+      ),
+    );
+  if (day.contraceptive)
+    out.push(
+      named(
+        t,
+        "cycle.sheet.contraceptive",
+        `cycle.contraceptive.${day.contraceptive}`,
+      ),
+    );
+  if (day.hasNote) out.push(t("cycle.sheet.note"));
+  return out;
 }
 
 export interface CycleCalendarProps {
@@ -222,6 +285,11 @@ export function CycleCalendar({
             markers.push(t("cycle.calendar.legendOvulation"));
           if (info?.hasSymptoms)
             markers.push(t("cycle.calendar.legendSymptoms"));
+          const hasIntercourse = !!info?.sexualActivity;
+          if (hasIntercourse)
+            markers.push(t("cycle.calendar.legendIntercourse"));
+          const others = info ? otherEntryLabels(info, t) : [];
+          markers.push(...others);
 
           const aria = `${date}${markers.length ? `, ${markers.join(", ")}` : ""}`;
           const flowLevel =
@@ -307,6 +375,19 @@ export function CycleCalendar({
                 {info?.hasSymptoms ? (
                   <span className="bg-muted-foreground/70 h-1 w-1 rounded-full" />
                 ) : null}
+                {hasIntercourse ? (
+                  <span
+                    data-slot="cycle-calendar-intercourse"
+                    className="size-1.5 rotate-45 rounded-xs"
+                    style={{ backgroundColor: INTERCOURSE_HUE }}
+                  />
+                ) : null}
+                {others.length > 0 ? (
+                  <span
+                    data-slot="cycle-calendar-other"
+                    className="border-muted-foreground size-1.5 rounded-full border"
+                  />
+                ) : null}
               </span>
             </>
           );
@@ -330,6 +411,8 @@ export function CycleCalendar({
               : isPredictedOvulationDot
                 ? "predicted"
                 : undefined,
+            "data-intercourse": hasIntercourse ? "true" : undefined,
+            "data-other-entries": others.length > 0 ? "true" : undefined,
           };
 
           return onSelectDay ? (
@@ -363,11 +446,20 @@ function CalendarLegend() {
   // Each swatch mirrors its grid affordance: period = filled, predicted =
   // dashed, fertile = a soft band fill, predicted-ovulation = a filled dot,
   // confirmed-ovulation = a ringed light oval (distinct from the dot), symptom
-  // = the small grey marker dot the grid draws (QA M4).
+  // = the small grey marker dot the grid draws (QA M4), intercourse = the
+  // diamond, other entries = the hollow ring.
   const items: {
     hue: string;
     labelKey: string;
-    variant: "fill" | "dashed" | "band" | "oval" | "dot";
+    variant:
+      | "fill"
+      | "dashed"
+      | "band"
+      | "oval"
+      | "dot"
+      | "smallDot"
+      | "diamond"
+      | "ring";
   }[] = [
     { hue: FLOW_HUE, labelKey: "cycle.calendar.legendPeriod", variant: "fill" },
     {
@@ -393,7 +485,17 @@ function CalendarLegend() {
     {
       hue: "var(--muted-foreground)",
       labelKey: "cycle.calendar.legendSymptom",
-      variant: "dot",
+      variant: "smallDot",
+    },
+    {
+      hue: INTERCOURSE_HUE,
+      labelKey: "cycle.calendar.legendIntercourse",
+      variant: "diamond",
+    },
+    {
+      hue: "var(--muted-foreground)",
+      labelKey: "cycle.calendar.legendOtherEntries",
+      variant: "ring",
     },
   ];
   return (
@@ -407,14 +509,16 @@ function CalendarLegend() {
           <span
             aria-hidden="true"
             className={cn(
-              it.variant === "oval"
-                ? "h-2.5 w-3.5 rounded-full ring-[1.5px] ring-inset"
-                : "rounded-full",
-              it.variant === "dot" && it.hue === "var(--muted-foreground)"
-                ? "h-1 w-1"
-                : it.variant === "oval"
-                  ? ""
-                  : "h-2.5 w-2.5",
+              it.variant === "oval" &&
+                "h-2.5 w-3.5 rounded-full ring-[1.5px] ring-inset",
+              (it.variant === "fill" ||
+                it.variant === "dashed" ||
+                it.variant === "band" ||
+                it.variant === "dot") &&
+                "h-2.5 w-2.5 rounded-full",
+              it.variant === "smallDot" && "h-1 w-1 rounded-full",
+              it.variant === "diamond" && "mx-0.5 size-2 rotate-45 rounded-xs",
+              it.variant === "ring" && "size-2 rounded-full border",
               it.variant === "dashed" && "opacity-60",
               it.variant === "band" && "opacity-30",
             )}
@@ -425,7 +529,9 @@ function CalendarLegend() {
                     opacity: 0.3,
                     "--tw-ring-color": it.hue,
                   } as React.CSSProperties)
-                : { backgroundColor: it.hue }
+                : it.variant === "ring"
+                  ? { borderColor: it.hue }
+                  : { backgroundColor: it.hue }
             }
           />
           {t(it.labelKey)}

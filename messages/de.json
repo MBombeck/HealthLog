@@ -8231,7 +8231,9 @@
       "flowSpotting": "Schmierblutung",
       "flowLight": "leicht",
       "flowMedium": "mittel",
-      "flowHeavy": "stark"
+      "flowHeavy": "stark",
+      "legendIntercourse": "Geschlechtsverkehr",
+      "legendOtherEntries": "Weitere Einträge"
     },
     "predictions": {
       "title": "Was als Nächstes kommt",

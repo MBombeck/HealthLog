@@ -8231,7 +8231,9 @@
       "flowSpotting": "manchado",
       "flowLight": "ligero",
       "flowMedium": "medio",
-      "flowHeavy": "abundante"
+      "flowHeavy": "abundante",
+      "legendIntercourse": "Relaciones",
+      "legendOtherEntries": "Otras entradas"
     },
     "predictions": {
       "title": "Qué viene después",
