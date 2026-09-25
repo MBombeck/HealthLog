@@ -112,6 +112,22 @@ export class BackupBlobTooLargeError extends Error {
 }
 
 /**
+ * Thrown when the copy a store would replace is being restored: a restore of
+ * it is queued or running. Replacing it then would pull the pieces out from
+ * under the restore. Nothing was written; the weekly run tries again next
+ * time.
+ */
+export class BackupBusyError extends Error {
+  constructor(readonly backupId: string) {
+    super(
+      "Backup not replaced: a restore of the current copy is queued or " +
+        "running. The previous copy is unchanged; the next run replaces it.",
+    );
+    this.name = "BackupBusyError";
+  }
+}
+
+/**
  * Produces the backup JSON in pieces. Every piece is written in order.
  *
  * Whatever it resolves to is ignored — the writer's own return value (the row
@@ -142,43 +158,22 @@ export interface PackBackupOptions {
 export type BackupChunkSink = (sealed: Buffer, seq: number) => Promise<void>;
 
 /**
- * Serialised backup JSON, produced in pieces → sealed pieces of the stored
- * copy, handed to `sink` as they fill.
- *
- * The pipeline is JSON piece → gzip → a piece of about `BACKUP_CHUNK_BYTES`
- * → AES-256-GCM (`sealBackupChunk`). Nothing is held but the piece being
- * filled: the gzip stream applies backpressure through the promise `write`
- * hands back, and a full piece is sealed and sunk before the producer may
- * write again. The last piece is always sealed at the end, marked as the last,
- * even when it carries nothing, because that mark is what tells a reader the
- * copy is complete.
+ * Collects gzip output and seals it into pieces of about `chunkBytes`, in
+ * order, counting the stored bytes against the limit. `finish` seals what is
+ * left as the last piece, even when that is nothing, because the last-piece
+ * mark is what tells a reader the copy is complete.
  */
-export async function packBackupChunks(
+function chunkSealer(
   sink: BackupChunkSink,
   streamId: string,
-  producer: BackupJsonProducer,
-  options: PackBackupOptions = {},
-): Promise<{ chunks: number; bytes: number }> {
+  options: PackBackupOptions,
+) {
   const limitBytes = options.maxBytes ?? defaultBackupStoreLimit();
   const chunkBytes = options.chunkBytes ?? BACKUP_CHUNK_BYTES;
-  const gzip = createGzip();
   let pending: Buffer[] = [];
   let pendingBytes = 0;
   let seq = 0;
   let stored = 0;
-
-  gzip.on("data", (chunk: Buffer) => {
-    pending.push(chunk);
-    pendingBytes += chunk.byteLength;
-  });
-  const finished = new Promise<void>((resolve, reject) => {
-    gzip.on("end", resolve);
-    gzip.on("error", reject);
-  });
-  // The producer's own failure is what gets reported; this only keeps the
-  // same rejection from also surfacing as unhandled. `await finished` below
-  // still sees it.
-  finished.catch(() => {});
 
   const seal = async (last: boolean): Promise<void> => {
     const payload = pending.length === 1 ? pending[0]! : Buffer.concat(pending);
@@ -193,8 +188,52 @@ export async function packBackupChunks(
     seq += 1;
   };
 
+  return {
+    push(gz: Buffer): void {
+      pending.push(gz);
+      pendingBytes += gz.byteLength;
+    },
+    async flushFull(): Promise<void> {
+      while (pendingBytes >= chunkBytes) await seal(false);
+    },
+    async finish(): Promise<{ chunks: number; bytes: number }> {
+      while (pendingBytes >= chunkBytes) await seal(false);
+      await seal(true);
+      return { chunks: seq, bytes: stored };
+    },
+  };
+}
+
+/**
+ * Serialised backup JSON, produced in pieces → sealed pieces of the stored
+ * copy, handed to `sink` as they fill.
+ *
+ * The pipeline is JSON piece → gzip → a piece of about `BACKUP_CHUNK_BYTES`
+ * → AES-256-GCM (`sealBackupChunk`). Nothing is held but the piece being
+ * filled: the gzip stream applies backpressure through the promise `write`
+ * hands back, and a full piece is sealed and sunk before the producer may
+ * write again.
+ */
+export async function packBackupChunks(
+  sink: BackupChunkSink,
+  streamId: string,
+  producer: BackupJsonProducer,
+  options: PackBackupOptions = {},
+): Promise<{ chunks: number; bytes: number }> {
+  const sealer = chunkSealer(sink, streamId, options);
+  const gzip = createGzip();
+  gzip.on("data", (chunk: Buffer) => sealer.push(chunk));
+  const finished = new Promise<void>((resolve, reject) => {
+    gzip.on("end", resolve);
+    gzip.on("error", reject);
+  });
+  // The producer's own failure is what gets reported; this only keeps the
+  // same rejection from also surfacing as unhandled. `await finished` below
+  // still sees it.
+  finished.catch(() => {});
+
   const write = async (chunk: string | Buffer): Promise<void> => {
-    while (pendingBytes >= chunkBytes) await seal(false);
+    await sealer.flushFull();
     if (gzip.write(chunk, "utf8")) return;
     await new Promise<void>((resolve, reject) => {
       const onDrain = () => {
@@ -218,9 +257,26 @@ export async function packBackupChunks(
   }
   gzip.end();
   await finished;
-  while (pendingBytes >= chunkBytes) await seal(false);
-  await seal(true);
-  return { chunks: seq, bytes: stored };
+  return sealer.finish();
+}
+
+/**
+ * Bytes that are already one gzip stream of the backup JSON → sealed pieces.
+ * For converting a copy stored before v1.39.2, whose content is gzip output
+ * already and needs no second compression.
+ */
+export async function packGzipChunks(
+  sink: BackupChunkSink,
+  streamId: string,
+  gz: AsyncIterable<Buffer> | Iterable<Buffer>,
+  options: PackBackupOptions = {},
+): Promise<{ chunks: number; bytes: number }> {
+  const sealer = chunkSealer(sink, streamId, options);
+  for await (const piece of gz) {
+    sealer.push(piece);
+    await sealer.flushFull();
+  }
+  return sealer.finish();
 }
 
 /**
@@ -265,6 +321,19 @@ export function unpackBackupBlob(stored: string): string {
   return gunzipSync(
     Buffer.from(plaintext.slice(GZIP_MARKER.length), "base64"),
   ).toString("utf8");
+}
+
+/**
+ * A single-value copy in one of the two forms written from one string (plain
+ * `encrypt(json)` or `HLZ1:` gzip) → its content as gzip bytes, for the
+ * conversion into pieces. The `~hlgcm1.` stream form is read in slices instead.
+ */
+export function singleValueToGzip(stored: string): Buffer {
+  const plaintext = decrypt(stored);
+  if (plaintext.startsWith(GZIP_MARKER)) {
+    return Buffer.from(plaintext.slice(GZIP_MARKER.length), "base64");
+  }
+  return gzipSync(plaintext);
 }
 
 /**

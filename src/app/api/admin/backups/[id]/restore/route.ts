@@ -25,11 +25,8 @@ import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import {
-  BACKUP_UNDECRYPTABLE_CODE,
-  BACKUP_UNDECRYPTABLE_ERROR,
-} from "@/lib/export/backup-blob";
-import {
   openStoredBackup,
+  storedBackupRefusal,
   STORED_BACKUP_SELECT,
   storedBackupIdentity,
 } from "@/lib/export/stored-backup";
@@ -114,8 +111,9 @@ const handler = apiHandler(
           reason: err instanceof Error ? err.message : "decrypt_failed",
         },
       });
-      return apiError(BACKUP_UNDECRYPTABLE_ERROR, 422, {
-        errorCode: BACKUP_UNDECRYPTABLE_CODE,
+      const refusal = storedBackupRefusal(err);
+      return apiError(refusal.message, refusal.status, {
+        errorCode: refusal.code,
       });
     }
 

@@ -5041,9 +5041,10 @@ model BackupRestoreJob {
   /// than a cascade deleting the job. Consumer: the worker and the status
   /// routes (the console marks the row being restored).
   backupId                String    @map("backup_id")
-  /// SHA-256 of `DataBackup.data` when the restore was requested. The weekly
-  /// job overwrites its row in place, so the worker checks the copy it reads is
-  /// the one the operator previewed and confirmed. Consumer: the worker.
+  /// SHA-256 of the stored copy's identity when the restore was requested (the
+  /// single value, or the stream id of a copy in pieces). The weekly job
+  /// overwrites its row in place, so the worker checks the copy it reads is the
+  /// one the operator previewed and confirmed. Consumer: the worker.
   backupDigest            String    @map("backup_digest")
   /// The operator's answer to "also restore the instance settings". Consumer:
   /// the worker, and the status routes.

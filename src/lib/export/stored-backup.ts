@@ -23,7 +23,11 @@ import { Readable, pipeline } from "node:stream";
 import { createGunzip } from "node:zlib";
 
 import type { PrismaClient } from "@/generated/prisma/client";
-import { openBackupBlob } from "@/lib/export/backup-blob";
+import {
+  BACKUP_UNDECRYPTABLE_CODE,
+  BACKUP_UNDECRYPTABLE_ERROR,
+  openBackupBlob,
+} from "@/lib/export/backup-blob";
 import {
   BackupIntegrityError,
   openBackupChunk,
@@ -47,7 +51,43 @@ export interface StoredBackupRef {
   chunkStreamId: string | null;
 }
 
-type ChunkReader = Pick<PrismaClient, "dataBackupChunk">;
+type ChunkReader = Pick<PrismaClient, "dataBackupChunk" | "dataBackup">;
+
+/**
+ * Why a row holding both forms is refused. Only an older release writes a
+ * single value into a row that already has pieces (after a downgrade), and
+ * nothing on the row says which of the two is the newer copy.
+ */
+const BOTH_FORMS_MESSAGE_TEXT =
+  "This backup holds both a single stored value and pieces, which happens " +
+  "when an older HealthLog version wrote to it after an upgrade. There is no " +
+  "way to tell which of the two is current, so it is not read. The next " +
+  "weekly backup replaces it with a new copy.";
+
+export const BOTH_FORMS_MESSAGE = BOTH_FORMS_MESSAGE_TEXT;
+
+/** A row holding both forms (see {@link BOTH_FORMS_MESSAGE}). */
+export class BackupFormsConflictError extends BackupIntegrityError {
+  constructor() {
+    super(BOTH_FORMS_MESSAGE);
+    this.name = "BackupFormsConflictError";
+  }
+}
+
+/**
+ * The copy was replaced by a newer one (the weekly backup ran) while a
+ * restore, preview or download was reading it. Nothing is wrong with either
+ * copy; the reader has to start again on the new one.
+ */
+export class BackupReplacedError extends Error {
+  constructor() {
+    super(
+      "The backup was replaced by a newer one while it was being read. " +
+        "Nothing was changed; start again to use the new copy.",
+    );
+    this.name = "BackupReplacedError";
+  }
+}
 
 /**
  * A value that changes whenever the stored copy is replaced, for the restore
@@ -70,20 +110,34 @@ async function* openedChunks(
   count: number,
 ): AsyncGenerator<Buffer> {
   for (let seq = 0; seq < count; seq++) {
-    const row = await prisma.dataBackupChunk.findUnique({
-      where: { backupId_seq: { backupId, seq } },
-      select: { data: true },
-    });
-    if (!row) {
-      throw new BackupIntegrityError(
-        `Piece ${seq} of ${count} of the stored copy is missing.`,
-      );
+    let piece: Buffer;
+    try {
+      const row = await prisma.dataBackupChunk.findUnique({
+        where: { backupId_seq: { backupId, seq } },
+        select: { data: true },
+      });
+      if (!row) {
+        throw new BackupIntegrityError(
+          `Piece ${seq} of ${count} of the stored copy is missing.`,
+        );
+      }
+      piece = openBackupChunk(row.data, {
+        streamId,
+        seq,
+        last: seq === count - 1,
+      });
+    } catch (err) {
+      // A piece that no longer fits is either tampering or the copy having
+      // been replaced since it was opened. The row tells them apart: a new
+      // copy always has a new stream id.
+      const now = await prisma.dataBackup.findUnique({
+        where: { id: backupId },
+        select: { chunkStreamId: true },
+      });
+      if (now?.chunkStreamId !== streamId) throw new BackupReplacedError();
+      throw err;
     }
-    yield openBackupChunk(row.data, {
-      streamId,
-      seq,
-      last: seq === count - 1,
-    });
+    yield piece;
   }
 }
 
@@ -97,6 +151,14 @@ export async function openStoredBackup(
   prisma: ChunkReader,
   backup: StoredBackupRef,
 ): Promise<BackupSource> {
+  if (backup.data != null && backup.chunkStreamId != null) {
+    throw new BackupFormsConflictError();
+  }
+  if ((backup.chunkStreamId == null) !== (backup.chunkCount == null)) {
+    throw new BackupIntegrityError(
+      "The stored copy lists pieces without saying how many, or the reverse.",
+    );
+  }
   if (backup.chunkStreamId == null || backup.chunkCount == null) {
     if (backup.data == null) {
       throw new BackupIntegrityError("The stored copy has no content.");
@@ -113,6 +175,11 @@ export async function openStoredBackup(
     where: { backupId: id },
   });
   if (stored !== count) {
+    const now = await prisma.dataBackup.findUnique({
+      where: { id },
+      select: { chunkStreamId: true },
+    });
+    if (now?.chunkStreamId !== streamId) throw new BackupReplacedError();
     throw new BackupIntegrityError(
       `The stored copy lists ${count} pieces but ${stored} are stored.`,
     );
@@ -134,4 +201,39 @@ export async function openStoredBackup(
     );
     return gunzip;
   };
+}
+
+/** How a route or the restore job answers a stored copy it could not read. */
+export interface StoredBackupRefusal {
+  status: 409 | 422;
+  /** `backup_changed` or `backup.payload.undecryptable`. */
+  code: "backup_changed" | typeof BACKUP_UNDECRYPTABLE_CODE;
+  message: string;
+}
+
+/**
+ * The answer for a failure to open or read a stored copy. A copy replaced
+ * while it was read is not damage and says so (409, `backup_changed`); a row
+ * holding both forms says why it is not read; everything else is the
+ * undecryptable refusal the routes have always given.
+ */
+export function storedBackupRefusal(err: unknown): StoredBackupRefusal {
+  if (err instanceof BackupReplacedError) {
+    return { status: 409, code: "backup_changed", message: err.message };
+  }
+  return {
+    status: 422,
+    code: BACKUP_UNDECRYPTABLE_CODE,
+    message:
+      err instanceof BackupFormsConflictError
+        ? `${err.message} Nothing was changed.`
+        : BACKUP_UNDECRYPTABLE_ERROR,
+  };
+}
+
+/** True for the failures `storedBackupRefusal` describes, rather than a bug. */
+export function isStoredBackupReadError(err: unknown): boolean {
+  return (
+    err instanceof BackupReplacedError || err instanceof BackupIntegrityError
+  );
 }

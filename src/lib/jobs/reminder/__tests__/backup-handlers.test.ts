@@ -54,7 +54,10 @@ vi.mock("../shared", () => ({
   getWorkerPrisma: mocks.getWorkerPrisma,
 }));
 
-import { BackupBlobTooLargeError } from "@/lib/export/backup-blob";
+import {
+  BackupBlobTooLargeError,
+  BackupBusyError,
+} from "@/lib/export/backup-blob";
 
 import { handleDataBackup } from "../backup-handlers";
 
@@ -185,6 +188,21 @@ describe("handleDataBackup outcome", () => {
     expect(outcome).toMatchObject({
       ok: false,
       did: { backed: 0, users_failed: 1, records_oversized: 1 },
+    });
+  });
+
+  it("skips an account whose copy is being restored, without failing the pass", async () => {
+    // Replacing a copy while a restore reads it would pull the pieces out from
+    // under the restore. The account keeps its copy and the next run tries
+    // again; that is not a failure of this pass.
+    mocks.getWorkerPrisma.mockReturnValue(buildPrismaMock());
+    mocks.store.mockRejectedValue(new BackupBusyError("backup-row"));
+
+    const outcome = await handleDataBackup([]);
+
+    expect(outcome).toMatchObject({
+      ok: true,
+      did: { backed: 0, total: 1, users_failed: 0, users_skipped_restoring: 1 },
     });
   });
 

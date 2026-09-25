@@ -853,14 +853,19 @@ async function main() {
   // it sat outside rotation until v1.38.6. Missing it was the worst possible
   // miss — the script reported zero rows remaining, the runbook told the
   // operator that zero meant safe to drop the old key, and every stored backup
-  // became undecryptable. Walked in bounded id-cursor batches because one row
-  // is an entire compressed account, and re-sealed WITHOUT reading the
-  // plaintext, so every single-value envelope (the plain backup JSON, the
-  // `HLZ1:` gzip form and the v1.39.1 `~hlgcm1.` stream) rotates unchanged.
+  // became undecryptable. From v1.39.2 the column holds only copies written
+  // before pieces existed, in any of three envelopes (the plain backup JSON,
+  // the `HLZ1:` gzip form, the `~hlgcm1.` stream of v1.38.6 to v1.39.1). Rotation does not
+  // re-seal them in place, which would hold a whole copy several times over;
+  // it converts each one into pieces under the active key, one row at a time
+  // and a slice of the value at a time, so the walk needs the whole client
+  // (it opens a transaction per row) rather than one delegate.
   results.push(
-    await rotateRegistryColumn("DataBackup", "data", {
-      dataBackup: prisma.dataBackup,
-    } as unknown as CorpusClient),
+    await rotateRegistryColumn(
+      "DataBackup",
+      "data",
+      prisma as unknown as CorpusClient,
+    ),
   );
 
   // ───── Whole-account backup in pieces (Bytes, binary2, batched) ─────
