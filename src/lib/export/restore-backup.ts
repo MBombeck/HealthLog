@@ -87,6 +87,7 @@ import { restoreDocumentFilingData } from "@/lib/export/document-filing-backup";
 import { restoreAwardsData } from "@/lib/export/awards-backup";
 import { restoreEnvironmentData } from "@/lib/export/environment-backup";
 import { restoreEcgData } from "@/lib/export/ecg-backup";
+import { restoredMedicationCreatedAt } from "@/lib/export/medication-created-at";
 import { invalidateUserData } from "@/lib/cache/invalidate";
 import { foldLegacyCoachAvailability } from "@/lib/modules/operator-availability";
 
@@ -887,6 +888,7 @@ export async function restoreBackup(
         const unresolvedRevisionLinks: string[] = [];
         let medicationIndex = 0;
         reportSection("medications");
+        const restoreStartedAt = new Date();
         for (const m of payload.medications) {
           const created = await tx.medication.create({
             data: {
@@ -920,7 +922,17 @@ export async function restoreBackup(
               reorderLeadDays: m.reorderLeadDays ?? null,
               externalSource: m.externalSource ?? null,
               externalId: m.externalId ?? null,
-              ...(m.createdAt ? { createdAt: new Date(m.createdAt) } : {}),
+              // A file from before v1.39.1 carries no creation date, and the
+              // restore time would hide every dose-history miss before it.
+              // The earliest thing the file records for the drug stands in.
+              ...(() => {
+                const createdAt = restoredMedicationCreatedAt(
+                  m,
+                  payload.intakeEvents,
+                  restoreStartedAt,
+                );
+                return createdAt ? { createdAt } : {};
+              })(),
               ...(m.updatedAt ? { updatedAt: new Date(m.updatedAt) } : {}),
               schedules: {
                 create: m.schedules.map((s) => ({

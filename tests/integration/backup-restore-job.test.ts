@@ -539,6 +539,48 @@ describe("backup restore as a background job", () => {
     expect(job?.failure?.code).toBe("failed_after_commit");
   });
 
+  it("dates a medication from a file without a creation date by its earliest dose", async () => {
+    const admin = await seedAdmin();
+    const prisma = getPrismaClient();
+    // A portable file from before v1.39.1: no medication createdAt.
+    const payload = backupPayloadSchema.parse({
+      schemaVersion: "1",
+      exportedAt: "2026-09-20T00:00:00.000Z",
+      userId: admin.id,
+      medications: [{ name: "Ramipril", dose: "5mg", schedules: [] }],
+      intakeEvents: [
+        {
+          medication: "Ramipril",
+          scheduledFor: "2025-03-10T08:00:00.000Z",
+          takenAt: "2025-03-10T08:04:00.000Z",
+        },
+        {
+          medication: "Ramipril",
+          scheduledFor: "2025-03-09T08:00:00.000Z",
+          autoMissed: true,
+        },
+      ],
+    });
+    const backup = await prisma.dataBackup.create({
+      data: {
+        userId: admin.id,
+        type: "MANUAL_UPLOAD_OLD_PORTABLE",
+        data: encrypt(JSON.stringify(payload)),
+      },
+    });
+    const queued = await requestRestore(backup.id);
+    const { data } = (await queued.json()) as { data: { jobId: string } };
+    await runBackupRestoreJob(data.jobId);
+    expect((await readBackupRestoreJob(data.jobId))?.status).toBe("succeeded");
+
+    const medication = await prisma.medication.findFirstOrThrow({
+      where: { userId: admin.id },
+    });
+    // Not the restore time: the dose history reads this as the day the
+    // medication began, and every miss before it would vanish.
+    expect(medication.createdAt.toISOString()).toBe("2025-03-09T08:00:00.000Z");
+  });
+
   it("a live job's heartbeat keeps it out of the sweep", async () => {
     const admin = await seedAdmin();
     const backup = await storeBackup(admin.id, ["m-a"]);
