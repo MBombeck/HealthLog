@@ -32,11 +32,9 @@ import { Buffer } from "node:buffer";
 import { prisma, toJson } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import {
-  BACKUP_UNDECRYPTABLE_CODE,
-  BACKUP_UNDECRYPTABLE_ERROR,
-} from "@/lib/export/backup-blob";
-import {
+  isStoredBackupReadError,
   openStoredBackup,
+  storedBackupRefusal,
   type StoredBackupRef,
 } from "@/lib/export/stored-backup";
 import {
@@ -354,8 +352,9 @@ export async function restoreBackup(
     // Bad stored input, not a broken server: a copy written under a key the
     // operator has since dropped, or one whose bytes have changed. Refused
     // above the transaction, so nothing was touched.
-    return refused(422, BACKUP_UNDECRYPTABLE_CODE, BACKUP_UNDECRYPTABLE_ERROR, {
-      errorCode: BACKUP_UNDECRYPTABLE_CODE,
+    const refusal = storedBackupRefusal(err);
+    return refused(refusal.status, refusal.code, refusal.message, {
+      errorCode: refusal.code,
     });
   }
 
@@ -381,16 +380,25 @@ export async function restoreBackup(
     raw = streamed.raw;
     payload = parseBackupPayload(raw);
   } catch (err) {
+    const readFailure = isStoredBackupReadError(err);
     await auditLog("admin.backups.restore.failed", {
       userId: input.actorUserId,
       ipAddress: input.ipAddress,
       details: {
         backupId: backup.id,
         ownerId: backup.userId,
-        reason: "schema_invalid",
+        reason: readFailure ? "read_failed" : "schema_invalid",
         message: err instanceof Error ? err.message : String(err),
       },
     });
+    if (readFailure) {
+      // The copy changed after it was opened: replaced by the weekly run, or
+      // altered. Nothing has been deleted yet.
+      const refusal = storedBackupRefusal(err);
+      return refused(refusal.status, refusal.code, refusal.message, {
+        errorCode: refusal.code,
+      });
+    }
     return refused(
       422,
       "schema_invalid",
@@ -2299,6 +2307,14 @@ export async function restoreBackup(
       },
     });
     annotate({ meta: { restoreFailReason: verbose } });
+    if (isStoredBackupReadError(err)) {
+      // The second read, inside the transaction, found the copy replaced or
+      // altered. The transaction rolled back, so nothing was changed.
+      const refusal = storedBackupRefusal(err);
+      return refused(refusal.status, refusal.code, refusal.message, {
+        errorCode: refusal.code,
+      });
+    }
     return refused(
       500,
       "transaction_failed",

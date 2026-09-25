@@ -14,7 +14,7 @@
  */
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { encrypt } from "@/lib/crypto";
+import { newChunkStreamId, sealBackupChunk } from "@/lib/export/backup-chunks";
 import { ENCRYPTED_COLUMNS } from "@/lib/crypto/encrypted-columns";
 import {
   BLOB_ROTATION_BATCH_SIZE,
@@ -34,35 +34,50 @@ describe("encryption corpus walk", () => {
       data: { username: "cursor-walk", email: "cursor-walk@example.test" },
     });
     const count = BLOB_ROTATION_BATCH_SIZE + 5;
-    await prisma.dataBackup.createMany({
-      data: Array.from({ length: count }, (_, i) => ({
-        id: `backup-${String(i).padStart(3, "0")}`,
+    // The pieces of one stored backup: a blob column walked in small pages.
+    const backup = await prisma.dataBackup.create({
+      data: {
         userId: user.id,
-        type: `MANUAL_UPLOAD_${i}`,
-        data: encrypt(`{"n":${i}}`),
+        type: "WEEKLY_AUTO",
+        data: null,
+        chunkCount: count,
+        chunkStreamId: newChunkStreamId(),
+      },
+    });
+    const streamId = newChunkStreamId();
+    await prisma.dataBackupChunk.createMany({
+      data: Array.from({ length: count }, (_, i) => ({
+        id: `piece-${String(i).padStart(3, "0")}`,
+        backupId: backup.id,
+        seq: i,
+        data: new Uint8Array(
+          sealBackupChunk(streamId, i, i === count - 1, Buffer.from(`${i}`)),
+        ),
       })),
     });
 
     let pages = 0;
     const client = {
-      dataBackup: {
+      dataBackupChunk: {
         findMany: async (args: never) => {
-          const rows = (await prisma.dataBackup.findMany(args)) as Array<{
+          const rows = (await prisma.dataBackupChunk.findMany(args)) as Array<{
             id: string;
           }>;
           pages += 1;
           // The first page's last row disappears before the second is read.
           if (pages === 1 && rows.length > 0) {
-            await prisma.dataBackup.delete({ where: { id: rows.at(-1)!.id } });
+            await prisma.dataBackupChunk.delete({
+              where: { id: rows.at(-1)!.id },
+            });
           }
           return rows;
         },
-        update: (args: never) => prisma.dataBackup.update(args),
+        update: (args: never) => prisma.dataBackupChunk.update(args),
       },
     } as unknown as CorpusClient;
 
     const col = ENCRYPTED_COLUMNS.find(
-      (c) => c.model === "DataBackup" && c.field === "data",
+      (c) => c.model === "DataBackupChunk" && c.field === "data",
     )!;
     const scan = await scanColumn(client, col);
 

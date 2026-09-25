@@ -482,13 +482,139 @@ describe("a restore queued against a copy that is then replaced", () => {
     expect(queued.status).toBe(202);
     const { data } = (await queued.json()) as { data: { jobId: string } };
 
-    // The next weekly run writes a new copy into the same row.
-    await weeklyCopy(user.id);
+    // The weekly run leaves a copy alone while a restore of it is queued, so
+    // stand in for a replacement written anyway (an older worker, say): the
+    // copy's stream id changes.
+    await expect(weeklyCopy(user.id)).rejects.toThrow(/restore of the current/);
+    await getPrismaClient().dataBackup.update({
+      where: { id },
+      data: { chunkStreamId: "f".repeat(32) },
+    });
     const before = await measurementsOf(user.id);
     await runBackupRestoreJob(data.jobId).catch(() => undefined);
     const job = await readBackupRestoreJob(data.jobId);
     expect(job?.failure?.code).toBe("backup_changed");
     expect(await measurementsOf(user.id)).toEqual(before);
+  });
+});
+
+describe("a copy replaced while it is being read", () => {
+  it("says it was replaced, not that it was tampered with", async () => {
+    const user = await seedAccount();
+    const prisma = getPrismaClient();
+    const { id } = await weeklyCopy(user.id);
+    const backup = await prisma.dataBackup.findUniqueOrThrow({
+      where: { id },
+      select: STORED_BACKUP_SELECT,
+    });
+    const { openStoredBackup, BackupReplacedError } =
+      await import("@/lib/export/stored-backup");
+    const source = await openStoredBackup(prisma, backup);
+
+    // The next weekly run writes a new copy into the same row.
+    await weeklyCopy(user.id);
+
+    const read = async () => {
+      for await (const chunk of source()) void chunk;
+    };
+    const err = await read().catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(BackupReplacedError);
+    expect((err as Error).message).toMatch(
+      /replaced by a newer one while it was being read/,
+    );
+  });
+
+  it("is not replaced by the weekly run while a restore of it is queued or running", async () => {
+    const user = await seedAccount();
+    const prisma = getPrismaClient();
+    const first = await weeklyCopy(user.id);
+    const before = await prisma.dataBackup.findUniqueOrThrow({
+      where: { id: first.id },
+    });
+    for (const status of ["queued", "running"]) {
+      const job = await prisma.backupRestoreJob.create({
+        data: {
+          userId: user.id,
+          actorUserId: user.id,
+          backupId: first.id,
+          backupDigest: "x",
+          status,
+        },
+      });
+      const { BackupBusyError } = await import("@/lib/export/backup-blob");
+      await expect(weeklyCopy(user.id)).rejects.toBeInstanceOf(BackupBusyError);
+      const after = await prisma.dataBackup.findUniqueOrThrow({
+        where: { id: first.id },
+      });
+      expect(after.chunkStreamId).toBe(before.chunkStreamId);
+      expect(await chunksOf(first.id)).toHaveLength(first.chunks);
+      await prisma.backupRestoreJob.update({
+        where: { id: job.id },
+        data: { status: "succeeded" },
+      });
+    }
+    // Once no restore reads it, the next run replaces it as usual.
+    const next = await weeklyCopy(user.id);
+    expect(next.id).toBe(first.id);
+  });
+});
+
+describe("a row that carries both forms", () => {
+  it("is refused with a reason, whichever form might be newer", async () => {
+    // How it happens: an older release that knows only the single value
+    // writes one into a row that already has pieces, after a downgrade.
+    const user = await seedAccount();
+    const prisma = getPrismaClient();
+    const { id } = await weeklyCopy(user.id);
+    await prisma.dataBackup.update({
+      where: { id },
+      data: {
+        data: await legacyStreamedBlobFrom(async (write) => {
+          await write("{}");
+        }),
+      },
+    });
+    const backup = await prisma.dataBackup.findUniqueOrThrow({
+      where: { id },
+      select: STORED_BACKUP_SELECT,
+    });
+    const { openStoredBackup } = await import("@/lib/export/stored-backup");
+    await expect(openStoredBackup(prisma, backup)).rejects.toThrow(
+      /both a single stored value and pieces/,
+    );
+    const res = await restoreRoute(id);
+    expect(res.status).toBe(422);
+  });
+
+  it("is written in one form again by the next weekly run", async () => {
+    const user = await seedAccount();
+    const prisma = getPrismaClient();
+    const { id } = await weeklyCopy(user.id);
+    await prisma.dataBackup.update({ where: { id }, data: { data: "x" } });
+    await weeklyCopy(user.id);
+    const row = await prisma.dataBackup.findUniqueOrThrow({ where: { id } });
+    expect(row.data).toBeNull();
+    expect(await readStoredBackup(prisma, id)).toContain('"measurements"');
+  });
+});
+
+describe("two backups of the same account at the same time", () => {
+  it("run one after the other and leave one complete copy", async () => {
+    const user = await seedAccount();
+    const prisma = getPrismaClient();
+    await weeklyCopy(user.id);
+    const results = await Promise.allSettled([
+      weeklyCopy(user.id),
+      weeklyCopy(user.id),
+    ]);
+    expect(results.map((r) => r.status)).toEqual(["fulfilled", "fulfilled"]);
+    const row = await prisma.dataBackup.findFirstOrThrow({
+      where: { userId: user.id, type: "WEEKLY_AUTO" },
+    });
+    expect(await chunksOf(row.id)).toHaveLength(row.chunkCount!);
+    expect(
+      JSON.parse(await readStoredBackup(prisma, row.id)).measurements,
+    ).toHaveLength(COUNT);
   });
 });
 

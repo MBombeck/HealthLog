@@ -13,6 +13,8 @@ import { Buffer } from "node:buffer";
 
 import { describe, expect, it } from "vitest";
 
+import { decryptBytes, encryptBytes } from "@/lib/crypto";
+import { BACKUP_CHUNK_AAD } from "@/lib/crypto/encrypted-columns";
 import {
   BackupIntegrityError,
   newChunkStreamId,
@@ -90,5 +92,19 @@ describe("sealed backup pieces", () => {
     expect(() =>
       openBackupChunk(relabelled, { streamId: id, seq: 0, last: true }),
     ).toThrow(BackupIntegrityError);
+  });
+
+  it("refuses a piece sealed without the backup-piece label", () => {
+    // The same key seals other binary values too (documents, for one). A
+    // value sealed for another purpose must not open as a backup piece, even
+    // if its plaintext happens to look like one.
+    const id = newChunkStreamId();
+    const sealed = sealBackupChunk(id, 0, true, PAYLOAD);
+    const plain = decryptBytes(sealed, BACKUP_CHUNK_AAD);
+    const unlabelled = encryptBytes(plain);
+    expect(() =>
+      openBackupChunk(unlabelled, { streamId: id, seq: 0, last: true }),
+    ).toThrow(BackupIntegrityError);
+    expect(() => decryptBytes(sealed)).toThrow();
   });
 });

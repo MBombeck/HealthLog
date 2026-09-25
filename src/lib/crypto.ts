@@ -283,8 +283,14 @@ export function reencryptToActive(encoded: string): string {
 /** Version byte identifying the binary2 layout. */
 const BYTES_CODEC_VERSION = 0x02;
 
-/** Encrypt raw bytes with the active key into the binary2 layout. */
-export function encryptBytes(plaintext: Buffer): Buffer {
+/**
+ * Encrypt raw bytes with the active key into the binary2 layout.
+ *
+ * `aad` binds the value to a purpose: it is authenticated but not stored, so
+ * the value opens only through `decryptBytes` with the same label. Omitted,
+ * the layout and the behaviour are exactly what they always were.
+ */
+export function encryptBytes(plaintext: Buffer, aad?: string): Buffer {
   const { id, key } = getActiveKey();
   const keyId = Buffer.from(id, "ascii");
   if (keyId.byteLength < 1 || keyId.byteLength > 32) {
@@ -293,6 +299,7 @@ export function encryptBytes(plaintext: Buffer): Buffer {
   }
   const iv = randomBytes(IV_LENGTH);
   const cipher = createCipheriv(ALGORITHM, key, iv);
+  if (aad !== undefined) cipher.setAAD(Buffer.from(aad, "utf8"));
   const ct = Buffer.concat([cipher.update(plaintext), cipher.final()]);
   const tag = cipher.getAuthTag();
   const header = Buffer.from([BYTES_CODEC_VERSION, keyId.byteLength]);
@@ -337,7 +344,7 @@ function parseBytesHeader(payload: Buffer): {
  * version, a malformed header, or an unconfigured key id throws — the caller
  * must treat a throw as "cannot serve", never fall back to the ciphertext.
  */
-export function decryptBytes(payload: Buffer): Buffer {
+export function decryptBytes(payload: Buffer, aad?: string): Buffer {
   const { keyId, iv, tag, ct } = parseBytesHeader(payload);
   const key = getKeyById(keyId);
   if (!key) {
@@ -348,6 +355,7 @@ export function decryptBytes(payload: Buffer): Buffer {
   }
   const dec = createDecipheriv(ALGORITHM, key, iv);
   dec.setAuthTag(tag);
+  if (aad !== undefined) dec.setAAD(Buffer.from(aad, "utf8"));
   return Buffer.concat([dec.update(ct), dec.final()]);
 }
 
@@ -360,9 +368,12 @@ export function extractKeyIdFromBytes(payload: Buffer): string | null {
   }
 }
 
-/** Re-encrypt a binary2 payload with the active key. Used by rotation. */
-export function reencryptBytesToActive(payload: Buffer): Buffer {
-  return encryptBytes(decryptBytes(payload));
+/**
+ * Re-encrypt a binary2 payload with the active key, under the same `aad`
+ * label it was sealed with. Used by rotation.
+ */
+export function reencryptBytesToActive(payload: Buffer, aad?: string): Buffer {
+  return encryptBytes(decryptBytes(payload, aad), aad);
 }
 
 // ─── HKDF subkey derivation ──────────────────────────────────────────────────
@@ -578,15 +589,56 @@ export function decryptStream(stored: string): Buffer {
   return decryptRawStream(Buffer.from(rest.slice(dot + 1), "base64"), key);
 }
 
+/** Incremental reader of a streamed ciphertext's body. */
+export interface StreamDecryptor {
+  /** Characters of the stored value taken by the header, before the body. */
+  readonly headerLength: number;
+  /** Decrypt one piece of ciphertext. The output is NOT yet authenticated. */
+  update(ciphertext: Buffer): Buffer;
+  /** Check the tag over everything passed to `update`; throws when it fails. */
+  final(tag: Buffer): Buffer;
+}
+
 /**
- * Re-seal a streamed ciphertext under the active key, as a streamed
- * ciphertext. Used by rotation for the backups v1.39.1 stored in this form;
- * the plaintext is the backup's gzip bytes and is never inspected.
+ * Open a streamed ciphertext for reading a piece at a time, from the first
+ * characters of the stored value (at least the header).
+ *
+ * Unlike `decryptStream`, this releases plaintext before the tag has been
+ * checked, so it is only for a caller that writes what it reads somewhere it
+ * can take back: the conversion of a stored backup into pieces does it inside
+ * one transaction, which rolls back when `final` throws.
  */
-export function reencryptStreamToActive(stored: string): string {
-  const plaintext = decryptStream(stored);
-  const encryptor = createStreamEncryptor();
-  return `${encryptor.header}${encryptor.update(plaintext)}${encryptor.final()}`;
+export function openStreamDecryptor(head: string): StreamDecryptor {
+  if (!isStreamCiphertext(head)) {
+    throw new Error("Not a streamed ciphertext");
+  }
+  const rest = head.slice(STREAM_CODEC_PREFIX.length);
+  const dot = rest.indexOf(".");
+  const keyId = dot > 0 ? rest.slice(0, dot) : "";
+  if (!/^[A-Za-z0-9_-]{1,32}$/.test(keyId)) {
+    throw new Error("Streamed ciphertext carries a malformed key id");
+  }
+  // The 12-byte IV is exactly sixteen base64 characters.
+  const iv = Buffer.from(rest.slice(dot + 1, dot + 17), "base64");
+  if (iv.byteLength !== IV_LENGTH) {
+    throw new Error("Streamed ciphertext has a malformed header");
+  }
+  const key = getKeyById(keyId);
+  if (!key) {
+    throw new Error(
+      `Encryption key id '${keyId}' is not configured. Add it to ` +
+        `ENCRYPTION_KEYS before decrypting rows written under that key.`,
+    );
+  }
+  const dec = createDecipheriv(ALGORITHM, key, iv);
+  return {
+    headerLength: STREAM_CODEC_PREFIX.length + dot + 17,
+    update: (ciphertext) => dec.update(ciphertext),
+    final: (tag) => {
+      dec.setAuthTag(tag);
+      return dec.final();
+    },
+  };
 }
 
 /** The key id a streamed ciphertext was written under, or null when unparsable. */

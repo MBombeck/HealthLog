@@ -234,6 +234,9 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "users_retryable",
   "users_scanned",
   "users_skipped",
+  // v1.39.2 — accounts the weekly backup left alone because a restore of their
+  // current copy was queued or running.
+  "users_skipped_restoring",
   "users_synced",
   "users_useful",
   "wedge_skipped",

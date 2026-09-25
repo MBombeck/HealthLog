@@ -28,11 +28,15 @@
  * with the position and the flag carried inside the authenticated plaintext
  * rather than in the nonce. Every piece has its own random 96-bit IV.
  *
+ * Every piece is sealed with a fixed associated-data label
+ * (`BACKUP_CHUNK_AAD`), so a value the same key sealed for another purpose
+ * never opens as a backup piece.
+ *
  * The header sits inside the ciphertext rather than beside it, deliberately:
  * key rotation re-seals a piece without knowing what it holds
- * (`reencryptBytesToActive`), and the binding survives that untouched. A
- * binding held as associated data outside the ciphertext would need a rotation
- * path of its own for this one column.
+ * (`reencryptBytesToActive`, given the same fixed label), and the binding
+ * survives that untouched. A position or stream id held as associated data
+ * would differ per piece, and rotation would need to know it for each one.
  *
  * The payload is gzip output. The pieces of one copy, opened in order and
  * concatenated, are one gzip stream of the backup JSON.
@@ -41,6 +45,7 @@ import { Buffer } from "node:buffer";
 import { randomBytes } from "node:crypto";
 
 import { decryptBytes, encryptBytes } from "@/lib/crypto";
+import { BACKUP_CHUNK_AAD } from "@/lib/crypto/encrypted-columns";
 
 const MAGIC = Buffer.from("HLBC", "ascii");
 const VERSION = 0x01;
@@ -96,7 +101,7 @@ export function sealBackupChunk(
   header.writeUInt32BE(seq, at);
   at += 4;
   header[at] = last ? FLAG_LAST : 0;
-  return encryptBytes(Buffer.concat([header, payload]));
+  return encryptBytes(Buffer.concat([header, payload]), BACKUP_CHUNK_AAD);
 }
 
 export interface ExpectedChunk {
@@ -117,7 +122,7 @@ export function openBackupChunk(
 ): Buffer {
   let plain: Buffer;
   try {
-    plain = decryptBytes(Buffer.from(sealed));
+    plain = decryptBytes(Buffer.from(sealed), BACKUP_CHUNK_AAD);
   } catch (err) {
     throw new BackupIntegrityError(
       `Piece ${expected.seq} of the stored copy could not be decrypted: ${

@@ -9,11 +9,11 @@
  * pins the fix at the level the bug lived at: seed real rows under an old key,
  * rotate, and read the backup back.
  *
- * Both stored envelopes are seeded on purpose. A row written before
- * `packBackupBlob` existed is `encrypt(json)`; one written after is the
- * `HLZ1:`-prefixed gzip form. Rotation re-seals the ciphertext without ever
- * looking at the plaintext, so both come back byte-identical — and so will
- * whatever envelope a later writer introduces.
+ * Every single-value envelope is seeded on purpose: `encrypt(json)`, the
+ * `HLZ1:` gzip form and the `~hlgcm1.` stream of v1.38.6 to v1.39.1. Rotation does not
+ * re-seal them in place, which would hold a whole copy several times over; it
+ * converts each into pieces under the active key, reading the value a slice
+ * at a time, and the copy has to read back byte-identical.
  *
  * `IdempotencyKey.responseBody` rides along as the disposable case: a row
  * under a key the deployment no longer configures is DELETED rather than
@@ -37,11 +37,15 @@ import {
 } from "@/lib/crypto/encrypted-columns";
 import {
   rotateColumn,
+  scanColumn,
   type CorpusClient,
 } from "@/lib/crypto/encryption-corpus";
-import { packBackupBlob, unpackBackupBlob } from "@/lib/export/backup-blob";
+import { packBackupBlob } from "@/lib/export/backup-blob";
 import { extractKeyIdFromBytes } from "@/lib/crypto";
-import { storeBackupBlob } from "@/lib/export/store-backup-blob";
+import {
+  convertSingleValueBackup,
+  storeBackupBlob,
+} from "@/lib/export/store-backup-blob";
 import { legacyStreamedBlob } from "@/__tests__/helpers/legacy-backup-blob";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { readStoredBackup } from "./stored-backup-read";
@@ -91,101 +95,157 @@ beforeEach(async () => {
 });
 
 describe("key rotation over the non-suffixed ciphertext columns", () => {
-  it("rotates DataBackup.data in both stored envelopes and keeps it readable", async () => {
+  /**
+   * Rotation converts a single-value copy into pieces rather than re-sealing
+   * it in place. Re-sealing needs the whole value in memory several times
+   * over, and the in-app rotation runs in the same 1 GB container as
+   * everything else; converting reads the value a slice at a time.
+   */
+  async function expectConverted(id: string, createdAt: Date) {
     const prisma = getPrismaClient();
-    const gzipped = await prisma.dataBackup.create({
-      data: {
-        userId: TEST_USER_ID,
-        type: "WEEKLY_AUTO",
-        data: underKey("v1", BACKUP_JSON, true),
-      },
-    });
-    // The pre-envelope shape: `encrypt(json)` with no `HLZ1:` marker.
-    const plainEnvelope = await prisma.dataBackup.create({
-      data: {
-        userId: TEST_USER_ID,
-        type: "MANUAL_UPLOAD_1",
-        data: underKey("v1", BACKUP_JSON),
-      },
-    });
-
-    const result = await rotateColumn(
-      { dataBackup: prisma.dataBackup } as unknown as CorpusClient,
-      column("DataBackup", "data"),
-    );
-    expect(result.scanned).toBe(2);
-    expect(result.rotated).toBe(2);
-    expect(result.errors).toBe(0);
-    expect(result.dropped).toBe(0);
-
-    for (const id of [gzipped.id, plainEnvelope.id]) {
-      const row = await prisma.dataBackup.findUniqueOrThrow({ where: { id } });
-      expect(extractKeyId(row.data!)).toBe("v2");
-      expect(unpackBackupBlob(row.data!)).toBe(BACKUP_JSON);
+    const row = await prisma.dataBackup.findUniqueOrThrow({ where: { id } });
+    expect(row.data).toBeNull();
+    expect(row.chunkCount).toBeGreaterThan(0);
+    expect(row.chunkStreamId).toMatch(/^[0-9a-f]{32}$/);
+    // The copy is still the one taken on that date.
+    expect(row.createdAt).toEqual(createdAt);
+    for (const piece of await prisma.dataBackupChunk.findMany({
+      where: { backupId: id },
+    })) {
+      expect(extractKeyIdFromBytes(Buffer.from(piece.data))).toBe("v2");
     }
+    expect(await readStoredBackup(prisma, id)).toBe(BACKUP_JSON);
+  }
 
-    // Idempotent: a second pass finds nothing left to do.
-    const again = await rotateColumn(
-      { dataBackup: prisma.dataBackup } as unknown as CorpusClient,
-      column("DataBackup", "data"),
-    );
-    expect(again.scanned).toBe(2);
-    expect(again.rotated).toBe(0);
-  });
-
-  it("survives dropping the retired key once rotation has run", async () => {
-    const prisma = getPrismaClient();
-    const backup = await prisma.dataBackup.create({
-      data: {
-        userId: TEST_USER_ID,
-        type: "WEEKLY_AUTO",
-        data: underKey("v1", BACKUP_JSON, true),
-      },
-    });
-    await rotateColumn(
-      { dataBackup: prisma.dataBackup } as unknown as CorpusClient,
-      column("DataBackup", "data"),
-    );
-
-    // What the runbook tells the operator to do next: retire v1 entirely.
-    process.env.ENCRYPTION_KEYS = JSON.stringify({ v2: "2".repeat(64) });
-    _resetCryptoCacheForTests();
-
-    const row = await prisma.dataBackup.findUniqueOrThrow({
-      where: { id: backup.id },
-    });
-    expect(unpackBackupBlob(row.data!)).toBe(BACKUP_JSON);
-  });
-
-  it("rotates the single stream v1.39.1 stored, and it stays readable", async () => {
-    // The `~hlgcm1.` form carries its key id behind a marker the string
-    // codec's parser does not read, so the walk used to file it as legacy
-    // and fail to decrypt it: the one copy form every v1.39.x host had was
-    // counted as an error on every rotation.
+  it("converts DataBackup.data in every single-value envelope into pieces under the active key", async () => {
     const prisma = getPrismaClient();
     const previous = process.env.ENCRYPTION_ACTIVE_KEY_ID;
     process.env.ENCRYPTION_ACTIVE_KEY_ID = "v1";
     _resetCryptoCacheForTests();
-    const stored = legacyStreamedBlob(BACKUP_JSON);
+    // The single stream of v1.38.6 to v1.39.1, whose key id sits behind a `~hlgcm1.`
+    // marker the string codec's parser does not read.
+    const streamed = legacyStreamedBlob(BACKUP_JSON);
     process.env.ENCRYPTION_ACTIVE_KEY_ID = previous;
     _resetCryptoCacheForTests();
+    const rows = [
+      await prisma.dataBackup.create({
+        data: {
+          userId: TEST_USER_ID,
+          type: "WEEKLY_AUTO",
+          data: underKey("v1", BACKUP_JSON, true),
+        },
+      }),
+      // The pre-envelope shape: `encrypt(json)` with no `HLZ1:` marker.
+      await prisma.dataBackup.create({
+        data: {
+          userId: TEST_USER_ID,
+          type: "MANUAL_UPLOAD_1",
+          data: underKey("v1", BACKUP_JSON),
+        },
+      }),
+      await prisma.dataBackup.create({
+        data: { userId: TEST_USER_ID, type: "MANUAL_UPLOAD_2", data: streamed },
+      }),
+      // Already under the active key: converted too, so no single value is
+      // left for a reader that has to hold it whole.
+      await prisma.dataBackup.create({
+        data: {
+          userId: TEST_USER_ID,
+          type: "MANUAL_UPLOAD_3",
+          data: underKey("v2", BACKUP_JSON, true),
+        },
+      }),
+    ];
+
+    const result = await rotateColumn(
+      prisma as unknown as CorpusClient,
+      column("DataBackup", "data"),
+    );
+    expect(result).toMatchObject({
+      scanned: 4,
+      rotated: 4,
+      errors: 0,
+      dropped: 0,
+    });
+
+    // What the runbook tells the operator to do next: retire v1 entirely.
+    process.env.ENCRYPTION_KEYS = JSON.stringify({ v2: "2".repeat(64) });
+    _resetCryptoCacheForTests();
+    for (const row of rows) await expectConverted(row.id, row.createdAt);
+
+    // Idempotent: a second pass finds nothing left to do.
+    const again = await rotateColumn(
+      prisma as unknown as CorpusClient,
+      column("DataBackup", "data"),
+    );
+    expect(again).toMatchObject({ scanned: 0, rotated: 0, errors: 0 });
+  });
+
+  it("converts a single stream read in many small slices, the tag straddling one", async () => {
+    const prisma = getPrismaClient();
+    const json = JSON.stringify({
+      rows: Array.from({ length: 3_000 }, (_, i) => ({ i, r: Math.random() })),
+    });
+    const stored = legacyStreamedBlob(json);
+    const header = stored.indexOf(".", "~hlgcm1.".length) + 17;
+    const body = stored.length - header;
+    for (const slice of [64, 1_024, body - (body % 4) - 8]) {
+      const row = await prisma.dataBackup.create({
+        data: { userId: TEST_USER_ID, type: `MANUAL_${slice}`, data: stored },
+      });
+      expect(await convertSingleValueBackup(prisma, row.id, slice)).toBe(
+        "converted",
+      );
+      expect(await readStoredBackup(prisma, row.id)).toBe(json);
+    }
+  });
+
+  it("leaves a single-value copy that fails its check exactly as it was", async () => {
+    const prisma = getPrismaClient();
+    const previous = process.env.ENCRYPTION_ACTIVE_KEY_ID;
+    process.env.ENCRYPTION_ACTIVE_KEY_ID = "v1";
+    _resetCryptoCacheForTests();
+    const streamed = legacyStreamedBlob(BACKUP_JSON);
+    process.env.ENCRYPTION_ACTIVE_KEY_ID = previous;
+    _resetCryptoCacheForTests();
+    // Alter one character of the ciphertext body: the tag at the end no
+    // longer verifies, which the conversion only learns after the last slice.
+    const at = streamed.length - 40;
+    const altered =
+      streamed.slice(0, at) +
+      (streamed[at] === "A" ? "B" : "A") +
+      streamed.slice(at + 1);
     const row = await prisma.dataBackup.create({
-      data: { userId: TEST_USER_ID, type: "WEEKLY_AUTO", data: stored },
+      data: { userId: TEST_USER_ID, type: "WEEKLY_AUTO", data: altered },
     });
 
     const result = await rotateColumn(
-      { dataBackup: prisma.dataBackup } as unknown as CorpusClient,
+      prisma as unknown as CorpusClient,
       column("DataBackup", "data"),
     );
-    expect(result).toMatchObject({ scanned: 1, rotated: 1, errors: 0 });
-
-    process.env.ENCRYPTION_KEYS = JSON.stringify({ v2: "2".repeat(64) });
-    _resetCryptoCacheForTests();
+    expect(result).toMatchObject({ scanned: 1, rotated: 0, errors: 1 });
     const after = await prisma.dataBackup.findUniqueOrThrow({
       where: { id: row.id },
     });
-    expect(after.data!.startsWith("~hlgcm1.v2.")).toBe(true);
-    expect(unpackBackupBlob(after.data!)).toBe(BACKUP_JSON);
+    expect(after.data).toBe(altered);
+    expect(after.chunkStreamId).toBeNull();
+    expect(await prisma.dataBackupChunk.count()).toBe(0);
+  });
+
+  it("reports single-value copies by key id without reading them whole", async () => {
+    const prisma = getPrismaClient();
+    await prisma.dataBackup.create({
+      data: {
+        userId: TEST_USER_ID,
+        type: "WEEKLY_AUTO",
+        data: underKey("v1", BACKUP_JSON, true),
+      },
+    });
+    const scan = await scanColumn(
+      prisma as unknown as CorpusClient,
+      column("DataBackup", "data"),
+    );
+    expect(scan).toMatchObject({ total: 1, byKeyId: { v1: 1 } });
   });
 
   it("rotates every piece of a chunked copy, which reads back once the old key is gone", async () => {

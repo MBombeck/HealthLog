@@ -22,11 +22,9 @@ import { apiHandler, HttpError, requireAdmin } from "@/lib/api-handler";
 import { apiError, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import {
-  BACKUP_UNDECRYPTABLE_CODE,
-  BACKUP_UNDECRYPTABLE_ERROR,
-} from "@/lib/export/backup-blob";
-import {
+  isStoredBackupReadError,
   openStoredBackup,
+  storedBackupRefusal,
   STORED_BACKUP_SELECT,
 } from "@/lib/export/stored-backup";
 import {
@@ -89,8 +87,9 @@ export const GET = apiHandler(
           reason: err instanceof Error ? err.message : "decrypt_failed",
         },
       });
-      return apiError(BACKUP_UNDECRYPTABLE_ERROR, 422, {
-        errorCode: BACKUP_UNDECRYPTABLE_CODE,
+      const refusal = storedBackupRefusal(err);
+      return apiError(refusal.message, refusal.status, {
+        errorCode: refusal.code,
       });
     }
 
@@ -103,16 +102,25 @@ export const GET = apiHandler(
       streamed = await readStreamedBackup(source);
       parseBackupPayload(streamed.raw);
     } catch (err) {
+      const readFailure = isStoredBackupReadError(err);
       await auditLog("admin.backups.download.failed", {
         userId: admin.id,
         ipAddress: getClientIp(request),
         details: {
           backupId: id,
           ownerId: backup.userId,
-          reason: "schema_invalid",
+          reason: readFailure ? "read_failed" : "schema_invalid",
           message: err instanceof Error ? err.message : String(err),
         },
       });
+      if (readFailure) {
+        // The copy changed between opening and reading (replaced by the
+        // weekly run, or altered): the same answer the open gives.
+        const refusal = storedBackupRefusal(err);
+        return apiError(refusal.message, refusal.status, {
+          errorCode: refusal.code,
+        });
+      }
       return apiError("Backup payload failed schema validation", 500);
     }
 

@@ -39,6 +39,13 @@
 
 export type EncryptedColumnKind = "string" | "bytes";
 
+/**
+ * The associated-data label a stored backup's pieces are sealed with. The same
+ * key seals other binary values (a stored document, for one); the label keeps
+ * a value sealed for another purpose from ever opening as a backup piece.
+ */
+export const BACKUP_CHUNK_AAD = "healthlog/data-backup-chunk/v1";
+
 export interface EncryptedColumn {
   /** Prisma model name (PascalCase, as declared in schema.prisma). */
   readonly model: string;
@@ -60,6 +67,19 @@ export interface EncryptedColumn {
    * layout. Like `codecField`, it implies batching.
    */
   readonly codec?: "binary2";
+  /**
+   * The associated-data label every value of the column is sealed with
+   * (`encryptBytes(value, aad)`). Rotation re-seals under the same label.
+   */
+  readonly aad?: string;
+  /**
+   * The column holds single-value backups, which rotation does not re-seal in
+   * place but converts into pieces in `DataBackupChunk` under the active key,
+   * reading the value a slice at a time. Re-sealing in place needs the whole
+   * value in memory several times over, and one value can be a hundred
+   * megabytes.
+   */
+  readonly convertsToPieces?: true;
   /**
    * Walk this column in bounded id-cursor batches instead of one `findMany`.
    * Set it on any column whose rows are blobs rather than short strings — a
@@ -387,9 +407,15 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   //
   // Rotation re-encrypts the ciphertext WITHOUT touching the plaintext, so it
   // is blind to the envelope inside: a row is the plain backup JSON, the
-  // `HLZ1:`-prefixed gzip form, or the single `~hlgcm1.` stream v1.39.1 wrote
+  // `HLZ1:`-prefixed gzip form, or the single `~hlgcm1.` stream v1.38.6 to v1.39.1 wrote
   // (re-sealed as a stream). Batched, because a single row is megabytes.
-  { model: "DataBackup", field: "data", kind: "string", batched: true },
+  {
+    model: "DataBackup",
+    field: "data",
+    kind: "string",
+    batched: true,
+    convertsToPieces: true,
+  },
 
   // ───── Whole-account backup, in pieces (Bytes, binary2, batched) ─────
   // How every backup is stored from v1.39.2: ordered pieces of about a
@@ -402,6 +428,7 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
     field: "data",
     kind: "bytes",
     codec: "binary2",
+    aad: BACKUP_CHUNK_AAD,
   },
 
   // ───── Idempotent-replay response cache (String, disposable) ─────

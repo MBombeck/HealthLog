@@ -1,9 +1,9 @@
 /**
- * The single-value backup form v1.39.1 wrote into `data_backups.data`: the
+ * The single-value backup form v1.38.6 to v1.39.1 wrote into `data_backups.data`: the
  * JSON gzipped, then sealed as one AES-256-GCM stream (`~hlgcm1.…`).
  *
  * Nothing in the app writes it any more; copies stored in pieces replaced it
- * in v1.39.2. Copies in this form still exist on every host that ran v1.39.x,
+ * in v1.39.2. Copies in this form still exist on every host that ran those releases,
  * and they still have to restore, so the tests build them with this.
  */
 import { Buffer } from "node:buffer";
