@@ -30,16 +30,18 @@ API Tokens**. It expires after a year unless you revoke it sooner.
 
 ## 2. New documents from Paperless-ngx (workflow)
 
-This needs Paperless-ngx 3.0 or later (the `{{doc_id}}` placeholder and the
-double-brace placeholder syntax below arrived there). In Paperless-ngx, open
-**Workflows** and add one:
+This needs Paperless-ngx 3.0 or later, the first release with the
+`{{doc_id}}` placeholder. In Paperless-ngx, open **Workflows** and add one:
 
 - **Triggers:** add _Document Added_ and _Document Updated_. On each, set
   the filter to "has any of these tags" and pick the tag you use for health
   documents, for example `HealthLog`.
 - **Action:** _Webhook_.
-  - URL: `https://<your HealthLog address>/api/documents/inbound`
-  - **Use parameters** (not JSON), with these parameters:
+  - **Webhook url:** `https://<your HealthLog address>/api/documents/inbound`.
+    Use the address HealthLog is served at: Paperless does not follow
+    redirects.
+  - **Use parameters for webhook body:** on. **Send webhook payload as
+    JSON:** off. **Webhook params:**
 
     | Name           | Value                                                |
     | -------------- | ---------------------------------------------------- |
@@ -50,7 +52,8 @@ double-brace placeholder syntax below arrived there). In Paperless-ngx, open
 
   - **Include document:** on. Paperless then sends the original file along
     with the parameters, which is exactly what HealthLog expects.
-  - **Headers:** `Authorization` = `Bearer hlk_…` (your document token).
+  - **Webhook headers:** `Authorization` = `Bearer hlk_…` (your document
+    token).
 
 Optionally add a parameter `kind` with one of `DOCTOR_REPORT`,
 `DISCHARGE_LETTER`, `LAB_RESULT`, `IMAGING`, `PRESCRIPTION`, `REFERRAL`,
@@ -127,7 +130,8 @@ Options:
   document type or by Papra tag; anything unmatched gets `--kind`, or
   _Other_.
 - `--dry-run` lists what would be copied, with sizes and a total, and sends
-  nothing. Worth running first.
+  nothing. Worth running first. It only talks to the source, so it needs no
+  HealthLog token and also lists documents HealthLog already has.
 - `--ai-read` lets HealthLog read the documents with AI as they arrive (see
   below). Off by default.
 
@@ -144,13 +148,15 @@ What it does:
   neither downloaded nor sent again, and a re-run over a large archive is
   quick. Documents you deleted in HealthLog stay deleted, also after they
   are removed for good. The same goes for a file you had already uploaded
-  by hand: the import recognises it by its content, and if you delete it
-  later, the import leaves it deleted. An interrupted run simply picks up
-  where it stopped.
+  by hand: the import recognises it by its content (sending it once to
+  compare), and if you delete it later, the import leaves it deleted. An
+  interrupted run simply picks up where it stopped.
 - When HealthLog asks it to slow down, it waits as long as HealthLog says
   and carries on. By default a document token may upload 120 documents an
-  hour, so an archive of a thousand documents takes an evening. Documents
-  HealthLog already has do not count towards that. Uploads you make yourself
+  hour, so an archive of a thousand documents takes a night. Documents
+  HealthLog recognises by their source id do not count towards that; they
+  count towards a separate allowance of 5,000 lookups an hour. Uploads you
+  make yourself
   in the web app or on your phone are counted separately and are not held
   up.
 - At the end it prints how many documents were imported, how many were
@@ -170,12 +176,14 @@ are searchable by their text where the file has a text layer.
 
 HealthLog remembers that these documents were held back: turning on
 automatic AI reading later does not send them to your AI provider either.
-To have documents read, open one and choose **Read with AI** or
-**Generate summary**, or use **Index all for search** in Documents for the
-ones that had no text to search. Pass `--ai-read` if you do want every
-imported document read as it arrives.
+To have a document read, open it and choose **Read with AI** or **Generate
+summary**; either ends the hold for that document. **Index all for search**
+leaves held-back documents alone, so a scan without a text layer stays
+unsearchable until you read it this way. Pass `--ai-read` if you do want
+every imported document read as it arrives.
 
-The Paperless workflow does not hold AI reading back: new documents are
+The Paperless workflow does not hold AI reading back unless you add the
+parameter `aiRead` with the value `defer`: otherwise new documents are
 treated like any other upload.
 
 ### Keeping Papra in step
