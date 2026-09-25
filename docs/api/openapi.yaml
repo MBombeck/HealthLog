@@ -5984,12 +5984,16 @@ paths:
           name: from
           schema:
             description: Window start (inclusive). Defaults to 90 days before `to`; clamped to a 366-day span floor. Recorded doses
-              are returned from this instant; expected slots are not minted before the medication's `createdAt`.
+              are returned from this instant. A slot from before the medication's `createdAt` appears only when a
+              recorded row (a take, a skip, or a miss carried in with restored history) claims it; the server's own
+              placeholder for such a slot is not returned.
             type: string
             format: date-time
             pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
           description: Window start (inclusive). Defaults to 90 days before `to`; clamped to a 366-day span floor. Recorded doses
-            are returned from this instant; expected slots are not minted before the medication's `createdAt`.
+            are returned from this instant. A slot from before the medication's `createdAt` appears only when a recorded
+            row (a take, a skip, or a miss carried in with restored history) claims it; the server's own placeholder for
+            such a slot is not returned.
         - in: query
           name: to
           schema:
@@ -43263,8 +43267,9 @@ components:
           type: integer
           minimum: 0
           maximum: 9007199254740991
-          description: "Full denominator over the window: `taken + skipped + missed`. Cadence-aware and clamped to the
-            medication's `createdAt`."
+          description: "Full denominator over the window: `taken + skipped + missed`. Cadence-aware. A slot from before the
+            medication's `createdAt` counts only when a recorded row (a take, a skip, or a miss carried in with restored
+            history) claims it, so the days before the medication existed are never missed."
         taken:
           type: integer
           minimum: 0

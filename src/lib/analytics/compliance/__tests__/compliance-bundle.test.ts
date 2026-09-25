@@ -159,10 +159,14 @@ describe("buildMedicationComplianceBundle — parity with the per-window composi
       buildComplianceDisplay(events, schedules, ctx, { now: NOW }),
     );
 
-    // The ledger window clamps to the medication's creation.
-    expect(bundle.ledgerFrom).toEqual(createdAt);
-    // One band per daily slot over the 40-day life → 40 or 41 slot rows
+    // The ledger mints over the whole 365-day period (#1028); the slots
+    // before the creation hold no recorded dose, so none of them survive:
+    // one band per daily slot over the 40-day life → 40 or 41 slot rows
     // (the boundary day depends on the creation instant vs slot time).
+    expect(bundle.ledgerFrom).toEqual(new Date(NOW.getTime() - 365 * DAY_MS));
+    expect(
+      bundle.ledgerRows.some((r) => r.at.getTime() < createdAt.getTime()),
+    ).toBe(false);
     const slotRows = bundle.ledgerRows.filter((r) => r.kind === "slot");
     expect(slotRows.length).toBeGreaterThanOrEqual(39);
     expect(slotRows.length).toBeLessThanOrEqual(41);

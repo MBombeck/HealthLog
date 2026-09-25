@@ -107,10 +107,14 @@ export function complianceCacheKey(
  * Slot rows contribute to `expected` / `expectedCount` (the day's due-slot
  * count): a taken slot adds to `taken` and its timing bucket; a missed slot
  * stays uncounted in `taken`; a skipped slot lands in `skipped`; an upcoming
- * slot is still due but not yet acted on. An ad-hoc row is a real off-schedule
- * take — it counts as `taken` AND adds its own `expected` slot (so the
- * heatmap's `missed = expected − taken − skipped` math stays non-negative) and
- * reads on-time (a logged dose colours green).
+ * slot is still due but not yet acted on. An ad-hoc row with a taken time is
+ * a real off-schedule take — it counts as `taken` AND adds its own `expected`
+ * slot (so the heatmap's `missed = expected − taken − skipped` math stays
+ * non-negative) and reads on-time (a logged dose colours green). An ad-hoc row
+ * without a taken time is an orphaned skip or auto-miss on an instant that is
+ * no slot of the schedule: it records no dose, so it never counts as taken. A
+ * skip still reads as skipped; an orphaned auto-miss has no slot to have
+ * missed and counts nothing, as it does in the rate.
  */
 function bucketLedgerRow(
   entry: DailyComplianceEntry,
@@ -145,12 +149,19 @@ function bucketLedgerRow(
       entry.expectedCount++;
       break;
     case "ad_hoc":
-      // An off-schedule take: a real taken dose with no scheduled slot. Count
-      // it as taken + its own expected slot so the heatmap missed math holds.
-      entry.expected++;
-      entry.expectedCount++;
-      entry.taken++;
-      entry.onTime++;
+      if (row.intake?.takenAt) {
+        // An off-schedule take: a real taken dose with no scheduled slot.
+        // Count it as taken + its own expected slot so the heatmap missed
+        // math holds.
+        entry.expected++;
+        entry.expectedCount++;
+        entry.taken++;
+        entry.onTime++;
+      } else if (row.intake?.skipped) {
+        entry.expected++;
+        entry.expectedCount++;
+        entry.skipped++;
+      }
       break;
   }
 }
@@ -184,14 +195,10 @@ export async function buildCompliancePayload(
   // v1.15.9 — pin a single `now` and thread it into every cadence
   // computation so no block can straddle a day boundary on a slow request.
   const now = new Date();
-  const createdAt = medication.createdAt;
 
-  const fetchFrom = new Date(
-    Math.max(
-      createdAt.getTime(),
-      now.getTime() - EVENT_FETCH_WINDOW_DAYS * DAY_MS,
-    ),
-  );
+  // Not clamped to the medication's creation: a dose recorded for a slot
+  // before the creation still claims that slot in the ledger (#1028).
+  const fetchFrom = new Date(now.getTime() - EVENT_FETCH_WINDOW_DAYS * DAY_MS);
   const events = await prisma.medicationIntakeEvent.findMany({
     // v1.7.0 sync — exclude tombstoned rows from the compliance read.
     // Bounded to the 366-day fetch window: every served block is a suffix
@@ -242,12 +249,10 @@ export async function buildCompliancePayload(
   // unified dose-history ledger (the same bands the % + the history view
   // read), so the per-day timing split (on-time / late) and the per-day
   // missed marks can never disagree with the headline rate. The 90-day
-  // window is carved out of the shared ledger by `row.at`; the window
-  // floor clamps to the medication's creation so pre-existence days never
-  // mint phantom slots.
-  const heatmapFrom = new Date(
-    Math.max(now.getTime() - 90 * DAY_MS, createdAt.getTime()),
-  );
+  // window is carved out of the shared ledger by `row.at`. The ledger
+  // already drops pre-existence slots no recorded dose claims, so the floor
+  // is the plain 90-day window, the same one the history view reads (#1028).
+  const heatmapFrom = new Date(now.getTime() - 90 * DAY_MS);
 
   const dailyCompliance: Record<string, DailyComplianceEntry> = {};
   const byDay = new Map<string, DailyComplianceEntry>();

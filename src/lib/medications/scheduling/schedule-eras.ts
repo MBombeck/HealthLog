@@ -14,7 +14,9 @@
  * Era rules:
  *   - revisions are chained: `validFrom` = previous revision's `validUntil`
  *     (or `medication.createdAt` for the first), `validUntil` = the replace
- *     instant. The LIVE rows cover `[newest validUntil, ∞)`.
+ *     instant. The LIVE rows cover `[newest validUntil, ∞)`. The first era
+ *     also covers any range before its `validFrom`, so a pre-creation slot
+ *     mints against the schedule that was live first.
  *   - boundary: a slot belongs to the era its ANCHOR lies in. Eras mint
  *     with an inclusive sub-range capped 1 ms short of `validUntil`, so an
  *     anchor exactly at the boundary mints in the NEXT era only. On-time /
@@ -171,10 +173,19 @@ export function segmentRangeIntoEras(
   const sorted = revisions
     .filter((r) => r.supersededByRevisionId == null)
     .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime());
-  for (const revision of sorted) {
-    const from = new Date(
-      Math.max(revision.validFrom.getTime(), range.from.getTime()),
-    );
+  for (const [index, revision] of sorted.entries()) {
+    // The earliest era also covers the time before its `validFrom` (the
+    // medication's creation): with no revision that stretch mints against
+    // the live rows, so with revisions it mints against the schedule that
+    // was live first. A dose recorded for a slot before the creation then
+    // meets its slot either way (#1028); unclaimed pre-creation slots are
+    // dropped by the ledger.
+    const from =
+      index === 0
+        ? range.from
+        : new Date(
+            Math.max(revision.validFrom.getTime(), range.from.getTime()),
+          );
     // Inclusive sub-range capped 1 ms short of `validUntil` — the anchor
     // boundary rule: a slot exactly at the boundary belongs to the era
     // that begins there, never to the one ending there.

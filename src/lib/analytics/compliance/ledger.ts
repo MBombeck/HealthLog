@@ -185,7 +185,10 @@ export function buildComplianceLedgerRows(
       pinned: e.attributionSource === "USER_PIN",
     }));
 
-  const rows = reconstructDoseHistory(bands, intakes, now);
+  // Slots before the medication's creation count only when a recorded dose
+  // claims them, so a caller's window reaching past the creation never
+  // mints phantom misses (#1028).
+  const rows = reconstructDoseHistory(bands, intakes, now, ctx.createdAt);
 
   // v1.25 H-MED1 — drop expected dose slots whose anchor falls inside a
   // pause interval. While a medication is paused no dose is expected, so a

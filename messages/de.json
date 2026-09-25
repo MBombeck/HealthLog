@@ -1795,7 +1795,7 @@
           "unpinnedToast": "Zuordnung gelöst",
           "dueContext": "fällig gewesen: {time} ({delta})",
           "confirmTitle": "Slot {time} zuordnen?",
-          "confirmBody": "Die Einnahme zählt für diesen Slot als verspätet — die Quote wird nicht geschönt. Die Zuordnung lässt sich jederzeit wieder lösen.",
+          "confirmBody": "Die Einnahme zählt für diesen Slot genau so, als wäre sie dort erfasst worden: pünktlich oder verspätet, je nachdem, wann sie genommen wurde. Die Quote wird also nicht geschönt. Die Zuordnung lässt sich jederzeit wieder lösen.",
           "confirmCancel": "Abbrechen",
           "confirmAction": "Zuordnen"
         }

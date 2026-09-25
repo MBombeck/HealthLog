@@ -249,7 +249,12 @@ function ledgerChipCounts(
       pinned: e.attributionSource === "USER_PIN",
     }));
 
-  const rows = reconstructDoseHistory(bands, intakes, asOf);
+  const rows = reconstructDoseHistory(
+    bands,
+    intakes,
+    asOf,
+    engineCtx.createdAt,
+  );
   let taken = 0;
   let missed = 0;
   for (const row of rows) {

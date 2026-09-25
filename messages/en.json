@@ -1795,7 +1795,7 @@
           "unpinnedToast": "Attribution released",
           "dueContext": "was due: {time} ({delta})",
           "confirmTitle": "Attribute to slot {time}?",
-          "confirmBody": "The intake counts as taken late for this slot – the rate is never flattered. You can release the attribution at any time.",
+          "confirmBody": "The intake counts for this slot just as it would if it had been logged there: on time or late depending on when it was taken, so the rate is never flattered. You can release the attribution at any time.",
           "confirmCancel": "Cancel",
           "confirmAction": "Attribute"
         }

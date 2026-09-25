@@ -1795,7 +1795,7 @@
           "unpinnedToast": "Prise détachée du créneau",
           "dueContext": "prévue à {time} ({delta})",
           "confirmTitle": "Rattacher au créneau de {time} ?",
-          "confirmBody": "La prise comptera comme prise en retard pour ce créneau – le taux n'est pas embelli. Le rattachement peut être retiré à tout moment.",
+          "confirmBody": "La prise comptera pour ce créneau exactement comme si elle y avait été enregistrée : à l'heure ou en retard selon le moment où elle a été prise. Le taux n'est donc pas embelli. Le rattachement peut être retiré à tout moment.",
           "confirmCancel": "Annuler",
           "confirmAction": "Rattacher"
         }

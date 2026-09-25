@@ -1795,7 +1795,7 @@
           "unpinnedToast": "Asignación quitada",
           "dueContext": "prevista: {time} ({delta})",
           "confirmTitle": "¿Asignar al horario de las {time}?",
-          "confirmBody": "La toma contará como tomada con retraso para este horario; el porcentaje no se maquilla. Puedes quitar la asignación en cualquier momento.",
+          "confirmBody": "La toma contará para este horario igual que si se hubiera registrado en él: a tiempo o con retraso según cuándo se tomó, así que el porcentaje no se maquilla. Puedes quitar la asignación en cualquier momento.",
           "confirmCancel": "Cancelar",
           "confirmAction": "Asignar"
         }

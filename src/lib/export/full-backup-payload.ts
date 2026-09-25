@@ -998,13 +998,17 @@ export async function buildFullBackupPayload(
             reorderLeadDays: m.reorderLeadDays,
             externalSource: m.externalSource,
             externalId: m.externalId,
-            createdAt: m.createdAt.toISOString(),
             updatedAt: m.updatedAt.toISOString(),
           }
         : {}),
       name: m.name,
       dose: m.dose,
       active: m.active,
+      // Both purposes carry the creation instant: it is the floor of the
+      // medication's expected slots, so a restore stamped with the restore
+      // time would read the whole restored history as predating the
+      // medication and drop its misses from every rate (#1028).
+      createdAt: m.createdAt.toISOString(),
       schedules: m.schedules.map((s) => ({
         ...(disasterRecovery
           ? {

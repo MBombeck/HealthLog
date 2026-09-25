@@ -3053,7 +3053,7 @@ describe("tallyComplianceFromLedger — the unified % keystone", () => {
       skipped: e.skipped,
       autoMissed: false,
     }));
-    const rows = reconstructDoseHistory(bands, intakes, nowEvening);
+    const rows = reconstructDoseHistory(bands, intakes, nowEvening, null);
 
     const fromLedger = {
       onTime: rows.filter((r) => r.status === "taken_on_time").length,
