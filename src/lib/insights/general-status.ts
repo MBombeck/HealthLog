@@ -44,6 +44,7 @@ import {
 } from "@/lib/insights/status-card-generation";
 import { annotate } from "@/lib/logging/context";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
+import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 
 // Derived from canonical enum so a new measurement type is auto-included
 // in the AI general-status fetch (V3 audit: enum drift cousins).
@@ -243,6 +244,8 @@ export async function prepareGeneralStatusForUser(
       userId,
       deletedAt: null,
       scheduledFor: { gte: intakeWindowStart },
+      // v1.39.1 (#1033) — adherence counts tracked medications only.
+      ...TRACKED_INTAKE_EVENT_WHERE,
     },
     orderBy: { scheduledFor: "asc" },
     select: {

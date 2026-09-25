@@ -40,7 +40,50 @@ const SCHEDULE_READ =
 
 /** The vocabulary that honours the switch. */
 const HONOURS =
-  /\b(?:TRACKED_INTAKE_WHERE|TRACKED_INTAKE_EVENT_WHERE|dueSchedules|scheduleWireFields|expectsDoses)\b/;
+  /\b(?:TRACKED_INTAKE_WHERE|TRACKED_INTAKE_EVENT_WHERE|dueSchedules|scheduleWireFields|expectsDoses|isRecordOnly)\b/;
+
+/**
+ * A bulk read of intake rows. Rate readers that never touch a schedule (a
+ * nudge that divides taken by resolved rows, a model series that buckets
+ * rows per day) count a record-only medication's rows unless they filter.
+ * Whitespace-tolerant: the delegate and the method may sit on two lines.
+ */
+const INTAKE_READ =
+  /\bmedicationIntakeEvent\s*\.\s*(?:findMany|groupBy|count|aggregate)\s*\(/;
+
+/**
+ * Intake readers that may see every medication's rows, and why: nothing in
+ * them is an adherence rate, an expected-dose count or a due dose.
+ */
+const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
+  "app/api/admin/status/route.ts": "instance row counts",
+  "app/api/dashboard/summary/route.ts":
+    "engagement streak of days with any logged action, no rate",
+  "app/api/export/medications/route.ts": "export of the recorded history",
+  "app/api/export/route.ts": "export of the recorded history",
+  "lib/export/full-backup-payload.ts": "backup of the recorded history",
+  "app/api/sync/state/route.ts": "sync watermarks, no rate",
+  "lib/jobs/measurement-tombstone-cleanup.ts": "tombstone purge",
+  "lib/ai/coach/tools/availability.ts":
+    "whether any intake history exists, and its date range",
+  "app/api/medications/[id]/intake/route.ts":
+    "one medication's recorded history, listed or written",
+  "app/api/medications/[id]/intake/bulk-delete/route.ts":
+    "deletes rows the person chose",
+  "app/api/medications/[id]/route.ts":
+    "one medication's slots; tombstones on the tracking switch",
+  "app/api/medications/intake/bulk/route.ts": "writes recorded doses",
+  "lib/medications/scheduling/slot-upsert.ts":
+    "binds a recorded dose to its slot",
+  "lib/medications/scheduling/worker-helpers.ts":
+    "slot lookups for one medication the caller already selected",
+  "lib/medications/inventory/consumption.ts":
+    "units consumed by a recorded dose",
+  "lib/medications/intake-slot-dedup.ts":
+    "folds duplicate rows of doses already recorded",
+  "lib/doctor-report/collect.ts":
+    "administration ledger lists recorded doses; rates gate via expectsDoses",
+};
 
 /**
  * Readers that may see every stored schedule row, and why. Each reason says
@@ -166,5 +209,57 @@ describe("medication intake tracking — schedule readers honour the switch", ()
         importOnly.replace(/^import[\s\S]*?from\s+["'][^"']+["'];?$/gm, ""),
       ),
     ).toBe(false);
+  });
+});
+
+const intakeReaders = sourceFiles().filter((rel) =>
+  INTAKE_READ.test(code(rel)),
+);
+
+describe("medication intake tracking — intake-row readers honour the switch", () => {
+  it("finds the intake readers it exists to police", () => {
+    expect(intakeReaders.length).toBeGreaterThanOrEqual(30);
+    for (const known of [
+      "lib/jobs/coach-nudge.ts",
+      "lib/insights/general-status.ts",
+      "lib/analytics/correlations-fast-path.ts",
+      "lib/medications/outstanding-doses.ts",
+    ]) {
+      expect(intakeReaders).toContain(known);
+    }
+  });
+
+  it("every intake reader uses the vocabulary or is allowlisted", () => {
+    const offenders = intakeReaders.filter(
+      (rel) => !(rel in INTAKE_MAY_SEE_EVERY_ROW) && !HONOURS.test(usage(rel)),
+    );
+    expect(
+      offenders,
+      "These files read intake rows without honouring Medication.trackIntake. " +
+        "Filter with TRACKED_INTAKE_EVENT_WHERE (or read only the ids of " +
+        "medications filtered with TRACKED_INTAKE_WHERE), or add the file to " +
+        "INTAKE_MAY_SEE_EVERY_ROW with the reason it computes no rate.",
+    ).toEqual([]);
+  });
+
+  it("the intake allowlist names no file that stopped reading intake rows", () => {
+    expect(
+      Object.keys(INTAKE_MAY_SEE_EVERY_ROW).filter(
+        (rel) => !intakeReaders.includes(rel),
+      ),
+    ).toEqual([]);
+  });
+
+  it("the intake matcher catches the shapes it claims to", () => {
+    expect(INTAKE_READ.test("prisma.medicationIntakeEvent.findMany({")).toBe(
+      true,
+    );
+    expect(
+      INTAKE_READ.test("prisma.medicationIntakeEvent\n    .groupBy({"),
+    ).toBe(true);
+    expect(INTAKE_READ.test("tx.medicationIntakeEvent . count (")).toBe(true);
+    expect(INTAKE_READ.test("prisma.medicationIntakeEvent.create({")).toBe(
+      false,
+    );
   });
 });
