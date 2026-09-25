@@ -5023,6 +5023,13 @@ model BackupRestoreJob {
   /// On failure: a stable `code`, a sentence an operator can act on, and the
   /// missing sections when that was the reason. Consumer: the status routes.
   failure                 Json?
+  /// When the restore transaction committed: from here on the account holds
+  /// the restored data, whatever happens to the steps after it. Written and
+  /// awaited before the rollup rebuild starts. Consumer: the boot sweep and
+  /// the admission check, which never queue a committed job again (a second
+  /// run would delete what the account gained since) and close it as
+  /// `failed_after_commit` instead; and the worker's own failure message.
+  committedAt             DateTime? @map("committed_at")
   /// How many times a worker has started this job. Consumer: the boot sweep,
   /// which stops re-queueing after the second attempt.
   attempts                Int       @default(0)

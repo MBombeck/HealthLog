@@ -99,6 +99,9 @@ export function defaultBackupBlobLimit(): number {
  * is about the record, and it is true: raising the heap raises the limit with
  * it, since the limit is derived from the heap.
  */
+/** The stable code of the 413 an upload too large to store is answered with. */
+export const BACKUP_UPLOAD_TOO_LARGE_CODE = "backup.upload.too_large";
+
 export class BackupBlobTooLargeError extends Error {
   readonly bytes: number;
   readonly limitBytes: number;

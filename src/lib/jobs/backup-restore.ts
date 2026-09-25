@@ -14,11 +14,17 @@
  * What stays true from the synchronous restore:
  *
  *   - Every check still happens before the first delete, and the replacement
- *     is still one transaction. A failed job leaves the account as it was.
+ *     is still one transaction. A job that fails before the commit leaves the
+ *     account as it was. After the commit only the rollup rebuild remains,
+ *     and a job that fails there says the data was restored
+ *     (`failed_after_commit`).
  *   - While it runs, the account keeps reading its current data: nothing the
  *     transaction writes is visible to anyone until it commits. Other writes
- *     to the account are neither refused nor held, exactly as before; a reading
- *     that arrives mid-restore stays next to the restored ones.
+ *     to the account are not refused, exactly as before. A new row (a reading
+ *     that arrives mid-restore) is written at once and stays next to the
+ *     restored ones. A write that updates or deletes a row the restore has
+ *     already deleted waits on that row's lock until the restore commits or
+ *     rolls back, and then finds the row gone or back.
  *
  * What the job adds:
  *
@@ -33,7 +39,12 @@
  *   - Resuming after a restart. The job writes a heartbeat every few seconds.
  *     A worker that stops mid-restore rolls the transaction back with it, and
  *     the boot sweep finds the row whose heartbeat went stale and queues it
- *     again from the start, at most twice. The stored copy it reads is the
+ *     again from the start. A job is started at most
+ *     {@link BACKUP_RESTORE_MAX_ATTEMPTS} times, so an interrupted restore is
+ *     restarted once; the second interruption fails it. A job whose
+ *     transaction had already committed (`committedAt`) is never restarted:
+ *     a second run would delete what the account gained since. The stored
+ *     copy it reads is the
  *     `DataBackup` row, which stays where it is whatever happens, so no retry
  *     ever needs the file again.
  */
@@ -299,6 +310,19 @@ const INTERRUPTED: BackupRestoreFailure = {
     "The restore stopped when the server restarted and was rolled back. Nothing was changed, and the backup is kept: start the restore again. If it stops again, the server likely ran out of memory.",
 };
 
+/**
+ * A job that stopped after its transaction committed. The account holds the
+ * restored data, so saying "nothing was changed" would be false, and running
+ * the restore again would delete whatever the account gained since. What did
+ * not finish is the rebuild of the chart tiers, which the nightly and boot
+ * passes rebuild on their own.
+ */
+const FAILED_AFTER_COMMIT: BackupRestoreFailure = {
+  code: "failed_after_commit",
+  message:
+    "The data was restored, but a step after it did not finish, so charts and summaries may take until the next nightly run to catch up. The restore is not run again, so nothing written since is lost.",
+};
+
 const NOT_STARTED: BackupRestoreFailure = {
   code: "not_started",
   message:
@@ -315,12 +339,24 @@ async function releaseAbandonedJobs(userId: string, now: Date): Promise<void> {
   const unclaimedBefore = new Date(
     now.getTime() - BACKUP_RESTORE_UNCLAIMED_AFTER_MS,
   );
-  await prisma.backupRestoreJob.updateMany({
-    where: {
-      userId,
-      status: "running",
-      OR: [{ heartbeatAt: { lt: staleBefore } }, { heartbeatAt: null }],
+  const stale = {
+    userId,
+    status: "running",
+    OR: [{ heartbeatAt: { lt: staleBefore } }, { heartbeatAt: null }],
+  };
+  // Committed first: those changed the account and are closed as such.
+  const afterCommit = await prisma.backupRestoreJob.updateMany({
+    where: { ...stale, committedAt: { not: null } },
+    data: {
+      status: "failed",
+      phase: null,
+      failure: failureJson(FAILED_AFTER_COMMIT),
+      completedAt: now,
     },
+  });
+  if (afterCommit.count > 0) invalidateUserData(userId);
+  await prisma.backupRestoreJob.updateMany({
+    where: { ...stale, committedAt: null },
     data: {
       status: "failed",
       phase: null,
@@ -495,6 +531,8 @@ export async function runBackupRestoreJob(
   const timer = setInterval(writeProgress, BACKUP_RESTORE_PROGRESS_WRITE_MS);
   timer.unref?.();
 
+  // Set once the transaction has committed (see `onCommitted` below).
+  let committed = false;
   const finish = async (
     status: "succeeded" | "failed",
     data: { result?: BackupRestoreResult; failure?: BackupRestoreFailure },
@@ -548,6 +586,14 @@ export async function runBackupRestoreJob(
       ipAddress: null,
       restoreInstanceSettings: row.restoreInstanceSettings,
       deadline: options.deadline,
+      onCommitted: async () => {
+        committed = true;
+        const committedAt = new Date();
+        await prisma.backupRestoreJob.updateMany({
+          where: { id: row.id, status: "running" },
+          data: { committedAt, phase: "rebuilding", heartbeatAt: committedAt },
+        });
+      },
       progress: (nextPhase, nextProgress) => {
         const phaseChanged = nextPhase !== phase;
         phase = nextPhase;
@@ -593,23 +639,18 @@ export async function runBackupRestoreJob(
       ? jobFailed("restore_transaction_failed")
       : jobDone({ refused: jobFactCode(outcome.code) });
   } catch (err) {
-    // After "rebuilding" the transaction had committed: the data is restored
-    // and only a step after it failed, which the message has to say.
-    // (`phase` is written by the progress callback, which TypeScript cannot see.)
-    const committed = (phase as RestorePhase) === "rebuilding";
+    // After the commit the data is restored and only a step after it
+    // failed, which the message has to say.
     await finish("failed", {
       failure: committed
-        ? {
-            code: "failed_after_commit",
-            message:
-              "The data was restored, but a step after it failed, so charts may take until the next nightly run to catch up. The server log names the step.",
-          }
+        ? FAILED_AFTER_COMMIT
         : {
             code: "unexpected",
             message:
               "The restore stopped on an unexpected error and was rolled back. Nothing was changed, and the backup is kept. The server log names the error.",
           },
     }).catch(() => undefined);
+    if (committed) invalidateUserData(row.userId);
     throw err;
   } finally {
     clearInterval(timer);
@@ -634,9 +675,11 @@ export async function sweepInterruptedRestores(
     },
     select: {
       id: true,
+      userId: true,
       attempts: true,
       pgBossJobId: true,
       heartbeatAt: true,
+      committedAt: true,
     },
   });
   let requeued = 0;
@@ -654,6 +697,22 @@ export async function sweepInterruptedRestores(
       status: "running",
       heartbeatAt: row.heartbeatAt,
     };
+    // Committed: the account already holds the restored data. Running the
+    // restore again would delete what it gained since, so it is closed.
+    if (row.committedAt) {
+      const done = await prisma.backupRestoreJob.updateMany({
+        where: guard,
+        data: {
+          status: "failed",
+          phase: null,
+          failure: failureJson(FAILED_AFTER_COMMIT),
+          completedAt: now,
+        },
+      });
+      if (done.count > 0) invalidateUserData(row.userId);
+      failed += done.count;
+      continue;
+    }
     if (!boss || row.attempts >= BACKUP_RESTORE_MAX_ATTEMPTS) {
       const done = await prisma.backupRestoreJob.updateMany({
         where: guard,

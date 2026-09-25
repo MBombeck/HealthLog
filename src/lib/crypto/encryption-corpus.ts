@@ -69,8 +69,7 @@ interface ColumnDelegate {
     select: Record<string, true>;
     orderBy?: Record<string, "asc" | "desc">;
     take?: number;
-    cursor?: Record<string, unknown>;
-    skip?: number;
+    where?: Record<string, { gt: string }>;
   }) => Promise<Array<Record<string, unknown>>>;
   update: (args: {
     where: Record<string, string>;
@@ -190,7 +189,9 @@ async function walkColumn(
       },
       orderBy: { [pk]: "asc" },
       take: batchSize,
-      ...(cursor ? { cursor: { [pk]: cursor }, skip: 1 } : {}),
+      // `id > last`, not Prisma's `cursor` + `skip`: the cursor form looks
+      // the last row up again, and a row deleted between pages ends the walk.
+      ...(cursor ? { where: { [pk]: { gt: cursor } } } : {}),
     });
     if (rows.length === 0) break;
     for (const row of rows) {

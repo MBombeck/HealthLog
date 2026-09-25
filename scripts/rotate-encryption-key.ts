@@ -114,8 +114,7 @@ interface PagedDelegate<V> {
     select: Record<string, true>;
     orderBy: { id: "asc" };
     take: number;
-    cursor?: { id: string };
-    skip?: number;
+    where?: { id: { gt: string } };
   }) => Promise<Array<Record<string, unknown>>>;
   update: (args: {
     where: { id: string };
@@ -142,7 +141,9 @@ async function* pagedRows(
       select: { id: true, [field]: true },
       orderBy: { id: "asc" },
       take: PAGE_SIZE,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      // `id > last`, not Prisma's `cursor` + `skip`: the cursor form looks
+      // the last row up again, and a row deleted between pages ends the walk.
+      ...(cursor ? { where: { id: { gt: cursor } } } : {}),
     });
     if (rows.length === 0) return;
     yield* rows;
@@ -786,7 +787,7 @@ async function main() {
         select: { id: true, textEncrypted: true, verbatimTextEncrypted: true },
         orderBy: { id: "asc" },
         take: 100,
-        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        ...(cursor ? { where: { id: { gt: cursor } } } : {}),
       });
       if (rows.length === 0) break;
       for (const row of rows) {

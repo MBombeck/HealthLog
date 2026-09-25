@@ -38,6 +38,10 @@ import { apiHandler, HttpError, requireAdmin } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { BackupJsonError, scanBackupJson } from "@/lib/export/backup-json-scan";
+import {
+  BACKUP_UPLOAD_TOO_LARGE_CODE,
+  BackupBlobTooLargeError,
+} from "@/lib/export/backup-blob";
 import { storeBackupBlob } from "@/lib/export/store-backup-blob";
 import { StreamedBackupInvalidError } from "@/lib/export/streamed-backup";
 import { annotate } from "@/lib/logging/context";
@@ -331,6 +335,21 @@ export const POST = apiHandler(async (request: NextRequest) => {
     if (err instanceof UploadRefused) {
       await denied(err.details.reason as string, err.details);
       return apiError(err.answer, err.status, err.meta);
+    }
+    // The file was fine; its encrypted copy is larger than one stored backup
+    // may be on this host (a fifth of the heap limit). That is the operator's
+    // to act on, with the numbers in the message, and not a server fault for
+    // the error reporter. The store rolled back, so nothing was kept.
+    if (err instanceof BackupBlobTooLargeError) {
+      await denied("stored_copy_too_large", {
+        bytes: err.bytes,
+        limitBytes: err.limitBytes,
+      });
+      return apiError(
+        `This backup is too large to store on this server. ${err.message}`,
+        413,
+        { errorCode: BACKUP_UPLOAD_TOO_LARGE_CODE },
+      );
     }
     throw err;
   }

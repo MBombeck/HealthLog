@@ -30494,8 +30494,8 @@ components:
                 anamnesis.fact.invalidValue; auth — auth.admin.required, auth.already_authenticated,
                 auth.mfa.code_invalid, auth.missing, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
                 auth.scope.insufficient, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
-                backup.payload.undecryptable, backup.restore.active, backup.section.missing; coach —
-                coach.budget.exceeded, coach.conversation.invalidTitle, coach.conversation.notFound,
+                backup.payload.undecryptable, backup.restore.active, backup.section.missing, backup.upload.too_large;
+                coach — coach.budget.exceeded, coach.conversation.invalidTitle, coach.conversation.notFound,
                 coach.fenced.attachmentConflict, coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound,
                 coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable,
                 coach.fenced.invalid, coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json,
@@ -71590,7 +71590,8 @@ components:
       additionalProperties: false
       description: "One restore job. `phase` and `progress` describe a running job; `result` is set once it `succeeded` (the
         same report the synchronous restore used to answer with, less `restored`); `failure` once it `failed`.
-        `attempts` counts the starts: a job whose worker stopped is started again, at most twice."
+        `attempts` counts the starts: a job whose worker stopped before the data was committed is started once more; one
+        that stopped after the commit is closed as `failed_after_commit` and never run again."
     AdminBackupRestorePhase:
       type: string
       enum:

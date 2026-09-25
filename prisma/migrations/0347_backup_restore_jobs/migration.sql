@@ -21,6 +21,7 @@ CREATE TABLE "backup_restore_jobs" (
     "result" JSONB,
     "failure" JSONB,
     "attempts" INTEGER NOT NULL DEFAULT 0,
+    "committed_at" TIMESTAMP(3),
     "heartbeat_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "started_at" TIMESTAMP(3),

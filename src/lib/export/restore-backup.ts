@@ -87,6 +87,7 @@ import { restoreDocumentFilingData } from "@/lib/export/document-filing-backup";
 import { restoreAwardsData } from "@/lib/export/awards-backup";
 import { restoreEnvironmentData } from "@/lib/export/environment-backup";
 import { restoreEcgData } from "@/lib/export/ecg-backup";
+import { restoredMedicationCreatedAt } from "@/lib/export/medication-created-at";
 import { invalidateUserData } from "@/lib/cache/invalidate";
 import { foldLegacyCoachAvailability } from "@/lib/modules/operator-availability";
 
@@ -251,6 +252,12 @@ export interface RestoreBackupInput {
   ipAddress: string | null;
   restoreInstanceSettings: boolean;
   progress?: RestoreProgressSink;
+  /**
+   * Awaited right after the transaction commits, before the rollup rebuild.
+   * The caller records that the account now holds the restored data, so a
+   * restore interrupted after this point is never run a second time.
+   */
+  onCommitted?: () => Promise<void>;
   /**
    * Epoch milliseconds by which the restore has to be over. When the
    * transaction's own time limit would run past it, the restore is refused
@@ -881,6 +888,7 @@ export async function restoreBackup(
         const unresolvedRevisionLinks: string[] = [];
         let medicationIndex = 0;
         reportSection("medications");
+        const restoreStartedAt = new Date();
         for (const m of payload.medications) {
           const created = await tx.medication.create({
             data: {
@@ -914,7 +922,17 @@ export async function restoreBackup(
               reorderLeadDays: m.reorderLeadDays ?? null,
               externalSource: m.externalSource ?? null,
               externalId: m.externalId ?? null,
-              ...(m.createdAt ? { createdAt: new Date(m.createdAt) } : {}),
+              // A file from before v1.39.1 carries no creation date, and the
+              // restore time would hide every dose-history miss before it.
+              // The earliest thing the file records for the drug stands in.
+              ...(() => {
+                const createdAt = restoredMedicationCreatedAt(
+                  m,
+                  payload.intakeEvents,
+                  restoreStartedAt,
+                );
+                return createdAt ? { createdAt } : {};
+              })(),
               ...(m.updatedAt ? { updatedAt: new Date(m.updatedAt) } : {}),
               schedules: {
                 create: m.schedules.map((s) => ({
@@ -2258,7 +2276,8 @@ export async function restoreBackup(
   }
 
   const { cleared, skipped } = outcome;
-  report("rebuilding");
+  report("rebuilding", true);
+  await input.onCommitted?.();
 
   // Pinned shape, not free text: a dashboard can alert on
   // `restoreSkippedLinks > 0` and the key list says which catalogue drifted.

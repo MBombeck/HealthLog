@@ -69,6 +69,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "backup.payload.undecryptable",
       "backup.restore.active",
       "backup.section.missing",
+      "backup.upload.too_large",
     ],
     coach: [
       "coach.budget.exceeded",

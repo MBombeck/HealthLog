@@ -464,6 +464,123 @@ describe("backup restore as a background job", () => {
     expect(gaveUp?.failure?.code).toBe("interrupted");
   });
 
+  it("never runs a committed restore again when its worker stopped in the rebuild", async () => {
+    const admin = await seedAdmin();
+    const backup = await storeBackup(admin.id, ["m-a", "m-b"]);
+    const prisma = getPrismaClient();
+
+    // Run the restore for real, so the commit marker is written by the code
+    // that writes it, then put the row back the way a worker that died in the
+    // rollup rebuild leaves it: running, phase rebuilding, heartbeat stale.
+    const queued = await requestRestore(backup.id);
+    const { data } = (await queued.json()) as { data: { jobId: string } };
+    await runBackupRestoreJob(data.jobId);
+    const committed = await prisma.backupRestoreJob.findUniqueOrThrow({
+      where: { id: data.jobId },
+    });
+    expect(committed.committedAt).not.toBeNull();
+    const stale = new Date(Date.now() - 10 * 60_000);
+    await prisma.backupRestoreJob.update({
+      where: { id: data.jobId },
+      data: {
+        status: "running",
+        phase: "rebuilding",
+        heartbeatAt: stale,
+        completedAt: null,
+        result: undefined,
+      },
+    });
+    // A reading the person logged after the restore committed.
+    await seedMeasurements(admin.id, ["after-commit"]);
+
+    expect(await sweepInterruptedRestores(queue.boss)).toEqual({
+      requeued: 0,
+      failed: 1,
+    });
+    const job = await readBackupRestoreJob(data.jobId);
+    expect(job?.status).toBe("failed");
+    expect(job?.failure?.code).toBe("failed_after_commit");
+    expect(job?.failure?.message).not.toContain("Nothing was changed");
+    // Not queued again, so the reading from after the commit survives.
+    expect(
+      queue.sent.filter(
+        (entry) =>
+          (entry.data as { restoreJobId?: string }).restoreJobId === data.jobId,
+      ),
+    ).toHaveLength(1);
+    expect(await measurementIdsOf(admin.id)).toEqual([
+      "after-commit",
+      "m-a",
+      "m-b",
+    ]);
+  });
+
+  it("the admission check closes a committed stale job as restored, not rolled back", async () => {
+    const admin = await seedAdmin();
+    const backup = await storeBackup(admin.id, ["m-a"]);
+    const prisma = getPrismaClient();
+    const queued = await requestRestore(backup.id);
+    const { data } = (await queued.json()) as { data: { jobId: string } };
+    const stale = new Date(Date.now() - 10 * 60_000);
+    await prisma.backupRestoreJob.update({
+      where: { id: data.jobId },
+      data: {
+        status: "running",
+        phase: "rebuilding",
+        attempts: 1,
+        heartbeatAt: stale,
+        committedAt: stale,
+      },
+    });
+
+    expect((await requestRestore(backup.id)).status).toBe(202);
+    const job = await readBackupRestoreJob(data.jobId);
+    expect(job?.status).toBe("failed");
+    expect(job?.failure?.code).toBe("failed_after_commit");
+  });
+
+  it("dates a medication from a file without a creation date by its earliest dose", async () => {
+    const admin = await seedAdmin();
+    const prisma = getPrismaClient();
+    // A portable file from before v1.39.1: no medication createdAt.
+    const payload = backupPayloadSchema.parse({
+      schemaVersion: "1",
+      exportedAt: "2026-09-20T00:00:00.000Z",
+      userId: admin.id,
+      medications: [{ name: "Ramipril", dose: "5mg", schedules: [] }],
+      intakeEvents: [
+        {
+          medication: "Ramipril",
+          scheduledFor: "2025-03-10T08:00:00.000Z",
+          takenAt: "2025-03-10T08:04:00.000Z",
+        },
+        {
+          medication: "Ramipril",
+          scheduledFor: "2025-03-09T08:00:00.000Z",
+          autoMissed: true,
+        },
+      ],
+    });
+    const backup = await prisma.dataBackup.create({
+      data: {
+        userId: admin.id,
+        type: "MANUAL_UPLOAD_OLD_PORTABLE",
+        data: encrypt(JSON.stringify(payload)),
+      },
+    });
+    const queued = await requestRestore(backup.id);
+    const { data } = (await queued.json()) as { data: { jobId: string } };
+    await runBackupRestoreJob(data.jobId);
+    expect((await readBackupRestoreJob(data.jobId))?.status).toBe("succeeded");
+
+    const medication = await prisma.medication.findFirstOrThrow({
+      where: { userId: admin.id },
+    });
+    // Not the restore time: the dose history reads this as the day the
+    // medication began, and every miss before it would vanish.
+    expect(medication.createdAt.toISOString()).toBe("2025-03-09T08:00:00.000Z");
+  });
+
   it("a live job's heartbeat keeps it out of the sweep", async () => {
     const admin = await seedAdmin();
     const backup = await storeBackup(admin.id, ["m-a"]);
