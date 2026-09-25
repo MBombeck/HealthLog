@@ -768,11 +768,18 @@ export async function restoreBackup(
           // their cumulative dailies too (Fitbit, Google Health) and have
           // never carried provenance — marking those would invent a state
           // they were never in. Ordinary point rows keep NULL honestly.
-          aggregationProvenance: (measurement.aggregationProvenance ??
-            (measurement.source === "APPLE_HEALTH" &&
-            measurement.externalId?.startsWith("stats:")
+          // Only an ABSENT field is the old-backup case. A current backup
+          // writes the field for every row, and an explicit null is the row's
+          // real state: the nightly daily-mean fold writes Apple Health
+          // `stats:` rows with no provenance. Treating that null as absent
+          // turned every such row into LEGACY_UNKNOWN on restore (#1031).
+          aggregationProvenance: (measurement.aggregationProvenance !==
+          undefined
+            ? measurement.aggregationProvenance
+            : measurement.source === "APPLE_HEALTH" &&
+                measurement.externalId?.startsWith("stats:")
               ? "LEGACY_UNKNOWN"
-              : null)) as never,
+              : null) as never,
           glucoseContext: (measurement.glucoseContext ?? null) as never,
           sleepStage: (measurement.sleepStage ?? null) as never,
           rhythmClassification: (measurement.rhythmClassification ??
