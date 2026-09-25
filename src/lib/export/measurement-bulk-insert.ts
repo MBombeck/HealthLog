@@ -10,13 +10,28 @@
  * `INSERT … SELECT FROM unnest(…)` with an array per column is a single small
  * statement whatever the batch size, and about four times faster.
  *
+ * The Apple Health export import writes its spot rows through the same
+ * statement (`insertNewMeasurementRows`), for the same reason. There the cost
+ * was per call rather than per shape: every `createManyAndReturn` of a
+ * 650-row flush left about 5 MB behind until roughly two dozen calls had
+ * accumulated, so a 300 000-record import settled at about 53 MB of retained
+ * heap and a run of back-to-back flushes reached well over 100 MB. Through
+ * this statement the same import holds a few megabytes.
+ *
  * `COLUMNS` maps every field of `MeasurementInsertRow` to its column and
  * type. It is typed as a complete record over the row's keys, so a field
  * added to the row without a column here does not compile, and the restore
  * builds its rows as `MeasurementInsertRow`, so a field it starts writing has
  * to be added to the row first.
  */
-import type { Prisma } from "@/generated/prisma/client";
+import { randomInt } from "node:crypto";
+import { hostname } from "node:os";
+
+import type {
+  MeasurementType,
+  Prisma,
+  PrismaClient,
+} from "@/generated/prisma/client";
 
 /** One measurement as the restore writes it. */
 export interface MeasurementInsertRow {
@@ -133,4 +148,147 @@ export async function insertMeasurementRows(
     return rows.map((row) => cell(row[field], kind));
   });
   return tx.$executeRawUnsafe(MEASUREMENT_BULK_INSERT_SQL, ...arrays);
+}
+
+/**
+ * The same statement, skipping any row that collides with an existing one on
+ * either unique identity, and answering with the rows it did insert.
+ *
+ * `ON CONFLICT DO NOTHING` with no target is what Prisma emits for
+ * `createMany({ skipDuplicates: true })`: a row that meets either
+ * `(user_id, type, source, external_id)` or
+ * `(user_id, type, measured_at, source, sleep_stage)` is left out, a row that
+ * meets another row of the same statement is left out after the first, and
+ * nothing throws for either.
+ */
+export const MEASUREMENT_BULK_INSERT_SKIP_DUPLICATES_SQL = `${MEASUREMENT_BULK_INSERT_SQL}
+  ON CONFLICT DO NOTHING
+  RETURNING id, type::text AS "type", measured_at AS "measuredAt", external_id AS "externalId"
+`;
+
+/** One row `insertNewMeasurementRows` wrote. */
+export interface InsertedMeasurementRow {
+  id: string;
+  type: MeasurementType;
+  measuredAt: Date;
+  externalId: string | null;
+}
+
+/** A row for {@link insertNewMeasurementRows}: the id and the defaults are filled in. */
+export type NewMeasurementRow = Omit<
+  MeasurementInsertRow,
+  | "id"
+  | "valueMin"
+  | "valueMax"
+  | "notes"
+  | "notesEncrypted"
+  | "aggregationProvenance"
+  | "glucoseContext"
+  | "rhythmClassification"
+  | "syncVersion"
+  | "deletedAt"
+  | "createdAt"
+  | "updatedAt"
+> &
+  Partial<
+    Pick<
+      MeasurementInsertRow,
+      | "valueMin"
+      | "valueMax"
+      | "notesEncrypted"
+      | "aggregationProvenance"
+      | "glucoseContext"
+      | "rhythmClassification"
+    >
+  >;
+
+/**
+ * Insert brand-new rows in one statement, skipping duplicates, and return the
+ * rows that landed. The replacement for
+ * `measurement.createManyAndReturn({ data, skipDuplicates: true })`.
+ *
+ * Every column the schema defaults is written with that default: a fresh
+ * cuid-shaped id, `sync_version` 1, not deleted, created and updated at the
+ * moment of the call, and null for every optional column the row does not
+ * carry.
+ */
+export async function insertNewMeasurementRows(
+  db: Pick<PrismaClient, "$queryRawUnsafe"> | Prisma.TransactionClient,
+  rows: readonly NewMeasurementRow[],
+): Promise<InsertedMeasurementRow[]> {
+  if (rows.length === 0) return [];
+  // Stamped here, as the Prisma client stamps `@default(now())` and
+  // `@updatedAt`, rather than left to the database clock.
+  const now = new Date();
+  const full: MeasurementInsertRow[] = rows.map((row) => ({
+    id: newMeasurementId(),
+    userId: row.userId,
+    type: row.type,
+    value: row.value,
+    valueMin: row.valueMin ?? null,
+    valueMax: row.valueMax ?? null,
+    unit: row.unit,
+    source: row.source,
+    measuredAt: row.measuredAt,
+    notes: null,
+    notesEncrypted: row.notesEncrypted ?? null,
+    externalId: row.externalId,
+    externalSourceVersion: row.externalSourceVersion,
+    aggregationProvenance: row.aggregationProvenance ?? null,
+    glucoseContext: row.glucoseContext ?? null,
+    sleepStage: row.sleepStage,
+    rhythmClassification: row.rhythmClassification ?? null,
+    deviceType: row.deviceType,
+    syncVersion: 1,
+    deletedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  }));
+  const arrays = FIELDS.map((field) => {
+    const kind = COLUMNS[field][1];
+    return full.map((row) => cell(row[field], kind));
+  });
+  return db.$queryRawUnsafe<InsertedMeasurementRow[]>(
+    MEASUREMENT_BULK_INSERT_SKIP_DUPLICATES_SQL,
+    ...arrays,
+  );
+}
+
+// ── Ids ──────────────────────────────────────────────────────────────────
+//
+// Prisma mints `@default(cuid())` in the client, so a row written around the
+// client needs one minted here. Same shape as Prisma's own (cuid v1): `c`, the
+// time in base 36, a rolling counter, a host fingerprint, and eight random
+// characters, 25 characters in all. Ids stay roughly time-ordered, which the
+// list reads rely on only as a tiebreaker.
+
+const BLOCK = 4;
+const BLOCK_SPACE = 36 ** BLOCK;
+let counter = randomInt(BLOCK_SPACE);
+
+function block(n: number): string {
+  return n.toString(36).padStart(BLOCK, "0").slice(-BLOCK);
+}
+
+const FINGERPRINT = (() => {
+  const host = hostname();
+  let sum = host.length + 36;
+  for (let i = 0; i < host.length; i++) sum += host.charCodeAt(i);
+  return (
+    (process.pid % 1296).toString(36).padStart(2, "0") +
+    (sum % 1296).toString(36).padStart(2, "0")
+  );
+})();
+
+/** A fresh id in the shape Prisma's `cuid()` default produces. */
+export function newMeasurementId(): string {
+  counter = (counter + 1) % BLOCK_SPACE;
+  return (
+    "c" +
+    Date.now().toString(36).padStart(8, "0") +
+    block(counter) +
+    FINGERPRINT +
+    block(randomInt(BLOCK_SPACE)) +
+    block(randomInt(BLOCK_SPACE))
+  );
 }

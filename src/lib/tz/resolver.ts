@@ -145,6 +145,21 @@ export async function resolveServerDefaultTimezone(): Promise<string> {
 }
 
 /**
+ * The zone the server actually uses for a stored `User.timezone` value: the
+ * value itself when it is a usable IANA name, the instance default otherwise.
+ *
+ * Every response that reports an account's zone goes through this, so a
+ * client never buckets days by a value the server itself has set aside.
+ */
+export async function resolveStoredTimezone(
+  stored: string | null | undefined,
+): Promise<string> {
+  return stored && isValidTimezone(stored)
+    ? stored
+    : resolveServerDefaultTimezone();
+}
+
+/**
  * Resolve the per-user display timezone. Reads `User.timezone`. Falls
  * back to the server default and then to "Europe/Berlin". Cached for
  * 60 s in process. The profile PUT calls `invalidateUserTimezone()`

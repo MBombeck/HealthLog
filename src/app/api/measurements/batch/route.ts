@@ -72,7 +72,11 @@ import {
   UNSTABLE_EXTERNAL_ID_REASON,
   type UnstableExternalIdShape,
 } from "@/lib/validations/external-id";
-import { validateMeasurementRange } from "@/lib/validations/measurement";
+import {
+  VALUE_RANGES,
+  getUnitForType,
+  validateMeasurementRange,
+} from "@/lib/validations/measurement";
 import { deviceTypeEnum } from "@/lib/validations/source-priority";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enqueuePrDetection } from "@/lib/jobs/pr-detection";
@@ -217,6 +221,36 @@ interface EntryResult {
   index: number;
   status: EntryStatus;
   reason?: string;
+  /**
+   * Only on a `value_out_of_range` skip: the value after conversion into the
+   * stored unit, which is what the band was checked against.
+   */
+  convertedValue?: number;
+  /** Only on a `value_out_of_range` skip: the band applied, in the stored unit. */
+  range?: { min: number; max: number; unit: string };
+}
+
+/**
+ * The `value_out_of_range` skip, with what a client needs to say which limit
+ * applied. The value is the entry's own reading after conversion, handed back
+ * to the account that sent it; a fraction sent where a percent was expected
+ * shows up here as a converted value a hundred times too small or too large.
+ */
+function outOfRangeResult(
+  index: number,
+  type: string,
+  convertedValue: number,
+): EntryResult {
+  const band = VALUE_RANGES[type];
+  return {
+    index,
+    status: "skipped",
+    reason: "value_out_of_range",
+    ...(Number.isFinite(convertedValue) ? { convertedValue } : {}),
+    ...(band
+      ? { range: { min: band.min, max: band.max, unit: getUnitForType(type) } }
+      : {}),
+  };
 }
 
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
@@ -277,10 +311,13 @@ async function postBatch(request: NextRequest): Promise<Response> {
 
   const parsed = batchPayloadSchema.safeParse(rawBody);
   if (!parsed.success) {
+    // The code is what lets a client tell this refusal from a transient one:
+    // the batch as sent will never be accepted, so resending it is pointless.
     return apiValidationError(
       parsed.error.issues[0]?.message ?? "Invalid batch",
       sanitiseZodIssues(parsed.error.issues),
       422,
+      { errorCode: "measurement.batch.invalid" },
     );
   }
 
@@ -373,11 +410,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     // sensor reading shouldn't poison an otherwise clean ingest.
     const rangeError = validateMeasurementRange(mapped.type, mapped.value);
     if (rangeError !== null) {
-      results[index] = {
-        index,
-        status: "skipped",
-        reason: "value_out_of_range",
-      };
+      results[index] = outOfRangeResult(index, mapped.type, mapped.value);
       continue;
     }
 
@@ -678,11 +711,11 @@ async function postBatch(request: NextRequest): Promise<Response> {
           // already applied above, so reaching here means the two disagreed —
           // report it exactly as the earlier guard would have, and let the
           // wide-event tally record which end refused.
-          results[p.index] = {
-            index: p.index,
-            status: "skipped",
-            reason: "value_out_of_range",
-          };
+          results[p.index] = outOfRangeResult(
+            p.index,
+            p.row.type as string,
+            p.row.value as number,
+          );
           continue;
       }
 

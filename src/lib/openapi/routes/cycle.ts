@@ -437,7 +437,12 @@ const cycleBulkEntryResult = z.object({
   status: z.enum(["inserted", "duplicate", "updated", "skipped"]),
   id: z.string().optional(),
   externalId: z.string().optional(),
-  reason: z.string().optional(),
+  reason: z
+    .string()
+    .optional()
+    .describe(
+      "On a `skipped` entry. `unstable_external_id` is a verdict on the entry and terminal: resending it unchanged is skipped again. `constraint` means the write met a database constraint (a key another write claimed at the same moment, or a reference that no longer exists). `upsert_failed` is a write failure on the server's side: nothing was stored, the entry should be sent again, and the response carrying it is `Cache-Control: no-store`, so a retry under the same `Idempotency-Key` writes again rather than replaying the failure.",
+    ),
 });
 
 const cycleBulkResponse = z.object({
@@ -808,6 +813,11 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...cycleDisabledResponse,
         ...stdResponses,
+        "422": {
+          description:
+            "The whole batch was refused and nothing was written: more than 500 entries (`meta.errorCode` = `cycle.bulk.too_large`, no issue list), or the body failed validation (`meta.errorCode` = `cycle.bulk.invalid`, every issue under `details.issues`). Both are permanent for the batch as sent. A problem with one entry never refuses the batch; it comes back as that entry's `skipped` status.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

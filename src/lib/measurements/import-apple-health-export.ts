@@ -41,6 +41,11 @@ import {
   canonicalDailyTimestamp,
 } from "@/lib/measurements/drain-per-sample-cumulative";
 import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
+import {
+  insertNewMeasurementRows,
+  type InsertedMeasurementRow,
+  type NewMeasurementRow,
+} from "@/lib/export/measurement-bulk-insert";
 import { resolveHkWorkoutSportType } from "@/lib/measurements/hk-workout-activity-type-map";
 import {
   convertHkValue,
@@ -309,7 +314,10 @@ export interface StreamParseInput {
   /** IANA timezone, used to anchor cumulative-type day-keys. */
   userTimezone: string;
   /** Prisma client to flush rows through. */
-  prisma: Pick<PrismaClient, "measurement" | "workout" | "$transaction">;
+  prisma: Pick<
+    PrismaClient,
+    "measurement" | "workout" | "$transaction" | "$queryRawUnsafe"
+  >;
   /**
    * Live progress hook. Called every `PROGRESS_TICK_RECORDS` records
    * read, and once on terminal `done`. Best-effort; the parser
@@ -457,55 +465,38 @@ export async function streamParseExportXml(
       type: MeasurementType;
       measuredAt: Date;
     }> = [];
-    const createData: Prisma.MeasurementCreateManyInput[] = chunk.map(
-      (row) => ({
-        userId,
-        type: row.type,
-        value: row.value,
-        unit: row.unit,
-        source: "APPLE_HEALTH",
-        measuredAt: row.measuredAt,
-        externalId: row.externalId,
-        externalSourceVersion: row.externalSourceVersion,
-        sleepStage: row.sleepStage ?? null,
-        deviceType: row.deviceType,
-      }),
-    );
+    // Written as one `INSERT … SELECT FROM unnest(…) ON CONFLICT DO NOTHING
+    // RETURNING` rather than `createManyAndReturn`: the Prisma call left about
+    // 5 MB of heap behind per flush until some two dozen had piled up, which
+    // is the import's whole budget in a small container. Same semantics —
+    // duplicates on either unique identity are skipped, never thrown — and the
+    // same answer: the rows that landed. See `insertNewMeasurementRows`.
+    const createData: NewMeasurementRow[] = chunk.map((row) => ({
+      userId,
+      type: row.type,
+      value: row.value,
+      unit: row.unit,
+      source: "APPLE_HEALTH",
+      measuredAt: row.measuredAt,
+      externalId: row.externalId,
+      externalSourceVersion: row.externalSourceVersion,
+      sleepStage: row.sleepStage ?? null,
+      deviceType: row.deviceType,
+    }));
     const insertStartedAt = Date.now();
-    let createdRows: Array<{
-      id: string;
-      type: MeasurementType;
-      measuredAt: Date;
-      externalId: string | null;
-    }> = [];
+    let createdRows: InsertedMeasurementRow[] = [];
     const failedInsertIndexes = new Set<number>();
     try {
-      createdRows = await prisma.measurement.createManyAndReturn({
-        data: createData,
-        skipDuplicates: true,
-        select: {
-          id: true,
-          type: true,
-          measuredAt: true,
-          externalId: true,
-        },
-      });
+      createdRows = await insertNewMeasurementRows(prisma, createData);
     } catch {
       // Retain the old per-sample failure isolation if an unexpected database
       // error rejects the bulk statement. Conflicts remain non-errors because
-      // every retry still uses skipDuplicates.
+      // every retry still skips duplicates.
       for (let index = 0; index < createData.length; index += 1) {
         try {
-          const created = await prisma.measurement.createManyAndReturn({
-            data: [createData[index]],
-            skipDuplicates: true,
-            select: {
-              id: true,
-              type: true,
-              measuredAt: true,
-              externalId: true,
-            },
-          });
+          const created = await insertNewMeasurementRows(prisma, [
+            createData[index],
+          ]);
           createdRows.push(...created);
         } catch {
           failedInsertIndexes.add(index);

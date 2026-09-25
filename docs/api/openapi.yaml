@@ -491,7 +491,15 @@ paths:
         "401": *a1
         "403": *a3
         "409": *a7
-        "422": *a4
+        "422":
+          description: "The whole batch was refused and nothing was written: more than 500 entries (`meta.errorCode` =
+            `cycle.bulk.too_large`, no issue list), or the body failed validation (`meta.errorCode` =
+            `cycle.bulk.invalid`, every issue under `details.issues`). Both are permanent for the batch as sent. A
+            problem with one entry never refuses the batch; it comes back as that entry's `skipped` status."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
   /api/cycle/period:
     post:
@@ -3750,6 +3758,12 @@ paths:
         in request order. Use `/api/measurements/batch` for Apple Health upload streams.
 
 
+        Sleep stages by name (since v1.39.1): an object with `type: SLEEP_DURATION`, a `sleepStage` of `IN_BED`,
+        `ASLEEP`, `AWAKE`, `CORE`, `DEEP` or `REM`, and the segment as `startDate` + `endDate` or as `measuredAt` (its
+        end) + `value` (minutes). It is stored and deduplicated exactly as the batch route stores a HealthKit sleep
+        sample, so a bridge can send stages without the HealthKit codepoints. See `NamedSleepStageEntry`.
+
+
         Also reachable with a narrow `measurements:write` Bearer, which is the supported way to push readings from a
         scale, a watch bridge or a home-automation rule. That credential is confined to its owner's own record — a
         request carrying the account selector is refused 403 before any sharing grant is read, however the record is
@@ -3767,12 +3781,21 @@ paths:
             schema:
               anyOf:
                 - $ref: "#/components/schemas/CreateMeasurementRequest"
+                - $ref: "#/components/schemas/NamedSleepStageEntry"
                 - type: array
                   items:
                     $ref: "#/components/schemas/CreateMeasurementRequest"
       responses:
+        "200":
+          description: "Named sleep-stage body only: the segment was already stored (`status: duplicate`) or a stored one was
+            corrected in place (`status: updated`). Every other body answers 201 or an error, as before."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamedSleepStageDuplicateResponse"
         "201":
-          description: Created. A single resource for the object body; an array of resources, in request order, for the array body.
+          description: "Created. A single resource for the object body; an array of resources, in request order, for the array
+            body; for a named sleep-stage body, the stored row with `status: inserted`."
           content:
             application/json:
               schema:
@@ -3781,7 +3804,7 @@ paths:
         "403": *a9
         "409":
           description: A measurement with this data already exists — the `(userId, type, source, externalId)` dedup index rejected
-            the write.
+            the write. Never for a named sleep-stage body, which answers a re-post with 200 instead.
           content:
             application/json:
               schema:
@@ -3945,9 +3968,11 @@ paths:
         "401": *a1
         "409": *a7
         "422":
-          description: The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation, or
-            (`measurement.batch.source_not_permitted`) carried an entry naming a source — any source — under a narrow
-            `measurements:write` credential. Nothing was written in any of the three cases.
+          description: "The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation
+            (`measurement.batch.invalid`, with every issue under `details.issues`), or
+            (`measurement.batch.source_not_permitted`) carried an entry naming a source, any source, under a narrow
+            `measurements:write` credential. Nothing was written in any of the three cases, and all three are permanent
+            for the batch as sent: resending it unchanged is refused the same way."
           content:
             application/json:
               schema:
@@ -16855,8 +16880,11 @@ paths:
         Upsert key is (day, nutrient): a re-post replaces the stored total and reports `updated`. Post the current +
         previous local day per sync; backfill 30 days on first enable. Max 500 entries; Idempotency-Key supported; rate
         limit 60/min. Per-entry skips (`unit_mismatch` | `value_out_of_range` | `day_invalid`) are terminal — log and
-        drop, do not retry the entry. Behind the opt-in `nutrients` module (403 `module.disabled` when off). Query
-        HealthKit with exactly the listed unit per code (`ug` = microgram; do not convert to IU):
+        drop, do not retry the entry. `upsert_failed` is not one of them: it is a server-side write failure for the
+        entry's whole write group, nothing was stored, and the entry should be sent again on a later sync; a response
+        carrying it is `Cache-Control: no-store` and is not replayed for its `Idempotency-Key`. Behind the opt-in
+        `nutrients` module (403 `module.disabled` when off). Query HealthKit with exactly the listed unit per code (`ug`
+        = microgram; do not convert to IU):
 
 
         | code | HealthKit identifier | unit |
@@ -22158,6 +22186,61 @@ components:
         `glucoseContext` stays REQUIRED on a `BLOOD_GLUCOSE` row here: this is the hand-entry surface, where the person
         taking the reading knows whether it was fasting or after a meal. The bulk ingest paths (CSV import, JSON import,
         device sync) accept a contextless reading, because a sensor export classifies nothing per sample."
+    NamedSleepStageEntry:
+      type: object
+      properties:
+        type:
+          type: string
+          const: SLEEP_DURATION
+        sleepStage:
+          type: string
+          enum:
+            - IN_BED
+            - ASLEEP
+            - AWAKE
+            - CORE
+            - DEEP
+            - REM
+        startDate:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        endDate:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        measuredAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        value:
+          type: number
+        externalId:
+          type: string
+          minLength: 1
+          maxLength: 120
+        source:
+          default: MANUAL
+          type: string
+          enum:
+            - MANUAL
+            - APPLE_HEALTH
+        deviceType:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 32
+            - type: "null"
+      required:
+        - type
+        - sleepStage
+      description: "One sleep-stage segment with the stage named (since v1.39.1), for a bridge that does not speak HealthKit.
+        Chosen whenever the object carries a string `sleepStage`. `type` is `SLEEP_DURATION`. The segment is either
+        `startDate` + `endDate`, or `measuredAt` (its END) + `value` (its length in minutes); a `value` sent beside the
+        dates must agree with them to within a minute. Stored as the batch route stores a HealthKit sleep sample: value
+        in minutes, `measuredAt` at the end, the stage in `sleepStage`. Without an `externalId` the server derives one
+        from the stage and both instants, so sending the same segment again is a `duplicate`, and a segment whose start
+        moved is `updated` rather than added."
     AppleHealthBatchRequest:
       type: object
       properties:
@@ -30331,7 +30414,7 @@ components:
                 labs.update.linkedFieldsImmutable, labs.update.numericExpected, labs.update.qualitativeExpected,
                 labs.update.referenceRangeInvalid, labs.update.sourceReferenceRangeInvalid; managed_profile —
                 managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
-                managed_profile.guardian.required, managed_profile.not_found; measurement —
+                managed_profile.guardian.required, managed_profile.not_found; measurement — measurement.batch.invalid,
                 measurement.batch.source_not_permitted, measurement.batch.too_large, measurement.bulk-delete.invalid,
                 measurement.create.invalid, measurement.create.source_not_permitted, measurement.delete.too_large,
                 measurement.duplicate_timestamp, measurement.restore.invalid, measurement.update.server_owned_source;
@@ -30805,6 +30888,12 @@ components:
                   externalId:
                     type: string
                   reason:
+                    description: "On a `skipped` entry. `unstable_external_id` is a verdict on the entry and terminal: resending it
+                      unchanged is skipped again. `constraint` means the write met a database constraint (a key another
+                      write claimed at the same moment, or a reference that no longer exists). `upsert_failed` is a
+                      write failure on the server's side: nothing was stored, the entry should be sent again, and the
+                      response carrying it is `Cache-Control: no-store`, so a retry under the same `Idempotency-Key`
+                      writes again rather than replaying the failure."
                     type: string
                 required:
                   - index
@@ -39652,6 +39741,136 @@ components:
         - limit
         - offset
       additionalProperties: false
+    NamedSleepStageDuplicateResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/NamedSleepStageMeasurement"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    NamedSleepStageMeasurement:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Stored row id, or a synthetic key (`day:<type>:<dayKey>`, `sleep-seg:<dayKey>:<n>`) on the collapsed list
+            modes.
+        type:
+          $ref: "#/components/schemas/MeasurementType"
+        value:
+          type: number
+        unit:
+          type: string
+        measuredAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        source:
+          $ref: "#/components/schemas/MeasurementSource"
+        notes:
+          anyOf:
+            - type: string
+            - type: "null"
+        userId:
+          type: string
+        valueMin:
+          description: Bucket MINIMUM — set only on an hourly heart-rate `stats:` row.
+          anyOf:
+            - type: number
+            - type: "null"
+        valueMax:
+          description: Bucket MAXIMUM — set only on an hourly heart-rate `stats:` row.
+          anyOf:
+            - type: number
+            - type: "null"
+        externalId:
+          description: External-system dedup key; null for manual entries.
+          anyOf:
+            - type: string
+            - type: "null"
+        externalSourceVersion:
+          anyOf:
+            - type: string
+            - type: "null"
+        glucoseContext:
+          description: Set only on BLOOD_GLUCOSE rows, and null there too when the writer recorded no classification (a sensor
+            export, a device sync). Never invent one.
+          anyOf:
+            - type: string
+            - type: "null"
+        sleepStage:
+          description: Set only on SLEEP_DURATION rows.
+          anyOf:
+            - type: string
+            - type: "null"
+        rhythmClassification:
+          description: Device classification verdict; set only on EVENT rows.
+          anyOf:
+            - type: string
+            - type: "null"
+        deviceType:
+          description: "`watch | band | ring | phone | scale | other | unknown`."
+          anyOf:
+            - type: string
+            - type: "null"
+        syncVersion:
+          description: Bumped on every server-side mutation; the last-writer-wins input for cross-device reconciliation.
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        deletedAt:
+          description: Soft-delete tombstone; null on a live row.
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        dayKey:
+          type: string
+        sampleCount:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        partial:
+          description: True on the one bucket whose day was cut off by the read cap, so its sum understates the real total.
+          type: boolean
+        status:
+          type: string
+          enum:
+            - inserted
+            - updated
+            - duplicate
+          description: "`inserted` — a new row (HTTP 201). `duplicate` — the segment was already stored, by this route or the
+            batch route, and nothing changed (HTTP 200). `updated` — a stored segment with the same stage, source and
+            end was corrected in place, for example a later start (HTTP 200)."
+      required:
+        - id
+        - type
+        - value
+        - unit
+        - measuredAt
+        - source
+        - status
+      additionalProperties: false
+      description: The stored SLEEP_DURATION row for a named sleep-stage segment, with what the call did to it.
     CreateMeasurementResponse:
       type: object
       properties:
@@ -39661,6 +39880,7 @@ components:
             - type: array
               items:
                 $ref: "#/components/schemas/MeasurementResource"
+            - $ref: "#/components/schemas/NamedSleepStageMeasurement"
         error:
           type: "null"
         meta:
@@ -39819,6 +40039,28 @@ components:
             not advance the entry cursor; the response is marked `Cache-Control: no-store`."
         reason:
           type: string
+        convertedValue:
+          description: "Only on a `value_out_of_range` skip (since v1.39.1): the entry's value after conversion into the stored
+            unit, which is the number the band was checked against. A HealthKit fraction that should have been a percent
+            shows up here a hundred times off."
+          type: number
+        range:
+          description: "Only on a `value_out_of_range` skip (since v1.39.1): the plausibility band that refused the entry, in the
+            stored unit. Both edges are inclusive. A skip is permanent for the value as sent; resending it unchanged
+            skips it again."
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+            unit:
+              type: string
+          required:
+            - min
+            - max
+            - unit
+          additionalProperties: false
       required:
         - index
         - status
@@ -47237,6 +47479,9 @@ components:
             - type: "null"
         timezone:
           type: string
+          description: "The IANA zone the server cuts this account's days in, the same value `/api/auth/me` reports: the stored
+            zone, or the instance default when the stored value is not a usable IANA name (since v1.39.1; before, the
+            raw stored value). Always a valid IANA name, so sending it back in a PATCH is accepted."
         timeFormat:
           type: string
           enum:
@@ -47349,6 +47594,9 @@ components:
             - type: "null"
         timezone:
           type: string
+          description: "The IANA zone the server cuts this account's days in, the same value `/api/auth/me` reports: the stored
+            zone, or the instance default when the stored value is not a usable IANA name (since v1.39.1; before, the
+            raw stored value). Always a valid IANA name, so sending it back in a PATCH is accepted."
         timeFormat:
           type: string
           enum:
@@ -64471,7 +64719,12 @@ components:
         - status
       additionalProperties: false
       description: "Per-entry ingest outcome. skipped reasons: unit_mismatch | value_out_of_range | day_invalid |
-        upsert_failed. Log and drop a skipped entry — do not retry it."
+        upsert_failed. The first three are verdicts on the entry itself and terminal: resending it unchanged is skipped
+        again, so log and drop it. `upsert_failed` is a write failure on the server's side, not a verdict on the entry:
+        nothing was stored for it, and it should be sent again on a later sync. A write failure takes out the whole
+        group it was written in (every new day total, or every existing one), so several entries can carry it at once. A
+        response carrying it is marked `Cache-Control: no-store` and is not kept for `Idempotency-Key` replay, so the
+        retry writes again rather than replaying the failure."
     NutrientOverviewEnvelope:
       type: object
       properties:

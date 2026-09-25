@@ -10,6 +10,7 @@ import type { ZodOpenApiObject } from "zod-openapi";
 import { updateMeasurementSchema } from "@/lib/validations/measurement";
 import { seriesBatchQuerySchema } from "@/lib/validations/series-batch";
 import { deviceTypeEnum } from "@/lib/validations/source-priority";
+import { sleepStageEntrySchema } from "@/lib/validations/sleep-stage-entry";
 import {
   MODULE_DISABLED_DESCRIPTION,
   createMeasurementSchema,
@@ -147,6 +148,22 @@ const batchEntryResult = z
         "`inserted`/`duplicate` — the row landed (advance the cursor). `updated` — a `stats:` aggregate overwrote an existing row. `skipped` — validation no-op; see `reason`. `failed` — retryable database failure that must not advance the entry cursor; the response is marked `Cache-Control: no-store`.",
       ),
     reason: z.string().optional(),
+    convertedValue: z
+      .number()
+      .optional()
+      .describe(
+        "Only on a `value_out_of_range` skip (since v1.39.1): the entry's value after conversion into the stored unit, which is the number the band was checked against. A HealthKit fraction that should have been a percent shows up here a hundred times off.",
+      ),
+    range: z
+      .object({
+        min: z.number(),
+        max: z.number(),
+        unit: z.string(),
+      })
+      .optional()
+      .describe(
+        "Only on a `value_out_of_range` skip (since v1.39.1): the plausibility band that refused the entry, in the stored unit. Both edges are inclusive. A skip is permanent for the value as sent; resending it unchanged skips it again.",
+      ),
   })
   .meta({ id: "AppleHealthBatchEntryResult" });
 
@@ -311,6 +328,21 @@ export const measurementResource = z
     id: "MeasurementResource",
     description:
       "Server-shaped measurement row. GET endpoints return the whole stored row with the decrypted note on `notes` and the `notesEncrypted` ciphertext stripped; the collapsed list modes synthesise rows carrying the display fields plus `dayKey` / `sampleCount`.",
+  });
+
+/** The answer to a named-stage `POST /api/measurements` (since v1.39.1). */
+const namedSleepStageResult = measurementResource
+  .extend({
+    status: z
+      .enum(["inserted", "updated", "duplicate"])
+      .describe(
+        "`inserted` — a new row (HTTP 201). `duplicate` — the segment was already stored, by this route or the batch route, and nothing changed (HTTP 200). `updated` — a stored segment with the same stage, source and end was corrected in place, for example a later start (HTTP 200).",
+      ),
+  })
+  .meta({
+    id: "NamedSleepStageMeasurement",
+    description:
+      "The stored SLEEP_DURATION row for a named sleep-stage segment, with what the call did to it.",
   });
 
 /**
@@ -850,6 +882,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "Create one measurement (or a small array)",
       description:
         "Single ingest. The body may also be a bare ARRAY of the same objects — the mode the iOS client uses for a combined blood-pressure + pulse or dual-value glucose write — in which case `data` is the array of created rows in request order. Use `/api/measurements/batch` for Apple Health upload streams.\n\n" +
+        "Sleep stages by name (since v1.39.1): an object with `type: SLEEP_DURATION`, a `sleepStage` of `IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP` or `REM`, and the segment as `startDate` + `endDate` or as `measuredAt` (its end) + `value` (minutes). It is stored and deduplicated exactly as the batch route stores a HealthKit sleep sample, so a bridge can send stages without the HealthKit codepoints. See `NamedSleepStageEntry`.\n\n" +
         "Also reachable with a narrow `measurements:write` Bearer, which is the supported way to push readings from a scale, a watch bridge or a home-automation rule. That credential is confined to its owner's own record — a request carrying the account selector is refused 403 before any sharing grant is read, however the record is actually shared — and it may not attribute a source at all: rows it writes carry `source: EXTERNAL`, resolved from the credential, so a bridged reading stays distinguishable from a hand-typed one. A body naming ANY source, `MANUAL` included, is refused 422 (`measurement.create.source_not_permitted`). The GET on this same path, and the PUT and DELETE beside it, name no scope and so refuse it — though the rows themselves stay editable by their owner, unlike a connected provider's.",
       parameters: [idempotencyKeyParameter],
       requestBody: {
@@ -858,6 +891,11 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           "application/json": {
             schema: z.union([
               createMeasurementSchema,
+              sleepStageEntrySchema.meta({
+                id: "NamedSleepStageEntry",
+                description:
+                  "One sleep-stage segment with the stage named (since v1.39.1), for a bridge that does not speak HealthKit. Chosen whenever the object carries a string `sleepStage`. `type` is `SLEEP_DURATION`. The segment is either `startDate` + `endDate`, or `measuredAt` (its END) + `value` (its length in minutes); a `value` sent beside the dates must agree with them to within a minute. Stored as the batch route stores a HealthKit sleep sample: value in minutes, `measuredAt` at the end, the stage in `sleepStage`. Without an `externalId` the server derives one from the stage and both instants, so sending the same segment again is a `duplicate`, and a segment whose start moved is `updated` rather than added.",
+              }),
               z.array(createMeasurementSchema),
             ]),
           },
@@ -868,19 +906,35 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...recordRefusal(),
         "201": {
           description:
-            "Created. A single resource for the object body; an array of resources, in request order, for the array body.",
+            "Created. A single resource for the object body; an array of resources, in request order, for the array body; for a named sleep-stage body, the stored row with `status: inserted`.",
           content: {
             "application/json": {
               schema: dataEnvelope(
-                z.union([measurementResource, z.array(measurementResource)]),
+                z.union([
+                  measurementResource,
+                  z.array(measurementResource),
+                  namedSleepStageResult,
+                ]),
                 "CreateMeasurementResponse",
+              ),
+            },
+          },
+        },
+        "200": {
+          description:
+            "Named sleep-stage body only: the segment was already stored (`status: duplicate`) or a stored one was corrected in place (`status: updated`). Every other body answers 201 or an error, as before.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                namedSleepStageResult,
+                "NamedSleepStageDuplicateResponse",
               ),
             },
           },
         },
         "409": {
           description:
-            "A measurement with this data already exists — the `(userId, type, source, externalId)` dedup index rejected the write.",
+            "A measurement with this data already exists — the `(userId, type, source, externalId)` dedup index rejected the write. Never for a named sleep-stage body, which answers a re-post with 200 instead.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         // After the spread: `stdResponses` carries a generic 422 that would
@@ -1011,7 +1065,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation, or (`measurement.batch.source_not_permitted`) carried an entry naming a source — any source — under a narrow `measurements:write` credential. Nothing was written in any of the three cases.",
+            "The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation (`measurement.batch.invalid`, with every issue under `details.issues`), or (`measurement.batch.source_not_permitted`) carried an entry naming a source, any source, under a narrow `measurements:write` credential. Nothing was written in any of the three cases, and all three are permanent for the batch as sent: resending it unchanged is refused the same way.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

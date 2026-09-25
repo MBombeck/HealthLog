@@ -249,7 +249,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
     },
   });
 
-  return apiSuccess({
+  const response = apiSuccess({
     processed: entries.length,
     inserted,
     updated,
@@ -257,4 +257,12 @@ async function postBulk(request: NextRequest): Promise<Response> {
     skipped,
     entries: results,
   });
+  // `upsert_failed` is a write that did not happen, not a verdict on the
+  // entry, and the client sends it again. `no-store` keeps the idempotency
+  // layer from caching this answer, so a retry under the same key writes
+  // instead of replaying the failure.
+  if (results.some((r) => r.reason === "upsert_failed")) {
+    response.headers.set("Cache-Control", "private, no-store");
+  }
+  return response;
 }
