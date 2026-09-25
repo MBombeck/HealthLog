@@ -504,7 +504,7 @@ describe("B8 — the measurement-ingest scope reaches its two routes and no othe
     } as never);
   }
 
-  it("admits the scope on POST /api/measurements, attributed MANUAL", async () => {
+  it("admits the scope on POST /api/measurements, attributed EXTERNAL", async () => {
     await armToken(["measurements:write"], "mwrite1");
     const { POST } = await import("@/app/api/measurements/route");
     const res = await POST(postMeasurement());
@@ -513,7 +513,41 @@ describe("B8 — the measurement-ingest scope reaches its two routes and no othe
     const row = await getPrismaClient().measurement.findFirstOrThrow({
       where: { userId: USER_ID, type: "WEIGHT" },
     });
-    expect(row.source).toBe("MANUAL");
+    // v1.38.x — the body names no source (see `measurementBody`), and the
+    // route resolves one from the credential rather than falling back on the
+    // schema default. This assertion is the whole feature: a reading pushed
+    // by a bridge is distinguishable afterwards from one typed by hand.
+    expect(row.source).toBe("EXTERNAL");
+  });
+
+  it("refuses a body naming MANUAL, rather than overriding it", async () => {
+    // The source is server-resolved now, so an explicit assertion has only
+    // two possible fates: honoured (and the row is indistinguishable from a
+    // typed one, defeating the point) or overridden in silence (which hands
+    // the caller a row it did not ask for and no way to notice). The route
+    // takes neither and refuses. MANUAL specifically, because it used to be
+    // the permitted value — the widening from "names APPLE_HEALTH" to "names
+    // anything" is exactly this case.
+    await armToken(["measurements:write"], "mwrite1b");
+    const { POST } = await import("@/app/api/measurements/route");
+    const res = await POST(
+      new NextRequest("https://health.example/api/measurements", {
+        method: "POST",
+        headers: {
+          authorization: headerJar.get("authorization")!,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "WEIGHT",
+          value: 74.2,
+          measuredAt: new Date().toISOString(),
+          source: "MANUAL",
+        }),
+      } as never),
+    );
+
+    expect(res.status).toBe(422);
+    expect(await getPrismaClient().measurement.count()).toBe(0);
   });
 
   it("admits the scope on the batch route, attributed MANUAL", async () => {
@@ -545,8 +579,11 @@ describe("B8 — the measurement-ingest scope reaches its two routes and no othe
     const row = await getPrismaClient().measurement.findFirstOrThrow({
       where: { userId: USER_ID, externalId: "uuid-measurements-write-1" },
     });
-    // Absent `source` defaults to APPLE_HEALTH for the phone and MANUAL here.
-    expect(row.source).toBe("MANUAL");
+    // Absent `source` defaults to APPLE_HEALTH for the phone and resolves to
+    // EXTERNAL here. That also moves the dedup key to
+    // `(userId, type, EXTERNAL, externalId)`, so a bridge's externalIds can
+    // never collide with the phone's.
+    expect(row.source).toBe("EXTERNAL");
   });
 
   it("does not move the native sync checkpoint", async () => {
@@ -609,6 +646,83 @@ describe("B8 — the measurement-ingest scope reaches its two routes and no othe
 
     expect(res.status).toBe(422);
     expect(await getPrismaClient().measurement.count()).toBe(0);
+  });
+
+  it("refuses a batch entry naming MANUAL too, not only APPLE_HEALTH", async () => {
+    // MANUAL was permitted here while it was also the value the route forced,
+    // so nothing was ever overridden. Now it would be, and the sibling case
+    // above says why that is refused instead.
+    await armToken(["measurements:write"], "mwrite4b");
+    const { POST } = await import("@/app/api/measurements/batch/route");
+    const res = await POST(
+      new NextRequest("https://health.example/api/measurements/batch", {
+        method: "POST",
+        headers: {
+          authorization: headerJar.get("authorization")!,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          entries: [
+            {
+              hkIdentifier: "HKQuantityTypeIdentifierBodyMass",
+              value: 73,
+              unit: "kg",
+              startDate: new Date().toISOString(),
+              endDate: new Date().toISOString(),
+              externalId: "uuid-measurements-write-3b",
+              source: "MANUAL",
+            },
+          ],
+        }),
+      } as never),
+    );
+
+    expect(res.status).toBe(422);
+    expect(await getPrismaClient().measurement.count()).toBe(0);
+  });
+
+  it("leaves the row it wrote editable by its owner", async () => {
+    // The counterpart to the source split. `EXTERNAL` is outside
+    // `WRITABLE_MEASUREMENT_SOURCES` — no client may name it — but it is
+    // inside `USER_CORRECTABLE_MEASUREMENT_SOURCES`, because the hardware
+    // behind an ingest token is the user's own scale, not a provider. A later
+    // tidy-up that folds the two constants back together turns every bridge
+    // row value-locked with a 409, and this case is what notices.
+    await armToken(["measurements:write"], "mwrite1c");
+    const { POST } = await import("@/app/api/measurements/route");
+    expect((await POST(postMeasurement())).status).toBe(201);
+    const row = await getPrismaClient().measurement.findFirstOrThrow({
+      where: { userId: USER_ID, type: "WEIGHT" },
+    });
+    expect(row.source).toBe("EXTERNAL");
+
+    // Edit as the owner: a cookie session, no Bearer. The scoped credential
+    // could not reach `PUT` at all — that is the point of a write-only scope.
+    headerJar.delete("authorization");
+    const session = await getPrismaClient().session.create({
+      data: {
+        userId: USER_ID,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+    cookieJar.set("healthlog_session", session.id);
+
+    const { PUT } = await import("@/app/api/measurements/[id]/route");
+    const res = await PUT(
+      new NextRequest(`https://health.example/api/measurements/${row.id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ value: 75.1 }),
+      } as never),
+      { params: Promise.resolve({ id: row.id }) },
+    );
+
+    expect(res.status).toBe(200);
+    const reread = await getPrismaClient().measurement.findUniqueOrThrow({
+      where: { id: row.id },
+    });
+    expect(reread.value).toBe(75.1);
+    expect(reread.source).toBe("EXTERNAL");
   });
 
   it("is refused on the read leg of the very same path", async () => {

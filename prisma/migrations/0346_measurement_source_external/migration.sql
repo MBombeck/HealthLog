@@ -1,0 +1,27 @@
+-- Ingest-token write provenance.
+--
+-- The `measurements:write` Bearer scope mints a token a home-automation
+-- bridge pastes into a rule; until now the rows it pushed were attributed
+-- `MANUAL`, the same label a hand-typed reading gets, so afterwards nobody
+-- could tell which readings came off the scale. Rows written under that
+-- scope carry their own `MeasurementSource` value instead, so they are
+-- distinguishable from MANUAL / TELEGRAM / MCP provenance and get an
+-- isolated idempotency namespace `(userId, type, EXTERNAL, externalId)`.
+--
+-- Purely-additive enum extension; no row touched. `ADD VALUE IF NOT EXISTS`
+-- makes a rerun safe. The new value is NOT used elsewhere in this migration,
+-- so it is safe to extend the enum in the same step (Postgres only forbids
+-- USING a freshly-added value in the same transaction). Mirrors the 0189
+-- extension that added TELEGRAM and the 0207 one that added MCP. The enum is
+-- `@@map`-ed to the snake_case type name `measurement_source`.
+--
+-- No backfill, deliberately, and none is possible: `measurements` carries no
+-- actor or token column and the audit trail never records the credential, so
+-- a bridge-written MANUAL row is byte-identical to a hand-typed one. That
+-- indistinguishability is the bug being fixed; any heuristic would relabel
+-- real hand entries as machine ones. Existing rows stay MANUAL — still
+-- editable, and correctly not badged.
+--
+-- Reversibility: Postgres cannot remove an enum value, so `EXTERNAL` stays
+-- (inert with no rows).
+ALTER TYPE "measurement_source" ADD VALUE IF NOT EXISTS 'EXTERNAL';

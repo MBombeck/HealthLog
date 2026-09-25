@@ -13,8 +13,8 @@ import {
 } from "@/lib/api-response";
 import {
   updateMeasurementSchema,
+  USER_CORRECTABLE_MEASUREMENT_SOURCES,
   validateMeasurementRange,
-  WRITABLE_MEASUREMENT_SOURCES,
 } from "@/lib/validations/measurement";
 import { encryptNote, shapeMeasurementNotes } from "@/lib/crypto/note-cipher";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
@@ -120,12 +120,22 @@ export const PUT = apiHandler(
     if (data.value !== undefined && data.value !== existing.value) {
       // Server-owned rows first: a value attributed to a connector / import /
       // computed engine is the provider's reading — editing the number would
-      // forge a source-attributed row the server never received. Mirrors the
-      // write-side classification (`WRITABLE_MEASUREMENT_SOURCES`): only
-      // MANUAL and APPLE_HEALTH rows are client-owned. Timestamp and note
-      // edits stay allowed — annotating a Withings reading is legitimate.
+      // forge a source-attributed row the server never received. Timestamp
+      // and note edits stay allowed — annotating a Withings reading is
+      // legitimate.
+      //
+      // v1.38.x — gated on `USER_CORRECTABLE_MEASUREMENT_SOURCES` rather than
+      // the write-side `WRITABLE_MEASUREMENT_SOURCES` the two once shared,
+      // because `EXTERNAL` separates the questions. A client may not NAME that
+      // source (it is resolved from the ingest credential, and the write
+      // allowlist is published as `ingest.writeAllowlist`), but the hardware
+      // behind the token is the user's own scale, so the rationale above —
+      // "the value is the provider's" — does not reach it. Locking those rows
+      // would also break the correctability the settings card and the Home
+      // Assistant guide promise. This is the only site that reads the wider
+      // set; re-merging the two constants silently value-locks bridge rows.
       if (
-        !(WRITABLE_MEASUREMENT_SOURCES as readonly string[]).includes(
+        !(USER_CORRECTABLE_MEASUREMENT_SOURCES as readonly string[]).includes(
           existing.source,
         )
       ) {
