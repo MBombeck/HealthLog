@@ -578,6 +578,17 @@ export function decryptStream(stored: string): Buffer {
   return decryptRawStream(Buffer.from(rest.slice(dot + 1), "base64"), key);
 }
 
+/**
+ * Re-seal a streamed ciphertext under the active key, as a streamed
+ * ciphertext. Used by rotation for the backups v1.39.1 stored in this form;
+ * the plaintext is the backup's gzip bytes and is never inspected.
+ */
+export function reencryptStreamToActive(stored: string): string {
+  const plaintext = decryptStream(stored);
+  const encryptor = createStreamEncryptor();
+  return `${encryptor.header}${encryptor.update(plaintext)}${encryptor.final()}`;
+}
+
 /** The key id a streamed ciphertext was written under, or null when unparsable. */
 export function extractStreamKeyId(stored: string): string | null {
   if (!isStreamCiphertext(stored)) return null;

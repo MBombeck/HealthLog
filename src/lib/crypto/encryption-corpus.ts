@@ -35,8 +35,11 @@ import {
   encrypt,
   extractKeyId,
   extractKeyIdFromBytes,
+  extractStreamKeyId,
   getActiveKeyId,
+  isStreamCiphertext,
   reencryptBytesToActive,
+  reencryptStreamToActive,
 } from "@/lib/crypto";
 import {
   ENCRYPTED_COLUMNS,
@@ -202,7 +205,7 @@ async function walkColumn(
       await onRow({
         id: row[pk] as string,
         value,
-        codec: codecField ? String(row[codecField] ?? "") : null,
+        codec: codecField ? String(row[codecField] ?? "") : (col.codec ?? null),
       });
     }
     cursor = rows[rows.length - 1]![pk] as string;
@@ -228,7 +231,18 @@ function walkedKeyId(
 ): string | null {
   if (codec !== null) return blobKeyId(value as Uint8Array, codec);
   const ciphertext = toCiphertext(value, kind);
-  return ciphertext == null ? null : extractKeyId(ciphertext);
+  if (ciphertext == null) return null;
+  // The single-stream backup form v1.39.1 wrote carries its key id behind a
+  // `~hlgcm1.` marker, where the string codec's parser does not look.
+  if (isStreamCiphertext(ciphertext)) return extractStreamKeyId(ciphertext);
+  return extractKeyId(ciphertext);
+}
+
+/** Re-seal a string-codec value under the active key, keeping its form. */
+function reencryptString(ciphertext: string): string {
+  return isStreamCiphertext(ciphertext)
+    ? reencryptStreamToActive(ciphertext)
+    : encrypt(decrypt(ciphertext));
 }
 
 export interface ColumnScan {
@@ -368,7 +382,7 @@ export async function rotateColumn(
         codec !== null
           ? reencryptBlob(value as Uint8Array, codec)
           : fromCiphertext(
-              encrypt(decrypt(toCiphertext(value, col.kind)!)),
+              reencryptString(toCiphertext(value, col.kind)!),
               col.kind,
             );
       await delegate.update({

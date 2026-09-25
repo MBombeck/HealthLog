@@ -40,6 +40,7 @@ import {
   type CorpusClient,
 } from "@/lib/crypto/encryption-corpus";
 import { packBackupBlob, unpackBackupBlob } from "@/lib/export/backup-blob";
+import { legacyStreamedBlob } from "@/__tests__/helpers/legacy-backup-blob";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const TEST_USER_ID = "user-rotation-blobs";
@@ -151,6 +152,37 @@ describe("key rotation over the non-suffixed ciphertext columns", () => {
       where: { id: backup.id },
     });
     expect(unpackBackupBlob(row.data)).toBe(BACKUP_JSON);
+  });
+
+  it("rotates the single stream v1.39.1 stored, and it stays readable", async () => {
+    // The `~hlgcm1.` form carries its key id behind a marker the string
+    // codec's parser does not read, so the walk used to file it as legacy
+    // and fail to decrypt it: the one copy form every v1.39.x host had was
+    // counted as an error on every rotation.
+    const prisma = getPrismaClient();
+    const previous = process.env.ENCRYPTION_ACTIVE_KEY_ID;
+    process.env.ENCRYPTION_ACTIVE_KEY_ID = "v1";
+    _resetCryptoCacheForTests();
+    const stored = legacyStreamedBlob(BACKUP_JSON);
+    process.env.ENCRYPTION_ACTIVE_KEY_ID = previous;
+    _resetCryptoCacheForTests();
+    const row = await prisma.dataBackup.create({
+      data: { userId: TEST_USER_ID, type: "WEEKLY_AUTO", data: stored },
+    });
+
+    const result = await rotateColumn(
+      { dataBackup: prisma.dataBackup } as unknown as CorpusClient,
+      column("DataBackup", "data"),
+    );
+    expect(result).toMatchObject({ scanned: 1, rotated: 1, errors: 0 });
+
+    process.env.ENCRYPTION_KEYS = JSON.stringify({ v2: "2".repeat(64) });
+    _resetCryptoCacheForTests();
+    const after = await prisma.dataBackup.findUniqueOrThrow({
+      where: { id: row.id },
+    });
+    expect(after.data!.startsWith("~hlgcm1.v2.")).toBe(true);
+    expect(unpackBackupBlob(after.data!)).toBe(BACKUP_JSON);
   });
 
   it("drops an unreadable idempotency row instead of failing the run", async () => {
