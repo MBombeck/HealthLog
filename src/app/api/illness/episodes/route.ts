@@ -127,6 +127,10 @@ async function postEpisode(request: NextRequest): Promise<Response> {
       resolvedAt: entry.resolvedAt ? new Date(entry.resolvedAt) : null,
       parentConditionId: entry.parentConditionId ?? null,
       noteEncrypted: entry.note ? encryptToBytes(entry.note) : null,
+      bodySiteEncrypted: entry.bodySite?.trim()
+        ? encryptToBytes(entry.bodySite.trim())
+        : null,
+      laterality: entry.laterality ?? null,
     },
   });
 

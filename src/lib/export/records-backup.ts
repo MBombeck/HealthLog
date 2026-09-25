@@ -206,6 +206,8 @@ type CanonicalIllnessDayLog = IllnessDayLogDTO & {
 
 type CanonicalIllnessEpisode = IllnessEpisodeDTO & {
   noteEncrypted?: string | null;
+  /** The body site's ciphertext, disaster-recovery purpose only (v1.39.2). */
+  bodySiteEncrypted?: string | null;
   deletedAt?: string | null;
   dayLogs: CanonicalIllnessDayLog[];
 };
@@ -440,6 +442,13 @@ export async function buildRecordsBackupSection(
         noteEncrypted: row.noteEncrypted
           ? Buffer.from(row.noteEncrypted).toString("base64")
           : null,
+        // Ciphertext verbatim, like the note: the disaster-recovery file never
+        // carries the site in the clear.
+        bodySite: null,
+        bodySiteEncrypted: row.bodySiteEncrypted
+          ? Buffer.from(row.bodySiteEncrypted).toString("base64")
+          : null,
+        laterality: row.laterality,
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),
         deletedAt: row.deletedAt?.toISOString() ?? null,

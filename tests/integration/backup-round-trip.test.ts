@@ -660,6 +660,9 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       label: "Iron deficiency",
       type: "CHRONIC",
       onsetAt: AT("2026-03-01T00:00:00.000Z"),
+      // v1.39.2 — a condition's body site and side travel too.
+      bodySiteEncrypted: encryptToBytes("Stomach"),
+      laterality: "BOTH",
     },
   });
   const illnessSymptom = await prisma.illnessSymptom.create({
@@ -1963,6 +1966,24 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       condition: "Iron deficiency",
       createdAt: "2026-07-02T09:00:00.000Z",
     });
+
+    // The condition's body site and side (v1.39.2). A restore that dropped
+    // either would still return the right number of episodes; the site must
+    // come back as ciphertext that reads as what was typed, and the side as
+    // it was.
+    const sitedEpisode = await prisma.illnessEpisode.findFirstOrThrow({
+      where: { userId: OWNER_ID, label: "Iron deficiency" },
+      select: { bodySiteEncrypted: true, laterality: true },
+    });
+    expect(
+      {
+        bodySite: sitedEpisode.bodySiteEncrypted
+          ? decryptFromBytes(sitedEpisode.bodySiteEncrypted)
+          : null,
+        laterality: sitedEpisode.laterality,
+      },
+      "a condition's body site and side must survive the round trip",
+    ).toEqual({ bodySite: "Stomach", laterality: "BOTH" });
 
     // The staged fact, and the decision on it.
     //

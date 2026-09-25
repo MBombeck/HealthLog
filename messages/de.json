@@ -268,6 +268,7 @@
     "illnessTitle": "Erkrankungen",
     "illnessOngoing": "Andauernd",
     "illnessColCondition": "Erkrankung",
+    "illnessColBodySite": "Körperstelle",
     "illnessColType": "Art",
     "illnessColLifecycle": "Verlauf",
     "illnessColOnset": "Beginn",
@@ -9201,7 +9202,8 @@
       "parentNone": "Nicht verknüpft",
       "resolved": "Beendet am",
       "resolvedHelp": "Leer lassen, solange die Episode noch andauert.",
-      "markOngoing": "Noch andauernd"
+      "markOngoing": "Noch andauernd",
+      "bodySiteHint": "Zum Beispiel Knie oder unterer Rücken."
     },
     "sheet": {
       "title": "{date} erfassen",
@@ -10938,10 +10940,11 @@
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Vorsorge, Termine oder Eingriffe anzeigen",
+    "viewSwitchLabel": "Vorsorge, Termine, Eingriffe oder Körperstellen anzeigen",
     "tabVorsorge": "Vorsorge",
     "tabVisits": "Termine",
-    "tabProcedures": "Eingriffe"
+    "tabProcedures": "Eingriffe",
+    "tabBodySites": "Körperstellen"
   },
   "practitioners": {
     "title": "Praxen und Ärzte",
@@ -10982,5 +10985,26 @@
       "removeNamed": "{name} entfernen",
       "removed": "Verknüpfung mit {name} gelöst"
     }
+  },
+  "bodySites": {
+    "title": "Körperstellen",
+    "description": "Eingriffe und Erkrankungen nach der Stelle am Körper.",
+    "loadError": "Die Körperstellen konnten nicht geladen werden.",
+    "emptyTitle": "Noch keine Körperstelle erfasst",
+    "emptyDescription": "Gib bei einem Eingriff oder einer Erkrankung eine Körperstelle an, dann erscheint sie hier.",
+    "sitesLabel": "Körperstellen",
+    "sidesLabel": "Seite",
+    "allSides": "Alle Seiten",
+    "pickPrompt": "Wähle eine Stelle, um zu sehen, was dazu erfasst ist.",
+    "noMatchTitle": "Auf dieser Seite ist nichts erfasst",
+    "visitsTitle": "Eingriffe und Termine",
+    "conditionsTitle": "Erkrankungen",
+    "hiddenDocument": "Ein Dokument, das nicht mit dir geteilt ist",
+    "hiddenLabResult": "Ein Laborwert, der nicht mit dir geteilt ist",
+    "hiddenCondition": "Eine Erkrankung, die nicht mit dir geteilt ist",
+    "hiddenVisit": "Ein Termin, der nicht mit dir geteilt ist",
+    "linkedLabel": "Verknüpfte Einträge",
+    "conditionSince": "Seit {onset}",
+    "conditionDates": "{onset} bis {resolved}"
   }
 }

@@ -29,6 +29,9 @@ export interface IllnessEpisodeDTO {
   resolvedAt: string | null;
   parentConditionId: string | null;
   note: string | null;
+  /** Where on the body, decrypted; null when not stated (v1.39.2). */
+  bodySite: string | null;
+  laterality: "LEFT" | "RIGHT" | "BOTH" | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -64,6 +67,8 @@ export interface IllnessEpisodeCreateInput {
   resolvedAt?: string | null;
   parentConditionId?: string | null;
   note?: string | null;
+  bodySite?: string | null;
+  laterality?: "LEFT" | "RIGHT" | "BOTH" | null;
 }
 
 export interface IllnessDayLogInput {
@@ -82,6 +87,9 @@ export interface IllnessEpisodeUpdateInput {
   resolvedAt?: string | null;
   parentConditionId?: string | null;
   note?: string | null;
+  /** Absent keeps the stored value; null or blank clears it. */
+  bodySite?: string | null;
+  laterality?: "LEFT" | "RIGHT" | "BOTH" | null;
 }
 
 /* ── P3 correlation + retrospective DTOs (server-authoritative) ───────── */

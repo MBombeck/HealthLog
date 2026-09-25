@@ -7481,6 +7481,24 @@ model IllnessEpisode {
   /// `src/lib/crypto.ts` (Bytes column, `*Encrypted` suffix per
   /// convention).
   noteEncrypted     Bytes?           @map("note_encrypted")
+  /// Where on the body the condition sits, in the person's own words
+  /// ("knee", "lower back", "L4/L5"), v1.39.2. The same field, codec and
+  /// reasoning as `Encounter.bodySiteEncrypted`: free text because no picker
+  /// covers every site and a coded vocabulary the person cannot read is worse
+  /// than their own word, encrypted because it is health data, and searched
+  /// by decrypting the account's own rows server-side
+  /// (`src/lib/body-sites/`), never through a plaintext or hashed copy.
+  ///
+  /// Allowed on every type. An injury or a chronic joint condition is the
+  /// usual case, but a type edit must not lose what was typed.
+  ///
+  /// The shipped iOS app neither sends nor decodes it, and the PATCH treats
+  /// an absent key as "leave alone", so an edit from the phone keeps it.
+  bodySiteEncrypted Bytes?           @map("body_site_encrypted")
+  /// Which side, when the site has one. Same enum and the same NULL meaning
+  /// as `Encounter.laterality`: not stated or not applicable. Plaintext,
+  /// because a side alone says nothing.
+  laterality        Laterality?
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
@@ -8389,8 +8407,8 @@ enum EncounterKind {
   @@map("encounter_kind")
 }
 
-/// The side of the body a procedure's site is on. See
-/// `Encounter.laterality`.
+/// The side of the body a site is on. See `Encounter.laterality`; since
+/// v1.39.2 also `IllnessEpisode.laterality`.
 enum Laterality {
   LEFT
   RIGHT

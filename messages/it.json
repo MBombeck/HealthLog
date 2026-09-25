@@ -268,6 +268,7 @@
     "illnessTitle": "Condizioni e malattie",
     "illnessOngoing": "In corso",
     "illnessColCondition": "Condizione",
+    "illnessColBodySite": "Parte del corpo",
     "illnessColType": "Tipo",
     "illnessColLifecycle": "Decorso",
     "illnessColOnset": "Inizio",
@@ -9201,7 +9202,8 @@
       "parentNone": "Non collegato",
       "resolved": "Conclusa il",
       "resolvedHelp": "Lascia vuoto finché l'episodio è ancora in corso.",
-      "markOngoing": "Ancora in corso"
+      "markOngoing": "Ancora in corso",
+      "bodySiteHint": "Ad esempio ginocchio o zona lombare."
     },
     "sheet": {
       "title": "Registra {date}",
@@ -10938,10 +10940,11 @@
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Mostra controlli, appuntamenti o interventi",
+    "viewSwitchLabel": "Mostra controlli, appuntamenti, interventi o parti del corpo",
     "tabVorsorge": "Controlli",
     "tabVisits": "Appuntamenti",
-    "tabProcedures": "Interventi"
+    "tabProcedures": "Interventi",
+    "tabBodySites": "Parti del corpo"
   },
   "practitioners": {
     "title": "Studi e medici",
@@ -10982,5 +10985,26 @@
       "removeNamed": "Rimuovi {name}",
       "removed": "Collegamento a {name} rimosso"
     }
+  },
+  "bodySites": {
+    "title": "Parti del corpo",
+    "description": "Interventi e malattie in base alla parte del corpo.",
+    "loadError": "Non è stato possibile caricare le parti del corpo.",
+    "emptyTitle": "Nessuna parte del corpo registrata",
+    "emptyDescription": "Aggiungi una parte del corpo a un intervento o a una malattia e comparirà qui.",
+    "sitesLabel": "Parti del corpo",
+    "sidesLabel": "Lato",
+    "allSides": "Tutti i lati",
+    "pickPrompt": "Scegli una parte del corpo per vedere cosa vi è registrato.",
+    "noMatchTitle": "Nulla di registrato su questo lato",
+    "visitsTitle": "Interventi e appuntamenti",
+    "conditionsTitle": "Malattie",
+    "hiddenDocument": "Un documento non condiviso con te",
+    "hiddenLabResult": "Un risultato di laboratorio non condiviso con te",
+    "hiddenCondition": "Una malattia non condivisa con te",
+    "hiddenVisit": "Un appuntamento non condiviso con te",
+    "linkedLabel": "Voci collegate",
+    "conditionSince": "Dal {onset}",
+    "conditionDates": "Dal {onset} al {resolved}"
   }
 }

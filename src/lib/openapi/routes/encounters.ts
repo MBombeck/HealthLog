@@ -33,6 +33,11 @@ import {
   practitionerUpdateSchema,
   practitionerListQuerySchema,
 } from "@/lib/validations/practitioners";
+import { bodySiteQuerySchema } from "@/lib/validations/body-sites";
+import {
+  illnessLifecycleEnum,
+  illnessTypeEnum,
+} from "@/lib/validations/illness";
 
 import {
   dataEnvelope,
@@ -220,6 +225,75 @@ const procedureList = z
       "The procedure history. `procedures` is the filtered list, newest first. `bodySites` and `total` are computed over the whole history before the filter, so the filter choices never shrink to the one just picked.",
   });
 
+const bodySitesQuery = bodySiteQuerySchema.meta({
+  id: "BodySitesQuery",
+  description:
+    "Without `site`: only the list of sites. With `site`: also what is filed there. `site` is compared to the whole stored site, case- and accent-insensitively, after the decrypt; it names a site from the list rather than searching words. `laterality` narrows to one side and needs `site`; LEFT and RIGHT include records on BOTH sides, and a record whose side was never stated is left out once a side is picked.",
+});
+
+const bodySiteSide = z
+  .object({
+    laterality: lateralityEnum.nullable(),
+    count: z.number().int(),
+  })
+  .meta({
+    id: "BodySiteSide",
+    description:
+      "How many records sit on one side of a site. `laterality: null` counts the records whose side was not stated.",
+  });
+
+const bodySite = z
+  .object({
+    bodySite: z.string(),
+    procedures: z.number().int(),
+    conditions: z.number().int(),
+    sides: z.array(bodySiteSide),
+  })
+  .meta({
+    id: "BodySite",
+    description:
+      "One body site the record holds, across visits (procedures, mostly) and conditions. Keyed case-, accent- and space-insensitively; `bodySite` is the first spelling met, newest record first. `conditions` is 0 when the caller may not read conditions.",
+  });
+
+const bodySiteCondition = z
+  .object({
+    id: z.string(),
+    label: z.string(),
+    type: illnessTypeEnum,
+    lifecycle: illnessLifecycleEnum,
+    onsetAt: z.string(),
+    resolvedAt: z.string().nullable(),
+    bodySite: z.string().nullable(),
+    laterality: lateralityEnum.nullable(),
+    links: z.object({
+      documents: z.array(linkedTarget),
+      visits: z.array(linkedTarget),
+    }),
+  })
+  .meta({
+    id: "BodySiteCondition",
+    description:
+      "A condition at the picked site, with the documents filed against it and the visits it was linked to. No note: that is read on the condition itself. A document link comes back with `redacted: true` and no label or date when the caller's grant does not cover documents.",
+  });
+
+const bodySiteList = z
+  .object({
+    sites: z.array(bodySite),
+    selection: z
+      .object({
+        bodySite: z.string(),
+        laterality: lateralityEnum.nullable(),
+        visits: z.array(encounter),
+        conditions: z.array(bodySiteCondition).nullable(),
+      })
+      .optional(),
+  })
+  .meta({
+    id: "BodySiteList",
+    description:
+      "The record's body sites, most records first, and with `site` the visits and conditions filed there, each newest first with its links. `selection.conditions` is null (not empty) when the caller may not read conditions in this record or the record has the illness module off. Links into a section the caller's grant does not cover carry `redacted: true` and no label.",
+  });
+
 const suggestionCandidate = z
   .object({
     id: z.string(),
@@ -326,6 +400,27 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(procedureList, "ListProceduresEnvelope"),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/body-sites": {
+    get: {
+      tags: ["Records"],
+      summary: "List body sites, or what is filed at one",
+      description:
+        "The body sites the record holds, across visits and conditions, and with `site` the visits and conditions filed at that site with their linked documents, lab results and visits. The same list serves as suggestions for a body-site field, so a site is written the same way twice. Body sites are encrypted at rest, so grouping and matching run server-side after the decrypt, over at most 500 rows per kind. Read at the same section and level as the visit list; conditions join only when the caller may read the illness section and the record has the illness module on.",
+      requestParams: { query: bodySitesQuery },
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "The body sites, and the selection when one was named.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(bodySiteList, "ListBodySitesEnvelope"),
             },
           },
         },

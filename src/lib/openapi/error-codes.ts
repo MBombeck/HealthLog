@@ -71,6 +71,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "backup.section.missing",
       "backup.upload.too_large",
     ],
+    "body-site": ["body-site.invalid"],
     coach: [
       "coach.budget.exceeded",
       "coach.conversation.invalidTitle",

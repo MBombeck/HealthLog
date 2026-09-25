@@ -12,7 +12,8 @@ import type { Prisma } from "@/generated/prisma/client";
 export const MAX_TARGETS_PER_CALL = 100;
 
 /** The record a link hangs off. */
-export type LinkSourceKind = "encounter" | "document" | "vaccination";
+export type LinkSourceKind =
+  "encounter" | "document" | "vaccination" | "conditionEpisode";
 
 /** The record a link points at. */
 export type LinkTargetKind =
@@ -141,6 +142,12 @@ const SOURCES: Record<
   vaccination: {
     delegate: (tx) => narrow<OwnedRowDelegate>(tx.vaccinationRecord),
     relationField: "vaccination",
+  },
+  // A condition is a source only in the read direction of two tables that
+  // already exist (see the two `conditionEpisode:*` pairs below).
+  conditionEpisode: {
+    delegate: (tx) => narrow<OwnedRowDelegate>(tx.illnessEpisode),
+    relationField: "episode",
   },
 };
 
@@ -278,6 +285,25 @@ const LINK_TABLES: Partial<
     sourceColumn: "documentId",
     targetColumn: "vaccinationId",
     target: VACCINATION_ENDPOINT,
+  },
+  // v1.39.2 — the body-site view walks from a condition to what is filed
+  // against it. Both pairs are an existing table read from the condition's
+  // end, the way `document:encounter` reads the visit table from the
+  // document's: `document_condition_links` answers "which documents are about
+  // this condition" and `encounter_condition_links` "which visits were for
+  // it". A second direction each, not a new table, so the ceiling above is
+  // untouched.
+  "conditionEpisode:document": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.documentConditionLink),
+    sourceColumn: "episodeId",
+    targetColumn: "documentId",
+    target: DOCUMENT_ENDPOINT,
+  },
+  "conditionEpisode:encounter": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.encounterConditionLink),
+    sourceColumn: "episodeId",
+    targetColumn: "encounterId",
+    target: ENCOUNTER_ENDPOINT,
   },
 };
 

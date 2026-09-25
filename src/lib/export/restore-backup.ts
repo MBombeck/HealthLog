@@ -1790,6 +1790,17 @@ export async function restoreBackup(
                   : episode.note == null
                     ? null
                     : encryptToBytes(episode.note),
+              // v1.39.2 — the same two-armed read as the note: ciphertext
+              // verbatim from a disaster-recovery file, plaintext re-encrypted
+              // from a portable one, nothing from a file older than the field.
+              bodySiteEncrypted:
+                episode.bodySiteEncrypted !== undefined &&
+                episode.bodySiteEncrypted !== null
+                  ? decodeEncryptedBytes(episode.bodySiteEncrypted)
+                  : episode.bodySite?.trim()
+                    ? encryptToBytes(episode.bodySite.trim())
+                    : null,
+              laterality: episode.laterality ?? null,
               deletedAt: episode.deletedAt ? new Date(episode.deletedAt) : null,
               ...(episode.createdAt
                 ? { createdAt: new Date(episode.createdAt) }

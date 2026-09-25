@@ -13,6 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VorsorgeSection } from "@/components/measurement-reminders/vorsorge-section";
 import { VisitsSection } from "@/components/encounters/visits-section";
 import { ProceduresSection } from "@/components/encounters/procedures-section";
+import { BodySitesSection } from "@/components/body-sites/body-sites-section";
+import type { BodySiteSide } from "@/hooks/use-body-sites";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
 
@@ -36,6 +38,11 @@ import { invalidateKeys, queryKeys } from "@/lib/query-keys";
  * so it sits beside the visits rather than behind a nav entry of its own, and
  * its read hangs off the same `["encounters"]` root the pull already evicts.
  *
+ * v1.39.2 — a fourth tab, the body-site view: procedures and conditions by
+ * where on the body they are, with what is linked to them. It starts from the
+ * visits (a procedure is one), so it sits here rather than under the illness
+ * journal, and its read hangs off the same `["encounters"]` root.
+ *
  * The pull invalidates both reads. Refreshing one and leaving the other stale
  * is how a page ends up showing a visit that closed a checkup still listed as
  * due.
@@ -47,8 +54,21 @@ export default function CheckupsPageClient() {
   const { t } = useTranslations();
   // A link to one visit (`?visit=<id>`, from a document's link chip) lands on
   // the visits tab, where the section opens it.
-  const linkedVisit = useSearchParams()?.get("visit");
-  const [view, setView] = useState(linkedVisit ? "visits" : "vorsorge");
+  const searchParams = useSearchParams();
+  const linkedVisit = searchParams?.get("visit");
+  // A link to one body site (`?site=<text>&side=<LEFT|RIGHT|BOTH>`, from a
+  // condition's page) lands on the body-site tab with that site picked.
+  const linkedSite = searchParams?.get("site")?.trim() || null;
+  const linkedSideParam = searchParams?.get("side");
+  const linkedSide: BodySiteSide =
+    linkedSideParam === "LEFT" ||
+    linkedSideParam === "RIGHT" ||
+    linkedSideParam === "BOTH"
+      ? linkedSideParam
+      : null;
+  const [view, setView] = useState(
+    linkedVisit ? "visits" : linkedSite ? "body-sites" : "vorsorge",
+  );
 
   const refresh = useCallback(
     () =>
@@ -78,6 +98,9 @@ export default function CheckupsPageClient() {
           <TabsTrigger value="procedures" data-testid="checkups-tab-procedures">
             {t("checkups.tabProcedures")}
           </TabsTrigger>
+          <TabsTrigger value="body-sites" data-testid="checkups-tab-body-sites">
+            {t("checkups.tabBodySites")}
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="vorsorge">
           <VorsorgeSection enabled={isAuthenticated} variant="page" />
@@ -89,6 +112,13 @@ export default function CheckupsPageClient() {
         </TabsContent>
         <TabsContent value="procedures">
           <ProceduresSection enabled={isAuthenticated} />
+        </TabsContent>
+        <TabsContent value="body-sites">
+          <BodySitesSection
+            enabled={isAuthenticated}
+            initialSite={linkedSite}
+            initialSide={linkedSide}
+          />
         </TabsContent>
       </Tabs>
     </div>

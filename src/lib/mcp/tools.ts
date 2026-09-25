@@ -140,6 +140,41 @@ async function runCoachTool(
   return result;
 }
 
+/**
+ * Fence the condition body sites in a `get_illness_recovery` result (v1.39.2).
+ *
+ * The Coach reads the same illness block inside its fenced snapshot, where the
+ * sanitised site is enough. An MCP client gets the block as a bare tool result,
+ * so the site, which is the person's own words, is wrapped like every other
+ * free-text leaf this server returns. Nothing else in the result changes.
+ */
+function fenceIllnessSites(result: unknown): unknown {
+  const r = result as {
+    data?: { illness?: Record<string, unknown> } & Record<string, unknown>;
+  };
+  const illness = r?.data?.illness;
+  if (!illness) return result;
+  const fence = (list: unknown) =>
+    Array.isArray(list)
+      ? list.map((entry: Record<string, unknown>) =>
+          typeof entry?.bodySite === "string"
+            ? { ...entry, bodySite: fenceUserText(entry.bodySite) }
+            : entry,
+        )
+      : list;
+  return {
+    ...r,
+    data: {
+      ...r.data,
+      illness: {
+        ...illness,
+        active: fence(illness.active),
+        recentResolved: fence(illness.recentResolved),
+      },
+    },
+  };
+}
+
 /** Finite-number guard for the citation summarisers. */
 function num(v: unknown): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
@@ -1341,12 +1376,14 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: "get_illness_recovery",
     title: "Get illness & recovery",
     description:
-      "Fetch the user's illness + recovery context: rest mode, active and recently-resolved illnesses, the recovery / strain composites, and the illness retrospective (recovery-gap, nadir, red flags). Carries the rest-mode safety flag for framing. Returns { present: false } when there is nothing to report.",
+      "Fetch the user's illness + recovery context: rest mode, active and recently-resolved illnesses (with the body site and side when the user named one), the recovery / strain composites, and the illness retrospective (recovery-gap, nadir, red flags). Carries the rest-mode safety flag for framing. Returns { present: false } when there is nothing to report.",
     inputShape: {},
     annotations: READ_ONLY_ANNOTATIONS,
     outputShape: coachReadOutput,
-    run(ctx, args) {
-      return runCoachTool(ctx, "get_illness_recovery", args);
+    async run(ctx, args) {
+      return fenceIllnessSites(
+        await runCoachTool(ctx, "get_illness_recovery", args),
+      );
     },
   },
   {

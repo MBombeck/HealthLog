@@ -717,6 +717,62 @@ describe("doctor-report surgical history section", () => {
   });
 });
 
+// v1.39.2 — the body site on conditions. A column of its own, present only
+// when at least one condition in the window names a site, so a report without
+// any keeps the table it always had.
+//
+// Mutation checks (each run, each seen red):
+//   - drop the site cell from the row → "prints the site with its side" goes
+//     red;
+//   - show the column unconditionally → "keeps the old table" goes red.
+describe("doctor-report condition body site", () => {
+  const CONDITIONS: NonNullable<DoctorReportData["illnessEpisodes"]> = [
+    {
+      label: "Meniscus tear",
+      type: "INJURY",
+      lifecycle: "ACUTE",
+      onsetAt: "2026-05-01T00:00:00.000Z",
+      resolvedAt: null,
+      bodySite: "Knee",
+      laterality: "LEFT",
+    },
+    {
+      label: "Head cold",
+      type: "INFECTION",
+      lifecycle: "ACUTE",
+      onsetAt: "2026-05-10T00:00:00.000Z",
+      resolvedAt: "2026-05-14T00:00:00.000Z",
+      bodySite: null,
+      laterality: null,
+    },
+  ];
+  const render = (
+    illnessEpisodes: NonNullable<DoctorReportData["illnessEpisodes"]>,
+    locale: "en" | "de",
+  ) =>
+    extractText(
+      renderDoctorReportPdfBytes(makeData({ illnessEpisodes }), {
+        timeFormat: "AUTO",
+        dateFormat: "AUTO",
+        t: getServerTranslator(locale).t,
+        locale,
+        now: FIXED_NOW,
+      }),
+    );
+
+  it("prints the site with its side in the report's language", async () => {
+    const text = await render(CONDITIONS, "de");
+    expect(text).toContain("Körperstelle");
+    expect(text).toMatch(/Knee · Links/);
+  });
+
+  it("keeps the old table when no condition names a site", async () => {
+    const text = await render([CONDITIONS[1]], "en");
+    expect(text).toContain("Head cold");
+    expect(text).not.toContain("Body site");
+  });
+});
+
 // ── emergency first page ── the Notfalldaten sheet owns page one, but only
 // when the aggregator populated `data.emergency` (the EMERGENCY leaf admitted
 // AND the profile holds something). A null payload — which is exactly what the
