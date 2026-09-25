@@ -19,6 +19,10 @@ HealthLog has four ways to bring data in, all reachable from
 All paths skip rows that already exist, so re-running an import is
 safe — it merges rather than duplicating.
 
+Documents (letters, lab reports, scans) from Paperless-ngx or Papra come in
+through a document token and an import script instead; see
+[`document-import.md`](./document-import.md).
+
 Every import reports what it actually wrote. A file where nothing was
 written is shown as a failure, a file where some rows landed and some
 were refused is shown as a partial result, and the refused rows are
