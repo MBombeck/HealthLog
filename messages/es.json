@@ -4776,7 +4776,9 @@
           "done": "{name} está añadido.",
           "doneUnnamed": "Tu primer medicamento está añadido.",
           "nextDose": "Próxima dosis: {when}.",
-          "reminders": "Los recordatorios siguen el horario que fijaste."
+          "reminders": "Los recordatorios siguen el horario que fijaste.",
+          "recordOnly": "Solo registro: sin recordatorios, nada queda pendiente.",
+          "asNeeded": "Según necesidad: sin recordatorios, registra cada toma cuando la hagas."
         },
         "log-reading": {
           "title": "Registra una medición: {target}",

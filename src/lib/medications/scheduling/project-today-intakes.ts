@@ -37,6 +37,11 @@ import {
 import { localHmAsUtc } from "@/lib/tz/local-day";
 import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import {
+  isBeforeLiveEra,
+  LIVE_ERA_REVISION_ARGS,
+  liveEraStart,
+} from "@/lib/medications/scheduling/live-era";
 
 export interface ProjectTodayIntakesResult {
   projected: number;
@@ -61,18 +66,10 @@ export async function projectTodayIntakesAndRecompute(input: {
       endsOn: true,
       oneShot: true,
       createdAt: true,
-      // The newest active schedule revision. When it archived an EMPTY
-      // payload, the stretch up to its `validUntil` expected no dose at all
-      // (intake tracking was off, or the medication was as-needed), so the
-      // live schedule starts there and no slot anchored before it is
-      // projected. Turning tracking back on at 15:00 therefore does not put
-      // the morning dose on the doses card.
-      scheduleRevisions: {
-        where: { supersededByRevisionId: null },
-        orderBy: { validUntil: "desc" },
-        take: 1,
-        select: { validUntil: true, payload: true },
-      },
+      // The live era start: no slot anchored before it is projected. Turning
+      // tracking back on at 15:00, or moving a dose time at 14:30, therefore
+      // never puts a dose from earlier that day on the card.
+      scheduleRevisions: LIVE_ERA_REVISION_ARGS,
       schedules: {
         select: {
           id: true,
@@ -112,13 +109,7 @@ export async function projectTodayIntakesAndRecompute(input: {
 
   for (const med of activeMedications) {
     if (med.schedules.length === 0) continue;
-    const latestRevision = med.scheduleRevisions?.[0];
-    const expectedNothingUntil =
-      latestRevision &&
-      Array.isArray(latestRevision.payload) &&
-      latestRevision.payload.length === 0
-        ? latestRevision.validUntil.getTime()
-        : null;
+    const eraStart = liveEraStart(med.scheduleRevisions);
 
     // Rolling cadence anchors off the last logged intake. One findFirst
     // per medication, scoped to `takenAt IS NOT NULL` — byte-identical to
@@ -172,12 +163,7 @@ export async function projectTodayIntakesAndRecompute(input: {
         const [h, m] = slotTime.split(":").map(Number);
         if (!Number.isFinite(h) || !Number.isFinite(m)) continue;
         const scheduledFor = localHmAsUtc(now, userTz, h, m);
-        if (
-          expectedNothingUntil !== null &&
-          scheduledFor.getTime() < expectedNothingUntil
-        ) {
-          continue;
-        }
+        if (isBeforeLiveEra(scheduledFor, eraStart)) continue;
         projected.push({
           medicationId: schedule.medicationId,
           scheduledFor,

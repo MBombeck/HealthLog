@@ -65,6 +65,7 @@ import { isNearUtc, userDayKey } from "@/lib/tz/resolver";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { defaultLocale, type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 
 /**
  * v1.4.37 W2 — cold-path correlation window. Trim from 30 to 28 days
@@ -279,7 +280,13 @@ export async function computeCorrelationHypothesesFastPath(
     }) as Promise<MoodRow[]>,
     prisma.medicationIntakeEvent.findMany({
       // v1.7.0 sync — exclude tombstoned rows.
-      where: { userId, deletedAt: null, scheduledFor: { gte: since } },
+      where: {
+        userId,
+        deletedAt: null,
+        scheduledFor: { gte: since },
+        // v1.39.1 (#1033) — compliance counts tracked medications only.
+        ...TRACKED_INTAKE_EVENT_WHERE,
+      },
       select: { scheduledFor: true, takenAt: true, skipped: true },
     }) as Promise<IntakeRow[]>,
   ]);

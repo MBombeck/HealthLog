@@ -1181,3 +1181,45 @@ describe("Telegram webhook — GET verification is rate-limited first", () => {
     );
   });
 });
+
+/**
+ * #1033 — a medication kept as a record is never offered, recorded or snoozed
+ * from Telegram, the same as on the web.
+ */
+describe("POST /api/telegram/webhook — record-only medications", () => {
+  function textUpdate(text: string) {
+    return {
+      update_id: 300,
+      message: { message_id: 30, text, chat: { id: 7777 }, from: { id: 7777 } },
+    };
+  }
+
+  function whereOf(call: unknown): Record<string, unknown> {
+    return (call as [{ where: Record<string, unknown> }])[0].where;
+  }
+
+  it("/add lists tracked medications only", async () => {
+    await POST(tgRequest(textUpdate("/add")));
+    const where = whereOf(vi.mocked(prisma.medication.findMany).mock.calls[0]);
+    expect(where).toMatchObject({ active: true, trackIntake: true });
+  });
+
+  it("the 'taken' keyword resolves tracked medications only", async () => {
+    await POST(tgRequest(textUpdate("taken Ramipril")));
+    const where = whereOf(vi.mocked(prisma.medication.findFirst).mock.calls[0]);
+    expect(where).toMatchObject({ active: true, trackIntake: true });
+  });
+
+  it("a reminder button on a record-only medication records nothing", async () => {
+    await POST(tgRequest(callbackUpdate("taken:med-1")));
+    // The gate lookup: a record-only medication resolves to nothing here,
+    // so no dose is written (later lookups only bind an admitted dose).
+    const calls = vi.mocked(prisma.medication.findFirst).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    expect(whereOf(calls[0])).toMatchObject({
+      id: "med-1",
+      active: true,
+      trackIntake: true,
+    });
+  });
+});

@@ -40,6 +40,10 @@ import {
 import { getUserTodayBounds as getUserTodayBoundsUtil } from "@/lib/tz/local-day";
 import { getWorkerPrisma, parseTimeToMinutes } from "./shared";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import {
+  LIVE_ERA_REVISION_ARGS,
+  liveEraStart as liveEraStartOf,
+} from "@/lib/medications/scheduling/live-era";
 
 export interface ReminderCheckPayload {
   triggeredAt: string;
@@ -174,12 +178,7 @@ export async function handleReminderCheck(
         include: {
           schedules: true,
           phaseConfig: true,
-          scheduleRevisions: {
-            where: { supersededByRevisionId: null },
-            orderBy: { validUntil: "desc" },
-            take: 1,
-            select: { validUntil: true },
-          },
+          scheduleRevisions: LIVE_ERA_REVISION_ARGS,
           user: {
             select: {
               id: true,
@@ -249,7 +248,7 @@ export async function handleReminderCheck(
         // skips and USER_PIN decisions are mutations, whose Prisma @updatedAt
         // timestamp records the decision. Ordinary takes use their takenAt.
         const liveEraStart =
-          med.scheduleRevisions?.[0]?.validUntil.getTime() ?? null;
+          liveEraStartOf(med.scheduleRevisions)?.getTime() ?? null;
         const liveEraEvents =
           liveEraStart === null
             ? todayEvents

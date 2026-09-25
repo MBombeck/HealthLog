@@ -439,3 +439,173 @@ describe("the shipped iPhone app editing a record-only medication", () => {
     ).toBe(0);
   });
 });
+
+describe("rate readers that never read a schedule", () => {
+  it("a week of misses on a record-only medication raises no compliance nudge", async () => {
+    const prisma = getPrismaClient();
+    const userId = await makeUser();
+    const record = await seedDaily(userId, "Record", false);
+    at("2026-06-10T04:00:00.000Z");
+    // Seven auto-missed slots left over from before tracking went off.
+    for (let d = 1; d <= 7; d++) {
+      await prisma.medicationIntakeEvent.create({
+        data: {
+          userId,
+          medicationId: record,
+          scheduledFor: new Date(Date.UTC(2026, 5, 10 - d, 6, 0)),
+          autoMissed: true,
+          source: "REMINDER",
+        },
+      });
+    }
+    const { findTriggerForUser } = await import("@/lib/jobs/coach-nudge");
+    const user = {
+      id: userId,
+      heightCm: null,
+      dateOfBirth: null,
+      gender: null,
+      thresholdsJson: null,
+      timezone: TZ,
+    };
+    const groups = { medication: true, vitals: false, routine: false };
+    expect(
+      await findTriggerForUser(prisma, user, new Date(), groups),
+    ).toBeNull();
+
+    // The same rows on a tracked medication do nudge.
+    await prisma.medication.update({
+      where: { id: record },
+      data: { trackIntake: true },
+    });
+    expect(await findTriggerForUser(prisma, user, new Date(), groups)).toBe(
+      "compliance",
+    );
+  });
+});
+
+describe("the live era floors every slot minted from the live schedule", () => {
+  const route = () => import("@/app/api/medications/[id]/route");
+
+  async function putSchedule(medicationId: string, time: string) {
+    const { PUT } = await route();
+    return call(
+      PUT as Handler,
+      `/api/medications/${medicationId}`,
+      { id: medicationId },
+      {
+        method: "PUT",
+        body: {
+          trackIntake: true,
+          schedules: [
+            {
+              windowStart: time,
+              windowEnd: time,
+              timesOfDay: [time],
+              rrule: "FREQ=DAILY",
+            },
+          ],
+        },
+      },
+    );
+  }
+
+  async function pendingFor(medicationId: string) {
+    return getPrismaClient().medicationIntakeEvent.findMany({
+      where: { medicationId, deletedAt: null, takenAt: null, skipped: false },
+      select: { scheduledFor: true, autoMissed: true },
+    });
+  }
+
+  it("tracking back on, then a times edit the same afternoon, mints no earlier slot", async () => {
+    const prisma = getPrismaClient();
+    const userId = await makeUser();
+    const medicationId = await seedDaily(userId, "Statin", false);
+    const { PUT } = await route();
+
+    at("2026-06-10T12:00:00.000Z"); // 14:00 local: tracking back on
+    const on = await call(
+      PUT as Handler,
+      `/api/medications/${medicationId}`,
+      { id: medicationId },
+      { method: "PUT", body: { trackIntake: true } },
+    );
+    expect(on.status).toBe(200);
+
+    at("2026-06-10T12:30:00.000Z"); // 14:30 local: 08:00 moves to 09:00
+    expect((await putSchedule(medicationId, "09:00")).status).toBe(200);
+
+    await buildMedsTodayBlock(prisma, userId, TZ, new Date());
+    expect(await pendingFor(medicationId)).toEqual([]);
+
+    // Next morning's 09:00 is a real dose again; the next day's pass stamps
+    // nothing from the day of the switch.
+    at("2026-06-11T22:00:00.000Z");
+    await runIntakeAutoSkipPass(prisma, { nowMs: Date.now() });
+    expect(
+      await prisma.medicationIntakeEvent.count({
+        where: { medicationId, autoMissed: true },
+      }),
+    ).toBe(0);
+  });
+
+  it("a same-day times edit on a tracked medication mints no earlier slot", async () => {
+    const prisma = getPrismaClient();
+    const userId = await makeUser();
+    const medicationId = await seedDaily(userId, "Ramipril", true);
+
+    at("2026-06-10T12:30:00.000Z"); // 14:30 local: 08:00 moves to 09:00
+    expect((await putSchedule(medicationId, "09:00")).status).toBe(200);
+    const block = await buildMedsTodayBlock(prisma, userId, TZ, new Date());
+    expect(block.scheduledToday).toBe(0);
+    expect((block.dueCandidates ?? []).every((c) => !c.overdue)).toBe(true);
+    expect(await pendingFor(medicationId)).toEqual([]);
+
+    // The worker does not remind the 09:00 slot either.
+    await handleReminderCheck([]);
+    expect(dispatchedFor(medicationId)).toBe(0);
+  });
+
+  it("auto-miss leaves a placeholder minted after the switch for a slot before it", async () => {
+    const prisma = getPrismaClient();
+    const userId = await makeUser();
+    const medicationId = await seedDaily(userId, "Metformin", true);
+    const eraStart = new Date("2026-06-10T12:30:00.000Z");
+    await prisma.medicationScheduleRevision.create({
+      data: {
+        medicationId,
+        validFrom: new Date("2026-06-01T00:00:00.000Z"),
+        validUntil: eraStart,
+        payload: [],
+      },
+    });
+    // A real expectation of the old era, minted that morning.
+    await prisma.medicationIntakeEvent.create({
+      data: {
+        userId,
+        medicationId,
+        scheduledFor: new Date("2026-06-09T06:00:00.000Z"),
+        source: "REMINDER",
+        createdAt: new Date("2026-06-09T04:00:00.000Z"),
+      },
+    });
+    // A phantom: minted after the switch for a slot before it.
+    await prisma.medicationIntakeEvent.create({
+      data: {
+        userId,
+        medicationId,
+        scheduledFor: new Date("2026-06-10T07:00:00.000Z"),
+        source: "REMINDER",
+        createdAt: new Date("2026-06-10T13:00:00.000Z"),
+      },
+    });
+
+    at("2026-06-12T12:00:00.000Z");
+    await runIntakeAutoSkipPass(prisma, { nowMs: Date.now() });
+    const rows = await prisma.medicationIntakeEvent.findMany({
+      where: { medicationId },
+      orderBy: { scheduledFor: "asc" },
+      select: { autoMissed: true },
+    });
+    expect(rows.map((r) => r.autoMissed)).toEqual([true, false]);
+  });
+});

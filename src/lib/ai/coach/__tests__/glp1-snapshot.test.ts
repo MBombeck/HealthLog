@@ -158,6 +158,23 @@ describe("buildGlp1SnapshotBlock", () => {
     });
   });
 
+  it("keeps the pen count but no supply span when intake is not tracked (#1033)", async () => {
+    prismaMock.medication.findMany.mockResolvedValue([
+      fakeMedication({
+        trackIntake: false,
+        unitsPerDose: 1,
+        inventoryItems: [{ state: "ACTIVE", unitsTotal: 4, unitsRemaining: 4 }],
+      }),
+    ]);
+    const out = await buildGlp1SnapshotBlock("user-1");
+    expect(out?.medications[0].penInventory).toEqual({
+      pensRemaining: 1,
+      dosesRemaining: 4,
+      weeksOfSupplyApprox: null,
+    });
+    expect(out?.medications[0].nextInjection).toBeNull();
+  });
+
   // W1 — ledger-only accounts (the pre-item delta writer) keep their
   // pen count in the Coach prompt instead of a silent omission.
   it("falls back to the legacy ledger when the medication has zero items", async () => {

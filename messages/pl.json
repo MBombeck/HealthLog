@@ -4776,7 +4776,9 @@
           "done": "{name} został dodany.",
           "doneUnnamed": "Twój pierwszy lek został dodany.",
           "nextDose": "Następna dawka: {when}.",
-          "reminders": "Przypomnienia podążają za ustawionym harmonogramem."
+          "reminders": "Przypomnienia podążają za ustawionym harmonogramem.",
+          "recordOnly": "Tylko zapis: bez przypomnień, nic nie przypada.",
+          "asNeeded": "W razie potrzeby: bez przypomnień, zapisz dawkę, gdy ją przyjmiesz."
         },
         "log-reading": {
           "title": "Wpisz jeden pomiar: {target}",
