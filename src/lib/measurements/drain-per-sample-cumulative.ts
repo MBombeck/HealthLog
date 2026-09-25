@@ -124,6 +124,12 @@ export interface DrainBucket {
 export interface DrainSummary {
   /** Did the run actually write to the DB (false for `dryRun`). */
   dryRun: boolean;
+  /**
+   * `shouldStop` ended the walk before every day was reached. Nothing is
+   * lost: folded days committed one by one, and the next run starts at the
+   * first day this one did not reach.
+   */
+  stoppedEarly: boolean;
   /** Per-user-day buckets the drain rewrote (or would rewrite). */
   buckets: DrainBucket[];
   /** Aggregate counts across the run. */
@@ -167,6 +173,11 @@ export interface DrainOptions {
    * the operator points at) for explicit one-shot use.
    */
   cutoffHours?: number;
+  /**
+   * Ends the pass cleanly before the next day when it returns `true`; the
+   * summary then reports `stoppedEarly`. See `ConsolidationOptions`.
+   */
+  shouldStop?: () => boolean;
 }
 
 export interface BucketedRows {
@@ -210,6 +221,7 @@ export async function drainPerSampleCumulative(
 
   const summary: DrainSummary = {
     dryRun: options.dryRun ?? false,
+    stoppedEarly: false,
     buckets: [],
     totals: {
       usersScanned: 0,
@@ -229,7 +241,7 @@ export async function drainPerSampleCumulative(
   let beforePerSampleDeleted = 0;
   let beforeDailyUpserted = 0;
 
-  const { usersScanned } = await runConsolidation<MeasurementType>({
+  const walk = await runConsolidation<MeasurementType>({
     prismaClient,
     options,
     types: CUMULATIVE_HK_TYPES,
@@ -521,7 +533,8 @@ export async function drainPerSampleCumulative(
     },
   });
 
-  summary.totals.usersScanned = usersScanned;
+  summary.totals.usersScanned = walk.usersScanned;
+  summary.stoppedEarly = walk.stoppedEarly;
 
   // v1.34.0 — bound the profile sidecar. One indexed range delete per run,
   // across every account, on the same nightly tick that writes the profiles.

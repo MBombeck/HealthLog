@@ -191,10 +191,20 @@ export function bucketRowsByLocalHour(
   return byHour;
 }
 
+/** One hourly slot of a folded day, as `adoptOrMintHourlyRows` receives it. */
+export interface HourlySlot {
+  /** Target hourly `stats:` externalId (index-A identity). */
+  externalId: string;
+  /** Local HH:30 anchor instant (index-B identity). */
+  anchor: Date;
+  value: number;
+}
+
 /**
- * Adopt-or-mint one hourly `stats:` row inside the caller's transaction.
+ * Adopt-or-mint a day's hourly `stats:` rows inside the caller's transaction.
+ * Returns the canonical row id for every slot, in slot order.
  *
- * TWO unique indexes can collide on the mint:
+ * TWO unique indexes can collide on a mint:
  *   A) `(userId, type, source, externalId)` — a row already carrying the
  *      target hourly `stats:` externalId (a prior fold / rebuild pass).
  *   B) `(userId, type, measuredAt, source, sleepStage)` (NULLS NOT
@@ -202,98 +212,149 @@ export function bucketRowsByLocalHour(
  *      anchor instant, which may carry a DIFFERENT externalId (a
  *      per-sample row that happened at HH:30, or a sibling stats row).
  *
- * Determinism (VECTOR 1): resolve by index A FIRST — the row already
- * holding the target externalId IS the canonical hourly row by
- * construction. Only when no such row exists fall back to the index-B row
- * physically occupying the anchor. A stable `orderBy: id` pins the pick.
- * Adopting the wrong sibling and stamping the target externalId onto it
- * would otherwise collide with the real `stats:` row on index A.
+ * Determinism: per slot, resolve by index A FIRST — the row already holding
+ * the target externalId IS the canonical hourly row by construction. Only
+ * when no such row exists fall back to the index-B row physically occupying
+ * the anchor. The lowest id wins a tie. Adopting the wrong sibling and
+ * stamping the target externalId onto it would otherwise collide with the
+ * real `stats:` row on index A.
  *
- * Concurrency (VECTOR 2): the resolve→create is a check-then-act not
- * serialised by the unique index under READ COMMITTED. If a concurrent
- * writer wins the slot between the lookup and the INSERT, the `create`
- * throws P2002 and Postgres aborts the whole transaction. Callers
- * therefore catch P2002 OUTSIDE their transaction (a caught error inside
- * would leave the tx in the aborted `25P02` state) and retry the fold
- * once: on the retry the deterministic lookup finds the now-existing row
- * and ADOPTS it, so the create path never fires twice. Built
- * field-by-field (no spread) per the no-mass-assignment convention.
+ * Why a batch. This used to run per slot — two lookups and a write for each
+ * of up to 24 hours, about 75 statements for one day — and on a multi-year
+ * heart-rate history that loop was most of the pass's 380 000 statements.
+ * Now one lookup reads every row that could matter for the whole day, the
+ * slots are resolved against that snapshot in order, and the mints go out as
+ * one insert. The snapshot is kept up to date as each slot adopts or mints,
+ * so a later slot sees exactly what the one-by-one loop would have read back
+ * from the database: an adopted row that moves to its anchor frees the
+ * instant it left and occupies the one it moved to, and a minted row occupies
+ * its anchor and externalId. Updates run in slot order, as before, and no
+ * mint can collide with them because a slot mints only when nothing in the
+ * snapshot holds its externalId or its anchor.
+ *
+ * Concurrency: the resolve→write is a check-then-act not serialised by the
+ * unique index under READ COMMITTED. If a concurrent writer wins a slot
+ * between the lookup and the INSERT, the insert throws P2002 and Postgres
+ * aborts the whole transaction. Callers therefore catch P2002 OUTSIDE their
+ * transaction (a caught error inside would leave the tx in the aborted
+ * `25P02` state) and retry the fold once: on the retry the lookup finds the
+ * now-existing row and ADOPTS it. Built field-by-field (no spread) per the
+ * no-mass-assignment convention.
  */
-export async function adoptOrMintHourlyRow(
+export async function adoptOrMintHourlyRows(
   tx: Prisma.TransactionClient,
   input: {
     userId: string;
     type: MeasurementType;
-    /** Target hourly `stats:` externalId (index-A identity). */
-    externalId: string;
-    /** Local HH:30 anchor instant (index-B identity). */
-    anchor: Date;
-    value: number;
     unit: string;
+    slots: readonly HourlySlot[];
   },
-): Promise<string> {
-  const eidRow = await tx.measurement.findFirst({
+): Promise<string[]> {
+  if (input.slots.length === 0) return [];
+
+  // Every row that either index could put in the way, lowest id first — the
+  // order the per-slot `findFirst … orderBy id` used to resolve ties by.
+  // `sleepStage` is NULL for these continuous types, matched via the
+  // NULLS-NOT-DISTINCT index.
+  const existing = await tx.measurement.findMany({
     where: {
       userId: input.userId,
       type: input.type,
       source: "APPLE_HEALTH",
-      externalId: input.externalId,
+      OR: [
+        { externalId: { in: input.slots.map((slot) => slot.externalId) } },
+        {
+          measuredAt: { in: input.slots.map((slot) => slot.anchor) },
+          sleepStage: null,
+        },
+      ],
     },
-    select: { id: true },
-    orderBy: { id: "asc" },
-  });
-  // Index-B occupant (`sleepStage` is NULL for these continuous types,
-  // matched via the NULLS-NOT-DISTINCT index). At most one row can exist.
-  const slotRow = await tx.measurement.findFirst({
-    where: {
-      userId: input.userId,
-      type: input.type,
-      source: "APPLE_HEALTH",
-      measuredAt: input.anchor,
-      sleepStage: null,
-    },
-    select: { id: true },
+    select: { id: true, externalId: true, measuredAt: true },
     orderBy: { id: "asc" },
   });
 
-  const adoptTarget = eidRow ?? slotRow;
-  if (adoptTarget) {
-    // Pin the adopted row to the anchor, but only when the anchor slot is
-    // free or already this row — a DIFFERENT row occupying the slot would
-    // otherwise collide on index B. In that rare case the row keeps its
-    // existing instant; the `stats:` externalId is the identity,
-    // measuredAt is secondary.
-    const slotIsFreeForTarget =
-      slotRow === null || slotRow.id === adoptTarget.id;
-    // Adopt: refresh value, stamp the hourly externalId, optionally
-    // re-anchor, and un-tombstone. This coexists with any pre-existing row
-    // on the slot instead of colliding with it.
-    await tx.measurement.update({
-      where: { id: adoptTarget.id },
-      data: {
-        value: input.value,
-        unit: input.unit,
-        externalId: input.externalId,
-        deletedAt: null,
-        ...(slotIsFreeForTarget ? { measuredAt: input.anchor } : {}),
-      },
-    });
-    return adoptTarget.id;
+  // The snapshot the slots resolve against. `id: null` marks a row this
+  // call is about to mint.
+  const state: Array<{
+    id: string | null;
+    externalId: string | null;
+    at: number;
+  }> = existing.map((row) => ({
+    id: row.id,
+    externalId: row.externalId,
+    at: row.measuredAt.getTime(),
+  }));
+
+  const resolved: Array<string | null> = [];
+  const mints: HourlySlot[] = [];
+
+  for (const slot of input.slots) {
+    const anchorAt = slot.anchor.getTime();
+    const eidRow = state.find((row) => row.externalId === slot.externalId);
+    const slotRow = state.find((row) => row.at === anchorAt);
+    const adoptTarget = eidRow ?? slotRow;
+
+    if (adoptTarget && adoptTarget.id !== null) {
+      // Pin the adopted row to the anchor, but only when the anchor slot is
+      // free or already this row — a DIFFERENT row occupying the slot would
+      // otherwise collide on index B. In that rare case the row keeps its
+      // existing instant; the `stats:` externalId is the identity,
+      // measuredAt is secondary.
+      const slotIsFreeForTarget =
+        slotRow === undefined || slotRow === adoptTarget;
+      // Adopt: refresh value, stamp the hourly externalId, optionally
+      // re-anchor, and un-tombstone. This coexists with any pre-existing row
+      // on the slot instead of colliding with it.
+      await tx.measurement.update({
+        where: { id: adoptTarget.id },
+        data: {
+          value: slot.value,
+          unit: input.unit,
+          externalId: slot.externalId,
+          deletedAt: null,
+          ...(slotIsFreeForTarget ? { measuredAt: slot.anchor } : {}),
+        },
+      });
+      adoptTarget.externalId = slot.externalId;
+      if (slotIsFreeForTarget) adoptTarget.at = anchorAt;
+      resolved.push(adoptTarget.id);
+    } else {
+      // Nothing holds this slot's identity or instant — including rows this
+      // call already decided to mint, which carry a distinct anchor and
+      // externalId by construction (one slot per local hour).
+      state.push({ id: null, externalId: slot.externalId, at: anchorAt });
+      mints.push(slot);
+      resolved.push(null);
+    }
   }
 
-  const created = await tx.measurement.create({
-    data: {
-      userId: input.userId,
-      type: input.type,
-      value: input.value,
-      unit: input.unit,
-      source: "APPLE_HEALTH",
-      measuredAt: input.anchor,
-      externalId: input.externalId,
-    },
-    select: { id: true },
-  });
-  return created.id;
+  if (mints.length > 0) {
+    const created = await tx.measurement.createManyAndReturn({
+      data: mints.map((slot) => ({
+        userId: input.userId,
+        type: input.type,
+        value: slot.value,
+        unit: input.unit,
+        source: "APPLE_HEALTH" as const,
+        measuredAt: slot.anchor,
+        externalId: slot.externalId,
+      })),
+      select: { id: true, externalId: true },
+    });
+    const idByExternalId = new Map(
+      created.map((row) => [row.externalId, row.id] as const),
+    );
+    input.slots.forEach((slot, index) => {
+      if (resolved[index] !== null) return;
+      const id = idByExternalId.get(slot.externalId);
+      if (id === undefined) {
+        throw new Error(`hourly mint returned no row for ${slot.externalId}`);
+      }
+      resolved[index] = id;
+    });
+  }
+
+  return resolved as string[];
 }
 
 /**
@@ -347,6 +408,12 @@ export function deriveDailyRestingFromPulse(
 
 export interface DenseIntradayRetentionSummary {
   dryRun: boolean;
+  /**
+   * `shouldStop` ended the walk before every day was reached. Nothing is
+   * lost: folded days committed one by one, and the next run starts at the
+   * first day this one did not reach.
+   */
+  stoppedEarly: boolean;
   totals: {
     usersScanned: number;
     daysConsolidated: number;
@@ -385,6 +452,11 @@ export interface DenseIntradayRetentionOptions {
    * full-collapse, never by the scheduled pass.
    */
   retentionDays?: number;
+  /**
+   * Ends the pass cleanly before the next day when it returns `true`; the
+   * summary then reports `stoppedEarly`. See `ConsolidationOptions`.
+   */
+  shouldStop?: () => boolean;
 }
 
 /**
@@ -412,6 +484,7 @@ export async function runDenseIntradayRetention(
 
   const summary: DenseIntradayRetentionSummary = {
     dryRun: options.dryRun ?? false,
+    stoppedEarly: false,
     totals: {
       usersScanned: 0,
       daysConsolidated: 0,
@@ -462,7 +535,7 @@ export async function runDenseIntradayRetention(
   // for the dry-run hourly fan-out estimate (writeDay never runs on dry-run).
   let currentTz = "Europe/Berlin";
 
-  const { usersScanned } = await runConsolidation<MeasurementType>({
+  const walk = await runConsolidation<MeasurementType>({
     prismaClient,
     options: { ...options, cutoffHours },
     types: DENSE_INTRADAY_RETENTION_TYPES,
@@ -543,18 +616,16 @@ export async function runDenseIntradayRetention(
         let removed = 0;
         let retiredDaily = false;
         await pc.$transaction(async (tx) => {
-          const canonicalRowIds: string[] = [];
-          for (const [hour, hourRows] of byHour) {
-            const rowId = await adoptOrMintHourlyRow(tx, {
-              userId,
-              type,
+          const canonicalRowIds = await adoptOrMintHourlyRows(tx, {
+            userId,
+            type,
+            unit,
+            slots: byHour.map(([hour, hourRows]) => ({
               externalId: hourlyStatsExternalId(hkIdentifier, dateKey, hour),
               anchor: canonicalHourlyTimestamp(dateKey, hour, tz),
               value: meanBucketValue(hourRows),
-              unit,
-            });
-            canonicalRowIds.push(rowId);
-          }
+            })),
+          });
 
           // Retire a live pre-hourly DAILY `stats:` row for this day (the
           // late-sync path: raw samples arriving for a day folded to the
@@ -712,7 +783,8 @@ export async function runDenseIntradayRetention(
     },
   });
 
-  summary.totals.usersScanned = usersScanned;
+  summary.totals.usersScanned = walk.usersScanned;
+  summary.stoppedEarly = walk.stoppedEarly;
 
   log(
     `[dense-intraday-retention] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} hourlyRowsUpserted=${summary.totals.hourlyRowsUpserted} dailyRowsRetired=${summary.totals.dailyRowsRetired} derivedRestingRowsUpserted=${summary.totals.derivedRestingRowsUpserted}${options.dryRun ? " (dry-run)" : ""}`,

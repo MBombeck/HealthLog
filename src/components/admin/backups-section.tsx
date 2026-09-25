@@ -454,6 +454,20 @@ function missingSectionLabel(
  * the server may reword, and matching on it would turn a copy edit into a
  * silent loss of the panel.
  */
+
+/**
+ * The upload body for a backup file: the file itself when it is already
+ * gzip, otherwise the file compressed in the browser. The server accepts
+ * both; compressing keeps a large export well inside the request size limit.
+ */
+async function uploadBody(file: File): Promise<Blob> {
+  const head = new Uint8Array(await file.slice(0, 2).arrayBuffer());
+  if (head[0] === 0x1f && head[1] === 0x8b) return file;
+  return new Response(
+    file.stream().pipeThrough(new CompressionStream("gzip")),
+  ).blob();
+}
+
 export function missingSectionsOf(err: unknown): MissingBackupSection[] {
   if (!(err instanceof ApiError)) return [];
   if (err.meta?.errorCode !== "backup.section.missing") return [];
@@ -697,10 +711,11 @@ export function BackupsSection() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const upload = useMutation({
     mutationFn: async (file: File) => {
-      const fd = new FormData();
-      fd.append("file", file);
-      // apiFetch with a raw init: the multipart body must NOT be JSON
-      // re-encoded, so the verb helper (which JSON-stringifies) is out.
+      // Sent as the raw body, compressed on the way unless it already is: the
+      // server reads it as a stream, and a large export (hundreds of MB of
+      // JSON) shrinks about tenfold. No request timeout, because a file of
+      // that size takes longer to check and store than the default allows.
+      const body = await uploadBody(file);
       return apiFetch<{
         id: string;
         valid: true;
@@ -734,7 +749,12 @@ export function BackupsSection() {
           customMetricEntries?: number;
           intradayProfiles?: number;
         };
-      }>("/api/admin/backups/upload", { method: "POST", body: fd });
+      }>("/api/admin/backups/upload", {
+        method: "POST",
+        body,
+        headers: { "Content-Type": "application/gzip" },
+        signal: null,
+      });
     },
     onSuccess: (data) => {
       const total =
@@ -818,7 +838,8 @@ export function BackupsSection() {
       return apiPost<{ restored: true; skipped?: RestoreSkipSummary }>(
         `/api/admin/backups/${row.id}/restore`,
         { confirm: "RESTORE", restoreInstanceSettings },
-        { headers: { "Idempotency-Key": idempotencyKey } },
+        // No request timeout: rebuilding a large account takes minutes.
+        { headers: { "Idempotency-Key": idempotencyKey }, signal: null },
       );
     },
     onSuccess: (data) => {
@@ -959,7 +980,7 @@ export function BackupsSection() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/json,.json"
+            accept="application/json,.json,application/gzip,.gz"
             className="sr-only"
             onChange={handleFileChange}
             aria-label={t("admin.section.backups.uploadButton")}

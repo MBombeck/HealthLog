@@ -39,6 +39,8 @@
  * hashing params so tuning one never silently changes the other.
  */
 import { hashRaw, type Algorithm } from "@node-rs/argon2";
+import { once } from "node:events";
+import { createWriteStream } from "node:fs";
 import {
   createCipheriv,
   createDecipheriv,
@@ -128,6 +130,11 @@ export async function encryptArchive(
   const ciphertext = Buffer.concat([cipher.update(body), cipher.final()]);
   const tag = cipher.getAuthTag();
 
+  return Buffer.concat([archiveHeader(), salt, iv, tag, ciphertext]);
+}
+
+/** The fixed `HLX1` header for the current KDF parameters. */
+function archiveHeader(): Buffer {
   const header = Buffer.alloc(4 + 1 + 1 + 4 + 4 + 1 + 1);
   header.write(MAGIC, 0, "ascii");
   header.writeUInt8(VERSION, 4);
@@ -136,8 +143,88 @@ export async function encryptArchive(
   header.writeUInt32BE(EXPORT_ARGON2_PARAMS.timeCost, 10);
   header.writeUInt8(EXPORT_ARGON2_PARAMS.parallelism, 14);
   header.writeUInt8(SALT_LENGTH, 15);
+  return header;
+}
 
-  return Buffer.concat([header, salt, iv, tag, ciphertext]);
+/** Where `encryptArchiveToFile` left an archive, in two parts. */
+export interface SpooledArchive {
+  /** Header, salt, IV and tag: everything in front of the ciphertext. */
+  prefix: Buffer;
+  /** File holding the ciphertext, which follows the prefix. */
+  bodyPath: string;
+  /** Size of the whole archive in bytes. */
+  byteLength: number;
+}
+
+/**
+ * Seal a JSON document produced in pieces into an `HLX1` archive without
+ * holding it: the ciphertext goes to `bodyPath` as it is produced.
+ *
+ * Why a file. The format puts the GCM tag in front of the ciphertext, and the
+ * tag exists only once the last byte has been encrypted, so the archive
+ * cannot be sent as it is written. Holding it in memory instead is what the
+ * route did, and for an account of 1.25 million measurements that did not fit
+ * a 1 GB container (#1031). Spooling the ciphertext keeps the format, so every
+ * archive already on someone's disk still opens the same way. Only ciphertext
+ * ever touches the disk; the caller deletes the file once it is sent.
+ *
+ * Decrypts with `decryptArchive` exactly like an archive `encryptArchive`
+ * wrote; the tests hold the two to that.
+ */
+export async function encryptArchiveToFile(
+  producer: (
+    write: (chunk: string | Buffer) => Promise<void>,
+  ) => Promise<unknown>,
+  passphrase: string,
+  bodyPath: string,
+): Promise<SpooledArchive> {
+  if (passphrase.length < MIN_EXPORT_PASSPHRASE_LENGTH) {
+    throw new Error(
+      `Passphrase must be at least ${MIN_EXPORT_PASSPHRASE_LENGTH} characters`,
+    );
+  }
+  const salt = randomBytes(SALT_LENGTH);
+  const key = await deriveKey(passphrase, EXPORT_ARGON2_PARAMS, salt);
+  const iv = randomBytes(IV_LENGTH);
+  const cipher = createCipheriv(ALGORITHM, key, iv);
+  const file = createWriteStream(bodyPath, { mode: 0o600 });
+  let bodyBytes = 0;
+  const fileError = new Promise<never>((_, reject) => {
+    file.once("error", reject);
+  });
+  fileError.catch(() => {});
+
+  const put = async (bytes: Buffer): Promise<void> => {
+    if (bytes.length === 0) return;
+    bodyBytes += bytes.length;
+    if (!file.write(bytes)) {
+      await Promise.race([once(file, "drain"), fileError]);
+    }
+  };
+
+  try {
+    await producer(async (chunk) => {
+      await put(
+        cipher.update(
+          typeof chunk === "string" ? Buffer.from(chunk, "utf8") : chunk,
+        ),
+      );
+    });
+    await put(cipher.final());
+    file.end();
+    await Promise.race([once(file, "finish"), fileError]);
+  } catch (err) {
+    file.destroy();
+    throw err;
+  }
+
+  const prefix = Buffer.concat([
+    archiveHeader(),
+    salt,
+    iv,
+    cipher.getAuthTag(),
+  ]);
+  return { prefix, bodyPath, byteLength: prefix.length + bodyBytes };
 }
 
 /** Parse + validate the fixed `HLX1` header. Throws on any structural fault. */

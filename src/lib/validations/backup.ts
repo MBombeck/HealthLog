@@ -1774,6 +1774,16 @@ export const backupPayloadSchema = z
 export type BackupPayload = z.infer<typeof backupPayloadSchema>;
 
 /**
+ * One element of `measurements`, validated on its own. The streamed readers
+ * (`src/lib/export/streamed-backup.ts`) check a large file's measurements
+ * one at a time with this, and the rest of the file with
+ * `backupPayloadSchema` over a document whose measurements are empty, which
+ * together is the same check `backupPayloadSchema` makes of the whole file.
+ */
+export const backupMeasurementSchema = measurementSchema;
+export type BackupMeasurement = z.infer<typeof measurementSchema>;
+
+/**
  * Numeric counts of each backed-up record kind. Returned in the
  * upload + restore API responses so the admin sees what they
  * uploaded/restored without having to download the file again.

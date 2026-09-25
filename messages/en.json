@@ -7167,7 +7167,7 @@
         "uploadTitle": "Upload backup",
         "uploadDescription": "Validate a backup file and store it as a manual snapshot. Restoring is a separate step.",
         "uploadButton": "Upload file",
-        "uploadHelp": "JSON file matching the current backup schema. Max 10 MB.",
+        "uploadHelp": "A HealthLog backup as .json or .json.gz. The file is compressed before upload; compressed, it may be up to 512 MB.",
         "uploadSuccess": "Backup uploaded ({count} records)",
         "uploadFailed": "Upload failed",
         "restore": "Restore",

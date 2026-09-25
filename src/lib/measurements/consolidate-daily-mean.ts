@@ -93,6 +93,12 @@ export interface MeanConsolidationBucket {
 
 export interface MeanConsolidationSummary {
   dryRun: boolean;
+  /**
+   * `shouldStop` ended the walk before every day was reached. Nothing is
+   * lost: folded days committed one by one, and the next run starts at the
+   * first day this one did not reach.
+   */
+  stoppedEarly: boolean;
   buckets: MeanConsolidationBucket[];
   totals: {
     usersScanned: number;
@@ -123,6 +129,11 @@ export interface MeanConsolidationOptions {
    * `undefined` to drain everything.
    */
   cutoffHours?: number;
+  /**
+   * Ends the pass cleanly before the next day when it returns `true`; the
+   * summary then reports `stoppedEarly`. See `ConsolidationOptions`.
+   */
+  shouldStop?: () => boolean;
 }
 
 /** Arithmetic mean of a per-day bucket. Exposed for unit testing. */
@@ -205,6 +216,7 @@ export async function consolidateDailyMean(
 
   const summary: MeanConsolidationSummary = {
     dryRun: options.dryRun ?? false,
+    stoppedEarly: false,
     buckets: [],
     totals: {
       usersScanned: 0,
@@ -215,7 +227,7 @@ export async function consolidateDailyMean(
     },
   };
 
-  const { usersScanned, daysFailed } = await runConsolidation<MeasurementType>({
+  const walk = await runConsolidation<MeasurementType>({
     prismaClient,
     options,
     types: HIGH_FREQUENCY_MEAN_TYPES,
@@ -420,8 +432,9 @@ export async function consolidateDailyMean(
     },
   });
 
-  summary.totals.usersScanned = usersScanned;
-  summary.totals.daysFailed = daysFailed;
+  summary.totals.usersScanned = walk.usersScanned;
+  summary.stoppedEarly = walk.stoppedEarly;
+  summary.totals.daysFailed = walk.daysFailed;
 
   log(
     `[mean-consolidation] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} dailyRowsUpserted=${summary.totals.dailyRowsUpserted} daysFailed=${summary.totals.daysFailed}${options.dryRun ? " (dry-run)" : ""}`,

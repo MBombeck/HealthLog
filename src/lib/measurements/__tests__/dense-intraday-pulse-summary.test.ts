@@ -33,6 +33,7 @@ import {
 } from "../dense-intraday-retention";
 import type { PerSampleRow } from "../drain-per-sample-cumulative";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
+import { candidateLookup, createManyVia } from "./hourly-mint-mock";
 
 function pulseRow(id: string, value: number, iso: string): PerSampleRow {
   return {
@@ -68,6 +69,8 @@ function buildPrismaMock(opts: {
       update: txUpdate,
       findFirst: txFindFirst,
       updateMany: txUpdateMany,
+      findMany: candidateLookup(),
+      createManyAndReturn: createManyVia(txCreate),
     },
   };
 
@@ -325,6 +328,10 @@ describe("PULSE fold — per-day failure boundary", () => {
             update: vi.fn(),
             findFirst: vi.fn().mockResolvedValue(null),
             updateMany: vi.fn().mockResolvedValue({ count: 5 }),
+            findMany: candidateLookup(),
+            createManyAndReturn: createManyVia(
+              vi.fn().mockResolvedValue({ id: "minted" }),
+            ),
           },
         });
       },

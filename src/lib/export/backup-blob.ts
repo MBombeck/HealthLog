@@ -37,7 +37,8 @@
  */
 import { Buffer } from "node:buffer";
 import v8 from "node:v8";
-import { createGzip, gunzipSync, gzipSync } from "node:zlib";
+import { Readable } from "node:stream";
+import { createGunzip, createGzip, gunzipSync, gzipSync } from "node:zlib";
 
 import {
   createStreamEncryptor,
@@ -125,7 +126,7 @@ export class BackupBlobTooLargeError extends Error {
  * counts) is the caller's business, not the envelope's.
  */
 export type BackupJsonProducer = (
-  write: (chunk: string) => Promise<void>,
+  write: (chunk: string | Buffer) => Promise<void>,
 ) => Promise<unknown>;
 
 export interface PackBackupBlobOptions {
@@ -141,26 +142,59 @@ export interface PackBackupBlobOptions {
  * Serialised backup JSON, produced in pieces → the stored string.
  *
  * The pipeline is JSON piece → gzip → AES-256-GCM → base64, with nothing
- * buffered end to end but the base64 answer. `producer` decides how big its
- * pieces are; the gzip stream applies backpressure through the promise this
- * hands back, so a fast producer cannot outrun the compressor and pile up
- * chunks in the stream's internal queue.
- *
- * The one copy that cannot be avoided is the answer itself. `data_backups.data`
- * is a single `text` column, so the row has to be one value, and one value has
- * to exist as one string before the driver can bind it. That copy is therefore
- * also the only thing here that grows without bound as a record grows, which
- * is why the size check lives on it: `maxBytes` counts the ciphertext this
- * call has actually produced and stops on the account whose backup does not
- * fit, rather than reading a heap gauge every account shares.
+ * buffered end to end but the base64 answer. Kept for callers that need the
+ * answer as one value; the weekly and manual backup no longer do, they hand
+ * the pieces to Postgres as they come (`packBackupBlobInto` below, via
+ * `storeBackupBlob`).
  */
 export async function packBackupBlobStreaming(
   producer: BackupJsonProducer,
   options: PackBackupBlobOptions = {},
 ): Promise<string> {
+  const pieces: string[] = [];
+  await packBackupBlobInto(
+    (piece) => {
+      pieces.push(piece);
+    },
+    producer,
+    options,
+  );
+  return pieces.join("");
+}
+
+/** Receives the stored string a piece at a time, in order. Awaited. */
+export type BackupBlobSink = (piece: string) => void | Promise<void>;
+
+/**
+ * How much base64 to gather before handing it to the sink. Large enough that
+ * a sink writing to the database makes a few dozen round trips for a large
+ * record rather than thousands, small enough to be irrelevant to the heap.
+ */
+const SINK_FLUSH_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Serialised backup JSON, produced in pieces → the stored string, delivered
+ * in pieces.
+ *
+ * The concatenation of every piece `sink` receives is exactly the string
+ * `packBackupBlobStreaming` returns. `producer` decides how big its JSON
+ * pieces are; the gzip stream applies backpressure through the promise this
+ * hands back, so a fast producer cannot outrun the compressor, and a slow
+ * sink holds the producer back the same way, so neither side piles up.
+ *
+ * `maxBytes` still counts the whole answer. Nothing here holds it any more,
+ * but every reader of a stored copy (restore, download, summary) opens it as
+ * one value, so the limit is what keeps a copy restorable on this host.
+ */
+export async function packBackupBlobInto(
+  sink: BackupBlobSink,
+  producer: BackupJsonProducer,
+  options: PackBackupBlobOptions = {},
+): Promise<void> {
   const limitBytes = options.maxBytes ?? defaultBackupBlobLimit();
   const encryptor = createStreamEncryptor();
-  const pieces: string[] = [encryptor.header];
+  let pending: string[] = [encryptor.header];
+  let pendingBytes = encryptor.header.length;
   let heldBytes = encryptor.header.length;
   const gzip = createGzip();
 
@@ -169,12 +203,13 @@ export async function packBackupBlobStreaming(
     try {
       const piece = encryptor.update(chunk);
       if (piece === "") return;
-      // Base64 is ASCII, so a character counted here is a byte held here.
+      // Base64 is ASCII, so a character counted here is a byte written here.
       heldBytes += piece.length;
       if (heldBytes > limitBytes) {
         throw new BackupBlobTooLargeError(heldBytes, limitBytes);
       }
-      pieces.push(piece);
+      pending.push(piece);
+      pendingBytes += piece.length;
     } catch (err) {
       failure ??= err;
       gzip.destroy(err as Error);
@@ -192,8 +227,19 @@ export async function packBackupBlobStreaming(
   // rejection; `await finished` below still sees the rejection.
   finished.catch(() => {});
 
-  const write = async (chunk: string): Promise<void> => {
+  const flush = async (force: boolean): Promise<void> => {
+    if (pendingBytes === 0 || (!force && pendingBytes < SINK_FLUSH_BYTES)) {
+      return;
+    }
+    const piece = pending.join("");
+    pending = [];
+    pendingBytes = 0;
+    await sink(piece);
+  };
+
+  const write = async (chunk: string | Buffer): Promise<void> => {
     if (failure) throw failure;
+    await flush(false);
     if (gzip.write(chunk, "utf8")) return;
     await new Promise<void>((resolve, reject) => {
       const onDrain = () => {
@@ -219,8 +265,10 @@ export async function packBackupBlobStreaming(
   await finished;
   if (failure) throw failure;
 
-  pieces.push(encryptor.final());
-  return pieces.join("");
+  const tail = encryptor.final();
+  pending.push(tail);
+  pendingBytes += tail.length;
+  await flush(true);
 }
 
 /**
@@ -265,4 +313,35 @@ export function unpackBackupBlob(stored: string): string {
   return gunzipSync(
     Buffer.from(plaintext.slice(GZIP_MARKER.length), "base64"),
   ).toString("utf8");
+}
+
+/**
+ * A stored `DataBackup.data` string → a source of its JSON as byte chunks,
+ * which can be opened as many times as the caller needs to read it.
+ *
+ * `unpackBackupBlob` returns the JSON as one string, and a string is what a
+ * large record cannot be: the disaster-recovery JSON of an account with 1.25
+ * million measurements is 662 MB, past the 536 870 888 characters V8 allows
+ * in any string, so that call threw on every such backup (#1031). Here the
+ * authentication happens first and whole, on the compressed ciphertext, which
+ * stays small (48 MB for that record): no plaintext byte is released before
+ * the tag has verified. Only the decompression is streamed, on every open.
+ *
+ * Fail-closed exactly like `unpackBackupBlob`: a bad key or a tag that does
+ * not verify throws here, before a source exists; a truncated gzip member
+ * errors the stream.
+ */
+export function openBackupBlob(stored: string): () => AsyncIterable<Buffer> {
+  if (isStreamCiphertext(stored)) {
+    const gz = decryptStream(stored);
+    return () => Readable.from([gz]).pipe(createGunzip());
+  }
+  const plaintext = decrypt(stored);
+  if (!plaintext.startsWith(GZIP_MARKER)) {
+    // A pre-envelope copy was written from one string, so it is one.
+    const bytes = Buffer.from(plaintext, "utf8");
+    return () => Readable.from([bytes]);
+  }
+  const gz = Buffer.from(plaintext.slice(GZIP_MARKER.length), "base64");
+  return () => Readable.from([gz]).pipe(createGunzip());
 }

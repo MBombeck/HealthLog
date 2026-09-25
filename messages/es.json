@@ -7167,7 +7167,7 @@
         "uploadTitle": "Subir copia de seguridad",
         "uploadDescription": "Valida un archivo de copia de seguridad y guárdalo como instantánea manual. La restauración es un paso aparte.",
         "uploadButton": "Subir archivo",
-        "uploadHelp": "Archivo JSON que coincida con el esquema de copia de seguridad actual. Máx. 10 MB.",
+        "uploadHelp": "Una copia de seguridad de HealthLog en .json o .json.gz. El archivo se comprime antes de subirlo; comprimido puede ocupar hasta 512 MB.",
         "uploadSuccess": "Copia de seguridad subida ({count} registros)",
         "uploadFailed": "La subida falló",
         "restore": "Restaurar",

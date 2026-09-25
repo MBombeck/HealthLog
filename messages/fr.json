@@ -7167,7 +7167,7 @@
         "uploadTitle": "Téléverser une sauvegarde",
         "uploadDescription": "Validez un fichier de sauvegarde et stockez-le comme instantané manuel. La restauration est une étape distincte.",
         "uploadButton": "Téléverser un fichier",
-        "uploadHelp": "Fichier JSON correspondant au schéma de sauvegarde actuel. Max 10 Mo.",
+        "uploadHelp": "Une sauvegarde HealthLog au format .json ou .json.gz. Le fichier est compressé avant l’envoi ; compressé, il peut atteindre 512 Mo.",
         "uploadSuccess": "Sauvegarde téléversée ({count} enregistrements)",
         "uploadFailed": "Échec du téléversement",
         "restore": "Restaurer",

@@ -108,6 +108,49 @@ function shouldRotate(value: string | null): boolean {
   return id !== getActiveKeyId();
 }
 
+/** The part of a Prisma delegate the per-column walks below need. */
+interface PagedDelegate<V> {
+  findMany: (args: {
+    select: Record<string, true>;
+    orderBy: { id: "asc" };
+    take: number;
+    cursor?: { id: string };
+    skip?: number;
+  }) => Promise<Array<Record<string, unknown>>>;
+  update: (args: {
+    where: { id: string };
+    data: Record<string, V>;
+  }) => Promise<unknown>;
+}
+
+/** Rows per page when walking a column. */
+const PAGE_SIZE = 5_000;
+
+/**
+ * Every row of one column, `id` and value only, a page at a time in id order.
+ * The walks used to read a column in one `findMany`, which for
+ * `Measurement.notesEncrypted` is every measurement of the instance: 1.25
+ * million rows on one large account (#1031).
+ */
+async function* pagedRows(
+  delegate: PagedDelegate<unknown>,
+  field: string,
+): AsyncGenerator<Record<string, unknown>> {
+  let cursor: string | null = null;
+  for (;;) {
+    const rows = await delegate.findMany({
+      select: { id: true, [field]: true },
+      orderBy: { id: "asc" },
+      take: PAGE_SIZE,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+    if (rows.length === 0) return;
+    yield* rows;
+    if (rows.length < PAGE_SIZE) return;
+    cursor = rows[rows.length - 1]!.id as string;
+  }
+}
+
 /**
  * Rotate one `String` ciphertext column on a Prisma model. `delegate` is the
  * `prisma.<model>` accessor; `field` is the column. Reads only `id` + the
@@ -116,31 +159,28 @@ function shouldRotate(value: string | null): boolean {
 async function rotateStringColumn(
   table: string,
   field: string,
-  delegate: {
-    findMany: (args: {
-      select: Record<string, true>;
-    }) => Promise<Array<Record<string, unknown>>>;
-    update: (args: {
-      where: { id: string };
-      data: Record<string, string>;
-    }) => Promise<unknown>;
-  },
+  delegate: PagedDelegate<string>,
 ): Promise<RotationResult> {
-  const rows = await delegate.findMany({ select: { id: true, [field]: true } });
   const result: RotationResult = {
     table,
     field,
-    scanned: rows.length,
+    scanned: 0,
     rotated: 0,
     errors: 0,
     dropped: 0,
   };
-  for (const row of rows) {
+  for await (const row of pagedRows(
+    delegate as PagedDelegate<unknown>,
+    field,
+  )) {
     const v = row[field] as string | null;
+    // `scanned` counts rows that hold ciphertext, as the in-app rotation does.
+    if (!v) continue;
+    result.scanned++;
     if (!shouldRotate(v)) continue;
     const id = row.id as string;
     try {
-      const re = encrypt(decrypt(v as string));
+      const re = encrypt(decrypt(v));
       await delegate.update({ where: { id }, data: { [field]: re } });
       result.rotated++;
     } catch (err) {
@@ -159,28 +199,23 @@ async function rotateStringColumn(
 async function rotateBytesColumn(
   table: string,
   field: string,
-  delegate: {
-    findMany: (args: {
-      select: Record<string, true>;
-    }) => Promise<Array<Record<string, unknown>>>;
-    update: (args: {
-      where: { id: string };
-      data: Record<string, Uint8Array>;
-    }) => Promise<unknown>;
-  },
+  delegate: PagedDelegate<Uint8Array>,
 ): Promise<RotationResult> {
-  const rows = await delegate.findMany({ select: { id: true, [field]: true } });
   const result: RotationResult = {
     table,
     field,
-    scanned: rows.length,
+    scanned: 0,
     rotated: 0,
     errors: 0,
     dropped: 0,
   };
-  for (const row of rows) {
+  for await (const row of pagedRows(
+    delegate as PagedDelegate<unknown>,
+    field,
+  )) {
     const buf = row[field] as Uint8Array | null;
     if (!buf || buf.byteLength === 0) continue;
+    result.scanned++;
     const asString = Buffer.from(buf).toString("utf8");
     if (!shouldRotate(asString)) continue;
     const id = row.id as string;

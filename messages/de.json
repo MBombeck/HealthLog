@@ -7167,7 +7167,7 @@
         "uploadTitle": "Backup hochladen",
         "uploadDescription": "Eine Backup-Datei validieren und als manuellen Snapshot speichern. Das Wiederherstellen ist ein separater Schritt.",
         "uploadButton": "Datei hochladen",
-        "uploadHelp": "JSON-Datei passend zum aktuellen Backup-Schema. Max. 10 MB.",
+        "uploadHelp": "HealthLog-Backup als .json oder .json.gz. Die Datei wird vor dem Hochladen komprimiert; komprimiert darf sie bis zu 512 MB groß sein.",
         "uploadSuccess": "Backup hochgeladen ({count} Datensätze)",
         "uploadFailed": "Upload fehlgeschlagen",
         "restore": "Wiederherstellen",

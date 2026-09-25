@@ -7146,7 +7146,7 @@
         "uploadTitle": "백업 업로드",
         "uploadDescription": "백업 파일을 검사한 뒤 수동 스냅샷으로 저장해요. 복원은 별도 단계예요.",
         "uploadButton": "파일 업로드",
-        "uploadHelp": "현재 백업 스키마에 맞는 JSON 파일이에요. 최대 10 MB.",
+        "uploadHelp": "HealthLog 백업 파일(.json 또는 .json.gz)이에요. 업로드 전에 압축되며, 압축된 크기는 최대 512 MB까지 가능해요.",
         "uploadSuccess": "백업을 업로드했어요 (기록 {count}개)",
         "uploadFailed": "업로드하지 못했어요",
         "restore": "복원",

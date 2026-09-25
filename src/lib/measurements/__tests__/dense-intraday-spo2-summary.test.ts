@@ -29,6 +29,7 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
 import { runDenseIntradayRetention } from "../dense-intraday-retention";
 import type { PerSampleRow } from "../drain-per-sample-cumulative";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
+import { candidateLookup, createManyVia } from "./hourly-mint-mock";
 
 function spo2Row(id: string, value: number, iso: string): PerSampleRow {
   return {
@@ -60,6 +61,8 @@ function buildPrismaMock(opts: { spo2Rows: PerSampleRow[] }) {
       update: txUpdate,
       findFirst: txFindFirst,
       updateMany: txUpdateMany,
+      findMany: candidateLookup(),
+      createManyAndReturn: createManyVia(txCreate),
     },
   };
 
@@ -254,6 +257,10 @@ describe("SpO2 fold — per-day failure boundary", () => {
             update: vi.fn(),
             findFirst: vi.fn().mockResolvedValue(null),
             updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+            findMany: candidateLookup(),
+            createManyAndReturn: createManyVia(
+              vi.fn().mockResolvedValue({ id: "minted" }),
+            ),
           },
         });
       },

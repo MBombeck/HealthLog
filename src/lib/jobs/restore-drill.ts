@@ -22,8 +22,9 @@
  * no other cron uses.
  */
 import type { Job } from "pg-boss";
+import { BackupJsonError, scanBackupJson } from "@/lib/export/backup-json-scan";
 import {
-  decryptBackup,
+  openBackupObject,
   getS3Client,
   loadOffhostConfig,
   OffhostBackupNotConfiguredError,
@@ -103,19 +104,36 @@ export async function runRestoreDrill(
   const dateKey = BACKUP_KEY_PATTERN.exec(objectKey)![1];
 
   const ciphertext = await s3.getObject(objectKey);
-  const plaintext = decryptBackup(ciphertext, cfg.encryptionKey);
-  const parsed: unknown = JSON.parse(plaintext);
-
-  if (typeof parsed !== "object" || parsed === null) {
-    throw new Error(
-      `Restore drill: backup object "${objectKey}" decrypted and parsed but is not a JSON object.`,
-    );
+  // Read as a stream, never as one string: the JSON of a large record is
+  // longer than any string V8 can hold (#1031). The bulk tables are counted,
+  // not kept.
+  const source = openBackupObject(ciphertext, cfg.encryptionKey);
+  let plaintextBytes = 0;
+  async function* counted() {
+    for await (const chunk of source()) {
+      plaintextBytes += chunk.byteLength;
+      yield chunk;
+    }
   }
-  const payload = parsed as Record<string, unknown>;
+  let scanned;
+  try {
+    scanned = await scanBackupJson(counted(), {
+      streamKeys: new Set(["measurements", "intakeEvents", "moodEntries"]),
+    });
+  } catch (err) {
+    if (err instanceof BackupJsonError) {
+      throw new Error(
+        `Restore drill: backup object "${objectKey}" decrypted but is not a JSON object: ${err.message}`,
+      );
+    }
+    throw err;
+  }
+  const payload = scanned.document;
+  const streamedCounts = scanned.streamedCounts;
   if (
     typeof payload.exportedAt !== "string" ||
     typeof payload.userId !== "string" ||
-    !Array.isArray(payload.measurements)
+    streamedCounts.measurements === undefined
   ) {
     throw new Error(
       `Restore drill: backup object "${objectKey}" parses but is missing core fields (exportedAt / userId / measurements).`,
@@ -133,12 +151,12 @@ export async function runRestoreDrill(
     ageDays,
     stale: ageDays > MAX_BACKUP_AGE_DAYS,
     ciphertextBytes: ciphertext.length,
-    plaintextBytes: Buffer.byteLength(plaintext, "utf8"),
+    plaintextBytes,
     recordCounts: {
-      measurements: payload.measurements.length,
+      measurements: streamedCounts.measurements,
       medications: countArray(payload.medications),
-      intakeEvents: countArray(payload.intakeEvents),
-      moodEntries: countArray(payload.moodEntries),
+      intakeEvents: streamedCounts.intakeEvents ?? 0,
+      moodEntries: streamedCounts.moodEntries ?? 0,
     },
   };
 }

@@ -7167,7 +7167,7 @@
         "uploadTitle": "Carica backup",
         "uploadDescription": "Convalida un file di backup e archivialo come istantanea manuale. Il ripristino è un passaggio separato.",
         "uploadButton": "Carica file",
-        "uploadHelp": "File JSON conforme allo schema di backup attuale. Max 10 MB.",
+        "uploadHelp": "Un backup di HealthLog in formato .json o .json.gz. Il file viene compresso prima del caricamento; compresso può arrivare a 512 MB.",
         "uploadSuccess": "Backup caricato ({count} record)",
         "uploadFailed": "Caricamento non riuscito",
         "restore": "Ripristina",

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Buffer } from "node:buffer";
 import {
   encryptArchive,
+  encryptArchiveToFile,
   decryptArchive,
   parseArchiveHeader,
   EXPORT_ARGON2_PARAMS,
@@ -76,5 +77,47 @@ describe("passphrase-encrypted export archive (HLX1)", () => {
     const buf = Buffer.from(PAYLOAD, "utf8");
     const archive = await encryptArchive(buf, PASSPHRASE);
     expect(await decryptArchive(archive, PASSPHRASE)).toBe(PAYLOAD);
+  });
+});
+
+/**
+ * #1031: the encrypted export is sealed as it is produced and spooled to a
+ * file, because holding it did not fit a 1 GB container for a large account.
+ * The format must not change: an archive written this way opens with the
+ * same `decryptArchive` every existing archive opens with.
+ */
+describe("encryptArchiveToFile", () => {
+  it("writes an archive decryptArchive opens, byte for byte the same document", async () => {
+    const { mkdtemp, readFile, rm } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const dir = await mkdtemp(join(tmpdir(), "hlx-spool-"));
+    try {
+      const pieces = Array.from({ length: 500 }, (_, i) =>
+        JSON.stringify({ i, note: "ümlaut 🫀 ".repeat(i % 7) }),
+      );
+      const bodyPath = join(dir, "body");
+      const spooled = await encryptArchiveToFile(
+        async (write) => {
+          await write("[");
+          for (let i = 0; i < pieces.length; i++) {
+            await write(i === 0 ? pieces[i]! : `,${pieces[i]}`);
+          }
+          await write(Buffer.from("]"));
+        },
+        PASSPHRASE,
+        bodyPath,
+      );
+      const archive = Buffer.concat([spooled.prefix, await readFile(bodyPath)]);
+      expect(archive.byteLength).toBe(spooled.byteLength);
+      expect(await decryptArchive(archive, PASSPHRASE)).toBe(
+        `[${pieces.join(",")}]`,
+      );
+      await expect(
+        decryptArchive(archive, "wrong passphrase!!"),
+      ).rejects.toThrow();
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
