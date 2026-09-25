@@ -69,6 +69,27 @@ export interface CalendarDayDTO {
   ovulationTest: string | null;
   /** Logged cervical-mucus quality, or null. */
   cervicalMucus: string | null;
+  /** Logged cervix signs (symptothermal secondary indicator), each or null. */
+  cervixPosition: string | null;
+  cervixFirmness: string | null;
+  cervixOpening: string | null;
+  /** Spotting / bleeding outside the period logged on this day. */
+  intermenstrualBleeding: boolean;
+  /**
+   * Intercourse logged on this day. Read through the same resolver as the
+   * day-log itself (plaintext column or the encrypted envelope), and carried
+   * under the same `cycle` grant: a caller who may read this grid may read
+   * the day log it summarises, and one who may not reaches neither.
+   */
+  sexualActivity: boolean;
+  /** Logged at-home pregnancy test result, or null. */
+  pregnancyTest: string | null;
+  /** Logged at-home progesterone test result, or null. */
+  progesteroneTest: string | null;
+  /** Logged contraceptive method, or null. */
+  contraceptive: string | null;
+  /** Whether the day carries a note. The note's text never rides the grid. */
+  hasNote: boolean;
 }
 
 /** Rows the calendar needs from each day-log. */
@@ -83,7 +104,15 @@ export type CalendarDayLogRow = Pick<
   | "cervixPosition"
   | "cervixFirmness"
   | "cervixOpening"
-> & { hasSymptoms: boolean };
+  | "intermenstrualBleeding"
+> & {
+  hasSymptoms: boolean;
+  hasNote: boolean;
+  sexualActivity: boolean;
+  pregnancyTest: string | null;
+  progesteroneTest: string | null;
+  contraceptive: string | null;
+};
 
 /** Map MenstrualCycle rows (oldest→newest) to engine `CycleInput`. */
 export function toCycleInputs(
@@ -449,6 +478,15 @@ export function buildCalendar(
       temperatureExcluded: log?.temperatureExcluded ?? false,
       ovulationTest: log?.ovulationTest ?? null,
       cervicalMucus: log?.cervicalMucus ?? null,
+      cervixPosition: log?.cervixPosition ?? null,
+      cervixFirmness: log?.cervixFirmness ?? null,
+      cervixOpening: log?.cervixOpening ?? null,
+      intermenstrualBleeding: log?.intermenstrualBleeding ?? false,
+      sexualActivity: log?.sexualActivity ?? false,
+      pregnancyTest: log?.pregnancyTest ?? null,
+      progesteroneTest: log?.progesteroneTest ?? null,
+      contraceptive: log?.contraceptive ?? null,
+      hasNote: log?.hasNote ?? false,
     });
   }
 

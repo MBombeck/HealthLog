@@ -30974,6 +30974,28 @@ components:
                           - CLOSED
                           - OPEN
                       - type: "null"
+                  intermenstrualBleeding:
+                    type: boolean
+                    description: Spotting or bleeding outside the period logged on this day.
+                  sexualActivity:
+                    type: boolean
+                    description: Intercourse logged on this day. Resolved from the plaintext column or the encrypted envelope, exactly as
+                      the day-log read resolves it, and served under the same cycle grant.
+                  pregnancyTest:
+                    anyOf:
+                      - $ref: "#/components/schemas/HomeTestResult"
+                      - type: "null"
+                  progesteroneTest:
+                    anyOf:
+                      - $ref: "#/components/schemas/HomeTestResult"
+                      - type: "null"
+                  contraceptive:
+                    anyOf:
+                      - type: string
+                      - type: "null"
+                  hasNote:
+                    type: boolean
+                    description: Whether the day carries a note. The note text is only on the day-log read.
                 required:
                   - date
                   - phase
@@ -30994,6 +31016,12 @@ components:
                   - cervixPosition
                   - cervixFirmness
                   - cervixOpening
+                  - intermenstrualBleeding
+                  - sexualActivity
+                  - pregnancyTest
+                  - progesteroneTest
+                  - contraceptive
+                  - hasNote
                 additionalProperties: false
             meta:
               type: object

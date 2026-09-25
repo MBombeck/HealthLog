@@ -111,11 +111,52 @@ function decryptSensitive(envelope: string | null): SensitiveEnvelope {
   }
 }
 
+/** The five intent-revealing fields, as a reader should see them. */
+interface ResolvedSensitiveFields {
+  sexualActivity: boolean;
+  protectedSex: boolean | null;
+  pregnancyTest: string | null;
+  progesteroneTest: string | null;
+  contraceptive: string | null;
+}
+
+/**
+ * Resolve the intent-revealing fields of one day-log row: from the encryption
+ * envelope when the row carries one, else from the plaintext columns (the
+ * flag-OFF path). The day-log read and the calendar grid both go through here,
+ * so a day cannot show intercourse in one and not the other.
+ */
+export function resolveSensitiveFields(
+  row: Pick<
+    CycleDayLog,
+    | "sensitiveEncrypted"
+    | "sexualActivity"
+    | "protectedSex"
+    | "pregnancyTest"
+    | "progesteroneTest"
+    | "contraceptive"
+  >,
+): ResolvedSensitiveFields {
+  if (row.sensitiveEncrypted != null) {
+    const enc = decryptSensitive(row.sensitiveEncrypted);
+    return {
+      sexualActivity: enc.sexualActivity ?? false,
+      protectedSex: enc.protectedSex ?? null,
+      pregnancyTest: enc.pregnancyTest ?? null,
+      progesteroneTest: enc.progesteroneTest ?? null,
+      contraceptive: enc.contraceptive ?? null,
+    };
+  }
+  return {
+    sexualActivity: row.sexualActivity,
+    protectedSex: row.protectedSex,
+    pregnancyTest: row.pregnancyTest,
+    progesteroneTest: row.progesteroneTest,
+    contraceptive: row.contraceptive,
+  };
+}
+
 export function toCycleDayLogDTO(row: DayLogWithLinks): CycleDayLogDTO {
-  // Prefer the encryption envelope when present; else read the plaintext
-  // columns (the flag-OFF path).
-  const enc = decryptSensitive(row.sensitiveEncrypted);
-  const hasEnvelope = row.sensitiveEncrypted != null;
   return {
     id: row.id,
     date: row.date,
@@ -129,19 +170,7 @@ export function toCycleDayLogDTO(row: DayLogWithLinks): CycleDayLogDTO {
     cervixPosition: row.cervixPosition,
     cervixFirmness: row.cervixFirmness,
     cervixOpening: row.cervixOpening,
-    sexualActivity: hasEnvelope
-      ? (enc.sexualActivity ?? false)
-      : row.sexualActivity,
-    protectedSex: hasEnvelope ? (enc.protectedSex ?? null) : row.protectedSex,
-    pregnancyTest: hasEnvelope
-      ? (enc.pregnancyTest ?? null)
-      : row.pregnancyTest,
-    progesteroneTest: hasEnvelope
-      ? (enc.progesteroneTest ?? null)
-      : row.progesteroneTest,
-    contraceptive: hasEnvelope
-      ? (enc.contraceptive ?? null)
-      : row.contraceptive,
+    ...resolveSensitiveFields(row),
     symptoms: (row.symptomLinks ?? []).map((l) => ({
       key: l.symptom.key,
       severity: l.severity ?? null,
