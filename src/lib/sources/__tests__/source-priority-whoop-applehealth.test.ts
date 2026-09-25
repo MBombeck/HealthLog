@@ -150,8 +150,13 @@ describe("WHOOP-written HealthKit records remain source-agnostic", () => {
   });
 
   it("persists supported export.xml rows as APPLE_HEALTH, never as a raw writer label", () => {
+    // Spot rows are built as `NewMeasurementRow`s and written through the
+    // column-array bulk insert; the source is fixed where each row is built.
     expect(appleImporterSource).toMatch(
-      /measurement\.createManyAndReturn\([\s\S]*source:\s*"APPLE_HEALTH"/,
+      /const createData: NewMeasurementRow\[\] = chunk\.map\(\(row\) => \(\{[^}]*source:\s*"APPLE_HEALTH"/,
+    );
+    expect(appleImporterSource).toMatch(
+      /insertNewMeasurementRows\(prisma, createData\)/,
     );
     expect(appleImporterSource).not.toMatch(
       /source:\s*attrs\.(?:sourceName|device)/,

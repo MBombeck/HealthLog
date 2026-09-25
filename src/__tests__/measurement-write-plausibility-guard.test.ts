@@ -130,6 +130,22 @@ const WRITERS: Record<string, Disposition> = {
 const MEASUREMENT_WRITE =
   /[A-Za-z_$][\w$]*\s*\.\s*measurement\s*\.\s*(create|createMany|createManyAndReturn|upsert)\s*\(/;
 
+/**
+ * A call into the column-array bulk insert, which writes around the Prisma
+ * delegate and so never matches {@link MEASUREMENT_WRITE}. The Apple export
+ * importer writes its spot rows only this way, and was invisible to this
+ * guard for as long as nothing looked for it. The definitions themselves are
+ * excluded by the lookbehind; the module that holds them is pinned below as
+ * the one place raw SQL may insert a measurement.
+ */
+const BULK_INSERT_CALL = /(?<!function\s)\binsert(?:New)?MeasurementRows\s*\(/;
+
+/** Raw SQL that inserts into the measurements table. */
+const RAW_MEASUREMENT_INSERT = /INSERT\s+INTO\s+"?measurements"?[\s(]/i;
+
+/** The only module allowed to hold {@link RAW_MEASUREMENT_INSERT}. */
+const BULK_INSERT_MODULE = "lib/export/measurement-bulk-insert.ts";
+
 function sourceFiles(): string[] {
   return walkSourceFiles(SRC, { floor: 3000 })
     .filter((p) => !p.startsWith("generated/"))
@@ -143,7 +159,10 @@ function read(rel: string): string {
 }
 
 function discoveredWriters(): string[] {
-  return sourceFiles().filter((rel) => MEASUREMENT_WRITE.test(read(rel)));
+  return sourceFiles().filter((rel) => {
+    const text = read(rel);
+    return MEASUREMENT_WRITE.test(text) || BULK_INSERT_CALL.test(text);
+  });
 }
 
 describe("every measurement writer declares how it meets the plausibility domain", () => {
@@ -156,6 +175,21 @@ describe("every measurement writer declares how it meets the plausibility domain
 
   it("the discovered writer set matches the declared map exactly", () => {
     expect(discoveredWriters()).toEqual(Object.keys(WRITERS).sort());
+  });
+
+  it("sees a writer that only calls the bulk insert", () => {
+    // The importer has no Prisma measurement write left; if the bulk-insert
+    // matcher stopped matching, it would drop out of the sweep silently.
+    const importer = "lib/measurements/import-apple-health-export.ts";
+    expect(MEASUREMENT_WRITE.test(read(importer))).toBe(false);
+    expect(discoveredWriters()).toContain(importer);
+  });
+
+  it("raw SQL inserts measurements in the bulk-insert module and nowhere else", () => {
+    const raw = sourceFiles().filter((rel) =>
+      RAW_MEASUREMENT_INSERT.test(read(rel)),
+    );
+    expect(raw).toEqual([BULK_INSERT_MODULE]);
   });
 
   it("every provider-fed writer reaches the gate module", () => {
