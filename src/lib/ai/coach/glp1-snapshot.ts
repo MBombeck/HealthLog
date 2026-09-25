@@ -385,6 +385,10 @@ export async function buildGlp1SnapshotBlock(
       weeksOfSupplyApprox = Math.round(dosesRemaining / dosesPerWeek);
     }
 
+    // v1.39.1 (#1033) — with intake tracking off no dose consumes the
+    // stock, so a supply span derived from the cadence would be invented.
+    if (isRecordOnly(med)) weeksOfSupplyApprox = null;
+
     const penInventory: PenInventory | null =
       pensRemaining !== null
         ? { pensRemaining, dosesRemaining, weeksOfSupplyApprox }
