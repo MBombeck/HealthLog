@@ -142,6 +142,33 @@ describe("<ProceduresSection>", () => {
     expect(html).toContain("2 of 2");
   });
 
+  it("heads a procedure with what was done, and keeps the practice on its own line", () => {
+    const html = render({
+      procedures: [
+        procedure({
+          id: "p1",
+          reason: "Meniscus repair",
+          practitioner: {
+            id: "pr1",
+            name: "Sample clinic",
+            specialty: null,
+            practice: null,
+            location: null,
+            phone: null,
+            note: null,
+            createdAt: "2011-01-01T00:00:00.000Z",
+            updatedAt: "2011-01-01T00:00:00.000Z",
+          },
+        }),
+      ],
+      bodySites: [],
+      total: 1,
+    });
+    expect(html).toMatch(/font-medium">Meniscus repair</);
+    expect(html).toContain("Sample clinic");
+    expect(html.match(/Meniscus repair/g)).toHaveLength(1);
+  });
+
   it("offers every body site as a filter, with All pressed while nothing is filtered", () => {
     const html = render({
       procedures: [
