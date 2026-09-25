@@ -99,6 +99,15 @@ function code(rel: string): string {
   return stripComments(readFileSync(join(SRC, rel), "utf8"));
 }
 
+/**
+ * The code without its import statements. An import of the vocabulary is
+ * not a use of it: a reader that still imports `TRACKED_INTAKE_WHERE` after
+ * its filter was deleted would otherwise pass.
+ */
+function usage(rel: string): string {
+  return code(rel).replace(/^import[\s\S]*?from\s+["'][^"']+["'];?$/gm, "");
+}
+
 const readers = sourceFiles().filter((rel) => SCHEDULE_READ.test(code(rel)));
 
 describe("medication intake tracking — schedule readers honour the switch", () => {
@@ -119,7 +128,7 @@ describe("medication intake tracking — schedule readers honour the switch", ()
 
   it("every schedule reader uses the vocabulary or is allowlisted", () => {
     const offenders = readers.filter(
-      (rel) => !(rel in MAY_READ_EVERY_ROW) && !HONOURS.test(code(rel)),
+      (rel) => !(rel in MAY_READ_EVERY_ROW) && !HONOURS.test(usage(rel)),
     );
     expect(
       offenders,
@@ -148,5 +157,14 @@ describe("medication intake tracking — schedule readers honour the switch", ()
     expect(SCHEDULE_READ.test("const schedules = m.schedules;")).toBe(false);
     expect(HONOURS.test(stripComments("// dueSchedules(m)"))).toBe(false);
     expect(HONOURS.test("where: { ...TRACKED_INTAKE_WHERE }")).toBe(true);
+    // An import alone is not a use.
+    const importOnly =
+      'import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";\n' +
+      "const rows = await prisma.medication.findMany({ where: { active: true } });";
+    expect(
+      HONOURS.test(
+        importOnly.replace(/^import[\s\S]*?from\s+["'][^"']+["'];?$/gm, ""),
+      ),
+    ).toBe(false);
   });
 });
