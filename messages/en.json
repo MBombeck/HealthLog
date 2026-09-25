@@ -329,6 +329,11 @@
     "visitsColReason": "Reason",
     "visitsColOutcome": "Outcome",
     "visitsColConditions": "Conditions",
+    "surgicalHistoryTitle": "Surgical history",
+    "surgicalHistoryColDate": "Date",
+    "surgicalHistoryColProcedure": "Procedure",
+    "surgicalHistoryColBodySite": "Body site",
+    "surgicalHistoryColOutcome": "Outcome",
     "immunizationsTitle": "Immunizations",
     "immunizationsColDate": "Date",
     "immunizationsColVaccine": "Vaccine",
@@ -10395,6 +10400,7 @@
     "scopeCount": "{count} entries from {groups} areas",
     "scopeSensitive": "incl. {names}",
     "leafVisits": "Visits",
+    "leafSurgicalHistory": "Surgical history",
     "leafImmunizations": "Immunizations",
     "leafEmergency": "Emergency information (blood type, contacts, directives)"
   },
@@ -10779,8 +10785,16 @@
       "emergency": "Emergency",
       "hospital": "Hospital",
       "therapy": "Therapy session",
-      "other": "Appointment"
+      "other": "Appointment",
+      "procedure": "Procedure or surgery"
     },
+    "laterality": {
+      "left": "Left",
+      "right": "Right",
+      "both": "Both sides",
+      "none": "Not stated"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "Visits",
     "sectionDescription": "Doctor's visits and booked appointments in one place.",
     "add": "Visit",
@@ -10822,6 +10836,9 @@
       "reason": "Reason",
       "outcome": "Outcome",
       "outcomeReveal": "Add an outcome",
+      "bodySite": "Body site",
+      "bodySiteHint": "For example knee or gallbladder.",
+      "laterality": "Side",
       "linkDocuments": "Documents",
       "linkLabResults": "Lab results",
       "linkConditions": "Conditions",
@@ -10841,12 +10858,28 @@
     },
     "dashboard": {
       "nextVisit": "Next appointment: {what} on {when}"
+    },
+    "procedures": {
+      "title": "Procedures and surgeries",
+      "description": "Every procedure and surgery you have had, newest first.",
+      "add": "Procedure",
+      "searchLabel": "Filter by body site",
+      "searchPlaceholder": "For example knee",
+      "sitesLabel": "Body sites",
+      "allSites": "All",
+      "count": "{shown} of {total}",
+      "emptyTitle": "No procedure recorded yet",
+      "emptyDescription": "Record a visit of the kind Procedure or surgery, or switch an existing visit to it.",
+      "noMatchTitle": "Nothing matches this filter",
+      "clearFilter": "Clear filter",
+      "loadError": "Procedures could not be loaded."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Show checkups or visits",
+    "viewSwitchLabel": "Show checkups, visits or procedures",
     "tabVorsorge": "Checkups",
-    "tabVisits": "Visits"
+    "tabVisits": "Visits",
+    "tabProcedures": "Procedures"
   },
   "practitioners": {
     "title": "Practices and doctors",

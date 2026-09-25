@@ -293,6 +293,11 @@
     "visitsColReason": "Motif",
     "visitsColOutcome": "Résultat",
     "visitsColConditions": "Maladies",
+    "surgicalHistoryTitle": "Antécédents chirurgicaux",
+    "surgicalHistoryColDate": "Date",
+    "surgicalHistoryColProcedure": "Intervention",
+    "surgicalHistoryColBodySite": "Partie du corps",
+    "surgicalHistoryColOutcome": "Résultat",
     "immunizationsTitle": "Vaccinations",
     "immunizationsColDate": "Date",
     "immunizationsColVaccine": "Vaccin",
@@ -10395,6 +10400,7 @@
     "scopeCount": "{count} éléments issus de {groups} domaines",
     "scopeSensitive": "dont {names}",
     "leafVisits": "Consultations",
+    "leafSurgicalHistory": "Antécédents chirurgicaux",
     "leafImmunizations": "Vaccinations",
     "leafEmergency": "Informations d'urgence (groupe sanguin, contacts, directives)"
   },
@@ -10779,8 +10785,16 @@
       "emergency": "Urgence",
       "hospital": "Hôpital",
       "therapy": "Séance de thérapie",
-      "other": "Rendez-vous médical"
+      "other": "Rendez-vous médical",
+      "procedure": "Intervention ou chirurgie"
     },
+    "laterality": {
+      "left": "Gauche",
+      "right": "Droite",
+      "both": "Des deux côtés",
+      "none": "Non précisé"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "Rendez-vous",
     "sectionDescription": "Consultations et rendez-vous pris, au même endroit.",
     "add": "Rendez-vous",
@@ -10822,6 +10836,9 @@
       "reason": "Motif",
       "outcome": "Résultat",
       "outcomeReveal": "Ajouter un résultat",
+      "bodySite": "Partie du corps",
+      "bodySiteHint": "Par exemple genou ou vésicule biliaire.",
+      "laterality": "Côté",
       "linkDocuments": "Documents",
       "linkLabResults": "Résultats de laboratoire",
       "linkConditions": "Maladies",
@@ -10841,12 +10858,28 @@
     },
     "dashboard": {
       "nextVisit": "Prochain rendez-vous : {what} le {when}"
+    },
+    "procedures": {
+      "title": "Interventions et chirurgies",
+      "description": "Toutes les interventions et chirurgies que vous avez eues, les plus récentes d’abord.",
+      "add": "Intervention",
+      "searchLabel": "Filtrer par partie du corps",
+      "searchPlaceholder": "Par exemple genou",
+      "sitesLabel": "Parties du corps",
+      "allSites": "Toutes",
+      "count": "{shown} sur {total}",
+      "emptyTitle": "Aucune intervention enregistrée",
+      "emptyDescription": "Enregistrez un rendez-vous du type Intervention ou chirurgie, ou passez un rendez-vous existant à ce type.",
+      "noMatchTitle": "Rien ne correspond à ce filtre",
+      "clearFilter": "Effacer le filtre",
+      "loadError": "Les interventions n’ont pas pu être chargées."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Afficher les dépistages ou les rendez-vous",
+    "viewSwitchLabel": "Afficher les dépistages, les rendez-vous ou les interventions",
     "tabVorsorge": "Dépistages",
-    "tabVisits": "Rendez-vous"
+    "tabVisits": "Rendez-vous",
+    "tabProcedures": "Interventions"
   },
   "practitioners": {
     "title": "Cabinets et médecins",

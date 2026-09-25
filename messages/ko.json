@@ -329,6 +329,11 @@
     "visitsColReason": "사유",
     "visitsColOutcome": "결과",
     "visitsColConditions": "질환",
+    "surgicalHistoryTitle": "수술 이력",
+    "surgicalHistoryColDate": "날짜",
+    "surgicalHistoryColProcedure": "시술",
+    "surgicalHistoryColBodySite": "신체 부위",
+    "surgicalHistoryColOutcome": "결과",
     "immunizationsTitle": "예방접종",
     "immunizationsColDate": "날짜",
     "immunizationsColVaccine": "백신",
@@ -10395,6 +10400,7 @@
     "scopeCount": "{groups}개 영역에서 {count}개 항목",
     "scopeSensitive": "{names} 포함",
     "leafVisits": "진료",
+    "leafSurgicalHistory": "수술 이력",
     "leafImmunizations": "예방접종",
     "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)"
   },
@@ -10779,8 +10785,16 @@
       "emergency": "응급",
       "hospital": "병원",
       "therapy": "치료 세션",
-      "other": "예약"
+      "other": "예약",
+      "procedure": "시술 또는 수술"
     },
+    "laterality": {
+      "left": "왼쪽",
+      "right": "오른쪽",
+      "both": "양쪽",
+      "none": "지정 안 함"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "진료",
     "sectionDescription": "병원 방문과 잡아 둔 예약을 한곳에서 봐요.",
     "add": "진료",
@@ -10822,6 +10836,9 @@
       "reason": "사유",
       "outcome": "결과",
       "outcomeReveal": "결과 추가",
+      "bodySite": "신체 부위",
+      "bodySiteHint": "예: 무릎, 담낭",
+      "laterality": "방향",
       "linkDocuments": "문서",
       "linkLabResults": "검사 결과",
       "linkConditions": "질환",
@@ -10841,12 +10858,28 @@
     },
     "dashboard": {
       "nextVisit": "다음 예약: {what} ({when})"
+    },
+    "procedures": {
+      "title": "시술 및 수술",
+      "description": "지금까지 받은 모든 시술과 수술을 최신순으로 보여 줍니다.",
+      "add": "시술",
+      "searchLabel": "신체 부위로 필터",
+      "searchPlaceholder": "예: 무릎",
+      "sitesLabel": "신체 부위",
+      "allSites": "전체",
+      "count": "{total}개 중 {shown}개",
+      "emptyTitle": "아직 기록된 시술이 없습니다",
+      "emptyDescription": "종류를 '시술 또는 수술'로 진료를 기록하거나, 기존 진료의 종류를 바꾸세요.",
+      "noMatchTitle": "이 필터에 맞는 항목이 없습니다",
+      "clearFilter": "필터 지우기",
+      "loadError": "시술 목록을 불러올 수 없습니다."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "건강검진 또는 진료 보기",
+    "viewSwitchLabel": "건강검진, 진료 또는 시술 보기",
     "tabVorsorge": "건강검진",
-    "tabVisits": "진료"
+    "tabVisits": "진료",
+    "tabProcedures": "시술·수술"
   },
   "practitioners": {
     "title": "병원과 의사",

@@ -293,6 +293,11 @@
     "visitsColReason": "Motivo",
     "visitsColOutcome": "Resultado",
     "visitsColConditions": "Enfermedades",
+    "surgicalHistoryTitle": "Antecedentes quirúrgicos",
+    "surgicalHistoryColDate": "Fecha",
+    "surgicalHistoryColProcedure": "Procedimiento",
+    "surgicalHistoryColBodySite": "Zona del cuerpo",
+    "surgicalHistoryColOutcome": "Resultado",
     "immunizationsTitle": "Vacunas",
     "immunizationsColDate": "Fecha",
     "immunizationsColVaccine": "Vacuna",
@@ -10395,6 +10400,7 @@
     "scopeCount": "{count} entradas de {groups} áreas",
     "scopeSensitive": "incl. {names}",
     "leafVisits": "Visitas médicas",
+    "leafSurgicalHistory": "Antecedentes quirúrgicos",
     "leafImmunizations": "Vacunas",
     "leafEmergency": "Información de emergencia (grupo sanguíneo, contactos, voluntades)"
   },
@@ -10779,8 +10785,16 @@
       "emergency": "Urgencia",
       "hospital": "Hospital",
       "therapy": "Sesión de terapia",
-      "other": "Cita médica"
+      "other": "Cita médica",
+      "procedure": "Procedimiento o cirugía"
     },
+    "laterality": {
+      "left": "Izquierda",
+      "right": "Derecha",
+      "both": "Ambos lados",
+      "none": "Sin indicar"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "Citas",
     "sectionDescription": "Visitas médicas y citas reservadas en un solo sitio.",
     "add": "Cita",
@@ -10822,6 +10836,9 @@
       "reason": "Motivo",
       "outcome": "Resultado",
       "outcomeReveal": "Añadir un resultado",
+      "bodySite": "Zona del cuerpo",
+      "bodySiteHint": "Por ejemplo, rodilla o vesícula.",
+      "laterality": "Lado",
       "linkDocuments": "Documentos",
       "linkLabResults": "Resultados de laboratorio",
       "linkConditions": "Enfermedades",
@@ -10841,12 +10858,28 @@
     },
     "dashboard": {
       "nextVisit": "Próxima cita: {what} el {when}"
+    },
+    "procedures": {
+      "title": "Procedimientos y cirugías",
+      "description": "Todos los procedimientos y cirugías que has tenido, del más reciente al más antiguo.",
+      "add": "Procedimiento",
+      "searchLabel": "Filtrar por zona del cuerpo",
+      "searchPlaceholder": "Por ejemplo, rodilla",
+      "sitesLabel": "Zonas del cuerpo",
+      "allSites": "Todas",
+      "count": "{shown} de {total}",
+      "emptyTitle": "Aún no hay ningún procedimiento registrado",
+      "emptyDescription": "Registra una cita del tipo Procedimiento o cirugía, o cambia una cita existente a ese tipo.",
+      "noMatchTitle": "Nada coincide con este filtro",
+      "clearFilter": "Quitar filtro",
+      "loadError": "No se pudieron cargar los procedimientos."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Mostrar revisiones o citas",
+    "viewSwitchLabel": "Mostrar revisiones, citas o procedimientos",
     "tabVorsorge": "Revisiones",
-    "tabVisits": "Citas"
+    "tabVisits": "Citas",
+    "tabProcedures": "Procedimientos"
   },
   "practitioners": {
     "title": "Consultas y médicos",

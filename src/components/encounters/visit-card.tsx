@@ -23,7 +23,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { Encounter } from "@/hooks/use-encounters";
 import type { EncounterKind, EncounterStatus } from "@/generated/prisma/client";
-import { encounterKindText, encounterStatusText } from "./encounter-labels";
+import {
+  bodySiteText,
+  encounterKindText,
+  encounterStatusText,
+} from "./encounter-labels";
 
 /** The two statuses worth calling out on a row; the rest the section implies. */
 function isNoteworthy(status: EncounterStatus): boolean {
@@ -70,6 +74,8 @@ export function VisitCard({
   const heading =
     encounter.practitioner?.name ??
     encounterKindText(t, encounter.kind as EncounterKind);
+  // Where on the body, with the side — what the person wrote, so foreground.
+  const site = bodySiteText(t, encounter.bodySite, encounter.laterality);
 
   return (
     <Card
@@ -100,6 +106,15 @@ export function VisitCard({
           {encounter.reason ? (
             <p className="text-foreground line-clamp-1 text-sm">
               {encounter.reason}
+            </p>
+          ) : null}
+
+          {site ? (
+            <p
+              className="text-foreground line-clamp-1 text-sm"
+              data-slot="visit-card-body-site"
+            >
+              {site}
             </p>
           ) : null}
 

@@ -989,6 +989,67 @@ describe("get_visits", () => {
       mode: "insensitive",
     });
   });
+
+  // v1.39.1 — the procedure history. A surgery fifteen years ago is still the
+  // answer to "what surgeries have I had", so `kind: PROCEDURE` without a
+  // `months` argument reads the whole record rather than the default year.
+  //
+  // Mutation checks (each run, each seen red):
+  //   - keep the 12-month default for PROCEDURE → "reads the whole record"
+  //     goes red with an `occurredAt` floor;
+  //   - drop the fence around `bodySite` → the fence assertion goes red.
+  it("narrows to one kind", async () => {
+    vi.mocked(prisma.encounter.findMany).mockResolvedValue([] as never);
+    await tool("get_visits").run(CTX, { kind: "SPECIALIST" });
+    const arg = vi.mocked(prisma.encounter.findMany).mock.calls[0][0] as {
+      where: Record<string, unknown>;
+    };
+    expect(arg.where.kind).toBe("SPECIALIST");
+  });
+
+  it("reads the whole record for procedures when no window is named", async () => {
+    vi.mocked(prisma.encounter.findMany).mockResolvedValue([] as never);
+    await tool("get_visits").run(CTX, { kind: "PROCEDURE" });
+    const arg = vi.mocked(prisma.encounter.findMany).mock.calls[0][0] as {
+      where: { kind?: string; occurredAt?: { gte?: Date; lte?: Date } };
+    };
+    expect(arg.where.kind).toBe("PROCEDURE");
+    expect(arg.where.occurredAt?.gte).toBeUndefined();
+    expect(arg.where.occurredAt?.lte).toBeInstanceOf(Date);
+  });
+
+  it("keeps a named window for procedures", async () => {
+    vi.mocked(prisma.encounter.findMany).mockResolvedValue([] as never);
+    await tool("get_visits").run(CTX, { kind: "PROCEDURE", months: 6 });
+    const arg = vi.mocked(prisma.encounter.findMany).mock.calls[0][0] as {
+      where: { occurredAt?: { gte?: Date } };
+    };
+    expect(arg.where.occurredAt?.gte).toBeInstanceOf(Date);
+  });
+
+  it("carries the body site fenced and the side as a constant", async () => {
+    vi.mocked(decryptFromBytes).mockImplementation((buf: Uint8Array) =>
+      Buffer.from(buf).toString("utf8"),
+    );
+    vi.mocked(prisma.encounter.findMany).mockResolvedValue([
+      visitRow({
+        kind: "PROCEDURE",
+        bodySiteEncrypted: Buffer.from("knee", "utf8"),
+        laterality: "LEFT",
+      }),
+    ] as never);
+    vi.mocked(listTargetsBySource).mockResolvedValue(new Map());
+    const result = (await tool("get_visits").run(CTX, {
+      kind: "PROCEDURE",
+    })) as {
+      windowMonths: number | null;
+      visits: Array<Record<string, unknown>>;
+    };
+    expect(result.windowMonths).toBeNull();
+    expect(result.visits[0].bodySite).toContain("<<<USER_TEXT_START>>>");
+    expect(result.visits[0].bodySite).toContain("knee");
+    expect(result.visits[0].laterality).toBe("LEFT");
+  });
 });
 
 describe("search — cursor pagination", () => {

@@ -660,6 +660,10 @@ async function main() {
   results.push(
     await rotateBytesColumn("Encounter", "outcomeEncrypted", prisma.encounter),
   );
+  // v1.39.1 — a procedure's body site.
+  results.push(
+    await rotateBytesColumn("Encounter", "bodySiteEncrypted", prisma.encounter),
+  );
   results.push(
     await rotateBytesColumn(
       "Practitioner",

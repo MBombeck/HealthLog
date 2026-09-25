@@ -44,6 +44,8 @@ function visit(over: Partial<EncounterDTO> & { id: string }): EncounterDTO {
     practitioner: null,
     reason: null,
     outcome: null,
+    bodySite: null,
+    laterality: null,
     reminderNextDueAt: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

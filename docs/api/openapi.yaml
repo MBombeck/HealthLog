@@ -13978,6 +13978,39 @@ paths:
         "409": *a7
         "422": *a4
         "429": *a10
+  /api/encounters/procedures:
+    get:
+      tags:
+        - Records
+      summary: List procedures and surgeries
+      description: "The caller's procedure and surgery history: every live visit of kind PROCEDURE with status DONE, newest
+        first, bounded at 500. Planned, cancelled and missed procedures are not in it; a booked one stays in the visit
+        list's `upcoming` half. Read at the same section and level as the visit list."
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+            maxLength: 200
+        - in: query
+          name: laterality
+          schema:
+            type: string
+            enum:
+              - LEFT
+              - RIGHT
+              - BOTH
+      responses:
+        "200":
+          description: The procedure history.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListProceduresEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/encounters/suggest:
     get:
       tags:
@@ -21362,7 +21395,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 94
+              maxItems: 95
               type: array
               items:
                 type: string
@@ -21421,7 +21454,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 94
+              maxItems: 95
               type: array
               items:
                 type: string
@@ -24037,7 +24070,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 94
+          maxItems: 95
           type: array
           items:
             type: string
@@ -26830,6 +26863,7 @@ components:
             - HOSPITAL
             - THERAPY
             - OTHER
+            - PROCEDURE
         practitionerId:
           anyOf:
             - type: string
@@ -26845,6 +26879,19 @@ components:
           anyOf:
             - type: string
               maxLength: 4000
+            - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+              maxLength: 200
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
             - type: "null"
         reminderId:
           anyOf:
@@ -26878,8 +26925,10 @@ components:
       additionalProperties: false
       description: "File a visit, or book one. `occurredAt` is the only required field — a visit saves with a date and nothing
         else. A future instant with `status: PLANNED` books an appointment and mints exactly one reminder for it.
-        `reason` and `outcome` are encrypted at rest. The three id arrays pre-link documents, lab results and condition
-        episodes; an id naming nothing the caller owns is dropped rather than refused, so a link never blocks a save."
+        `reason`, `outcome` and `bodySite` are encrypted at rest. `kind: PROCEDURE` marks a procedure or surgery;
+        `bodySite` (free text) and `laterality` (LEFT / RIGHT / BOTH, null when not stated) say where, and are accepted
+        on any kind. The three id arrays pre-link documents, lab results and condition episodes; an id naming nothing
+        the caller owns is dropped rather than refused, so a link never blocks a save."
     UpdateEncounterRequest:
       type: object
       properties:
@@ -26905,6 +26954,7 @@ components:
             - HOSPITAL
             - THERAPY
             - OTHER
+            - PROCEDURE
         practitionerId:
           anyOf:
             - type: string
@@ -26920,6 +26970,19 @@ components:
           anyOf:
             - type: string
               maxLength: 4000
+            - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+              maxLength: 200
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
             - type: "null"
         reminderId:
           anyOf:
@@ -26949,10 +27012,12 @@ components:
             minLength: 1
             maxLength: 40
       additionalProperties: false
-      description: Partial edit of a visit; an omitted key leaves the column untouched, and a body naming nothing is a 422.
+      description: "Partial edit of a visit; an omitted key leaves the column untouched, and a body naming nothing is a 422.
         Moving `occurredAt` re-anchors the appointment reminder the visit already owns and never mints a second. Moving
         `status` to DONE closes the checkup named by `reminderId`, on the transition only. CANCELLED and NO_SHOW stop
         the reminder without deleting the row. A present id array replaces that link family, empty array included.
+        Switching an existing visit to `kind: PROCEDURE` is an ordinary edit of this kind; nothing has to be entered
+        again."
     EncounterLinkRequest:
       type: object
       properties:
@@ -35702,6 +35767,7 @@ components:
                   - HOSPITAL
                   - THERAPY
                   - OTHER
+                  - PROCEDURE
               practitionerId:
                 anyOf:
                   - type: string
@@ -35715,6 +35781,19 @@ components:
                 anyOf:
                   - type: string
                     minLength: 1
+                  - type: "null"
+              bodySiteEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              laterality:
+                anyOf:
+                  - type: string
+                    enum:
+                      - LEFT
+                      - RIGHT
+                      - BOTH
                   - type: "null"
               reminderId:
                 anyOf:
@@ -60378,6 +60457,7 @@ components:
             - HOSPITAL
             - THERAPY
             - OTHER
+            - PROCEDURE
         practitioner:
           anyOf:
             - $ref: "#/components/schemas/Practitioner"
@@ -60389,6 +60469,18 @@ components:
         outcome:
           anyOf:
             - type: string
+            - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
             - type: "null"
         reminderNextDueAt:
           anyOf:
@@ -60410,14 +60502,18 @@ components:
         - practitioner
         - reason
         - outcome
+        - bodySite
+        - laterality
         - reminderNextDueAt
         - createdAt
         - updatedAt
       additionalProperties: false
       description: "One contact with the healthcare system: a visit that happened, or one that is booked. `practitioner` is
-        resolved rather than an id. `reason` and `outcome` are the decrypted free text (null on a key-rotation gap).
-        `reminderNextDueAt` is the server-computed instant a booked appointment next nudges, and is null for a visit
-        that already happened or whose one-shot reminder is spent."
+        resolved rather than an id. `reason`, `outcome` and `bodySite` are the decrypted free text (null on a
+        key-rotation gap). `kind: PROCEDURE` marks a procedure or surgery, and `bodySite` with `laterality` say where;
+        both are carried on every kind so switching a visit's kind away and back loses nothing. `reminderNextDueAt` is
+        the server-computed instant a booked appointment next nudges, and is null for a visit that already happened or
+        whose one-shot reminder is spent."
     Practitioner:
       type: object
       properties:
@@ -60562,6 +60658,69 @@ components:
         - data
         - error
       additionalProperties: false
+    ListProceduresEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ProcedureList"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ProcedureList:
+      type: object
+      properties:
+        procedures:
+          type: array
+          items:
+            $ref: "#/components/schemas/Encounter"
+        bodySites:
+          type: array
+          items:
+            $ref: "#/components/schemas/BodySiteFacet"
+        total:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - procedures
+        - bodySites
+        - total
+      additionalProperties: false
+      description: The procedure history. `procedures` is the filtered list, newest first. `bodySites` and `total` are
+        computed over the whole history before the filter, so the filter choices never shrink to the one just picked.
+    BodySiteFacet:
+      type: object
+      properties:
+        bodySite:
+          type: string
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
+        count:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - bodySite
+        - laterality
+        - count
+      additionalProperties: false
+      description: One body site and side in the procedure history, with how many procedures carry it. Keyed case- and
+        space-insensitively; `bodySite` is the first spelling seen.
     SuggestEncounterEnvelope:
       type: object
       properties:
@@ -60642,6 +60801,7 @@ components:
             - HOSPITAL
             - THERAPY
             - OTHER
+            - PROCEDURE
         practitionerName:
           anyOf:
             - type: string

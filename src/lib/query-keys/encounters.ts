@@ -47,6 +47,14 @@ export const encounterKeys = {
     ] as const,
   encounter: (id: string) => ["encounters", "detail", id] as const,
   /**
+   * The procedure history for one filter. Under the `["encounters"]` root, so
+   * every visit write (switching a kind, editing a site) evicts it with the
+   * list. The filter is part of the key because it is part of the question:
+   * the search runs server-side over the decrypted site.
+   */
+  encounterProcedures: (q: string, laterality: string | null) =>
+    ["encounters", "procedures", q, laterality] as const,
+  /**
    * The "which visit does this belong to" verdict for one anchor date. The
    * anchor is part of the key because it IS the question: a document dated the
    * 3rd and one dated the 20th get different answers, and one overwriting the
