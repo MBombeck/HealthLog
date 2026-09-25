@@ -361,5 +361,7 @@ Outcomes:
 - **Not configured** — deployments without the `BACKUP_S3_*` vars skip
   silently (wide-event warning only).
 
-The drill needs no IAM grant beyond the uploader's existing
-`GetObject` + `ListBucket`.
+The drill lists the bucket to find the newest object, so it needs
+`ListBucket` on top of the uploader's `PutObject`, `GetObject` and
+`AbortMultipartUpload`. Cloudflare R2's **Object Read & Write** token covers
+all four.
