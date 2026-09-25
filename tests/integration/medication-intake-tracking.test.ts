@@ -376,3 +376,66 @@ describe("switching intake tracking back on", () => {
     expect(dispatchedFor(medicationId)).toBeGreaterThan(0);
   });
 });
+
+describe("the shipped iPhone app editing a record-only medication", () => {
+  it("never replaces the recorded schedule with its 08:00 default", async () => {
+    const prisma = getPrismaClient();
+    const userId = await makeUser();
+    const medicationId = await seedDaily(userId, "Statin", false);
+    await prisma.medicationSchedule.updateMany({
+      where: { medicationId },
+      data: { windowStart: "21:00", windowEnd: "21:00", timesOfDay: ["21:00"] },
+    });
+    const route = await import("@/app/api/medications/[id]/route");
+    at("2026-06-10T10:00:00.000Z");
+
+    // `EditMedicationSheet.save()` in 1.0.3 / 1.0.4 after the dose time on
+    // its "daily at 08:00" default was moved to 09:00 and the name edited.
+    const res = await call<{
+      name: string;
+      trackIntake: boolean;
+      schedules: unknown[];
+      recordedSchedules?: Array<{ timesOfDay: string[] }>;
+    }>(
+      route.PUT as Handler,
+      `/api/medications/${medicationId}`,
+      { id: medicationId },
+      {
+        method: "PUT",
+        body: {
+          name: "Statin 20",
+          dose: "1 tablet",
+          treatmentClass: "GENERIC",
+          category: "OTHER",
+          active: true,
+          notificationsEnabled: true,
+          deliveryForm: "ORAL",
+          schedules: [
+            {
+              windowStart: "09:00",
+              windowEnd: "09:00",
+              timesOfDay: ["09:00"],
+              rrule: "FREQ=DAILY",
+            },
+          ],
+          oneShot: false,
+          asNeeded: false,
+        },
+      },
+    );
+    expect(res.status).toBe(200);
+    expect(res.data.name).toBe("Statin 20");
+    expect(res.data.trackIntake).toBe(false);
+    expect(res.data.schedules).toEqual([]);
+    expect(res.data.recordedSchedules?.[0]?.timesOfDay).toEqual(["21:00"]);
+    const stored = await prisma.medicationSchedule.findMany({
+      where: { medicationId },
+    });
+    expect(stored.map((s) => s.timesOfDay)).toEqual([["21:00"]]);
+    expect(
+      await prisma.medicationScheduleRevision.count({
+        where: { medicationId },
+      }),
+    ).toBe(0);
+  });
+});
