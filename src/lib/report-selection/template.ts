@@ -16,7 +16,8 @@ import { type ReportLeafId } from "./catalogue";
 /**
  * Identity and insurer (the cover page a practice files the document under),
  * the three classic vitals, weight and BMI, the glucose series and its panel,
- * labs, the drug list and adherence, allergies and past illness episodes.
+ * labs, the drug list and adherence, allergies, past illness episodes, the
+ * surgical history and the immunization record.
  *
  * Deliberately not in it: everything a wearable produces, gait and mobility,
  * environment exposure, the per-dose administration ledger (a clinician asks
@@ -39,6 +40,7 @@ export const STANDARD_TEMPLATE_LEAVES: readonly ReportLeafId[] = [
   "MEDICATION_COMPLIANCE",
   "ALLERGIES",
   "ILLNESS_EPISODES",
+  "SURGICAL_HISTORY",
   "IMMUNIZATIONS",
 ];
 

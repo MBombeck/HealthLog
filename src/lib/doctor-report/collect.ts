@@ -70,6 +70,7 @@ import {
   loadIllnessEpisodes,
   loadImmunizations,
   loadVisits,
+  loadSurgicalHistory,
   loadLabResults,
 } from "./clinical-records";
 
@@ -508,6 +509,7 @@ export async function collectDoctorReportData(
     labResults,
     illnessEpisodes,
     visits,
+    surgicalHistory,
     immunizations,
     allergies,
     familyHistory,
@@ -525,6 +527,10 @@ export async function collectDoctorReportData(
       : Promise.resolve(null),
     gate.admits("VISITS")
       ? loadVisits(userId, start, end)
+      : Promise.resolve(null),
+    // Reference data, not windowed, like the immunization history below.
+    gate.admits("SURGICAL_HISTORY")
+      ? loadSurgicalHistory(userId)
       : Promise.resolve(null),
     // Reference data, not windowed — the immunization history is a lifetime
     // document, so the whole live set rides when the leaf and module admit it.
@@ -601,6 +607,7 @@ export async function collectDoctorReportData(
     labResults,
     illnessEpisodes,
     visits,
+    surgicalHistory,
     immunizations,
     allergies,
     familyHistory,

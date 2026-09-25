@@ -277,6 +277,13 @@ export function buildFhirDocumentBundle(
   // both carry the doses; the Bundle does not, and this comment is where a
   // reader who notices should land.
   //
+  // The surgical history (v1.39.1) rides the same decision. A procedure is a
+  // visit of kind PROCEDURE, and FHIR's `Procedure` resource would map it
+  // cleanly (`code.text` from the reason, `bodySite.text` from the site), but
+  // emitting one without its REST route and capability entry is the same
+  // half-shipped state. The PDF and the clinician view carry the section; the
+  // Bundle does not.
+  //
   // held an episode (the aggregator gates `data.illnessEpisodes`). Each
   // episode emits a patient-reported Condition (generic SNOMED root, label on
   // `code.text`) plus a bounding Encounter that references it.
