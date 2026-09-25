@@ -203,3 +203,82 @@ describe("POST /api/cycle/day-logs/bulk — external-id stability floor", () => 
     expect(upsertCycleDayLog).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("POST /api/cycle/day-logs/bulk — refusal codes", () => {
+  /**
+   * The native client files rows under a permanent-refusal register as soon
+   * as it can tell the refusal is permanent. It can only tell from the code,
+   * so both whole-batch 422s are pinned here, with the envelope they ride.
+   */
+  async function refusal(body: unknown) {
+    const res = await POST(postReq(body));
+    return {
+      status: res.status,
+      body: (await res.json()) as {
+        data: null;
+        error: string;
+        details?: { issues: unknown[] };
+        meta?: { errorCode?: string };
+      },
+    };
+  }
+
+  it("names a malformed batch cycle.bulk.invalid, with every issue listed", async () => {
+    const { status, body } = await refusal({
+      entries: [{ date: "not-a-day" }, { date: "2026-13-40" }],
+    });
+    expect(status).toBe(422);
+    expect(body.data).toBeNull();
+    expect(body.meta?.errorCode).toBe("cycle.bulk.invalid");
+    expect(body.details?.issues.length).toBeGreaterThanOrEqual(2);
+    expect(upsertCycleDayLog).not.toHaveBeenCalled();
+  });
+
+  it("names a batch with no entries array cycle.bulk.invalid", async () => {
+    const { status, body } = await refusal({});
+    expect(status).toBe(422);
+    expect(body.meta?.errorCode).toBe("cycle.bulk.invalid");
+  });
+
+  it("names an over-cap batch cycle.bulk.too_large", async () => {
+    const entries = Array.from({ length: 501 }, (_, i) => ({
+      date: "2026-01-01",
+      externalId: `e${i}`,
+    }));
+    const { status, body } = await refusal({ entries });
+    expect(status).toBe(422);
+    expect(body.meta?.errorCode).toBe("cycle.bulk.too_large");
+  });
+});
+
+describe("POST /api/cycle/day-logs/bulk — a failed write is not cached", () => {
+  it("marks a response carrying upsert_failed no-store and leaves a clean one alone", async () => {
+    vi.mocked(upsertCycleDayLog).mockRejectedValueOnce(new Error("reset"));
+    const failed = await POST(
+      postReq({
+        entries: [{ date: "2026-01-01", loggedAt: "2026-01-01T08:00:00.000Z" }],
+      }),
+    );
+    expect(failed.status).toBe(200);
+    const body = (await failed.json()) as {
+      data: { entries: Array<{ status: string; reason?: string }> };
+    };
+    expect(body.data.entries[0]).toMatchObject({
+      status: "skipped",
+      reason: "upsert_failed",
+    });
+    expect(failed.headers.get("Cache-Control")).toBe("private, no-store");
+
+    vi.mocked(upsertCycleDayLog).mockResolvedValueOnce({
+      id: "d1",
+      existed: false,
+      changed: true,
+    } as never);
+    const clean = await POST(
+      postReq({
+        entries: [{ date: "2026-01-02", loggedAt: "2026-01-02T08:00:00.000Z" }],
+      }),
+    );
+    expect(clean.headers.get("Cache-Control")).not.toBe("private, no-store");
+  });
+});

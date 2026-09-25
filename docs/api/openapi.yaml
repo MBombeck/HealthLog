@@ -491,7 +491,15 @@ paths:
         "401": *a1
         "403": *a3
         "409": *a7
-        "422": *a4
+        "422":
+          description: "The whole batch was refused and nothing was written: more than 500 entries (`meta.errorCode` =
+            `cycle.bulk.too_large`, no issue list), or the body failed validation (`meta.errorCode` =
+            `cycle.bulk.invalid`, every issue under `details.issues`). Both are permanent for the batch as sent. A
+            problem with one entry never refuses the batch; it comes back as that entry's `skipped` status."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
   /api/cycle/period:
     post:
@@ -16810,8 +16818,11 @@ paths:
         Upsert key is (day, nutrient): a re-post replaces the stored total and reports `updated`. Post the current +
         previous local day per sync; backfill 30 days on first enable. Max 500 entries; Idempotency-Key supported; rate
         limit 60/min. Per-entry skips (`unit_mismatch` | `value_out_of_range` | `day_invalid`) are terminal — log and
-        drop, do not retry the entry. Behind the opt-in `nutrients` module (403 `module.disabled` when off). Query
-        HealthKit with exactly the listed unit per code (`ug` = microgram; do not convert to IU):
+        drop, do not retry the entry. `upsert_failed` is not one of them: it is a server-side write failure for the
+        entry's whole write group, nothing was stored, and the entry should be sent again on a later sync; a response
+        carrying it is `Cache-Control: no-store` and is not replayed for its `Idempotency-Key`. Behind the opt-in
+        `nutrients` module (403 `module.disabled` when off). Query HealthKit with exactly the listed unit per code (`ug`
+        = microgram; do not convert to IU):
 
 
         | code | HealthKit identifier | unit |
@@ -30760,6 +30771,12 @@ components:
                   externalId:
                     type: string
                   reason:
+                    description: "On a `skipped` entry. `unstable_external_id` is a verdict on the entry and terminal: resending it
+                      unchanged is skipped again. `constraint` means the write met a database constraint (a key another
+                      write claimed at the same moment, or a reference that no longer exists). `upsert_failed` is a
+                      write failure on the server's side: nothing was stored, the entry should be sent again, and the
+                      response carrying it is `Cache-Control: no-store`, so a retry under the same `Idempotency-Key`
+                      writes again rather than replaying the failure."
                     type: string
                 required:
                   - index
@@ -64336,7 +64353,12 @@ components:
         - status
       additionalProperties: false
       description: "Per-entry ingest outcome. skipped reasons: unit_mismatch | value_out_of_range | day_invalid |
-        upsert_failed. Log and drop a skipped entry — do not retry it."
+        upsert_failed. The first three are verdicts on the entry itself and terminal: resending it unchanged is skipped
+        again, so log and drop it. `upsert_failed` is a write failure on the server's side, not a verdict on the entry:
+        nothing was stored for it, and it should be sent again on a later sync. A write failure takes out the whole
+        group it was written in (every new day total, or every existing one), so several entries can carry it at once. A
+        response carrying it is marked `Cache-Control: no-store` and is not kept for `Idempotency-Key` replay, so the
+        retry writes again rather than replaying the failure."
     NutrientOverviewEnvelope:
       type: object
       properties:
