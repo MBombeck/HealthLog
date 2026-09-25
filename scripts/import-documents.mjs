@@ -201,7 +201,7 @@ function retryAfterSeconds(response, fallback) {
  * service pacing us), a 5xx or a dropped connection is retried a few times
  * with a growing pause, and anything else is returned to the caller.
  */
-async function request(label, url, init, makeBody) {
+async function request(label, url, init, makeBody, { waitOn429 = true } = {}) {
   let transient = 0;
   for (;;) {
     let response;
@@ -218,7 +218,7 @@ async function request(label, url, init, makeBody) {
       await wait(TRANSIENT_BACKOFF_MS[transient++], `${label} did not answer`);
       continue;
     }
-    if (response.status === 429) {
+    if (response.status === 429 && waitOn429) {
       await response.arrayBuffer().catch(() => {});
       const seconds = retryAfterSeconds(response, 60);
       await wait(seconds * 1000, `${label} asked to slow down`);
@@ -569,12 +569,20 @@ function stopOnRefusal(response, body, url) {
  */
 async function lookup(options, source, doc) {
   const url = `${options.healthlogUrl}/api/documents/inbound/source?${keyQuery(source, doc)}`;
-  const response = await request("HealthLog", url, {
-    headers: {
-      Authorization: `Bearer ${options.healthlogToken}`,
-      Accept: "application/json",
+  // Not worth waiting for: if the lookups are spent, the upload with the key
+  // answers the same question.
+  const response = await request(
+    "HealthLog",
+    url,
+    {
+      headers: {
+        Authorization: `Bearer ${options.healthlogToken}`,
+        Accept: "application/json",
+      },
     },
-  });
+    undefined,
+    { waitOn429: false },
+  );
   const body = await readBody(response);
   stopOnRefusal(response, body, url);
   if (!response.ok || !body?.data?.known) return null;
@@ -603,6 +611,9 @@ async function upload(options, source, doc, file) {
       if (doc.date) form.append("documentDate", doc.date);
       if (kind) form.append("kind", kind);
       if (!options.aiRead) form.append("aiRead", "defer");
+      // In the form as well as the address; HealthLog checks they agree.
+      form.append("sourceSystem", source.system);
+      form.append("sourceId", doc.sourceId.slice(0, SOURCE_ID_MAX));
       return form;
     },
   );
@@ -789,8 +800,7 @@ function printSummary(options, tally, listed, totalBytes, unknownSizes) {
   if (!options.dryRun && tally.imported > 0 && !options.aiRead) {
     out(
       `${tally.imported} document(s) imported without automatic AI reading. ` +
-        "To have one read, open it in HealthLog and choose Read with AI or Generate summary; " +
-        "Documents > Index all for search reads the ones that had no text to search.",
+        "To have one read, open it in HealthLog and choose Read with AI or Generate summary.",
     );
   }
 }

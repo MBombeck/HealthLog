@@ -60,7 +60,8 @@ change the type in HealthLog.
 
 Tagging a document again, or editing it in Paperless, fires the workflow
 again. That is harmless: HealthLog recognises the Paperless document id and
-answers "already stored". If you delete the document in HealthLog, a later
+answers "already stored", though each re-send still counts towards the
+token's hourly limit. If you delete the document in HealthLog, a later
 re-send does not bring it back.
 
 **What the workflow is not for.** Paperless gives up on a webhook after
@@ -150,7 +151,8 @@ What it does:
 - When HealthLog asks it to slow down, it waits as long as HealthLog says
   and carries on. By default a document token may upload 120 documents an
   hour, so an archive of a thousand documents takes an evening. Documents
-  HealthLog already has do not count towards that. Uploads you make yourself
+  HealthLog already has do not count towards that, because the script asks
+  before sending them. Uploads you make yourself
   in the web app or on your phone are counted separately and are not held
   up.
 - At the end it prints how many documents were imported, how many were
@@ -169,11 +171,11 @@ thousand AI requests at once. Imported documents still get a preview and
 are searchable by their text where the file has a text layer.
 
 HealthLog remembers that these documents were held back: turning on
-automatic AI reading later does not send them to your AI provider either.
-To have documents read, open one and choose **Read with AI** or
-**Generate summary**, or use **Index all for search** in Documents for the
-ones that had no text to search. Pass `--ai-read` if you do want every
-imported document read as it arrives.
+automatic AI reading later does not send them to your AI provider, and
+**Index all for search** in Documents leaves them out too. To have a
+document read, open it and choose **Read with AI** or **Generate summary**.
+Pass `--ai-read` if you do want every imported document read as it
+arrives.
 
 The Paperless workflow does not hold AI reading back: new documents are
 treated like any other upload.
@@ -212,6 +214,11 @@ id. Anything else is sent as `OTHER`, and `OTHER` is one shared set of ids
 per account: if you push documents from two other systems, make sure their
 ids cannot collide, for example by prefixing them (`nextcloud-123`,
 `scanner-123`).
+
+When the same file arrives under a second id (the same scan in the source
+twice, or a file you had uploaded by hand), HealthLog keeps one copy and
+remembers the extra id for it. One document takes up to 20 such ids; a
+21st is refused with a message, and nothing is stored.
 
 ## For operators
 
