@@ -103,6 +103,16 @@ device.
 
 ### Fixed
 
+- **All-time averages and counts no longer count some days twice.** Since
+  1.37.19 the all-time figures combined the stored daily summaries with the
+  raw readings older than five years, and a day that had both was counted
+  in each. Long histories were affected most, and one more day every day,
+  as days aged past the five-year mark. The all-time mean and count on a
+  metric's insights page, the device and resilience tiles, the glucose
+  reading count and the dashboard summaries now count every reading once,
+  so some of these figures change after the update. Nothing needs to be
+  repaired in the stored data.
+
 - **Medication history before a medication was added.** If you added a
   medication at 4 pm and then logged the 2 pm dose, "Last 90 days" showed
   it as off-schedule and due at the evening slot, and listed a morning slot
