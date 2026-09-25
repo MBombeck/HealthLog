@@ -45,15 +45,16 @@ function makeClient(seed: Record<string, Row[]>): {
     if (client[key]) continue;
     const model = col.model;
     client[key] = {
-      // `take` / `cursor` are honoured so the batched-column walk terminates
-      // here the way it does against Postgres.
-      findMany: async ({ select, take, cursor, skip }) => {
+      // `take` / `id > last` are honoured so the batched-column walk
+      // terminates here the way it does against Postgres.
+      findMany: async ({ select, take, where }) => {
         const fields = Object.keys(select);
-        let rows = store[model];
-        if (cursor) {
-          const at = rows.findIndex((r) => r.id === cursor.id);
-          rows = at < 0 ? [] : rows.slice(at + (skip ?? 0));
-        }
+        let rows = [...store[model]].sort((a, b) =>
+          String(a.id).localeCompare(String(b.id)),
+        );
+        const after = where?.id?.gt;
+        if (after !== undefined)
+          rows = rows.filter((r) => String(r.id) > after);
         if (take !== undefined) rows = rows.slice(0, take);
         return rows.map((row) => {
           const out: Record<string, unknown> = {};
