@@ -463,4 +463,44 @@ describe("runDenseIntradayHourlyRebuild — rebuild flow", () => {
     expect(summary.totals.daysFailed).toBe(1);
     expect(summary.totals.daysRebuilt).toBe(1);
   });
+
+  it("stops before the next day once its budget is spent (#1031)", async () => {
+    const { mock, $transaction } = buildPrismaMock({
+      dailyByType: {
+        HEART_RATE_VARIABILITY: [
+          { id: "daily-1", externalId: HRV_DAILY_ID },
+          {
+            id: "daily-2",
+            externalId:
+              "stats:HKQuantityTypeIdentifierHeartRateVariabilitySDNN:2026-05-02",
+          },
+        ],
+      },
+      tombstonesByType: {
+        HEART_RATE_VARIABILITY: [
+          tombstone(
+            "a",
+            40,
+            "2026-05-01T08:00:00.000Z",
+            "HEART_RATE_VARIABILITY",
+          ),
+          tombstone(
+            "b",
+            44,
+            "2026-05-02T08:00:00.000Z",
+            "HEART_RATE_VARIABILITY",
+          ),
+        ],
+      },
+    });
+    let asked = 0;
+    const summary = await runDenseIntradayHourlyRebuild(mock, {
+      log: () => {},
+      shouldStop: () => asked++ >= 1,
+    });
+
+    expect(summary.stoppedEarly).toBe(true);
+    expect(summary.totals.daysRebuilt).toBe(1);
+    expect($transaction).toHaveBeenCalledTimes(1);
+  });
 });

@@ -111,6 +111,8 @@ export interface DenseIntradayHourlyRebuildSummary {
     /** Days whose rebuild threw and was stepped over (retried next run). */
     daysFailed: number;
   };
+  /** `shouldStop` ended the pass before every candidate day was reached. */
+  stoppedEarly: boolean;
 }
 
 export interface DenseIntradayHourlyRebuildOptions {
@@ -126,6 +128,12 @@ export interface DenseIntradayHourlyRebuildOptions {
    * pass `0` to lift the bound.
    */
   retentionDays?: number;
+  /**
+   * Asked before each day. Returning `true` ends the pass cleanly; the
+   * summary reports `stoppedEarly`. A rebuilt day leaves the candidate set,
+   * so the next run starts at the first day this one did not reach.
+   */
+  shouldStop?: () => boolean;
 }
 
 /**
@@ -147,6 +155,7 @@ export async function runDenseIntradayHourlyRebuild(
 
   const summary: DenseIntradayHourlyRebuildSummary = {
     dryRun,
+    stoppedEarly: false,
     totals: {
       usersScanned: 0,
       daysRebuilt: 0,
@@ -160,7 +169,7 @@ export async function runDenseIntradayHourlyRebuild(
   const users = await loadConsolidationUsers(prismaClient, options.userId);
   summary.totals.usersScanned = users.length;
 
-  for (const user of users) {
+  walk: for (const user of users) {
     const tz = resolveUserTimezone(user.timezone);
 
     for (const type of DENSE_INTRADAY_RETENTION_TYPES) {
@@ -195,6 +204,10 @@ export async function runDenseIntradayHourlyRebuild(
       if (candidates.length === 0) continue;
 
       for (const candidate of candidates) {
+        if (options.shouldStop?.()) {
+          summary.stoppedEarly = true;
+          break walk;
+        }
         // Per-day failure boundary: one poisoned day is stepped over so the
         // walk keeps rebuilding every other user / type / day; the failed
         // day keeps its live daily row, so the discovery re-finds it.

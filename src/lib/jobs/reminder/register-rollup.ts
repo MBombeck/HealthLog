@@ -547,6 +547,8 @@ export async function registerRollupQueues(
     DENSE_INTRADAY_HOURLY_REBUILD_QUEUE,
     { localConcurrency: DENSE_INTRADAY_HOURLY_REBUILD_CONCURRENCY },
     async (jobs) => {
+      const shouldStop = jobBudget(jobs);
+      let stoppedEarly = false;
       let daysRebuiltTotal = 0;
       let hourlyRowsTotal = 0;
       let dailyRowsRetiredTotal = 0;
@@ -554,12 +556,17 @@ export async function registerRollupQueues(
       for (const job of jobs) {
         const { userId } = job.data;
         try {
+          const summary = await runDenseIntradayHourlyRebuildForUser(
+            userId,
+            shouldStop,
+          );
           const {
             daysRebuilt,
             hourlyRowsUpserted,
             dailyRowsRetired,
             daysSkippedNoTombstones,
-          } = await runDenseIntradayHourlyRebuildForUser(userId);
+          } = summary;
+          stoppedEarly ||= summary.stoppedEarly;
           daysRebuiltTotal += daysRebuilt;
           hourlyRowsTotal += hourlyRowsUpserted;
           dailyRowsRetiredTotal += dailyRowsRetired;
@@ -578,13 +585,25 @@ export async function registerRollupQueues(
           throw err;
         }
       }
-      return jobDone({
+      const did = {
         users: jobs.length,
+        stopped_early: stoppedEarly,
         days_rebuilt: daysRebuiltTotal,
         hourly_rows_upserted: hourlyRowsTotal,
         daily_rows_retired: dailyRowsRetiredTotal,
         days_skipped_no_tombstones: daysSkippedTotal,
-      });
+      };
+      // Out of budget: fail so pg-boss retries (the boot send allows three
+      // retries), and the retry starts at the first day not yet rebuilt. The
+      // queue is `exclusive`, so the job cannot hand itself on while active.
+      if (stoppedEarly) {
+        return jobFailed(
+          "stopped before every day was rebuilt; the retry resumes",
+          undefined,
+          did,
+        );
+      }
+      return jobDone(did);
     },
   );
 
