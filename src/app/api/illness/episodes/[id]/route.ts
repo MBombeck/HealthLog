@@ -79,6 +79,7 @@ export const PATCH = apiHandler(
         type: true,
         lifecycle: true,
         parentConditionId: true,
+        laterality: true,
       },
     });
     if (
@@ -154,6 +155,15 @@ export const PATCH = apiHandler(
     if (entry.note !== undefined) {
       data.noteEncrypted = entry.note ? encryptToBytes(entry.note) : null;
     }
+    // v1.39.2 — the body site and side. Written only when the key is in the
+    // body: the shipped iPhone app edits conditions and has never heard of
+    // either field, so an absent key must keep what the web client stored.
+    if (entry.bodySite !== undefined) {
+      data.bodySiteEncrypted = entry.bodySite?.trim()
+        ? encryptToBytes(entry.bodySite.trim())
+        : null;
+    }
+    if (entry.laterality !== undefined) data.laterality = entry.laterality;
 
     const updated = await prisma.illnessEpisode.update({ where: { id }, data });
 
@@ -171,6 +181,7 @@ export const PATCH = apiHandler(
             onsetAt: existing.onsetAt,
             resolvedAt: existing.resolvedAt,
             parentConditionId: existing.parentConditionId,
+            laterality: existing.laterality,
           },
           after: {
             label: updated.label,
@@ -179,8 +190,14 @@ export const PATCH = apiHandler(
             onsetAt: updated.onsetAt,
             resolvedAt: updated.resolvedAt,
             parentConditionId: updated.parentConditionId,
+            laterality: updated.laterality,
           },
-          redacted: entry.note !== undefined ? ["note"] : [],
+          // The site is the person's own words, like the note: named when it
+          // changed, never quoted.
+          redacted: [
+            ...(entry.note !== undefined ? ["note"] : []),
+            ...(entry.bodySite !== undefined ? ["bodySite"] : []),
+          ],
         }),
       },
     });

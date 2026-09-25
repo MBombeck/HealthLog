@@ -268,6 +268,7 @@
     "illnessTitle": "Schorzenia i choroby",
     "illnessOngoing": "Trwająca",
     "illnessColCondition": "Schorzenie",
+    "illnessColBodySite": "Miejsce na ciele",
     "illnessColType": "Typ",
     "illnessColLifecycle": "Przebieg",
     "illnessColOnset": "Początek",
@@ -9194,7 +9195,8 @@
       "parentNone": "Niepowiązane",
       "resolved": "Zakończono",
       "resolvedHelp": "Pozostaw puste, dopóki epizod nadal trwa.",
-      "markOngoing": "Nadal trwa"
+      "markOngoing": "Nadal trwa",
+      "bodySiteHint": "Na przykład kolano lub dolna część pleców."
     },
     "sheet": {
       "title": "Zapisz {date}",
@@ -10928,10 +10930,11 @@
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Pokaż badania profilaktyczne, wizyty lub zabiegi",
+    "viewSwitchLabel": "Pokaż badania profilaktyczne, wizyty, zabiegi lub miejsca na ciele",
     "tabVorsorge": "Profilaktyka",
     "tabVisits": "Wizyty",
-    "tabProcedures": "Zabiegi"
+    "tabProcedures": "Zabiegi",
+    "tabBodySites": "Miejsca na ciele"
   },
   "practitioners": {
     "title": "Gabinety i lekarze",
@@ -10972,5 +10975,26 @@
       "removeNamed": "Usuń {name}",
       "removed": "Odłączono: {name}"
     }
+  },
+  "bodySites": {
+    "title": "Miejsca na ciele",
+    "description": "Zabiegi i choroby według miejsca na ciele.",
+    "loadError": "Nie udało się wczytać miejsc na ciele.",
+    "emptyTitle": "Nie zapisano jeszcze żadnego miejsca na ciele",
+    "emptyDescription": "Dodaj miejsce na ciele do zabiegu lub choroby, a pojawi się tutaj.",
+    "sitesLabel": "Miejsca na ciele",
+    "sidesLabel": "Strona",
+    "allSides": "Wszystkie strony",
+    "pickPrompt": "Wybierz miejsce, aby zobaczyć, co jest do niego zapisane.",
+    "noMatchTitle": "Po tej stronie nic nie zapisano",
+    "visitsTitle": "Zabiegi i wizyty",
+    "conditionsTitle": "Choroby",
+    "hiddenDocument": "Dokument, który nie jest Ci udostępniony",
+    "hiddenLabResult": "Wynik badania, który nie jest Ci udostępniony",
+    "hiddenCondition": "Choroba, która nie jest Ci udostępniona",
+    "hiddenVisit": "Wizyta, która nie jest Ci udostępniona",
+    "linkedLabel": "Powiązane wpisy",
+    "conditionSince": "Od {onset}",
+    "conditionDates": "Od {onset} do {resolved}"
   }
 }

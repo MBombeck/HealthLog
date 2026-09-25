@@ -94,7 +94,9 @@ export async function loadLabResults(
 /**
  * Illness / condition episodes overlapping the window. An episode overlaps
  * when it began on or before the window end AND is either still ongoing or
- * resolved on or after the window start. Labels, lifecycle and dates only.
+ * resolved on or after the window start. Labels, lifecycle, dates and, since
+ * v1.39.2, the body site and side; never the note. The site decrypts
+ * fail-soft per row, the stance `loadSurgicalHistory` takes.
  */
 export async function loadIllnessEpisodes(
   userId: string,
@@ -115,15 +117,34 @@ export async function loadIllnessEpisodes(
       lifecycle: true,
       onsetAt: true,
       resolvedAt: true,
+      bodySiteEncrypted: true,
+      laterality: true,
     },
   });
-  const mapped = rows.map((e) => ({
-    label: e.label,
-    type: e.type,
-    lifecycle: e.lifecycle,
-    onsetAt: e.onsetAt.toISOString(),
-    resolvedAt: e.resolvedAt ? e.resolvedAt.toISOString() : null,
-  }));
+  const site = (value: Uint8Array | null): string | null => {
+    if (!value || value.byteLength === 0) return null;
+    try {
+      return decryptFromBytes(value).trim() || null;
+    } catch {
+      getEvent()?.addWarning(
+        `doctor-report: condition bodySite decrypt failed for ${userId}`,
+      );
+      return null;
+    }
+  };
+  const mapped = rows.map((e) => {
+    const bodySite = site(e.bodySiteEncrypted);
+    return {
+      label: e.label,
+      type: e.type,
+      lifecycle: e.lifecycle,
+      onsetAt: e.onsetAt.toISOString(),
+      resolvedAt: e.resolvedAt ? e.resolvedAt.toISOString() : null,
+      bodySite,
+      // A side with no site is not shown anywhere, so it is not carried.
+      laterality: bodySite ? e.laterality : null,
+    };
+  });
   return mapped.length > 0 ? mapped : null;
 }
 

@@ -304,6 +304,7 @@
     "illnessTitle": "질환 및 아픈 날",
     "illnessOngoing": "진행 중",
     "illnessColCondition": "질환",
+    "illnessColBodySite": "신체 부위",
     "illnessColType": "유형",
     "illnessColLifecycle": "경과",
     "illnessColOnset": "발병",
@@ -9194,7 +9195,8 @@
       "parentNone": "연결 안 함",
       "resolved": "종료일",
       "resolvedHelp": "아직 진행 중이면 비워 두세요.",
-      "markOngoing": "아직 진행 중"
+      "markOngoing": "아직 진행 중",
+      "bodySiteHint": "예: 무릎, 허리"
     },
     "sheet": {
       "title": "{date} 기록",
@@ -10928,10 +10930,11 @@
     }
   },
   "checkups": {
-    "viewSwitchLabel": "건강검진, 진료 또는 시술 보기",
+    "viewSwitchLabel": "건강검진, 진료, 시술 또는 신체 부위 보기",
     "tabVorsorge": "건강검진",
     "tabVisits": "진료",
-    "tabProcedures": "시술·수술"
+    "tabProcedures": "시술·수술",
+    "tabBodySites": "신체 부위"
   },
   "practitioners": {
     "title": "병원과 의사",
@@ -10972,5 +10975,26 @@
       "removeNamed": "{name} 제거",
       "removed": "{name} 연결 해제됨"
     }
+  },
+  "bodySites": {
+    "title": "신체 부위",
+    "description": "시술과 질환을 신체 부위별로 봅니다.",
+    "loadError": "신체 부위를 불러오지 못했습니다.",
+    "emptyTitle": "아직 기록된 신체 부위가 없습니다",
+    "emptyDescription": "시술이나 질환에 신체 부위를 입력하면 여기에 표시됩니다.",
+    "sitesLabel": "신체 부위",
+    "sidesLabel": "방향",
+    "allSides": "전체",
+    "pickPrompt": "부위를 선택하면 그 부위에 기록된 내용을 볼 수 있습니다.",
+    "noMatchTitle": "이쪽에는 기록된 내용이 없습니다",
+    "visitsTitle": "시술 및 진료",
+    "conditionsTitle": "질환",
+    "hiddenDocument": "공유되지 않은 문서",
+    "hiddenLabResult": "공유되지 않은 검사 결과",
+    "hiddenCondition": "공유되지 않은 질환",
+    "hiddenVisit": "공유되지 않은 진료",
+    "linkedLabel": "연결된 기록",
+    "conditionSince": "{onset}부터",
+    "conditionDates": "{onset} ~ {resolved}"
   }
 }

@@ -26,6 +26,7 @@ import {
   illnessTypeEnum,
   illnessLifecycleEnum,
 } from "@/lib/validations/illness";
+import { lateralityEnum } from "@/lib/validations/encounters";
 
 import {
   dataEnvelope,
@@ -42,13 +43,13 @@ import {
 const createIllnessEpisodeRequest = illnessEpisodeCreateSchema.meta({
   id: "CreateIllnessEpisodeRequest",
   description:
-    "Open an illness/condition episode. `label` is the user-facing name; `type` + `lifecycle` classify it. `onsetAt` defaults to 'now' server-side when omitted. `parentConditionId` threads a FLARE/RECURRING bout under a parent condition (must be an owned, live episode). The optional `note` is encrypted at rest.",
+    "Open an illness/condition episode. `label` is the user-facing name; `type` + `lifecycle` classify it. `onsetAt` defaults to 'now' server-side when omitted. `parentConditionId` threads a FLARE/RECURRING bout under a parent condition (must be an owned, live episode). The optional `note` is encrypted at rest. `bodySite` (free text, encrypted at rest) and `laterality` (LEFT / RIGHT / BOTH, null when not stated) say where on the body the condition sits; both are optional on every type.",
 });
 
 const updateIllnessEpisodeRequest = illnessEpisodeUpdateSchema.meta({
   id: "UpdateIllnessEpisodeRequest",
   description:
-    "Partial edit of an episode; an omitted key leaves the column untouched. A `null` `resolvedAt` re-opens a resolved episode; a `null` `parentConditionId` detaches it from its parent. Rejects unknown keys.",
+    "Partial edit of an episode; an omitted key leaves the column untouched. A `null` `resolvedAt` re-opens a resolved episode; a `null` `parentConditionId` detaches it from its parent. `bodySite` and `laterality` follow the same rule: an omitted key keeps the stored value, `null` (or a blank site) clears it, so a client that does not know the fields never erases them. Rejects unknown keys.",
 });
 
 const resolveIllnessEpisodeRequest = illnessEpisodeResolveSchema.meta({
@@ -113,13 +114,15 @@ const illnessEpisode = z
     resolvedAt: z.string().nullable(),
     parentConditionId: z.string().nullable(),
     note: z.string().nullable(),
+    bodySite: z.string().nullable(),
+    laterality: lateralityEnum.nullable(),
     createdAt: z.string(),
     updatedAt: z.string(),
   })
   .meta({
     id: "IllnessEpisode",
     description:
-      "A stored illness/condition episode. `note` is the decrypted free-text (or null on a key-rotation gap — fail-soft, never 500). `resolvedAt` is null while the episode is open. `parentConditionId` links a FLARE/RECURRING bout to its parent condition.",
+      "A stored illness/condition episode. `note` is the decrypted free-text (or null on a key-rotation gap — fail-soft, never 500). `resolvedAt` is null while the episode is open. `parentConditionId` links a FLARE/RECURRING bout to its parent condition. `bodySite` is the decrypted body site (null when not stated or on a key-rotation gap) and `laterality` its side.",
   });
 
 const illnessDayLog = z

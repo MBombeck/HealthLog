@@ -254,6 +254,9 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   { model: "LabResult", field: "noteEncrypted", kind: "bytes" },
   { model: "Biomarker", field: "contextEncrypted", kind: "bytes" },
   { model: "IllnessEpisode", field: "noteEncrypted", kind: "bytes" },
+  // v1.39.2 — where on the body a condition sits. The side beside it
+  // (`laterality`) stays plaintext, as on `Encounter`.
+  { model: "IllnessEpisode", field: "bodySiteEncrypted", kind: "bytes" },
   { model: "IllnessDayLog", field: "noteEncrypted", kind: "bytes" },
 
   // ───── v1.19.0 ECG waveform (Bytes column) ─────

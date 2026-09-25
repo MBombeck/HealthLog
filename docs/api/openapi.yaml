@@ -14036,6 +14036,43 @@ paths:
         "403": *a9
         "422": *a4
         "429": *a5
+  /api/body-sites:
+    get:
+      tags:
+        - Records
+      summary: List body sites, or what is filed at one
+      description: The body sites the record holds, across visits and conditions, and with `site` the visits and conditions
+        filed at that site with their linked documents, lab results and visits. The same list serves as suggestions for
+        a body-site field, so a site is written the same way twice. Body sites are encrypted at rest, so grouping and
+        matching run server-side after the decrypt, over at most 500 rows per kind. Read at the same section and level
+        as the visit list; conditions join only when the caller may read the illness section and the record has the
+        illness module on.
+      parameters:
+        - in: query
+          name: site
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+        - in: query
+          name: laterality
+          schema:
+            type: string
+            enum:
+              - LEFT
+              - RIGHT
+              - BOTH
+      responses:
+        "200":
+          description: The body sites, and the selection when one was named.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListBodySitesEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/encounters/suggest:
     get:
       tags:
@@ -27522,12 +27559,27 @@ components:
             - type: string
               maxLength: 2000
             - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+              maxLength: 200
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
       required:
         - label
         - type
       description: Open an illness/condition episode. `label` is the user-facing name; `type` + `lifecycle` classify it.
         `onsetAt` defaults to 'now' server-side when omitted. `parentConditionId` threads a FLARE/RECURRING bout under a
-        parent condition (must be an owned, live episode). The optional `note` is encrypted at rest.
+        parent condition (must be an owned, live episode). The optional `note` is encrypted at rest. `bodySite` (free
+        text, encrypted at rest) and `laterality` (LEFT / RIGHT / BOTH, null when not stated) say where on the body the
+        condition sits; both are optional on every type.
     UpdateIllnessEpisodeRequest:
       type: object
       properties:
@@ -27573,9 +27625,24 @@ components:
             - type: string
               maxLength: 2000
             - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+              maxLength: 200
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
       additionalProperties: false
-      description: Partial edit of an episode; an omitted key leaves the column untouched. A `null` `resolvedAt` re-opens a
-        resolved episode; a `null` `parentConditionId` detaches it from its parent. Rejects unknown keys.
+      description: "Partial edit of an episode; an omitted key leaves the column untouched. A `null` `resolvedAt` re-opens a
+        resolved episode; a `null` `parentConditionId` detaches it from its parent. `bodySite` and `laterality` follow
+        the same rule: an omitted key keeps the stored value, `null` (or a blank site) clears it, so a client that does
+        not know the fields never erases them. Rejects unknown keys."
     ResolveIllnessEpisodeRequest:
       type: object
       properties:
@@ -30516,39 +30583,39 @@ components:
                 auth.mfa.code_invalid, auth.missing, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
                 auth.scope.insufficient, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
                 backup.payload.undecryptable, backup.restore.active, backup.section.missing, backup.upload.too_large;
-                coach — coach.budget.exceeded, coach.conversation.invalidTitle, coach.conversation.notFound,
-                coach.fenced.attachmentConflict, coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound,
-                coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable,
-                coach.fenced.invalid, coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json,
-                coach-prefs.body.invalid_shape; consent — consent.ai.required; cycle — cycle.bulk.invalid,
-                cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range, cycle.cycles.invalid,
-                cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled, cycle.period.invalid,
-                cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json,
-                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; documents —
-                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
-                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
-                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
-                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
-                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
-                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
-                documents.inbound.localOcrDisabled, documents.inbound.notFound, documents.inbound.notIndexed,
-                documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
-                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
-                documents.inbound.restoreGone, documents.inbound.uploadBusy, documents.inbound.uploadTimeout,
-                documents.inbound.vaccinationNotFound; encounter — encounter.invalid, encounter.link.invalid,
-                encounter.practitioner-not-found, encounter.reminder-conflict, encounter.reminder-not-found; environment
-                — environment.invalid, environment.no_home, environment.range_too_large, environment.travel.not_found;
-                export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
-                feedback — feedback.body.invalid; health_score_config — health_score_config.invalid,
-                health_score_config.too_narrow; illness — illness.day-log.invalid, illness.disabled,
-                illness.episode.chronic-no-resolve, illness.episode.invalid, illness.episode.invalid-window,
-                illness.episode.parent-not-found, illness.insights.invalid; import — import.write_failed; ingest —
-                ingest.rate_limited; insights — insights.generate.budgetExceeded, insights.generate.outboundScreened,
-                insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
-                labs.biomarker.create.invalid, labs.biomarker.duplicate, labs.biomarker.notFound,
-                labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
-                labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType,
-                labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
+                body-site — body-site.invalid; coach — coach.budget.exceeded, coach.conversation.invalidTitle,
+                coach.conversation.notFound, coach.fenced.attachmentConflict, coach.fenced.attachmentLimit,
+                coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired,
+                coach.fenced.attachmentUnavailable, coach.fenced.invalid, coach.request.invalid; coach-prefs —
+                coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape; consent — consent.ai.required; cycle —
+                cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range,
+                cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled,
+                cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs —
+                cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json;
+                documents — documents.chat.conversationNotFound, documents.chat.invalid,
+                documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
+                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
+                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
+                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
+                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
+                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notFound,
+                documents.inbound.notIndexed, documents.inbound.pdfNeedsAnthropic,
+                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
+                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.uploadBusy,
+                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound; encounter — encounter.invalid,
+                encounter.link.invalid, encounter.practitioner-not-found, encounter.reminder-conflict,
+                encounter.reminder-not-found; environment — environment.invalid, environment.no_home,
+                environment.range_too_large, environment.travel.not_found; export — export.selection.empty,
+                export.selection.unknown_leaf; familyHistory — familyHistory.invalid; feedback — feedback.body.invalid;
+                health_score_config — health_score_config.invalid, health_score_config.too_narrow; illness —
+                illness.day-log.invalid, illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
+                illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
+                import.write_failed; ingest — ingest.rate_limited; insights — insights.generate.budgetExceeded,
+                insights.generate.outboundScreened, insights.generate.profileScopeChanged,
+                insights.generate.scopeChanged; labs — labs.biomarker.create.invalid, labs.biomarker.duplicate,
+                labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
+                labs.create.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge,
+                labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
                 labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound, labs.update.invalid,
                 labs.update.linkedFieldsImmutable, labs.update.numericExpected, labs.update.qualitativeExpected,
                 labs.update.referenceRangeInvalid, labs.update.sourceReferenceRangeInvalid; managed_profile —
@@ -34649,6 +34716,24 @@ components:
                 anyOf:
                   - type: string
                     minLength: 1
+                  - type: "null"
+              bodySite:
+                anyOf:
+                  - type: string
+                    maxLength: 200
+                  - type: "null"
+              bodySiteEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              laterality:
+                anyOf:
+                  - type: string
+                    enum:
+                      - LEFT
+                      - RIGHT
+                      - BOTH
                   - type: "null"
               deletedAt:
                 anyOf:
@@ -61086,6 +61171,183 @@ components:
       additionalProperties: false
       description: One body site and side in the procedure history, with how many procedures carry it. Keyed case- and
         space-insensitively; `bodySite` is the first spelling seen.
+    ListBodySitesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/BodySiteList"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    BodySiteList:
+      type: object
+      properties:
+        sites:
+          type: array
+          items:
+            $ref: "#/components/schemas/BodySite"
+        selection:
+          type: object
+          properties:
+            bodySite:
+              type: string
+            laterality:
+              anyOf:
+                - type: string
+                  enum:
+                    - LEFT
+                    - RIGHT
+                    - BOTH
+                - type: "null"
+            visits:
+              type: array
+              items:
+                $ref: "#/components/schemas/Encounter"
+            conditions:
+              anyOf:
+                - type: array
+                  items:
+                    $ref: "#/components/schemas/BodySiteCondition"
+                - type: "null"
+          required:
+            - bodySite
+            - laterality
+            - visits
+            - conditions
+          additionalProperties: false
+      required:
+        - sites
+      additionalProperties: false
+      description: "The record's body sites, most records first, and with `site` the visits and conditions filed there, each
+        newest first with its links. `selection.conditions` is null (not empty) when the caller may not read conditions
+        in this record or the record has the illness module off. Links into a section the caller's grant does not cover
+        carry `redacted: true` and no label."
+    BodySite:
+      type: object
+      properties:
+        bodySite:
+          type: string
+        procedures:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        conditions:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        sides:
+          type: array
+          items:
+            $ref: "#/components/schemas/BodySiteSide"
+      required:
+        - bodySite
+        - procedures
+        - conditions
+        - sides
+      additionalProperties: false
+      description: One body site the record holds, across visits (procedures, mostly) and conditions. Keyed case-, accent- and
+        space-insensitively; `bodySite` is the first spelling met, newest record first. `conditions` is 0 when the
+        caller may not read conditions.
+    BodySiteSide:
+      type: object
+      properties:
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
+        count:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - laterality
+        - count
+      additionalProperties: false
+      description: "How many records sit on one side of a site. `laterality: null` counts the records whose side was not stated."
+    BodySiteCondition:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        type:
+          type: string
+          enum:
+            - INFECTION
+            - ALLERGY
+            - INJURY
+            - MENTAL_HEALTH
+            - AUTOIMMUNE
+            - CHRONIC
+            - OTHER
+        lifecycle:
+          type: string
+          enum:
+            - ACUTE
+            - CHRONIC_ONGOING
+            - RECURRING
+            - FLARE
+        onsetAt:
+          type: string
+        resolvedAt:
+          anyOf:
+            - type: string
+            - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
+        links:
+          type: object
+          properties:
+            documents:
+              type: array
+              items:
+                $ref: "#/components/schemas/EncounterLinkedTarget"
+            visits:
+              type: array
+              items:
+                $ref: "#/components/schemas/EncounterLinkedTarget"
+          required:
+            - documents
+            - visits
+          additionalProperties: false
+      required:
+        - id
+        - label
+        - type
+        - lifecycle
+        - onsetAt
+        - resolvedAt
+        - bodySite
+        - laterality
+        - links
+      additionalProperties: false
+      description: "A condition at the picked site, with the documents filed against it and the visits it was linked to. No
+        note: that is read on the condition itself. A document link comes back with `redacted: true` and no label or
+        date when the caller's grant does not cover documents."
     SuggestEncounterEnvelope:
       type: object
       properties:
@@ -62059,6 +62321,18 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
         createdAt:
           type: string
         updatedAt:
@@ -62072,12 +62346,15 @@ components:
         - resolvedAt
         - parentConditionId
         - note
+        - bodySite
+        - laterality
         - createdAt
         - updatedAt
       additionalProperties: false
       description: A stored illness/condition episode. `note` is the decrypted free-text (or null on a key-rotation gap —
         fail-soft, never 500). `resolvedAt` is null while the episode is open. `parentConditionId` links a
-        FLARE/RECURRING bout to its parent condition.
+        FLARE/RECURRING bout to its parent condition. `bodySite` is the decrypted body site (null when not stated or on
+        a key-rotation gap) and `laterality` its side.
     CreateIllnessEpisodeEnvelope:
       type: object
       properties:

@@ -140,6 +140,16 @@ export function IllnessSection({
           key={`${episode.label}-${episode.onsetAt}-${index}`}
           label={episode.label}
           value={compose([
+            episode.bodySite
+              ? episode.laterality
+                ? t("encounters.bodySiteWithSide", {
+                    site: episode.bodySite,
+                    side: t(
+                      lateralityLabelKey(episode.laterality as Laterality),
+                    ),
+                  })
+                : episode.bodySite
+              : null,
             t(`illness.type.${episode.type}`),
             t(`illness.lifecycle.${episode.lifecycle}`),
             `${fmtDate(episode.onsetAt)} – ${

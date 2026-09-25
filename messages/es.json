@@ -268,6 +268,7 @@
     "illnessTitle": "Afecciones y enfermedades",
     "illnessOngoing": "En curso",
     "illnessColCondition": "Afección",
+    "illnessColBodySite": "Zona del cuerpo",
     "illnessColType": "Tipo",
     "illnessColLifecycle": "Curso",
     "illnessColOnset": "Inicio",
@@ -9194,7 +9195,8 @@
       "parentNone": "Sin vincular",
       "resolved": "Finalizó el",
       "resolvedHelp": "Déjalo vacío mientras el episodio siga en curso.",
-      "markOngoing": "Aún en curso"
+      "markOngoing": "Aún en curso",
+      "bodySiteHint": "Por ejemplo, rodilla o zona lumbar."
     },
     "sheet": {
       "title": "Registrar {date}",
@@ -10928,10 +10930,11 @@
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Mostrar revisiones, citas o procedimientos",
+    "viewSwitchLabel": "Mostrar revisiones, citas, procedimientos o zonas del cuerpo",
     "tabVorsorge": "Revisiones",
     "tabVisits": "Citas",
-    "tabProcedures": "Procedimientos"
+    "tabProcedures": "Procedimientos",
+    "tabBodySites": "Zonas del cuerpo"
   },
   "practitioners": {
     "title": "Consultas y médicos",
@@ -10972,5 +10975,26 @@
       "removeNamed": "Quitar {name}",
       "removed": "Se desvinculó {name}"
     }
+  },
+  "bodySites": {
+    "title": "Zonas del cuerpo",
+    "description": "Procedimientos y enfermedades según la zona del cuerpo.",
+    "loadError": "No se pudieron cargar las zonas del cuerpo.",
+    "emptyTitle": "Aún no hay ninguna zona del cuerpo registrada",
+    "emptyDescription": "Añade una zona del cuerpo a un procedimiento o a una enfermedad y aparecerá aquí.",
+    "sitesLabel": "Zonas del cuerpo",
+    "sidesLabel": "Lado",
+    "allSides": "Todos los lados",
+    "pickPrompt": "Elige una zona para ver lo que hay registrado en ella.",
+    "noMatchTitle": "No hay nada registrado en este lado",
+    "visitsTitle": "Procedimientos y citas",
+    "conditionsTitle": "Enfermedades",
+    "hiddenDocument": "Un documento que no se ha compartido contigo",
+    "hiddenLabResult": "Un resultado de laboratorio que no se ha compartido contigo",
+    "hiddenCondition": "Una enfermedad que no se ha compartido contigo",
+    "hiddenVisit": "Una cita que no se ha compartido contigo",
+    "linkedLabel": "Registros vinculados",
+    "conditionSince": "Desde el {onset}",
+    "conditionDates": "Del {onset} al {resolved}"
   }
 }

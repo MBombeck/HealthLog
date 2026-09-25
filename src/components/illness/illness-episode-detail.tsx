@@ -10,6 +10,7 @@
  */
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useState } from "react";
+import Link from "next/link";
 
 import { EpisodeVisitsCard } from "@/components/illness/episode-visits-card";
 import { EpisodeDocumentsCard } from "@/components/documents/episode-documents-card";
@@ -20,6 +21,7 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { bodySiteText } from "@/components/encounters/encounter-labels";
 
 import { IllnessCorrelationCard } from "./illness-correlation-card";
 import { IllnessDayTimeline } from "./illness-day-timeline";
@@ -41,7 +43,10 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
   const { t } = useTranslations();
   // v1.36.x — logging a day, editing and resolving an episode are the
   // owner's; a delegate reads the episode.
-  const { canManageDomain } = useRecordCapabilities();
+  const { canManageDomain, sections } = useRecordCapabilities();
+  // The body-site view is read in the visits' section; a grant without it
+  // gets the site as text rather than a link that would be refused.
+  const canOpenBodySites = sections === null || sections.includes("profile");
   const canManageIllness = canManageDomain("illness");
   const fmt = useFormatters();
   const {
@@ -66,6 +71,15 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
   }
 
   const active = episode ? episode.resolvedAt === null : false;
+  const bodySite = episode
+    ? bodySiteText(t, episode.bodySite, episode.laterality)
+    : null;
+  const bodySiteHref = episode?.bodySite
+    ? `/checkups?${new URLSearchParams({
+        site: episode.bodySite,
+        ...(episode.laterality ? { side: episode.laterality } : {}),
+      }).toString()}`
+    : "/checkups";
   const isChronic = episode?.lifecycle === "CHRONIC_ONGOING";
 
   return (
@@ -95,6 +109,20 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
                     })}`
                   : ""}
               </span>
+              {bodySite && !canOpenBodySites ? (
+                <span className="text-foreground text-xs">{bodySite}</span>
+              ) : null}
+              {bodySite && canOpenBodySites ? (
+                // Where on the body, in the person's own words, so foreground;
+                // it opens the body-site view on that site and side.
+                <Link
+                  href={bodySiteHref}
+                  className="text-foreground text-xs underline-offset-4 hover:underline"
+                  data-slot="episode-body-site"
+                >
+                  {bodySite}
+                </Link>
+              ) : null}
             </span>
           ) : undefined
         }

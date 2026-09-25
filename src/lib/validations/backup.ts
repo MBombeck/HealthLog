@@ -1072,6 +1072,13 @@ const illnessEpisodeBackupSchema = z
     note: z.string().nullable().optional(),
     createdAt: isoDateTime.optional(),
     noteEncrypted: base64BytesSchema.nullable().optional(),
+    // v1.39.2 — the body site and side. Optional so a file written before
+    // they existed still parses; the condition restores with neither. The
+    // site rides as ciphertext in a disaster-recovery file and as plaintext
+    // in a portable one, exactly like the note beside it.
+    bodySite: z.string().max(200).nullable().optional(),
+    bodySiteEncrypted: base64BytesSchema.nullable().optional(),
+    laterality: z.enum(Laterality).nullable().optional(),
     deletedAt: isoDateTime.nullable().optional(),
     updatedAt: isoDateTime.optional(),
     dayLogs: z.array(illnessDayLogBackupSchema).default([]),

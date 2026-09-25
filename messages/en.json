@@ -304,6 +304,7 @@
     "illnessTitle": "Conditions & illnesses",
     "illnessOngoing": "Ongoing",
     "illnessColCondition": "Condition",
+    "illnessColBodySite": "Body site",
     "illnessColType": "Type",
     "illnessColLifecycle": "Course",
     "illnessColOnset": "Onset",
@@ -9194,7 +9195,8 @@
       "parentNone": "Not linked",
       "resolved": "Ended on",
       "resolvedHelp": "Leave empty while the episode is still ongoing.",
-      "markOngoing": "Still ongoing"
+      "markOngoing": "Still ongoing",
+      "bodySiteHint": "For example knee or lower back."
     },
     "sheet": {
       "title": "Log {date}",
@@ -10928,10 +10930,11 @@
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Show checkups, visits or procedures",
+    "viewSwitchLabel": "Show checkups, visits, procedures or body sites",
     "tabVorsorge": "Checkups",
     "tabVisits": "Visits",
-    "tabProcedures": "Procedures"
+    "tabProcedures": "Procedures",
+    "tabBodySites": "Body sites"
   },
   "practitioners": {
     "title": "Practices and doctors",
@@ -10972,5 +10975,26 @@
       "removeNamed": "Remove {name}",
       "removed": "Unlinked {name}"
     }
+  },
+  "bodySites": {
+    "title": "Body sites",
+    "description": "Procedures and conditions by where on the body they are.",
+    "loadError": "Body sites could not be loaded.",
+    "emptyTitle": "No body site recorded yet",
+    "emptyDescription": "Add a body site to a procedure or a condition and it appears here.",
+    "sitesLabel": "Body sites",
+    "sidesLabel": "Side",
+    "allSides": "All sides",
+    "pickPrompt": "Pick a site to see what is filed there.",
+    "noMatchTitle": "Nothing recorded on this side",
+    "visitsTitle": "Procedures and visits",
+    "conditionsTitle": "Conditions",
+    "hiddenDocument": "A document not shared with you",
+    "hiddenLabResult": "A lab result not shared with you",
+    "hiddenCondition": "A condition not shared with you",
+    "hiddenVisit": "A visit not shared with you",
+    "linkedLabel": "Linked records",
+    "conditionSince": "Since {onset}",
+    "conditionDates": "{onset} to {resolved}"
   }
 }

@@ -377,6 +377,53 @@ describe("get_medication_compliance", () => {
   });
 });
 
+// v1.39.2 — a condition's body site is the person's own words, so an MCP
+// client gets it fenced like every other free-text leaf. Mutation check (run,
+// seen red): return the coach result unchanged → this test goes red.
+describe("get_illness_recovery — condition body site", () => {
+  it("fences the body site and leaves the rest of the block alone", async () => {
+    vi.mocked(executeCoachTool).mockResolvedValue({
+      present: true,
+      data: {
+        illness: {
+          restMode: true,
+          active: [
+            {
+              label: "Meniscus tear",
+              type: "INJURY",
+              lifecycle: "ACUTE",
+              onsetAt: "2026-05-01T00:00:00.000Z",
+              bodySite: "Knee",
+              laterality: "LEFT",
+            },
+            {
+              label: "Head cold",
+              type: "INFECTION",
+              lifecycle: "ACUTE",
+              onsetAt: "2026-05-10T00:00:00.000Z",
+            },
+          ],
+          recentResolved: [],
+        },
+      },
+    });
+    const result = (await tool("get_illness_recovery").run(CTX, {})) as {
+      data: {
+        illness: {
+          restMode: boolean;
+          active: Array<Record<string, unknown>>;
+        };
+      };
+    };
+    const [tear, cold] = result.data.illness.active;
+    expect(tear.bodySite).toBe("<<<USER_TEXT_START>>>Knee<<<USER_TEXT_END>>>");
+    expect(tear.laterality).toBe("LEFT");
+    expect(tear.label).toBe("Meniscus tear");
+    expect(cold).not.toHaveProperty("bodySite");
+    expect(result.data.illness.restMode).toBe(true);
+  });
+});
+
 describe("get_labs", () => {
   it("forwards the optional analyte filter and returns readings with units + bands", async () => {
     vi.mocked(executeCoachTool).mockResolvedValue({

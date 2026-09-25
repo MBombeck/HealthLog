@@ -55,6 +55,17 @@ export const encounterKeys = {
   encounterProcedures: (q: string, laterality: string | null) =>
     ["encounters", "procedures", q, laterality] as const,
   /**
+   * v1.39.2 — the body-site view and the body-site suggestions. Under the
+   * `["encounters"]` root, so a visit write evicts it with the list; a
+   * condition write reaches it through `bodySitesAll` in
+   * `illnessDependentKeys`, because conditions are the other half of it. The
+   * picked site and side are part of the key: the selection is resolved on the
+   * server after the decrypt. The suggestions read is the no-site slot.
+   */
+  bodySitesAll: () => ["encounters", "body-sites"] as const,
+  bodySites: (site: string | null, laterality: string | null) =>
+    ["encounters", "body-sites", site, laterality] as const,
+  /**
    * The "which visit does this belong to" verdict for one anchor date. The
    * anchor is part of the key because it IS the question: a document dated the
    * 3rd and one dated the 20th get different answers, and one overwriting the

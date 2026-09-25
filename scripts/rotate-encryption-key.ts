@@ -549,6 +549,14 @@ async function main() {
       prisma.illnessEpisode,
     ),
   );
+  // v1.39.2 — a condition's body site.
+  results.push(
+    await rotateBytesColumn(
+      "IllnessEpisode",
+      "bodySiteEncrypted",
+      prisma.illnessEpisode,
+    ),
+  );
   results.push(
     await rotateBytesColumn(
       "IllnessDayLog",
