@@ -86,12 +86,40 @@ async function healthlog(
     deleted?: string[];
     tooLarge?: string[];
     moduleOff?: boolean;
+    /** An older HealthLog with no lookup route. */
+    noLookup?: boolean;
+    /** The address redirects elsewhere (http → https, a moved host). */
+    redirect?: string;
   } = {},
 ) {
   const stored = new Set<string>();
   const received: Received[] = [];
+  const lookups: string[] = [];
   let throttled = false;
   const url = await serve(async (req, url, body) => {
+    if (opts.redirect) {
+      return {
+        status: 301,
+        headers: { location: `${opts.redirect}${url.pathname}` },
+      };
+    }
+    const queryKey = `${url.searchParams.get("sourceSystem")}:${url.searchParams.get("sourceId")}`;
+    if (
+      url.pathname === "/api/documents/inbound/source" &&
+      req.method === "GET" &&
+      !opts.noLookup
+    ) {
+      lookups.push(queryKey);
+      const deleted = opts.deleted?.includes(queryKey) ?? false;
+      const known = deleted || stored.has(queryKey);
+      return {
+        status: 200,
+        json: {
+          data: { known, id: known ? queryKey : null, deleted },
+          error: null,
+        },
+      };
+    }
     if (url.pathname !== "/api/documents/inbound" || req.method !== "POST") {
       return { status: 404, json: { data: null, error: "Not found" } };
     }
@@ -130,8 +158,11 @@ async function healthlog(
         size = v.size;
       }
     }
+    // The key rides the query string, where HealthLog reads it first.
+    fields.sourceSystem = url.searchParams.get("sourceSystem") ?? "";
+    fields.sourceId = url.searchParams.get("sourceId") ?? "";
     received.push({ auth: req.headers.authorization, fields, filename, size });
-    const key = `${fields.sourceSystem}:${fields.sourceId}`;
+    const key = queryKey;
     if (opts.tooLarge?.includes(key)) {
       return {
         status: 413,
@@ -168,7 +199,7 @@ async function healthlog(
       json: { data: { id: key, duplicate: false }, error: null },
     };
   });
-  return { url, received };
+  return { url, received, lookups };
 }
 
 /** Paperless-ngx v10 stand-in: two pages of documents, one outside the tag. */
@@ -238,7 +269,8 @@ async function paperless() {
             },
             {
               id: 2,
-              title: "Arztbrief",
+              // Blank in the source: the file name stands in.
+              title: "   ",
               created: null,
               added: "2024-04-01T09:30:00Z",
               tags: [7],
@@ -379,6 +411,7 @@ describe("import-documents.mjs — Paperless-ngx", () => {
     });
     // No created date: filed under the day it was added, and said so.
     expect(hl.received[1].fields.documentDate).toBe("2024-04-01");
+    expect(hl.received[1].fields.title).toBe("brief");
     expect(hl.received[1].fields.kind).toBeUndefined();
     expect(first.stdout).toMatch(/Imported: 2/);
     expect(first.stdout).toMatch(/filed under the day it was added/);
@@ -387,7 +420,8 @@ describe("import-documents.mjs — Paperless-ngx", () => {
     // The API contract the script leans on.
     const docs = pl.seen.filter((s) => s.path.startsWith("/api/documents/?"));
     expect(docs[0].path).toContain("tags__id__all=7");
-    expect(docs[0].accept).toBe("application/json; version=10");
+    // API v9: the lowest the current Paperless-ngx releases accept.
+    expect(docs[0].accept).toBe("application/json; version=9");
     expect(docs[0].auth).toBe("Token pl_test");
     // `next` was followed on the source's own origin.
     expect(docs[1].path).toContain("page=2");
@@ -398,11 +432,20 @@ describe("import-documents.mjs — Paperless-ngx", () => {
       "/api/documents/2/download/?original=true",
     ]);
 
-    // A second run changes nothing: HealthLog answers duplicate for both.
+    // A second run changes nothing: HealthLog already holds both, and the
+    // lookup says so before anything is downloaded or uploaded again.
+    const downloadsBefore = pl.seen.filter((s) =>
+      s.path.includes("/download/"),
+    ).length;
     const second = await runScript(args, env);
     expect(second.code).toBe(0);
     expect(second.stdout).toMatch(/Imported: 0/);
     expect(second.stdout).toMatch(/Already in HealthLog: 2/);
+    expect(pl.seen.filter((s) => s.path.includes("/download/")).length).toBe(
+      downloadsBefore,
+    );
+    expect(hl.received).toHaveLength(2);
+    expect(hl.lookups).toContain("PAPERLESS:1");
   });
 
   it("leaves a document deleted in HealthLog alone", async () => {
@@ -478,6 +521,73 @@ describe("import-documents.mjs — Paperless-ngx", () => {
       { PAPERLESS_TOKEN: "pl_test" },
     );
     expect(res.code).toBe(1);
+  });
+});
+
+describe("import-documents.mjs — edges", () => {
+  const env = { HEALTHLOG_TOKEN: "hlk_test", PAPERLESS_TOKEN: "pl_test" };
+
+  it("still imports against a HealthLog without the lookup", async () => {
+    const hl = await healthlog({ noLookup: true });
+    const pl = await paperless();
+    const res = await runScript(
+      [
+        "paperless",
+        "--paperless-url",
+        pl.url,
+        "--healthlog-url",
+        hl.url,
+        "--tag",
+        "HealthLog",
+      ],
+      env,
+    );
+    expect(res.code).toBe(0);
+    expect(res.stdout).toMatch(/Imported: 2/);
+  });
+
+  it("stops on a redirecting HealthLog address and names where it points", async () => {
+    const hl = await healthlog({ redirect: "https://health.example" });
+    const pl = await paperless();
+    const res = await runScript(
+      [
+        "paperless",
+        "--paperless-url",
+        pl.url,
+        "--healthlog-url",
+        hl.url,
+        "--tag",
+        "HealthLog",
+      ],
+      env,
+    );
+    expect(res.code).toBe(1);
+    expect(res.stderr).toMatch(/redirects to https:\/\/health\.example/);
+  });
+
+  it("applies --since itself when the server ignores the filter", async () => {
+    const hl = await healthlog();
+    const pl = await paperless();
+    const res = await runScript(
+      [
+        "paperless",
+        "--paperless-url",
+        pl.url,
+        "--healthlog-url",
+        hl.url,
+        "--tag",
+        "HealthLog",
+        "--since",
+        "2024-04-01",
+      ],
+      env,
+    );
+    expect(res.code).toBe(0);
+    // Document 1 (created 2024-03-05) is before the cut and never fetched.
+    expect(hl.received.map((r) => r.fields.sourceId)).toEqual(["2"]);
+    expect(pl.seen.some((s) => s.path.startsWith("/api/documents/1/"))).toBe(
+      false,
+    );
   });
 });
 

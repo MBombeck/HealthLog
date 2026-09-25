@@ -30,7 +30,9 @@ API Tokens**. It expires after a year unless you revoke it sooner.
 
 ## 2. New documents from Paperless-ngx (workflow)
 
-In Paperless-ngx, open **Workflows** and add one:
+This needs Paperless-ngx 3.0 or later (the `{{doc_id}}` placeholder and the
+double-brace placeholder syntax below arrived there). In Paperless-ngx, open
+**Workflows** and add one:
 
 - **Triggers:** add _Document Added_ and _Document Updated_. On each, set
   the filter to "has any of these tags" and pick the tag you use for health
@@ -71,7 +73,8 @@ and let the workflow handle what comes after.
 ## 3. The archive: the import script
 
 The script is a single file, `scripts/import-documents.mjs` in the
-HealthLog repository. It needs Node 22 and nothing else, and it runs on any
+HealthLog repository. It works with Paperless-ngx 2.16 or later (API
+version 9) and current Papra releases. It needs Node 22 and nothing else, and it runs on any
 machine that can reach both systems. Download it:
 
 ```sh
@@ -136,14 +139,20 @@ What it does:
 - The document date is the date the source has for the document. When the
   source has none, the script uses the day the document was added there, and
   lists those documents in its summary so you can correct the date.
-- Running it again is safe. HealthLog skips documents it already has, and
-  documents you deleted in HealthLog stay deleted. An interrupted run simply
-  picks up where it stopped.
+- Running it again is safe. Before downloading a document the script asks
+  HealthLog whether it already has it, so documents already there are
+  neither downloaded nor sent again, and a re-run over a large archive is
+  quick. Documents you deleted in HealthLog stay deleted, also after they
+  are removed for good. The same goes for a file you had already uploaded
+  by hand: the import recognises it by its content, and if you delete it
+  later, the import leaves it deleted. An interrupted run simply picks up
+  where it stopped.
 - When HealthLog asks it to slow down, it waits as long as HealthLog says
   and carries on. By default a document token may upload 120 documents an
-  hour, so an archive of a thousand documents takes an evening. Uploads you
-  make yourself in the web app or on your phone are counted separately and
-  are not held up.
+  hour, so an archive of a thousand documents takes an evening. Documents
+  HealthLog already has do not count towards that. Uploads you make yourself
+  in the web app or on your phone are counted separately and are not held
+  up.
 - At the end it prints how many documents were imported, how many were
   already there, how many you had deleted, and every document it skipped
   with the reason. It exits with `0` when everything went through, `3` when
@@ -159,7 +168,9 @@ the script holds that back, so a whole archive does not turn into a
 thousand AI requests at once. Imported documents still get a preview and
 are searchable by their text where the file has a text layer.
 
-To have documents read later, open one and choose **Read with AI** or
+HealthLog remembers that these documents were held back: turning on
+automatic AI reading later does not send them to your AI provider either.
+To have documents read, open one and choose **Read with AI** or
 **Generate summary**, or use **Index all for search** in Documents for the
 ones that had no text to search. Pass `--ai-read` if you do want every
 imported document read as it arrives.
@@ -192,6 +203,15 @@ until they are removed for good 30 days later. Run the script with
 `--dry-run` to see how much an import needs. An admin can raise the limit in
 the admin area, for everyone or for one account. If storage runs out during
 an import, the script stops and says so; raise the limit and run it again.
+
+## Source ids
+
+Documents are recognised by the pair of source system and document id:
+`PAPERLESS` plus the Paperless document id, `PAPRA` plus the Papra document
+id. Anything else is sent as `OTHER`, and `OTHER` is one shared set of ids
+per account: if you push documents from two other systems, make sure their
+ids cannot collide, for example by prefixing them (`nextcloud-123`,
+`scanner-123`).
 
 ## For operators
 
