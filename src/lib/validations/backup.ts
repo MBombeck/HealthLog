@@ -1636,6 +1636,7 @@ const documentBackupSchema = z
     // restore cannot write a system the detail sheet has no name for.
     sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS).nullable().optional(),
     sourceId: z.string().max(DOCUMENT_SOURCE_ID_MAX).nullable().optional(),
+    aiReadDeferred: z.boolean().optional(),
     summary: z.string().nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),

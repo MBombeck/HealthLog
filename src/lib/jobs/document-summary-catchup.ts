@@ -120,7 +120,14 @@ export async function runSummaryCatchUpForUser(
       break;
     }
     const rows: { id: string }[] = await prisma.inboundDocument.findMany({
-      where: { userId, deletedAt: null, summaryEncrypted: null },
+      // An import held back from AI reading (`aiRead=defer`) stays held back
+      // when the opt-in is flipped on: the person reads those deliberately.
+      where: {
+        userId,
+        deletedAt: null,
+        summaryEncrypted: null,
+        aiReadDeferred: false,
+      },
       select: { id: true },
       orderBy: { id: "asc" },
       take: PAGE_SIZE,

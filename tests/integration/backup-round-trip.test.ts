@@ -830,6 +830,9 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       // re-run of the importer after a restore stores the page twice.
       sourceSystem: "PAPERLESS",
       sourceId: "4711",
+      // Held back from automatic AI reading; a restore that dropped the
+      // marker would hand the page to the summary catch-up.
+      aiReadDeferred: true,
     },
   });
 
@@ -1515,7 +1518,12 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     expect({
       sourceSystem: vaultDocument.sourceSystem,
       sourceId: vaultDocument.sourceId,
-    }).toEqual({ sourceSystem: "PAPERLESS", sourceId: "4711" });
+      aiReadDeferred: vaultDocument.aiReadDeferred,
+    }).toEqual({
+      sourceSystem: "PAPERLESS",
+      sourceId: "4711",
+      aiReadDeferred: true,
+    });
     const threads = await prisma.coachConversation.findMany({
       where: { userId: OWNER_ID },
       orderBy: { createdAt: "asc" },

@@ -283,7 +283,9 @@ function filenameFrom(response, fallback) {
 function paperless(options) {
   const headers = {
     Authorization: `Token ${options.sourceToken}`,
-    Accept: "application/json; version=10",
+    // API version 9 (Paperless-ngx 2.16 and later): the lowest the current
+    // servers still accept, and the one where `created` became a plain date.
+    Accept: "application/json; version=9",
   };
   const base = options.baseUrl;
   const label = "Paperless-ngx";
@@ -345,10 +347,17 @@ function paperless(options) {
         }
         const created = dayOf(doc.created);
         const added = dayOf(doc.added);
+        const date = created ?? added;
+        // Checked here as well: an older server may ignore the date filter.
+        if (options.since && date && date < options.since) continue;
         yield {
           sourceId: String(doc.id),
-          title: doc.title || doc.original_file_name || `Paperless ${doc.id}`,
-          date: created ?? added,
+          title: titleOf(
+            doc.title,
+            doc.original_file_name,
+            `Paperless ${doc.id}`,
+          ),
+          date,
           dateFallback: created ? null : added ? "added" : "none",
           filename: doc.original_file_name ?? null,
           kindKeys:
@@ -429,7 +438,11 @@ function papra(options) {
           if (options.since && date && date < options.since) continue;
           yield {
             sourceId: String(doc.id),
-            title: stripExtension(doc.name) || `Papra ${doc.id}`,
+            title: titleOf(
+              stripExtension(doc.name),
+              doc.originalName,
+              `Papra ${doc.id}`,
+            ),
             date,
             dateFallback: documentDate ? null : created ? "added" : "none",
             filename: doc.originalName ?? doc.name ?? null,
@@ -480,6 +493,19 @@ function dayOf(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null;
 }
 
+/**
+ * A title that is not blank: the source's title, else its file name without
+ * the extension, else a placeholder naming the source id. HealthLog refuses a
+ * blank title.
+ */
+function titleOf(title, filename, fallback) {
+  return (
+    (typeof title === "string" ? title.trim() : "") ||
+    stripExtension(filename).trim() ||
+    fallback
+  );
+}
+
 function stripExtension(name) {
   if (typeof name !== "string") return "";
   return name.replace(/\.[A-Za-z0-9]{1,5}$/, "");
@@ -495,8 +521,68 @@ function kindFor(options, doc) {
   return options.kind;
 }
 
+/** The source key as query parameters, which HealthLog reads before the body. */
+function keyQuery(source, doc) {
+  return new URLSearchParams({
+    sourceSystem: source.system,
+    sourceId: doc.sourceId.slice(0, SOURCE_ID_MAX),
+  });
+}
+
+async function readBody(response) {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+/** Refusals that end the run, whichever HealthLog request met them. */
+function stopOnRefusal(response, body, url) {
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get("location");
+    throw new StopError(
+      `The HealthLog address redirects${location ? ` to ${new URL(location, url).origin}` : ""}. Use that address with --healthlog-url.`,
+    );
+  }
+  if (response.status === 401) {
+    throw new StopError(
+      "HealthLog refused the token (401). It may be expired or revoked; create a new document token.",
+    );
+  }
+  if (response.status === 403) {
+    if (body?.meta?.errorCode === "module.disabled") {
+      throw new StopError(
+        "The document vault is switched off in HealthLog. Turn on Documents in Settings, then run the script again.",
+      );
+    }
+    throw new StopError(
+      "HealthLog refused the request (403). Use a document token from Settings > API & Tokens; other tokens cannot upload documents.",
+    );
+  }
+}
+
+/**
+ * Ask HealthLog whether it already holds this document, before downloading
+ * it from the source. Null when the answer is "no", or when the HealthLog
+ * version has no lookup yet (the upload then decides, as before).
+ */
+async function lookup(options, source, doc) {
+  const url = `${options.healthlogUrl}/api/documents/inbound/source?${keyQuery(source, doc)}`;
+  const response = await request("HealthLog", url, {
+    headers: {
+      Authorization: `Bearer ${options.healthlogToken}`,
+      Accept: "application/json",
+    },
+  });
+  const body = await readBody(response);
+  stopOnRefusal(response, body, url);
+  if (!response.ok || !body?.data?.known) return null;
+  return body.data.deleted ? { outcome: "deleted" } : { outcome: "duplicate" };
+}
+
 async function upload(options, source, doc, file) {
-  const url = `${options.healthlogUrl}/api/documents/inbound`;
+  const url = `${options.healthlogUrl}/api/documents/inbound?${keyQuery(source, doc)}`;
   const kind = kindFor(options, doc);
   const response = await request(
     "HealthLog",
@@ -513,22 +599,16 @@ async function upload(options, source, doc, file) {
         new Blob([file.bytes], { type: file.type }),
         file.filename,
       );
-      form.append("title", doc.title.trim().slice(0, TITLE_MAX));
+      form.append("title", doc.title.slice(0, TITLE_MAX));
       if (doc.date) form.append("documentDate", doc.date);
       if (kind) form.append("kind", kind);
-      form.append("sourceSystem", source.system);
-      form.append("sourceId", doc.sourceId.slice(0, SOURCE_ID_MAX));
       if (!options.aiRead) form.append("aiRead", "defer");
       return form;
     },
   );
 
-  let body = null;
-  try {
-    body = await response.json();
-  } catch {
-    body = null;
-  }
+  const body = await readBody(response);
+  stopOnRefusal(response, body, url);
   const meta = body?.meta ?? {};
   switch (response.status) {
     case 201:
@@ -537,23 +617,10 @@ async function upload(options, source, doc, file) {
       return body?.data?.deleted
         ? { outcome: "deleted" }
         : { outcome: "duplicate" };
-    case 401:
-      throw new StopError(
-        "HealthLog refused the token (401). It may be expired or revoked; create a new document token.",
-      );
-    case 403:
-      if (meta.errorCode === "module.disabled") {
-        throw new StopError(
-          "The document vault is switched off in HealthLog. Turn on Documents in Settings, then run the script again.",
-        );
-      }
-      throw new StopError(
-        "HealthLog refused the upload (403). Use a document token from Settings > API & Tokens; other tokens cannot upload documents.",
-      );
     case 413:
       if (meta.reason === "quotaExceeded") {
         throw new StopError(
-          `Your HealthLog storage is full (${mib(meta.usedBytes)} of ${mib(meta.quotaBytes)} used). An admin can raise the limit in the admin area, for everyone or just for your account.`,
+          "Your HealthLog storage is full. An admin can raise the limit in the admin area, for everyone or just for your account.",
         );
       }
       return {
@@ -639,6 +706,19 @@ async function run(argv, env = process.env) {
         out(
           `  ${doc.date ?? "no date"}  ${kind.padEnd(16)} ${size === null ? "?" : mib(size)}  ${where}`,
         );
+        continue;
+      }
+
+      // Asked first so a document HealthLog already holds is not downloaded.
+      const known = await lookup(options, source, doc);
+      if (known) {
+        if (known.outcome === "duplicate") {
+          tally.duplicate++;
+          out(`  present   ${where}`);
+        } else {
+          tally.deleted++;
+          out(`  deleted   ${where} (you deleted it in HealthLog; left alone)`);
+        }
         continue;
       }
 

@@ -2030,6 +2030,9 @@ export async function restoreBackup(
                 ? new Date(document.lastIndexAttemptAt)
                 : null,
               lastIndexOutcome: document.lastIndexOutcome ?? null,
+              // An older file has no marker: those documents predate the
+              // hold and restore as ordinary ones.
+              aiReadDeferred: document.aiReadDeferred ?? false,
               sourceSystem: document.sourceSystem ?? null,
               sourceId: document.sourceSystem
                 ? (document.sourceId ?? null)

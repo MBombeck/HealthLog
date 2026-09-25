@@ -70,6 +70,11 @@ import { enqueueDocumentSummary } from "@/lib/jobs/document-summary";
 import { enqueueDocumentThumbnail } from "@/lib/jobs/document-thumbnail";
 import { DOCUMENTS_WRITE_SCOPE } from "@/lib/documents/scopes";
 import {
+  findSourceKey,
+  rememberSourceAlias,
+  type SourceKeyMatch,
+} from "@/lib/documents/source-key";
+import {
   acquireDocumentUploadSlot,
   detectDocumentType,
   resolveDocumentLimits,
@@ -81,10 +86,15 @@ import { linkTargets } from "@/lib/links";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { isP2002 } from "@/lib/prisma-errors";
-import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import {
+  checkRateLimit,
+  rateLimitHeaders,
+  refundRateLimit,
+} from "@/lib/rate-limit";
 import {
   documentCreateSchema,
   documentListQuerySchema,
+  documentSourceKeySchema,
   toContentIndexSource,
   type DocumentSourceSystemValue,
 } from "@/lib/validations/inbound-documents";
@@ -193,6 +203,16 @@ function deletedResponse(ctx: UploadContext, id: string | null): NextResponse {
   return receiptResponse(id, 200, { duplicate: true, deleted: true });
 }
 
+/** Answer a source key that is already held: duplicate, or deleted. */
+function answerSourceKey(
+  ctx: UploadContext,
+  match: SourceKeyMatch,
+): Promise<NextResponse> | NextResponse {
+  return match.state === "live"
+    ? duplicateResponse(ctx, match.document)
+    : deletedResponse(ctx, match.id);
+}
+
 /**
  * §3.2 — a duplicate upload is NOT an error: return the existing live row
  * with `meta.duplicate: true` at the envelope level (the UI toasts "already
@@ -262,21 +282,66 @@ async function processUpload(
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
   if (!gate.enabled) return gate.response;
 
+  // A source key may ride the query string. It is answered here, before the
+  // bucket is charged and before a byte of the body is read: a nightly
+  // re-sync of an archive HealthLog already holds costs neither. Both halves
+  // or neither; half a key is a mistake worth saying so about.
+  const url = new URL(request.url);
+  const querySystem = url.searchParams.get("sourceSystem");
+  const queryId = url.searchParams.get("sourceId");
+  let queryKey: {
+    sourceSystem: DocumentSourceSystemValue;
+    sourceId: string;
+  } | null = null;
+  if (querySystem !== null || queryId !== null) {
+    const parsedKey = documentSourceKeySchema.safeParse({
+      sourceSystem: querySystem ?? undefined,
+      sourceId: queryId ?? undefined,
+    });
+    if (!parsedKey.success) {
+      return apiValidationError(
+        "Invalid source key",
+        sanitiseZodIssues(parsedKey.error.issues),
+        422,
+        { errorCode: "documents.inbound.invalidMetadata" },
+      );
+    }
+    queryKey = parsedKey.data;
+    const match = await findSourceKey(
+      user.id,
+      queryKey.sourceSystem,
+      queryKey.sourceId,
+    );
+    if (match) {
+      return answerSourceKey(
+        {
+          userId: user.id,
+          scoped,
+          sourceSystem: queryKey.sourceSystem,
+          aiDeferred: false,
+        },
+        match,
+      );
+    }
+  }
+
   // A scoped token draws on its own bucket, keyed on the token (its id rides
   // `session.id` on the Bearer path), so an import running overnight cannot
   // use up the allowance the person's own uploads from the web or the phone
   // draw on. The cookie / wildcard bucket is unchanged.
-  const rl = scoped
-    ? await checkRateLimit(
-        `documents-upload:token:${auth.session.id}`,
-        resolveDocumentUploadLimitPerHour(),
-        UPLOAD_WINDOW_MS,
-      )
-    : await checkRateLimit(
-        `documents-upload:${user.id}`,
-        UPLOAD_LIMIT_PER_HOUR,
-        UPLOAD_WINDOW_MS,
-      );
+  const bucketKey = scoped
+    ? `documents-upload:token:${auth.session.id}`
+    : `documents-upload:${user.id}`;
+  const rl = await checkRateLimit(
+    bucketKey,
+    scoped ? resolveDocumentUploadLimitPerHour() : UPLOAD_LIMIT_PER_HOUR,
+    UPLOAD_WINDOW_MS,
+  );
+  // A slot pays for a document stored. An upload that turns out to be one
+  // already held (same key, same bytes) hands its slot back, so re-sends —
+  // a Paperless workflow firing on every edit, a re-run over an archive —
+  // never eat into the allowance.
+  const refundSlot = () => refundRateLimit(bucketKey).catch(() => {});
   if (!rl.allowed) {
     const response = apiError("Too many uploads. Try again later.", 429, {
       errorCode: "documents.inbound.rateLimited",
@@ -356,8 +421,23 @@ async function processUpload(
     );
   }
 
-  const sourceSystem = parsed.data.sourceSystem ?? null;
-  const sourceId = sourceSystem ? (parsed.data.sourceId ?? null) : null;
+  // The key from the query string, or from the form fields; if a caller sends
+  // both they have to agree.
+  const formSystem = parsed.data.sourceSystem ?? null;
+  const formId = formSystem ? (parsed.data.sourceId ?? null) : null;
+  if (
+    queryKey &&
+    formSystem !== null &&
+    (formSystem !== queryKey.sourceSystem || formId !== queryKey.sourceId)
+  ) {
+    return apiError(
+      "The source key in the address and in the form differ.",
+      422,
+      { errorCode: "documents.inbound.invalidMetadata" },
+    );
+  }
+  const sourceSystem = queryKey?.sourceSystem ?? formSystem;
+  const sourceId = queryKey?.sourceId ?? formId;
   const ctx: UploadContext = {
     userId: user.id,
     scoped,
@@ -370,23 +450,12 @@ async function processUpload(
   // person deleted is refused a second copy — live and tombstoned rows both
   // count (the unique index has no `deleted_at` predicate), and past the purge
   // the ledger remembers.
-  if (sourceSystem && sourceId) {
-    const keyed = await findBySourceKey(user.id, sourceSystem, sourceId);
-    if (keyed)
-      return keyed.deletedAt
-        ? deletedResponse(ctx, keyed.id)
-        : duplicateResponse(ctx, keyed);
-    const purged = await prisma.documentImportKey.findUnique({
-      where: {
-        userId_sourceSystem_sourceId: {
-          userId: user.id,
-          sourceSystem,
-          sourceId,
-        },
-      },
-      select: { id: true },
-    });
-    if (purged) return deletedResponse(ctx, null);
+  if (sourceSystem && sourceId && !queryKey) {
+    const match = await findSourceKey(user.id, sourceSystem, sourceId);
+    if (match) {
+      await refundSlot();
+      return answerSourceKey(ctx, match);
+    }
   }
 
   let buffer: Buffer;
@@ -449,6 +518,13 @@ async function processUpload(
     omit: { contentEncrypted: true },
   });
   if (existing) {
+    // An import sending bytes that are already stored under another key (or
+    // none) is answered with that document — and the key is remembered for
+    // it, so once the person deletes the document this key stays deleted too.
+    if (sourceSystem && sourceId) {
+      await rememberSourceAlias(user.id, existing.id, sourceSystem, sourceId);
+    }
+    await refundSlot();
     return duplicateResponse(ctx, existing);
   }
 
@@ -507,6 +583,7 @@ async function processUpload(
             : new Date(),
           sourceSystem,
           sourceId,
+          aiReadDeferred: ctx.aiDeferred,
         },
         omit: { contentEncrypted: true },
       });
@@ -533,11 +610,14 @@ async function processUpload(
     });
   } catch (err) {
     if (err instanceof QuotaExceededError) {
+      // The figures are the owner's; a write-only token learns only that the
+      // vault is full.
       return apiError("Storage quota exceeded.", 413, {
         errorCode: "documents.inbound.quotaExceeded",
         reason: "quotaExceeded",
-        quotaBytes: limits.quotaBytes,
-        usedBytes: err.usedBytes,
+        ...(scoped
+          ? {}
+          : { quotaBytes: limits.quotaBytes, usedBytes: err.usedBytes }),
       });
     }
     if (isP2002(err)) {
@@ -545,18 +625,23 @@ async function processUpload(
       // source key, or the same bytes. Surface the winner exactly as the fast
       // paths above would have.
       if (sourceSystem && sourceId) {
-        const keyed = await findBySourceKey(user.id, sourceSystem, sourceId);
-        if (keyed) {
-          return keyed.deletedAt
-            ? deletedResponse(ctx, keyed.id)
-            : duplicateResponse(ctx, keyed);
+        const match = await findSourceKey(user.id, sourceSystem, sourceId);
+        if (match) {
+          await refundSlot();
+          return answerSourceKey(ctx, match);
         }
       }
       const winner = await prisma.inboundDocument.findFirst({
         where: { userId: user.id, contentSha256, deletedAt: null },
         omit: { contentEncrypted: true },
       });
-      if (winner) return duplicateResponse(ctx, winner);
+      if (winner) {
+        if (sourceSystem && sourceId) {
+          await rememberSourceAlias(user.id, winner.id, sourceSystem, sourceId);
+        }
+        await refundSlot();
+        return duplicateResponse(ctx, winner);
+      }
     }
     throw err;
   }
@@ -651,24 +736,10 @@ async function processUpload(
   );
 }
 
-/**
- * Find a document by its import source key, live or tombstoned. The blob
- * column is never selected.
- */
-function findBySourceKey(
-  userId: string,
-  sourceSystem: DocumentSourceSystemValue,
-  sourceId: string,
-): Promise<SerialisableDocument | null> {
-  return prisma.inboundDocument.findFirst({
-    where: { userId, sourceSystem, sourceId },
-    omit: { contentEncrypted: true },
-  });
-}
-
 /** Authenticate and reserve memory capacity before any request-body read. */
 async function postUpload(request: Request): Promise<Response> {
-  // The one route that names `documents:write`. Every other vault leg —
+  // One of the two routes that name `documents:write` (the other is the
+  // source-key lookup beside it). Every other vault leg —
   // list, detail, original, thumbnail, bulk, AI — declares no scope and so
   // refuses the token (`bearer-scope-enforcement-guard.test.ts`).
   const auth = await requireAuth(DOCUMENTS_WRITE_SCOPE);

@@ -177,6 +177,8 @@ export interface DocumentBackupEntry {
    */
   sourceSystem?: string | null;
   sourceId?: string | null;
+  /** Canonical DR only: the import's hold on automatic AI reading. */
+  aiReadDeferred?: boolean;
 }
 
 export interface RecordsBackupOptions {
@@ -194,6 +196,7 @@ interface DisasterRecoveryDocumentRow {
   summaryState: string;
   lastIndexAttemptAt: Date | null;
   lastIndexOutcome: string | null;
+  aiReadDeferred: boolean;
   updatedAt: Date;
 }
 
@@ -306,6 +309,7 @@ export async function buildRecordsBackupSection(
           lastIndexOutcome: true,
           sourceSystem: true,
           sourceId: true,
+          aiReadDeferred: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -563,6 +567,7 @@ export async function buildRecordsBackupSection(
         summaryState: dr.summaryState,
         lastIndexAttemptAt: dr.lastIndexAttemptAt?.toISOString() ?? null,
         lastIndexOutcome: dr.lastIndexOutcome,
+        aiReadDeferred: dr.aiReadDeferred,
       };
     }
 

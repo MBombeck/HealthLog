@@ -253,21 +253,34 @@ describe("T4 — declared scopes are exported constants, never string literals",
   });
 });
 
-describe("T4b — `documents:write` opens exactly one door", () => {
-  it("only the vault upload route declares the scope", () => {
+describe("T4b — `documents:write` opens exactly two doors", () => {
+  it("only the vault upload and the source-key lookup declare the scope", () => {
     // The scope admits a narrow token wherever it is named, so the set of
-    // files naming it IS its reach. The upload, and nothing else: not the
-    // list or detail beside it, not the original or thumbnail, not bulk, not
-    // the AI legs. A second route here is a widening and belongs in review.
+    // files naming it IS its reach. The upload, and the lookup that answers
+    // what an upload of the same key would answer (known / id / deleted) so
+    // an importer can skip a download. Nothing else: not the list or detail,
+    // not the original or thumbnail, not bulk, not the AI legs. A third route
+    // here is a widening and belongs in review.
     const declaring = filesMatching(
       /requireAuth\(\s*DOCUMENTS_WRITE_SCOPE\s*\)|requireRecordAuth\([^)]*\bscope:\s*DOCUMENTS_WRITE_SCOPE\b/,
     );
-    expect(declaring).toEqual(["app/api/documents/inbound/route.ts"]);
-    // And within that file, once: the GET beside the POST must not name it.
-    const src = read("app/api/documents/inbound/route.ts");
+    expect(declaring).toEqual([
+      "app/api/documents/inbound/route.ts",
+      "app/api/documents/inbound/source/route.ts",
+    ]);
+    // Within the upload file, once: the GET list beside the POST must not
+    // name it.
+    const upload = read("app/api/documents/inbound/route.ts");
     expect(
-      src.match(/requireAuth\(\s*DOCUMENTS_WRITE_SCOPE\s*\)/g),
+      upload.match(/requireAuth\(\s*DOCUMENTS_WRITE_SCOPE\s*\)/g),
     ).toHaveLength(1);
+    // And the lookup is a read of one key and nothing else: a single GET.
+    const lookup = read("app/api/documents/inbound/source/route.ts");
+    expect(
+      [...lookup.matchAll(/export const (GET|POST|PUT|PATCH|DELETE)\b/g)].map(
+        (m) => m[1],
+      ),
+    ).toEqual(["GET"]);
   });
 });
 

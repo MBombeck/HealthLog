@@ -152,6 +152,9 @@ export const WIPE_MODELS = [
   // import after the wipe skip files for a decision about a record that no
   // longer exists.
   "DocumentImportKey",
+  // Further import keys that resolved to a document by content; a child of
+  // the document, removed before it so the counts are truthful.
+  "DocumentSourceAlias",
   "ExtractedFact",
   "ImportJob",
 
