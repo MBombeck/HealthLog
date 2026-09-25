@@ -37,7 +37,11 @@ import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useTranslations } from "@/lib/i18n/context";
-import { useVaccinationMutations, type Vaccination } from "./use-vaccinations";
+import {
+  useVaccination,
+  useVaccinationMutations,
+  type Vaccination,
+} from "./use-vaccinations";
 import {
   VaccinationForm,
   draftFromVaccination,
@@ -63,6 +67,9 @@ export function VaccinationSheet({
 }) {
   const { t } = useTranslations();
   const { create, update, remove } = useVaccinationMutations();
+  // The list row carries no document links; the detail read does. Until it
+  // answers, the draft's links stay "untouched" and Save leaves them alone.
+  const detail = useVaccination(vaccination?.id ?? null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   // Seeded once at mount; the caller remounts on every open by varying `key`.
   const [draft, setDraft] = useState<VaccinationDraft>(() =>
@@ -125,7 +132,22 @@ export function VaccinationSheet({
       }
     >
       <div className="space-y-4">
-        <VaccinationForm draft={draft} onChange={setDraft} />
+        <VaccinationForm
+          draft={draft}
+          onChange={setDraft}
+          savedDocuments={
+            vaccination
+              ? {
+                  ids:
+                    detail.data?.documents?.map((document) => document.id) ??
+                    null,
+                  pending: detail.isPending,
+                  error: detail.isError,
+                  retry: () => void detail.refetch(),
+                }
+              : undefined
+          }
+        />
         {error ? (
           <p role="alert" className="text-destructive text-sm">
             {error}

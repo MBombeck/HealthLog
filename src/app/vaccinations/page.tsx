@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -42,5 +42,11 @@ export default function VaccinationsPage() {
     return <PageAuthGate />;
   }
 
-  return <VaccinationsView />;
+  // The view reads `?dose=` through `useSearchParams`, which needs a
+  // boundary on a statically rendered page.
+  return (
+    <Suspense fallback={<PageAuthGate />}>
+      <VaccinationsView />
+    </Suspense>
+  );
 }

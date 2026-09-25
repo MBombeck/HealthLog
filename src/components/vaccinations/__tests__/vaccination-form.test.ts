@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 
+import type { Vaccination } from "../use-vaccinations";
 import {
+  draftFromVaccination,
   draftHasIdentity,
   draftInstant,
   draftToBody,
@@ -70,5 +72,65 @@ describe("vaccination form draft", () => {
       site: "LEFT_ARM",
       note: "sore arm",
     });
+  });
+});
+
+/**
+ * #1024 — a dose opened from the LIST carries no `documents` (the list omits
+ * them; only the detail read has them). The edit draft used to seed that
+ * absence as an empty link set and send it on Save, and the route reads a
+ * present array as "replace the links with this": editing any field of a dose
+ * silently unlinked every document filed against it.
+ */
+describe("vaccination form document links", () => {
+  const listRow = {
+    id: "dose-1",
+    occurredAt: "2025-09-12T00:00:00.000Z",
+    antigenSlug: "covid19",
+    vaccineName: null,
+    doseNumber: null,
+    seriesDoses: null,
+    lotNumber: null,
+    site: null,
+    catalogEntry: null,
+    series: [],
+    practitioner: null,
+    encounter: null,
+    reminderId: null,
+    note: null,
+    createdAt: "2025-09-12T00:00:00.000Z",
+    updatedAt: "2025-09-12T00:00:00.000Z",
+  } as Vaccination;
+
+  it("an edit seeded from a list row does not claim the dose has no documents", () => {
+    const draft = draftFromVaccination(listRow);
+    expect(draft.documentIds).toBeNull();
+  });
+
+  it("saving such an edit leaves the links alone", () => {
+    const body = draftToBody({
+      ...draftFromVaccination(listRow),
+      lotNumber: "AB123",
+    });
+    expect(body).not.toBeNull();
+    expect(body).not.toHaveProperty("documentIds");
+  });
+
+  it("a detail row seeds its linked documents", () => {
+    const draft = draftFromVaccination({
+      ...listRow,
+      documents: [
+        { id: "doc-1", label: "Record", date: null, redacted: false },
+      ],
+    });
+    expect(draft.documentIds).toEqual(["doc-1"]);
+  });
+
+  it("a deliberate unlink of every document is still sent", () => {
+    const body = draftToBody({
+      ...draftFromVaccination(listRow),
+      documentIds: [],
+    });
+    expect(body!.documentIds).toEqual([]);
   });
 });

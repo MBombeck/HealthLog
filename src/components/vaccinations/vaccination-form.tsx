@@ -59,7 +59,14 @@ export interface VaccinationDraft {
   practitioner: Practitioner | null;
   encounterId: string | null;
   note: string;
-  documentIds: string[];
+  /**
+   * The documents the person has chosen, or `null` for "untouched: whatever
+   * the dose is filed against now". A dose opened from the list arrives
+   * without its links (only the detail read carries them), and an empty array
+   * here is sent as "unlink everything" — which is how editing a lot number
+   * used to strip every page filed against the dose.
+   */
+  documentIds: string[] | null;
 }
 
 /** Today as a local `YYYY-MM-DD`, the DateField default and max. */
@@ -102,7 +109,7 @@ export function draftFromVaccination(row: Vaccination): VaccinationDraft {
     practitioner: row.practitioner,
     encounterId: row.encounter?.id ?? null,
     note: row.note ?? "",
-    documentIds: row.documents?.map((doc) => doc.id) ?? [],
+    documentIds: row.documents ? row.documents.map((doc) => doc.id) : null,
   };
 }
 
@@ -143,16 +150,30 @@ export function draftToBody(
     practitionerId: draft.practitioner?.id ?? null,
     encounterId: draft.encounterId,
     note: draft.note.trim() || null,
-    documentIds: draft.documentIds,
+    // Absent unless the person changed the links: the route reads a present
+    // array as the whole new set.
+    ...(draft.documentIds !== null ? { documentIds: draft.documentIds } : {}),
   };
 }
 
 export function VaccinationForm({
   draft,
   onChange,
+  savedDocuments,
 }: {
   draft: VaccinationDraft;
   onChange: (next: VaccinationDraft) => void;
+  /**
+   * What the dose is filed against on the server, for an edit: the ids, or
+   * `pending` while the detail read runs, or `error` when it failed. A create
+   * passes nothing and starts from an empty set.
+   */
+  savedDocuments?: {
+    ids: string[] | null;
+    pending: boolean;
+    error: boolean;
+    retry: () => void;
+  };
 }) {
   const { t } = useTranslations();
   const { user } = useAuth();
@@ -306,7 +327,14 @@ export function VaccinationForm({
       <VaccinationDocumentPicker
         enabled={user?.modules?.inboundDocuments === true}
         anchor={anchor}
-        documentIds={draft.documentIds}
+        documentIds={draft.documentIds ?? savedDocuments?.ids ?? []}
+        seedPending={
+          draft.documentIds === null && (savedDocuments?.pending ?? false)
+        }
+        seedError={
+          draft.documentIds === null && (savedDocuments?.error ?? false)
+        }
+        onRetrySeed={savedDocuments?.retry}
         onChange={(documentIds) => patch({ documentIds })}
       />
     </div>
