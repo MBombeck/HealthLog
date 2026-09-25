@@ -35,6 +35,8 @@ import {
   RP_NAME as rpName,
   getRpId,
   getExpectedOrigin,
+  REGISTRATION_ACCEPTED_ALGORITHM_IDS,
+  REGISTRATION_OFFERED_ALGORITHM_IDS,
 } from "@/lib/auth/webauthn-rp";
 
 // Boundary narrowing mirrors `passkey.ts`: a malformed body fails fast with a
@@ -107,6 +109,7 @@ export async function createMfaRegistrationOptions(
     rpID: getRpId(),
     userName: username,
     attestationType: "none",
+    supportedAlgorithmIDs: REGISTRATION_OFFERED_ALGORITHM_IDS,
     excludeCredentials: existing.map((c) => ({
       id: c.credentialId,
       transports: c.transports as Transport[],
@@ -168,6 +171,7 @@ export async function verifyMfaRegistration(
       expectedChallenge: challenge.challenge,
       expectedOrigin: getExpectedOrigin(),
       expectedRPID: getRpId(),
+      supportedAlgorithmIDs: REGISTRATION_ACCEPTED_ALGORITHM_IDS,
     });
   } finally {
     await prisma.authChallenge

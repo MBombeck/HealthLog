@@ -58,3 +58,23 @@ export function getExpectedOrigin(): string | string[] {
   const origins = getConfiguredOrigins();
   return origins.length === 1 ? origins[0] : origins;
 }
+
+/**
+ * COSE algorithms offered to the authenticator at registration, in order of
+ * preference: EdDSA, ES256, RS256. Passed explicitly so the options a browser
+ * receives do not follow a library default; a runtime with post-quantum
+ * support would otherwise put ML-DSA-44 at the front of the list.
+ */
+export const REGISTRATION_OFFERED_ALGORITHM_IDS = [-8, -7, -257];
+
+/**
+ * COSE algorithms a registration response may carry. Wider than the offered
+ * list on purpose: it is the set the server has always accepted (EdDSA,
+ * ES256, ES512, PS256/384/512, RS256/384/512 and legacy RS1), so an
+ * authenticator that picks an algorithm it was not offered keeps registering
+ * as it did before. Narrowing it would turn away authenticators that work
+ * today.
+ */
+export const REGISTRATION_ACCEPTED_ALGORITHM_IDS = [
+  -8, -7, -36, -37, -38, -39, -257, -258, -259, -65535,
+];

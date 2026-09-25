@@ -5,12 +5,15 @@ name: CodeQL
 # settings, so the query suite, the excluded paths and the schedule are
 # reviewable in the diff like everything else here.
 #
-# Deliberately NOT on `push: main`. The weekly run already analyses the
-# default branch, which is what keeps the Security tab current, and every
-# change reaches `main` through a pull request that is analysed on the way
-# in. Adding a push trigger would analyse the same tree a second time
-# minutes later for no additional signal.
+# Runs on every push to `main` as well as on pull requests. Most changes
+# reach `main` through a pull request that is analysed on the way in, but
+# not all of them: an asset uploaded through the web UI or a maintenance
+# commit pushed directly lands without one, and the weekly run would only
+# catch it days later. The push run re-analyses a merged tree once more,
+# which is the cost of every commit on `main` having an analysis of its own.
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   schedule:
@@ -22,9 +25,13 @@ on:
 permissions:
   contents: read
 
+# A pull request keeps only its newest run: an older head is superseded and
+# never merged. A push to `main` is grouped by commit and never cancelled, so
+# two merges in quick succession each keep their own analysis instead of the
+# second one cancelling (or replacing the queued run of) the first.
 concurrency:
-  group: codeql-${{ github.ref }}
-  cancel-in-progress: true
+  group: codeql-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   analyze:
