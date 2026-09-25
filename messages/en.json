@@ -4776,7 +4776,9 @@
           "done": "{name} is added.",
           "doneUnnamed": "Your first medication is added.",
           "nextDose": "Next dose: {when}.",
-          "reminders": "Reminders follow the schedule you set."
+          "reminders": "Reminders follow the schedule you set.",
+          "recordOnly": "Kept as a record: no reminders, nothing falls due.",
+          "asNeeded": "As needed: no reminders, log a dose when you take it."
         },
         "log-reading": {
           "title": "Enter one reading: {target}",

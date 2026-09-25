@@ -384,6 +384,10 @@ function ConnectNoticeTile({
 interface MedicationDetail {
   name: string;
   nextDueAt: string | null;
+  /** v1.16.11 — as-needed: never reminded. */
+  asNeeded?: boolean;
+  /** v1.39.1 (#1033) — false: kept as a record, never reminded. */
+  trackIntake?: boolean;
 }
 
 function AddMedicationTask({
@@ -418,11 +422,15 @@ function AddMedicationTask({
             : t("onboarding.flow.first-result.add-medication.doneUnnamed")
         }
         detail={
-          detail.data?.nextDueAt
-            ? t("onboarding.flow.first-result.add-medication.nextDose", {
-                when: fmt.dateTime(detail.data.nextDueAt),
-              })
-            : t("onboarding.flow.first-result.add-medication.reminders")
+          detail.data?.trackIntake === false
+            ? t("onboarding.flow.first-result.add-medication.recordOnly")
+            : detail.data?.asNeeded
+              ? t("onboarding.flow.first-result.add-medication.asNeeded")
+              : detail.data?.nextDueAt
+                ? t("onboarding.flow.first-result.add-medication.nextDose", {
+                    when: fmt.dateTime(detail.data.nextDueAt),
+                  })
+                : t("onboarding.flow.first-result.add-medication.reminders")
         }
       />
     );

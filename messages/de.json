@@ -4776,7 +4776,9 @@
           "done": "{name} ist angelegt.",
           "doneUnnamed": "Dein erstes Medikament ist angelegt.",
           "nextDose": "Nächste Dosis: {when}.",
-          "reminders": "Erinnerungen folgen dem Plan, den du festgelegt hast."
+          "reminders": "Erinnerungen folgen dem Plan, den du festgelegt hast.",
+          "recordOnly": "Nur dokumentiert: keine Erinnerungen, nichts wird fällig.",
+          "asNeeded": "Bei Bedarf: keine Erinnerungen, erfasse eine Dosis, wenn du sie nimmst."
         },
         "log-reading": {
           "title": "Einen Wert eintragen: {target}",

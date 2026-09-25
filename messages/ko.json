@@ -4776,7 +4776,9 @@
           "done": "{name}이(가) 추가되었습니다.",
           "doneUnnamed": "첫 약이 추가되었습니다.",
           "nextDose": "다음 복용: {when}.",
-          "reminders": "알림은 설정한 일정을 따릅니다."
+          "reminders": "알림은 설정한 일정을 따릅니다.",
+          "recordOnly": "기록으로만 남겨요: 알림도, 예정된 복용도 없어요.",
+          "asNeeded": "필요시: 알림 없이, 복용할 때 기록하세요."
         },
         "log-reading": {
           "title": "측정값 하나 입력: {target}",

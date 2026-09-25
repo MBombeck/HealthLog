@@ -4776,7 +4776,9 @@
           "done": "{name} est ajouté.",
           "doneUnnamed": "Votre premier médicament est ajouté.",
           "nextDose": "Prochaine prise : {when}.",
-          "reminders": "Les rappels suivent l'horaire que vous avez défini."
+          "reminders": "Les rappels suivent l'horaire que vous avez défini.",
+          "recordOnly": "Conservé pour mémoire : pas de rappel, rien n’est dû.",
+          "asNeeded": "Au besoin : pas de rappel, notez une prise quand vous la prenez."
         },
         "log-reading": {
           "title": "Saisir une mesure : {target}",

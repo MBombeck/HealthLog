@@ -4776,7 +4776,9 @@
           "done": "{name} è stato aggiunto.",
           "doneUnnamed": "Il tuo primo farmaco è stato aggiunto.",
           "nextDose": "Prossima dose: {when}.",
-          "reminders": "I promemoria seguono l'orario che hai impostato."
+          "reminders": "I promemoria seguono l'orario che hai impostato.",
+          "recordOnly": "Solo annotato: niente promemoria, nulla è dovuto.",
+          "asNeeded": "Al bisogno: niente promemoria, registra una dose quando la prendi."
         },
         "log-reading": {
           "title": "Inserisci una misurazione: {target}",
