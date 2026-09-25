@@ -49,10 +49,7 @@ import { syncMfaEnrollCookie } from "@/lib/auth/mfa-enrollment";
 import { buildAvatarUrl } from "@/lib/avatar";
 import { decrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
-import {
-  isValidTimezone,
-  resolveServerDefaultTimezone,
-} from "@/lib/tz/resolver";
+import { resolveStoredTimezone } from "@/lib/tz/resolver";
 import { isCycleEnabled } from "@/lib/cycle/gate";
 import {
   resolveModuleMap,
@@ -279,9 +276,7 @@ export const GET = apiHandler(async () => {
     // The zone the server cuts this account's days in: the stored zone, or
     // the instance default when the stored one is unusable. Clients bucket
     // by this value, so it must be the resolved one, not the raw column.
-    timezone: isValidTimezone(user.timezone)
-      ? user.timezone
-      : await resolveServerDefaultTimezone(),
+    timezone: await resolveStoredTimezone(user.timezone),
     onboardingCompletedAt: user.onboardingCompletedAt,
     onboardingTourCompleted: user.onboardingTourCompleted,
     // v1.39 (C1) — the needs-based setup flow, published additively:

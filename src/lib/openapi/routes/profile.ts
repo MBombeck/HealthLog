@@ -498,7 +498,11 @@ const profileResponse = z
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).nullable(),
     heightCm: z.number().nullable(),
     locale: z.string().nullable(),
-    timezone: z.string(),
+    timezone: z
+      .string()
+      .describe(
+        "The IANA zone the server cuts this account's days in, the same value `/api/auth/me` reports: the stored zone, or the instance default when the stored value is not a usable IANA name (since v1.39.1; before, the raw stored value). Always a valid IANA name, so sending it back in a PATCH is accepted.",
+      ),
     timeFormat: z
       .enum(["AUTO", "H12", "H24"])
       .describe(
@@ -542,7 +546,11 @@ const profileUpdateResponse = z
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).nullable(),
     heightCm: z.number().nullable(),
     locale: z.string().nullable(),
-    timezone: z.string(),
+    timezone: z
+      .string()
+      .describe(
+        "The IANA zone the server cuts this account's days in, the same value `/api/auth/me` reports: the stored zone, or the instance default when the stored value is not a usable IANA name (since v1.39.1; before, the raw stored value). Always a valid IANA name, so sending it back in a PATCH is accepted.",
+      ),
     timeFormat: z
       .enum(["AUTO", "H12", "H24"])
       .describe(

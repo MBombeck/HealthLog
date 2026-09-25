@@ -47119,6 +47119,9 @@ components:
             - type: "null"
         timezone:
           type: string
+          description: "The IANA zone the server cuts this account's days in, the same value `/api/auth/me` reports: the stored
+            zone, or the instance default when the stored value is not a usable IANA name (since v1.39.1; before, the
+            raw stored value). Always a valid IANA name, so sending it back in a PATCH is accepted."
         timeFormat:
           type: string
           enum:
@@ -47231,6 +47234,9 @@ components:
             - type: "null"
         timezone:
           type: string
+          description: "The IANA zone the server cuts this account's days in, the same value `/api/auth/me` reports: the stored
+            zone, or the instance default when the stored value is not a usable IANA name (since v1.39.1; before, the
+            raw stored value). Always a valid IANA name, so sending it back in a PATCH is accepted."
         timeFormat:
           type: string
           enum:

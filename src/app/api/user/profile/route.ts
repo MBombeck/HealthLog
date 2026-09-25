@@ -20,6 +20,7 @@ import { applyProfileUpdate } from "@/lib/auth/profile-update";
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { resolveModuleMap } from "@/lib/modules/gate";
+import { resolveStoredTimezone } from "@/lib/tz/resolver";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,10 @@ export const GET = apiHandler(async () => {
     gender: dbUser?.gender ?? null,
     heightCm: dbUser?.heightCm ?? null,
     locale: dbUser?.locale ?? null,
-    timezone: dbUser?.timezone ?? "Europe/Berlin",
+    // The zone the server cuts this account's days in, exactly as
+    // `/api/auth/me` reports it: the stored zone, or the instance default
+    // when the stored value is unusable. Never the raw column.
+    timezone: await resolveStoredTimezone(dbUser?.timezone),
     timeFormat: dbUser?.timeFormat ?? "AUTO",
     dateFormat: dbUser?.dateFormat ?? "AUTO",
     moodReminderEnabled: dbUser?.moodReminderEnabled ?? false,
@@ -118,7 +122,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     gender: result.user.gender,
     heightCm: result.user.heightCm,
     locale: result.user.locale,
-    timezone: result.user.timezone,
+    timezone: await resolveStoredTimezone(result.user.timezone),
     timeFormat: result.user.timeFormat,
     dateFormat: result.user.dateFormat,
     moodReminderEnabled: result.user.moodReminderEnabled,

@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findUnique: vi.fn(), update: vi.fn() },
+    appSettings: { findUnique: vi.fn() },
   },
 }));
 
@@ -60,6 +61,12 @@ const SESSION_OK = {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(resolveModuleMap).mockResolvedValue(MODULE_MAP as never);
+  // The operator's default zone, which the server falls back to when a
+  // stored one is unusable. Distinct from the built-in default so a test can
+  // tell the resolver ran.
+  vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
+    defaultUserTimezone: "America/Chicago",
+  } as never);
 });
 
 const callGet = GET as unknown as (req: NextRequest) => Promise<Response>;
@@ -436,5 +443,83 @@ describe("PATCH /api/user/profile", () => {
     expect(body.data.rejectedFields).toEqual([
       expect.objectContaining({ path: "gender" }),
     ]);
+  });
+});
+
+/**
+ * `/api/auth/me` has returned the zone the server actually cuts days in —
+ * the stored one, or the instance default when the stored value is unusable
+ * — while this alias returned the raw column. A client reading this endpoint
+ * could bucket a day differently from the server. Both now go through the
+ * same resolution.
+ */
+describe("/api/user/profile — timezone is the resolved zone", () => {
+  function profileRow(timezone: string | null) {
+    return {
+      username: "testuser",
+      displayName: null,
+      email: null,
+      dateOfBirth: null,
+      gender: null,
+      heightCm: null,
+      locale: null,
+      timezone,
+      moodReminderEnabled: false,
+      fullName: null,
+      insurerName: null,
+      insurerIkNumber: null,
+      insuranceNumberEncrypted: null,
+    };
+  }
+
+  async function getZone(stored: string | null): Promise<string> {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(
+      profileRow(stored) as never,
+    );
+    const res = await callGet(makeGetReq());
+    expect(res.status).toBe(200);
+    return ((await res.json()) as { data: { timezone: string } }).data.timezone;
+  }
+
+  it("returns a usable stored zone as stored", async () => {
+    expect(await getZone("Asia/Tokyo")).toBe("Asia/Tokyo");
+  });
+
+  it("returns the instance default in place of a bare offset", async () => {
+    expect(await getZone("+05:30")).toBe("America/Chicago");
+  });
+
+  it("returns the instance default in place of a name no runtime knows", async () => {
+    expect(await getZone("Mars/Olympus_Mons")).toBe("America/Chicago");
+  });
+
+  it("returns the instance default when the row is missing", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+    const res = await callGet(makeGetReq());
+    const body = (await res.json()) as { data: { timezone: string } };
+    expect(body.data.timezone).toBe("America/Chicago");
+  });
+
+  it("answers a PATCH that leaves an unusable zone untouched with the resolved one", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.user.update).mockResolvedValue({
+      ...profileRow("+05:30"),
+      id: "user-1",
+      role: "USER",
+      displayName: "Alex T.",
+    } as never);
+    const res = await PATCH(
+      new NextRequest("http://localhost/api/user/profile", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ displayName: "Alex T." }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { timezone: string } };
+    expect(body.data.timezone).toBe("America/Chicago");
   });
 });
