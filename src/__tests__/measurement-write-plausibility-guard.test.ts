@@ -114,7 +114,7 @@ const WRITERS: Record<string, Disposition> = {
   },
 
   // ── Restore ───────────────────────────────────────────────────────────
-  "app/api/admin/backups/[id]/restore/route.ts": {
+  "lib/export/restore-backup.ts": {
     kind: "restore",
     why: "replays the record's own export; dropping rows would break the restore contract",
   },

@@ -31,7 +31,7 @@ import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
 import { parseBackupPayload } from "@/lib/validations/backup";
-import { POST } from "@/app/api/admin/backups/[id]/restore/route";
+import { POST } from "./restore-job-driver";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";

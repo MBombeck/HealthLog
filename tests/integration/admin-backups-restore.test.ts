@@ -208,7 +208,7 @@ describe("POST /api/admin/backups/[id]/restore", () => {
     });
 
     // ── act: restore ──
-    const { POST } = await import("@/app/api/admin/backups/[id]/restore/route");
+    const { POST } = await import("./restore-job-driver");
     const req = makeRequest(backup.id, { confirm: "RESTORE" });
     const res = await POST(req as unknown as Parameters<typeof POST>[0], {
       params: Promise.resolve({ id: backup.id }),
@@ -302,7 +302,7 @@ describe("POST /api/admin/backups/[id]/restore", () => {
       },
     });
 
-    const { POST } = await import("@/app/api/admin/backups/[id]/restore/route");
+    const { POST } = await import("./restore-job-driver");
     const req = makeRequest(backup.id, { confirm: "yes" });
     const res = await POST(req as unknown as Parameters<typeof POST>[0], {
       params: Promise.resolve({ id: backup.id }),
@@ -358,7 +358,7 @@ describe("POST /api/admin/backups/[id]/restore", () => {
       },
     });
 
-    const { POST } = await import("@/app/api/admin/backups/[id]/restore/route");
+    const { POST } = await import("./restore-job-driver");
     const restore = (body: Record<string, unknown>) =>
       POST(
         makeRequest(backup.id, body) as unknown as Parameters<typeof POST>[0],
@@ -421,7 +421,7 @@ describe("POST /api/admin/backups/[id]/restore", () => {
       },
     });
 
-    const { POST } = await import("@/app/api/admin/backups/[id]/restore/route");
+    const { POST } = await import("./restore-job-driver");
     const res = await POST(
       makeRequest(backup.id, {
         confirm: "RESTORE",
@@ -442,7 +442,7 @@ describe("POST /api/admin/backups/[id]/restore", () => {
     const admin = await seedAdminSession();
     void admin;
 
-    const { POST } = await import("@/app/api/admin/backups/[id]/restore/route");
+    const { POST } = await import("./restore-job-driver");
     const req = makeRequest("does-not-exist", { confirm: "RESTORE" });
     const res = await POST(req as unknown as Parameters<typeof POST>[0], {
       params: Promise.resolve({ id: "does-not-exist" }),

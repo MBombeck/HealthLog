@@ -163,8 +163,7 @@ describe("backup endpoints — AuditLog contract", () => {
     expect(downloadRes.status).toBe(200);
 
     // ── restore ──
-    const { POST: RESTORE } =
-      await import("@/app/api/admin/backups/[id]/restore/route");
+    const { POST: RESTORE } = await import("./restore-job-driver");
     const restoreRes = await RESTORE(
       new Request(`http://localhost/api/admin/backups/${seeded.id}/restore`, {
         method: "POST",

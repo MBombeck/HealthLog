@@ -254,7 +254,7 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
 ];
 
 export const BACKUP_RESTORE_FILES: readonly string[] = [
-  "src/app/api/admin/backups/[id]/restore/route.ts",
+  "src/lib/export/restore-backup.ts",
   "src/lib/export/profile-backup.ts",
   "src/lib/export/intraday-profile-backup.ts",
   "src/lib/export/health-score-backup.ts",
@@ -666,6 +666,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Replay protection for requests this host already answered. Restoring it would suppress a legitimate new request.",
   DataBackup:
     "The backup catalogue itself. A backup that contains the list of backups is a recursion with no reader.",
+  BackupRestoreJob:
+    "The record of a restore this host ran from one of its own stored copies. It names a backup row that exists only in this database, so carrying it would describe a restore the receiving host never performed.",
   OffhostBackupState:
     "When this host last put this account's copy in this operator's bucket, and how big it was. It describes one deployment's relationship with one bucket, so restoring it elsewhere would assert an off-host copy that host has never written.",
   ImportJob:

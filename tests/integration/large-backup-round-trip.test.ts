@@ -117,7 +117,7 @@ async function measurementsOf(userId: string) {
 }
 
 async function restore(id: string) {
-  const { POST } = await import("@/app/api/admin/backups/[id]/restore/route");
+  const { POST } = await import("./restore-job-driver");
   const res = await POST(
     new Request(`http://localhost/api/admin/backups/${id}/restore`, {
       method: "POST",

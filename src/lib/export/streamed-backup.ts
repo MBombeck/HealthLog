@@ -79,8 +79,17 @@ function parseMeasurement(element: unknown, index: number): BackupMeasurement {
  * is not a JSON object and with `StreamedBackupInvalidError` for a
  * measurement the schema refuses.
  */
+export interface ReadStreamedBackupOptions {
+  /**
+   * Called after each measurement passes the element schema, with how many
+   * have so far. For a caller that reports progress; keep it cheap.
+   */
+  onMeasurementChecked?: (checked: number) => void;
+}
+
 export async function readStreamedBackup(
   source: BackupSource,
+  options: ReadStreamedBackupOptions = {},
 ): Promise<StreamedBackup> {
   let firstWithoutId: number | null = null;
   let bytes = 0;
@@ -95,6 +104,7 @@ export async function readStreamedBackup(
     onElement: (_key, element, index) => {
       const row = parseMeasurement(element, index);
       if (!row.id && firstWithoutId === null) firstWithoutId = index;
+      options.onMeasurementChecked?.(index + 1);
     },
   });
 

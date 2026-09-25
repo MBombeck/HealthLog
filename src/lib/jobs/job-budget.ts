@@ -46,3 +46,22 @@ export function jobBudget(
   return () =>
     now() >= deadline || jobs.some((job) => job.signal?.aborted === true);
 }
+
+/**
+ * The same budget as an instant, for a pass that cannot stop half-way.
+ *
+ * A pass that commits unit by unit asks `jobBudget` between units. A pass
+ * that is one transaction cannot stop part-way without undoing everything it
+ * did, so it asks once, before it starts, whether its own time limit ends
+ * before this instant, and refuses to start when it does. `undefined` when the
+ * job carries no expiry.
+ */
+export function jobDeadline(
+  job: BudgetedJob,
+  now: () => number = Date.now,
+): number | undefined {
+  if (!Number.isFinite(job.expireInSeconds) || job.expireInSeconds <= 0) {
+    return undefined;
+  }
+  return now() + job.expireInSeconds * 1000 * JOB_BUDGET_SHARE;
+}

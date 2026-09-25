@@ -383,7 +383,7 @@ describe("the recorded day survives a backup and a restore", () => {
       await prisma.healthScoreRecord.count({ where: { userId: admin.id } }),
     ).toBe(0);
 
-    const { POST } = await import("@/app/api/admin/backups/[id]/restore/route");
+    const { POST } = await import("./restore-job-driver");
     const res = await POST(
       new Request(`http://localhost/api/admin/backups/${backup.id}/restore`, {
         method: "POST",
@@ -583,7 +583,7 @@ describe("the composition note reads the stored day, and survives a restore", ()
       (await readAnalytics()).data!.healthScore!.compositionNotice ?? null,
     ).toBeNull();
 
-    const { POST } = await import("@/app/api/admin/backups/[id]/restore/route");
+    const { POST } = await import("./restore-job-driver");
     const res = await POST(
       new Request(`http://localhost/api/admin/backups/${backup.id}/restore`, {
         method: "POST",

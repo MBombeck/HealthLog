@@ -1,11 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
 
 /**
  * A restore writes into the account the BACKUP RECORD names, not the one the
  * encrypted payload claims.
  *
- * The route took its target from `payload.userId` — a field inside the blob —
+ * The restore took its target from `payload.userId` — a field inside the blob —
  * while logging `backup.userId` from the row. An admin selecting one user's
  * backup could therefore write into a different account, and the audit trail
  * would record the account they thought they picked. Both values are in hand at
@@ -14,19 +13,6 @@ import { NextRequest } from "next/server";
  * This is inside the admin privilege boundary, so it is an integrity problem
  * rather than an escalation: the operator's intent was not honoured.
  */
-
-vi.mock("@/lib/api-handler", () => ({
-  apiHandler: (fn: unknown) => fn,
-  HttpError: class extends Error {
-    constructor(
-      public status: number,
-      message: string,
-    ) {
-      super(message);
-    }
-  },
-  requireAdmin: vi.fn(async () => ({ user: { id: "admin-1" } })),
-}));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -53,10 +39,6 @@ vi.mock("@/lib/validations/backup", () => ({
 }));
 vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn() }));
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
-vi.mock("@/lib/idempotency", () => ({
-  withIdempotency: (fn: unknown) => fn,
-  defaultUserIdResolver: vi.fn(),
-}));
 vi.mock("@/lib/rollups/mood-rollups", () => ({
   recomputeUserMoodRollups: vi.fn(),
 }));
@@ -68,21 +50,24 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   recomputeUserRollups: vi.fn(),
 }));
 
-import { POST } from "../route";
+import { restoreBackup } from "../restore-backup";
 import { prisma } from "@/lib/db";
 import { parseBackupPayload } from "@/lib/validations/backup";
 import { auditLog } from "@/lib/auth/audit";
 
-function request(): NextRequest {
-  return new NextRequest("http://localhost/api/admin/backups/b-1/restore", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    // The route requires a typed confirmation before it will restore anything.
-    body: JSON.stringify({ confirm: "RESTORE" }),
+/**
+ * Run the restore the job runs, and answer with the status the synchronous
+ * route used to: 200, or the refusal's status.
+ */
+async function restore(): Promise<{ status: number }> {
+  const outcome = await restoreBackup({
+    backup: { id: "b-1", userId: "user-A", data: "cipher" },
+    actorUserId: "admin-1",
+    ipAddress: null,
+    restoreInstanceSettings: false,
   });
+  return { status: outcome.ok ? 200 : outcome.status };
 }
-
-const params = Promise.resolve({ id: "b-1" });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -101,9 +86,7 @@ describe("admin backup restore — declared owner", () => {
       userId: "user-B",
     } as never);
 
-    const res = await (
-      POST as unknown as (r: NextRequest, c: unknown) => Promise<Response>
-    )(request(), { params });
+    const res = await restore();
 
     expect(res.status).toBe(409);
     // The restore must not have gone looking for the claimed user at all.
@@ -127,9 +110,7 @@ describe("admin backup restore — declared owner", () => {
     } as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
 
-    const res = await (
-      POST as unknown as (r: NextRequest, c: unknown) => Promise<Response>
-    )(request(), { params });
+    const res = await restore();
 
     // Reaching the owner lookup proves the mismatch branch did not fire; this
     // case then fails on the deleted-user branch, which is the next guard.
