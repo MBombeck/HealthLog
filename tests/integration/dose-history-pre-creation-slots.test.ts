@@ -278,7 +278,7 @@ describe("placeholders on slots before the medication existed (#1028)", () => {
     const sql = readFileSync(
       join(
         process.cwd(),
-        "prisma/migrations/0346_release_pre_creation_placeholder_misses/migration.sql",
+        "prisma/migrations/0350_release_pre_creation_placeholder_misses/migration.sql",
       ),
       "utf8",
     );
