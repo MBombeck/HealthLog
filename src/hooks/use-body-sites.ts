@@ -41,6 +41,18 @@ export function useBodySites(
 }
 
 /**
+ * Whether the caller may ask for the list at all. It is read in the visits'
+ * section (`profile`), so a grant without it would be refused on every open;
+ * `null` or absent sections mean the whole record (one's own, or an
+ * entire-record grant).
+ */
+export function canReadBodySites(
+  sections: readonly string[] | null | undefined,
+): boolean {
+  return !sections || sections.includes("profile");
+}
+
+/**
  * The site names a body-site field suggests: every site the record holds,
  * most used first. A failed or refused read (a grant without the visits
  * section) suggests nothing and never blocks the field.

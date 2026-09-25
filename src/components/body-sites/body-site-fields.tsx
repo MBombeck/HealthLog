@@ -10,14 +10,18 @@
  * types. The list comes from the server (`useBodySiteSuggestions`), which
  * decrypts and folds the sites; the browser's own `datalist` does the
  * narrowing, so a suggestion is a nudge and never a restriction. A caller whose
- * grant cannot read the list gets a plain text field.
+ * grant cannot read the list gets a plain text field and no request.
  */
 import { useId } from "react";
 
 import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { useBodySiteSuggestions } from "@/hooks/use-body-sites";
+import {
+  canReadBodySites,
+  useBodySiteSuggestions,
+} from "@/hooks/use-body-sites";
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   LATERALITIES,
@@ -46,7 +50,11 @@ export function BodySiteFields({
   const listId = `${useId()}-body-sites`;
   const typed = bodySite.trim().toLowerCase();
   // The exact site already typed is not suggested back to itself.
-  const suggestions = useBodySiteSuggestions().filter(
+  // The list is read in the visits' section. A delegate without it (say, one
+  // who may only keep the illness journal) is not sent to a read that would
+  // refuse them on every open; the field simply offers nothing.
+  const { sections } = useRecordCapabilities();
+  const suggestions = useBodySiteSuggestions(canReadBodySites(sections)).filter(
     (site) => site.toLowerCase() !== typed,
   );
 

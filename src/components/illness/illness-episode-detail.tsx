@@ -22,6 +22,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { bodySiteText } from "@/components/encounters/encounter-labels";
+import { canReadBodySites } from "@/hooks/use-body-sites";
 
 import { IllnessCorrelationCard } from "./illness-correlation-card";
 import { IllnessDayTimeline } from "./illness-day-timeline";
@@ -46,7 +47,7 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
   const { canManageDomain, sections } = useRecordCapabilities();
   // The body-site view is read in the visits' section; a grant without it
   // gets the site as text rather than a link that would be refused.
-  const canOpenBodySites = sections === null || sections.includes("profile");
+  const canOpenBodySites = canReadBodySites(sections);
   const canManageIllness = canManageDomain("illness");
   const fmt = useFormatters();
   const {

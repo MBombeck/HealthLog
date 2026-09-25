@@ -8,10 +8,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
  *
  *   - the suggestions are the server's list, in its order;
  *   - the site already typed is not suggested back to itself;
- *   - no list (a refused or failed read) is a plain field, not an empty list.
+ *   - no list (a refused or failed read) is a plain field, not an empty list;
+ *   - a delegate whose grant does not include the visits' section is not
+ *     sent to a read that would refuse them.
  *
- * Mutation check (run, seen red): drop the `list` attribute from the input →
- * "offers the sites the record holds" goes red.
+ * Mutation checks (each run, each seen red): drop the `list` attribute from
+ * the input → "offers the sites the record holds" goes red; enable the read
+ * unconditionally in `canReadBodySites` → "does not ask for the list" goes
+ * red.
  */
 
 vi.mock("@/lib/api/api-fetch", async () => {
@@ -24,6 +28,7 @@ vi.mock("@/lib/api/api-fetch", async () => {
 import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import type { BodySiteListDTO } from "@/lib/body-sites/dto";
+import { canReadBodySites } from "@/hooks/use-body-sites";
 import { BodySiteFields } from "../body-site-fields";
 
 function render(data: BodySiteListDTO | null, typed = ""): string {
@@ -76,5 +81,13 @@ describe("<BodySiteFields>", () => {
     const html = render(null);
     expect(html).not.toContain("<datalist");
     expect(html).not.toContain(" list=");
+  });
+
+  it("does not ask for the list without the visits' section", () => {
+    expect(canReadBodySites(null)).toBe(true);
+    expect(canReadBodySites(undefined)).toBe(true);
+    expect(canReadBodySites(["profile", "illness"])).toBe(true);
+    expect(canReadBodySites(["illness"])).toBe(false);
+    expect(canReadBodySites([])).toBe(false);
   });
 });
