@@ -29,6 +29,11 @@ vi.mock("@/lib/analytics/summaries-slice", () => ({
 vi.mock("@/lib/rollups/measurement-coverage", () => ({
   probeRollupCoverage: (...a: unknown[]) => probeRollupCoverage(...a),
   isFullyCovered: (...a: unknown[]) => isFullyCovered(...a),
+  // Every uncovered type asked about has readings inside the fold window, so
+  // a miss here is a real miss. The pre-window case runs against Postgres in
+  // `tests/integration/dashboard-snapshot-pre-window-types.test.ts`.
+  typesWithReadingsInFoldWindow: async (_userId: string, types: string[]) =>
+    new Set(types),
 }));
 vi.mock("@/lib/rollups/mood-rollups", () => ({
   readMoodDayRollups: (...a: unknown[]) => readMoodDayRollups(...a),
