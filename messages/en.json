@@ -10880,9 +10880,10 @@
       "selectAll": "Select all",
       "searchPlaceholder": "Search",
       "searchNoMatch": "No match",
-      "remove": "Remove",
       "suggested": "Around this date",
-      "loadError": "The list could not be loaded."
+      "loadError": "The list could not be loaded.",
+      "removeNamed": "Remove {name}",
+      "removed": "Unlinked {name}"
     }
   }
 }

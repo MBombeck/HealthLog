@@ -10880,9 +10880,10 @@
       "selectAll": "Tout sélectionner",
       "searchPlaceholder": "Rechercher",
       "searchNoMatch": "Aucun résultat",
-      "remove": "Retirer",
       "suggested": "Autour de cette date",
-      "loadError": "Impossible de charger la liste."
+      "loadError": "Impossible de charger la liste.",
+      "removeNamed": "Retirer {name}",
+      "removed": "{name} dissocié"
     }
   }
 }

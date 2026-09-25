@@ -10880,9 +10880,10 @@
       "selectAll": "Alle auswählen",
       "searchPlaceholder": "Suchen",
       "searchNoMatch": "Kein Treffer",
-      "remove": "Entfernen",
       "suggested": "Um dieses Datum",
-      "loadError": "Die Liste konnte nicht geladen werden."
+      "loadError": "Die Liste konnte nicht geladen werden.",
+      "removeNamed": "{name} entfernen",
+      "removed": "Verknüpfung mit {name} gelöst"
     }
   }
 }
