@@ -128,6 +128,12 @@ export interface Glp1Medication {
   runwayDays?: number | null;
   /** v1.17.0 — per-medication reorder lead override (days); null = inherit the user default. */
   reorderLeadDays?: number | null;
+  /**
+   * v1.39.1 (#1033) — false keeps the medication as a record: the list
+   * serves `schedules: []` and nothing is due, so the card drops the
+   * compliance bars and the take / skip actions and shows a badge instead.
+   */
+  trackIntake?: boolean;
   schedules: ScheduleLite[];
 }
 
@@ -438,6 +444,7 @@ export function Glp1MedicationCard({
       notificationsEnabled={medication.notificationsEnabled}
       active={medication.active}
       pausedAt={medication.pausedAt}
+      recordOnly={medication.trackIntake === false}
     />
   );
 
@@ -551,6 +558,7 @@ export function Glp1MedicationCard({
       currentCycle={
         complianceNotApplicable ? null : (display?.currentCycle ?? null)
       }
+      recordOnly={medication.trackIntake === false}
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
       onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}

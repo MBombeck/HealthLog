@@ -91,6 +91,7 @@ import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { formatDose } from "@/lib/medications/format-dose";
 import type { MedicationPayload } from "@/components/medications/wizard/wizard-payload";
 import type { ComplianceDisplay } from "@/lib/analytics/compliance";
+import { IntakeTrackingBody } from "@/components/medications/sections/intake-tracking-section";
 
 // v1.15.20 — Recharts stays out of the detail page's initial bundle:
 // both chart bodies load through `next/dynamic` (client-only) with the
@@ -163,6 +164,13 @@ export interface MedicationDetailSnapshot {
    * estimate; the estimate remains only as the stale-payload fallback.
    */
   runwayDays?: number | null;
+  /**
+   * v1.39.1 (#1033) — false keeps the medication as a record. The detail
+   * GET then serves `schedules: []` and the stored rows in
+   * `recordedSchedules`; the page shows (and edits) the stored rows.
+   */
+  trackIntake?: boolean;
+  recordedSchedules?: ScheduleSnapshot[];
   schedules: ScheduleSnapshot[];
 }
 
@@ -234,6 +242,7 @@ function snapshotToWizardPayload(
     endsOn: med.endsOn ? new Date(med.endsOn) : null,
     oneShot: med.oneShot ?? false,
     asNeeded: med.asNeeded ?? false,
+    trackIntake: med.trackIntake !== false,
     schedules: med.schedules.map((s) => ({
       id: s.id,
       windowStart: s.windowStart,
@@ -250,10 +259,23 @@ function snapshotToWizardPayload(
 }
 
 export function MedicationDetailTabs({
-  medication,
+  medication: served,
 }: {
   medication: MedicationDetailSnapshot;
 }) {
+  // v1.39.1 (#1033) — a record-only medication arrives with `schedules: []`
+  // (so clients that derive due doses from it stay silent) and its stored
+  // schedule in `recordedSchedules`. This page is where the record is read
+  // and edited, so it works on the stored rows; nothing on it derives a due
+  // dose from them (next-due and compliance come from the server).
+  const recordOnly = served.trackIntake === false;
+  const medication = useMemo<MedicationDetailSnapshot>(
+    () =>
+      served.recordedSchedules
+        ? { ...served, schedules: served.recordedSchedules }
+        : served,
+    [served],
+  );
   const { t } = useTranslations();
   const fmt = useFormatters();
   const { canManageDomain, inSharedRecord } = useRecordCapabilities();
@@ -381,7 +403,8 @@ export function MedicationDetailTabs({
       try {
         return await apiGet<{
           applicable: boolean;
-          notApplicableReason: "NO_LOCAL_SCHEDULE" | null;
+          notApplicableReason:
+            "NO_LOCAL_SCHEDULE" | "INTAKE_NOT_TRACKED" | null;
           compliance7: { rate: number; streak: number };
           compliance30: { rate: number };
           complianceDisplay: ComplianceDisplay | null;
@@ -483,6 +506,7 @@ export function MedicationDetailTabs({
         oneShot={oneShot}
         asNeeded={asNeeded}
         startsOn={medication.startsOn}
+        recordOnly={recordOnly}
       />
 
       <Tabs
@@ -521,11 +545,13 @@ export function MedicationDetailTabs({
                 value={
                   !medication.active
                     ? t("medications.detail.uebersicht.pausedHint")
-                    : asNeeded
-                      ? t("medications.detail.uebersicht.nextDoseAsNeeded")
-                      : medication.nextDueAt
-                        ? fmt.dateTime(medication.nextDueAt)
-                        : t("medications.detail.uebersicht.nextDoseNone")
+                    : recordOnly
+                      ? t("medications.detail.uebersicht.nextDoseNotTracked")
+                      : asNeeded
+                        ? t("medications.detail.uebersicht.nextDoseAsNeeded")
+                        : medication.nextDueAt
+                          ? fmt.dateTime(medication.nextDueAt)
+                          : t("medications.detail.uebersicht.nextDoseNone")
                 }
                 jumpLabel={
                   asNeeded
@@ -537,7 +563,7 @@ export function MedicationDetailTabs({
               />
               {/* v1.16.11 — as-needed never reminds; the row would only
                   mislead (the cron skips schedule-less medications). */}
-              {!asNeeded && (
+              {!asNeeded && !recordOnly && (
                 <StatusRow
                   label={t("medications.detail.uebersicht.reminderLabel")}
                   value={
@@ -595,7 +621,7 @@ export function MedicationDetailTabs({
             </ul>
           </MedicationDetailSection>
 
-          {!asNeeded && (
+          {!asNeeded && !recordOnly && (
             <MedicationDetailSection
               titleId="medication-uebersicht-compliance-heading"
               title={t("medications.detail.uebersicht.complianceTitle")}
@@ -642,6 +668,21 @@ export function MedicationDetailTabs({
             dissolved Erinnerung tab). Cadence-kind stays structural (the
             hero's "Vollständig bearbeiten"). */}
         <TabsContent value="zeitplan" className="space-y-6 pt-2">
+          {/* v1.39.1 (#1033) — the intake-tracking switch leads the tab:
+              it decides whether the times below are a dose plan or a
+              record. */}
+          <MedicationDetailSection
+            titleId="medication-zeitplan-track-intake-heading"
+            title={t("medications.trackIntake.title")}
+            dataSlot="medication-zeitplan-track-intake"
+          >
+            <IntakeTrackingBody
+              key={recordOnly ? "off" : "on"}
+              medicationId={id}
+              trackIntake={!recordOnly}
+            />
+          </MedicationDetailSection>
+
           {medication.schedules.length > 0 ? (
             <MedicationDetailSection
               titleId="medication-zeitplan-times-heading"
@@ -670,48 +711,50 @@ export function MedicationDetailTabs({
             </MedicationDetailSection>
           ) : null}
 
-          <MedicationDetailSection
-            titleId="medication-zeitplan-reminder-heading"
-            title={t("medications.detail.zeitplan.reminderTitle")}
-            dataSlot="medication-zeitplan-reminder"
-          >
-            <div className="space-y-4">
-              <NotificationsBody
-                medicationId={id}
-                notificationsEnabled={medication.notificationsEnabled}
-              />
-              <GraceRow
-                medicationId={id}
-                schedules={medication.schedules.map((s) => ({
-                  windowStart: s.windowStart,
-                  windowEnd: s.windowEnd,
-                  label: s.label,
-                  dose: s.dose,
-                  daysOfWeek: s.daysOfWeek,
-                  timesOfDay: s.timesOfDay,
-                  rrule: s.rrule,
-                  rollingIntervalDays: s.rollingIntervalDays,
-                  reminderGraceMinutes: s.reminderGraceMinutes,
-                  scheduleType: s.scheduleType,
-                  cyclicOnWeeks: s.cyclicOnWeeks,
-                  cyclicOffWeeks: s.cyclicOffWeeks,
-                  doseWindows: s.doseWindows,
-                }))}
-              />
-              {/* Quiet cross-link: WHICH channels deliver the reminder
+          {!recordOnly && (
+            <MedicationDetailSection
+              titleId="medication-zeitplan-reminder-heading"
+              title={t("medications.detail.zeitplan.reminderTitle")}
+              dataSlot="medication-zeitplan-reminder"
+            >
+              <div className="space-y-4">
+                <NotificationsBody
+                  medicationId={id}
+                  notificationsEnabled={medication.notificationsEnabled}
+                />
+                <GraceRow
+                  medicationId={id}
+                  schedules={medication.schedules.map((s) => ({
+                    windowStart: s.windowStart,
+                    windowEnd: s.windowEnd,
+                    label: s.label,
+                    dose: s.dose,
+                    daysOfWeek: s.daysOfWeek,
+                    timesOfDay: s.timesOfDay,
+                    rrule: s.rrule,
+                    rollingIntervalDays: s.rollingIntervalDays,
+                    reminderGraceMinutes: s.reminderGraceMinutes,
+                    scheduleType: s.scheduleType,
+                    cyclicOnWeeks: s.cyclicOnWeeks,
+                    cyclicOffWeeks: s.cyclicOffWeeks,
+                    doseWindows: s.doseWindows,
+                  }))}
+                />
+                {/* Quiet cross-link: WHICH channels deliver the reminder
                   (push / Telegram / ntfy, quiet hours) is configured
                   globally, not per medication. */}
-              <p className="text-muted-foreground text-xs">
-                <Link
-                  href="/settings/notifications"
-                  className="focus-visible:ring-ring rounded-sm underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
-                  data-slot="zeitplan-manage-channels-link"
-                >
-                  {t("medications.detail.zeitplan.manageChannels")}
-                </Link>
-              </p>
-            </div>
-          </MedicationDetailSection>
+                <p className="text-muted-foreground text-xs">
+                  <Link
+                    href="/settings/notifications"
+                    className="focus-visible:ring-ring rounded-sm underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
+                    data-slot="zeitplan-manage-channels-link"
+                  >
+                    {t("medications.detail.zeitplan.manageChannels")}
+                  </Link>
+                </p>
+              </div>
+            </MedicationDetailSection>
+          )}
 
           {/* PLANHISTORIE — archived schedule eras (v1.16.3 effective
               dating) as a quiet collapsible timeline, plus the manual

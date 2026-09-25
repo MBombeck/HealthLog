@@ -82,6 +82,8 @@ export interface DueDerivationMedication {
   nextDueOverdue?: boolean;
   /** v1.16.11 (#316) — as-needed (PRN): never due, never in the set. */
   asNeeded?: boolean;
+  /** v1.39.1 (#1033) — false: kept as a record, never due, never in the set. */
+  trackIntake?: boolean;
   schedules: DueDerivationSchedule[];
 }
 
@@ -150,7 +152,11 @@ export function deriveDueMedications(
     // the cards suppress their pills the same way. As-needed (PRN)
     // medications are never due, structurally — even a (bogus)
     // compliance row for one must not pull it into the set.
-    if (!m.active || m.pausedAt || m.asNeeded) continue;
+    // A medication with intake tracking off is never due either; the list
+    // already serves it with no schedules, this makes the rule explicit.
+    if (!m.active || m.pausedAt || m.asNeeded || m.trackIntake === false) {
+      continue;
+    }
 
     const nextDueMs = m.nextDueAt ? new Date(m.nextDueAt).getTime() : NaN;
     const status = reduceCurrentWindowStatus({

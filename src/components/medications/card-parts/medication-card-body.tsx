@@ -134,6 +134,14 @@ export interface MedicationCardBodyProps {
   asNeeded?: boolean;
 
   /**
+   * v1.39.1 (#1033) — intake tracking off. The medication is shown as a
+   * record: no compliance block (the batched read excludes it, so a
+   * skeleton would spin forever), no open-cycle slot, and no take / skip
+   * actions, because nothing is due and doses are not logged from here.
+   */
+  recordOnly?: boolean;
+
+  /**
    * v1.16.11 — projected supply runway in whole days, set ONLY while it
    * sits below the user's low-stock threshold (the variants gate it).
    * Non-null renders the muted warning-toned "Vorrat: ≈ N Tage" notice on
@@ -182,6 +190,7 @@ export function MedicationCardBody({
   onRetryCompliance,
   currentCycle,
   asNeeded = false,
+  recordOnly = false,
   lowStockRunwayDays = null,
   intakeLoading,
   onRecordIntake,
@@ -306,6 +315,7 @@ export function MedicationCardBody({
             notice now costs zero layout shift. */}
         {active &&
           !asNeeded &&
+          !recordOnly &&
           (complianceNotApplicable ? (
             <MedicationComplianceNotApplicable
               lowStockRunwayDays={lowStockRunwayDays}
@@ -334,7 +344,7 @@ export function MedicationCardBody({
             one xs text line on every active card: the descriptor rides the
             compliance query, and a line appearing after the fetch resolved
             used to grow the card and shift the grid row (CLS). */}
-        {active && !asNeeded && (
+        {active && !asNeeded && !recordOnly && (
           <div className="min-h-4">
             {currentCycle && <MedicationCycleStatus cycle={currentCycle} />}
           </div>
@@ -342,7 +352,7 @@ export function MedicationCardBody({
 
         {/* Quick actions — bottom-pinned so the action rows align across a
             grid row regardless of how much content sits above. */}
-        {active && (
+        {active && !recordOnly && (
           <div className="mt-auto pt-0">
             <MedicationIntakeActions
               intakeLoading={intakeLoading}

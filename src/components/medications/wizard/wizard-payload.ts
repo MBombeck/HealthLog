@@ -274,6 +274,11 @@ export interface WizardPayload {
   startsOn: Date | null;
   endsOn: Date | null;
   notificationsEnabled: boolean;
+  /**
+   * v1.39.1 (#1033) — intake tracking. Off keeps the medication, dose and
+   * schedule as a record: nothing due, no reminders, no adherence.
+   */
+  trackIntake: boolean;
   /** Every parallel schedule under construction. Always >= 1 entry. */
   schedules: ScheduleDraft[];
   /** Which schedule Steps 5-7 currently edit. */
@@ -322,6 +327,7 @@ export function emptyWizardPayload(): WizardPayload {
     startsOn: todayUtc(),
     endsOn: null,
     notificationsEnabled: true,
+    trackIntake: true,
     schedules: [draft],
     activeScheduleIndex: 0,
   };
@@ -603,6 +609,12 @@ export interface CreateMedicationBody {
    * `schedules` array (the route 422s on any entry alongside the flag).
    */
   asNeeded: boolean;
+  /**
+   * v1.39.1 (#1033) — intake tracking. Sent on create and edit for a
+   * scheduled medication (the wizard hydrates it from the stored value);
+   * omitted for an as-needed one, which is never due either way.
+   */
+  trackIntake?: boolean;
   schedules: Array<{
     id?: string;
     windowStart: string;
@@ -813,6 +825,7 @@ export function buildCreateBody(
     }),
     oneShot: isOneShot,
     asNeeded: isAsNeeded,
+    ...(!isAsNeeded && { trackIntake: committed.trackIntake }),
     schedules: draftsToEmit.map((draft) =>
       encodeScheduleDraft(draft, isOneShot),
     ),
@@ -1035,6 +1048,8 @@ export interface MedicationPayload {
   oneShot: boolean;
   /** v1.16.11 — as-needed (PRN) flag; hydrates the "Bei Bedarf" mode. */
   asNeeded?: boolean;
+  /** v1.39.1 (#1033) — intake tracking; absent = tracked. */
+  trackIntake?: boolean;
   schedules: Array<{
     id?: string;
     windowStart: string;
@@ -1181,6 +1196,7 @@ export function hydrateWizardPayload(
     startsOn: initial.startsOn ?? base.startsOn,
     endsOn: initial.endsOn,
     notificationsEnabled: initial.notificationsEnabled ?? true,
+    trackIntake: initial.trackIntake !== false,
     schedules: drafts,
     activeScheduleIndex: 0,
   };
