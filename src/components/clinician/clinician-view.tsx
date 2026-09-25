@@ -46,6 +46,7 @@ import { EmergencySection, PatientIdentitySection } from "./identity-sections";
 import {
   IllnessSection,
   ImmunizationsSection,
+  SurgicalHistorySection,
   LabResultsSection,
   VisitsSection,
 } from "./history-sections";
@@ -251,6 +252,12 @@ export function ClinicianView({
               fmtDate={fmtDate}
             />
             <VisitsSection
+              t={t}
+              report={report}
+              scope={scope}
+              fmtDate={fmtDate}
+            />
+            <SurgicalHistorySection
               t={t}
               report={report}
               scope={scope}

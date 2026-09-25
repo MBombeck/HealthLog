@@ -309,6 +309,27 @@ export interface DoctorReportData {
     conditionLabels: string[];
   }> | null;
   /**
+   * The surgical history (v1.39.1): every visit of kind PROCEDURE that
+   * happened, oldest first. Reference data, not time-windowed, like the
+   * immunization record below — an operation fifteen years ago is still the
+   * answer to "what surgeries have you had". Null when the SURGICAL_HISTORY
+   * leaf was not selected or no procedure exists; both builders then skip the
+   * section. Optional so older fixtures still typecheck.
+   *
+   * `procedure` is the visit's reason, which is where a person writes what was
+   * done. `procedure`, `bodySite` and `outcome` are decrypted free text and
+   * null on a key-rotation gap. `laterality` rides as the enum constant; the
+   * renderer names it in the report's language.
+   */
+  surgicalHistory?: Array<{
+    occurredAt: string;
+    procedure: string | null;
+    bodySite: string | null;
+    laterality: string | null;
+    outcome: string | null;
+    practitionerName: string | null;
+  }> | null;
+  /**
    * The immunization history. Reference data, not time-windowed — an Impfpass
    * is a lifetime document and a doctor wants the whole of it, so this mirrors
    * the allergies stance rather than the visit window. Populated when the

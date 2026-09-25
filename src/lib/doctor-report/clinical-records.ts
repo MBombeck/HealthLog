@@ -200,6 +200,58 @@ export async function loadVisits(
 }
 
 /**
+ * The surgical history: every procedure that happened, oldest first.
+ *
+ * Reference data, not windowed — like the immunization history below, it is a
+ * lifetime answer, and a report over the last 90 days that left out a knee
+ * operation from 2011 would answer "what surgeries have you had" wrongly.
+ * Planned, cancelled and missed procedures are not surgical history. The three
+ * free-text columns decrypt fail-soft per row, the same stance `loadVisits`
+ * takes.
+ */
+export async function loadSurgicalHistory(
+  userId: string,
+): Promise<DoctorReportData["surgicalHistory"]> {
+  const rows = await prisma.encounter.findMany({
+    where: { userId, deletedAt: null, kind: "PROCEDURE", status: "DONE" },
+    orderBy: { occurredAt: "asc" },
+    select: {
+      occurredAt: true,
+      reasonEncrypted: true,
+      outcomeEncrypted: true,
+      bodySiteEncrypted: true,
+      laterality: true,
+      practitioner: { select: { name: true } },
+    },
+  });
+  if (rows.length === 0) return null;
+
+  const decrypt = (
+    value: Uint8Array | null,
+    field: "reason" | "outcome" | "bodySite",
+  ): string | null => {
+    if (!value || value.byteLength === 0) return null;
+    try {
+      return decryptFromBytes(value);
+    } catch {
+      getEvent()?.addWarning(
+        `doctor-report: procedure ${field} decrypt failed for ${userId}`,
+      );
+      return null;
+    }
+  };
+
+  return rows.map((row) => ({
+    occurredAt: row.occurredAt.toISOString(),
+    procedure: decrypt(row.reasonEncrypted, "reason"),
+    bodySite: decrypt(row.bodySiteEncrypted, "bodySite"),
+    laterality: row.laterality,
+    outcome: decrypt(row.outcomeEncrypted, "outcome"),
+    practitionerName: row.practitioner?.name ?? null,
+  }));
+}
+
+/**
  * The immunization history. Reference data, not time-windowed — an Impfpass is
  * a lifetime document, so like allergies it ignores the report window.
  *

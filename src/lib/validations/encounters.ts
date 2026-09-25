@@ -61,10 +61,22 @@ export const encounterKindEnum = z.enum([
   "HOSPITAL",
   "THERAPY",
   "OTHER",
+  "PROCEDURE",
 ]);
+
+/** The side a procedure's body site is on. Absent or null: not stated. */
+export const lateralityEnum = z.enum(["LEFT", "RIGHT", "BOTH"]);
 
 export type EncounterStatusInput = z.infer<typeof encounterStatusEnum>;
 export type EncounterKindInput = z.infer<typeof encounterKindEnum>;
+export type LateralityInput = z.infer<typeof lateralityEnum>;
+
+/**
+ * Where on the body, in the person's own words. Becomes `bodySiteEncrypted`.
+ * Bounded like a label rather than like prose: "left knee, medial meniscus" is
+ * the long end of what belongs here, and the reason field holds the rest.
+ */
+const bodySite = z.string().max(200).nullable().optional();
 
 const id = z.string().min(1).max(40);
 
@@ -88,6 +100,8 @@ export const encounterCreateSchema = z
     reason: z.string().max(2000).nullable().optional(),
     /** Becomes `outcomeEncrypted`. */
     outcome: z.string().max(4000).nullable().optional(),
+    bodySite,
+    laterality: lateralityEnum.nullable().optional(),
     /** The checkup this visit closes, when it was filed from a due one. */
     reminderId: id.nullable().optional(),
     documentIds: linkIds,
@@ -113,6 +127,8 @@ export const encounterUpdateSchema = z
     practitionerId: id.nullable().optional(),
     reason: z.string().max(2000).nullable().optional(),
     outcome: z.string().max(4000).nullable().optional(),
+    bodySite,
+    laterality: lateralityEnum.nullable().optional(),
     reminderId: id.nullable().optional(),
     documentIds: linkIds,
     labResultIds: linkIds,
@@ -172,6 +188,23 @@ export const encounterSuggestQuerySchema = z
   .strict();
 
 export type EncounterSuggestQuery = z.infer<typeof encounterSuggestQuerySchema>;
+
+/**
+ * The procedure history query.
+ *
+ * `q` is matched after the decrypt, over the body site, the side and the
+ * reason, every word required (see `src/lib/encounters/procedures.ts`). It is
+ * named `q` and not `bodySite` because it also searches the reason: a knee
+ * operation recorded before the site field existed says "knee" only there.
+ */
+export const procedureListQuerySchema = z
+  .object({
+    q: z.string().max(200).optional(),
+    laterality: lateralityEnum.optional(),
+  })
+  .strict();
+
+export type ProcedureListQuery = z.infer<typeof procedureListQuerySchema>;
 
 /* ── links ────────────────────────────────────────────────────────── */
 

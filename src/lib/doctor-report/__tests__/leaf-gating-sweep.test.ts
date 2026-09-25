@@ -299,6 +299,7 @@ describe("per-leaf gating sweep", () => {
     expect(allPayload.familyHistory).not.toBeNull();
     expect(allPayload.illnessEpisodes).not.toBeNull();
     expect(allPayload.visits).not.toBeNull();
+    expect(allPayload.surgicalHistory).not.toBeNull();
     expect(allPayload.mood).not.toBeNull();
     expect(allPayload.cycle).not.toBeNull();
     expect(allPayload.anamnesis).not.toBeNull();
@@ -454,18 +455,23 @@ describe("zero read for unchosen leaves", () => {
     ["LAB_RESULTS", "labResult"],
     ["ILLNESS_EPISODES", "illnessEpisode"],
     ["VISITS", "encounter"],
+    ["SURGICAL_HISTORY", "encounter"],
     ["IMMUNIZATIONS", "vaccinationRecord"],
     ["ANAMNESIS", "userHealthProfile"],
     ["EMERGENCY", "userHealthProfile"],
     ["ANAMNESIS", "healthProfileFactRevision"],
   ];
 
-  // ANAMNESIS and EMERGENCY both read `userHealthProfile`, so withholding one
+  // ANAMNESIS and EMERGENCY both read `userHealthProfile` (and VISITS and
+  // SURGICAL_HISTORY both read `encounter`), so withholding one
   // while the other stays selected still queries the table. Both must be off
   // before the read stops — the zero-read guarantee is over the SET of leaves
   // that touch a table, not each one in isolation.
   const TABLE_READERS: Record<string, ReportLeafId[]> = {
     userHealthProfile: ["ANAMNESIS", "EMERGENCY"],
+    // The visits in the window and the lifetime surgical history both read
+    // the encounter table, under their own leaves.
+    encounter: ["VISITS", "SURGICAL_HISTORY"],
   };
 
   it.each(gated)(

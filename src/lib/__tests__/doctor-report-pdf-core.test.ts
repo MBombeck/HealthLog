@@ -641,6 +641,82 @@ describe("doctor-report illness section", () => {
   });
 });
 
+// v1.39.1 — the surgical history. Lifetime reference data like the
+// immunization record: every procedure that happened, with its date, what was
+// done (the visit's reason), where, and what came of it. Present only when the
+// SURGICAL_HISTORY leaf was admitted and at least one procedure exists.
+//
+// Mutation checks (each run, each seen red):
+//   - drop the section's `if` block from the renderer → "prints the surgical
+//     history table" goes red;
+//   - print `bodySite` without the side → "names the side beside the site"
+//     goes red.
+describe("doctor-report surgical history section", () => {
+  const PROCEDURES: NonNullable<DoctorReportData["surgicalHistory"]> = [
+    {
+      occurredAt: "2011-03-14T09:00:00.000Z",
+      procedure: "Meniscus repair",
+      bodySite: "Knee",
+      laterality: "LEFT",
+      outcome: "Full recovery after physiotherapy",
+      practitionerName: "Sample clinic",
+    },
+    {
+      occurredAt: "2019-07-02T09:00:00.000Z",
+      procedure: null,
+      bodySite: null,
+      laterality: null,
+      outcome: null,
+      practitionerName: null,
+    },
+  ];
+
+  it("prints the surgical history table with procedure, site and outcome", async () => {
+    const bytes = renderDoctorReportPdfBytes(
+      makeData({ surgicalHistory: PROCEDURES }),
+      {
+        timeFormat: "AUTO",
+        dateFormat: "AUTO",
+        t: getServerTranslator("en").t,
+        locale: "en",
+        now: FIXED_NOW,
+      },
+    );
+    const text = await extractText(bytes);
+    expect(text).toContain("Surgical history");
+    expect(text).toContain("Meniscus repair");
+    expect(text).toContain("Full recovery after physiotherapy");
+  });
+
+  it("names the side beside the site", async () => {
+    const bytes = renderDoctorReportPdfBytes(
+      makeData({ surgicalHistory: PROCEDURES }),
+      {
+        timeFormat: "AUTO",
+        dateFormat: "AUTO",
+        t: getServerTranslator("de").t,
+        locale: "de",
+        now: FIXED_NOW,
+      },
+    );
+    const text = await extractText(bytes);
+    expect(text).toContain("Operationen und Eingriffe");
+    expect(text).toMatch(/Knee · Links/);
+  });
+
+  it("omits the section when there is no procedure", async () => {
+    const bytes = renderDoctorReportPdfBytes(makeData(), {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
+      t: getServerTranslator("en").t,
+      locale: "en",
+      now: FIXED_NOW,
+    });
+    const text = await extractText(bytes);
+    expect(text).not.toContain("Surgical history");
+  });
+});
+
 // ── emergency first page ── the Notfalldaten sheet owns page one, but only
 // when the aggregator populated `data.emergency` (the EMERGENCY leaf admitted
 // AND the profile holds something). A null payload — which is exactly what the

@@ -293,6 +293,11 @@
     "visitsColReason": "Anlass",
     "visitsColOutcome": "Ergebnis",
     "visitsColConditions": "Erkrankungen",
+    "surgicalHistoryTitle": "Operationen und Eingriffe",
+    "surgicalHistoryColDate": "Datum",
+    "surgicalHistoryColProcedure": "Eingriff",
+    "surgicalHistoryColBodySite": "Körperstelle",
+    "surgicalHistoryColOutcome": "Ergebnis",
     "immunizationsTitle": "Impfungen",
     "immunizationsColDate": "Datum",
     "immunizationsColVaccine": "Impfstoff",
@@ -10438,6 +10443,7 @@
     "scopeCount": "{count} Einträge aus {groups} Bereichen",
     "scopeSensitive": "inkl. {names}",
     "leafVisits": "Arztbesuche",
+    "leafSurgicalHistory": "Operationen und Eingriffe",
     "leafImmunizations": "Impfungen",
     "leafEmergency": "Notfalldaten (Blutgruppe, Kontakte, Verfügungen)"
   },
@@ -10822,8 +10828,16 @@
       "emergency": "Notfall",
       "hospital": "Krankenhaus",
       "therapy": "Therapietermin",
-      "other": "Arzttermin"
+      "other": "Arzttermin",
+      "procedure": "Eingriff oder Operation"
     },
+    "laterality": {
+      "left": "Links",
+      "right": "Rechts",
+      "both": "Beidseitig",
+      "none": "Keine Angabe"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "Termine",
     "sectionDescription": "Arztbesuche und gebuchte Termine an einem Ort.",
     "add": "Termin",
@@ -10865,6 +10879,9 @@
       "reason": "Anlass",
       "outcome": "Ergebnis",
       "outcomeReveal": "Ergebnis eintragen",
+      "bodySite": "Körperstelle",
+      "bodySiteHint": "Zum Beispiel Knie oder Gallenblase.",
+      "laterality": "Seite",
       "linkDocuments": "Dokumente",
       "linkLabResults": "Laborwerte",
       "linkConditions": "Erkrankungen",
@@ -10884,12 +10901,28 @@
     },
     "dashboard": {
       "nextVisit": "Nächster Termin: {what} am {when}"
+    },
+    "procedures": {
+      "title": "Eingriffe und Operationen",
+      "description": "Alle Eingriffe und Operationen, die du hattest, die neuesten zuerst.",
+      "add": "Eingriff",
+      "searchLabel": "Nach Körperstelle filtern",
+      "searchPlaceholder": "Zum Beispiel Knie",
+      "sitesLabel": "Körperstellen",
+      "allSites": "Alle",
+      "count": "{shown} von {total}",
+      "emptyTitle": "Noch kein Eingriff erfasst",
+      "emptyDescription": "Erfasse einen Termin der Art Eingriff oder Operation, oder stelle einen vorhandenen Termin darauf um.",
+      "noMatchTitle": "Nichts passt zu diesem Filter",
+      "clearFilter": "Filter zurücksetzen",
+      "loadError": "Die Eingriffe konnten nicht geladen werden."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Vorsorge oder Termine anzeigen",
+    "viewSwitchLabel": "Vorsorge, Termine oder Eingriffe anzeigen",
     "tabVorsorge": "Vorsorge",
-    "tabVisits": "Termine"
+    "tabVisits": "Termine",
+    "tabProcedures": "Eingriffe"
   },
   "practitioners": {
     "title": "Praxen und Ärzte",

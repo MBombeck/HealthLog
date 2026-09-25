@@ -70,6 +70,7 @@ import { calendarDaysUntil } from "@/lib/measurement-reminders/due-day";
 import { fenceUserText, scrubFenceMarkers } from "@/lib/ai/coach/data-fence";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { listTargetsBySource } from "@/lib/links";
+import { encounterKindEnum } from "@/lib/validations/encounters";
 import type { McpAuthContext } from "./auth";
 import { dueSchedules } from "@/lib/medications/intake-tracking";
 
@@ -931,7 +932,9 @@ const getPreventiveCareOutput: z.ZodRawShape = {
  */
 const getVisitsOutput: z.ZodRawShape = {
   present: z.boolean(),
-  windowMonths: z.number().optional(),
+  // Null when the read covered the whole record: a procedure history asked
+  // for without a window (v1.39.1).
+  windowMonths: z.number().nullable().optional(),
   visits: z
     .array(
       z.object({
@@ -942,6 +945,8 @@ const getVisitsOutput: z.ZodRawShape = {
         specialty: z.string().nullable(),
         reason: z.string().nullable(),
         outcome: z.string().nullable(),
+        bodySite: z.string().nullable(),
+        laterality: z.enum(["LEFT", "RIGHT", "BOTH"]).nullable(),
         conditions: z.array(z.string()),
       }),
     )
@@ -1903,7 +1908,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: "get_visits",
     title: "Get past doctor visits",
     description:
-      "Fetch the user's own past doctor visits over a bounded window (default: the last 12 months) so a question like 'when did I last see a cardiologist' is answerable from the record. Each visit carries its date, lifecycle status (DONE / CANCELLED / NO_SHOW — a no-show is not a visit that happened), kind, practitioner name + specialty, the visit's own free-text reason and outcome, and the labels of any conditions it was filed against. Optionally narrow to one practitioner by a name substring. Newest first, bounded. Returns { present: false } when the user has never recorded a visit — distinct from a filtered read that simply matched none.",
+      "Fetch the user's own past doctor visits over a bounded window (default: the last 12 months) so a question like 'when did I last see a cardiologist' is answerable from the record. Each visit carries its date, lifecycle status (DONE / CANCELLED / NO_SHOW — a no-show is not a visit that happened), kind, practitioner name + specialty, the visit's own free-text reason and outcome, the body site and side (set on procedures), and the labels of any conditions it was filed against. Optionally narrow to one practitioner by a name substring, or to one kind. kind PROCEDURE is the procedure and surgery history: without a months argument it reads the whole record, because a surgery years ago is still the answer to 'what surgeries have I had'. Newest first, bounded. Returns { present: false } when the user has never recorded a visit — distinct from a filtered read that simply matched none.",
     inputShape: {
       months: z
         .number()
@@ -1922,21 +1927,32 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         .describe(
           "Optional case-insensitive name substring to narrow to one practitioner (e.g. a surname read back from an earlier result). Omit for every practitioner.",
         ),
+      kind: encounterKindEnum
+        .optional()
+        .describe(
+          "Optional visit kind to narrow to. PROCEDURE lists procedures and surgeries, over the whole record unless months is given.",
+        ),
     },
     annotations: READ_ONLY_ANNOTATIONS,
     outputShape: getVisitsOutput,
     async run(ctx, args) {
+      const kindArg = encounterKindEnum.safeParse(args.kind);
+      const kind = kindArg.success ? kindArg.data : undefined;
+      // A procedure history is lifetime reference data; every other read keeps
+      // the default year. A window the caller names always wins.
       const months =
         typeof args.months === "number"
           ? args.months
-          : DEFAULT_VISITS_WINDOW_MONTHS;
+          : kind === "PROCEDURE"
+            ? null
+            : DEFAULT_VISITS_WINDOW_MONTHS;
       const practitioner =
         typeof args.practitioner === "string" && args.practitioner.trim()
           ? args.practitioner.trim()
           : undefined;
       const now = new Date();
-      const cutoff = new Date(now);
-      cutoff.setMonth(cutoff.getMonth() - months);
+      const cutoff = months === null ? null : new Date(now);
+      cutoff?.setMonth(cutoff.getMonth() - (months ?? 0));
 
       const rows = await prisma.encounter.findMany({
         // `userId` is the resolved session's, never an argument — a visit
@@ -1944,7 +1960,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         where: {
           userId: ctx.userId,
           deletedAt: null,
-          occurredAt: { gte: cutoff, lte: now },
+          occurredAt: { ...(cutoff ? { gte: cutoff } : {}), lte: now },
+          ...(kind ? { kind } : {}),
           ...(practitioner
             ? {
                 practitioner: {
@@ -1984,6 +2001,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       const visits = rows.map((r) => {
         const reason = decryptVisitText(r.reasonEncrypted);
         const outcome = decryptVisitText(r.outcomeEncrypted);
+        const bodySite = decryptVisitText(r.bodySiteEncrypted);
         return {
           occurredAt: r.occurredAt.toISOString(),
           status: r.status,
@@ -2000,6 +2018,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
           // too — scrubbed of any forged marker before it enters the payload.
           reason: reason !== null ? fenceUserText(reason) : null,
           outcome: outcome !== null ? fenceUserText(outcome) : null,
+          bodySite: bodySite !== null ? fenceUserText(bodySite) : null,
+          laterality: r.laterality,
           conditions: (conditionsBySource.get(r.id) ?? []).map((c) =>
             scrubFenceMarkers(c.label),
           ),

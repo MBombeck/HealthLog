@@ -17,6 +17,7 @@ import type {
   Encounter,
   EncounterKind,
   EncounterStatus,
+  Laterality,
   MeasurementReminder,
   Practitioner,
 } from "@/generated/prisma/client";
@@ -59,6 +60,13 @@ export interface EncounterDTO {
   reason: string | null;
   outcome: string | null;
   /**
+   * Where on the body, decrypted. Carried on every kind, not only PROCEDURE,
+   * so a visit switched away from PROCEDURE and back keeps what was typed.
+   */
+  bodySite: string | null;
+  /** The side of the body site, or null when not stated. */
+  laterality: Laterality | null;
+  /**
    * The server-computed instant the appointment reminder next fires, when this
    * visit minted one and it has not fired yet. `null` for a visit that already
    * happened, or once the one-shot reminder is spent.
@@ -91,7 +99,7 @@ export interface EncounterDTO {
 
 function decryptField(
   value: Uint8Array | null,
-  field: "reason" | "outcome",
+  field: "reason" | "outcome" | "bodySite",
 ): string | null {
   if (!value || value.byteLength === 0) return null;
   try {
@@ -124,6 +132,8 @@ export function toEncounterDTO(
     practitioner: row.practitioner ? toPractitionerDTO(row.practitioner) : null,
     reason: decryptField(row.reasonEncrypted, "reason"),
     outcome: decryptField(row.outcomeEncrypted, "outcome"),
+    bodySite: decryptField(row.bodySiteEncrypted, "bodySite"),
+    laterality: row.laterality,
     reminderNextDueAt: row.reminder?.nextDueAt?.toISOString() ?? null,
     ...(links ? { links } : {}),
     ...(skipped ? { skipped } : {}),
@@ -144,4 +154,25 @@ export function toEncounterDTO(
 export interface EncounterListDTO {
   upcoming: EncounterDTO[];
   past: EncounterDTO[];
+}
+
+/** One body site and side the procedure history holds, with how often. */
+export interface BodySiteFacetDTO {
+  /** The first spelling seen; the facet itself is keyed case-insensitively. */
+  bodySite: string;
+  laterality: Laterality | null;
+  count: number;
+}
+
+/**
+ * The procedure history response.
+ *
+ * `procedures` is the filtered list, newest first. `bodySites` and `total` are
+ * computed over the whole history, before the filter, so the filter choices a
+ * client offers never shrink to the one it just picked.
+ */
+export interface ProcedureListDTO {
+  procedures: EncounterDTO[];
+  bodySites: BodySiteFacetDTO[];
+  total: number;
 }

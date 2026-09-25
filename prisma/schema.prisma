@@ -8227,12 +8227,12 @@ model NutrientIntakeDay {
 /// relocated to the link pickers, which follow the modules that own the
 /// things they point at.
 model Encounter {
-  id               String          @id @default(cuid())
-  userId           String          @map("user_id")
+  id                String          @id @default(cuid())
+  userId            String          @map("user_id")
   /// The visit instant (UTC; wall-clock anchoring is the reader's
   /// concern, per the schema's UTC-only convention). Future instants are
   /// legal — that is the whole appointment half.
-  occurredAt       DateTime        @map("occurred_at")
+  occurredAt        DateTime        @map("occurred_at")
   /// Where in its lifecycle. PLANNED is a future appointment; DONE is a
   /// visit that happened; CANCELLED and NO_SHOW are terminal and keep
   /// the row so the history stays honest.
@@ -8246,27 +8246,49 @@ model Encounter {
   /// `FHIR_REST_RESOURCE_TYPES` (`src/lib/fhir/rest.ts`) is deliberately
   /// untouched — a capability statement that names a type with no route
   /// module lies.
-  status           EncounterStatus @default(DONE)
-  kind             EncounterKind   @default(OTHER)
-  practitionerId   String?         @map("practitioner_id")
+  status            EncounterStatus @default(DONE)
+  kind              EncounterKind   @default(OTHER)
+  practitionerId    String?         @map("practitioner_id")
   /// The person's own framing of why they went or are going. Encrypted
   /// at rest (AES-256-GCM, the `*Encrypted` Bytes convention).
-  reasonEncrypted  Bytes?          @map("reason_encrypted")
+  reasonEncrypted   Bytes?          @map("reason_encrypted")
   /// What came out of it — plan, follow-up, what to watch. Same codec.
   /// One field rather than a treatment/follow-up pair whose boundary
   /// nobody can state: two columns would be two chances to put the text
   /// in the wrong one, and the actionable half of a follow-up is not
   /// prose at all, it is the next appointment.
-  outcomeEncrypted Bytes?          @map("outcome_encrypted")
+  outcomeEncrypted  Bytes?          @map("outcome_encrypted")
+  /// Where on the body a procedure was done, in the person's own words
+  /// ("knee", "gallbladder", "L4/L5"). Free text, because no picker covers
+  /// everything a surgeon operates on, and a coded vocabulary the person
+  /// cannot read is worse than their own word. Health data, so encrypted
+  /// like `reasonEncrypted`.
+  ///
+  /// Searching it does not need plaintext at rest: the procedures read
+  /// (`src/lib/encounters/procedures.ts`) decrypts the account's own
+  /// procedures server-side and matches there. That set is a person's
+  /// surgical history — tens of rows, not thousands — so a decrypt pass
+  /// per search is cheap, and a plaintext or hashed search column would be
+  /// a second copy of the most identifying field on the row.
+  ///
+  /// Allowed on any kind, surfaced for PROCEDURE: switching a visit's kind
+  /// away and back must not lose what was typed.
+  bodySiteEncrypted Bytes?          @map("body_site_encrypted")
+  /// Which side, when the site has one. Separate from the text so "left
+  /// knee" and "right knee" group and filter as the same site on two sides
+  /// without parsing prose, and plaintext because a side alone says
+  /// nothing. NULL means not stated or not applicable, deliberately one
+  /// value rather than a NONE beside NULL that would mean the same.
+  laterality        Laterality?
   /// Optional link to the reminder this visit closes. Set when the user
   /// files the visit from a due checkup, or minted here when the visit
   /// is PLANNED. Satisfying the reminder is the side effect, not this
   /// column.
-  reminderId       String?         @map("reminder_id")
-  createdAt        DateTime        @default(now()) @map("created_at")
-  updatedAt        DateTime        @updatedAt @map("updated_at")
+  reminderId        String?         @map("reminder_id")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
-  deletedAt        DateTime?       @map("deleted_at")
+  deletedAt         DateTime?       @map("deleted_at")
 
   user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   practitioner   Practitioner?            @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
@@ -8297,6 +8319,16 @@ enum EncounterStatus {
 /// What kind of contact it was. Defaulted to OTHER so it is never a
 /// required pick, and small enough to stay readable at a glance in a
 /// list. Maps to FHIR `Encounter.class` at the export boundary.
+///
+/// PROCEDURE (v1.39.1) marks a surgery or procedure. A kind rather than a
+/// boolean beside the kind, because the kind already answers "what was
+/// this contact" and a flag would make HOSPITAL-plus-flag and PROCEDURE two
+/// spellings of one visit with no rule for which to use. The cost is that a
+/// surgery done in an emergency is filed as PROCEDURE and not EMERGENCY; the
+/// operation is the fact a surgical history asks for, and the reason text
+/// keeps the rest. Additive for every client in the field: the shipped iOS
+/// app does not decode visits at all, and the web client ships with the
+/// server.
 enum EncounterKind {
   ROUTINE
   ACUTE
@@ -8306,8 +8338,19 @@ enum EncounterKind {
   HOSPITAL
   THERAPY
   OTHER
+  PROCEDURE
 
   @@map("encounter_kind")
+}
+
+/// The side of the body a procedure's site is on. See
+/// `Encounter.laterality`.
+enum Laterality {
+  LEFT
+  RIGHT
+  BOTH
+
+  @@map("laterality")
 }
 
 /// The account's own address book of doctors and practices.

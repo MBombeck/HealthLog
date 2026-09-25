@@ -12,7 +12,12 @@
  * Writes reach two roots (`encounterDependentKeys`), because renaming a
  * practice changes the label every visit that names it renders.
  */
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
 import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
@@ -21,7 +26,11 @@ import {
   invalidateKeys,
   queryKeys,
 } from "@/lib/query-keys";
-import type { EncounterDTO, EncounterListDTO } from "@/lib/encounters/dto";
+import type {
+  EncounterDTO,
+  EncounterListDTO,
+  ProcedureListDTO,
+} from "@/lib/encounters/dto";
 import type { EncounterSuggestionResult } from "@/lib/encounters/suggest-window";
 
 export type Encounter = EncounterDTO;
@@ -34,6 +43,8 @@ export interface EncounterWriteBody {
   practitionerId?: string | null;
   reason?: string | null;
   outcome?: string | null;
+  bodySite?: string | null;
+  laterality?: "LEFT" | "RIGHT" | "BOTH" | null;
   /** The checkup this visit closes, when it was filed from a due one. */
   reminderId?: string | null;
   documentIds?: string[];
@@ -71,6 +82,35 @@ export function useEncounters(
       const qs = sp.toString();
       return apiGet<EncounterList>(qs ? `${BASE}?${qs}` : BASE);
     },
+    enabled,
+  });
+}
+
+/**
+ * The procedure and surgery history, searched server-side.
+ *
+ * The body site is ciphertext at rest, so the search runs on the server after
+ * the decrypt, and the query is part of the key. The previous answer stays on
+ * screen while the next one loads, so typing does not flash the list empty;
+ * the body-site choices and the total arrive with every answer, computed over
+ * the whole history.
+ */
+export function useProcedures(
+  enabled: boolean,
+  filter: { q: string; laterality: "LEFT" | "RIGHT" | "BOTH" | null },
+) {
+  return useQuery({
+    queryKey: queryKeys.encounterProcedures(filter.q, filter.laterality),
+    queryFn: () => {
+      const sp = new URLSearchParams();
+      if (filter.q.trim()) sp.set("q", filter.q.trim());
+      if (filter.laterality) sp.set("laterality", filter.laterality);
+      const qs = sp.toString();
+      return apiGet<ProcedureListDTO>(
+        qs ? `${BASE}/procedures?${qs}` : `${BASE}/procedures`,
+      );
+    },
+    placeholderData: keepPreviousData,
     enabled,
   });
 }

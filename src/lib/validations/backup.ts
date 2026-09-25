@@ -48,6 +48,7 @@ import {
   InjectionSite,
   IntakeAttributionSource,
   IntakeSource,
+  Laterality,
   MeasurementAggregationProvenance,
   MeasurementReminderEventKind,
   MeasurementSource,
@@ -1091,6 +1092,10 @@ const encounterBackupSchema = z
     practitionerId: z.string().nullable().optional(),
     reasonEncrypted: base64BytesSchema.nullable().optional(),
     outcomeEncrypted: base64BytesSchema.nullable().optional(),
+    // v1.39.1 — the procedure's body site and side. Optional so a file written
+    // before they existed still parses; the visit restores with neither.
+    bodySiteEncrypted: base64BytesSchema.nullable().optional(),
+    laterality: z.enum(Laterality).nullable().optional(),
     // Remapped against the restored reminders (they travel since v1.37.20);
     // dropped to NULL, with the drop named, only when the file lacks the row.
     reminderId: z.string().nullable().optional(),

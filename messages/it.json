@@ -293,6 +293,11 @@
     "visitsColReason": "Motivo",
     "visitsColOutcome": "Esito",
     "visitsColConditions": "Malattie",
+    "surgicalHistoryTitle": "Anamnesi chirurgica",
+    "surgicalHistoryColDate": "Data",
+    "surgicalHistoryColProcedure": "Intervento",
+    "surgicalHistoryColBodySite": "Parte del corpo",
+    "surgicalHistoryColOutcome": "Esito",
     "immunizationsTitle": "Vaccinazioni",
     "immunizationsColDate": "Data",
     "immunizationsColVaccine": "Vaccino",
@@ -10438,6 +10443,7 @@
     "scopeCount": "{count} voci da {groups} aree",
     "scopeSensitive": "incl. {names}",
     "leafVisits": "Visite mediche",
+    "leafSurgicalHistory": "Anamnesi chirurgica",
     "leafImmunizations": "Vaccinazioni",
     "leafEmergency": "Informazioni di emergenza (gruppo sanguigno, contatti, disposizioni)"
   },
@@ -10822,8 +10828,16 @@
       "emergency": "Emergenza",
       "hospital": "Ospedale",
       "therapy": "Seduta di terapia",
-      "other": "Appuntamento medico"
+      "other": "Appuntamento medico",
+      "procedure": "Procedura o intervento chirurgico"
     },
+    "laterality": {
+      "left": "Sinistra",
+      "right": "Destra",
+      "both": "Entrambi i lati",
+      "none": "Non indicato"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "Appuntamenti",
     "sectionDescription": "Visite mediche e appuntamenti fissati in un unico posto.",
     "add": "Appuntamento",
@@ -10865,6 +10879,9 @@
       "reason": "Motivo",
       "outcome": "Esito",
       "outcomeReveal": "Aggiungi un esito",
+      "bodySite": "Parte del corpo",
+      "bodySiteHint": "Per esempio ginocchio o cistifellea.",
+      "laterality": "Lato",
       "linkDocuments": "Documenti",
       "linkLabResults": "Esami di laboratorio",
       "linkConditions": "Malattie",
@@ -10884,12 +10901,28 @@
     },
     "dashboard": {
       "nextVisit": "Prossimo appuntamento: {what} il {when}"
+    },
+    "procedures": {
+      "title": "Procedure e interventi chirurgici",
+      "description": "Tutte le procedure e gli interventi che hai avuto, dal più recente.",
+      "add": "Intervento",
+      "searchLabel": "Filtra per parte del corpo",
+      "searchPlaceholder": "Per esempio ginocchio",
+      "sitesLabel": "Parti del corpo",
+      "allSites": "Tutte",
+      "count": "{shown} di {total}",
+      "emptyTitle": "Nessun intervento registrato",
+      "emptyDescription": "Registra un appuntamento del tipo Procedura o intervento chirurgico, oppure cambia un appuntamento esistente in questo tipo.",
+      "noMatchTitle": "Nessun risultato per questo filtro",
+      "clearFilter": "Rimuovi filtro",
+      "loadError": "Non è stato possibile caricare gli interventi."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Mostra controlli o appuntamenti",
+    "viewSwitchLabel": "Mostra controlli, appuntamenti o interventi",
     "tabVorsorge": "Controlli",
-    "tabVisits": "Appuntamenti"
+    "tabVisits": "Appuntamenti",
+    "tabProcedures": "Interventi"
   },
   "practitioners": {
     "title": "Studi e medici",

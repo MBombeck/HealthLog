@@ -60,6 +60,8 @@ function visit(over: Partial<EncounterDTO> & { id: string }): EncounterDTO {
     practitioner: null,
     reason: null,
     outcome: null,
+    bodySite: null,
+    laterality: null,
     reminderNextDueAt: null,
     createdAt: "2026-08-01T09:00:00.000Z",
     updatedAt: "2026-08-01T09:00:00.000Z",

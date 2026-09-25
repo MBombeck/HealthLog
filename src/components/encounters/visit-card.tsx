@@ -23,7 +23,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { Encounter } from "@/hooks/use-encounters";
 import type { EncounterKind, EncounterStatus } from "@/generated/prisma/client";
-import { encounterKindText, encounterStatusText } from "./encounter-labels";
+import {
+  bodySiteText,
+  encounterKindText,
+  encounterStatusText,
+} from "./encounter-labels";
 
 /** The two statuses worth calling out on a row; the rest the section implies. */
 function isNoteworthy(status: EncounterStatus): boolean {
@@ -67,9 +71,23 @@ export function VisitCard({
 
   // The practice, or the kind when there is none. A visit with neither is not
   // nameless — the kind always resolves, because it defaults to one.
+  //
+  // A procedure leads with what was done instead: in a surgical history the
+  // operation is the thing being scanned for, and a column of rows headed
+  // "Procedure or surgery" beside a badge saying the same would say nothing.
+  // The practice then moves to its own line, still foreground.
+  const isProcedure = encounter.kind === "PROCEDURE";
+  const procedureHeading = isProcedure ? encounter.reason : null;
   const heading =
+    procedureHeading ??
     encounter.practitioner?.name ??
     encounterKindText(t, encounter.kind as EncounterKind);
+  const reasonLine = procedureHeading ? null : encounter.reason;
+  const practiceLine = procedureHeading
+    ? (encounter.practitioner?.name ?? null)
+    : null;
+  // Where on the body, with the side — what the person wrote, so foreground.
+  const site = bodySiteText(t, encounter.bodySite, encounter.laterality);
 
   return (
     <Card
@@ -97,9 +115,22 @@ export function VisitCard({
             </Badge>
           </div>
 
-          {encounter.reason ? (
+          {reasonLine ? (
+            <p className="text-foreground line-clamp-1 text-sm">{reasonLine}</p>
+          ) : null}
+
+          {site ? (
+            <p
+              className="text-foreground line-clamp-1 text-sm"
+              data-slot="visit-card-body-site"
+            >
+              {site}
+            </p>
+          ) : null}
+
+          {practiceLine ? (
             <p className="text-foreground line-clamp-1 text-sm">
-              {encounter.reason}
+              {practiceLine}
             </p>
           ) : null}
 

@@ -293,6 +293,11 @@
     "visitsColReason": "Powód",
     "visitsColOutcome": "Wynik",
     "visitsColConditions": "Choroby",
+    "surgicalHistoryTitle": "Historia operacji",
+    "surgicalHistoryColDate": "Data",
+    "surgicalHistoryColProcedure": "Zabieg",
+    "surgicalHistoryColBodySite": "Miejsce na ciele",
+    "surgicalHistoryColOutcome": "Wynik",
     "immunizationsTitle": "Szczepienia",
     "immunizationsColDate": "Data",
     "immunizationsColVaccine": "Szczepionka",
@@ -10438,6 +10443,7 @@
     "scopeCount": "{count} pozycji z {groups} obszarów",
     "scopeSensitive": "w tym {names}",
     "leafVisits": "Wizyty lekarskie",
+    "leafSurgicalHistory": "Historia operacji",
     "leafImmunizations": "Szczepienia",
     "leafEmergency": "Informacje na wypadek nagły (grupa krwi, kontakty, oświadczenia)"
   },
@@ -10822,8 +10828,16 @@
       "emergency": "Nagły przypadek",
       "hospital": "Szpital",
       "therapy": "Sesja terapeutyczna",
-      "other": "Wizyta lekarska"
+      "other": "Wizyta lekarska",
+      "procedure": "Zabieg lub operacja"
     },
+    "laterality": {
+      "left": "Lewa strona",
+      "right": "Prawa strona",
+      "both": "Obie strony",
+      "none": "Nie podano"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "Wizyty",
     "sectionDescription": "Wizyty u lekarza i umówione terminy w jednym miejscu.",
     "add": "Wizyta",
@@ -10865,6 +10879,9 @@
       "reason": "Powód",
       "outcome": "Wynik",
       "outcomeReveal": "Dodaj wynik",
+      "bodySite": "Miejsce na ciele",
+      "bodySiteHint": "Na przykład kolano lub pęcherzyk żółciowy.",
+      "laterality": "Strona",
       "linkDocuments": "Dokumenty",
       "linkLabResults": "Wyniki badań",
       "linkConditions": "Choroby",
@@ -10884,12 +10901,28 @@
     },
     "dashboard": {
       "nextVisit": "Najbliższa wizyta: {what}, {when}"
+    },
+    "procedures": {
+      "title": "Zabiegi i operacje",
+      "description": "Wszystkie zabiegi i operacje, które przeszedłeś, od najnowszych.",
+      "add": "Zabieg",
+      "searchLabel": "Filtruj według miejsca na ciele",
+      "searchPlaceholder": "Na przykład kolano",
+      "sitesLabel": "Miejsca na ciele",
+      "allSites": "Wszystkie",
+      "count": "{shown} z {total}",
+      "emptyTitle": "Nie zapisano jeszcze żadnego zabiegu",
+      "emptyDescription": "Zapisz wizytę rodzaju Zabieg lub operacja albo zmień rodzaj istniejącej wizyty.",
+      "noMatchTitle": "Nic nie pasuje do tego filtra",
+      "clearFilter": "Wyczyść filtr",
+      "loadError": "Nie udało się wczytać zabiegów."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Pokaż badania profilaktyczne lub wizyty",
+    "viewSwitchLabel": "Pokaż badania profilaktyczne, wizyty lub zabiegi",
     "tabVorsorge": "Profilaktyka",
-    "tabVisits": "Wizyty"
+    "tabVisits": "Wizyty",
+    "tabProcedures": "Zabiegi"
   },
   "practitioners": {
     "title": "Gabinety i lekarze",
