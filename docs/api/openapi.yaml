@@ -23103,6 +23103,13 @@ components:
             rates/streaks, but intakes still log (ad-hoc), inventory still consumes, and the history renders. Stays
             active indefinitely. Mutually exclusive with `oneShot`."
           type: boolean
+        trackIntake:
+          description: "v1.39.1 — intake tracking. Default true. When false the medication keeps its dose, dates and schedules as
+            information, but nothing is ever due: no reminder on any channel, no projected slot, no entry on the today
+            list or the doses card, and no adherence figure anywhere. Existing intake history stays stored. Switching it
+            back on resumes from that moment; the time it was off never counts as missed. Omitted on update leaves the
+            current value."
+          type: boolean
         schedules:
           type: array
           items:
@@ -23417,6 +23424,13 @@ components:
             (supplying any schedule entry is a 422): it is never due, never reminded, and excluded from compliance
             rates/streaks, but intakes still log (ad-hoc), inventory still consumes, and the history renders. Stays
             active indefinitely. Mutually exclusive with `oneShot`."
+          type: boolean
+        trackIntake:
+          description: "v1.39.1 — intake tracking. Default true. When false the medication keeps its dose, dates and schedules as
+            information, but nothing is ever due: no reminder on any channel, no projected slot, no entry on the today
+            list or the doses card, and no adherence figure anywhere. Existing intake history stays stored. Switching it
+            back on resumes from that moment; the time it was off never counts as missed. Omitted on update leaves the
+            current value."
           type: boolean
         schedules:
           type: array
@@ -33035,6 +33049,8 @@ components:
                 type: boolean
               asNeeded:
                 type: boolean
+              trackIntake:
+                type: boolean
               deliveryForm:
                 type: string
                 enum:
@@ -42557,6 +42573,13 @@ components:
             any schedule entry alongside the flag): it is never due (`nextDueAt` stays null), never reminded, and
             excluded from every compliance rate/streak — but intakes still log as ad-hoc rows, inventory still consumes
             per `unitsPerDose`, and the history renders. Stays active indefinitely. Mutually exclusive with `oneShot`."
+        trackIntake:
+          type: boolean
+          description: "v1.39.1 — intake tracking. True (the default) for every medication that existed before the field. When
+            false the medication is kept as a record: nothing is ever due (`nextDueAt` stays null), nothing reminds on
+            any channel, and it is excluded from every adherence figure. Its stored schedule then travels in
+            `recordedSchedules` while `schedules` is served empty, so a client that arms reminders from `schedules`
+            stays silent without an update."
         createdAt:
           type: string
           format: date-time
@@ -42566,6 +42589,14 @@ components:
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         schedules:
+          type: array
+          items:
+            $ref: "#/components/schemas/MedicationScheduleOutput"
+          description: "The schedules in force. Empty for an as-needed medication and (v1.39.1) for a medication with
+            `trackIntake: false`, whose stored schedule is in `recordedSchedules`."
+        recordedSchedules:
+          description: "v1.39.1 — present only when `trackIntake` is false: the stored schedule, kept as information. Nothing
+            derives a due dose or a reminder from it. Absent on a tracked medication, whose schedule is `schedules`."
           type: array
           items:
             $ref: "#/components/schemas/MedicationScheduleOutput"
@@ -42644,6 +42675,7 @@ components:
         - endsOn
         - oneShot
         - asNeeded
+        - trackIntake
         - createdAt
         - updatedAt
         - schedules
@@ -42808,6 +42840,13 @@ components:
             any schedule entry alongside the flag): it is never due (`nextDueAt` stays null), never reminded, and
             excluded from every compliance rate/streak — but intakes still log as ad-hoc rows, inventory still consumes
             per `unitsPerDose`, and the history renders. Stays active indefinitely. Mutually exclusive with `oneShot`."
+        trackIntake:
+          type: boolean
+          description: "v1.39.1 — intake tracking. True (the default) for every medication that existed before the field. When
+            false the medication is kept as a record: nothing is ever due (`nextDueAt` stays null), nothing reminds on
+            any channel, and it is excluded from every adherence figure. Its stored schedule then travels in
+            `recordedSchedules` while `schedules` is served empty, so a client that arms reminders from `schedules`
+            stays silent without an update."
         createdAt:
           type: string
           format: date-time
@@ -42817,6 +42856,14 @@ components:
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         schedules:
+          type: array
+          items:
+            $ref: "#/components/schemas/MedicationScheduleOutput"
+          description: "The schedules in force. Empty for an as-needed medication and (v1.39.1) for a medication with
+            `trackIntake: false`, whose stored schedule is in `recordedSchedules`."
+        recordedSchedules:
+          description: "v1.39.1 — present only when `trackIntake` is false: the stored schedule, kept as information. Nothing
+            derives a due dose or a reminder from it. Absent on a tracked medication, whose schedule is `schedules`."
           type: array
           items:
             $ref: "#/components/schemas/MedicationScheduleOutput"
@@ -42863,6 +42910,7 @@ components:
         - endsOn
         - oneShot
         - asNeeded
+        - trackIntake
         - createdAt
         - updatedAt
         - schedules
@@ -43615,7 +43663,9 @@ components:
         notApplicableReason:
           anyOf:
             - type: string
-              const: NO_LOCAL_SCHEDULE
+              enum:
+                - NO_LOCAL_SCHEDULE
+                - INTAKE_NOT_TRACKED
             - type: "null"
         compliance7:
           description: Seven-day adherence summary, or an all-zero compatibility placeholder when applicable is false.
@@ -43874,10 +43924,13 @@ components:
         notApplicableReason:
           anyOf:
             - type: string
-              const: NO_LOCAL_SCHEDULE
+              enum:
+                - NO_LOCAL_SCHEDULE
+                - INTAKE_NOT_TRACKED
             - type: "null"
-          description: Reason adherence is not applicable. NO_LOCAL_SCHEDULE means the medication has no HealthLog-owned
-            expected-dose grid.
+          description: "Reason adherence is not applicable. NO_LOCAL_SCHEDULE means the medication has no HealthLog-owned
+            expected-dose grid. INTAKE_NOT_TRACKED (v1.39.1) means the medication's intake tracking is switched off
+            (`trackIntake: false`): its schedule is kept as information and nothing is expected from it."
         compliance7:
           description: Seven-day adherence summary. When applicable is false, this remains a non-null all-zero compatibility
             placeholder for released clients and must not be rendered as a percentage.
@@ -72014,6 +72067,13 @@ components:
             any schedule entry alongside the flag): it is never due (`nextDueAt` stays null), never reminded, and
             excluded from every compliance rate/streak — but intakes still log as ad-hoc rows, inventory still consumes
             per `unitsPerDose`, and the history renders. Stays active indefinitely. Mutually exclusive with `oneShot`."
+        trackIntake:
+          type: boolean
+          description: "v1.39.1 — intake tracking. True (the default) for every medication that existed before the field. When
+            false the medication is kept as a record: nothing is ever due (`nextDueAt` stays null), nothing reminds on
+            any channel, and it is excluded from every adherence figure. Its stored schedule then travels in
+            `recordedSchedules` while `schedules` is served empty, so a client that arms reminders from `schedules`
+            stays silent without an update."
         createdAt:
           type: string
           format: date-time
@@ -72023,6 +72083,14 @@ components:
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         schedules:
+          type: array
+          items:
+            $ref: "#/components/schemas/MedicationScheduleOutput"
+          description: "The schedules in force. Empty for an as-needed medication and (v1.39.1) for a medication with
+            `trackIntake: false`, whose stored schedule is in `recordedSchedules`."
+        recordedSchedules:
+          description: "v1.39.1 — present only when `trackIntake` is false: the stored schedule, kept as information. Nothing
+            derives a due dose or a reminder from it. Absent on a tracked medication, whose schedule is `schedules`."
           type: array
           items:
             $ref: "#/components/schemas/MedicationScheduleOutput"
@@ -72046,6 +72114,7 @@ components:
         - endsOn
         - oneShot
         - asNeeded
+        - trackIntake
         - createdAt
         - updatedAt
         - schedules

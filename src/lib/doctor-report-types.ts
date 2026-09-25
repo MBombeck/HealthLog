@@ -481,6 +481,8 @@ export interface DoctorReportComplianceMedication {
   id: string;
   name: string;
   asNeeded: boolean;
+  /** v1.39.1 (#1033) — intake tracking off: listed, never rated. */
+  trackIntake: boolean;
   startsOn: Date | null;
   endsOn: Date | null;
   oneShot: boolean;

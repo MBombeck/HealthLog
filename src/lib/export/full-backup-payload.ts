@@ -1004,6 +1004,10 @@ export async function buildFullBackupPayload(
       name: m.name,
       dose: m.dose,
       active: m.active,
+      // v1.39.1 (#1033) — the person's decision to keep this medication as a
+      // record only. Both purposes carry it: a restore that dropped it would
+      // start reminding them about a medication they chose not to track.
+      trackIntake: m.trackIntake,
       // Both purposes carry the creation instant: it is the floor of the
       // medication's expected slots, so a restore stamped with the restore
       // time would read the whole restored history as predating the

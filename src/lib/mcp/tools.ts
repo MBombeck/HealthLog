@@ -71,6 +71,7 @@ import { fenceUserText, scrubFenceMarkers } from "@/lib/ai/coach/data-fence";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { listTargetsBySource } from "@/lib/links";
 import type { McpAuthContext } from "./auth";
+import { dueSchedules } from "@/lib/medications/intake-tracking";
 
 /**
  * Tool annotations (MCP 2025-11-25). The cloud connectors REQUIRE these on every
@@ -849,6 +850,7 @@ const getMedicationScheduleOutput: z.ZodRawShape = {
         nextDueAt: z.string().nullable(),
         overdue: z.boolean(),
         asNeeded: z.boolean(),
+        intakeTracked: z.boolean(),
       }),
     )
     .optional(),
@@ -1447,7 +1449,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: "get_medication_schedule",
     title: "Get the medication schedule",
     description:
-      "Fetch when the user's active medications are next due, and which are overdue right now. Reuses the same server-authoritative recurrence engine the medication cards render (open overdue slots win over future ones). Returns one row per active medication: name, dose, next-due instant, an overdue flag, and an as-needed (PRN) flag. As-needed medications have no scheduled due time (nextDueAt: null). Returns { present: false } when no medications are tracked.",
+      "Fetch when the user's active medications are next due, and which are overdue right now. Reuses the same server-authoritative recurrence engine the medication cards render (open overdue slots win over future ones). Returns one row per active medication: name, dose, next-due instant, an overdue flag, an as-needed (PRN) flag, and an intakeTracked flag. As-needed medications and medications whose intake tracking is off (intakeTracked: false, kept as a record only) have no due time (nextDueAt: null). Returns { present: false } when no medications are tracked.",
     inputShape: {},
     annotations: READ_ONLY_ANNOTATIONS,
     outputShape: getMedicationScheduleOutput,
@@ -1540,7 +1542,9 @@ export const MCP_TOOLS: McpToolDefinition[] = [
             oneShot: m.oneShot,
             createdAt: m.createdAt,
           },
-          schedules: m.schedules,
+          // v1.39.1 (#1033) — nothing is due on a medication with intake
+          // tracking off.
+          schedules: dueSchedules(m),
           now,
           userTz,
           lastIntakeAt: lastTakenAtByMedId.get(m.id) ?? null,
@@ -1553,6 +1557,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
           nextDueAt: display ? display.at.toISOString() : null,
           overdue: display ? display.overdue : false,
           asNeeded: m.asNeeded,
+          intakeTracked: m.trackIntake,
         };
       });
 

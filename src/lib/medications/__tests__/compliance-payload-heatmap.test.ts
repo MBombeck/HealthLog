@@ -57,6 +57,7 @@ it("counts an off-schedule row as taken only when it has a taken time", async ()
       endsOn: null,
       oneShot: false,
       asNeeded: false,
+      trackIntake: true,
       schedules: [
         {
           windowStart: "08:00",

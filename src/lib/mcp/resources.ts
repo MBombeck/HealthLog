@@ -192,6 +192,9 @@ export const MCP_RESOURCES: McpResourceDefinition[] = [
           dose: med.dose,
           treatmentClass: med.treatmentClass,
           asNeeded: med.asNeeded,
+          // v1.39.1 (#1033) — false: kept as a record, nothing is due and
+          // no adherence applies; the schedules below are information.
+          intakeTracked: med.trackIntake,
           paused: med.pausedAt !== null,
           startsOn: med.startsOn ? med.startsOn.toISOString() : null,
           endsOn: med.endsOn ? med.endsOn.toISOString() : null,
@@ -519,6 +522,7 @@ export const MCP_RESOURCE_TEMPLATES: McpResourceTemplateDefinition[] = [
         dose: med.dose,
         treatmentClass: med.treatmentClass,
         asNeeded: med.asNeeded,
+        intakeTracked: med.trackIntake,
         paused: med.pausedAt !== null,
         startsOn: med.startsOn ? med.startsOn.toISOString() : null,
         endsOn: med.endsOn ? med.endsOn.toISOString() : null,

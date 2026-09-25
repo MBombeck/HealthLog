@@ -11,6 +11,7 @@ import {
 } from "@/lib/medications/compliance-payload";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 /**
  * Batched card-compliance read: one round trip for every medication the
@@ -50,7 +51,7 @@ export const GET = apiHandler(async () => {
     // v1.16.11 — as-needed (PRN) medications carry no compliance entry:
     // the cards/table render a last-taken presentation for them instead
     // of rates, and an empty expected set must not read as 0% or 100%.
-    where: { userId: user.id, asNeeded: false },
+    where: { userId: user.id, asNeeded: false, ...TRACKED_INTAKE_WHERE },
     include: {
       schedules: true,
       // v1.16.3 — archived schedule eras for era-aware compliance.

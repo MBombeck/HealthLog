@@ -38,6 +38,7 @@ import {
   type MedTarget,
   type MedTargetTier,
 } from "@/lib/medications/med-target-map";
+import { dueSchedules } from "@/lib/medications/intake-tracking";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -592,9 +593,11 @@ export async function buildMedicationEfficacy(
     lastNonSkippedTakenAt(events),
     timezone,
   );
+  // v1.39.1 (#1033) — with intake tracking off the live era expects
+  // nothing, so the adherence band shows no fabricated misses.
   const bundle = buildMedicationComplianceBundle(
     events,
-    med.schedules,
+    dueSchedules(med),
     ctx,
     now,
   );

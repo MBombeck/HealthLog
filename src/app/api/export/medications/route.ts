@@ -66,6 +66,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         name: true,
         dose: true,
         active: true,
+        trackIntake: true,
         schedules: {
           select: {
             windowStart: true,

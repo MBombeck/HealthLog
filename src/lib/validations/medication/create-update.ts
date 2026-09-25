@@ -70,6 +70,17 @@ const courseWindowFields = {
     .describe(
       "As-needed (PRN) medication (pain relief, rescue inhaler). When true the medication carries NO schedules (supplying any schedule entry is a 422): it is never due, never reminded, and excluded from compliance rates/streaks, but intakes still log (ad-hoc), inventory still consumes, and the history renders. Stays active indefinitely. Mutually exclusive with `oneShot`.",
     ),
+  /**
+   * v1.39.1 (#1033) — per-medication intake tracking. Default true. False
+   * keeps the medication (dose, dates, schedule) as a record: nothing is
+   * due, nothing reminds, no adherence figure. Omitted leaves it as is.
+   */
+  trackIntake: z
+    .boolean()
+    .optional()
+    .describe(
+      "v1.39.1 — intake tracking. Default true. When false the medication keeps its dose, dates and schedules as information, but nothing is ever due: no reminder on any channel, no projected slot, no entry on the today list or the doses card, and no adherence figure anywhere. Existing intake history stays stored. Switching it back on resumes from that moment; the time it was off never counts as missed. Omitted on update leaves the current value.",
+    ),
 };
 
 /**

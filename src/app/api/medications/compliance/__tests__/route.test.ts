@@ -250,6 +250,8 @@ describe("GET /api/medications/compliance", () => {
     expect(call.where).toEqual({
       userId: "user-1",
       asNeeded: false,
+      // v1.39.1 (#1033) — intake tracking off is left out like PRN.
+      trackIntake: true,
     });
   });
 

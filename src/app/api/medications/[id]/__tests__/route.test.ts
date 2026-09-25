@@ -776,3 +776,146 @@ describe("PUT /api/medications/[id] — as-needed (v1.16.11, #316)", () => {
     expect(prisma.medication.update).not.toHaveBeenCalled();
   });
 });
+
+describe("PUT /api/medications/[id] — intake tracking switch (#1033)", () => {
+  const LIVE_ROW = {
+    id: "s1",
+    medicationId: "m1",
+    windowStart: "08:00",
+    windowEnd: "08:00",
+    label: null,
+    dose: null,
+    daysOfWeek: null,
+    timesOfDay: ["08:00"],
+    reminderGraceMinutes: null,
+    rrule: "FREQ=DAILY",
+    rollingIntervalDays: null,
+    scheduleType: "SCHEDULED",
+    cyclicOnWeeks: null,
+    cyclicOffWeeks: null,
+    doseWindows: null,
+  };
+
+  function arrange(trackIntake: boolean) {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      id: "m1",
+      userId: "user-1",
+      active: true,
+      asNeeded: false,
+      trackIntake,
+      createdAt: new Date("2026-05-01T08:00:00.000Z"),
+    } as never);
+    vi.mocked(prisma.medication.update).mockResolvedValue({
+      id: "m1",
+      userId: "user-1",
+      trackIntake: !trackIntake,
+      unitsPerDose: 1,
+      schedules: [{ ...LIVE_ROW, unitsPerDose: null }],
+    } as never);
+    vi.mocked(getMedicationCategories).mockResolvedValue({});
+    vi.mocked(auditLog).mockResolvedValue(undefined);
+    vi.mocked(dayKeyForScheduledFor).mockReturnValue("2026-06-10");
+    vi.mocked(recomputeMedicationComplianceForDay).mockResolvedValue(undefined);
+    vi.mocked(prisma.medicationSchedule.findMany).mockResolvedValue([
+      LIVE_ROW,
+    ] as never);
+    vi.mocked(prisma.medicationScheduleRevision.create).mockClear();
+    vi.mocked(prisma.medicationIntakeEvent.updateMany).mockClear();
+    vi.mocked(prisma.medication.update).mockClear();
+  }
+
+  it("switching off archives the schedule in force and tombstones open slots", async () => {
+    arrange(true);
+    const res = await PUT(putReq({ trackIntake: false }), ROUTE_CTX);
+    expect(res.status).toBe(200);
+
+    // The tracked stretch keeps its expected doses: the archived era
+    // carries the live schedule and ends now.
+    const revisions = vi.mocked(prisma.medicationScheduleRevision.create).mock
+      .calls;
+    expect(revisions).toHaveLength(1);
+    const era = revisions[0][0].data as {
+      payload: Array<{ timesOfDay: string[] }>;
+      validFrom: Date;
+    };
+    expect(era.payload).toHaveLength(1);
+    expect(era.payload[0].timesOfDay).toEqual(["08:00"]);
+    expect(era.validFrom.toISOString()).toBe("2026-05-01T08:00:00.000Z");
+
+    // Open placeholders of today and later go; actioned rows never do.
+    const tombstones = vi.mocked(prisma.medicationIntakeEvent.updateMany).mock
+      .calls;
+    expect(tombstones).toHaveLength(1);
+    expect(tombstones[0][0].where).toMatchObject({
+      medicationId: "m1",
+      takenAt: null,
+      skipped: false,
+      autoMissed: false,
+      deletedAt: null,
+    });
+
+    // The flag is written field-by-field; the schedule rows are kept.
+    const update = vi.mocked(prisma.medication.update).mock.calls[0][0];
+    expect(update.data).toMatchObject({ trackIntake: false });
+    expect(update.data).not.toHaveProperty("schedules");
+    expect(prisma.medicationSchedule.deleteMany).not.toHaveBeenCalledWith({
+      where: { medicationId: "m1" },
+    });
+
+    // The wire serves it like an as-needed medication, schedule on record.
+    const body = (await res.json()) as {
+      data: { schedules: unknown[]; recordedSchedules?: unknown[] };
+    };
+    expect(body.data.schedules).toEqual([]);
+    expect(body.data.recordedSchedules).toHaveLength(1);
+  });
+
+  it("switching back on archives the untracked stretch as expecting nothing", async () => {
+    arrange(false);
+    const res = await PUT(putReq({ trackIntake: true }), ROUTE_CTX);
+    expect(res.status).toBe(200);
+    const revisions = vi.mocked(prisma.medicationScheduleRevision.create).mock
+      .calls;
+    expect(revisions).toHaveLength(1);
+    const era = revisions[0][0].data as { payload: unknown[] };
+    // No retroactive misses: the stretch that was off expected no dose.
+    expect(era.payload).toEqual([]);
+    // Nothing is tombstoned on the way back on.
+    expect(prisma.medicationIntakeEvent.updateMany).not.toHaveBeenCalled();
+    const body = (await res.json()) as {
+      data: { schedules: unknown[]; recordedSchedules?: unknown[] };
+    };
+    expect(body.data.schedules).toHaveLength(1);
+    expect(body.data).not.toHaveProperty("recordedSchedules");
+  });
+
+  it("an unchanged flag archives nothing", async () => {
+    arrange(true);
+    const res = await PUT(putReq({ trackIntake: true }), ROUTE_CTX);
+    expect(res.status).toBe(200);
+    expect(prisma.medicationScheduleRevision.create).not.toHaveBeenCalled();
+    expect(prisma.medicationIntakeEvent.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("a schedule edit while untracked archives the stretch as empty", async () => {
+    arrange(false);
+    const res = await PUT(
+      putReq({
+        schedules: [
+          {
+            windowStart: "08:00",
+            windowEnd: "08:00",
+            timesOfDay: ["08:00"],
+            rrule: "FREQ=DAILY",
+          },
+        ],
+      }),
+      ROUTE_CTX,
+    );
+    expect(res.status).toBe(200);
+    const era = vi.mocked(prisma.medicationScheduleRevision.create).mock
+      .calls[0][0].data as { payload: unknown[] };
+    expect(era.payload).toEqual([]);
+  });
+});

@@ -899,6 +899,7 @@ export async function restoreBackup(
               endsOn: m.endsOn ? new Date(m.endsOn) : null,
               oneShot: m.oneShot ?? false,
               asNeeded: m.asNeeded ?? false,
+              trackIntake: m.trackIntake ?? true,
               deliveryForm: m.deliveryForm ?? "ORAL",
               trackInjectionSites: m.trackInjectionSites ?? false,
               allowedInjectionSites: m.allowedInjectionSites ?? [],

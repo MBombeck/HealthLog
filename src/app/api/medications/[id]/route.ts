@@ -41,6 +41,11 @@ import { serializeScheduleUnitsPerDose } from "@/lib/medications/schedule-units-
 import { hhmmToMinutesOrNull } from "@/lib/medications/scheduling/hhmm";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { NextRequest } from "next/server";
+import {
+  dueSchedules,
+  isRecordOnly,
+  scheduleWireFields,
+} from "@/lib/medications/intake-tracking";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -106,7 +111,7 @@ export const GET = apiHandler(
     // cadences re-anchor on the latest non-skipped intake, so fetch it
     // once (no-op for calendar cadences but cheap + keeps the value
     // correct for rolling injections).
-    const lastIntake = medication.schedules.some(
+    const lastIntake = dueSchedules(medication).some(
       (s) => s.rollingIntervalDays !== null,
     )
       ? await prisma.medicationIntakeEvent.findFirst({
@@ -157,6 +162,9 @@ export const GET = apiHandler(
       orderBy: { validUntil: "desc" },
       select: { validUntil: true },
     });
+    // v1.39.1 (#1033) — intake tracking off: nothing is due from the
+    // stored rows, and no runway derives from them.
+    const liveSchedules = dueSchedules(medication);
     const display = computeDisplayDue({
       medication: {
         id: medication.id,
@@ -165,7 +173,7 @@ export const GET = apiHandler(
         oneShot: medication.oneShot,
         createdAt: medication.createdAt,
       },
-      schedules: medication.schedules,
+      schedules: liveSchedules,
       now,
       userTz: user.timezone || "Europe/Berlin",
       lastIntakeAt: lastIntake?.takenAt ?? null,
@@ -220,14 +228,16 @@ export const GET = apiHandler(
         ? null
         : estimateUnitsRunwayDays(
             stockUnitsRemaining,
-            schedulesDto,
+            isRecordOnly(medication) ? [] : schedulesDto,
             Number(medication.unitsPerDose),
           );
 
     return apiSuccess({
       ...medication,
       unitsPerDose: Number(medication.unitsPerDose),
-      schedules: schedulesDto,
+      // v1.39.1 (#1033) — `schedules: []` plus `recordedSchedules` when
+      // intake tracking is off (see `scheduleWireFields`).
+      ...scheduleWireFields(medication.trackIntake, schedulesDto),
       category,
       nextDueAt: display ? display.at.toISOString() : null,
       nextDueOverdue: display?.overdue ?? false,
@@ -265,6 +275,8 @@ export const PUT = apiHandler(
         active: true,
         createdAt: true,
         asNeeded: true,
+        // v1.39.1 (#1033) — the tracking transition below needs the before.
+        trackIntake: true,
         // v1.37.0 — the pre-image the audit row carries (C4).
         name: true,
         dose: true,
@@ -309,8 +321,15 @@ export const PUT = apiHandler(
       endsOn,
       oneShot,
       asNeeded,
+      trackIntake,
       reminderGraceMinutes: topLevelGraceMinutes,
     } = parsed.data;
+
+    // v1.39.1 (#1033) — intake tracking transition. Off keeps the schedule
+    // as a record; the live era from here on expects nothing.
+    const wasTracked = existing.trackIntake !== false;
+    const willTrack = trackIntake ?? wasTracked;
+    const trackingChanged = wasTracked !== willTrack;
 
     // ── v1.16.11 (#316) — as-needed invariants ──────────────────────
     //
@@ -516,123 +535,16 @@ export const PUT = apiHandler(
     // the manager's grant ends.
     let replacedCadence: string | null = null;
     let replacedScheduleCount: number | null = null;
-    let tombstonedSlotCount: number | null = null;
-    let tombstonedFrom: Date | null = null;
-    let tombstonedTo: Date | null = null;
+    let tombstonedSlotCount = null as number | null;
+    // Assigned inside `tombstoneOpenSlots`; the casts keep TypeScript from
+    // narrowing them to `null` across the closure.
+    let tombstonedFrom = null as Date | null;
+    let tombstonedTo = null as Date | null;
 
-    // If schedules provided, replace all
-    if (schedules && normalisedSchedules) {
-      // v1.16.3 — effective dating. Before the wholesale replace below wipes
-      // the old rows, archive them as ONE revision covering
-      // `[previous validUntil | medication.createdAt, now)` — but only when a
-      // cadence-relevant field actually changes. A no-op edit (the Zeitplan
-      // tab echoing the same rows back) must not mint a phantom era.
-      const previousRows = await prisma.medicationSchedule.findMany({
-        where: { medicationId: id },
-      });
-      const previousEntries = previousRows.map((row) =>
-        toRevisionPayloadEntry({
-          timesOfDay: row.timesOfDay,
-          windowStart: row.windowStart,
-          windowEnd: row.windowEnd,
-          daysOfWeek: row.daysOfWeek,
-          rrule: row.rrule,
-          rollingIntervalDays: row.rollingIntervalDays,
-          scheduleType: row.scheduleType,
-          cyclicOnWeeks: row.cyclicOnWeeks,
-          cyclicOffWeeks: row.cyclicOffWeeks,
-          doseWindows: row.doseWindows,
-          label: row.label,
-          dose: row.dose,
-          reminderGraceMinutes: row.reminderGraceMinutes,
-        }),
-      );
-      replacedScheduleCount = previousRows.length;
-      replacedCadence =
-        previousRows.length > 0
-          ? previousRows
-              .map((row) =>
-                [
-                  row.timesOfDay,
-                  row.rrule ?? "",
-                  row.rollingIntervalDays !== null
-                    ? `every ${row.rollingIntervalDays}d`
-                    : "",
-                  row.daysOfWeek ?? "",
-                ]
-                  .filter((part) => part !== "")
-                  .join(" "),
-              )
-              .join(" | ")
-          : null;
-
-      if (
-        previousRows.length > 0 &&
-        schedulesMateriallyDiffer(
-          previousEntries,
-          normalisedSchedules.map((n) => n.snapshot),
-        )
-      ) {
-        const lastRevision = await prisma.medicationScheduleRevision.findFirst({
-          // Chain from the ACTIVE boundary: a superseded row is an
-          // audit record whose `validUntil` may sit past its correction.
-          where: { medicationId: id, supersededByRevisionId: null },
-          orderBy: { validUntil: "desc" },
-          select: { validUntil: true },
-        });
-        await prisma.medicationScheduleRevision.create({
-          data: {
-            medicationId: id,
-            validFrom: lastRevision?.validUntil ?? existing.createdAt,
-            validUntil: new Date(),
-            payload: previousEntries as unknown as Prisma.InputJsonValue,
-          },
-        });
-        annotate({
-          action: {
-            name: "medication.schedule.revision_archived",
-            entity_type: "medication",
-            entity_id: id,
-          },
-          meta: { schedule_revision_rows: previousEntries.length },
-        });
-      } else if (
-        previousRows.length === 0 &&
-        existing.asNeeded &&
-        asNeeded === false &&
-        normalisedSchedules.length > 0
-      ) {
-        // v1.16.11 — flipping as-needed OFF. The medication carried ZERO
-        // schedule rows while as-needed, so the wholesale-replace archive
-        // above never fires — and without a revision the live era would
-        // start at the PREVIOUS revision's `validUntil` (or `createdAt`),
-        // retro-painting the schedule-less as-needed stretch with the NEW
-        // schedule's expected slots: every PRN day would read as missed.
-        // Archive an EMPTY era covering the as-needed stretch instead; an
-        // empty payload expands to zero schedules, so era-aware compliance
-        // expects nothing there — exactly the as-needed contract.
-        const lastRevision = await prisma.medicationScheduleRevision.findFirst({
-          where: { medicationId: id, supersededByRevisionId: null },
-          orderBy: { validUntil: "desc" },
-          select: { validUntil: true },
-        });
-        await prisma.medicationScheduleRevision.create({
-          data: {
-            medicationId: id,
-            validFrom: lastRevision?.validUntil ?? existing.createdAt,
-            validUntil: new Date(),
-            payload: [] as unknown as Prisma.InputJsonValue,
-          },
-        });
-        annotate({
-          action: {
-            name: "medication.schedule.revision_archived",
-            entity_type: "medication",
-            entity_id: id,
-          },
-          meta: { schedule_revision_rows: 0 },
-        });
-      }
+    // Tombstone today's and future open pending rows of this medication.
+    // Runs on a schedule replace (the old anchors are stale) and when intake
+    // tracking is switched off (nothing is due any more).
+    const tombstoneOpenSlots = async (): Promise<void> => {
       // A schedule replace invalidates the open slot anchors the projector /
       // reminder worker minted for the OLD times: a pending 08:00 row for a
       // medication that now doses at 20:00 would linger as a phantom slot,
@@ -703,9 +615,195 @@ export const PUT = apiHandler(
           });
         }
       }
+    };
+
+    // If schedules provided, replace all
+    if (schedules && normalisedSchedules) {
+      // v1.16.3 — effective dating. Before the wholesale replace below wipes
+      // the old rows, archive them as ONE revision covering
+      // `[previous validUntil | medication.createdAt, now)` — but only when a
+      // cadence-relevant field actually changes. A no-op edit (the Zeitplan
+      // tab echoing the same rows back) must not mint a phantom era.
+      const previousRows = await prisma.medicationSchedule.findMany({
+        where: { medicationId: id },
+      });
+      const previousEntries = previousRows.map((row) =>
+        toRevisionPayloadEntry({
+          timesOfDay: row.timesOfDay,
+          windowStart: row.windowStart,
+          windowEnd: row.windowEnd,
+          daysOfWeek: row.daysOfWeek,
+          rrule: row.rrule,
+          rollingIntervalDays: row.rollingIntervalDays,
+          scheduleType: row.scheduleType,
+          cyclicOnWeeks: row.cyclicOnWeeks,
+          cyclicOffWeeks: row.cyclicOffWeeks,
+          doseWindows: row.doseWindows,
+          label: row.label,
+          dose: row.dose,
+          reminderGraceMinutes: row.reminderGraceMinutes,
+        }),
+      );
+      replacedScheduleCount = previousRows.length;
+      replacedCadence =
+        previousRows.length > 0
+          ? previousRows
+              .map((row) =>
+                [
+                  row.timesOfDay,
+                  row.rrule ?? "",
+                  row.rollingIntervalDays !== null
+                    ? `every ${row.rollingIntervalDays}d`
+                    : "",
+                  row.daysOfWeek ?? "",
+                ]
+                  .filter((part) => part !== "")
+                  .join(" "),
+              )
+              .join(" | ")
+          : null;
+
+      // v1.39.1 (#1033) — a stretch with intake tracking off expected
+      // nothing, so it archives with an empty payload whatever the rows
+      // said; and a tracking transition is itself an era boundary even when
+      // the rows stay the same.
+      const archivedEntries = wasTracked ? previousEntries : [];
+      if (
+        previousRows.length > 0 &&
+        (trackingChanged ||
+          !wasTracked ||
+          schedulesMateriallyDiffer(
+            previousEntries,
+            normalisedSchedules.map((n) => n.snapshot),
+          ))
+      ) {
+        const lastRevision = await prisma.medicationScheduleRevision.findFirst({
+          // Chain from the ACTIVE boundary: a superseded row is an
+          // audit record whose `validUntil` may sit past its correction.
+          where: { medicationId: id, supersededByRevisionId: null },
+          orderBy: { validUntil: "desc" },
+          select: { validUntil: true },
+        });
+        await prisma.medicationScheduleRevision.create({
+          data: {
+            medicationId: id,
+            validFrom: lastRevision?.validUntil ?? existing.createdAt,
+            validUntil: new Date(),
+            payload: archivedEntries as unknown as Prisma.InputJsonValue,
+          },
+        });
+        annotate({
+          action: {
+            name: "medication.schedule.revision_archived",
+            entity_type: "medication",
+            entity_id: id,
+          },
+          meta: { schedule_revision_rows: archivedEntries.length },
+        });
+      } else if (
+        previousRows.length === 0 &&
+        existing.asNeeded &&
+        asNeeded === false &&
+        normalisedSchedules.length > 0
+      ) {
+        // v1.16.11 — flipping as-needed OFF. The medication carried ZERO
+        // schedule rows while as-needed, so the wholesale-replace archive
+        // above never fires — and without a revision the live era would
+        // start at the PREVIOUS revision's `validUntil` (or `createdAt`),
+        // retro-painting the schedule-less as-needed stretch with the NEW
+        // schedule's expected slots: every PRN day would read as missed.
+        // Archive an EMPTY era covering the as-needed stretch instead; an
+        // empty payload expands to zero schedules, so era-aware compliance
+        // expects nothing there — exactly the as-needed contract.
+        const lastRevision = await prisma.medicationScheduleRevision.findFirst({
+          where: { medicationId: id, supersededByRevisionId: null },
+          orderBy: { validUntil: "desc" },
+          select: { validUntil: true },
+        });
+        await prisma.medicationScheduleRevision.create({
+          data: {
+            medicationId: id,
+            validFrom: lastRevision?.validUntil ?? existing.createdAt,
+            validUntil: new Date(),
+            payload: [] as unknown as Prisma.InputJsonValue,
+          },
+        });
+        annotate({
+          action: {
+            name: "medication.schedule.revision_archived",
+            entity_type: "medication",
+            entity_id: id,
+          },
+          meta: { schedule_revision_rows: 0 },
+        });
+      }
+      await tombstoneOpenSlots();
       await prisma.medicationSchedule.deleteMany({
         where: { medicationId: id },
       });
+    } else if (trackingChanged) {
+      // v1.39.1 (#1033) — intake tracking switched without a schedule
+      // replace. Close the current era at this instant: switching OFF
+      // archives the schedule that was in force (the tracked stretch keeps
+      // its expected doses); switching back ON archives the untracked
+      // stretch with an empty payload, so compliance never counts it as
+      // missed and the live schedule, the projector and the reminder worker
+      // all resume from now.
+      const liveRows = await prisma.medicationSchedule.findMany({
+        where: { medicationId: id },
+      });
+      if (liveRows.length > 0) {
+        const lastRevision = await prisma.medicationScheduleRevision.findFirst({
+          where: { medicationId: id, supersededByRevisionId: null },
+          orderBy: { validUntil: "desc" },
+          select: { validUntil: true },
+        });
+        const archivedEntries = wasTracked
+          ? liveRows.map((row) =>
+              toRevisionPayloadEntry({
+                timesOfDay: row.timesOfDay,
+                windowStart: row.windowStart,
+                windowEnd: row.windowEnd,
+                daysOfWeek: row.daysOfWeek,
+                rrule: row.rrule,
+                rollingIntervalDays: row.rollingIntervalDays,
+                scheduleType: row.scheduleType,
+                cyclicOnWeeks: row.cyclicOnWeeks,
+                cyclicOffWeeks: row.cyclicOffWeeks,
+                doseWindows: row.doseWindows,
+                label: row.label,
+                dose: row.dose,
+                reminderGraceMinutes: row.reminderGraceMinutes,
+              }),
+            )
+          : [];
+        await prisma.medicationScheduleRevision.create({
+          data: {
+            medicationId: id,
+            validFrom: lastRevision?.validUntil ?? existing.createdAt,
+            validUntil: new Date(),
+            payload: archivedEntries as unknown as Prisma.InputJsonValue,
+          },
+        });
+        annotate({
+          action: {
+            name: "medication.schedule.revision_archived",
+            entity_type: "medication",
+            entity_id: id,
+          },
+          meta: {
+            schedule_revision_rows: archivedEntries.length,
+            track_intake: willTrack,
+          },
+        });
+      }
+    }
+
+    // v1.39.1 (#1033) — switching intake tracking off leaves nothing due:
+    // the open placeholders of today and later go the way a schedule
+    // replace sends them (a replace in the same request already did it).
+    if (trackingChanged && !willTrack && !schedules) {
+      await tombstoneOpenSlots();
     }
 
     const baseUpdateData = {
@@ -743,6 +841,8 @@ export const PUT = apiHandler(
       // v1.16.11 — as-needed flag, field-by-field (the invariants above
       // already guaranteed the medication ends schedule-consistent).
       ...(asNeeded !== undefined && { asNeeded }),
+      // v1.39.1 (#1033) — intake tracking, field-by-field.
+      ...(trackIntake !== undefined && { trackIntake }),
       ...(normalisedSchedules && {
         schedules: {
           create: normalisedSchedules.map((n) => n.createData),
@@ -849,6 +949,7 @@ export const PUT = apiHandler(
             dose: existing.dose,
             active: existing.active,
             asNeeded: existing.asNeeded,
+            trackIntake: existing.trackIntake,
             endsOn: existing.endsOn,
           },
           after: {
@@ -856,6 +957,7 @@ export const PUT = apiHandler(
             dose: medication.dose,
             active: medication.active,
             asNeeded: medication.asNeeded,
+            trackIntake: medication.trackIntake,
             endsOn: medication.endsOn,
           },
         }),
@@ -886,9 +988,12 @@ export const PUT = apiHandler(
     return apiSuccess({
       ...medication,
       unitsPerDose: Number(medication.unitsPerDose),
-      schedules: serializeScheduleUnitsPerDose(
-        medication.schedules,
-        medication.unitsPerDose,
+      ...scheduleWireFields(
+        medication.trackIntake,
+        serializeScheduleUnitsPerDose(
+          medication.schedules,
+          medication.unitsPerDose,
+        ),
       ),
       category: normalizedCategory,
     });

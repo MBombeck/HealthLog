@@ -54,6 +54,7 @@ import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake
 import { dispatchMedicationIntakeWebClear } from "@/lib/notifications/web-push-clear";
 import { notifyDelegatedIntake } from "@/lib/notifications/delegated-intake";
 import { countOutstandingDosesToday } from "@/lib/medications/outstanding-doses";
+import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 
 // The query + body schemas moved to `@/lib/validations/medication` when this
 // endpoint joined the published contract: the OpenAPI registry generates from
@@ -125,6 +126,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
         // v1.7.0 sync — exclude tombstoned rows from the today list.
         deletedAt: null,
         scheduledFor: { gte: todayStart, lt: todayEnd },
+        // v1.39.1 (#1033) — the today list is what clients offer doses
+        // from; a medication with intake tracking off is not on it.
+        ...TRACKED_INTAKE_EVENT_WHERE,
       },
       orderBy: { scheduledFor: "asc" },
       include: { medication: { select: { id: true, snoozedUntil: true } } },

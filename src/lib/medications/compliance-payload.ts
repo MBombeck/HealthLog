@@ -21,6 +21,7 @@ import {
 } from "@/lib/analytics/compliance";
 import type { DoseHistoryRow } from "@/lib/medications/scheduling/dose-history";
 import { userDayKey } from "@/lib/tz/format";
+import { isRecordOnly } from "@/lib/medications/intake-tracking";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -37,10 +38,11 @@ export interface CompliancePayload {
   /**
    * False only when adherence is not meaningful for this medication.
    * Today that means a scheduled (non-PRN) medication with no local schedule,
-   * such as an Apple Health mirror whose cadence remains source-owned.
+   * such as an Apple Health mirror whose cadence remains source-owned, and
+   * (v1.39.1, #1033) a medication whose intake tracking is switched off.
    */
   applicable: boolean;
-  notApplicableReason: "NO_LOCAL_SCHEDULE" | null;
+  notApplicableReason: "NO_LOCAL_SCHEDULE" | "INTAKE_NOT_TRACKED" | null;
   compliance7: ComplianceResult;
   compliance30: ComplianceResult;
   dailyCompliance: Record<string, DailyComplianceEntry>;
@@ -74,6 +76,8 @@ export interface ComplianceMedicationInput {
   endsOn: Date | null;
   oneShot: boolean;
   asNeeded: boolean;
+  /** v1.39.1 (#1033) — intake tracking off: no adherence, heatmap empty. */
+  trackIntake: boolean;
   schedules: Parameters<typeof buildMedicationComplianceBundle>[1];
   /** v1.16.3 — archived schedule eras for era-aware compliance. */
   scheduleRevisions?: Parameters<
@@ -179,6 +183,20 @@ export async function buildCompliancePayload(
   // rendered as adherence. Mark this shape explicitly not-applicable BEFORE
   // reading intake history or invoking the arithmetic.
   //
+  // v1.39.1 (#1033) — a medication with intake tracking off keeps its
+  // schedule as a record and expects nothing from it. Same not-applicable
+  // shape, its own reason, so an aware client can say why.
+  if (isRecordOnly(medication)) {
+    return {
+      applicable: false,
+      notApplicableReason: "INTAKE_NOT_TRACKED",
+      compliance7: NOT_APPLICABLE_LEGACY_COMPLIANCE,
+      compliance30: NOT_APPLICABLE_LEGACY_COMPLIANCE,
+      dailyCompliance: {},
+      complianceDisplay: null,
+    };
+  }
+
   // Keep PRN behaviour unchanged. The batched endpoint already excludes PRN
   // medications, and a direct per-id read retains its existing payload.
   if (!medication.asNeeded && !expectsDoses(medication)) {
