@@ -33,6 +33,10 @@ import {
   isTelegramCapturableType,
   logTelegramMeasurement,
 } from "@/lib/measurements/create-from-telegram";
+// v1.39.1 (#1033) — every Telegram path that offers, records or snoozes a
+// dose (the /add list, the "taken" keyword, the reminder buttons) leaves a
+// medication kept as a record out, as the web and the today list do.
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 /**
  * Telegram webhook update handlers, split out of
@@ -301,7 +305,7 @@ async function markMedicationTaken(
 ): Promise<{ ok: boolean; message: string; medicationName?: string }> {
   const { t } = getServerTranslator(locale);
   const medication = await prisma.medication.findFirst({
-    where: { id: medicationId, userId, active: true },
+    where: { id: medicationId, userId, active: true, ...TRACKED_INTAKE_WHERE },
     select: { id: true, name: true },
   });
   if (!medication) {
@@ -518,7 +522,12 @@ export async function handleCallback(update: TelegramUpdate) {
     }
 
     const medication = await prisma.medication.findFirst({
-      where: { id: medicationId, userId: user.id, active: true },
+      where: {
+        id: medicationId,
+        userId: user.id,
+        active: true,
+        ...TRACKED_INTAKE_WHERE,
+      },
       select: { id: true, name: true },
     });
     if (!medication) {
@@ -560,7 +569,12 @@ export async function handleCallback(update: TelegramUpdate) {
     }
 
     const medication = await prisma.medication.findFirst({
-      where: { id: medicationId, userId: user.id, active: true },
+      where: {
+        id: medicationId,
+        userId: user.id,
+        active: true,
+        ...TRACKED_INTAKE_WHERE,
+      },
       select: { id: true, name: true },
     });
     if (!medication) {
@@ -1189,7 +1203,7 @@ export async function handleTextMessage(update: TelegramUpdate) {
   if (/^\/add\b/i.test(text)) {
     const userMsgId = message?.message_id;
     const meds = await prisma.medication.findMany({
-      where: { userId: user.id, active: true },
+      where: { userId: user.id, active: true, ...TRACKED_INTAKE_WHERE },
       select: { id: true, name: true, dose: true },
       orderBy: { name: "asc" },
     });
@@ -1297,6 +1311,7 @@ export async function handleTextMessage(update: TelegramUpdate) {
       where: {
         userId: user.id,
         active: true,
+        ...TRACKED_INTAKE_WHERE,
         name: { equals: nameInput, mode: "insensitive" },
       },
       select: { id: true },
@@ -1304,7 +1319,7 @@ export async function handleTextMessage(update: TelegramUpdate) {
     medicationId = med?.id ?? null;
   } else {
     const meds = await prisma.medication.findMany({
-      where: { userId: user.id, active: true },
+      where: { userId: user.id, active: true, ...TRACKED_INTAKE_WHERE },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
       take: 2,
