@@ -9,7 +9,7 @@
  *
  * So this test does not assert on the payload. It builds a real payload from a
  * populated account, serialises it, parses it back through the REAL
- * `parseBackupPayload`, hands it to the REAL route, and asserts on the rows the
+ * `parseBackupPayload`, hands it to the REAL restore, and asserts on the rows the
  * restore tried to write. A field that survives that survives a restore.
  *
  * The transaction stand-in is deliberately not inert: `cycleSymptom.findMany`
@@ -19,7 +19,6 @@
  * inert v1.33.1 fix behaved in production.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
 import { Buffer } from "node:buffer";
 
 import { SCORE_VERSION } from "@/lib/analytics/score/types";
@@ -30,19 +29,6 @@ process.env.ENCRYPTION_KEY =
 const mocks = vi.hoisted(() => ({
   decrypt: vi.fn(),
   transaction: vi.fn(),
-}));
-
-vi.mock("@/lib/api-handler", () => ({
-  apiHandler: (fn: unknown) => fn,
-  HttpError: class extends Error {
-    constructor(
-      public status: number,
-      message: string,
-    ) {
-      super(message);
-    }
-  },
-  requireAdmin: vi.fn(async () => ({ user: { id: "admin-1" } })),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -66,10 +52,6 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
   getEvent: vi.fn(() => null),
 }));
-vi.mock("@/lib/idempotency", () => ({
-  withIdempotency: (fn: unknown) => fn,
-  defaultUserIdResolver: vi.fn(),
-}));
 vi.mock("@/lib/cache/invalidate", () => ({ invalidateUserData: vi.fn() }));
 vi.mock("@/lib/rollups/mood-rollups", () => ({
   recomputeUserMoodRollups: vi.fn(),
@@ -82,7 +64,7 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   recomputeUserRollups: vi.fn(),
 }));
 
-import { POST } from "../route";
+import { restoreBackup } from "../restore-backup";
 import { prisma } from "@/lib/db";
 import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
@@ -437,15 +419,10 @@ function recordingTx(
     );
 
   return new Proxy({} as Record<string, unknown>, {
-    get: (_t, model: string) => delegate(model),
-  });
-}
-
-function request(): NextRequest {
-  return new NextRequest("http://localhost/api/admin/backups/b-1/restore", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ confirm: "RESTORE" }),
+    // `$executeRaw` and friends: the restore's per-account lock, and the
+    // measurement insert, which answer with a row count.
+    get: (_t, model: string) =>
+      model.startsWith("$") ? async () => 0 : delegate(model),
   });
 }
 
@@ -462,7 +439,7 @@ async function roundTrip(
   seed: Record<string, { findUnique?: unknown; findMany?: unknown[] }> = {},
   payloadOverride?: Record<string, unknown>,
 ): Promise<{
-  res: Response;
+  res: { status: number };
   written: Written[];
   payload: Record<string, unknown>;
 }> {
@@ -483,11 +460,23 @@ async function roundTrip(
       fn(recordingTx(written, seed)),
   );
 
-  const res = await (
-    POST as unknown as (r: NextRequest, c: unknown) => Promise<Response>
-  )(request(), { params: Promise.resolve({ id: "b-1" }) });
+  const res = await restore();
 
   return { res, written, payload };
+}
+
+/**
+ * Run the restore the job runs, and answer with the status the synchronous
+ * route used to: 200, or the refusal's status.
+ */
+async function restore(): Promise<{ status: number }> {
+  const outcome = await restoreBackup({
+    backup: { id: "b-1", userId: OWNER, data: "cipher" },
+    actorUserId: "admin-1",
+    ipAddress: null,
+    restoreInstanceSettings: false,
+  });
+  return { status: outcome.ok ? 200 : outcome.status };
 }
 
 beforeEach(() => {

@@ -38,7 +38,7 @@ process.env.ENCRYPTION_KEY =
 import { encrypt } from "@/lib/crypto";
 import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
 import { parseBackupPayload } from "@/lib/validations/backup";
-import { POST } from "@/app/api/admin/backups/[id]/restore/route";
+import { POST } from "./restore-job-driver";
 import { invalidateUserData } from "@/lib/cache/invalidate";
 
 import { cookieJar, headerJar } from "./mock-next-headers";

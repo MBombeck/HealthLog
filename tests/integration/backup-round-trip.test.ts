@@ -69,7 +69,7 @@ import { decryptContextFromBytes } from "@/lib/labs/biomarker-store";
 import { packBackupBlobStreaming } from "@/lib/export/backup-blob";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { TWO_ENDED_MODELS, type TwoEndedModel } from "@/lib/export/backup-plan";
-import { POST } from "@/app/api/admin/backups/[id]/restore/route";
+import { POST } from "./restore-job-driver";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";

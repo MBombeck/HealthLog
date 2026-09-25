@@ -65,7 +65,11 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "auth.token.expired",
       "auth.token.invalid",
     ],
-    backup: ["backup.payload.undecryptable", "backup.section.missing"],
+    backup: [
+      "backup.payload.undecryptable",
+      "backup.restore.active",
+      "backup.section.missing",
+    ],
     coach: [
       "coach.budget.exceeded",
       "coach.conversation.invalidTitle",

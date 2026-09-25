@@ -211,6 +211,9 @@ export const WIPE_MODELS = [
   // just returned.
   "IdempotencyKey",
   "DataBackup",
+  // The restores run from those copies: which copy, who asked, and how each
+  // ended. About this account's record, so they go with it.
+  "BackupRestoreJob",
   // What this host last put in the operator's bucket for this account. The
   // objects themselves stay — the worker holds no DeleteObject grant and the
   // bucket's lifecycle rule owns their retirement — but the row saying when

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { JOB_BUDGET_SHARE, jobBudget } from "@/lib/jobs/job-budget";
+import {
+  JOB_BUDGET_SHARE,
+  jobBudget,
+  jobDeadline,
+} from "@/lib/jobs/job-budget";
 
 // pg-boss declares a job dead at its expiry but does not stop the handler;
 // the long passes stop themselves on this budget instead (issue #1031).
@@ -41,5 +45,18 @@ describe("jobBudget", () => {
     const shouldStop = jobBudget([], () => now);
     now = Number.MAX_SAFE_INTEGER;
     expect(shouldStop()).toBe(false);
+  });
+});
+
+describe("jobDeadline", () => {
+  it("is the same budget share of the expiry, as an instant", () => {
+    expect(jobDeadline(job(7200), () => 1_000)).toBe(
+      1_000 + 7200 * 1000 * JOB_BUDGET_SHARE,
+    );
+  });
+
+  it("is undefined for a job with no usable expiry", () => {
+    expect(jobDeadline(job(0))).toBeUndefined();
+    expect(jobDeadline(job(Number.NaN))).toBeUndefined();
   });
 });

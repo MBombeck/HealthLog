@@ -57,7 +57,13 @@ import type {
   RestoreSkipSummary,
   SkippedCatalogue,
 } from "@/lib/export/restore-skips";
+import type { BackupRestoreJobView } from "@/lib/jobs/backup-restore";
 import { getApiErrorMessage } from "./_shared";
+import {
+  isActiveRestore,
+  RestoreJobStatus,
+  visibleRestoreJobs,
+} from "./backup-restore-status";
 import {
   ApiError,
   apiFetch,
@@ -448,12 +454,40 @@ function missingSectionLabel(
  * carry, and that nothing was changed — have to survive long enough to be read.
  */
 /**
- * The refused sections carried on an `ApiError`, or none.
+ * The refused sections a failed restore job names, or none.
  *
- * Keyed on `meta.errorCode` and not on the message text: the message is prose
+ * Keyed on the failure's `code` and not on its message: the message is prose
  * the server may reword, and matching on it would turn a copy edit into a
  * silent loss of the panel.
  */
+
+const DISMISSED_RESTORES_KEY = "healthlog.admin.backups.dismissedRestores";
+
+/** Dismissed restore panels, from this browser. Empty when storage is off. */
+function readDismissedRestores(): string[] {
+  try {
+    if (typeof window === "undefined") return [];
+    const raw = window.localStorage.getItem(DISMISSED_RESTORES_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((id): id is string => typeof id === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeDismissedRestores(ids: string[]): void {
+  try {
+    // The list only ever shows a day of jobs; fifty ids is weeks of them.
+    window.localStorage.setItem(
+      DISMISSED_RESTORES_KEY,
+      JSON.stringify(ids.slice(-50)),
+    );
+  } catch {
+    // A private window: the panel comes back on reload, nothing else breaks.
+  }
+}
 
 /**
  * The upload body for a backup file: the file itself when it is already
@@ -468,10 +502,11 @@ async function uploadBody(file: File): Promise<Blob> {
   ).blob();
 }
 
-export function missingSectionsOf(err: unknown): MissingBackupSection[] {
-  if (!(err instanceof ApiError)) return [];
-  if (err.meta?.errorCode !== "backup.section.missing") return [];
-  const sections = err.meta?.sections;
+export function missingSectionsOf(
+  failure: { code: string; sections?: readonly unknown[] } | null | undefined,
+): MissingBackupSection[] {
+  if (failure?.code !== "backup.section.missing") return [];
+  const sections = failure.sections;
   if (!Array.isArray(sections)) return [];
   return sections.filter(
     (section): section is MissingBackupSection => typeof section === "string",
@@ -820,9 +855,77 @@ export function BackupsSection() {
     MissingBackupSection[]
   >([]);
 
-  // Restore: typed-confirmation dialog. The mutation is keyed by row id
-  // and used inline by `<RestoreRowDialog>` below — keeping the
-  // mutation here lets the parent invalidate the list query on success.
+  // A job this page watched while it ran, and has now seen finish. Only those
+  // raise a toast and refresh the page's data: a job that had already finished
+  // when the page opened is shown in its panel and nothing more. Read in the
+  // poll's own callback, where each answer arrives, rather than in an effect.
+  const watched = useRef<Map<string, string>>(new Map());
+  function noticeFinishedRestores(jobs: readonly BackupRestoreJobView[]) {
+    for (const job of jobs) {
+      const before = watched.current.get(job.id);
+      watched.current.set(job.id, job.status);
+      if (before !== "queued" && before !== "running") continue;
+      if (job.status === "succeeded") {
+        setRefusedSections([]);
+        const report = job.result?.skipped;
+        if (report && report.links > 0) {
+          setSkipped(report as RestoreSkipSummary);
+          toast.warning(
+            t("admin.section.backups.restoreSkippedToast", {
+              links: String(report.links),
+            }),
+          );
+        } else {
+          setSkipped(null);
+          toast.success(t("admin.section.backups.restoreSuccess"));
+        }
+        // Restore touches every personal-data table; nuke the broader cache
+        // so dashboards / lists rebuild against the new state.
+        void queryClient.invalidateQueries();
+      } else if (job.status === "failed") {
+        setRefusedSections(missingSectionsOf(job.failure));
+        toast.error(t("admin.section.backups.restoreFailed"));
+      }
+    }
+  }
+
+  // The restore jobs, read from the server so a reload during a restore finds
+  // it again. Polled every two seconds while any is queued or running, and
+  // not at all otherwise. A poll that fails keeps the last answer on screen:
+  // a network blip is not a failed restore.
+  const restores = useQuery({
+    queryKey: queryKeys.adminBackupRestores(),
+    queryFn: async () => {
+      const data = await apiGet<{ jobs: BackupRestoreJobView[] }>(
+        "/api/admin/backups/restores",
+      );
+      noticeFinishedRestores(data.jobs);
+      return data;
+    },
+    refetchInterval: (query) =>
+      query.state.data?.jobs.some(isActiveRestore) ? 2000 : false,
+  });
+  const restoreJobs = restores.data?.jobs ?? [];
+  const activeOwners = new Set(
+    restoreJobs.filter(isActiveRestore).map((job) => job.userId),
+  );
+
+  // Finished restores the operator dismissed. Remembered in this browser only,
+  // for convenience; the list itself forgets a job after a day.
+  const [dismissedRestores, setDismissedRestores] = useState<Set<string>>(
+    () => new Set(readDismissedRestores()),
+  );
+  function dismissRestore(id: string) {
+    setDismissedRestores((previous) => {
+      const next = new Set(previous);
+      next.add(id);
+      writeDismissedRestores([...next]);
+      return next;
+    });
+  }
+
+  // Restore: typed-confirmation dialog. The request only queues the restore;
+  // the panel above the list follows it from there.
   const restore = useMutation({
     mutationFn: async ({
       row,
@@ -831,47 +934,35 @@ export function BackupsSection() {
       row: BackupRow;
       restoreInstanceSettings: boolean;
     }) => {
-      // Idempotency-Key prevents a double-click from re-running the
-      // destructive transaction. Include the row id so two different
-      // backups can both be restored independently in the same minute.
+      // Idempotency-Key prevents a double-click from queuing a second
+      // restore. Include the row id so two different backups can both be
+      // restored independently in the same minute.
       const idempotencyKey = `restore-${row.id}-${randomId()}`;
-      return apiPost<{ restored: true; skipped?: RestoreSkipSummary }>(
+      return apiPost<{ jobId: string; status: "queued" }>(
         `/api/admin/backups/${row.id}/restore`,
         { confirm: "RESTORE", restoreInstanceSettings },
-        // No request timeout: rebuilding a large account takes minutes.
-        { headers: { "Idempotency-Key": idempotencyKey }, signal: null },
+        { headers: { "Idempotency-Key": idempotencyKey } },
       );
     },
     onSuccess: (data) => {
-      // A restore that dropped links is not a plain success and must not read
-      // as one. The count and the exact keys go on screen; the same report is
-      // in the audit row for anyone asking later.
       setRefusedSections([]);
-      const report = data.skipped;
-      if (report && report.links > 0) {
-        setSkipped(report);
-        toast.warning(
-          t("admin.section.backups.restoreSkippedToast", {
-            links: String(report.links),
-          }),
-        );
-      } else {
-        setSkipped(null);
-        toast.success(t("admin.section.backups.restoreSuccess"));
-      }
-      queryClient.invalidateQueries({ queryKey: queryKeys.adminBackups() });
-      // Restore touches every personal-data table; nuke the broader
-      // cache so dashboards / lists rebuild against the new state.
-      queryClient.invalidateQueries();
+      setSkipped(null);
+      watched.current.set(data.jobId, "queued");
+      // Neutral, not a success: nothing has been restored yet.
+      toast.info(t("admin.section.backups.restoreStarted"));
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.adminBackupRestores(),
+      });
     },
     onError: (err) => {
-      // The server refuses an incomplete file before it deletes anything, and
-      // names the sections in `meta`. That is the one restore failure the
-      // operator can act on, so it gets the panel rather than only a toast.
-      const sections = missingSectionsOf(err);
-      if (sections.length > 0) {
-        setRefusedSections(sections);
-        toast.error(t("admin.section.backups.restoreMissingTitle"));
+      if (
+        err instanceof ApiError &&
+        err.meta?.errorCode === "backup.restore.active"
+      ) {
+        toast.error(t("admin.section.backups.restoreActive"));
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.adminBackupRestores(),
+        });
         return;
       }
       setRefusedSections([]);
@@ -1001,6 +1092,14 @@ export function BackupsSection() {
           </Button>
         </div>
       </div>
+
+      {visibleRestoreJobs(restoreJobs, dismissedRestores).map((job) => (
+        <RestoreJobStatus
+          key={job.id}
+          job={job}
+          onDismiss={() => dismissRestore(job.id)}
+        />
+      ))}
 
       <RestoreRefusalNotice
         sections={refusedSections}
@@ -1133,8 +1232,9 @@ export function BackupsSection() {
                         <RestoreRowDialog
                           row={row}
                           pending={
-                            restore.isPending &&
-                            restore.variables?.row.id === row.id
+                            (restore.isPending &&
+                              restore.variables?.row.id === row.id) ||
+                            activeOwners.has(row.userId)
                           }
                           onConfirm={(options) =>
                             restore.mutate({ row, ...options })
@@ -1196,8 +1296,9 @@ export function BackupsSection() {
                     <RestoreRowDialog
                       row={row}
                       pending={
-                        restore.isPending &&
-                        restore.variables?.row.id === row.id
+                        (restore.isPending &&
+                          restore.variables?.row.id === row.id) ||
+                        activeOwners.has(row.userId)
                       }
                       onConfirm={(options) =>
                         restore.mutate({ row, ...options })
