@@ -231,6 +231,9 @@ export async function runContentIndexBackfillForUser(
         deletedAt: null,
         mimeType: { in: candidateMimes },
         contentIndex: { is: null },
+        // An import held back from AI reading (#1038) is read only when the
+        // person opens it and asks; "index all" leaves it local.
+        aiReadDeferred: false,
       },
       select: { id: true },
       orderBy: { id: "asc" },

@@ -56,6 +56,7 @@ vi.mock("@/lib/db", () => {
       documentSourceAlias: {
         findUnique: vi.fn(),
         createMany: vi.fn(),
+        count: vi.fn(),
       },
       extractedFact: {
         groupBy: vi.fn(),
@@ -247,6 +248,7 @@ beforeEach(() => {
   vi.mocked(prisma.documentSourceAlias.createMany).mockResolvedValue({
     count: 1,
   } as never);
+  vi.mocked(prisma.documentSourceAlias.count).mockResolvedValue(0 as never);
   // No settings row / no user override → policy defaults (25 MiB / 1 GiB).
   vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
   vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
@@ -844,7 +846,28 @@ describe("POST /api/documents/inbound — document import", () => {
     );
     expect(res.status).toBe(200);
     expect((await res.json()).data).toEqual({ id: "doc-src", duplicate: true });
-    expect(checkRateLimit).not.toHaveBeenCalled();
+    // Metered on the lookup bucket only; no upload slot is spent.
+    expect(
+      vi.mocked(checkRateLimit).mock.calls.map((c) => [c[0], c[1]]),
+    ).toEqual([["documents-source:token:tok-1", 5000]]);
+  });
+
+  it("429s the query-string check once the lookup bucket is spent", async () => {
+    armToken([DOCUMENTS_WRITE_SCOPE]);
+    vi.mocked(checkRateLimit).mockResolvedValueOnce({
+      allowed: false,
+      remaining: 0,
+      limit: 5000,
+      resetAt: Date.now() + 60_000,
+    } as never);
+    const res = await post(
+      new Request(
+        "http://localhost/api/documents/inbound?sourceSystem=PAPRA&sourceId=doc_1",
+        { method: "POST", body: "x" },
+      ),
+    );
+    expect(res.status).toBe(429);
+    expect(prisma.inboundDocument.findFirst).not.toHaveBeenCalled();
   });
 
   it("422s half a query-string key", async () => {
@@ -871,7 +894,7 @@ describe("POST /api/documents/inbound — document import", () => {
     expect(txCreate).not.toHaveBeenCalled();
   });
 
-  it("remembers the key when keyed bytes are already stored, and refunds the slot", async () => {
+  it("remembers the key when keyed bytes are already stored, and keeps the slot charged", async () => {
     // Own-key lookup misses; the content lookup finds a live row.
     vi.mocked(prisma.inboundDocument.findFirst)
       .mockResolvedValueOnce(null as never)
@@ -891,8 +914,25 @@ describe("POST /api/documents/inbound — document import", () => {
       ],
       skipDuplicates: true,
     });
-    expect(refundRateLimit).toHaveBeenCalledWith("documents-upload:user-1");
+    // The body was read: the slot stays spent, so the same bytes under id
+    // after id are not free.
+    expect(refundRateLimit).not.toHaveBeenCalled();
     expect(txCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses a further id for bytes already held under the maximum", async () => {
+    vi.mocked(prisma.inboundDocument.findFirst)
+      .mockResolvedValueOnce(null as never)
+      .mockResolvedValueOnce(docRow({ id: "doc-manual" }) as never);
+    vi.mocked(prisma.documentSourceAlias.count).mockResolvedValue(20 as never);
+    const res = await post(
+      mkUpload({ sourceSystem: "PAPRA", sourceId: "doc_21" }),
+    );
+    expect(res.status).toBe(409);
+    expect((await res.json()).meta.errorCode).toBe(
+      "documents.inbound.sourceAliasLimit",
+    );
+    expect(prisma.documentSourceAlias.createMany).not.toHaveBeenCalled();
   });
 
   it("resolves a key held as an alias of a deleted document to deleted", async () => {
@@ -908,22 +948,18 @@ describe("POST /api/documents/inbound — document import", () => {
       duplicate: true,
       deleted: true,
     });
-    expect(refundRateLimit).toHaveBeenCalled();
+    expect(refundRateLimit).not.toHaveBeenCalled();
     expect(txCreate).not.toHaveBeenCalled();
   });
 
-  it("refunds the slot on a plain content duplicate", async () => {
+  it("keeps a plain content duplicate charged and writes no alias", async () => {
     vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(
       docRow({ id: "doc-existing" }) as never,
     );
     await post(mkUpload());
-    expect(refundRateLimit).toHaveBeenCalledWith("documents-upload:user-1");
-    expect(prisma.documentSourceAlias.createMany).not.toHaveBeenCalled();
-  });
-
-  it("does not refund a stored upload", async () => {
-    await post(mkUpload());
+    expect(checkRateLimit).toHaveBeenCalledTimes(1);
     expect(refundRateLimit).not.toHaveBeenCalled();
+    expect(prisma.documentSourceAlias.createMany).not.toHaveBeenCalled();
   });
 
   it("persists the deferral on the row", async () => {

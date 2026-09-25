@@ -67,11 +67,16 @@ export const POST = apiHandler(async (request) => {
   let enqueued = 0;
   if (jobCreated) {
     const [indexedCount, totalCount] = await Promise.all([
+      // Imports held back from AI reading (#1038) are not part of this run
+      // and are left out of both figures.
       prisma.documentContentIndex.count({
-        where: { userId: user.id, document: { deletedAt: null } },
+        where: {
+          userId: user.id,
+          document: { deletedAt: null, aiReadDeferred: false },
+        },
       }),
       prisma.inboundDocument.count({
-        where: { userId: user.id, deletedAt: null },
+        where: { userId: user.id, deletedAt: null, aiReadDeferred: false },
       }),
     ]);
     enqueued = Math.max(0, totalCount - indexedCount);

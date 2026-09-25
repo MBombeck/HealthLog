@@ -131,6 +131,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "documents.inbound.rateLimited",
       "documents.inbound.restoreDuplicate",
       "documents.inbound.restoreGone",
+      "documents.inbound.sourceAliasLimit",
       "documents.inbound.uploadBusy",
       "documents.inbound.uploadTimeout",
       "documents.inbound.vaccinationNotFound",

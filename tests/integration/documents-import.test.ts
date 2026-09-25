@@ -400,7 +400,7 @@ describe("source keys that reach a document by its bytes (#1038)", () => {
   });
 });
 
-describe("re-sends cost no allowance and no body read (#1038)", () => {
+describe("re-sends with the key in the address cost no upload slot (#1038)", () => {
   it("answers a query-string key before the body and the bucket, and the lookup agrees", async () => {
     await seedUser({ inboundDocuments: true });
     token = await mintDocumentToken();
@@ -459,18 +459,25 @@ describe("re-sends cost no allowance and no body read (#1038)", () => {
     expect(blocked.status).toBe(429);
   });
 
-  it("a duplicate by bytes hands its slot back", async () => {
+  it("an upload that sends its body pays its slot, duplicate or not", async () => {
     await seedUser({ inboundDocuments: true });
     token = await mintDocumentToken();
     process.env.DOCUMENT_UPLOAD_LIMIT_PER_HOUR = "2";
     asToken();
     expect((await post(upload(pdf("one")))).status).toBe(201);
-    // Charged and handed back each time; without the refund the second of
-    // these would already meet a spent bucket.
-    expect((await post(upload(pdf("one")))).status).toBe(200);
-    expect((await post(upload(pdf("one")))).status).toBe(200);
-    expect((await post(upload(pdf("two")))).status).toBe(201);
-    expect((await post(upload(pdf("three")))).status).toBe(429);
+    // The same bytes under a new id: answered, remembered, and charged, so
+    // id after id is not a free way to grow the alias table.
+    const again = await post(
+      upload(pdf("one"), { sourceSystem: "OTHER", sourceId: "a1" }),
+    );
+    expect(again.status).toBe(200);
+    expect(
+      (
+        await post(
+          upload(pdf("one"), { sourceSystem: "OTHER", sourceId: "a2" }),
+        )
+      ).status,
+    ).toBe(429);
   });
 });
 

@@ -15679,15 +15679,18 @@ paths:
         `sourceId` (its id there, printable, up to 128 characters; needs `sourceSystem`) key the upload. A re-send with
         a known key is a duplicate: 200 with the live row (`meta.duplicate: true`), or, when the owner DELETED that
         document, 200 with `data.deleted: true` and `meta.deleted: true` and nothing stored; this holds after the 30-day
-        purge too. The key may instead ride the query string (`?sourceSystem=…&sourceId=…`): it is then answered before
-        the body is read and before the hourly allowance is charged, so a re-send of a document already held costs
-        neither; a key in both places must agree (else 422). A key that is answered with an existing document by its
-        bytes is remembered for that document, so deleting it keeps that key deleted too. `OTHER` is one shared
-        namespace per account: two different systems both sent as `OTHER` must not reuse each other's ids. An upload
-        answered as a duplicate or as deleted hands its slot of the hourly allowance back. `aiRead=defer` holds back
-        automatic AI reading for this upload: the thumbnail and a local text index still run, the summary and lab
-        staging do not, and the document stays out of the summary catch-up until the person reads it with AI or
-        generates its summary. Absent, behaviour is unchanged.
+        purge too. The key may also ride the query string (`?sourceSystem=…&sourceId=…`): a key the vault already holds
+        is then answered at once, the file is not stored or processed, and the request counts only toward the lookup
+        allowance shared with `GET /api/documents/inbound/source` (5000 an hour per token, per person for a session; 429
+        past it), not toward the hourly upload limit. A key in both places must agree (else 422). Every other upload
+        counts toward the hourly upload limit, duplicates included. A key that is answered with an existing document by
+        its bytes is remembered for that document, so deleting it keeps that key deleted too; one document takes at most
+        20 such keys, beyond which the upload is refused 409 (`documents.inbound.sourceAliasLimit`). `OTHER` is one
+        shared namespace per account: two different systems both sent as `OTHER` must not reuse each other's ids.
+        `aiRead=defer` holds back automatic AI reading for this upload: the thumbnail and a local text index still run,
+        the summary and lab staging do not, and the document stays out of every automatic AI path (the summary catch-up,
+        the automatic index, Index all for search) until the person reads it with AI or generates its summary. Absent,
+        behaviour is unchanged.
 
 
         **Narrow token.** Also reachable with a `documents:write` Bearer (minted at `POST /api/tokens/documents`), which
@@ -15709,8 +15712,9 @@ paths:
               - PAPERLESS
               - PAPRA
               - OTHER
-          description: Import source key, first half. Sent here instead of (or agreeing with) the form field, it is checked before
-            the body is read or the hourly allowance is charged.
+          description: "Import source key, first half. Sent here (and, if also in the form, agreeing with it), a key the vault
+            already holds is answered at once: the file is not stored or processed and the request does not count toward
+            the hourly upload limit, only toward the lookup allowance shared with `GET /api/documents/inbound/source`."
         - name: sourceId
           in: query
           required: false
@@ -15796,7 +15800,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentUploadEnvelope"
         "401": *a1
-        "409": *a7
+        "409":
+          description: The same bytes are already stored under 20 other import source ids (`documents.inbound.sourceAliasLimit`).
+            Nothing was stored or remembered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "413":
           description: "Too large: `meta.reason` is `fileTooLarge` (with `maxFileBytes`) or `quotaExceeded` (with `quotaBytes` +
             `usedBytes`)."
@@ -15823,8 +15833,8 @@ paths:
         `known`, the document `id` (null once a deleted document was purged), and whether the owner `deleted` it. Checks
         the document's own key, keys remembered for it when an import sent the same bytes under another key, and the
         keys of purged documents. Reachable with a `documents:write` Bearer (the scope's second and last route) or a
-        cookie session; stores nothing. 5000 lookups an hour per token (per person for a session); gated on the
-        `inboundDocuments` module."
+        cookie session; stores nothing. 5000 lookups an hour per token (per person for a session), shared with the
+        upload's query-string key check; gated on the `inboundDocuments` module."
       parameters:
         - name: sourceSystem
           in: query
@@ -30738,21 +30748,21 @@ components:
                 documents.inbound.localOcrDisabled, documents.inbound.notFound, documents.inbound.notIndexed,
                 documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
                 documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
-                documents.inbound.restoreGone, documents.inbound.uploadBusy, documents.inbound.uploadTimeout,
-                documents.inbound.vaccinationNotFound; encounter — encounter.invalid, encounter.link.invalid,
-                encounter.practitioner-not-found, encounter.reminder-conflict, encounter.reminder-not-found; environment
-                — environment.invalid, environment.no_home, environment.range_too_large, environment.travel.not_found;
-                export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
-                feedback — feedback.body.invalid; health_score_config — health_score_config.invalid,
-                health_score_config.too_narrow; illness — illness.day-log.invalid, illness.disabled,
-                illness.episode.chronic-no-resolve, illness.episode.invalid, illness.episode.invalid-window,
-                illness.episode.parent-not-found, illness.insights.invalid; import — import.write_failed; ingest —
-                ingest.rate_limited; insights — insights.generate.budgetExceeded, insights.generate.outboundScreened,
-                insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
-                labs.biomarker.create.invalid, labs.biomarker.duplicate, labs.biomarker.notFound,
-                labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
-                labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType,
-                labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
+                documents.inbound.restoreGone, documents.inbound.sourceAliasLimit, documents.inbound.uploadBusy,
+                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound; encounter — encounter.invalid,
+                encounter.link.invalid, encounter.practitioner-not-found, encounter.reminder-conflict,
+                encounter.reminder-not-found; environment — environment.invalid, environment.no_home,
+                environment.range_too_large, environment.travel.not_found; export — export.selection.empty,
+                export.selection.unknown_leaf; familyHistory — familyHistory.invalid; feedback — feedback.body.invalid;
+                health_score_config — health_score_config.invalid, health_score_config.too_narrow; illness —
+                illness.day-log.invalid, illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
+                illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
+                import.write_failed; ingest — ingest.rate_limited; insights — insights.generate.budgetExceeded,
+                insights.generate.outboundScreened, insights.generate.profileScopeChanged,
+                insights.generate.scopeChanged; labs — labs.biomarker.create.invalid, labs.biomarker.duplicate,
+                labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
+                labs.create.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge,
+                labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
                 labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound, labs.update.invalid,
                 labs.update.linkedFieldsImmutable, labs.update.numericExpected, labs.update.qualitativeExpected,
                 labs.update.referenceRangeInvalid, labs.update.sourceReferenceRangeInvalid; managed_profile —

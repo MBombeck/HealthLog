@@ -70,6 +70,7 @@ import { enqueueDocumentSummary } from "@/lib/jobs/document-summary";
 import { enqueueDocumentThumbnail } from "@/lib/jobs/document-thumbnail";
 import { DOCUMENTS_WRITE_SCOPE } from "@/lib/documents/scopes";
 import {
+  checkSourceLookupRateLimit,
   findSourceKey,
   rememberSourceAlias,
   type SourceKeyMatch,
@@ -86,11 +87,7 @@ import { linkTargets } from "@/lib/links";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { isP2002 } from "@/lib/prisma-errors";
-import {
-  checkRateLimit,
-  rateLimitHeaders,
-  refundRateLimit,
-} from "@/lib/rate-limit";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import {
   documentCreateSchema,
   documentListQuerySchema,
@@ -203,6 +200,19 @@ function deletedResponse(ctx: UploadContext, id: string | null): NextResponse {
   return receiptResponse(id, 200, { duplicate: true, deleted: true });
 }
 
+/**
+ * The same bytes have already been sent under too many source keys
+ * (`MAX_SOURCE_ALIASES_PER_DOCUMENT`). A conflict with what is stored, not a
+ * rate: nothing is remembered and nothing stored.
+ */
+function aliasLimitResponse(): NextResponse {
+  return apiError(
+    "This file is already stored under too many source ids.",
+    409,
+    { errorCode: "documents.inbound.sourceAliasLimit" },
+  );
+}
+
 /** Answer a source key that is already held: duplicate, or deleted. */
 function answerSourceKey(
   ctx: UploadContext,
@@ -307,6 +317,22 @@ async function processUpload(
       );
     }
     queryKey = parsedKey.data;
+    // Metered like the lookup route, on the same bucket: the check stores
+    // nothing and costs no upload slot, but it is not a free oracle either.
+    const lookupRl = await checkSourceLookupRateLimit(
+      scoped,
+      auth.session.id,
+      user.id,
+    );
+    if (!lookupRl.allowed) {
+      const response = apiError("Too many lookups. Try again later.", 429, {
+        errorCode: "documents.inbound.rateLimited",
+      });
+      for (const [k, v] of Object.entries(rateLimitHeaders(lookupRl))) {
+        response.headers.set(k, v);
+      }
+      return response;
+    }
     const match = await findSourceKey(
       user.id,
       queryKey.sourceSystem,
@@ -337,11 +363,10 @@ async function processUpload(
     scoped ? resolveDocumentUploadLimitPerHour() : UPLOAD_LIMIT_PER_HOUR,
     UPLOAD_WINDOW_MS,
   );
-  // A slot pays for a document stored. An upload that turns out to be one
-  // already held (same key, same bytes) hands its slot back, so re-sends —
-  // a Paperless workflow firing on every edit, a re-run over an archive —
-  // never eat into the allowance.
-  const refundSlot = () => refundRateLimit(bucketKey).catch(() => {});
+  // Every upload that reaches the body pays its slot, stored or not. The cheap
+  // way to re-send is the query-string key above, answered before this line;
+  // handing slots back after a full body read would let a leaked token send
+  // the same bytes under id after id for free.
   if (!rl.allowed) {
     const response = apiError("Too many uploads. Try again later.", 429, {
       errorCode: "documents.inbound.rateLimited",
@@ -452,10 +477,7 @@ async function processUpload(
   // the ledger remembers.
   if (sourceSystem && sourceId && !queryKey) {
     const match = await findSourceKey(user.id, sourceSystem, sourceId);
-    if (match) {
-      await refundSlot();
-      return answerSourceKey(ctx, match);
-    }
+    if (match) return answerSourceKey(ctx, match);
   }
 
   let buffer: Buffer;
@@ -522,9 +544,14 @@ async function processUpload(
     // none) is answered with that document — and the key is remembered for
     // it, so once the person deletes the document this key stays deleted too.
     if (sourceSystem && sourceId) {
-      await rememberSourceAlias(user.id, existing.id, sourceSystem, sourceId);
+      const remembered = await rememberSourceAlias(
+        user.id,
+        existing.id,
+        sourceSystem,
+        sourceId,
+      );
+      if (remembered === "limit") return aliasLimitResponse();
     }
-    await refundSlot();
     return duplicateResponse(ctx, existing);
   }
 
@@ -626,10 +653,7 @@ async function processUpload(
       // paths above would have.
       if (sourceSystem && sourceId) {
         const match = await findSourceKey(user.id, sourceSystem, sourceId);
-        if (match) {
-          await refundSlot();
-          return answerSourceKey(ctx, match);
-        }
+        if (match) return answerSourceKey(ctx, match);
       }
       const winner = await prisma.inboundDocument.findFirst({
         where: { userId: user.id, contentSha256, deletedAt: null },
@@ -637,9 +661,14 @@ async function processUpload(
       });
       if (winner) {
         if (sourceSystem && sourceId) {
-          await rememberSourceAlias(user.id, winner.id, sourceSystem, sourceId);
+          const remembered = await rememberSourceAlias(
+            user.id,
+            winner.id,
+            sourceSystem,
+            sourceId,
+          );
+          if (remembered === "limit") return aliasLimitResponse();
         }
-        await refundSlot();
         return duplicateResponse(ctx, winner);
       }
     }
