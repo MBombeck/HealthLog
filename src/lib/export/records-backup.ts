@@ -171,6 +171,12 @@ export interface DocumentBackupEntry {
   /** Refs #776 — the index-attempt record, carried verbatim (canonical DR). */
   lastIndexAttemptAt?: string | null;
   lastIndexOutcome?: string | null;
+  /**
+   * v1.39.2 (#1038) — where an imported document came from, both payload
+   * kinds. Optional so a file written before the fields existed still parses.
+   */
+  sourceSystem?: string | null;
+  sourceId?: string | null;
 }
 
 export interface RecordsBackupOptions {
@@ -296,6 +302,8 @@ export async function buildRecordsBackupSection(
           summaryState: true,
           lastIndexAttemptAt: true,
           lastIndexOutcome: true,
+          sourceSystem: true,
+          sourceId: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -314,6 +322,8 @@ export async function buildRecordsBackupSection(
           reportDate: true,
           documentDate: true,
           summaryEncrypted: true,
+          sourceSystem: true,
+          sourceId: true,
           createdAt: true,
         },
       });
@@ -520,6 +530,8 @@ export async function buildRecordsBackupSection(
       documentDate: d.documentDate
         ? d.documentDate.toISOString().slice(0, 10)
         : null,
+      sourceSystem: d.sourceSystem,
+      sourceId: d.sourceId,
       createdAt: d.createdAt.toISOString(),
     };
 

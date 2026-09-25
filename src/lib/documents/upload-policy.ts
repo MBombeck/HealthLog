@@ -84,6 +84,32 @@ export function acquireDocumentUploadSlot(userId: string): (() => void) | null {
   };
 }
 
+/**
+ * Hourly upload ceiling for a narrow `documents:write` token, per token.
+ *
+ * Its own bucket rather than the person's: an overnight import running at this
+ * rate must never use up the allowance the web app and the phone draw on. The
+ * default is twice the cookie bucket because an importer is strictly serial
+ * and is the reason the token exists. Operator-tunable via
+ * `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`, clamped to 1-1000 the way
+ * `DOCUMENT_AI_LIMIT_PER_HOUR` is, so a typo can neither shut the door nor
+ * remove the cap. The per-user quota, not this number, is the disk guard.
+ */
+const DOCUMENT_UPLOAD_TOKEN_LIMIT_DEFAULT = 120;
+const DOCUMENT_UPLOAD_TOKEN_LIMIT_MIN = 1;
+const DOCUMENT_UPLOAD_TOKEN_LIMIT_MAX = 1000;
+
+export function resolveDocumentUploadLimitPerHour(): number {
+  const raw = process.env.DOCUMENT_UPLOAD_LIMIT_PER_HOUR;
+  if (!raw) return DOCUMENT_UPLOAD_TOKEN_LIMIT_DEFAULT;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed)) return DOCUMENT_UPLOAD_TOKEN_LIMIT_DEFAULT;
+  return Math.min(
+    DOCUMENT_UPLOAD_TOKEN_LIMIT_MAX,
+    Math.max(DOCUMENT_UPLOAD_TOKEN_LIMIT_MIN, parsed),
+  );
+}
+
 export interface DocumentLimits {
   /** Per-file upload cap in bytes (admin-tunable, clamped to the ceiling). */
   maxFileBytes: number;

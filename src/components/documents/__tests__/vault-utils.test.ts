@@ -45,6 +45,8 @@ function doc(overrides: Partial<InboundDocumentDto> = {}): InboundDocumentDto {
     lastIndexAttemptAt: null,
     lastIndexOutcome: null,
     hasThumbnail: false,
+    sourceSystem: null,
+    sourceId: null,
     createdAt: "2026-03-11T08:00:00.000Z",
     updatedAt: "2026-03-11T08:00:00.000Z",
     ...overrides,

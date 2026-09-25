@@ -6140,7 +6140,14 @@
       "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji — nie odczyta danych, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz, i nadal możesz je poprawić.",
       "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie."
     },
-    "tokenMintMovedDescription": "Tokeny wydajemy tam, gdzie działają: powyżej dla pomiarów albo w punkcie końcowym API danego leku dla tego jednego leku.",
+    "documentsToken": {
+      "title": "Tokeny dokumentów",
+      "description": "Utwórz token, aby Paperless-ngx, Papra lub skrypt importu mogły dodawać dokumenty do Twojego archiwum.",
+      "detail": "Token pokazujemy tylko raz.",
+      "scopeNote": "Może wyłącznie dodawać nowe dokumenty do Twojego archiwum. Niczego nie wyświetli, nie otworzy, nie pobierze, nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Dowiaduje się tylko, czy plik został zapisany, a nie to, jak został opisany.",
+      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie."
+    },
+    "tokenMintMovedDescription": "Tokeny wydajemy tam, gdzie działają: powyżej dla pomiarów i dokumentów albo w punkcie końcowym API danego leku dla tego jednego leku.",
     "tokenNamePlaceholder": "Nazwa tokena (np. Skrót iPhone)",
     "tokenCreated": "Token utworzony — skopiuj go teraz! Nie zostanie pokazany ponownie.",
     "tokenCopy": "Kopiuj token",
@@ -9984,6 +9991,9 @@
       "noConditions": "Niepowiązany ze schorzeniem",
       "previewUnavailable": "Brak podglądu dla tego typu pliku",
       "uploadedMeta": "Dodano {date} · {size}",
+      "importedFrom": "Zaimportowano z: {system}",
+      "importedFromWithId": "Zaimportowano z: {system} · ID {id}",
+      "sourceOther": "inny system",
       "share": "Udostępnij",
       "labValuesLink": "Zobacz {count} wyników laboratoryjnych",
       "visitsLabel": "Należy do wizyty",

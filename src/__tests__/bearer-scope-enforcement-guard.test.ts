@@ -149,6 +149,9 @@ describe("T3 — the mint sites are frozen", () => {
     // body cannot express a scope. Reaches two write routes on the holder's
     // own record and nothing else, the mint included.
     "app/api/tokens/measurements/route.ts": "[MEASUREMENTS_WRITE_SCOPE]",
+    // Document upload from another system (#1038). Same shape as the
+    // measurement mint: a literal, one scope, one route that accepts it.
+    "app/api/tokens/documents/route.ts": "[DOCUMENTS_WRITE_SCOPE]",
     // MCP, audience-bound to `/mcp`. `health:write` requires explicit consent.
     "app/api/mcp/tokens/route.ts": "SCOPE_HEALTH_READ / SCOPE_HEALTH_WRITE",
     "app/api/mcp/oauth/token/route.ts":
@@ -175,6 +178,7 @@ describe("T3 — the mint sites are frozen", () => {
     const userFacing = [
       "app/api/medications/[id]/api-endpoint/route.ts",
       "app/api/tokens/measurements/route.ts",
+      "app/api/tokens/documents/route.ts",
       "app/api/mcp/tokens/route.ts",
       "app/api/mcp/oauth/token/route.ts",
     ];
@@ -226,7 +230,11 @@ describe("T4 — declared scopes are exported constants, never string literals",
     // `scope` option, a route can widen itself without the word `requireAuth`
     // appearing anywhere in it. A vocabulary that watched only the first form
     // would have gone on passing while the surface it describes grew.
-    const DECLARED_SCOPES = ["FHIR_READ_SCOPE", "MEASUREMENTS_WRITE_SCOPE"];
+    const DECLARED_SCOPES = [
+      "DOCUMENTS_WRITE_SCOPE",
+      "FHIR_READ_SCOPE",
+      "MEASUREMENTS_WRITE_SCOPE",
+    ];
     const used = new Set<string>();
     for (const rel of sourceFiles()) {
       const src = read(rel);
@@ -242,6 +250,24 @@ describe("T4 — declared scopes are exported constants, never string literals",
       }
     }
     expect([...used].sort()).toEqual(DECLARED_SCOPES);
+  });
+});
+
+describe("T4b — `documents:write` opens exactly one door", () => {
+  it("only the vault upload route declares the scope", () => {
+    // The scope admits a narrow token wherever it is named, so the set of
+    // files naming it IS its reach. The upload, and nothing else: not the
+    // list or detail beside it, not the original or thumbnail, not bulk, not
+    // the AI legs. A second route here is a widening and belongs in review.
+    const declaring = filesMatching(
+      /requireAuth\(\s*DOCUMENTS_WRITE_SCOPE\s*\)|requireRecordAuth\([^)]*\bscope:\s*DOCUMENTS_WRITE_SCOPE\b/,
+    );
+    expect(declaring).toEqual(["app/api/documents/inbound/route.ts"]);
+    // And within that file, once: the GET beside the POST must not name it.
+    const src = read("app/api/documents/inbound/route.ts");
+    expect(
+      src.match(/requireAuth\(\s*DOCUMENTS_WRITE_SCOPE\s*\)/g),
+    ).toHaveLength(1);
   });
 });
 

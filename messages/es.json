@@ -6140,7 +6140,14 @@
       "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial: no puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Las mediciones se marcan como procedentes de un dispositivo externo, así las distingues más tarde, y puedes corregirlas igualmente.",
       "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
     },
-    "tokenMintMovedDescription": "Los tokens se emiten donde se aplican: arriba para las mediciones, o en el endpoint de API de un medicamento para ese medicamento concreto.",
+    "documentsToken": {
+      "title": "Tokens de documentos",
+      "description": "Crea un token para que Paperless-ngx, Papra o el script de importación añadan documentos a tu archivo.",
+      "detail": "El token se muestra una sola vez.",
+      "scopeNote": "Solo puede añadir documentos nuevos a tu propio archivo. No puede listar, abrir, descargar, modificar ni borrar nada, ni crear otro token. Lo único que recibe es si un archivo se guardó, no cómo lo archivaste.",
+      "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
+    },
+    "tokenMintMovedDescription": "Los tokens se emiten donde se aplican: arriba para las mediciones y los documentos, o en el endpoint de API de un medicamento para ese medicamento concreto.",
     "tokenNamePlaceholder": "Nombre del token (p. ej., Atajo de iPhone)",
     "tokenCreated": "Token creado — ¡cópialo ahora! No se mostrará de nuevo.",
     "tokenCopy": "Copiar token",
@@ -9984,6 +9991,9 @@
       "noConditions": "Sin vincular a una afección",
       "previewUnavailable": "Sin vista previa integrada para este tipo de archivo",
       "uploadedMeta": "Añadido el {date} · {size}",
+      "importedFrom": "Importado de {system}",
+      "importedFromWithId": "Importado de {system} · ID {id}",
+      "sourceOther": "otro sistema",
       "share": "Compartir",
       "labValuesLink": "Ver {count} valores de laboratorio",
       "visitsLabel": "Pertenece a la cita",

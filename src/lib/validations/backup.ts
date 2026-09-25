@@ -81,6 +81,10 @@ import {
   emergencyBloodTypeSchema,
   organDonorStatusSchema,
 } from "@/lib/validations/emergency-profile";
+import {
+  DOCUMENT_SOURCE_ID_MAX,
+  DOCUMENT_SOURCE_SYSTEMS,
+} from "@/lib/validations/inbound-documents";
 import { REMINDER_EVENT_SOURCES } from "@/lib/measurement-reminders/satisfy";
 import {
   UNITS_PER_DOSE_MESSAGE,
@@ -1621,6 +1625,10 @@ const documentBackupSchema = z
     // Free string on purpose: a future outcome value must not fail a restore.
     lastIndexAttemptAt: isoDateTime.nullable().optional(),
     lastIndexOutcome: z.string().nullable().optional(),
+    // v1.39.2 (#1038) — import provenance. Closed like the upload field, so a
+    // restore cannot write a system the detail sheet has no name for.
+    sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS).nullable().optional(),
+    sourceId: z.string().max(DOCUMENT_SOURCE_ID_MAX).nullable().optional(),
     summary: z.string().nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),

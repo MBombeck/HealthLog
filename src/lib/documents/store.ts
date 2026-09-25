@@ -17,7 +17,10 @@ import type {
   InboundDocumentStatus,
 } from "@/generated/prisma/client";
 import { servingClassFor } from "@/lib/documents/upload-policy";
-import { toIndexOutcome } from "@/lib/validations/inbound-documents";
+import {
+  toDocumentSourceSystem,
+  toIndexOutcome,
+} from "@/lib/validations/inbound-documents";
 import type {
   DocumentConditionLinkDto,
   DocumentEncounterLinkDto,
@@ -247,6 +250,8 @@ export function serialiseDocument(
       ? null
       : toIndexOutcome(doc.lastIndexOutcome),
     hasThumbnail,
+    sourceSystem: toDocumentSourceSystem(doc.sourceSystem),
+    sourceId: doc.sourceSystem ? doc.sourceId : null,
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
   };

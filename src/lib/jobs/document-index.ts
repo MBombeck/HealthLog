@@ -26,6 +26,12 @@ export interface DocumentIndexPayload {
   userId: string;
   documentId: string;
   enqueuedAt?: string;
+  /**
+   * v1.39.2 (#1038) — set for an upload that asked for `aiRead=defer`: index
+   * from the local text layer only and stage no lab facts. Absent on every
+   * job enqueued before the field existed, which keeps their behaviour.
+   */
+  localOnly?: boolean;
 }
 
 /**
@@ -38,7 +44,10 @@ export async function runDocumentIndex(
 ): Promise<void> {
   const { userId, documentId } = payload;
   if (!userId || !documentId) return;
-  const outcome = await indexDocumentContent(userId, documentId);
+  const localOnly = payload.localOnly === true;
+  const outcome = await indexDocumentContent(userId, documentId, {
+    localOnly,
+  });
   annotate({
     action: { name: "documents.autoIndex.run" },
     meta: outcome.indexed
@@ -51,7 +60,9 @@ export async function runDocumentIndex(
   // PENDING for the existing human review; nothing is committed. Fully gated +
   // idempotent inside; a failure here must never fail the index job, so it is
   // swallowed to a no-op (the manual extract button remains the fallback).
-  if (outcome.indexed) {
+  // A deferred import stages nothing: lab staging is an AI read, and the
+  // person asked for those to wait.
+  if (outcome.indexed && !localOnly) {
     await maybeAutoStageLabFacts(userId, documentId).catch(() => {});
   }
 }
@@ -67,6 +78,7 @@ export async function runDocumentIndex(
 export async function enqueueDocumentIndex(
   userId: string,
   documentId: string,
+  options: { localOnly?: boolean } = {},
 ): Promise<{ enqueued: boolean }> {
   const boss = getGlobalBoss();
   if (!boss) return { enqueued: false };
@@ -74,6 +86,7 @@ export async function enqueueDocumentIndex(
     userId,
     documentId,
     enqueuedAt: new Date().toISOString(),
+    ...(options.localOnly ? { localOnly: true } : {}),
   };
   try {
     const jobId = await boss.send(DOCUMENT_INDEX_QUEUE, payload, {
