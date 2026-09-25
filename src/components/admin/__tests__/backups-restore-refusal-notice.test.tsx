@@ -3,7 +3,7 @@
  *
  * The server refuses a file whose manifest claims a section the file does not
  * carry, before it deletes anything. That refusal reaches a person through the
- * `meta.errorCode` on the error envelope, and a bare "restore failed" toast
+ * `code` on the restore job's failure, and a bare "restore failed" toast
  * would waste it: the operator on the other end is frequently holding the only
  * copy of an account, and the two facts they can act on — which section is
  * missing, and that nothing was changed — have to stay on screen.
@@ -14,7 +14,7 @@
  *   3. no sections means no notice — a panel that appears after every restore
  *      trains the operator to ignore it,
  *   4. the copy resolves in more than one locale,
- *   5. `missingSectionsOf` keys on the errorCode and not on the message text,
+ *   5. `missingSectionsOf` keys on the failure code and not on the message text,
  *      so rewording the server's prose cannot silently remove the panel.
  *
  * Mutation check: render a count instead of the list and case 1 goes red; drop
@@ -30,7 +30,6 @@ import {
   RestoreRefusalNotice,
   missingSectionsOf,
 } from "@/components/admin/backups-section";
-import { ApiError } from "@/lib/api/api-fetch";
 import type { MissingBackupSection } from "@/lib/export/restore-skips";
 
 vi.mock("next/navigation", () => ({
@@ -79,33 +78,24 @@ describe("RestoreRefusalNotice", () => {
 });
 
 describe("missingSectionsOf", () => {
-  it("reads the sections off the refusal envelope", () => {
-    const err = new ApiError("Backup is missing documents", 422, {
-      errorCode: "backup.section.missing",
-      sections: ["documents"],
-    });
-
-    expect(missingSectionsOf(err)).toEqual(["documents"]);
+  it("reads the sections off the failed job", () => {
+    expect(
+      missingSectionsOf({
+        code: "backup.section.missing",
+        sections: ["documents"],
+      }),
+    ).toEqual(["documents"]);
   });
 
-  it("ignores an error whose message merely looks like one", () => {
+  it("ignores a failure whose message merely looks like one", () => {
     // The message is prose the server may reword. Only the code counts.
-    const err = new ApiError("Backup is missing documents", 422, {
-      errorCode: "something_else",
-      sections: ["documents"],
-    });
-
-    expect(missingSectionsOf(err)).toEqual([]);
-    expect(missingSectionsOf(new Error("Backup is missing documents"))).toEqual(
-      [],
-    );
+    expect(
+      missingSectionsOf({ code: "something_else", sections: ["documents"] }),
+    ).toEqual([]);
+    expect(missingSectionsOf(null)).toEqual([]);
   });
 
   it("survives a refusal with no section list", () => {
-    const err = new ApiError("Refused", 422, {
-      errorCode: "backup.section.missing",
-    });
-
-    expect(missingSectionsOf(err)).toEqual([]);
+    expect(missingSectionsOf({ code: "backup.section.missing" })).toEqual([]);
   });
 });

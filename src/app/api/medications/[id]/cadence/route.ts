@@ -33,6 +33,7 @@ import {
 } from "@/lib/analytics/compliance";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { dueSchedules } from "@/lib/medications/intake-tracking";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -131,8 +132,10 @@ export const GET = apiHandler(
       scheduleRevisions: med.scheduleRevisions,
     };
 
+    // v1.39.1 (#1033) — intake tracking off: no chip, no next dose.
+    const liveSchedules = dueSchedules(med);
     const timeline = buildCadenceTimeline(
-      med.schedules,
+      liveSchedules,
       events,
       asOf,
       windowDays,
@@ -141,7 +144,7 @@ export const GET = apiHandler(
       engineCtx,
     );
     const chips = complianceChips(
-      med.schedules,
+      liveSchedules,
       events,
       asOf,
       windowDays,
@@ -150,7 +153,7 @@ export const GET = apiHandler(
       engineCtx,
     );
     const next = computeNextDose(
-      med.schedules,
+      liveSchedules,
       asOf,
       14,
       anchor,

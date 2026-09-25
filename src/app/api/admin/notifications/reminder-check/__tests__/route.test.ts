@@ -92,7 +92,7 @@ describe("POST /api/admin/notifications/reminder-check", () => {
     expect(res.status).toBe(200);
     const json = (await res.json()) as { data: { scoped: boolean } };
     expect(json.data.scoped).toBe(false);
-    expect(whereOfLastFindMany()).toEqual({ active: true });
+    expect(whereOfLastFindMany()).toEqual({ active: true, trackIntake: true });
   });
 
   it("narrows the sweep to the named account", async () => {
@@ -102,6 +102,7 @@ describe("POST /api/admin/notifications/reminder-check", () => {
     expect(json.data.scoped).toBe(true);
     expect(whereOfLastFindMany()).toEqual({
       active: true,
+      trackIntake: true,
       userId: "cku0mock0account0id",
     });
   });

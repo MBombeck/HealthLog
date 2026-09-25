@@ -60,8 +60,10 @@ under `v1` (the synthetic id assigned to the existing `ENCRYPTION_KEY`).
 
    Read three things off the output before going further:
 
-   - the per-column line, `scanned` / `rotated` / `errors` / `dropped`. Treat
-     `errors > 0` as a hard failure and re-run after fixing the cause. A
+   - the per-column line, `scanned` / `rotated` / `errors` / `dropped`.
+     `scanned` counts the rows that hold ciphertext in that column, not every
+     row of the table. Treat `errors > 0` as a hard failure and re-run after
+     fixing the cause. A
      `dropped` count is only ever a cache row the run could not read and
      deleted rather than leave unreadable.
    - `Columns walked: N/M registered`. The two numbers must match.

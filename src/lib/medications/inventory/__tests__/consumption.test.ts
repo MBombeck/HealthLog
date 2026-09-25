@@ -361,6 +361,42 @@ describe("consumeForIntake", () => {
     expect(state.events[0].inventoryConsumption).toBeNull();
   });
 
+  it("consumes 1½ units per dose across two containers and refunds both exactly (#1034)", async () => {
+    const state: FakeState = {
+      unitsPerDose: 1.5,
+      events: [takenEvent()],
+      items: [
+        item({
+          id: "open",
+          state: "IN_USE",
+          unitsTotal: 30,
+          unitsRemaining: 1,
+          firstUseAt: new Date(NOW.getTime() - 3 * MS_PER_DAY),
+          expiresAt: new Date(NOW.getTime() + 27 * MS_PER_DAY),
+        }),
+        item({ id: "next", unitsTotal: 30, unitsRemaining: 30 }),
+      ],
+    };
+    const client = makeClient(state);
+    await consumeForIntake(consumeArgs(client));
+
+    // The open container gives its last unit, the next one the half.
+    expect(state.items.find((i) => i.id === "open")?.unitsRemaining).toBe(0);
+    expect(state.items.find((i) => i.id === "next")?.unitsRemaining).toBe(29.5);
+    expect(state.events[0].inventoryConsumption).toEqual([
+      { itemId: "open", units: 1 },
+      { itemId: "next", units: 0.5 },
+    ]);
+
+    await restoreForIntake({
+      client: client as never,
+      userId: "user-1",
+      eventId: "evt-1",
+    });
+    expect(state.items.find((i) => i.id === "open")?.unitsRemaining).toBe(1);
+    expect(state.items.find((i) => i.id === "next")?.unitsRemaining).toBe(30);
+  });
+
   it("prefers the IN_USE container over fresher ACTIVE stock", async () => {
     const state: FakeState = {
       unitsPerDose: 1,

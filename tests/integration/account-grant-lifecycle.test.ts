@@ -677,7 +677,7 @@ describe("account grant lifecycle paths", () => {
     });
 
     await signIn(admin.id);
-    const { POST } = await import("@/app/api/admin/backups/[id]/restore/route");
+    const { POST } = await import("./restore-job-driver");
     const response = await POST(
       new Request(`http://localhost/api/admin/backups/${backup.id}/restore`, {
         method: "POST",

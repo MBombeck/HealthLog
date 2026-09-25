@@ -33,6 +33,7 @@ import {
   SCHEDULE_COMPLIANCE_SELECT,
 } from "@/lib/analytics/compliance";
 import type { MeasurementType } from "@/generated/prisma/client";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 type Severity = "alert" | "caution" | "info" | "good";
 
@@ -101,7 +102,12 @@ export const GET = apiHandler(async () => {
       prisma.medication.findMany({
         // v1.16.11 — as-needed (PRN) medications never surface a compliance
         // rate (no expected doses).
-        where: { userId: user.id, active: true, asNeeded: false },
+        where: {
+          userId: user.id,
+          active: true,
+          asNeeded: false,
+          ...TRACKED_INTAKE_WHERE,
+        },
         include: {
           // Schedules through the shared compliance select so the configured
           // per-dose windows reach the engine like every other surface.

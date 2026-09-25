@@ -67,6 +67,7 @@ export function EncounterSheet({
   encounter,
   reminderId,
   episodeId,
+  kind,
   onSaved,
 }: {
   open: boolean;
@@ -77,6 +78,8 @@ export function EncounterSheet({
   reminderId?: string | null;
   /** A condition to pre-link, when the sheet was opened from an episode. */
   episodeId?: string | null;
+  /** The kind a new visit starts as — PROCEDURE from the procedure history. */
+  kind?: EncounterDraft["kind"];
   onSaved?: (saved: Encounter) => void;
 }) {
   const { t } = useTranslations();
@@ -92,6 +95,7 @@ export function EncounterSheet({
       : emptyDraft({
           occurredAt: nowLocalValue(),
           episodeIds: episodeId ? [episodeId] : [],
+          ...(kind ? { kind } : {}),
         }),
   );
   const [error, setError] = useState<string | null>(null);

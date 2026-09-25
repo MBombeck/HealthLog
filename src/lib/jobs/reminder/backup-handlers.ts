@@ -4,12 +4,11 @@
  * Extracted from reminder-worker.ts, which owns the queue names, cron
  * schedules, and boss.work registrations.
  */
-import { type Job } from "pg-boss";
+import { type Job, type JobWithMetadata } from "pg-boss";
+import { jobBudget } from "@/lib/jobs/job-budget";
 import { recordError } from "@/lib/jobs/worker-status";
-import {
-  BackupBlobTooLargeError,
-  packBackupBlobStreaming,
-} from "@/lib/export/backup-blob";
+import { BackupBlobTooLargeError } from "@/lib/export/backup-blob";
+import { storeBackupBlob } from "@/lib/export/store-backup-blob";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
@@ -18,6 +17,7 @@ import {
   runOffhostBackup,
 } from "@/lib/jobs/offhost-backup";
 import { getWorkerPrisma } from "./shared";
+import { reportJobProgress } from "@/lib/jobs/job-observer";
 
 export interface DataBackupPayload {
   triggeredAt: string;
@@ -28,13 +28,18 @@ export interface OffhostBackupPayload {
 }
 
 export async function handleOffhostBackup(
-  jobs: Job<OffhostBackupPayload>[],
+  jobs: JobWithMetadata<OffhostBackupPayload>[],
 ): Promise<JobOutcome> {
-  void jobs;
   return withBackgroundEvent("job.offhost_backup", async (evt) => {
     const p = getWorkerPrisma();
     try {
-      const report = await runOffhostBackup(p);
+      // A retry of this job carries the same creation time, so it resumes
+      // after the accounts an earlier attempt uploaded, and the run stops
+      // between accounts before the job's expiry would cut one off.
+      const report = await runOffhostBackup(p, undefined, new Date(), {
+        runStartedAt: jobs[0]?.createdOn,
+        shouldStop: jobBudget(jobs),
+      });
       evt.addMeta("offhost_backup_uploaded", report.uploaded);
       evt.addMeta("offhost_backup_failed", report.failed);
       evt.addMeta("offhost_backup_total_users", report.totalUsers);
@@ -56,6 +61,8 @@ export async function handleOffhostBackup(
       }
 
       const did = {
+        offhost_backup_already_uploaded: report.alreadyUploaded,
+        stopped_early: report.stoppedEarly,
         offhost_backup_uploaded: report.uploaded,
         offhost_backup_failed: report.failed,
         offhost_backup_total_users: report.totalUsers,
@@ -70,7 +77,20 @@ export async function handleOffhostBackup(
       // than one. Per-account failures still ride out as counts when SOME
       // account got a copy: that is the fan-out rule, and retrying the whole
       // cohort over one object would re-upload everybody's.
-      if (report.totalUsers > 0 && report.uploaded === 0) {
+      // Out of budget before every account: fail, so pg-boss retries the job,
+      // and the retry resumes after the accounts this attempt uploaded.
+      if (report.stoppedEarly) {
+        return jobFailed(
+          "stopped before every account was uploaded; the retry resumes",
+          undefined,
+          did,
+        );
+      }
+
+      if (
+        report.totalUsers > 0 &&
+        report.uploaded + report.alreadyUploaded === 0
+      ) {
         // The SDK's own words, not a stack: `runJob` puts the cause message in
         // the reported meta, and "SignatureDoesNotMatch" is the sentence an
         // operator can act on.
@@ -118,38 +138,30 @@ export async function handleDataBackup(
       // six weeks in.
       let lastError: unknown;
       for (const user of users) {
+        reportJobProgress({
+          backup_user: user.id,
+          backup_users_done: backed + usersFailed,
+          backup_users_total: users.length,
+        });
         try {
           // Streamed, compressed, then encrypted (the record contains
-          // sensitive health information). Nothing between the database rows
-          // and this string exists as a whole: the payload goes into gzip a
-          // page at a time and the cipher consumes gzip's output as it comes,
-          // because a materialised copy of a large record is what used to take
-          // the process down. Both legs live in `packBackupBlobStreaming`,
-          // which is also what the restore path reads back through.
-          const encryptedBackup = await packBackupBlobStreaming((write) =>
-            streamFullBackupJson(prisma, user.id, write, {
-              purpose: "disaster-recovery",
-            }),
+          // sensitive health information), and stored a piece at a time.
+          // Nothing between the database rows and the stored row exists as a
+          // whole in this process: the payload goes into gzip a page at a
+          // time, the cipher consumes gzip's output as it comes, and the
+          // ciphertext goes back to Postgres in pieces that one statement
+          // assembles into the row (`storeBackupBlob`). The stored copy used
+          // to be built here as one string first, which on a large record
+          // added several hundred megabytes to a container capped at 1 GB.
+          const { bytes: storedBytes } = await storeBackupBlob(
+            prisma,
+            { userId: user.id, type: "WEEKLY_AUTO" },
+            (write) =>
+              streamFullBackupJson(prisma, user.id, write, {
+                purpose: "disaster-recovery",
+              }),
           );
-          largestBlobBytes = Math.max(
-            largestBlobBytes,
-            Buffer.byteLength(encryptedBackup, "utf8"),
-          );
-
-          await prisma.dataBackup.upsert({
-            where: {
-              userId_type: { userId: user.id, type: "WEEKLY_AUTO" },
-            },
-            update: {
-              data: encryptedBackup,
-              createdAt: new Date(),
-            },
-            create: {
-              userId: user.id,
-              type: "WEEKLY_AUTO",
-              data: encryptedBackup,
-            },
-          });
+          largestBlobBytes = Math.max(largestBlobBytes, storedBytes);
           backed++;
         } catch (err) {
           // One user's payload failing is that user's problem, not the pass's:

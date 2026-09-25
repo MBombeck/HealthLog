@@ -1,5 +1,6 @@
 /**
- * OpenAPI route table — the two backups-console routes that read a stored copy.
+ * OpenAPI route table — the backups-console routes that read a stored copy, and
+ * the restore job they start.
  *
  * Part of the OpenAPI route table; aggregated in `./index.ts`.
  *
@@ -13,6 +14,10 @@
  * (422, `backup.payload.undecryptable`, nothing changed) rather than whatever
  * the handler happens to answer, and a promise belongs somewhere it can be
  * quoted from.
+ *
+ * The restore answers 202 and runs as a background job, so the two routes that
+ * report on that job are published with it: a 202 without its status route is
+ * half a contract.
  */
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
@@ -42,20 +47,85 @@ const restoreSkipEntry = z
       "One catalogue key the file referenced and this instance could not resolve, with the number of links it cost.",
   });
 
-const restoreResult = z
+const restoreQueued = z
   .object({
-    restored: z.literal(true),
-    summary: z.record(z.string(), z.unknown()),
-    skipped: z.object({
-      catalogueKeys: z.array(restoreSkipEntry),
-      links: z.number().int(),
-    }),
-    cleared: z.record(z.string(), z.number().int()),
+    jobId: z.string(),
+    status: z.literal("queued"),
+    statusUrl: z.string(),
   })
   .meta({
-    id: "AdminBackupRestoreResult",
+    id: "AdminBackupRestoreQueued",
     description:
-      "What the transaction wrote. `cleared` counts the rows each class held before it was rebuilt from the file, `summary` counts what the file carried, and `skipped.links` is the number of links dropped because a catalogue key in the file does not exist here — zero is the normal answer.",
+      "The restore was accepted and queued. Poll `statusUrl` (`GET /api/admin/backups/restores/{jobId}`) for its progress and outcome.",
+  });
+
+const restorePhase = z
+  .enum(["validating", "clearing", "measurements", "sections", "rebuilding"])
+  .meta({
+    id: "AdminBackupRestorePhase",
+    description:
+      "Where a running restore is: reading and checking the file, clearing the account's current data, writing the readings, writing the other sections, rebuilding the chart tiers after the commit.",
+  });
+
+const restoreProgress = z
+  .object({
+    measurementsChecked: z.number().int(),
+    measurementsTotal: z.number().int().nullable(),
+    measurementsWritten: z.number().int(),
+    sectionsDone: z.number().int(),
+    sectionsTotal: z.number().int(),
+  })
+  .meta({
+    id: "AdminBackupRestoreProgress",
+    description:
+      "Counts only. `measurementsTotal` is null until the first read of the file has counted the readings.",
+  });
+
+const restoreFailure = z
+  .object({
+    code: z.string().meta({
+      description:
+        "Stable reason: `backup_not_found`, `backup_changed`, `backup.payload.undecryptable`, `schema_invalid`, `incompatible_schema_version`, `owner_mismatch`, `owner_not_found`, `backup.section.missing`, `document_ciphertext_missing`, `time_budget`, `transaction_failed`, `interrupted`, `not_started`, `enqueue_failed`, `failed_after_commit`, `unexpected`. Every code but `failed_after_commit` means the account was not changed.",
+    }),
+    message: z.string(),
+    sections: z.array(z.string()).optional(),
+  })
+  .meta({
+    id: "AdminBackupRestoreFailure",
+    description:
+      "Why the restore did not happen, in a sentence an operator can act on. `sections` names the missing sections for `backup.section.missing`.",
+  });
+
+const restoreJob = z
+  .object({
+    id: z.string(),
+    userId: z.string(),
+    username: z.string().nullable(),
+    backupId: z.string(),
+    restoreInstanceSettings: z.boolean(),
+    status: z.enum(["queued", "running", "succeeded", "failed"]),
+    phase: restorePhase.nullable(),
+    progress: restoreProgress.nullable(),
+    result: z
+      .object({
+        summary: z.record(z.string(), z.unknown()),
+        skipped: z.object({
+          catalogueKeys: z.array(restoreSkipEntry),
+          links: z.number().int(),
+        }),
+        cleared: z.record(z.string(), z.number().int()),
+      })
+      .nullable(),
+    failure: restoreFailure.nullable(),
+    attempts: z.number().int(),
+    createdAt: z.string(),
+    startedAt: z.string().nullable(),
+    completedAt: z.string().nullable(),
+  })
+  .meta({
+    id: "AdminBackupRestoreJob",
+    description:
+      "One restore job. `phase` and `progress` describe a running job; `result` is set once it `succeeded` (the same report the synchronous restore used to answer with, less `restored`); `failure` once it `failed`. `attempts` counts the starts: a job whose worker stopped before the data was committed is started once more; one that stopped after the commit is closed as `failed_after_commit` and never run again.",
   });
 
 /**
@@ -122,9 +192,9 @@ export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/admin/backups/{id}/restore": {
     post: {
       tags: ["Admin"],
-      summary: "Restore one stored backup over its owner's record",
+      summary: "Queue the restore of one stored backup over its owner's record",
       description:
-        "Replaces the snapshot owner's data tables from the stored copy, in one transaction, under the ids the file carries. Replacing is not merging: every row the account gained after the snapshot was taken is deleted with the rest of its class. The target is the account the snapshot was taken for, never the admin running it, and a payload declaring a different owner than the stored row is refused. Admin session cookie required; Bearer tokens cannot reach admin endpoints.",
+        "Queues a restore that replaces the snapshot owner's data tables from the stored copy, in one transaction, under the ids the file carries, and answers 202 with the job's id. Replacing is not merging: every row the account gained after the snapshot was taken is deleted with the rest of its class. The target is the account the snapshot was taken for, never the admin running it. The request refuses a missing confirmation, an unknown backup and a copy that cannot be decrypted; the file's own checks (schema, declared owner, manifest, documents) run in the job before anything is deleted, and a refusal there ends the job as `failed` with the same reason. One restore per account at a time. Admin session cookie required; Bearer tokens cannot reach admin endpoints.",
       requestParams: {
         path: z.object({
           id: z.string().meta({ description: "`DataBackup.id`." }),
@@ -139,11 +209,15 @@ export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         content: { "application/json": { schema: restoreRequest } },
       },
       responses: {
-        "200": {
-          description: "The restore ran.",
+        "202": {
+          description:
+            "The restore is queued. Its progress and outcome are at `statusUrl`.",
           content: {
             "application/json": {
-              schema: dataEnvelope(restoreResult, "AdminBackupRestoreResponse"),
+              schema: dataEnvelope(
+                restoreQueued,
+                "AdminBackupRestoreQueuedResponse",
+              ),
             },
           },
         },
@@ -155,7 +229,7 @@ export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "404": notFoundResponse,
         "409": {
           description:
-            "Either the payload declares a different owner than the stored row, or a request under the same `Idempotency-Key` is still in flight. Nothing was changed.",
+            "A restore of the same account is already queued or running (`meta.errorCode` = `backup.restore.active`, `meta.jobId` names it), or a request under the same `Idempotency-Key` is still in flight. Nothing was changed.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "413": {
@@ -164,7 +238,64 @@ export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "The request or the file was refused before anything was written: `confirm` missing, the copy undecryptable (`meta.errorCode` = `backup.payload.undecryptable`), the payload failing schema validation, an unsupported `schemaVersion`, a section the file's own manifest says it carries and does not (`meta.errorCode` = `backup.section.missing`), a metadata-only document entry, or an owner who no longer exists here.",
+            "The request was refused before anything was queued: `confirm` missing, or the copy undecryptable (`meta.errorCode` = `backup.payload.undecryptable`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "503": {
+          description:
+            "The restore could not be handed to the background worker. Nothing was changed.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
+  "/api/admin/backups/restores": {
+    get: {
+      tags: ["Admin"],
+      summary: "List the restores the backups console shows",
+      description:
+        "Every queued or running restore, and those created in the last day, newest first, at most 20. What the console reads when it opens, so a reload during a restore picks its progress up again. Admin session cookie required; Bearer tokens cannot reach admin endpoints.",
+      responses: {
+        "200": {
+          description: "The restore jobs.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ jobs: z.array(restoreJob) }),
+                "AdminBackupRestoreJobListResponse",
+              ),
+            },
+          },
+        },
+        "403": adminOnlyResponse,
+      },
+    },
+  },
+  "/api/admin/backups/restores/{jobId}": {
+    get: {
+      tags: ["Admin"],
+      summary: "Read one restore job",
+      description:
+        "The status, phase and counts of one restore, and its report or its failure once it finished. Admin session cookie required; Bearer tokens cannot reach admin endpoints.",
+      requestParams: {
+        path: z.object({
+          jobId: z.string().meta({
+            description: "The `jobId` the restore request answered with.",
+          }),
+        }),
+      },
+      responses: {
+        "200": {
+          description: "The restore job.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(restoreJob, "AdminBackupRestoreJobResponse"),
+            },
+          },
+        },
+        "403": adminOnlyResponse,
+        "404": {
+          description: "No restore job with this id.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

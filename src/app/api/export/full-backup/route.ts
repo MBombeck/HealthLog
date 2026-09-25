@@ -35,7 +35,9 @@ import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { apiError, getClientIp } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
+import type { FullBackupCounts } from "@/lib/export/full-backup-payload";
+import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
+import { streamToResponseBody } from "@/lib/export/response-stream";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = apiHandler(async (request: NextRequest) => {
@@ -47,48 +49,44 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return apiError("Maximum 10 exports per hour", 429);
   }
 
-  // v1.23 — the payload builder is shared with the passphrase-encrypted
-  // export route so both emit the byte-for-byte same shape (the measurement/
-  // medication/mood/cycle domains are restore-compatible; the newer records
-  // domains are export-only for now — see the module doc comment above).
-  const { payload, counts } = await buildFullBackupPayload(prisma, user.id);
-
-  await auditLog("user.export.full-backup", {
-    userId: user.id,
-    ipAddress: getClientIp(request),
-    details: { counts },
-  });
-
-  annotate({
-    meta: {
-      export_measurements_count: counts.measurements,
-      export_medications_count: counts.medications,
-      export_intake_count: counts.intakeEvents,
-      export_medication_side_effect_count: counts.medicationSideEffects,
-      export_mood_count: counts.moodEntries,
-      export_cycle_count: counts.cycles,
-      export_cycle_day_log_count: counts.cycleDayLogs,
-      export_lab_result_count: counts.labResults,
-      export_biomarker_count: counts.biomarkers,
-      export_illness_episode_count: counts.illnessEpisodes,
-      export_illness_day_log_count: counts.illnessDayLogs,
-      export_allergy_count: counts.allergies,
-      export_family_history_count: counts.familyHistory,
-      export_workout_count: counts.workouts,
-      export_document_count: counts.documents,
-      export_nutrient_day_count: counts.nutrientDays,
-      export_health_profile_count: counts.healthProfile,
-      export_custom_metric_count: counts.customMetrics,
-      export_custom_metric_entry_count: counts.customMetricEntries,
-      export_intraday_profile_count: counts.intradayProfiles,
+  // Written into the response as it is produced (`streamFullBackupJson`), not
+  // built and stringified first: for an account of 1.25 million measurements
+  // the built payload and its JSON string did not fit a 1 GB container, and
+  // the export took the whole app down (#1031). The file is byte for byte
+  // what `JSON.stringify` of the payload builder's object gives; the passphrase
+  // export beside this route writes the same bytes, encrypted.
+  //
+  // The counts are only known once the last row has gone out, so the audit
+  // row is written then. A file that stops early is audited as a failure.
+  const ipAddress = getClientIp(request);
+  let counts: FullBackupCounts | undefined;
+  const body = streamToResponseBody(
+    async (write) => {
+      counts = await streamFullBackupJson(prisma, user.id, write);
     },
-  });
+    {
+      onComplete: () =>
+        auditLog("user.export.full-backup", {
+          userId: user.id,
+          ipAddress,
+          details: { counts },
+        }),
+      onError: (err) =>
+        auditLog("user.export.full-backup.failed", {
+          userId: user.id,
+          ipAddress,
+          details: {
+            reason: err instanceof Error ? err.message : String(err),
+          },
+        }),
+    },
+  );
 
   const stamp = new Date().toISOString().slice(0, 10);
   // Stream the JSON directly (NOT wrapped in the apiSuccess envelope) so
   // the file is a self-contained backup — admin upload + restore expect
   // the raw payload, not `{ data: { ... } }`.
-  return new NextResponse(JSON.stringify(payload), {
+  return new NextResponse(body, {
     status: 200,
     headers: {
       "Content-Type": "application/json; charset=utf-8",

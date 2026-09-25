@@ -37,6 +37,10 @@ import {
 } from "@/lib/analytics/compliance";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { userDayKey } from "@/lib/tz/resolver";
+import {
+  TRACKED_INTAKE_EVENT_WHERE,
+  TRACKED_INTAKE_WHERE,
+} from "@/lib/medications/intake-tracking";
 
 export interface ScheduleAnchoredComplianceBucket {
   /** YYYY-MM-DD in the user's tz. */
@@ -54,8 +58,10 @@ export async function buildScheduleAnchoredComplianceBuckets(
   const nowMs = now.getTime();
   const start = new Date(nowMs - days * 86_400_000);
 
+  // v1.39.1 (#1033) — a medication with intake tracking off expects no
+  // dose, so it contributes to neither side of the daily buckets.
   const medications = await prisma.medication.findMany({
-    where: { userId, active: true },
+    where: { userId, active: true, ...TRACKED_INTAKE_WHERE },
     include: {
       // v1.15.20 — the shared compliance select so a future engine column
       // reaches this surface the moment it joins SCHEDULE_COMPLIANCE_SELECT.
@@ -69,7 +75,12 @@ export async function buildScheduleAnchoredComplianceBuckets(
 
   const events = await prisma.medicationIntakeEvent.findMany({
     // v1.7.0 sync — exclude tombstoned rows from the compliance buckets.
-    where: { userId, deletedAt: null, scheduledFor: { gte: start } },
+    where: {
+      userId,
+      deletedAt: null,
+      scheduledFor: { gte: start },
+      ...TRACKED_INTAKE_EVENT_WHERE,
+    },
     select: {
       medicationId: true,
       scheduledFor: true,

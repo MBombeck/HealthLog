@@ -165,4 +165,78 @@ describe("<DocumentRecordLinks>", () => {
     expect(html).not.toContain('data-slot="document-vaccination-links-add"');
     expect(html).not.toContain('data-slot="document-visit-links-add"');
   });
+
+  describe("chips open the record they point at (#1024)", () => {
+    it("a manager's dose chip carries the dose date and opens the dose", () => {
+      const html = render(
+        <DocumentRecordLinks
+          doc={doc({
+            vaccinationLinks: [
+              {
+                vaccinationId: "dose-1",
+                occurredAt: "1991-04-02T00:00:00.000Z",
+                catalogSlug: "tetanus",
+                vaccineName: null,
+              },
+            ],
+          })}
+          canManage
+          seedFresh
+          onChange={() => undefined}
+        />,
+      );
+      const open = html.match(
+        /<a[^>]*data-slot="document-vaccination-links-chip-open"[^>]*>/,
+      );
+      expect(open?.[0]).toContain('href="/vaccinations?dose=dose-1"');
+      // The date tells two doses of one vaccine apart.
+      expect(open?.[0]).toBeDefined();
+      expect(html).toMatch(/>Tetanus<\/span><span[^>]*>04\/02\/1991</);
+      // The label is not the unlink control; the X is.
+      expect(html).toContain(
+        'data-slot="document-vaccination-links-chip-remove"',
+      );
+    });
+
+    it("a reader's dose chip opens that dose, not the whole list", () => {
+      const html = render(
+        <DocumentRecordLinks
+          doc={doc({
+            vaccinationLinks: [
+              {
+                vaccinationId: "dose-1",
+                occurredAt: "1991-04-02T00:00:00.000Z",
+                catalogSlug: null,
+                vaccineName: "DTP",
+              },
+            ],
+          })}
+          canManage={false}
+          seedFresh
+          onChange={() => undefined}
+        />,
+      );
+      expect(html).toContain('href="/vaccinations?dose=dose-1"');
+    });
+
+    it("a reader's visit chip opens the visit", () => {
+      const html = render(
+        <DocumentRecordLinks
+          doc={doc({
+            encounterLinks: [
+              {
+                encounterId: "enc-1",
+                kind: "CHECKUP",
+                occurredAt: "2026-03-01T09:00:00.000Z",
+              },
+            ],
+          } as never)}
+          canManage={false}
+          seedFresh
+          onChange={() => undefined}
+        />,
+      );
+      expect(html).toContain('href="/checkups?visit=enc-1"');
+    });
+  });
 });

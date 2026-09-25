@@ -22,15 +22,20 @@
  *     `attributionSource = USER_PIN`) binds by its `scheduledFor` anchor like
  *     a skip, NOT by takenAt-band membership, so a pin outside the late tail
  *     never degrades back to ad-hoc. Status is `taken_late` unless the
- *     takenAt happens to sit inside the slot's on-time band — a pin can
- *     never flatter the timing;
+ *     takenAt sits where the take would read on time on its own (the
+ *     on-time band plus its bounded early grace) — a pin never changes the
+ *     timing;
  *   - a RELEASED pin (v1.16.0 — "Zuordnung lösen" persists `USER_PIN` with
  *     `scheduledFor === takenAt`) is a deliberately ad-hoc take: it never
  *     anchor-binds (not even when its instant sits within epsilon of a slot
  *     anchor) and surfaces as an ad-hoc row carrying `pinned`, never as
  *     `taken_late`;
  *   - each slot is claimed by at most one intake (first/best wins); extra
- *     intakes near a filled slot fall through to ad-hoc.
+ *     intakes near a filled slot fall through to ad-hoc;
+ *   - a slot anchored before `expectedFrom` (the medication's creation) was
+ *     never expected: it appears only when a recorded row claims it (#1028).
+ *     See `expectedFrom` below for why the boundary is the creation and
+ *     which pre-creation rows count as recorded.
  *
  * Pure / synchronous / instant-based — the caller mints the bands DST-correctly
  * via `localHmAsUtc` and supplies the per-dose window.
@@ -125,6 +130,13 @@ export interface DoseHistoryRow {
   nearestSlot?: NearestSlotContext;
 }
 
+/**
+ * How far before a medication's creation the today projector's placeholders
+ * can sit: it mints the creation's local day only, which starts less than a
+ * day before the creation.
+ */
+const PLACEHOLDER_REACH_MS = 24 * 60 * 60 * 1000;
+
 /** Sub-minute slop for binding an anchored (skip/pending) row to its slot. */
 const ANCHOR_EPSILON_MS = 60_000;
 
@@ -136,7 +148,46 @@ export function reconstructDoseHistory(
   bands: SlotBand[],
   intakes: HistoryIntake[],
   now: Date,
+  /**
+   * The instant from which slots are expected: the medication's creation.
+   * `null` treats every band as expected (a pure-math fixture).
+   *
+   * Before it, a slot appears only when a recorded row claims it. Rows get
+   * there three ways: a dose logged for earlier on the creation day, history
+   * imported from another app, and history restored from a backup. The
+   * boundary is chosen so that nothing is invented and nothing recorded is
+   * hidden:
+   *
+   *   - An earlier boundary (the first recorded row, or the course start
+   *     date) would read every slot between it and the creation that no row
+   *     names as missed. Nothing supports that reading: an import carries
+   *     takes and skips only (reminder and "no dose information" rows are
+   *     dropped on the way in), a partial or single back-dated entry names a
+   *     few days, and a course start says when the person began, not that
+   *     the unlogged days were missed. Those misses would be invented.
+   *   - With the creation as the boundary, every recorded take (by its
+   *     window or its pin) and skip still claims its slot, and a recorded
+   *     miss does too: an auto-miss anchored more than a day before the
+   *     creation came in with the history (a restore), and it keeps its
+   *     slot as missed.
+   *   - The rows that record nothing are dropped: a pending row, and an
+   *     auto-miss within the day before the creation. The today projector
+   *     mints a placeholder for every slot of the creation day, and a
+   *     placeholder anchored before the creation is the only pre-creation
+   *     auto-miss the server itself can have produced; the day's start is
+   *     less than 24 hours before the creation, which bounds them.
+   */
+  expectedFrom: Date | null,
 ): DoseHistoryRow[] {
+  const expectedFromMs = expectedFrom?.getTime() ?? -Infinity;
+  const beforeExpected = (at: Date): boolean => at.getTime() < expectedFromMs;
+  // A pre-creation row that records nothing: pending, or an auto-miss inside
+  // the creation day's placeholder reach (see `expectedFrom`).
+  const recordsNothing = (i: HistoryIntake): boolean => {
+    if (i.skipped || !beforeExpected(i.scheduledFor)) return false;
+    if (!i.autoMissed) return true;
+    return i.scheduledFor.getTime() >= expectedFromMs - PLACEHOLDER_REACH_MS;
+  };
   // Per-band claim: the intake attributed to it + the resolved status.
   const claim = new Map<
     SlotBand,
@@ -155,6 +206,9 @@ export function reconstructDoseHistory(
   const taken = intakes.filter((i) => i.takenAt !== null && !i.pinned);
 
   for (const i of anchored) {
+    // A pre-creation placeholder records nothing: drop it whether or not
+    // its slot was minted.
+    if (recordsNothing(i)) continue;
     const band = nearestAnchorBand(i.scheduledFor, bands);
     if (band && !claim.has(band)) {
       // Status is time-aware for a pending row: the projector / reminder
@@ -184,8 +238,9 @@ export function reconstructDoseHistory(
   // v1.15.20 — pinned takes bind by their stored slot anchor, NOT by
   // takenAt-band membership: the whole point of a pin is that the take sits
   // outside (or past the tail of) the band it belongs to. Status never
-  // flatters: taken_late, unless the takenAt happens to sit inside the
-  // slot's own on-time band anyway. A pin whose slot is gone (schedule
+  // flatters: taken_late, unless the takenAt sits where band attribution
+  // would read it on time anyway, the early grace included, so the same
+  // take reads the same pinned or not. A pin whose slot is gone (schedule
   // changed) or already claimed falls through to ad-hoc so nothing vanishes.
   for (const i of pinnedTaken) {
     // v1.16.0 — a released pin ("Zuordnung lösen") persists USER_PIN with
@@ -201,7 +256,8 @@ export function reconstructDoseHistory(
     if (band && !claim.has(band)) {
       const t = (i.takenAt as Date).getTime();
       const onTime =
-        t >= band.onTimeStart.getTime() && t <= band.onTimeEnd.getTime();
+        t >= (band.earlyStart ?? band.onTimeStart).getTime() &&
+        t <= band.onTimeEnd.getTime();
       claim.set(band, {
         intake: i,
         status: onTime ? "taken_on_time" : "taken_late",
@@ -224,7 +280,13 @@ export function reconstructDoseHistory(
     }
   }
 
-  const rows: DoseHistoryRow[] = bands.map((band) => {
+  // A slot before the medication existed stays absent unless a recorded
+  // dose claimed it above.
+  const visibleBands = bands.filter(
+    (band) => claim.has(band) || !beforeExpected(band.at),
+  );
+
+  const rows: DoseHistoryRow[] = visibleBands.map((band) => {
     const c = claim.get(band);
     if (c) {
       return {
@@ -257,7 +319,7 @@ export function reconstructDoseHistory(
     // Orphaned skips (no takenAt) carry no take to attribute, so no context.
     const nearestSlot =
       i.takenAt !== null
-        ? suggestNearestSlot(i.takenAt, bands, (band) => claim.has(band))
+        ? suggestNearestSlot(i.takenAt, visibleBands, (band) => claim.has(band))
         : null;
     rows.push({
       kind: "ad_hoc",

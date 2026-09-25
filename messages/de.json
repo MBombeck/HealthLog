@@ -293,6 +293,11 @@
     "visitsColReason": "Anlass",
     "visitsColOutcome": "Ergebnis",
     "visitsColConditions": "Erkrankungen",
+    "surgicalHistoryTitle": "Operationen und Eingriffe",
+    "surgicalHistoryColDate": "Datum",
+    "surgicalHistoryColProcedure": "Eingriff",
+    "surgicalHistoryColBodySite": "Körperstelle",
+    "surgicalHistoryColOutcome": "Ergebnis",
     "immunizationsTitle": "Impfungen",
     "immunizationsColDate": "Datum",
     "immunizationsColVaccine": "Impfstoff",
@@ -1201,6 +1206,16 @@
     "yesterday": "Gestern",
     "tomorrow": "Morgen",
     "asNeededMarker": "Bei Bedarf",
+    "recordOnlyBadge": "Nur dokumentiert",
+    "trackIntake": {
+      "title": "Einnahmen erfassen",
+      "label": "Einnahmen erfassen",
+      "helperOn": "Dosen werden nach diesem Plan fällig, mit Erinnerungen und Therapietreue.",
+      "helperOff": "Nur dokumentiert: nichts wird fällig, keine Erinnerungen, keine Therapietreue.",
+      "enabledToast": "Einnahmen werden erfasst",
+      "disabledToast": "Einnahmen werden nicht erfasst",
+      "toggleFailed": "Einnahme-Erfassung konnte nicht geändert werden."
+    },
     "withoutNotification": "Ohne Benachrichtigung",
     "pausedSince": "Pausiert seit",
     "takeNow": "Jetzt einnehmen",
@@ -1796,7 +1811,7 @@
           "unpinnedToast": "Zuordnung gelöst",
           "dueContext": "fällig gewesen: {time} ({delta})",
           "confirmTitle": "Slot {time} zuordnen?",
-          "confirmBody": "Die Einnahme zählt für diesen Slot als verspätet — die Quote wird nicht geschönt. Die Zuordnung lässt sich jederzeit wieder lösen.",
+          "confirmBody": "Die Einnahme zählt für diesen Slot genau so, als wäre sie dort erfasst worden: pünktlich oder verspätet, je nachdem, wann sie genommen wurde. Die Quote wird also nicht geschönt. Die Zuordnung lässt sich jederzeit wieder lösen.",
           "confirmCancel": "Abbrechen",
           "confirmAction": "Zuordnen"
         }
@@ -1927,6 +1942,7 @@
         "nextDoseLabel": "Nächste Dosis",
         "nextDoseNone": "Keine anstehende Dosis.",
         "nextDoseAsNeeded": "Bei Bedarf — keine geplante Dosis.",
+        "nextDoseNotTracked": "Nicht erfasst, nur dokumentiert.",
         "pausedHint": "Pausiert — keine Erinnerungen.",
         "reminderLabel": "Erinnerung",
         "reminderOn": "Aktiv",
@@ -2000,7 +2016,7 @@
         "packagingEdit": "Bearbeiten",
         "packagingDescription": "Lege fest, wie viele Einheiten eine Dosis verbraucht und wie groß eine neue Packung üblicherweise ist — z. B. nach einem Herstellerwechsel mit anderer Blistergröße.",
         "packagingUnitsPerDoseLabel": "Einheiten pro Dosis",
-        "packagingUnitsPerDoseHelper": "Z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis (1–100). Bereits erfasste Einnahmen bleiben unverändert.",
+        "packagingUnitsPerDoseHelper": "Z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis oder 1,5 für anderthalb (über 0, bis 100). Bereits erfasste Einnahmen bleiben unverändert.",
         "packagingDefaultPackLabel": "Standard-Packungsgröße (Einheiten)",
         "packagingDefaultPackHelper": "Vorbefüllung beim Erfassen neuer Packungen (1–1000). Leer lassen, wenn keine üblich ist.",
         "packagingSuccess": "Packungsangaben gespeichert",
@@ -2198,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "die Datei hält zu dieser Dosis nichts fest — niemand hat reagiert und nichts wurde eingetragen",
       "reasonStatusReminderEvent": "die Zeile betrifft eine verschobene Erinnerung und sagt nichts über die Dosis",
       "reasonStatusNotificationNotSent": "die Zeile hält fest, dass keine Benachrichtigung gesendet wurde — das betrifft die App, nicht die Dosis"
+    },
+    "unitsPerDoseField": {
+      "other": "Andere…",
+      "inputLabel": "Einheiten pro Dosis, anderer Wert",
+      "placeholder": "z. B. 1,5 oder 1 1/2",
+      "invalid": "Gib eine Zahl über 0 und bis 100 ein, zum Beispiel 1,5 oder 1 1/2.",
+      "preview": "Zählt als {value} pro Dosis"
     }
   },
   "charts": {
@@ -4760,7 +4783,9 @@
           "done": "{name} ist angelegt.",
           "doneUnnamed": "Dein erstes Medikament ist angelegt.",
           "nextDose": "Nächste Dosis: {when}.",
-          "reminders": "Erinnerungen folgen dem Plan, den du festgelegt hast."
+          "reminders": "Erinnerungen folgen dem Plan, den du festgelegt hast.",
+          "recordOnly": "Nur dokumentiert: keine Erinnerungen, nichts wird fällig.",
+          "asNeeded": "Bei Bedarf: keine Erinnerungen, erfasse eine Dosis, wenn du sie nimmst."
         },
         "log-reading": {
           "title": "Einen Wert eintragen: {target}",
@@ -7169,7 +7194,7 @@
         "uploadTitle": "Backup hochladen",
         "uploadDescription": "Eine Backup-Datei validieren und als manuellen Snapshot speichern. Das Wiederherstellen ist ein separater Schritt.",
         "uploadButton": "Datei hochladen",
-        "uploadHelp": "JSON-Datei passend zum aktuellen Backup-Schema. Max. 10 MB.",
+        "uploadHelp": "HealthLog-Backup als .json oder .json.gz. Die Datei wird vor dem Hochladen komprimiert; komprimiert darf sie bis zu 512 MB groß sein.",
         "uploadSuccess": "Backup hochgeladen ({count} Datensätze)",
         "uploadFailed": "Upload fehlgeschlagen",
         "restore": "Wiederherstellen",
@@ -7244,7 +7269,39 @@
           "unknownDetail": "Noch kein nächtlicher Lauf hat dieses Konto erfasst.",
           "age": "vor {hours} h",
           "scheduleNote": "Der Upload läuft alle {hours} h. Frisch heißt innerhalb eines Laufs, fällig heißt ein Lauf blieb ohne Ergebnis, veraltet heißt zwei."
-        }
+        },
+        "restoreStarted": "Wiederherstellung gestartet. Der Fortschritt steht über der Liste.",
+        "restoreActive": "Für dieses Konto läuft schon eine Wiederherstellung. Warte, bis sie fertig ist.",
+        "restoreJobQueuedTitle": "Wiederherstellung von {username} wartet auf den Start",
+        "restoreJobQueuedNote": "Sie beginnt, sobald der Hintergrunddienst sie übernimmt.",
+        "restoreJobRunningTitle": "{username} wird wiederhergestellt",
+        "restoreJobRunningNote": "Das Konto zeigt seine bisherigen Daten, bis die Wiederherstellung fertig ist. Du kannst die Seite verlassen; die Wiederherstellung läuft auf dem Server weiter.",
+        "restoreJobResumed": "Nach einem Neustart des Servers erneut gestartet.",
+        "restoreJobPhaseValidating": "Backup-Datei wird geprüft: {checked} Messwerte geprüft",
+        "restoreJobPhaseClearing": "Bisherige Daten des Kontos werden entfernt",
+        "restoreJobPhaseMeasurements": "Messwerte werden geschrieben: {done} von {total}",
+        "restoreJobPhaseSections": "Übrige Einträge werden geschrieben: {done} von {total} Bereichen",
+        "restoreJobPhaseRebuilding": "Diagramme und Zusammenfassungen werden neu berechnet",
+        "restoreJobSucceededTitle": "Wiederherstellung von {username} abgeschlossen",
+        "restoreJobSucceededDescription": "{count} Datensätze wiederhergestellt. Fertig {when}.",
+        "restoreJobFailedTitle": "Wiederherstellung von {username} nicht abgeschlossen",
+        "restoreJobFailedKept": "Es wurde nichts geändert. Das Backup bleibt erhalten, du kannst die Wiederherstellung also über seine Zeile erneut starten, ohne es noch einmal hochzuladen.",
+        "restoreFailureNotFound": "Das Backup wurde gelöscht, bevor die Wiederherstellung es lesen konnte.",
+        "restoreFailureChanged": "Das Backup wurde durch eine neuere Kopie ersetzt, während die Wiederherstellung wartete. Prüfe die neue Kopie und starte die Wiederherstellung dann erneut.",
+        "restoreFailureUndecryptable": "Das Backup ließ sich nicht entschlüsseln. Der Schlüssel, mit dem es geschrieben wurde, ist nicht mehr eingerichtet, oder die gespeicherte Kopie wurde verändert.",
+        "restoreFailureSchema": "Die Backup-Datei ist kein gültiges HealthLog-Backup.",
+        "restoreFailureVersion": "Das Backup stammt von einer neueren HealthLog-Version. Aktualisiere zuerst diesen Server.",
+        "restoreFailureOwnerMismatch": "Die Datei im Backup gehört zu einem anderen Konto als die Backup-Zeile.",
+        "restoreFailureOwnerMissing": "Das Konto, zu dem dieses Backup gehört, gibt es nicht mehr.",
+        "restoreFailureSectionMissing": "Die Datei ist unvollständig: Ihr Manifest nennt einen Bereich, den sie nicht enthält.",
+        "restoreFailureDocument": "Die Datei enthält Dokumente ohne deren Inhalt, wie ein portabler Export. Nimm eine Notfall-Sicherung.",
+        "restoreFailureTimeBudget": "Dieses Backup ist zu groß, um innerhalb des Zeitlimits des Hintergrundauftrags wiederhergestellt zu werden.",
+        "restoreFailureTransaction": "Die Datenbank hat die Wiederherstellung mittendrin abgelehnt, deshalb wurde alles zurückgerollt. Das Server-Log nennt den Fehler.",
+        "restoreFailureInterrupted": "Die Wiederherstellung wurde durch einen Neustart des Servers unterbrochen und zurückgerollt. Bricht sie erneut ab, reicht dem Server wahrscheinlich der Arbeitsspeicher nicht.",
+        "restoreFailureNotStarted": "Der Hintergrunddienst hat die Wiederherstellung nicht übernommen. Prüfe, ob er läuft.",
+        "restoreFailureEnqueue": "Die Wiederherstellung konnte nicht an den Hintergrunddienst übergeben werden. Prüfe, ob er läuft.",
+        "restoreFailureAfterCommit": "Die Daten wurden wiederhergestellt, aber ein Schritt danach ist fehlgeschlagen. Diagramme holen das womöglich erst beim nächsten nächtlichen Lauf nach.",
+        "restoreFailureUnexpected": "Die Wiederherstellung ist an einem unerwarteten Fehler gescheitert und wurde zurückgerollt. Das Server-Log nennt den Fehler."
       },
       "danger-zone": {
         "title": "Gefahrenzone",
@@ -8233,7 +8290,9 @@
       "flowSpotting": "Schmierblutung",
       "flowLight": "leicht",
       "flowMedium": "mittel",
-      "flowHeavy": "stark"
+      "flowHeavy": "stark",
+      "legendIntercourse": "Geschlechtsverkehr",
+      "legendOtherEntries": "Weitere Einträge"
     },
     "predictions": {
       "title": "Was als Nächstes kommt",
@@ -10393,6 +10452,7 @@
     "scopeCount": "{count} Einträge aus {groups} Bereichen",
     "scopeSensitive": "inkl. {names}",
     "leafVisits": "Arztbesuche",
+    "leafSurgicalHistory": "Operationen und Eingriffe",
     "leafImmunizations": "Impfungen",
     "leafEmergency": "Notfalldaten (Blutgruppe, Kontakte, Verfügungen)"
   },
@@ -10777,8 +10837,16 @@
       "emergency": "Notfall",
       "hospital": "Krankenhaus",
       "therapy": "Therapietermin",
-      "other": "Arzttermin"
+      "other": "Arzttermin",
+      "procedure": "Eingriff oder Operation"
     },
+    "laterality": {
+      "left": "Links",
+      "right": "Rechts",
+      "both": "Beidseitig",
+      "none": "Keine Angabe"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "Termine",
     "sectionDescription": "Arztbesuche und gebuchte Termine an einem Ort.",
     "add": "Termin",
@@ -10820,6 +10888,9 @@
       "reason": "Anlass",
       "outcome": "Ergebnis",
       "outcomeReveal": "Ergebnis eintragen",
+      "bodySite": "Körperstelle",
+      "bodySiteHint": "Zum Beispiel Knie oder Gallenblase.",
+      "laterality": "Seite",
       "linkDocuments": "Dokumente",
       "linkLabResults": "Laborwerte",
       "linkConditions": "Erkrankungen",
@@ -10839,12 +10910,28 @@
     },
     "dashboard": {
       "nextVisit": "Nächster Termin: {what} am {when}"
+    },
+    "procedures": {
+      "title": "Eingriffe und Operationen",
+      "description": "Alle Eingriffe und Operationen, die du hattest, die neuesten zuerst.",
+      "add": "Eingriff",
+      "searchLabel": "Nach Körperstelle filtern",
+      "searchPlaceholder": "Zum Beispiel Knie",
+      "sitesLabel": "Körperstellen",
+      "allSites": "Alle",
+      "count": "{shown} von {total}",
+      "emptyTitle": "Noch kein Eingriff erfasst",
+      "emptyDescription": "Erfasse einen Termin der Art Eingriff oder Operation, oder stelle einen vorhandenen Termin darauf um.",
+      "noMatchTitle": "Nichts passt zu diesem Filter",
+      "clearFilter": "Filter zurücksetzen",
+      "loadError": "Die Eingriffe konnten nicht geladen werden."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Vorsorge oder Termine anzeigen",
+    "viewSwitchLabel": "Vorsorge, Termine oder Eingriffe anzeigen",
     "tabVorsorge": "Vorsorge",
-    "tabVisits": "Termine"
+    "tabVisits": "Termine",
+    "tabProcedures": "Eingriffe"
   },
   "practitioners": {
     "title": "Praxen und Ärzte",
@@ -10880,9 +10967,10 @@
       "selectAll": "Alle auswählen",
       "searchPlaceholder": "Suchen",
       "searchNoMatch": "Kein Treffer",
-      "remove": "Entfernen",
       "suggested": "Um dieses Datum",
-      "loadError": "Die Liste konnte nicht geladen werden."
+      "loadError": "Die Liste konnte nicht geladen werden.",
+      "removeNamed": "{name} entfernen",
+      "removed": "Verknüpfung mit {name} gelöst"
     }
   }
 }

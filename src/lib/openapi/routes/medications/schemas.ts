@@ -152,7 +152,7 @@ export const medicationResource = z
     unitsPerDose: z
       .number()
       .describe(
-        "v1.16.10 — inventory units one dose consumes (e.g. 2 tablets of 2 mg for a 4 mg dose). v1.16.12 — may be a split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. Default 1. The intake consumption hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.",
+        "v1.16.10 — inventory units one dose consumes (e.g. 2 tablets of 2 mg for a 4 mg dose). v1.16.12 — may be a split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. v1.39.1 (#1034) — any value above 0 and at most 100 with at most 4 decimal places, so also a whole number plus a fraction (1.5, 2.25, 1.3333) or a measured amount (0.8). Default 1. The intake consumption hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.",
       ),
     reorderLeadDays: z
       .number()
@@ -222,9 +222,24 @@ export const medicationResource = z
       .describe(
         "v1.16.11 as-needed (PRN) flag. When true the medication carries ZERO schedules (the write routes 422 on any schedule entry alongside the flag): it is never due (`nextDueAt` stays null), never reminded, and excluded from every compliance rate/streak — but intakes still log as ad-hoc rows, inventory still consumes per `unitsPerDose`, and the history renders. Stays active indefinitely. Mutually exclusive with `oneShot`.",
       ),
+    trackIntake: z
+      .boolean()
+      .describe(
+        "v1.39.1 — intake tracking. True (the default) for every medication that existed before the field. When false the medication is kept as a record: nothing is ever due (`nextDueAt` stays null), nothing reminds on any channel, and it is excluded from every adherence figure. Its stored schedule then travels in `recordedSchedules` while `schedules` is served empty, so a client that arms reminders from `schedules` stays silent without an update.",
+      ),
     createdAt: z.iso.datetime({ offset: true }),
     updatedAt: z.iso.datetime({ offset: true }),
-    schedules: z.array(medicationScheduleResource),
+    schedules: z
+      .array(medicationScheduleResource)
+      .describe(
+        "The schedules in force. Empty for an as-needed medication and (v1.39.1) for a medication with `trackIntake: false`, whose stored schedule is in `recordedSchedules`.",
+      ),
+    recordedSchedules: z
+      .array(medicationScheduleResource)
+      .optional()
+      .describe(
+        "v1.39.1 — present only when `trackIntake` is false: the stored schedule, kept as information. Nothing derives a due dose or a reminder from it. Absent on a tracked medication, whose schedule is `schedules`.",
+      ),
   })
   .meta({
     id: "Medication",
@@ -571,7 +586,7 @@ export const complianceResult = z
       .int()
       .nonnegative()
       .describe(
-        "Full denominator over the window: `taken + skipped + missed`. Cadence-aware and clamped to the medication's `createdAt`.",
+        "Full denominator over the window: `taken + skipped + missed`. Cadence-aware. A slot from before the medication's `createdAt` counts only when a recorded row (a take, a skip, or a miss carried in with restored history) claims it, so the days before the medication existed are never missed.",
       ),
     taken: z.number().int().nonnegative(),
     skipped: z
@@ -761,10 +776,10 @@ export const medicationComplianceResponse = z
         "Whether a local adherence percentage applies to this medication.",
       ),
     notApplicableReason: z
-      .literal("NO_LOCAL_SCHEDULE")
+      .enum(["NO_LOCAL_SCHEDULE", "INTAKE_NOT_TRACKED"])
       .nullable()
       .describe(
-        "Reason adherence is not applicable. NO_LOCAL_SCHEDULE means the medication has no HealthLog-owned expected-dose grid.",
+        "Reason adherence is not applicable. NO_LOCAL_SCHEDULE means the medication has no HealthLog-owned expected-dose grid. INTAKE_NOT_TRACKED (v1.39.1) means the medication's intake tracking is switched off (`trackIntake: false`): its schedule is kept as information and nothing is expected from it.",
       ),
     compliance7: complianceResult.describe(
       "Seven-day adherence summary. When applicable is false, this remains a non-null all-zero compatibility placeholder for released clients and must not be rendered as a percentage.",
@@ -797,7 +812,9 @@ export const medicationComplianceSummaryEntry = z
       .describe(
         "Whether this medication has a local expected-dose grid and therefore a displayable adherence percentage.",
       ),
-    notApplicableReason: z.literal("NO_LOCAL_SCHEDULE").nullable(),
+    notApplicableReason: z
+      .enum(["NO_LOCAL_SCHEDULE", "INTAKE_NOT_TRACKED"])
+      .nullable(),
     compliance7: complianceResult.describe(
       "Seven-day adherence summary, or an all-zero compatibility placeholder when applicable is false.",
     ),
@@ -911,7 +928,7 @@ export const doseHistoryQuery = z.object({
     .datetime({ offset: true })
     .optional()
     .describe(
-      "Window start (inclusive). Defaults to 90 days before `to`; clamped to a 366-day span floor. Recorded doses are returned from this instant; expected slots are not minted before the medication's `createdAt`.",
+      "Window start (inclusive). Defaults to 90 days before `to`; clamped to a 366-day span floor. Recorded doses are returned from this instant. A slot from before the medication's `createdAt` appears only when a recorded row (a take, a skip, or a miss carried in with restored history) claims it; the server's own placeholder for such a slot is not returned.",
     ),
   to: z.iso
     .datetime({ offset: true })

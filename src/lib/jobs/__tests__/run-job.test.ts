@@ -149,3 +149,25 @@ describe("runJob", () => {
     expect(handler).toHaveBeenCalledWith(jobs);
   });
 });
+
+describe("runJob observation (#1031)", () => {
+  it("runs every handler inside the job observer, so a long or expired job leaves a log line", async () => {
+    const observer = await import("../job-observer");
+    const observe = vi.spyOn(observer, "observeJob");
+    const jobs = [
+      { id: "j-1", expireInSeconds: 900 },
+    ] as unknown as Job<object>[];
+    const wrapped = runJob("dense-intraday-retention", async () =>
+      jobDone({ days_consolidated: 1 }),
+    );
+
+    await wrapped(jobs);
+
+    expect(observe).toHaveBeenCalledWith(
+      "dense-intraday-retention",
+      jobs,
+      expect.any(Function),
+    );
+    observe.mockRestore();
+  });
+});

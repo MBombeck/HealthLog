@@ -46,6 +46,7 @@ import {
   shapeDoseChangeNote,
 } from "@/lib/crypto/note-cipher";
 import { NextRequest } from "next/server";
+import { dueSchedules } from "@/lib/medications/intake-tracking";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -120,12 +121,16 @@ export const GET = apiHandler(
       prefsRow?.notificationPrefs ?? null,
       medication.reorderLeadDays,
     );
-    const schedules: RunwaySchedule[] = medication.schedules.map((sched) => ({
-      ...sched,
-      // Decimal → number so the slot-aware runway math reads the wire shape.
-      unitsPerDose:
-        sched.unitsPerDose === null ? null : Number(sched.unitsPerDose),
-    }));
+    // v1.39.1 (#1033) — intake tracking off: no dose consumes stock, so no
+    // runway and no low-stock flag derive from the stored schedule.
+    const schedules: RunwaySchedule[] = dueSchedules(medication).map(
+      (sched) => ({
+        ...sched,
+        // Decimal → number so the slot-aware runway math reads the wire shape.
+        unitsPerDose:
+          sched.unitsPerDose === null ? null : Number(sched.unitsPerDose),
+      }),
+    );
     /** runway ≤ effective trigger AND the alert is enabled. */
     const isLowStock = (dosesRemaining: number): boolean => {
       if (runwayFloor === null) return false;

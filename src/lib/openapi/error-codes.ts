@@ -65,7 +65,12 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "auth.token.expired",
       "auth.token.invalid",
     ],
-    backup: ["backup.payload.undecryptable", "backup.section.missing"],
+    backup: [
+      "backup.payload.undecryptable",
+      "backup.restore.active",
+      "backup.section.missing",
+      "backup.upload.too_large",
+    ],
     coach: [
       "coach.budget.exceeded",
       "coach.conversation.invalidTitle",
@@ -198,6 +203,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "managed_profile.not_found",
     ],
     measurement: [
+      "measurement.batch.invalid",
       "measurement.batch.source_not_permitted",
       "measurement.batch.too_large",
       "measurement.bulk-delete.invalid",

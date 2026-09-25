@@ -111,6 +111,7 @@ import {
   DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
   type HealthProfileAiSection,
 } from "@/lib/validations/health-profile-facts";
+import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const SELF_CONTEXT_AI_SECTIONS = [
@@ -556,6 +557,9 @@ export async function findTriggerForUser(
         userId: user.id,
         deletedAt: null,
         scheduledFor: { gte: sevenDaysAgo, lte: now },
+        // v1.39.1 (#1033) — a medication kept as a record expects no dose;
+        // its rows must not raise a compliance nudge.
+        ...TRACKED_INTAKE_EVENT_WHERE,
       },
       select: { takenAt: true, skipped: true, autoMissed: true },
     });

@@ -70,6 +70,7 @@ import {
   loadIllnessEpisodes,
   loadImmunizations,
   loadVisits,
+  loadSurgicalHistory,
   loadLabResults,
 } from "./clinical-records";
 
@@ -333,12 +334,14 @@ export async function collectDoctorReportData(
   // Medication compliance through the dose-ledger authority — the same engine
   // the detail page uses, not a raw-row tally. As-needed medications are
   // excluded: no schedule, no expected dose, no fabricated 100 % on a
-  // clinical report. The medication itself stays on the list.
+  // clinical report. The medication itself stays on the list. A medication
+  // with intake tracking off is excluded the same way (`expectsDoses`).
   const compliance = buildLedgerCompliance(
     medications.map((m) => ({
       id: m.id,
       name: m.name,
       asNeeded: m.asNeeded,
+      trackIntake: m.trackIntake,
       startsOn: m.startsOn,
       endsOn: m.endsOn,
       oneShot: m.oneShot,
@@ -508,6 +511,7 @@ export async function collectDoctorReportData(
     labResults,
     illnessEpisodes,
     visits,
+    surgicalHistory,
     immunizations,
     allergies,
     familyHistory,
@@ -525,6 +529,10 @@ export async function collectDoctorReportData(
       : Promise.resolve(null),
     gate.admits("VISITS")
       ? loadVisits(userId, start, end)
+      : Promise.resolve(null),
+    // Reference data, not windowed, like the immunization history below.
+    gate.admits("SURGICAL_HISTORY")
+      ? loadSurgicalHistory(userId)
       : Promise.resolve(null),
     // Reference data, not windowed — the immunization history is a lifetime
     // document, so the whole live set rides when the leaf and module admit it.
@@ -601,6 +609,7 @@ export async function collectDoctorReportData(
     labResults,
     illnessEpisodes,
     visits,
+    surgicalHistory,
     immunizations,
     allergies,
     familyHistory,

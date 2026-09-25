@@ -41,7 +41,10 @@ import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { detectPersonalRecordsForUser } from "@/lib/personal-records/pr-detection-worker";
-import type { MeasurementType } from "@/generated/prisma/client";
+import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
+
+/** Budget for one account's delete-and-re-derive transaction. */
+const REDERIVE_TRANSACTION_TIMEOUT_MS = 5 * 60 * 1000;
 
 export const CUMULATIVE_PR_REDERIVE_QUEUE = "cumulative-pr-rederive";
 
@@ -90,22 +93,40 @@ export interface CumulativePrRederiveSummary {
 export async function runCumulativePrRederivationForUser(
   userId: string,
 ): Promise<CumulativePrRederiveSummary> {
-  const { count: rowsDeleted } = await prisma.personalRecord.deleteMany({
-    where: {
-      userId,
-      metricSlot: null,
-      metricType: { in: CUMULATIVE_TYPES_ARRAY },
-      createdAt: { lt: CUMULATIVE_PR_FIX_CUTOFF },
+  // One transaction: the suspect rows go and the re-derived ones arrive
+  // together, or neither happens. Deleting first and re-deriving after the
+  // commit lost the records whenever the detector failed (a timeout on a
+  // large account, a restart): discovery looks for the suspect rows, so once
+  // they were gone the account was never repaired again (#1031). The detector
+  // reads through the transaction, so it sees the suspect rows as deleted and
+  // compares against what is left. It only reads and inserts, and sends no
+  // notification when `silent`.
+  const { rowsDeleted, rowsReinserted } = await prisma.$transaction(
+    async (tx) => {
+      const { count } = await tx.personalRecord.deleteMany({
+        where: {
+          userId,
+          metricSlot: null,
+          metricType: { in: CUMULATIVE_TYPES_ARRAY },
+          createdAt: { lt: CUMULATIVE_PR_FIX_CUTOFF },
+        },
+      });
+      if (count === 0) return { rowsDeleted: 0, rowsReinserted: 0 };
+      const result = await detectPersonalRecordsForUser(userId, {
+        silent: true,
+        prisma: tx as unknown as PrismaClient,
+      });
+      return {
+        rowsDeleted: count,
+        rowsReinserted: result.inserted + result.ties,
+      };
     },
-  });
-
-  let rowsReinserted = 0;
-  if (rowsDeleted > 0) {
-    const result = await detectPersonalRecordsForUser(userId, {
-      silent: true,
-    });
-    rowsReinserted = result.inserted + result.ties;
-  }
+    // The detector walks every trackable type of the account; on a large
+    // record that is tens of seconds (19.8 s measured for 1.25 million
+    // measurements plus 784 000 energy rows), so the default five seconds
+    // would roll back every repair that matters.
+    { timeout: REDERIVE_TRANSACTION_TIMEOUT_MS, maxWait: 10_000 },
+  );
 
   annotate({
     action: {

@@ -66,6 +66,35 @@ interface FailingQueueRow {
   failures: number;
   last_failed_at: Date | null;
   last_error: string | null;
+  last_expire_seconds: number | null;
+}
+
+/**
+ * The two texts pg-boss writes when a job ran out of time: the supervisor's,
+ * for a job still `active` past its expiry, and the worker's own, for a
+ * handler that did not settle inside it.
+ */
+const TIMEOUT_MESSAGE = /^(job timed out|handler execution exceeded \d+s)$/;
+
+/**
+ * Say what a bare timeout means. "job timed out" alone sent an operator
+ * nowhere: pg-boss writes the same words for a pass that was too slow for its
+ * limit and for a job whose process died under it (a restart, or a container
+ * killed for memory), in which case the job sits `active` until the limit runs
+ * out. The limit and the two causes are what the operator can check.
+ */
+function explainTimeout(message: string, expireSeconds: number | null): string {
+  const limit =
+    expireSeconds !== null && expireSeconds > 0
+      ? expireSeconds >= 3600 && expireSeconds % 3600 === 0
+        ? `${expireSeconds / 3600} h`
+        : `${Math.round(expireSeconds / 60)} min`
+      : null;
+  return (
+    `${message}: did not finish within its ${limit ?? "time"} limit. ` +
+    `Either the run was too slow for the limit, or the app restarted while it ` +
+    `ran; a restart shows in the container's restart count and log.`
+  );
 }
 
 /**
@@ -73,10 +102,15 @@ interface FailingQueueRow {
  * serialises to `{ message, stack, … }`; a thrown non-Error can be any JSON at
  * all, so the raw text is the fallback rather than an invented placeholder.
  */
-function presentError(raw: string | null): string {
+function presentError(
+  raw: string | null,
+  expireSeconds: number | null = null,
+): string {
   if (raw === null) return "";
   const trimmed = raw.trim();
   if (trimmed.length === 0) return "";
+  if (TIMEOUT_MESSAGE.test(trimmed))
+    return explainTimeout(trimmed, expireSeconds);
   const redacted = redactSecrets(trimmed);
   return redacted.length > MAX_ERROR_CHARS
     ? `${redacted.slice(0, MAX_ERROR_CHARS)}…`
@@ -105,7 +139,10 @@ export async function readFailingQueues(
             )
             ORDER BY completed_on DESC NULLS LAST
           )
-        )[1] AS last_error
+        )[1] AS last_error,
+        (
+          array_agg(expire_seconds ORDER BY completed_on DESC NULLS LAST)
+        )[1] AS last_expire_seconds
       FROM pgboss.job
       WHERE state = 'failed'
         AND completed_on > now() - make_interval(hours => ${withinHours}::int)
@@ -119,7 +156,7 @@ export async function readFailingQueues(
         queue: row.name,
         failures: row.failures,
         lastFailedAt: row.last_failed_at!.toISOString(),
-        lastError: presentError(row.last_error),
+        lastError: presentError(row.last_error, row.last_expire_seconds),
       }));
   } catch {
     // No `pgboss` schema (web-only deployment) or no permission to read it.
@@ -160,11 +197,17 @@ export async function readLastQueueRun(
 ): Promise<LastQueueRun | null> {
   try {
     const rows = await prisma.$queryRaw<
-      Array<{ state: string; completed_on: Date | null; output: string | null }>
+      Array<{
+        state: string;
+        completed_on: Date | null;
+        output: string | null;
+        expire_seconds: number | null;
+      }>
     >`
       SELECT
         state,
         completed_on,
+        expire_seconds,
         -- pg-boss wraps a thrown value: an expired job's row reads
         -- {"value":{"message":"job timed out"}}, so a plain ->>'message'
         -- misses it and the operator gets raw JSON instead of the sentence.
@@ -189,7 +232,10 @@ export async function readLastQueueRun(
     return {
       at: row.completed_on.toISOString(),
       state,
-      error: state === "completed" ? null : presentError(row.output),
+      error:
+        state === "completed"
+          ? null
+          : presentError(row.output, row.expire_seconds),
     };
   } catch {
     // No `pgboss` schema (web-only deployment) or no permission to read it.
@@ -234,6 +280,61 @@ export async function readQueueFailureForUser(
       lastFailedAt: row.last_failed_at.toISOString(),
       failures: row.failures,
     };
+  } catch {
+    return null;
+  }
+}
+
+/** A job pg-boss still has as running, from `readActiveJobsStartedBefore`. */
+export interface ActiveJob {
+  queue: string;
+  id: string;
+  /** ISO instant the job was picked up. */
+  startedAt: string;
+  /** The job's expiry, in seconds, as pg-boss holds it. */
+  expireSeconds: number;
+}
+
+/**
+ * Jobs still marked active that were picked up before `before` — at worker
+ * boot, before this process has taken any job, that is every job a previous
+ * process was running when it stopped.
+ *
+ * Why it matters (#1031): a worker killed for memory writes nothing, and
+ * pg-boss only marks its job `job timed out` once the expiry has passed,
+ * which for the backup is two hours later. Reading these rows at boot turns
+ * a silent restart into a line naming what was cut off. With more than one
+ * worker process on the same database, a job another live worker is running
+ * would show up here too, which the boot line says.
+ *
+ * `null` when the queue schema is absent, like the readers above.
+ */
+export async function readActiveJobsStartedBefore(
+  before: Date,
+): Promise<ActiveJob[] | null> {
+  try {
+    const rows = await prisma.$queryRaw<
+      Array<{
+        name: string;
+        id: string;
+        started_on: Date | null;
+        expire_seconds: number;
+      }>
+    >`
+      SELECT name, id::text AS id, started_on, expire_seconds
+      FROM pgboss.job
+      WHERE state = 'active' AND started_on < ${before}
+      ORDER BY started_on
+      LIMIT ${MAX_QUEUES}
+    `;
+    return rows
+      .filter((row) => row.started_on !== null)
+      .map((row) => ({
+        queue: row.name,
+        id: row.id,
+        startedAt: row.started_on!.toISOString(),
+        expireSeconds: row.expire_seconds,
+      }));
   } catch {
     return null;
   }

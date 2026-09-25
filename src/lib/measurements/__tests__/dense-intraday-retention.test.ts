@@ -25,6 +25,7 @@ import {
 } from "../dense-intraday-retention";
 import type { PerSampleRow } from "../drain-per-sample-cumulative";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
+import { candidateLookup, createManyVia } from "./hourly-mint-mock";
 
 function row(
   id: string,
@@ -56,7 +57,16 @@ function buildPrismaMock(
     async (args: { where: { type: string } }) =>
       rowsByType[args.where.type] ?? [],
   );
-  const tx = { measurement: { create, update, findFirst, updateMany } };
+  const tx = {
+    measurement: {
+      create,
+      update,
+      findFirst,
+      updateMany,
+      findMany: candidateLookup(existingCanonicalId),
+      createManyAndReturn: createManyVia(create),
+    },
+  };
   return {
     mock: {
       user: {

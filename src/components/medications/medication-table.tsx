@@ -92,6 +92,11 @@ export interface TableMedication {
    * "Bei Bedarf" marker, the compliance column shows "–".
    */
   asNeeded?: boolean;
+  /**
+   * v1.39.1 (#1033) — false keeps the medication as a record: the next-dose
+   * cell names that, the compliance and action cells show "–".
+   */
+  trackIntake?: boolean;
   /** v1.16.10 — dose-derived stock from the list payload; null = inventory tracking off. */
   stockDosesRemaining?: number | null;
   /** v1.37.19 — server-resolved slot-aware runway (days); null = off/no cadence. */
@@ -511,7 +516,18 @@ function MedicationTableRowItem({
   let nextCell: React.ReactNode = (
     <span className="text-muted-foreground">–</span>
   );
-  if (medication.asNeeded) {
+  const recordOnly = medication.trackIntake === false;
+  if (recordOnly) {
+    // v1.39.1 (#1033) — kept as a record: nothing is ever due.
+    nextCell = (
+      <span
+        className="text-muted-foreground"
+        data-slot="medication-table-record-only-marker"
+      >
+        {t("medications.recordOnlyBadge")}
+      </span>
+    );
+  } else if (medication.asNeeded) {
     // v1.16.11 — a calm marker where next-due normally sits; no due
     // pill, no overdue escalation, ever.
     nextCell = (
@@ -688,7 +704,7 @@ function MedicationTableRowItem({
       <TableCell>{statusCell}</TableCell>
       <TableCell className="text-sm">{nextCell}</TableCell>
       <TableCell>
-        {medication.active && !medication.asNeeded ? (
+        {medication.active && !medication.asNeeded && !recordOnly ? (
           complianceCell
         ) : (
           <span className="text-muted-foreground text-sm">–</span>
@@ -696,7 +712,7 @@ function MedicationTableRowItem({
       </TableCell>
       <TableCell className="text-sm">{stockCell}</TableCell>
       <TableCell>
-        {medication.active && canAddIntake ? (
+        {medication.active && canAddIntake && !recordOnly ? (
           <div className="flex gap-1.5">
             <Button
               size="icon"

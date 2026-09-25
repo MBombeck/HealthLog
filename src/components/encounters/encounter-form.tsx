@@ -27,6 +27,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { FieldGroup } from "@/components/ui/field-group";
+import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,8 +37,10 @@ import type { Practitioner } from "@/hooks/use-practitioners";
 import {
   ENCOUNTER_KINDS,
   ENCOUNTER_STATUSES,
+  LATERALITIES,
   encounterKindText,
   encounterStatusText,
+  lateralityText,
 } from "./encounter-labels";
 import { PractitionerCombobox } from "./practitioner-combobox";
 import { EncounterLinkPickers } from "./encounter-link-pickers";
@@ -50,6 +53,9 @@ export interface EncounterDraft {
   practitioner: Practitioner | null;
   reason: string;
   outcome: string;
+  /** Where on the body; free text, empty when not stated. */
+  bodySite: string;
+  laterality: "LEFT" | "RIGHT" | "BOTH" | null;
   documentIds: string[];
   labResultIds: string[];
   episodeIds: string[];
@@ -82,6 +88,8 @@ export function emptyDraft(
     practitioner: null,
     reason: "",
     outcome: "",
+    bodySite: "",
+    laterality: null,
     documentIds: [],
     labResultIds: [],
     episodeIds: [],
@@ -97,6 +105,8 @@ export function draftFromEncounter(row: Encounter): EncounterDraft {
     practitioner: row.practitioner,
     reason: row.reason ?? "",
     outcome: row.outcome ?? "",
+    bodySite: row.bodySite ?? "",
+    laterality: row.laterality,
     documentIds: row.links?.documents.map((link) => link.id) ?? [],
     labResultIds: row.links?.labResults.map((link) => link.id) ?? [],
     episodeIds: row.links?.conditions.map((link) => link.id) ?? [],
@@ -131,6 +141,8 @@ export function draftToBody(
     practitionerId: draft.practitioner?.id ?? null,
     reason: draft.reason.trim() || null,
     outcome: draft.outcome.trim() || null,
+    bodySite: draft.bodySite.trim() || null,
+    laterality: draft.laterality,
     ...(options.reminderId ? { reminderId: options.reminderId } : {}),
     documentIds: draft.documentIds,
     labResultIds: draft.labResultIds,
@@ -167,6 +179,15 @@ export function EncounterForm({
   // truth for something the draft already knows.
   const [revealed, setRevealed] = useState(false);
   const outcomeOpen = revealed || !planned || draft.outcome.length > 0;
+
+  // The body site belongs to a procedure, so that is where it is offered. A
+  // visit that already carries one keeps the fields in view whatever its kind:
+  // switching the kind away must not hide text the person typed, and the
+  // server keeps it either way.
+  const showBodySite =
+    draft.kind === "PROCEDURE" ||
+    draft.bodySite.trim().length > 0 ||
+    draft.laterality !== null;
 
   return (
     <div className="space-y-4" data-slot="encounter-form">
@@ -233,6 +254,47 @@ export function EncounterForm({
           ))}
         </NativeSelect>
       </FieldGroup>
+
+      {showBodySite ? (
+        <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
+          <FieldGroup
+            htmlFor="encounter-body-site"
+            label={t("encounters.form.bodySite")}
+            hint={t("encounters.form.bodySiteHint")}
+          >
+            <Input
+              id="encounter-body-site"
+              value={draft.bodySite}
+              maxLength={200}
+              autoComplete="off"
+              onChange={(event) => patch({ bodySite: event.target.value })}
+            />
+          </FieldGroup>
+          <FieldGroup
+            htmlFor="encounter-laterality"
+            label={t("encounters.form.laterality")}
+          >
+            <NativeSelect
+              id="encounter-laterality"
+              value={draft.laterality ?? ""}
+              onChange={(event) =>
+                patch({
+                  laterality:
+                    (event.target.value as EncounterDraft["laterality"]) ||
+                    null,
+                })
+              }
+            >
+              <option value="">{t("encounters.laterality.none")}</option>
+              {LATERALITIES.map((side) => (
+                <option key={side} value={side}>
+                  {lateralityText(t, side)}
+                </option>
+              ))}
+            </NativeSelect>
+          </FieldGroup>
+        </div>
+      ) : null}
 
       <FieldGroup
         htmlFor="encounter-reason"

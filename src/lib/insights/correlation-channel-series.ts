@@ -59,6 +59,7 @@ import type {
   MeasurementSource,
   MeasurementType,
 } from "@/generated/prisma/client";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 /**
  * v1.21.0 (FDREXTEND) — build the user's MEDICATION_COMPLIANCE daily series.
@@ -75,7 +76,7 @@ export async function fetchComplianceSeries(
 ): Promise<NamedSeries> {
   const medications = await prisma.medication.findMany({
     // PRN (as-needed) medications have no expected doses → no defensible rate.
-    where: { userId, active: true, asNeeded: false },
+    where: { userId, active: true, asNeeded: false, ...TRACKED_INTAKE_WHERE },
     include: {
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       scheduleRevisions: { orderBy: { validFrom: "asc" } },

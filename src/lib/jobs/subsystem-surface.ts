@@ -101,6 +101,7 @@ const subsystemSurface = {
   "step-up-elevation-cleanup": { audience: "system" },
   "data-backup-offhost": { audience: "system" },
   "data-restore-drill": { audience: "system" },
+  "backup-restore": { audience: "system" },
   "host-metric-sample": { audience: "system" },
   "feedback-aggregator": { audience: "system" },
   "geo-backfill": { audience: "system" },

@@ -19,8 +19,20 @@
  * empty, and the link cap stays authoritative on the server. This surface only
  * ever raises the FETCH limit so grouping has something to group; it never
  * raises what may be linked.
+ *
+ * **A chip is a record, not a remove button.** The whole chip used to be the
+ * unlink control with an X drawn inside it, so a tap meant to open the linked
+ * record removed the link instead. The label now opens the record when the
+ * option names a target (`href`) and is plain text when it does not; only the
+ * separate X, labelled with what it removes, unlinks, and every unlink offers
+ * an undo right under the chips. The undo is inline rather than in a toast on
+ * purpose: this block lives inside a modal sheet, and a toast sits outside the
+ * sheet where its button cannot be pressed while the sheet is open. The chip
+ * carries the option's date, so two doses of one vaccine read as two
+ * different records.
  */
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Check, Plus, Search, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -45,6 +57,11 @@ export interface EntityLinkOption {
    * Options with the same key collapse under one heading, in first-seen order.
    */
   group?: { key: string; label: string } | null;
+  /**
+   * Where the linked record opens, or null/omitted when it has no page of its
+   * own. The chip's label becomes a link to it; the X stays the only unlink.
+   */
+  href?: string | null;
 }
 
 /** Lowercased haystack for the client search over one option. */
@@ -116,6 +133,18 @@ export function toggleAll(selected: string[], ids: string[]): string[] {
   return merged;
 }
 
+/** Put an unlinked id back (the undo), never twice. */
+export function restoreLink(selected: string[], id: string): string[] {
+  return selected.includes(id) ? selected : [...selected, id];
+}
+
+/** The chip's full name: the label and, when it has one, the date. */
+function chipName(option: EntityLinkOption): string {
+  return option.dateLabel
+    ? `${option.label}, ${option.dateLabel}`
+    : option.label;
+}
+
 function toggleOne(selected: string[], id: string): string[] {
   return selected.includes(id)
     ? selected.filter((entry) => entry !== id)
@@ -170,6 +199,19 @@ export function EntityLinkPicker({
     [options, term],
   );
 
+  // The link the last X removed, offered back until the next change.
+  const [lastRemoved, setLastRemoved] = useState<EntityLinkOption | null>(null);
+
+  const change = (ids: string[]) => {
+    setLastRemoved(null);
+    onChange(ids);
+  };
+
+  const unlink = (option: EntityLinkOption) => {
+    onChange(selected.filter((id) => id !== option.id));
+    setLastRemoved(option);
+  };
+
   const selectedSet = new Set(selected);
   const selectedChips = selected
     .map((id) => optionById.get(id))
@@ -201,26 +243,73 @@ export function EntityLinkPicker({
         <div className="space-y-2">
           {selectedChips.length > 0 ? (
             <ul className="flex flex-wrap gap-1.5" data-slot={`${slot}-chips`}>
-              {selectedChips.map((option) => (
-                <li key={option.id}>
-                  <button
-                    type="button"
-                    data-slot={`${slot}-chip`}
-                    onClick={() => onChange(toggleOne(selected, option.id))}
-                    className="border-border bg-muted/40 hover:bg-muted focus-visible:ring-ring/50 flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-xs focus-visible:ring-[3px] focus-visible:outline-none"
-                  >
-                    <span className="text-foreground max-w-[12rem] truncate">
+              {selectedChips.map((option) => {
+                const name = (
+                  <>
+                    <span className="text-foreground max-w-48 truncate">
                       {option.label}
                     </span>
-                    <X
-                      className="text-muted-foreground size-3 shrink-0"
-                      aria-hidden
-                    />
-                    <span className="sr-only">{t("links.picker.remove")}</span>
-                  </button>
-                </li>
-              ))}
+                    {option.dateLabel ? (
+                      <span className="text-muted-foreground shrink-0">
+                        {option.dateLabel}
+                      </span>
+                    ) : null}
+                  </>
+                );
+                return (
+                  <li
+                    key={option.id}
+                    data-slot={`${slot}-chip`}
+                    className="border-border bg-muted/40 flex min-h-8 items-center rounded-full border text-xs"
+                  >
+                    {option.href ? (
+                      <Link
+                        href={option.href}
+                        data-slot={`${slot}-chip-open`}
+                        className="hover:bg-muted focus-visible:ring-ring/50 flex min-h-8 min-w-0 items-center gap-1.5 rounded-full py-1 pr-1.5 pl-3 focus-visible:ring-[3px] focus-visible:outline-none"
+                      >
+                        {name}
+                      </Link>
+                    ) : (
+                      <span className="flex min-w-0 items-center gap-1.5 py-1 pr-1.5 pl-3">
+                        {name}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      data-slot={`${slot}-chip-remove`}
+                      aria-label={t("links.picker.removeNamed", {
+                        name: chipName(option),
+                      })}
+                      onClick={() => unlink(option)}
+                      className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring/50 mr-0.5 flex size-7 shrink-0 items-center justify-center rounded-full focus-visible:ring-[3px] focus-visible:outline-none"
+                    >
+                      <X className="size-3.5" aria-hidden />
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
+          ) : null}
+
+          {lastRemoved ? (
+            <p
+              role="status"
+              data-slot={`${slot}-undo`}
+              className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs"
+            >
+              <span>
+                {t("links.picker.removed", { name: chipName(lastRemoved) })}
+              </span>
+              <button
+                type="button"
+                data-slot={`${slot}-undo-button`}
+                onClick={() => change(restoreLink(selected, lastRemoved.id))}
+                className="text-foreground focus-visible:ring-ring/50 min-h-8 rounded-sm font-medium underline underline-offset-2 focus-visible:ring-[3px] focus-visible:outline-none"
+              >
+                {t("common.undo")}
+              </button>
+            </p>
           ) : null}
 
           <Button
@@ -281,9 +370,7 @@ export function EntityLinkPicker({
                         <button
                           type="button"
                           data-slot={`${slot}-group-select`}
-                          onClick={() =>
-                            onChange(toggleAll(selected, groupIds))
-                          }
+                          onClick={() => change(toggleAll(selected, groupIds))}
                           className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
                         >
                           {t("links.picker.selectAll")}
@@ -300,7 +387,7 @@ export function EntityLinkPicker({
                               aria-pressed={on}
                               data-slot={`${slot}-option`}
                               onClick={() =>
-                                onChange(toggleOne(selected, option.id))
+                                change(toggleOne(selected, option.id))
                               }
                               className={cn(
                                 "border-border hover:bg-muted/50 focus-visible:ring-ring/50 flex min-h-11 w-full items-center gap-2 rounded-md border px-3 text-left focus-visible:ring-[3px] focus-visible:outline-none",

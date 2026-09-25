@@ -329,6 +329,11 @@
     "visitsColReason": "사유",
     "visitsColOutcome": "결과",
     "visitsColConditions": "질환",
+    "surgicalHistoryTitle": "수술 이력",
+    "surgicalHistoryColDate": "날짜",
+    "surgicalHistoryColProcedure": "시술",
+    "surgicalHistoryColBodySite": "신체 부위",
+    "surgicalHistoryColOutcome": "결과",
     "immunizationsTitle": "예방접종",
     "immunizationsColDate": "날짜",
     "immunizationsColVaccine": "백신",
@@ -1201,6 +1206,16 @@
     "yesterday": "어제",
     "tomorrow": "내일",
     "asNeededMarker": "필요시",
+    "recordOnlyBadge": "기록만",
+    "trackIntake": {
+      "title": "복용 기록",
+      "label": "복용 기록하기",
+      "helperOn": "이 일정에 따라 복용 시각이 되고, 알림과 복약 순응도가 적용돼요.",
+      "helperOff": "기록으로만 남겨요: 예정된 복용, 알림, 복약 순응도가 없어요.",
+      "enabledToast": "복용 기록 켜짐",
+      "disabledToast": "복용 기록 꺼짐",
+      "toggleFailed": "복용 기록 설정을 바꾸지 못했어요."
+    },
     "withoutNotification": "알림 없음",
     "pausedSince": "일시중지 시작",
     "takeNow": "지금 복용",
@@ -1796,7 +1811,7 @@
           "unpinnedToast": "배정을 해제했어요",
           "dueContext": "예정 시각: {time} ({delta})",
           "confirmTitle": "{time} 시간대에 배정할까요?",
-          "confirmBody": "이 복용은 해당 시간대에 늦게 복용한 것으로 계산돼요 – 순응도가 부풀려지지 않아요. 배정은 언제든 해제할 수 있어요.",
+          "confirmBody": "이 복용은 처음부터 이 시간대에 기록한 것과 똑같이 계산돼요. 복용한 시각에 따라 제시간 또는 늦게 복용한 것으로 계산되어 순응도가 부풀려지지 않아요. 배정은 언제든 해제할 수 있어요.",
           "confirmCancel": "취소",
           "confirmAction": "배정"
         }
@@ -1927,6 +1942,7 @@
         "nextDoseLabel": "다음 복용",
         "nextDoseNone": "예정된 복용이 없어요.",
         "nextDoseAsNeeded": "필요시 복용 — 예정된 복용이 없어요.",
+        "nextDoseNotTracked": "복용을 기록하지 않아요. 기록으로만 남겨요.",
         "pausedHint": "일시중지 — 알림이 오지 않아요.",
         "reminderLabel": "알림",
         "reminderOn": "켜짐",
@@ -2000,7 +2016,7 @@
         "packagingEdit": "편집",
         "packagingDescription": "1회분에 몇 개를 쓰는지, 새 포장이 보통 몇 개인지 설정해요 — 예를 들어 제조사가 바뀌어 포장 크기가 달라졌을 때요.",
         "packagingUnitsPerDoseLabel": "1회분당 개수",
-        "packagingUnitsPerDoseHelper": "예: 4mg 복용에 2mg 정제 2개 (1–100). 이미 기록된 복용은 그대로예요.",
+        "packagingUnitsPerDoseHelper": "예: 4mg 복용에 2mg 정제 2개, 한 알 반이면 1.5 (0 초과, 100 이하). 이미 기록된 복용은 그대로예요.",
         "packagingDefaultPackLabel": "기본 포장 크기 (개)",
         "packagingDefaultPackHelper": "새 포장을 등록할 때 수량을 미리 채워요 (1–1000). 해당 없으면 비워 두세요.",
         "packagingSuccess": "포장 정보를 저장했어요",
@@ -2198,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "파일에 그 복용에 대한 기록이 없어요 — 응답도 없었고 기록된 것도 없어요",
       "reasonStatusReminderEvent": "행이 미뤄 둔 알림에 관한 내용이라 복용에 대해 알려주는 게 없어요",
       "reasonStatusNotificationNotSent": "행은 알림이 발송되지 않았다는 기록이라 복용이 아니라 앱에 관한 내용이에요"
+    },
+    "unitsPerDoseField": {
+      "other": "기타…",
+      "inputLabel": "1회분 단위 수, 다른 값",
+      "placeholder": "예: 1.5 또는 1 1/2",
+      "invalid": "0보다 크고 100 이하인 숫자를 입력하세요. 예: 1.5 또는 1 1/2",
+      "preview": "1회분당 {value}(으)로 계산돼요"
     }
   },
   "charts": {
@@ -4760,7 +4783,9 @@
           "done": "{name}이(가) 추가되었습니다.",
           "doneUnnamed": "첫 약이 추가되었습니다.",
           "nextDose": "다음 복용: {when}.",
-          "reminders": "알림은 설정한 일정을 따릅니다."
+          "reminders": "알림은 설정한 일정을 따릅니다.",
+          "recordOnly": "기록으로만 남겨요: 알림도, 예정된 복용도 없어요.",
+          "asNeeded": "필요시: 알림 없이, 복용할 때 기록하세요."
         },
         "log-reading": {
           "title": "측정값 하나 입력: {target}",
@@ -7148,7 +7173,7 @@
         "uploadTitle": "백업 업로드",
         "uploadDescription": "백업 파일을 검사한 뒤 수동 스냅샷으로 저장해요. 복원은 별도 단계예요.",
         "uploadButton": "파일 업로드",
-        "uploadHelp": "현재 백업 스키마에 맞는 JSON 파일이에요. 최대 10 MB.",
+        "uploadHelp": "HealthLog 백업 파일(.json 또는 .json.gz)이에요. 업로드 전에 압축되며, 압축된 크기는 최대 512 MB까지 가능해요.",
         "uploadSuccess": "백업을 업로드했어요 (기록 {count}개)",
         "uploadFailed": "업로드하지 못했어요",
         "restore": "복원",
@@ -7223,7 +7248,39 @@
           "unknownDetail": "아직 어떤 야간 실행도 이 계정을 기록하지 않았습니다.",
           "age": "{hours}시간 전",
           "scheduleNote": "업로드는 {hours}시간마다 실행됩니다. 최신은 한 번의 실행 이내, 지연은 한 번이 아무것도 만들지 못한 상태, 오래됨은 두 번이 그런 상태입니다."
-        }
+        },
+        "restoreStarted": "복원을 시작했어요. 진행 상황은 목록 위에 표시돼요.",
+        "restoreActive": "이 계정의 복원이 이미 진행 중이에요. 끝날 때까지 기다려 주세요.",
+        "restoreJobQueuedTitle": "{username} 복원이 시작을 기다리고 있어요",
+        "restoreJobQueuedNote": "백그라운드 작업자가 가져가는 즉시 시작돼요.",
+        "restoreJobRunningTitle": "{username} 복원 중",
+        "restoreJobRunningNote": "복원이 끝날 때까지 계정에는 기존 데이터가 그대로 보여요. 이 페이지를 떠나도 복원은 서버에서 계속돼요.",
+        "restoreJobResumed": "서버가 다시 시작된 뒤 복원을 다시 시작했어요.",
+        "restoreJobPhaseValidating": "백업 파일 확인 중: 측정값 {checked}개 확인",
+        "restoreJobPhaseClearing": "계정의 기존 데이터를 지우는 중",
+        "restoreJobPhaseMeasurements": "측정값 기록 중: {total}개 중 {done}개",
+        "restoreJobPhaseSections": "나머지 기록 작성 중: {total}개 항목 중 {done}개",
+        "restoreJobPhaseRebuilding": "차트와 요약을 다시 계산하는 중",
+        "restoreJobSucceededTitle": "{username} 복원이 끝났어요",
+        "restoreJobSucceededDescription": "기록 {count}개를 복원했어요. 완료: {when}.",
+        "restoreJobFailedTitle": "{username} 복원이 완료되지 않았어요",
+        "restoreJobFailedKept": "아무것도 바뀌지 않았어요. 백업은 그대로 남아 있으니 다시 업로드하지 않고 해당 행에서 복원을 다시 시작할 수 있어요.",
+        "restoreFailureNotFound": "복원이 읽기 전에 백업이 삭제됐어요.",
+        "restoreFailureChanged": "복원이 기다리는 동안 백업이 더 최신 사본으로 바뀌었어요. 새 사본을 확인한 뒤 복원을 다시 시작해 주세요.",
+        "restoreFailureUndecryptable": "백업을 복호화할 수 없어요. 백업을 쓴 키가 더 이상 설정되어 있지 않거나, 저장된 사본이 바뀌었어요.",
+        "restoreFailureSchema": "올바른 HealthLog 백업 파일이 아니에요.",
+        "restoreFailureVersion": "더 새로운 HealthLog 버전이 쓴 백업이에요. 먼저 이 서버를 업데이트해 주세요.",
+        "restoreFailureOwnerMismatch": "백업 안의 파일이 백업 행과 다른 계정의 것이에요.",
+        "restoreFailureOwnerMissing": "이 백업이 속한 계정이 더 이상 없어요.",
+        "restoreFailureSectionMissing": "파일이 불완전해요. 매니페스트에 적힌 항목이 파일에 없어요.",
+        "restoreFailureDocument": "휴대용 내보내기처럼 내용 없이 문서만 담긴 파일이에요. 재해 복구용 백업을 사용해 주세요.",
+        "restoreFailureTimeBudget": "이 백업은 너무 커서 백그라운드 작업의 시간 제한 안에 복원할 수 없어요.",
+        "restoreFailureTransaction": "데이터베이스가 복원 도중에 거부해서 모든 변경을 되돌렸어요. 서버 로그에 오류가 나와 있어요.",
+        "restoreFailureInterrupted": "서버가 다시 시작되면서 복원이 멈췄고 되돌려졌어요. 또 멈춘다면 서버 메모리가 부족할 가능성이 커요.",
+        "restoreFailureNotStarted": "백그라운드 작업자가 복원을 가져가지 않았어요. 작업자가 실행 중인지 확인해 주세요.",
+        "restoreFailureEnqueue": "복원을 백그라운드 작업자에게 넘기지 못했어요. 작업자가 실행 중인지 확인해 주세요.",
+        "restoreFailureAfterCommit": "데이터는 복원됐지만 그다음 단계가 실패했어요. 차트는 다음 야간 실행 때 따라잡을 수 있어요.",
+        "restoreFailureUnexpected": "예상하지 못한 오류로 복원이 멈췄고 되돌려졌어요. 서버 로그에 오류가 나와 있어요."
       },
       "danger-zone": {
         "title": "위험 구역",
@@ -8233,7 +8290,9 @@
       "flowSpotting": "점상 출혈",
       "flowLight": "적음",
       "flowMedium": "보통",
-      "flowHeavy": "많음"
+      "flowHeavy": "많음",
+      "legendIntercourse": "성관계",
+      "legendOtherEntries": "기타 기록"
     },
     "predictions": {
       "title": "다음에 올 일",
@@ -10393,6 +10452,7 @@
     "scopeCount": "{groups}개 영역에서 {count}개 항목",
     "scopeSensitive": "{names} 포함",
     "leafVisits": "진료",
+    "leafSurgicalHistory": "수술 이력",
     "leafImmunizations": "예방접종",
     "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)"
   },
@@ -10777,8 +10837,16 @@
       "emergency": "응급",
       "hospital": "병원",
       "therapy": "치료 세션",
-      "other": "예약"
+      "other": "예약",
+      "procedure": "시술 또는 수술"
     },
+    "laterality": {
+      "left": "왼쪽",
+      "right": "오른쪽",
+      "both": "양쪽",
+      "none": "지정 안 함"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "진료",
     "sectionDescription": "병원 방문과 잡아 둔 예약을 한곳에서 봐요.",
     "add": "진료",
@@ -10820,6 +10888,9 @@
       "reason": "사유",
       "outcome": "결과",
       "outcomeReveal": "결과 추가",
+      "bodySite": "신체 부위",
+      "bodySiteHint": "예: 무릎, 담낭",
+      "laterality": "방향",
       "linkDocuments": "문서",
       "linkLabResults": "검사 결과",
       "linkConditions": "질환",
@@ -10839,12 +10910,28 @@
     },
     "dashboard": {
       "nextVisit": "다음 예약: {what} ({when})"
+    },
+    "procedures": {
+      "title": "시술 및 수술",
+      "description": "지금까지 받은 모든 시술과 수술을 최신순으로 보여 줍니다.",
+      "add": "시술",
+      "searchLabel": "신체 부위로 필터",
+      "searchPlaceholder": "예: 무릎",
+      "sitesLabel": "신체 부위",
+      "allSites": "전체",
+      "count": "{total}개 중 {shown}개",
+      "emptyTitle": "아직 기록된 시술이 없습니다",
+      "emptyDescription": "종류를 '시술 또는 수술'로 진료를 기록하거나, 기존 진료의 종류를 바꾸세요.",
+      "noMatchTitle": "이 필터에 맞는 항목이 없습니다",
+      "clearFilter": "필터 지우기",
+      "loadError": "시술 목록을 불러올 수 없습니다."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "건강검진 또는 진료 보기",
+    "viewSwitchLabel": "건강검진, 진료 또는 시술 보기",
     "tabVorsorge": "건강검진",
-    "tabVisits": "진료"
+    "tabVisits": "진료",
+    "tabProcedures": "시술·수술"
   },
   "practitioners": {
     "title": "병원과 의사",
@@ -10880,9 +10967,10 @@
       "selectAll": "전체 선택",
       "searchPlaceholder": "검색",
       "searchNoMatch": "결과 없음",
-      "remove": "제거",
       "suggested": "이 날짜 전후",
-      "loadError": "목록을 불러오지 못했습니다."
+      "loadError": "목록을 불러오지 못했습니다.",
+      "removeNamed": "{name} 제거",
+      "removed": "{name} 연결 해제됨"
     }
   }
 }

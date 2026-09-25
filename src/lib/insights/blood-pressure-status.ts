@@ -66,6 +66,7 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 /**
  * Cap on the embedded correlation / paired-daily arrays. The Pearson
@@ -328,7 +329,7 @@ export async function prepareBloodPressureStatusForUser(
   const activeMedicationRows = await prisma.medication.findMany({
     // v1.16.11 — as-needed (PRN) medications never feed the BP-status
     // compliance gate (no expected doses, no rate).
-    where: { userId, active: true, asNeeded: false },
+    where: { userId, active: true, asNeeded: false, ...TRACKED_INTAKE_WHERE },
     // v1.15.20 — schedules through the shared compliance select so the
     // configured per-dose windows reach this surface like every other.
     include: {

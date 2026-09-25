@@ -611,3 +611,43 @@ describe("backupPayloadSchema — database enum boundaries", () => {
     expect(parsed.success).toBe(false);
   });
 });
+
+// #1034 — a restore applies the same units-per-dose rule as the write
+// routes, on the medication and on each schedule, so a hand-edited file
+// cannot put a value into the database that no route would accept.
+describe("backupPayloadSchema — unitsPerDose", () => {
+  function withMedication(med: Record<string, unknown>) {
+    return backupPayloadSchema.safeParse({
+      schemaVersion: "1",
+      exportedAt: "2026-09-25T07:00:00.000Z",
+      userId: "u1",
+      measurements: [],
+      intakeEvents: [],
+      medications: [{ name: "Example", dose: "5 mg", ...med }],
+    });
+  }
+
+  it("accepts the Decimal strings a backup carries, mixed values included", () => {
+    for (const v of ["1", "0.5", "1.5", "2.25", "1.3333", "1.2"]) {
+      expect(withMedication({ unitsPerDose: v }).success).toBe(true);
+    }
+  });
+
+  it("refuses a medication value the write routes would refuse", () => {
+    for (const v of ["0", "-1", "101", "abc", "1.23456"]) {
+      expect(withMedication({ unitsPerDose: v }).success).toBe(false);
+    }
+  });
+
+  it("applies the rule to the per-schedule override, string or number", () => {
+    const schedule = (unitsPerDose: unknown) => ({
+      schedules: [{ windowStart: "08:00", windowEnd: "08:00", unitsPerDose }],
+    });
+    expect(withMedication(schedule("1.5")).success).toBe(true);
+    expect(withMedication(schedule(2.25)).success).toBe(true);
+    expect(withMedication(schedule(null)).success).toBe(true);
+    expect(withMedication(schedule("0")).success).toBe(false);
+    expect(withMedication(schedule(150)).success).toBe(false);
+    expect(withMedication(schedule("x")).success).toBe(false);
+  });
+});

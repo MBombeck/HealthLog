@@ -69,6 +69,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserDashboardSnapshot } from "@/lib/cache/invalidate";
+import { nutrientEntryResultSchema } from "@/lib/validations/nutrients";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -447,6 +448,46 @@ describe("POST /api/nutrients/batch — write semantics", () => {
     expect(body.data.entries[1].status).toBe("updated");
     expect(body.data.updated).toBe(1);
     spy.mockRestore();
+  });
+
+  it("marks a response carrying upsert_failed no-store, so a retry with the same Idempotency-Key writes again", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(prisma.nutrientIntakeDay.createMany).mockRejectedValue(
+      new Error("connection reset"),
+    );
+    const failed = await POST(
+      postReq({
+        entries: [
+          { day: recentDay(), nutrient: "zinc", unit: "mg", amount: 10 },
+        ],
+      }),
+    );
+    expect(failed.status).toBe(200);
+    expect(failed.headers.get("Cache-Control")).toBe("private, no-store");
+    spy.mockRestore();
+
+    vi.mocked(prisma.nutrientIntakeDay.createMany).mockResolvedValue({
+      count: 1,
+    } as never);
+    const clean = await POST(
+      postReq({
+        entries: [
+          { day: recentDay(), nutrient: "zinc", unit: "mg", amount: 10 },
+        ],
+      }),
+    );
+    expect(clean.headers.get("Cache-Control")).not.toBe("private, no-store");
+  });
+
+  it("documents upsert_failed as a transient write failure to retry, and the validation skips as terminal", () => {
+    const description = String(
+      (nutrientEntryResultSchema.meta() as { description?: string })
+        .description,
+    );
+    expect(description).toMatch(/`upsert_failed` is a write failure/);
+    expect(description).toMatch(/sent again on a later sync/);
+    expect(description).not.toMatch(/log and drop a skipped entry/i);
+    expect(description).toMatch(/unit_mismatch/);
   });
 
   it("a race that drops one createMany row still counts consistently and is observable", async () => {

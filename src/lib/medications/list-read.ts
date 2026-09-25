@@ -28,6 +28,12 @@ import {
 } from "@/lib/medications/scheduling/next-due";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
+import {
+  dueSchedules,
+  isRecordOnly,
+  scheduleWireFields,
+} from "@/lib/medications/intake-tracking";
+import { liveEraStartsByMedication } from "@/lib/medications/scheduling/live-era";
 
 export type MedicationsListResult = Array<Record<string, unknown>>;
 
@@ -159,11 +165,8 @@ export async function buildMedicationsList(
     else resolvedSlotsByMedId.set(e.medicationId, [mark]);
   }
 
-  const eraStartByMedId = new Map<string, Date>();
-  for (const f of eraFloors) {
-    if (f._max.validUntil)
-      eraStartByMedId.set(f.medicationId, f._max.validUntil);
-  }
+  // The live era start per medication (see `live-era.ts`).
+  const eraStartByMedId = liveEraStartsByMedication(eraFloors);
 
   const lastTakenAtByMedicationId = Object.fromEntries(
     latestIntakes.map((entry) => [
@@ -207,6 +210,9 @@ export async function buildMedicationsList(
   const now = new Date();
 
   return medications.map((m) => {
+    // v1.39.1 (#1033) — intake tracking off: the stored rows are a record,
+    // not a dose plan. Nothing is due and no runway derives from them.
+    const liveSchedules = dueSchedules(m);
     // v1.16.4 — an OPEN overdue slot (anchor passed, still inside its
     // catch-up band, unresolved) surfaces FIRST with `nextDueOverdue:
     // true`; only a closed or resolved band falls through to the future
@@ -220,7 +226,7 @@ export async function buildMedicationsList(
         oneShot: m.oneShot,
         createdAt: m.createdAt,
       },
-      schedules: m.schedules,
+      schedules: liveSchedules,
       now,
       userTz,
       lastIntakeAt: lastTakenAtDateByMedicationId[m.id] ?? null,
@@ -230,8 +236,9 @@ export async function buildMedicationsList(
     const displaySchedule =
       display?.scheduleId === undefined
         ? null
-        : (m.schedules.find((schedule) => schedule.id === display.scheduleId) ??
-          null);
+        : (liveSchedules.find(
+            (schedule) => schedule.id === display.scheduleId,
+          ) ?? null);
     // A prior-day rolling occurrence can remain the one authoritative
     // actionable dose while today's same HH:mm window has already passed.
     // The client window reducer uses this count to decide whether a passed
@@ -257,6 +264,7 @@ export async function buildMedicationsList(
       m.schedules,
       m.unitsPerDose,
     );
+    const liveSchedulesDto = isRecordOnly(m) ? [] : schedulesDto;
     // v1.37.19 — slot-aware doses figure: divide the units pool by the
     // schedule-weighted average units per dose, not the medication-level
     // column alone (wrong for any per-slot medication). Falls back to the
@@ -277,7 +285,7 @@ export async function buildMedicationsList(
         ? null
         : estimateUnitsRunwayDays(
             stockUnitsRemaining,
-            schedulesDto,
+            liveSchedulesDto,
             Number(m.unitsPerDose),
           );
     return {
@@ -286,7 +294,9 @@ export async function buildMedicationsList(
       // the string Prisma would otherwise serialise a Decimal to.
       unitsPerDose: Number(m.unitsPerDose),
       // #219 — same Decimal → number unwrap for the per-schedule column.
-      schedules: schedulesDto,
+      // v1.39.1 (#1033) — `schedules: []` plus `recordedSchedules` when
+      // intake tracking is off (see `scheduleWireFields`).
+      ...scheduleWireFields(m.trackIntake, schedulesDto),
       category: categoryMap[m.id] ?? "OTHER",
       // v1.32.25 — provenance echo. Surfacing the mirror source lets the
       // web UI and an operator tell an externally-mirrored row (today only

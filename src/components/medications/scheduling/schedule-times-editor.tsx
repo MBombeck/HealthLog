@@ -82,9 +82,17 @@ function effectiveTimes(s: EditableSchedule): string[] {
 export function ScheduleTimesEditor({
   medicationId,
   schedules,
+  trackIntake,
 }: {
   medicationId: string;
   schedules: EditableSchedule[];
+  /**
+   * v1.39.1 (#1033) — the medication's intake-tracking state, echoed on the
+   * save. The server keeps the stored schedule of a record-only medication
+   * unless the write names `trackIntake`, because a client that does not
+   * know the field cannot have seen that schedule.
+   */
+  trackIntake?: boolean;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -114,6 +122,7 @@ export function ScheduleTimesEditor({
       // Replace schedules wholesale — preserve every cadence field from
       // the snapshot field-by-field, change only the times + windows.
       const body = {
+        ...(trackIntake !== undefined && { trackIntake }),
         schedules: schedules.map((s, i) => {
           const edit = edits[i];
           const times =

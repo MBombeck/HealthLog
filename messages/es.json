@@ -293,6 +293,11 @@
     "visitsColReason": "Motivo",
     "visitsColOutcome": "Resultado",
     "visitsColConditions": "Enfermedades",
+    "surgicalHistoryTitle": "Antecedentes quirúrgicos",
+    "surgicalHistoryColDate": "Fecha",
+    "surgicalHistoryColProcedure": "Procedimiento",
+    "surgicalHistoryColBodySite": "Zona del cuerpo",
+    "surgicalHistoryColOutcome": "Resultado",
     "immunizationsTitle": "Vacunas",
     "immunizationsColDate": "Fecha",
     "immunizationsColVaccine": "Vacuna",
@@ -1201,6 +1206,16 @@
     "yesterday": "Ayer",
     "tomorrow": "Mañana",
     "asNeededMarker": "Según necesidad",
+    "recordOnlyBadge": "Solo registro",
+    "trackIntake": {
+      "title": "Registro de tomas",
+      "label": "Registrar tomas",
+      "helperOn": "Las dosis tocan según este horario, con recordatorios y adherencia.",
+      "helperOff": "Se guarda como registro: nada queda pendiente, sin recordatorios ni adherencia.",
+      "enabledToast": "Registro de tomas activado",
+      "disabledToast": "Registro de tomas desactivado",
+      "toggleFailed": "No se pudo cambiar el registro de tomas."
+    },
     "withoutNotification": "Sin notificación",
     "pausedSince": "En pausa desde",
     "takeNow": "Tomar ahora",
@@ -1796,7 +1811,7 @@
           "unpinnedToast": "Asignación quitada",
           "dueContext": "prevista: {time} ({delta})",
           "confirmTitle": "¿Asignar al horario de las {time}?",
-          "confirmBody": "La toma contará como tomada con retraso para este horario; el porcentaje no se maquilla. Puedes quitar la asignación en cualquier momento.",
+          "confirmBody": "La toma contará para este horario igual que si se hubiera registrado en él: a tiempo o con retraso según cuándo se tomó, así que el porcentaje no se maquilla. Puedes quitar la asignación en cualquier momento.",
           "confirmCancel": "Cancelar",
           "confirmAction": "Asignar"
         }
@@ -1927,6 +1942,7 @@
         "nextDoseLabel": "Próxima dosis",
         "nextDoseNone": "No hay dosis pendiente.",
         "nextDoseAsNeeded": "Según necesidad — sin dosis programada.",
+        "nextDoseNotTracked": "Sin registro de tomas, se guarda como registro.",
         "pausedHint": "En pausa — sin recordatorios.",
         "reminderLabel": "Recordatorio",
         "reminderOn": "Activado",
@@ -2000,7 +2016,7 @@
         "packagingEdit": "Editar",
         "packagingDescription": "Define cuántas unidades consume una dosis y el tamaño habitual de un envase nuevo, p. ej. tras un cambio de fabricante con otro tamaño de blíster.",
         "packagingUnitsPerDoseLabel": "Unidades por dosis",
-        "packagingUnitsPerDoseHelper": "P. ej. dos comprimidos de 2 mg para una dosis de 4 mg (1–100). Las tomas ya registradas no cambian.",
+        "packagingUnitsPerDoseHelper": "P. ej. dos comprimidos de 2 mg para una dosis de 4 mg, o 1,5 para uno y medio (más de 0, hasta 100). Las tomas ya registradas no cambian.",
         "packagingDefaultPackLabel": "Tamaño de envase predeterminado (unidades)",
         "packagingDefaultPackHelper": "Rellena la cantidad al registrar envases nuevos (1–1000). Déjalo vacío si no aplica.",
         "packagingSuccess": "Datos del envase guardados",
@@ -2198,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "el archivo no registra nada sobre esa dosis: nadie respondió y nada se anotó",
       "reasonStatusReminderEvent": "la fila trata de un recordatorio postergado, que no dice nada sobre la dosis",
       "reasonStatusNotificationNotSent": "la fila registra que no se envió ninguna notificación, lo cual habla de la aplicación y no de la dosis"
+    },
+    "unitsPerDoseField": {
+      "other": "Otro…",
+      "inputLabel": "Unidades por dosis, otro valor",
+      "placeholder": "p. ej., 1,5 o 1 1/2",
+      "invalid": "Introduce un número mayor que 0 y hasta 100, por ejemplo 1,5 o 1 1/2.",
+      "preview": "Cuenta como {value} por dosis"
     }
   },
   "charts": {
@@ -4760,7 +4783,9 @@
           "done": "{name} está añadido.",
           "doneUnnamed": "Tu primer medicamento está añadido.",
           "nextDose": "Próxima dosis: {when}.",
-          "reminders": "Los recordatorios siguen el horario que fijaste."
+          "reminders": "Los recordatorios siguen el horario que fijaste.",
+          "recordOnly": "Solo registro: sin recordatorios, nada queda pendiente.",
+          "asNeeded": "Según necesidad: sin recordatorios, registra cada toma cuando la hagas."
         },
         "log-reading": {
           "title": "Registra una medición: {target}",
@@ -7169,7 +7194,7 @@
         "uploadTitle": "Subir copia de seguridad",
         "uploadDescription": "Valida un archivo de copia de seguridad y guárdalo como instantánea manual. La restauración es un paso aparte.",
         "uploadButton": "Subir archivo",
-        "uploadHelp": "Archivo JSON que coincida con el esquema de copia de seguridad actual. Máx. 10 MB.",
+        "uploadHelp": "Una copia de seguridad de HealthLog en .json o .json.gz. El archivo se comprime antes de subirlo; comprimido puede ocupar hasta 512 MB.",
         "uploadSuccess": "Copia de seguridad subida ({count} registros)",
         "uploadFailed": "La subida falló",
         "restore": "Restaurar",
@@ -7244,7 +7269,39 @@
           "unknownDetail": "Ninguna ejecución nocturna ha registrado esta cuenta todavía.",
           "age": "hace {hours} h",
           "scheduleNote": "La subida se ejecuta cada {hours} h. Reciente significa dentro de una ejecución, pendiente que una no produjo nada, obsoleta que fueron dos."
-        }
+        },
+        "restoreStarted": "Restauración iniciada. Su progreso aparece encima de la lista.",
+        "restoreActive": "Ya hay una restauración en curso para esta cuenta. Espera a que termine.",
+        "restoreJobQueuedTitle": "La restauración de {username} está esperando para empezar",
+        "restoreJobQueuedNote": "Empieza en cuanto el proceso en segundo plano la recoja.",
+        "restoreJobRunningTitle": "Restaurando {username}",
+        "restoreJobRunningNote": "La cuenta sigue mostrando sus datos actuales hasta que termine la restauración. Puedes salir de esta página; la restauración continúa en el servidor.",
+        "restoreJobResumed": "Iniciada de nuevo tras reiniciarse el servidor.",
+        "restoreJobPhaseValidating": "Comprobando el archivo de copia: {checked} lecturas comprobadas",
+        "restoreJobPhaseClearing": "Borrando los datos actuales de la cuenta",
+        "restoreJobPhaseMeasurements": "Escribiendo lecturas: {done} de {total}",
+        "restoreJobPhaseSections": "Escribiendo el resto de registros: {done} de {total} secciones",
+        "restoreJobPhaseRebuilding": "Recalculando gráficos y resúmenes",
+        "restoreJobSucceededTitle": "Restauración de {username} terminada",
+        "restoreJobSucceededDescription": "{count} registros restaurados. Terminó {when}.",
+        "restoreJobFailedTitle": "La restauración de {username} no se completó",
+        "restoreJobFailedKept": "No se cambió nada. La copia se conserva, así que puedes volver a iniciar la restauración desde su fila sin subirla otra vez.",
+        "restoreFailureNotFound": "La copia se eliminó antes de que la restauración pudiera leerla.",
+        "restoreFailureChanged": "La copia se sustituyó por una más reciente mientras la restauración esperaba. Revisa la copia nueva y vuelve a iniciar la restauración.",
+        "restoreFailureUndecryptable": "No se pudo descifrar la copia. La clave con la que se escribió ya no está configurada, o la copia guardada se modificó.",
+        "restoreFailureSchema": "El archivo no es una copia de seguridad válida de HealthLog.",
+        "restoreFailureVersion": "La copia la escribió una versión más reciente de HealthLog. Actualiza primero este servidor.",
+        "restoreFailureOwnerMismatch": "El archivo de la copia pertenece a otra cuenta que la fila de la copia.",
+        "restoreFailureOwnerMissing": "La cuenta a la que pertenece esta copia ya no existe.",
+        "restoreFailureSectionMissing": "El archivo está incompleto: su manifiesto nombra una sección que no contiene.",
+        "restoreFailureDocument": "El archivo contiene documentos sin su contenido, como una exportación portátil. Usa una copia de recuperación ante desastres.",
+        "restoreFailureTimeBudget": "Esta copia es demasiado grande para restaurarse dentro del límite de tiempo del proceso en segundo plano.",
+        "restoreFailureTransaction": "La base de datos rechazó la restauración a mitad, así que se deshizo todo. El registro del servidor indica el error.",
+        "restoreFailureInterrupted": "La restauración se detuvo al reiniciarse el servidor y se deshizo. Si vuelve a detenerse, probablemente al servidor le falta memoria.",
+        "restoreFailureNotStarted": "El proceso en segundo plano no recogió la restauración. Comprueba que está en marcha.",
+        "restoreFailureEnqueue": "No se pudo entregar la restauración al proceso en segundo plano. Comprueba que está en marcha.",
+        "restoreFailureAfterCommit": "Los datos se restauraron, pero falló un paso posterior. Puede que los gráficos no se pongan al día hasta la próxima ejecución nocturna.",
+        "restoreFailureUnexpected": "La restauración se detuvo por un error inesperado y se deshizo. El registro del servidor indica el error."
       },
       "danger-zone": {
         "title": "Zona de peligro",
@@ -8233,7 +8290,9 @@
       "flowSpotting": "manchado",
       "flowLight": "ligero",
       "flowMedium": "medio",
-      "flowHeavy": "abundante"
+      "flowHeavy": "abundante",
+      "legendIntercourse": "Relaciones",
+      "legendOtherEntries": "Otras entradas"
     },
     "predictions": {
       "title": "Qué viene después",
@@ -10393,6 +10452,7 @@
     "scopeCount": "{count} entradas de {groups} áreas",
     "scopeSensitive": "incl. {names}",
     "leafVisits": "Visitas médicas",
+    "leafSurgicalHistory": "Antecedentes quirúrgicos",
     "leafImmunizations": "Vacunas",
     "leafEmergency": "Información de emergencia (grupo sanguíneo, contactos, voluntades)"
   },
@@ -10777,8 +10837,16 @@
       "emergency": "Urgencia",
       "hospital": "Hospital",
       "therapy": "Sesión de terapia",
-      "other": "Cita médica"
+      "other": "Cita médica",
+      "procedure": "Procedimiento o cirugía"
     },
+    "laterality": {
+      "left": "Izquierda",
+      "right": "Derecha",
+      "both": "Ambos lados",
+      "none": "Sin indicar"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "Citas",
     "sectionDescription": "Visitas médicas y citas reservadas en un solo sitio.",
     "add": "Cita",
@@ -10820,6 +10888,9 @@
       "reason": "Motivo",
       "outcome": "Resultado",
       "outcomeReveal": "Añadir un resultado",
+      "bodySite": "Zona del cuerpo",
+      "bodySiteHint": "Por ejemplo, rodilla o vesícula.",
+      "laterality": "Lado",
       "linkDocuments": "Documentos",
       "linkLabResults": "Resultados de laboratorio",
       "linkConditions": "Enfermedades",
@@ -10839,12 +10910,28 @@
     },
     "dashboard": {
       "nextVisit": "Próxima cita: {what} el {when}"
+    },
+    "procedures": {
+      "title": "Procedimientos y cirugías",
+      "description": "Todos los procedimientos y cirugías que has tenido, del más reciente al más antiguo.",
+      "add": "Procedimiento",
+      "searchLabel": "Filtrar por zona del cuerpo",
+      "searchPlaceholder": "Por ejemplo, rodilla",
+      "sitesLabel": "Zonas del cuerpo",
+      "allSites": "Todas",
+      "count": "{shown} de {total}",
+      "emptyTitle": "Aún no hay ningún procedimiento registrado",
+      "emptyDescription": "Registra una cita del tipo Procedimiento o cirugía, o cambia una cita existente a ese tipo.",
+      "noMatchTitle": "Nada coincide con este filtro",
+      "clearFilter": "Quitar filtro",
+      "loadError": "No se pudieron cargar los procedimientos."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Mostrar revisiones o citas",
+    "viewSwitchLabel": "Mostrar revisiones, citas o procedimientos",
     "tabVorsorge": "Revisiones",
-    "tabVisits": "Citas"
+    "tabVisits": "Citas",
+    "tabProcedures": "Procedimientos"
   },
   "practitioners": {
     "title": "Consultas y médicos",
@@ -10880,9 +10967,10 @@
       "selectAll": "Seleccionar todo",
       "searchPlaceholder": "Buscar",
       "searchNoMatch": "Sin coincidencias",
-      "remove": "Quitar",
       "suggested": "En torno a esta fecha",
-      "loadError": "No se pudo cargar la lista."
+      "loadError": "No se pudo cargar la lista.",
+      "removeNamed": "Quitar {name}",
+      "removed": "Se desvinculó {name}"
     }
   }
 }

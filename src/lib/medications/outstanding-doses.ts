@@ -13,6 +13,7 @@
  */
 import { prisma } from "@/lib/db";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
+import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 
 /**
  * Count the user's outstanding (pending) doses for today in their timezone.
@@ -31,6 +32,12 @@ export async function countOutstandingDosesToday(
         takenAt: null,
         skipped: false,
         autoMissed: false,
+        // A tombstoned placeholder is gone for every read surface; it must
+        // not keep a badge count alive.
+        deletedAt: null,
+        // v1.39.1 (#1033) — nothing of a medication with intake tracking
+        // off is outstanding.
+        ...TRACKED_INTAKE_EVENT_WHERE,
       },
     });
   } catch {

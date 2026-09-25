@@ -34,7 +34,17 @@
  *   * `auto_missed = false` AND
  *   * `takenAt IS NULL` AND
  *   * `deletedAt IS NULL` AND
- *   * `scheduledFor < NOW() - <per-medication auto-miss delay>`
+ *   * `scheduledFor < NOW() - <per-medication auto-miss delay>` AND
+ *   * `scheduledFor >= medication.createdAt`
+ *
+ * The last clause (#1028): the today projector mints a pending placeholder
+ * for every slot of the current day, so a medication added at 16:00 carries
+ * placeholders for its 09:00 and 14:00 slots. Those slots were never
+ * expected, and a placeholder on one records nothing. Stamping it a miss
+ * put a forgotten dose into every reader that counts raw rows (the miss-free
+ * streak, the Coach snapshot) for a day before the medication existed. It
+ * stays pending instead: the dose history drops it, and a dose the person
+ * does record for that slot still converges onto it.
  *
  * The 24 h floor is intentional: a slightly late mark (user took the
  * morning dose at noon when the schedule was 09:00) shouldn't be flipped
@@ -56,6 +66,11 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
 import { normaliseDoseWindows } from "@/lib/medications/scheduling/worker-helpers";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import {
+  LIVE_ERA_REVISION_ARGS,
+  liveEraStart,
+} from "@/lib/medications/scheduling/live-era";
 
 export const INTAKE_AUTO_SKIP_QUEUE = "intake-auto-skip";
 
@@ -224,34 +239,68 @@ export async function runIntakeAutoSkipPass(
     usersByMedication.set(candidate.medicationId, users);
   }
 
+  // v1.39.1 (#1033) — a medication with intake tracking off expects no
+  // dose, so a placeholder left on it never becomes a miss. Switching
+  // tracking off tombstones its open placeholders; this is the backstop.
   const medications = await prisma.medication.findMany({
-    where: { id: { in: [...usersByMedication.keys()] } },
+    where: {
+      id: { in: [...usersByMedication.keys()] },
+      ...TRACKED_INTAKE_WHERE,
+    },
     select: {
       id: true,
+      createdAt: true,
       schedules: {
         select: { rrule: true, rollingIntervalDays: true, doseWindows: true },
       },
+      scheduleRevisions: LIVE_ERA_REVISION_ARGS,
     },
   });
 
   // Group medications by their derived delay so one `updateMany` covers
   // each distinct cutoff instead of one query per medication.
-  const medsByDelay = new Map<number, string[]>();
+  const medsByDelay = new Map<
+    number,
+    Array<{ id: string; createdAt: Date; eraStart: Date | null }>
+  >();
   for (const medication of medications) {
     const delayMs = medicationAutoMissDelayMs(medication.schedules);
     const group = medsByDelay.get(delayMs) ?? [];
-    group.push(medication.id);
+    group.push({
+      id: medication.id,
+      createdAt: medication.createdAt,
+      eraStart: liveEraStart(medication.scheduleRevisions),
+    });
     medsByDelay.set(delayMs, group);
   }
 
   let skippedCount = 0;
   const invalidatedUserIds = new Set<string>();
-  for (const [delayMs, medicationIds] of medsByDelay) {
+  for (const [delayMs, group] of medsByDelay) {
+    const medicationIds = group.map((m) => m.id);
     const { count } = await prisma.medicationIntakeEvent.updateMany({
       where: {
         ...pendingWhere,
-        medicationId: { in: medicationIds },
         scheduledFor: { lt: new Date(nowMs - delayMs) },
+        // Per medication, only slots from its creation on: a placeholder
+        // for a slot before it was never an expected dose (see above).
+        //
+        // And only slots the schedule in force at the time expected: a
+        // placeholder anchored before the live era start but minted after it
+        // came from the NEW schedule projected back over the part of the
+        // day that belonged to the previous era (or to none, while intake
+        // tracking was off). Earlier placeholders minted before the switch
+        // were real expectations of the old era and still resolve.
+        OR: group.map((m) => ({
+          medicationId: m.id,
+          scheduledFor: { gte: m.createdAt },
+          ...(m.eraStart && {
+            NOT: {
+              scheduledFor: { lt: m.eraStart },
+              createdAt: { gte: m.eraStart },
+            },
+          }),
+        })),
       },
       // `syncVersion` bumps so delta-sync clients pick up the terminal
       // state instead of holding a stale pending row forever.

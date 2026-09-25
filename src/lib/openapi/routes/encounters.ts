@@ -25,6 +25,8 @@ import {
   encounterLinkSchema,
   encounterStatusEnum,
   encounterKindEnum,
+  lateralityEnum,
+  procedureListQuerySchema,
 } from "@/lib/validations/encounters";
 import {
   practitionerCreateSchema,
@@ -49,13 +51,13 @@ import {
 const createEncounterRequest = encounterCreateSchema.meta({
   id: "CreateEncounterRequest",
   description:
-    "File a visit, or book one. `occurredAt` is the only required field — a visit saves with a date and nothing else. A future instant with `status: PLANNED` books an appointment and mints exactly one reminder for it. `reason` and `outcome` are encrypted at rest. The three id arrays pre-link documents, lab results and condition episodes; an id naming nothing the caller owns is dropped rather than refused, so a link never blocks a save.",
+    "File a visit, or book one. `occurredAt` is the only required field — a visit saves with a date and nothing else. A future instant with `status: PLANNED` books an appointment and mints exactly one reminder for it. `reason`, `outcome` and `bodySite` are encrypted at rest. `kind: PROCEDURE` marks a procedure or surgery; `bodySite` (free text) and `laterality` (LEFT / RIGHT / BOTH, null when not stated) say where, and are accepted on any kind. The three id arrays pre-link documents, lab results and condition episodes; an id naming nothing the caller owns is dropped rather than refused, so a link never blocks a save.",
 });
 
 const updateEncounterRequest = encounterUpdateSchema.meta({
   id: "UpdateEncounterRequest",
   description:
-    "Partial edit of a visit; an omitted key leaves the column untouched, and a body naming nothing is a 422. Moving `occurredAt` re-anchors the appointment reminder the visit already owns and never mints a second. Moving `status` to DONE closes the checkup named by `reminderId`, on the transition only. CANCELLED and NO_SHOW stop the reminder without deleting the row. A present id array replaces that link family, empty array included.",
+    "Partial edit of a visit; an omitted key leaves the column untouched, and a body naming nothing is a 422. Moving `occurredAt` re-anchors the appointment reminder the visit already owns and never mints a second. Moving `status` to DONE closes the checkup named by `reminderId`, on the transition only. CANCELLED and NO_SHOW stop the reminder without deleting the row. A present id array replaces that link family, empty array included. Switching an existing visit to `kind: PROCEDURE` is an ordinary edit of this kind; nothing has to be entered again.",
 });
 
 const listEncountersQuery = encounterListQuerySchema.meta({
@@ -74,6 +76,12 @@ const encounterLinkRequest = encounterLinkSchema.meta({
   id: "EncounterLinkRequest",
   description:
     "Targets to file against, or unfile from, a visit. Idempotent in both directions and capped at 100 ids. Ids naming nothing the caller owns come back in `unknown` rather than failing the request.",
+});
+
+const listProceduresQuery = procedureListQuerySchema.meta({
+  id: "ListProceduresQuery",
+  description:
+    "Filters for the procedure history. `q` must match every word, case- and accent-insensitively, somewhere in the body site, the side (English or the record owner's language) or the reason. `laterality` filters the side exactly. Both run server-side after the decrypt, because the body site is encrypted at rest.",
 });
 
 const createPractitionerRequest = practitionerCreateSchema.meta({
@@ -163,6 +171,8 @@ const encounter = z
     practitioner: practitioner.nullable(),
     reason: z.string().nullable(),
     outcome: z.string().nullable(),
+    bodySite: z.string().nullable(),
+    laterality: lateralityEnum.nullable(),
     reminderNextDueAt: z.string().nullable(),
     links: encounterLinks.optional(),
     skipped: skipReport.optional(),
@@ -172,7 +182,7 @@ const encounter = z
   .meta({
     id: "Encounter",
     description:
-      "One contact with the healthcare system: a visit that happened, or one that is booked. `practitioner` is resolved rather than an id. `reason` and `outcome` are the decrypted free text (null on a key-rotation gap). `reminderNextDueAt` is the server-computed instant a booked appointment next nudges, and is null for a visit that already happened or whose one-shot reminder is spent.",
+      "One contact with the healthcare system: a visit that happened, or one that is booked. `practitioner` is resolved rather than an id. `reason`, `outcome` and `bodySite` are the decrypted free text (null on a key-rotation gap). `kind: PROCEDURE` marks a procedure or surgery, and `bodySite` with `laterality` say where; both are carried on every kind so switching a visit's kind away and back loses nothing. `reminderNextDueAt` is the server-computed instant a booked appointment next nudges, and is null for a visit that already happened or whose one-shot reminder is spent.",
   });
 
 const encounterList = z
@@ -184,6 +194,30 @@ const encounterList = z
     id: "EncounterList",
     description:
       "Visits split server-side rather than client-side. `upcoming` reads soonest-first and `past` reads newest-first — opposite directions, resolved once here so the ordering lives in one place.",
+  });
+
+const bodySiteFacet = z
+  .object({
+    bodySite: z.string(),
+    laterality: lateralityEnum.nullable(),
+    count: z.number().int(),
+  })
+  .meta({
+    id: "BodySiteFacet",
+    description:
+      "One body site and side in the procedure history, with how many procedures carry it. Keyed case- and space-insensitively; `bodySite` is the first spelling seen.",
+  });
+
+const procedureList = z
+  .object({
+    procedures: z.array(encounter),
+    bodySites: z.array(bodySiteFacet),
+    total: z.number().int(),
+  })
+  .meta({
+    id: "ProcedureList",
+    description:
+      "The procedure history. `procedures` is the filtered list, newest first. `bodySites` and `total` are computed over the whole history before the filter, so the filter choices never shrink to the one just picked.",
   });
 
 const suggestionCandidate = z
@@ -275,6 +309,27 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...stdResponses,
         ...recordWriteRateLimitResponse,
+      },
+    },
+  },
+  "/api/encounters/procedures": {
+    get: {
+      tags: ["Records"],
+      summary: "List procedures and surgeries",
+      description:
+        "The caller's procedure and surgery history: every live visit of kind PROCEDURE with status DONE, newest first, bounded at 500. Planned, cancelled and missed procedures are not in it; a booked one stays in the visit list's `upcoming` half. Read at the same section and level as the visit list.",
+      requestParams: { query: listProceduresQuery },
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "The procedure history.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(procedureList, "ListProceduresEnvelope"),
+            },
+          },
+        },
+        ...stdResponses,
       },
     },
   },

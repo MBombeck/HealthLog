@@ -55,6 +55,14 @@ export interface CoachVisitEntry {
   reason: string | null;
   /** What came out of it, decrypted + sanitised; null (always) for an upcoming visit. */
   outcome: string | null;
+  /**
+   * Where on the body, decrypted + sanitised (v1.39.1). Present only when the
+   * visit names a site, so the block does not grow for the visits that never
+   * carry one.
+   */
+  bodySite?: string;
+  /** The side of `bodySite`, when one is stated. */
+  laterality?: string;
 }
 
 export interface CoachVisitsBlock {
@@ -70,6 +78,8 @@ interface EncounterRow {
   kind: string;
   reasonEncrypted: Uint8Array | null;
   outcomeEncrypted: Uint8Array | null;
+  bodySiteEncrypted?: Uint8Array | null;
+  laterality?: string | null;
   practitioner: { name: string; specialty: string | null } | null;
 }
 
@@ -87,6 +97,7 @@ function decryptText(value: Uint8Array | null): string | null {
 }
 
 function toEntry(row: EncounterRow): CoachVisitEntry {
+  const bodySite = decryptText(row.bodySiteEncrypted ?? null);
   return {
     occurredAt: row.occurredAt.toISOString(),
     kind: row.kind,
@@ -98,6 +109,9 @@ function toEntry(row: EncounterRow): CoachVisitEntry {
       : null,
     reason: decryptText(row.reasonEncrypted),
     outcome: decryptText(row.outcomeEncrypted),
+    ...(bodySite
+      ? { bodySite, ...(row.laterality ? { laterality: row.laterality } : {}) }
+      : {}),
   };
 }
 

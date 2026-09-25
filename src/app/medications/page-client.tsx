@@ -105,6 +105,12 @@ interface Medication {
   oneShot?: boolean;
   /** v1.16.11 (#316) — as-needed (PRN): no schedules, never due. */
   asNeeded?: boolean;
+  /**
+   * v1.39.1 (#1033) — false keeps the medication as a record: served with
+   * `schedules: []` (the stored rows ride `recordedSchedules`), never due,
+   * and left out of the take-all and log-dose flows.
+   */
+  trackIntake?: boolean;
   /** v1.9.0 — optional WHO ATC classification code for the FHIR export. */
   atcCode?: string | null;
   /** v1.9.0 — optional RxNorm RxCUI (secondary FHIR coding). */
@@ -647,25 +653,27 @@ export default function MedicationsPageClient() {
         <LogIntakeDialog
           open={logIntakeOpen}
           onOpenChange={setLogIntakeOpen}
-          medications={activeMeds.map((m) => ({
-            id: m.id,
-            name: m.name,
-            dose: m.dose,
-            active: m.active,
-            lastTakenAt: m.lastTakenAt,
-            todayEventCount: m.todayEventCount ?? 0,
-            nextDueAt: m.nextDueAt,
-            nextDueOverdue: m.nextDueOverdue,
-            schedules: m.schedules.map((s) => ({
-              windowStart: s.windowStart,
-              windowEnd: s.windowEnd,
-              daysOfWeek: s.daysOfWeek,
-              label: s.label,
-              dose: s.dose,
-              timesOfDay: s.timesOfDay,
-              doseWindows: s.doseWindows,
-            })),
-          }))}
+          medications={activeMeds
+            .filter((m) => m.trackIntake !== false)
+            .map((m) => ({
+              id: m.id,
+              name: m.name,
+              dose: m.dose,
+              active: m.active,
+              lastTakenAt: m.lastTakenAt,
+              todayEventCount: m.todayEventCount ?? 0,
+              nextDueAt: m.nextDueAt,
+              nextDueOverdue: m.nextDueOverdue,
+              schedules: m.schedules.map((s) => ({
+                windowStart: s.windowStart,
+                windowEnd: s.windowEnd,
+                daysOfWeek: s.daysOfWeek,
+                label: s.label,
+                dose: s.dose,
+                timesOfDay: s.timesOfDay,
+                doseWindows: s.doseWindows,
+              })),
+            }))}
         />
       )}
     </div>

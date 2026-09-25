@@ -26,6 +26,7 @@
  * trusting that paragraph.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
+import { reportJobProgress } from "@/lib/jobs/job-observer";
 import {
   buildFullBackupPayload,
   isDeferredRows,
@@ -44,6 +45,9 @@ export type BackupJsonSink = (chunk: string) => void | Promise<void>;
  * resident buffer trivial and the write count in the low thousands.
  */
 const FLUSH_BYTES = 256 * 1024;
+
+/** How often a bulk section reports how far it has got to a running job. */
+const PROGRESS_EVERY_ROWS = 50_000;
 
 /**
  * There is deliberately no heap reading in this writer.
@@ -125,6 +129,9 @@ export async function streamFullBackupJson(
           rows === 0 ? JSON.stringify(row) : `,${JSON.stringify(row)}`,
         );
         rows++;
+        if (rows % PROGRESS_EVERY_ROWS === 0) {
+          reportJobProgress({ backup_section: key, backup_section_rows: rows });
+        }
       }
       await write("]");
       bulkCounts[key] = rows;

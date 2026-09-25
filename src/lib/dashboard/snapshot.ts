@@ -66,6 +66,7 @@ import {
 } from "@/lib/targets/weight-trend";
 import {
   probeRollupCoverage,
+  typesWithReadingsInFoldWindow,
   type RollupCoverageMap,
 } from "@/lib/rollups/measurement-coverage";
 import { buildMoodDailySeries } from "@/lib/analytics/mood-series";
@@ -1091,18 +1092,34 @@ function buildLayoutCatalogue(
  * cheap (empty reads) and absence must not cold the phase. A type
  * present-but-`false` has live rows without buckets — for these dense types
  * that is exactly the multi-second live fallback the snapshot must never
- * wait on, so the phase stays `null` until the backfill converges.
+ * wait on, so the phase stays `null` until the backfill converges — unless
+ * none of its readings lies inside the fold window. The fold never writes a
+ * bucket older than `ROLLUP_FOLD_WINDOW_MS`, so such a type is not waiting
+ * for anything: counting it as a miss held the phase `null` for good on an
+ * account whose blood pressure, say, was all imported history. Its live reads
+ * cover only rows older than the window, and the window reads come back
+ * empty. The second query runs on the miss path alone.
  * An empty map is a fresh account with no measurements at all — nothing to
  * compute, so the thick phase stays `null`.
  */
-function isThickPhaseWarm(coverage: RollupCoverageMap): boolean {
+const THICK_PHASE_GATE_TYPES = [
+  "WEIGHT",
+  "BLOOD_PRESSURE_SYS",
+  "BLOOD_PRESSURE_DIA",
+  "ACTIVITY_STEPS",
+] as const;
+
+async function isThickPhaseWarm(
+  userId: string,
+  coverage: RollupCoverageMap,
+): Promise<boolean> {
   if (coverage.size === 0) return false;
-  return (
-    coverage.get("WEIGHT") !== false &&
-    coverage.get("BLOOD_PRESSURE_SYS") !== false &&
-    coverage.get("BLOOD_PRESSURE_DIA") !== false &&
-    coverage.get("ACTIVITY_STEPS") !== false
+  const uncovered = THICK_PHASE_GATE_TYPES.filter(
+    (type) => coverage.get(type) === false,
   );
+  if (uncovered.length === 0) return true;
+  const foldable = await typesWithReadingsInFoldWindow(userId, uncovered);
+  return foldable.size === 0;
 }
 
 /**
@@ -1262,7 +1279,7 @@ export async function buildDashboardSnapshot(
   // paint-together vs slowest-wins). Unrelated uncovered types do NOT
   // cold the phase (see `isThickPhaseWarm`).
   const coverage = await time("coverage", () => probeRollupCoverage(user.id));
-  const warm = isThickPhaseWarm(coverage);
+  const warm = await isThickPhaseWarm(user.id, coverage);
 
   // Resolve the stored layout once up front: the hero score rings read
   // the `selectedScoreRings` preference off it, and the module-gated

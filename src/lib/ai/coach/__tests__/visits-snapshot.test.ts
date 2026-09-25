@@ -102,6 +102,42 @@ describe("buildVisitsSnapshotBlock", () => {
     expect(recentArg.orderBy).toEqual({ occurredAt: "desc" });
   });
 
+  // v1.39.1 — a procedure's body site rides the entry so "the knee operation
+  // in March" reads as one fact, and stays off every other entry so the block
+  // does not grow for visits that never carry one.
+  //
+  // Mutation check: always emit `bodySite` → the absent-key assertion goes red.
+  it("names the body site and side of a procedure, and only when one is set", async () => {
+    prismaMock.encounter.findFirst.mockResolvedValue({
+      occurredAt: new Date(NOW.getTime() - 30 * DAY),
+      kind: "PROCEDURE",
+      reasonEncrypted: Buffer.from("arthroscopy", "utf8"),
+      outcomeEncrypted: null,
+      bodySiteEncrypted: Buffer.from("knee", "utf8"),
+      laterality: "LEFT",
+      practitioner: null,
+    });
+    prismaMock.encounter.findMany.mockResolvedValue([
+      {
+        occurredAt: new Date(NOW.getTime() + 3 * DAY),
+        kind: "ROUTINE",
+        reasonEncrypted: null,
+        outcomeEncrypted: null,
+        bodySiteEncrypted: null,
+        laterality: null,
+        practitioner: null,
+      },
+    ]);
+    const block = await buildVisitsSnapshotBlock("user_1", NOW);
+    expect(block!.mostRecent).toMatchObject({
+      kind: "PROCEDURE",
+      bodySite: "knee",
+      laterality: "LEFT",
+    });
+    expect(block!.upcoming[0]).not.toHaveProperty("bodySite");
+    expect(block!.upcoming[0]).not.toHaveProperty("laterality");
+  });
+
   it("fail-softs a decrypt error to null rather than throwing the whole block", async () => {
     vi.mocked(decryptFromBytes).mockImplementation(() => {
       throw new Error("bad key id");

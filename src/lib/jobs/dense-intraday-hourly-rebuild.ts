@@ -65,11 +65,14 @@ export interface DenseIntradayHourlyRebuildPayload {
  */
 export async function runDenseIntradayHourlyRebuildForUser(
   userId: string,
+  shouldStop?: () => boolean,
 ): Promise<{
   daysRebuilt: number;
   hourlyRowsUpserted: number;
   dailyRowsRetired: number;
   daysSkippedNoTombstones: number;
+  /** The job's budget ran out first; see the queue handler. */
+  stoppedEarly: boolean;
 }> {
   // Shares the retention drain's kill-switch: when an operator disables the
   // dense tier, no-op so any already-queued backlog drains cleanly.
@@ -79,10 +82,12 @@ export async function runDenseIntradayHourlyRebuildForUser(
       hourlyRowsUpserted: 0,
       dailyRowsRetired: 0,
       daysSkippedNoTombstones: 0,
+      stoppedEarly: false,
     };
   }
   const summary = await runDenseIntradayHourlyRebuild(prisma, {
     userId,
+    shouldStop,
     log: () => {
       // Silent inside the queue handler — the worker logs the totals.
     },
@@ -104,6 +109,7 @@ export async function runDenseIntradayHourlyRebuildForUser(
     hourlyRowsUpserted: summary.totals.hourlyRowsUpserted,
     dailyRowsRetired: summary.totals.dailyRowsRetired,
     daysSkippedNoTombstones: summary.totals.daysSkippedNoTombstones,
+    stoppedEarly: summary.stoppedEarly,
   };
 }
 

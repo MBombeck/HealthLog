@@ -256,13 +256,25 @@ export function buildComplianceDisplay(
  * `schedules ?? []` on a scheduled medication. The doctor report has excluded
  * both arms since it was written, so the report never prints a fabricated
  * 100 %; the same reason applies to every other surface, so the two arms live
- * in one predicate rather than being re-derived at each call site.
+ * in one predicate rather than being re-derived at each call site. v1.39.1
+ * adds the third arm: a medication whose intake tracking is off keeps its
+ * schedule rows and still expects nothing.
  */
 export function expectsDoses(medication: {
   asNeeded: boolean;
+  /**
+   * v1.39.1 (#1033) — intake tracking switched off keeps the schedule rows
+   * as information but expects nothing from them. Required, not optional,
+   * so a caller cannot reach the predicate without having read the flag.
+   */
+  trackIntake: boolean;
   schedules: readonly unknown[];
 }): boolean {
-  return !medication.asNeeded && medication.schedules.length > 0;
+  return (
+    !medication.asNeeded &&
+    medication.trackIntake !== false &&
+    medication.schedules.length > 0
+  );
 }
 
 export function calculateCompliance(
@@ -317,11 +329,15 @@ export function calculateCompliance(
     rate: number;
   } | null = null;
   if (ledgerCtx) {
+    // The tally reads the whole period, not only the part after the
+    // medication's creation: the ledger itself keeps a slot before the
+    // creation only when a recorded dose claims it (#1028), so the rate
+    // matches the history view on the creation day.
     const tally = tallyComplianceFromLedger(
       events,
       schedules,
       ledgerCtx,
-      effectiveStart,
+      periodStart,
       now,
       now,
     );
@@ -484,7 +500,10 @@ export interface MedicationComplianceBundle {
   complianceDisplay: ComplianceDisplay;
   /** Unified ledger rows over `[ledgerFrom, now]`, chronological. */
   ledgerRows: DoseHistoryRow[];
-  /** Lower bound of the mint window (clamped to the medication's creation). */
+  /**
+   * Lower bound of the mint window. Not clamped to the medication's
+   * creation: the ledger drops pre-creation slots no recorded dose claims.
+   */
   ledgerFrom: Date;
 }
 
@@ -498,7 +517,8 @@ export interface MedicationComplianceBundle {
  * mint — five-plus full band expansions per request. This builder instead:
  *
  *   1. mints the bands + reconstructs the ledger ONCE over
- *      `[max(createdAt, now − 365 d), now]` (every served window is a
+ *      `[now − 365 d, now]` (slots before the medication's creation survive
+ *      only when a recorded dose claims them; every served window is a
  *      suffix of that range and ends at `now`, so a sub-window tally is a
  *      filter over `row.at`, not a re-expansion);
  *   2. builds ONE cadence timeline over the same range for the per-window
@@ -520,7 +540,12 @@ export function buildMedicationComplianceBundle(
   const ledgerPeriodStart = new Date(
     now.getTime() - COMPLIANCE_LEDGER_WINDOW_DAYS * ONE_DAY_MS,
   );
-  const ledgerFrom =
+  // The ledger mints over the whole period: a slot before the medication's
+  // creation stays in it only when a recorded dose claims it (#1028), so no
+  // pre-existence day reads as missed. The streak timeline keeps its
+  // creation floor.
+  const ledgerFrom = ledgerPeriodStart;
+  const timelineFrom =
     ctx.createdAt.getTime() > ledgerPeriodStart.getTime()
       ? ctx.createdAt
       : ledgerPeriodStart;
@@ -535,10 +560,17 @@ export function buildMedicationComplianceBundle(
   // the wide timeline reproduces the per-window builds.
   const fullDays = Math.max(
     1,
-    Math.ceil((now.getTime() - ledgerFrom.getTime()) / ONE_DAY_MS),
+    Math.ceil((now.getTime() - timelineFrom.getTime()) / ONE_DAY_MS),
   );
   const timeline = hasSchedules
-    ? buildTimelineForWindow(events, schedules, ctx, now, ledgerFrom, fullDays)
+    ? buildTimelineForWindow(
+        events,
+        schedules,
+        ctx,
+        now,
+        timelineFrom,
+        fullDays,
+      )
     : [];
 
   const resultForWindow = (days: number): ComplianceResult => {
@@ -563,7 +595,7 @@ export function buildMedicationComplianceBundle(
       Math.ceil((now.getTime() - effectiveStart.getTime()) / ONE_DAY_MS),
     );
     const tally = tallyLedgerRows(ledgerRows, {
-      from: effectiveStart,
+      from: periodStart,
       to: now,
     });
     const { current: streak } = streaksFromTimeline(
@@ -590,10 +622,7 @@ export function buildMedicationComplianceBundle(
   const expectedOver = (days: number): number => {
     const hit = expectedCache.get(days);
     if (hit !== undefined) return hit;
-    const from = Math.max(
-      ctx.createdAt.getTime(),
-      now.getTime() - days * ONE_DAY_MS,
-    );
+    const from = now.getTime() - days * ONE_DAY_MS;
     let count = 0;
     for (const row of ledgerRows) {
       if (row.kind !== "slot") continue;

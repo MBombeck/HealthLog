@@ -44,9 +44,15 @@ export interface MeanConsolidationPayload {
  */
 export async function runMeanConsolidationForUser(
   userId: string,
-): Promise<{ daysConsolidated: number; perSampleRowsSoftDeleted: number }> {
+  shouldStop?: () => boolean,
+): Promise<{
+  daysConsolidated: number;
+  perSampleRowsSoftDeleted: number;
+  stoppedEarly: boolean;
+}> {
   const summary = await consolidateDailyMean(prisma, {
     userId,
+    shouldStop,
     cutoffHours: MEAN_CONSOLIDATION_CUTOFF_HOURS,
     log: () => {
       // Silent inside the queue handler — the worker logs the totals.
@@ -59,12 +65,14 @@ export async function runMeanConsolidationForUser(
         days: summary.totals.daysConsolidated,
         per_sample_rows_soft_deleted: summary.totals.perSampleRowsSoftDeleted,
         daily_rows_upserted: summary.totals.dailyRowsUpserted,
+        stopped_early: summary.stoppedEarly,
       },
     },
   });
   return {
     daysConsolidated: summary.totals.daysConsolidated,
     perSampleRowsSoftDeleted: summary.totals.perSampleRowsSoftDeleted,
+    stoppedEarly: summary.stoppedEarly,
   };
 }
 

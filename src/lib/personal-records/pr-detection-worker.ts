@@ -40,6 +40,10 @@
 import { prisma as defaultPrisma } from "@/lib/db";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
+import {
+  iterateDayBuckets,
+  iterateSourcePages,
+} from "@/lib/measurements/consolidation-base";
 import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
@@ -273,8 +277,12 @@ export async function detectPersonalRecordsForUser(
 
     // Warm-up gate. Cheap count first so we don't pull a 30k-row
     // scan on a brand-new account.
+    // Bounded: the gate only asks whether there are enough, so it stops
+    // counting at the threshold instead of counting a whole history (766 000
+    // heart-rate rows on a large account, every half hour).
     const sampleCount = await prisma.measurement.count({
       where: { userId, type: metricType, deletedAt: null },
+      take: PR_DETECTION_WARMUP_THRESHOLD,
     });
     if (sampleCount < PR_DETECTION_WARMUP_THRESHOLD) continue;
 
@@ -542,18 +550,28 @@ async function findBestMeasurement(
  * cumulative-day surface.
  *
  * Order of operations:
- *   1. Read every row for the type (already scoped by the caller's
- *      warm-up gate to a metric with at least
- *      `PR_DETECTION_WARMUP_THRESHOLD` samples).
- *   2. Collapse to the canonical source per local day.
- *   3. Bucket-and-sum the canonical rows per local day; pick the
- *      winning day by `direction`.
+ *   1. Read the type's rows one local day at a time, in time order
+ *      (already scoped by the caller's warm-up gate to a metric with at
+ *      least `PR_DETECTION_WARMUP_THRESHOLD` samples).
+ *   2. Collapse each day to its canonical source.
+ *   3. Sum the day's canonical rows; keep the winning day by `direction`.
  *   4. Re-read the winning day's latest slice so the PR row carries a
  *      real row's unit/source/externalId (the day-sum overrides
  *      `value` below).
  * The unique-index contract is unaffected — a re-run picks the same
  * day and the same latest-slice timestamp, so `achievedAt` is stable.
  */
+/** One row of the cumulative-day scan. */
+interface CumulativeRow {
+  id: string;
+  value: number;
+  unit: string;
+  measuredAt: Date;
+  source: MeasurementSource;
+  externalId: string | null;
+  deviceType: string | null;
+}
+
 async function findBestCumulativeDay(
   prisma: PrismaClient,
   userId: string,
@@ -562,46 +580,50 @@ async function findBestCumulativeDay(
   tz: string,
   priorityJson: unknown,
 ): Promise<MeasurementCandidate | null> {
-  const rows = await prisma.measurement.findMany({
-    where: { userId, type, deletedAt: null },
-    orderBy: { measuredAt: "asc" },
-    select: {
-      id: true,
-      value: true,
-      unit: true,
-      measuredAt: true,
-      source: true,
-      externalId: true,
-      deviceType: true,
-    },
-  });
-  if (rows.length === 0) return null;
-
+  // Read a day at a time, in time order, never the whole history: the
+  // canonical-source pick is per day, so running it on each day alone gives
+  // the same rows it gave on the whole list. Loading every row at once was
+  // unbounded; with 784 000 rows of one cumulative type the pass ran a
+  // 524 MB heap out of memory (#1031).
   const metricKey = metricKeyForType(type);
-  const canonicalRows = metricKey
-    ? pickCanonicalSourceRows(
-        rows.map((r) => ({ ...r, type })),
-        metricKey,
-        priorityJson,
-        (d) => dayKeyForUserTz(d, tz),
-      ).canonicalRows
-    : rows;
-
-  const byDay = new Map<string, { total: number; latest: Date }>();
-  for (const row of canonicalRows) {
-    const key = dayKeyForUserTz(row.measuredAt, tz);
-    const slot = byDay.get(key);
-    if (!slot) {
-      byDay.set(key, { total: row.value, latest: row.measuredAt });
-    } else {
-      slot.total += row.value;
-      if (row.measuredAt > slot.latest) slot.latest = row.measuredAt;
-    }
-  }
-
   let winnerTotal: number | null = null;
   let winnerLatest: Date | null = null;
-  for (const { total, latest } of byDay.values()) {
+  const days = iterateDayBuckets(
+    iterateSourcePages<CumulativeRow>(
+      prisma,
+      { userId, type, deletedAt: null },
+      {
+        id: true,
+        value: true,
+        unit: true,
+        measuredAt: true,
+        source: true,
+        externalId: true,
+        deviceType: true,
+      },
+    ),
+    tz,
+    null,
+  );
+  for await (const [, dayRows] of days) {
+    const canonicalRows = metricKey
+      ? pickCanonicalSourceRows(
+          dayRows.map((r) => ({ ...r, type })),
+          metricKey,
+          priorityJson,
+          (d) => dayKeyForUserTz(d, tz),
+        ).canonicalRows
+      : dayRows;
+    if (canonicalRows.length === 0) continue;
+
+    let total = 0;
+    let latest = canonicalRows[0]!.measuredAt;
+    for (const row of canonicalRows) {
+      total += row.value;
+      if (row.measuredAt > latest) latest = row.measuredAt;
+    }
+    // Days arrive in order, and only a strictly better day replaces the
+    // winner, so a tie keeps the earliest day, as before.
     const better =
       winnerTotal === null ||
       (direction === PersonalRecordDirection.MAX

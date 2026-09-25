@@ -329,6 +329,11 @@
     "visitsColReason": "Reason",
     "visitsColOutcome": "Outcome",
     "visitsColConditions": "Conditions",
+    "surgicalHistoryTitle": "Surgical history",
+    "surgicalHistoryColDate": "Date",
+    "surgicalHistoryColProcedure": "Procedure",
+    "surgicalHistoryColBodySite": "Body site",
+    "surgicalHistoryColOutcome": "Outcome",
     "immunizationsTitle": "Immunizations",
     "immunizationsColDate": "Date",
     "immunizationsColVaccine": "Vaccine",
@@ -1201,6 +1206,16 @@
     "yesterday": "Yesterday",
     "tomorrow": "Tomorrow",
     "asNeededMarker": "As needed",
+    "recordOnlyBadge": "Record only",
+    "trackIntake": {
+      "title": "Intake tracking",
+      "label": "Track intake",
+      "helperOn": "Doses fall due on this schedule, with reminders and adherence.",
+      "helperOff": "Kept as a record: nothing falls due, no reminders, no adherence.",
+      "enabledToast": "Intake tracking on",
+      "disabledToast": "Intake tracking off",
+      "toggleFailed": "Could not change intake tracking."
+    },
     "withoutNotification": "Without notification",
     "pausedSince": "Paused since",
     "takeNow": "Take now",
@@ -1796,7 +1811,7 @@
           "unpinnedToast": "Attribution released",
           "dueContext": "was due: {time} ({delta})",
           "confirmTitle": "Attribute to slot {time}?",
-          "confirmBody": "The intake counts as taken late for this slot – the rate is never flattered. You can release the attribution at any time.",
+          "confirmBody": "The intake counts for this slot just as it would if it had been logged there: on time or late depending on when it was taken, so the rate is never flattered. You can release the attribution at any time.",
           "confirmCancel": "Cancel",
           "confirmAction": "Attribute"
         }
@@ -1927,6 +1942,7 @@
         "nextDoseLabel": "Next dose",
         "nextDoseNone": "No upcoming dose.",
         "nextDoseAsNeeded": "As needed — no planned dose.",
+        "nextDoseNotTracked": "Not tracked, kept as a record.",
         "pausedHint": "Paused — no reminders.",
         "reminderLabel": "Reminder",
         "reminderOn": "On",
@@ -2000,7 +2016,7 @@
         "packagingEdit": "Edit",
         "packagingDescription": "Set how many units one dose consumes and how large a new pack usually is — e.g. after a manufacturer switch with a different blister size.",
         "packagingUnitsPerDoseLabel": "Units per dose",
-        "packagingUnitsPerDoseHelper": "E.g. two 2 mg tablets for a 4 mg dose (1–100). Doses already recorded stay unchanged.",
+        "packagingUnitsPerDoseHelper": "E.g. two 2 mg tablets for a 4 mg dose, or 1.5 for one and a half (above 0, up to 100). Doses already recorded stay unchanged.",
         "packagingDefaultPackLabel": "Default pack size (units)",
         "packagingDefaultPackHelper": "Prefills the quantity when registering new packs (1–1000). Leave empty if none applies.",
         "packagingSuccess": "Packaging details saved",
@@ -2198,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "the file records nothing about that dose — nobody answered and nothing was logged",
       "reasonStatusReminderEvent": "the row is about a snoozed reminder, which says nothing about the dose",
       "reasonStatusNotificationNotSent": "the row records that no notification was sent, which is about the app rather than the dose"
+    },
+    "unitsPerDoseField": {
+      "other": "Other…",
+      "inputLabel": "Units per dose, other value",
+      "placeholder": "e.g. 1.5 or 1 1/2",
+      "invalid": "Enter a number above 0 and up to 100, for example 1.5 or 1 1/2.",
+      "preview": "Counts as {value} per dose"
     }
   },
   "charts": {
@@ -4760,7 +4783,9 @@
           "done": "{name} is added.",
           "doneUnnamed": "Your first medication is added.",
           "nextDose": "Next dose: {when}.",
-          "reminders": "Reminders follow the schedule you set."
+          "reminders": "Reminders follow the schedule you set.",
+          "recordOnly": "Kept as a record: no reminders, nothing falls due.",
+          "asNeeded": "As needed: no reminders, log a dose when you take it."
         },
         "log-reading": {
           "title": "Enter one reading: {target}",
@@ -7169,7 +7194,7 @@
         "uploadTitle": "Upload backup",
         "uploadDescription": "Validate a backup file and store it as a manual snapshot. Restoring is a separate step.",
         "uploadButton": "Upload file",
-        "uploadHelp": "JSON file matching the current backup schema. Max 10 MB.",
+        "uploadHelp": "A HealthLog backup as .json or .json.gz. The file is compressed before upload; compressed, it may be up to 512 MB.",
         "uploadSuccess": "Backup uploaded ({count} records)",
         "uploadFailed": "Upload failed",
         "restore": "Restore",
@@ -7244,7 +7269,39 @@
           "unknownDetail": "No nightly run has recorded this account yet.",
           "age": "{hours} h ago",
           "scheduleNote": "The upload runs every {hours} h. Fresh means inside one run, due means one run produced nothing, stale means two did not."
-        }
+        },
+        "restoreStarted": "Restore started. Its progress shows above the list.",
+        "restoreActive": "A restore of this account is already running. Wait for it to finish.",
+        "restoreJobQueuedTitle": "Restore of {username} is waiting to start",
+        "restoreJobQueuedNote": "It starts as soon as the background worker picks it up.",
+        "restoreJobRunningTitle": "Restoring {username}",
+        "restoreJobRunningNote": "The account keeps showing its current data until the restore finishes. You can leave this page; the restore continues on the server.",
+        "restoreJobResumed": "Started again after the server restarted.",
+        "restoreJobPhaseValidating": "Checking the backup file: {checked} readings checked",
+        "restoreJobPhaseClearing": "Clearing the account's current data",
+        "restoreJobPhaseMeasurements": "Writing readings: {done} of {total}",
+        "restoreJobPhaseSections": "Writing the other records: {done} of {total} sections",
+        "restoreJobPhaseRebuilding": "Rebuilding charts and summaries",
+        "restoreJobSucceededTitle": "Restore of {username} finished",
+        "restoreJobSucceededDescription": "{count} records restored. Finished {when}.",
+        "restoreJobFailedTitle": "Restore of {username} did not complete",
+        "restoreJobFailedKept": "Nothing was changed. The backup is kept, so you can start the restore again from its row without uploading it again.",
+        "restoreFailureNotFound": "The backup was deleted before the restore could read it.",
+        "restoreFailureChanged": "The backup was replaced by a newer copy while the restore waited. Check the new copy, then start the restore again.",
+        "restoreFailureUndecryptable": "The backup could not be decrypted. The key that wrote it is no longer configured, or the stored copy was changed.",
+        "restoreFailureSchema": "The backup file is not a valid HealthLog backup.",
+        "restoreFailureVersion": "The backup was written by a newer version of HealthLog. Update this server first.",
+        "restoreFailureOwnerMismatch": "The file inside the backup belongs to a different account than the backup row.",
+        "restoreFailureOwnerMissing": "The account this backup belongs to no longer exists.",
+        "restoreFailureSectionMissing": "The file is incomplete: its manifest names a section it does not carry.",
+        "restoreFailureDocument": "The file carries documents without their content, as a portable export does. Use a disaster-recovery backup.",
+        "restoreFailureTimeBudget": "This backup is too large to restore within the background job's time limit.",
+        "restoreFailureTransaction": "The database refused the restore part-way, so everything was rolled back. The server log names the error.",
+        "restoreFailureInterrupted": "The restore stopped when the server restarted, and was rolled back. If it stops again, the server is likely running out of memory.",
+        "restoreFailureNotStarted": "The background worker did not pick the restore up. Check that the worker is running.",
+        "restoreFailureEnqueue": "The restore could not be handed to the background worker. Check that the worker is running.",
+        "restoreFailureAfterCommit": "The data was restored, but a step after it failed. Charts may take until the next nightly run to catch up.",
+        "restoreFailureUnexpected": "The restore stopped on an unexpected error and was rolled back. The server log names the error."
       },
       "danger-zone": {
         "title": "Danger Zone",
@@ -8233,7 +8290,9 @@
       "flowSpotting": "spotting",
       "flowLight": "light",
       "flowMedium": "medium",
-      "flowHeavy": "heavy"
+      "flowHeavy": "heavy",
+      "legendIntercourse": "Intercourse",
+      "legendOtherEntries": "Other entries"
     },
     "predictions": {
       "title": "What comes next",
@@ -10393,6 +10452,7 @@
     "scopeCount": "{count} entries from {groups} areas",
     "scopeSensitive": "incl. {names}",
     "leafVisits": "Visits",
+    "leafSurgicalHistory": "Surgical history",
     "leafImmunizations": "Immunizations",
     "leafEmergency": "Emergency information (blood type, contacts, directives)"
   },
@@ -10777,8 +10837,16 @@
       "emergency": "Emergency",
       "hospital": "Hospital",
       "therapy": "Therapy session",
-      "other": "Appointment"
+      "other": "Appointment",
+      "procedure": "Procedure or surgery"
     },
+    "laterality": {
+      "left": "Left",
+      "right": "Right",
+      "both": "Both sides",
+      "none": "Not stated"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "Visits",
     "sectionDescription": "Doctor's visits and booked appointments in one place.",
     "add": "Visit",
@@ -10820,6 +10888,9 @@
       "reason": "Reason",
       "outcome": "Outcome",
       "outcomeReveal": "Add an outcome",
+      "bodySite": "Body site",
+      "bodySiteHint": "For example knee or gallbladder.",
+      "laterality": "Side",
       "linkDocuments": "Documents",
       "linkLabResults": "Lab results",
       "linkConditions": "Conditions",
@@ -10839,12 +10910,28 @@
     },
     "dashboard": {
       "nextVisit": "Next appointment: {what} on {when}"
+    },
+    "procedures": {
+      "title": "Procedures and surgeries",
+      "description": "Every procedure and surgery you have had, newest first.",
+      "add": "Procedure",
+      "searchLabel": "Filter by body site",
+      "searchPlaceholder": "For example knee",
+      "sitesLabel": "Body sites",
+      "allSites": "All",
+      "count": "{shown} of {total}",
+      "emptyTitle": "No procedure recorded yet",
+      "emptyDescription": "Record a visit of the kind Procedure or surgery, or switch an existing visit to it.",
+      "noMatchTitle": "Nothing matches this filter",
+      "clearFilter": "Clear filter",
+      "loadError": "Procedures could not be loaded."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Show checkups or visits",
+    "viewSwitchLabel": "Show checkups, visits or procedures",
     "tabVorsorge": "Checkups",
-    "tabVisits": "Visits"
+    "tabVisits": "Visits",
+    "tabProcedures": "Procedures"
   },
   "practitioners": {
     "title": "Practices and doctors",
@@ -10880,9 +10967,10 @@
       "selectAll": "Select all",
       "searchPlaceholder": "Search",
       "searchNoMatch": "No match",
-      "remove": "Remove",
       "suggested": "Around this date",
-      "loadError": "The list could not be loaded."
+      "loadError": "The list could not be loaded.",
+      "removeNamed": "Remove {name}",
+      "removed": "Unlinked {name}"
     }
   }
 }

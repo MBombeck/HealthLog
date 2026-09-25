@@ -16,6 +16,7 @@ import { PgBoss } from "pg-boss";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
+  readActiveJobsStartedBefore,
   readFailingQueues,
   readQueueFailureForUser,
 } from "@/lib/jobs/job-failures";
@@ -28,8 +29,16 @@ const OTHER_QUEUE = "reminder-check";
 let boss: PgBoss;
 
 /** Send a job, take it, and fail it terminally so it lands in `state='failed'`. */
-async function failOneJob(queue: string, data: object, error: string) {
-  const jobId = await boss.send(queue, data, { retryLimit: 0 });
+async function failOneJob(
+  queue: string,
+  data: object,
+  error: string,
+  expireInSeconds?: number,
+) {
+  const jobId = await boss.send(queue, data, {
+    retryLimit: 0,
+    ...(expireInSeconds === undefined ? {} : { expireInSeconds }),
+  });
   if (!jobId) throw new Error("queue rejected the job");
   const [job] = await boss.fetch(queue);
   if (!job) throw new Error("nothing to fetch");
@@ -81,6 +90,26 @@ describe("readFailingQueues", () => {
     expect(other?.lastError).toBe("reminder dispatch failed");
   });
 
+  it("says what a bare timeout means, with the job's own limit (#1031)", async () => {
+    await getPrismaClient().$executeRawUnsafe(
+      `DELETE FROM pgboss.job WHERE state = 'failed'`,
+    );
+    // pg-boss writes these words both for a pass too slow for its limit and
+    // for a job whose process died under it; alone they sent an operator
+    // nowhere.
+    await failOneJob(QUEUE, {}, "job timed out", 900);
+    await failOneJob(OTHER_QUEUE, {}, "job timed out", 7200);
+
+    const failing = await readFailingQueues();
+    const fifteen = failing?.find((entry) => entry.queue === QUEUE);
+    expect(fifteen?.lastError).toMatch(
+      /^job timed out: did not finish within its 15 min limit\./,
+    );
+    expect(fifteen?.lastError).toMatch(/restarted/);
+    const twoHours = failing?.find((entry) => entry.queue === OTHER_QUEUE);
+    expect(twoHours?.lastError).toMatch(/within its 2 h limit/);
+  });
+
   it("reports an empty list — not null — when nothing is failing", async () => {
     await getPrismaClient().$executeRawUnsafe(
       `DELETE FROM pgboss.job WHERE state = 'failed'`,
@@ -129,6 +158,34 @@ describe("readQueueFailureForUser", () => {
     );
     await failOneJob(OTHER_QUEUE, { userId: "user-a" }, "reminder failed");
     await expect(readQueueFailureForUser(QUEUE, "user-a")).resolves.toBeNull();
+  });
+});
+
+describe("readActiveJobsStartedBefore (#1031)", () => {
+  it("lists a job still marked active from before the given instant, and nothing after it", async () => {
+    const jobId = await boss.send(
+      OTHER_QUEUE,
+      {},
+      { retryLimit: 0, expireInSeconds: 7200 },
+    );
+    const [job] = await boss.fetch(OTHER_QUEUE);
+    expect(job?.id).toBe(jobId);
+
+    const cutOff = await readActiveJobsStartedBefore(
+      new Date(Date.now() + 60_000),
+    );
+    expect(cutOff).toContainEqual(
+      expect.objectContaining({
+        queue: OTHER_QUEUE,
+        id: jobId,
+        expireSeconds: 7200,
+      }),
+    );
+    await expect(
+      readActiveJobsStartedBefore(new Date(Date.now() - 60 * 60_000)),
+    ).resolves.toEqual([]);
+
+    await boss.complete(OTHER_QUEUE, jobId!);
   });
 });
 

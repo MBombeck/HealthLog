@@ -73,6 +73,12 @@ import {
   RESTORE_DRILL_QUEUE,
 } from "@/lib/jobs/restore-drill";
 import {
+  BACKUP_RESTORE_QUEUE,
+  enqueueBackupRestoreSweepAtBoot,
+  handleBackupRestore,
+  type BackupRestorePayload,
+} from "@/lib/jobs/backup-restore";
+import {
   NOTE_ENCRYPTION_BACKFILL_QUEUE,
   NOTE_ENCRYPTION_BACKFILL_CONCURRENCY,
   runNoteEncryptionBackfillForUser,
@@ -347,6 +353,10 @@ const allQueues = [
   STEP_UP_ELEVATION_CLEANUP_QUEUE,
   OFFHOST_BACKUP_QUEUE,
   RESTORE_DRILL_QUEUE,
+  // v1.39.1 — an admin's restore of a stored backup, run off the request, and
+  // the boot sweep that re-queues one a stopped worker left running. Without
+  // this entry every restore request would queue a job nobody works.
+  BACKUP_RESTORE_QUEUE,
   HOST_METRIC_QUEUE,
   FEEDBACK_AGGREGATOR_QUEUE,
   GEO_BACKFILL_QUEUE,
@@ -724,10 +734,11 @@ export async function registerMaintenanceQueues(
     { localConcurrency: 1 },
     handleStepUpElevationCleanup,
   );
+  // With metadata: the handler resumes a retry from the job's creation time.
   await createAndWork<OffhostBackupPayload>(
     boss,
     OFFHOST_BACKUP_QUEUE,
-    { localConcurrency: 1 },
+    { localConcurrency: 1, includeMetadata: true },
     handleOffhostBackup,
   );
   await createAndWork(
@@ -736,6 +747,18 @@ export async function registerMaintenanceQueues(
     { localConcurrency: 1 },
     handleRestoreDrill,
   );
+  // One restore at a time per worker: each holds a transaction over a whole
+  // account and a batch of readings in memory, and two at once on a small host
+  // is how a restore that fits alone would run out of heap.
+  await createAndWork<BackupRestorePayload>(
+    boss,
+    BACKUP_RESTORE_QUEUE,
+    { localConcurrency: 1 },
+    handleBackupRestore,
+  );
+  // A restore the previous process was running is picked up again once its
+  // heartbeat has gone stale; see `sweepInterruptedRestores`.
+  await enqueueBackupRestoreSweepAtBoot(boss);
   await createAndWork<HostMetricSamplePayload>(
     boss,
     HOST_METRIC_QUEUE,

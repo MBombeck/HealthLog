@@ -305,6 +305,9 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // structured health records above make.
   { model: "Encounter", field: "reasonEncrypted", kind: "bytes" },
   { model: "Encounter", field: "outcomeEncrypted", kind: "bytes" },
+  // v1.39.1 — where on the body a procedure was done. The side beside it
+  // (`laterality`) stays plaintext: a side alone says nothing.
+  { model: "Encounter", field: "bodySiteEncrypted", kind: "bytes" },
   { model: "Practitioner", field: "noteEncrypted", kind: "bytes" },
 
   // ───── v1.38.0 dose free text (Bytes column) ─────

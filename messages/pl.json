@@ -293,6 +293,11 @@
     "visitsColReason": "Powód",
     "visitsColOutcome": "Wynik",
     "visitsColConditions": "Choroby",
+    "surgicalHistoryTitle": "Historia operacji",
+    "surgicalHistoryColDate": "Data",
+    "surgicalHistoryColProcedure": "Zabieg",
+    "surgicalHistoryColBodySite": "Miejsce na ciele",
+    "surgicalHistoryColOutcome": "Wynik",
     "immunizationsTitle": "Szczepienia",
     "immunizationsColDate": "Data",
     "immunizationsColVaccine": "Szczepionka",
@@ -1201,6 +1206,16 @@
     "yesterday": "Wczoraj",
     "tomorrow": "Jutro",
     "asNeededMarker": "W razie potrzeby",
+    "recordOnlyBadge": "Tylko zapis",
+    "trackIntake": {
+      "title": "Rejestrowanie przyjęć",
+      "label": "Rejestruj przyjęcia",
+      "helperOn": "Dawki przypadają według tego harmonogramu, z przypomnieniami i przestrzeganiem.",
+      "helperOff": "Tylko zapis: nic nie przypada, bez przypomnień i bez przestrzegania.",
+      "enabledToast": "Rejestrowanie przyjęć włączone",
+      "disabledToast": "Rejestrowanie przyjęć wyłączone",
+      "toggleFailed": "Nie udało się zmienić rejestrowania przyjęć."
+    },
     "withoutNotification": "Bez powiadomienia",
     "pausedSince": "Wstrzymane od",
     "takeNow": "Przyjmij teraz",
@@ -1796,7 +1811,7 @@
           "unpinnedToast": "Przypisanie usunięte",
           "dueContext": "termin: {time} ({delta})",
           "confirmTitle": "Przypisać do slotu {time}?",
-          "confirmBody": "Dawka zostanie policzona jako przyjęta z opóźnieniem dla tego slotu – wskaźnik nie jest zawyżany. Przypisanie można w każdej chwili usunąć.",
+          "confirmBody": "Dawka zostanie policzona dla tego slotu tak, jakby została w nim zapisana: jako przyjęta na czas lub z opóźnieniem, zależnie od tego, kiedy ją przyjęto, więc wskaźnik nie jest zawyżany. Przypisanie można w każdej chwili usunąć.",
           "confirmCancel": "Anuluj",
           "confirmAction": "Przypisz"
         }
@@ -1927,6 +1942,7 @@
         "nextDoseLabel": "Następna dawka",
         "nextDoseNone": "Brak nadchodzącej dawki.",
         "nextDoseAsNeeded": "W razie potrzeby — brak zaplanowanej dawki.",
+        "nextDoseNotTracked": "Przyjęcia nie są rejestrowane, tylko zapis.",
         "pausedHint": "Wstrzymano — brak przypomnień.",
         "reminderLabel": "Przypomnienie",
         "reminderOn": "Włączone",
@@ -2000,7 +2016,7 @@
         "packagingEdit": "Edytuj",
         "packagingDescription": "Określ, ile jednostek zużywa jedna dawka i jaki jest typowy rozmiar nowego opakowania — np. po zmianie producenta z innym blistrem.",
         "packagingUnitsPerDoseLabel": "Jednostki na dawkę",
-        "packagingUnitsPerDoseHelper": "Np. dwie tabletki 2 mg na dawkę 4 mg (1–100). Zarejestrowane dawki pozostają bez zmian.",
+        "packagingUnitsPerDoseHelper": "Np. dwie tabletki 2 mg na dawkę 4 mg lub 1,5 dla półtorej (powyżej 0, do 100). Zarejestrowane dawki pozostają bez zmian.",
         "packagingDefaultPackLabel": "Domyślny rozmiar opakowania (jednostki)",
         "packagingDefaultPackHelper": "Wstępnie wypełnia ilość przy dodawaniu nowych opakowań (1–1000). Zostaw puste, jeśli nie dotyczy.",
         "packagingSuccess": "Zapisano dane opakowania",
@@ -2198,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "plik nie zapisuje nic o tej dawce — nikt nie odpowiedział i nic nie zostało zanotowane",
       "reasonStatusReminderEvent": "wiersz dotyczy odłożonego przypomnienia, co nic nie mówi o dawce",
       "reasonStatusNotificationNotSent": "wiersz zapisuje, że nie wysłano powiadomienia, co dotyczy aplikacji, a nie dawki"
+    },
+    "unitsPerDoseField": {
+      "other": "Inna…",
+      "inputLabel": "Jednostki na dawkę, inna wartość",
+      "placeholder": "np. 1,5 lub 1 1/2",
+      "invalid": "Wpisz liczbę większą od 0 i nie większą niż 100, na przykład 1,5 lub 1 1/2.",
+      "preview": "Liczy się jako {value} na dawkę"
     }
   },
   "charts": {
@@ -4760,7 +4783,9 @@
           "done": "{name} został dodany.",
           "doneUnnamed": "Twój pierwszy lek został dodany.",
           "nextDose": "Następna dawka: {when}.",
-          "reminders": "Przypomnienia podążają za ustawionym harmonogramem."
+          "reminders": "Przypomnienia podążają za ustawionym harmonogramem.",
+          "recordOnly": "Tylko zapis: bez przypomnień, nic nie przypada.",
+          "asNeeded": "W razie potrzeby: bez przypomnień, zapisz dawkę, gdy ją przyjmiesz."
         },
         "log-reading": {
           "title": "Wpisz jeden pomiar: {target}",
@@ -7169,7 +7194,7 @@
         "uploadTitle": "Prześlij kopię zapasową",
         "uploadDescription": "Sprawdź plik kopii zapasowej i zapisz go jako ręczną migawkę. Przywracanie to osobny krok.",
         "uploadButton": "Prześlij plik",
-        "uploadHelp": "Plik JSON zgodny z bieżącym schematem kopii zapasowej. Maks. 10 MB.",
+        "uploadHelp": "Kopia zapasowa HealthLog w formacie .json lub .json.gz. Plik jest kompresowany przed wysłaniem; po kompresji może mieć do 512 MB.",
         "uploadSuccess": "Przesłano kopię zapasową ({count} rekordów)",
         "uploadFailed": "Przesyłanie nie powiodło się",
         "restore": "Przywróć",
@@ -7244,7 +7269,39 @@
           "unknownDetail": "Żaden nocny przebieg nie zarejestrował jeszcze tego konta.",
           "age": "{hours} h temu",
           "scheduleNote": "Wysyłka działa co {hours} h. Świeża znaczy w obrębie jednego przebiegu, zaległa że jeden nic nie dał, przeterminowana że dwa."
-        }
+        },
+        "restoreStarted": "Przywracanie rozpoczęte. Postęp widać nad listą.",
+        "restoreActive": "Dla tego konta trwa już przywracanie. Poczekaj, aż się skończy.",
+        "restoreJobQueuedTitle": "Przywracanie {username} czeka na start",
+        "restoreJobQueuedNote": "Zacznie się, gdy tylko proces w tle je przejmie.",
+        "restoreJobRunningTitle": "Przywracanie {username}",
+        "restoreJobRunningNote": "Konto pokazuje dotychczasowe dane, dopóki przywracanie się nie zakończy. Możesz opuścić tę stronę; przywracanie trwa dalej na serwerze.",
+        "restoreJobResumed": "Uruchomione ponownie po restarcie serwera.",
+        "restoreJobPhaseValidating": "Sprawdzanie pliku kopii: sprawdzono {checked} pomiarów",
+        "restoreJobPhaseClearing": "Usuwanie bieżących danych konta",
+        "restoreJobPhaseMeasurements": "Zapisywanie pomiarów: {done} z {total}",
+        "restoreJobPhaseSections": "Zapisywanie pozostałych wpisów: {done} z {total} sekcji",
+        "restoreJobPhaseRebuilding": "Przeliczanie wykresów i podsumowań",
+        "restoreJobSucceededTitle": "Przywracanie {username} zakończone",
+        "restoreJobSucceededDescription": "Przywrócono {count} wpisów. Zakończono {when}.",
+        "restoreJobFailedTitle": "Przywracanie {username} nie zostało ukończone",
+        "restoreJobFailedKept": "Nic nie zostało zmienione. Kopia zostaje, więc możesz ponownie uruchomić przywracanie z jej wiersza bez ponownego wgrywania.",
+        "restoreFailureNotFound": "Kopia została usunięta, zanim przywracanie zdążyło ją odczytać.",
+        "restoreFailureChanged": "Kopia została zastąpiona nowszą, gdy przywracanie czekało. Sprawdź nową kopię, a potem uruchom przywracanie ponownie.",
+        "restoreFailureUndecryptable": "Nie udało się odszyfrować kopii. Klucz, którym ją zapisano, nie jest już skonfigurowany albo zapisana kopia została zmieniona.",
+        "restoreFailureSchema": "Plik nie jest prawidłową kopią HealthLog.",
+        "restoreFailureVersion": "Kopię zapisała nowsza wersja HealthLog. Najpierw zaktualizuj ten serwer.",
+        "restoreFailureOwnerMismatch": "Plik w kopii należy do innego konta niż wiersz kopii.",
+        "restoreFailureOwnerMissing": "Konto, do którego należy ta kopia, już nie istnieje.",
+        "restoreFailureSectionMissing": "Plik jest niekompletny: jego manifest wymienia sekcję, której nie zawiera.",
+        "restoreFailureDocument": "Plik zawiera dokumenty bez ich treści, jak eksport przenośny. Użyj kopii do odtwarzania po awarii.",
+        "restoreFailureTimeBudget": "Ta kopia jest za duża, by przywrócić ją w limicie czasu procesu w tle.",
+        "restoreFailureTransaction": "Baza danych odrzuciła przywracanie w trakcie, więc wszystko wycofano. Dziennik serwera podaje błąd.",
+        "restoreFailureInterrupted": "Przywracanie zatrzymało się przy restarcie serwera i zostało wycofane. Jeśli zatrzyma się znowu, serwerowi prawdopodobnie brakuje pamięci.",
+        "restoreFailureNotStarted": "Proces w tle nie przejął przywracania. Sprawdź, czy działa.",
+        "restoreFailureEnqueue": "Nie udało się przekazać przywracania do procesu w tle. Sprawdź, czy działa.",
+        "restoreFailureAfterCommit": "Dane zostały przywrócone, ale krok po nich się nie powiódł. Wykresy mogą nadrobić to dopiero przy następnym nocnym przebiegu.",
+        "restoreFailureUnexpected": "Przywracanie zatrzymało się na nieoczekiwanym błędzie i zostało wycofane. Dziennik serwera podaje błąd."
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",
@@ -8233,7 +8290,9 @@
       "flowSpotting": "plamienie",
       "flowLight": "lekkie",
       "flowMedium": "średnie",
-      "flowHeavy": "obfite"
+      "flowHeavy": "obfite",
+      "legendIntercourse": "Współżycie",
+      "legendOtherEntries": "Inne wpisy"
     },
     "predictions": {
       "title": "Co dalej",
@@ -10393,6 +10452,7 @@
     "scopeCount": "{count} pozycji z {groups} obszarów",
     "scopeSensitive": "w tym {names}",
     "leafVisits": "Wizyty lekarskie",
+    "leafSurgicalHistory": "Historia operacji",
     "leafImmunizations": "Szczepienia",
     "leafEmergency": "Informacje na wypadek nagły (grupa krwi, kontakty, oświadczenia)"
   },
@@ -10777,8 +10837,16 @@
       "emergency": "Nagły przypadek",
       "hospital": "Szpital",
       "therapy": "Sesja terapeutyczna",
-      "other": "Wizyta lekarska"
+      "other": "Wizyta lekarska",
+      "procedure": "Zabieg lub operacja"
     },
+    "laterality": {
+      "left": "Lewa strona",
+      "right": "Prawa strona",
+      "both": "Obie strony",
+      "none": "Nie podano"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "Wizyty",
     "sectionDescription": "Wizyty u lekarza i umówione terminy w jednym miejscu.",
     "add": "Wizyta",
@@ -10820,6 +10888,9 @@
       "reason": "Powód",
       "outcome": "Wynik",
       "outcomeReveal": "Dodaj wynik",
+      "bodySite": "Miejsce na ciele",
+      "bodySiteHint": "Na przykład kolano lub pęcherzyk żółciowy.",
+      "laterality": "Strona",
       "linkDocuments": "Dokumenty",
       "linkLabResults": "Wyniki badań",
       "linkConditions": "Choroby",
@@ -10839,12 +10910,28 @@
     },
     "dashboard": {
       "nextVisit": "Najbliższa wizyta: {what}, {when}"
+    },
+    "procedures": {
+      "title": "Zabiegi i operacje",
+      "description": "Wszystkie zabiegi i operacje, które przeszedłeś, od najnowszych.",
+      "add": "Zabieg",
+      "searchLabel": "Filtruj według miejsca na ciele",
+      "searchPlaceholder": "Na przykład kolano",
+      "sitesLabel": "Miejsca na ciele",
+      "allSites": "Wszystkie",
+      "count": "{shown} z {total}",
+      "emptyTitle": "Nie zapisano jeszcze żadnego zabiegu",
+      "emptyDescription": "Zapisz wizytę rodzaju Zabieg lub operacja albo zmień rodzaj istniejącej wizyty.",
+      "noMatchTitle": "Nic nie pasuje do tego filtra",
+      "clearFilter": "Wyczyść filtr",
+      "loadError": "Nie udało się wczytać zabiegów."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Pokaż badania profilaktyczne lub wizyty",
+    "viewSwitchLabel": "Pokaż badania profilaktyczne, wizyty lub zabiegi",
     "tabVorsorge": "Profilaktyka",
-    "tabVisits": "Wizyty"
+    "tabVisits": "Wizyty",
+    "tabProcedures": "Zabiegi"
   },
   "practitioners": {
     "title": "Gabinety i lekarze",
@@ -10880,9 +10967,10 @@
       "selectAll": "Zaznacz wszystko",
       "searchPlaceholder": "Szukaj",
       "searchNoMatch": "Brak wyników",
-      "remove": "Usuń",
       "suggested": "Wokół tej daty",
-      "loadError": "Nie udało się wczytać listy."
+      "loadError": "Nie udało się wczytać listy.",
+      "removeNamed": "Usuń {name}",
+      "removed": "Odłączono: {name}"
     }
   }
 }

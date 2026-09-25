@@ -43,6 +43,25 @@ vi.mock("@/lib/daily/morning-refresh-trigger", () => ({
   maybeEnqueueMorningRefresh: async () => undefined,
 }));
 
+// The spot flush writes through one raw `INSERT … ON CONFLICT DO NOTHING
+// RETURNING` statement. These fakes model the table in memory, so route that
+// statement to the fake's own skip-duplicates insert; the SQL itself is pinned
+// against a real Postgres in tests/integration/measurement-bulk-insert.test.ts.
+vi.mock("@/lib/export/measurement-bulk-insert", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/export/measurement-bulk-insert")
+  >()),
+  insertNewMeasurementRows: (
+    db: { measurement: { createManyAndReturn: (args: unknown) => unknown } },
+    rows: unknown[],
+  ) =>
+    db.measurement.createManyAndReturn({
+      data: rows,
+      skipDuplicates: true,
+      select: { id: true, type: true, measuredAt: true, externalId: true },
+    }),
+}));
+
 vi.mock("@/lib/arrivals/emit-shared", () => ({
   emitDataArrival: async () => undefined,
 }));

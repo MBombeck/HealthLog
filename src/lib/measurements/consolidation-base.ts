@@ -32,6 +32,8 @@ import type {
   Prisma,
 } from "@/generated/prisma/client";
 
+import { reportJobProgress } from "@/lib/jobs/job-observer";
+
 import {
   CONSOLIDATION_GRACE_CUTOFF_HOURS,
   canonicalDailyTimestamp,
@@ -57,6 +59,18 @@ export interface ConsolidationOptions {
   dryRun?: boolean;
   /** Logger sink — defaults to `console.log`. */
   log?: (line: string) => void;
+  /**
+   * Asked before every day bucket. Returning `true` ends the pass cleanly
+   * after the day in flight has committed, and the result reports
+   * `stoppedEarly`. The queue handlers wire it to the job's time budget and
+   * to pg-boss's abort signal, so a pass that cannot finish inside its expiry
+   * stops on its own instead of being declared dead while it keeps writing.
+   *
+   * Stopping loses nothing: every day commits on its own, and a folded day's
+   * source rows leave the scan predicate, so the next run starts at the first
+   * day this one did not reach.
+   */
+  shouldStop?: () => boolean;
 }
 
 /**
@@ -229,7 +243,7 @@ export interface ConsolidationParams<TType extends MeasurementType> {
     dryRun: boolean;
   }) => void;
   /**
-   * Fired once per (user, type) immediately after the rows are bucketed,
+   * Fired once per (user, type) after the type's rows have been walked,
    * with the raw scanned-row count and per-day bucket count. Only invoked
    * for types that yielded at least one source row. Lets a single-type
    * drain (legacy steps) reproduce its scan-time log line. Optional.
@@ -275,35 +289,40 @@ const DEFAULT_SCAN_SELECT: Prisma.MeasurementSelect = {
 };
 
 /**
- * Page size for the keyset-paginated source-row scan. Heavy multi-year
- * tenants previously materialised the entire per-(user, type) history in a
- * single unbounded `findMany` result set — the dominant Prisma intermediate
- * cost and the root of the consolidation boot-storm on large accounts.
- * Scanning in bounded keyset pages caps the per-query result set while still
- * accumulating the same full row set.
+ * Page size for the keyset-paginated source-row scan.
  */
 const CONSOLIDATION_SCAN_PAGE_SIZE = 5000;
 
 /**
  * Keyset-paginate the per-(user, type) source-row scan on `(measuredAt, id)`
- * ascending, accumulating every page into one array. Output is identical to a
- * single unbounded `findMany` — same `where`, same `select`, same ascending
- * order — but the Prisma client never holds more than one page of rows at a
- * time, so a multi-year tenant no longer materialises its whole history in one
- * result set at worker boot.
+ * ascending, one page at a time.
  *
- * `(measuredAt, id)` is a stable keyset: `measuredAt` is the primary order and
- * `id` breaks ties, so each page resumes exactly after the last row with no
- * gaps or duplicates. The cursor clause is AND-combined with the caller's
- * `baseWhere` so the scope / soft-delete / grace filters always still apply.
+ * Two properties matter, and both used to be missing.
+ *
+ * The pages are yielded, not accumulated. The previous helper gathered every
+ * page into one array before a single day was folded, so the pass held a
+ * type's whole history at once: on an account with 766 000 heart-rate samples
+ * that is about 230 MB of live heap for the array alone, most of a 524 MB
+ * limit, and nothing was written until the whole scan had finished.
+ *
+ * The cursor is index-usable. `measuredAt > c OR (measuredAt = c AND id > i)`
+ * cannot be an index condition, so Postgres walked the index from the user's
+ * first row on every page and filtered its way to the cursor, which makes the
+ * whole scan quadratic (measured: 47 ms and 248 000 rows filtered for one
+ * page halfway through). The redundant `measuredAt >= c` conjunct is the
+ * index condition; the OR only breaks ties at the boundary instant.
+ *
+ * The caller's `baseWhere` is AND-combined, so the scope / soft-delete /
+ * grace filters always still apply.
  */
-export async function scanSourceRowsPaged(
+export async function* iterateSourcePages<
+  Row extends { id: string; measuredAt: Date } = PerSampleRow,
+>(
   prismaClient: PrismaClient,
   baseWhere: Prisma.MeasurementWhereInput,
   scanSelect: Prisma.MeasurementSelect,
   pageSize: number = CONSOLIDATION_SCAN_PAGE_SIZE,
-): Promise<PerSampleRow[]> {
-  const accumulated: PerSampleRow[] = [];
+): AsyncGenerator<Row[], void, void> {
   let cursor: { measuredAt: Date; id: string } | null = null;
 
   for (;;) {
@@ -311,6 +330,7 @@ export async function scanSourceRowsPaged(
       ? {
           AND: [
             baseWhere,
+            { measuredAt: { gte: cursor.measuredAt } },
             {
               OR: [
                 { measuredAt: { gt: cursor.measuredAt } },
@@ -326,20 +346,63 @@ export async function scanSourceRowsPaged(
       select: scanSelect,
       orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
       take: pageSize,
-    })) as PerSampleRow[];
+    })) as unknown as Row[];
 
-    if (page.length === 0) break;
-
-    for (const row of page) accumulated.push(row);
-
-    // A short page is the last page — no further rows can satisfy the keyset.
-    if (page.length < pageSize) break;
+    if (page.length === 0) return;
 
     const last = page[page.length - 1]!;
+    const isLastPage = page.length < pageSize;
+    yield page;
+
+    // A short page is the last page — no further rows can satisfy the keyset.
+    if (isLastPage) return;
     cursor = { measuredAt: last.measuredAt, id: last.id };
   }
+}
 
-  return accumulated;
+/**
+ * Group a stream of ascending pages into complete per-day buckets, in the
+ * user's timezone, without holding more than one day at a time.
+ *
+ * The rows arrive in `measuredAt` order and a local calendar day is one
+ * contiguous span of instants, so a day is complete the moment a row from a
+ * later day shows up. Rows whose externalId starts with `statsPrefix` (the
+ * daily-stats shape) are skipped, the same as `bucketRowsByDay`; pass `null`
+ * to keep every row. `onRow` sees every scanned row, skipped ones included,
+ * for the scan-count log line.
+ */
+export async function* iterateDayBuckets<
+  Row extends { measuredAt: Date; externalId: string | null } = PerSampleRow,
+>(
+  pages: AsyncIterable<readonly Row[]>,
+  tz: string,
+  statsPrefix: string | null,
+  onRow?: () => void,
+): AsyncGenerator<[dateKey: string, rows: Row[]], void, void> {
+  let currentKey: string | null = null;
+  let current: Row[] = [];
+  for await (const page of pages) {
+    for (const row of page) {
+      onRow?.();
+      if (
+        statsPrefix !== null &&
+        row.externalId !== null &&
+        row.externalId.startsWith(statsPrefix)
+      ) {
+        continue;
+      }
+      const key = dayKeyForUserTz(row.measuredAt, tz);
+      if (key !== currentKey) {
+        if (currentKey !== null && current.length > 0) {
+          yield [currentKey, current];
+        }
+        currentKey = key;
+        current = [];
+      }
+      current.push(row);
+    }
+  }
+  if (currentKey !== null && current.length > 0) yield [currentKey, current];
 }
 
 /**
@@ -348,7 +411,8 @@ export async function scanSourceRowsPaged(
  * and delegates the per-day mint + delete to `writeDay`. Returns the
  * number of users scanned (so the caller can seed its summary totals)
  * plus the number of day buckets absorbed by `onBucketError` (0 when the
- * boundary is not supplied).
+ * boundary is not supplied), and whether `options.shouldStop` ended the
+ * walk before every day was reached.
  *
  * Idempotency, the grace-window cutoff, and the "skip already-collapsed
  * rows" predicate are all owned here; the divergent reducer / delete /
@@ -356,16 +420,24 @@ export async function scanSourceRowsPaged(
  */
 export async function runConsolidation<TType extends MeasurementType>(
   params: ConsolidationParams<TType>,
-): Promise<{ usersScanned: number; dryRun: boolean; daysFailed: number }> {
+): Promise<{
+  usersScanned: number;
+  dryRun: boolean;
+  daysFailed: number;
+  stoppedEarly: boolean;
+}> {
   const { prismaClient, options } = params;
   const dryRun = options.dryRun ?? false;
   const cutoffAt = resolveCutoffInstant(options.cutoffHours);
   const scanSelect = params.scanSelect ?? DEFAULT_SCAN_SELECT;
+  const shouldStop = options.shouldStop ?? (() => false);
   let daysFailed = 0;
+  let daysWalked = 0;
+  let stoppedEarly = false;
 
   const users = await loadConsolidationUsers(prismaClient, options.userId);
 
-  for (const user of users) {
+  walk: for (const user of users) {
     const tz = resolveUserTimezone(user.timezone);
     params.onUserStart?.({ userId: user.id, tz, dryRun });
 
@@ -373,36 +445,45 @@ export async function runConsolidation<TType extends MeasurementType>(
       const hkIdentifier = params.hkIdentifierForType(type);
       if (!hkIdentifier) continue;
 
-      // Keyset-paginate the scan instead of loading the whole per-(user, type)
-      // history in one result set; the accumulated array is byte-identical to a
-      // single unbounded `findMany`, but a multi-year tenant no longer spikes
-      // worker memory at boot. See `scanSourceRowsPaged`.
-      const sourceRows = await scanSourceRowsPaged(
-        prismaClient,
-        params.buildScanWhere({
-          userId: user.id,
-          type,
-          cutoffAt,
-          statsPrefix: params.statsPrefix,
-        }),
-        scanSelect,
+      // Streamed: each day is folded as soon as its last row has been read,
+      // so the pass holds one page and one day, never the type's history.
+      // See `iterateSourcePages` and `iterateDayBuckets`.
+      let rowCount = 0;
+      let dayCount = 0;
+      const days = iterateDayBuckets(
+        iterateSourcePages(
+          prismaClient,
+          params.buildScanWhere({
+            userId: user.id,
+            type,
+            cutoffAt,
+            statsPrefix: params.statsPrefix,
+          }),
+          scanSelect,
+        ),
+        tz,
+        params.statsPrefix,
+        () => {
+          rowCount += 1;
+        },
       );
 
-      if (sourceRows.length === 0) continue;
-
-      const byDay = bucketRowsByDay(sourceRows, tz, params.statsPrefix);
-
-      params.onScan?.({
-        userId: user.id,
-        type,
-        tz,
-        rowCount: sourceRows.length,
-        dayCount: byDay.size,
-        dryRun,
-      });
-
-      for (const [dateKey, dayRows] of byDay) {
-        if (dayRows.length === 0) continue;
+      for await (const [dateKey, dayRows] of days) {
+        if (shouldStop()) {
+          stoppedEarly = true;
+          // Leaving the loop closes both generators, so no further page is
+          // requested.
+          break walk;
+        }
+        dayCount += 1;
+        daysWalked += 1;
+        // How far the pass has got, for the job's progress and expiry lines.
+        reportJobProgress({
+          consolidation_user: user.id,
+          consolidation_type: type,
+          consolidation_day: dateKey,
+          consolidation_days_walked: daysWalked,
+        });
 
         try {
           const reducedValue = params.reduce(dayRows);
@@ -464,10 +545,21 @@ export async function runConsolidation<TType extends MeasurementType>(
           });
         }
       }
+
+      if (rowCount > 0) {
+        params.onScan?.({
+          userId: user.id,
+          type,
+          tz,
+          rowCount,
+          dayCount,
+          dryRun,
+        });
+      }
     }
 
     params.onUserComplete?.({ userId: user.id, tz, dryRun });
   }
 
-  return { usersScanned: users.length, dryRun, daysFailed };
+  return { usersScanned: users.length, dryRun, daysFailed, stoppedEarly };
 }

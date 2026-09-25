@@ -228,4 +228,50 @@ describe("off-host backup ledger (real Postgres)", () => {
     await prisma.user.delete({ where: { id: "account-one" } });
     expect(await prisma.offhostBackupState.count()).toBe(0);
   });
+
+  it("a retry of the same run resumes after the accounts it already uploaded (#1031)", async () => {
+    const prisma = getPrismaClient();
+    for (const id of ["acct-a", "acct-b", "acct-c"]) await seedUser(id);
+    const bucket = makeBucket();
+    const puts: string[] = [];
+    const putStream = bucket.putStream;
+    bucket.putStream = async (key, body) => {
+      puts.push(key);
+      return putStream(key, body);
+    };
+    // The job was created a moment ago; its retries share that instant.
+    const runStartedAt = new Date(Date.now() - 60_000);
+    const day = runStartedAt.toISOString().slice(0, 10);
+
+    // First attempt: out of budget after one account.
+    let asked = 0;
+    const first = await runOffhostBackup(prisma, bucket, new Date(), {
+      runStartedAt,
+      shouldStop: () => asked++ >= 1,
+    });
+    expect(first.stoppedEarly).toBe(true);
+    expect(first.uploaded).toBe(1);
+
+    // The retry: same run, so the account already done is skipped.
+    const retry = await runOffhostBackup(prisma, bucket, new Date(), {
+      runStartedAt,
+    });
+    expect(retry.stoppedEarly).toBe(false);
+    expect(retry.alreadyUploaded).toBe(1);
+    expect(retry.uploaded).toBe(2);
+
+    // Each account uploaded exactly once, all under the run's own day.
+    expect(puts.sort()).toEqual([
+      `${day}/user-acct-a.json.enc`,
+      `${day}/user-acct-b.json.enc`,
+      `${day}/user-acct-c.json.enc`,
+    ]);
+
+    // A new run (a later job) uploads everybody again.
+    const next = await runOffhostBackup(prisma, bucket, new Date(), {
+      runStartedAt: new Date(),
+    });
+    expect(next.alreadyUploaded).toBe(0);
+    expect(next.uploaded).toBe(3);
+  });
 });

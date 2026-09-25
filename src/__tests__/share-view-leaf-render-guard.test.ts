@@ -13,7 +13,7 @@
  * is `STRUCTURED_LEAF_GROUP`, the other is HTML rendered by the real
  * `<ClinicianView>` over a real fixture. It proves four things per leaf.
  *
- *   1. `DISPOSITIONS` is `Record<StructuredLeafId, …>`, so an eighteenth
+ *   1. `DISPOSITIONS` is `Record<StructuredLeafId, …>`, so a nineteenth
  *      structured leaf cannot be added to the catalogue without deciding here
  *      whether it renders — and saying so — or `pnpm typecheck` fails. That is
  *      the lock, and it is the compiler's, not this suite's.
@@ -332,6 +332,22 @@ const DISPOSITIONS: Record<StructuredLeafId, Disposition> = {
     },
     marker: "Palpitations",
   },
+  SURGICAL_HISTORY: {
+    kind: "rendered",
+    data: {
+      surgicalHistory: [
+        {
+          occurredAt: "2011-03-14T09:00:00.000Z",
+          procedure: "Meniscus repair",
+          bodySite: "Knee",
+          laterality: "LEFT",
+          outcome: null,
+          practitionerName: null,
+        },
+      ],
+    },
+    marker: "Meniscus repair",
+  },
   IMMUNIZATIONS: {
     kind: "rendered",
     data: {
@@ -419,7 +435,7 @@ describe("clinician view — every catalogue leaf has a renderer or a reason", (
   it("reads a plausible catalogue", () => {
     // Sanity floor: a degraded import would satisfy every loop below
     // vacuously, which is the failure mode a pair guard dies of.
-    expect(STRUCTURED_LEAF_IDS).toHaveLength(17);
+    expect(STRUCTURED_LEAF_IDS).toHaveLength(18);
     expect(Object.keys(DISPOSITIONS).sort()).toEqual(
       [...STRUCTURED_LEAF_IDS].sort(),
     );

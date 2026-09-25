@@ -430,7 +430,16 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
   // for accounts with older history, while the cold live path reported
   // the true unbounded numbers. The pre-fold remainder query below
   // splices the older rows back in.
-  const foldWindowStart = new Date(Date.now() - ROLLUP_FOLD_WINDOW_MS);
+  //
+  // The two halves meet at ONE instant, and it is a DAY bucket boundary:
+  // buckets from `foldSplit` on, raw readings before it. Buckets older than
+  // the window do exist — the per-write hook folds any day it touches, the
+  // import folded whole spans up to v1.39.0, every fold snaps its start down
+  // to the whole day, and nothing prunes a bucket the moving window has
+  // passed — so bounding only the raw half counted each reading on such a
+  // day twice. Split on a boundary, a reading is in exactly one half
+  // whichever buckets exist.
+  const foldSplit = startOfUtcDay(new Date(Date.now() - ROLLUP_FOLD_WINDOW_MS));
 
   const [narrows, latests, dayBuckets, accumulatorRows, preFoldRemainder] =
     await Promise.all([
@@ -504,6 +513,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
         FROM "measurement_rollups"
         WHERE "user_id" = $1
           AND "granularity" = 'DAY'
+          AND "bucket_start" >= $2
         ORDER BY "type", "bucket_start", (${rankUnqualified}), "source"
       )
       SELECT
@@ -519,6 +529,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
       GROUP BY "type"
     `,
         userId,
+        foldSplit,
       ),
       // v1.20.0 F6 — trailing 90-day DAY rollup rows carrying the per-bucket
       // regression accumulators. The windowed slope / r² / sd compose from
@@ -576,7 +587,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
       FROM measurements m
       WHERE m."user_id" = ${userId}
         AND m."deleted_at" IS NULL
-        AND m."measured_at" < ${foldWindowStart}
+        AND m."measured_at" < ${foldSplit}
       GROUP BY m."type"
     `,
     ]);

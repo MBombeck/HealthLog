@@ -16,6 +16,7 @@
  */
 import { markWorkerStarted, recordError } from "@/lib/jobs/worker-status";
 import { createWorkerBoss, setGlobalBoss } from "@/lib/jobs/boss-instance";
+import { reportJobsCutOffAtBoot } from "@/lib/jobs/job-observer";
 import { assertSubsystemEnabled } from "@/lib/process-type";
 import { DATABASE_URL, workerLog } from "./reminder/shared";
 import {
@@ -55,7 +56,11 @@ export async function startReminderWorker() {
     recordError();
   });
 
+  // Read before any `boss.work` binding below can take a job: whatever is
+  // still active now was started by a process that is gone.
+  const bootedAt = new Date();
   await boss.start();
+  await reportJobsCutOffAtBoot(bootedAt);
   setGlobalBoss(boss);
   markWorkerStarted();
 

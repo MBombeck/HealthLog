@@ -50,6 +50,7 @@ import {
   type PreparedStatusCard,
 } from "@/lib/insights/status-card-generation";
 import { annotate } from "@/lib/logging/context";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 // 360 daily days + 24 monthly windows ≈ 1080 days of intake history.
 const COMPLIANCE_HISTORY_DAYS = 360 + 24 * 30;
@@ -197,7 +198,7 @@ export async function prepareMedicationComplianceStatusForUser(
   const medicationRows = await prisma.medication.findMany({
     // v1.16.11 — as-needed (PRN) medications never surface a compliance
     // rate (no expected doses).
-    where: { userId, active: true, asNeeded: false },
+    where: { userId, active: true, asNeeded: false, ...TRACKED_INTAKE_WHERE },
     // v1.15.20 — schedules through the shared compliance select so the
     // configured per-dose windows reach this surface like every other.
     include: {

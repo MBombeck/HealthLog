@@ -113,6 +113,8 @@ export function documentOptionsWithSuggestions(
       id: doc.id,
       label: doc.title ?? doc.filename ?? doc.id,
       dateLabel: date ? labels.date(date) : null,
+      // The vault opens a document's sheet from `?doc=`.
+      href: `/documents?doc=${encodeURIComponent(doc.id)}`,
     };
     if (isNearAnchor(own, anchorIso)) {
       suggested.push({

@@ -4,14 +4,16 @@ import {
   MEDICATION_CATEGORY_VALUES,
   MEDICATION_DELIVERY_FORM_VALUES,
   MEDICATION_TREATMENT_CLASS_VALUES,
-  UNITS_PER_DOSE_MESSAGE,
   atcCodeField,
   injectionSiteEnum,
-  isSupportedUnitsPerDose,
   INJECTION_SITE_VALUES,
   rxNormCodeField,
 } from "./base";
 import { scheduleSchema } from "./schedule";
+import {
+  UNITS_PER_DOSE_MESSAGE,
+  isSupportedUnitsPerDose,
+} from "@/lib/medications/units-per-dose";
 import { assertStableExternalId } from "@/lib/validations/external-id";
 
 /**
@@ -70,6 +72,17 @@ const courseWindowFields = {
     .describe(
       "As-needed (PRN) medication (pain relief, rescue inhaler). When true the medication carries NO schedules (supplying any schedule entry is a 422): it is never due, never reminded, and excluded from compliance rates/streaks, but intakes still log (ad-hoc), inventory still consumes, and the history renders. Stays active indefinitely. Mutually exclusive with `oneShot`.",
     ),
+  /**
+   * v1.39.1 (#1033) — per-medication intake tracking. Default true. False
+   * keeps the medication (dose, dates, schedule) as a record: nothing is
+   * due, nothing reminds, no adherence figure. Omitted leaves it as is.
+   */
+  trackIntake: z
+    .boolean()
+    .optional()
+    .describe(
+      "v1.39.1 — intake tracking. Default true. When false the medication keeps its dose, dates and schedules as information, but nothing is ever due: no reminder on any channel, no projected slot, no entry on the today list or the doses card, and no adherence figure anywhere. Existing intake history stays stored. Switching it back on resumes from that moment; the time it was off never counts as missed. Omitted on update leaves the current value. On a medication whose tracking is off, an update that does not name `trackIntake` leaves its stored schedule alone: `schedules`, `asNeeded` and `oneShot` in such a request are ignored (a client that does not know the field cannot have seen the stored schedule, which is served in `recordedSchedules`). Name `trackIntake` to change the schedule of such a medication.",
+    ),
 };
 
 /**
@@ -102,7 +115,7 @@ export const createMedicationSchema = z
       .refine(isSupportedUnitsPerDose, { message: UNITS_PER_DOSE_MESSAGE })
       .optional()
       .describe(
-        "Inventory units consumed per dose. A whole number 1–100 (e.g. 2 tablets of 2 mg for a 4 mg dose) or a supported fraction for a split pill (¼ / ⅓ / ½ / ⅔ / ¾). Default 1. The intake consumption hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.",
+        "Inventory units consumed per dose: above 0 and at most 100, with at most 4 decimal places. A whole number (2 tablets of 2 mg for a 4 mg dose), a split pill (0.5, thirds as 0.3333 / 0.6667), a whole number plus a fraction (1.5, 2.25) or a measured amount (0.8). Default 1. The intake consumption hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.",
       ),
     /**
      * v1.17.0 — optional per-medication reorder lead time in days. The
@@ -258,13 +271,13 @@ export const updateMedicationSchema = z
     treatmentClass: z.enum(MEDICATION_TREATMENT_CLASS_VALUES).optional(),
     dosesPerUnit: z.number().int().min(1).max(1000).nullable().optional(),
     /** v1.16.10 — inventory units one dose consumes. Default 1.
-     *  v1.16.12 — whole number 1–100 or a curated fraction (½ / ⅓ / ¼ …). */
+     *  #1034 — any value above 0 and at most 100 with up to 4 decimals. */
     unitsPerDose: z
       .number()
       .refine(isSupportedUnitsPerDose, { message: UNITS_PER_DOSE_MESSAGE })
       .optional()
       .describe(
-        "Inventory units consumed per dose — a whole number 1–100 or a supported split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾). The intake consumption hook decrements this many units per taken dose; already-stamped intake events keep their recorded consumption.",
+        "Inventory units consumed per dose: above 0 and at most 100, with at most 4 decimal places (1, 0.5, 1.5, 2.25). The intake consumption hook decrements this many units per taken dose; already-stamped intake events keep their recorded consumption.",
       ),
     /**
      * v1.17.0 — per-medication reorder lead time in days (0–60). `null`

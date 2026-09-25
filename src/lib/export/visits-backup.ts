@@ -35,7 +35,11 @@
  */
 import { Buffer } from "node:buffer";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import type { EncounterKind, EncounterStatus } from "@/generated/prisma/client";
+import type {
+  EncounterKind,
+  EncounterStatus,
+  Laterality,
+} from "@/generated/prisma/client";
 
 import {
   recordUnknownKeys,
@@ -74,6 +78,9 @@ export interface EncounterBackupEntry {
   practitionerId: string | null;
   reasonEncrypted: string | null;
   outcomeEncrypted: string | null;
+  /** The procedure's body site, ciphertext like the two above (v1.39.1). */
+  bodySiteEncrypted: string | null;
+  laterality: Laterality | null;
   /**
    * The appointment's reminder row, which restores in the same run since
    * v1.37.20. The restore remaps it against the restored reminders and drops
@@ -141,6 +148,8 @@ const ENCOUNTER_BACKUP_SELECT = {
   practitionerId: true,
   reasonEncrypted: true,
   outcomeEncrypted: true,
+  bodySiteEncrypted: true,
+  laterality: true,
   reminderId: true,
   createdAt: true,
   updatedAt: true,
@@ -244,6 +253,8 @@ export async function buildVisitsBackupSection(
       practitionerId: row.practitionerId,
       reasonEncrypted: encodeCiphertext(row.reasonEncrypted),
       outcomeEncrypted: encodeCiphertext(row.outcomeEncrypted),
+      bodySiteEncrypted: encodeCiphertext(row.bodySiteEncrypted),
+      laterality: row.laterality,
       reminderId: row.reminderId,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
@@ -336,7 +347,12 @@ export type RestoredEncounter = Pick<
   OptionalNullable<
     Pick<
       EncounterBackupEntry,
-      "practitionerId" | "reasonEncrypted" | "outcomeEncrypted" | "reminderId"
+      | "practitionerId"
+      | "reasonEncrypted"
+      | "outcomeEncrypted"
+      | "bodySiteEncrypted"
+      | "laterality"
+      | "reminderId"
     >
   > & { deletedAt?: string | null };
 
@@ -457,6 +473,13 @@ export async function restoreVisitsData(
             entry.outcomeEncrypted == null
               ? null
               : decodeCiphertext(entry.outcomeEncrypted),
+          // Absent in a file written before v1.39.1: the visit comes back
+          // with no site, which is what it had.
+          bodySiteEncrypted:
+            entry.bodySiteEncrypted == null
+              ? null
+              : decodeCiphertext(entry.bodySiteEncrypted),
+          laterality: entry.laterality ?? null,
           reminderId,
           createdAt: new Date(entry.createdAt),
           updatedAt: new Date(entry.updatedAt),

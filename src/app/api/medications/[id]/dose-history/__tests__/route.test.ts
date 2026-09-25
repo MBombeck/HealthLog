@@ -426,3 +426,147 @@ describe("GET /api/medications/[id]/dose-history — early take (#1028 class)", 
     }
   });
 });
+
+/**
+ * #1028 follow-up — a medication added in the afternoon, dosed 09:00 / 14:00
+ * / 21:00. The 14:00 dose of the creation day was recorded afterwards on its
+ * own slot, the 21:00 dose came in through the reminder, and the 09:00 slot
+ * of that day only ever held the pending placeholder the today projector
+ * mints for every slot of the day, which the auto-miss pass later stamped.
+ *
+ * The 14:00 dose must read as its own slot, taken on time, not as an
+ * off-schedule take "due" at 21:00; the 09:00 slot, which predates the
+ * medication and holds no recorded dose, must not appear at all.
+ */
+describe("GET /api/medications/[id]/dose-history — slots before creation (#1028)", () => {
+  const cases = [
+    { tz: "Asia/Kolkata", edited: false },
+    { tz: "America/New_York", edited: false },
+    // The schedule was saved again shortly after the medication was added,
+    // so the creation day lives in an archived schedule era.
+    { tz: "Asia/Kolkata", edited: true },
+  ];
+  for (const { tz, edited } of cases) {
+    it(`attributes a recorded dose on a pre-creation slot and hides the unrecorded one (${tz}${edited ? ", edited schedule" : ""})`, async () => {
+      const day1 = new Date("2026-09-23T12:00:00Z");
+      const day2 = new Date("2026-09-24T12:00:00Z");
+      const createdAt = localHmAsUtc(day1, tz, 16, 5);
+      const now = localHmAsUtc(day2, tz, 22, 0);
+      const d1 = (h: number, m = 0) => localHmAsUtc(day1, tz, h, m);
+      const d2 = (h: number, m = 0) => localHmAsUtc(day2, tz, h, m);
+
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(now);
+      try {
+        vi.mocked(getSession).mockResolvedValue({
+          ...SESSION_OK,
+          user: { ...SESSION_OK.user, timezone: tz },
+        } as never);
+        vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+          id: "med-1",
+          startsOn: new Date("2026-09-23T00:00:00Z"),
+          endsOn: new Date("2026-09-28T00:00:00Z"),
+          oneShot: false,
+          createdAt,
+          scheduleRevisions: edited
+            ? [
+                {
+                  id: "rev-1",
+                  validFrom: createdAt,
+                  validUntil: localHmAsUtc(day1, tz, 16, 30),
+                  supersededByRevisionId: null,
+                  payload: [
+                    {
+                      timesOfDay: ["09:00", "14:00", "21:00"],
+                      windowStart: "09:00",
+                      windowEnd: "09:00",
+                      daysOfWeek: null,
+                      rrule: null,
+                      rollingIntervalDays: null,
+                      scheduleType: "SCHEDULED",
+                      cyclicOnWeeks: null,
+                      cyclicOffWeeks: null,
+                      doseWindows: null,
+                      label: null,
+                      dose: "1 tablet",
+                      reminderGraceMinutes: null,
+                    },
+                  ],
+                },
+              ]
+            : [],
+          schedules: [
+            {
+              id: "sched-1",
+              windowStart: "09:00",
+              windowEnd: "09:00",
+              daysOfWeek: null,
+              timesOfDay: ["09:00", "14:00", "21:00"],
+              reminderGraceMinutes: null,
+              rrule: null,
+              rollingIntervalDays: null,
+              scheduleType: "SCHEDULED",
+              cyclicOnWeeks: null,
+              cyclicOffWeeks: null,
+            },
+          ],
+        } as never);
+        const row = (
+          id: string,
+          scheduledFor: Date,
+          takenAt: Date | null,
+          extra: Partial<{ autoMissed: boolean; source: string }> = {},
+        ) => ({
+          id,
+          scheduledFor,
+          takenAt,
+          skipped: false,
+          autoMissed: extra.autoMissed ?? false,
+          attributionSource: "AUTO",
+          doseTaken: null,
+          source: extra.source ?? "REMINDER",
+        });
+        vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue([
+          row("d2-2100", d2(21), d2(21, 30)),
+          row("d2-1400", d2(14), d2(14)),
+          row("d2-0900", d2(9), d2(10)),
+          row("d1-2100", d1(21), d1(21)),
+          row("d1-1400", d1(14), d1(14), { source: "WEB" }),
+          // The projector's placeholder for the pre-creation 09:00 slot,
+          // stamped by the auto-miss pass a day later.
+          row("d1-0900-placeholder", d1(9), null, { autoMissed: true }),
+        ] as never);
+
+        const from = new Date(now.getTime() - 90 * 86_400_000).toISOString();
+        const res = await GET(
+          getReq(
+            `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(now.toISOString())}`,
+          ),
+          ROUTE_PARAMS,
+        );
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        const rows = json.data.rows as Array<{
+          kind: string;
+          at: string;
+          timeOfDay: string | null;
+          status: string;
+          nearestSlot?: unknown;
+          intake: { id: string | null } | null;
+        }>;
+
+        expect(
+          rows.map((r) => [r.at, r.kind, r.status, r.intake?.id ?? null]),
+        ).toEqual([
+          [d1(14).toISOString(), "slot", "taken_on_time", "d1-1400"],
+          [d1(21).toISOString(), "slot", "taken_on_time", "d1-2100"],
+          [d2(9).toISOString(), "slot", "taken_on_time", "d2-0900"],
+          [d2(14).toISOString(), "slot", "taken_on_time", "d2-1400"],
+          [d2(21).toISOString(), "slot", "taken_on_time", "d2-2100"],
+        ]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  }
+});

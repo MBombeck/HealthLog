@@ -21,7 +21,7 @@ import {
   type InjectionSiteKey,
 } from "@/lib/medications/injection-sites";
 import type { MedicationDeliveryForm } from "@/lib/validations/medication";
-import { unitsPerDoseOptionsFor } from "@/components/medications/units-per-dose";
+import { UnitsPerDoseField } from "@/components/medications/units-per-dose-field";
 import { DOSE_UNIT_KEYS } from "@/lib/medications/dose-units";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -153,35 +153,19 @@ export function Step3Dose({ payload, applyPartial }: StepProps) {
         <Label id="wizard-units-per-dose-label" className="text-sm">
           {t("medications.wizard.steps.step3.unitsPerDoseLabel")}
         </Label>
-        {/* v1.16.12 (#316) — curated fraction / whole-number selector
-            instead of a free-text field: split-pill doses (½ tablet) are
-            now expressible, and a button set is the most error-resistant
-            input (no ambiguous decimal separators, no out-of-set values
-            the server would reject). The decimal value is what the
-            payload + API carry; the button shows the glyph. */}
-        <div
-          role="group"
-          aria-labelledby="wizard-units-per-dose-label"
-          data-slot="wizard-units-per-dose"
-          className="flex flex-wrap gap-1.5"
-        >
-          {unitsPerDoseOptionsFor(payload.unitsPerDose).map((opt) => {
-            const selected = payload.unitsPerDose === opt.raw;
-            return (
-              <Button
-                key={opt.raw}
-                type="button"
-                size="sm"
-                variant={selected ? "default" : "outline"}
-                aria-pressed={selected}
-                className="min-w-10 tabular-nums"
-                onClick={() => applyPartial({ unitsPerDose: opt.raw })}
-              >
-                {opt.label}
-              </Button>
-            );
-          })}
-        </div>
+        {/* v1.16.12 (#316) — curated fraction / whole-number buttons, the
+            most error-resistant input for the common doses. #1034 — plus an
+            Other field for a whole number and a fraction (1½) or any other
+            value up to four decimals; the step holds while it does not read.
+            The decimal value is what the payload + API carry; the button
+            shows the glyph. */}
+        <UnitsPerDoseField
+          value={payload.unitsPerDose}
+          onChange={(next) => applyPartial({ unitsPerDose: next })}
+          labelId="wizard-units-per-dose-label"
+          inputId="wizard-units-per-dose-other"
+          dataSlot="wizard-units-per-dose"
+        />
         <p className="text-muted-foreground text-xs">
           {t("medications.wizard.steps.step3.unitsPerDoseHint")}
         </p>

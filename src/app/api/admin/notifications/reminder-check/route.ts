@@ -8,6 +8,7 @@ import { adminReminderCheckSchema } from "@/lib/validations/notifications";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { dispatchLocalisedNotification } from "@/lib/notifications/dispatch-localised";
 import { getUserTodayBounds, getDayOfWeekInTz } from "@/lib/tz/local-day";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +100,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const medications = await prisma.medication.findMany({
     where: {
       active: true,
+      // v1.39.1 (#1033) — the manual check reminds exactly what the worker
+      // reminds: never a medication with intake tracking off.
+      ...TRACKED_INTAKE_WHERE,
       // Absent selector ⇒ no `userId` key ⇒ the instance-wide sweep.
       ...(scopedUserId ? { userId: scopedUserId } : {}),
     },

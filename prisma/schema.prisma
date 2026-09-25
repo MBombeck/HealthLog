@@ -750,6 +750,7 @@ model User {
   notificationChannels                      NotificationChannel[]
   pushSubscriptions                         PushSubscription[]
   dataBackups                               DataBackup[]
+  backupRestoreJobs                         BackupRestoreJob[]
   offhostBackupState                        OffhostBackupState?
   achievements                              UserAchievement[]
   recommendationFeedback                    RecommendationFeedback[]
@@ -983,7 +984,7 @@ model User {
   // record. 1:1, and keyed by record rather than by the person at the
   // keyboard so a guardian running a managed profile's setup writes the
   // child's row, not their own. See `OnboardingRecord`.
-  onboardingRecord           OnboardingRecord?
+  onboardingRecord OnboardingRecord?
 
   // v1.15.20 — user-authored "about me" context for the AI surfaces
   // (1:1, encrypted free text). See `UserHealthProfile`.
@@ -2609,6 +2610,25 @@ model Medication {
   /// never reminded" surface follows structurally from the empty
   /// schedule list. Mutually exclusive with `oneShot`.
   asNeeded                      Boolean                @default(false) @map("as_needed")
+  /// v1.39.1 (#1033) — per-medication intake tracking. `true` (the default,
+  /// and the backfill for every existing row) is the behaviour every
+  /// medication has always had. `false` keeps the medication as a record:
+  /// dose, dates and the schedule rows stay stored and shown as information,
+  /// but nothing derives a due dose from them — no reminder on any channel,
+  /// no projected or auto-missed slot, no place on the doses card or the
+  /// take-all flow, and no adherence figure anywhere (compliance, heatmap,
+  /// doctor report, Coach, BP-status gate, achievements, MCP). Unlike
+  /// `asNeeded` the schedule rows survive, so every schedule reader that
+  /// derives a due dose must honour this flag explicitly
+  /// (`src/lib/medications/intake-tracking.ts`); the structural guard
+  /// `src/__tests__/medication-intake-tracking-guard.test.ts` holds the list.
+  /// The medication wire serves such a medication with `schedules: []` and
+  /// the stored rows under `recordedSchedules`, so a client that arms local
+  /// reminders from `schedules` stays silent without an update. Switching
+  /// tracking off or back on archives a schedule revision at that instant
+  /// (the stretch in between archives with an empty payload), so the rate
+  /// paths never count the untracked stretch as missed.
+  trackIntake                   Boolean                @default(true) @map("track_intake")
   /// v1.6.0 — route of administration. Decoupled from `treatmentClass`
   /// so the injection-site picker can surface for any INJECTION dose.
   /// A one-time injection is `oneShot = true` + `deliveryForm =
@@ -4711,14 +4731,14 @@ model AppSettings {
   // id or an unreachable host all parse perfectly and deliver nothing.
   /// Instant the last report left successfully. Consumer: the GlitchTip card's
   /// badge, which is only green while this is inside the recent window.
-  glitchtipLastOkAt               DateTime? @map("glitchtip_last_ok_at")
+  glitchtipLastOkAt          DateTime? @map("glitchtip_last_ok_at")
   /// Instant the last attempt failed. Consumer: the GlitchTip card's status
   /// line, which names the failure rather than showing a reassuring badge.
-  glitchtipLastFailureAt          DateTime? @map("glitchtip_last_failure_at")
+  glitchtipLastFailureAt     DateTime? @map("glitchtip_last_failure_at")
   /// Short classification of that failure (`invalid_dsn`, `http_403`,
   /// `network`) — never a response body, which is a remote host's text.
   /// Consumer: the same status line.
-  glitchtipLastFailureReason      String?   @map("glitchtip_last_failure_reason")
+  glitchtipLastFailureReason String?   @map("glitchtip_last_failure_reason")
 
   // Medication reminder thresholds (minutes after windowEnd)
   reminderLateMinutes   Int @default(120) @map("reminder_late_minutes")
@@ -4955,6 +4975,101 @@ model DataBackup {
   @@unique([userId, type], map: "data_backups_user_id_type_key")
   @@index([userId])
   @@map("data_backups")
+}
+
+// ─── Backup restore jobs (v1.39.1) ──────────────────────────
+//
+// A restore of a stored backup runs on the `backup-restore` pg-boss queue, not
+// inside the request that asked for it: rebuilding an account of 1.25 million
+// readings takes about a minute and a half, and a reverse proxy that cuts a
+// request at 60 s showed the operator an error for a restore that went on to
+// finish. The request checks the copy opens, writes one of these rows and
+// answers 202; the worker runs the restore and writes its progress and its
+// outcome here, and `GET /api/admin/backups/restores/{id}` reads them back.
+//
+// The staged file is the `DataBackup` row the restore reads. It is already
+// encrypted at rest and stays where it is whatever the outcome, so a failed
+// restore is retried from the same row without uploading anything again.
+//
+// At most one queued or running job per account: the partial unique index
+// `backup_restore_jobs_one_active_per_user` (migration 0347, raw SQL because
+// Prisma cannot express a partial index) is what makes a second request a 409
+// rather than a race.
+//
+// Status state machine:
+//   queued → running → succeeded
+//                    ↘ failed
+//   running (worker gone) → queued again at the next worker boot, at most
+//   twice, then failed.
+model BackupRestoreJob {
+  id                      String    @id @default(cuid())
+  /// The account the restore replaces: the backup's owner, never the admin.
+  /// Consumer: the admission check, the worker, and the status routes.
+  userId                  String    @map("user_id")
+  /// The admin who asked for the restore. A plain column rather than a
+  /// relation, so deleting that admin later does not erase the record of who
+  /// replaced this account's data. Consumer: the worker's audit rows.
+  actorUserId             String    @map("actor_user_id")
+  /// The `DataBackup` row being restored. A plain column: the backup may be
+  /// deleted while the job waits, which the worker reports as a failure rather
+  /// than a cascade deleting the job. Consumer: the worker and the status
+  /// routes (the console marks the row being restored).
+  backupId                String    @map("backup_id")
+  /// SHA-256 of `DataBackup.data` when the restore was requested. The weekly
+  /// job overwrites its row in place, so the worker checks the copy it reads is
+  /// the one the operator previewed and confirmed. Consumer: the worker.
+  backupDigest            String    @map("backup_digest")
+  /// The operator's answer to "also restore the instance settings". Consumer:
+  /// the worker, and the status routes.
+  restoreInstanceSettings Boolean   @default(false) @map("restore_instance_settings")
+  /// `pg-boss` job id of the latest delivery. Consumer: the boot sweep, which
+  /// completes a delivery whose worker is gone so it does not later surface as
+  /// a timed-out job.
+  pgBossJobId             String?   @map("pg_boss_job_id")
+  /// `queued | running | succeeded | failed`. Consumer: every reader.
+  status                  String    @default("queued")
+  /// Where a running restore is: `validating | clearing | measurements |
+  /// sections | rebuilding`. NULL while queued and once finished. Consumer:
+  /// the status routes.
+  phase                   String?
+  /// Counts the worker writes as it goes (`RestoreProgress` in
+  /// `src/lib/export/restore-backup.ts`). Consumer: the status routes.
+  progress                Json      @default("{}")
+  /// On success: what the restore wrote, cleared and skipped. Counts and
+  /// catalogue keys only, the same facts the audit row carries. Consumer: the
+  /// status routes.
+  result                  Json?
+  /// On failure: a stable `code`, a sentence an operator can act on, and the
+  /// missing sections when that was the reason. Consumer: the status routes.
+  failure                 Json?
+  /// When the restore transaction committed: from here on the account holds
+  /// the restored data, whatever happens to the steps after it. Written and
+  /// awaited before the rollup rebuild starts. Consumer: the boot sweep and
+  /// the admission check, which never queue a committed job again (a second
+  /// run would delete what the account gained since) and close it as
+  /// `failed_after_commit` instead; and the worker's own failure message.
+  committedAt             DateTime? @map("committed_at")
+  /// How many times a worker has started this job. Consumer: the boot sweep,
+  /// which stops re-queueing after the second attempt.
+  attempts                Int       @default(0)
+  /// Bumped every few seconds while a worker runs the job. A running row whose
+  /// heartbeat has gone stale belongs to a worker that is gone. Consumer: the
+  /// admission check and the boot sweep.
+  heartbeatAt             DateTime? @map("heartbeat_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  startedAt               DateTime? @map("started_at")
+  completedAt             DateTime? @map("completed_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // `backup_restore_jobs_one_active_per_user` is a partial UNIQUE index over
+  // `(user_id) WHERE status IN ('queued', 'running')` — see migration 0347.
+  // Prisma can't express a partial index in the schema language, so it lives
+  // in raw SQL and is intentionally omitted here.
+  @@index([userId, createdAt])
+  @@index([status, heartbeatAt])
+  @@map("backup_restore_jobs")
 }
 
 // ─── Off-host backup ledger ──────────────────────────────────
@@ -5338,7 +5453,7 @@ model MeasurementReminder {
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
   deletedAt          DateTime?        @map("deleted_at")
 
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// Back-relation for the appointment arm: a PLANNED `Encounter` mints
   /// exactly one ENCOUNTER-origin row and points at it. SetNull on the far
   /// side, so deleting the reminder leaves the visit intact.
@@ -5622,15 +5737,15 @@ model CustomMetric {
 /// snapshot of the metric's unit at write time (historical truth, mirroring the
 /// LabResult per-row unit). Charts read these LIVE (no rollup tier).
 model CustomMetricEntry {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  customMetricId String   @map("custom_metric_id")
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  customMetricId String    @map("custom_metric_id")
   value          Float
   /// Unit snapshot from the metric at write time.
   unit           String
-  measuredAt     DateTime @map("measured_at")
+  measuredAt     DateTime  @map("measured_at")
   note           String?
-  createdAt      DateTime @default(now()) @map("created_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
   /// v1.37.20 — soft-delete tombstone, peer parity with Measurement /
   /// MoodEntry (every other entry surface deletes recoverably with an undo
   /// toast; custom-metric entries were the one hard delete). NULL = live.
@@ -6138,28 +6253,28 @@ model CoachReminder {
 // must never land in the table as plaintext. A cleared profile keeps the
 // row with a NULL payload so `updatedAt` documents the deletion instant.
 model UserHealthProfile {
-  id                        String                   @id @default(cuid())
-  userId                    String                   @unique @map("user_id")
+  id                         String                   @id @default(cuid())
+  userId                     String                   @unique @map("user_id")
   // Free text, hard-capped at 4 000 chars by the route's Zod schema
   // BEFORE encryption. NULL = cleared / never written.
-  aboutMeEncrypted          Bytes?                   @map("about_me_encrypted")
+  aboutMeEncrypted           Bytes?                   @map("about_me_encrypted")
   // v1.16.0 — structured self-context companions to the free text.
   // Short answers (each capped at 500 chars BEFORE encryption).
   // Age/gender deliberately do NOT live here — they come from the User
   // profile and are merged into the prompt block at assembly time so
   // the data is never duplicated.
-  conditionsEncrypted       Bytes?                   @map("conditions_encrypted")
-  allergiesEncrypted        Bytes?                   @map("allergies_encrypted")
-  coachFocusEncrypted       Bytes?                   @map("coach_focus_encrypted")
+  conditionsEncrypted        Bytes?                   @map("conditions_encrypted")
+  allergiesEncrypted         Bytes?                   @map("allergies_encrypted")
+  coachFocusEncrypted        Bytes?                   @map("coach_focus_encrypted")
   // v1.16.0 — up to 3 clarifying questions the server derives after a
   // save (AI-generated when a provider + budget allow, deterministic
   // hints otherwise). Encrypted JSON string[]; the Coach composer
   // renders them as tappable suggestion chips. NULL = none pending.
-  pendingQuestionsEncrypted Bytes?                   @map("pending_questions_encrypted")
+  pendingQuestionsEncrypted  Bytes?                   @map("pending_questions_encrypted")
   // Closed inclusion list for self-context sent to Coach and briefing prompts.
   // The static default preserves every pre-existing prompt section for legacy
   // rows without automatically opting future enum members in.
-  aiIncludedSections        HealthProfileAiSection[] @default([ABOUT_ME, CONDITIONS, ALLERGIES, COACH_FOCUS, FAMILY_HISTORY, SMOKING_STATUS, ALCOHOL_PATTERN, SHIFT_SCHEDULE]) @map("ai_included_sections")
+  aiIncludedSections         HealthProfileAiSection[] @default([ABOUT_ME, CONDITIONS, ALLERGIES, COACH_FOCUS, FAMILY_HISTORY, SMOKING_STATUS, ALCOHOL_PATTERN, SHIFT_SCHEDULE]) @map("ai_included_sections")
   // Emergency ("Notfalldaten") facts, surfaced on page one of the doctor
   // report and edited in Settings -> Anamnese. Three closed-set enums are
   // plaintext (read directly by the report, like `User.gender`); three free
@@ -6167,14 +6282,14 @@ model UserHealthProfile {
   // `*Encrypted` column. All six are nullable: an unset emergency profile is
   // absent, not empty. The report page is withheld unless the EMERGENCY leaf is
   // admitted AND at least one of these holds a value.
-  emergencyBloodType     EmergencyBloodType?     @map("emergency_blood_type")
-  organDonorStatus       OrganDonorStatus?       @map("organ_donor_status")
-  advanceDirectiveStatus AdvanceDirectiveStatus? @map("advance_directive_status")
-  emergencyContactsEncrypted Bytes?              @map("emergency_contacts_encrypted")
-  emergencyImplantsEncrypted Bytes?              @map("emergency_implants_encrypted")
-  emergencyNoteEncrypted     Bytes?              @map("emergency_note_encrypted")
-  createdAt                 DateTime                 @default(now()) @map("created_at")
-  updatedAt                 DateTime                 @updatedAt @map("updated_at")
+  emergencyBloodType         EmergencyBloodType?      @map("emergency_blood_type")
+  organDonorStatus           OrganDonorStatus?        @map("organ_donor_status")
+  advanceDirectiveStatus     AdvanceDirectiveStatus?  @map("advance_directive_status")
+  emergencyContactsEncrypted Bytes?                   @map("emergency_contacts_encrypted")
+  emergencyImplantsEncrypted Bytes?                   @map("emergency_implants_encrypted")
+  emergencyNoteEncrypted     Bytes?                   @map("emergency_note_encrypted")
+  createdAt                  DateTime                 @default(now()) @map("created_at")
+  updatedAt                  DateTime                 @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -6285,10 +6400,10 @@ model HealthProfileFactRevision {
 // secondary signal used by the frontend to render a "≈ N replies left"
 // hint without exposing raw token figures.
 model CoachUsage {
-  id          String @id @default(cuid())
-  userId      String @map("user_id")
-  dateKey     String @map("date_key")
-  totalTokens Int    @default(0) @map("total_tokens")
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  dateKey        String   @map("date_key")
+  totalTokens    Int      @default(0) @map("total_tokens")
   /// v1.38.19 — the share of `totalTokens` served by a provider the
   /// OPERATOR funds (`admin-openai` / `admin-codex`). The operator-cost cap is
   /// enforced against this counter and the user-plan cap against
@@ -8119,12 +8234,12 @@ model NutrientIntakeDay {
 /// relocated to the link pickers, which follow the modules that own the
 /// things they point at.
 model Encounter {
-  id               String          @id @default(cuid())
-  userId           String          @map("user_id")
+  id                String          @id @default(cuid())
+  userId            String          @map("user_id")
   /// The visit instant (UTC; wall-clock anchoring is the reader's
   /// concern, per the schema's UTC-only convention). Future instants are
   /// legal — that is the whole appointment half.
-  occurredAt       DateTime        @map("occurred_at")
+  occurredAt        DateTime        @map("occurred_at")
   /// Where in its lifecycle. PLANNED is a future appointment; DONE is a
   /// visit that happened; CANCELLED and NO_SHOW are terminal and keep
   /// the row so the history stays honest.
@@ -8138,27 +8253,49 @@ model Encounter {
   /// `FHIR_REST_RESOURCE_TYPES` (`src/lib/fhir/rest.ts`) is deliberately
   /// untouched — a capability statement that names a type with no route
   /// module lies.
-  status           EncounterStatus @default(DONE)
-  kind             EncounterKind   @default(OTHER)
-  practitionerId   String?         @map("practitioner_id")
+  status            EncounterStatus @default(DONE)
+  kind              EncounterKind   @default(OTHER)
+  practitionerId    String?         @map("practitioner_id")
   /// The person's own framing of why they went or are going. Encrypted
   /// at rest (AES-256-GCM, the `*Encrypted` Bytes convention).
-  reasonEncrypted  Bytes?          @map("reason_encrypted")
+  reasonEncrypted   Bytes?          @map("reason_encrypted")
   /// What came out of it — plan, follow-up, what to watch. Same codec.
   /// One field rather than a treatment/follow-up pair whose boundary
   /// nobody can state: two columns would be two chances to put the text
   /// in the wrong one, and the actionable half of a follow-up is not
   /// prose at all, it is the next appointment.
-  outcomeEncrypted Bytes?          @map("outcome_encrypted")
+  outcomeEncrypted  Bytes?          @map("outcome_encrypted")
+  /// Where on the body a procedure was done, in the person's own words
+  /// ("knee", "gallbladder", "L4/L5"). Free text, because no picker covers
+  /// everything a surgeon operates on, and a coded vocabulary the person
+  /// cannot read is worse than their own word. Health data, so encrypted
+  /// like `reasonEncrypted`.
+  ///
+  /// Searching it does not need plaintext at rest: the procedures read
+  /// (`src/lib/encounters/procedures.ts`) decrypts the account's own
+  /// procedures server-side and matches there. That set is a person's
+  /// surgical history — tens of rows, not thousands — so a decrypt pass
+  /// per search is cheap, and a plaintext or hashed search column would be
+  /// a second copy of the most identifying field on the row.
+  ///
+  /// Allowed on any kind, surfaced for PROCEDURE: switching a visit's kind
+  /// away and back must not lose what was typed.
+  bodySiteEncrypted Bytes?          @map("body_site_encrypted")
+  /// Which side, when the site has one. Separate from the text so "left
+  /// knee" and "right knee" group and filter as the same site on two sides
+  /// without parsing prose, and plaintext because a side alone says
+  /// nothing. NULL means not stated or not applicable, deliberately one
+  /// value rather than a NONE beside NULL that would mean the same.
+  laterality        Laterality?
   /// Optional link to the reminder this visit closes. Set when the user
   /// files the visit from a due checkup, or minted here when the visit
   /// is PLANNED. Satisfying the reminder is the side effect, not this
   /// column.
-  reminderId       String?         @map("reminder_id")
-  createdAt        DateTime        @default(now()) @map("created_at")
-  updatedAt        DateTime        @updatedAt @map("updated_at")
+  reminderId        String?         @map("reminder_id")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
-  deletedAt        DateTime?       @map("deleted_at")
+  deletedAt         DateTime?       @map("deleted_at")
 
   user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   practitioner   Practitioner?            @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
@@ -8189,6 +8326,16 @@ enum EncounterStatus {
 /// What kind of contact it was. Defaulted to OTHER so it is never a
 /// required pick, and small enough to stay readable at a glance in a
 /// list. Maps to FHIR `Encounter.class` at the export boundary.
+///
+/// PROCEDURE (v1.39.1) marks a surgery or procedure. A kind rather than a
+/// boolean beside the kind, because the kind already answers "what was
+/// this contact" and a flag would make HOSPITAL-plus-flag and PROCEDURE two
+/// spellings of one visit with no rule for which to use. The cost is that a
+/// surgery done in an emergency is filed as PROCEDURE and not EMERGENCY; the
+/// operation is the fact a surgical history asks for, and the reason text
+/// keeps the rest. Additive for every client in the field: the shipped iOS
+/// app does not decode visits at all, and the web client ships with the
+/// server.
 enum EncounterKind {
   ROUTINE
   ACUTE
@@ -8198,8 +8345,19 @@ enum EncounterKind {
   HOSPITAL
   THERAPY
   OTHER
+  PROCEDURE
 
   @@map("encounter_kind")
+}
+
+/// The side of the body a procedure's site is on. See
+/// `Encounter.laterality`.
+enum Laterality {
+  LEFT
+  RIGHT
+  BOTH
+
+  @@map("laterality")
 }
 
 /// The account's own address book of doctors and practices.

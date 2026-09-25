@@ -23,6 +23,7 @@ import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import { readNote } from "@/lib/crypto/note-cipher";
 import { matchGlp1SideEffectTags } from "@/lib/medications/glp1-side-effect-tag-match";
 import type { Glp1SideEffectTag } from "@/lib/medications/glp1-side-effect-tags";
+import { isRecordOnly } from "@/lib/medications/intake-tracking";
 
 /**
  * Recommended generic name for the canonical GLP-1 drug brand. The Coach
@@ -338,7 +339,11 @@ export async function buildGlp1SnapshotBlock(
           }
         : null;
 
-    const nextInjection = predictNextInjection(schedule, lastInjection, now);
+    // v1.39.1 (#1033) — with intake tracking off the cadence stays as
+    // information but no injection is predicted as due.
+    const nextInjection = isRecordOnly(med)
+      ? null
+      : predictNextInjection(schedule, lastInjection, now);
 
     // Inventory math over the per-item entities (v1.16.10 — the same
     // rows the Bestand tab and the consumption hook move).
@@ -379,6 +384,10 @@ export async function buildGlp1SnapshotBlock(
       dosesRemaining = pensRemaining * med.dosesPerUnit;
       weeksOfSupplyApprox = Math.round(dosesRemaining / dosesPerWeek);
     }
+
+    // v1.39.1 (#1033) — with intake tracking off no dose consumes the
+    // stock, so a supply span derived from the cadence would be invented.
+    if (isRecordOnly(med)) weeksOfSupplyApprox = null;
 
     const penInventory: PenInventory | null =
       pensRemaining !== null

@@ -69,7 +69,7 @@ import { decryptContextFromBytes } from "@/lib/labs/biomarker-store";
 import { packBackupBlobStreaming } from "@/lib/export/backup-blob";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { TWO_ENDED_MODELS, type TwoEndedModel } from "@/lib/export/backup-plan";
-import { POST } from "@/app/api/admin/backups/[id]/restore/route";
+import { POST } from "./restore-job-driver";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -2890,4 +2890,63 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       UNREADABLE_EXPORT_MARKER,
     );
   });
+
+  /**
+   * #1028 — a medication's creation instant is the floor of its expected
+   * slots: every adherence surface counts a slot before it only when a
+   * recorded dose claims it. A restore that stamped the restore time as the
+   * creation turned the whole restored history into "before the medication
+   * existed", so its misses dropped out of the rate. Both file purposes must
+   * bring the creation instant back.
+   */
+  for (const purpose of ["portable-export", "disaster-recovery"] as const) {
+    it(`restores a medication's creation instant from a ${purpose} file`, async () => {
+      const prisma = getPrismaClient();
+      await seedAdminSession(prisma);
+      await createOwner(prisma);
+      const createdAt = AT("2025-11-03T16:05:00.000Z");
+      await prisma.medication.create({
+        data: {
+          userId: OWNER_ID,
+          name: "Metformin",
+          dose: "500mg",
+          createdAt,
+          schedules: {
+            create: {
+              windowStart: "08:00",
+              windowEnd: "08:00",
+              timesOfDay: ["08:00"],
+            },
+          },
+        },
+      });
+
+      const { payload } = await buildFullBackupPayload(prisma, OWNER_ID, {
+        purpose,
+      });
+      await prisma.user.delete({ where: { id: OWNER_ID } });
+      await createOwner(prisma);
+      const backup = await prisma.dataBackup.create({
+        data: {
+          userId: OWNER_ID,
+          type: "TWO_ENDED_ROUND_TRIP",
+          data: encrypt(JSON.stringify(payload)),
+        },
+      });
+      const response = await POST(
+        new Request(`http://localhost/api/admin/backups/${backup.id}/restore`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ confirm: "RESTORE" }),
+        }) as never,
+        { params: Promise.resolve({ id: backup.id }) },
+      );
+      expect(response.status, JSON.stringify(await response.json())).toBe(200);
+
+      const restored = await prisma.medication.findFirstOrThrow({
+        where: { userId: OWNER_ID, name: "Metformin" },
+      });
+      expect(restored.createdAt.toISOString()).toBe(createdAt.toISOString());
+    });
+  }
 });

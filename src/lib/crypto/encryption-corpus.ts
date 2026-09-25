@@ -22,7 +22,7 @@
  *    `ENCRYPTION_KEYS` / `ENCRYPTION_ACTIVE_KEY_ID`. The operator's env key map
  *    is the only place keys live; a key drop stays a deliberate env + redeploy
  *    act, never a button.
- *  - IDEMPOTENT. `shouldRotate()` skips rows already on the active key, so a
+ *  - IDEMPOTENT. The walk skips rows already on the active key, so a
  *    second pass (or two racing workers) re-encrypts zero rows.
  *  - FAIL-CLOSED. A row written under a key id that is no longer configured
  *    throws on decrypt (counted as an error, the row is left untouched) rather
@@ -54,14 +54,22 @@ export const LEGACY_BUCKET = "legacy";
  */
 export const BLOB_ROTATION_BATCH_SIZE = 25;
 
+/**
+ * Batch size for every other column. These rows are short strings, but a
+ * column can have one per measurement: `Measurement.notesEncrypted` is read
+ * for every row of the table, 1.25 million on a large account (#1031). The
+ * walk used to read such a column in one `findMany`; it is id-cursor paged
+ * like the blob columns, only with larger pages.
+ */
+export const ROW_ROTATION_BATCH_SIZE = 5_000;
+
 /** Minimal Prisma delegate shape this module needs. */
 interface ColumnDelegate {
   findMany: (args: {
     select: Record<string, true>;
     orderBy?: Record<string, "asc" | "desc">;
     take?: number;
-    cursor?: Record<string, unknown>;
-    skip?: number;
+    where?: Record<string, { gt: string }>;
   }) => Promise<Array<Record<string, unknown>>>;
   update: (args: {
     where: Record<string, string>;
@@ -114,10 +122,6 @@ function fromCiphertext(
   return next;
 }
 
-function shouldRotate(ciphertext: string): boolean {
-  return extractKeyId(ciphertext) !== getActiveKeyId();
-}
-
 // ─── Codec-dispatched blob columns (document vault) ─────────────────────────
 
 /**
@@ -152,15 +156,16 @@ function reencryptBlob(value: Uint8Array, codec: string): Uint8Array {
 }
 
 /**
- * Walk a blob column in bounded id-cursor batches, invoking `onRow` per
- * non-empty row. At most `BLOB_ROTATION_BATCH_SIZE` rows are in memory per
- * step; an interrupted run resumes safely on re-invocation because processing
- * is idempotent (already-active rows are skipped by the callers).
+ * Walk a column in bounded id-cursor batches, invoking `onRow` per non-empty
+ * row. At most one batch is in memory per step (`BLOB_ROTATION_BATCH_SIZE`
+ * rows of a blob column, `ROW_ROTATION_BATCH_SIZE` of any other); an
+ * interrupted run resumes safely on re-invocation because processing is
+ * idempotent (already-active rows are skipped by the callers).
  *
  * `codec` is the row's own codec label for a codec-dispatched column and null
  * for a plain `batched` one — a backup blob has one layout, just a large one.
  */
-async function walkBlobColumn(
+async function walkColumn(
   delegate: ColumnDelegate,
   col: EncryptedColumn,
   onRow: (row: {
@@ -171,6 +176,9 @@ async function walkBlobColumn(
 ): Promise<void> {
   const codecField = col.codecField;
   const pk = pkField(col);
+  const batchSize = isBlobColumn(col)
+    ? BLOB_ROTATION_BATCH_SIZE
+    : ROW_ROTATION_BATCH_SIZE;
   let cursor: string | null = null;
   for (;;) {
     const rows = await delegate.findMany({
@@ -180,8 +188,10 @@ async function walkBlobColumn(
         ...(codecField ? { [codecField]: true } : {}),
       },
       orderBy: { [pk]: "asc" },
-      take: BLOB_ROTATION_BATCH_SIZE,
-      ...(cursor ? { cursor: { [pk]: cursor }, skip: 1 } : {}),
+      take: batchSize,
+      // `id > last`, not Prisma's `cursor` + `skip`: the cursor form looks
+      // the last row up again, and a row deleted between pages ends the walk.
+      ...(cursor ? { where: { [pk]: { gt: cursor } } } : {}),
     });
     if (rows.length === 0) break;
     for (const row of rows) {
@@ -196,7 +206,7 @@ async function walkBlobColumn(
       });
     }
     cursor = rows[rows.length - 1]![pk] as string;
-    if (rows.length < BLOB_ROTATION_BATCH_SIZE) break;
+    if (rows.length < batchSize) break;
   }
 }
 
@@ -205,8 +215,8 @@ function pkField(col: EncryptedColumn): string {
   return col.pkField ?? "id";
 }
 
-/** True when the column's rows must be walked in bounded batches. */
-function isBatched(col: EncryptedColumn): boolean {
+/** True when the column's rows are blobs, walked in the small batches. */
+function isBlobColumn(col: EncryptedColumn): boolean {
   return Boolean(col.codecField ?? col.batched);
 }
 
@@ -242,25 +252,12 @@ export async function scanColumn(
   const byKeyId: Record<string, number> = {};
   let total = 0;
 
-  if (isBatched(col)) {
-    // Blob column: bounded batches, per-row codec where the column has one.
-    await walkBlobColumn(delegate, col, ({ value, codec }) => {
-      total += 1;
-      const id = walkedKeyId(value, codec, col.kind) ?? LEGACY_BUCKET;
-      byKeyId[id] = (byKeyId[id] ?? 0) + 1;
-    });
-  } else {
-    const rows = await delegate.findMany({
-      select: { [pkField(col)]: true, [col.field]: true },
-    });
-    for (const row of rows) {
-      const ciphertext = toCiphertext(row[col.field], col.kind);
-      if (ciphertext == null) continue;
-      total += 1;
-      const id = extractKeyId(ciphertext) ?? LEGACY_BUCKET;
-      byKeyId[id] = (byKeyId[id] ?? 0) + 1;
-    }
-  }
+  // Bounded batches for every column, per-row codec where the column has one.
+  await walkColumn(delegate, col, ({ value, codec }) => {
+    total += 1;
+    const id = walkedKeyId(value, codec, col.kind) ?? LEGACY_BUCKET;
+    byKeyId[id] = (byKeyId[id] ?? 0) + 1;
+  });
   return {
     model: col.model,
     field: col.field,
@@ -356,57 +353,33 @@ export async function rotateColumn(
     }
   };
 
-  if (isBatched(col)) {
-    // Blob column: bounded id-cursor batches (never an unbounded findMany),
-    // re-encrypted under each row's OWN codec where it has one. Idempotent —
-    // rows already on the active key are skipped, so an interrupted run
-    // resumes cleanly on the next invocation.
-    await walkBlobColumn(delegate, col, async ({ id, value, codec }) => {
-      result.scanned += 1;
-      if (walkedKeyId(value, codec, col.kind) === getActiveKeyId()) return;
-      try {
-        // The plaintext is never inspected, only re-sealed, so every envelope
-        // a stored value can legitimately carry survives rotation untouched.
-        const next =
-          codec !== null
-            ? reencryptBlob(value as Uint8Array, codec)
-            : fromCiphertext(
-                encrypt(decrypt(toCiphertext(value, col.kind)!)),
-                col.kind,
-              );
-        await delegate.update({
-          where: { [pkField(col)]: id },
-          data: { [col.field]: next },
-        });
-        result.rotated += 1;
-      } catch {
-        await onUnreadable(id);
-      }
-    });
-    return result;
-  }
-
-  const pk = pkField(col);
-  const rows = await delegate.findMany({
-    select: { [pk]: true, [col.field]: true },
-  });
-  result.scanned = rows.length;
-  for (const row of rows) {
-    const ciphertext = toCiphertext(row[col.field], col.kind);
-    if (ciphertext == null || !shouldRotate(ciphertext)) continue;
-    const id = row[pk] as string;
+  // Bounded id-cursor batches for every column (never an unbounded
+  // findMany), re-encrypted under each row's OWN codec where it has one.
+  // Idempotent — rows already on the active key are skipped, so an
+  // interrupted run resumes cleanly on the next invocation. `scanned` counts
+  // the rows that hold ciphertext, whatever the column.
+  await walkColumn(delegate, col, async ({ id, value, codec }) => {
+    result.scanned += 1;
+    if (walkedKeyId(value, codec, col.kind) === getActiveKeyId()) return;
     try {
-      // ACTIVE-KEY-ONLY: encrypt() always writes the active key id.
-      const reencrypted = encrypt(decrypt(ciphertext));
+      // The plaintext is never inspected, only re-sealed, so every envelope
+      // a stored value can legitimately carry survives rotation untouched.
+      const next =
+        codec !== null
+          ? reencryptBlob(value as Uint8Array, codec)
+          : fromCiphertext(
+              encrypt(decrypt(toCiphertext(value, col.kind)!)),
+              col.kind,
+            );
       await delegate.update({
-        where: { [pk]: id },
-        data: { [col.field]: fromCiphertext(reencrypted, col.kind) },
+        where: { [pkField(col)]: id },
+        data: { [col.field]: next },
       });
       result.rotated += 1;
     } catch {
       await onUnreadable(id);
     }
-  }
+  });
   return result;
 }
 

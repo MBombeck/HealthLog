@@ -1,6 +1,6 @@
 /**
  * The `labs` and `history` groups on the clinician view: lab results, illness
- * episodes, visits and the immunization record.
+ * episodes, visits, the surgical history and the immunization record.
  *
  * All four were selectable on a share link and none of them reached the page,
  * while the PDF download from the same link printed every one. What each
@@ -12,8 +12,11 @@
  * A pure server component: no client hooks, no session, no markdown — every
  * value renders as escaped React text.
  */
-import type { EncounterKind } from "@/generated/prisma/client";
-import { encounterKindLabelKey } from "@/lib/encounters/kind-label";
+import type { EncounterKind, Laterality } from "@/generated/prisma/client";
+import {
+  encounterKindLabelKey,
+  lateralityLabelKey,
+} from "@/lib/encounters/kind-label";
 import { formatReferenceRange } from "@/lib/labs/reference-range";
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import {
@@ -217,6 +220,53 @@ export function VisitsSection({
           </div>
         ))}
       </div>
+    </LeafSection>
+  );
+}
+
+/**
+ * The surgical history. Reference data, not window-bounded, like the
+ * immunization record below: every procedure that happened, oldest first. What
+ * was done is the row's label; the date, the site with its side and the
+ * outcome compose onto the value side, the shape the immunization rows use.
+ */
+export function SurgicalHistorySection({
+  t,
+  report,
+  scope,
+  fmtDate,
+}: {
+  t: Translate;
+  report: DoctorReportData;
+  scope: LeafScope;
+  fmtDate: (iso: string) => string;
+}) {
+  const procedures = report.surgicalHistory ?? [];
+
+  const site = (row: (typeof procedures)[number]) => {
+    if (!row.bodySite) return null;
+    if (!row.laterality) return row.bodySite;
+    return t("encounters.bodySiteWithSide", {
+      site: row.bodySite,
+      side: t(lateralityLabelKey(row.laterality as Laterality)),
+    });
+  };
+
+  return (
+    <LeafSection
+      t={t}
+      scope={scope}
+      leaves={["SURGICAL_HISTORY"]}
+      title={t("doctorReport.surgicalHistoryTitle")}
+      empty={procedures.length === 0}
+    >
+      {procedures.map((row, index) => (
+        <StatRow
+          key={`${row.occurredAt}-${index}`}
+          label={row.procedure ?? "—"}
+          value={compose([fmtDate(row.occurredAt), site(row), row.outcome])}
+        />
+      ))}
     </LeafSection>
   );
 }

@@ -52,7 +52,7 @@ describe("reminder-worker — drainPerSampleCumulative nightly schedule", () => 
 
   it("registers a createAndWork handler against the drain queue", () => {
     expect(source).toMatch(
-      /createAndWork[\s\S]{0,200}DRAIN_CUMULATIVE_QUEUE[\s\S]{0,900}drainPerSampleCumulative/,
+      /createAndWork[\s\S]{0,200}DRAIN_CUMULATIVE_QUEUE[\s\S]{0,1100}drainPerSampleCumulative/,
     );
   });
 

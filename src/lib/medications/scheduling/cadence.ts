@@ -921,6 +921,11 @@ function missedFromLedger(
       skipped: e.skipped,
       autoMissed: e.autoMissed ?? false,
     }));
-  const rows = reconstructDoseHistory(bands, intakes, asOf);
+  const rows = reconstructDoseHistory(
+    bands,
+    intakes,
+    asOf,
+    engineCtx.createdAt,
+  );
   return rows.filter((r) => r.status === "missed").length;
 }

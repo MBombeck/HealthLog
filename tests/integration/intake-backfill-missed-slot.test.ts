@@ -100,8 +100,9 @@ async function seedTwiceDaily(userId: string, hours: { a: number; b: number }) {
       dose: "5mg",
       active: true,
       startsOn: new Date(Date.now() - 30 * DAY_MS),
-      // The ledger clamps its window floor to the medication's creation, so a
-      // medication minted at test time would have no yesterday to read back.
+      // The ledger shows an unrecorded slot only from the medication's
+      // creation on, so a medication minted at test time would have no
+      // missed yesterday to read back.
       createdAt: new Date(Date.now() - 30 * DAY_MS),
       schedules: {
         create: {

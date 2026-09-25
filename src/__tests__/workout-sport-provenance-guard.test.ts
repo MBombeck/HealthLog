@@ -177,7 +177,7 @@ describe("T2 — the set of files writing Workout rows is frozen", () => {
     "app/api/workouts/batch/route.ts": "client-supplied enum",
     // Backup restore replays rows this app previously wrote, provenance and
     // all.
-    "app/api/admin/backups/[id]/restore/route.ts": "restore replay",
+    "lib/export/restore-backup.ts": "restore replay",
   };
 
   it("only the registered ingests and the declared non-mappers create Workout rows", () => {

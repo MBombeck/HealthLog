@@ -39,6 +39,11 @@ import {
 } from "@/lib/notifications/reminder-dedup";
 import { getUserTodayBounds as getUserTodayBoundsUtil } from "@/lib/tz/local-day";
 import { getWorkerPrisma, parseTimeToMinutes } from "./shared";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import {
+  LIVE_ERA_REVISION_ARGS,
+  liveEraStart as liveEraStartOf,
+} from "@/lib/medications/scheduling/live-era";
 
 export interface ReminderCheckPayload {
   triggeredAt: string;
@@ -165,17 +170,15 @@ export async function handleReminderCheck(
       // zero schedules anyway (the per-schedule loop below would be a
       // no-op), but the explicit predicate keeps them out of the tick's
       // per-medication intake reads entirely.
+      // v1.39.1 (#1033) — a medication with intake tracking off keeps its
+      // schedule rows as a record, so it must be excluded explicitly: no
+      // reminder on any channel and no missed-dose placeholder.
       const medications = await prisma.medication.findMany({
-        where: { active: true, asNeeded: false },
+        where: { active: true, asNeeded: false, ...TRACKED_INTAKE_WHERE },
         include: {
           schedules: true,
           phaseConfig: true,
-          scheduleRevisions: {
-            where: { supersededByRevisionId: null },
-            orderBy: { validUntil: "desc" },
-            take: 1,
-            select: { validUntil: true },
-          },
+          scheduleRevisions: LIVE_ERA_REVISION_ARGS,
           user: {
             select: {
               id: true,
@@ -245,7 +248,7 @@ export async function handleReminderCheck(
         // skips and USER_PIN decisions are mutations, whose Prisma @updatedAt
         // timestamp records the decision. Ordinary takes use their takenAt.
         const liveEraStart =
-          med.scheduleRevisions?.[0]?.validUntil.getTime() ?? null;
+          liveEraStartOf(med.scheduleRevisions)?.getTime() ?? null;
         const liveEraEvents =
           liveEraStart === null
             ? todayEvents

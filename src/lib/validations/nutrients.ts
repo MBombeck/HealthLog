@@ -64,7 +64,7 @@ export const nutrientEntryResultSchema = z
   .meta({
     id: "NutrientEntryResult",
     description:
-      "Per-entry ingest outcome. skipped reasons: unit_mismatch | value_out_of_range | day_invalid | upsert_failed. Log and drop a skipped entry — do not retry it.",
+      "Per-entry ingest outcome. skipped reasons: unit_mismatch | value_out_of_range | day_invalid | upsert_failed. The first three are verdicts on the entry itself and terminal: resending it unchanged is skipped again, so log and drop it. `upsert_failed` is a write failure on the server's side, not a verdict on the entry: nothing was stored for it, and it should be sent again on a later sync. A write failure takes out the whole group it was written in (every new day total, or every existing one), so several entries can carry it at once. A response carrying it is marked `Cache-Control: no-store` and is not kept for `Idempotency-Key` replay, so the retry writes again rather than replaying the failure.",
   });
 
 export const nutrientBatchResponseSchema = z

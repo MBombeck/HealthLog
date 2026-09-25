@@ -40,6 +40,7 @@ import {
   type WorkerScheduleRow,
 } from "@/lib/medications/scheduling/worker-helpers";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
+import { dueSchedules } from "@/lib/medications/intake-tracking";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -134,26 +135,23 @@ export const GET = apiHandler(
       return apiError("Medication not found", 404);
     }
 
-    // Resolve the window. Default to the trailing 90 days; clamp the floor to
-    // the medication's creation so pre-existence days never mint phantom
-    // slots, and cap the span so a pathological `from=1970` can't expand a
-    // year-plus of bands. `to` defaults to `now`.
+    // Resolve the window. Default to the trailing 90 days and cap the span
+    // so a pathological `from=1970` can't expand a year-plus of bands. `to`
+    // defaults to `now`.
     const to = parsed.data.to ?? now;
     const requestedFrom =
       parsed.data.from ?? new Date(to.getTime() - 90 * DAY_MS);
     const spanFloor = new Date(to.getTime() - MAX_WINDOW_DAYS * DAY_MS);
-    // The window the caller asked for, capped only by the span limit. This is
-    // the floor for recorded doses: a dose logged with a time before the
-    // medication was added (created at 16:20, "taken at 14:00") is a real
-    // record and belongs in the window, exactly as the unwindowed full
-    // history shows it (#1028).
-    const intakeFrom = new Date(
-      Math.max(requestedFrom.getTime(), spanFloor.getTime()),
-    );
-    // The floor for minted slots additionally stops at the medication's
-    // creation, so pre-existence days never mint phantom missed slots.
+    // The window the caller asked for, capped only by the span limit. Both
+    // recorded doses and minted slots use it: a dose logged for a slot
+    // before the medication was added (created at 16:20, the 14:00 dose
+    // recorded afterwards) is a real record and must meet its slot, or it
+    // reads as an off-schedule take due at the next slot (#1028). Slots
+    // before the creation that no recorded dose claims stay out of the
+    // ledger: `reconstructDoseHistory` receives the creation instant as the
+    // floor of expected slots, so pre-existence days never read as missed.
     const from = new Date(
-      Math.max(intakeFrom.getTime(), medication.createdAt.getTime()),
+      Math.max(requestedFrom.getTime(), spanFloor.getTime()),
     );
 
     const events = await prisma.medicationIntakeEvent.findMany({
@@ -220,7 +218,10 @@ export const GET = apiHandler(
     // A legacy daily schedule carrying only `windowStart` surfaces it as the
     // single time-of-day so the minter mints its daily band (mirrors the
     // compliance route + the ledger tally).
-    const canonicalSchedules = medication.schedules.map((s) => {
+    // v1.39.1 (#1033) — with intake tracking off the live era expects
+    // nothing: the ledger shows the doses that were recorded and the slots
+    // of archived eras, never a missed slot minted from the record.
+    const canonicalSchedules = dueSchedules(medication).map((s) => {
       const canonical = buildCanonicalSchedule(s as WorkerScheduleRow);
       if (
         canonical.timesOfDay.length === 0 &&
@@ -264,7 +265,7 @@ export const GET = apiHandler(
     // partition, so filter on the stored anchor (a take snapped to an
     // out-of-window slot is excluded, matching the compliance read).
     const historyIntakes: HistoryIntake[] = mapped
-      .filter((e) => e.scheduledFor >= intakeFrom && e.scheduledFor <= horizon)
+      .filter((e) => e.scheduledFor >= from && e.scheduledFor <= horizon)
       .map((e) => ({
         id: e.id,
         scheduledFor: e.scheduledFor,
@@ -276,7 +277,12 @@ export const GET = apiHandler(
         source: e.source,
       }));
 
-    const rows = reconstructDoseHistory(bands, historyIntakes, now);
+    const rows = reconstructDoseHistory(
+      bands,
+      historyIntakes,
+      now,
+      medication.createdAt,
+    );
 
     const serialized: SerializedDoseHistoryRow[] = rows.map((row) => ({
       kind: row.kind,
@@ -314,11 +320,10 @@ export const GET = apiHandler(
     });
 
     // The window the recorded doses were read over (#1028): from the
-    // requested start (slots additionally start at the medication's
-    // creation) to the read horizon, which reaches past `to` only for a dose
-    // recorded ahead of its slot.
+    // requested start to the read horizon, which reaches past `to` only for
+    // a dose recorded ahead of its slot.
     return apiSuccess({
-      from: intakeFrom.toISOString(),
+      from: from.toISOString(),
       to: horizon.toISOString(),
       family,
       hasExpectedSlots: bands.length > 0,

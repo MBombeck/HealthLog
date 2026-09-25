@@ -23,8 +23,8 @@
  */
 import { Buffer } from "node:buffer";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { Transform, type Readable } from "node:stream";
-import { createGzip, gunzipSync, gzipSync } from "node:zlib";
+import { Readable, Transform } from "node:stream";
+import { createGunzip, createGzip, gunzipSync, gzipSync } from "node:zlib";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { createRawStreamEncryptor, decryptRawStream } from "@/lib/crypto";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
@@ -191,6 +191,48 @@ export function decryptBackup(buf: Buffer, key: Buffer): string {
   return version === BACKUP_ENVELOPE_GZIP
     ? gunzipSync(plaintext).toString("utf8")
     : plaintext.toString("utf8");
+}
+
+/**
+ * An off-host object → a source of its JSON as byte chunks, openable as often
+ * as needed. `decryptBackup` answers one string, which the JSON of a large
+ * record cannot be: 662 MB for an account of 1.25 million measurements, past
+ * the longest string V8 allows (#1031). The tag is verified whole on the
+ * compressed ciphertext before a source exists, exactly as `decryptBackup`
+ * does; only the decompression is streamed.
+ */
+export function openBackupObject(
+  buf: Buffer,
+  key: Buffer,
+): () => AsyncIterable<Buffer> {
+  const magic = buf.subarray(0, 4).toString("binary");
+  const version = buf[PREAMBLE_LENGTH - 1];
+  if (
+    magic !== MAGIC ||
+    (version !== BACKUP_ENVELOPE_PLAIN &&
+      version !== BACKUP_ENVELOPE_GZIP &&
+      version !== BACKUP_ENVELOPE_STREAM)
+  ) {
+    throw new Error("Invalid backup envelope (bad magic or version)");
+  }
+  let plaintext: Buffer;
+  if (version === BACKUP_ENVELOPE_STREAM) {
+    plaintext = decryptRawStream(buf.subarray(PREAMBLE_LENGTH), key);
+  } else {
+    const iv = buf.subarray(PREAMBLE_LENGTH, PREAMBLE_LENGTH + IV_LENGTH);
+    const tag = buf.subarray(
+      PREAMBLE_LENGTH + IV_LENGTH,
+      PREAMBLE_LENGTH + IV_LENGTH + TAG_LENGTH,
+    );
+    const ct = buf.subarray(PREAMBLE_LENGTH + IV_LENGTH + TAG_LENGTH);
+    const dec = createDecipheriv(ALGORITHM, key, iv);
+    dec.setAuthTag(tag);
+    plaintext = Buffer.concat([dec.update(ct), dec.final()]);
+  }
+  if (version === BACKUP_ENVELOPE_PLAIN) {
+    return () => Readable.from([plaintext]);
+  }
+  return () => Readable.from([plaintext]).pipe(createGunzip());
 }
 
 /**
@@ -551,9 +593,33 @@ interface BackupRunReport {
   largestObjectBytes: number;
   /** Accounts refused for size rather than failed for a reason. */
   oversized: number;
+  /**
+   * Accounts an earlier attempt of the same run already uploaded, and this
+   * one therefore skipped (see `RunOffhostBackupOptions.runStartedAt`).
+   */
+  alreadyUploaded: number;
+  /** `shouldStop` ended the run before every account was reached. */
+  stoppedEarly: boolean;
 }
 
-export type RunOffhostBackupOptions = UploadBackupOptions;
+export interface RunOffhostBackupOptions extends UploadBackupOptions {
+  /**
+   * When this run first started: the pg-boss job's creation time, the same
+   * on every attempt of the job. An attempt skips each account whose ledger
+   * shows a successful upload since then, because an earlier attempt of the
+   * same run already put its object in the bucket, and the objects are keyed
+   * on this date so a retry after midnight still writes under the run's day.
+   * Without it a retry started again from the first account (#1031), and on
+   * a cohort with one large record the retry never got past the accounts the
+   * first attempt had already done.
+   */
+  runStartedAt?: Date;
+  /**
+   * Asked before each account. Returning `true` ends the run cleanly between
+   * accounts, before the job's expiry would cut one off halfway.
+   */
+  shouldStop?: () => boolean;
+}
 
 export async function runOffhostBackup(
   prisma: PrismaClient,
@@ -568,9 +634,23 @@ export async function runOffhostBackup(
     );
   }
   const s3 = s3Override ?? (await getS3Client(cfg));
-  const dateKey = now.toISOString().slice(0, 10);
+  const runStartedAt = options.runStartedAt;
+  const dateKey = (runStartedAt ?? now).toISOString().slice(0, 10);
 
-  const users = await prisma.user.findMany({ select: { id: true } });
+  const users = await prisma.user.findMany({
+    select: { id: true },
+    orderBy: { id: "asc" },
+  });
+  const doneThisRun = new Set<string>();
+  if (runStartedAt) {
+    const done = await prisma.offhostBackupState.findMany({
+      where: { lastSuccessAt: { gte: runStartedAt } },
+      select: { userId: true },
+    });
+    for (const row of done) doneThisRun.add(row.userId);
+  }
+  let alreadyUploaded = 0;
+  let stoppedEarly = false;
   let uploaded = 0;
   let failed = 0;
   let oversized = 0;
@@ -579,6 +659,14 @@ export async function runOffhostBackup(
   let ledgerWriteFailures = 0;
   const evt = getEvent();
   for (const user of users) {
+    if (doneThisRun.has(user.id)) {
+      alreadyUploaded++;
+      continue;
+    }
+    if (options.shouldStop?.()) {
+      stoppedEarly = true;
+      break;
+    }
     let objectBytes: number | null = null;
     try {
       objectBytes = await uploadEncryptedBackup(
@@ -679,6 +767,8 @@ export async function runOffhostBackup(
     totalUsers: users.length,
     largestObjectBytes,
     oversized,
+    alreadyUploaded,
+    stoppedEarly,
   };
 }
 

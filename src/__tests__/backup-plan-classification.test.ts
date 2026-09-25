@@ -321,7 +321,7 @@ describe("every backed-up model travels both ways, or is named as debt", () => {
   it("does not count a nested relation read as a restore write", () => {
     expect(
       touches(
-        ["src/app/api/admin/backups/[id]/restore/route.ts"],
+        ["src/lib/export/restore-backup.ts"],
         "User",
         WRITE_OPS,
         WRITE_RELATION_OPS,

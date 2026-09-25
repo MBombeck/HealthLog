@@ -293,6 +293,11 @@
     "visitsColReason": "Motivo",
     "visitsColOutcome": "Esito",
     "visitsColConditions": "Malattie",
+    "surgicalHistoryTitle": "Anamnesi chirurgica",
+    "surgicalHistoryColDate": "Data",
+    "surgicalHistoryColProcedure": "Intervento",
+    "surgicalHistoryColBodySite": "Parte del corpo",
+    "surgicalHistoryColOutcome": "Esito",
     "immunizationsTitle": "Vaccinazioni",
     "immunizationsColDate": "Data",
     "immunizationsColVaccine": "Vaccino",
@@ -1201,6 +1206,16 @@
     "yesterday": "Ieri",
     "tomorrow": "Domani",
     "asNeededMarker": "Al bisogno",
+    "recordOnlyBadge": "Solo annotato",
+    "trackIntake": {
+      "title": "Registrazione assunzioni",
+      "label": "Registra le assunzioni",
+      "helperOn": "Le dosi sono dovute secondo questo programma, con promemoria e aderenza.",
+      "helperOff": "Solo annotato: nulla è dovuto, niente promemoria, niente aderenza.",
+      "enabledToast": "Registrazione assunzioni attiva",
+      "disabledToast": "Registrazione assunzioni disattivata",
+      "toggleFailed": "Impossibile modificare la registrazione delle assunzioni."
+    },
     "withoutNotification": "Senza notifica",
     "pausedSince": "In pausa dal",
     "takeNow": "Assumi ora",
@@ -1796,7 +1811,7 @@
           "unpinnedToast": "Attribuzione rimossa",
           "dueContext": "prevista alle {time} ({delta})",
           "confirmTitle": "Attribuire allo slot delle {time}?",
-          "confirmBody": "L'assunzione conterà come in ritardo per questo slot – la percentuale non viene abbellita. L'attribuzione può essere rimossa in qualsiasi momento.",
+          "confirmBody": "L'assunzione conterà per questo slot esattamente come se fosse stata registrata lì: puntuale o in ritardo a seconda di quando è stata presa, quindi la percentuale non viene abbellita. L'attribuzione può essere rimossa in qualsiasi momento.",
           "confirmCancel": "Annulla",
           "confirmAction": "Attribuisci"
         }
@@ -1927,6 +1942,7 @@
         "nextDoseLabel": "Prossima dose",
         "nextDoseNone": "Nessuna dose in programma.",
         "nextDoseAsNeeded": "Al bisogno — nessuna dose programmata.",
+        "nextDoseNotTracked": "Assunzioni non registrate, solo annotato.",
         "pausedHint": "In pausa — nessun promemoria.",
         "reminderLabel": "Promemoria",
         "reminderOn": "Attivo",
@@ -2000,7 +2016,7 @@
         "packagingEdit": "Modifica",
         "packagingDescription": "Imposta quante unità consuma una dose e la dimensione abituale di una nuova confezione, ad es. dopo un cambio di produttore con blister diverso.",
         "packagingUnitsPerDoseLabel": "Unità per dose",
-        "packagingUnitsPerDoseHelper": "Ad es. due compresse da 2 mg per una dose da 4 mg (1–100). Le assunzioni già registrate restano invariate.",
+        "packagingUnitsPerDoseHelper": "Ad es. due compresse da 2 mg per una dose da 4 mg, oppure 1,5 per una e mezza (oltre 0, fino a 100). Le assunzioni già registrate restano invariate.",
         "packagingDefaultPackLabel": "Dimensione confezione predefinita (unità)",
         "packagingDefaultPackHelper": "Precompila la quantità quando registri nuove confezioni (1–1000). Lascia vuoto se non applicabile.",
         "packagingSuccess": "Dati confezione salvati",
@@ -2198,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "il file non registra nulla su quella dose: nessuno ha risposto e niente è stato annotato",
       "reasonStatusReminderEvent": "la riga riguarda un promemoria postposto, che non dice nulla sulla dose",
       "reasonStatusNotificationNotSent": "la riga registra che non è stata inviata alcuna notifica, il che riguarda l'app e non la dose"
+    },
+    "unitsPerDoseField": {
+      "other": "Altro…",
+      "inputLabel": "Unità per dose, altro valore",
+      "placeholder": "ad es. 1,5 o 1 1/2",
+      "invalid": "Inserisci un numero maggiore di 0 e fino a 100, ad esempio 1,5 o 1 1/2.",
+      "preview": "Conta come {value} per dose"
     }
   },
   "charts": {
@@ -4760,7 +4783,9 @@
           "done": "{name} è stato aggiunto.",
           "doneUnnamed": "Il tuo primo farmaco è stato aggiunto.",
           "nextDose": "Prossima dose: {when}.",
-          "reminders": "I promemoria seguono l'orario che hai impostato."
+          "reminders": "I promemoria seguono l'orario che hai impostato.",
+          "recordOnly": "Solo annotato: niente promemoria, nulla è dovuto.",
+          "asNeeded": "Al bisogno: niente promemoria, registra una dose quando la prendi."
         },
         "log-reading": {
           "title": "Inserisci una misurazione: {target}",
@@ -7169,7 +7194,7 @@
         "uploadTitle": "Carica backup",
         "uploadDescription": "Convalida un file di backup e archivialo come istantanea manuale. Il ripristino è un passaggio separato.",
         "uploadButton": "Carica file",
-        "uploadHelp": "File JSON conforme allo schema di backup attuale. Max 10 MB.",
+        "uploadHelp": "Un backup di HealthLog in formato .json o .json.gz. Il file viene compresso prima del caricamento; compresso può arrivare a 512 MB.",
         "uploadSuccess": "Backup caricato ({count} record)",
         "uploadFailed": "Caricamento non riuscito",
         "restore": "Ripristina",
@@ -7244,7 +7269,39 @@
           "unknownDetail": "Nessun giro notturno ha ancora registrato questo account.",
           "age": "{hours} h fa",
           "scheduleNote": "Il caricamento gira ogni {hours} h. Recente significa entro un giro, attesa che un giro non ha prodotto nulla, obsoleta che non lo hanno fatto due."
-        }
+        },
+        "restoreStarted": "Ripristino avviato. L'avanzamento compare sopra l'elenco.",
+        "restoreActive": "Per questo account è già in corso un ripristino. Aspetta che finisca.",
+        "restoreJobQueuedTitle": "Il ripristino di {username} è in attesa di partire",
+        "restoreJobQueuedNote": "Parte appena il processo in background lo prende in carico.",
+        "restoreJobRunningTitle": "Ripristino di {username} in corso",
+        "restoreJobRunningNote": "L'account continua a mostrare i dati attuali finché il ripristino non termina. Puoi lasciare questa pagina: il ripristino prosegue sul server.",
+        "restoreJobResumed": "Riavviato dopo il riavvio del server.",
+        "restoreJobPhaseValidating": "Controllo del file di backup: {checked} misurazioni controllate",
+        "restoreJobPhaseClearing": "Rimozione dei dati attuali dell'account",
+        "restoreJobPhaseMeasurements": "Scrittura delle misurazioni: {done} di {total}",
+        "restoreJobPhaseSections": "Scrittura degli altri dati: {done} di {total} sezioni",
+        "restoreJobPhaseRebuilding": "Ricalcolo di grafici e riepiloghi",
+        "restoreJobSucceededTitle": "Ripristino di {username} completato",
+        "restoreJobSucceededDescription": "{count} record ripristinati. Terminato {when}.",
+        "restoreJobFailedTitle": "Il ripristino di {username} non è stato completato",
+        "restoreJobFailedKept": "Non è stato modificato nulla. Il backup resta disponibile, quindi puoi riavviare il ripristino dalla sua riga senza caricarlo di nuovo.",
+        "restoreFailureNotFound": "Il backup è stato eliminato prima che il ripristino potesse leggerlo.",
+        "restoreFailureChanged": "Il backup è stato sostituito da una copia più recente mentre il ripristino aspettava. Controlla la nuova copia, poi riavvia il ripristino.",
+        "restoreFailureUndecryptable": "Non è stato possibile decifrare il backup. La chiave con cui è stato scritto non è più configurata, oppure la copia salvata è stata modificata.",
+        "restoreFailureSchema": "Il file non è un backup HealthLog valido.",
+        "restoreFailureVersion": "Il backup è stato scritto da una versione più recente di HealthLog. Aggiorna prima questo server.",
+        "restoreFailureOwnerMismatch": "Il file nel backup appartiene a un account diverso da quello della riga di backup.",
+        "restoreFailureOwnerMissing": "L'account a cui appartiene questo backup non esiste più.",
+        "restoreFailureSectionMissing": "Il file è incompleto: il suo manifesto nomina una sezione che non contiene.",
+        "restoreFailureDocument": "Il file contiene documenti senza il loro contenuto, come un'esportazione portabile. Usa un backup di disaster recovery.",
+        "restoreFailureTimeBudget": "Questo backup è troppo grande per essere ripristinato entro il tempo concesso al processo in background.",
+        "restoreFailureTransaction": "Il database ha rifiutato il ripristino a metà, quindi tutto è stato annullato. Il log del server indica l'errore.",
+        "restoreFailureInterrupted": "Il ripristino si è interrotto al riavvio del server ed è stato annullato. Se si interrompe di nuovo, probabilmente al server manca memoria.",
+        "restoreFailureNotStarted": "Il processo in background non ha preso in carico il ripristino. Controlla che sia in esecuzione.",
+        "restoreFailureEnqueue": "Non è stato possibile passare il ripristino al processo in background. Controlla che sia in esecuzione.",
+        "restoreFailureAfterCommit": "I dati sono stati ripristinati, ma un passaggio successivo non è riuscito. I grafici potrebbero aggiornarsi solo con la prossima esecuzione notturna.",
+        "restoreFailureUnexpected": "Il ripristino si è fermato per un errore imprevisto ed è stato annullato. Il log del server indica l'errore."
       },
       "danger-zone": {
         "title": "Zona pericolosa",
@@ -8233,7 +8290,9 @@
       "flowSpotting": "spotting",
       "flowLight": "leggero",
       "flowMedium": "medio",
-      "flowHeavy": "abbondante"
+      "flowHeavy": "abbondante",
+      "legendIntercourse": "Rapporti",
+      "legendOtherEntries": "Altre voci"
     },
     "predictions": {
       "title": "Cosa arriva dopo",
@@ -10393,6 +10452,7 @@
     "scopeCount": "{count} voci da {groups} aree",
     "scopeSensitive": "incl. {names}",
     "leafVisits": "Visite mediche",
+    "leafSurgicalHistory": "Anamnesi chirurgica",
     "leafImmunizations": "Vaccinazioni",
     "leafEmergency": "Informazioni di emergenza (gruppo sanguigno, contatti, disposizioni)"
   },
@@ -10777,8 +10837,16 @@
       "emergency": "Emergenza",
       "hospital": "Ospedale",
       "therapy": "Seduta di terapia",
-      "other": "Appuntamento medico"
+      "other": "Appuntamento medico",
+      "procedure": "Procedura o intervento chirurgico"
     },
+    "laterality": {
+      "left": "Sinistra",
+      "right": "Destra",
+      "both": "Entrambi i lati",
+      "none": "Non indicato"
+    },
+    "bodySiteWithSide": "{site} · {side}",
     "sectionTitle": "Appuntamenti",
     "sectionDescription": "Visite mediche e appuntamenti fissati in un unico posto.",
     "add": "Appuntamento",
@@ -10820,6 +10888,9 @@
       "reason": "Motivo",
       "outcome": "Esito",
       "outcomeReveal": "Aggiungi un esito",
+      "bodySite": "Parte del corpo",
+      "bodySiteHint": "Per esempio ginocchio o cistifellea.",
+      "laterality": "Lato",
       "linkDocuments": "Documenti",
       "linkLabResults": "Esami di laboratorio",
       "linkConditions": "Malattie",
@@ -10839,12 +10910,28 @@
     },
     "dashboard": {
       "nextVisit": "Prossimo appuntamento: {what} il {when}"
+    },
+    "procedures": {
+      "title": "Procedure e interventi chirurgici",
+      "description": "Tutte le procedure e gli interventi che hai avuto, dal più recente.",
+      "add": "Intervento",
+      "searchLabel": "Filtra per parte del corpo",
+      "searchPlaceholder": "Per esempio ginocchio",
+      "sitesLabel": "Parti del corpo",
+      "allSites": "Tutte",
+      "count": "{shown} di {total}",
+      "emptyTitle": "Nessun intervento registrato",
+      "emptyDescription": "Registra un appuntamento del tipo Procedura o intervento chirurgico, oppure cambia un appuntamento esistente in questo tipo.",
+      "noMatchTitle": "Nessun risultato per questo filtro",
+      "clearFilter": "Rimuovi filtro",
+      "loadError": "Non è stato possibile caricare gli interventi."
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Mostra controlli o appuntamenti",
+    "viewSwitchLabel": "Mostra controlli, appuntamenti o interventi",
     "tabVorsorge": "Controlli",
-    "tabVisits": "Appuntamenti"
+    "tabVisits": "Appuntamenti",
+    "tabProcedures": "Interventi"
   },
   "practitioners": {
     "title": "Studi e medici",
@@ -10880,9 +10967,10 @@
       "selectAll": "Seleziona tutto",
       "searchPlaceholder": "Cerca",
       "searchNoMatch": "Nessun risultato",
-      "remove": "Rimuovi",
       "suggested": "Intorno a questa data",
-      "loadError": "Impossibile caricare l’elenco."
+      "loadError": "Impossibile caricare l’elenco.",
+      "removeNamed": "Rimuovi {name}",
+      "removed": "Collegamento a {name} rimosso"
     }
   }
 }

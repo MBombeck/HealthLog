@@ -189,6 +189,24 @@ describe("segmentRangeIntoEras", () => {
   });
 });
 
+describe("segmentRangeIntoEras — before the first revision (#1028)", () => {
+  it("covers the stretch before the medication's creation with the first era", () => {
+    // A slot before the creation must still mint so a dose recorded on it
+    // meets its slot; without a revision it mints against the live rows,
+    // with one it mints against the schedule that was live first.
+    const range = {
+      from: new Date("2026-04-30T00:00:00.000Z"),
+      to: new Date("2026-06-10T00:00:00.000Z"),
+    };
+    const eras = segmentRangeIntoEras(range, [oldEraRevision], [liveSchedule]);
+    expect(eras).toHaveLength(2);
+    expect(eras[0].live).toBe(false);
+    expect(eras[0].from).toEqual(range.from);
+    expect(eras[0].schedules[0].timesOfDay).toEqual(["07:00", "19:00"]);
+    expect(eras[1].from).toEqual(replaceAt);
+  });
+});
+
 describe("buildBandsForSchedulesWithEras", () => {
   const range = {
     from: new Date("2026-05-20T00:00:00.000Z"),
@@ -255,6 +273,7 @@ describe("buildBandsForSchedulesWithEras", () => {
       bands,
       [{ scheduledFor: takenAt, takenAt, skipped: false }],
       range.to,
+      null,
     );
     const takenRows = rows.filter((r) => r.status === "taken_on_time");
     expect(takenRows).toHaveLength(1);

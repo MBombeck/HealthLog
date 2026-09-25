@@ -54,6 +54,8 @@ interface FakeScheduleRow {
 
 interface FakeMedication {
   id: string;
+  /** Defaults to long before every fixture row when omitted. */
+  createdAt?: Date;
   schedules: FakeScheduleRow[];
 }
 
@@ -62,8 +64,9 @@ interface FakeWhere {
   autoMissed?: boolean;
   takenAt?: null;
   deletedAt?: null;
-  medicationId?: { in: string[] };
-  scheduledFor?: { lt: Date };
+  medicationId?: string | { in: string[] };
+  scheduledFor?: { lt?: Date; gte?: Date };
+  OR?: FakeWhere[];
 }
 
 function matches(row: FakeIntakeRow, where: FakeWhere): boolean {
@@ -74,9 +77,21 @@ function matches(row: FakeIntakeRow, where: FakeWhere): boolean {
   if (where.takenAt === null && row.takenAt !== null) return false;
   if (where.deletedAt === null && row.deletedAt !== null) return false;
   if (
-    where.medicationId !== undefined &&
+    typeof where.medicationId === "string" &&
+    row.medicationId !== where.medicationId
+  )
+    return false;
+  if (
+    typeof where.medicationId === "object" &&
     !where.medicationId.in.includes(row.medicationId)
   )
+    return false;
+  if (
+    where.scheduledFor?.gte !== undefined &&
+    row.scheduledFor.getTime() < where.scheduledFor.gte.getTime()
+  )
+    return false;
+  if (where.OR !== undefined && !where.OR.some((w) => matches(row, w)))
     return false;
   if (
     where.scheduledFor?.lt !== undefined &&
@@ -128,7 +143,12 @@ function makeFakePrisma(state: {
     },
     medication: {
       findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
-        state.medications.filter((m) => where.id.in.includes(m.id)),
+        state.medications
+          .filter((m) => where.id.in.includes(m.id))
+          .map((m) => ({
+            createdAt: new Date("2020-01-01T00:00:00Z"),
+            ...m,
+          })),
       ),
     },
   } as unknown as PrismaClient;
@@ -443,6 +463,29 @@ describe("runIntakeAutoSkipPass", () => {
     const result = await runIntakeAutoSkipPass(prisma, { nowMs: NOW_MS });
     expect(result.skippedCount).toBe(0);
     expect(rows[0].autoMissed).toBe(false);
+  });
+
+  // #1028 — the today projector mints a pending placeholder for every slot
+  // of the day, including the slots before the medication was added. Such a
+  // slot was never expected, so its placeholder must never become a miss:
+  // the miss-free streak, the Coach and every other raw-row reader would
+  // count it.
+  it("never flips a placeholder whose slot predates the medication", async () => {
+    const createdAt = new Date(NOW_MS - 30 * HOUR_MS);
+    const rows = [
+      pendingRow("i-before", "med-new", new Date(NOW_MS - 37 * HOUR_MS)),
+      pendingRow("i-after", "med-new", new Date(NOW_MS - 25 * HOUR_MS)),
+      pendingRow("i-old-med", "med-daily", new Date(NOW_MS - 37 * HOUR_MS)),
+    ];
+    const prisma = makeFakePrisma({
+      rows,
+      medications: [{ ...DAILY_MED, id: "med-new", createdAt }, DAILY_MED],
+    });
+    const result = await runIntakeAutoSkipPass(prisma, { nowMs: NOW_MS });
+    expect(rows.find((r) => r.id === "i-before")?.autoMissed).toBe(false);
+    expect(rows.find((r) => r.id === "i-after")?.autoMissed).toBe(true);
+    expect(rows.find((r) => r.id === "i-old-med")?.autoMissed).toBe(true);
+    expect(result.skippedCount).toBe(2);
   });
 
   it("uses Date.now() when no nowMs override is supplied", async () => {

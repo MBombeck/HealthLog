@@ -39,6 +39,8 @@ export interface MedicationDetailSummaryProps {
   /** v1.16.11 — as-needed (PRN): the cadence line reads "Bei Bedarf". */
   asNeeded?: boolean;
   startsOn?: string | null;
+  /** v1.39.1 (#1033) — intake tracking off: a "Record only" badge. */
+  recordOnly?: boolean;
 }
 
 type Status = "active" | "paused" | "ended";
@@ -62,6 +64,7 @@ export function MedicationDetailSummary({
   oneShot,
   asNeeded = false,
   startsOn,
+  recordOnly = false,
 }: MedicationDetailSummaryProps) {
   const { t, locale } = useTranslations();
   const formatters = useFormatters();
@@ -116,6 +119,14 @@ export function MedicationDetailSummary({
           />
           {statusLabel}
         </Badge>
+        {recordOnly && (
+          <Badge
+            variant="secondary"
+            data-slot="medication-detail-record-only-badge"
+          >
+            {t("medications.recordOnlyBadge")}
+          </Badge>
+        )}
       </div>
       <p
         className="text-muted-foreground text-sm"

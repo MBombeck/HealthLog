@@ -25,6 +25,7 @@ import { readMedicationsListCached } from "@/lib/medications/list-read";
 import { serializeScheduleUnitsPerDose } from "@/lib/medications/schedule-units-dto";
 import { withIdempotency } from "@/lib/idempotency";
 import { NextRequest } from "next/server";
+import { scheduleWireFields } from "@/lib/medications/intake-tracking";
 
 // v1.32.25 — blast-radius cap on externally-mirrored medications per user.
 // A client that mints a fresh `externalId` for the same source concept on
@@ -72,6 +73,7 @@ async function respondWithExistingMirror(
   medication: Record<string, unknown> & {
     id: string;
     unitsPerDose: unknown;
+    trackIntake: boolean;
     schedules: Array<{ unitsPerDose: Prisma.Decimal | null }>;
   },
 ): Promise<Response> {
@@ -96,9 +98,13 @@ async function respondWithExistingMirror(
     ...medication,
     unitsPerDose: Number(medication.unitsPerDose),
     // #219 — Decimal → number for the per-schedule column too.
-    schedules: serializeScheduleUnitsPerDose(
-      medication.schedules,
-      Number(medication.unitsPerDose),
+    // v1.39.1 (#1033) — record-only medications ship `schedules: []`.
+    ...scheduleWireFields(
+      medication.trackIntake,
+      serializeScheduleUnitsPerDose(
+        medication.schedules,
+        Number(medication.unitsPerDose),
+      ),
     ),
     category,
   });
@@ -165,6 +171,7 @@ async function postMedication(request: NextRequest): Promise<Response> {
     endsOn,
     oneShot,
     asNeeded,
+    trackIntake,
   } = parsed.data;
 
   // v1.28 — idempotent mirror create. A mirrored medication (Apple
@@ -304,6 +311,10 @@ async function postMedication(request: NextRequest): Promise<Response> {
         // carries an empty `scheduleInputs`, so the nested create below
         // persists zero schedule rows.
         ...(asNeeded !== undefined && { asNeeded }),
+        // v1.39.1 (#1033) — intake tracking, field-by-field. Created off,
+        // the schedule is stored as a record from the start; the column
+        // default (true) covers every caller that does not send it.
+        ...(trackIntake !== undefined && { trackIntake }),
         schedules: {
           create: scheduleInputs.map((s) => {
             // Invariant 2 — default to FREQ=DAILY when nothing else is set.
@@ -426,9 +437,13 @@ async function postMedication(request: NextRequest): Promise<Response> {
       ...medication,
       unitsPerDose: Number(medication.unitsPerDose),
       // #219 — Decimal → number for the per-schedule column too.
-      schedules: serializeScheduleUnitsPerDose(
-        medication.schedules,
-        medication.unitsPerDose,
+      // v1.39.1 (#1033) — record-only medications ship `schedules: []`.
+      ...scheduleWireFields(
+        medication.trackIntake,
+        serializeScheduleUnitsPerDose(
+          medication.schedules,
+          medication.unitsPerDose,
+        ),
       ),
       category: normalizedCategory,
     },

@@ -11,7 +11,7 @@
  * attached is read off a lock screen. A raw enum constant there is the schema
  * leaking into the product.
  */
-import type { EncounterKind } from "@/generated/prisma/client";
+import type { EncounterKind, Laterality } from "@/generated/prisma/client";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { defaultLocale, locales, type Locale } from "@/lib/i18n/config";
 
@@ -41,6 +41,8 @@ export function encounterKindLabel(
       return t("encounters.kind.hospital");
     case "THERAPY":
       return t("encounters.kind.therapy");
+    case "PROCEDURE":
+      return t("encounters.kind.procedure");
     default:
       return t("encounters.kind.other");
   }
@@ -73,7 +75,25 @@ export function encounterKindLabelKey(kind: EncounterKind): string {
       return "encounters.kind.hospital";
     case "THERAPY":
       return "encounters.kind.therapy";
+    case "PROCEDURE":
+      return "encounters.kind.procedure";
     default:
       return "encounters.kind.other";
+  }
+}
+
+/**
+ * The side of a body site as a key, for the same translator-holding callers:
+ * the doctor-report PDF and the clinician share view name it in the reading
+ * clinician's language.
+ */
+export function lateralityLabelKey(laterality: Laterality): string {
+  switch (laterality) {
+    case "LEFT":
+      return "encounters.laterality.left";
+    case "RIGHT":
+      return "encounters.laterality.right";
+    default:
+      return "encounters.laterality.both";
   }
 }

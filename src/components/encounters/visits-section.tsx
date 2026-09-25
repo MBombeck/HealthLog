@@ -22,6 +22,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDeepLinkedRecord } from "@/hooks/use-deep-linked-record";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useEncounters, type Encounter } from "@/hooks/use-encounters";
 import { useTranslations } from "@/lib/i18n/context";
@@ -49,6 +50,15 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
 
   const upcoming = list.data?.upcoming ?? [];
   const past = list.data?.past ?? [];
+
+  // `?visit=<id>` — a document's link chip names the visit it is filed
+  // against. Scroll to it, and open it for someone who may edit it.
+  useDeepLinkedRecord({
+    param: "visit",
+    records: list.data ? [...upcoming, ...past] : undefined,
+    anchorAttribute: "data-encounter-id",
+    open: canManageVisits ? openSheet : undefined,
+  });
   const empty = upcoming.length === 0 && past.length === 0;
 
   const addButton = canAddVisit ? (

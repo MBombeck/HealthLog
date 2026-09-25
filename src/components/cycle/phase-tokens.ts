@@ -22,6 +22,12 @@ export const FLOW_HUE = "var(--cycle-phase-menstrual)";
 export const FERTILE_HUE = "var(--cycle-phase-follicular)";
 /** Ovulation marker tint (amber-gold family). */
 export const OVULATION_HUE = "var(--cycle-phase-ovulatory)";
+/**
+ * Intercourse marker tint (luteal family). Never colour-only: the marker is a
+ * diamond, a shape no other calendar marker uses, and the cell's aria-label
+ * names it.
+ */
+export const INTERCOURSE_HUE = "var(--cycle-phase-luteal)";
 
 /**
  * Flow-intensity shading — a SINGLE-HUE OPACITY LADDER on the menstrual rose

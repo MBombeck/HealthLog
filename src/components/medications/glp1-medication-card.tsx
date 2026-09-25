@@ -23,7 +23,7 @@ import { apiGet, apiPost } from "@/lib/api/api-fetch";
 import { formatDateTime, formatTime } from "@/lib/format";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { formatDose } from "@/lib/medications/format-dose";
-import { formatUnitsPerDose } from "@/components/medications/units-per-dose";
+import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
 import { getDayOfWeekInTz } from "@/lib/tz/local-day";
 import { type InjectionSiteKey } from "@/lib/medications/injection-sites";
 import { LogInjectionSiteDialog } from "@/components/medications/log-injection-site-dialog";
@@ -128,6 +128,12 @@ export interface Glp1Medication {
   runwayDays?: number | null;
   /** v1.17.0 — per-medication reorder lead override (days); null = inherit the user default. */
   reorderLeadDays?: number | null;
+  /**
+   * v1.39.1 (#1033) — false keeps the medication as a record: the list
+   * serves `schedules: []` and nothing is due, so the card drops the
+   * compliance bars and the take / skip actions and shows a badge instead.
+   */
+  trackIntake?: boolean;
   schedules: ScheduleLite[];
 }
 
@@ -192,7 +198,7 @@ export function Glp1MedicationCard({
   highlighted = false,
 }: Glp1MedicationCardProps) {
   const queryClient = useQueryClient();
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   // v1.16.9 — the card reasons in the PROFILE timezone; Berlin stays the
   // last-resort fallback for logged-out mounts and legacy fixtures.
   const { user } = useAuth();
@@ -438,6 +444,7 @@ export function Glp1MedicationCard({
       notificationsEnabled={medication.notificationsEnabled}
       active={medication.active}
       pausedAt={medication.pausedAt}
+      recordOnly={medication.trackIntake === false}
     />
   );
 
@@ -499,7 +506,7 @@ export function Glp1MedicationCard({
                 {" "}
                 ·{" "}
                 {t("medications.perSlotUnits", {
-                  units: formatUnitsPerDose(schedule.unitsPerDose),
+                  units: formatUnitsPerDose(schedule.unitsPerDose, locale),
                 })}
               </span>
             )}
@@ -551,6 +558,7 @@ export function Glp1MedicationCard({
       currentCycle={
         complianceNotApplicable ? null : (display?.currentCycle ?? null)
       }
+      recordOnly={medication.trackIntake === false}
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
       onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}

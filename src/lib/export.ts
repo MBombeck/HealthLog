@@ -269,6 +269,8 @@ export function formatMedicationsForExport(
     name: string;
     dose: string;
     active: boolean;
+    /** v1.39.1 (#1033) — false: kept as a record, intake not tracked. */
+    trackIntake: boolean;
     schedules: Array<{
       windowStart: string;
       windowEnd: string;
@@ -281,6 +283,7 @@ export function formatMedicationsForExport(
     name: m.name,
     dose: m.dose,
     active: m.active,
+    trackIntake: m.trackIntake,
     schedules: m.schedules
       .map(
         (s) =>

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.39.0
+  version: 1.39.1
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -491,7 +491,15 @@ paths:
         "401": *a1
         "403": *a3
         "409": *a7
-        "422": *a4
+        "422":
+          description: "The whole batch was refused and nothing was written: more than 500 entries (`meta.errorCode` =
+            `cycle.bulk.too_large`, no issue list), or the body failed validation (`meta.errorCode` =
+            `cycle.bulk.invalid`, every issue under `details.issues`). Both are permanent for the batch as sent. A
+            problem with one entry never refuses the batch; it comes back as that entry's `skipped` status."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
   /api/cycle/period:
     post:
@@ -3750,6 +3758,12 @@ paths:
         in request order. Use `/api/measurements/batch` for Apple Health upload streams.
 
 
+        Sleep stages by name (since v1.39.1): an object with `type: SLEEP_DURATION`, a `sleepStage` of `IN_BED`,
+        `ASLEEP`, `AWAKE`, `CORE`, `DEEP` or `REM`, and the segment as `startDate` + `endDate` or as `measuredAt` (its
+        end) + `value` (minutes). It is stored and deduplicated exactly as the batch route stores a HealthKit sleep
+        sample, so a bridge can send stages without the HealthKit codepoints. See `NamedSleepStageEntry`.
+
+
         Also reachable with a narrow `measurements:write` Bearer, which is the supported way to push readings from a
         scale, a watch bridge or a home-automation rule. That credential is confined to its owner's own record — a
         request carrying the account selector is refused 403 before any sharing grant is read, however the record is
@@ -3767,12 +3781,21 @@ paths:
             schema:
               anyOf:
                 - $ref: "#/components/schemas/CreateMeasurementRequest"
+                - $ref: "#/components/schemas/NamedSleepStageEntry"
                 - type: array
                   items:
                     $ref: "#/components/schemas/CreateMeasurementRequest"
       responses:
+        "200":
+          description: "Named sleep-stage body only: the segment was already stored (`status: duplicate`) or a stored one was
+            corrected in place (`status: updated`). Every other body answers 201 or an error, as before."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamedSleepStageDuplicateResponse"
         "201":
-          description: Created. A single resource for the object body; an array of resources, in request order, for the array body.
+          description: "Created. A single resource for the object body; an array of resources, in request order, for the array
+            body; for a named sleep-stage body, the stored row with `status: inserted`."
           content:
             application/json:
               schema:
@@ -3781,7 +3804,7 @@ paths:
         "403": *a9
         "409":
           description: A measurement with this data already exists — the `(userId, type, source, externalId)` dedup index rejected
-            the write.
+            the write. Never for a named sleep-stage body, which answers a re-post with 200 instead.
           content:
             application/json:
               schema:
@@ -3945,9 +3968,11 @@ paths:
         "401": *a1
         "409": *a7
         "422":
-          description: The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation, or
-            (`measurement.batch.source_not_permitted`) carried an entry naming a source — any source — under a narrow
-            `measurements:write` credential. Nothing was written in any of the three cases.
+          description: "The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation
+            (`measurement.batch.invalid`, with every issue under `details.issues`), or
+            (`measurement.batch.source_not_permitted`) carried an entry naming a source, any source, under a narrow
+            `measurements:write` credential. Nothing was written in any of the three cases, and all three are permanent
+            for the batch as sent: resending it unchanged is refused the same way."
           content:
             application/json:
               schema:
@@ -5993,12 +6018,16 @@ paths:
           name: from
           schema:
             description: Window start (inclusive). Defaults to 90 days before `to`; clamped to a 366-day span floor. Recorded doses
-              are returned from this instant; expected slots are not minted before the medication's `createdAt`.
+              are returned from this instant. A slot from before the medication's `createdAt` appears only when a
+              recorded row (a take, a skip, or a miss carried in with restored history) claims it; the server's own
+              placeholder for such a slot is not returned.
             type: string
             format: date-time
             pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
           description: Window start (inclusive). Defaults to 90 days before `to`; clamped to a 366-day span floor. Recorded doses
-            are returned from this instant; expected slots are not minted before the medication's `createdAt`.
+            are returned from this instant. A slot from before the medication's `createdAt` appears only when a recorded
+            row (a take, a skip, or a miss carried in with restored history) claims it; the server's own placeholder for
+            such a slot is not returned.
         - in: query
           name: to
           schema:
@@ -13974,6 +14003,39 @@ paths:
         "409": *a7
         "422": *a4
         "429": *a10
+  /api/encounters/procedures:
+    get:
+      tags:
+        - Records
+      summary: List procedures and surgeries
+      description: "The caller's procedure and surgery history: every live visit of kind PROCEDURE with status DONE, newest
+        first, bounded at 500. Planned, cancelled and missed procedures are not in it; a booked one stays in the visit
+        list's `upcoming` half. Read at the same section and level as the visit list."
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+            maxLength: 200
+        - in: query
+          name: laterality
+          schema:
+            type: string
+            enum:
+              - LEFT
+              - RIGHT
+              - BOTH
+      responses:
+        "200":
+          description: The procedure history.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListProceduresEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/encounters/suggest:
     get:
       tags:
@@ -16851,8 +16913,11 @@ paths:
         Upsert key is (day, nutrient): a re-post replaces the stored total and reports `updated`. Post the current +
         previous local day per sync; backfill 30 days on first enable. Max 500 entries; Idempotency-Key supported; rate
         limit 60/min. Per-entry skips (`unit_mismatch` | `value_out_of_range` | `day_invalid`) are terminal — log and
-        drop, do not retry the entry. Behind the opt-in `nutrients` module (403 `module.disabled` when off). Query
-        HealthKit with exactly the listed unit per code (`ug` = microgram; do not convert to IU):
+        drop, do not retry the entry. `upsert_failed` is not one of them: it is a server-side write failure for the
+        entry's whole write group, nothing was stored, and the entry should be sent again on a later sync; a response
+        carrying it is `Cache-Control: no-store` and is not replayed for its `Idempotency-Key`. Behind the opt-in
+        `nutrients` module (403 `module.disabled` when off). Query HealthKit with exactly the listed unit per code (`ug`
+        = microgram; do not convert to IU):
 
 
         | code | HealthKit identifier | unit |
@@ -20532,12 +20597,14 @@ paths:
     post:
       tags:
         - Admin
-      summary: Restore one stored backup over its owner's record
-      description: "Replaces the snapshot owner's data tables from the stored copy, in one transaction, under the ids the file
-        carries. Replacing is not merging: every row the account gained after the snapshot was taken is deleted with the
-        rest of its class. The target is the account the snapshot was taken for, never the admin running it, and a
-        payload declaring a different owner than the stored row is refused. Admin session cookie required; Bearer tokens
-        cannot reach admin endpoints."
+      summary: Queue the restore of one stored backup over its owner's record
+      description: "Queues a restore that replaces the snapshot owner's data tables from the stored copy, in one transaction,
+        under the ids the file carries, and answers 202 with the job's id. Replacing is not merging: every row the
+        account gained after the snapshot was taken is deleted with the rest of its class. The target is the account the
+        snapshot was taken for, never the admin running it. The request refuses a missing confirmation, an unknown
+        backup and a copy that cannot be decrypted; the file's own checks (schema, declared owner, manifest, documents)
+        run in the job before anything is deleted, and a refusal there ends the job as `failed` with the same reason.
+        One restore per account at a time. Admin session cookie required; Bearer tokens cannot reach admin endpoints."
       parameters:
         - in: path
           name: id
@@ -20554,12 +20621,12 @@ paths:
             schema:
               $ref: "#/components/schemas/AdminBackupRestoreRequest"
       responses:
-        "200":
-          description: The restore ran.
+        "202":
+          description: The restore is queued. Its progress and outcome are at `statusUrl`.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminBackupRestoreResponse"
+                $ref: "#/components/schemas/AdminBackupRestoreQueuedResponse"
         "400":
           description: Body was not JSON.
           content:
@@ -20569,8 +20636,9 @@ paths:
         "403": *a50
         "404": *a51
         "409":
-          description: Either the payload declares a different owner than the stored row, or a request under the same
-            `Idempotency-Key` is still in flight. Nothing was changed.
+          description: A restore of the same account is already queued or running (`meta.errorCode` = `backup.restore.active`,
+            `meta.jobId` names it), or a request under the same `Idempotency-Key` is still in flight. Nothing was
+            changed.
           content:
             application/json:
               schema:
@@ -20582,10 +20650,59 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
-          description: "The request or the file was refused before anything was written: `confirm` missing, the copy undecryptable
-            (`meta.errorCode` = `backup.payload.undecryptable`), the payload failing schema validation, an unsupported
-            `schemaVersion`, a section the file's own manifest says it carries and does not (`meta.errorCode` =
-            `backup.section.missing`), a metadata-only document entry, or an owner who no longer exists here."
+          description: "The request was refused before anything was queued: `confirm` missing, or the copy undecryptable
+            (`meta.errorCode` = `backup.payload.undecryptable`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: The restore could not be handed to the background worker. Nothing was changed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/admin/backups/restores:
+    get:
+      tags:
+        - Admin
+      summary: List the restores the backups console shows
+      description: Every queued or running restore, and those created in the last day, newest first, at most 20. What the
+        console reads when it opens, so a reload during a restore picks its progress up again. Admin session cookie
+        required; Bearer tokens cannot reach admin endpoints.
+      responses:
+        "200":
+          description: The restore jobs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBackupRestoreJobListResponse"
+        "403": *a50
+  /api/admin/backups/restores/{jobId}:
+    get:
+      tags:
+        - Admin
+      summary: Read one restore job
+      description: The status, phase and counts of one restore, and its report or its failure once it finished. Admin session
+        cookie required; Bearer tokens cannot reach admin endpoints.
+      parameters:
+        - in: path
+          name: jobId
+          schema:
+            type: string
+            description: The `jobId` the restore request answered with.
+          required: true
+          description: The `jobId` the restore request answered with.
+      responses:
+        "200":
+          description: The restore job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBackupRestoreJobResponse"
+        "403": *a50
+        "404":
+          description: No restore job with this id.
           content:
             application/json:
               schema:
@@ -21358,7 +21475,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 94
+              maxItems: 95
               type: array
               items:
                 type: string
@@ -21417,7 +21534,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 94
+              maxItems: 95
               type: array
               items:
                 type: string
@@ -22154,6 +22271,61 @@ components:
         `glucoseContext` stays REQUIRED on a `BLOOD_GLUCOSE` row here: this is the hand-entry surface, where the person
         taking the reading knows whether it was fasting or after a meal. The bulk ingest paths (CSV import, JSON import,
         device sync) accept a contextless reading, because a sensor export classifies nothing per sample."
+    NamedSleepStageEntry:
+      type: object
+      properties:
+        type:
+          type: string
+          const: SLEEP_DURATION
+        sleepStage:
+          type: string
+          enum:
+            - IN_BED
+            - ASLEEP
+            - AWAKE
+            - CORE
+            - DEEP
+            - REM
+        startDate:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        endDate:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        measuredAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        value:
+          type: number
+        externalId:
+          type: string
+          minLength: 1
+          maxLength: 120
+        source:
+          default: MANUAL
+          type: string
+          enum:
+            - MANUAL
+            - APPLE_HEALTH
+        deviceType:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 32
+            - type: "null"
+      required:
+        - type
+        - sleepStage
+      description: "One sleep-stage segment with the stage named (since v1.39.1), for a bridge that does not speak HealthKit.
+        Chosen whenever the object carries a string `sleepStage`. `type` is `SLEEP_DURATION`. The segment is either
+        `startDate` + `endDate`, or `measuredAt` (its END) + `value` (its length in minutes); a `value` sent beside the
+        dates must agree with them to within a minute. Stored as the batch route stores a HealthKit sleep sample: value
+        in minutes, `measuredAt` at the end, the stage in `sleepStage`. Without an `externalId` the server derives one
+        from the stage and both instants, so sending the same segment again is a `duplicate`, and a segment whose start
+        moved is `updated` rather than added."
     AppleHealthBatchRequest:
       type: object
       properties:
@@ -22857,9 +23029,10 @@ components:
           minimum: 1
           maximum: 1000
         unitsPerDose:
-          description: Inventory units consumed per dose. A whole number 1–100 (e.g. 2 tablets of 2 mg for a 4 mg dose) or a
-            supported fraction for a split pill (¼ / ⅓ / ½ / ⅔ / ¾). Default 1. The intake consumption hook decrements
-            this many units per taken dose; dose-derived readouts divide unit counts by it.
+          description: "Inventory units consumed per dose: above 0 and at most 100, with at most 4 decimal places. A whole number
+            (2 tablets of 2 mg for a 4 mg dose), a split pill (0.5, thirds as 0.3333 / 0.6667), a whole number plus a
+            fraction (1.5, 2.25) or a measured amount (0.8). Default 1. The intake consumption hook decrements this many
+            units per taken dose; dose-derived readouts divide unit counts by it."
           type: number
         reorderLeadDays:
           description: Per-medication reorder lead time in days (0–60). The low-stock alert fires the supply early enough to
@@ -22964,6 +23137,16 @@ components:
             rates/streaks, but intakes still log (ad-hoc), inventory still consumes, and the history renders. Stays
             active indefinitely. Mutually exclusive with `oneShot`."
           type: boolean
+        trackIntake:
+          description: "v1.39.1 — intake tracking. Default true. When false the medication keeps its dose, dates and schedules as
+            information, but nothing is ever due: no reminder on any channel, no projected slot, no entry on the today
+            list or the doses card, and no adherence figure anywhere. Existing intake history stays stored. Switching it
+            back on resumes from that moment; the time it was off never counts as missed. Omitted on update leaves the
+            current value. On a medication whose tracking is off, an update that does not name `trackIntake` leaves its
+            stored schedule alone: `schedules`, `asNeeded` and `oneShot` in such a request are ignored (a client that
+            does not know the field cannot have seen the stored schedule, which is served in `recordedSchedules`). Name
+            `trackIntake` to change the schedule of such a medication."
+          type: boolean
         schedules:
           type: array
           items:
@@ -23002,10 +23185,10 @@ components:
           type: string
           maxLength: 50
         unitsPerDose:
-          description: Per-schedule inventory units consumed per dose (#219). A whole number 1-100 or a supported fraction (¼ / ⅓
-            / ½ / ⅔ / ¾) for a split pill. Omitted / NULL means the schedule inherits `Medication.unitsPerDose`. Lets
-            one medication decrement a different tablet count at different times of day (a whole tablet in the morning,
-            a half at noon).
+          description: Per-schedule inventory units consumed per dose (#219). Above 0 and at most 100 with at most 4 decimal
+            places (1, 0.5, 1.5). Omitted / NULL means the schedule inherits `Medication.unitsPerDose`. Lets one
+            medication decrement a different tablet count at different times of day (a whole tablet in the morning, a
+            half at noon).
           type: number
         daysOfWeek:
           description: Legacy day-of-week filter (0=Sunday..6=Saturday). v1.5 reads new writes through `rrule` first; this field
@@ -23184,9 +23367,9 @@ components:
               maximum: 1000
             - type: "null"
         unitsPerDose:
-          description: Inventory units consumed per dose — a whole number 1–100 or a supported split-pill fraction (¼ / ⅓ / ½ / ⅔
-            / ¾). The intake consumption hook decrements this many units per taken dose; already-stamped intake events
-            keep their recorded consumption.
+          description: "Inventory units consumed per dose: above 0 and at most 100, with at most 4 decimal places (1, 0.5, 1.5,
+            2.25). The intake consumption hook decrements this many units per taken dose; already-stamped intake events
+            keep their recorded consumption."
           type: number
         reorderLeadDays:
           description: Per-medication reorder lead time in days (0–60). null clears the override and reverts to the user-level
@@ -23278,6 +23461,16 @@ components:
             (supplying any schedule entry is a 422): it is never due, never reminded, and excluded from compliance
             rates/streaks, but intakes still log (ad-hoc), inventory still consumes, and the history renders. Stays
             active indefinitely. Mutually exclusive with `oneShot`."
+          type: boolean
+        trackIntake:
+          description: "v1.39.1 — intake tracking. Default true. When false the medication keeps its dose, dates and schedules as
+            information, but nothing is ever due: no reminder on any channel, no projected slot, no entry on the today
+            list or the doses card, and no adherence figure anywhere. Existing intake history stays stored. Switching it
+            back on resumes from that moment; the time it was off never counts as missed. Omitted on update leaves the
+            current value. On a medication whose tracking is off, an update that does not name `trackIntake` leaves its
+            stored schedule alone: `schedules`, `asNeeded` and `oneShot` in such a request are ignored (a client that
+            does not know the field cannot have seen the stored schedule, which is served in `recordedSchedules`). Name
+            `trackIntake` to change the schedule of such a medication."
           type: boolean
         schedules:
           type: array
@@ -24033,7 +24226,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 94
+          maxItems: 95
           type: array
           items:
             type: string
@@ -26826,6 +27019,7 @@ components:
             - HOSPITAL
             - THERAPY
             - OTHER
+            - PROCEDURE
         practitionerId:
           anyOf:
             - type: string
@@ -26841,6 +27035,19 @@ components:
           anyOf:
             - type: string
               maxLength: 4000
+            - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+              maxLength: 200
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
             - type: "null"
         reminderId:
           anyOf:
@@ -26874,8 +27081,10 @@ components:
       additionalProperties: false
       description: "File a visit, or book one. `occurredAt` is the only required field — a visit saves with a date and nothing
         else. A future instant with `status: PLANNED` books an appointment and mints exactly one reminder for it.
-        `reason` and `outcome` are encrypted at rest. The three id arrays pre-link documents, lab results and condition
-        episodes; an id naming nothing the caller owns is dropped rather than refused, so a link never blocks a save."
+        `reason`, `outcome` and `bodySite` are encrypted at rest. `kind: PROCEDURE` marks a procedure or surgery;
+        `bodySite` (free text) and `laterality` (LEFT / RIGHT / BOTH, null when not stated) say where, and are accepted
+        on any kind. The three id arrays pre-link documents, lab results and condition episodes; an id naming nothing
+        the caller owns is dropped rather than refused, so a link never blocks a save."
     UpdateEncounterRequest:
       type: object
       properties:
@@ -26901,6 +27110,7 @@ components:
             - HOSPITAL
             - THERAPY
             - OTHER
+            - PROCEDURE
         practitionerId:
           anyOf:
             - type: string
@@ -26916,6 +27126,19 @@ components:
           anyOf:
             - type: string
               maxLength: 4000
+            - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+              maxLength: 200
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
             - type: "null"
         reminderId:
           anyOf:
@@ -26945,10 +27168,12 @@ components:
             minLength: 1
             maxLength: 40
       additionalProperties: false
-      description: Partial edit of a visit; an omitted key leaves the column untouched, and a body naming nothing is a 422.
+      description: "Partial edit of a visit; an omitted key leaves the column untouched, and a body naming nothing is a 422.
         Moving `occurredAt` re-anchors the appointment reminder the visit already owns and never mints a second. Moving
         `status` to DONE closes the checkup named by `reminderId`, on the transition only. CANCELLED and NO_SHOW stop
         the reminder without deleting the row. A present id array replaces that link family, empty array included.
+        Switching an existing visit to `kind: PROCEDURE` is an ordinary edit of this kind; nothing has to be entered
+        again."
     EncounterLinkRequest:
       type: object
       properties:
@@ -30290,44 +30515,45 @@ components:
                 anamnesis.fact.invalidValue; auth — auth.admin.required, auth.already_authenticated,
                 auth.mfa.code_invalid, auth.missing, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
                 auth.scope.insufficient, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
-                backup.payload.undecryptable, backup.section.missing; coach — coach.budget.exceeded,
-                coach.conversation.invalidTitle, coach.conversation.notFound, coach.fenced.attachmentConflict,
-                coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed,
-                coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable, coach.fenced.invalid,
-                coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape;
-                consent — consent.ai.required; cycle — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid,
-                cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
-                cycle.disabled, cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit;
-                cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach —
-                disable-coach.body.invalid_json; documents — documents.chat.conversationNotFound,
-                documents.chat.invalid, documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
-                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
-                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
-                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
-                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
-                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notFound,
-                documents.inbound.notIndexed, documents.inbound.pdfNeedsAnthropic,
-                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
-                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.uploadBusy,
-                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound; encounter — encounter.invalid,
-                encounter.link.invalid, encounter.practitioner-not-found, encounter.reminder-conflict,
-                encounter.reminder-not-found; environment — environment.invalid, environment.no_home,
-                environment.range_too_large, environment.travel.not_found; export — export.selection.empty,
-                export.selection.unknown_leaf; familyHistory — familyHistory.invalid; feedback — feedback.body.invalid;
-                health_score_config — health_score_config.invalid, health_score_config.too_narrow; illness —
-                illness.day-log.invalid, illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
-                illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
-                import.write_failed; ingest — ingest.rate_limited; insights — insights.generate.budgetExceeded,
-                insights.generate.outboundScreened, insights.generate.profileScopeChanged,
-                insights.generate.scopeChanged; labs — labs.biomarker.create.invalid, labs.biomarker.duplicate,
-                labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
-                labs.create.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge,
-                labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
+                backup.payload.undecryptable, backup.restore.active, backup.section.missing, backup.upload.too_large;
+                coach — coach.budget.exceeded, coach.conversation.invalidTitle, coach.conversation.notFound,
+                coach.fenced.attachmentConflict, coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound,
+                coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable,
+                coach.fenced.invalid, coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json,
+                coach-prefs.body.invalid_shape; consent — consent.ai.required; cycle — cycle.bulk.invalid,
+                cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range, cycle.cycles.invalid,
+                cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled, cycle.period.invalid,
+                cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json,
+                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; documents —
+                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
+                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
+                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
+                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
+                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
+                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
+                documents.inbound.localOcrDisabled, documents.inbound.notFound, documents.inbound.notIndexed,
+                documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
+                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
+                documents.inbound.restoreGone, documents.inbound.uploadBusy, documents.inbound.uploadTimeout,
+                documents.inbound.vaccinationNotFound; encounter — encounter.invalid, encounter.link.invalid,
+                encounter.practitioner-not-found, encounter.reminder-conflict, encounter.reminder-not-found; environment
+                — environment.invalid, environment.no_home, environment.range_too_large, environment.travel.not_found;
+                export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
+                feedback — feedback.body.invalid; health_score_config — health_score_config.invalid,
+                health_score_config.too_narrow; illness — illness.day-log.invalid, illness.disabled,
+                illness.episode.chronic-no-resolve, illness.episode.invalid, illness.episode.invalid-window,
+                illness.episode.parent-not-found, illness.insights.invalid; import — import.write_failed; ingest —
+                ingest.rate_limited; insights — insights.generate.budgetExceeded, insights.generate.outboundScreened,
+                insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
+                labs.biomarker.create.invalid, labs.biomarker.duplicate, labs.biomarker.notFound,
+                labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
+                labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType,
+                labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
                 labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound, labs.update.invalid,
                 labs.update.linkedFieldsImmutable, labs.update.numericExpected, labs.update.qualitativeExpected,
                 labs.update.referenceRangeInvalid, labs.update.sourceReferenceRangeInvalid; managed_profile —
                 managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
-                managed_profile.guardian.required, managed_profile.not_found; measurement —
+                managed_profile.guardian.required, managed_profile.not_found; measurement — measurement.batch.invalid,
                 measurement.batch.source_not_permitted, measurement.batch.too_large, measurement.bulk-delete.invalid,
                 measurement.create.invalid, measurement.create.source_not_permitted, measurement.delete.too_large,
                 measurement.duplicate_timestamp, measurement.restore.invalid, measurement.update.server_owned_source;
@@ -30801,6 +31027,12 @@ components:
                   externalId:
                     type: string
                   reason:
+                    description: "On a `skipped` entry. `unstable_external_id` is a verdict on the entry and terminal: resending it
+                      unchanged is skipped again. `constraint` means the write met a database constraint (a key another
+                      write claimed at the same moment, or a reference that no longer exists). `upsert_failed` is a
+                      write failure on the server's side: nothing was stored, the entry should be sent again, and the
+                      response carrying it is `Cache-Control: no-store`, so a retry under the same `Idempotency-Key`
+                      writes again rather than replaying the failure."
                     type: string
                 required:
                   - index
@@ -31017,6 +31249,28 @@ components:
                           - CLOSED
                           - OPEN
                       - type: "null"
+                  intermenstrualBleeding:
+                    type: boolean
+                    description: Spotting or bleeding outside the period logged on this day.
+                  sexualActivity:
+                    type: boolean
+                    description: Intercourse logged on this day. Resolved from the plaintext column or the encrypted envelope, exactly as
+                      the day-log read resolves it, and served under the same cycle grant.
+                  pregnancyTest:
+                    anyOf:
+                      - $ref: "#/components/schemas/HomeTestResult"
+                      - type: "null"
+                  progesteroneTest:
+                    anyOf:
+                      - $ref: "#/components/schemas/HomeTestResult"
+                      - type: "null"
+                  contraceptive:
+                    anyOf:
+                      - type: string
+                      - type: "null"
+                  hasNote:
+                    type: boolean
+                    description: Whether the day carries a note. The note text is only on the day-log read.
                 required:
                   - date
                   - phase
@@ -31037,6 +31291,12 @@ components:
                   - cervixPosition
                   - cervixFirmness
                   - cervixOpening
+                  - intermenstrualBleeding
+                  - sexualActivity
+                  - pregnancyTest
+                  - progesteroneTest
+                  - contraceptive
+                  - hasNote
                 additionalProperties: false
             meta:
               type: object
@@ -32860,6 +33120,8 @@ components:
               oneShot:
                 type: boolean
               asNeeded:
+                type: boolean
+              trackIntake:
                 type: boolean
               deliveryForm:
                 type: string
@@ -35670,6 +35932,7 @@ components:
                   - HOSPITAL
                   - THERAPY
                   - OTHER
+                  - PROCEDURE
               practitionerId:
                 anyOf:
                   - type: string
@@ -35683,6 +35946,19 @@ components:
                 anyOf:
                   - type: string
                     minLength: 1
+                  - type: "null"
+              bodySiteEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              laterality:
+                anyOf:
+                  - type: string
+                    enum:
+                      - LEFT
+                      - RIGHT
+                      - BOTH
                   - type: "null"
               reminderId:
                 anyOf:
@@ -39620,6 +39896,136 @@ components:
         - limit
         - offset
       additionalProperties: false
+    NamedSleepStageDuplicateResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/NamedSleepStageMeasurement"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    NamedSleepStageMeasurement:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Stored row id, or a synthetic key (`day:<type>:<dayKey>`, `sleep-seg:<dayKey>:<n>`) on the collapsed list
+            modes.
+        type:
+          $ref: "#/components/schemas/MeasurementType"
+        value:
+          type: number
+        unit:
+          type: string
+        measuredAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        source:
+          $ref: "#/components/schemas/MeasurementSource"
+        notes:
+          anyOf:
+            - type: string
+            - type: "null"
+        userId:
+          type: string
+        valueMin:
+          description: Bucket MINIMUM — set only on an hourly heart-rate `stats:` row.
+          anyOf:
+            - type: number
+            - type: "null"
+        valueMax:
+          description: Bucket MAXIMUM — set only on an hourly heart-rate `stats:` row.
+          anyOf:
+            - type: number
+            - type: "null"
+        externalId:
+          description: External-system dedup key; null for manual entries.
+          anyOf:
+            - type: string
+            - type: "null"
+        externalSourceVersion:
+          anyOf:
+            - type: string
+            - type: "null"
+        glucoseContext:
+          description: Set only on BLOOD_GLUCOSE rows, and null there too when the writer recorded no classification (a sensor
+            export, a device sync). Never invent one.
+          anyOf:
+            - type: string
+            - type: "null"
+        sleepStage:
+          description: Set only on SLEEP_DURATION rows.
+          anyOf:
+            - type: string
+            - type: "null"
+        rhythmClassification:
+          description: Device classification verdict; set only on EVENT rows.
+          anyOf:
+            - type: string
+            - type: "null"
+        deviceType:
+          description: "`watch | band | ring | phone | scale | other | unknown`."
+          anyOf:
+            - type: string
+            - type: "null"
+        syncVersion:
+          description: Bumped on every server-side mutation; the last-writer-wins input for cross-device reconciliation.
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        deletedAt:
+          description: Soft-delete tombstone; null on a live row.
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        dayKey:
+          type: string
+        sampleCount:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        partial:
+          description: True on the one bucket whose day was cut off by the read cap, so its sum understates the real total.
+          type: boolean
+        status:
+          type: string
+          enum:
+            - inserted
+            - updated
+            - duplicate
+          description: "`inserted` — a new row (HTTP 201). `duplicate` — the segment was already stored, by this route or the
+            batch route, and nothing changed (HTTP 200). `updated` — a stored segment with the same stage, source and
+            end was corrected in place, for example a later start (HTTP 200)."
+      required:
+        - id
+        - type
+        - value
+        - unit
+        - measuredAt
+        - source
+        - status
+      additionalProperties: false
+      description: The stored SLEEP_DURATION row for a named sleep-stage segment, with what the call did to it.
     CreateMeasurementResponse:
       type: object
       properties:
@@ -39629,6 +40035,7 @@ components:
             - type: array
               items:
                 $ref: "#/components/schemas/MeasurementResource"
+            - $ref: "#/components/schemas/NamedSleepStageMeasurement"
         error:
           type: "null"
         meta:
@@ -39787,6 +40194,28 @@ components:
             not advance the entry cursor; the response is marked `Cache-Control: no-store`."
         reason:
           type: string
+        convertedValue:
+          description: "Only on a `value_out_of_range` skip (since v1.39.1): the entry's value after conversion into the stored
+            unit, which is the number the band was checked against. A HealthKit fraction that should have been a percent
+            shows up here a hundred times off."
+          type: number
+        range:
+          description: "Only on a `value_out_of_range` skip (since v1.39.1): the plausibility band that refused the entry, in the
+            stored unit. Both edges are inclusive. A skip is permanent for the value as sent; resending it unchanged
+            skips it again."
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+            unit:
+              type: string
+          required:
+            - min
+            - max
+            - unit
+          additionalProperties: false
       required:
         - index
         - status
@@ -42149,8 +42578,10 @@ components:
         unitsPerDose:
           type: number
           description: v1.16.10 — inventory units one dose consumes (e.g. 2 tablets of 2 mg for a 4 mg dose). v1.16.12 — may be a
-            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. Default 1. The intake consumption
-            hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.
+            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. v1.39.1 (#1034) — any value above
+            0 and at most 100 with at most 4 decimal places, so also a whole number plus a fraction (1.5, 2.25, 1.3333)
+            or a measured amount (0.8). Default 1. The intake consumption hook decrements this many units per taken
+            dose; dose-derived readouts divide unit counts by it.
         reorderLeadDays:
           anyOf:
             - type: integer
@@ -42230,6 +42661,13 @@ components:
             any schedule entry alongside the flag): it is never due (`nextDueAt` stays null), never reminded, and
             excluded from every compliance rate/streak — but intakes still log as ad-hoc rows, inventory still consumes
             per `unitsPerDose`, and the history renders. Stays active indefinitely. Mutually exclusive with `oneShot`."
+        trackIntake:
+          type: boolean
+          description: "v1.39.1 — intake tracking. True (the default) for every medication that existed before the field. When
+            false the medication is kept as a record: nothing is ever due (`nextDueAt` stays null), nothing reminds on
+            any channel, and it is excluded from every adherence figure. Its stored schedule then travels in
+            `recordedSchedules` while `schedules` is served empty, so a client that arms reminders from `schedules`
+            stays silent without an update."
         createdAt:
           type: string
           format: date-time
@@ -42239,6 +42677,14 @@ components:
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         schedules:
+          type: array
+          items:
+            $ref: "#/components/schemas/MedicationScheduleOutput"
+          description: "The schedules in force. Empty for an as-needed medication and (v1.39.1) for a medication with
+            `trackIntake: false`, whose stored schedule is in `recordedSchedules`."
+        recordedSchedules:
+          description: "v1.39.1 — present only when `trackIntake` is false: the stored schedule, kept as information. Nothing
+            derives a due dose or a reminder from it. Absent on a tracked medication, whose schedule is `schedules`."
           type: array
           items:
             $ref: "#/components/schemas/MedicationScheduleOutput"
@@ -42317,6 +42763,7 @@ components:
         - endsOn
         - oneShot
         - asNeeded
+        - trackIntake
         - createdAt
         - updatedAt
         - schedules
@@ -42389,8 +42836,10 @@ components:
         unitsPerDose:
           type: number
           description: v1.16.10 — inventory units one dose consumes (e.g. 2 tablets of 2 mg for a 4 mg dose). v1.16.12 — may be a
-            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. Default 1. The intake consumption
-            hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.
+            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. v1.39.1 (#1034) — any value above
+            0 and at most 100 with at most 4 decimal places, so also a whole number plus a fraction (1.5, 2.25, 1.3333)
+            or a measured amount (0.8). Default 1. The intake consumption hook decrements this many units per taken
+            dose; dose-derived readouts divide unit counts by it.
         reorderLeadDays:
           anyOf:
             - type: integer
@@ -42481,6 +42930,13 @@ components:
             any schedule entry alongside the flag): it is never due (`nextDueAt` stays null), never reminded, and
             excluded from every compliance rate/streak — but intakes still log as ad-hoc rows, inventory still consumes
             per `unitsPerDose`, and the history renders. Stays active indefinitely. Mutually exclusive with `oneShot`."
+        trackIntake:
+          type: boolean
+          description: "v1.39.1 — intake tracking. True (the default) for every medication that existed before the field. When
+            false the medication is kept as a record: nothing is ever due (`nextDueAt` stays null), nothing reminds on
+            any channel, and it is excluded from every adherence figure. Its stored schedule then travels in
+            `recordedSchedules` while `schedules` is served empty, so a client that arms reminders from `schedules`
+            stays silent without an update."
         createdAt:
           type: string
           format: date-time
@@ -42490,6 +42946,14 @@ components:
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         schedules:
+          type: array
+          items:
+            $ref: "#/components/schemas/MedicationScheduleOutput"
+          description: "The schedules in force. Empty for an as-needed medication and (v1.39.1) for a medication with
+            `trackIntake: false`, whose stored schedule is in `recordedSchedules`."
+        recordedSchedules:
+          description: "v1.39.1 — present only when `trackIntake` is false: the stored schedule, kept as information. Nothing
+            derives a due dose or a reminder from it. Absent on a tracked medication, whose schedule is `schedules`."
           type: array
           items:
             $ref: "#/components/schemas/MedicationScheduleOutput"
@@ -42536,6 +43000,7 @@ components:
         - endsOn
         - oneShot
         - asNeeded
+        - trackIntake
         - createdAt
         - updatedAt
         - schedules
@@ -43288,7 +43753,9 @@ components:
         notApplicableReason:
           anyOf:
             - type: string
-              const: NO_LOCAL_SCHEDULE
+              enum:
+                - NO_LOCAL_SCHEDULE
+                - INTAKE_NOT_TRACKED
             - type: "null"
         compliance7:
           description: Seven-day adherence summary, or an all-zero compatibility placeholder when applicable is false.
@@ -43318,8 +43785,9 @@ components:
           type: integer
           minimum: 0
           maximum: 9007199254740991
-          description: "Full denominator over the window: `taken + skipped + missed`. Cadence-aware and clamped to the
-            medication's `createdAt`."
+          description: "Full denominator over the window: `taken + skipped + missed`. Cadence-aware. A slot from before the
+            medication's `createdAt` counts only when a recorded row (a take, a skip, or a miss carried in with restored
+            history) claims it, so the days before the medication existed are never missed."
         taken:
           type: integer
           minimum: 0
@@ -43546,10 +44014,13 @@ components:
         notApplicableReason:
           anyOf:
             - type: string
-              const: NO_LOCAL_SCHEDULE
+              enum:
+                - NO_LOCAL_SCHEDULE
+                - INTAKE_NOT_TRACKED
             - type: "null"
-          description: Reason adherence is not applicable. NO_LOCAL_SCHEDULE means the medication has no HealthLog-owned
-            expected-dose grid.
+          description: "Reason adherence is not applicable. NO_LOCAL_SCHEDULE means the medication has no HealthLog-owned
+            expected-dose grid. INTAKE_NOT_TRACKED (v1.39.1) means the medication's intake tracking is switched off
+            (`trackIntake: false`): its schedule is kept as information and nothing is expected from it."
         compliance7:
           description: Seven-day adherence summary. When applicable is false, this remains a non-null all-zero compatibility
             placeholder for released clients and must not be rendered as a percentage.
@@ -47204,6 +47675,9 @@ components:
             - type: "null"
         timezone:
           type: string
+          description: "The IANA zone the server cuts this account's days in, the same value `/api/auth/me` reports: the stored
+            zone, or the instance default when the stored value is not a usable IANA name (since v1.39.1; before, the
+            raw stored value). Always a valid IANA name, so sending it back in a PATCH is accepted."
         timeFormat:
           type: string
           enum:
@@ -47316,6 +47790,9 @@ components:
             - type: "null"
         timezone:
           type: string
+          description: "The IANA zone the server cuts this account's days in, the same value `/api/auth/me` reports: the stored
+            zone, or the instance default when the stored value is not a usable IANA name (since v1.39.1; before, the
+            raw stored value). Always a valid IANA name, so sending it back in a PATCH is accepted."
         timeFormat:
           type: string
           enum:
@@ -60345,6 +60822,7 @@ components:
             - HOSPITAL
             - THERAPY
             - OTHER
+            - PROCEDURE
         practitioner:
           anyOf:
             - $ref: "#/components/schemas/Practitioner"
@@ -60356,6 +60834,18 @@ components:
         outcome:
           anyOf:
             - type: string
+            - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
             - type: "null"
         reminderNextDueAt:
           anyOf:
@@ -60377,14 +60867,18 @@ components:
         - practitioner
         - reason
         - outcome
+        - bodySite
+        - laterality
         - reminderNextDueAt
         - createdAt
         - updatedAt
       additionalProperties: false
       description: "One contact with the healthcare system: a visit that happened, or one that is booked. `practitioner` is
-        resolved rather than an id. `reason` and `outcome` are the decrypted free text (null on a key-rotation gap).
-        `reminderNextDueAt` is the server-computed instant a booked appointment next nudges, and is null for a visit
-        that already happened or whose one-shot reminder is spent."
+        resolved rather than an id. `reason`, `outcome` and `bodySite` are the decrypted free text (null on a
+        key-rotation gap). `kind: PROCEDURE` marks a procedure or surgery, and `bodySite` with `laterality` say where;
+        both are carried on every kind so switching a visit's kind away and back loses nothing. `reminderNextDueAt` is
+        the server-computed instant a booked appointment next nudges, and is null for a visit that already happened or
+        whose one-shot reminder is spent."
     Practitioner:
       type: object
       properties:
@@ -60529,6 +61023,69 @@ components:
         - data
         - error
       additionalProperties: false
+    ListProceduresEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ProcedureList"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ProcedureList:
+      type: object
+      properties:
+        procedures:
+          type: array
+          items:
+            $ref: "#/components/schemas/Encounter"
+        bodySites:
+          type: array
+          items:
+            $ref: "#/components/schemas/BodySiteFacet"
+        total:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - procedures
+        - bodySites
+        - total
+      additionalProperties: false
+      description: The procedure history. `procedures` is the filtered list, newest first. `bodySites` and `total` are
+        computed over the whole history before the filter, so the filter choices never shrink to the one just picked.
+    BodySiteFacet:
+      type: object
+      properties:
+        bodySite:
+          type: string
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
+        count:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - bodySite
+        - laterality
+        - count
+      additionalProperties: false
+      description: One body site and side in the procedure history, with how many procedures carry it. Keyed case- and
+        space-insensitively; `bodySite` is the first spelling seen.
     SuggestEncounterEnvelope:
       type: object
       properties:
@@ -60609,6 +61166,7 @@ components:
             - HOSPITAL
             - THERAPY
             - OTHER
+            - PROCEDURE
         practitionerName:
           anyOf:
             - type: string
@@ -64438,7 +64996,12 @@ components:
         - status
       additionalProperties: false
       description: "Per-entry ingest outcome. skipped reasons: unit_mismatch | value_out_of_range | day_invalid |
-        upsert_failed. Log and drop a skipped entry — do not retry it."
+        upsert_failed. The first three are verdicts on the entry itself and terminal: resending it unchanged is skipped
+        again, so log and drop it. `upsert_failed` is a write failure on the server's side, not a verdict on the entry:
+        nothing was stored for it, and it should be sent again on a later sync. A write failure takes out the whole
+        group it was written in (every new day total, or every existing one), so several entries can carry it at once. A
+        response carrying it is marked `Cache-Control: no-store` and is not kept for `Idempotency-Key` replay, so the
+        retry writes again rather than replaying the failure."
     NutrientOverviewEnvelope:
       type: object
       properties:
@@ -70928,11 +71491,11 @@ components:
       additionalProperties: {}
       description: "The backup payload as the writer serialised it: `schemaVersion`, `exportedAt`, `userId`, and one array or
         object per serialised class."
-    AdminBackupRestoreResponse:
+    AdminBackupRestoreQueuedResponse:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/AdminBackupRestoreResult"
+          $ref: "#/components/schemas/AdminBackupRestoreQueued"
         error:
           type: "null"
         meta:
@@ -70945,49 +71508,197 @@ components:
         - data
         - error
       additionalProperties: false
-    AdminBackupRestoreResult:
+    AdminBackupRestoreQueued:
       type: object
       properties:
-        restored:
-          type: boolean
-          const: true
-        summary:
-          type: object
-          propertyNames:
-            type: string
-          additionalProperties: {}
-        skipped:
+        jobId:
+          type: string
+        status:
+          type: string
+          const: queued
+        statusUrl:
+          type: string
+      required:
+        - jobId
+        - status
+        - statusUrl
+      additionalProperties: false
+      description: The restore was accepted and queued. Poll `statusUrl` (`GET /api/admin/backups/restores/{jobId}`) for its
+        progress and outcome.
+    AdminBackupRestoreJobListResponse:
+      type: object
+      properties:
+        data:
           type: object
           properties:
-            catalogueKeys:
+            jobs:
               type: array
               items:
-                $ref: "#/components/schemas/AdminBackupRestoreSkipEntry"
-            links:
-              type: integer
+                $ref: "#/components/schemas/AdminBackupRestoreJob"
+          required:
+            - jobs
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminBackupRestoreJob:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        username:
+          anyOf:
+            - type: string
+            - type: "null"
+        backupId:
+          type: string
+        restoreInstanceSettings:
+          type: boolean
+        status:
+          type: string
+          enum:
+            - queued
+            - running
+            - succeeded
+            - failed
+        phase:
+          anyOf:
+            - $ref: "#/components/schemas/AdminBackupRestorePhase"
+            - type: "null"
+        progress:
+          anyOf:
+            - $ref: "#/components/schemas/AdminBackupRestoreProgress"
+            - type: "null"
+        result:
+          anyOf:
+            - type: object
+              properties:
+                summary:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties: {}
+                skipped:
+                  type: object
+                  properties:
+                    catalogueKeys:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/AdminBackupRestoreSkipEntry"
+                    links:
+                      type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                  required:
+                    - catalogueKeys
+                    - links
+                  additionalProperties: false
+                cleared:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+              required:
+                - summary
+                - skipped
+                - cleared
+              additionalProperties: false
+            - type: "null"
+        failure:
+          anyOf:
+            - $ref: "#/components/schemas/AdminBackupRestoreFailure"
+            - type: "null"
+        attempts:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        createdAt:
+          type: string
+        startedAt:
+          anyOf:
+            - type: string
+            - type: "null"
+        completedAt:
+          anyOf:
+            - type: string
+            - type: "null"
+      required:
+        - id
+        - userId
+        - username
+        - backupId
+        - restoreInstanceSettings
+        - status
+        - phase
+        - progress
+        - result
+        - failure
+        - attempts
+        - createdAt
+        - startedAt
+        - completedAt
+      additionalProperties: false
+      description: "One restore job. `phase` and `progress` describe a running job; `result` is set once it `succeeded` (the
+        same report the synchronous restore used to answer with, less `restored`); `failure` once it `failed`.
+        `attempts` counts the starts: a job whose worker stopped before the data was committed is started once more; one
+        that stopped after the commit is closed as `failed_after_commit` and never run again."
+    AdminBackupRestorePhase:
+      type: string
+      enum:
+        - validating
+        - clearing
+        - measurements
+        - sections
+        - rebuilding
+      description: "Where a running restore is: reading and checking the file, clearing the account's current data, writing
+        the readings, writing the other sections, rebuilding the chart tiers after the commit."
+    AdminBackupRestoreProgress:
+      type: object
+      properties:
+        measurementsChecked:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        measurementsTotal:
+          anyOf:
+            - type: integer
               minimum: -9007199254740991
               maximum: 9007199254740991
-          required:
-            - catalogueKeys
-            - links
-          additionalProperties: false
-        cleared:
-          type: object
-          propertyNames:
-            type: string
-          additionalProperties:
-            type: integer
-            minimum: -9007199254740991
-            maximum: 9007199254740991
+            - type: "null"
+        measurementsWritten:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        sectionsDone:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        sectionsTotal:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
       required:
-        - restored
-        - summary
-        - skipped
-        - cleared
+        - measurementsChecked
+        - measurementsTotal
+        - measurementsWritten
+        - sectionsDone
+        - sectionsTotal
       additionalProperties: false
-      description: What the transaction wrote. `cleared` counts the rows each class held before it was rebuilt from the file,
-        `summary` counts what the file carried, and `skipped.links` is the number of links dropped because a catalogue
-        key in the file does not exist here — zero is the normal answer.
+      description: Counts only. `measurementsTotal` is null until the first read of the file has counted the readings.
     AdminBackupRestoreSkipEntry:
       type: object
       properties:
@@ -71005,6 +71716,45 @@ components:
         - links
       additionalProperties: false
       description: One catalogue key the file referenced and this instance could not resolve, with the number of links it cost.
+    AdminBackupRestoreFailure:
+      type: object
+      properties:
+        code:
+          type: string
+          description: "Stable reason: `backup_not_found`, `backup_changed`, `backup.payload.undecryptable`, `schema_invalid`,
+            `incompatible_schema_version`, `owner_mismatch`, `owner_not_found`, `backup.section.missing`,
+            `document_ciphertext_missing`, `time_budget`, `transaction_failed`, `interrupted`, `not_started`,
+            `enqueue_failed`, `failed_after_commit`, `unexpected`. Every code but `failed_after_commit` means the
+            account was not changed."
+        message:
+          type: string
+        sections:
+          type: array
+          items:
+            type: string
+      required:
+        - code
+        - message
+      additionalProperties: false
+      description: Why the restore did not happen, in a sentence an operator can act on. `sections` names the missing sections
+        for `backup.section.missing`.
+    AdminBackupRestoreJobResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminBackupRestoreJob"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     __schema0:
       anyOf:
         - type: string
@@ -71397,8 +72147,10 @@ components:
         unitsPerDose:
           type: number
           description: v1.16.10 — inventory units one dose consumes (e.g. 2 tablets of 2 mg for a 4 mg dose). v1.16.12 — may be a
-            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. Default 1. The intake consumption
-            hook decrements this many units per taken dose; dose-derived readouts divide unit counts by it.
+            split-pill fraction (¼ / ⅓ / ½ / ⅔ / ¾); thirds carry as ≈0.3333 / 0.6667. v1.39.1 (#1034) — any value above
+            0 and at most 100 with at most 4 decimal places, so also a whole number plus a fraction (1.5, 2.25, 1.3333)
+            or a measured amount (0.8). Default 1. The intake consumption hook decrements this many units per taken
+            dose; dose-derived readouts divide unit counts by it.
         reorderLeadDays:
           anyOf:
             - type: integer
@@ -71489,6 +72241,13 @@ components:
             any schedule entry alongside the flag): it is never due (`nextDueAt` stays null), never reminded, and
             excluded from every compliance rate/streak — but intakes still log as ad-hoc rows, inventory still consumes
             per `unitsPerDose`, and the history renders. Stays active indefinitely. Mutually exclusive with `oneShot`."
+        trackIntake:
+          type: boolean
+          description: "v1.39.1 — intake tracking. True (the default) for every medication that existed before the field. When
+            false the medication is kept as a record: nothing is ever due (`nextDueAt` stays null), nothing reminds on
+            any channel, and it is excluded from every adherence figure. Its stored schedule then travels in
+            `recordedSchedules` while `schedules` is served empty, so a client that arms reminders from `schedules`
+            stays silent without an update."
         createdAt:
           type: string
           format: date-time
@@ -71498,6 +72257,14 @@ components:
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         schedules:
+          type: array
+          items:
+            $ref: "#/components/schemas/MedicationScheduleOutput"
+          description: "The schedules in force. Empty for an as-needed medication and (v1.39.1) for a medication with
+            `trackIntake: false`, whose stored schedule is in `recordedSchedules`."
+        recordedSchedules:
+          description: "v1.39.1 — present only when `trackIntake` is false: the stored schedule, kept as information. Nothing
+            derives a due dose or a reminder from it. Absent on a tracked medication, whose schedule is `schedules`."
           type: array
           items:
             $ref: "#/components/schemas/MedicationScheduleOutput"
@@ -71521,6 +72288,7 @@ components:
         - endsOn
         - oneShot
         - asNeeded
+        - trackIntake
         - createdAt
         - updatedAt
         - schedules

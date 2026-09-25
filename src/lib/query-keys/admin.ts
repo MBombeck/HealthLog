@@ -41,6 +41,11 @@ export const adminKeys = {
   /** v1.37.20 — restore preview: the counts a stored backup file carries. */
   adminBackupSummary: (id: string) =>
     ["admin", "backups", id, "summary"] as const,
+  /**
+   * v1.39.1 — the restore jobs the backups console shows. Its own prefix, so
+   * invalidating the backup list does not refetch the poll and vice versa.
+   */
+  adminBackupRestores: () => ["admin", "backup-restores"] as const,
   /** v1.23 — encryption coverage + rotation progress (admin Encryption section). */
   adminEncryptionStatus: () => ["admin", "encryption", "status"] as const,
   adminCoachFeedback: () => ["admin", "coach-feedback"] as const,

@@ -18,7 +18,10 @@
  * per-row updates (existing pairs), the measurements-batch shape. A write
  * failure marks its WHOLE group `skipped upsert_failed` rather than
  * isolating the one entry that would have caused it (unavoidable once the
- * write is batched) — the request itself never fails.
+ * write is batched) — the request itself never fails. That reason is
+ * transient, unlike the validation skips: the client sends those entries
+ * again, and the response is marked `no-store` so an idempotent retry is not
+ * answered from the cache.
  *
  * Module gate FIRST: the opt-in `nutrients` module (default off)
  * refuses ingest with the 403 `module.disabled` envelope, so a phone
@@ -360,11 +363,19 @@ async function postBatch(request: NextRequest): Promise<Response> {
     },
   });
 
-  return apiSuccess({
+  const response = apiSuccess({
     processed: entries.length,
     inserted,
     updated,
     skipped,
     entries: results,
   });
+  // `upsert_failed` is transient: nothing was stored for those entries and the
+  // client sends them again. `no-store` keeps the idempotency layer from
+  // caching this answer, so a retry under the same key writes instead of
+  // replaying the failure. The measurement batch does the same for `failed`.
+  if (skippedByReason.upsert_failed) {
+    response.headers.set("Cache-Control", "private, no-store");
+  }
+  return response;
 }

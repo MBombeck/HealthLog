@@ -45,13 +45,12 @@ interface FindManyArgs {
   select: Record<string, true>;
   orderBy?: Record<string, "asc" | "desc">;
   take?: number;
-  cursor?: Record<string, unknown>;
-  skip?: number;
+  where?: Record<string, { gt: string }>;
 }
 
 /**
- * Pagination-honouring fake delegate: applies orderBy(id) + cursor + skip +
- * take exactly like Prisma keyset pagination, and records every findMany
+ * Pagination-honouring fake delegate: applies orderBy(id) + `id > last` +
+ * take exactly like the keyset pagination the walk sends, and records every findMany
  * call so the test can assert the batch boundedness.
  */
 function makeDocClient(rows: DocRow[]): {
@@ -68,10 +67,8 @@ function makeDocClient(rows: DocRow[]): {
       findMany: async (args: FindManyArgs) => {
         findManyCalls.push(args);
         let list = [...store].sort((a, b) => a.id.localeCompare(b.id));
-        if (args.cursor) {
-          const idx = list.findIndex((r) => r.id === args.cursor!.id);
-          list = list.slice(idx + (args.skip ?? 0));
-        }
+        const after = args.where?.id?.gt;
+        if (after !== undefined) list = list.filter((r) => r.id > after);
         if (args.take !== undefined) list = list.slice(0, args.take);
         return list.map((row) => {
           const out: Record<string, unknown> = {};
@@ -181,8 +178,8 @@ describe("codec-dispatched blob rotation (bounded batches)", () => {
       expect(call.orderBy).toEqual({ id: "asc" });
     }
     // Cursor advanced between pages.
-    expect(findManyCalls[0].cursor).toBeUndefined();
-    expect(findManyCalls[1].cursor).toEqual({ id: pad(24) });
+    expect(findManyCalls[0].where).toBeUndefined();
+    expect(findManyCalls[1].where).toEqual({ id: { gt: pad(24) } });
 
     // Every row now reads under the active key, each in its OWN codec.
     for (const row of store) {

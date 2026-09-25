@@ -48,6 +48,7 @@ import {
   InjectionSite,
   IntakeAttributionSource,
   IntakeSource,
+  Laterality,
   MeasurementAggregationProvenance,
   MeasurementReminderEventKind,
   MeasurementSource,
@@ -81,6 +82,10 @@ import {
   organDonorStatusSchema,
 } from "@/lib/validations/emergency-profile";
 import { REMINDER_EVENT_SOURCES } from "@/lib/measurement-reminders/satisfy";
+import {
+  UNITS_PER_DOSE_MESSAGE,
+  isSupportedUnitsPerDose,
+} from "@/lib/medications/units-per-dose";
 
 export const BACKUP_SCHEMA_VERSION = "2" as const;
 const LEGACY_BACKUP_SCHEMA_VERSION = "1" as const;
@@ -131,6 +136,15 @@ const measurementSchema = z
   })
   .passthrough();
 
+// #1034 — the restore applies the write routes' units-per-dose rule. A
+// backup carries the Decimal column as a string ("1.5"); a hand-authored
+// file may carry a number. `Number("")` is 0, so an empty string fails too.
+const unitsPerDoseValue = z
+  .union([z.string(), z.number()])
+  .refine((v) => isSupportedUnitsPerDose(Number(v)), {
+    message: UNITS_PER_DOSE_MESSAGE,
+  });
+
 const medicationScheduleSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -140,7 +154,7 @@ const medicationScheduleSchema = z
     dose: z.string().nullable().optional(),
     // #219 — per-schedule units per dose. Serialised as a Decimal string in a
     // DR file (or a number in a hand-authored one); NULL means inherit.
-    unitsPerDose: z.union([z.string(), z.number()]).nullable().optional(),
+    unitsPerDose: unitsPerDoseValue.nullable().optional(),
     daysOfWeek: z.string().nullable().optional(),
     timesOfDay: z.array(z.string()).optional(),
     reminderGraceMinutes: z.number().int().nullable().optional(),
@@ -320,7 +334,13 @@ const medicationSchema = z
     dose: z.string(),
     treatmentClass: z.enum(MedicationCategory).optional(),
     dosesPerUnit: z.number().int().nullable().optional(),
-    unitsPerDose: z.string().min(1).optional(),
+    unitsPerDose: z
+      .string()
+      .min(1)
+      .refine((v) => isSupportedUnitsPerDose(Number(v)), {
+        message: UNITS_PER_DOSE_MESSAGE,
+      })
+      .optional(),
     active: z.boolean().optional(),
     notificationsEnabled: z.boolean().optional(),
     pausedAt: isoDateTime.nullable().optional(),
@@ -329,6 +349,9 @@ const medicationSchema = z
     endsOn: isoDateTime.nullable().optional(),
     oneShot: z.boolean().optional(),
     asNeeded: z.boolean().optional(),
+    // v1.39.1 (#1033) — absent in a backup written before the field existed;
+    // the restore defaults it to tracking on, the behaviour those had.
+    trackIntake: z.boolean().optional(),
     deliveryForm: z.enum(MedicationDeliveryForm).optional(),
     trackInjectionSites: z.boolean().optional(),
     allowedInjectionSites: z.array(z.enum(InjectionSite)).optional(),
@@ -1088,6 +1111,10 @@ const encounterBackupSchema = z
     practitionerId: z.string().nullable().optional(),
     reasonEncrypted: base64BytesSchema.nullable().optional(),
     outcomeEncrypted: base64BytesSchema.nullable().optional(),
+    // v1.39.1 — the procedure's body site and side. Optional so a file written
+    // before they existed still parses; the visit restores with neither.
+    bodySiteEncrypted: base64BytesSchema.nullable().optional(),
+    laterality: z.enum(Laterality).nullable().optional(),
     // Remapped against the restored reminders (they travel since v1.37.20);
     // dropped to NULL, with the drop named, only when the file lacks the row.
     reminderId: z.string().nullable().optional(),
@@ -1772,6 +1799,16 @@ export const backupPayloadSchema = z
   });
 
 export type BackupPayload = z.infer<typeof backupPayloadSchema>;
+
+/**
+ * One element of `measurements`, validated on its own. The streamed readers
+ * (`src/lib/export/streamed-backup.ts`) check a large file's measurements
+ * one at a time with this, and the rest of the file with
+ * `backupPayloadSchema` over a document whose measurements are empty, which
+ * together is the same check `backupPayloadSchema` makes of the whole file.
+ */
+export const backupMeasurementSchema = measurementSchema;
+export type BackupMeasurement = z.infer<typeof measurementSchema>;
 
 /**
  * Numeric counts of each backed-up record kind. Returned in the

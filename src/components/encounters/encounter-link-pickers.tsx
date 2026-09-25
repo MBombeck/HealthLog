@@ -132,6 +132,7 @@ export function EncounterLinkPickers({
       id: episode.id,
       label: episode.label,
       dateLabel: episode.onsetAt ? format.date(episode.onsetAt) : null,
+      href: `/illness/${encodeURIComponent(episode.id)}`,
     }),
   );
 

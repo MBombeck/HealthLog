@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
@@ -11,6 +12,7 @@ import { PageAuthGate } from "@/components/ui/page-auth-gate";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VorsorgeSection } from "@/components/measurement-reminders/vorsorge-section";
 import { VisitsSection } from "@/components/encounters/visits-section";
+import { ProceduresSection } from "@/components/encounters/procedures-section";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
 
@@ -29,6 +31,11 @@ import { invalidateKeys, queryKeys } from "@/lib/query-keys";
  * did I actually attend — and the page's own sentence already covers both. A
  * visit carries no module gate for the same reason this page never had one.
  *
+ * v1.39.1 — a third tab, the procedure and surgery history. It is the visits
+ * list read one way (the visits of kind PROCEDURE, searchable by body site),
+ * so it sits beside the visits rather than behind a nav entry of its own, and
+ * its read hangs off the same `["encounters"]` root the pull already evicts.
+ *
  * The pull invalidates both reads. Refreshing one and leaving the other stale
  * is how a page ends up showing a visit that closed a checkup still listed as
  * due.
@@ -38,7 +45,10 @@ export default function CheckupsPageClient() {
   const mounted = useMounted();
   const queryClient = useQueryClient();
   const { t } = useTranslations();
-  const [view, setView] = useState("vorsorge");
+  // A link to one visit (`?visit=<id>`, from a document's link chip) lands on
+  // the visits tab, where the section opens it.
+  const linkedVisit = useSearchParams()?.get("visit");
+  const [view, setView] = useState(linkedVisit ? "visits" : "vorsorge");
 
   const refresh = useCallback(
     () =>
@@ -65,6 +75,9 @@ export default function CheckupsPageClient() {
           <TabsTrigger value="visits" data-testid="checkups-tab-visits">
             {t("checkups.tabVisits")}
           </TabsTrigger>
+          <TabsTrigger value="procedures" data-testid="checkups-tab-procedures">
+            {t("checkups.tabProcedures")}
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="vorsorge">
           <VorsorgeSection enabled={isAuthenticated} variant="page" />
@@ -73,6 +86,9 @@ export default function CheckupsPageClient() {
           {/* Mounted only on the active tab, so the visits read does not fire
               for a person who never opens it. */}
           <VisitsSection enabled={isAuthenticated} />
+        </TabsContent>
+        <TabsContent value="procedures">
+          <ProceduresSection enabled={isAuthenticated} />
         </TabsContent>
       </Tabs>
     </div>

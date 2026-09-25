@@ -11,6 +11,27 @@ vi.mock("@/lib/daily/morning-refresh-trigger", () => ({
   maybeEnqueueMorningRefresh: vi.fn().mockResolvedValue(undefined),
 }));
 
+// The spot flush writes through one raw `INSERT … ON CONFLICT DO NOTHING
+// RETURNING` statement. These fakes model the table in memory, so route that
+// statement to the fake's own skip-duplicates insert; the SQL itself is pinned
+// against a real Postgres in tests/integration/measurement-bulk-insert.test.ts.
+vi.mock("@/lib/export/measurement-bulk-insert", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/export/measurement-bulk-insert")
+  >()),
+  insertNewMeasurementRows: vi.fn(
+    (
+      db: { measurement: { createManyAndReturn: (args: unknown) => unknown } },
+      rows: unknown[],
+    ) =>
+      db.measurement.createManyAndReturn({
+        data: rows,
+        skipDuplicates: true,
+        select: { id: true, type: true, measuredAt: true, externalId: true },
+      }),
+  ),
+}));
+
 vi.mock("@/lib/arrivals/emit-shared", () => ({
   emitDataArrival: vi.fn().mockResolvedValue(undefined),
 }));
@@ -35,6 +56,7 @@ import {
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
+import { insertNewMeasurementRows } from "@/lib/export/measurement-bulk-insert";
 import {
   APPLE_HEALTH_TYPE_MAP,
   CUMULATIVE_HK_TYPES,
@@ -728,6 +750,40 @@ describe("streamParseExportXml — cumulative source-day estimates", () => {
     expect(prisma._measurements).toHaveLength(0);
     expect(result.unknown["ACTIVITY_STEPS::aggregate_out_of_range"]).toBe(1);
     expect(result.cumulativeEstimates).toEqual({ days: 0, rows: 0 });
+  });
+});
+
+describe("streamParseExportXml — spot-row writer", () => {
+  it("writes spot rows through the bounded bulk insert, never createManyAndReturn", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "healthlog-parser-test-"));
+    const xmlPath = join(tmp, "export.xml");
+    writeFileSync(xmlPath, tinyExportXml());
+    const prisma = makeFakePrisma();
+    const direct = vi.spyOn(prisma.measurement, "createManyAndReturn");
+    const helper = vi.mocked(insertNewMeasurementRows);
+    helper.mockClear();
+
+    await streamParseExportXml({
+      xmlPath,
+      userId: "user-1",
+      userTimezone: "Europe/Berlin",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma: prisma as any,
+      spotBatchSize: 2,
+      workoutBatchSize: 1,
+    });
+
+    expect(helper).toHaveBeenCalled();
+    // Every createManyAndReturn the fake saw came through the helper's
+    // stand-in above; none came from the import itself.
+    expect(direct).toHaveBeenCalledTimes(helper.mock.calls.length);
+    const written = helper.mock.calls.flatMap(([, rows]) => [...rows]);
+    expect(written.map((r) => r.type)).toEqual(
+      expect.arrayContaining(["WEIGHT", "SLEEP_DURATION"]),
+    );
+    expect(new Set(written.map((r) => r.source))).toEqual(
+      new Set(["APPLE_HEALTH"]),
+    );
   });
 });
 

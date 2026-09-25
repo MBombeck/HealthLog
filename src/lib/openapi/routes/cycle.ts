@@ -186,7 +186,7 @@ const cyclePredictionDto = z
       "The materialised forecast. Fertile-window fields (and predictedOvulation/ovulationConfirmed) are server-suppressed (null/false) unless the goal is TRYING_TO_CONCEIVE or AVOID_PREGNANCY.",
   });
 
-const cycleCalendarDayDto = z.object({
+export const cycleCalendarDayDto = z.object({
   date: z.string(),
   phase: cyclePhaseEnumOpenapi.nullable(),
   isPredictedPeriod: z.boolean(),
@@ -218,6 +218,23 @@ const cycleCalendarDayDto = z.object({
   cervixPosition: cervixPositionEnum.nullable(),
   cervixFirmness: cervixFirmnessEnum.nullable(),
   cervixOpening: cervixOpeningEnum.nullable(),
+  // v1.39.1 — the rest of what a day log can hold, so a day with only one of
+  // these logged no longer reads as an empty day. Additive: an older client
+  // that does not know a field ignores it.
+  intermenstrualBleeding: z.boolean().meta({
+    description: "Spotting or bleeding outside the period logged on this day.",
+  }),
+  sexualActivity: z.boolean().meta({
+    description:
+      "Intercourse logged on this day. Resolved from the plaintext column or the encrypted envelope, exactly as the day-log read resolves it, and served under the same cycle grant.",
+  }),
+  pregnancyTest: homeTestResultEnumOpenapi.nullable(),
+  progesteroneTest: homeTestResultEnumOpenapi.nullable(),
+  contraceptive: z.string().nullable(),
+  hasNote: z.boolean().meta({
+    description:
+      "Whether the day carries a note. The note text is only on the day-log read.",
+  }),
 });
 
 const cycleVerdictDto = z
@@ -420,7 +437,12 @@ const cycleBulkEntryResult = z.object({
   status: z.enum(["inserted", "duplicate", "updated", "skipped"]),
   id: z.string().optional(),
   externalId: z.string().optional(),
-  reason: z.string().optional(),
+  reason: z
+    .string()
+    .optional()
+    .describe(
+      "On a `skipped` entry. `unstable_external_id` is a verdict on the entry and terminal: resending it unchanged is skipped again. `constraint` means the write met a database constraint (a key another write claimed at the same moment, or a reference that no longer exists). `upsert_failed` is a write failure on the server's side: nothing was stored, the entry should be sent again, and the response carrying it is `Cache-Control: no-store`, so a retry under the same `Idempotency-Key` writes again rather than replaying the failure.",
+    ),
 });
 
 const cycleBulkResponse = z.object({
@@ -791,6 +813,11 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...cycleDisabledResponse,
         ...stdResponses,
+        "422": {
+          description:
+            "The whole batch was refused and nothing was written: more than 500 entries (`meta.errorCode` = `cycle.bulk.too_large`, no issue list), or the body failed validation (`meta.errorCode` = `cycle.bulk.invalid`, every issue under `details.issues`). Both are permanent for the batch as sent. A problem with one entry never refuses the batch; it comes back as that entry's `skipped` status.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },
