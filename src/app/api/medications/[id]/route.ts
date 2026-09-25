@@ -299,6 +299,55 @@ export const PUT = apiHandler(
       return returnAllZodIssues(parsed.error, 422);
     }
 
+    // ── v1.39.1 (#1033) — a record-only schedule is only replaced knowingly ──
+    //
+    // A medication with intake tracking off is served with `schedules: []`
+    // and its stored schedule in `recordedSchedules`, so a client that
+    // predates the field arms no reminder from it. The price is that such a
+    // client cannot SEE the stored schedule. The shipped iPhone app (1.0.3 /
+    // 1.0.4) opens a medication without schedule rows in its editor as
+    // "daily at 08:00"; a rename or dose edit sends no `schedules` (its
+    // editor diffs against that same prefill), but any touch of a schedule
+    // field sends a full replacement built from the 08:00 default plus
+    // `asNeeded` and `oneShot`, and never `trackIntake`. Applied, that would
+    // overwrite the schedule the person kept on record with one they never
+    // chose (or flip it to as-needed and delete the rows).
+    //
+    // Rule: on a medication whose intake tracking is off, a write that does
+    // not name `trackIntake` leaves the schedule shape alone. `schedules`,
+    // `asNeeded` and `oneShot` are dropped from it; every other field (name,
+    // dose, dates, `active`, `notificationsEnabled`, inventory, ...) applies
+    // as sent. A client that knows about the switch names it on every
+    // schedule save (the web editor and wizard do), and those writes apply.
+    const keepRecordedSchedule =
+      existing.trackIntake === false &&
+      parsed.data.trackIntake === undefined &&
+      (parsed.data.schedules !== undefined ||
+        parsed.data.asNeeded !== undefined ||
+        parsed.data.oneShot !== undefined);
+    const input = keepRecordedSchedule
+      ? {
+          ...parsed.data,
+          schedules: undefined,
+          asNeeded: undefined,
+          oneShot: undefined,
+        }
+      : parsed.data;
+    if (keepRecordedSchedule) {
+      annotate({
+        action: {
+          name: "medication.update.record_schedule_kept",
+          entity_type: "medication",
+          entity_id: id,
+        },
+        meta: {
+          dropped_schedules: parsed.data.schedules !== undefined,
+          dropped_as_needed: parsed.data.asNeeded !== undefined,
+          dropped_one_shot: parsed.data.oneShot !== undefined,
+        },
+      });
+    }
+
     const {
       name,
       dose,
@@ -323,7 +372,7 @@ export const PUT = apiHandler(
       asNeeded,
       trackIntake,
       reminderGraceMinutes: topLevelGraceMinutes,
-    } = parsed.data;
+    } = input;
 
     // v1.39.1 (#1033) — intake tracking transition. Off keeps the schedule
     // as a record; the live era from here on expects nothing.

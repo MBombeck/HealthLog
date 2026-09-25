@@ -24,6 +24,10 @@ vi.mock("@/lib/db", () => ({
       findMany: vi.fn().mockResolvedValue([]),
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    medicationPauseEra: {
+      create: vi.fn().mockResolvedValue({}),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
     apiToken: {
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
@@ -902,6 +906,8 @@ describe("PUT /api/medications/[id] — intake tracking switch (#1033)", () => {
     arrange(false);
     const res = await PUT(
       putReq({
+        // The web editor names the flag on a record-only schedule save.
+        trackIntake: false,
         schedules: [
           {
             windowStart: "08:00",
@@ -917,5 +923,193 @@ describe("PUT /api/medications/[id] — intake tracking switch (#1033)", () => {
     const era = vi.mocked(prisma.medicationScheduleRevision.create).mock
       .calls[0][0].data as { payload: unknown[] };
     expect(era.payload).toEqual([]);
+  });
+});
+
+/**
+ * #1033 — the shipped iPhone app (1.0.3 / 1.0.4) cannot see the schedule of a
+ * record-only medication (it is served with `schedules: []`). These are the
+ * exact bodies its edit sheet sends (`EditMedicationSheet.save()` →
+ * `MedicationPatch`, nil keys omitted): it never names `trackIntake`, always
+ * sends `active` and `notificationsEnabled`, and sends the schedule shape
+ * only when a schedule field was touched, rebuilt from the "daily at 08:00"
+ * default its form shows for a medication without schedule rows.
+ */
+describe("PUT /api/medications/[id] — shipped client on a record-only medication (#1033)", () => {
+  const STORED_ROW = {
+    id: "s1",
+    medicationId: "m1",
+    windowStart: "21:00",
+    windowEnd: "21:00",
+    label: null,
+    dose: null,
+    daysOfWeek: null,
+    timesOfDay: ["21:00"],
+    reminderGraceMinutes: null,
+    rrule: "FREQ=DAILY",
+    rollingIntervalDays: null,
+    scheduleType: "SCHEDULED",
+    cyclicOnWeeks: null,
+    cyclicOffWeeks: null,
+    doseWindows: null,
+  };
+
+  // `name`/`dose`/`treatmentClass`/`category`/`active`/`notificationsEnabled`/
+  // `deliveryForm` ride every save; `dosesPerUnit` is nil for an empty field.
+  const IOS_RENAME = {
+    name: "Atorvastatin 20",
+    dose: "20 mg",
+    treatmentClass: "GENERIC",
+    category: "OTHER",
+    active: true,
+    notificationsEnabled: true,
+    deliveryForm: "ORAL",
+  };
+  // The same save after the dose time was moved from the shown 08:00 default
+  // to 09:00: `scheduleWrite(.daily)` + `oneShot` + `startsOn` + `asNeeded`.
+  const IOS_SCHEDULE_TOUCHED = {
+    ...IOS_RENAME,
+    schedules: [
+      {
+        windowStart: "09:00",
+        windowEnd: "09:00",
+        timesOfDay: ["09:00"],
+        rrule: "FREQ=DAILY",
+      },
+    ],
+    oneShot: false,
+    startsOn: "2026-06-01",
+    asNeeded: false,
+  };
+  // The same save after picking the "as needed" cadence.
+  const IOS_AS_NEEDED = {
+    ...IOS_RENAME,
+    schedules: [],
+    oneShot: false,
+    asNeeded: true,
+  };
+
+  function arrange(trackIntake: boolean) {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      id: "m1",
+      userId: "user-1",
+      active: true,
+      asNeeded: false,
+      trackIntake,
+      createdAt: new Date("2026-05-01T08:00:00.000Z"),
+      _count: { schedules: 1 },
+    } as never);
+    vi.mocked(prisma.medication.update).mockResolvedValue({
+      id: "m1",
+      userId: "user-1",
+      trackIntake,
+      unitsPerDose: 1,
+      schedules: [{ ...STORED_ROW, unitsPerDose: null }],
+    } as never);
+    vi.mocked(getMedicationCategories).mockResolvedValue({});
+    vi.mocked(auditLog).mockResolvedValue(undefined);
+    vi.mocked(dayKeyForScheduledFor).mockReturnValue("2026-06-10");
+    vi.mocked(recomputeMedicationComplianceForDay).mockResolvedValue(undefined);
+    vi.mocked(prisma.medicationSchedule.findMany).mockResolvedValue([
+      STORED_ROW,
+    ] as never);
+    vi.mocked(prisma.medication.update).mockClear();
+    vi.mocked(prisma.medicationSchedule.deleteMany).mockClear();
+    vi.mocked(prisma.medicationScheduleRevision.create).mockClear();
+    vi.mocked(prisma.medicationIntakeEvent.updateMany).mockClear();
+  }
+
+  function updateData(): Record<string, unknown> {
+    return vi.mocked(prisma.medication.update).mock.calls[0][0].data as Record<
+      string,
+      unknown
+    >;
+  }
+
+  it("a rename applies and touches no schedule", async () => {
+    arrange(false);
+    const res = await PUT(putReq(IOS_RENAME), ROUTE_CTX);
+    expect(res.status).toBe(200);
+    expect(updateData()).toMatchObject({
+      name: "Atorvastatin 20",
+      notificationsEnabled: true,
+    });
+    expect(updateData()).not.toHaveProperty("schedules");
+    expect(updateData()).not.toHaveProperty("trackIntake");
+    expect(prisma.medicationSchedule.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("a schedule-touched save keeps the recorded schedule and applies the rest", async () => {
+    arrange(false);
+    const res = await PUT(putReq(IOS_SCHEDULE_TOUCHED), ROUTE_CTX);
+    expect(res.status).toBe(200);
+    const data = updateData();
+    // The 09:00 default the person never chose is not written.
+    expect(data).not.toHaveProperty("schedules");
+    expect(data).not.toHaveProperty("asNeeded");
+    expect(data).not.toHaveProperty("oneShot");
+    expect(prisma.medicationSchedule.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.medicationScheduleRevision.create).not.toHaveBeenCalled();
+    expect(prisma.medicationIntakeEvent.updateMany).not.toHaveBeenCalled();
+    // Everything else in the save applies.
+    expect(data).toMatchObject({ name: "Atorvastatin 20" });
+    expect(data).toHaveProperty("startsOn");
+    // And it is still a record: the stored schedule comes back on record.
+    const body = (await res.json()) as {
+      data: {
+        schedules: unknown[];
+        recordedSchedules?: Array<{ timesOfDay: string[] }>;
+      };
+    };
+    expect(body.data.schedules).toEqual([]);
+    expect(body.data.recordedSchedules?.[0]?.timesOfDay).toEqual(["21:00"]);
+  });
+
+  it("picking 'as needed' neither 422s nor deletes the recorded schedule", async () => {
+    arrange(false);
+    const res = await PUT(putReq(IOS_AS_NEEDED), ROUTE_CTX);
+    expect(res.status).toBe(200);
+    expect(updateData()).not.toHaveProperty("asNeeded");
+    expect(updateData()).not.toHaveProperty("schedules");
+    expect(prisma.medicationSchedule.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("the same schedule write applies once it names trackIntake", async () => {
+    arrange(false);
+    const res = await PUT(
+      putReq({ ...IOS_SCHEDULE_TOUCHED, trackIntake: false }),
+      ROUTE_CTX,
+    );
+    expect(res.status).toBe(200);
+    expect(updateData()).toHaveProperty("schedules");
+    expect(prisma.medicationSchedule.deleteMany).toHaveBeenCalledWith({
+      where: { medicationId: "m1" },
+    });
+  });
+
+  it("a tracked medication takes the shipped client's schedule write as before", async () => {
+    arrange(true);
+    const res = await PUT(putReq(IOS_SCHEDULE_TOUCHED), ROUTE_CTX);
+    expect(res.status).toBe(200);
+    expect(updateData()).toHaveProperty("schedules");
+    expect(updateData()).toMatchObject({ asNeeded: false, oneShot: false });
+    expect(prisma.medicationSchedule.deleteMany).toHaveBeenCalledWith({
+      where: { medicationId: "m1" },
+    });
+  });
+
+  it.each([
+    ["pause", { active: false }],
+    ["reactivate", { active: true }],
+    ["end course", { endsOn: "2026-06-12" }],
+  ])("the %s write applies unchanged", async (_label, body) => {
+    arrange(false);
+    const res = await PUT(putReq(body), ROUTE_CTX);
+    expect(res.status).toBe(200);
+    expect(updateData()).toMatchObject(
+      "active" in body ? { active: body.active } : {},
+    );
+    expect(updateData()).not.toHaveProperty("schedules");
   });
 });

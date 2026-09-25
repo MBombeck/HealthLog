@@ -610,11 +610,11 @@ export interface CreateMedicationBody {
    */
   asNeeded: boolean;
   /**
-   * v1.39.1 (#1033) — intake tracking. Sent on create and edit for a
-   * scheduled medication (the wizard hydrates it from the stored value);
-   * omitted for an as-needed one, which is never due either way.
+   * v1.39.1 (#1033) — intake tracking, sent on every create and edit (the
+   * wizard hydrates it from the stored value). An as-needed medication
+   * always tracks intake.
    */
-  trackIntake?: boolean;
+  trackIntake: boolean;
   schedules: Array<{
     id?: string;
     windowStart: string;
@@ -825,7 +825,10 @@ export function buildCreateBody(
     }),
     oneShot: isOneShot,
     asNeeded: isAsNeeded,
-    ...(!isAsNeeded && { trackIntake: committed.trackIntake }),
+    // Always named, so the server applies this schedule even to a
+    // medication kept as a record. Turning a medication into an as-needed
+    // one means doses will be logged, so it tracks intake again.
+    trackIntake: isAsNeeded ? true : committed.trackIntake,
     schedules: draftsToEmit.map((draft) =>
       encodeScheduleDraft(draft, isOneShot),
     ),

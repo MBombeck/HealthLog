@@ -691,6 +691,7 @@ export function MedicationDetailTabs({
             >
               <ScheduleTimesEditor
                 medicationId={id}
+                trackIntake={!recordOnly}
                 schedules={medication.schedules.map((s) => ({
                   id: s.id,
                   windowStart: s.windowStart,
