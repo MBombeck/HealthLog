@@ -252,6 +252,12 @@ export interface RestoreBackupInput {
   restoreInstanceSettings: boolean;
   progress?: RestoreProgressSink;
   /**
+   * Awaited right after the transaction commits, before the rollup rebuild.
+   * The caller records that the account now holds the restored data, so a
+   * restore interrupted after this point is never run a second time.
+   */
+  onCommitted?: () => Promise<void>;
+  /**
    * Epoch milliseconds by which the restore has to be over. When the
    * transaction's own time limit would run past it, the restore is refused
    * before anything is deleted rather than started and cut off.
@@ -2258,7 +2264,8 @@ export async function restoreBackup(
   }
 
   const { cleared, skipped } = outcome;
-  report("rebuilding");
+  report("rebuilding", true);
+  await input.onCommitted?.();
 
   // Pinned shape, not free text: a dashboard can alert on
   // `restoreSkippedLinks > 0` and the key list says which catalogue drifted.

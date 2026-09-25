@@ -464,6 +464,81 @@ describe("backup restore as a background job", () => {
     expect(gaveUp?.failure?.code).toBe("interrupted");
   });
 
+  it("never runs a committed restore again when its worker stopped in the rebuild", async () => {
+    const admin = await seedAdmin();
+    const backup = await storeBackup(admin.id, ["m-a", "m-b"]);
+    const prisma = getPrismaClient();
+
+    // Run the restore for real, so the commit marker is written by the code
+    // that writes it, then put the row back the way a worker that died in the
+    // rollup rebuild leaves it: running, phase rebuilding, heartbeat stale.
+    const queued = await requestRestore(backup.id);
+    const { data } = (await queued.json()) as { data: { jobId: string } };
+    await runBackupRestoreJob(data.jobId);
+    const committed = await prisma.backupRestoreJob.findUniqueOrThrow({
+      where: { id: data.jobId },
+    });
+    expect(committed.committedAt).not.toBeNull();
+    const stale = new Date(Date.now() - 10 * 60_000);
+    await prisma.backupRestoreJob.update({
+      where: { id: data.jobId },
+      data: {
+        status: "running",
+        phase: "rebuilding",
+        heartbeatAt: stale,
+        completedAt: null,
+        result: undefined,
+      },
+    });
+    // A reading the person logged after the restore committed.
+    await seedMeasurements(admin.id, ["after-commit"]);
+
+    expect(await sweepInterruptedRestores(queue.boss)).toEqual({
+      requeued: 0,
+      failed: 1,
+    });
+    const job = await readBackupRestoreJob(data.jobId);
+    expect(job?.status).toBe("failed");
+    expect(job?.failure?.code).toBe("failed_after_commit");
+    expect(job?.failure?.message).not.toContain("Nothing was changed");
+    // Not queued again, so the reading from after the commit survives.
+    expect(
+      queue.sent.filter(
+        (entry) =>
+          (entry.data as { restoreJobId?: string }).restoreJobId === data.jobId,
+      ),
+    ).toHaveLength(1);
+    expect(await measurementIdsOf(admin.id)).toEqual([
+      "after-commit",
+      "m-a",
+      "m-b",
+    ]);
+  });
+
+  it("the admission check closes a committed stale job as restored, not rolled back", async () => {
+    const admin = await seedAdmin();
+    const backup = await storeBackup(admin.id, ["m-a"]);
+    const prisma = getPrismaClient();
+    const queued = await requestRestore(backup.id);
+    const { data } = (await queued.json()) as { data: { jobId: string } };
+    const stale = new Date(Date.now() - 10 * 60_000);
+    await prisma.backupRestoreJob.update({
+      where: { id: data.jobId },
+      data: {
+        status: "running",
+        phase: "rebuilding",
+        attempts: 1,
+        heartbeatAt: stale,
+        committedAt: stale,
+      },
+    });
+
+    expect((await requestRestore(backup.id)).status).toBe(202);
+    const job = await readBackupRestoreJob(data.jobId);
+    expect(job?.status).toBe("failed");
+    expect(job?.failure?.code).toBe("failed_after_commit");
+  });
+
   it("a live job's heartbeat keeps it out of the sweep", async () => {
     const admin = await seedAdmin();
     const backup = await storeBackup(admin.id, ["m-a"]);

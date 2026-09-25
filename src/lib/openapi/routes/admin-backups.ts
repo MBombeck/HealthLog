@@ -125,7 +125,7 @@ const restoreJob = z
   .meta({
     id: "AdminBackupRestoreJob",
     description:
-      "One restore job. `phase` and `progress` describe a running job; `result` is set once it `succeeded` (the same report the synchronous restore used to answer with, less `restored`); `failure` once it `failed`. `attempts` counts the starts: a job whose worker stopped is started again, at most twice.",
+      "One restore job. `phase` and `progress` describe a running job; `result` is set once it `succeeded` (the same report the synchronous restore used to answer with, less `restored`); `failure` once it `failed`. `attempts` counts the starts: a job whose worker stopped before the data was committed is started once more; one that stopped after the commit is closed as `failed_after_commit` and never run again.",
   });
 
 /**
