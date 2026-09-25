@@ -532,7 +532,38 @@ test.describe("Backup and restore, through the settings surfaces", () => {
 
     await openBackupsConsole(page);
     const response = await restoreThroughDialog(page, requireSnapshot());
-    expect(response.status()).toBe(200);
+    // The restore runs on the `backup-restore` queue: the request answers 202
+    // with the job and its status route, and the worker inside the server
+    // under test does the work. Nothing below is read until the job says it
+    // is done, so every assertion is about the finished restore rather than
+    // a moment in the middle of it.
+    expect(response.status()).toBe(202);
+    const queued = (await response.json()) as {
+      data: { jobId: string; status: string; statusUrl: string };
+    };
+    expect(queued.data.status).toBe("queued");
+    expect(queued.data.statusUrl).toBe(
+      `/api/admin/backups/restores/${queued.data.jobId}`,
+    );
+    await expect
+      .poll(
+        async () => {
+          const res = await page.request.get(queued.data.statusUrl);
+          const body = (await res.json()) as {
+            data: {
+              status: string;
+              failure: { code: string } | null;
+            } | null;
+          };
+          // A failed job ends the wait with its code in the message instead
+          // of running the clock out on a state that will never change.
+          return body.data?.status === "failed"
+            ? `failed: ${body.data.failure?.code ?? "unknown"}`
+            : body.data?.status;
+        },
+        { timeout: 60_000, intervals: [250, 500, 1_000] },
+      )
+      .toBe("succeeded");
 
     const afterRestore = await storedMeasurements();
 
@@ -564,7 +595,7 @@ test.describe("Backup and restore, through the settings surfaces", () => {
 
     // And the reading that arrived after the snapshot is gone.
     // `docs/ops/backup-restore.md` says the restore "replaces the account's
-    // data tables", and the route's own words are "one transaction replaces
+    // data tables", and `restore-backup.ts` puts it as "one transaction replaces
     // every serialized owner-scoped class". Replacing is not merging: whoever
     // restores yesterday's copy loses today's readings, and that is the
     // documented behaviour rather than an accident of the implementation.
