@@ -66,10 +66,11 @@ const PROGRESS_EVERY_ROWS = 50_000;
  * What this writer holds is bounded by its own shape and needs no gauge to
  * prove: the three tables that scale with a record are pulled a page at a
  * time, every other section is released as soon as its JSON is in the sink,
- * and at most `FLUSH_BYTES` of text is ever pending. The one copy that DOES
- * grow with the record is the sink's — the stored blob — so that is where the
- * bound belongs, and `packBackupBlobStreaming` enforces it there against bytes
- * it counted itself rather than against a heap the rest of the process shares.
+ * and at most `FLUSH_BYTES` of text is ever pending. The sink does not hold
+ * the record either: the stored copy goes to the database in sealed pieces
+ * (`packBackupChunks`), and the one limit on its size is a storage limit it
+ * counts against its own bytes, not against a heap the rest of the process
+ * shares.
  */
 
 /**

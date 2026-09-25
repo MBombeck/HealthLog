@@ -64,6 +64,8 @@ beforeEach(() => {
     id: "b1",
     userId: "u1",
     data: "ciphertext",
+    chunkCount: null,
+    chunkStreamId: null,
     createdAt: new Date("2026-08-01T00:00:00Z"),
     user: { id: "u1", username: "self-hoster" },
   });

@@ -20580,8 +20580,10 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
           description: "The stored copy could not be opened: either the key that wrote it is no longer in `ENCRYPTION_KEYS` (a
-            rotation that dropped the legacy entry too early), or the stored bytes are not the ones that were written.
-            `meta.errorCode` = `backup.payload.undecryptable`. Nothing was changed."
+            rotation that dropped the legacy entry too early), or the stored bytes are not the ones that were written (a
+            stored piece missing, moved, altered, taken from another copy, or the copy cut short). Every piece is
+            checked before any of the copy is read. `meta.errorCode` = `backup.payload.undecryptable`. Nothing was
+            changed."
           content:
             application/json:
               schema:

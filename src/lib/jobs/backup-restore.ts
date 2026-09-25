@@ -63,6 +63,10 @@ import { withBackgroundEvent } from "@/lib/logging/background";
 import { annotate } from "@/lib/logging/context";
 import { isP2002 } from "@/lib/prisma-errors";
 import {
+  STORED_BACKUP_SELECT,
+  storedBackupIdentity,
+} from "@/lib/export/stored-backup";
+import {
   restoreBackup,
   RESTORE_SECTION_STEPS,
   type RestoreFailureCode,
@@ -190,9 +194,12 @@ export function jobFactCode(code: BackupRestoreFailureCode): string {
   return code.replace(/\./g, "_");
 }
 
-/** SHA-256 of a stored copy, to tell whether it changed while a job waited. */
-export function backupDigest(data: string): string {
-  return createHash("sha256").update(data).digest("hex");
+/**
+ * SHA-256 of a stored copy's identity (`storedBackupIdentity`), to tell
+ * whether the copy was replaced while a job waited.
+ */
+export function backupDigest(identity: string): string {
+  return createHash("sha256").update(identity).digest("hex");
 }
 
 const viewSelect = {
@@ -557,7 +564,7 @@ export async function runBackupRestoreJob(
   try {
     const backup = await prisma.dataBackup.findUnique({
       where: { id: row.backupId },
-      select: { id: true, userId: true, data: true },
+      select: STORED_BACKUP_SELECT,
     });
     if (!backup || backup.userId !== row.userId) {
       await finish("failed", {
@@ -569,7 +576,7 @@ export async function runBackupRestoreJob(
       });
       return jobDone({ refused: "backup_not_found" });
     }
-    if (backupDigest(backup.data) !== row.backupDigest) {
+    if (backupDigest(storedBackupIdentity(backup)) !== row.backupDigest) {
       await finish("failed", {
         failure: {
           code: "backup_changed",

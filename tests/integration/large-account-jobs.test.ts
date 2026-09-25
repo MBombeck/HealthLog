@@ -22,8 +22,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { runDenseIntradayRetention } from "@/lib/measurements/dense-intraday-retention";
 import { consolidateDailyMean } from "@/lib/measurements/consolidate-daily-mean";
-import { unpackBackupBlob } from "@/lib/export/backup-blob";
 import { storeBackupBlob } from "@/lib/export/store-backup-blob";
+import { readStoredBackup } from "./stored-backup-read";
 
 const TZ = "Europe/Berlin";
 const RUN_A = "user-1031-stopped";
@@ -214,7 +214,7 @@ describe("storeBackupBlob (#1031)", () => {
 
   it("stores a copy that reads back as exactly the JSON produced", async () => {
     const prisma = getPrismaClient();
-    const { bytes } = await storeBackupBlob(
+    const { id, bytes, chunks } = await storeBackupBlob(
       prisma,
       { userId: RUN_A, type: "WEEKLY_AUTO" },
       producer(20_000),
@@ -223,8 +223,15 @@ describe("storeBackupBlob (#1031)", () => {
     const row = await prisma.dataBackup.findUniqueOrThrow({
       where: { userId_type: { userId: RUN_A, type: "WEEKLY_AUTO" } },
     });
-    expect(row.data.length).toBe(bytes);
-    expect(unpackBackupBlob(row.data)).toBe(expectedJson(20_000));
+    expect(row.id).toBe(id);
+    expect(row.data).toBeNull();
+    expect(row.chunkCount).toBe(chunks);
+    const pieces = await prisma.dataBackupChunk.findMany({
+      where: { backupId: id },
+    });
+    expect(pieces).toHaveLength(chunks);
+    expect(pieces.reduce((sum, p) => sum + p.data.byteLength, 0)).toBe(bytes);
+    expect(await readStoredBackup(prisma, id)).toBe(expectedJson(20_000));
   });
 
   it("keeps the previous copy when a run fails halfway, and the next run still stores", async () => {
@@ -249,8 +256,9 @@ describe("storeBackupBlob (#1031)", () => {
     const after = await prisma.dataBackup.findUniqueOrThrow({
       where: { userId_type: { userId: RUN_A, type: "WEEKLY_AUTO" } },
     });
-    expect(after.data).toBe(before.data);
+    expect(after.chunkStreamId).toBe(before.chunkStreamId);
     expect(after.createdAt.getTime()).toBe(before.createdAt.getTime());
+    expect(await readStoredBackup(prisma, after.id)).toBe(expectedJson(10));
 
     // The temporary table went with the failed transaction.
     await storeBackupBlob(
@@ -261,6 +269,6 @@ describe("storeBackupBlob (#1031)", () => {
     const replaced = await prisma.dataBackup.findUniqueOrThrow({
       where: { userId_type: { userId: RUN_A, type: "WEEKLY_AUTO" } },
     });
-    expect(unpackBackupBlob(replaced.data)).toBe(expectedJson(30));
+    expect(await readStoredBackup(prisma, replaced.id)).toBe(expectedJson(30));
   });
 });

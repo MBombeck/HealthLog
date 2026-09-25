@@ -666,6 +666,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Replay protection for requests this host already answered. Restoring it would suppress a legitimate new request.",
   DataBackup:
     "The backup catalogue itself. A backup that contains the list of backups is a recursion with no reader.",
+  DataBackupChunk:
+    "The pieces a stored backup is kept in. They are that backup, not part of the account's record, and a backup that contained its own pieces would be the same recursion.",
   BackupRestoreJob:
     "The record of a restore this host ran from one of its own stored copies. It names a backup row that exists only in this database, so carrying it would describe a restore the receiving host never performed.",
   OffhostBackupState:

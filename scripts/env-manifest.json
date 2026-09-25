@@ -288,6 +288,11 @@
           "name": "TRUST_PROXY_HOPS",
           "purpose": "Trusted reverse-proxy hop count; the client IP is read that many entries from the right of X-Forwarded-For.",
           "example": "1"
+        },
+        {
+          "name": "BACKUP_MAX_STORED_MB",
+          "purpose": "Largest stored backup of one account the app keeps, in megabytes of encrypted copy (2048 by default). A storage limit, independent of the app's memory: a backup past it fails with a message naming this variable, and the previous copy stays.",
+          "example": "2048"
         }
       ]
     }

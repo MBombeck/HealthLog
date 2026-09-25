@@ -855,11 +855,24 @@ async function main() {
   // operator that zero meant safe to drop the old key, and every stored backup
   // became undecryptable. Walked in bounded id-cursor batches because one row
   // is an entire compressed account, and re-sealed WITHOUT reading the
-  // plaintext, so both stored envelopes (the plain backup JSON and the
-  // `HLZ1:` gzip form) — and any later one — rotate unchanged.
+  // plaintext, so every single-value envelope (the plain backup JSON, the
+  // `HLZ1:` gzip form and the v1.39.1 `~hlgcm1.` stream) rotates unchanged.
   results.push(
     await rotateRegistryColumn("DataBackup", "data", {
       dataBackup: prisma.dataBackup,
+    } as unknown as CorpusClient),
+  );
+
+  // ───── Whole-account backup in pieces (Bytes, binary2, batched) ─────
+  // From v1.39.2 a backup is stored as sealed pieces in "data_backup_chunks",
+  // one `encryptBytes()` value each, and the "data" column above holds only
+  // copies written before that. Walked in id-cursor batches of a few pieces
+  // (each is about a megabyte) and re-sealed without reading the backup: the
+  // header that ties a piece to its copy and position is inside the
+  // ciphertext, so it comes through rotation unchanged.
+  results.push(
+    await rotateRegistryColumn("DataBackupChunk", "data", {
+      dataBackupChunk: prisma.dataBackupChunk,
     } as unknown as CorpusClient),
   );
 

@@ -220,7 +220,7 @@ function pkField(col: EncryptedColumn): string {
 
 /** True when the column's rows are blobs, walked in the small batches. */
 function isBlobColumn(col: EncryptedColumn): boolean {
-  return Boolean(col.codecField ?? col.batched);
+  return Boolean(col.codecField ?? col.codec ?? col.batched);
 }
 
 /** The key id a walked row was written under, dispatching on its codec. */
