@@ -25,14 +25,16 @@
  * record removed the link instead. The label now opens the record when the
  * option names a target (`href`) and is plain text when it does not; only the
  * separate X, labelled with what it removes, unlinks, and every unlink offers
- * an undo. The chip carries the option's date, so two doses of one vaccine
- * read as two different records.
+ * an undo right under the chips. The undo is inline rather than in a toast on
+ * purpose: this block lives inside a modal sheet, and a toast sits outside the
+ * sheet where its button cannot be pressed while the sheet is open. The chip
+ * carries the option's date, so two doses of one vaccine read as two
+ * different records.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Check, Plus, Search, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -197,21 +199,17 @@ export function EntityLinkPicker({
     [options, term],
   );
 
-  // The undo runs after later renders; it must restore into the selection as
-  // it is THEN, not as it was when the X was pressed.
-  const selectedRef = useRef(selected);
-  useEffect(() => {
-    selectedRef.current = selected;
-  }, [selected]);
+  // The link the last X removed, offered back until the next change.
+  const [lastRemoved, setLastRemoved] = useState<EntityLinkOption | null>(null);
+
+  const change = (ids: string[]) => {
+    setLastRemoved(null);
+    onChange(ids);
+  };
 
   const unlink = (option: EntityLinkOption) => {
     onChange(selected.filter((id) => id !== option.id));
-    toast(t("links.picker.removed", { name: chipName(option) }), {
-      action: {
-        label: t("common.undo"),
-        onClick: () => onChange(restoreLink(selectedRef.current, option.id)),
-      },
-    });
+    setLastRemoved(option);
   };
 
   const selectedSet = new Set(selected);
@@ -294,6 +292,26 @@ export function EntityLinkPicker({
             </ul>
           ) : null}
 
+          {lastRemoved ? (
+            <p
+              role="status"
+              data-slot={`${slot}-undo`}
+              className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs"
+            >
+              <span>
+                {t("links.picker.removed", { name: chipName(lastRemoved) })}
+              </span>
+              <button
+                type="button"
+                data-slot={`${slot}-undo-button`}
+                onClick={() => change(restoreLink(selected, lastRemoved.id))}
+                className="text-foreground focus-visible:ring-ring/50 min-h-8 rounded-sm font-medium underline underline-offset-2 focus-visible:ring-[3px] focus-visible:outline-none"
+              >
+                {t("common.undo")}
+              </button>
+            </p>
+          ) : null}
+
           <Button
             type="button"
             variant="outline"
@@ -352,9 +370,7 @@ export function EntityLinkPicker({
                         <button
                           type="button"
                           data-slot={`${slot}-group-select`}
-                          onClick={() =>
-                            onChange(toggleAll(selected, groupIds))
-                          }
+                          onClick={() => change(toggleAll(selected, groupIds))}
                           className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
                         >
                           {t("links.picker.selectAll")}
@@ -371,7 +387,7 @@ export function EntityLinkPicker({
                               aria-pressed={on}
                               data-slot={`${slot}-option`}
                               onClick={() =>
-                                onChange(toggleOne(selected, option.id))
+                                change(toggleOne(selected, option.id))
                               }
                               className={cn(
                                 "border-border hover:bg-muted/50 focus-visible:ring-ring/50 flex min-h-11 w-full items-center gap-2 rounded-md border px-3 text-left focus-visible:ring-[3px] focus-visible:outline-none",

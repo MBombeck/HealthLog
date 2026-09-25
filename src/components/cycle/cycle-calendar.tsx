@@ -364,7 +364,7 @@ export function CycleCalendar({
                   oval lives behind the number, so it needs no row dot. */}
               <span
                 aria-hidden="true"
-                className="relative z-10 mt-0.5 flex h-1.5 items-center gap-0.5"
+                className="relative z-10 mt-0.5 flex h-2 items-center gap-0.5"
               >
                 {isPredictedOvulationDot ? (
                   <span
@@ -378,7 +378,7 @@ export function CycleCalendar({
                 {hasIntercourse ? (
                   <span
                     data-slot="cycle-calendar-intercourse"
-                    className="size-1.5 rotate-45 rounded-xs"
+                    className="mx-px size-2 rotate-45"
                     style={{ backgroundColor: INTERCOURSE_HUE }}
                   />
                 ) : null}
@@ -517,7 +517,7 @@ function CalendarLegend() {
                 it.variant === "dot") &&
                 "h-2.5 w-2.5 rounded-full",
               it.variant === "smallDot" && "h-1 w-1 rounded-full",
-              it.variant === "diamond" && "mx-0.5 size-2 rotate-45 rounded-xs",
+              it.variant === "diamond" && "mx-0.5 size-2 rotate-45",
               it.variant === "ring" && "size-2 rounded-full border",
               it.variant === "dashed" && "opacity-60",
               it.variant === "band" && "opacity-30",
