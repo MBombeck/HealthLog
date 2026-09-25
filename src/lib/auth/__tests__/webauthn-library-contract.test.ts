@@ -42,6 +42,10 @@ import {
 } from "vitest";
 import { NextRequest } from "next/server";
 import { isoCBOR } from "@simplewebauthn/server/helpers";
+import {
+  generateRegistrationOptions,
+  verifyRegistrationResponse,
+} from "@simplewebauthn/server";
 
 // ── In-memory stand-in for the four tables the ceremonies touch ──────
 
@@ -110,6 +114,16 @@ vi.mock("@/lib/db", () => {
   };
 });
 
+// Pass-through spies: the real library runs, the test can read the arguments.
+vi.mock("@simplewebauthn/server", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@simplewebauthn/server")>();
+  return {
+    ...real,
+    generateRegistrationOptions: vi.fn(real.generateRegistrationOptions),
+    verifyRegistrationResponse: vi.fn(real.verifyRegistrationResponse),
+  };
+});
+
 vi.mock("@/lib/rate-limit", () => ({
   checkAuthSurfaceRateLimit: vi.fn().mockResolvedValue({
     allowed: true,
@@ -130,6 +144,7 @@ import {
   createMfaAuthenticationOptions,
   createMfaRegistrationOptions,
   verifyMfaAuthentication,
+  verifyMfaRegistration,
 } from "../mfa/webauthn";
 import { POST as LOGIN_OPTIONS } from "@/app/api/auth/passkey/login-options/route";
 
@@ -653,6 +668,70 @@ describe("algorithm set", () => {
       expect(passkey.userId).toBe(USER_ID);
     },
   );
+});
+
+describe("security-key algorithm set", () => {
+  it.each(LEGACY_ALGS.map((a) => [a.name, a] as const))(
+    "%s registers as a second factor",
+    async (_name, alg) => {
+      const keys = alg.keyPair();
+      const credentialId = randomBytes(16);
+      const { options, challengeId } = await createMfaRegistrationOptions(
+        USER_ID,
+        "user@example.test",
+      );
+      const verification = await verifyMfaRegistration(
+        challengeId,
+        USER_ID,
+        registrationResponse(
+          options.challenge,
+          credentialId,
+          alg.cose(keys.publicKey),
+          ["usb"],
+        ),
+      );
+      expect(verification.verified).toBe(true);
+    },
+  );
+});
+
+describe("algorithm lists are passed explicitly", () => {
+  // A library default can move under a runtime change (a post-quantum capable
+  // runtime prepends ML-DSA-44) without any option snapshot on this runtime
+  // noticing, so the arguments themselves are pinned.
+  it("both ceremonies offer EdDSA, ES256, RS256 and accept the full legacy set", async () => {
+    vi.mocked(generateRegistrationOptions).mockClear();
+    vi.mocked(verifyRegistrationResponse).mockClear();
+    const keys = ES256.keyPair();
+    await registerPasskey(ES256, keys, randomBytes(16));
+    const mfa = await createMfaRegistrationOptions(
+      USER_ID,
+      "user@example.test",
+    );
+    await verifyMfaRegistration(
+      mfa.challengeId,
+      USER_ID,
+      registrationResponse(
+        mfa.options.challenge,
+        randomBytes(16),
+        ES256.cose(keys.publicKey),
+        ["usb"],
+      ),
+    );
+
+    const offered = vi
+      .mocked(generateRegistrationOptions)
+      .mock.calls.map(([opts]) => opts.supportedAlgorithmIDs);
+    const accepted = vi
+      .mocked(verifyRegistrationResponse)
+      .mock.calls.map(([opts]) => opts.supportedAlgorithmIDs);
+    expect(offered).toEqual([
+      [-8, -7, -257],
+      [-8, -7, -257],
+    ]);
+    const legacy = LEGACY_ALGS.map((a) => a.alg);
+    expect(accepted).toEqual([legacy, legacy]);
+  });
 });
 
 // ── 3. Stored credentials ────────────────────────────────────────────

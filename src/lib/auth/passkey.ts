@@ -14,6 +14,8 @@ import {
   RP_NAME as rpName,
   getRpId,
   getExpectedOrigin,
+  REGISTRATION_ACCEPTED_ALGORITHM_IDS,
+  REGISTRATION_OFFERED_ALGORITHM_IDS,
 } from "@/lib/auth/webauthn-rp";
 import { hashToken } from "@/lib/auth/hmac";
 
@@ -111,6 +113,7 @@ export async function createRegistrationOptions(
     rpID: getRpId(),
     userName: username,
     attestationType: "none",
+    supportedAlgorithmIDs: REGISTRATION_OFFERED_ALGORITHM_IDS,
     excludeCredentials: existingPasskeys.map((pk) => ({
       id: pk.credentialId,
       transports: pk.transports as Transport[],
@@ -217,6 +220,7 @@ export async function verifyRegistration(
     expectedChallenge,
     expectedOrigin: getExpectedOrigin(),
     expectedRPID: getRpId(),
+    supportedAlgorithmIDs: REGISTRATION_ACCEPTED_ALGORITHM_IDS,
   });
 }
 
