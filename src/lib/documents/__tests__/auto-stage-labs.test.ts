@@ -206,6 +206,18 @@ describe("maybeAutoStageLabFacts", () => {
     expect(res).toEqual({ staged: true, facts: 1 });
   });
 
+  it("stages nothing for an import held back from AI reading (#1038)", async () => {
+    findFirst.mockResolvedValue({
+      kind: "LAB_RESULT",
+      status: "STORED",
+      aiReadDeferred: true,
+      _count: { facts: 0 },
+    });
+    const res = await maybeAutoStageLabFacts("u1", "d1");
+    expect(res).toEqual({ staged: false, reason: "deferred" });
+    expect(mockExtract).not.toHaveBeenCalled();
+  });
+
   it("is idempotent — a non-STORED / already-staged document is left alone", async () => {
     findFirst.mockResolvedValue({
       kind: "OTHER",

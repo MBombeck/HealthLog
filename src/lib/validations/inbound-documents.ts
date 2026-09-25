@@ -697,6 +697,26 @@ export function toDocumentSourceSystem(
 /** Max length of an imported document's id in its source system. */
 export const DOCUMENT_SOURCE_ID_MAX = 128;
 
+/**
+ * The document's id in its source system. Printable ASCII only: it is a key,
+ * not prose, and it is echoed on the detail sheet.
+ */
+const documentSourceIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(DOCUMENT_SOURCE_ID_MAX)
+  .regex(/^[\x21-\x7e]+$/u, "Expected printable characters without spaces");
+
+/**
+ * A source key on its own — the query-string form the upload accepts ahead of
+ * the body, and the lookup route's query. Both halves required.
+ */
+export const documentSourceKeySchema = z.object({
+  sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS),
+  sourceId: documentSourceIdSchema,
+});
+
 export const documentCreateSchema = z
   .object({
     title: z.string().trim().min(1).max(DOCUMENT_TITLE_MAX).optional(),
@@ -710,13 +730,7 @@ export const documentCreateSchema = z
      * The document's id in `sourceSystem`. Printable ASCII only: it is a key,
      * not prose, and it is echoed on the detail sheet.
      */
-    sourceId: z
-      .string()
-      .trim()
-      .min(1)
-      .max(DOCUMENT_SOURCE_ID_MAX)
-      .regex(/^[\x21-\x7e]+$/u, "Expected printable characters without spaces")
-      .optional(),
+    sourceId: documentSourceIdSchema.optional(),
     /**
      * `defer` holds back automatic AI reading for this upload: the thumbnail
      * and a local text index still run, the summary and the lab staging do

@@ -98,12 +98,25 @@ export async function runDocumentSummaryJob(
   // re-enqueue after a duplicate upload, or a boot backfill overlap).
   const existing = await prisma.inboundDocument.findFirst({
     where: { id: documentId, userId, deletedAt: null },
-    select: { id: true, summaryEncrypted: true },
+    select: { id: true, summaryEncrypted: true, aiReadDeferred: true },
   });
   if (!existing || existing.summaryEncrypted) {
     annotate({
       action: { name: "documents.summary.autoSkipped" },
       meta: { documentId, reason: !existing ? "not-found" : "exists" },
+    });
+    return;
+  }
+  // An import held back from AI reading is never summarised automatically,
+  // whichever path enqueued it; the on-demand route clears the marker first.
+  if (existing.aiReadDeferred) {
+    await prisma.inboundDocument.updateMany({
+      where: { id: documentId, userId, summaryState: "PENDING" },
+      data: { summaryState: "NONE" },
+    });
+    annotate({
+      action: { name: "documents.summary.autoSkipped" },
+      meta: { documentId, reason: "deferred" },
     });
     return;
   }

@@ -192,7 +192,10 @@ describe("POST /api/documents/inbound/[id]/summary", () => {
         deletedAt: null,
         summaryEncrypted: null,
       },
-      data: expect.objectContaining({ summaryState: "READY" }),
+      data: expect.objectContaining({
+        summaryState: "READY",
+        aiReadDeferred: false,
+      }),
     });
     assertNoPersistence();
   });
@@ -266,7 +269,7 @@ describe("POST /api/documents/inbound/[id]/summary", () => {
         deletedAt: null,
         summaryState: { not: "READY" },
       },
-      data: { summaryState: "WITHHELD" },
+      data: { summaryState: "WITHHELD", aiReadDeferred: false },
     });
     const calls = vi.mocked(prisma.inboundDocument.updateMany).mock.calls;
     for (const [arg] of calls) {

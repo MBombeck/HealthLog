@@ -2927,11 +2927,13 @@ paths:
         once; it is stored as an HMAC and no path re-reveals it.
 
 
-        **What it can do.** `POST /api/documents/inbound` on its owner's own record, and nothing else. It is the door
-        another document system pushes through: a Paperless-ngx workflow posting a newly tagged document, or an import
-        script copying an archive. Uploads through it draw on a bucket of their own, keyed on the token (default 120 an
-        hour, operator-tunable via `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`), and get back a receipt (`id`, `duplicate`, and
-        `deleted` when the source key belongs to a document the owner deleted) rather than the stored row.
+        **What it can do.** `POST /api/documents/inbound` on its owner's own record, and `GET
+        /api/documents/inbound/source`, which answers whether a source key is already held so an importer can skip a
+        download. Nothing else. It is the door another document system pushes through: a Paperless-ngx workflow posting
+        a newly tagged document, or an import script copying an archive. Uploads through it draw on a bucket of their
+        own, keyed on the token (default 120 an hour, operator-tunable via `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`), and get
+        back a receipt (`id`, `duplicate`, and `deleted` when the source key belongs to a document the owner deleted)
+        rather than the stored row.
 
 
         **What it cannot do.** List, read, download, preview, edit, delete or bulk-act on a document, reach the
@@ -15677,19 +15679,45 @@ paths:
         `sourceId` (its id there, printable, up to 128 characters; needs `sourceSystem`) key the upload. A re-send with
         a known key is a duplicate: 200 with the live row (`meta.duplicate: true`), or, when the owner DELETED that
         document, 200 with `data.deleted: true` and `meta.deleted: true` and nothing stored; this holds after the 30-day
-        purge too. `aiRead=defer` holds back automatic AI reading for this upload: the thumbnail and a local text index
-        still run, the summary and lab staging do not, so the document waits for the person to read it deliberately.
-        Absent, behaviour is unchanged.
+        purge too. The key may instead ride the query string (`?sourceSystem=…&sourceId=…`): it is then answered before
+        the body is read and before the hourly allowance is charged, so a re-send of a document already held costs
+        neither; a key in both places must agree (else 422). A key that is answered with an existing document by its
+        bytes is remembered for that document, so deleting it keeps that key deleted too. `OTHER` is one shared
+        namespace per account: two different systems both sent as `OTHER` must not reuse each other's ids. An upload
+        answered as a duplicate or as deleted hands its slot of the hourly allowance back. `aiRead=defer` holds back
+        automatic AI reading for this upload: the thumbnail and a local text index still run, the summary and lab
+        staging do not, and the document stays out of the summary catch-up until the person reads it with AI or
+        generates its summary. Absent, behaviour is unchanged.
 
 
-        **Narrow token.** Also reachable with a `documents:write` Bearer (minted at `POST /api/tokens/documents`), and
-        it is the only route that scope reaches. Such a caller draws on a bucket of its own, keyed on the token (default
-        120 an hour, `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`, clamped 1-1000; the 429 carries `Retry-After` and
-        `X-RateLimit-*`), and gets a `DocumentUploadReceipt` instead of the stored row. A cookie or wildcard caller
-        keeps the 60-an-hour per-user bucket and the full row. With the vault module off the answer is 403
-        `module.disabled` for every caller.
+        **Narrow token.** Also reachable with a `documents:write` Bearer (minted at `POST /api/tokens/documents`), which
+        reaches only this route and the source-key lookup `GET /api/documents/inbound/source`. Such a caller draws on a
+        bucket of its own, keyed on the token (default 120 an hour, `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`, clamped 1-1000;
+        the 429 carries `Retry-After` and `X-RateLimit-*`), and gets a `DocumentUploadReceipt` instead of the stored
+        row; its 413 `quotaExceeded` carries no `quotaBytes` / `usedBytes`. The response is an untagged union (row or
+        receipt) on purpose: a discriminator would need a new field on the row every existing client decodes. A cookie
+        or wildcard caller keeps the 60-an-hour per-user bucket and the full row. With the vault module off the answer
+        is 403 `module.disabled` for every caller.
       parameters:
         - *a6
+        - name: sourceSystem
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - PAPERLESS
+              - PAPRA
+              - OTHER
+          description: Import source key, first half. Sent here instead of (or agreeing with) the form field, it is checked before
+            the body is read or the hourly allowance is charged.
+        - name: sourceId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+          description: Import source key, second half. Both halves or neither; half a key is 422.
       requestBody:
         required: true
         content:
@@ -15783,6 +15811,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/documents/inbound/source:
+    get:
+      tags:
+        - Documents
+      summary: Look up an import source key
+      description: "Whether the vault already holds a document under this import source key, so an importer can skip a
+        document before downloading it from the source system. Answers exactly what an upload with the same key would:
+        `known`, the document `id` (null once a deleted document was purged), and whether the owner `deleted` it. Checks
+        the document's own key, keys remembered for it when an import sent the same bytes under another key, and the
+        keys of purged documents. Reachable with a `documents:write` Bearer (the scope's second and last route) or a
+        cookie session; stores nothing. 5000 lookups an hour per token (per person for a session); gated on the
+        `inboundDocuments` module."
+      parameters:
+        - name: sourceSystem
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - PAPERLESS
+              - PAPRA
+              - OTHER
+        - name: sourceId
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 128
+      responses:
+        "200":
+          description: The answer for this key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentSourceLookupEnvelope"
+        "401": *a1
         "422": *a4
         "429": *a5
   /api/documents/inbound/capability:
@@ -35220,6 +35286,8 @@ components:
                   - type: string
                     maxLength: 128
                   - type: "null"
+              aiReadDeferred:
+                type: boolean
               summary:
                 anyOf:
                   - type: string
@@ -63643,6 +63711,39 @@ components:
         stored, not its title, filename or links. Every caller gets it when the upload's source key belongs to a
         document the owner DELETED (`deleted: true`, 200, nothing stored); `id` is the tombstoned row, or null once the
         30-day purge removed it."
+    DocumentSourceLookupEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DocumentSourceLookup"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DocumentSourceLookup:
+      type: object
+      properties:
+        known:
+          type: boolean
+        id:
+          anyOf:
+            - type: string
+            - type: "null"
+        deleted:
+          type: boolean
+      required:
+        - known
+        - id
+        - deleted
+      additionalProperties: false
     DocumentAiCapabilityEnvelope:
       type: object
       properties:

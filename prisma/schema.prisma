@@ -925,6 +925,9 @@ model User {
   // v1.39.2 — source keys of imported documents that the tombstone purge
   // removed, so a re-run of an importer cannot bring a deleted document back.
   documentImportKeys                        DocumentImportKey[]
+  // v1.39.2 — further source keys an import answered with an existing
+  // document (same bytes under another key). See DocumentSourceAlias.
+  documentSourceAliases                     DocumentSourceAlias[]
   extractedFacts                            ExtractedFact[]
   documentConditionLinks                    DocumentConditionLink[]
   documentContentIndexes                    DocumentContentIndex[]
@@ -7957,6 +7960,11 @@ model InboundDocument {
   /// back a document the person deleted. The purge carries the key over to
   /// `DocumentImportKey` when it removes the row.
   sourceId           String?               @map("source_id") @db.VarChar(128)
+  /// v1.39.2 (#1038) — the upload asked for `aiRead=defer`: nothing may send
+  /// this document to an AI provider on its own (the summary catch-up, the
+  /// summary job, lab auto-staging all skip it). Cleared when the person
+  /// explicitly reads it with AI or generates its summary.
+  aiReadDeferred     Boolean               @default(false) @map("ai_read_deferred")
 
   facts           ExtractedFact[]
   conditionLinks  DocumentConditionLink[]
@@ -7976,6 +7984,8 @@ model InboundDocument {
   /// share-link memberships (m:n via `ClinicianShareLinkDocument`).
   /// Cascades: deleting this document removes it from every share it was on.
   shareLinks      ClinicianShareLinkDocument[]
+  /// Further import source keys that resolved to this document by content.
+  sourceAliases   DocumentSourceAlias[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -8001,6 +8011,30 @@ model InboundDocument {
   // boot-discovery (which anti-joins document_thumbnails for the missing
   // preview). Raw SQL only (partial predicate not expressible in Prisma).
   @@map("inbound_documents")
+}
+
+/// v1.39.2 (#1038) — a source key an import sent for bytes that were already
+/// stored under another document (a manual upload, or the same file under a
+/// second id in the source). The upload answered "duplicate" with that
+/// document, so the key belongs to it: a re-send resolves to it, and when the
+/// purge removes the document the key moves to `DocumentImportKey` with its
+/// own, so deleting the document keeps every key that ever reached it deleted.
+/// Cascades with the document; the purge copies it first.
+model DocumentSourceAlias {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  documentId   String   @map("document_id")
+  /// Same closed vocabulary as `InboundDocument.sourceSystem`.
+  sourceSystem String   @map("source_system") @db.VarChar(16)
+  sourceId     String   @map("source_id") @db.VarChar(128)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document InboundDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceSystem, sourceId])
+  @@index([documentId])
+  @@map("document_source_aliases")
 }
 
 /// v1.39.2 (#1038) — the source key of an imported document that the daily

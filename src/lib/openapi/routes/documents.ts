@@ -399,13 +399,31 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
     post: {
-      parameters: [idempotencyKeyParameter],
+      parameters: [
+        idempotencyKeyParameter,
+        {
+          name: "sourceSystem",
+          in: "query",
+          required: false,
+          schema: { type: "string", enum: [...DOCUMENT_SOURCE_SYSTEMS] },
+          description:
+            "Import source key, first half. Sent here instead of (or agreeing with) the form field, it is checked before the body is read or the hourly allowance is charged.",
+        },
+        {
+          name: "sourceId",
+          in: "query",
+          required: false,
+          schema: { type: "string", maxLength: DOCUMENT_SOURCE_ID_MAX },
+          description:
+            "Import source key, second half. Both halves or neither; half a key is 422.",
+        },
+      ],
       tags: ["Documents"],
       summary: "Store a document (no extraction)",
       description:
         'STORE-ONLY upload. Stores the raw document ENCRYPTED at rest with `status: STORED` and runs NO extraction — provider-free, no AI consent / budget / egress. A file is always filable, even with no document-scan provider configured. `multipart/form-data`: a `file` plus optional `title`, `kind`, `documentDate` (YYYY-MM-DD), and repeated `episodeIds` form fields (pre-link to the caller\'s illness/condition episodes). Accepted types (magic-byte sniffed, never the wire Content-Type): PDF/JPEG/PNG/WebP/GIF render inline; Office (docx/xlsx/pptx/doc/xls/ppt), text/CSV/Markdown/RTF, TIFF, HEIC/HEIF, XML/JSON are stored verbatim and served download-only. HEIC is stored as-is but attachment-only — prefer transcoding to JPEG client-side for inline preview parity. Error contract: `413` with `meta.reason = "fileTooLarge"` (+ `maxFileBytes`) or `"quotaExceeded"` (+ `quotaBytes`, `usedBytes`); `415` with `meta.reason = "unsupportedType"`. A same-user duplicate (same bytes) returns 200 + `meta.duplicate: true` with the existing row — not an error. `Idempotency-Key` honoured. Read `GET /api/documents/inbound/usage` for the effective limits before offering an upload. AI extraction is a separate opt-in action — see `POST /api/documents/inbound/{id}/extract`.\n\n' +
-        "**Importing from another system (v1.39.2).** Optional `sourceSystem` (`PAPERLESS`, `PAPRA`, `OTHER`) and `sourceId` (its id there, printable, up to 128 characters; needs `sourceSystem`) key the upload. A re-send with a known key is a duplicate: 200 with the live row (`meta.duplicate: true`), or, when the owner DELETED that document, 200 with `data.deleted: true` and `meta.deleted: true` and nothing stored; this holds after the 30-day purge too. `aiRead=defer` holds back automatic AI reading for this upload: the thumbnail and a local text index still run, the summary and lab staging do not, so the document waits for the person to read it deliberately. Absent, behaviour is unchanged.\n\n" +
-        "**Narrow token.** Also reachable with a `documents:write` Bearer (minted at `POST /api/tokens/documents`), and it is the only route that scope reaches. Such a caller draws on a bucket of its own, keyed on the token (default 120 an hour, `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`, clamped 1-1000; the 429 carries `Retry-After` and `X-RateLimit-*`), and gets a `DocumentUploadReceipt` instead of the stored row. A cookie or wildcard caller keeps the 60-an-hour per-user bucket and the full row. With the vault module off the answer is 403 `module.disabled` for every caller.",
+        "**Importing from another system (v1.39.2).** Optional `sourceSystem` (`PAPERLESS`, `PAPRA`, `OTHER`) and `sourceId` (its id there, printable, up to 128 characters; needs `sourceSystem`) key the upload. A re-send with a known key is a duplicate: 200 with the live row (`meta.duplicate: true`), or, when the owner DELETED that document, 200 with `data.deleted: true` and `meta.deleted: true` and nothing stored; this holds after the 30-day purge too. The key may instead ride the query string (`?sourceSystem=…&sourceId=…`): it is then answered before the body is read and before the hourly allowance is charged, so a re-send of a document already held costs neither; a key in both places must agree (else 422). A key that is answered with an existing document by its bytes is remembered for that document, so deleting it keeps that key deleted too. `OTHER` is one shared namespace per account: two different systems both sent as `OTHER` must not reuse each other\'s ids. An upload answered as a duplicate or as deleted hands its slot of the hourly allowance back. `aiRead=defer` holds back automatic AI reading for this upload: the thumbnail and a local text index still run, the summary and lab staging do not, and the document stays out of the summary catch-up until the person reads it with AI or generates its summary. Absent, behaviour is unchanged.\n\n" +
+        "**Narrow token.** Also reachable with a `documents:write` Bearer (minted at `POST /api/tokens/documents`), which reaches only this route and the source-key lookup `GET /api/documents/inbound/source`. Such a caller draws on a bucket of its own, keyed on the token (default 120 an hour, `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`, clamped 1-1000; the 429 carries `Retry-After` and `X-RateLimit-*`), and gets a `DocumentUploadReceipt` instead of the stored row; its 413 `quotaExceeded` carries no `quotaBytes` / `usedBytes`. The response is an untagged union (row or receipt) on purpose: a discriminator would need a new field on the row every existing client decodes. A cookie or wildcard caller keeps the 60-an-hour per-user bucket and the full row. With the vault module off the answer is 403 `module.disabled` for every caller.",
       requestBody: {
         required: true,
         content: {
@@ -480,6 +498,48 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description:
             'Unsupported or unidentifiable type (`meta.reason = "unsupportedType"`). Executables, HTML/SVG, and generic archives are always refused.',
           content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/documents/inbound/source": {
+    get: {
+      tags: ["Documents"],
+      summary: "Look up an import source key",
+      description:
+        "Whether the vault already holds a document under this import source key, so an importer can skip a document before downloading it from the source system. Answers exactly what an upload with the same key would: `known`, the document `id` (null once a deleted document was purged), and whether the owner `deleted` it. Checks the document's own key, keys remembered for it when an import sent the same bytes under another key, and the keys of purged documents. Reachable with a `documents:write` Bearer (the scope's second and last route) or a cookie session; stores nothing. 5000 lookups an hour per token (per person for a session); gated on the `inboundDocuments` module.",
+      parameters: [
+        {
+          name: "sourceSystem",
+          in: "query",
+          required: true,
+          schema: { type: "string", enum: [...DOCUMENT_SOURCE_SYSTEMS] },
+        },
+        {
+          name: "sourceId",
+          in: "query",
+          required: true,
+          schema: { type: "string", maxLength: DOCUMENT_SOURCE_ID_MAX },
+        },
+      ],
+      responses: {
+        "200": {
+          description: "The answer for this key.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z
+                  .object({
+                    known: z.boolean(),
+                    id: z.string().nullable(),
+                    deleted: z.boolean(),
+                  })
+                  .meta({ id: "DocumentSourceLookup" }),
+                "DocumentSourceLookupEnvelope",
+              ),
+            },
+          },
         },
         ...stdResponses,
       },

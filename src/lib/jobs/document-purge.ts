@@ -49,18 +49,39 @@ export async function purgeExpiredDocumentTombstones(
     const keyed = await tx.inboundDocument.findMany({
       where: {
         ...expired,
-        sourceSystem: { not: null },
-        sourceId: { not: null },
+        OR: [
+          { sourceSystem: { not: null }, sourceId: { not: null } },
+          { sourceAliases: { some: {} } },
+        ],
       },
-      select: { userId: true, sourceSystem: true, sourceId: true },
+      select: {
+        userId: true,
+        sourceSystem: true,
+        sourceId: true,
+        // Further keys the import answered with this document (same bytes).
+        // They cascade away with the row, so they are copied here first.
+        sourceAliases: { select: { sourceSystem: true, sourceId: true } },
+      },
     });
-    if (keyed.length > 0) {
+    const keys = keyed.flatMap((row) => [
+      ...(row.sourceSystem && row.sourceId
+        ? [
+            {
+              userId: row.userId,
+              sourceSystem: row.sourceSystem,
+              sourceId: row.sourceId,
+            },
+          ]
+        : []),
+      ...row.sourceAliases.map((alias) => ({
+        userId: row.userId,
+        sourceSystem: alias.sourceSystem,
+        sourceId: alias.sourceId,
+      })),
+    ]);
+    if (keys.length > 0) {
       await tx.documentImportKey.createMany({
-        data: keyed.map((row) => ({
-          userId: row.userId,
-          sourceSystem: row.sourceSystem!,
-          sourceId: row.sourceId!,
-        })),
+        data: keys,
         skipDuplicates: true,
       });
     }

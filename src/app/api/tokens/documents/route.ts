@@ -9,7 +9,8 @@
  * that file for the reasoning behind each guard. In short:
  *
  * - `permissions` is a literal, so no request shape reaches it;
- * - `documents:write` is accepted by exactly one route, the upload, on the
+ * - `documents:write` is accepted by the upload and by the source-key lookup
+ *   that answers what the upload would, both on the
  *   holder's own record, and the answer it gets back is a receipt rather than
  *   the stored row — it cannot list, read, download, edit or delete a
  *   document, reach the AI legs, or mint another token;

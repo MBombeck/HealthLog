@@ -295,7 +295,7 @@ describe("document import through a documents:write token", () => {
     expect((await own.json()).data.title).toBeNull();
   });
 
-  it("413s past the quota with the figures, storing nothing", async () => {
+  it("413s past the quota without the figures, storing nothing", async () => {
     await seedUser({ inboundDocuments: true });
     token = await mintDocumentToken();
     await getPrismaClient().user.update({
@@ -306,10 +306,10 @@ describe("document import through a documents:write token", () => {
     const res = await post(upload(PNG_1X1, {}, "x.png"));
     expect(res.status).toBe(413);
     const body = await res.json();
-    expect(body.meta).toMatchObject({
-      reason: "quotaExceeded",
-      quotaBytes: 10,
-    });
+    // The figures are the owner's; the token hears only that it is full.
+    expect(body.meta.reason).toBe("quotaExceeded");
+    expect(body.meta).not.toHaveProperty("quotaBytes");
+    expect(body.meta).not.toHaveProperty("usedBytes");
     expect(
       await getPrismaClient().inboundDocument.count({ where: { userId } }),
     ).toBe(0);
@@ -322,6 +322,172 @@ describe("document import through a documents:write token", () => {
     const res = await post(upload(pdf("x")));
     expect(res.status).toBe(403);
     expect((await res.json()).meta.errorCode).toBe("module.disabled");
+  });
+});
+
+describe("source keys that reach a document by its bytes (#1038)", () => {
+  it("a key answered with an existing document stays deleted after delete and purge", async () => {
+    await seedUser({ inboundDocuments: true });
+    token = await mintDocumentToken();
+    const prisma = getPrismaClient();
+
+    // Stored by hand first, no key.
+    asCookie();
+    const manual = await post(upload(pdf("same")));
+    expect(manual.status).toBe(201);
+    const id = (await manual.json()).data.id as string;
+
+    // The import sends the same bytes under two keys: both answered with it.
+    asToken();
+    for (const sourceId of ["K1", "K2"]) {
+      const res = await post(
+        upload(pdf("same"), { sourceSystem: "PAPRA", sourceId }),
+      );
+      expect(res.status).toBe(200);
+      expect((await res.json()).data).toEqual({ id, duplicate: true });
+    }
+    expect(
+      await prisma.documentSourceAlias.count({ where: { documentId: id } }),
+    ).toBe(2);
+
+    // Deleted: both keys answer "deleted", even with different bytes.
+    asCookie();
+    const byId = await import("@/app/api/documents/inbound/[id]/route");
+    await (byId.DELETE as unknown as (r: Request, c: Ctx) => Promise<Response>)(
+      new Request(`http://localhost/api/documents/inbound/${id}`, {
+        method: "DELETE",
+      }),
+      ctx(id),
+    );
+    asToken();
+    const tomb = await post(
+      upload(pdf("rescan"), { sourceSystem: "PAPRA", sourceId: "K2" }),
+    );
+    expect((await tomb.json()).data).toEqual({
+      id,
+      duplicate: true,
+      deleted: true,
+    });
+
+    // Purged: the aliases move to the ledger with the row.
+    const { purgeExpiredDocumentTombstones } =
+      await import("@/lib/jobs/document-purge");
+    await purgeExpiredDocumentTombstones(
+      prisma as never,
+      new Date(Date.now() + 31 * 86_400_000),
+    );
+    expect(await prisma.documentSourceAlias.count()).toBe(0);
+    expect(
+      (
+        await prisma.documentImportKey.findMany({
+          where: { userId },
+          select: { sourceId: true },
+          orderBy: { sourceId: "asc" },
+        })
+      ).map((k) => k.sourceId),
+    ).toEqual(["K1", "K2"]);
+    for (const sourceId of ["K1", "K2"]) {
+      const res = await post(
+        upload(pdf("same"), { sourceSystem: "PAPRA", sourceId }),
+      );
+      expect((await res.json()).data).toEqual({
+        id: null,
+        duplicate: true,
+        deleted: true,
+      });
+    }
+    expect(await prisma.inboundDocument.count({ where: { userId } })).toBe(0);
+  });
+});
+
+describe("re-sends cost no allowance and no body read (#1038)", () => {
+  it("answers a query-string key before the body and the bucket, and the lookup agrees", async () => {
+    await seedUser({ inboundDocuments: true });
+    token = await mintDocumentToken();
+    process.env.DOCUMENT_UPLOAD_LIMIT_PER_HOUR = "1";
+    asToken();
+
+    const key = "?sourceSystem=PAPERLESS&sourceId=77";
+    const first = await post(
+      new Request(`http://localhost/api/documents/inbound${key}`, {
+        method: "POST",
+        body: (() => {
+          const f = new FormData();
+          f.append("file", new Blob([new Uint8Array(pdf("x"))]), "x.pdf");
+          return f;
+        })(),
+        headers: { authorization: `Bearer ${token}` },
+      }),
+    );
+    expect(first.status).toBe(201);
+
+    // The one slot is spent; re-sends still answer, with no body at all.
+    for (let i = 0; i < 3; i++) {
+      const again = await post(
+        new Request(`http://localhost/api/documents/inbound${key}`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${token}` },
+        }),
+      );
+      expect(again.status).toBe(200);
+      expect((await again.json()).data.duplicate).toBe(true);
+    }
+
+    const lookup = await import("@/app/api/documents/inbound/source/route");
+    const get = (q: string) =>
+      (lookup.GET as unknown as (r: Request) => Promise<Response>)(
+        new NextRequest(`http://localhost/api/documents/inbound/source${q}`, {
+          headers: { authorization: `Bearer ${token}` },
+        } as never),
+      );
+    const known = await get(key);
+    expect(known.status).toBe(200);
+    expect((await known.json()).data).toMatchObject({
+      known: true,
+      deleted: false,
+    });
+    const unknown = await get("?sourceSystem=PAPERLESS&sourceId=78");
+    expect((await unknown.json()).data).toEqual({
+      known: false,
+      id: null,
+      deleted: false,
+    });
+    expect((await get("?sourceSystem=PAPERLESS")).status).toBe(422);
+
+    // A new document still meets the spent bucket.
+    const blocked = await post(upload(pdf("new")));
+    expect(blocked.status).toBe(429);
+  });
+
+  it("a duplicate by bytes hands its slot back", async () => {
+    await seedUser({ inboundDocuments: true });
+    token = await mintDocumentToken();
+    process.env.DOCUMENT_UPLOAD_LIMIT_PER_HOUR = "2";
+    asToken();
+    expect((await post(upload(pdf("one")))).status).toBe(201);
+    // Charged and handed back each time; without the refund the second of
+    // these would already meet a spent bucket.
+    expect((await post(upload(pdf("one")))).status).toBe(200);
+    expect((await post(upload(pdf("one")))).status).toBe(200);
+    expect((await post(upload(pdf("two")))).status).toBe(201);
+    expect((await post(upload(pdf("three")))).status).toBe(429);
+  });
+});
+
+describe("aiRead=defer is kept on the row (#1038)", () => {
+  it("marks the upload and leaves others alone", async () => {
+    await seedUser({ inboundDocuments: true });
+    token = await mintDocumentToken();
+    asToken();
+    const deferred = await post(upload(pdf("d"), { aiRead: "defer" }));
+    const plain = await post(upload(pdf("p")));
+    const rows = await getPrismaClient().inboundDocument.findMany({
+      where: { userId },
+      select: { id: true, aiReadDeferred: true },
+    });
+    const byId = new Map(rows.map((r) => [r.id, r.aiReadDeferred]));
+    expect(byId.get((await deferred.json()).data.id)).toBe(true);
+    expect(byId.get((await plain.json()).data.id)).toBe(false);
   });
 });
 
