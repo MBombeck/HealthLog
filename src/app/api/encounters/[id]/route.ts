@@ -170,6 +170,12 @@ export const PATCH = apiHandler(
           ? encryptToBytes(entry.outcome)
           : null;
       }
+      if (entry.bodySite !== undefined) {
+        data.bodySiteEncrypted = entry.bodySite?.trim()
+          ? encryptToBytes(entry.bodySite.trim())
+          : null;
+      }
+      if (entry.laterality !== undefined) data.laterality = entry.laterality;
       if (entry.practitionerId !== undefined) {
         data.practitioner = practitionerId
           ? { connect: { id: practitionerId } }
@@ -331,12 +337,14 @@ export const PATCH = apiHandler(
             occurredAt: existing.occurredAt,
             status: existing.status,
             kind: existing.kind,
+            laterality: existing.laterality,
             practitionerId: existing.practitionerId,
           },
           after: {
             occurredAt: outcome.updated.occurredAt,
             status: outcome.updated.status,
             kind: outcome.updated.kind,
+            laterality: outcome.updated.laterality,
             practitionerId: outcome.updated.practitionerId,
           },
         }),

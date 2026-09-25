@@ -48,6 +48,7 @@ export type StructuredLeafId =
   | "ALLERGIES"
   | "ILLNESS_EPISODES"
   | "VISITS"
+  | "SURGICAL_HISTORY"
   | "IMMUNIZATIONS"
   | "FAMILY_HISTORY"
   | "MOOD"
@@ -204,6 +205,7 @@ export const STRUCTURED_LEAF_GROUP: Record<StructuredLeafId, ReportGroupId> = {
   ALLERGIES: "history",
   ILLNESS_EPISODES: "history",
   VISITS: "history",
+  SURGICAL_HISTORY: "history",
   IMMUNIZATIONS: "history",
   FAMILY_HISTORY: "sensitive",
   MOOD: "sensitive",
@@ -211,7 +213,7 @@ export const STRUCTURED_LEAF_GROUP: Record<StructuredLeafId, ReportGroupId> = {
   ANAMNESIS: "sensitive",
 };
 
-/** i18n label keys for the 17 structured leaves. */
+/** i18n label keys for the 18 structured leaves. */
 export const STRUCTURED_LEAF_LABEL_KEYS: Record<StructuredLeafId, string> = {
   PATIENT_IDENTITY: "reportSelection.leafPatientIdentity",
   EMERGENCY: "reportSelection.leafEmergency",
@@ -225,6 +227,7 @@ export const STRUCTURED_LEAF_LABEL_KEYS: Record<StructuredLeafId, string> = {
   ALLERGIES: "reportSelection.leafAllergies",
   ILLNESS_EPISODES: "reportSelection.leafIllnessEpisodes",
   VISITS: "reportSelection.leafVisits",
+  SURGICAL_HISTORY: "reportSelection.leafSurgicalHistory",
   IMMUNIZATIONS: "reportSelection.leafImmunizations",
   FAMILY_HISTORY: "reportSelection.leafFamilyHistory",
   MOOD: "reportSelection.leafMood",
@@ -323,6 +326,7 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   // no module of its own — it is core, like the checkups page it lives on —
   // and the whole report is already gated by `doctorReport`. Reading the
   // absence as an oversight is the mistake this comment exists to prevent.
+  // SURGICAL_HISTORY is absent for the same reason: a procedure is a visit.
 };
 
 /** Every measurement leaf id, in enum order. */

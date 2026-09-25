@@ -132,6 +132,8 @@ describe("editing never unfiles what the visit already collected", () => {
       practitioner: null,
       reason: null,
       outcome: null,
+      bodySite: null,
+      laterality: null,
       reminderNextDueAt: null,
       links: {
         documents: [{ id: "d1", label: "Letter", date: null, redacted: false }],
@@ -214,5 +216,98 @@ describe("the link pickers follow the modules that own their targets", () => {
     // The positive control: without it the three assertions above would pass
     // against a component that never renders any block.
     expect(html).toContain('data-slot="encounter-link-pickers"');
+  });
+});
+
+/**
+ * v1.39.1 — the body site. Shown for a procedure, where it means something,
+ * and kept visible on any visit that already carries one, so switching the
+ * kind away never hides text the person typed. Never required.
+ *
+ * Mutation checks (each run, each seen red):
+ *   - show the field only for PROCEDURE → "keeps a typed site visible after
+ *     the kind moves away" goes red;
+ *   - send `bodySite` untrimmed → the whitespace case goes red.
+ */
+describe("the body site", () => {
+  function renderDraft(over: Parameters<typeof emptyDraft>[0]) {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return renderToStaticMarkup(
+      <QueryClientProvider client={queryClient}>
+        <I18nProvider initialLocale="en">
+          <EncounterForm
+            draft={emptyDraft({ occurredAt: "2026-08-08T10:00", ...over })}
+            onChange={() => {}}
+            isEdit
+          />
+        </I18nProvider>
+      </QueryClientProvider>,
+    );
+  }
+
+  it("offers the site and the side for a procedure", () => {
+    const html = renderDraft({ kind: "PROCEDURE" });
+    expect(html).toContain('id="encounter-body-site"');
+    expect(html).toContain('id="encounter-laterality"');
+    expect(html).toContain("Body site");
+    expect(html).toContain("Not stated");
+  });
+
+  it("keeps the fields off an ordinary visit", () => {
+    const html = renderDraft({ kind: "ROUTINE" });
+    expect(html).not.toContain('id="encounter-body-site"');
+  });
+
+  it("keeps a typed site visible after the kind moves away", () => {
+    const html = renderDraft({ kind: "HOSPITAL", bodySite: "Knee" });
+    expect(html).toContain('id="encounter-body-site"');
+  });
+
+  it("offers Procedure or surgery among the kinds", () => {
+    const html = renderDraft({ kind: "OTHER" });
+    expect(html).toContain('value="PROCEDURE"');
+    expect(html).toContain("Procedure or surgery");
+  });
+
+  it("sends the site trimmed and the side, and null for an empty site", () => {
+    const withSite = draftToBody(
+      emptyDraft({
+        occurredAt: "2026-08-08T10:00",
+        kind: "PROCEDURE",
+        bodySite: "  Knee ",
+        laterality: "LEFT",
+      }),
+      { isEdit: false },
+    );
+    expect(withSite?.bodySite).toBe("Knee");
+    expect(withSite?.laterality).toBe("LEFT");
+
+    const empty = draftToBody(
+      emptyDraft({ occurredAt: "2026-08-08T10:00", bodySite: "   " }),
+      { isEdit: false },
+    );
+    expect(empty?.bodySite).toBeNull();
+    expect(empty?.laterality).toBeNull();
+  });
+
+  it("seeds the site and the side from the row being edited", () => {
+    const draft = draftFromEncounter({
+      id: "e1",
+      occurredAt: "2026-08-01T09:00:00.000Z",
+      status: "DONE",
+      kind: "PROCEDURE",
+      practitioner: null,
+      reason: null,
+      outcome: null,
+      bodySite: "Knee",
+      laterality: "RIGHT",
+      reminderNextDueAt: null,
+      createdAt: "2026-08-01T09:00:00.000Z",
+      updatedAt: "2026-08-01T09:00:00.000Z",
+    });
+    expect(draft.bodySite).toBe("Knee");
+    expect(draft.laterality).toBe("RIGHT");
   });
 });

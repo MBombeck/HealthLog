@@ -943,6 +943,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "profile",
     why: "One visit of the record, fetch-then-guard against the resolved user. The links it resolves are read through the link service, which narrows both ends to the same resolved id.",
   },
+  "app/api/encounters/procedures/route.ts": {
+    domain: "profile",
+    why: "The record's procedure and surgery history: the visits of kind PROCEDURE that happened, searched by body site. The same rows the visit list serves, read one way, so it sits under the same domain and level; the search runs over the resolved user's own rows after the decrypt and cannot address anyone else's.",
+  },
   "app/api/encounters/suggest/route.ts": {
     domain: "profile",
     why: "Which of the record's visits a document or lab panel dated around a given day belongs to. A read over the same rows the visit list serves, reduced to a verdict — the caller learns nothing about the record it could not learn from the list itself, and the anchor it passes is a date rather than an id, so it cannot address a row.",
@@ -1945,8 +1949,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  * The screener detail read adds one: the per-administration read that
  * decrypts the stored item answers, on the record list at the same level as
  * the screener history beside it. 229 -> 230.
+ *
+ * v1.39.1 -- the procedure history adds one: a read on the record list at the
+ * level and domain of the visit list it is a view of. 230 -> 231.
  */
-const FROZEN_ENTRY_COUNT = 230;
+const FROZEN_ENTRY_COUNT = 231;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
