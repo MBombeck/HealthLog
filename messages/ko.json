@@ -8233,7 +8233,9 @@
       "flowSpotting": "점상 출혈",
       "flowLight": "적음",
       "flowMedium": "보통",
-      "flowHeavy": "많음"
+      "flowHeavy": "많음",
+      "legendIntercourse": "성관계",
+      "legendOtherEntries": "기타 기록"
     },
     "predictions": {
       "title": "다음에 올 일",
@@ -10880,9 +10882,10 @@
       "selectAll": "전체 선택",
       "searchPlaceholder": "검색",
       "searchNoMatch": "결과 없음",
-      "remove": "제거",
       "suggested": "이 날짜 전후",
-      "loadError": "목록을 불러오지 못했습니다."
+      "loadError": "목록을 불러오지 못했습니다.",
+      "removeNamed": "{name} 제거",
+      "removed": "{name} 연결 해제됨"
     }
   }
 }

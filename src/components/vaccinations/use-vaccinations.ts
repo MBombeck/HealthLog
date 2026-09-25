@@ -71,6 +71,19 @@ export function useVaccinations(antigenSlug?: string | null, enabled = true) {
 }
 
 /**
+ * One dose with its links. The list omits each dose's documents, so an edit
+ * reads them here before it shows or sends them.
+ */
+export function useVaccination(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.vaccination(id ?? ""),
+    enabled: id !== null,
+    queryFn: () =>
+      apiGet<Vaccination>(`${BASE}/${encodeURIComponent(id ?? "")}`),
+  });
+}
+
+/**
  * Create / edit / soft-delete / restore a dose.
  *
  * Every write fans out through `vaccinationDependentKeys` AND the reminder

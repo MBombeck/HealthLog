@@ -281,6 +281,15 @@ function gridDay(date: string, over: Partial<CalendarDay> = {}): CalendarDay {
     basalBodyTempC: null,
     ovulationTest: null,
     cervicalMucus: null,
+    cervixPosition: null,
+    cervixFirmness: null,
+    cervixOpening: null,
+    intermenstrualBleeding: false,
+    sexualActivity: false,
+    pregnancyTest: null,
+    progesteroneTest: null,
+    contraceptive: null,
+    hasNote: false,
     ...over,
   };
 }

@@ -47,6 +47,7 @@ export function recordOptions(
     label: string;
     meta?: string | null;
     occurredAt: string;
+    href?: string | null;
   }>,
   anchor: string | null,
   labels: { suggested: string; date: (iso: string) => string },
@@ -59,6 +60,7 @@ export function recordOptions(
       label: record.label,
       meta: record.meta ?? null,
       dateLabel: labels.date(record.occurredAt),
+      href: record.href ?? null,
     };
     if (isNearAnchor(record.occurredAt, anchor)) {
       near.push({
@@ -71,6 +73,16 @@ export function recordOptions(
     }
   }
   return [...near, ...rest];
+}
+
+/** Where a visit opens: its sheet on the checkups page. */
+function visitHref(encounterId: string): string {
+  return `/checkups?visit=${encodeURIComponent(encounterId)}`;
+}
+
+/** Where a dose opens: its sheet on the vaccinations page. */
+function doseHref(vaccinationId: string): string {
+  return `/vaccinations?dose=${encodeURIComponent(vaccinationId)}`;
 }
 
 /** A dose named the way the vaccination page names it. */
@@ -146,6 +158,7 @@ export function DocumentRecordLinks({
       label: encounterKindText(t, visit.kind as EncounterKind),
       meta: visit.practitioner?.name ?? null,
       occurredAt: visit.occurredAt,
+      href: visitHref(visit.id),
     })),
     anchor,
     labels,
@@ -155,6 +168,7 @@ export function DocumentRecordLinks({
       id: dose.id,
       label: doseName(t, dose.catalogEntry?.slug ?? null, dose.vaccineName),
       occurredAt: dose.occurredAt,
+      href: doseHref(dose.id),
     })),
     anchor,
     labels,
@@ -194,7 +208,7 @@ export function DocumentRecordLinks({
             {doc.encounterLinks.map((link) => (
               <Link
                 key={link.encounterId}
-                href={`/documents?encounter=${encodeURIComponent(link.encounterId)}`}
+                href={visitHref(link.encounterId)}
                 className="bg-muted text-foreground hover:bg-muted/70 focus-visible:ring-ring/50 inline-flex max-w-64 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs focus-visible:ring-[3px] focus-visible:outline-none"
               >
                 <span className="truncate">
@@ -244,7 +258,7 @@ export function DocumentRecordLinks({
             {(doc.vaccinationLinks ?? []).map((link) => (
               <Link
                 key={link.vaccinationId}
-                href="/vaccinations"
+                href={doseHref(link.vaccinationId)}
                 data-slot="document-vaccination-link"
                 className="bg-muted text-foreground hover:bg-muted/70 focus-visible:ring-ring/50 inline-flex max-w-64 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs focus-visible:ring-[3px] focus-visible:outline-none"
               >

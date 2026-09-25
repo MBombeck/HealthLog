@@ -80,7 +80,13 @@ describe("buildCalendar", () => {
         cervixPosition: null,
         cervixFirmness: null,
         cervixOpening: null,
+        intermenstrualBleeding: false,
+        sexualActivity: false,
+        pregnancyTest: null,
+        progesteroneTest: null,
+        contraceptive: null,
         hasSymptoms: true,
+        hasNote: false,
       },
     ];
     const { prediction, days } = buildCalendar(

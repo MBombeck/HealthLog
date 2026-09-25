@@ -19,6 +19,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDeepLinkedRecord } from "@/hooks/use-deep-linked-record";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -64,6 +65,15 @@ export function VaccinationsView() {
     setSession((n) => n + 1);
     setSheetOpen(true);
   };
+
+  // `?dose=<id>` — a document's link chip names the dose it is filed
+  // against. Scroll to it, and open it for someone who may edit it.
+  useDeepLinkedRecord({
+    param: "dose",
+    records: data?.vaccinations,
+    anchorAttribute: "data-vaccination-id",
+    open: canManageProfile ? openEdit : undefined,
+  });
 
   const addButton = canAddDose ? (
     <Button

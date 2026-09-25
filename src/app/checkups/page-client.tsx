@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
@@ -38,7 +39,10 @@ export default function CheckupsPageClient() {
   const mounted = useMounted();
   const queryClient = useQueryClient();
   const { t } = useTranslations();
-  const [view, setView] = useState("vorsorge");
+  // A link to one visit (`?visit=<id>`, from a document's link chip) lands on
+  // the visits tab, where the section opens it.
+  const linkedVisit = useSearchParams()?.get("visit");
+  const [view, setView] = useState(linkedVisit ? "visits" : "vorsorge");
 
   const refresh = useCallback(
     () =>

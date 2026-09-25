@@ -7,6 +7,7 @@ import {
   EntityLinkPicker,
   filterOptions,
   groupOptions,
+  restoreLink,
   toggleAll,
   type EntityLinkOption,
 } from "../entity-link-picker";
@@ -164,5 +165,68 @@ describe("<EntityLinkPicker> inline summary", () => {
     );
     expect(html).toContain('data-slot="skeleton"');
     expect(html).not.toContain("Nothing to link");
+  });
+});
+
+describe("<EntityLinkPicker> chips (#1024)", () => {
+  const base = {
+    icon: FolderOpen,
+    title: "Vaccinations",
+    slot: "test-link",
+    searchPlaceholder: "Search",
+    emptyLabel: "Nothing to link",
+    onChange: () => undefined,
+    pending: false,
+  };
+  const DOSES: EntityLinkOption[] = [
+    {
+      id: "d1",
+      label: "COVID-19",
+      dateLabel: "12 Sep 2025",
+      href: "/vaccinations?dose=d1",
+    },
+    { id: "d2", label: "COVID-19", dateLabel: "3 Jan 2024" },
+  ];
+
+  it("the chip itself is not the remove control", () => {
+    // Clicking a chip used to unlink it: the whole chip was the button.
+    const html = render(
+      <EntityLinkPicker {...base} options={DOSES} selected={["d1", "d2"]} />,
+    );
+    expect(html).not.toMatch(/<button[^>]*data-slot="test-link-chip"/);
+    // One labelled remove button per chip, separate from the label.
+    const removes = html.match(
+      /<button[^>]*data-slot="test-link-chip-remove"[^>]*>/g,
+    );
+    expect(removes).toHaveLength(2);
+    expect(removes![0]).toContain('aria-label="Remove COVID-19, 12 Sep 2025"');
+  });
+
+  it("two doses of the same vaccine are told apart by their date", () => {
+    const html = render(
+      <EntityLinkPicker {...base} options={DOSES} selected={["d1", "d2"]} />,
+    );
+    expect(html).toContain("12 Sep 2025");
+    expect(html).toContain("3 Jan 2024");
+  });
+
+  it("a chip with a target opens the linked record", () => {
+    const html = render(
+      <EntityLinkPicker {...base} options={DOSES} selected={["d1", "d2"]} />,
+    );
+    const open = html.match(/<a[^>]*data-slot="test-link-chip-open"[^>]*>/);
+    expect(open?.[0]).toContain('href="/vaccinations?dose=d1"');
+    // No target, no link: the label is plain text, never a remove button.
+    expect(html.match(/data-slot="test-link-chip-open"/g)).toHaveLength(1);
+  });
+});
+
+describe("restoreLink", () => {
+  it("puts an unlinked id back", () => {
+    expect(restoreLink(["a"], "b")).toEqual(["a", "b"]);
+  });
+
+  it("never duplicates an id that is already back", () => {
+    expect(restoreLink(["a", "b"], "b")).toEqual(["a", "b"]);
   });
 });

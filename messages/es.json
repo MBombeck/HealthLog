@@ -8233,7 +8233,9 @@
       "flowSpotting": "manchado",
       "flowLight": "ligero",
       "flowMedium": "medio",
-      "flowHeavy": "abundante"
+      "flowHeavy": "abundante",
+      "legendIntercourse": "Relaciones",
+      "legendOtherEntries": "Otras entradas"
     },
     "predictions": {
       "title": "Qué viene después",
@@ -10880,9 +10882,10 @@
       "selectAll": "Seleccionar todo",
       "searchPlaceholder": "Buscar",
       "searchNoMatch": "Sin coincidencias",
-      "remove": "Quitar",
       "suggested": "En torno a esta fecha",
-      "loadError": "No se pudo cargar la lista."
+      "loadError": "No se pudo cargar la lista.",
+      "removeNamed": "Quitar {name}",
+      "removed": "Se desvinculó {name}"
     }
   }
 }

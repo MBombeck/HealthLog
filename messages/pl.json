@@ -8233,7 +8233,9 @@
       "flowSpotting": "plamienie",
       "flowLight": "lekkie",
       "flowMedium": "średnie",
-      "flowHeavy": "obfite"
+      "flowHeavy": "obfite",
+      "legendIntercourse": "Współżycie",
+      "legendOtherEntries": "Inne wpisy"
     },
     "predictions": {
       "title": "Co dalej",
@@ -10880,9 +10882,10 @@
       "selectAll": "Zaznacz wszystko",
       "searchPlaceholder": "Szukaj",
       "searchNoMatch": "Brak wyników",
-      "remove": "Usuń",
       "suggested": "Wokół tej daty",
-      "loadError": "Nie udało się wczytać listy."
+      "loadError": "Nie udało się wczytać listy.",
+      "removeNamed": "Usuń {name}",
+      "removed": "Odłączono: {name}"
     }
   }
 }

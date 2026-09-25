@@ -34,6 +34,7 @@ import {
   toCyclePredictionDTO,
   goalAllowsFertileWindow,
   cycleDisclaimerKey,
+  resolveSensitiveFields,
 } from "@/lib/cycle/dto";
 import { resolveCycleVerdict } from "@/lib/cycle/verdict";
 import { addDays, dayDiff } from "@/lib/cycle/day-math";
@@ -115,6 +116,19 @@ export const GET = apiHandler(async (request: NextRequest) => {
         cervixPosition: true,
         cervixFirmness: true,
         cervixOpening: true,
+        intermenstrualBleeding: true,
+        // The intent fields and their encrypted envelope, resolved below
+        // through the same reader the day-log route uses. Same `cycle` grant
+        // as that route (see sharing-surface-guard), so the grid shows a
+        // delegate nothing the day log would not.
+        sexualActivity: true,
+        protectedSex: true,
+        pregnancyTest: true,
+        progesteroneTest: true,
+        contraceptive: true,
+        sensitiveEncrypted: true,
+        // Selected for presence only; the text is never decrypted here.
+        notesEncrypted: true,
         _count: { select: { symptomLinks: true } },
       },
     }),
@@ -141,18 +155,27 @@ export const GET = apiHandler(async (request: NextRequest) => {
     }),
   ]);
 
-  const dayLogs: CalendarDayLogRow[] = dayLogRows.map((l) => ({
-    date: l.date,
-    flow: l.flow,
-    basalBodyTempC: l.basalBodyTempC,
-    temperatureExcluded: l.temperatureExcluded,
-    ovulationTest: l.ovulationTest,
-    cervicalMucus: l.cervicalMucus,
-    cervixPosition: l.cervixPosition,
-    cervixFirmness: l.cervixFirmness,
-    cervixOpening: l.cervixOpening,
-    hasSymptoms: l._count.symptomLinks > 0,
-  }));
+  const dayLogs: CalendarDayLogRow[] = dayLogRows.map((l) => {
+    const sensitive = resolveSensitiveFields(l);
+    return {
+      date: l.date,
+      flow: l.flow,
+      basalBodyTempC: l.basalBodyTempC,
+      temperatureExcluded: l.temperatureExcluded,
+      ovulationTest: l.ovulationTest,
+      cervicalMucus: l.cervicalMucus,
+      cervixPosition: l.cervixPosition,
+      cervixFirmness: l.cervixFirmness,
+      cervixOpening: l.cervixOpening,
+      intermenstrualBleeding: l.intermenstrualBleeding,
+      sexualActivity: sensitive.sexualActivity,
+      pregnancyTest: sensitive.pregnancyTest,
+      progesteroneTest: sensitive.progesteroneTest,
+      contraceptive: sensitive.contraceptive,
+      hasSymptoms: l._count.symptomLinks > 0,
+      hasNote: l.notesEncrypted != null && l.notesEncrypted !== "",
+    };
+  });
 
   const nights = nightlyTemps.map((m) => ({
     date: moodDateKey(m.measuredAt, tz),

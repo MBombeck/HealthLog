@@ -17,6 +17,11 @@
  *
  * Nothing here can block a save: the list starts empty and stays valid empty,
  * and linking is optional, capped and idempotent behind the link facade.
+ *
+ * On an edit the selection is what the dose is filed against on the server,
+ * read from the dose's detail route; the block waits for that read rather
+ * than showing an empty set, which would both hide the links and offer to
+ * save their removal.
  */
 import { FolderOpen } from "lucide-react";
 
@@ -28,6 +33,9 @@ export function VaccinationDocumentPicker({
   enabled,
   anchor,
   documentIds,
+  seedPending = false,
+  seedError = false,
+  onRetrySeed,
   onChange,
 }: {
   /** The `inboundDocuments` module flag — false blanks the block entirely. */
@@ -35,6 +43,11 @@ export function VaccinationDocumentPicker({
   /** The dose's own date (ISO), for the suggestions on top. */
   anchor: string | null;
   documentIds: string[];
+  /** The dose's own links are still loading. */
+  seedPending?: boolean;
+  /** Reading the dose's own links failed. */
+  seedError?: boolean;
+  onRetrySeed?: () => void;
   onChange: (documentIds: string[]) => void;
 }) {
   const { t } = useTranslations();
@@ -48,10 +61,13 @@ export function VaccinationDocumentPicker({
         icon={FolderOpen}
         title={t("vaccinations.form.linkDocuments")}
         slot="vaccination-document"
-        pending={vault.pending}
-        error={vault.error}
+        pending={vault.pending || seedPending}
+        error={vault.error || seedError}
         errorLabel={t("links.picker.loadError")}
-        onRetry={vault.retry}
+        onRetry={() => {
+          if (vault.error) vault.retry();
+          if (seedError) onRetrySeed?.();
+        }}
         selected={documentIds}
         onChange={onChange}
         options={vault.options}

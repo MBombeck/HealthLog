@@ -45,6 +45,19 @@ export interface CalendarDay {
   basalBodyTempC: number | null;
   ovulationTest: OvulationTest | null;
   cervicalMucus: CervicalMucus | null;
+  /** Logged cervix signs, each or null. */
+  cervixPosition: string | null;
+  cervixFirmness: string | null;
+  cervixOpening: string | null;
+  /** Spotting outside the period logged on this day. */
+  intermenstrualBleeding: boolean;
+  /** Intercourse logged on this day (resolved server-side, envelope included). */
+  sexualActivity: boolean;
+  pregnancyTest: string | null;
+  progesteroneTest: string | null;
+  contraceptive: string | null;
+  /** Whether the day carries a note; the text is only on the day-log read. */
+  hasNote: boolean;
 }
 
 export interface CyclePrediction {
