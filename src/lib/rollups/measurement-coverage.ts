@@ -20,6 +20,7 @@
  * read regardless of how many types the user has logged.
  */
 import { prisma } from "@/lib/db";
+import { ROLLUP_FOLD_WINDOW_MS } from "@/lib/rollups/measurement-rollups";
 
 /**
  * Per-type coverage map. `true` means at least one DAY rollup row
@@ -81,4 +82,37 @@ export function isFullyCovered(coverage: RollupCoverageMap): boolean {
     if (!hasBuckets) return false;
   }
   return true;
+}
+
+/**
+ * Of `types`, the ones this user has a live reading of inside the fold
+ * window — the only ones the fold can ever give a bucket.
+ *
+ * The fold writes buckets inside `ROLLUP_FOLD_WINDOW_MS` and nowhere else, so
+ * a type whose every reading is older than that reports `false` in
+ * `probeRollupCoverage` for good. A caller that waits for coverage before
+ * taking a path has to tell that apart from a type the backfill simply has
+ * not reached yet, or it waits forever. One indexed `EXISTS` per type on
+ * `(user_id, type, measured_at)`; callers ask only about the types their
+ * probe found uncovered.
+ */
+export async function typesWithReadingsInFoldWindow(
+  userId: string,
+  types: readonly string[],
+): Promise<Set<string>> {
+  if (types.length === 0) return new Set();
+  const windowStart = new Date(Date.now() - ROLLUP_FOLD_WINDOW_MS);
+  const rows = await prisma.$queryRaw<Array<{ type: string }>>`
+    SELECT candidate."type"
+    FROM unnest(${[...types]}::text[]) AS candidate("type")
+    WHERE EXISTS (
+      SELECT 1
+      FROM measurements m
+      WHERE m.user_id       = ${userId}
+        AND m."type"        = candidate."type"::measurement_type
+        AND m."deleted_at"  IS NULL
+        AND m."measured_at" >= ${windowStart}
+    )
+  `;
+  return new Set(rows.map((row) => row.type));
 }
