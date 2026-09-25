@@ -196,7 +196,9 @@ describe("intake tracking off — nothing is due", () => {
 
     const block = await buildMedsTodayBlock(prisma, userId, TZ, new Date());
     expect(block.activeCount).toBe(1);
-    expect(block.dueCandidates.map((c) => c.medicationId)).toEqual([tracked]);
+    expect((block.dueCandidates ?? []).map((c) => c.medicationId)).toEqual([
+      tracked,
+    ]);
 
     const intakeRoute = await import("@/app/api/medications/intake/route");
     const today = await call<Array<{ medicationId: string }>>(
@@ -350,7 +352,9 @@ describe("switching intake tracking back on", () => {
     // Today's 08:00 lies before the switch: not projected, not reminded.
     const block = await buildMedsTodayBlock(prisma, userId, TZ, new Date());
     expect(block.scheduledToday).toBe(0);
-    expect(block.dueCandidates.every((c) => c.overdue === false)).toBe(true);
+    expect((block.dueCandidates ?? []).every((c) => c.overdue === false)).toBe(
+      true,
+    );
     await handleReminderCheck([]);
     expect(dispatchedFor(medicationId)).toBe(0);
 
