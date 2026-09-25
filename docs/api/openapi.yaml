@@ -2823,11 +2823,15 @@ paths:
         the only place it ever exists; it is stored as an HMAC and no path re-reveals it.
 
 
-        **What it can do.** `POST /api/measurements` and `POST /api/measurements/batch`, on its owner's own record,
-        attributing `source: MANUAL`. An entry naming `APPLE_HEALTH` is refused 422 rather than relabelled: that source
-        is half a dedup key the phone also writes into, it participates in the cross-source merge, and it is what
+        **What it can do.** `POST /api/measurements` and `POST /api/measurements/batch`, on its owner's own record. Rows
+        it writes carry `source: EXTERNAL`, resolved from the credential rather than taken from the body, so a reading
+        pushed by a bridge stays distinguishable from one typed in by hand and can be picked out with the source filter.
+        A body naming ANY source is refused 422 rather than relabelled — honouring it would defeat the label, overriding
+        it silently would hand the caller rows it did not ask for. `APPLE_HEALTH` is the one that would do real damage:
+        it is half a dedup key the phone also writes into, it participates in the cross-source merge, and it is what
         decides the Apple Health card may claim a sync happened. For the same reason a write through this credential
-        does not move the native client's sync checkpoint.
+        does not move the native client's sync checkpoint. The rows stay editable by their owner, unlike a connected
+        provider's — the hardware behind the token is the user's own.
 
 
         **What it cannot do.** Everything else, including the measurement reads on the same paths, the edit and delete
@@ -3705,6 +3709,7 @@ paths:
               - MCP
               - GOOGLE_HEALTH
               - STRAVA
+              - EXTERNAL
         - in: query
           name: valueMin
           schema:
@@ -3748,9 +3753,11 @@ paths:
         Also reachable with a narrow `measurements:write` Bearer, which is the supported way to push readings from a
         scale, a watch bridge or a home-automation rule. That credential is confined to its owner's own record — a
         request carrying the account selector is refused 403 before any sharing grant is read, however the record is
-        actually shared — and to `MANUAL` attribution, so an explicit `APPLE_HEALTH` source is refused 422
-        (`measurement.create.source_not_permitted`). The GET on this same path, and the PUT and DELETE beside it, name
-        no scope and so refuse it.
+        actually shared — and it may not attribute a source at all: rows it writes carry `source: EXTERNAL`, resolved
+        from the credential, so a bridged reading stays distinguishable from a hand-typed one. A body naming ANY source,
+        `MANUAL` included, is refused 422 (`measurement.create.source_not_permitted`). The GET on this same path, and
+        the PUT and DELETE beside it, name no scope and so refuse it — though the rows themselves stay editable by their
+        owner, unlike a connected provider's.
       parameters:
         - *a6
       requestBody:
@@ -3781,8 +3788,8 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
           description: Validation failed, or (`measurement.create.source_not_permitted`) a narrow `measurements:write` credential
-            named `APPLE_HEALTH` as the source. Refused rather than relabelled, so the caller can fix the payload
-            instead of discovering rows it did not ask for.
+            named a source — any source. Refused rather than relabelled, so the caller can fix the payload instead of
+            discovering rows it did not ask for.
           content:
             application/json:
               schema:
@@ -3914,8 +3921,10 @@ paths:
 
 
         Also reachable with a narrow `measurements:write` Bearer, for a bridge that is not the phone. Such a credential
-        writes only on its owner's own record; its entries are attributed `MANUAL` whatever they omit, an entry naming
-        `APPLE_HEALTH` is refused 422 (`measurement.batch.source_not_permitted`), and the call does not advance the
+        writes only on its owner's own record; its entries are attributed `EXTERNAL` and it may not name a source
+        itself, so an entry carrying one — `MANUAL` and `APPLE_HEALTH` alike — is refused 422
+        (`measurement.batch.source_not_permitted`). `EXTERNAL` also gives those writes their own `(userId, type, source,
+        externalId)` namespace, so a bridge's ids can never collide with the phone's. The call does not advance the
         native sync checkpoint — `lastSyncedAt` means the CLIENT delivered what it was holding, and a third-party push
         is not that.
       parameters:
@@ -3937,7 +3946,7 @@ paths:
         "409": *a7
         "422":
           description: The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation, or
-            (`measurement.batch.source_not_permitted`) carried an entry naming `APPLE_HEALTH` under a narrow
+            (`measurement.batch.source_not_permitted`) carried an entry naming a source — any source — under a narrow
             `measurements:write` credential. Nothing was written in any of the three cases.
           content:
             application/json:
@@ -6824,6 +6833,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 activeEnergy:
                   maxItems: 8
                   type: array
@@ -6844,6 +6854,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 walkingRunningDistance:
                   maxItems: 8
                   type: array
@@ -6864,6 +6875,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 flightsClimbed:
                   maxItems: 8
                   type: array
@@ -6884,6 +6896,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 sleep:
                   maxItems: 8
                   type: array
@@ -6904,6 +6917,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 weight:
                   maxItems: 8
                   type: array
@@ -6924,6 +6938,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 bloodPressure:
                   maxItems: 8
                   type: array
@@ -6944,6 +6959,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 pulse:
                   maxItems: 8
                   type: array
@@ -6964,6 +6980,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 bodyFat:
                   maxItems: 8
                   type: array
@@ -6984,6 +7001,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 bodyTemperature:
                   maxItems: 8
                   type: array
@@ -7004,6 +7022,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 spo2:
                   maxItems: 8
                   type: array
@@ -7024,6 +7043,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 hrv:
                   maxItems: 8
                   type: array
@@ -7044,6 +7064,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 restingHeartRate:
                   maxItems: 8
                   type: array
@@ -7064,6 +7085,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 vo2Max:
                   maxItems: 8
                   type: array
@@ -7084,6 +7106,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 skinTemperature:
                   maxItems: 8
                   type: array
@@ -7104,6 +7127,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 respiratoryRate:
                   maxItems: 8
                   type: array
@@ -7124,6 +7148,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 recovery:
                   maxItems: 8
                   type: array
@@ -7144,6 +7169,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 stress:
                   maxItems: 8
                   type: array
@@ -7164,6 +7190,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 sleepDebt:
                   maxItems: 8
                   type: array
@@ -7184,6 +7211,7 @@ paths:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 metricPriority:
                   type: object
                   properties:
@@ -7207,6 +7235,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     activeEnergy:
                       maxItems: 8
                       type: array
@@ -7227,6 +7256,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     walkingRunningDistance:
                       maxItems: 8
                       type: array
@@ -7247,6 +7277,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     flightsClimbed:
                       maxItems: 8
                       type: array
@@ -7267,6 +7298,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     sleep:
                       maxItems: 8
                       type: array
@@ -7287,6 +7319,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     weight:
                       maxItems: 8
                       type: array
@@ -7307,6 +7340,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     bloodPressure:
                       maxItems: 8
                       type: array
@@ -7327,6 +7361,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     pulse:
                       maxItems: 8
                       type: array
@@ -7347,6 +7382,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     bodyFat:
                       maxItems: 8
                       type: array
@@ -7367,6 +7403,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     bodyTemperature:
                       maxItems: 8
                       type: array
@@ -7387,6 +7424,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     spo2:
                       maxItems: 8
                       type: array
@@ -7407,6 +7445,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     hrv:
                       maxItems: 8
                       type: array
@@ -7427,6 +7466,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     restingHeartRate:
                       maxItems: 8
                       type: array
@@ -7447,6 +7487,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     vo2Max:
                       maxItems: 8
                       type: array
@@ -7467,6 +7508,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     skinTemperature:
                       maxItems: 8
                       type: array
@@ -7487,6 +7529,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     respiratoryRate:
                       maxItems: 8
                       type: array
@@ -7507,6 +7550,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     recovery:
                       maxItems: 8
                       type: array
@@ -7527,6 +7571,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     stress:
                       maxItems: 8
                       type: array
@@ -7547,6 +7592,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                     sleepDebt:
                       maxItems: 8
                       type: array
@@ -7567,6 +7613,7 @@ paths:
                           - MCP
                           - GOOGLE_HEALTH
                           - STRAVA
+                          - EXTERNAL
                 deviceTypePriority:
                   type: object
                   properties:
@@ -32680,6 +32727,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
               notes:
                 anyOf:
                   - type: string
@@ -33958,6 +34006,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
               externalId:
                 anyOf:
                   - type: string
@@ -34642,6 +34691,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
               externalId:
                 anyOf:
                   - type: string
@@ -36562,6 +36612,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
               externalId:
                 anyOf:
                   - type: string
@@ -36743,6 +36794,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
               externalRecordingId:
                 type: string
                 minLength: 1
@@ -38836,7 +38888,10 @@ components:
         - MCP
         - GOOGLE_HEALTH
         - STRAVA
-      description: Origin of the measurement. v1.4.23 added APPLE_HEALTH for the iOS HealthKit batch ingest path.
+        - EXTERNAL
+      description: Origin of the measurement. v1.4.23 added APPLE_HEALTH for the iOS HealthKit batch ingest path. v1.38.x
+        added EXTERNAL for rows pushed in under a narrow `measurements:write` Bearer — a scale, a watch bridge, a
+        home-automation rule. No client may name that value on a write; the server resolves it from the credential.
     SyncMeasurementTombstone:
       type: object
       properties:
@@ -45391,6 +45446,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             activeEnergy:
               maxItems: 8
               type: array
@@ -45411,6 +45467,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             walkingRunningDistance:
               maxItems: 8
               type: array
@@ -45431,6 +45488,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             flightsClimbed:
               maxItems: 8
               type: array
@@ -45451,6 +45509,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             sleep:
               maxItems: 8
               type: array
@@ -45471,6 +45530,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             weight:
               maxItems: 8
               type: array
@@ -45491,6 +45551,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             bloodPressure:
               maxItems: 8
               type: array
@@ -45511,6 +45572,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             pulse:
               maxItems: 8
               type: array
@@ -45531,6 +45593,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             bodyFat:
               maxItems: 8
               type: array
@@ -45551,6 +45614,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             bodyTemperature:
               maxItems: 8
               type: array
@@ -45571,6 +45635,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             spo2:
               maxItems: 8
               type: array
@@ -45591,6 +45656,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             hrv:
               maxItems: 8
               type: array
@@ -45611,6 +45677,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             restingHeartRate:
               maxItems: 8
               type: array
@@ -45631,6 +45698,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             vo2Max:
               maxItems: 8
               type: array
@@ -45651,6 +45719,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             skinTemperature:
               maxItems: 8
               type: array
@@ -45671,6 +45740,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             respiratoryRate:
               maxItems: 8
               type: array
@@ -45691,6 +45761,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             recovery:
               maxItems: 8
               type: array
@@ -45711,6 +45782,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             stress:
               maxItems: 8
               type: array
@@ -45731,6 +45803,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             sleepDebt:
               maxItems: 8
               type: array
@@ -45751,6 +45824,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             metricPriority:
               type: object
               properties:
@@ -45774,6 +45848,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 activeEnergy:
                   maxItems: 8
                   type: array
@@ -45794,6 +45869,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 walkingRunningDistance:
                   maxItems: 8
                   type: array
@@ -45814,6 +45890,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 flightsClimbed:
                   maxItems: 8
                   type: array
@@ -45834,6 +45911,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 sleep:
                   maxItems: 8
                   type: array
@@ -45854,6 +45932,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 weight:
                   maxItems: 8
                   type: array
@@ -45874,6 +45953,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 bloodPressure:
                   maxItems: 8
                   type: array
@@ -45894,6 +45974,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 pulse:
                   maxItems: 8
                   type: array
@@ -45914,6 +45995,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 bodyFat:
                   maxItems: 8
                   type: array
@@ -45934,6 +46016,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 bodyTemperature:
                   maxItems: 8
                   type: array
@@ -45954,6 +46037,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 spo2:
                   maxItems: 8
                   type: array
@@ -45974,6 +46058,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 hrv:
                   maxItems: 8
                   type: array
@@ -45994,6 +46079,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 restingHeartRate:
                   maxItems: 8
                   type: array
@@ -46014,6 +46100,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 vo2Max:
                   maxItems: 8
                   type: array
@@ -46034,6 +46121,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 skinTemperature:
                   maxItems: 8
                   type: array
@@ -46054,6 +46142,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 respiratoryRate:
                   maxItems: 8
                   type: array
@@ -46074,6 +46163,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 recovery:
                   maxItems: 8
                   type: array
@@ -46094,6 +46184,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 stress:
                   maxItems: 8
                   type: array
@@ -46114,6 +46205,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 sleepDebt:
                   maxItems: 8
                   type: array
@@ -46134,6 +46226,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
               additionalProperties: false
             deviceTypePriority:
               type: object
@@ -46203,6 +46296,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             activeEnergy:
               maxItems: 8
               type: array
@@ -46223,6 +46317,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             walkingRunningDistance:
               maxItems: 8
               type: array
@@ -46243,6 +46338,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             flightsClimbed:
               maxItems: 8
               type: array
@@ -46263,6 +46359,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             sleep:
               maxItems: 8
               type: array
@@ -46283,6 +46380,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             weight:
               maxItems: 8
               type: array
@@ -46303,6 +46401,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             bloodPressure:
               maxItems: 8
               type: array
@@ -46323,6 +46422,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             pulse:
               maxItems: 8
               type: array
@@ -46343,6 +46443,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             bodyFat:
               maxItems: 8
               type: array
@@ -46363,6 +46464,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             bodyTemperature:
               maxItems: 8
               type: array
@@ -46383,6 +46485,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             spo2:
               maxItems: 8
               type: array
@@ -46403,6 +46506,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             hrv:
               maxItems: 8
               type: array
@@ -46423,6 +46527,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             restingHeartRate:
               maxItems: 8
               type: array
@@ -46443,6 +46548,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             vo2Max:
               maxItems: 8
               type: array
@@ -46463,6 +46569,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             skinTemperature:
               maxItems: 8
               type: array
@@ -46483,6 +46590,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             respiratoryRate:
               maxItems: 8
               type: array
@@ -46503,6 +46611,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             recovery:
               maxItems: 8
               type: array
@@ -46523,6 +46632,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             stress:
               maxItems: 8
               type: array
@@ -46543,6 +46653,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             sleepDebt:
               maxItems: 8
               type: array
@@ -46563,6 +46674,7 @@ components:
                   - MCP
                   - GOOGLE_HEALTH
                   - STRAVA
+                  - EXTERNAL
             metricPriority:
               type: object
               properties:
@@ -46586,6 +46698,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 activeEnergy:
                   maxItems: 8
                   type: array
@@ -46606,6 +46719,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 walkingRunningDistance:
                   maxItems: 8
                   type: array
@@ -46626,6 +46740,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 flightsClimbed:
                   maxItems: 8
                   type: array
@@ -46646,6 +46761,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 sleep:
                   maxItems: 8
                   type: array
@@ -46666,6 +46782,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 weight:
                   maxItems: 8
                   type: array
@@ -46686,6 +46803,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 bloodPressure:
                   maxItems: 8
                   type: array
@@ -46706,6 +46824,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 pulse:
                   maxItems: 8
                   type: array
@@ -46726,6 +46845,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 bodyFat:
                   maxItems: 8
                   type: array
@@ -46746,6 +46866,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 bodyTemperature:
                   maxItems: 8
                   type: array
@@ -46766,6 +46887,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 spo2:
                   maxItems: 8
                   type: array
@@ -46786,6 +46908,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 hrv:
                   maxItems: 8
                   type: array
@@ -46806,6 +46929,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 restingHeartRate:
                   maxItems: 8
                   type: array
@@ -46826,6 +46950,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 vo2Max:
                   maxItems: 8
                   type: array
@@ -46846,6 +46971,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 skinTemperature:
                   maxItems: 8
                   type: array
@@ -46866,6 +46992,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 respiratoryRate:
                   maxItems: 8
                   type: array
@@ -46886,6 +47013,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 recovery:
                   maxItems: 8
                   type: array
@@ -46906,6 +47034,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 stress:
                   maxItems: 8
                   type: array
@@ -46926,6 +47055,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
                 sleepDebt:
                   maxItems: 8
                   type: array
@@ -46946,6 +47076,7 @@ components:
                       - MCP
                       - GOOGLE_HEALTH
                       - STRAVA
+                      - EXTERNAL
               additionalProperties: false
             deviceTypePriority:
               type: object

@@ -8,12 +8,14 @@ import type {
 import { POST as postCsvImport } from "@/app/api/import/csv/route";
 import { POST as postAppleHealthBatch } from "@/app/api/measurements/batch/route";
 import { POST as postManualMeasurement } from "@/app/api/measurements/route";
+import { hashToken } from "@/lib/auth/hmac";
 import { encrypt } from "@/lib/crypto";
 import { upsertFitbitMeasurements } from "@/lib/fitbit/sync-core";
 import { upsertGoogleHealthMeasurements } from "@/lib/google-health/sync-core";
 import { upsertScoreRow } from "@/lib/insights/score-row";
 import { logMcpMeasurement } from "@/lib/mcp/writes";
 import { logTelegramMeasurement } from "@/lib/measurements/create-from-telegram";
+import { MEASUREMENTS_WRITE_SCOPE } from "@/lib/measurements/scopes";
 import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
 import { upsertNightscoutEntries } from "@/lib/nightscout/sync";
 import { upsertOuraMeasurements } from "@/lib/oura/sync";
@@ -309,6 +311,50 @@ const SOURCE_CASES = {
       expect(verdict.status).toBe("inserted");
     },
   },
+  // v1.38.x — the third-party ingest token. Written through the ordinary
+  // single-entry POST, because that IS the production path: the route reads
+  // the credential and resolves the source itself. The body names none — one
+  // that did would be refused 422.
+  EXTERNAL: {
+    expectedType: "PULSE",
+    expectedExternalId: null,
+    write: async () => {
+      // The trap in this suite: `beforeEach` seeds a session cookie and the
+      // caller resolver is cookie-first, so arming only the `authorization`
+      // header would resolve as that session and quietly write MANUAL — the
+      // case would then fail on a row it never actually tested. Clear the
+      // cookie for the duration, then put it back: this is the last case
+      // today, but nothing stops one being appended after it.
+      const prisma = getPrismaClient();
+      const session = cookieJar.get("healthlog_session");
+      cookieJar.clear();
+
+      const raw = `hlk_external_${"0".repeat(48)}`;
+      await prisma.apiToken.create({
+        data: {
+          userId: USER_ID,
+          name: "source-smoke-external",
+          tokenHash: hashToken(raw),
+          permissions: [MEASUREMENTS_WRITE_SCOPE],
+        },
+      });
+      headerJar.set("authorization", `Bearer ${raw}`);
+
+      try {
+        const response = await postManualMeasurement(
+          jsonRequest("http://localhost/api/measurements", {
+            type: "PULSE",
+            value: 61,
+            measuredAt: MEASURED_AT.toISOString(),
+          }),
+        );
+        expect(response.status).toBe(201);
+      } finally {
+        headerJar.delete("authorization");
+        if (session) cookieJar.set("healthlog_session", session);
+      }
+    },
+  },
 } satisfies Record<MeasurementSource, SourceCase>;
 
 beforeEach(async () => {
@@ -359,9 +405,9 @@ describe("MeasurementSource write paths against real Postgres", () => {
       });
     }
 
-    expect(sourceCases).toHaveLength(14);
+    expect(sourceCases).toHaveLength(15);
     expect(await prisma.measurement.count({ where: { userId: USER_ID } })).toBe(
-      14,
+      15,
     );
   });
 });

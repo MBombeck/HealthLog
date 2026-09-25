@@ -745,6 +745,7 @@
     "sourceMcp": "MCP",
     "sourceGoogleHealth": "Google Health",
     "sourceStrava": "Strava",
+    "sourceExternal": "Urządzenie zewnętrzne",
     "bulkDeleteSuccess": "Usunięto pomiary: {count}",
     "bulkDeleteSuccessOne": "Usunięto pomiar",
     "bulkDeleteError": "Błąd podczas usuwania wybranych pomiarów",
@@ -5072,7 +5073,8 @@
           "TELEGRAM": "Telegram",
           "MCP": "MCP",
           "GOOGLE_HEALTH": "Google Health",
-          "STRAVA": "Strava"
+          "STRAVA": "Strava",
+          "EXTERNAL": "Urządzenie zewnętrzne"
         },
         "deviceLabels": {
           "watch": "Zegarek",
@@ -6110,7 +6112,7 @@
       "title": "Tokeny pomiarów",
       "description": "Utwórz token, aby waga, zegarek lub automatyka domowa mogły dodawać pomiary.",
       "detail": "Token pokazujemy tylko raz.",
-      "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji — nie odczyta danych, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary trafiają tak, jakbyś wpisał je ręcznie, więc możesz je poprawić.",
+      "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji — nie odczyta danych, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz, i nadal możesz je poprawić.",
       "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie."
     },
     "tokenMintMovedDescription": "Tokeny wydajemy tam, gdzie działają: powyżej dla pomiarów albo w punkcie końcowym API danego leku dla tego jednego leku.",

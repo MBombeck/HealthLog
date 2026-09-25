@@ -41,6 +41,10 @@ export const MEASUREMENT_SOURCE_SETTINGS_LABEL_KEYS: Record<
   MCP: "settings.sections.sources.sourceLabels.MCP",
   GOOGLE_HEALTH: "settings.sections.sources.sourceLabels.GOOGLE_HEALTH",
   STRAVA: "settings.sections.sources.sourceLabels.STRAVA",
+  // v1.38.x — readings pushed in under a `measurements:write` token.
+  // Never offered in the ladder (it is on no default priority list), but
+  // the map is keyed by the enum, so the entry is not optional.
+  EXTERNAL: "settings.sections.sources.sourceLabels.EXTERNAL",
 };
 
 /**
@@ -66,6 +70,7 @@ export const MEASUREMENT_SOURCE_LIST_LABEL_KEYS: Record<
   MCP: "measurements.sourceMcp",
   GOOGLE_HEALTH: "measurements.sourceGoogleHealth",
   STRAVA: "measurements.sourceStrava",
+  EXTERNAL: "measurements.sourceExternal",
 };
 
 /**
