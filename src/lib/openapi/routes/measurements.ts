@@ -147,6 +147,22 @@ const batchEntryResult = z
         "`inserted`/`duplicate` — the row landed (advance the cursor). `updated` — a `stats:` aggregate overwrote an existing row. `skipped` — validation no-op; see `reason`. `failed` — retryable database failure that must not advance the entry cursor; the response is marked `Cache-Control: no-store`.",
       ),
     reason: z.string().optional(),
+    convertedValue: z
+      .number()
+      .optional()
+      .describe(
+        "Only on a `value_out_of_range` skip (since v1.39.1): the entry's value after conversion into the stored unit, which is the number the band was checked against. A HealthKit fraction that should have been a percent shows up here a hundred times off.",
+      ),
+    range: z
+      .object({
+        min: z.number(),
+        max: z.number(),
+        unit: z.string(),
+      })
+      .optional()
+      .describe(
+        "Only on a `value_out_of_range` skip (since v1.39.1): the plausibility band that refused the entry, in the stored unit. Both edges are inclusive. A skip is permanent for the value as sent; resending it unchanged skips it again.",
+      ),
   })
   .meta({ id: "AppleHealthBatchEntryResult" });
 
@@ -1011,7 +1027,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation, or (`measurement.batch.source_not_permitted`) carried an entry naming `APPLE_HEALTH` under a narrow `measurements:write` credential. Nothing was written in any of the three cases.",
+            "The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation (`measurement.batch.invalid`, with every issue under `details.issues`), or (`measurement.batch.source_not_permitted`) carried an entry naming `APPLE_HEALTH` under a narrow `measurements:write` credential. Nothing was written in any of the three cases, and all three are permanent for the batch as sent: resending it unchanged is refused the same way.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

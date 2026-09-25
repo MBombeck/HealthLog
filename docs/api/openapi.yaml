@@ -3936,9 +3936,11 @@ paths:
         "401": *a1
         "409": *a7
         "422":
-          description: The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation, or
+          description: "The batch exceeded the 500-entry limit (`measurement.batch.too_large`), failed validation
+            (`measurement.batch.invalid`, with every issue under `details.issues`), or
             (`measurement.batch.source_not_permitted`) carried an entry naming `APPLE_HEALTH` under a narrow
-            `measurements:write` credential. Nothing was written in any of the three cases.
+            `measurements:write` credential. Nothing was written in any of the three cases, and all three are permanent
+            for the batch as sent: resending it unchanged is refused the same way."
           content:
             application/json:
               schema:
@@ -30284,7 +30286,7 @@ components:
                 labs.update.linkedFieldsImmutable, labs.update.numericExpected, labs.update.qualitativeExpected,
                 labs.update.referenceRangeInvalid, labs.update.sourceReferenceRangeInvalid; managed_profile —
                 managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
-                managed_profile.guardian.required, managed_profile.not_found; measurement —
+                managed_profile.guardian.required, managed_profile.not_found; measurement — measurement.batch.invalid,
                 measurement.batch.source_not_permitted, measurement.batch.too_large, measurement.bulk-delete.invalid,
                 measurement.create.invalid, measurement.create.source_not_permitted, measurement.delete.too_large,
                 measurement.duplicate_timestamp, measurement.restore.invalid, measurement.update.server_owned_source;
@@ -39736,6 +39738,28 @@ components:
             not advance the entry cursor; the response is marked `Cache-Control: no-store`."
         reason:
           type: string
+        convertedValue:
+          description: "Only on a `value_out_of_range` skip (since v1.39.1): the entry's value after conversion into the stored
+            unit, which is the number the band was checked against. A HealthKit fraction that should have been a percent
+            shows up here a hundred times off."
+          type: number
+        range:
+          description: "Only on a `value_out_of_range` skip (since v1.39.1): the plausibility band that refused the entry, in the
+            stored unit. Both edges are inclusive. A skip is permanent for the value as sent; resending it unchanged
+            skips it again."
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+            unit:
+              type: string
+          required:
+            - min
+            - max
+            - unit
+          additionalProperties: false
       required:
         - index
         - status

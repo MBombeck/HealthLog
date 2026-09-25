@@ -198,6 +198,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "managed_profile.not_found",
     ],
     measurement: [
+      "measurement.batch.invalid",
       "measurement.batch.source_not_permitted",
       "measurement.batch.too_large",
       "measurement.bulk-delete.invalid",
