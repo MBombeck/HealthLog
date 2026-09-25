@@ -256,13 +256,25 @@ export function buildComplianceDisplay(
  * `schedules ?? []` on a scheduled medication. The doctor report has excluded
  * both arms since it was written, so the report never prints a fabricated
  * 100 %; the same reason applies to every other surface, so the two arms live
- * in one predicate rather than being re-derived at each call site.
+ * in one predicate rather than being re-derived at each call site. v1.39.1
+ * adds the third arm: a medication whose intake tracking is off keeps its
+ * schedule rows and still expects nothing.
  */
 export function expectsDoses(medication: {
   asNeeded: boolean;
+  /**
+   * v1.39.1 (#1033) — intake tracking switched off keeps the schedule rows
+   * as information but expects nothing from them. Required, not optional,
+   * so a caller cannot reach the predicate without having read the flag.
+   */
+  trackIntake: boolean;
   schedules: readonly unknown[];
 }): boolean {
-  return !medication.asNeeded && medication.schedules.length > 0;
+  return (
+    !medication.asNeeded &&
+    medication.trackIntake !== false &&
+    medication.schedules.length > 0
+  );
 }
 
 export function calculateCompliance(

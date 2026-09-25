@@ -39,6 +39,7 @@ import {
 } from "@/lib/notifications/reminder-dedup";
 import { getUserTodayBounds as getUserTodayBoundsUtil } from "@/lib/tz/local-day";
 import { getWorkerPrisma, parseTimeToMinutes } from "./shared";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 export interface ReminderCheckPayload {
   triggeredAt: string;
@@ -165,8 +166,11 @@ export async function handleReminderCheck(
       // zero schedules anyway (the per-schedule loop below would be a
       // no-op), but the explicit predicate keeps them out of the tick's
       // per-medication intake reads entirely.
+      // v1.39.1 (#1033) — a medication with intake tracking off keeps its
+      // schedule rows as a record, so it must be excluded explicitly: no
+      // reminder on any channel and no missed-dose placeholder.
       const medications = await prisma.medication.findMany({
-        where: { active: true, asNeeded: false },
+        where: { active: true, asNeeded: false, ...TRACKED_INTAKE_WHERE },
         include: {
           schedules: true,
           phaseConfig: true,

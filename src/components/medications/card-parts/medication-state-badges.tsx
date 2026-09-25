@@ -6,6 +6,8 @@ interface MedicationStateBadgesProps {
   notificationsEnabled: boolean;
   active: boolean;
   pausedAt: string | null;
+  /** v1.39.1 (#1033) — intake tracking off: kept as a record only. */
+  recordOnly?: boolean;
 }
 
 /**
@@ -18,12 +20,22 @@ export function MedicationStateBadges({
   notificationsEnabled,
   active,
   pausedAt,
+  recordOnly = false,
 }: MedicationStateBadgesProps) {
   const { t } = useTranslations();
 
   return (
     <>
-      {!notificationsEnabled && (
+      {recordOnly && (
+        <Badge
+          variant="secondary"
+          className="text-xs"
+          data-slot="medication-record-only-badge"
+        >
+          {t("medications.recordOnlyBadge")}
+        </Badge>
+      )}
+      {!notificationsEnabled && !recordOnly && (
         <Badge variant="secondary" className="text-xs">
           {t("medications.withoutNotification")}
         </Badge>

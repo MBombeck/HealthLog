@@ -66,6 +66,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
 import { normaliseDoseWindows } from "@/lib/medications/scheduling/worker-helpers";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 export const INTAKE_AUTO_SKIP_QUEUE = "intake-auto-skip";
 
@@ -234,8 +235,14 @@ export async function runIntakeAutoSkipPass(
     usersByMedication.set(candidate.medicationId, users);
   }
 
+  // v1.39.1 (#1033) — a medication with intake tracking off expects no
+  // dose, so a placeholder left on it never becomes a miss. Switching
+  // tracking off tombstones its open placeholders; this is the backstop.
   const medications = await prisma.medication.findMany({
-    where: { id: { in: [...usersByMedication.keys()] } },
+    where: {
+      id: { in: [...usersByMedication.keys()] },
+      ...TRACKED_INTAKE_WHERE,
+    },
     select: {
       id: true,
       createdAt: true,

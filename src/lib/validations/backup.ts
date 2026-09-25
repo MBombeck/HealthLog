@@ -330,6 +330,9 @@ const medicationSchema = z
     endsOn: isoDateTime.nullable().optional(),
     oneShot: z.boolean().optional(),
     asNeeded: z.boolean().optional(),
+    // v1.39.1 (#1033) — absent in a backup written before the field existed;
+    // the restore defaults it to tracking on, the behaviour those had.
+    trackIntake: z.boolean().optional(),
     deliveryForm: z.enum(MedicationDeliveryForm).optional(),
     trackInjectionSites: z.boolean().optional(),
     allowedInjectionSites: z.array(z.enum(InjectionSite)).optional(),

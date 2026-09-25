@@ -80,6 +80,8 @@ interface Schedule extends ScheduleWindowInput {
 export interface MedicationOption extends DefaultMedicationOption {
   dose: string;
   schedules: Schedule[];
+  /** v1.39.1 (#1033) — false: kept as a record, not offered for a dose. */
+  trackIntake?: boolean;
 }
 
 interface MedicationIntakeQuickAddProps {
@@ -138,7 +140,9 @@ export function MedicationIntakeQuickAdd({
   const medications = useMemo(
     () =>
       Array.isArray(medicationsRaw)
-        ? medicationsRaw.filter((m) => m.active)
+        ? // v1.39.1 (#1033) — a medication with intake tracking off is
+          // kept as a record; the dose capture does not offer it.
+          medicationsRaw.filter((m) => m.active && m.trackIntake !== false)
         : [],
     [medicationsRaw],
   );

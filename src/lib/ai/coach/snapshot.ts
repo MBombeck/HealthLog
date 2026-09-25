@@ -95,6 +95,7 @@ import {
   buildDayStrainBlock,
   buildProfileContextBlocks,
 } from "./snapshot-blocks/context-blocks";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 // Test-only escape hatch — the suites import it from this module.
 export { __resetCoachSnapshotCacheForTests } from "./snapshot-cache";
@@ -683,7 +684,7 @@ async function buildCoachSnapshotImpl(
     ? prisma.medication.findMany({
         // v1.16.11 — as-needed (PRN) medications never reach the Coach
         // compliance context (no expected doses, no rate).
-        where: { userId, asNeeded: false },
+        where: { userId, asNeeded: false, ...TRACKED_INTAKE_WHERE },
         select: {
           id: true,
           startsOn: true,

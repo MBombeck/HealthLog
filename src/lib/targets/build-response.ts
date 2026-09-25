@@ -35,6 +35,7 @@ import { buildVitalTargets } from "./vitals-builder";
 import type { TargetItem, TargetMoodEntry, TargetValueByType } from "./types";
 
 import type { User } from "@/generated/prisma/client";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 function getAge(dateOfBirth: Date): number {
   const today = new Date();
@@ -167,7 +168,12 @@ export async function buildTargetsResponse(user: AuthedUser) {
     ),
     limit(async () => {
       const activeMedications = await prisma.medication.findMany({
-        where: { userId, active: true, asNeeded: false },
+        where: {
+          userId,
+          active: true,
+          asNeeded: false,
+          ...TRACKED_INTAKE_WHERE,
+        },
         include: {
           schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
           scheduleRevisions: { orderBy: { validFrom: "asc" } },

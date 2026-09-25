@@ -113,6 +113,12 @@ interface Medication {
    * low-stock trigger so the notice lands before the last dose.
    */
   reorderLeadDays?: number | null;
+  /**
+   * v1.39.1 (#1033) — false keeps the medication as a record: the list
+   * serves `schedules: []` and nothing is due, so the card drops the
+   * compliance bars and the take / skip actions and shows a badge instead.
+   */
+  trackIntake?: boolean;
   schedules: Schedule[];
 }
 
@@ -377,6 +383,7 @@ export function MedicationCard({
       notificationsEnabled={medication.notificationsEnabled}
       active={medication.active}
       pausedAt={medication.pausedAt}
+      recordOnly={medication.trackIntake === false}
     />
   );
 
@@ -516,6 +523,7 @@ export function MedicationCard({
       currentCycle={
         complianceNotApplicable ? null : (display?.currentCycle ?? null)
       }
+      recordOnly={medication.trackIntake === false}
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
       onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}

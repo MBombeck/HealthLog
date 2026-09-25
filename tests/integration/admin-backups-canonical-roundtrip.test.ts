@@ -262,6 +262,8 @@ describe("canonical disaster-recovery backup round-trip", () => {
         startsOn: new Date("2026-06-01T00:00:00.000Z"),
         endsOn: new Date("2026-08-01T00:00:00.000Z"),
         asNeeded: false,
+        // Not the default, so the round trip proves it travels (#1033).
+        trackIntake: false,
         deliveryForm: "INJECTION",
         trackInjectionSites: true,
         allowedInjectionSites: ["THIGH_LEFT", "THIGH_RIGHT"],

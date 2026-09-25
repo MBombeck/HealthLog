@@ -185,7 +185,12 @@ describe("handleReminderCheck — as-needed skip (v1.16.11, #316)", () => {
     const args = prismaMock.medication.findMany.mock.calls[0][0] as {
       where: Record<string, unknown>;
     };
-    expect(args.where).toEqual({ active: true, asNeeded: false });
+    // v1.39.1 (#1033) — nor a medication with intake tracking off.
+    expect(args.where).toEqual({
+      active: true,
+      asNeeded: false,
+      trackIntake: true,
+    });
   });
 
   it("dispatches nothing when the candidate set is empty", async () => {

@@ -69,6 +69,7 @@ for (const tz of ["Asia/Kolkata", "America/New_York"]) {
         endsOn: new Date("2026-09-28T00:00:00Z"),
         oneShot: false,
         asNeeded: false,
+        trackIntake: true,
         schedules: [
           {
             windowStart: "09:00",

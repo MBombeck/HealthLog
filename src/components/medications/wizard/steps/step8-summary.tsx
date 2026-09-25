@@ -167,9 +167,39 @@ export function Step8Summary({
         )}
       </div>
 
+      {/* v1.39.1 (#1033) — intake tracking. Off keeps the medication and
+          its schedule as a record; nothing is due, so the reminders toggle
+          below goes with it. As-needed is never due either way. */}
+      {payload.mode !== "asNeeded" && (
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <Label
+              htmlFor="wizard-track-intake"
+              className="text-sm font-medium"
+            >
+              {t("medications.trackIntake.label")}
+            </Label>
+            <p className="text-muted-foreground text-xs">
+              {payload.trackIntake
+                ? t("medications.trackIntake.helperOn")
+                : t("medications.trackIntake.helperOff")}
+            </p>
+          </div>
+          <Switch
+            id="wizard-track-intake"
+            checked={payload.trackIntake}
+            onCheckedChange={(checked) =>
+              applyPartial({ trackIntake: checked })
+            }
+            data-slot="wizard-track-intake-toggle"
+            aria-label={t("medications.trackIntake.label")}
+          />
+        </div>
+      )}
+
       {/* v1.16.11 — an as-needed medication never reminds (no slots),
           so the reminders toggle is hidden alongside the schedules. */}
-      {payload.mode !== "asNeeded" && (
+      {payload.mode !== "asNeeded" && payload.trackIntake && (
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <Label htmlFor="wizard-reminders" className="text-sm font-medium">
@@ -191,20 +221,22 @@ export function Step8Summary({
         </div>
       )}
 
-      {payload.mode !== "asNeeded" && showNoChannelHint && (
-        <p
-          className="text-muted-foreground text-xs"
-          data-slot="wizard-no-channel-hint"
-        >
-          {t("medications.wizard.steps.step8.noChannelHint")}{" "}
-          <Link
-            href="/settings/notifications"
-            className="text-primary underline-offset-2 hover:underline"
+      {payload.mode !== "asNeeded" &&
+        payload.trackIntake &&
+        showNoChannelHint && (
+          <p
+            className="text-muted-foreground text-xs"
+            data-slot="wizard-no-channel-hint"
           >
-            {t("medications.wizard.steps.step8.noChannelHintLink")}
-          </Link>
-        </p>
-      )}
+            {t("medications.wizard.steps.step8.noChannelHint")}{" "}
+            <Link
+              href="/settings/notifications"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {t("medications.wizard.steps.step8.noChannelHintLink")}
+            </Link>
+          </p>
+        )}
 
       {submitError && (
         <p

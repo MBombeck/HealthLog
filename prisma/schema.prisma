@@ -2610,6 +2610,25 @@ model Medication {
   /// never reminded" surface follows structurally from the empty
   /// schedule list. Mutually exclusive with `oneShot`.
   asNeeded                      Boolean                @default(false) @map("as_needed")
+  /// v1.39.1 (#1033) — per-medication intake tracking. `true` (the default,
+  /// and the backfill for every existing row) is the behaviour every
+  /// medication has always had. `false` keeps the medication as a record:
+  /// dose, dates and the schedule rows stay stored and shown as information,
+  /// but nothing derives a due dose from them — no reminder on any channel,
+  /// no projected or auto-missed slot, no place on the doses card or the
+  /// take-all flow, and no adherence figure anywhere (compliance, heatmap,
+  /// doctor report, Coach, BP-status gate, achievements, MCP). Unlike
+  /// `asNeeded` the schedule rows survive, so every schedule reader that
+  /// derives a due dose must honour this flag explicitly
+  /// (`src/lib/medications/intake-tracking.ts`); the structural guard
+  /// `src/__tests__/medication-intake-tracking-guard.test.ts` holds the list.
+  /// The medication wire serves such a medication with `schedules: []` and
+  /// the stored rows under `recordedSchedules`, so a client that arms local
+  /// reminders from `schedules` stays silent without an update. Switching
+  /// tracking off or back on archives a schedule revision at that instant
+  /// (the stretch in between archives with an empty payload), so the rate
+  /// paths never count the untracked stretch as missed.
+  trackIntake                   Boolean                @default(true) @map("track_intake")
   /// v1.6.0 — route of administration. Decoupled from `treatmentClass`
   /// so the injection-site picker can surface for any INJECTION dose.
   /// A one-time injection is `oneShot = true` + `deliveryForm =

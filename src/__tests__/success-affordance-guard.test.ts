@@ -248,6 +248,9 @@ const PINNED_AFFORDANCES: Record<
   "src/components/medications/sections/inventory-dialogs.tsx": {
     "toast.success": 3,
   },
+  "src/components/medications/sections/intake-tracking-section.tsx": {
+    "toast.success": 1,
+  },
   "src/components/medications/sections/inventory-section.tsx": {
     "toast.success": 1,
   },

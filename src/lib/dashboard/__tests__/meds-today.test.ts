@@ -217,7 +217,12 @@ describe("buildMedsTodayBlock — tally", () => {
     const arg = fakePrisma.medication.findMany.mock.calls[0][0] as {
       where: { userId: string; active: boolean };
     };
-    expect(arg.where).toEqual({ userId: "user-1", active: true });
+    // v1.39.1 (#1033) — and only medications whose intake is tracked.
+    expect(arg.where).toEqual({
+      userId: "user-1",
+      active: true,
+      trackIntake: true,
+    });
   });
 });
 

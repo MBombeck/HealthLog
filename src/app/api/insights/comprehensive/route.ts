@@ -42,6 +42,7 @@ import {
   readMoodDayRollups,
 } from "@/lib/rollups/mood-rollups";
 import { userDayKey } from "@/lib/tz/format";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 export const dynamic = "force-dynamic";
 
@@ -381,7 +382,7 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
   const medicationRows = await prisma.medication.findMany({
     // v1.16.11 — as-needed (PRN) medications never surface a compliance
     // rate (no expected doses).
-    where: { userId, active: true, asNeeded: false },
+    where: { userId, active: true, asNeeded: false, ...TRACKED_INTAKE_WHERE },
     // v1.15.20 — schedules through the shared compliance select so the
     // configured per-dose windows reach this surface like every other.
     include: {

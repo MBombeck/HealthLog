@@ -34,6 +34,7 @@ import {
   MED_TARGET_MAP,
   type MedTargetClass,
 } from "@/lib/medications/med-target-map";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MAD_TO_SIGMA = 1.4826;
@@ -164,6 +165,9 @@ export async function buildAdherenceStoryline(
     where: {
       userId,
       active: true,
+      // v1.39.1 (#1033) — the adherence figure below counts tracked
+      // medications only, so a record-only one cannot be its subject.
+      ...TRACKED_INTAKE_WHERE,
       OR: [{ endsOn: null }, { endsOn: { gte: now } }],
     },
     select: { name: true, treatmentClass: true },

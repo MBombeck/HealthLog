@@ -40,6 +40,7 @@ import {
   type WorkerScheduleRow,
 } from "@/lib/medications/scheduling/worker-helpers";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
+import { dueSchedules } from "@/lib/medications/intake-tracking";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -217,7 +218,10 @@ export const GET = apiHandler(
     // A legacy daily schedule carrying only `windowStart` surfaces it as the
     // single time-of-day so the minter mints its daily band (mirrors the
     // compliance route + the ledger tally).
-    const canonicalSchedules = medication.schedules.map((s) => {
+    // v1.39.1 (#1033) — with intake tracking off the live era expects
+    // nothing: the ledger shows the doses that were recorded and the slots
+    // of archived eras, never a missed slot minted from the record.
+    const canonicalSchedules = dueSchedules(medication).map((s) => {
       const canonical = buildCanonicalSchedule(s as WorkerScheduleRow);
       if (
         canonical.timesOfDay.length === 0 &&

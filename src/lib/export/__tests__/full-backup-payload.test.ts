@@ -104,6 +104,7 @@ function makePrisma() {
           endsOn: new Date("2026-08-01T00:00:00.000Z"),
           oneShot: false,
           asNeeded: false,
+          trackIntake: false,
           deliveryForm: "INJECTION",
           trackInjectionSites: true,
           allowedInjectionSites: ["THIGH_LEFT", "THIGH_RIGHT"],
@@ -649,6 +650,7 @@ describe("buildFullBackupPayload disaster-recovery mode", () => {
         expect.objectContaining({
           id: "medication-canonical",
           asNeeded: false,
+          trackIntake: false,
           deliveryForm: "INJECTION",
           unitsPerDose: "0.5000",
           schedules: [

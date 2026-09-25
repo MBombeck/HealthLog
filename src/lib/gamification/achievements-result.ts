@@ -41,6 +41,10 @@ import {
 import { classifyIntakeTiming } from "@/lib/analytics/compliance";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { DEFAULT_TIMEZONE, userDayKey, validTimezoneOr } from "@/lib/tz/format";
+import {
+  TRACKED_INTAKE_EVENT_WHERE,
+  TRACKED_INTAKE_WHERE,
+} from "@/lib/medications/intake-tracking";
 
 export type AuthedUser = Awaited<ReturnType<typeof requireAuth>>["user"];
 
@@ -614,6 +618,9 @@ export async function buildAchievementsResult(
         deletedAt: null,
         source: { not: "IMPORT" },
         scheduledFor: { gte: startDate, lte: now },
+        // v1.39.1 (#1033) — doses of a medication with intake tracking off
+        // count toward no streak or badge.
+        ...TRACKED_INTAKE_EVENT_WHERE,
       },
       select: {
         medicationId: true,
@@ -626,7 +633,7 @@ export async function buildAchievementsResult(
       },
     }),
     prisma.medication.findMany({
-      where: { userId },
+      where: { userId, ...TRACKED_INTAKE_WHERE },
       select: {
         id: true,
         schedules: {

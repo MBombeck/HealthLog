@@ -78,6 +78,7 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { coerceLocale, type Locale } from "@/lib/i18n/config";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { annotate, getEvent } from "@/lib/logging/context";
+import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 /** Pg-boss queue + cron — imported by the reminder worker's bootstrap. */
 export const MEDICATION_LOW_STOCK_QUEUE = "medication-low-stock";
@@ -367,7 +368,14 @@ export async function runMedicationLowStockTick(
   const users = await prisma.user.findMany({
     where: {
       medications: {
-        some: { active: true, pausedAt: null, inventoryItems: { some: {} } },
+        some: {
+          active: true,
+          pausedAt: null,
+          // v1.39.1 (#1033) — no low-stock notice for a medication with
+          // intake tracking off: no dose consumes its stock.
+          ...TRACKED_INTAKE_WHERE,
+          inventoryItems: { some: {} },
+        },
       },
     },
     select: { id: true, locale: true, notificationPrefs: true },
@@ -390,6 +398,7 @@ export async function runMedicationLowStockTick(
           userId: user.id,
           active: true,
           pausedAt: null,
+          ...TRACKED_INTAKE_WHERE,
           inventoryItems: { some: {} },
         },
         select: {

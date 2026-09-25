@@ -43,6 +43,10 @@ import {
   type ResolvedSlotMark,
 } from "@/lib/medications/scheduling/next-due";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
+import {
+  TRACKED_INTAKE_EVENT_WHERE,
+  TRACKED_INTAKE_WHERE,
+} from "@/lib/medications/intake-tracking";
 
 export interface MedsTodayDueCandidate {
   medicationId: string;
@@ -127,8 +131,10 @@ export async function buildMedsTodayBlock(
 
   const [medications, todayEvents, latestIntakes, resolvedEvents, eraFloors] =
     await Promise.all([
+      // v1.39.1 (#1033) — a medication with intake tracking off has no
+      // place on the doses card: not counted, never the next due dose.
       prisma.medication.findMany({
-        where: { userId, active: true },
+        where: { userId, active: true, ...TRACKED_INTAKE_WHERE },
         include: { schedules: true },
         orderBy: { createdAt: "desc" },
       }),
@@ -137,6 +143,7 @@ export async function buildMedsTodayBlock(
           userId,
           deletedAt: null,
           scheduledFor: { gte: todayStart, lt: todayEndExclusive },
+          ...TRACKED_INTAKE_EVENT_WHERE,
         },
         select: { takenAt: true, skipped: true },
       }),

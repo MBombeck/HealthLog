@@ -334,12 +334,14 @@ export async function collectDoctorReportData(
   // Medication compliance through the dose-ledger authority — the same engine
   // the detail page uses, not a raw-row tally. As-needed medications are
   // excluded: no schedule, no expected dose, no fabricated 100 % on a
-  // clinical report. The medication itself stays on the list.
+  // clinical report. The medication itself stays on the list. A medication
+  // with intake tracking off is excluded the same way (`expectsDoses`).
   const compliance = buildLedgerCompliance(
     medications.map((m) => ({
       id: m.id,
       name: m.name,
       asNeeded: m.asNeeded,
+      trackIntake: m.trackIntake,
       startsOn: m.startsOn,
       endsOn: m.endsOn,
       oneShot: m.oneShot,
