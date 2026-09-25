@@ -2016,7 +2016,7 @@
         "packagingEdit": "Modifica",
         "packagingDescription": "Imposta quante unità consuma una dose e la dimensione abituale di una nuova confezione, ad es. dopo un cambio di produttore con blister diverso.",
         "packagingUnitsPerDoseLabel": "Unità per dose",
-        "packagingUnitsPerDoseHelper": "Ad es. due compresse da 2 mg per una dose da 4 mg (1–100). Le assunzioni già registrate restano invariate.",
+        "packagingUnitsPerDoseHelper": "Ad es. due compresse da 2 mg per una dose da 4 mg, oppure 1,5 per una e mezza (oltre 0, fino a 100). Le assunzioni già registrate restano invariate.",
         "packagingDefaultPackLabel": "Dimensione confezione predefinita (unità)",
         "packagingDefaultPackHelper": "Precompila la quantità quando registri nuove confezioni (1–1000). Lascia vuoto se non applicabile.",
         "packagingSuccess": "Dati confezione salvati",
@@ -2214,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "il file non registra nulla su quella dose: nessuno ha risposto e niente è stato annotato",
       "reasonStatusReminderEvent": "la riga riguarda un promemoria postposto, che non dice nulla sulla dose",
       "reasonStatusNotificationNotSent": "la riga registra che non è stata inviata alcuna notifica, il che riguarda l'app e non la dose"
+    },
+    "unitsPerDoseField": {
+      "other": "Altro…",
+      "inputLabel": "Unità per dose, altro valore",
+      "placeholder": "ad es. 1,5 o 1 1/2",
+      "invalid": "Inserisci un numero maggiore di 0 e fino a 100, ad esempio 1,5 o 1 1/2.",
+      "preview": "Conta come {value} per dose"
     }
   },
   "charts": {

@@ -494,6 +494,42 @@ describe("POST /api/medications — as-needed (v1.16.11, #316)", () => {
     expect(data.unitsPerDose).toBe(2);
   });
 
+  // #1034 — a whole number plus a fraction reaches the Prisma write
+  // unchanged, on the medication and on a per-slot override; a value with
+  // a fifth decimal place is refused before any write.
+  it("creates a medication with a mixed units-per-dose value", async () => {
+    const res = await POST(
+      postReq({
+        name: "Ibuprofen",
+        dose: "400 mg",
+        category: "PAIN_RELIEF",
+        unitsPerDose: 1.5,
+        asNeeded: true,
+      }),
+    );
+    expect(res.status).toBe(201);
+    expect(lastCreateData().unitsPerDose).toBe(1.5);
+  });
+
+  it("422s a units-per-dose value with more than four decimal places", async () => {
+    const res = await POST(
+      postReq({
+        name: "Ibuprofen",
+        dose: "400 mg",
+        category: "PAIN_RELIEF",
+        unitsPerDose: 1.23456,
+        asNeeded: true,
+      }),
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<{ path: Array<string | number> }> };
+    };
+    expect(
+      body.details.issues.some((i) => i.path.includes("unitsPerDose")),
+    ).toBe(true);
+  });
+
   it("still 422s a scheduled create without any schedule (legacy contract)", async () => {
     const res = await POST(postReq({ name: "Ramipril", dose: "5 mg" }));
     expect(res.status).toBe(422);

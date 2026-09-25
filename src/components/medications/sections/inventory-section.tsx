@@ -60,6 +60,7 @@ import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 import { formatDate } from "@/lib/date-format";
 import { queryKeys } from "@/lib/query-keys";
 import { formatUnitCount } from "@/components/medications/units-per-dose";
+import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
 import { apiDelete, apiGet } from "@/lib/api/api-fetch";
 import type { SupplySummary } from "@/lib/medications/inventory/summary";
 import {
@@ -334,7 +335,7 @@ export function InventorySection({
         <div className="flex items-center justify-between gap-3 py-3">
           <p className="text-foreground text-sm font-medium">
             {t("medications.detail.bestand.packagingUnitsPerDose", {
-              units: perDose,
+              units: formatUnitsPerDose(perDose, locale),
             })}
             <span className="text-muted-foreground block text-xs font-normal">
               {dosesPerUnit != null

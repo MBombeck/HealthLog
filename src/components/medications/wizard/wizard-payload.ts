@@ -61,6 +61,7 @@ import {
   type MedicationDeliveryForm,
 } from "@/lib/validations/medication";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
+import { parseUnitsPerDoseInput } from "@/lib/medications/units-per-dose";
 import {
   isExplicitRange,
   type DoseWindowEntry,
@@ -189,7 +190,9 @@ export interface ScheduleDraft {
   /**
    * #219 — per-schedule units-consumed-per-dose (empty = inherit the
    * medication `unitsPerDose`). Decrements the right tablet count for a
-   * morning-whole / noon-half plan.
+   * morning-whole / noon-half plan. Holds what the editor shows: a button
+   * value ("0.5") or the text typed into the Other field ("1,5", "1 1/2"),
+   * read by `parseUnitsPerDoseInput` when the body is built.
    */
   unitsPerDose?: string;
   /**
@@ -233,7 +236,8 @@ export interface WizardPayload {
   dosesPerUnit: string;
   /**
    * v1.16.10 — inventory units one dose consumes (2 × 2 mg tablets for
-   * a 4 mg dose). Empty string / "1" both map to the server default 1.
+   * a 4 mg dose). A button value or the text typed into the Other field
+   * ("1,5", "1 1/2", #1034), read by `parseUnitsPerDoseInput`.
    */
   unitsPerDose: string;
   /**
@@ -499,7 +503,10 @@ export function validateStep(payload: WizardPayload, step: number): boolean {
     case 2:
       return payload.treatmentRow !== null;
     case 3:
-      return payload.doseAmount.trim().length > 0;
+      return (
+        payload.doseAmount.trim().length > 0 &&
+        parseUnitsPerDoseInput(payload.unitsPerDose) !== null
+      );
     case 4:
       if (payload.startsOn === null) return false;
       if (payload.endsOn === null) return true;
@@ -532,7 +539,12 @@ export function validateStep(payload: WizardPayload, step: number): boolean {
     }
     case 7: {
       const times = payload.timesOfDay.filter((t) => TIME_RE.test(t));
-      return times.length >= 1;
+      // Blank inherits the medication-level value; anything typed must read.
+      const slotUnits = payload.scheduleUnitsPerDose.trim();
+      return (
+        times.length >= 1 &&
+        (slotUnits === "" || parseUnitsPerDoseInput(slotUnits) !== null)
+      );
     }
     case 8:
       if (payload.startsOn === null) return false;
@@ -704,8 +716,8 @@ export function encodeScheduleDraft(
   // omitted so the schedule inherits the medication-level value.
   if (draft.dose && draft.dose.trim() !== "") out.dose = draft.dose.trim();
   if (draft.unitsPerDose && draft.unitsPerDose.trim() !== "") {
-    const parsed = Number.parseFloat(draft.unitsPerDose);
-    if (Number.isFinite(parsed) && parsed > 0) out.unitsPerDose = parsed;
+    const parsed = parseUnitsPerDoseInput(draft.unitsPerDose);
+    if (parsed !== null) out.unitsPerDose = parsed;
   }
   if (isPrn) out.scheduleType = "PRN";
   // v1.15.18 — emit only the explicit windows that still name a live dose
@@ -787,9 +799,10 @@ export function buildCreateBody(
       : committed.schedules;
 
   const parsedDosesPerUnit = Number.parseInt(committed.dosesPerUnit, 10);
-  // v1.16.12 — fractional dosing: parse as a float (½ → 0.5) and gate at
-  // > 0, not the old integer `>= 1`, so a split-pill dose survives.
-  const parsedUnitsPerDose = Number.parseFloat(committed.unitsPerDose);
+  // #1034 — the shared reader, not `parseFloat`: "1,5" is 1.5 (parseFloat
+  // reads 1), "1 1/2" and "1½" are 1.5, and a value the server would
+  // refuse is null. Step 3 cannot be left while it is null.
+  const parsedUnitsPerDose = parseUnitsPerDoseInput(committed.unitsPerDose);
   const body: CreateMedicationBody = {
     name: committed.name.trim(),
     dose,
@@ -802,10 +815,9 @@ export function buildCreateBody(
       }),
     // v1.16.10 — always sent when valid (an edit back to 1 must reach
     // the server; the create default matches the schema default).
-    ...(Number.isFinite(parsedUnitsPerDose) &&
-      parsedUnitsPerDose > 0 && {
-        unitsPerDose: parsedUnitsPerDose,
-      }),
+    ...(parsedUnitsPerDose !== null && {
+      unitsPerDose: parsedUnitsPerDose,
+    }),
     // v1.8.5 — injection-site tracking is only meaningful for an
     // INJECTION delivery form. Always send the boolean for an injection
     // (so edits can deactivate it); send the allowed list only when

@@ -34,6 +34,10 @@ import {
 import { useTranslations } from "@/lib/i18n/context";
 import { apiPatch, apiPost, apiPut } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
+import {
+  formatUnitsPerDose,
+  parseUnitsPerDoseInput,
+} from "@/lib/medications/units-per-dose";
 import { startsInUseClock } from "@/lib/medications/inventory/clock-container-types";
 import {
   CONTAINER_TYPES,
@@ -526,20 +530,21 @@ export function PackagingDialog({
   dosesPerUnit: number | null;
   onClose: () => void;
 }) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const queryClient = useQueryClient();
-  const [perDoseValue, setPerDoseValue] = useState(String(unitsPerDose));
+  // #1034 — opens on the value as the reader writes it ("1,5" in German)
+  // and reads back through the same parser as the wizard's Other field.
+  const [perDoseValue, setPerDoseValue] = useState(() =>
+    formatUnitsPerDose(unitsPerDose, locale),
+  );
   const [packValue, setPackValue] = useState(
     dosesPerUnit === null ? "" : String(dosesPerUnit),
   );
   const [busy, setBusy] = useState(false);
   const formId = useId();
 
-  const parsedPerDose = Number(perDoseValue);
-  const perDoseValid =
-    Number.isInteger(parsedPerDose) &&
-    parsedPerDose >= 1 &&
-    parsedPerDose <= 100;
+  const parsedPerDose = parseUnitsPerDoseInput(perDoseValue);
+  const perDoseValid = parsedPerDose !== null;
   const parsedPack = packValue.trim() === "" ? null : Number(packValue);
   const packValid =
     parsedPack === null ||
@@ -616,15 +621,16 @@ export function PackagingDialog({
           </label>
           <Input
             id="packaging-units-per-dose"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={100}
-            step={1}
+            type="text"
+            inputMode="decimal"
+            maxLength={12}
             required
             autoComplete="off"
             value={perDoseValue}
             onChange={(e) => setPerDoseValue(e.target.value)}
+            aria-invalid={
+              (perDoseValue.trim() !== "" && !perDoseValid) || undefined
+            }
             aria-describedby="packaging-units-per-dose-helper"
           />
           <p

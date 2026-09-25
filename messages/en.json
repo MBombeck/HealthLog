@@ -2016,7 +2016,7 @@
         "packagingEdit": "Edit",
         "packagingDescription": "Set how many units one dose consumes and how large a new pack usually is — e.g. after a manufacturer switch with a different blister size.",
         "packagingUnitsPerDoseLabel": "Units per dose",
-        "packagingUnitsPerDoseHelper": "E.g. two 2 mg tablets for a 4 mg dose (1–100). Doses already recorded stay unchanged.",
+        "packagingUnitsPerDoseHelper": "E.g. two 2 mg tablets for a 4 mg dose, or 1.5 for one and a half (above 0, up to 100). Doses already recorded stay unchanged.",
         "packagingDefaultPackLabel": "Default pack size (units)",
         "packagingDefaultPackHelper": "Prefills the quantity when registering new packs (1–1000). Leave empty if none applies.",
         "packagingSuccess": "Packaging details saved",
@@ -2214,6 +2214,13 @@
       "reasonStatusNoDoseInformation": "the file records nothing about that dose — nobody answered and nothing was logged",
       "reasonStatusReminderEvent": "the row is about a snoozed reminder, which says nothing about the dose",
       "reasonStatusNotificationNotSent": "the row records that no notification was sent, which is about the app rather than the dose"
+    },
+    "unitsPerDoseField": {
+      "other": "Other…",
+      "inputLabel": "Units per dose, other value",
+      "placeholder": "e.g. 1.5 or 1 1/2",
+      "invalid": "Enter a number above 0 and up to 100, for example 1.5 or 1 1/2.",
+      "preview": "Counts as {value} per dose"
     }
   },
   "charts": {

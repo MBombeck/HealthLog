@@ -139,7 +139,7 @@ describe("medication schemas — dosesPerUnit cap 1000 + unitsPerDose 1–100", 
     expect(
       createMedicationSchema.safeParse({
         ...MINIMAL_MEDICATION,
-        unitsPerDose: 1.5,
+        unitsPerDose: 100.5,
       }).success,
     ).toBe(false);
   });
@@ -157,8 +157,7 @@ describe("medication schemas — dosesPerUnit cap 1000 + unitsPerDose 1–100", 
   });
 
   // v1.16.12 (#316) — fractional dosing: a curated set of split-pill
-  // fractions is accepted alongside the whole numbers; an arbitrary
-  // decimal is NOT (the UI only ever sends a curated value).
+  // fractions is accepted alongside the whole numbers.
   it("accepts every curated unitsPerDose fraction on create + update", () => {
     for (const v of [0.25, 0.3333, 0.5, 0.6667, 0.75]) {
       expect(
@@ -173,13 +172,32 @@ describe("medication schemas — dosesPerUnit cap 1000 + unitsPerDose 1–100", 
     }
   });
 
-  it("rejects an uncurated fractional unitsPerDose", () => {
-    for (const v of [0.333, 0.1, 0.4, 1.5, 2.5]) {
+  // #1034 — a whole number plus a fraction (1½, 2¼), and any other value
+  // the Decimal(10,4) column stores exactly, is accepted on create + update.
+  it("accepts a mixed or free decimal unitsPerDose with up to four places", () => {
+    for (const v of [1.5, 2.25, 1.3333, 3.75, 0.1, 0.4, 1.2, 99.5]) {
       expect(
         createMedicationSchema.safeParse({
           ...MINIMAL_MEDICATION,
           unitsPerDose: v,
         }).success,
+      ).toBe(true);
+      expect(
+        updateMedicationSchema.safeParse({ unitsPerDose: v }).success,
+      ).toBe(true);
+    }
+  });
+
+  it("rejects a unitsPerDose with more than four decimal places", () => {
+    for (const v of [1.23456, 0.33333, 0.00001]) {
+      expect(
+        createMedicationSchema.safeParse({
+          ...MINIMAL_MEDICATION,
+          unitsPerDose: v,
+        }).success,
+      ).toBe(false);
+      expect(
+        updateMedicationSchema.safeParse({ unitsPerDose: v }).success,
       ).toBe(false);
     }
   });

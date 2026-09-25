@@ -345,3 +345,29 @@ describe("slot-aware units math (#219 parity)", () => {
     expect(estimateUnitsRunwayDays(10, [], 1)).toBeNull();
   });
 });
+
+// #1034 — a whole number plus a fraction (1½) and a free decimal (1.2)
+// run through the same arithmetic as a whole tablet.
+describe("units runway with a mixed units-per-dose value (#1034)", () => {
+  const morning = schedule({ timesOfDay: ["08:00"] });
+  const evening = schedule({ timesOfDay: ["20:00"] });
+
+  it("burns 1½ units per dose at the medication level", () => {
+    // Two doses a day at 1.5 units = 3 units/day; 30 units last 10 days.
+    expect(estimateDailyUnitsCount([morning, evening], 1.5)).toBeCloseTo(3);
+    expect(estimateUnitsRunwayDays(30, [morning, evening], 1.5)).toBe(10);
+    expect(effectiveUnitsPerDose([morning, evening], 1.5)).toBeCloseTo(1.5);
+  });
+
+  it("honours a 2¼ per-slot override beside the inherited value", () => {
+    const heavy = schedule({ timesOfDay: ["20:00"], unitsPerDose: 2.25 });
+    // 1 + 2.25 = 3.25 units/day; 13 units last 4 days.
+    expect(estimateDailyUnitsCount([morning, heavy], 1)).toBeCloseTo(3.25);
+    expect(estimateUnitsRunwayDays(13, [morning, heavy], 1)).toBe(4);
+  });
+
+  it("floors a partial day under a free decimal dose", () => {
+    // 1.2 units/day; 10 units cover 8 whole days (8.33…).
+    expect(estimateUnitsRunwayDays(10, [morning], 1.2)).toBe(8);
+  });
+});
