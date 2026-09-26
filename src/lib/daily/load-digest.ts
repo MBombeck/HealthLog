@@ -28,6 +28,7 @@ import {
 import { userDayKey } from "@/lib/tz/format";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { calendarDaysUntil } from "@/lib/measurement-reminders/due-day";
+import { holdsOpenAfterReminder } from "@/lib/measurement-reminders/holds-open";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { DASHBOARD_REFETCH_INTERVAL_MS } from "@/lib/queries/refetch-interval";
 import { isArrivalKind } from "@/lib/arrivals/types";
@@ -407,10 +408,11 @@ export async function loadDailyDigest(
       // proves every one of them, and the DTO mapper refuses such a row
       // outright so a site that lost its filter fails loudly.
       //
-      // Due TODAY or overdue: anything whose due instant falls before the end
-      // of the person's local day, not only what has passed by now. Since
-      // v1.39.2 an open check-up keeps its due date after the reminder, so
-      // the overdue ones stay here until they are done, skipped or snoozed.
+      // Read up to the end of the person's local day; the filter below keeps
+      // what is due now, plus what is due later today when it is a reminder
+      // that stays due (see `holdsOpenAfterReminder`). Since v1.39.2 such a
+      // reminder keeps its due date after it is sent, so the overdue ones
+      // stay here until they are satisfied, skipped or snoozed.
       where: {
         userId: user.id,
         enabled: true,
@@ -418,7 +420,17 @@ export async function loadDailyDigest(
         origin: { not: "ENCOUNTER" },
         nextDueAt: { not: null, lt: todayEndExclusive },
       },
-      select: { label: true, origin: true },
+      select: {
+        label: true,
+        origin: true,
+        intervalDays: true,
+        rrule: true,
+        anchorDate: true,
+        notifyHour: true,
+        lastSatisfiedAt: true,
+        createdAt: true,
+        nextDueAt: true,
+      },
       orderBy: { nextDueAt: "asc" },
       take: PREVENTIVE_DUE_READ_LIMIT,
     }),
@@ -637,11 +649,24 @@ export async function loadDailyDigest(
   // A Coach-suggested measurement cadence stores its label as a bundle key;
   // the checkups page and the dashboard card translate it, and so does this
   // line. A free-text label (every other row) is the person's own words.
-  const preventiveDue: DailyDigestPreventiveDue[] = dueReminders.map((row) => {
-    if (row.origin !== "COACH") return { label: row.label };
-    const translated = t(row.label);
-    return { label: translated === row.label ? row.label : translated };
-  });
+  //
+  // A reminder that stays due after it is sent (a cycle longer than a week,
+  // a fortnightly questionnaire, a yearly check-up) is on the rail for its
+  // whole due day and keeps its place under the cap. A short-cycle one (a
+  // daily weigh-in, a twice-daily course) is a rhythm: it shows only once its
+  // time has come, is not pinned, and its next reading moves it on.
+  const preventiveDue: DailyDigestPreventiveDue[] = [];
+  for (const row of dueReminders) {
+    if (row.nextDueAt === null) continue;
+    const staysDue = holdsOpenAfterReminder(row, user.timezone, row.nextDueAt);
+    if (!staysDue && row.nextDueAt.getTime() > now.getTime()) continue;
+    let label = row.label;
+    if (row.origin === "COACH") {
+      const translated = t(row.label);
+      if (translated !== row.label) label = translated;
+    }
+    preventiveDue.push({ label, staysDue });
+  }
 
   // Group the two figures for the reader. `Intl.NumberFormat` is the only
   // locale-aware step the digest takes on its own; everything else it renders

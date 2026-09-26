@@ -51,6 +51,10 @@ import {
   isOverdueDue,
   relativeDueKey,
 } from "@/lib/measurement-reminders/due-day";
+import {
+  changedReminderFields,
+  type ReminderEditBody,
+} from "@/lib/measurement-reminders/edit-body";
 import { cn } from "@/lib/utils";
 import { applyOrder, useModuleListPrefs } from "@/lib/module-list-prefs";
 import { EncounterSheet } from "@/components/encounters/encounter-sheet";
@@ -259,6 +263,8 @@ export function VorsorgeSection({
     setVisitSession((n) => n + 1);
   };
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  // The form as it opened, so an edit sends only what changed.
+  const [initialForm, setInitialForm] = useState<FormState>(EMPTY_FORM);
   // The value-capture sheet: holds the reminder whose measurement we are
   // entering. Non-null ⇒ the MeasurementForm sheet is open for that row.
   const [capturing, setCapturing] = useState<MeasurementReminder | null>(null);
@@ -292,7 +298,7 @@ export function VorsorgeSection({
         : interval != null
           ? CADENCE_CUSTOM
           : "7";
-    setForm({
+    const opened: FormState = {
       label: resolveReminderLabel(reminder, t),
       kind: reminder.measurementType ? "type" : "freeText",
       measurementType: reminder.measurementType ?? "BLOOD_PRESSURE_SYS",
@@ -303,7 +309,9 @@ export function VorsorgeSection({
       anchorDate: toDateInputValue(reminder.anchorDate),
       notifyHour: reminder.notifyHour,
       location: reminder.location ?? "",
-    });
+    };
+    setForm(opened);
+    setInitialForm(opened);
     setEditing(reminder);
   }
 
@@ -314,36 +322,45 @@ export function VorsorgeSection({
 
   // Resolve the picker state to the mutually-exclusive cadence pair the
   // schema expects (exactly one of intervalDays / rrule).
-  function resolveCadence(): {
+  function resolveCadence(state: FormState): {
     intervalDays: number | null;
     rrule: string | null;
   } {
-    if (form.cadenceChoice === CADENCE_RRULE) {
-      const trimmed = form.rrule.trim();
+    if (state.cadenceChoice === CADENCE_RRULE) {
+      const trimmed = state.rrule.trim();
       return { intervalDays: null, rrule: trimmed || null };
     }
-    if (form.cadenceChoice === CADENCE_CUSTOM) {
-      return { intervalDays: form.customIntervalDays, rrule: null };
+    if (state.cadenceChoice === CADENCE_CUSTOM) {
+      return { intervalDays: state.customIntervalDays, rrule: null };
     }
-    return { intervalDays: Number(form.cadenceChoice), rrule: null };
+    return { intervalDays: Number(state.cadenceChoice), rrule: null };
+  }
+
+  function toEditBody(state: FormState): ReminderEditBody {
+    const { intervalDays, rrule } = resolveCadence(state);
+    return {
+      label: state.label.trim(),
+      measurementType: state.kind === "type" ? state.measurementType : null,
+      intervalDays,
+      rrule,
+      anchorDate: fromDateInputValue(state.anchorDate),
+      notifyHour: state.notifyHour,
+      location: state.location.trim() || null,
+    };
   }
 
   function submit() {
     const trimmed = form.label.trim();
     if (!trimmed) return;
-    const { intervalDays, rrule } = resolveCadence();
-    const body = {
-      label: trimmed,
-      measurementType: form.kind === "type" ? form.measurementType : null,
-      intervalDays,
-      rrule,
-      anchorDate: fromDateInputValue(form.anchorDate),
-      notifyHour: form.notifyHour,
-      location: form.location.trim() || null,
-    };
+    const body = toEditBody(form);
     if (isEdit) {
+      // Only what changed: an untouched first due date resent as local
+      // midnight used to read as a new one and move an overdue check-up on.
       update.mutate(
-        { id: (editing as MeasurementReminder).id, body },
+        {
+          id: (editing as MeasurementReminder).id,
+          body: changedReminderFields(toEditBody(initialForm), body),
+        },
         { onSuccess: closeSheet },
       );
     } else {

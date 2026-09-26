@@ -33,6 +33,8 @@ import {
 } from "@/lib/measurement-reminders/scheduling";
 import { toMeasurementReminderDto } from "@/lib/measurement-reminders/dto";
 import { wallClockInTz, zonedWallClockToUtc } from "@/lib/tz/wall-clock";
+import { userDayKey } from "@/lib/tz/format";
+import { holdsOpenAfterReminder } from "@/lib/measurement-reminders/holds-open";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -191,15 +193,40 @@ export const PATCH = apiHandler(
     // label, location or type edit used to recompute too, and since the
     // recompute searches strictly after now, correcting the label of an
     // open, overdue check-up quietly moved it to its next slot. Compared by
-    // value, because the edit forms resend every field on each save.
+    // value, because a client may resend every field on each save.
+    //
+    // The first due date is compared by CALENDAR DAY in the profile zone. The
+    // web form sends a date as the browser's local midnight, and a booster
+    // row stores the dose instant plus N days, so the same day arrives as a
+    // different instant. A resent same-day anchor is dropped from the write
+    // altogether, so the stored instant stays what it was.
     const sameInstant = (a: Date | null, b: Date | null) =>
       (a?.getTime() ?? null) === (b?.getTime() ?? null);
+    const sameDay = (a: Date | null, b: Date | null) =>
+      a === null || b === null
+        ? a === b
+        : userDayKey(a, timezone) === userDayKey(b, timezone);
+    if (
+      Object.hasOwn(updateData, "anchorDate") &&
+      sameDay(merged.anchorDate, existing.anchorDate)
+    ) {
+      delete updateData.anchorDate;
+      merged.anchorDate = existing.anchorDate;
+    }
     const cadenceChanged =
       merged.intervalDays !== existing.intervalDays ||
       merged.rrule !== existing.rrule ||
-      !sameInstant(merged.anchorDate, existing.anchorDate) ||
-      (updateData.enabled === true && !existing.enabled);
-    if (cadenceChanged) {
+      !sameInstant(merged.anchorDate, existing.anchorDate);
+    const reEnabled = updateData.enabled === true && !existing.enabled;
+    // Re-enabling a reminder that stays due after it is sent keeps the slot it
+    // was on, overdue or not: switching it off and on again is not doing it.
+    // A short-cycle reminder is scheduled from now, as before.
+    const keepsOpenSlot =
+      reEnabled &&
+      !cadenceChanged &&
+      existing.nextDueAt !== null &&
+      holdsOpenAfterReminder(existing, timezone, existing.nextDueAt);
+    if (cadenceChanged || (reEnabled && !keepsOpenSlot)) {
       const after =
         existing.lastSatisfiedAt && existing.lastSatisfiedAt > now
           ? existing.lastSatisfiedAt
@@ -229,6 +256,16 @@ export const PATCH = apiHandler(
       updateData.nextDueAt = moved;
       if (sameInstant(existing.snoozedUntil, existing.nextDueAt)) {
         updateData.snoozedUntil = moved;
+      }
+      // Already sent for this slot and moved to a later hour: carry the
+      // last-sent cursor along, or the slot would read as unsent and go out
+      // a second time at the new hour.
+      if (
+        existing.lastNotifiedAt !== null &&
+        existing.lastNotifiedAt.getTime() >= existing.nextDueAt.getTime() &&
+        moved.getTime() > existing.lastNotifiedAt.getTime()
+      ) {
+        updateData.lastNotifiedAt = moved;
       }
     }
 

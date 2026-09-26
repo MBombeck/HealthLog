@@ -11,8 +11,9 @@
  *   2. **Migration 0355's repair.** The container has every migration applied
  *      already, so the data steps are pulled out of the `.sql` file and run
  *      again against rows seeded the way an upgrading instance holds them:
- *      check-ups the old tick rolled on after a send go back to the reminded
- *      slot, and every row whose evidence is ambiguous is left alone. The
+ *      reminders on a cycle longer than a week that the old tick rolled on
+ *      after a send go back to the reminded slot, measurement reminders
+ *      included, and every row whose evidence is ambiguous is left alone. The
  *      steps run twice; the second run must change nothing.
  */
 import { readFileSync } from "node:fs";
@@ -178,6 +179,70 @@ describe("an open check-up through the reminder tick", () => {
   });
 });
 
+describe("an open fortnightly questionnaire through the reminder tick", () => {
+  const DUE = new Date("2026-09-26T07:00:00.000Z");
+
+  it("stays due after its reminder and moves on from the reading that fills it", async () => {
+    const prisma = getPrismaClient();
+    const user = await seedUser("questionnaire-owner");
+    const created = await prisma.measurementReminder.create({
+      data: {
+        userId: user.id,
+        label: "PHQ-9",
+        measurementType: "PHQ9_SCORE",
+        intervalDays: 14,
+        rrule: null,
+        notifyHour: 9,
+        origin: "VORSORGE",
+        enabled: true,
+        lastSatisfiedAt: new Date("2026-08-15T07:00:00.000Z"),
+        nextDueAt: DUE,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      },
+    });
+    const dispatch = vi.fn(async () => OK);
+    const tick = (at: Date) =>
+      runMeasurementReminderTick(prisma, at, {
+        dispatch,
+        isModuleEnabled: async () => true,
+      });
+
+    await tick(DUE);
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    let row = await prisma.measurementReminder.findUniqueOrThrow({
+      where: { id: created.id },
+    });
+    expect(row.nextDueAt).toEqual(DUE);
+
+    // The questionnaire is filled the next afternoon.
+    const filledAt = new Date(DUE.getTime() + DAY + 6 * 60 * 60 * 1000);
+    await prisma.measurement.create({
+      data: {
+        userId: user.id,
+        type: "PHQ9_SCORE",
+        value: 4,
+        unit: "score",
+        measuredAt: filledAt,
+        source: "MANUAL",
+      },
+    });
+    // Outside the notify hour the open slot is not even polled (the
+    // eventful satisfy worker covers that moment); the next notify hour's
+    // poll resolves it.
+    const afternoon = await tick(new Date(filledAt.getTime() + 15 * 60 * 1000));
+    expect(afternoon.autoResolved).toBe(0);
+    const next = await tick(new Date(DUE.getTime() + 2 * DAY));
+    expect(next.autoResolved).toBe(1);
+    row = await prisma.measurementReminder.findUniqueOrThrow({
+      where: { id: created.id },
+    });
+    expect(row.lastSatisfiedAt).toEqual(filledAt);
+    // Fourteen days on from the reading, at 09:00 Berlin.
+    expect(row.nextDueAt).toEqual(new Date("2026-10-11T07:00:00.000Z"));
+    expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("migration 0355", () => {
   it("adds the nullable last_notified_at column", async () => {
     const rows = await getPrismaClient().$queryRawUnsafe<
@@ -254,6 +319,44 @@ describe("migration 0355", () => {
         data: { rrule: null, intervalDays: null, nextDueAt: null },
       },
       {
+        // The reported shape: fortnightly questionnaires, last filled weeks
+        // ago, each rolled fourteen days on within a second of its send.
+        id: "phq9-fortnightly",
+        data: {
+          measurementType: "PHQ9_SCORE",
+          rrule: null,
+          intervalDays: 14,
+          lastSatisfiedAt: new Date("2026-08-15T07:00:00.000Z"),
+          nextDueAt: new Date("2026-10-10T07:00:00.000Z"),
+        },
+        updatedAt: new Date("2026-09-26T07:00:03.600Z"),
+      },
+      {
+        id: "gad7-fortnightly",
+        data: {
+          measurementType: "GAD7_SCORE",
+          rrule: null,
+          intervalDays: 14,
+          lastSatisfiedAt: new Date("2026-08-15T07:00:00.000Z"),
+          nextDueAt: new Date("2026-10-10T07:00:00.000Z"),
+        },
+        updatedAt: new Date("2026-09-26T07:00:03.900Z"),
+      },
+      { id: "yearly-measurement", data: { measurementType: "WEIGHT" } },
+      {
+        // A snooze that ran out before the send says nothing about this slot.
+        id: "old-snooze",
+        data: { snoozedUntil: new Date("2026-09-20T07:00:00.000Z") },
+      },
+      {
+        // A rule whose last occurrence was the one sent: rolled to nothing.
+        id: "rule-exhausted",
+        data: {
+          rrule: "FREQ=MONTHLY;UNTIL=20260930T000000Z",
+          nextDueAt: null,
+        },
+      },
+      {
         // An earlier cycle's send is older; the latest send decides.
         id: "monthly-many-sends",
         data: {
@@ -304,9 +407,48 @@ describe("migration 0355", () => {
           nextDueAt: new Date("2026-10-03T07:00:00.000Z"),
         },
       },
-      { id: "measurement", data: { measurementType: "WEIGHT" } },
+      {
+        // A measurement reminder on a short cycle still rolls on.
+        id: "measurement-3-day",
+        data: {
+          measurementType: "WEIGHT",
+          rrule: null,
+          intervalDays: 3,
+          nextDueAt: new Date("2026-09-29T07:00:00.000Z"),
+        },
+      },
+      {
+        id: "measurement-7-day",
+        data: {
+          measurementType: "BLOOD_PRESSURE_SYS",
+          rrule: null,
+          intervalDays: 7,
+          nextDueAt: new Date("2026-10-03T07:00:00.000Z"),
+        },
+      },
+      {
+        // Satisfied by a reading after the send: done, not rolled on.
+        id: "measurement-read-after-send",
+        data: {
+          measurementType: "PHQ9_SCORE",
+          rrule: null,
+          intervalDays: 14,
+          lastSatisfiedAt: new Date("2026-09-26T07:03:00.000Z"),
+          nextDueAt: new Date("2026-10-10T07:00:00.000Z"),
+        },
+        updatedAt: new Date("2026-09-26T07:03:01.000Z"),
+      },
       { id: "appointment", data: { origin: "ENCOUNTER", rrule: null } },
       { id: "deleted", data: { deletedAt: ROLLED } },
+      {
+        // A course whose window closed before the send stays closed.
+        id: "course-ended",
+        data: {
+          rrule: "FREQ=DAILY",
+          nextDueAt: null,
+          endsOn: new Date("2026-09-25T00:00:00.000Z"),
+        },
+      },
       { id: "disabled", data: { enabled: false } },
       { id: "never-sent", claims: [] },
       {
@@ -368,6 +510,9 @@ describe("migration 0355", () => {
       dashboardWidgetsJson: { version: 1, widgets: [] },
     });
     await seedUser("hero-none");
+    await seedUser("hero-malformed", {
+      dashboardWidgetsJson: { version: 1, enabledHeroItemKinds: "all" },
+    });
 
     await runDataSteps();
     await runDataSteps();
@@ -385,5 +530,6 @@ describe("migration 0355", () => {
     ]);
     expect(await layout("hero-default")).toEqual({ version: 1, widgets: [] });
     expect(await layout("hero-none")).toBeNull();
+    expect((await layout("hero-malformed"))?.enabledHeroItemKinds).toBe("all");
   });
 });
