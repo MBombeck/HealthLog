@@ -115,7 +115,7 @@ export const measurementReminderPaths: NonNullable<ZodOpenApiObject["paths"]> =
         tags: ["MeasurementReminders"],
         summary: "Edit a Vorsorge reminder (v1.17.1)",
         description:
-          "Partial edit; omitted fields are left untouched. nextDueAt is recomputed server-side after the cadence merge. Owner-scoped.",
+          "Partial edit; omitted fields are left untouched. nextDueAt is recomputed server-side only when the edit changes when the reminder recurs (intervalDays, rrule, anchorDate compared by value, or enabled switched back on); that recompute also clears a snooze. A notifyHour-only edit keeps the due day and moves the hour on it. Any other edit (label, location, measurementType) leaves nextDueAt as it is, so an open, overdue check-up stays due. Owner-scoped.",
         requestParams: { path: z.object({ id: z.string() }) },
         requestBody: {
           required: true,

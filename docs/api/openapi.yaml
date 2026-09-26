@@ -13350,8 +13350,11 @@ paths:
       tags:
         - MeasurementReminders
       summary: Edit a Vorsorge reminder (v1.17.1)
-      description: Partial edit; omitted fields are left untouched. nextDueAt is recomputed server-side after the cadence
-        merge. Owner-scoped.
+      description: Partial edit; omitted fields are left untouched. nextDueAt is recomputed server-side only when the edit
+        changes when the reminder recurs (intervalDays, rrule, anchorDate compared by value, or enabled switched back
+        on); that recompute also clears a snooze. A notifyHour-only edit keeps the due day and moves the hour on it. Any
+        other edit (label, location, measurementType) leaves nextDueAt as it is, so an open, overdue check-up stays due.
+        Owner-scoped.
       parameters:
         - in: path
           name: id
@@ -26953,7 +26956,7 @@ components:
         enabled:
           type: boolean
       description: Partial edit of a Vorsorge reminder. Omitted fields are left untouched; nextDueAt is recomputed server-side
-        after the patch applies.
+        when the cadence changes and otherwise kept (a notifyHour edit moves only the hour on the same due day).
     MeasurementReminderSnooze:
       type: object
       properties:

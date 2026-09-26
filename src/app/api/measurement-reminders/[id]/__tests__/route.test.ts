@@ -231,6 +231,55 @@ describe("PATCH /api/measurement-reminders/[id] — nextDueAt honours explicit-n
     expect("rrule" in persisted).toBe(false);
     expect("anchorDate" in persisted).toBe(false);
 
+    // v1.39.2 — and nextDueAt is not written either. It used to be
+    // recomputed on every PATCH, so correcting the label of an open,
+    // overdue check-up (BASE_ROW is due 2026-01-31, NOW is June) quietly
+    // moved it to its next slot, the same "reminded and gone" defect the
+    // reminder tick had. Only a change to when it recurs reschedules it.
+    expect("nextDueAt" in persisted).toBe(false);
+    expect("snoozedUntil" in persisted).toBe(false);
+  });
+
+  it("an edit that resends the unchanged cadence keeps an overdue slot", async () => {
+    findFirstMock.mockResolvedValue(BASE_ROW);
+
+    const res = await PATCH(
+      makeRequest({ label: "New label", intervalDays: 30, rrule: null }),
+      params,
+    );
+    expect(res.status).toBe(200);
+
+    const persisted = updateMock.mock.calls[0]?.[0]?.data as Record<
+      string,
+      unknown
+    >;
+    expect("nextDueAt" in persisted).toBe(false);
+  });
+
+  it("a notify-hour edit keeps the due day and moves only the hour", async () => {
+    findFirstMock.mockResolvedValue(BASE_ROW);
+
+    const res = await PATCH(makeRequest({ notifyHour: 18 }), params);
+    expect(res.status).toBe(200);
+
+    const persisted = updateMock.mock.calls[0]?.[0]?.data as Record<
+      string,
+      unknown
+    >;
+    // 2026-01-31 18:00 in Berlin (UTC+1 in winter).
+    expect(persisted.nextDueAt).toEqual(new Date("2026-01-31T17:00:00Z"));
+  });
+
+  it("re-enabling a disabled reminder schedules it from now", async () => {
+    findFirstMock.mockResolvedValue({ ...BASE_ROW, enabled: false });
+
+    const res = await PATCH(makeRequest({ enabled: true }), params);
+    expect(res.status).toBe(200);
+
+    const persisted = updateMock.mock.calls[0]?.[0]?.data as Record<
+      string,
+      unknown
+    >;
     const expected = computeReminderNextDueAt(BASE_ROW, TZ, NOW);
     expect(persisted.nextDueAt).toEqual(expected);
   });
