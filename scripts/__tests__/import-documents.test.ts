@@ -167,19 +167,20 @@ async function healthlog(
         size = v.size;
       }
     }
-    // The key rides the query string, where HealthLog reads it first, and
-    // the form; HealthLog refuses the two disagreeing.
+    // The key rides the form only: in the address HealthLog would meter it
+    // against the lookup allowance, which a spent lookup has already used up.
     if (
-      fields.sourceSystem !== url.searchParams.get("sourceSystem") ||
-      fields.sourceId !== url.searchParams.get("sourceId")
+      url.searchParams.has("sourceSystem") ||
+      url.searchParams.has("sourceId")
     ) {
       return {
-        status: 422,
-        json: { data: null, error: "source key mismatch" },
+        status: 429,
+        headers: { "retry-after": "3600" },
+        json: { data: null, error: "lookup allowance spent" },
       };
     }
     received.push({ auth: req.headers.authorization, fields, filename, size });
-    const key = queryKey;
+    const key = `${fields.sourceSystem}:${fields.sourceId}`;
     if (opts.tooLarge?.includes(key)) {
       return {
         status: 413,
