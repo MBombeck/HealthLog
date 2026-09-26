@@ -10322,7 +10322,7 @@
       "preventiveCare": {
         "title": "Check-up due",
         "body": "{label} is due.",
-        "bodyMany": "{count} check-ups are due."
+        "bodyManyNamed": "Due: {labels}"
       },
       "syncIssue": {
         "title": "Sync needs attention",
@@ -10367,7 +10367,8 @@
       "upcomingVisit": {
         "title": "Appointment coming up",
         "bodyToday": "{what} — today",
-        "bodyTomorrow": "{what} — tomorrow"
+        "bodyTomorrow": "{what} — tomorrow",
+        "bodyDayAfterTomorrow": "{what} — the day after tomorrow"
       }
     },
     "action": {

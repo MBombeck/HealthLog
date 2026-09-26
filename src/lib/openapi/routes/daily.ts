@@ -177,7 +177,7 @@ export const dailyPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "The unified daily digest",
       description:
-        "Assembles the day's read from already-cached data: the nightly briefing lifted read-only from the insights cache, the dashboard-snapshot health score / meds-today / sleep freshness, plus deterministic integration-status and Vorsorge reads for the 'worth a look' rail. No provider call, no warm-on-mount. No module gate and no AI gate: the digest is data, and the `insights` module is the AI analysis opt-out. Its AI parts follow their capabilities, published in `ai`. Cookie or Bearer auth.",
+        "Assembles the day's read from already-cached data: the nightly briefing lifted read-only from the insights cache, the dashboard-snapshot health score / meds-today / sleep freshness, plus deterministic integration-status, Vorsorge and visit reads for the 'worth a look' rail. The rail's `preventive_care` item covers every check-up due today or overdue and names up to three of them; `upcoming_visit` items cover every planned visit on the local today (also once it has started, until the day ends) in one item, and the next day with a visit inside the next 48 hours in a second. A due check-up and today's visits always keep a place within the three-item cap. No provider call, no warm-on-mount. No module gate and no AI gate: the digest is data, and the `insights` module is the AI analysis opt-out. Its AI parts follow their capabilities, published in `ai`. Cookie or Bearer auth.",
       responses: {
         "200": {
           description: "The daily digest.",

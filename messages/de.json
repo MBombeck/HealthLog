@@ -10322,7 +10322,7 @@
       "preventiveCare": {
         "title": "Vorsorge fällig",
         "body": "{label} ist fällig.",
-        "bodyMany": "{count} Vorsorgetermine sind fällig."
+        "bodyManyNamed": "Fällig: {labels}"
       },
       "syncIssue": {
         "title": "Synchronisierung braucht Aufmerksamkeit",
@@ -10367,7 +10367,8 @@
       "upcomingVisit": {
         "title": "Termin steht an",
         "bodyToday": "{what} — heute",
-        "bodyTomorrow": "{what} — morgen"
+        "bodyTomorrow": "{what} — morgen",
+        "bodyDayAfterTomorrow": "{what} — übermorgen"
       }
     },
     "action": {

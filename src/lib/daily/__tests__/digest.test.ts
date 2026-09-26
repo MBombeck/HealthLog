@@ -639,7 +639,18 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
     );
     const care = d.worthALook.filter((i) => i.kind === "preventive_care");
     expect(care).toHaveLength(1);
-    expect(care[0].body).toBe("3 check-ups are due.");
+    expect(care[0].body).toBe("Due: A, B, C");
+  });
+
+  it("names the first three due check-ups and counts the rest", () => {
+    const d = buildDailyDigest(
+      input({
+        preventiveDue: ["A", "B", "C", "D", "E"].map((label) => ({ label })),
+      }),
+      t,
+    );
+    const care = d.worthALook.find((i) => i.kind === "preventive_care");
+    expect(care?.body).toBe("Due: A, B, C +2");
   });
 
   it("bounds the rail at three items, never padded", () => {
@@ -1316,4 +1327,122 @@ describe("buildDailyDigest — AI text follows its capability", () => {
       expect(d.ai.briefing.reason).toBe(reason);
     },
   );
+});
+
+// v1.39.2 — a check-up that is due today or overdue, and a visit booked for
+// today, are the two rail items a person can miss for good: the check-up
+// because the reminder already went out, the visit because the day ends.
+// Watched red: with the plain `slice(0, 3)` over the priority order, the
+// first two cases drop the item behind an overdue dose and three sync issues.
+describe("buildDailyDigest — due check-ups and today's visits hold their place", () => {
+  const crowd = {
+    medsToday: meds({ nextDueOverdue: true, nextDueMedicationName: "X" }),
+    syncIssues: [
+      { integration: "withings", state: "error_reauth" },
+      { integration: "nightscout", state: "parked" },
+      { integration: "fitbit", state: "error_reauth" },
+    ],
+  };
+  const visit = (over: Record<string, unknown> = {}) => ({
+    id: "v1",
+    kind: "ROUTINE",
+    occurredAt: "2026-07-16T13:00:00.000Z",
+    practitionerName: "Dr. Weiss",
+    dayOffset: 0,
+    ...over,
+  });
+
+  it("keeps a due check-up on a full rail", () => {
+    const d = buildDailyDigest(
+      input({ ...crowd, preventiveDue: [{ label: "Skin check" }] }),
+      t,
+    );
+    expect(d.worthALook).toHaveLength(MAX_WORTH_A_LOOK);
+    expect(d.worthALook.map((i) => i.kind)).toContain("preventive_care");
+    // The overdue dose still leads; the pinned item takes a later slot.
+    expect(d.worthALook[0].kind).toBe("dose_window");
+  });
+
+  it("keeps today's visit on a full rail", () => {
+    const d = buildDailyDigest(
+      input({ ...crowd, upcomingVisits: [visit()] }),
+      t,
+    );
+    expect(d.worthALook.map((i) => i.kind)).toContain("upcoming_visit");
+  });
+
+  it("keeps both a due check-up and today's visit on a full rail", () => {
+    const d = buildDailyDigest(
+      input({
+        ...crowd,
+        preventiveDue: [{ label: "Skin check" }],
+        upcomingVisits: [visit()],
+      }),
+      t,
+    );
+    expect(d.worthALook.map((i) => i.kind)).toEqual([
+      "dose_window",
+      "preventive_care",
+      "upcoming_visit",
+    ]);
+  });
+
+  it("does not pin a visit that is not today", () => {
+    const d = buildDailyDigest(
+      input({ ...crowd, upcomingVisits: [visit({ dayOffset: 1 })] }),
+      t,
+    );
+    expect(d.worthALook.map((i) => i.kind)).not.toContain("upcoming_visit");
+  });
+
+  it("names every visit of the day in one item, including one already under way", () => {
+    const d = buildDailyDigest(
+      input({
+        upcomingVisits: [
+          // Started an hour before NOW: still today's, still on the rail.
+          visit({ occurredAt: "2026-07-16T08:00:00.000Z" }),
+          visit({ id: "v2", practitionerName: "Dentist" }),
+        ],
+      }),
+      t,
+    );
+    const visits = d.worthALook.filter((i) => i.kind === "upcoming_visit");
+    expect(visits).toHaveLength(1);
+    expect(visits[0].body).toBe("Dr. Weiss, Dentist — today");
+  });
+
+  it("says tomorrow and the day after by calendar day", () => {
+    const tomorrow = buildDailyDigest(
+      input({ upcomingVisits: [visit({ dayOffset: 1 })] }),
+      t,
+    );
+    expect(
+      tomorrow.worthALook.find((i) => i.kind === "upcoming_visit")?.body,
+    ).toBe("Dr. Weiss — tomorrow");
+    const later = buildDailyDigest(
+      input({ upcomingVisits: [visit({ dayOffset: 2 })] }),
+      t,
+    );
+    expect(
+      later.worthALook.find((i) => i.kind === "upcoming_visit")?.body,
+    ).toBe("Dr. Weiss — the day after tomorrow");
+  });
+
+  it("shows today's visits and the next day's as two items", () => {
+    const d = buildDailyDigest(
+      input({
+        upcomingVisits: [
+          visit(),
+          visit({ id: "v2", practitionerName: "Dentist", dayOffset: 1 }),
+          visit({ id: "v3", practitionerName: "Lab", dayOffset: 2 }),
+        ],
+      }),
+      t,
+    );
+    expect(
+      d.worthALook
+        .filter((i) => i.kind === "upcoming_visit")
+        .map((i) => i.body),
+    ).toEqual(["Dr. Weiss — today", "Dentist — tomorrow"]);
+  });
 });

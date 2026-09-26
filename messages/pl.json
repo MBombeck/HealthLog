@@ -10322,7 +10322,7 @@
       "preventiveCare": {
         "title": "Badanie do wykonania",
         "body": "{label} jest do wykonania.",
-        "bodyMany": "Do wykonania jest {count} badań."
+        "bodyManyNamed": "Do wykonania: {labels}"
       },
       "syncIssue": {
         "title": "Synchronizacja wymaga uwagi",
@@ -10367,7 +10367,8 @@
       "upcomingVisit": {
         "title": "Zbliża się wizyta",
         "bodyToday": "{what} — dzisiaj",
-        "bodyTomorrow": "{what} — jutro"
+        "bodyTomorrow": "{what} — jutro",
+        "bodyDayAfterTomorrow": "{what} — pojutrze"
       }
     },
     "action": {

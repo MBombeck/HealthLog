@@ -177,7 +177,7 @@ const fakeDb = vi.hoisted(() => {
     ecgRecording: { findFirst: async () => null },
     personalRecord: { findMany: none },
     arrivalReaction: { findMany: none },
-    encounter: { findFirst: async () => null },
+    encounter: { findMany: none },
     // The AI capability loader's consent read: no receipts.
     consentReceipt: { findMany: none },
   };

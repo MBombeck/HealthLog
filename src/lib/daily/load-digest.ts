@@ -27,6 +27,7 @@ import {
 } from "@/lib/ai/capabilities/gate";
 import { userDayKey } from "@/lib/tz/format";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
+import { calendarDaysUntil } from "@/lib/measurement-reminders/due-day";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { DASHBOARD_REFETCH_INTERVAL_MS } from "@/lib/queries/refetch-interval";
 import { isArrivalKind } from "@/lib/arrivals/types";
@@ -71,7 +72,8 @@ import {
 const SYNC_ISSUE_STATES = ["error_reauth", "parked"] as const;
 
 /**
- * How far ahead the rail mentions a booked appointment: today or tomorrow.
+ * How far ahead the rail mentions a booked appointment: the next 48 hours, on
+ * top of everything booked for the local today.
  *
  * The rail is a "what about today" surface, so anything further out is not a
  * thing to act on this morning. Two days rather than one because an evening
@@ -79,6 +81,9 @@ const SYNC_ISSUE_STATES = ["error_reauth", "parked"] as const;
  * from them.
  */
 const UPCOMING_VISIT_WINDOW_MS = 2 * 24 * 60 * 60 * 1000;
+
+/** Defensive cap on how many planned visits the rail read returns. */
+const UPCOMING_VISIT_READ_LIMIT = 10;
 
 /** Defensive cap on how many overdue reminders we read for the rail summary. */
 const PREVENTIVE_DUE_READ_LIMIT = 20;
@@ -372,9 +377,8 @@ export async function loadDailyDigest(
   // First instant of the user's NEXT local day (profile tz) — bounds the
   // dose-window rail to today's business. `getUserTodayBounds` returns the
   // inclusive last millisecond of today; +1 ms is exactly tomorrow's start.
-  const todayEndExclusive = new Date(
-    getUserTodayBounds(now, user.timezone).end.getTime() + 1,
-  );
+  const todayBounds = getUserTodayBounds(now, user.timezone);
+  const todayEndExclusive = new Date(todayBounds.end.getTime() + 1);
 
   const [
     { body: snapshot, locale },
@@ -384,7 +388,7 @@ export async function loadDailyDigest(
     planRows,
     ecgRow,
     arrivalRows,
-    nextVisitRow,
+    visitRows,
     coachAi,
     reactionLinesAi,
   ] = await Promise.all([
@@ -402,14 +406,19 @@ export async function loadDailyDigest(
       // sites carry this exclusion; `encounter-reminder-exclusion.test.ts`
       // proves every one of them, and the DTO mapper refuses such a row
       // outright so a site that lost its filter fails loudly.
+      //
+      // Due TODAY or overdue: anything whose due instant falls before the end
+      // of the person's local day, not only what has passed by now. Since
+      // v1.39.2 an open check-up keeps its due date after the reminder, so
+      // the overdue ones stay here until they are done, skipped or snoozed.
       where: {
         userId: user.id,
         enabled: true,
         deletedAt: null,
         origin: { not: "ENCOUNTER" },
-        nextDueAt: { not: null, lte: now },
+        nextDueAt: { not: null, lt: todayEndExclusive },
       },
-      select: { label: true },
+      select: { label: true, origin: true },
       orderBy: { nextDueAt: "asc" },
       take: PREVENTIVE_DUE_READ_LIMIT,
     }),
@@ -460,20 +469,22 @@ export async function loadDailyDigest(
         generatedAt: true,
       },
     }),
-    // The next PLANNED visit inside the two-day horizon. Read straight off the
-    // visit table, never off the reminder engine — see the mapping below for
-    // why the exclusion above must stay untouched.
-    prisma.encounter.findFirst({
+    // Every PLANNED visit from the start of the local today to the end of the
+    // two-day horizon. Read straight off the visit table, never off the
+    // reminder engine — see the mapping below for why the exclusion above
+    // must stay untouched.
+    prisma.encounter.findMany({
       where: {
         userId: user.id,
         deletedAt: null,
         status: "PLANNED",
         occurredAt: {
-          gt: now,
+          gte: todayBounds.start,
           lte: new Date(now.getTime() + UPCOMING_VISIT_WINDOW_MS),
         },
       },
       orderBy: { occurredAt: "asc" },
+      take: UPCOMING_VISIT_READ_LIMIT,
       select: {
         id: true,
         kind: true,
@@ -531,12 +542,9 @@ export async function loadDailyDigest(
     state: row.state,
   }));
 
-  const preventiveDue: DailyDigestPreventiveDue[] = dueReminders.map((row) => ({
-    label: row.label,
-  }));
-
   /**
-   * The appointment falling today or tomorrow, read from the VISIT table.
+   * The booked visits of the local today and the next 48 hours, read from the
+   * VISIT table.
    *
    * Not from the reminder table. An ENCOUNTER-origin reminder is excluded from
    * every preventive-care read, which is right — an appointment is not a
@@ -545,18 +553,18 @@ export async function loadDailyDigest(
    * in, and the exclusion above stays exactly as it is. A diff here that
    * touches `origin` is the wrong fix.
    *
-   * `occurredAt > now` deliberately, not `>= todayStart`: an appointment that
-   * has already happened today is not something to be reminded about, and the
-   * person is more likely to be at it than looking at this.
+   * `occurredAt >= todayStart`, not `> now`: a visit's reminder fires at its
+   * start time, and a rail that dropped the visit at that very moment showed a
+   * notification about something the start page no longer mentioned. A visit
+   * that is still PLANNED stays on the rail until its day ends.
    */
-  const upcomingVisit: DailyDigestUpcomingVisit | null = nextVisitRow
-    ? {
-        id: nextVisitRow.id,
-        kind: nextVisitRow.kind,
-        occurredAt: nextVisitRow.occurredAt.toISOString(),
-        practitionerName: nextVisitRow.practitioner?.name ?? null,
-      }
-    : null;
+  const upcomingVisits: DailyDigestUpcomingVisit[] = visitRows.map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    occurredAt: row.occurredAt.toISOString(),
+    practitionerName: row.practitioner?.name ?? null,
+    dayOffset: calendarDaysUntil(row.occurredAt, now, user.timezone),
+  }));
 
   // S10 — the freshest ECG recording (device verdict + recordedAt only). The
   // builder decides "new" and gates on the `insights` module. An ECG row only
@@ -626,6 +634,15 @@ export async function loadDailyDigest(
   const resolvedLocale: Locale = locale;
   const { t } = getServerTranslator(resolvedLocale);
 
+  // A Coach-suggested measurement cadence stores its label as a bundle key;
+  // the checkups page and the dashboard card translate it, and so does this
+  // line. A free-text label (every other row) is the person's own words.
+  const preventiveDue: DailyDigestPreventiveDue[] = dueReminders.map((row) => {
+    if (row.origin !== "COACH") return { label: row.label };
+    const translated = t(row.label);
+    return { label: translated === row.label ? row.label : translated };
+  });
+
   // Group the two figures for the reader. `Intl.NumberFormat` is the only
   // locale-aware step the digest takes on its own; everything else it renders
   // comes through the translator.
@@ -655,7 +672,7 @@ export async function loadDailyDigest(
       morningRefreshedToday,
       syncIssues,
       preventiveDue,
-      upcomingVisit,
+      upcomingVisits,
       coachPlans,
       milestone,
       tensionWindow,
