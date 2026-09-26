@@ -491,7 +491,7 @@ jobs:
           echo "Triggering Coolify deploy for ${IMAGE_TAG}@${IMAGE_DIGEST} (source ${BUILD_SHA})."
           response="$(curl --silent --show-error --max-time 30 \
             --write-out "\n__HTTP_STATUS__:%{http_code}" \
-            --request GET "$deploy_url" \
+            --request POST "$deploy_url" \
             --header "Authorization: Bearer $COOLIFY_TOKEN")"
           status="${response##*__HTTP_STATUS__:}"
           body="${response%__HTTP_STATUS__:*}"
