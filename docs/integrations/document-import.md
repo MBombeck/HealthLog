@@ -62,9 +62,11 @@ kind of document. Without it, documents are filed as _Other_ and you can
 change the type in HealthLog.
 
 Tagging a document again, or editing it in Paperless, fires the workflow
-again. That is harmless: HealthLog recognises the Paperless document id and
-answers "already stored". If you delete the document in HealthLog, a later
-re-send does not bring it back.
+again. HealthLog recognises the Paperless document id and answers "already
+stored", so no second copy is made, and if you delete the document in
+HealthLog, a later re-send does not bring it back. Each re-send still carries
+the whole file, so it counts towards the token's hourly upload limit (see
+For operators below).
 
 **What the workflow is not for.** Paperless gives up on a webhook after
 three quick retries and does not retry at all when a request takes longer
@@ -152,13 +154,14 @@ What it does:
   compare), and if you delete it later, the import leaves it deleted. An
   interrupted run simply picks up where it stopped.
 - When HealthLog asks it to slow down, it waits as long as HealthLog says
-  and carries on. By default a document token may upload 120 documents an
-  hour, so an archive of a thousand documents takes a night. Documents
-  HealthLog recognises by their source id do not count towards that; they
-  count towards a separate allowance of 5,000 lookups an hour. Uploads you
-  make yourself
-  in the web app or on your phone are counted separately and are not held
-  up.
+  and carries on. By default a document token may send 120 uploads an hour,
+  so an archive of a thousand documents takes a night. Every upload that
+  sends a file counts, including one HealthLog answers as already stored.
+  Documents the script recognises by asking first are not uploaded and do
+  not count; those questions draw on a separate allowance of 5,000 an hour
+  per token. When that allowance is spent, the script waits for it like it
+  waits for the upload limit. Uploads you make yourself in the web app or on
+  your phone are counted separately and are not held up.
 - At the end it prints how many documents were imported, how many were
   already there, how many you had deleted, and every document it skipped
   with the reason. It exits with `0` when everything went through, `3` when
@@ -221,10 +224,16 @@ per account: if you push documents from two other systems, make sure their
 ids cannot collide, for example by prefixing them (`nextcloud-123`,
 `scanner-123`).
 
+The same file sent under a different id is stored once, and HealthLog
+remembers the extra id for it, up to 20 extra ids per document. A 21st is
+refused with `409` (`documents.inbound.sourceAliasLimit`) and nothing is
+stored or remembered; the script lists such a document as skipped.
+
 ## For operators
 
-`DOCUMENT_UPLOAD_LIMIT_PER_HOUR` sets how many documents one document token
-may upload per hour (default `120`, clamped to 1–1000). It applies to
+`DOCUMENT_UPLOAD_LIMIT_PER_HOUR` sets how many uploads one document token
+may send per hour (default `120`, clamped to 1–1000). Every upload that
+sends a file counts, duplicates included. It applies to
 document tokens only; uploads from the web app and the phone keep their own
 limit of 60 per hour per person. Raise it to let a large import finish
 faster; the storage limit still applies. The variable is on the
