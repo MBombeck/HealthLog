@@ -112,54 +112,91 @@ export async function resetBackupJourney(): Promise<void> {
 }
 
 /**
- * Copy one stored snapshot and flip a single character of its ciphertext.
+ * Copy one stored snapshot and flip a single byte of its ciphertext.
  *
- * `DataBackup.data` is `~hlgcm1.<keyId>.<base64(iv | ciphertext | authTag)>`
- * (see `src/lib/crypto.ts`), so the flip lands four fifths of the way in —
- * well past the header, inside the ciphertext the tag covers. The replacement
- * stays inside the base64 alphabet, so what the restore meets is a
- * well-formed envelope whose authentication tag no longer matches, and not a
- * decoder error standing in for one.
+ * Since v1.39.2 a stored copy is a row in `data_backups` that names its
+ * pieces (`chunk_count`, `chunk_stream_id`) and ordered, separately sealed
+ * pieces in `data_backup_chunks`. Each piece is `iv | ciphertext | tag`
+ * under AES-256-GCM (see `src/lib/export/backup-chunks.ts`), so a byte four
+ * fifths of the way into the middle piece sits inside ciphertext its tag
+ * covers: what the restore meets is a well-formed copy whose one piece no
+ * longer authenticates, not a missing or reordered piece.
  *
  * A COPY rather than the row itself: the journey still needs the good
  * snapshot afterwards, and a control that destroys its own subject can only
- * be run once.
+ * be run once. The copy keeps the original stream id, which the pieces'
+ * sealed headers are bound to, so the only fault in it is the flipped byte.
  */
 export async function storeTamperedCopy(backupId: string): Promise<string> {
   return withPool(async (pool) => {
     const { rows } = await pool.query<{
       user_id: string;
-      data: string;
-    }>(`SELECT user_id, data FROM data_backups WHERE id = $1`, [backupId]);
+      chunk_count: number | null;
+      chunk_stream_id: string | null;
+    }>(
+      `SELECT user_id, chunk_count, chunk_stream_id FROM data_backups WHERE id = $1`,
+      [backupId],
+    );
     if (rows.length !== 1) {
       throw new Error(`no stored backup ${backupId} to copy`);
     }
-    const stored = rows[0].data;
-    const at = Math.floor(stored.length * 0.8);
-    const original = stored[at];
-    if (!/[A-Za-z0-9+/]/.test(original)) {
+    const { user_id, chunk_count, chunk_stream_id } = rows[0];
+    if (!chunk_count || !chunk_stream_id) {
+      throw new Error(`stored backup ${backupId} is not kept in pieces`);
+    }
+    const { rows: pieces } = await pool.query<{ seq: number; data: Buffer }>(
+      `SELECT seq, data FROM data_backup_chunks WHERE backup_id = $1 ORDER BY seq`,
+      [backupId],
+    );
+    if (pieces.length !== chunk_count) {
       throw new Error(
-        `the byte at ${at} of the stored blob is '${original}', not ciphertext base64`,
+        `stored backup ${backupId} names ${chunk_count} pieces but has ${pieces.length}`,
       );
     }
-    const flipped = original === "A" ? "B" : "A";
-    const tampered = stored.slice(0, at) + flipped + stored.slice(at + 1);
-    if (tampered === stored) {
+
+    const target = pieces[Math.floor(pieces.length / 2)];
+    const at = Math.floor(target.data.length * 0.8);
+    const tampered = Buffer.from(target.data);
+    tampered[at] ^= 0x01;
+    if (tampered.equals(target.data)) {
       throw new Error("the tamper changed nothing");
     }
 
-    const { rows: created } = await pool.query<{ id: string }>(
-      `INSERT INTO data_backups (id, user_id, type, data, created_at)
-       VALUES ($1, $2, $3, $4, now())
-       RETURNING id`,
-      [
-        `c${Date.now().toString(36)}tampered${Math.floor(Math.random() * 1e6)}`,
-        rows[0].user_id,
-        `MANUAL_UPLOAD_${Date.now()}`,
-        tampered,
-      ],
-    );
-    return created[0].id;
+    const copyId = `c${Date.now().toString(36)}tampered${Math.floor(Math.random() * 1e6)}`;
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `INSERT INTO data_backups (id, user_id, type, data, chunk_count, chunk_stream_id, created_at)
+         VALUES ($1, $2, $3, NULL, $4, $5, now())`,
+        [
+          copyId,
+          user_id,
+          `MANUAL_UPLOAD_${Date.now()}`,
+          chunk_count,
+          chunk_stream_id,
+        ],
+      );
+      for (const piece of pieces) {
+        await client.query(
+          `INSERT INTO data_backup_chunks (id, backup_id, seq, data)
+           VALUES ($1, $2, $3, $4)`,
+          [
+            `${copyId}p${piece.seq}`,
+            copyId,
+            piece.seq,
+            piece.seq === target.seq ? tampered : piece.data,
+          ],
+        );
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+    return copyId;
   });
 }
 
