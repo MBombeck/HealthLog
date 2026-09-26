@@ -275,11 +275,14 @@ describe("migration 0355", () => {
         updatedAt: new Date("2026-09-26T07:02:00.000Z"),
       },
       {
+        // Snoozed a minute after the send to a day well past a week out, so
+        // only the snooze cursor tells it apart from a roll-on.
         id: "snoozed",
         data: {
-          snoozedUntil: new Date("2026-10-03T07:00:00.000Z"),
-          nextDueAt: new Date("2026-10-03T07:00:00.000Z"),
+          snoozedUntil: new Date("2026-11-02T08:00:00.000Z"),
+          nextDueAt: new Date("2026-11-02T08:00:00.000Z"),
         },
+        updatedAt: new Date("2026-09-26T07:01:00.000Z"),
       },
       {
         // Edited two days after the send: the last write is not the roll-on.
