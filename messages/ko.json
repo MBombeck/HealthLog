@@ -8527,6 +8527,7 @@
       "inDays": "{days}일 후"
     },
     "overdueByDays": "{days}일 지남",
+    "overdueSinceYesterday": "어제부터 지남",
     "cadence": {
       "everyNDays": "{days}일마다",
       "custom": "사용자 지정 일정",

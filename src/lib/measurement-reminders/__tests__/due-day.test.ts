@@ -16,7 +16,7 @@
  */
 import { describe, it, expect } from "vitest";
 
-import { relativeDueKey } from "../due-day";
+import { isOverdueDue, relativeDueKey } from "../due-day";
 
 /**
  * The profile zone under test. July is deliberate: no IANA zone shifts its
@@ -84,11 +84,33 @@ describe("relativeDueKey", () => {
     ).toEqual(TOMORROW);
   });
 
-  it("counts a checkup from yesterday as one day overdue, however recent", () => {
-    // Forty-five minutes in the past. It was still yesterday's checkup.
+  it("calls a checkup from yesterday overdue since yesterday, however recent", () => {
+    // Forty-five minutes in the past. It was still yesterday's checkup. Its
+    // own phrase, because "overdue by 1 days" is what the counted form reads
+    // as on the one day an open check-up is most likely to be looked at.
     expect(
       relativeDueKey(zoned(FRIDAY, 23, 30), at(SATURDAY, 0, 15), ZONE),
-    ).toEqual({ key: "measurementReminders.overdueByDays", days: 1 });
+    ).toEqual({ key: "measurementReminders.overdueSinceYesterday", days: 1 });
+  });
+
+  it("counts the days for a checkup overdue longer than that", () => {
+    expect(relativeDueKey(zoned(FRIDAY, 9), at(FRIDAY + 2, 10), ZONE)).toEqual({
+      key: "measurementReminders.overdueByDays",
+      days: 2,
+    });
+  });
+
+  it("reads both overdue phrases as overdue, and nothing else", () => {
+    const now = at(SATURDAY, 12);
+    expect(isOverdueDue(relativeDueKey(zoned(FRIDAY, 9), now, ZONE))).toBe(
+      true,
+    );
+    expect(isOverdueDue(relativeDueKey(zoned(FRIDAY - 3, 9), now, ZONE))).toBe(
+      true,
+    );
+    expect(isOverdueDue(relativeDueKey(zoned(SATURDAY, 9), now, ZONE))).toBe(
+      false,
+    );
   });
 
   it("counts whole calendar days for a checkup further out", () => {

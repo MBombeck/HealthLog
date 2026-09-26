@@ -8527,6 +8527,7 @@
       "inDays": "Tra {days} giorni"
     },
     "overdueByDays": "In ritardo di {days} giorni",
+    "overdueSinceYesterday": "In ritardo da ieri",
     "cadence": {
       "everyNDays": "Ogni {days} giorni",
       "custom": "Pianificazione personalizzata",

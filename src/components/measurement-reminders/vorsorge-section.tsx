@@ -47,7 +47,10 @@ import {
   useDisplayTimezone,
 } from "@/lib/i18n/context";
 import { relativeCalendarDate } from "@/lib/i18n/relative-time";
-import { relativeDueKey } from "@/lib/measurement-reminders/due-day";
+import {
+  isOverdueDue,
+  relativeDueKey,
+} from "@/lib/measurement-reminders/due-day";
 import { cn } from "@/lib/utils";
 import { applyOrder, useModuleListPrefs } from "@/lib/module-list-prefs";
 import { EncounterSheet } from "@/components/encounters/encounter-sheet";
@@ -899,8 +902,7 @@ function VorsorgeCard({
   // routes to the check-in page), never the numeric value-entry wording.
   const isScreening = isScreeningReminderType(reminder.measurementType);
   const isDue =
-    due.key === "measurementReminders.nextDue.today" ||
-    due.key === "measurementReminders.overdueByDays";
+    due.key === "measurementReminders.nextDue.today" || isOverdueDue(due);
   const progress = intervalProgress(reminder, now);
 
   // Category-style header badge: the measurement label, or "self-planned"
@@ -1361,7 +1363,7 @@ function VorsorgeCard({
   // normal muted-resolved date. The card surface stays neutral per the house
   // rule; only this inline label carries the status hue.
   const dueIsToday = due.key === "measurementReminders.nextDue.today";
-  const dueIsOverdue = due.key === "measurementReminders.overdueByDays";
+  const dueIsOverdue = isOverdueDue(due);
   const nextLastSlot = (
     <div className="min-h-[2.75rem] space-y-1.5 text-sm">
       <div className="text-muted-foreground flex items-baseline justify-between gap-3">

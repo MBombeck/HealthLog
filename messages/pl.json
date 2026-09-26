@@ -8527,6 +8527,7 @@
       "inDays": "Za {days} dni"
     },
     "overdueByDays": "Zaległe od {days} dni",
+    "overdueSinceYesterday": "Zaległe od wczoraj",
     "cadence": {
       "everyNDays": "Co {days} dni",
       "custom": "Własny harmonogram",

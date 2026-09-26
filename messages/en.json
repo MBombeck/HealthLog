@@ -8527,6 +8527,7 @@
       "inDays": "In {days} days"
     },
     "overdueByDays": "Overdue by {days} days",
+    "overdueSinceYesterday": "Overdue since yesterday",
     "cadence": {
       "everyNDays": "Every {days} days",
       "custom": "Custom schedule",

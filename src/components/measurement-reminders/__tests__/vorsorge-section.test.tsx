@@ -275,7 +275,9 @@ describe("<VorsorgeSection> loading + empty", () => {
     } as MeasurementReminder;
     remindersMock.mockReturnValue({ data: [reminder], isLoading: false });
     const html = render(<VorsorgeSection />);
-    expect(html).toContain("Overdue by 1 days");
+    // One day over reads "since yesterday": the counted form printed
+    // "Overdue by 1 days", and the warning hue must follow both phrases.
+    expect(html).toContain("Overdue since yesterday");
     expect(html).toContain("text-warning");
   });
 
