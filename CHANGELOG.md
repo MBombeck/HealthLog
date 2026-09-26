@@ -1,5 +1,134 @@
 # Changelog
 
+## [1.39.2] — 2026-09-26
+
+Documents can be brought over from Paperless-ngx and Papra, conditions
+get a body site with a view of everything filed at one place on the body,
+open check-ups stay due after their reminder, and backups of very large
+accounts work in the standard 1 GB container.
+
+### Added
+
+- **Document import from Paperless-ngx and Papra.** Settings, API &
+  Tokens has a Document tokens card. A document token (scope
+  `documents:write`, 365 days, at most ten live per person) can upload to
+  your own vault and do nothing else; its upload answers only
+  `{ id, duplicate }`. `scripts/import-documents.mjs` copies every
+  document with a chosen tag from Paperless-ngx 2.16 or later or from
+  Papra, with title and date, and supports `--since`, a dry run and
+  `--ai-read`. A Paperless-ngx 3.0 workflow can post new documents
+  directly. Each document remembers its source system and id, shown on
+  the document as "Imported from … · ID …". Re-sending a known source id
+  answers `200` as a duplicate; a source id whose document you deleted
+  answers `200` with `deleted: true` and stores nothing, also after the
+  document is purged. A file you already had is recognised by its
+  content, and up to 20 extra source ids are remembered per document
+  (`409 documents.inbound.sourceAliasLimit` past that).
+  `GET /api/documents/inbound/source` answers whether a source id is
+  known without sending the file; it and a source id in the upload's
+  query string share an allowance of 5,000 an hour. Uploads by a document
+  token have their own hourly limit, `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`
+  (default 120, 1 to 1000), so an import never holds up your own uploads.
+  Thanks to @AntonPalmqvist for #1038 and to the self-hoster behind #938.
+- **Hold AI reading back for imports.** An upload with `aiRead=defer` gets
+  a preview and a local text index but is not summarised, not staged for
+  lab import and not sent to a provider by any automatic path, including
+  the summary catch-up after switching auto-read on and Index all for
+  search. Read with AI or Generate summary on the document ends the hold.
+  The import script defers by default.
+- **Body site on conditions.** A condition takes a body site in your own
+  words, stored encrypted, and an optional side (left, right, both), with
+  suggestions from sites already used. Its page links the site to the new
+  Body sites tab.
+- **Body sites tab in Checkups.** Lists every body site across visits and
+  conditions, grouped regardless of spelling case. Picking a site, and
+  optionally a side, lists the visits and conditions there with their
+  linked documents, lab results and visits. Left or right includes both
+  sides. Conditions appear only with the illness module on and, for
+  someone you share with, only with Illness in their access; links they
+  cannot open show as placeholders. `GET /api/body-sites` serves it.
+  Thanks to @Cnote43 for #1025.
+- **Body site in the doctor report, share page, Coach and MCP.** The
+  conditions table gets a Body site column when at least one condition
+  has a site; the clinician share page, the MCP doctor-visit summary,
+  `get_illness_recovery` and the Coach's illness context carry it too.
+
+### Changed
+
+- **Stored backups are kept in encrypted pieces.** The weekly and manual
+  backup is stored as sealed pieces of about 1 MiB, each checked before a
+  restore, preview or download releases anything, so the size of a backup
+  no longer depends on the app's memory. The limit derived from the heap
+  (about 105 MB in a 1 GB container) is gone; `BACKUP_MAX_STORED_MB`
+  (default 2048) is the only one left. On a test account of 2.6 million
+  readings in a 1 GB container: backup 87 s, preview 20 s, download of the
+  1.4 GB file 25 s, restore about 4.5 minutes, every reading matching.
+  Thanks to @mills1975 for #1031.
+- **A backup is not replaced while it is being restored.** The weekly and
+  manual backup skip an account whose restore is queued or running; the
+  next run catches up. Two backups of the same account at once run one
+  after the other. A backup replaced while it is read answers `409
+backup_changed` ("replaced by a newer one while it was being read")
+  instead of an error that looked like tampering.
+- **Key rotation converts older backups.** Backups stored as one value
+  before this release, uploaded ones included, are converted into pieces
+  under the new key, one at a time and with little memory, keeping their
+  date. A backup that fails its check is left unchanged and counted as an
+  error.
+- SimpleWebAuthn 14 and React 19.3. The passkey algorithm list is pinned,
+  so existing passkeys keep working.
+
+### Fixed
+
+- **A reminder moved an open check-up to its next date.** Sending a
+  reminder advanced `nextDueAt` by a full cycle without the check-up being
+  done, so a questionnaire every 14 days read as due in two weeks and a
+  yearly check-up as due next year, and neither showed on the start page.
+  A reminder that repeats less often than weekly, once only, or has no
+  occurrence left now stays due until a qualifying reading, done, skip or
+  snooze, and is resent at most once a week while open (new
+  `lastNotifiedAt`). Weekly or more frequent reminders roll on as before.
+  Migration `0355` returns reminders moved this way in the last 90 days to
+  the day they were reminded, only where the notification record shows it
+  unambiguously.
+- **Editing a check-up rescheduled it.** Saving any change recomputed the
+  due date from now, and the web form resent its first date shifted to the
+  browser's midnight. Only a change to the interval, rule or first date
+  (compared by calendar day) reschedules now; a notify-hour change keeps
+  the day, and switching a check-up off and on keeps an open slot.
+- **The start page missed check-ups and visits due today.** Check-ups due
+  today show by name (up to three, then "+N") from the morning of the due
+  day; every visit booked today stays for the whole day, with the next day
+  within 48 hours as a second item; both always keep a place among the
+  three items. Layouts saved before visits were a start page item get
+  them switched on once.
+- "Overdue by 1 days" reads "Overdue since yesterday".
+- **A restore changed Apple Health daily averages.** Restoring a backup
+  marked daily averages from the nightly clean-up as coming from an
+  unknown older source; they now come back exactly as saved.
+- **Key rotation counted every weekly backup as an error.** Since 1.38.6
+  rotation could not re-encrypt backups written as one stream, so it never
+  finished clean.
+
+### Upgrade notes
+
+- Take a database backup before upgrading.
+- Migrations: `0352` stores backups in pieces, `0353` adds the source of
+  imported documents, the deferred-reading marker and the tables that keep
+  deleted imports deleted, `0354` adds body site and side to conditions,
+  `0355` adds `last_notified_at`, repairs check-ups a reminder had moved
+  on and switches visits on for older start page layouts. None deletes
+  anything.
+- Going back to 1.39.1 is not supported: it cannot read backups stored in
+  pieces. Restore the database backup from before the upgrade instead.
+- 1 GB is the minimum memory for the container that runs background jobs;
+  in 512 MB no backup can run.
+- If a key rotation reported errors for `data_backups` before, run it
+  again after updating, before retiring the old key.
+- The API changes are additive, and iPhone app 1.0.3 and 1.0.4 keep
+  working. A condition edit that leaves out `bodySite` or `laterality`
+  keeps the stored values.
+
 ## [1.39.1] — 2026-09-25
 
 Medication history stops counting misses from before a medication existed,
