@@ -159,8 +159,8 @@ What it does:
   sends a file counts, including one HealthLog answers as already stored.
   Documents the script recognises by asking first are not uploaded and do
   not count; those questions draw on a separate allowance of 5,000 an hour
-  per token. When that allowance is spent, the script waits for it like it
-  waits for the upload limit. Uploads you make yourself in the web app or on
+  per token. When that allowance is spent, the script simply uploads the
+  document, which then counts as one upload. Uploads you make yourself in the web app or on
   your phone are counted separately and are not held up.
 - At the end it prints how many documents were imported, how many were
   already there, how many you had deleted, and every document it skipped
