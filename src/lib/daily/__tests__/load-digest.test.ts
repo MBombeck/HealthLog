@@ -302,6 +302,22 @@ describe("loadDailyDigest — AI parts", () => {
   });
 });
 
+/** A reminder row as the preventive read selects it; due this morning. */
+function reminderRow(over: Record<string, unknown> = {}) {
+  return {
+    label: "Skin check",
+    origin: "VORSORGE",
+    intervalDays: null,
+    rrule: "FREQ=YEARLY;INTERVAL=1",
+    anchorDate: null,
+    notifyHour: 9,
+    lastSatisfiedAt: null,
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    nextDueAt: new Date("2026-07-17T07:00:00.000Z"),
+    ...over,
+  };
+}
+
 // v1.39.2 — the two reads behind the check-up and visit rail items. NOW is
 // 11:00 in Berlin on 2026-07-17, so the local day runs 2026-07-16T22:00Z to
 // 2026-07-17T22:00Z.
@@ -370,8 +386,8 @@ describe("loadDailyDigest — due check-ups and today's visits", () => {
       await import("@/lib/i18n/server-translator");
     vi.mocked(getServerTranslator).mockReturnValueOnce({ t } as never);
     vi.mocked(prisma.measurementReminder.findMany).mockResolvedValueOnce([
-      { label: "coach.cadence.bp7day.label", origin: "COACH" },
-      { label: "coach.cadence.bp7day.label", origin: "VORSORGE" },
+      reminderRow({ label: "coach.cadence.bp7day.label", origin: "COACH" }),
+      reminderRow({ label: "coach.cadence.bp7day.label" }),
     ] as never);
 
     await loadDailyDigest(USER, NOW);
@@ -379,5 +395,57 @@ describe("loadDailyDigest — due check-ups and today's visits", () => {
     expect(t).toHaveBeenCalledWith("daily.item.preventiveCare.bodyManyNamed", {
       labels: "Blood pressure week, coach.cadence.bp7day.label",
     });
+  });
+
+  // Watched red: with every reminder due before the end of the day on the
+  // rail, a daily weigh-in at 20:00 read "check-up due" from the morning on.
+  it("shows a reminder that stays due from the morning of its day", async () => {
+    vi.mocked(prisma.measurementReminder.findMany).mockResolvedValueOnce([
+      reminderRow({
+        label: "PHQ-9",
+        measurementType: "PHQ9_SCORE",
+        rrule: null,
+        intervalDays: 14,
+        nextDueAt: new Date("2026-07-17T16:00:00.000Z"), // 18:00 today
+      }),
+    ] as never);
+
+    const digest = await loadDailyDigest(USER, NOW);
+
+    expect(digest.worthALook.map((i) => i.kind)).toContain("preventive_care");
+  });
+
+  it("leaves a short-cycle reminder due later today off until its time", async () => {
+    vi.mocked(prisma.measurementReminder.findMany).mockResolvedValueOnce([
+      reminderRow({
+        label: "Weigh-in",
+        measurementType: "WEIGHT",
+        rrule: null,
+        intervalDays: 1,
+        notifyHour: 20,
+        nextDueAt: new Date("2026-07-17T18:00:00.000Z"), // 20:00 today
+      }),
+    ] as never);
+
+    const digest = await loadDailyDigest(USER, NOW);
+
+    expect(digest.worthALook.map((i) => i.kind)).not.toContain(
+      "preventive_care",
+    );
+  });
+
+  it("shows a short-cycle reminder once its time has come", async () => {
+    vi.mocked(prisma.measurementReminder.findMany).mockResolvedValueOnce([
+      reminderRow({
+        label: "Weigh-in",
+        rrule: null,
+        intervalDays: 1,
+        nextDueAt: new Date("2026-07-17T06:00:00.000Z"), // 08:00 today
+      }),
+    ] as never);
+
+    const digest = await loadDailyDigest(USER, NOW);
+
+    expect(digest.worthALook.map((i) => i.kind)).toContain("preventive_care");
   });
 });

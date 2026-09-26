@@ -1354,13 +1354,24 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
 
   it("keeps a due check-up on a full rail", () => {
     const d = buildDailyDigest(
-      input({ ...crowd, preventiveDue: [{ label: "Skin check" }] }),
+      input({
+        ...crowd,
+        preventiveDue: [{ label: "Skin check", staysDue: true }],
+      }),
       t,
     );
     expect(d.worthALook).toHaveLength(MAX_WORTH_A_LOOK);
     expect(d.worthALook.map((i) => i.kind)).toContain("preventive_care");
     // The overdue dose still leads; the pinned item takes a later slot.
     expect(d.worthALook[0].kind).toBe("dose_window");
+  });
+
+  it("does not pin a short-cycle reminder: it rolls on anyway", () => {
+    const d = buildDailyDigest(
+      input({ ...crowd, preventiveDue: [{ label: "Weigh-in" }] }),
+      t,
+    );
+    expect(d.worthALook.map((i) => i.kind)).not.toContain("preventive_care");
   });
 
   it("keeps today's visit on a full rail", () => {
@@ -1375,7 +1386,7 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
     const d = buildDailyDigest(
       input({
         ...crowd,
-        preventiveDue: [{ label: "Skin check" }],
+        preventiveDue: [{ label: "Skin check", staysDue: true }],
         upcomingVisits: [visit()],
       }),
       t,

@@ -878,4 +878,49 @@ describe("runMeasurementReminderTick", () => {
     // The evening slot of the same day.
     expect(updates[0].data.nextDueAt).toEqual(new Date("2026-06-15T17:00:00Z"));
   });
+
+  it("skips an already-reminded open slot outside its hour before any read", async () => {
+    const { prisma } = makePrisma({
+      reminders: [
+        checkup({
+          nextDueAt: new Date("2026-06-14T07:00:00Z"),
+          lastNotifiedAt: new Date("2026-06-14T07:00:04Z"),
+        }),
+      ],
+      labMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    const summary = await runMeasurementReminderTick(
+      prisma as never,
+      new Date("2026-06-15T12:00:00Z"), // 14:00 Berlin
+      { dispatch },
+    );
+
+    expect(summary.skippedOutsideWindow).toBe(1);
+    expect(prisma.labResult.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("still polls an already-reminded open slot for a result in its hour", async () => {
+    const takenAt = new Date("2026-06-14T18:00:00Z");
+    const { prisma, updates } = makePrisma({
+      reminders: [
+        checkup({
+          nextDueAt: new Date("2026-06-14T07:00:00Z"),
+          lastNotifiedAt: new Date("2026-06-14T07:00:04Z"),
+        }),
+      ],
+      labMatch: { takenAt },
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    const summary = await runMeasurementReminderTick(
+      prisma as never,
+      NINE_LOCAL,
+      { dispatch },
+    );
+
+    expect(summary.autoResolved).toBe(1);
+    expect(updates[0].data.lastSatisfiedAt).toEqual(takenAt);
+  });
 });

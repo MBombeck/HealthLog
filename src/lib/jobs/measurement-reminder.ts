@@ -19,7 +19,7 @@
  *      gated on `lastNotifiedAt` (see `isCheckupRepeatHeld`). A reminder on
  *      a weekly or shorter cycle rolls on to its next slot, which is the
  *      next nudge anyway, and an appointment (`origin: ENCOUNTER`) is
- *      one-shot and closes (see `staysDueAfterReminder`). The per-day claim
+ *      one-shot and closes (see `holdsOpenAfterReminder`). The per-day claim
  *      in `notification_events` stays the guard against a second send on
  *      the same local day.
  *   2. Auto-resolve from an incoming measurement. Before deciding to
@@ -57,6 +57,7 @@ import { findSatisfyingEvent } from "@/lib/measurement-reminders/resolve";
 import { satisfyReminder } from "@/lib/measurement-reminders/satisfy";
 import { evaluateCoachContextReminders } from "@/lib/ai/coach/context-reminders";
 import { calendarDaysUntil } from "@/lib/measurement-reminders/due-day";
+import { holdsOpenAfterReminder } from "@/lib/measurement-reminders/holds-open";
 
 /**
  * v1.18.0 — map a reminder's `measurementType` to the toggleable module
@@ -96,45 +97,8 @@ function moduleForMeasurementType(
  */
 const DUE_QUERY_SLACK_MS = 15 * 60_000;
 
-/**
- * Calendar days an open reminder waits before it is sent again, and the cycle
- * length at or under which a reminder rolls on instead of staying due: a
- * weekly or daily reminder's own next slot comes round at least as soon as the
- * repeat would.
- */
+/** Calendar days an open reminder waits before it is sent again. */
 export const CHECKUP_REPEAT_DAYS = 7;
-
-/**
- * v1.39.2 — whether a delivered reminder leaves the row due.
- *
- * Decided by the cycle length, not by what the reminder asks for. A reminder
- * whose next slot is more than a week away stays due until it is satisfied (a
- * matching reading or lab result, or "done"), skipped or snoozed: rolling it
- * on would file an open task under a slot weeks or a year away. That held for
- * free-text check-ups and for measurement reminders alike; the report that
- * led here was a fortnightly PHQ-9 and GAD-7 pair that each rolled two weeks
- * forward the morning they were reminded, without either questionnaire being
- * filled. A one-shot (no interval, no rule) has no next slot and also stays
- * due. A reminder on a weekly or shorter cycle rolls on as before, because its
- * next slot is the next reminder anyway; holding a daily course on a missed
- * slot would stall it. A cadence with no next slot left rolls to nothing as
- * before. An appointment (`ENCOUNTER`) always stays one-shot.
- */
-export function staysDueAfterReminder(
-  reminder: {
-    origin?: string | null;
-    intervalDays: number | null;
-    rrule: string | null;
-  },
-  rolledTo: Date | null,
-  timezone: string,
-  now: Date,
-): boolean {
-  if (reminder.origin === "ENCOUNTER") return false;
-  if (reminder.intervalDays === null && reminder.rrule === null) return true;
-  if (rolledTo === null) return false;
-  return calendarDaysUntil(rolledTo, now, timezone) > CHECKUP_REPEAT_DAYS;
-}
 
 /**
  * v1.39.2 — whether an open check-up's repeat nudge is still being held.
@@ -322,6 +286,24 @@ export async function runMeasurementReminderTick(
     try {
       const timezone = reminder.user.timezone || "Europe/Berlin";
 
+      // v1.39.2 — a reminder already sent for its current slot stays in
+      // this scan every tick until it is satisfied. Outside its notify hour
+      // there is nothing it could do this tick, so skip it before the
+      // auto-resolve read: the eventful `reminder-satisfy` worker resolves it
+      // the moment a reading or lab result lands, and the safety-net poll
+      // below still runs for it once a day, in the notify hour. The weekly
+      // hold stays after that poll on purpose, so the safety net is daily
+      // rather than weekly.
+      if (
+        reminder.lastNotifiedAt != null &&
+        reminder.nextDueAt !== null &&
+        reminder.lastNotifiedAt.getTime() >= reminder.nextDueAt.getTime() &&
+        wallClockInTz(now, timezone).hour !== reminder.notifyHour
+      ) {
+        summary.skippedOutsideWindow += 1;
+        continue;
+      }
+
       // ── Auto-resolve from an incoming event ────────────────────────
       // Cheap safety-net poll, in the cron (the eventful `reminder-satisfy`
       // worker is the fast path). A typed reminder resolves from a matching
@@ -485,12 +467,14 @@ export async function runMeasurementReminderTick(
       // Dispatch succeeded. Record the delivery; a check-up keeps its due
       // date (it is still open, and `lastNotifiedAt` holds the repeat to a
       // week), everything else rolls on past this slot.
-      const rolledTo = nextSlotAfterReminder(reminder, timezone, now);
       await prisma.measurementReminder.update({
         where: { id: reminder.id },
-        data: staysDueAfterReminder(reminder, rolledTo, timezone, now)
+        data: holdsOpenAfterReminder(reminder, timezone, now)
           ? { lastNotifiedAt: now }
-          : { nextDueAt: rolledTo, lastNotifiedAt: now },
+          : {
+              nextDueAt: nextSlotAfterReminder(reminder, timezone, now),
+              lastNotifiedAt: now,
+            },
       });
       summary.dispatched += 1;
     } catch (err: unknown) {

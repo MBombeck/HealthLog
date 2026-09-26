@@ -142,6 +142,12 @@ export interface DailyDigestSyncIssue {
 export interface DailyDigestPreventiveDue {
   /** Display label, already resolved (a Coach cadence key is translated). */
   label: string;
+  /**
+   * Whether this reminder stays due after it is sent (a cycle longer than a
+   * week, or none). Only such a reminder earns the check-up item a place
+   * under the rail cap; a short-cycle rhythm rolls on by itself.
+   */
+  staysDue?: boolean;
 }
 
 /**
@@ -670,8 +676,9 @@ function buildUpcomingVisitItems(
 /**
  * The bounded rail: at most `max` items, in priority order, with the pinned
  * items guaranteed a place. A pinned item is one a person can miss for good if
- * the cap drops it today: a check-up that is due or overdue (its reminder has
- * already gone out) and a visit booked for today (the day ends). The rest fill
+ * the cap drops it today: a reminder that stays due and is due or overdue
+ * (its notification has already gone out, and it will not roll on by itself)
+ * and a visit booked for today (the day ends). The rest fill
  * the remaining slots in order, and the result keeps the priority order, so an
  * overdue dose still leads.
  */
@@ -1116,9 +1123,10 @@ export function buildDailyDigest(
   // Due check-ups and today's visits keep their place under the cap (see
   // `capWithPinned`); they still sit below a dose in the displayed order.
   const pinned = new Set<PriorityItem>(
-    [preventive, visits.today].filter(
-      (item): item is PriorityItem => item !== null,
-    ),
+    [
+      input.preventiveDue.some((due) => due.staysDue) ? preventive : null,
+      visits.today,
+    ].filter((item): item is PriorityItem => item !== null),
   );
   // S11 — the calm, informational tension marker sits last: it is context, not
   // an action that expires, so a time-sensitive dose / sync / check-in wins the
