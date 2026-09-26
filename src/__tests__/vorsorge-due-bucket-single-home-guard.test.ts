@@ -52,6 +52,7 @@ const MINTED_ONLY_BY_THE_BUCKET = [
   "measurementReminders.nextDue.tomorrow",
   "measurementReminders.nextDue.inDays",
   "measurementReminders.nextDue.none",
+  "measurementReminders.overdueSinceYesterday",
 ];
 
 /** The hook that yields the zone the surrounding dates are printed in. */

@@ -8527,6 +8527,7 @@
       "inDays": "{days}일 후"
     },
     "overdueByDays": "{days}일 지남",
+    "overdueSinceYesterday": "어제부터 지남",
     "cadence": {
       "everyNDays": "{days}일마다",
       "custom": "사용자 지정 일정",
@@ -10321,7 +10322,7 @@
       "preventiveCare": {
         "title": "건강검진 시기",
         "body": "{label} — 받을 때가 됐어요.",
-        "bodyMany": "건강검진 {count}건을 받을 때가 됐어요."
+        "bodyManyNamed": "받을 때가 된 건강검진: {labels}"
       },
       "syncIssue": {
         "title": "동기화 확인이 필요해요",
@@ -10366,7 +10367,8 @@
       "upcomingVisit": {
         "title": "다가오는 예약",
         "bodyToday": "{what} — 오늘",
-        "bodyTomorrow": "{what} — 내일"
+        "bodyTomorrow": "{what} — 내일",
+        "bodyDayAfterTomorrow": "{what} — 모레"
       }
     },
     "action": {

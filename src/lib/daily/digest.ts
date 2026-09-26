@@ -133,13 +133,20 @@ export interface DailyDigestSyncIssue {
   state: string;
 }
 
-/** A Vorsorge / measurement reminder whose next-due instant has passed. */
+/**
+ * A Vorsorge / measurement reminder that is due today or overdue: its
+ * next-due instant falls before the end of the person's local day. Since
+ * v1.39.2 an open check-up keeps its due date after it is reminded, so this
+ * list holds it until it is done, skipped or snoozed.
+ */
 export interface DailyDigestPreventiveDue {
+  /** Display label, already resolved (a Coach cadence key is translated). */
   label: string;
 }
 
 /**
- * A booked visit falling today or tomorrow.
+ * A booked visit on the person's local today (even once it has started) or
+ * within the next two days.
  *
  * Read off the VISIT table, never off the reminder engine: an appointment's
  * one-shot reminder is excluded from every preventive-care read, and this is
@@ -151,6 +158,12 @@ export interface DailyDigestUpcomingVisit {
   kind: string;
   occurredAt: string;
   practitionerName: string | null;
+  /**
+   * Calendar days from the person's local today, in their profile timezone:
+   * 0 today, 1 tomorrow, 2 the day after. Resolved by the IO seam so the
+   * builder never needs the timezone.
+   */
+  dayOffset: number;
 }
 
 /**
@@ -301,8 +314,13 @@ export interface DailyDigestInput {
   morningRefreshedToday: boolean;
   syncIssues: DailyDigestSyncIssue[];
   preventiveDue: DailyDigestPreventiveDue[];
-  /** The booked visit falling today or tomorrow, or null. Honest-absent. */
-  upcomingVisit?: DailyDigestUpcomingVisit | null;
+  /**
+   * Every booked visit on the local today and within the next two days,
+   * soonest first. Optional so a consumer that predates it stays valid; a
+   * missing value means no visit. The digest DTO has no visit field of its
+   * own: visits reach the wire only as `upcoming_visit` rail items.
+   */
+  upcomingVisits?: readonly DailyDigestUpcomingVisit[];
   /** Standing coach plans (active + reviewed) — check-in candidates (§2.3). */
   coachPlans: DailyDigestCoachPlan[];
   /**
@@ -544,16 +562,32 @@ function buildSyncIssueItems(
   }));
 }
 
-/** A single preventive-care item summarising the due Vorsorge reminders. */
+/** How many due check-ups the rail item names before it counts the rest. */
+const PREVENTIVE_NAMED_MAX = 3;
+
+/**
+ * A single preventive-care item summarising the check-ups that are due today
+ * or overdue. One names itself; several are named up to three, with the rest
+ * counted as "+N" so the line needs no plural form in any language.
+ */
 function buildPreventiveCareItem(
   due: DailyDigestPreventiveDue[],
   t: Translate,
 ): PriorityItem | null {
   if (due.length === 0) return null;
-  const body =
-    due.length === 1
-      ? t("daily.item.preventiveCare.body", { label: due[0].label })
-      : t("daily.item.preventiveCare.bodyMany", { count: due.length });
+  let body: string;
+  if (due.length === 1) {
+    body = t("daily.item.preventiveCare.body", { label: due[0].label });
+  } else {
+    const named = due
+      .slice(0, PREVENTIVE_NAMED_MAX)
+      .map((d) => d.label)
+      .join(", ");
+    const rest = due.length - PREVENTIVE_NAMED_MAX;
+    body = t("daily.item.preventiveCare.bodyManyNamed", {
+      labels: rest > 0 ? `${named} +${rest}` : named,
+    });
+  }
   return {
     kind: "preventive_care",
     title: t("daily.item.preventiveCare.title"),
@@ -570,46 +604,90 @@ function buildPreventiveCareItem(
 }
 
 /**
- * The booked visit falling today or tomorrow, as one rail line.
+ * Booked visits as rail lines: one item for everything booked today, and one
+ * for the next day that has a visit within the two-day horizon.
+ *
+ * Today's item stays for the whole local day, also after the visit's start
+ * time: the visit's reminder fires at that time, and the rail used to drop the
+ * visit at exactly that moment. Several visits on one day share one item and
+ * are named together, so a busy day cannot fill the three-item rail with
+ * appointments alone.
  *
  * No module gate: a visit is core, like the checkups page it lives on. No
  * action beyond opening the page either — there is nothing to do about an
  * appointment except keep it, and a "mark done" here would duplicate the
  * visit's own status field with a second place to set it.
  */
-function buildUpcomingVisitItem(
-  visit: DailyDigestUpcomingVisit | null,
-  now: Date,
+function buildUpcomingVisitItems(
+  visits: readonly DailyDigestUpcomingVisit[],
   t: Translate,
-): PriorityItem | null {
-  if (!visit) return null;
-  const at = new Date(visit.occurredAt);
-  if (Number.isNaN(at.getTime())) return null;
-  // Today vs tomorrow is decided on the SAME instants the read window used, so
-  // a visit admitted by the query can never be described as neither.
-  const hoursAway = (at.getTime() - now.getTime()) / (60 * 60 * 1000);
-  // Through the key resolver, never `encounters.kind.${kind}`: the enum is
-  // `ROUTINE` and the bundle leaf is `routine`, so the interpolated form put
-  // raw dot notation on a lock screen.
-  const what =
-    visit.practitionerName ??
-    t(encounterKindLabelKey(visit.kind as EncounterKind));
-  return {
-    kind: "upcoming_visit",
-    title: t("daily.item.upcomingVisit.title"),
-    body:
-      hoursAway <= 24
-        ? t("daily.item.upcomingVisit.bodyToday", { what })
-        : t("daily.item.upcomingVisit.bodyTomorrow", { what }),
-    status: "info",
-    actions: [
-      {
-        labelKey: "daily.action.viewCheckups",
-        intent: "checkup.view",
-        href: "/checkups",
-      },
-    ],
+): { today: PriorityItem | null; next: PriorityItem | null } {
+  const item = (group: readonly DailyDigestUpcomingVisit[]): PriorityItem => {
+    // Through the key resolver, never `encounters.kind.${kind}`: the enum is
+    // `ROUTINE` and the bundle leaf is `routine`, so the interpolated form put
+    // raw dot notation on a lock screen.
+    const names = group.map(
+      (visit) =>
+        visit.practitionerName ??
+        t(encounterKindLabelKey(visit.kind as EncounterKind)),
+    );
+    const what = Array.from(new Set(names)).join(", ");
+    const offset = group[0].dayOffset;
+    return {
+      kind: "upcoming_visit",
+      title: t("daily.item.upcomingVisit.title"),
+      body:
+        offset <= 0
+          ? t("daily.item.upcomingVisit.bodyToday", { what })
+          : offset === 1
+            ? t("daily.item.upcomingVisit.bodyTomorrow", { what })
+            : t("daily.item.upcomingVisit.bodyDayAfterTomorrow", { what }),
+      status: "info",
+      actions: [
+        {
+          labelKey: "daily.action.viewCheckups",
+          intent: "checkup.view",
+          href: "/checkups",
+        },
+      ],
+    };
   };
+
+  const valid = visits.filter(
+    (visit) => !Number.isNaN(new Date(visit.occurredAt).getTime()),
+  );
+  const today = valid.filter((visit) => visit.dayOffset <= 0);
+  const later = valid.filter((visit) => visit.dayOffset > 0);
+  const nextOffset =
+    later.length > 0 ? Math.min(...later.map((v) => v.dayOffset)) : null;
+  const next = later.filter((visit) => visit.dayOffset === nextOffset);
+  return {
+    today: today.length > 0 ? item(today) : null,
+    next: next.length > 0 ? item(next) : null,
+  };
+}
+
+/**
+ * The bounded rail: at most `max` items, in priority order, with the pinned
+ * items guaranteed a place. A pinned item is one a person can miss for good if
+ * the cap drops it today: a check-up that is due or overdue (its reminder has
+ * already gone out) and a visit booked for today (the day ends). The rest fill
+ * the remaining slots in order, and the result keeps the priority order, so an
+ * overdue dose still leads.
+ */
+function capWithPinned(
+  items: readonly PriorityItem[],
+  pinned: ReadonlySet<PriorityItem>,
+  max: number,
+): PriorityItem[] {
+  const keep = new Set<PriorityItem>();
+  for (const item of items) {
+    if (keep.size < max && pinned.has(item)) keep.add(item);
+  }
+  for (const item of items) {
+    if (keep.size < max) keep.add(item);
+  }
+  return items.filter((item) => keep.has(item));
 }
 
 /**
@@ -993,7 +1071,9 @@ export function buildDailyDigest(
   // Priority order: a due or overdue dose is the most time-sensitive daily
   // action, a broken sync next, then the calm coach check-in, a preventive
   // check-up least urgent. Bounded to 3 — a check-in the cap crowds out
-  // resurfaces on a following day (within its window), never lost.
+  // resurfaces on a following day (within its window), never lost. A due
+  // check-up and today's visits are not left to the order: the cap keeps
+  // them (see `capWithPinned`).
   const worthALook: PriorityItem[] = [];
   worthALook.push(
     ...buildDoseWindowItems(
@@ -1030,12 +1110,16 @@ export function buildDailyDigest(
   // rail because a person reads "what am I meant to arrange" and "where am I
   // meant to be" in one glance, and they stay separate items because one is
   // overdue and the other is simply scheduled.
-  const visit = buildUpcomingVisitItem(
-    input.upcomingVisit ?? null,
-    input.now,
-    t,
+  const visits = buildUpcomingVisitItems(input.upcomingVisits ?? [], t);
+  if (visits.today) worthALook.push(visits.today);
+  if (visits.next) worthALook.push(visits.next);
+  // Due check-ups and today's visits keep their place under the cap (see
+  // `capWithPinned`); they still sit below a dose in the displayed order.
+  const pinned = new Set<PriorityItem>(
+    [preventive, visits.today].filter(
+      (item): item is PriorityItem => item !== null,
+    ),
   );
-  if (visit) worthALook.push(visit);
   // S11 — the calm, informational tension marker sits last: it is context, not
   // an action that expires, so a time-sensitive dose / sync / check-in wins the
   // bounded rail ahead of it.
@@ -1086,7 +1170,7 @@ export function buildDailyDigest(
     topSignal,
     briefingLead,
     line: composeLine(briefingLead, topSignal, input.score, t),
-    worthALook: visible.slice(0, MAX_WORTH_A_LOOK),
+    worthALook: capWithPinned(visible, pinned, MAX_WORTH_A_LOOK),
     justIn,
     reactionLine,
     ai: input.ai,

@@ -9,8 +9,10 @@
  *     logged since the last satisfy advances lastSatisfiedAt + recomputes
  *     nextDueAt and suppresses the nudge. Free-text reminders never
  *     auto-resolve.
- *   - Ledger-free dedup: a successful dispatch advances nextDueAt past
- *     now so the same due cycle never re-fires.
+ *   - A measurement reminder rolls on: a successful dispatch advances
+ *     nextDueAt past now. A check-up (no measurementType, not an
+ *     appointment) does NOT roll on: it stays due until it is done, and a
+ *     second nudge for the same open slot waits a week.
  *   - clientManaged suppresses the APNs leg only: the tick still
  *     dispatches, and a reminder nothing delivered stays overdue.
  *
@@ -136,6 +138,8 @@ interface FakeReminder {
   location: string | null;
   nextDueAt: Date | null;
   lastSatisfiedAt: Date | null;
+  /** v1.39.2 — the last delivered nudge; absent on most fixtures. */
+  lastNotifiedAt?: Date | null;
   enabled: boolean;
   createdAt: Date;
   user: {
@@ -580,5 +584,198 @@ describe("runMeasurementReminderTick", () => {
 
     expect(summary.skippedOutsideWindow).toBe(1);
     expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  // ── v1.39.2 — an open check-up stays due after its reminder ─────────
+  //
+  // Watched red: with the tick advancing every delivered reminder (the
+  // pre-v1.39.2 behaviour), the first two cases fail — the yearly check-up's
+  // update carries a `nextDueAt` a year out, and the dashboard and the digest
+  // then read the open check-up as scheduled for next year.
+  const checkup = (overrides: Partial<FakeReminder> = {}) =>
+    reminder({
+      measurementType: null,
+      intervalDays: null,
+      rrule: "FREQ=YEARLY;INTERVAL=1",
+      nextDueAt: new Date("2026-06-15T07:00:00Z"), // due today at 09:00
+      ...overrides,
+    });
+
+  it("keeps a reminded check-up due and records the delivery instead", async () => {
+    const { prisma, updates } = makePrisma({
+      reminders: [checkup()],
+      labMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    const summary = await runMeasurementReminderTick(
+      prisma as never,
+      NINE_LOCAL,
+      { dispatch },
+    );
+
+    expect(summary.dispatched).toBe(1);
+    expect(updates).toHaveLength(1);
+    expect(updates[0].data).toEqual({ lastNotifiedAt: NINE_LOCAL });
+    expect("nextDueAt" in updates[0].data).toBe(false);
+  });
+
+  it("keeps a Coach-suggested check-up due the same way", async () => {
+    const { prisma, updates } = makePrisma({
+      reminders: [checkup({ origin: "COACH" })],
+      labMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    await runMeasurementReminderTick(prisma as never, NINE_LOCAL, { dispatch });
+
+    expect(updates).toHaveLength(1);
+    expect("nextDueAt" in updates[0].data).toBe(false);
+  });
+
+  it("still rolls a measurement reminder on after its reminder", async () => {
+    const { prisma, updates } = makePrisma({
+      reminders: [reminder({ origin: "COACH" })],
+      measurementMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    await runMeasurementReminderTick(prisma as never, NINE_LOCAL, { dispatch });
+
+    expect(updates).toHaveLength(1);
+    const advanced = updates[0].data.nextDueAt as Date;
+    expect(advanced.getTime()).toBeGreaterThan(NINE_LOCAL.getTime());
+    expect(updates[0].data.lastNotifiedAt).toEqual(NINE_LOCAL);
+  });
+
+  it("still closes an appointment reminder after its one nudge", async () => {
+    const { prisma, updates } = makePrisma({
+      reminders: [
+        reminder({
+          origin: "ENCOUNTER",
+          measurementType: null,
+          intervalDays: null,
+        }),
+      ],
+      labMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    await runMeasurementReminderTick(prisma as never, NINE_LOCAL, { dispatch });
+
+    expect(updates).toHaveLength(1);
+    expect(updates[0].data.nextDueAt).toBeNull();
+  });
+
+  it("does not re-remind an open check-up the day after", async () => {
+    const { prisma } = makePrisma({
+      reminders: [
+        checkup({
+          nextDueAt: new Date("2026-06-14T07:00:00Z"),
+          lastNotifiedAt: new Date("2026-06-14T07:00:04Z"),
+        }),
+      ],
+      labMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    const summary = await runMeasurementReminderTick(
+      prisma as never,
+      NINE_LOCAL,
+      { dispatch },
+    );
+
+    expect(summary.skippedRepeatHeld).toBe(1);
+    expect(claimMock).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("holds the repeat for six days and sends it on the seventh", async () => {
+    const notifiedAt = new Date("2026-06-08T07:00:04Z");
+    const open = checkup({
+      nextDueAt: new Date("2026-06-08T07:00:00Z"),
+      lastNotifiedAt: notifiedAt,
+    });
+
+    const sixDays = makePrisma({ reminders: [open], labMatch: null });
+    const heldDispatch = vi.fn<DispatchFn>(async () => OK);
+    await runMeasurementReminderTick(
+      sixDays.prisma as never,
+      new Date("2026-06-14T07:00:00Z"),
+      { dispatch: heldDispatch },
+    );
+    expect(heldDispatch).not.toHaveBeenCalled();
+
+    // Seven calendar days on, at the same notify hour — a few seconds EARLIER
+    // on the clock than the first send, which an hour count would still read
+    // as "under a week".
+    const sevenDays = makePrisma({ reminders: [open], labMatch: null });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+    const summary = await runMeasurementReminderTick(
+      sevenDays.prisma as never,
+      NINE_LOCAL,
+      { dispatch },
+    );
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(summary.dispatched).toBe(1);
+    expect(sevenDays.updates[0].data).toEqual({ lastNotifiedAt: NINE_LOCAL });
+  });
+
+  it("fires on the day a check-up was snoozed to, whatever the last send", async () => {
+    // A snooze moves `nextDueAt` past the last send: that is a new slot the
+    // person asked for, not a repeat of the old one.
+    const { prisma } = makePrisma({
+      reminders: [
+        checkup({
+          nextDueAt: new Date("2026-06-15T07:00:00Z"),
+          lastNotifiedAt: new Date("2026-06-14T07:00:04Z"),
+        }),
+      ],
+      labMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    await runMeasurementReminderTick(prisma as never, NINE_LOCAL, { dispatch });
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a one-shot check-up due instead of dropping it", async () => {
+    // No cadence at all: rolling it on used to write `nextDueAt: null`, and
+    // the open check-up vanished from every surface.
+    const { prisma, updates } = makePrisma({
+      reminders: [checkup({ rrule: null, intervalDays: null })],
+      labMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    await runMeasurementReminderTick(prisma as never, NINE_LOCAL, { dispatch });
+
+    expect(updates[0].data).toEqual({ lastNotifiedAt: NINE_LOCAL });
+  });
+
+  it("rolls a weekly check-up on, since its next slot is the next nudge", async () => {
+    const { prisma, updates } = makePrisma({
+      reminders: [checkup({ rrule: null, intervalDays: 7 })],
+      labMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    await runMeasurementReminderTick(prisma as never, NINE_LOCAL, { dispatch });
+
+    const advanced = updates[0].data.nextDueAt as Date;
+    expect(advanced.getTime()).toBeGreaterThan(NINE_LOCAL.getTime());
+  });
+
+  it("keeps a fortnightly check-up due", async () => {
+    const { prisma, updates } = makePrisma({
+      reminders: [checkup({ rrule: null, intervalDays: 14 })],
+      labMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    await runMeasurementReminderTick(prisma as never, NINE_LOCAL, { dispatch });
+
+    expect(updates[0].data).toEqual({ lastNotifiedAt: NINE_LOCAL });
   });
 });

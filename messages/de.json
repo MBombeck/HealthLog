@@ -8527,6 +8527,7 @@
       "inDays": "In {days} Tagen"
     },
     "overdueByDays": "Überfällig seit {days} Tagen",
+    "overdueSinceYesterday": "Überfällig seit gestern",
     "cadence": {
       "everyNDays": "Alle {days} Tage",
       "custom": "Eigener Zeitplan",
@@ -10321,7 +10322,7 @@
       "preventiveCare": {
         "title": "Vorsorge fällig",
         "body": "{label} ist fällig.",
-        "bodyMany": "{count} Vorsorgetermine sind fällig."
+        "bodyManyNamed": "Fällig: {labels}"
       },
       "syncIssue": {
         "title": "Synchronisierung braucht Aufmerksamkeit",
@@ -10366,7 +10367,8 @@
       "upcomingVisit": {
         "title": "Termin steht an",
         "bodyToday": "{what} — heute",
-        "bodyTomorrow": "{what} — morgen"
+        "bodyTomorrow": "{what} — morgen",
+        "bodyDayAfterTomorrow": "{what} — übermorgen"
       }
     },
     "action": {

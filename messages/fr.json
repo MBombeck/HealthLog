@@ -8527,6 +8527,7 @@
       "inDays": "Dans {days} jours"
     },
     "overdueByDays": "En retard de {days} jours",
+    "overdueSinceYesterday": "En retard depuis hier",
     "cadence": {
       "everyNDays": "Tous les {days} jours",
       "custom": "Planning personnalisé",
@@ -10321,7 +10322,7 @@
       "preventiveCare": {
         "title": "Examen à faire",
         "body": "{label} est à faire.",
-        "bodyMany": "{count} examens sont à faire."
+        "bodyManyNamed": "À faire : {labels}"
       },
       "syncIssue": {
         "title": "La synchronisation demande votre attention",
@@ -10366,7 +10367,8 @@
       "upcomingVisit": {
         "title": "Rendez-vous à venir",
         "bodyToday": "{what} — aujourd'hui",
-        "bodyTomorrow": "{what} — demain"
+        "bodyTomorrow": "{what} — demain",
+        "bodyDayAfterTomorrow": "{what} — après-demain"
       }
     },
     "action": {

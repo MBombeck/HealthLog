@@ -25,6 +25,13 @@ import type { ModuleKey } from "@/lib/modules/registry";
  * dashboard-layout label. Typed consumers derive from this tuple so stored
  * visibility settings and API validation cannot accept vocabulary the current
  * build does not understand.
+ *
+ * A new kind also needs a data migration that appends it to every stored,
+ * non-empty `enabledHeroItemKinds` list. The layout stores the ENABLED kinds
+ * whenever they are not all of them, so a list saved before the kind existed
+ * reads as "switched off" and the new kind never shows for that person.
+ * `upcoming_visit` shipped without one and stayed hidden that way until
+ * migration 0355 appended it.
  */
 export const PRIORITY_ITEM_KINDS = [
   "coach_checkin",

@@ -8527,6 +8527,7 @@
       "inDays": "En {days} días"
     },
     "overdueByDays": "Vencido hace {days} días",
+    "overdueSinceYesterday": "Vencido desde ayer",
     "cadence": {
       "everyNDays": "Cada {days} días",
       "custom": "Programación personalizada",
@@ -10321,7 +10322,7 @@
       "preventiveCare": {
         "title": "Revisión pendiente",
         "body": "{label} está pendiente.",
-        "bodyMany": "Hay {count} revisiones pendientes."
+        "bodyManyNamed": "Pendientes: {labels}"
       },
       "syncIssue": {
         "title": "La sincronización necesita atención",
@@ -10366,7 +10367,8 @@
       "upcomingVisit": {
         "title": "Cita próxima",
         "bodyToday": "{what}: hoy",
-        "bodyTomorrow": "{what}: mañana"
+        "bodyTomorrow": "{what}: mañana",
+        "bodyDayAfterTomorrow": "{what}: pasado mañana"
       }
     },
     "action": {

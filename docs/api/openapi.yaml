@@ -13274,8 +13274,12 @@ paths:
       tags:
         - MeasurementReminders
       summary: List Vorsorge reminders (v1.17.1)
-      description: Returns the owner's live (non-tombstoned) Vorsorge reminders, sorted by server-computed nextDueAt ascending
-        (nulls last). Each row carries the canonical nextDueAt the client renders without recomputing.
+      description: "Returns the owner's live (non-tombstoned) Vorsorge reminders, sorted by server-computed nextDueAt
+        ascending (nulls last). Each row carries the canonical nextDueAt the client renders without recomputing. Since
+        v1.39.2 a check-up (a reminder with no measurementType) keeps its nextDueAt after its reminder is sent: an open
+        check-up stays due, then overdue, until it is completed, skipped or snoozed, and the server repeats the reminder
+        at most once a week while it stays open. A check-up on a weekly or shorter cadence, and a reminder with a
+        measurementType, still roll on to the next slot after a delivered reminder."
       responses:
         "200":
           description: The owner's measurement reminders.
@@ -13346,8 +13350,11 @@ paths:
       tags:
         - MeasurementReminders
       summary: Edit a Vorsorge reminder (v1.17.1)
-      description: Partial edit; omitted fields are left untouched. nextDueAt is recomputed server-side after the cadence
-        merge. Owner-scoped.
+      description: Partial edit; omitted fields are left untouched. nextDueAt is recomputed server-side only when the edit
+        changes when the reminder recurs (intervalDays, rrule, anchorDate compared by value, or enabled switched back
+        on); that recompute also clears a snooze. A notifyHour-only edit keeps the due day and moves the hour on it. Any
+        other edit (label, location, measurementType) leaves nextDueAt as it is, so an open, overdue check-up stays due.
+        Owner-scoped.
       parameters:
         - in: path
           name: id
@@ -18896,10 +18903,14 @@ paths:
         - Insights
       summary: The unified daily digest
       description: "Assembles the day's read from already-cached data: the nightly briefing lifted read-only from the insights
-        cache, the dashboard-snapshot health score / meds-today / sleep freshness, plus deterministic integration-status
-        and Vorsorge reads for the 'worth a look' rail. No provider call, no warm-on-mount. No module gate and no AI
-        gate: the digest is data, and the `insights` module is the AI analysis opt-out. Its AI parts follow their
-        capabilities, published in `ai`. Cookie or Bearer auth."
+        cache, the dashboard-snapshot health score / meds-today / sleep freshness, plus deterministic
+        integration-status, Vorsorge and visit reads for the 'worth a look' rail. The rail's `preventive_care` item
+        covers every check-up due today or overdue and names up to three of them; `upcoming_visit` items cover every
+        planned visit on the local today (also once it has started, until the day ends) in one item, and the next day
+        with a visit inside the next 48 hours in a second. A due check-up and today's visits always keep a place within
+        the three-item cap. No provider call, no warm-on-mount. No module gate and no AI gate: the digest is data, and
+        the `insights` module is the AI analysis opt-out. Its AI parts follow their capabilities, published in `ai`.
+        Cookie or Bearer auth."
       responses:
         "200":
           description: The daily digest.
@@ -26945,7 +26956,7 @@ components:
         enabled:
           type: boolean
       description: Partial edit of a Vorsorge reminder. Omitted fields are left untouched; nextDueAt is recomputed server-side
-        after the patch applies.
+        when the cadence changes and otherwise kept (a notifyHour edit moves only the hour on the same due day).
     MeasurementReminderSnooze:
       type: object
       properties:

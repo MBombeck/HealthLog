@@ -8527,6 +8527,7 @@
       "inDays": "Tra {days} giorni"
     },
     "overdueByDays": "In ritardo di {days} giorni",
+    "overdueSinceYesterday": "In ritardo da ieri",
     "cadence": {
       "everyNDays": "Ogni {days} giorni",
       "custom": "Pianificazione personalizzata",
@@ -10321,7 +10322,7 @@
       "preventiveCare": {
         "title": "Controllo da fare",
         "body": "{label} è da fare.",
-        "bodyMany": "Ci sono {count} controlli da fare."
+        "bodyManyNamed": "Da fare: {labels}"
       },
       "syncIssue": {
         "title": "La sincronizzazione richiede attenzione",
@@ -10366,7 +10367,8 @@
       "upcomingVisit": {
         "title": "Appuntamento in arrivo",
         "bodyToday": "{what} — oggi",
-        "bodyTomorrow": "{what} — domani"
+        "bodyTomorrow": "{what} — domani",
+        "bodyDayAfterTomorrow": "{what} — dopodomani"
       }
     },
     "action": {

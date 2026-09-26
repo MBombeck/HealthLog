@@ -41,7 +41,7 @@ export const measurementReminderPaths: NonNullable<ZodOpenApiObject["paths"]> =
         tags: ["MeasurementReminders"],
         summary: "List Vorsorge reminders (v1.17.1)",
         description:
-          "Returns the owner's live (non-tombstoned) Vorsorge reminders, sorted by server-computed nextDueAt ascending (nulls last). Each row carries the canonical nextDueAt the client renders without recomputing.",
+          "Returns the owner's live (non-tombstoned) Vorsorge reminders, sorted by server-computed nextDueAt ascending (nulls last). Each row carries the canonical nextDueAt the client renders without recomputing. Since v1.39.2 a check-up (a reminder with no measurementType) keeps its nextDueAt after its reminder is sent: an open check-up stays due, then overdue, until it is completed, skipped or snoozed, and the server repeats the reminder at most once a week while it stays open. A check-up on a weekly or shorter cadence, and a reminder with a measurementType, still roll on to the next slot after a delivered reminder.",
         responses: {
           ...recordRefusal(),
           "200": {
@@ -115,7 +115,7 @@ export const measurementReminderPaths: NonNullable<ZodOpenApiObject["paths"]> =
         tags: ["MeasurementReminders"],
         summary: "Edit a Vorsorge reminder (v1.17.1)",
         description:
-          "Partial edit; omitted fields are left untouched. nextDueAt is recomputed server-side after the cadence merge. Owner-scoped.",
+          "Partial edit; omitted fields are left untouched. nextDueAt is recomputed server-side only when the edit changes when the reminder recurs (intervalDays, rrule, anchorDate compared by value, or enabled switched back on); that recompute also clears a snooze. A notifyHour-only edit keeps the due day and moves the hour on it. Any other edit (label, location, measurementType) leaves nextDueAt as it is, so an open, overdue check-up stays due. Owner-scoped.",
         requestParams: { path: z.object({ id: z.string() }) },
         requestBody: {
           required: true,

@@ -86,6 +86,11 @@ export function relativeDueKey(
   if (Number.isNaN(due.getTime()))
     return { key: "measurementReminders.nextDue.none", days: 0 };
   const deltaDays = calendarDaysUntil(due, new Date(now), timeZone);
+  // Its own phrase rather than the counted one: "overdue by 1 days" is what
+  // the counted form reads as, on the one day an open check-up (which since
+  // v1.39.2 stays due after its reminder) is most likely to be looked at.
+  if (deltaDays === -1)
+    return { key: "measurementReminders.overdueSinceYesterday", days: 1 };
   if (deltaDays < 0)
     return {
       key: "measurementReminders.overdueByDays",
@@ -96,4 +101,16 @@ export function relativeDueKey(
   if (deltaDays === 1)
     return { key: "measurementReminders.nextDue.tomorrow", days: 1 };
   return { key: "measurementReminders.nextDue.inDays", days: deltaDays };
+}
+
+/**
+ * Whether a phrase from {@link relativeDueKey} says "overdue". Two keys do —
+ * "since yesterday" and the counted one — so a surface that colours an
+ * overdue badge asks here rather than comparing against one of them.
+ */
+export function isOverdueDue(due: RelativeDue): boolean {
+  return (
+    due.key === "measurementReminders.overdueByDays" ||
+    due.key === "measurementReminders.overdueSinceYesterday"
+  );
 }
