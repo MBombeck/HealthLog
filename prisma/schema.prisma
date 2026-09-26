@@ -5483,10 +5483,11 @@ model MeasurementReminder {
   skipCount          Int              @default(0) @map("skip_count")
   /// v1.39.2 — when a reminder for this row last reached at least one channel.
   /// Written by the reminder tick after a delivered dispatch, read by the same
-  /// tick. A check-up (no `measurementType`, not an appointment) no longer
-  /// rolls `nextDueAt` forward when it is reminded: it stays due until it is
-  /// done, skipped or snoozed, and this cursor is what keeps the repeat to at
-  /// most once a week. A nudge counts as "already sent for this slot" only
+  /// tick. A reminder on a cycle longer than a week, or a one-shot (never an
+  /// appointment), no longer rolls `nextDueAt` forward when it is reminded:
+  /// it stays due until it is satisfied (a reading, a lab result or "done"),
+  /// skipped or snoozed, and this cursor keeps the repeat to at most once a
+  /// week. A nudge counts as "already sent for this slot" only
   /// while `lastNotifiedAt >= nextDueAt`, so a snooze, a skip or a satisfy
   /// (each of which moves `nextDueAt`) opens a fresh slot that fires on its
   /// own day. Operational state, deliberately not in the backup: a restored

@@ -9,10 +9,11 @@
  *     logged since the last satisfy advances lastSatisfiedAt + recomputes
  *     nextDueAt and suppresses the nudge. Free-text reminders never
  *     auto-resolve.
- *   - A measurement reminder rolls on: a successful dispatch advances
- *     nextDueAt past now. A check-up (no measurementType, not an
- *     appointment) does NOT roll on: it stays due until it is done, and a
- *     second nudge for the same open slot waits a week.
+ *   - A reminder on a weekly or shorter cycle rolls on: a successful
+ *     dispatch advances nextDueAt past now. One on a longer cycle, or a
+ *     one-shot, does NOT roll on (measurement reminder or free text): it
+ *     stays due until it is satisfied, and a second nudge for the same open
+ *     slot waits a week. Appointments stay one-shot.
  *   - clientManaged suppresses the APNs leg only: the tick still
  *     dispatches, and a reminder nothing delivered stays overdue.
  *
@@ -633,7 +634,7 @@ describe("runMeasurementReminderTick", () => {
     expect("nextDueAt" in updates[0].data).toBe(false);
   });
 
-  it("still rolls a measurement reminder on after its reminder", async () => {
+  it("still rolls a weekly measurement reminder on after its reminder", async () => {
     const { prisma, updates } = makePrisma({
       reminders: [reminder({ origin: "COACH" })],
       measurementMatch: null,
@@ -777,5 +778,104 @@ describe("runMeasurementReminderTick", () => {
     await runMeasurementReminderTick(prisma as never, NINE_LOCAL, { dispatch });
 
     expect(updates[0].data).toEqual({ lastNotifiedAt: NINE_LOCAL });
+  });
+
+  // Watched red: with the rule keyed on `measurementType` (free text only),
+  // the first case rolls the questionnaire two weeks forward — exactly the
+  // reported pair of screening reminders.
+  it("keeps a fortnightly questionnaire due after its reminder", async () => {
+    const { prisma, updates } = makePrisma({
+      reminders: [
+        reminder({
+          measurementType: "PHQ9_SCORE",
+          intervalDays: 14,
+          lastSatisfiedAt: new Date("2026-06-01T07:00:00Z"),
+          nextDueAt: new Date("2026-06-15T07:00:00Z"),
+        }),
+      ],
+      measurementMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    await runMeasurementReminderTick(prisma as never, NINE_LOCAL, {
+      dispatch,
+      isModuleEnabled: async () => true,
+    });
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(updates[0].data).toEqual({ lastNotifiedAt: NINE_LOCAL });
+  });
+
+  it("holds the repeat of an open measurement reminder too", async () => {
+    const { prisma } = makePrisma({
+      reminders: [
+        reminder({
+          measurementType: "WEIGHT",
+          intervalDays: 30,
+          nextDueAt: new Date("2026-06-14T07:00:00Z"),
+          lastNotifiedAt: new Date("2026-06-14T07:00:04Z"),
+        }),
+      ],
+      measurementMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    const summary = await runMeasurementReminderTick(
+      prisma as never,
+      NINE_LOCAL,
+      { dispatch },
+    );
+
+    expect(summary.skippedRepeatHeld).toBe(1);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("satisfies an open measurement reminder from the reading and schedules from it", async () => {
+    // Held open since yesterday; the questionnaire lands this morning.
+    const filledAt = new Date("2026-06-15T06:30:00Z");
+    const { prisma, updates } = makePrisma({
+      reminders: [
+        reminder({
+          measurementType: "GAD7_SCORE",
+          intervalDays: 14,
+          lastSatisfiedAt: new Date("2026-05-31T07:00:00Z"),
+          nextDueAt: new Date("2026-06-14T07:00:00Z"),
+          lastNotifiedAt: new Date("2026-06-14T07:00:04Z"),
+        }),
+      ],
+      measurementMatch: { measuredAt: filledAt },
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    const summary = await runMeasurementReminderTick(
+      prisma as never,
+      NINE_LOCAL,
+      { dispatch },
+    );
+
+    expect(summary.autoResolved).toBe(1);
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(updates[0].data.lastSatisfiedAt).toEqual(filledAt);
+    // Fourteen days on from the reading, at the notify hour.
+    expect(updates[0].data.nextDueAt).toEqual(new Date("2026-06-29T07:00:00Z"));
+  });
+
+  it("rolls a daily course on after its reminder", async () => {
+    const { prisma, updates } = makePrisma({
+      reminders: [
+        reminder({
+          origin: "COACH",
+          intervalDays: null,
+          rrule: "FREQ=DAILY;BYHOUR=9,19",
+        }),
+      ],
+      measurementMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    await runMeasurementReminderTick(prisma as never, NINE_LOCAL, { dispatch });
+
+    // The evening slot of the same day.
+    expect(updates[0].data.nextDueAt).toEqual(new Date("2026-06-15T17:00:00Z"));
   });
 });

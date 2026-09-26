@@ -41,7 +41,7 @@ export const measurementReminderPaths: NonNullable<ZodOpenApiObject["paths"]> =
         tags: ["MeasurementReminders"],
         summary: "List Vorsorge reminders (v1.17.1)",
         description:
-          "Returns the owner's live (non-tombstoned) Vorsorge reminders, sorted by server-computed nextDueAt ascending (nulls last). Each row carries the canonical nextDueAt the client renders without recomputing. Since v1.39.2 a check-up (a reminder with no measurementType) keeps its nextDueAt after its reminder is sent: an open check-up stays due, then overdue, until it is completed, skipped or snoozed, and the server repeats the reminder at most once a week while it stays open. A check-up on a weekly or shorter cadence, and a reminder with a measurementType, still roll on to the next slot after a delivered reminder.",
+          "Returns the owner's live (non-tombstoned) Vorsorge reminders, sorted by server-computed nextDueAt ascending (nulls last). Each row carries the canonical nextDueAt the client renders without recomputing. Since v1.39.2 a reminder whose cycle is longer than seven days (intervalDays > 7, an rrule whose next occurrence is more than seven days out) or that has no cadence keeps its nextDueAt after its reminder is sent, with or without a measurementType: it stays due, then overdue, until it is satisfied (a matching reading or lab result, or completed), skipped or snoozed, and the server repeats the reminder at most once every seven local days while it stays open. A reminder on a weekly or shorter cycle still rolls on to its next slot after a delivered reminder.",
         responses: {
           ...recordRefusal(),
           "200": {

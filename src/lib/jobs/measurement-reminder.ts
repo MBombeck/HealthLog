@@ -9,21 +9,19 @@
  *
  * Differences from the mood reminder:
  *
- *   1. What a delivered reminder does to the row depends on what the row
- *      is. A measurement reminder (it names a `measurementType`) is a
- *      rhythm: after a delivered dispatch `nextDueAt` rolls on to the next
- *      occurrence, and the next reading satisfies it. An appointment
- *      (`origin: ENCOUNTER`) is one-shot and closes. A check-up (no
- *      `measurementType`, whether the person or the Coach made it) is a
- *      task: it stays due until it is marked done, skipped or snoozed, so
- *      the start page and the check-up card keep showing it as due and
- *      then overdue. Rolling it on silently filed an open check-up under
- *      next year. While it stays open it is reminded again at most once a
- *      week, gated on `lastNotifiedAt` (see `isCheckupRepeatHeld`). A
- *      check-up on a weekly or shorter cadence still rolls on, because its
- *      own next slot is the next nudge (see `staysDueAfterReminder`). The
- *      per-day claim in `notification_events` stays the guard against a
- *      second send on the same local day.
+ *   1. What a delivered reminder does to the row depends on its cycle.
+ *      A reminder whose next slot is more than a week away (a fortnightly
+ *      questionnaire, a yearly check-up) or that has no next slot at all (a
+ *      one-shot) stays due until it is satisfied, skipped or snoozed, so the
+ *      start page and the check-up card keep showing it as due and then
+ *      overdue; rolling it on silently filed an open task under a later
+ *      slot. While it stays open it is reminded again at most once a week,
+ *      gated on `lastNotifiedAt` (see `isCheckupRepeatHeld`). A reminder on
+ *      a weekly or shorter cycle rolls on to its next slot, which is the
+ *      next nudge anyway, and an appointment (`origin: ENCOUNTER`) is
+ *      one-shot and closes (see `staysDueAfterReminder`). The per-day claim
+ *      in `notification_events` stays the guard against a second send on
+ *      the same local day.
  *   2. Auto-resolve from an incoming measurement. Before deciding to
  *      fire, the runner checks whether a matching reading of the
  *      reminder's `measurementType` has landed since the last satisfy
@@ -99,54 +97,42 @@ function moduleForMeasurementType(
 const DUE_QUERY_SLACK_MS = 15 * 60_000;
 
 /**
- * v1.39.2 — whether a reminder is a check-up: a task that is done by marking
- * it done (or by a lab result landing), not by logging a reading.
- *
- * Decided by `measurementType`, not by `origin`. Both `VORSORGE` and `COACH`
- * rows come in two shapes: a free-text check-up ("blood panel", a Coach
- * "checkup.create" with a yearly preset) and a measurement rhythm ("weigh in
- * weekly", the Coach's twice-daily blood-pressure course). The rhythm is
- * satisfied by the next reading and has a next slot of its own that comes
- * round soon; holding it on a missed slot would stall a daily course and
- * paint a routine prompt as overdue. An appointment (`ENCOUNTER`) is neither
- * and stays one-shot.
- */
-export function isCheckupReminder(reminder: {
-  origin?: string | null;
-  measurementType: MeasurementType | string | null;
-}): boolean {
-  return reminder.origin !== "ENCOUNTER" && reminder.measurementType === null;
-}
-
-/**
- * Calendar days an open check-up waits before it is reminded again, and the
- * cadence length at or under which a check-up rolls on instead of staying
- * due: a weekly or daily item's own next slot is a reminder at least as soon
- * as the repeat would be.
+ * Calendar days an open reminder waits before it is sent again, and the cycle
+ * length at or under which a reminder rolls on instead of staying due: a
+ * weekly or daily reminder's own next slot comes round at least as soon as the
+ * repeat would.
  */
 export const CHECKUP_REPEAT_DAYS = 7;
 
 /**
  * v1.39.2 — whether a delivered reminder leaves the row due.
  *
- * A check-up stays due when its next slot is more than a week out, or when it
- * has no next slot at all (a one-shot): rolling it on would file an open task
- * under next month or next year, and a one-shot would drop off every surface.
- * A check-up on a weekly or shorter cadence rolls on as before, because its
- * next slot already brings the next nudge within the week. Measurement
- * reminders and appointments always roll on.
+ * Decided by the cycle length, not by what the reminder asks for. A reminder
+ * whose next slot is more than a week away stays due until it is satisfied (a
+ * matching reading or lab result, or "done"), skipped or snoozed: rolling it
+ * on would file an open task under a slot weeks or a year away. That held for
+ * free-text check-ups and for measurement reminders alike; the report that
+ * led here was a fortnightly PHQ-9 and GAD-7 pair that each rolled two weeks
+ * forward the morning they were reminded, without either questionnaire being
+ * filled. A one-shot (no interval, no rule) has no next slot and also stays
+ * due. A reminder on a weekly or shorter cycle rolls on as before, because its
+ * next slot is the next reminder anyway; holding a daily course on a missed
+ * slot would stall it. A cadence with no next slot left rolls to nothing as
+ * before. An appointment (`ENCOUNTER`) always stays one-shot.
  */
 export function staysDueAfterReminder(
   reminder: {
     origin?: string | null;
-    measurementType: MeasurementType | string | null;
+    intervalDays: number | null;
+    rrule: string | null;
   },
   rolledTo: Date | null,
   timezone: string,
   now: Date,
 ): boolean {
-  if (!isCheckupReminder(reminder)) return false;
-  if (rolledTo === null) return true;
+  if (reminder.origin === "ENCOUNTER") return false;
+  if (reminder.intervalDays === null && reminder.rrule === null) return true;
+  if (rolledTo === null) return false;
   return calendarDaysUntil(rolledTo, now, timezone) > CHECKUP_REPEAT_DAYS;
 }
 
@@ -388,7 +374,7 @@ export async function runMeasurementReminderTick(
       // this it would qualify again at every notify hour. Once a week is the
       // repeat; the per-day claim below is not enough on its own.
       if (
-        isCheckupReminder(reminder) &&
+        reminder.origin !== "ENCOUNTER" &&
         isCheckupRepeatHeld(reminder, timezone, now)
       ) {
         summary.skippedRepeatHeld += 1;
