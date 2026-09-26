@@ -20,21 +20,16 @@ import {
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { DOCUMENTS_WRITE_SCOPE } from "@/lib/documents/scopes";
-import { findSourceKey } from "@/lib/documents/source-key";
+import {
+  checkSourceLookupRateLimit,
+  findSourceKey,
+} from "@/lib/documents/source-key";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
-import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimitHeaders } from "@/lib/rate-limit";
 import { documentSourceKeySchema } from "@/lib/validations/inbound-documents";
 
 export const dynamic = "force-dynamic";
-
-/**
- * Lookups per caller per hour. Generous on purpose: an importer asks once per
- * document in the source, so a re-sync of a few thousand documents has to fit
- * in an hour. A lookup reads three indexed rows and stores nothing.
- */
-const LOOKUP_LIMIT_PER_HOUR = 5000;
-const LOOKUP_WINDOW_MS = 60 * 60 * 1000;
 
 export const GET = apiHandler(async (request: Request) => {
   const auth = await requireAuth(DOCUMENTS_WRITE_SCOPE);
@@ -43,12 +38,10 @@ export const GET = apiHandler(async (request: Request) => {
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
   if (!gate.enabled) return gate.response;
 
-  const rl = await checkRateLimit(
-    isScopedCredential(auth)
-      ? `documents-source:token:${auth.session.id}`
-      : `documents-source:${user.id}`,
-    LOOKUP_LIMIT_PER_HOUR,
-    LOOKUP_WINDOW_MS,
+  const rl = await checkSourceLookupRateLimit(
+    isScopedCredential(auth),
+    auth.session.id,
+    user.id,
   );
   if (!rl.allowed) {
     const response = apiError("Too many lookups. Try again later.", 429, {

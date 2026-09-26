@@ -90,6 +90,8 @@ async function healthlog(
     noLookup?: boolean;
     /** The address redirects elsewhere (http → https, a moved host). */
     redirect?: string;
+    /** Lookups are spent: every lookup answers 429 with a long Retry-After. */
+    lookup429?: boolean;
   } = {},
 ) {
   const stored = new Set<string>();
@@ -110,6 +112,13 @@ async function healthlog(
       !opts.noLookup
     ) {
       lookups.push(queryKey);
+      if (opts.lookup429) {
+        return {
+          status: 429,
+          headers: { "retry-after": "3600" },
+          json: { data: null, error: "Too many lookups." },
+        };
+      }
       const deleted = opts.deleted?.includes(queryKey) ?? false;
       const known = deleted || stored.has(queryKey);
       return {
@@ -158,9 +167,17 @@ async function healthlog(
         size = v.size;
       }
     }
-    // The key rides the query string, where HealthLog reads it first.
-    fields.sourceSystem = url.searchParams.get("sourceSystem") ?? "";
-    fields.sourceId = url.searchParams.get("sourceId") ?? "";
+    // The key rides the query string, where HealthLog reads it first, and
+    // the form; HealthLog refuses the two disagreeing.
+    if (
+      fields.sourceSystem !== url.searchParams.get("sourceSystem") ||
+      fields.sourceId !== url.searchParams.get("sourceId")
+    ) {
+      return {
+        status: 422,
+        json: { data: null, error: "source key mismatch" },
+      };
+    }
     received.push({ auth: req.headers.authorization, fields, filename, size });
     const key = queryKey;
     if (opts.tooLarge?.includes(key)) {
@@ -544,6 +561,28 @@ describe("import-documents.mjs — edges", () => {
     );
     expect(res.code).toBe(0);
     expect(res.stdout).toMatch(/Imported: 2/);
+  });
+
+  it("does not wait on spent lookups: the keyed upload answers instead", async () => {
+    const hl = await healthlog({ lookup429: true });
+    const pl = await paperless();
+    const started = Date.now();
+    const res = await runScript(
+      [
+        "paperless",
+        "--paperless-url",
+        pl.url,
+        "--healthlog-url",
+        hl.url,
+        "--tag",
+        "HealthLog",
+      ],
+      env,
+    );
+    expect(res.code).toBe(0);
+    expect(res.stdout).toMatch(/Imported: 2/);
+    // A Retry-After of an hour was not honoured for a lookup.
+    expect(Date.now() - started).toBeLessThan(20_000);
   });
 
   it("stops on a redirecting HealthLog address and names where it points", async () => {

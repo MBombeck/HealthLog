@@ -114,11 +114,16 @@ describe("POST /api/documents/inbound/reindex", () => {
 
   it("scopes both counts to the caller's LIVE documents (the gauge's own figures)", async () => {
     await POST(req() as never);
+    // Imports held back from AI reading (#1038) are not part of the run and
+    // stay out of both figures.
     expect(prisma.inboundDocument.count).toHaveBeenCalledWith({
-      where: { userId: "user-1", deletedAt: null },
+      where: { userId: "user-1", deletedAt: null, aiReadDeferred: false },
     });
     expect(prisma.documentContentIndex.count).toHaveBeenCalledWith({
-      where: { userId: "user-1", document: { deletedAt: null } },
+      where: {
+        userId: "user-1",
+        document: { deletedAt: null, aiReadDeferred: false },
+      },
     });
   });
 });
