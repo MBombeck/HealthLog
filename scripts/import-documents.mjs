@@ -590,7 +590,11 @@ async function lookup(options, source, doc) {
 }
 
 async function upload(options, source, doc, file) {
-  const url = `${options.healthlogUrl}/api/documents/inbound?${keyQuery(source, doc)}`;
+  // The key goes in the form only. In the address HealthLog would check it
+  // against the lookup allowance first, and the lookup just asked that
+  // question; when the lookups are spent, the upload would then be refused
+  // with a 429 as well. In the form it costs one upload, like any other.
+  const url = `${options.healthlogUrl}/api/documents/inbound`;
   const kind = kindFor(options, doc);
   const response = await request(
     "HealthLog",
@@ -611,7 +615,6 @@ async function upload(options, source, doc, file) {
       if (doc.date) form.append("documentDate", doc.date);
       if (kind) form.append("kind", kind);
       if (!options.aiRead) form.append("aiRead", "defer");
-      // In the form as well as the address; HealthLog checks they agree.
       form.append("sourceSystem", source.system);
       form.append("sourceId", doc.sourceId.slice(0, SOURCE_ID_MAX));
       return form;
