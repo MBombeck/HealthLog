@@ -66,6 +66,8 @@ const BASE_ROW = {
   location: null,
   nextDueAt: new Date("2026-01-31T09:00:00Z"),
   lastSatisfiedAt: null as Date | null,
+  lastNotifiedAt: null as Date | null,
+  snoozedUntil: null as Date | null,
   enabled: true,
   createdAt: new Date("2026-01-01T00:00:00Z"),
   updatedAt: new Date("2026-01-01T00:00:00Z"),
@@ -270,7 +272,24 @@ describe("PATCH /api/measurement-reminders/[id] — nextDueAt honours explicit-n
     expect(persisted.nextDueAt).toEqual(new Date("2026-01-31T17:00:00Z"));
   });
 
-  it("re-enabling a disabled reminder schedules it from now", async () => {
+  it("re-enabling a disabled short-cycle reminder schedules it from now", async () => {
+    const weekly = { ...BASE_ROW, intervalDays: 7, enabled: false };
+    findFirstMock.mockResolvedValue(weekly);
+
+    const res = await PATCH(makeRequest({ enabled: true }), params);
+    expect(res.status).toBe(200);
+
+    const persisted = updateMock.mock.calls[0]?.[0]?.data as Record<
+      string,
+      unknown
+    >;
+    const expected = computeReminderNextDueAt(weekly, TZ, NOW);
+    expect(persisted.nextDueAt).toEqual(expected);
+  });
+
+  it("re-enabling an overdue reminder that stays due keeps its open slot", async () => {
+    // Thirty-day cycle, due in January: switching it off and on again is not
+    // doing it.
     findFirstMock.mockResolvedValue({ ...BASE_ROW, enabled: false });
 
     const res = await PATCH(makeRequest({ enabled: true }), params);
@@ -280,7 +299,53 @@ describe("PATCH /api/measurement-reminders/[id] — nextDueAt honours explicit-n
       string,
       unknown
     >;
-    const expected = computeReminderNextDueAt(BASE_ROW, TZ, NOW);
-    expect(persisted.nextDueAt).toEqual(expected);
+    expect(persisted.enabled).toBe(true);
+    expect("nextDueAt" in persisted).toBe(false);
+  });
+
+  it("reads a resent first due date on the same calendar day as unchanged", async () => {
+    // A booster row stores the dose instant plus N days; the web form sends
+    // the same day back as local midnight. Same day in the profile zone, so
+    // neither the anchor nor the due date moves.
+    findFirstMock.mockResolvedValue({
+      ...BASE_ROW,
+      anchorDate: new Date("2026-01-10T13:37:00Z"),
+    });
+
+    const res = await PATCH(
+      makeRequest({
+        label: "New label",
+        anchorDate: "2026-01-09T23:00:00.000Z", // 00:00 on the 10th, Berlin
+      }),
+      params,
+    );
+    expect(res.status).toBe(200);
+
+    const persisted = updateMock.mock.calls[0]?.[0]?.data as Record<
+      string,
+      unknown
+    >;
+    expect("anchorDate" in persisted).toBe(false);
+    expect("nextDueAt" in persisted).toBe(false);
+  });
+
+  it("moves the last-sent cursor with a later notify hour on the day it was sent", async () => {
+    // Sent at 09:00 today, moved to 18:00: still the slot that was sent, so
+    // the tick must not send it again at 18:00.
+    findFirstMock.mockResolvedValue({
+      ...BASE_ROW,
+      nextDueAt: new Date("2026-06-15T07:00:00Z"),
+      lastNotifiedAt: new Date("2026-06-15T07:00:05Z"),
+    });
+
+    const res = await PATCH(makeRequest({ notifyHour: 18 }), params);
+    expect(res.status).toBe(200);
+
+    const persisted = updateMock.mock.calls[0]?.[0]?.data as Record<
+      string,
+      unknown
+    >;
+    expect(persisted.nextDueAt).toEqual(new Date("2026-06-15T16:00:00Z"));
+    expect(persisted.lastNotifiedAt).toEqual(new Date("2026-06-15T16:00:00Z"));
   });
 });
