@@ -169,6 +169,38 @@ describe("indexDocumentContent — provider-first path", () => {
 });
 
 describe("indexDocumentContent — local fallback path", () => {
+  it("a deferred row stays local even when the job did not ask for it", async () => {
+    // #1038 — the row decides: an automatic index of a deferred document
+    // never reaches a provider, whichever path enqueued it.
+    vi.mocked(loadOwnedDocument).mockResolvedValue({
+      ...DOC,
+      aiReadDeferred: true,
+    } as never);
+    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    visionOk();
+    const outcome = await indexDocumentContent("user-1", "doc-1");
+    expect(outcome).toMatchObject({ indexed: true, source: "local-pdf" });
+    expect(resolveDocumentVisionProvider).not.toHaveBeenCalled();
+    expect(transcribeDocument).not.toHaveBeenCalled();
+  });
+
+  it("a deferred import stays local even with an external pick and the toggle ON", async () => {
+    // #1038 — `aiRead=defer`: the person asked for AI reading to wait.
+    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    visionOk();
+    const outcome = await indexDocumentContent("user-1", "doc-1", {
+      localOnly: true,
+    });
+    expect(outcome).toEqual({
+      indexed: true,
+      source: "local-pdf",
+      tokenCount: 5,
+    });
+    expect(resolveDocumentVisionProvider).not.toHaveBeenCalled();
+    expect(transcribeDocument).not.toHaveBeenCalled();
+    expect(reserveBudget).not.toHaveBeenCalled();
+  });
+
   it("falls back to local when NO provider is configured", async () => {
     vi.mocked(resolveDocumentVisionProvider).mockResolvedValue({
       chain: [],

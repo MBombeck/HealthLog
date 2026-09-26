@@ -131,6 +131,9 @@ x-healthlog-env: &healthlog_env
   BACKUP_S3_SECRET_KEY: "${BACKUP_S3_SECRET_KEY:-}"
   BACKUP_S3_REGION: "${BACKUP_S3_REGION:-auto}"
   BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-30}"
+  # Largest stored backup of one account, in MB of encrypted copy (default
+  # 2048). A storage limit, not a memory one; see .env.production.example.
+  BACKUP_MAX_STORED_MB: "${BACKUP_MAX_STORED_MB:-}"
   # How long the audit trail is kept, in days. Default 365, floor 7 (a value
   # below the floor is ignored rather than obeyed, so a window set in seconds
   # by mistake cannot empty a fresh table). It is not only a retention knob:
@@ -290,6 +293,12 @@ x-healthlog-env: &healthlog_env
   # (the `environment:` block is a whitelist). See
   # docs/integrations/ai-providers.md.
   DOCUMENT_AI_LIMIT_PER_HOUR: "${DOCUMENT_AI_LIMIT_PER_HOUR:-}"
+  # Hourly upload ceiling for each narrow document-upload token (a Paperless
+  # workflow, the import script; optional; default 120, clamped 1-1000).
+  # Uploads from the web app and the phone keep their own bucket. Listed here
+  # so an operator value in .env reaches the container. See
+  # docs/integrations/document-import.md.
+  DOCUMENT_UPLOAD_LIMIT_PER_HOUR: "${DOCUMENT_UPLOAD_LIMIT_PER_HOUR:-}"
   # Per-user hourly ceiling for lab-report scans (photo/PDF and browser-OCR
   # text share one bucket; optional; default 6, clamped 1-1000). A scan that
   # fails before the provider is called hands its slot back. Listed here so an

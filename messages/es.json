@@ -268,6 +268,7 @@
     "illnessTitle": "Afecciones y enfermedades",
     "illnessOngoing": "En curso",
     "illnessColCondition": "Afección",
+    "illnessColBodySite": "Zona del cuerpo",
     "illnessColType": "Tipo",
     "illnessColLifecycle": "Curso",
     "illnessColOnset": "Inicio",
@@ -6140,7 +6141,14 @@
       "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial: no puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Las mediciones se marcan como procedentes de un dispositivo externo, así las distingues más tarde, y puedes corregirlas igualmente.",
       "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
     },
-    "tokenMintMovedDescription": "Los tokens se emiten donde se aplican: arriba para las mediciones, o en el endpoint de API de un medicamento para ese medicamento concreto.",
+    "documentsToken": {
+      "title": "Tokens de documentos",
+      "description": "Crea un token para que Paperless-ngx, Papra o el script de importación añadan documentos a tu archivo.",
+      "detail": "El token se muestra una sola vez.",
+      "scopeNote": "Solo puede añadir documentos nuevos a tu propio archivo. No puede listar, abrir, descargar, modificar ni borrar nada, ni crear otro token. Lo único que recibe es si un archivo se guardó, no cómo lo archivaste.",
+      "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
+    },
+    "tokenMintMovedDescription": "Los tokens se emiten donde se aplican: arriba para las mediciones y los documentos, o en el endpoint de API de un medicamento para ese medicamento concreto.",
     "tokenNamePlaceholder": "Nombre del token (p. ej., Atajo de iPhone)",
     "tokenCreated": "Token creado — ¡cópialo ahora! No se mostrará de nuevo.",
     "tokenCopy": "Copiar token",
@@ -8519,6 +8527,7 @@
       "inDays": "En {days} días"
     },
     "overdueByDays": "Vencido hace {days} días",
+    "overdueSinceYesterday": "Vencido desde ayer",
     "cadence": {
       "everyNDays": "Cada {days} días",
       "custom": "Programación personalizada",
@@ -9194,7 +9203,8 @@
       "parentNone": "Sin vincular",
       "resolved": "Finalizó el",
       "resolvedHelp": "Déjalo vacío mientras el episodio siga en curso.",
-      "markOngoing": "Aún en curso"
+      "markOngoing": "Aún en curso",
+      "bodySiteHint": "Por ejemplo, rodilla o zona lumbar."
     },
     "sheet": {
       "title": "Registrar {date}",
@@ -9984,6 +9994,9 @@
       "noConditions": "Sin vincular a una afección",
       "previewUnavailable": "Sin vista previa integrada para este tipo de archivo",
       "uploadedMeta": "Añadido el {date} · {size}",
+      "importedFrom": "Importado de {system}",
+      "importedFromWithId": "Importado de {system} · ID {id}",
+      "sourceOther": "otro sistema",
       "share": "Compartir",
       "labValuesLink": "Ver {count} valores de laboratorio",
       "visitsLabel": "Pertenece a la cita",
@@ -10309,7 +10322,7 @@
       "preventiveCare": {
         "title": "Revisión pendiente",
         "body": "{label} está pendiente.",
-        "bodyMany": "Hay {count} revisiones pendientes."
+        "bodyManyNamed": "Pendientes: {labels}"
       },
       "syncIssue": {
         "title": "La sincronización necesita atención",
@@ -10354,7 +10367,8 @@
       "upcomingVisit": {
         "title": "Cita próxima",
         "bodyToday": "{what}: hoy",
-        "bodyTomorrow": "{what}: mañana"
+        "bodyTomorrow": "{what}: mañana",
+        "bodyDayAfterTomorrow": "{what}: pasado mañana"
       }
     },
     "action": {
@@ -10928,10 +10942,11 @@
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Mostrar revisiones, citas o procedimientos",
+    "viewSwitchLabel": "Mostrar revisiones, citas, procedimientos o zonas del cuerpo",
     "tabVorsorge": "Revisiones",
     "tabVisits": "Citas",
-    "tabProcedures": "Procedimientos"
+    "tabProcedures": "Procedimientos",
+    "tabBodySites": "Zonas del cuerpo"
   },
   "practitioners": {
     "title": "Consultas y médicos",
@@ -10972,5 +10987,26 @@
       "removeNamed": "Quitar {name}",
       "removed": "Se desvinculó {name}"
     }
+  },
+  "bodySites": {
+    "title": "Zonas del cuerpo",
+    "description": "Procedimientos y enfermedades según la zona del cuerpo.",
+    "loadError": "No se pudieron cargar las zonas del cuerpo.",
+    "emptyTitle": "Aún no hay ninguna zona del cuerpo registrada",
+    "emptyDescription": "Añade una zona del cuerpo a un procedimiento o a una enfermedad y aparecerá aquí.",
+    "sitesLabel": "Zonas del cuerpo",
+    "sidesLabel": "Lado",
+    "allSides": "Todos los lados",
+    "pickPrompt": "Elige una zona para ver lo que hay registrado en ella.",
+    "noMatchTitle": "No hay nada registrado en este lado",
+    "visitsTitle": "Procedimientos y citas",
+    "conditionsTitle": "Enfermedades",
+    "hiddenDocument": "Un documento que no se ha compartido contigo",
+    "hiddenLabResult": "Un resultado de laboratorio que no se ha compartido contigo",
+    "hiddenCondition": "Una enfermedad que no se ha compartido contigo",
+    "hiddenVisit": "Una cita que no se ha compartido contigo",
+    "linkedLabel": "Registros vinculados",
+    "conditionSince": "Desde el {onset}",
+    "conditionDates": "Del {onset} al {resolved}"
   }
 }

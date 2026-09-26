@@ -15,7 +15,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
-import { unpackBackupBlob } from "@/lib/export/backup-blob";
+import { readStoredBackup } from "./stored-backup-read";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -170,7 +170,7 @@ describe("POST /api/admin/backups/upload", () => {
     // received. Through the envelope rather than through `decrypt` alone: an
     // uploaded file is stored exactly the way the weekly worker stores one, so
     // the restore path reads both without knowing where the row came from.
-    const decrypted = JSON.parse(unpackBackupBlob(row!.data));
+    const decrypted = JSON.parse(await readStoredBackup(prisma, row!.id));
     expect(decrypted.userId).toBe(admin.id);
     expect(decrypted.measurements).toHaveLength(1);
 

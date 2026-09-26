@@ -113,6 +113,11 @@ export interface LoadedDocument {
   contentCodec: string;
   mimeType: string;
   status: string;
+  /**
+   * The import asked for `aiRead=defer` (#1038). Automatic paths read the
+   * document locally only while it is set.
+   */
+  aiReadDeferred: boolean;
 }
 
 /** Load one live, owner-scoped document with the columns the AI actions need. */
@@ -129,6 +134,7 @@ export async function loadOwnedDocument(
       contentCodec: true,
       mimeType: true,
       status: true,
+      aiReadDeferred: true,
     },
   });
 }

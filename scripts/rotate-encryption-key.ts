@@ -549,6 +549,14 @@ async function main() {
       prisma.illnessEpisode,
     ),
   );
+  // v1.39.2 — a condition's body site.
+  results.push(
+    await rotateBytesColumn(
+      "IllnessEpisode",
+      "bodySiteEncrypted",
+      prisma.illnessEpisode,
+    ),
+  );
   results.push(
     await rotateBytesColumn(
       "IllnessDayLog",
@@ -853,13 +861,31 @@ async function main() {
   // it sat outside rotation until v1.38.6. Missing it was the worst possible
   // miss — the script reported zero rows remaining, the runbook told the
   // operator that zero meant safe to drop the old key, and every stored backup
-  // became undecryptable. Walked in bounded id-cursor batches because one row
-  // is an entire compressed account, and re-sealed WITHOUT reading the
-  // plaintext, so both stored envelopes (the plain backup JSON and the
-  // `HLZ1:` gzip form) — and any later one — rotate unchanged.
+  // became undecryptable. From v1.39.2 the column holds only copies written
+  // before pieces existed, in any of three envelopes (the plain backup JSON,
+  // the `HLZ1:` gzip form, the `~hlgcm1.` stream of v1.38.6 to v1.39.1). Rotation does not
+  // re-seal them in place, which would hold a whole copy several times over;
+  // it converts each one into pieces under the active key, one row at a time
+  // and a slice of the value at a time, so the walk needs the whole client
+  // (it opens a transaction per row) rather than one delegate.
   results.push(
-    await rotateRegistryColumn("DataBackup", "data", {
-      dataBackup: prisma.dataBackup,
+    await rotateRegistryColumn(
+      "DataBackup",
+      "data",
+      prisma as unknown as CorpusClient,
+    ),
+  );
+
+  // ───── Whole-account backup in pieces (Bytes, binary2, batched) ─────
+  // From v1.39.2 a backup is stored as sealed pieces in "data_backup_chunks",
+  // one `encryptBytes()` value each, and the "data" column above holds only
+  // copies written before that. Walked in id-cursor batches of a few pieces
+  // (each is about a megabyte) and re-sealed without reading the backup: the
+  // header that ties a piece to its copy and position is inside the
+  // ciphertext, so it comes through rotation unchanged.
+  results.push(
+    await rotateRegistryColumn("DataBackupChunk", "data", {
+      dataBackupChunk: prisma.dataBackupChunk,
     } as unknown as CorpusClient),
   );
 

@@ -35,9 +35,16 @@ import {
   encrypt,
   extractKeyId,
   extractKeyIdFromBytes,
+  extractStreamKeyId,
   getActiveKeyId,
+  isStreamCiphertext,
   reencryptBytesToActive,
 } from "@/lib/crypto";
+import type { PrismaClient } from "@/generated/prisma/client";
+import {
+  convertSingleValueBackup,
+  singleValueBackupHead,
+} from "@/lib/export/store-backup-blob";
 import {
   ENCRYPTED_COLUMNS,
   type EncryptedColumn,
@@ -69,7 +76,7 @@ interface ColumnDelegate {
     select: Record<string, true>;
     orderBy?: Record<string, "asc" | "desc">;
     take?: number;
-    where?: Record<string, { gt: string }>;
+    where?: Record<string, unknown>;
   }) => Promise<Array<Record<string, unknown>>>;
   update: (args: {
     where: Record<string, string>;
@@ -136,10 +143,14 @@ function blobKeyId(value: Uint8Array, codec: string): string | null {
 }
 
 /** Re-encrypt one codec-dispatched blob under its OWN codec (never converts). */
-function reencryptBlob(value: Uint8Array, codec: string): Uint8Array {
+function reencryptBlob(
+  value: Uint8Array,
+  codec: string,
+  aad: string | undefined,
+): Uint8Array {
   const buf = Buffer.from(value);
   if (codec === "binary2") {
-    const rotated = reencryptBytesToActive(buf);
+    const rotated = reencryptBytesToActive(buf, aad);
     const next = new Uint8Array(new ArrayBuffer(rotated.byteLength));
     next.set(rotated);
     return next;
@@ -202,7 +213,7 @@ async function walkColumn(
       await onRow({
         id: row[pk] as string,
         value,
-        codec: codecField ? String(row[codecField] ?? "") : null,
+        codec: codecField ? String(row[codecField] ?? "") : (col.codec ?? null),
       });
     }
     cursor = rows[rows.length - 1]![pk] as string;
@@ -217,7 +228,7 @@ function pkField(col: EncryptedColumn): string {
 
 /** True when the column's rows are blobs, walked in the small batches. */
 function isBlobColumn(col: EncryptedColumn): boolean {
-  return Boolean(col.codecField ?? col.batched);
+  return Boolean(col.codecField ?? col.codec ?? col.batched);
 }
 
 /** The key id a walked row was written under, dispatching on its codec. */
@@ -228,7 +239,45 @@ function walkedKeyId(
 ): string | null {
   if (codec !== null) return blobKeyId(value as Uint8Array, codec);
   const ciphertext = toCiphertext(value, kind);
-  return ciphertext == null ? null : extractKeyId(ciphertext);
+  if (ciphertext == null) return null;
+  // The single-stream backup form v1.38.6 to v1.39.1 wrote carries its key id behind a
+  // `~hlgcm1.` marker, where the string codec's parser does not look.
+  if (isStreamCiphertext(ciphertext)) return extractStreamKeyId(ciphertext);
+  return extractKeyId(ciphertext);
+}
+
+/**
+ * The ids of the rows of a `convertsToPieces` column that still hold a single
+ * value, a page of ids at a time. Only the id is read: the value can be a
+ * hundred megabytes.
+ */
+async function* singleValueIds(
+  delegate: ColumnDelegate,
+): AsyncGenerator<string> {
+  let cursor: string | null = null;
+  for (;;) {
+    const rows = await delegate.findMany({
+      select: { id: true },
+      orderBy: { id: "asc" },
+      take: ROW_ROTATION_BATCH_SIZE,
+      where: {
+        data: { not: null },
+        ...(cursor ? { id: { gt: cursor } } : {}),
+      },
+    });
+    for (const row of rows) yield row.id as string;
+    if (rows.length < ROW_ROTATION_BATCH_SIZE) return;
+    cursor = rows[rows.length - 1]!.id as string;
+  }
+}
+
+/** True for a Prisma "record to update not found" (P2025). */
+function isRowGone(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { code?: unknown }).code === "P2025"
+  );
 }
 
 export interface ColumnScan {
@@ -251,6 +300,29 @@ export async function scanColumn(
   const delegate = getDelegate(client, col.model);
   const byKeyId: Record<string, number> = {};
   let total = 0;
+
+  if (col.convertsToPieces) {
+    // One value can be a hundred megabytes: read only the first characters,
+    // which carry the key id.
+    for await (const id of singleValueIds(delegate)) {
+      const head = await singleValueBackupHead(
+        client as unknown as PrismaClient,
+        id,
+      );
+      if (head === null) continue;
+      total += 1;
+      const key = walkedKeyId(head, null, col.kind) ?? LEGACY_BUCKET;
+      byKeyId[key] = (byKeyId[key] ?? 0) + 1;
+    }
+    return {
+      model: col.model,
+      field: col.field,
+      kind: col.kind,
+      total,
+      byKeyId,
+      legacy: byKeyId[LEGACY_BUCKET] ?? 0,
+    };
+  }
 
   // Bounded batches for every column, per-row codec where the column has one.
   await walkColumn(delegate, col, ({ value, codec }) => {
@@ -353,6 +425,28 @@ export async function rotateColumn(
     }
   };
 
+  if (col.convertsToPieces) {
+    // Converted into pieces under the active key, one row at a time and a
+    // slice of the value at a time, whatever key it is under now: re-sealing
+    // it in place would hold the whole value several times over
+    // (`convertSingleValueBackup`). A row converted, replaced or deleted since
+    // it was listed is gone, not an error.
+    for await (const id of singleValueIds(delegate)) {
+      result.scanned += 1;
+      try {
+        const outcome = await convertSingleValueBackup(
+          client as unknown as PrismaClient,
+          id,
+        );
+        if (outcome === "converted") result.rotated += 1;
+        else result.scanned -= 1;
+      } catch {
+        result.errors += 1;
+      }
+    }
+    return result;
+  }
+
   // Bounded id-cursor batches for every column (never an unbounded
   // findMany), re-encrypted under each row's OWN codec where it has one.
   // Idempotent — rows already on the active key are skipped, so an
@@ -366,7 +460,7 @@ export async function rotateColumn(
       // a stored value can legitimately carry survives rotation untouched.
       const next =
         codec !== null
-          ? reencryptBlob(value as Uint8Array, codec)
+          ? reencryptBlob(value as Uint8Array, codec, col.aad)
           : fromCiphertext(
               encrypt(decrypt(toCiphertext(value, col.kind)!)),
               col.kind,
@@ -376,7 +470,10 @@ export async function rotateColumn(
         data: { [col.field]: next },
       });
       result.rotated += 1;
-    } catch {
+    } catch (err) {
+      // Deleted between the read and the write (a backup replacing its
+      // pieces, an account going): nothing is left to rotate.
+      if (isRowGone(err)) return;
       await onUnreadable(id);
     }
   });

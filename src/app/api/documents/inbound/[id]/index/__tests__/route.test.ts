@@ -15,7 +15,11 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    inboundDocument: { findFirst: vi.fn(), update: vi.fn() },
+    inboundDocument: {
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
     extractedFact: { create: vi.fn() },
     documentContentIndex: { upsert: vi.fn() },
     user: { findUnique: vi.fn() },
@@ -290,6 +294,17 @@ describe("POST /api/documents/inbound/[id]/index — staging continuation", () =
     expect(maybeAutoStageLabFacts).toHaveBeenCalledWith("user-1", "doc-1");
     const body = await res.json();
     expect(body.data.labFactsStaged).toBe(4);
+    // Read with AI ends an import's hold on automatic AI reading (#1038),
+    // before the staging that would otherwise refuse it.
+    expect(prisma.inboundDocument.updateMany).toHaveBeenCalledWith({
+      where: { id: "doc-1", userId: "user-1", aiReadDeferred: true },
+      data: { aiReadDeferred: false },
+    });
+    expect(
+      vi.mocked(prisma.inboundDocument.updateMany).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(maybeAutoStageLabFacts).mock.invocationCallOrder[0],
+    );
   });
 
   it("reports zero staged facts as an honest zero, never an error", async () => {

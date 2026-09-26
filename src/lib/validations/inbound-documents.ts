@@ -441,6 +441,12 @@ export interface InboundDocumentDto {
    * shows its kind icon instead of fetching a thumbnail that 404s.
    */
   hasThumbnail: boolean;
+  /**
+   * v1.39.2 (#1038) — the system an imported document came from, or null for
+   * one added in HealthLog. Paired with `sourceId`, its id over there.
+   */
+  sourceSystem: DocumentSourceSystemValue | null;
+  sourceId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -669,13 +675,73 @@ const vaccinationIdList = z
  * becoming a second trip. No `userId` field; it is always narrowed from the
  * session.
  */
-export const documentCreateSchema = z.object({
-  title: z.string().trim().min(1).max(DOCUMENT_TITLE_MAX).optional(),
-  kind: z.enum(INBOUND_DOCUMENT_KINDS).optional(),
-  documentDate: isoDateString.optional(),
-  episodeIds: episodeIdList.optional(),
-  encounterIds: encounterIdList.optional(),
+/**
+ * v1.39.2 (#1038) — the systems an imported document can say it came from.
+ * Closed on purpose: the detail sheet names each one, and a free string here
+ * would be a label the person never chose rendered as if HealthLog vouched for
+ * it. OTHER covers any importer that is neither.
+ */
+export const DOCUMENT_SOURCE_SYSTEMS = ["PAPERLESS", "PAPRA", "OTHER"] as const;
+export type DocumentSourceSystemValue =
+  (typeof DOCUMENT_SOURCE_SYSTEMS)[number];
+
+/** Narrow a stored `sourceSystem` string to the closed set (null otherwise). */
+export function toDocumentSourceSystem(
+  value: string | null | undefined,
+): DocumentSourceSystemValue | null {
+  return (DOCUMENT_SOURCE_SYSTEMS as readonly string[]).includes(value ?? "")
+    ? (value as DocumentSourceSystemValue)
+    : null;
+}
+
+/** Max length of an imported document's id in its source system. */
+export const DOCUMENT_SOURCE_ID_MAX = 128;
+
+/**
+ * The document's id in its source system. Printable ASCII only: it is a key,
+ * not prose, and it is echoed on the detail sheet.
+ */
+const documentSourceIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(DOCUMENT_SOURCE_ID_MAX)
+  .regex(/^[\x21-\x7e]+$/u, "Expected printable characters without spaces");
+
+/**
+ * A source key on its own — the query-string form the upload accepts ahead of
+ * the body, and the lookup route's query. Both halves required.
+ */
+export const documentSourceKeySchema = z.object({
+  sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS),
+  sourceId: documentSourceIdSchema,
 });
+
+export const documentCreateSchema = z
+  .object({
+    title: z.string().trim().min(1).max(DOCUMENT_TITLE_MAX).optional(),
+    kind: z.enum(INBOUND_DOCUMENT_KINDS).optional(),
+    documentDate: isoDateString.optional(),
+    episodeIds: episodeIdList.optional(),
+    encounterIds: encounterIdList.optional(),
+    /** Where an imported document came from (provenance, shown on detail). */
+    sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS).optional(),
+    /**
+     * The document's id in `sourceSystem`. Printable ASCII only: it is a key,
+     * not prose, and it is echoed on the detail sheet.
+     */
+    sourceId: documentSourceIdSchema.optional(),
+    /**
+     * `defer` holds back automatic AI reading for this upload: the thumbnail
+     * and a local text index still run, the summary and the lab staging do
+     * not. Absent means today's behaviour.
+     */
+    aiRead: z.enum(["defer"]).optional(),
+  })
+  .refine((v) => v.sourceId === undefined || v.sourceSystem !== undefined, {
+    path: ["sourceSystem"],
+    message: "sourceId needs a sourceSystem",
+  });
 
 export type DocumentCreateInput = z.infer<typeof documentCreateSchema>;
 

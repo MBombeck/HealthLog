@@ -32,11 +32,9 @@ import vm from "node:vm";
 
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
 
-import {
-  BackupBlobTooLargeError,
-  packBackupBlobStreaming,
-  unpackBackupBlob,
-} from "@/lib/export/backup-blob";
+import { BackupBlobTooLargeError } from "@/lib/export/backup-blob";
+import { storeBackupBlob } from "@/lib/export/store-backup-blob";
+import { readStoredBackup } from "./stored-backup-read";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -233,26 +231,30 @@ describe("weekly backup under a memory budget", () => {
     let peakHeld = 0;
     let chunks = 0;
 
-    const blob = await packBackupBlobStreaming(async (write) => {
-      const counts = await streamFullBackupJson(
-        prisma,
-        OWNER_ID,
-        async (chunk) => {
-          await write(chunk);
-          // Sampled rather than continuous: a forced collection per chunk
-          // would dominate the runtime, and one in forty still lands inside
-          // every phase of the walk.
-          if (chunks++ % 40 === 0) {
-            peakHeld = Math.max(peakHeld, liveHeapBytes() - baseline);
-          }
-        },
-        // The purpose the weekly job asks for: tombstones and ciphertext ride
-        // verbatim, which is the arm that has to fit in memory.
-        { purpose: "disaster-recovery" },
-      );
-      expect(counts.measurements).toBe(MEASUREMENT_ROWS);
-      expect(counts.moodEntries).toBe(MOOD_ROWS);
-    });
+    const { id: blob } = await storeBackupBlob(
+      prisma,
+      { userId: OWNER_ID, type: "WEEKLY_AUTO" },
+      async (write) => {
+        const counts = await streamFullBackupJson(
+          prisma,
+          OWNER_ID,
+          async (chunk) => {
+            await write(chunk);
+            // Sampled rather than continuous: a forced collection per chunk
+            // would dominate the runtime, and one in forty still lands inside
+            // every phase of the walk.
+            if (chunks++ % 40 === 0) {
+              peakHeld = Math.max(peakHeld, liveHeapBytes() - baseline);
+            }
+          },
+          // The purpose the weekly job asks for: tombstones and ciphertext ride
+          // verbatim, which is the arm that has to fit in memory.
+          { purpose: "disaster-recovery" },
+        );
+        expect(counts.measurements).toBe(MEASUREMENT_ROWS);
+        expect(counts.moodEntries).toBe(MOOD_ROWS);
+      },
+    );
     peakHeld = Math.max(peakHeld, liveHeapBytes() - baseline);
     reportPeak("large record", peakHeld, liveHeapBytes());
 
@@ -263,7 +265,7 @@ describe("weekly backup under a memory budget", () => {
     ).toBeLessThan(STREAM_BUDGET_BYTES);
 
     // A blob that writes but does not read is worse than none.
-    const restored = JSON.parse(unpackBackupBlob(blob)) as {
+    const restored = JSON.parse(await readStoredBackup(prisma, blob)) as {
       measurements: Array<{ deletedAt: string | null }>;
       moodEntries: unknown[];
     };
@@ -307,21 +309,25 @@ describe("weekly backup under a memory budget", () => {
     let peak = baseline;
 
     let jsonBytes = 0;
-    const blob = await packBackupBlobStreaming(async (write) => {
-      const counts = await streamFullBackupJson(
-        prisma,
-        TINY_OWNER_ID,
-        async (chunk) => {
-          jsonBytes += chunk.length;
-          peak = Math.max(peak, process.memoryUsage().heapUsed);
-          await write(chunk);
-        },
-        { purpose: "disaster-recovery" },
-      );
-      expect(counts.measurements).toBe(1);
-    });
+    const { id: blob } = await storeBackupBlob(
+      prisma,
+      { userId: TINY_OWNER_ID, type: "WEEKLY_AUTO" },
+      async (write) => {
+        const counts = await streamFullBackupJson(
+          prisma,
+          TINY_OWNER_ID,
+          async (chunk) => {
+            jsonBytes += chunk.length;
+            peak = Math.max(peak, process.memoryUsage().heapUsed);
+            await write(chunk);
+          },
+          { purpose: "disaster-recovery" },
+        );
+        expect(counts.measurements).toBe(1);
+      },
+    );
 
-    const restored = JSON.parse(unpackBackupBlob(blob)) as {
+    const restored = JSON.parse(await readStoredBackup(prisma, blob)) as {
       measurements: unknown[];
     };
     expect(restored.measurements).toHaveLength(1);
@@ -336,14 +342,14 @@ describe("weekly backup under a memory budget", () => {
     reportPeak("tiny record", peak - baseline, liveHeapBytes());
   }, 180_000);
 
-  it("fails as a job rather than as a process when the stored copy does not fit", async () => {
-    // The bound that remains is on the one copy the pipeline cannot stream
-    // away: the blob itself, counted in bytes it produced. An account whose
-    // backup outgrows what this process can hold as a single value is now a
-    // failed backup for that account instead of a restart for every account
-    // on the host.
+  it("fails as a job rather than as a process when the stored copy passes its limit", async () => {
+    // The one bound left is a storage limit on the stored copy, counted in
+    // bytes it produced. An account past it is a failed backup for that
+    // account, not a restart for every account on the host.
     await expect(
-      packBackupBlobStreaming(
+      storeBackupBlob(
+        prisma,
+        { userId: OWNER_ID, type: "WEEKLY_AUTO" },
         (write) =>
           streamFullBackupJson(prisma, OWNER_ID, write, {
             purpose: "disaster-recovery",

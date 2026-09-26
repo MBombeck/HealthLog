@@ -15,6 +15,7 @@
  */
 import { z } from "zod/v4";
 import { isPlausibleEntryInstant } from "@/lib/validations/entry-instant";
+import { lateralityEnum } from "@/lib/validations/encounters";
 
 /**
  * Plausible-instant bound shared with the measurement / mood / cycle
@@ -53,6 +54,14 @@ export const illnessLifecycleEnum = z.enum([
 /* ── episode CRUD ─────────────────────────────────────────────────── */
 
 /**
+ * Where on the body, in the person's own words (v1.39.2). Becomes
+ * `bodySiteEncrypted`. Bounded like the procedure's site: a label, not prose.
+ * Absent leaves the stored value alone on an edit; `null` or blank clears it.
+ */
+const bodySite = z.string().max(200).nullable().optional();
+const laterality = lateralityEnum.nullable().optional();
+
+/**
  * Create an episode. `label` is the user-facing name; `note` is encrypted
  * at rest. `parentConditionId` threads a FLARE/RECURRING bout under a
  * parent condition. `onsetAt` defaults to "now" server-side when omitted.
@@ -66,6 +75,8 @@ export const illnessEpisodeCreateSchema = z
     resolvedAt: boundedInstant.nullable().optional(),
     parentConditionId: z.string().min(1).max(40).nullable().optional(),
     note: z.string().max(2000).nullable().optional(),
+    bodySite,
+    laterality,
   })
   // An episode can never resolve before it began. `onsetAt` defaults to "now"
   // server-side when omitted, so the invariant only bites when BOTH instants
@@ -95,6 +106,8 @@ export const illnessEpisodeUpdateSchema = z
     resolvedAt: boundedInstant.nullable().optional(),
     parentConditionId: z.string().min(1).max(40).nullable().optional(),
     note: z.string().max(2000).nullable().optional(),
+    bodySite,
+    laterality,
   })
   .strict()
   // When BOTH instants are in the same edit body, enforce the window order at

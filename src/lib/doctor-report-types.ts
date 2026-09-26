@@ -365,6 +365,13 @@ export interface DoctorReportData {
     onsetAt: string;
     /** ISO resolution instant, or null while ongoing. */
     resolvedAt: string | null;
+    /**
+     * Where on the body, decrypted (v1.39.2). Optional so a report built
+     * before the field existed still reads; null or absent means not stated.
+     */
+    bodySite?: string | null;
+    /** The side of `bodySite` (LEFT / RIGHT / BOTH), when stated. */
+    laterality?: string | null;
   }> | null;
   /**
    * v1.27.x — structured allergy / intolerance records. Reference data,

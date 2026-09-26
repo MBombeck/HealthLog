@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Document vault: store-only upload + browsable list.
@@ -49,6 +49,14 @@ vi.mock("@/lib/db", () => {
         create: vi.fn(),
         findMany: vi.fn(),
         findFirst: vi.fn(),
+      },
+      documentImportKey: {
+        findUnique: vi.fn(),
+      },
+      documentSourceAlias: {
+        findUnique: vi.fn(),
+        createMany: vi.fn(),
+        count: vi.fn(),
       },
       extractedFact: {
         groupBy: vi.fn(),
@@ -111,9 +119,16 @@ vi.mock("@/lib/rate-limit", () => ({
     resetAt: Date.now() + 3_600_000,
   }),
   rateLimitHeaders: () => ({}),
+  refundRateLimit: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
+// The Bearer path: the real `requireAuth` runs, and only the token lookup is
+// stubbed, so the scope decision under test is the production one.
+vi.mock("@/lib/auth/bearer", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/bearer")>();
+  return { ...actual, resolveBearerToken: vi.fn() };
+});
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
@@ -135,6 +150,11 @@ import { createHash } from "node:crypto";
 import { POST, GET } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { headers } from "next/headers";
+import { resolveBearerToken, BearerAuthError } from "@/lib/auth/bearer";
+import { checkRateLimit, refundRateLimit } from "@/lib/rate-limit";
+import { enqueueDocumentThumbnail } from "@/lib/jobs/document-thumbnail";
+import { DOCUMENTS_WRITE_SCOPE } from "@/lib/documents/scopes";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { enqueueDocumentIndex } from "@/lib/jobs/document-index";
 import { enqueueDocumentSummary } from "@/lib/jobs/document-summary";
@@ -219,6 +239,16 @@ beforeEach(() => {
     [] as never,
   );
   vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(null as never);
+  vi.mocked(prisma.documentImportKey.findUnique).mockResolvedValue(
+    null as never,
+  );
+  vi.mocked(prisma.documentSourceAlias.findUnique).mockResolvedValue(
+    null as never,
+  );
+  vi.mocked(prisma.documentSourceAlias.createMany).mockResolvedValue({
+    count: 1,
+  } as never);
+  vi.mocked(prisma.documentSourceAlias.count).mockResolvedValue(0 as never);
   // No settings row / no user override → policy defaults (25 MiB / 1 GiB).
   vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
   vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
@@ -579,5 +609,377 @@ describe("POST /api/documents/inbound — AI work on upload follows documentAi",
     // The index job still runs its provider-free text-layer path.
     expect(enqueueDocumentIndex).toHaveBeenCalledWith("user-1", "doc-1");
     expect(enqueueDocumentSummary).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * v1.39.2 (#1038) — the narrow `documents:write` token, and the import fields
+ * any caller may send. The Bearer is resolved by the real `requireAuth`; only
+ * the token lookup is stubbed.
+ */
+describe("POST /api/documents/inbound — document import", () => {
+  const TOKEN = "hlk_" + "d".repeat(64);
+
+  function armToken(permissions: string[]) {
+    vi.mocked(getSession).mockResolvedValue(null as never);
+    vi.mocked(headers).mockResolvedValue({
+      get: (name: string) =>
+        name.toLowerCase() === "authorization" ? `Bearer ${TOKEN}` : null,
+    } as never);
+    vi.mocked(resolveBearerToken).mockImplementation(async (_raw, req) => {
+      const admitted =
+        permissions.includes("*") ||
+        (req.kind === "scope" && permissions.includes(req.scope));
+      if (!admitted) {
+        throw new BearerAuthError(
+          403,
+          "insufficient_permissions",
+          "user-1",
+          "tok-1",
+        );
+      }
+      return {
+        user: { id: "user-1", username: "tester", role: "USER" },
+        tokenId: "tok-1",
+        expiresAt: new Date(Date.now() + 3_600_000),
+        permissions,
+      } as never;
+    });
+  }
+
+  beforeEach(() => {
+    vi.mocked(checkRateLimit).mockResolvedValue({
+      allowed: true,
+      remaining: 59,
+      resetAt: Date.now() + 3_600_000,
+    } as never);
+  });
+
+  afterEach(() => {
+    vi.mocked(headers).mockResolvedValue({ get: () => null } as never);
+  });
+
+  it("admits the scoped token and answers with a receipt, not the row", async () => {
+    armToken([DOCUMENTS_WRITE_SCOPE]);
+    txCreate.mockResolvedValue(
+      docRow({ title: "Befund", filename: "befund.png" }) as never,
+    );
+
+    const res = await post(mkUpload({ title: "Befund" }));
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    // Exactly the receipt: no title, filename, kind, links or counts.
+    expect(body.data).toEqual({ id: "doc-1", duplicate: false });
+  });
+
+  it("gives the scoped token its own bucket, keyed on the token", async () => {
+    armToken([DOCUMENTS_WRITE_SCOPE]);
+    await post(mkUpload());
+    const key = vi.mocked(checkRateLimit).mock.calls[0]![0];
+    expect(key).toBe("documents-upload:token:tok-1");
+    // Default 120/hour for a token; the cookie bucket stays at 60.
+    expect(vi.mocked(checkRateLimit).mock.calls[0]![1]).toBe(120);
+  });
+
+  it("keeps the cookie bucket for a session", async () => {
+    await post(mkUpload());
+    expect(vi.mocked(checkRateLimit).mock.calls[0]![0]).toBe(
+      "documents-upload:user-1",
+    );
+    expect(vi.mocked(checkRateLimit).mock.calls[0]![1]).toBe(60);
+  });
+
+  it("429s the scoped token past its bucket with Retry-After", async () => {
+    armToken([DOCUMENTS_WRITE_SCOPE]);
+    vi.mocked(checkRateLimit).mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      limit: 120,
+      resetAt: Date.now() + 90_000,
+    } as never);
+    const res = await post(mkUpload());
+    expect(res.status).toBe(429);
+    expect((await res.json()).meta.errorCode).toBe(
+      "documents.inbound.rateLimited",
+    );
+    expect(txCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses a token carrying some other narrow scope", async () => {
+    armToken(["measurements:write"]);
+    const res = await post(mkUpload());
+    expect(res.status).toBe(403);
+    expect(txCreate).not.toHaveBeenCalled();
+  });
+
+  it("answers a scoped content duplicate with the receipt", async () => {
+    armToken([DOCUMENTS_WRITE_SCOPE]);
+    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(
+      docRow({ id: "doc-existing", title: "Private title" }) as never,
+    );
+    const res = await post(mkUpload());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data).toEqual({ id: "doc-existing", duplicate: true });
+    expect(body.meta.duplicate).toBe(true);
+  });
+
+  it("stores the source key on a fresh import", async () => {
+    armToken([DOCUMENTS_WRITE_SCOPE]);
+    await post(mkUpload({ sourceSystem: "PAPERLESS", sourceId: "412" }));
+    const arg = txCreate.mock.calls[0]![0]!;
+    expect(arg.data.sourceSystem).toBe("PAPERLESS");
+    expect(arg.data.sourceId).toBe("412");
+  });
+
+  it("answers a live source-key match as a duplicate without reading bytes", async () => {
+    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValueOnce(
+      docRow({
+        id: "doc-src",
+        sourceSystem: "PAPRA",
+        sourceId: "doc_1",
+      }) as never,
+    );
+    const res = await post(
+      mkUpload({ sourceSystem: "PAPRA", sourceId: "doc_1" }),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.meta.duplicate).toBe(true);
+    expect(body.data.id).toBe("doc-src");
+    // The lookup spans tombstones: no deletedAt predicate.
+    const where = vi.mocked(prisma.inboundDocument.findFirst).mock.calls[0]![0]!
+      .where!;
+    expect(where).toEqual({
+      userId: "user-1",
+      sourceSystem: "PAPRA",
+      sourceId: "doc_1",
+    });
+    expect(txCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses to bring back a deleted import: 200 deleted, no new row", async () => {
+    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValueOnce(
+      docRow({
+        id: "doc-gone",
+        sourceSystem: "PAPERLESS",
+        sourceId: "7",
+        deletedAt: new Date("2026-09-01T00:00:00.000Z"),
+      }) as never,
+    );
+    const res = await post(
+      mkUpload({ sourceSystem: "PAPERLESS", sourceId: "7" }),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data).toEqual({
+      id: "doc-gone",
+      duplicate: true,
+      deleted: true,
+    });
+    expect(body.meta).toEqual({ duplicate: true, deleted: true });
+    expect(txCreate).not.toHaveBeenCalled();
+    expect(enqueueDocumentIndex).not.toHaveBeenCalled();
+  });
+
+  it("remembers a purged import through the ledger", async () => {
+    vi.mocked(prisma.documentImportKey.findUnique).mockResolvedValue({
+      id: "key-1",
+    } as never);
+    const res = await post(
+      mkUpload({ sourceSystem: "PAPERLESS", sourceId: "7" }),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data).toEqual({ id: null, duplicate: true, deleted: true });
+    expect(txCreate).not.toHaveBeenCalled();
+  });
+
+  it("422s a sourceId without a sourceSystem", async () => {
+    const res = await post(mkUpload({ sourceId: "7" }));
+    expect(res.status).toBe(422);
+    expect(txCreate).not.toHaveBeenCalled();
+  });
+
+  it("422s a sourceSystem outside the closed set", async () => {
+    const res = await post(
+      mkUpload({ sourceSystem: "DROPBOX", sourceId: "7" }),
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it("aiRead=defer indexes locally and skips the summary", async () => {
+    const res = await post(mkUpload({ aiRead: "defer" }));
+    expect(res.status).toBe(201);
+    expect(enqueueDocumentIndex).toHaveBeenCalledWith("user-1", "doc-1", {
+      localOnly: true,
+    });
+    expect(enqueueDocumentThumbnail).toHaveBeenCalledWith("user-1", "doc-1");
+    expect(enqueueDocumentSummary).not.toHaveBeenCalled();
+  });
+
+  it("without aiRead the upload keeps today's AI behaviour", async () => {
+    await post(mkUpload());
+    expect(enqueueDocumentIndex).toHaveBeenCalledWith("user-1", "doc-1");
+    expect(enqueueDocumentSummary).toHaveBeenCalledWith("user-1", "doc-1");
+  });
+
+  it("answers a query-string key before charging the bucket or reading the body", async () => {
+    armToken([DOCUMENTS_WRITE_SCOPE]);
+    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValueOnce(
+      docRow({
+        id: "doc-src",
+        sourceSystem: "PAPRA",
+        sourceId: "doc_1",
+      }) as never,
+    );
+    // Not multipart at all: reading it would be a 400.
+    const res = await post(
+      new Request(
+        "http://localhost/api/documents/inbound?sourceSystem=PAPRA&sourceId=doc_1",
+        {
+          method: "POST",
+          body: "not a form",
+          headers: { "content-type": "text/plain" },
+        },
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect((await res.json()).data).toEqual({ id: "doc-src", duplicate: true });
+    // Metered on the lookup bucket only; no upload slot is spent.
+    expect(
+      vi.mocked(checkRateLimit).mock.calls.map((c) => [c[0], c[1]]),
+    ).toEqual([["documents-source:token:tok-1", 5000]]);
+  });
+
+  it("429s the query-string check once the lookup bucket is spent", async () => {
+    armToken([DOCUMENTS_WRITE_SCOPE]);
+    vi.mocked(checkRateLimit).mockResolvedValueOnce({
+      allowed: false,
+      remaining: 0,
+      limit: 5000,
+      resetAt: Date.now() + 60_000,
+    } as never);
+    const res = await post(
+      new Request(
+        "http://localhost/api/documents/inbound?sourceSystem=PAPRA&sourceId=doc_1",
+        { method: "POST", body: "x" },
+      ),
+    );
+    expect(res.status).toBe(429);
+    expect(prisma.inboundDocument.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("422s half a query-string key", async () => {
+    const res = await post(
+      new Request("http://localhost/api/documents/inbound?sourceSystem=PAPRA", {
+        method: "POST",
+        body: "x",
+      }),
+    );
+    expect(res.status).toBe(422);
+    expect(checkRateLimit).not.toHaveBeenCalled();
+  });
+
+  it("422s a query key and a form key that disagree", async () => {
+    const r = mkUpload({ sourceSystem: "PAPRA", sourceId: "other" });
+    const res = await post(
+      new Request(`${r.url}?sourceSystem=PAPRA&sourceId=doc_1`, {
+        method: "POST",
+        body: await r.arrayBuffer(),
+        headers: { "content-type": r.headers.get("content-type")! },
+      }),
+    );
+    expect(res.status).toBe(422);
+    expect(txCreate).not.toHaveBeenCalled();
+  });
+
+  it("remembers the key when keyed bytes are already stored, and keeps the slot charged", async () => {
+    // Own-key lookup misses; the content lookup finds a live row.
+    vi.mocked(prisma.inboundDocument.findFirst)
+      .mockResolvedValueOnce(null as never)
+      .mockResolvedValueOnce(docRow({ id: "doc-manual" }) as never);
+    const res = await post(
+      mkUpload({ sourceSystem: "PAPRA", sourceId: "doc_9" }),
+    );
+    expect(res.status).toBe(200);
+    expect(prisma.documentSourceAlias.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          userId: "user-1",
+          documentId: "doc-manual",
+          sourceSystem: "PAPRA",
+          sourceId: "doc_9",
+        },
+      ],
+      skipDuplicates: true,
+    });
+    // The body was read: the slot stays spent, so the same bytes under id
+    // after id are not free.
+    expect(refundRateLimit).not.toHaveBeenCalled();
+    expect(txCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses a further id for bytes already held under the maximum", async () => {
+    vi.mocked(prisma.inboundDocument.findFirst)
+      .mockResolvedValueOnce(null as never)
+      .mockResolvedValueOnce(docRow({ id: "doc-manual" }) as never);
+    vi.mocked(prisma.documentSourceAlias.count).mockResolvedValue(20 as never);
+    const res = await post(
+      mkUpload({ sourceSystem: "PAPRA", sourceId: "doc_21" }),
+    );
+    expect(res.status).toBe(409);
+    expect((await res.json()).meta.errorCode).toBe(
+      "documents.inbound.sourceAliasLimit",
+    );
+    expect(prisma.documentSourceAlias.createMany).not.toHaveBeenCalled();
+  });
+
+  it("resolves a key held as an alias of a deleted document to deleted", async () => {
+    vi.mocked(prisma.documentSourceAlias.findUnique).mockResolvedValue({
+      document: docRow({ id: "doc-gone", deletedAt: new Date() }),
+    } as never);
+    const res = await post(
+      mkUpload({ sourceSystem: "PAPRA", sourceId: "doc_9" }),
+    );
+    expect(res.status).toBe(200);
+    expect((await res.json()).data).toEqual({
+      id: "doc-gone",
+      duplicate: true,
+      deleted: true,
+    });
+    expect(refundRateLimit).not.toHaveBeenCalled();
+    expect(txCreate).not.toHaveBeenCalled();
+  });
+
+  it("keeps a plain content duplicate charged and writes no alias", async () => {
+    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(
+      docRow({ id: "doc-existing" }) as never,
+    );
+    await post(mkUpload());
+    expect(checkRateLimit).toHaveBeenCalledTimes(1);
+    expect(refundRateLimit).not.toHaveBeenCalled();
+    expect(prisma.documentSourceAlias.createMany).not.toHaveBeenCalled();
+  });
+
+  it("persists the deferral on the row", async () => {
+    await post(mkUpload({ aiRead: "defer" }));
+    expect(txCreate.mock.calls[0]![0]!.data.aiReadDeferred).toBe(true);
+    await post(mkUpload());
+    expect(txCreate.mock.calls[1]![0]!.data.aiReadDeferred).toBe(false);
+  });
+
+  it("gives a scoped caller no quota figures on a full vault", async () => {
+    armToken([DOCUMENTS_WRITE_SCOPE]);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      documentQuotaBytes: BigInt(100),
+    } as never);
+    txQueryRaw.mockResolvedValue([{ used: BigInt(60) }]);
+    const res = await post(mkUpload());
+    expect(res.status).toBe(413);
+    const meta = (await res.json()).meta;
+    expect(meta.reason).toBe("quotaExceeded");
+    expect(meta).not.toHaveProperty("usedBytes");
+    expect(meta).not.toHaveProperty("quotaBytes");
   });
 });

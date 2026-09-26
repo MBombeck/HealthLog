@@ -1324,4 +1324,51 @@ describe("canonical disaster-recovery backup round-trip", () => {
       { id: "legacy-point-row", aggregationProvenance: null },
     ]);
   });
+
+  it("keeps a provenance the backup states as empty, rather than marking it legacy", async () => {
+    // The nightly daily-mean fold writes Apple Health `stats:` rows with no
+    // provenance (respiratory rate, walking speed, …). A current backup says
+    // so with an explicit null, which is not the same as a backup too old to
+    // carry the field. Restoring those rows as LEGACY_UNKNOWN changed 18 618
+    // rows of a 2.6 million-reading account on every restore (#1031).
+    const prisma = getPrismaClient();
+    const admin = await seedAdminSession();
+    const payload = backupPayloadSchema.parse({
+      schemaVersion: "2",
+      exportedAt: "2026-07-25T00:00:00.000Z",
+      userId: admin.id,
+      measurements: [
+        {
+          id: "daily-mean-stats",
+          type: "RESPIRATORY_RATE",
+          value: 14.2,
+          unit: "breaths/min",
+          measuredAt: "2026-07-20T10:00:00.000Z",
+          source: "APPLE_HEALTH",
+          externalId:
+            "stats:HKQuantityTypeIdentifierRespiratoryRate:2026-07-20",
+          aggregationProvenance: null,
+        },
+      ],
+    });
+    const backup = await prisma.dataBackup.create({
+      data: {
+        userId: admin.id,
+        type: "PROVENANCE_EXPLICIT_NULL",
+        data: encrypt(JSON.stringify(payload)),
+      },
+    });
+
+    const response = await POST(
+      makeRequest(backup.id) as unknown as Parameters<typeof POST>[0],
+      { params: Promise.resolve({ id: backup.id }) },
+    );
+    expect(response.status).toBe(200);
+    expect(
+      await prisma.measurement.findMany({
+        where: { userId: admin.id },
+        select: { id: true, aggregationProvenance: true },
+      }),
+    ).toEqual([{ id: "daily-mean-stats", aggregationProvenance: null }]);
+  });
 });

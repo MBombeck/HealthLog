@@ -189,6 +189,7 @@ export type AutoStageOutcome =
         | "modules-off"
         | "not-eligible"
         | "already-handled"
+        | "deferred"
         | "no-text"
         | "not-lab"
         | "budget"
@@ -256,11 +257,19 @@ export async function maybeAutoStageLabFacts(
   // leave a non-STORED / already-staged document alone.
   const doc = await prisma.inboundDocument.findFirst({
     where: { id: documentId, userId, deletedAt: null },
-    select: { kind: true, status: true, _count: { select: { facts: true } } },
+    select: {
+      kind: true,
+      status: true,
+      aiReadDeferred: true,
+      _count: { select: { facts: true } },
+    },
   });
   if (!doc || doc.status !== "STORED" || doc._count.facts > 0) {
     return { staged: false, reason: "already-handled" };
   }
+  // An import held back from AI reading stages nothing on its own; the
+  // explicit read clears the marker before it calls here.
+  if (doc.aiReadDeferred) return { staged: false, reason: "deferred" };
 
   // Same provider + consent gate the auto-index external path uses.
   const provider = await resolveIndexProvider(userId);

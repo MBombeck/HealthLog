@@ -25,10 +25,11 @@ import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import {
-  BACKUP_UNDECRYPTABLE_CODE,
-  BACKUP_UNDECRYPTABLE_ERROR,
-  openBackupBlob,
-} from "@/lib/export/backup-blob";
+  openStoredBackup,
+  storedBackupRefusal,
+  STORED_BACKUP_SELECT,
+  storedBackupIdentity,
+} from "@/lib/export/stored-backup";
 import { defaultUserIdResolver, withIdempotency } from "@/lib/idempotency";
 import {
   admitBackupRestore,
@@ -82,7 +83,7 @@ const handler = apiHandler(
 
     const backup = await prisma.dataBackup.findUnique({
       where: { id },
-      select: { id: true, userId: true, data: true },
+      select: STORED_BACKUP_SELECT,
     });
     if (!backup) {
       await auditLog("admin.backups.restore.denied", {
@@ -93,12 +94,13 @@ const handler = apiHandler(
       throw new HttpError(404, "Backup not found");
     }
 
-    // Opening authenticates the whole ciphertext (and decompresses nothing),
-    // so a copy written under a key this host no longer holds is refused now,
-    // in the answer the operator is looking at, rather than minutes later in
-    // a job. Bad stored input, not a broken server: 422, nothing queued.
+    // Opening authenticates every stored piece (and decompresses nothing), so
+    // a copy written under a key this host no longer holds, or one whose
+    // pieces do not add up, is refused now, in the answer the operator is
+    // looking at, rather than minutes later in a job. Bad stored input, not a
+    // broken server: 422, nothing queued.
     try {
-      openBackupBlob(backup.data);
+      await openStoredBackup(prisma, backup);
     } catch (err) {
       await auditLog("admin.backups.restore.failed", {
         userId: admin.id,
@@ -109,8 +111,9 @@ const handler = apiHandler(
           reason: err instanceof Error ? err.message : "decrypt_failed",
         },
       });
-      return apiError(BACKUP_UNDECRYPTABLE_ERROR, 422, {
-        errorCode: BACKUP_UNDECRYPTABLE_CODE,
+      const refusal = storedBackupRefusal(err);
+      return apiError(refusal.message, refusal.status, {
+        errorCode: refusal.code,
       });
     }
 
@@ -118,7 +121,7 @@ const handler = apiHandler(
       userId: backup.userId,
       actorUserId: admin.id,
       backupId: backup.id,
-      backupDigest: backupDigest(backup.data),
+      backupDigest: backupDigest(storedBackupIdentity(backup)),
       restoreInstanceSettings,
     });
 

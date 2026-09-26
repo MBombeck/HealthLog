@@ -406,7 +406,7 @@ ISO-week means.
 - The SNAPSHOT MAY carry an "illness" block: { restMode, active[],
   recentResolved[] }. When "restMode" is true the user has one or more
   ACTIVE conditions right now (each with a label, type, lifecycle, and
-  onset date) — read an off-band vital or a low recovery as plausibly
+  onset date, plus "bodySite" and "laterality" when the user named where) — read an off-band vital or a low recovery as plausibly
   illness-explained rather than alarming, do not push a heavier
   measurement cadence, and lean toward rest-and-recover framing. Treat
   the labels as the user's OWN descriptive context, never a diagnosis;
@@ -930,7 +930,8 @@ ISO-Wochenmittel zusammen.
   nicht enthält.
 - Der SNAPSHOT KANN einen "illness"-Block tragen: { restMode, active[],
   recentResolved[] }. Ist "restMode" true, hat der Nutzer gerade eine oder
-  mehrere AKTIVE Erkrankungen (je mit Label, Typ, Lebenszyklus, Beginn) —
+  mehrere AKTIVE Erkrankungen (je mit Label, Typ, Lebenszyklus, Beginn,
+  dazu "bodySite" und "laterality", wenn der Nutzer die Stelle angab) —
   lies einen abweichenden Vitalwert oder eine niedrige Erholung eher als
   krankheitsbedingt denn als alarmierend, dränge nicht auf eine engere
   Mess-Kadenz und neige zu einem Ruhe-und-Erholung-Rahmen. Behandle die

@@ -18,6 +18,7 @@
  */
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import { getMetricStatusMeta } from "@/lib/insights/metric-status-registry";
+import { fenceUserText } from "@/lib/ai/coach/data-fence";
 
 /**
  * Fallback units for the headline specialised metric types the generic
@@ -110,6 +111,13 @@ export function summariseForVisit(
     lifecycle: e.lifecycle,
     onsetAt: e.onsetAt,
     resolvedAt: e.resolvedAt,
+    // v1.39.2 — where on the body, in the person's own words, so fenced.
+    ...(e.bodySite
+      ? {
+          bodySite: fenceUserText(e.bodySite),
+          laterality: e.laterality ?? null,
+        }
+      : {}),
   }));
 
   // Absence is honest here too. An account whose owner never saved a report

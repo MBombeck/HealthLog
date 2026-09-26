@@ -20,7 +20,7 @@ vi.mock("@/lib/db", () => ({
     dismissedPriorityItem: { findMany: vi.fn().mockResolvedValue([]) },
     personalRecord: { findMany: vi.fn().mockResolvedValue([]) },
     arrivalReaction: { findMany: vi.fn().mockResolvedValue([]) },
-    encounter: { findFirst: vi.fn().mockResolvedValue(null) },
+    encounter: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
 
@@ -299,5 +299,153 @@ describe("loadDailyDigest — AI parts", () => {
       reason: "check_failed",
       onDeviceAllowed: false,
     });
+  });
+});
+
+/** A reminder row as the preventive read selects it; due this morning. */
+function reminderRow(over: Record<string, unknown> = {}) {
+  return {
+    label: "Skin check",
+    origin: "VORSORGE",
+    intervalDays: null,
+    rrule: "FREQ=YEARLY;INTERVAL=1",
+    anchorDate: null,
+    notifyHour: 9,
+    lastSatisfiedAt: null,
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    nextDueAt: new Date("2026-07-17T07:00:00.000Z"),
+    ...over,
+  };
+}
+
+// v1.39.2 — the two reads behind the check-up and visit rail items. NOW is
+// 11:00 in Berlin on 2026-07-17, so the local day runs 2026-07-16T22:00Z to
+// 2026-07-17T22:00Z.
+describe("loadDailyDigest — due check-ups and today's visits", () => {
+  it("reads check-ups due before the end of the local day, not only before now", async () => {
+    await loadDailyDigest(USER, NOW);
+
+    const args = vi.mocked(prisma.measurementReminder.findMany).mock
+      .calls[0][0] as { where: Record<string, unknown> };
+    expect(args.where.nextDueAt).toEqual({
+      not: null,
+      lt: new Date("2026-07-17T22:00:00.000Z"),
+    });
+    // Appointments stay off the preventive read.
+    expect(args.where.origin).toEqual({ not: "ENCOUNTER" });
+  });
+
+  it("reads every planned visit from the start of the local day", async () => {
+    await loadDailyDigest(USER, NOW);
+
+    const args = vi.mocked(prisma.encounter.findMany).mock.calls[0][0] as {
+      where: { status: string; occurredAt: { gte: Date; lte: Date } };
+    };
+    expect(args.where.status).toBe("PLANNED");
+    expect(args.where.occurredAt.gte).toEqual(
+      new Date("2026-07-16T22:00:00.000Z"),
+    );
+    expect(args.where.occurredAt.lte).toEqual(
+      new Date("2026-07-19T09:00:00.000Z"),
+    );
+  });
+
+  it("puts a visit that started this morning on the rail as today's", async () => {
+    vi.mocked(prisma.encounter.findMany).mockResolvedValueOnce([
+      {
+        id: "v1",
+        kind: "ROUTINE",
+        occurredAt: new Date("2026-07-17T07:00:00.000Z"), // 09:00 Berlin
+        practitioner: { name: "Dr. Weiss" },
+      },
+      {
+        id: "v2",
+        kind: "ROUTINE",
+        occurredAt: new Date("2026-07-17T23:30:00.000Z"), // 01:30 tomorrow
+        practitioner: { name: "Lab" },
+      },
+    ] as never);
+
+    const digest = await loadDailyDigest(USER, NOW);
+
+    const visits = digest.worthALook.filter(
+      (item) => item.kind === "upcoming_visit",
+    );
+    // The translator is stubbed to echo keys, so the bucket shows in the key.
+    expect(visits.map((item) => item.body)).toEqual([
+      "daily.item.upcomingVisit.bodyToday",
+      "daily.item.upcomingVisit.bodyTomorrow",
+    ]);
+  });
+
+  it("translates a Coach cadence label and keeps a free-text one", async () => {
+    const t = vi.fn((key: string) =>
+      key === "coach.cadence.bp7day.label" ? "Blood pressure week" : key,
+    );
+    const { getServerTranslator } =
+      await import("@/lib/i18n/server-translator");
+    vi.mocked(getServerTranslator).mockReturnValueOnce({ t } as never);
+    vi.mocked(prisma.measurementReminder.findMany).mockResolvedValueOnce([
+      reminderRow({ label: "coach.cadence.bp7day.label", origin: "COACH" }),
+      reminderRow({ label: "coach.cadence.bp7day.label" }),
+    ] as never);
+
+    await loadDailyDigest(USER, NOW);
+
+    expect(t).toHaveBeenCalledWith("daily.item.preventiveCare.bodyManyNamed", {
+      labels: "Blood pressure week, coach.cadence.bp7day.label",
+    });
+  });
+
+  // Watched red: with every reminder due before the end of the day on the
+  // rail, a daily weigh-in at 20:00 read "check-up due" from the morning on.
+  it("shows a reminder that stays due from the morning of its day", async () => {
+    vi.mocked(prisma.measurementReminder.findMany).mockResolvedValueOnce([
+      reminderRow({
+        label: "PHQ-9",
+        measurementType: "PHQ9_SCORE",
+        rrule: null,
+        intervalDays: 14,
+        nextDueAt: new Date("2026-07-17T16:00:00.000Z"), // 18:00 today
+      }),
+    ] as never);
+
+    const digest = await loadDailyDigest(USER, NOW);
+
+    expect(digest.worthALook.map((i) => i.kind)).toContain("preventive_care");
+  });
+
+  it("leaves a short-cycle reminder due later today off until its time", async () => {
+    vi.mocked(prisma.measurementReminder.findMany).mockResolvedValueOnce([
+      reminderRow({
+        label: "Weigh-in",
+        measurementType: "WEIGHT",
+        rrule: null,
+        intervalDays: 1,
+        notifyHour: 20,
+        nextDueAt: new Date("2026-07-17T18:00:00.000Z"), // 20:00 today
+      }),
+    ] as never);
+
+    const digest = await loadDailyDigest(USER, NOW);
+
+    expect(digest.worthALook.map((i) => i.kind)).not.toContain(
+      "preventive_care",
+    );
+  });
+
+  it("shows a short-cycle reminder once its time has come", async () => {
+    vi.mocked(prisma.measurementReminder.findMany).mockResolvedValueOnce([
+      reminderRow({
+        label: "Weigh-in",
+        rrule: null,
+        intervalDays: 1,
+        nextDueAt: new Date("2026-07-17T06:00:00.000Z"), // 08:00 today
+      }),
+    ] as never);
+
+    const digest = await loadDailyDigest(USER, NOW);
+
+    expect(digest.worthALook.map((i) => i.kind)).toContain("preventive_care");
   });
 });

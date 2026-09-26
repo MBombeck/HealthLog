@@ -268,6 +268,7 @@
     "illnessTitle": "Erkrankungen",
     "illnessOngoing": "Andauernd",
     "illnessColCondition": "Erkrankung",
+    "illnessColBodySite": "Körperstelle",
     "illnessColType": "Art",
     "illnessColLifecycle": "Verlauf",
     "illnessColOnset": "Beginn",
@@ -6140,7 +6141,14 @@
       "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen — deine Daten nicht lesen, nichts ändern oder löschen und kein weiteres Token erstellen. Werte werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst, und lassen sich jederzeit korrigieren.",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut."
     },
-    "tokenMintMovedDescription": "Tokens werden dort ausgestellt, wo sie gelten: oben für Messwerte, oder im API-Endpoint eines Medikaments für genau dieses Medikament.",
+    "documentsToken": {
+      "title": "Dokument-Tokens",
+      "description": "Erzeuge ein Token, damit Paperless-ngx, Papra oder das Import-Skript Dokumente in deine Ablage legen können.",
+      "detail": "Das Token wird nur einmal angezeigt.",
+      "scopeNote": "Es kann ausschließlich neue Dokumente in deine eigene Ablage legen. Es kann nichts auflisten, öffnen, herunterladen, ändern oder löschen und kein weiteres Token erstellen. Zurück bekommt es nur, ob eine Datei gespeichert wurde, nicht wie du sie abgelegt hast.",
+      "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut."
+    },
+    "tokenMintMovedDescription": "Tokens werden dort ausgestellt, wo sie gelten: oben für Messwerte und Dokumente, oder im API-Endpoint eines Medikaments für genau dieses Medikament.",
     "tokenNamePlaceholder": "Token-Name (z.B. iPhone Shortcut)",
     "tokenCreated": "Token erstellt — kopiere ihn jetzt! Er wird nicht erneut angezeigt.",
     "tokenCopy": "Token kopieren",
@@ -8519,6 +8527,7 @@
       "inDays": "In {days} Tagen"
     },
     "overdueByDays": "Überfällig seit {days} Tagen",
+    "overdueSinceYesterday": "Überfällig seit gestern",
     "cadence": {
       "everyNDays": "Alle {days} Tage",
       "custom": "Eigener Zeitplan",
@@ -9194,7 +9203,8 @@
       "parentNone": "Nicht verknüpft",
       "resolved": "Beendet am",
       "resolvedHelp": "Leer lassen, solange die Episode noch andauert.",
-      "markOngoing": "Noch andauernd"
+      "markOngoing": "Noch andauernd",
+      "bodySiteHint": "Zum Beispiel Knie oder unterer Rücken."
     },
     "sheet": {
       "title": "{date} erfassen",
@@ -9984,6 +9994,9 @@
       "noConditions": "Mit keiner Erkrankung verknüpft",
       "previewUnavailable": "Keine Inline-Vorschau für diesen Dateityp",
       "uploadedMeta": "Hinzugefügt am {date} · {size}",
+      "importedFrom": "Importiert aus {system}",
+      "importedFromWithId": "Importiert aus {system} · ID {id}",
+      "sourceOther": "einem anderen System",
       "share": "Teilen",
       "labValuesLink": "{count} Laborwerte ansehen",
       "visitsLabel": "Gehört zu Termin",
@@ -10309,7 +10322,7 @@
       "preventiveCare": {
         "title": "Vorsorge fällig",
         "body": "{label} ist fällig.",
-        "bodyMany": "{count} Vorsorgetermine sind fällig."
+        "bodyManyNamed": "Fällig: {labels}"
       },
       "syncIssue": {
         "title": "Synchronisierung braucht Aufmerksamkeit",
@@ -10354,7 +10367,8 @@
       "upcomingVisit": {
         "title": "Termin steht an",
         "bodyToday": "{what} — heute",
-        "bodyTomorrow": "{what} — morgen"
+        "bodyTomorrow": "{what} — morgen",
+        "bodyDayAfterTomorrow": "{what} — übermorgen"
       }
     },
     "action": {
@@ -10928,10 +10942,11 @@
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Vorsorge, Termine oder Eingriffe anzeigen",
+    "viewSwitchLabel": "Vorsorge, Termine, Eingriffe oder Körperstellen anzeigen",
     "tabVorsorge": "Vorsorge",
     "tabVisits": "Termine",
-    "tabProcedures": "Eingriffe"
+    "tabProcedures": "Eingriffe",
+    "tabBodySites": "Körperstellen"
   },
   "practitioners": {
     "title": "Praxen und Ärzte",
@@ -10972,5 +10987,26 @@
       "removeNamed": "{name} entfernen",
       "removed": "Verknüpfung mit {name} gelöst"
     }
+  },
+  "bodySites": {
+    "title": "Körperstellen",
+    "description": "Eingriffe und Erkrankungen nach der Stelle am Körper.",
+    "loadError": "Die Körperstellen konnten nicht geladen werden.",
+    "emptyTitle": "Noch keine Körperstelle erfasst",
+    "emptyDescription": "Gib bei einem Eingriff oder einer Erkrankung eine Körperstelle an, dann erscheint sie hier.",
+    "sitesLabel": "Körperstellen",
+    "sidesLabel": "Seite",
+    "allSides": "Alle Seiten",
+    "pickPrompt": "Wähle eine Stelle, um zu sehen, was dazu erfasst ist.",
+    "noMatchTitle": "Auf dieser Seite ist nichts erfasst",
+    "visitsTitle": "Eingriffe und Termine",
+    "conditionsTitle": "Erkrankungen",
+    "hiddenDocument": "Ein Dokument, das nicht mit dir geteilt ist",
+    "hiddenLabResult": "Ein Laborwert, der nicht mit dir geteilt ist",
+    "hiddenCondition": "Eine Erkrankung, die nicht mit dir geteilt ist",
+    "hiddenVisit": "Ein Termin, der nicht mit dir geteilt ist",
+    "linkedLabel": "Verknüpfte Einträge",
+    "conditionSince": "Seit {onset}",
+    "conditionDates": "{onset} bis {resolved}"
   }
 }

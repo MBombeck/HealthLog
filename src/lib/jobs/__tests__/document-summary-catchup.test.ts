@@ -100,6 +100,14 @@ describe("runSummaryCatchUpForUser", () => {
     });
   });
 
+  it("leaves imports held back from AI reading alone (#1038)", async () => {
+    serveDocuments(1);
+    await runSummaryCatchUpForUser("user-1");
+    expect(findMany.mock.calls[0]![0]!.where).toMatchObject({
+      aiReadDeferred: false,
+    });
+  });
+
   it("stops at the documented cap instead of queueing a whole vault", async () => {
     serveDocuments(MAX_ENQUEUES_PER_RUN + 50);
 

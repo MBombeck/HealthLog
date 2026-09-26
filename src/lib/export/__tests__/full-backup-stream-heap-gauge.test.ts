@@ -10,8 +10,8 @@
  * operator the record was too large and to buy memory.
  *
  * The bound that replaced it counts the bytes the backup itself produced, in
- * `packBackupBlobStreaming`, where the only copy that grows with a record
- * actually accumulates. This test is the tripwire for putting the gauge back.
+ * `packBackupChunks`, and it is a storage limit, not a memory one: the stored
+ * copy is written in sealed pieces and nothing in the process grows with it. This test is the tripwire for putting the gauge back.
  *
  * It is a grep with the limits of one: a heap reading spelled some other way —
  * a `v8.getHeapStatistics()` destructure, an import alias — would slip it. It

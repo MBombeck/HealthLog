@@ -9,11 +9,19 @@
  *
  * Differences from the mood reminder:
  *
- *   1. No dedicated dispatch-ledger table. The reminder's own
- *      `nextDueAt` IS the dedup guard: after a successful dispatch the
- *      runner advances `nextDueAt` to the next occurrence strictly past
- *      now, so the same due cycle never re-fires. This collapses one
- *      table + one cleanup queue versus the mood pattern.
+ *   1. What a delivered reminder does to the row depends on its cycle.
+ *      A reminder whose next slot is more than a week away (a fortnightly
+ *      questionnaire, a yearly check-up) or that has no next slot at all (a
+ *      one-shot) stays due until it is satisfied, skipped or snoozed, so the
+ *      start page and the check-up card keep showing it as due and then
+ *      overdue; rolling it on silently filed an open task under a later
+ *      slot. While it stays open it is reminded again at most once a week,
+ *      gated on `lastNotifiedAt` (see `isCheckupRepeatHeld`). A reminder on
+ *      a weekly or shorter cycle rolls on to its next slot, which is the
+ *      next nudge anyway, and an appointment (`origin: ENCOUNTER`) is
+ *      one-shot and closes (see `holdsOpenAfterReminder`). The per-day claim
+ *      in `notification_events` stays the guard against a second send on
+ *      the same local day.
  *   2. Auto-resolve from an incoming measurement. Before deciding to
  *      fire, the runner checks whether a matching reading of the
  *      reminder's `measurementType` has landed since the last satisfy
@@ -48,6 +56,8 @@ import {
 import { findSatisfyingEvent } from "@/lib/measurement-reminders/resolve";
 import { satisfyReminder } from "@/lib/measurement-reminders/satisfy";
 import { evaluateCoachContextReminders } from "@/lib/ai/coach/context-reminders";
+import { calendarDaysUntil } from "@/lib/measurement-reminders/due-day";
+import { holdsOpenAfterReminder } from "@/lib/measurement-reminders/holds-open";
 
 /**
  * v1.18.0 — map a reminder's `measurementType` to the toggleable module
@@ -87,6 +97,33 @@ function moduleForMeasurementType(
  */
 const DUE_QUERY_SLACK_MS = 15 * 60_000;
 
+/** Calendar days an open reminder waits before it is sent again. */
+export const CHECKUP_REPEAT_DAYS = 7;
+
+/**
+ * v1.39.2 — whether an open check-up's repeat nudge is still being held.
+ *
+ * Held when the last delivered nudge was for THIS slot (`lastNotifiedAt` at
+ * or after `nextDueAt`) and fewer than {@link CHECKUP_REPEAT_DAYS} calendar
+ * days have passed in the person's timezone. Calendar days rather than a
+ * 7 × 24 h gap, because the tick fires within the notify hour and the next
+ * week's tick can land a few seconds earlier on the clock than the first
+ * send did.
+ *
+ * A slot that moved after the last nudge — a snooze to a named day, a
+ * Telegram "later", a skip, a satisfy — is a new slot and is never held.
+ */
+export function isCheckupRepeatHeld(
+  reminder: { nextDueAt: Date | null; lastNotifiedAt?: Date | null },
+  timezone: string,
+  now: Date,
+): boolean {
+  const { nextDueAt, lastNotifiedAt } = reminder;
+  if (!nextDueAt || !lastNotifiedAt) return false;
+  if (lastNotifiedAt.getTime() < nextDueAt.getTime()) return false;
+  return calendarDaysUntil(now, lastNotifiedAt, timezone) < CHECKUP_REPEAT_DAYS;
+}
+
 export interface MeasurementReminderSummary {
   candidatesScanned: number;
   inWindow: number;
@@ -98,6 +135,8 @@ export interface MeasurementReminderSummary {
   skippedNoChannel: number;
   /** v1.37.19 (A6-7) — slot already claimed for this local day (racing worker or crash-recovery replay). */
   skippedAlreadyClaimed: number;
+  /** v1.39.2 — open check-up already reminded for this slot within the week. */
+  skippedRepeatHeld: number;
   /** v1.18.1 — expired COACH course-window reminders soft-deleted this tick. */
   expiredCleaned: number;
   failed: number;
@@ -205,6 +244,7 @@ export async function runMeasurementReminderTick(
     skippedModuleDisabled: 0,
     skippedNoChannel: 0,
     skippedAlreadyClaimed: 0,
+    skippedRepeatHeld: 0,
     expiredCleaned: 0,
     failed: 0,
   };
@@ -245,6 +285,24 @@ export async function runMeasurementReminderTick(
     summary.candidatesScanned += 1;
     try {
       const timezone = reminder.user.timezone || "Europe/Berlin";
+
+      // v1.39.2 — a reminder already sent for its current slot stays in
+      // this scan every tick until it is satisfied. Outside its notify hour
+      // there is nothing it could do this tick, so skip it before the
+      // auto-resolve read: the eventful `reminder-satisfy` worker resolves it
+      // the moment a reading or lab result lands, and the safety-net poll
+      // below still runs for it once a day, in the notify hour. The weekly
+      // hold stays after that poll on purpose, so the safety net is daily
+      // rather than weekly.
+      if (
+        reminder.lastNotifiedAt != null &&
+        reminder.nextDueAt !== null &&
+        reminder.lastNotifiedAt.getTime() >= reminder.nextDueAt.getTime() &&
+        wallClockInTz(now, timezone).hour !== reminder.notifyHour
+      ) {
+        summary.skippedOutsideWindow += 1;
+        continue;
+      }
 
       // ── Auto-resolve from an incoming event ────────────────────────
       // Cheap safety-net poll, in the cron (the eventful `reminder-satisfy`
@@ -291,6 +349,17 @@ export async function runMeasurementReminderTick(
       }
       if (!decision.inHourWindow) {
         summary.skippedOutsideWindow += 1;
+        continue;
+      }
+
+      // v1.39.2 — an open check-up stays due after its nudge, so without
+      // this it would qualify again at every notify hour. Once a week is the
+      // repeat; the per-day claim below is not enough on its own.
+      if (
+        reminder.origin !== "ENCOUNTER" &&
+        isCheckupRepeatHeld(reminder, timezone, now)
+      ) {
+        summary.skippedRepeatHeld += 1;
         continue;
       }
 
@@ -395,9 +464,18 @@ export async function runMeasurementReminderTick(
         continue;
       }
 
-      // Dispatch succeeded — advance `nextDueAt` past now so this due
-      // cycle never re-fires (the ledger-free dedup guard).
-      await advanceNextDue(prisma, reminder, timezone, now);
+      // Dispatch succeeded. Record the delivery; a check-up keeps its due
+      // date (it is still open, and `lastNotifiedAt` holds the repeat to a
+      // week), everything else rolls on past this slot.
+      await prisma.measurementReminder.update({
+        where: { id: reminder.id },
+        data: holdsOpenAfterReminder(reminder, timezone, now)
+          ? { lastNotifiedAt: now }
+          : {
+              nextDueAt: nextSlotAfterReminder(reminder, timezone, now),
+              lastNotifiedAt: now,
+            },
+      });
       summary.dispatched += 1;
     } catch (err: unknown) {
       summary.failed += 1;
@@ -534,35 +612,34 @@ export async function runReminderSatisfyForUser(
   return summary;
 }
 
+type RollableReminder = {
+  id: string;
+  intervalDays: number | null;
+  rrule: string | null;
+  anchorDate: Date | null;
+  notifyHour: number;
+  lastSatisfiedAt: Date | null;
+  createdAt: Date;
+};
+
 /**
- * Advance `nextDueAt` to the next occurrence strictly after `now`. Used
- * after a successful dispatch (and after a client-managed skip) as the
- * ledger-free dedup guard. Does NOT touch `lastSatisfiedAt` — a fired
- * reminder is not "satisfied", it just rolls to its next slot.
+ * The slot a reminder rolls on to after it fired at `now`: the next
+ * occurrence strictly after `now`, or `null` when there is none (a one-shot,
+ * or a course window that has ended). Does NOT touch `lastSatisfiedAt` — a
+ * fired reminder is not "satisfied", it just rolls to its next slot.
  */
-async function advanceNextDue(
-  prisma: PrismaClient,
-  reminder: {
-    id: string;
-    intervalDays: number | null;
-    rrule: string | null;
-    anchorDate: Date | null;
-    notifyHour: number;
-    lastSatisfiedAt: Date | null;
-    createdAt: Date;
-  },
+function nextSlotAfterReminder(
+  reminder: RollableReminder,
   timezone: string,
   now: Date,
-): Promise<void> {
-  // The dedup guard must move the slot strictly forward. For an `rrule`
-  // the engine already walks to the next strictly-after-now occurrence,
-  // so passing the row as-is is correct. For a ROLLING reminder the
-  // engine anchors the first-due slot AT `anchorDate ?? createdAt` when
-  // never satisfied, which stays ≤ now and would re-fire every tick — so
-  // re-anchor the rolling cadence on `now` (a fire is the rhythm
-  // restarting from this dispatch) to roll it forward by exactly one
-  // interval. This does NOT advance `lastSatisfiedAt`: a fired reminder
-  // is not satisfied, just rescheduled past the slot it nagged on.
+): Date | null {
+  // The slot must move strictly forward. For an `rrule` the engine already
+  // walks to the next strictly-after-now occurrence, so passing the row
+  // as-is is correct. For a ROLLING reminder the engine anchors the
+  // first-due slot AT `anchorDate ?? createdAt` when never satisfied, which
+  // stays ≤ now and would re-fire every tick — so re-anchor the rolling
+  // cadence on `now` (a fire is the rhythm restarting from this dispatch) to
+  // roll it forward by exactly one interval.
   const rolling = reminder.intervalDays !== null;
   const scheduleInput: ReminderScheduleInput = {
     intervalDays: reminder.intervalDays,
@@ -572,7 +649,20 @@ async function advanceNextDue(
     lastSatisfiedAt: rolling ? now : reminder.lastSatisfiedAt,
     createdAt: reminder.createdAt,
   };
-  const nextDueAt = computeReminderNextDueAt(scheduleInput, timezone, now);
+  return computeReminderNextDueAt(scheduleInput, timezone, now);
+}
+
+/**
+ * Advance `nextDueAt` past the current slot. Used after a disabled-module
+ * skip, where nothing the reminder could deliver is left for this cycle.
+ */
+async function advanceNextDue(
+  prisma: PrismaClient,
+  reminder: RollableReminder,
+  timezone: string,
+  now: Date,
+): Promise<void> {
+  const nextDueAt = nextSlotAfterReminder(reminder, timezone, now);
   await prisma.measurementReminder.update({
     where: { id: reminder.id },
     data: { nextDueAt },

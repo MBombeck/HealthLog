@@ -268,6 +268,7 @@
     "illnessTitle": "Affections et maladies",
     "illnessOngoing": "En cours",
     "illnessColCondition": "Affection",
+    "illnessColBodySite": "Partie du corps",
     "illnessColType": "Type",
     "illnessColLifecycle": "Évolution",
     "illnessColOnset": "Début",
@@ -6140,7 +6141,14 @@
       "scopeNote": "Il peut uniquement ajouter de nouvelles mesures à votre propre dossier : il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les mesures sont signalées comme provenant d'un appareil externe, ce qui vous permet de les reconnaître plus tard, et vous pouvez toujours les corriger.",
       "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer."
     },
-    "tokenMintMovedDescription": "Les jetons sont émis là où ils s'appliquent : ci-dessus pour les mesures, ou dans le point de terminaison API d'un médicament pour ce seul médicament.",
+    "documentsToken": {
+      "title": "Jetons de documents",
+      "description": "Créez un jeton pour que Paperless-ngx, Papra ou le script d'import ajoutent des documents à votre coffre.",
+      "detail": "Le jeton n'est affiché qu'une fois.",
+      "scopeNote": "Il peut uniquement ajouter de nouveaux documents à votre propre coffre. Il ne peut rien lister, ouvrir, télécharger, modifier ou supprimer, ni créer un autre jeton. Il apprend seulement si un fichier a été enregistré, pas comment vous l'avez classé.",
+      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer."
+    },
+    "tokenMintMovedDescription": "Les jetons sont émis là où ils s'appliquent : ci-dessus pour les mesures et les documents, ou dans le point de terminaison API d'un médicament pour ce seul médicament.",
     "tokenNamePlaceholder": "Nom du jeton (par exemple Raccourci iPhone)",
     "tokenCreated": "Jeton créé — copiez-le maintenant ! Il ne sera plus affiché.",
     "tokenCopy": "Copier le jeton",
@@ -8519,6 +8527,7 @@
       "inDays": "Dans {days} jours"
     },
     "overdueByDays": "En retard de {days} jours",
+    "overdueSinceYesterday": "En retard depuis hier",
     "cadence": {
       "everyNDays": "Tous les {days} jours",
       "custom": "Planning personnalisé",
@@ -9194,7 +9203,8 @@
       "parentNone": "Non lié",
       "resolved": "Terminée le",
       "resolvedHelp": "Laissez vide tant que l'épisode est en cours.",
-      "markOngoing": "Toujours en cours"
+      "markOngoing": "Toujours en cours",
+      "bodySiteHint": "Par exemple genou ou bas du dos."
     },
     "sheet": {
       "title": "Enregistrer {date}",
@@ -9984,6 +9994,9 @@
       "noConditions": "Lié à aucune affection",
       "previewUnavailable": "Pas d'aperçu intégré pour ce type de fichier",
       "uploadedMeta": "Ajouté le {date} · {size}",
+      "importedFrom": "Importé depuis {system}",
+      "importedFromWithId": "Importé depuis {system} · ID {id}",
+      "sourceOther": "un autre système",
       "share": "Partager",
       "labValuesLink": "Voir {count} valeurs de laboratoire",
       "visitsLabel": "Rattaché au rendez-vous",
@@ -10309,7 +10322,7 @@
       "preventiveCare": {
         "title": "Examen à faire",
         "body": "{label} est à faire.",
-        "bodyMany": "{count} examens sont à faire."
+        "bodyManyNamed": "À faire : {labels}"
       },
       "syncIssue": {
         "title": "La synchronisation demande votre attention",
@@ -10354,7 +10367,8 @@
       "upcomingVisit": {
         "title": "Rendez-vous à venir",
         "bodyToday": "{what} — aujourd'hui",
-        "bodyTomorrow": "{what} — demain"
+        "bodyTomorrow": "{what} — demain",
+        "bodyDayAfterTomorrow": "{what} — après-demain"
       }
     },
     "action": {
@@ -10928,10 +10942,11 @@
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Afficher les dépistages, les rendez-vous ou les interventions",
+    "viewSwitchLabel": "Afficher les dépistages, les rendez-vous, les interventions ou les parties du corps",
     "tabVorsorge": "Dépistages",
     "tabVisits": "Rendez-vous",
-    "tabProcedures": "Interventions"
+    "tabProcedures": "Interventions",
+    "tabBodySites": "Parties du corps"
   },
   "practitioners": {
     "title": "Cabinets et médecins",
@@ -10972,5 +10987,26 @@
       "removeNamed": "Retirer {name}",
       "removed": "{name} dissocié"
     }
+  },
+  "bodySites": {
+    "title": "Parties du corps",
+    "description": "Interventions et maladies selon la partie du corps concernée.",
+    "loadError": "Les parties du corps n’ont pas pu être chargées.",
+    "emptyTitle": "Aucune partie du corps enregistrée pour l’instant",
+    "emptyDescription": "Indiquez une partie du corps sur une intervention ou une maladie pour la retrouver ici.",
+    "sitesLabel": "Parties du corps",
+    "sidesLabel": "Côté",
+    "allSides": "Tous les côtés",
+    "pickPrompt": "Choisissez une partie du corps pour voir ce qui y est enregistré.",
+    "noMatchTitle": "Rien n’est enregistré de ce côté",
+    "visitsTitle": "Interventions et rendez-vous",
+    "conditionsTitle": "Maladies",
+    "hiddenDocument": "Un document qui ne vous est pas partagé",
+    "hiddenLabResult": "Un résultat d’analyse qui ne vous est pas partagé",
+    "hiddenCondition": "Une maladie qui ne vous est pas partagée",
+    "hiddenVisit": "Un rendez-vous qui ne vous est pas partagé",
+    "linkedLabel": "Éléments liés",
+    "conditionSince": "Depuis le {onset}",
+    "conditionDates": "Du {onset} au {resolved}"
   }
 }

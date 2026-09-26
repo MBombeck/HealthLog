@@ -1,35 +1,44 @@
 /**
- * Write one account's stored backup (`data_backups.data`) without ever
- * holding the stored copy in this process.
+ * Write one account's stored backup without ever holding the stored copy in
+ * this process.
  *
- * Why. `packBackupBlobStreaming` streams the JSON through gzip and the cipher,
- * but its answer is one string, because the column takes one value. Measured
- * on a seeded account of 1.25 million measurements: the answer is 64 MB of
- * base64, and between the pieces, the joined string and the copies the
- * database driver makes to bind it, the backup grew the process by about
- * 640 MB of resident memory (309 MB → 946 MB). The default compose stack runs
- * the web server and the worker in one container capped at 1 GB, so on a
- * record of that size the weekly or manual backup is the thing that takes the
- * container down; a killed worker leaves its job `active` until pg-boss
- * expires it two hours later as `job timed out`.
+ * The copy goes into `data_backup_chunks` as sealed pieces of about a
+ * megabyte (`packBackupChunks`, the piece format in `backup-chunks.ts`), so
+ * this process holds one piece at a time and the size of a copy has nothing to
+ * do with the memory of the process that writes it. Up to v1.39.1 the pieces
+ * were joined into one value in `data_backups.data`, which every reader then
+ * had to take whole; that capped a copy at a fifth of the heap, 105 MB in the
+ * default 1 GB container, and an account with 1.75 million readings was past
+ * it (#1031).
  *
- * What instead. The pieces go to Postgres as they come, a few megabytes at a
- * time, into a temporary table on the transaction's own connection, and one
- * statement assembles them into the row with `string_agg`. The process never
- * holds more than one piece; Postgres builds the value it was going to store
- * anyway.
+ * All of it is one transaction, so the account's previous copy stays in place,
+ * readable, until the new one is complete: a failure halfway through rolls
+ * back to it.
  *
- * All of it is one transaction, so the account's previous copy stays in place
- * until the new one is complete: a failure halfway through rolls back to it,
- * and the temporary table goes with the transaction either way.
+ * The pieces are written through the model API, never through a raw query.
+ * Prisma caches the plan of every raw query keyed by its parameter values, the
+ * last hundred of them, so a raw INSERT carrying a one-megabyte piece keeps
+ * that piece alive after the statement: measured, a hundred such inserts left
+ * 160 MB of heap behind that no collection frees, which is the memory bound
+ * this module exists to remove. A model create is planned once for its shape
+ * and keeps nothing.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 
+import { isStreamCiphertext, openStreamDecryptor } from "@/lib/crypto";
 import {
-  packBackupBlobInto,
+  BackupBusyError,
+  packBackupChunks,
+  packGzipChunks,
+  singleValueToGzip,
   type BackupJsonProducer,
-  type PackBackupBlobOptions,
+  type PackBackupOptions,
 } from "@/lib/export/backup-blob";
+import {
+  BackupIntegrityError,
+  newChunkStreamId,
+} from "@/lib/export/backup-chunks";
+import { BackupFormsConflictError } from "@/lib/export/stored-backup";
 
 /**
  * How long the storing transaction may stay open. The job around it expires
@@ -53,66 +62,209 @@ export interface StoreBackupBlobInput {
   userId: string;
   /** `DataBackup.type`: `WEEKLY_AUTO` for the scheduled and manual pass. */
   type: string;
+  /**
+   * The account the copy belongs to, when it is known only once the producer
+   * has finished: an uploaded file names its owner inside itself. The row is
+   * written under `userId` meanwhile (the uploading admin) and moved to this
+   * account before the transaction commits, so nothing outside it ever sees
+   * the row under the wrong owner.
+   */
+  ownerAfterRead?: () => string;
+}
+
+type Tx = Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
+
+/** Refuse to touch a copy an unfinished restore is reading. */
+async function assertNotBeingRestored(tx: Tx, backupId: string) {
+  const active = await tx.backupRestoreJob.findFirst({
+    where: { backupId, status: { in: ["queued", "running"] } },
+    select: { id: true },
+  });
+  if (active) throw new BackupBusyError(backupId);
 }
 
 /**
- * Pack `producer`'s JSON into the stored envelope and upsert it as the
- * `(userId, type)` backup. Resolves to the row's id and the stored size.
- *
- * `input` may be a function, read once the producer has finished: an
- * uploaded file names its owner somewhere inside itself, and the upload
- * route only knows who that is once it has read the file through.
+ * Pack `producer`'s JSON into sealed pieces and store them as the
+ * `(userId, type)` backup, replacing that backup's previous copy. Resolves to
+ * the row's id, the stored size in bytes and the number of pieces.
  */
 export async function storeBackupBlob(
   prisma: PrismaClient,
-  input: StoreBackupBlobInput | (() => StoreBackupBlobInput),
+  input: StoreBackupBlobInput,
   producer: BackupJsonProducer,
-  options: PackBackupBlobOptions = {},
-): Promise<{ id: string; bytes: number }> {
+  options: PackBackupOptions = {},
+): Promise<{ id: string; bytes: number; chunks: number }> {
   return prisma.$transaction(
     async (tx) => {
       await tx.$executeRawUnsafe(
         `SET LOCAL idle_in_transaction_session_timeout = '${STORE_IDLE_TIMEOUT}'`,
       );
-      await tx.$executeRaw`
-        CREATE TEMP TABLE backup_blob_parts (
-          seq integer PRIMARY KEY,
-          piece text NOT NULL
-        ) ON COMMIT DROP
-      `;
+      // The row first, so the pieces have something to belong to. An existing
+      // copy is cleared here, inside the transaction: outside it the previous
+      // copy stays whole and readable until this one commits.
+      const row = await tx.dataBackup.upsert({
+        where: { userId_type: { userId: input.userId, type: input.type } },
+        update: { data: null },
+        create: { userId: input.userId, type: input.type, data: null },
+        select: { id: true },
+      });
+      await assertNotBeingRestored(tx, row.id);
+      await tx.dataBackupChunk.deleteMany({ where: { backupId: row.id } });
 
-      let seq = 0;
-      let bytes = 0;
-      await packBackupBlobInto(
-        async (piece) => {
-          await tx.$executeRaw`
-            INSERT INTO backup_blob_parts (seq, piece) VALUES (${seq}, ${piece})
-          `;
-          seq += 1;
-          bytes += piece.length;
+      const streamId = newChunkStreamId();
+      const { chunks, bytes } = await packBackupChunks(
+        async (sealed, seq) => {
+          await tx.dataBackupChunk.create({
+            data: { backupId: row.id, seq, data: new Uint8Array(sealed) },
+            select: { id: true },
+          });
         },
+        streamId,
         producer,
         options,
       );
 
-      const target = typeof input === "function" ? input() : input;
-      // The row first, through Prisma, so a new account's backup gets its id
-      // the same way every other row does; the data it briefly carries is
-      // never visible outside this transaction.
-      const row = await tx.dataBackup.upsert({
-        where: { userId_type: { userId: target.userId, type: target.type } },
-        update: { createdAt: new Date() },
-        create: { userId: target.userId, type: target.type, data: "" },
-        select: { id: true },
+      // Again at the end: a restore may have been queued while this ran. The
+      // window left is the few milliseconds to the commit, and a restore
+      // started in it finds the copy changed (`backup_changed`) or, if it is
+      // already reading, is told the copy was replaced while being read.
+      await assertNotBeingRestored(tx, row.id);
+      await tx.dataBackup.update({
+        where: { id: row.id },
+        data: {
+          ...(input.ownerAfterRead ? { userId: input.ownerAfterRead() } : {}),
+          chunkCount: chunks,
+          chunkStreamId: streamId,
+          createdAt: new Date(),
+        },
       });
-      await tx.$executeRaw`
-        UPDATE data_backups
-        SET data = (
-          SELECT string_agg(piece, '' ORDER BY seq) FROM backup_blob_parts
-        )
-        WHERE id = ${row.id}
+      return { id: row.id, bytes, chunks };
+    },
+    { timeout: STORE_TRANSACTION_TIMEOUT_MS, maxWait: 60_000 },
+  );
+}
+
+/**
+ * The first characters of a single stored value, which carry its key id, or
+ * null when the row no longer holds one. For the key-rotation scan, which must
+ * not read a value that can be a hundred megabytes whole.
+ */
+export async function singleValueBackupHead(
+  prisma: PrismaClient,
+  id: string,
+): Promise<string | null> {
+  const [row] = await prisma.$queryRaw<Array<{ head: string | null }>>`
+    SELECT left(data, 64) AS head FROM data_backups WHERE id = ${id}
+  `;
+  return row?.head ?? null;
+}
+
+/**
+ * How much of a single stored value the conversion reads per query, in
+ * characters. A multiple of four, so every slice of base64 decodes on its own.
+ */
+const CONVERT_SLICE_CHARS = 1024 * 1024;
+
+/**
+ * Turn a copy stored as one value (before v1.39.2) into sealed pieces under
+ * the active key, in place: same row, same date. Resolves to `"gone"` when the
+ * row no longer holds a single value (converted, replaced or deleted since it
+ * was listed).
+ *
+ * Why convert rather than re-seal. Re-sealing a single value under the new key
+ * needs the stored string, its decoded bytes, the plaintext and the new
+ * ciphertext at once, and one value can be a hundred megabytes; key rotation
+ * runs in the app container. Converting reads the value a slice at a time and
+ * writes pieces as it goes.
+ *
+ * The single stream of v1.38.6 to v1.39.1 is read in slices and its tag is checked only at
+ * the end, so the pieces are written before the check has passed. That is why
+ * all of it is one transaction: a copy that fails the check rolls back, and
+ * the row is left exactly as it was. The older forms were written from one
+ * string and fit in one, so they are read whole.
+ */
+export async function convertSingleValueBackup(
+  prisma: PrismaClient,
+  id: string,
+  /** Characters per read; a multiple of four. Tests lower it. */
+  sliceChars: number = CONVERT_SLICE_CHARS,
+): Promise<"converted" | "gone"> {
+  if (sliceChars % 4 !== 0) throw new Error("sliceChars must divide by 4");
+  return prisma.$transaction(
+    async (tx) => {
+      await tx.$executeRawUnsafe(
+        `SET LOCAL idle_in_transaction_session_timeout = '${STORE_IDLE_TIMEOUT}'`,
+      );
+      const [row] = await tx.$queryRaw<
+        Array<{ head: string; len: number; stream_id: string | null }>
+      >`
+        SELECT left(data, 128) AS head, length(data)::int AS len,
+               chunk_stream_id AS stream_id
+        FROM data_backups
+        WHERE id = ${id} AND data IS NOT NULL
+        FOR UPDATE
       `;
-      return { id: row.id, bytes };
+      if (!row) return "gone";
+      if (row.stream_id !== null) {
+        throw new BackupFormsConflictError();
+      }
+
+      let gz: AsyncIterable<Buffer> | Iterable<Buffer>;
+      if (isStreamCiphertext(row.head)) {
+        const decryptor = openStreamDecryptor(row.head);
+        const slice = async (from: number): Promise<Buffer> => {
+          const [part] = await tx.$queryRaw<Array<{ s: string }>>`
+            SELECT substr(data, ${from + 1}::int, ${sliceChars}::int) AS s
+            FROM data_backups WHERE id = ${id}
+          `;
+          return Buffer.from(part?.s ?? "", "base64");
+        };
+        gz = (async function* () {
+          // The last 16 bytes of the body are the tag, so they are held back
+          // from every slice until the next one shows they were not the end.
+          let held = Buffer.alloc(0);
+          for (let at = decryptor.headerLength; at < row.len;) {
+            const bytes = Buffer.concat([held, await slice(at)]);
+            at += sliceChars;
+            const cut = Math.max(0, bytes.byteLength - 16);
+            held = Buffer.from(bytes.subarray(cut));
+            const out = decryptor.update(bytes.subarray(0, cut));
+            if (out.byteLength > 0) yield out;
+          }
+          if (held.byteLength !== 16) {
+            throw new BackupIntegrityError("The stored copy is truncated.");
+          }
+          const tail = decryptor.final(held);
+          if (tail.byteLength > 0) yield tail;
+        })();
+      } else {
+        const whole = await tx.dataBackup.findUniqueOrThrow({
+          where: { id },
+          select: { data: true },
+        });
+        gz = [singleValueToGzip(whole.data!)];
+      }
+
+      await tx.dataBackupChunk.deleteMany({ where: { backupId: id } });
+      const streamId = newChunkStreamId();
+      const { chunks } = await packGzipChunks(
+        async (sealed, seq) => {
+          await tx.dataBackupChunk.create({
+            data: { backupId: id, seq, data: new Uint8Array(sealed) },
+            select: { id: true },
+          });
+        },
+        streamId,
+        gz,
+        // The copy exists already; converting it must not be refused by the
+        // limit on writing a new one.
+        { maxBytes: Number.MAX_SAFE_INTEGER },
+      );
+      await tx.dataBackup.update({
+        where: { id },
+        data: { data: null, chunkCount: chunks, chunkStreamId: streamId },
+      });
+      return "converted";
     },
     { timeout: STORE_TRANSACTION_TIMEOUT_MS, maxWait: 60_000 },
   );

@@ -71,6 +71,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "backup.section.missing",
       "backup.upload.too_large",
     ],
+    "body-site": ["body-site.invalid"],
     coach: [
       "coach.budget.exceeded",
       "coach.conversation.invalidTitle",
@@ -131,6 +132,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "documents.inbound.rateLimited",
       "documents.inbound.restoreDuplicate",
       "documents.inbound.restoreGone",
+      "documents.inbound.sourceAliasLimit",
       "documents.inbound.uploadBusy",
       "documents.inbound.uploadTimeout",
       "documents.inbound.vaccinationNotFound",
@@ -312,7 +314,10 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "source-priority.body.invalid_json",
       "source-priority.body.invalid_shape",
     ],
-    tokens: ["tokens.measurements.ceiling_reached"],
+    tokens: [
+      "tokens.documents.ceiling_reached",
+      "tokens.measurements.ceiling_reached",
+    ],
     vaccination: [
       "vaccination.booster-invalid",
       "vaccination.booster-no-antigen",

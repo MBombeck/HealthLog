@@ -1,52 +1,38 @@
 /**
- * The envelope a `DataBackup.data` row is stored in: compress, then encrypt.
+ * The envelope of a stored backup: compress, then encrypt.
  *
- * Why it exists. The weekly worker handed `encrypt(JSON.stringify(payload))`
- * straight to Postgres. For an account with a few hundred thousand
- * measurements that is four full copies of the record alive at the same
- * moment: the payload object graph, the JSON string, the base64 ciphertext at
- * 1.33× the JSON, and the copy the database driver makes of that parameter on
- * its way to the wire. Measured on a seeded 445 000-measurement account, the
- * JSON alone is 242 MB and the run dies of heap exhaustion — under a 1 GB heap
- * it never reaches the insert, and on a bigger heap it only reaches it later.
- * The weekly pass was not slow; it could not finish.
+ * Why compress. A health record's JSON is extremely repetitive (the same
+ * twenty keys per row, timestamps sharing a prefix), so gzip takes it to about
+ * a tenth, and every copy after that shrinks with it. The backup also lives
+ * inside the database it would be needed to restore, so its size matters.
  *
- * Compressing first is what makes the whole tail of that pipeline cheap. A
- * health record's JSON is extremely repetitive — the same twenty keys per row,
- * timestamps sharing a prefix — so gzip takes that 242 MB to a few tens of
- * megabytes, and every copy after it shrinks with it. It is also the reason
- * the stored row stops being a liability of its own: the backup lives INSIDE
- * the database it would be needed to restore, so its size is not a cosmetic
- * concern.
+ * How it is written. The JSON goes into gzip a page at a time, and gzip's
+ * output is sealed in pieces of about a megabyte (`packBackupChunks`, the
+ * piece format in `backup-chunks.ts`), which `storeBackupBlob` puts into
+ * `data_backup_chunks`. Nothing in this process ever holds the whole JSON,
+ * the whole compressed copy or the whole ciphertext, so the size of a copy
+ * does not depend on the memory of the process that writes or reads it.
  *
- * Compressing first was not enough on its own. Even with a small stored blob,
- * `packBackupBlob` still needs the whole JSON as one argument, and building
- * that string is what exhausts the heap — measured under
- * `--max-old-space-size=450` on the seeded account: `FATAL ERROR: Reached heap
- * limit`. So the writer the weekly job actually uses is
- * `packBackupBlobStreaming`, which never sees a complete copy of the JSON, the
- * gzip output or the ciphertext: rows go in a page at a time, gzip and the
- * cipher consume them as they arrive, and only the base64 answer accumulates,
- * because the destination is a single `text` column and one value is what the
- * column takes.
- *
- * Every direction reads. Three shapes exist in the wild and all three restore:
- * the original `encrypt(json)`, the compressed `encrypt("HLZ1:" + gz)`, and
- * the streamed `~hlgcm1.…` form written from now on. An operator whose newest
- * usable copy predates any of this is exactly the person who needs it to work.
+ * Every earlier form still reads. Up to v1.39.1 a copy was one value in
+ * `data_backups.data`, in one of three shapes: the original `encrypt(json)`,
+ * the compressed `encrypt("HLZ1:" + gz)`, and the streamed `~hlgcm1.…` form.
+ * `openBackupBlob` below opens all three; an operator whose newest usable copy
+ * predates the pieces is exactly the person who needs it to work.
  */
 import { Buffer } from "node:buffer";
-import v8 from "node:v8";
 import { Readable } from "node:stream";
 import { createGunzip, createGzip, gunzipSync, gzipSync } from "node:zlib";
 
 import {
-  createStreamEncryptor,
   decrypt,
   decryptStream,
   encrypt,
   isStreamCiphertext,
 } from "@/lib/crypto";
+import {
+  sealBackupChunk,
+  BACKUP_CHUNK_BYTES,
+} from "@/lib/export/backup-chunks";
 
 /**
  * Prefix of the DECRYPTED plaintext when the body is gzipped-then-base64'd.
@@ -55,28 +41,15 @@ import {
  */
 const GZIP_MARKER = "HLZ1:";
 
-/** Serialised backup JSON → the string stored in `DataBackup.data`. */
+/**
+ * Serialised backup JSON → the single-value form stored in `DataBackup.data`
+ * before v1.39.2. Nothing in the app writes it any more; the tests use it to
+ * stand in for a copy written by an earlier release.
+ */
 export function packBackupBlob(json: string): string {
   const compressed = gzipSync(json).toString("base64");
   return encrypt(`${GZIP_MARKER}${compressed}`);
 }
-
-/**
- * The share of this process's heap limit one stored backup may become.
- *
- * The blob is the single copy this pipeline cannot stream away:
- * `data_backups.data` is one `text` column, so the row has to be one value,
- * and the driver makes a second copy of it on its way to the wire. Two copies
- * of the answer plus whatever the process legitimately holds is what has to
- * fit at once, so a fifth of the heap limit is one account's share.
- *
- * It is a share of the LIMIT, not of what is currently used. How large a
- * single value this process can hold depends on how it was started; it does
- * not depend on how long it has been running or on how much garbage is
- * waiting to be collected. The check this replaced read the latter, and so
- * aborted a 1.2 MB record on a server that had merely been up for a week.
- */
-const BLOB_HEAP_SHARE = 0.2;
 
 /** Bytes as an operator reads them. Kilobytes below a megabyte. */
 function size(bytes: number): string {
@@ -85,23 +58,39 @@ function size(bytes: number): string {
   return mb < 100 ? `${mb.toFixed(1)} MB` : `${Math.round(mb)} MB`;
 }
 
-/** Default cap for one stored blob, in bytes. */
-export function defaultBackupBlobLimit(): number {
-  return Math.floor(v8.getHeapStatistics().heap_size_limit * BLOB_HEAP_SHARE);
+/**
+ * The largest stored copy of one account, in megabytes, unless the operator
+ * sets `BACKUP_MAX_STORED_MB`.
+ *
+ * Not a memory bound. A copy is written and read a piece at a time
+ * (`backup-chunks.ts`), so its size does not depend on the process; the only
+ * thing it takes is room in the database, which holds the old and the new
+ * copy side by side until the new one commits. The limit is there so a
+ * runaway copy stops with a message instead of filling the database volume.
+ * 2 GB is far past any record seen so far: the copy of an account with 2.6
+ * million readings is about 100 MB.
+ */
+const DEFAULT_MAX_STORED_MB = 2048;
+
+/** The stored-copy limit in bytes: `BACKUP_MAX_STORED_MB`, or the default. */
+export function defaultBackupStoreLimit(): number {
+  const raw = process.env.BACKUP_MAX_STORED_MB?.trim();
+  const mb = raw ? Number(raw) : NaN;
+  const effective = Number.isFinite(mb) && mb > 0 ? mb : DEFAULT_MAX_STORED_MB;
+  return Math.floor(effective * 1024 * 1024);
 }
 
-/**
- * Thrown when one account's encrypted backup outgrows what this process can
- * hold as a single value.
- *
- * The message states what was counted — the ciphertext written so far — and
- * the limit it crossed, because that is the pair an operator can act on. It
- * is about the record, and it is true: raising the heap raises the limit with
- * it, since the limit is derived from the heap.
- */
 /** The stable code of the 413 an upload too large to store is answered with. */
 export const BACKUP_UPLOAD_TOO_LARGE_CODE = "backup.upload.too_large";
 
+/**
+ * Thrown when one account's encrypted copy passes the stored-copy limit.
+ *
+ * The message names what was counted, the limit it crossed, where the limit
+ * comes from and what to do about it, because that is what an operator reading
+ * a failed job needs. Nothing was stored: the write is one transaction, so the
+ * previous copy is still in place.
+ */
 export class BackupBlobTooLargeError extends Error {
   readonly bytes: number;
   readonly limitBytes: number;
@@ -109,16 +98,32 @@ export class BackupBlobTooLargeError extends Error {
   constructor(bytes: number, limitBytes: number) {
     super(
       `Backup stopped after ${size(bytes)} of encrypted backup for one ` +
-        `account, over the ${size(limitBytes)} a single stored copy may ` +
-        `occupy here (a fifth of this process's ` +
-        `${size(v8.getHeapStatistics().heap_size_limit)} heap limit). This ` +
-        `account's record is genuinely too large to store as one row on this ` +
-        `host; raise the container's memory or NODE_OPTIONS=` +
-        `--max-old-space-size and the limit rises with it.`,
+        `account, over the ${size(limitBytes)} limit for one stored copy ` +
+        `(BACKUP_MAX_STORED_MB, default ${DEFAULT_MAX_STORED_MB}). The ` +
+        `previous copy is unchanged. To store a copy this size, set ` +
+        `BACKUP_MAX_STORED_MB in .env to a larger number of megabytes and ` +
+        `recreate the app container; the database needs room for two copies ` +
+        `of this size while the new one is written.`,
     );
     this.name = "BackupBlobTooLargeError";
     this.bytes = bytes;
     this.limitBytes = limitBytes;
+  }
+}
+
+/**
+ * Thrown when the copy a store would replace is being restored: a restore of
+ * it is queued or running. Replacing it then would pull the pieces out from
+ * under the restore. Nothing was written; the weekly run tries again next
+ * time.
+ */
+export class BackupBusyError extends Error {
+  constructor(readonly backupId: string) {
+    super(
+      "Backup not replaced: a restore of the current copy is queued or " +
+        "running. The previous copy is unchanged; the next run replaces it.",
+    );
+    this.name = "BackupBusyError";
   }
 }
 
@@ -132,117 +137,103 @@ export type BackupJsonProducer = (
   write: (chunk: string | Buffer) => Promise<void>,
 ) => Promise<unknown>;
 
-export interface PackBackupBlobOptions {
+export interface PackBackupOptions {
   /**
-   * Largest stored blob this call may produce, in bytes. Defaults to
-   * `defaultBackupBlobLimit()`. Tests pass an explicit value; nothing else
+   * Largest stored copy this call may produce, in bytes. Defaults to
+   * `defaultBackupStoreLimit()`. Tests pass an explicit value; nothing else
    * should need to.
    */
   maxBytes?: number;
+  /**
+   * How much compressed backup one piece carries. Defaults to
+   * `BACKUP_CHUNK_BYTES`; tests lower it so a small record spans many pieces.
+   */
+  chunkBytes?: number;
 }
 
 /**
- * Serialised backup JSON, produced in pieces → the stored string.
- *
- * The pipeline is JSON piece → gzip → AES-256-GCM → base64, with nothing
- * buffered end to end but the base64 answer. Kept for callers that need the
- * answer as one value; the weekly and manual backup no longer do, they hand
- * the pieces to Postgres as they come (`packBackupBlobInto` below, via
- * `storeBackupBlob`).
+ * Receives each sealed piece of the copy, in order, with its position.
+ * Awaited, so a slow destination holds the producer back.
  */
-export async function packBackupBlobStreaming(
-  producer: BackupJsonProducer,
-  options: PackBackupBlobOptions = {},
-): Promise<string> {
-  const pieces: string[] = [];
-  await packBackupBlobInto(
-    (piece) => {
-      pieces.push(piece);
-    },
-    producer,
-    options,
-  );
-  return pieces.join("");
-}
-
-/** Receives the stored string a piece at a time, in order. Awaited. */
-export type BackupBlobSink = (piece: string) => void | Promise<void>;
+export type BackupChunkSink = (sealed: Buffer, seq: number) => Promise<void>;
 
 /**
- * How much base64 to gather before handing it to the sink. Large enough that
- * a sink writing to the database makes a few dozen round trips for a large
- * record rather than thousands, small enough to be irrelevant to the heap.
+ * Collects gzip output and seals it into pieces of about `chunkBytes`, in
+ * order, counting the stored bytes against the limit. `finish` seals what is
+ * left as the last piece, even when that is nothing, because the last-piece
+ * mark is what tells a reader the copy is complete.
  */
-const SINK_FLUSH_BYTES = 4 * 1024 * 1024;
+function chunkSealer(
+  sink: BackupChunkSink,
+  streamId: string,
+  options: PackBackupOptions,
+) {
+  const limitBytes = options.maxBytes ?? defaultBackupStoreLimit();
+  const chunkBytes = options.chunkBytes ?? BACKUP_CHUNK_BYTES;
+  let pending: Buffer[] = [];
+  let pendingBytes = 0;
+  let seq = 0;
+  let stored = 0;
 
-/**
- * Serialised backup JSON, produced in pieces → the stored string, delivered
- * in pieces.
- *
- * The concatenation of every piece `sink` receives is exactly the string
- * `packBackupBlobStreaming` returns. `producer` decides how big its JSON
- * pieces are; the gzip stream applies backpressure through the promise this
- * hands back, so a fast producer cannot outrun the compressor, and a slow
- * sink holds the producer back the same way, so neither side piles up.
- *
- * `maxBytes` still counts the whole answer. Nothing here holds it any more,
- * but every reader of a stored copy (restore, download, summary) opens it as
- * one value, so the limit is what keeps a copy restorable on this host.
- */
-export async function packBackupBlobInto(
-  sink: BackupBlobSink,
-  producer: BackupJsonProducer,
-  options: PackBackupBlobOptions = {},
-): Promise<void> {
-  const limitBytes = options.maxBytes ?? defaultBackupBlobLimit();
-  const encryptor = createStreamEncryptor();
-  let pending: string[] = [encryptor.header];
-  let pendingBytes = encryptor.header.length;
-  let heldBytes = encryptor.header.length;
-  const gzip = createGzip();
-
-  let failure: unknown = null;
-  gzip.on("data", (chunk: Buffer) => {
-    try {
-      const piece = encryptor.update(chunk);
-      if (piece === "") return;
-      // Base64 is ASCII, so a character counted here is a byte written here.
-      heldBytes += piece.length;
-      if (heldBytes > limitBytes) {
-        throw new BackupBlobTooLargeError(heldBytes, limitBytes);
-      }
-      pending.push(piece);
-      pendingBytes += piece.length;
-    } catch (err) {
-      failure ??= err;
-      gzip.destroy(err as Error);
+  const seal = async (last: boolean): Promise<void> => {
+    const payload = pending.length === 1 ? pending[0]! : Buffer.concat(pending);
+    pending = [];
+    pendingBytes = 0;
+    const sealed = sealBackupChunk(streamId, seq, last, payload);
+    stored += sealed.byteLength;
+    if (stored > limitBytes) {
+      throw new BackupBlobTooLargeError(stored, limitBytes);
     }
-  });
+    await sink(sealed, seq);
+    seq += 1;
+  };
 
+  return {
+    push(gz: Buffer): void {
+      pending.push(gz);
+      pendingBytes += gz.byteLength;
+    },
+    async flushFull(): Promise<void> {
+      while (pendingBytes >= chunkBytes) await seal(false);
+    },
+    async finish(): Promise<{ chunks: number; bytes: number }> {
+      while (pendingBytes >= chunkBytes) await seal(false);
+      await seal(true);
+      return { chunks: seq, bytes: stored };
+    },
+  };
+}
+
+/**
+ * Serialised backup JSON, produced in pieces → sealed pieces of the stored
+ * copy, handed to `sink` as they fill.
+ *
+ * The pipeline is JSON piece → gzip → a piece of about `BACKUP_CHUNK_BYTES`
+ * → AES-256-GCM (`sealBackupChunk`). Nothing is held but the piece being
+ * filled: the gzip stream applies backpressure through the promise `write`
+ * hands back, and a full piece is sealed and sunk before the producer may
+ * write again.
+ */
+export async function packBackupChunks(
+  sink: BackupChunkSink,
+  streamId: string,
+  producer: BackupJsonProducer,
+  options: PackBackupOptions = {},
+): Promise<{ chunks: number; bytes: number }> {
+  const sealer = chunkSealer(sink, streamId, options);
+  const gzip = createGzip();
+  gzip.on("data", (chunk: Buffer) => sealer.push(chunk));
   const finished = new Promise<void>((resolve, reject) => {
     gzip.on("end", resolve);
     gzip.on("error", reject);
   });
-  // A failure raised inside the `data` handler destroys the stream, which
-  // rejects this promise — and the producer's own `write` rethrows the same
-  // failure first, so nothing ever awaits it. Marking it handled keeps a
-  // failure that IS being reported from also surfacing as an unhandled
-  // rejection; `await finished` below still sees the rejection.
+  // The producer's own failure is what gets reported; this only keeps the
+  // same rejection from also surfacing as unhandled. `await finished` below
+  // still sees it.
   finished.catch(() => {});
 
-  const flush = async (force: boolean): Promise<void> => {
-    if (pendingBytes === 0 || (!force && pendingBytes < SINK_FLUSH_BYTES)) {
-      return;
-    }
-    const piece = pending.join("");
-    pending = [];
-    pendingBytes = 0;
-    await sink(piece);
-  };
-
   const write = async (chunk: string | Buffer): Promise<void> => {
-    if (failure) throw failure;
-    await flush(false);
+    await sealer.flushFull();
     if (gzip.write(chunk, "utf8")) return;
     await new Promise<void>((resolve, reject) => {
       const onDrain = () => {
@@ -266,12 +257,26 @@ export async function packBackupBlobInto(
   }
   gzip.end();
   await finished;
-  if (failure) throw failure;
+  return sealer.finish();
+}
 
-  const tail = encryptor.final();
-  pending.push(tail);
-  pendingBytes += tail.length;
-  await flush(true);
+/**
+ * Bytes that are already one gzip stream of the backup JSON → sealed pieces.
+ * For converting a copy stored before v1.39.2, whose content is gzip output
+ * already and needs no second compression.
+ */
+export async function packGzipChunks(
+  sink: BackupChunkSink,
+  streamId: string,
+  gz: AsyncIterable<Buffer> | Iterable<Buffer>,
+  options: PackBackupOptions = {},
+): Promise<{ chunks: number; bytes: number }> {
+  const sealer = chunkSealer(sink, streamId, options);
+  for await (const piece of gz) {
+    sealer.push(piece);
+    await sealer.flushFull();
+  }
+  return sealer.finish();
 }
 
 /**
@@ -316,6 +321,19 @@ export function unpackBackupBlob(stored: string): string {
   return gunzipSync(
     Buffer.from(plaintext.slice(GZIP_MARKER.length), "base64"),
   ).toString("utf8");
+}
+
+/**
+ * A single-value copy in one of the two forms written from one string (plain
+ * `encrypt(json)` or `HLZ1:` gzip) → its content as gzip bytes, for the
+ * conversion into pieces. The `~hlgcm1.` stream form is read in slices instead.
+ */
+export function singleValueToGzip(stored: string): Buffer {
+  const plaintext = decrypt(stored);
+  if (plaintext.startsWith(GZIP_MARKER)) {
+    return Buffer.from(plaintext.slice(GZIP_MARKER.length), "base64");
+  }
+  return gzipSync(plaintext);
 }
 
 /**

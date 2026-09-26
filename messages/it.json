@@ -268,6 +268,7 @@
     "illnessTitle": "Condizioni e malattie",
     "illnessOngoing": "In corso",
     "illnessColCondition": "Condizione",
+    "illnessColBodySite": "Parte del corpo",
     "illnessColType": "Tipo",
     "illnessColLifecycle": "Decorso",
     "illnessColOnset": "Inizio",
@@ -6140,7 +6141,14 @@
       "scopeNote": "Può soltanto aggiungere nuove misurazioni alla tua cartella: non può leggere i tuoi dati, modificare o eliminare nulla, né creare un altro token. Le misurazioni vengono contrassegnate come provenienti da un dispositivo esterno, così le riconosci in seguito, e puoi comunque correggerle.",
       "createFailed": "Non è stato possibile creare il token. Riprova."
     },
-    "tokenMintMovedDescription": "I token vengono emessi dove si applicano: qui sopra per le misurazioni, oppure nell'endpoint API di un farmaco per quel singolo farmaco.",
+    "documentsToken": {
+      "title": "Token per documenti",
+      "description": "Crea un token perché Paperless-ngx, Papra o lo script di importazione aggiungano documenti al tuo archivio.",
+      "detail": "Il token viene mostrato una sola volta.",
+      "scopeNote": "Può soltanto aggiungere nuovi documenti al tuo archivio. Non può elencare, aprire, scaricare, modificare o eliminare nulla, né creare un altro token. Riceve solo l'informazione se un file è stato salvato, non come l'hai archiviato.",
+      "createFailed": "Non è stato possibile creare il token. Riprova."
+    },
+    "tokenMintMovedDescription": "I token vengono emessi dove si applicano: qui sopra per le misurazioni e i documenti, oppure nell'endpoint API di un farmaco per quel singolo farmaco.",
     "tokenNamePlaceholder": "Nome del token (ad es. Comando rapido iPhone)",
     "tokenCreated": "Token creato — copialo ora! Non verrà mostrato di nuovo.",
     "tokenCopy": "Copia token",
@@ -8519,6 +8527,7 @@
       "inDays": "Tra {days} giorni"
     },
     "overdueByDays": "In ritardo di {days} giorni",
+    "overdueSinceYesterday": "In ritardo da ieri",
     "cadence": {
       "everyNDays": "Ogni {days} giorni",
       "custom": "Pianificazione personalizzata",
@@ -9194,7 +9203,8 @@
       "parentNone": "Non collegato",
       "resolved": "Conclusa il",
       "resolvedHelp": "Lascia vuoto finché l'episodio è ancora in corso.",
-      "markOngoing": "Ancora in corso"
+      "markOngoing": "Ancora in corso",
+      "bodySiteHint": "Ad esempio ginocchio o zona lombare."
     },
     "sheet": {
       "title": "Registra {date}",
@@ -9984,6 +9994,9 @@
       "noConditions": "Non collegato a una patologia",
       "previewUnavailable": "Nessuna anteprima integrata per questo tipo di file",
       "uploadedMeta": "Aggiunto il {date} · {size}",
+      "importedFrom": "Importato da {system}",
+      "importedFromWithId": "Importato da {system} · ID {id}",
+      "sourceOther": "un altro sistema",
       "share": "Condividi",
       "labValuesLink": "Vedi {count} valori di laboratorio",
       "visitsLabel": "Appartiene all'appuntamento",
@@ -10309,7 +10322,7 @@
       "preventiveCare": {
         "title": "Controllo da fare",
         "body": "{label} è da fare.",
-        "bodyMany": "Ci sono {count} controlli da fare."
+        "bodyManyNamed": "Da fare: {labels}"
       },
       "syncIssue": {
         "title": "La sincronizzazione richiede attenzione",
@@ -10354,7 +10367,8 @@
       "upcomingVisit": {
         "title": "Appuntamento in arrivo",
         "bodyToday": "{what} — oggi",
-        "bodyTomorrow": "{what} — domani"
+        "bodyTomorrow": "{what} — domani",
+        "bodyDayAfterTomorrow": "{what} — dopodomani"
       }
     },
     "action": {
@@ -10928,10 +10942,11 @@
     }
   },
   "checkups": {
-    "viewSwitchLabel": "Mostra controlli, appuntamenti o interventi",
+    "viewSwitchLabel": "Mostra controlli, appuntamenti, interventi o parti del corpo",
     "tabVorsorge": "Controlli",
     "tabVisits": "Appuntamenti",
-    "tabProcedures": "Interventi"
+    "tabProcedures": "Interventi",
+    "tabBodySites": "Parti del corpo"
   },
   "practitioners": {
     "title": "Studi e medici",
@@ -10972,5 +10987,26 @@
       "removeNamed": "Rimuovi {name}",
       "removed": "Collegamento a {name} rimosso"
     }
+  },
+  "bodySites": {
+    "title": "Parti del corpo",
+    "description": "Interventi e malattie in base alla parte del corpo.",
+    "loadError": "Non è stato possibile caricare le parti del corpo.",
+    "emptyTitle": "Nessuna parte del corpo registrata",
+    "emptyDescription": "Aggiungi una parte del corpo a un intervento o a una malattia e comparirà qui.",
+    "sitesLabel": "Parti del corpo",
+    "sidesLabel": "Lato",
+    "allSides": "Tutti i lati",
+    "pickPrompt": "Scegli una parte del corpo per vedere cosa vi è registrato.",
+    "noMatchTitle": "Nulla di registrato su questo lato",
+    "visitsTitle": "Interventi e appuntamenti",
+    "conditionsTitle": "Malattie",
+    "hiddenDocument": "Un documento non condiviso con te",
+    "hiddenLabResult": "Un risultato di laboratorio non condiviso con te",
+    "hiddenCondition": "Una malattia non condivisa con te",
+    "hiddenVisit": "Un appuntamento non condiviso con te",
+    "linkedLabel": "Voci collegate",
+    "conditionSince": "Dal {onset}",
+    "conditionDates": "Dal {onset} al {resolved}"
   }
 }

@@ -106,6 +106,13 @@ async function finishIndex(
     source,
     tokenCount,
   });
+  // Read with AI is the person reading the document on purpose, so an
+  // import's hold on automatic AI reading (`aiRead=defer`) ends here, before
+  // the lab staging below that would otherwise refuse it.
+  await prisma.inboundDocument.updateMany({
+    where: { id: documentId, userId, aiReadDeferred: true },
+    data: { aiReadDeferred: false },
+  });
   await auditLog("documents.inbound.index", {
     userId,
     ipAddress: getClientIp(request),

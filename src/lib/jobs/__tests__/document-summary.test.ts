@@ -140,6 +140,23 @@ beforeEach(() => {
 });
 
 describe("runDocumentSummaryJob — gating", () => {
+  it("never summarises an import held back from AI reading (#1038)", async () => {
+    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue({
+      id: "doc-1",
+      summaryEncrypted: null,
+      aiReadDeferred: true,
+    } as never);
+
+    await runDocumentSummaryJob({ userId: "user-1", documentId: "doc-1" });
+
+    expect(resolveDocumentVisionProvider).not.toHaveBeenCalled();
+    expect(runDocumentSummary).not.toHaveBeenCalled();
+    for (const [arg] of vi.mocked(prisma.inboundDocument.updateMany).mock
+      .calls) {
+      expect(arg.data).toEqual({ summaryState: "NONE" });
+    }
+  });
+
   it("does no provider work when the opt-in is OFF (only the PENDING heal may write)", async () => {
     vi.mocked(documentAutoReadEnabled).mockResolvedValue(false);
 

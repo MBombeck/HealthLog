@@ -155,7 +155,9 @@ async function persistSummary(
           deletedAt: null,
           summaryState: { not: "READY" },
         },
-        data: { summaryState: "WITHHELD" },
+        // An explicit request is the person reading it on purpose, so an
+        // import's hold on automatic AI reading ends here.
+        data: { summaryState: "WITHHELD", aiReadDeferred: false },
       });
       return "withheld";
     }
@@ -173,6 +175,7 @@ async function persistSummary(
         summaryEncrypted: encryptDocumentSummary(summary),
         summaryGeneratedAt: new Date(),
         summaryState: "READY",
+        aiReadDeferred: false,
       },
     });
     annotate({

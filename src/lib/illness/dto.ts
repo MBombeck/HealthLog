@@ -14,6 +14,7 @@ import { getEvent } from "@/lib/logging/context";
 import type {
   IllnessEpisode,
   IllnessDayLog,
+  Laterality,
   IllnessSymptom,
   IllnessSymptomLink,
 } from "@/generated/prisma/client";
@@ -32,6 +33,14 @@ export interface IllnessEpisodeDTO {
   resolvedAt: string | null;
   parentConditionId: string | null;
   note: string | null;
+  /**
+   * Where on the body, decrypted (v1.39.2). Null when not stated. Additive:
+   * a client that does not know the field ignores it, and an edit that does
+   * not send it keeps it.
+   */
+  bodySite: string | null;
+  /** The side of `bodySite`, or null when not stated. */
+  laterality: Laterality | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,7 +57,10 @@ export interface IllnessDayLogDTO {
 }
 
 /** Decrypt a Bytes note fail-soft (null on missing / undecryptable). */
-function decryptNote(noteEncrypted: Uint8Array | null): string | null {
+function decryptNote(
+  noteEncrypted: Uint8Array | null,
+  field: "note" | "body site" = "note",
+): string | null {
   if (!noteEncrypted || noteEncrypted.byteLength === 0) return null;
   try {
     return decryptFromBytes(noteEncrypted);
@@ -56,7 +68,7 @@ function decryptNote(noteEncrypted: Uint8Array | null): string | null {
     // Undecryptable note (key gap / corruption): fail soft to null but log it
     // (F-CRYPTO-2) so a systemic key gap surfaces instead of reading as blank.
     getEvent()?.addWarning(
-      `illness note decrypt failed: ${
+      `illness ${field} decrypt failed: ${
         err instanceof Error ? err.message : String(err)
       }`,
     );
@@ -74,6 +86,8 @@ export function toIllnessEpisodeDTO(row: IllnessEpisode): IllnessEpisodeDTO {
     resolvedAt: row.resolvedAt ? row.resolvedAt.toISOString() : null,
     parentConditionId: row.parentConditionId,
     note: decryptNote(row.noteEncrypted),
+    bodySite: decryptNote(row.bodySiteEncrypted, "body site"),
+    laterality: row.laterality,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

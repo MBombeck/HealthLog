@@ -97,6 +97,8 @@ function buildMockPrisma() {
           resolvedAt: new Date("2026-04-12T00:00:00.000Z"),
           parentConditionId: "ep-parent",
           noteEncrypted: encryptToBytes("Triggered by travel."),
+          bodySiteEncrypted: encryptToBytes("Temple"),
+          laterality: "RIGHT",
           createdAt: new Date("2026-04-10T00:00:00.000Z"),
           updatedAt: new Date("2026-04-12T00:00:00.000Z"),
           dayLogs: [
@@ -242,6 +244,7 @@ describe("buildRecordsBackupSection", () => {
     const updatedAt = new Date("2026-04-12T23:00:00.000Z");
     const labNote = encryptNoteToBytes("Canonical lab note");
     const illnessNote = encryptToBytes("Canonical illness note");
+    const illnessSite = encryptToBytes("Knee");
     const dayNote = encryptToBytes("Canonical day note");
     const reaction = encryptToBytes("Canonical reaction");
     const allergyNote = encryptToBytes("Canonical allergy note");
@@ -276,6 +279,8 @@ describe("buildRecordsBackupSection", () => {
         resolvedAt: null,
         parentConditionId: null,
         noteEncrypted: illnessNote,
+        bodySiteEncrypted: illnessSite,
+        laterality: "LEFT",
         createdAt,
         updatedAt,
         deletedAt,
@@ -357,6 +362,10 @@ describe("buildRecordsBackupSection", () => {
       parentConditionId: null,
       note: null,
       noteEncrypted: Buffer.from(illnessNote).toString("base64"),
+      // v1.39.2 — the body site rides as ciphertext, never in the clear.
+      bodySite: null,
+      bodySiteEncrypted: Buffer.from(illnessSite).toString("base64"),
+      laterality: "LEFT",
       createdAt: createdAt.toISOString(),
       updatedAt: updatedAt.toISOString(),
       deletedAt: deletedAt.toISOString(),
@@ -402,6 +411,9 @@ describe("buildRecordsBackupSection", () => {
     const flare = section.illnessEpisodes.find((e) => e.id === "ep-flare");
     expect(flare?.parentConditionId).toBe("ep-parent");
     expect(flare?.note).toBe("Triggered by travel.");
+    // The portable file carries the body site readable, like the note.
+    expect(flare?.bodySite).toBe("Temple");
+    expect(flare?.laterality).toBe("RIGHT");
     expect(flare?.dayLogs).toHaveLength(1);
     expect(flare?.dayLogs[0].note).toBe("Bad day.");
     expect(flare?.dayLogs[0].symptoms).toEqual([

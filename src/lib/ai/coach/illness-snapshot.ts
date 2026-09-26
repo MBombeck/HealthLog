@@ -5,8 +5,9 @@
  * its replies are grounded: it should not push a "measure more often" cadence
  * at someone who is unwell, and it should read a low recovery / off-band vital
  * as illness-explained rather than alarming. This is CONTEXT, not a metric —
- * the block carries no measured number, only labels + lifecycle + dates (never
- * the decrypted free-text note, which must not reach the prompt).
+ * the block carries no measured number, only labels + lifecycle + dates, and
+ * since v1.39.2 the body site when one is stated (never the decrypted
+ * free-text note, which must not reach the prompt).
  *
  * Server-authoritative and module-gated: a non-illness / opted-out account
  * gets `null` (no block, no read). The active set drives the `restMode` flag
@@ -17,6 +18,8 @@ import { prisma } from "@/lib/db";
 import { isIllnessEnabled } from "@/lib/illness/gate";
 import { computeEpisodeCorrelation } from "@/lib/illness/correlation-read";
 import { DEFAULT_TIMEZONE } from "@/lib/mood/date-key";
+import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
+import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 
 /** How many recently-resolved episodes to include as history context. */
 const RESOLVED_HISTORY_LIMIT = 6;
@@ -42,6 +45,36 @@ export function sanitizeLabel(label: string): string {
   return out.replace(/\s+/g, " ").trim().slice(0, MAX_LABEL_CHARS);
 }
 
+/** Max characters of a decrypted body site that may enter the prompt. */
+const MAX_BODY_SITE_CHARS = 120;
+
+/**
+ * Where on the body, when the person said (v1.39.2). Decrypted fail-soft and
+ * put through the same sanitiser as every other free-text leaf, since it is
+ * the person's own words inside the fenced snapshot. Absent rather than null
+ * when not stated, so the block does not grow for conditions that carry none.
+ */
+function siteFields(row: {
+  bodySiteEncrypted: Uint8Array | null;
+  laterality: string | null;
+}): { bodySite?: string; laterality?: string } {
+  if (!row.bodySiteEncrypted || row.bodySiteEncrypted.byteLength === 0) {
+    return {};
+  }
+  let plaintext: string;
+  try {
+    plaintext = decryptFromBytes(row.bodySiteEncrypted);
+  } catch {
+    return {};
+  }
+  const bodySite = sanitizeForPrompt(plaintext, MAX_BODY_SITE_CHARS);
+  if (!bodySite) return {};
+  return {
+    bodySite,
+    ...(row.laterality ? { laterality: row.laterality } : {}),
+  };
+}
+
 export interface CoachIllnessBlock {
   /** True when ≥ 1 episode is active right now (the Rest Mode flag). */
   restMode: boolean;
@@ -51,6 +84,10 @@ export interface CoachIllnessBlock {
     type: string;
     lifecycle: string;
     onsetAt: string;
+    /** Where on the body, sanitised; present only when stated (v1.39.2). */
+    bodySite?: string;
+    /** The side of `bodySite`, when one is stated. */
+    laterality?: string;
   }>;
   /** Recently-resolved episodes, newest first — light history context. */
   recentResolved: Array<{
@@ -58,13 +95,15 @@ export interface CoachIllnessBlock {
     type: string;
     onsetAt: string;
     resolvedAt: string;
+    bodySite?: string;
+    laterality?: string;
   }>;
 }
 
 /**
  * Build the illness context block, or `null` when the module is off / the
- * account has no episode history. Reads label + lifecycle + dates only — the
- * `noteEncrypted` column is never selected.
+ * account has no episode history. Reads label + lifecycle + dates and the body
+ * site — the `noteEncrypted` column is never selected.
  */
 export async function buildIllnessSnapshotBlock(
   userId: string,
@@ -81,13 +120,27 @@ export async function buildIllnessSnapshotBlock(
         onsetAt: { lte: now },
       },
       orderBy: { onsetAt: "asc" },
-      select: { label: true, type: true, lifecycle: true, onsetAt: true },
+      select: {
+        label: true,
+        type: true,
+        lifecycle: true,
+        onsetAt: true,
+        bodySiteEncrypted: true,
+        laterality: true,
+      },
     }),
     prisma.illnessEpisode.findMany({
       where: { userId, deletedAt: null, resolvedAt: { not: null } },
       orderBy: { resolvedAt: "desc" },
       take: RESOLVED_HISTORY_LIMIT,
-      select: { label: true, type: true, onsetAt: true, resolvedAt: true },
+      select: {
+        label: true,
+        type: true,
+        onsetAt: true,
+        resolvedAt: true,
+        bodySiteEncrypted: true,
+        laterality: true,
+      },
     }),
   ]);
 
@@ -100,6 +153,7 @@ export async function buildIllnessSnapshotBlock(
       type: e.type,
       lifecycle: e.lifecycle,
       onsetAt: e.onsetAt.toISOString(),
+      ...siteFields(e),
     })),
     recentResolved: resolvedRows.map((e) => ({
       label: sanitizeLabel(e.label),
@@ -107,6 +161,7 @@ export async function buildIllnessSnapshotBlock(
       onsetAt: e.onsetAt.toISOString(),
       // `resolvedAt` is non-null by the query filter above.
       resolvedAt: (e.resolvedAt as Date).toISOString(),
+      ...siteFields(e),
     })),
   };
 }

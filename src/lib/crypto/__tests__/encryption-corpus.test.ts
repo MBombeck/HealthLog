@@ -52,7 +52,7 @@ function makeClient(seed: Record<string, Row[]>): {
         let rows = [...store[model]].sort((a, b) =>
           String(a.id).localeCompare(String(b.id)),
         );
-        const after = where?.id?.gt;
+        const after = (where?.id as { gt?: string } | undefined)?.gt;
         if (after !== undefined)
           rows = rows.filter((r) => String(r.id) > after);
         if (take !== undefined) rows = rows.slice(0, take);
@@ -255,5 +255,31 @@ describe("encryption-corpus scan + rotate", () => {
       expect(take).toBeDefined();
       expect(take!).toBeLessThanOrEqual(5_000);
     }
+  });
+
+  it("treats a row deleted between the read and the write as gone, not as an error", async () => {
+    // A weekly backup replaces its pieces while a rotation walks them: the
+    // piece the walk read no longer exists when it writes it back.
+    const { client } = makeClient({
+      NotificationChannel: [
+        { id: "c1", config: activeUnder("v1", "a") },
+        { id: "c2", config: activeUnder("v1", "b") },
+      ],
+    });
+    const delegate = client.notificationChannel!;
+    const update = delegate.update;
+    delegate.update = async (args) => {
+      if (args.where.id === "c1") {
+        throw Object.assign(new Error("Record to update not found."), {
+          code: "P2025",
+        });
+      }
+      return update(args);
+    };
+    const rotation = await rotateCorpus(client);
+    const result = rotation.results.find(
+      (r) => r.model === "NotificationChannel",
+    )!;
+    expect(result).toMatchObject({ rotated: 1, errors: 0 });
   });
 });

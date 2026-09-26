@@ -922,6 +922,12 @@ model User {
   // (ExtractedFact) and only reach the structured stores on explicit
   // approval. Opt-in module, off by default.
   inboundDocuments                          InboundDocument[]
+  // v1.39.2 — source keys of imported documents that the tombstone purge
+  // removed, so a re-run of an importer cannot bring a deleted document back.
+  documentImportKeys                        DocumentImportKey[]
+  // v1.39.2 — further source keys an import answered with an existing
+  // document (same bytes under another key). See DocumentSourceAlias.
+  documentSourceAliases                     DocumentSourceAlias[]
   extractedFacts                            ExtractedFact[]
   documentConditionLinks                    DocumentConditionLink[]
   documentContentIndexes                    DocumentContentIndex[]
@@ -4964,17 +4970,43 @@ model PushSubscription {
 // ─── Data Backups ────────────────────────────────────────────
 
 model DataBackup {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  type      String   @default("WEEKLY_AUTO") // WEEKLY_AUTO, MANUAL
-  data      String // JSON export blob
-  createdAt DateTime @default(now()) @map("created_at")
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  type          String   @default("WEEKLY_AUTO") // WEEKLY_AUTO, MANUAL_UPLOAD_<ms>
+  /// The whole encrypted copy as one value: how every backup was stored up
+  /// to v1.39.1. NULL for a copy stored in pieces (`chunks`), which is how
+  /// every backup is written from v1.39.2 on. A row carries one or the other.
+  data          String?
+  /// How many pieces a chunked copy has, and the random id sealed into every
+  /// one of them (`src/lib/export/backup-chunks.ts`). The reader checks both
+  /// against the pieces before it releases a byte; NULL on a single-value copy.
+  chunkCount    Int?     @map("chunk_count")
+  chunkStreamId String?  @map("chunk_stream_id")
+  createdAt     DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chunks DataBackupChunk[]
 
   @@unique([userId, type], map: "data_backups_user_id_type_key")
   @@index([userId])
   @@map("data_backups")
+}
+
+/// One piece of a stored backup, in order. Each is sealed on its own with
+/// AES-256-GCM (the binary codec in `src/lib/crypto.ts`), and the sealed
+/// plaintext names the copy it belongs to, its position and whether it is
+/// the last, so a piece that is missing, moved, altered or borrowed from
+/// another copy is refused. Deleted with its backup.
+model DataBackupChunk {
+  id       String @id @default(cuid())
+  backupId String @map("backup_id")
+  seq      Int
+  data     Bytes
+
+  backup DataBackup @relation(fields: [backupId], references: [id], onDelete: Cascade)
+
+  @@unique([backupId, seq])
+  @@map("data_backup_chunks")
 }
 
 // ─── Backup restore jobs (v1.39.1) ──────────────────────────
@@ -5015,9 +5047,10 @@ model BackupRestoreJob {
   /// than a cascade deleting the job. Consumer: the worker and the status
   /// routes (the console marks the row being restored).
   backupId                String    @map("backup_id")
-  /// SHA-256 of `DataBackup.data` when the restore was requested. The weekly
-  /// job overwrites its row in place, so the worker checks the copy it reads is
-  /// the one the operator previewed and confirmed. Consumer: the worker.
+  /// SHA-256 of the stored copy's identity when the restore was requested (the
+  /// single value, or the stream id of a copy in pieces). The weekly job
+  /// overwrites its row in place, so the worker checks the copy it reads is the
+  /// one the operator previewed and confirmed. Consumer: the worker.
   backupDigest            String    @map("backup_digest")
   /// The operator's answer to "also restore the instance settings". Consumer:
   /// the worker, and the status routes.
@@ -5448,6 +5481,18 @@ model MeasurementReminder {
   lastSkippedAt      DateTime?        @map("last_skipped_at")
   /// v1.37.20 — lifetime skip counter ("skipped N times").
   skipCount          Int              @default(0) @map("skip_count")
+  /// v1.39.2 — when a reminder for this row last reached at least one channel.
+  /// Written by the reminder tick after a delivered dispatch, read by the same
+  /// tick. A reminder on a cycle longer than a week, or a one-shot (never an
+  /// appointment), no longer rolls `nextDueAt` forward when it is reminded:
+  /// it stays due until it is satisfied (a reading, a lab result or "done"),
+  /// skipped or snoozed, and this cursor keeps the repeat to at most once a
+  /// week. A nudge counts as "already sent for this slot" only
+  /// while `lastNotifiedAt >= nextDueAt`, so a snooze, a skip or a satisfy
+  /// (each of which moves `nextDueAt`) opens a fresh slot that fires on its
+  /// own day. Operational state, deliberately not in the backup: a restored
+  /// row without it re-reminds at most once, on its next notify hour.
+  lastNotifiedAt     DateTime?        @map("last_notified_at")
   createdAt          DateTime         @default(now()) @map("created_at")
   updatedAt          DateTime         @updatedAt @map("updated_at")
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
@@ -7478,6 +7523,24 @@ model IllnessEpisode {
   /// `src/lib/crypto.ts` (Bytes column, `*Encrypted` suffix per
   /// convention).
   noteEncrypted     Bytes?           @map("note_encrypted")
+  /// Where on the body the condition sits, in the person's own words
+  /// ("knee", "lower back", "L4/L5"), v1.39.2. The same field, codec and
+  /// reasoning as `Encounter.bodySiteEncrypted`: free text because no picker
+  /// covers every site and a coded vocabulary the person cannot read is worse
+  /// than their own word, encrypted because it is health data, and searched
+  /// by decrypting the account's own rows server-side
+  /// (`src/lib/body-sites/`), never through a plaintext or hashed copy.
+  ///
+  /// Allowed on every type. An injury or a chronic joint condition is the
+  /// usual case, but a type edit must not lose what was typed.
+  ///
+  /// The shipped iOS app neither sends nor decodes it, and the PATCH treats
+  /// an absent key as "leave alone", so an edit from the phone keeps it.
+  bodySiteEncrypted Bytes?           @map("body_site_encrypted")
+  /// Which side, when the site has one. Same enum and the same NULL meaning
+  /// as `Encounter.laterality`: not stated or not applicable. Plaintext,
+  /// because a side alone says nothing.
+  laterality        Laterality?
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
@@ -7938,6 +8001,27 @@ model InboundDocument {
   /// from "tried and here is why it failed" instead of showing a bare
   /// not-indexed state for both.
   lastIndexOutcome   String?               @map("last_index_outcome")
+  /// v1.39.2 (#1038) — where an imported document came from: a closed string
+  /// enum (`DOCUMENT_SOURCE_SYSTEMS` in
+  /// `src/lib/validations/inbound-documents.ts`): PAPERLESS | PAPRA | OTHER.
+  /// Null for a document added in HealthLog itself. Sent by the import script
+  /// and the Paperless workflow recipe; shown on the detail sheet.
+  sourceSystem       String?               @map("source_system") @db.VarChar(16)
+  /// v1.39.2 (#1038) — the document's id in `sourceSystem`. Together with
+  /// `userId` + `sourceSystem` it is unique across live AND tombstoned rows
+  /// (raw SQL in migration 0353, not expressible in Prisma):
+  ///   CREATE UNIQUE INDEX inbound_documents_user_source_key
+  ///     ON inbound_documents (user_id, source_system, source_id)
+  ///     WHERE source_id IS NOT NULL;
+  /// Including tombstones is the point: re-running an importer must not bring
+  /// back a document the person deleted. The purge carries the key over to
+  /// `DocumentImportKey` when it removes the row.
+  sourceId           String?               @map("source_id") @db.VarChar(128)
+  /// v1.39.2 (#1038) — the upload asked for `aiRead=defer`: nothing may send
+  /// this document to an AI provider on its own (the summary catch-up, the
+  /// summary job, lab auto-staging all skip it). Cleared when the person
+  /// explicitly reads it with AI or generates its summary.
+  aiReadDeferred     Boolean               @default(false) @map("ai_read_deferred")
 
   facts           ExtractedFact[]
   conditionLinks  DocumentConditionLink[]
@@ -7957,6 +8041,8 @@ model InboundDocument {
   /// share-link memberships (m:n via `ClinicianShareLinkDocument`).
   /// Cascades: deleting this document removes it from every share it was on.
   shareLinks      ClinicianShareLinkDocument[]
+  /// Further import source keys that resolved to this document by content.
+  sourceAliases   DocumentSourceAlias[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -7982,6 +8068,50 @@ model InboundDocument {
   // boot-discovery (which anti-joins document_thumbnails for the missing
   // preview). Raw SQL only (partial predicate not expressible in Prisma).
   @@map("inbound_documents")
+}
+
+/// v1.39.2 (#1038) — a source key an import sent for bytes that were already
+/// stored under another document (a manual upload, or the same file under a
+/// second id in the source). The upload answered "duplicate" with that
+/// document, so the key belongs to it: a re-send resolves to it, and when the
+/// purge removes the document the key moves to `DocumentImportKey` with its
+/// own, so deleting the document keeps every key that ever reached it deleted.
+/// Cascades with the document; the purge copies it first.
+model DocumentSourceAlias {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  documentId   String   @map("document_id")
+  /// Same closed vocabulary as `InboundDocument.sourceSystem`.
+  sourceSystem String   @map("source_system") @db.VarChar(16)
+  sourceId     String   @map("source_id") @db.VarChar(128)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document InboundDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceSystem, sourceId])
+  @@index([documentId])
+  @@map("document_source_aliases")
+}
+
+/// v1.39.2 (#1038) — the source key of an imported document that the daily
+/// tombstone purge has physically removed. While the tombstone exists the key
+/// lives on the document row itself; once the purge takes the row, this is the
+/// only memory that the person deleted it, so a re-run of the importer answers
+/// "deleted" instead of storing the document again. Written by the purge only;
+/// read by the upload route's source-key check. Holds no document content.
+model DocumentImportKey {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  /// Same closed vocabulary as `InboundDocument.sourceSystem`.
+  sourceSystem String   @map("source_system") @db.VarChar(16)
+  sourceId     String   @map("source_id") @db.VarChar(128)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceSystem, sourceId])
+  @@map("document_import_keys")
 }
 
 model ExtractedFact {
@@ -8350,8 +8480,8 @@ enum EncounterKind {
   @@map("encounter_kind")
 }
 
-/// The side of the body a procedure's site is on. See
-/// `Encounter.laterality`.
+/// The side of the body a site is on. See `Encounter.laterality`; since
+/// v1.39.2 also `IllnessEpisode.laterality`.
 enum Laterality {
   LEFT
   RIGHT

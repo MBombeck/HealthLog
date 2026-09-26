@@ -666,10 +666,16 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Replay protection for requests this host already answered. Restoring it would suppress a legitimate new request.",
   DataBackup:
     "The backup catalogue itself. A backup that contains the list of backups is a recursion with no reader.",
+  DataBackupChunk:
+    "The pieces a stored backup is kept in. They are that backup, not part of the account's record, and a backup that contained its own pieces would be the same recursion.",
   BackupRestoreJob:
     "The record of a restore this host ran from one of its own stored copies. It names a backup row that exists only in this database, so carrying it would describe a restore the receiving host never performed.",
   OffhostBackupState:
     "When this host last put this account's copy in this operator's bucket, and how big it was. It describes one deployment's relationship with one bucket, so restoring it elsewhere would assert an off-host copy that host has never written.",
+  DocumentImportKey:
+    "The source keys of imported documents the person deleted and the purge then removed, kept so a re-run of the importer does not store them again. The backup carries only live documents, so the tombstones that hold the same memory before the purge do not travel either; carrying the ledger alone would restore half of one decision. After a restore, a deliberate re-import can bring such a document back, and the person deletes it again.",
+  DocumentSourceAlias:
+    "Further import source keys that were answered with an already stored document because the bytes matched. The next import run writes the same alias again the moment it meets the same bytes, so a restore loses nothing a re-run does not rebuild; and for a deleted document it restores no less than the tombstones and ledger beside it do, which do not travel either.",
   ImportJob:
     "A job record pointing at an uploaded file that the backup does not carry, so restoring it would resurrect a task with nothing to work on.",
   InviteToken:

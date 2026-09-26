@@ -17,10 +17,11 @@ import { prisma } from "@/lib/db";
 import { apiHandler, HttpError, requireAdmin } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import {
-  BACKUP_UNDECRYPTABLE_CODE,
-  BACKUP_UNDECRYPTABLE_ERROR,
-  openBackupBlob,
-} from "@/lib/export/backup-blob";
+  isStoredBackupReadError,
+  openStoredBackup,
+  storedBackupRefusal,
+  STORED_BACKUP_SELECT,
+} from "@/lib/export/stored-backup";
 import {
   readStreamedBackup,
   type BackupSource,
@@ -44,7 +45,11 @@ export const GET = apiHandler(
 
     const backup = await prisma.dataBackup.findUnique({
       where: { id },
-      include: { user: { select: { id: true, username: true } } },
+      select: {
+        ...STORED_BACKUP_SELECT,
+        createdAt: true,
+        user: { select: { id: true, username: true } },
+      },
     });
     if (!backup) {
       throw new HttpError(404, "Backup not found");
@@ -54,13 +59,14 @@ export const GET = apiHandler(
     // string V8 can hold (#1031).
     let source: BackupSource;
     try {
-      source = openBackupBlob(backup.data);
-    } catch {
+      source = await openStoredBackup(prisma, backup);
+    } catch (err) {
       // Same refusal the restore and the download give, for the same reason:
       // a copy this instance cannot open is bad stored input, and the preview
       // is the first place an operator meets it.
-      return apiError(BACKUP_UNDECRYPTABLE_ERROR, 422, {
-        errorCode: BACKUP_UNDECRYPTABLE_CODE,
+      const refusal = storedBackupRefusal(err);
+      return apiError(refusal.message, refusal.status, {
+        errorCode: refusal.code,
       });
     }
 
@@ -70,7 +76,13 @@ export const GET = apiHandler(
       const streamed = await readStreamedBackup(source);
       measurementCount = streamed.measurementCount;
       payload = parseBackupPayload(streamed.raw);
-    } catch {
+    } catch (err) {
+      if (isStoredBackupReadError(err)) {
+        const refusal = storedBackupRefusal(err);
+        return apiError(refusal.message, refusal.status, {
+          errorCode: refusal.code,
+        });
+      }
       return apiError("Backup payload failed schema validation", 422);
     }
 

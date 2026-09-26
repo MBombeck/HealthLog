@@ -165,8 +165,8 @@ export function buildClinicalRecordsNotesSection(
 
   // v1.18.1 P4 — illness / condition episodes overlapping the window. Present
   // only when the illness module is on AND the window held an episode (the
-  // aggregator gates `data.illnessEpisodes`). Labels + lifecycle + dates only;
-  // the encrypted note is never read. A purely retrospective, factual table —
+  // aggregator gates `data.illnessEpisodes`). Labels + lifecycle + dates and
+  // the body site where one is stated; the encrypted note is never read. A purely retrospective, factual table —
   // no colour, no severity tint — matching the clinical-document register.
   if (data.illnessEpisodes && data.illnessEpisodes.length > 0) {
     y = ensureSpace(y, 6 + 18);
@@ -176,8 +176,21 @@ export function buildClinicalRecordsNotesSection(
     doc.text(t("doctorReport.illnessTitle"), margin, y);
     y += 6;
 
+    // v1.39.2 — the body site, in its own column only when at least one
+    // condition in the window names one, so a report without any keeps the
+    // table it always had. Same wording as the surgical history's site cell.
+    const withSite = data.illnessEpisodes.some((ep) => ep.bodySite);
+    const conditionSite = (ep: (typeof data.illnessEpisodes)[number]) => {
+      if (!ep.bodySite) return "—";
+      if (!ep.laterality) return ep.bodySite;
+      return t("encounters.bodySiteWithSide", {
+        site: ep.bodySite,
+        side: t(lateralityLabelKey(ep.laterality as Laterality)),
+      });
+    };
     const illnessRows = data.illnessEpisodes.map((ep) => [
       ep.label,
+      ...(withSite ? [conditionSite(ep)] : []),
       t(`illness.type.${ep.type}`),
       t(`illness.lifecycle.${ep.lifecycle}`),
       fmtDate(ep.onsetAt),
@@ -189,6 +202,7 @@ export function buildClinicalRecordsNotesSection(
       head: [
         [
           t("doctorReport.illnessColCondition"),
+          ...(withSite ? [t("doctorReport.illnessColBodySite")] : []),
           t("doctorReport.illnessColType"),
           t("doctorReport.illnessColLifecycle"),
           t("doctorReport.illnessColOnset"),

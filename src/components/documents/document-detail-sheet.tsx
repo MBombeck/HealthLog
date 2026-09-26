@@ -73,6 +73,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   INBOUND_DOCUMENT_KINDS,
+  type DocumentSourceSystemValue,
   type DocumentSuggestionDto,
   type DocumentSummaryMode,
   type InboundDocumentDetailDto,
@@ -698,6 +699,14 @@ export function DocumentDetailSheet({
     : null;
 
   const title = doc?.title ?? doc?.filename ?? t("documents.card.untitled");
+  // The product names are proper nouns and stay untranslated; only "another
+  // system" is prose.
+  const sourceSystemName = (system: DocumentSourceSystemValue): string =>
+    system === "PAPERLESS"
+      ? "Paperless-ngx"
+      : system === "PAPRA"
+        ? "Papra"
+        : t("documents.detail.sourceOther");
   const Icon = doc ? DOCUMENT_KIND_ICONS[doc.kind] : null;
   // v1.37.0 — the ONE eager fetch of the original, and only for a document
   // that is going to render it.
@@ -1167,6 +1176,25 @@ export function DocumentDetailSheet({
                 })}
                 {doc.filename ? ` · ${doc.filename}` : ""}
               </p>
+
+              {/* Where an imported document came from (#1038). Meta, so
+                  muted like the line above; the id is what the person looks
+                  up in the other system. */}
+              {doc.sourceSystem ? (
+                <p
+                  className="text-muted-foreground text-xs break-all"
+                  data-slot="document-detail-provenance"
+                >
+                  {doc.sourceId
+                    ? t("documents.detail.importedFromWithId", {
+                        system: sourceSystemName(doc.sourceSystem),
+                        id: doc.sourceId,
+                      })
+                    : t("documents.detail.importedFrom", {
+                        system: sourceSystemName(doc.sourceSystem),
+                      })}
+                </p>
+              ) : null}
             </div>
           </div>
         ) : null}

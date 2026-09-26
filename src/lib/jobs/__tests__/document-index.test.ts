@@ -11,6 +11,9 @@ vi.mock("@/lib/documents/index-document", () => ({
 }));
 vi.mock("@/lib/jobs/boss-instance", () => ({ getGlobalBoss: vi.fn() }));
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+vi.mock("@/lib/documents/auto-stage-labs", () => ({
+  maybeAutoStageLabFacts: vi.fn().mockResolvedValue(undefined),
+}));
 
 import {
   DOCUMENT_INDEX_QUEUE,
@@ -19,6 +22,7 @@ import {
 } from "../document-index";
 import { indexDocumentContent } from "@/lib/documents/index-document";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { maybeAutoStageLabFacts } from "@/lib/documents/auto-stage-labs";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -36,6 +40,15 @@ describe("enqueueDocumentIndex", () => {
       expect.objectContaining({ userId: "user-1", documentId: "doc-1" }),
       expect.objectContaining({ singletonKey: "document-index|doc-1" }),
     );
+  });
+
+  it("carries localOnly for a deferred import, and only then", async () => {
+    const send = vi.fn().mockResolvedValue("job-1");
+    vi.mocked(getGlobalBoss).mockReturnValue({ send } as never);
+    await enqueueDocumentIndex("user-1", "doc-1", { localOnly: true });
+    await enqueueDocumentIndex("user-1", "doc-2");
+    expect(send.mock.calls[0][1]).toMatchObject({ localOnly: true });
+    expect(send.mock.calls[1][1]).not.toHaveProperty("localOnly");
   });
 
   it("no-ops when the boss is not running", async () => {
@@ -62,7 +75,27 @@ describe("runDocumentIndex", () => {
       tokenCount: 3,
     } as never);
     await runDocumentIndex({ userId: "user-1", documentId: "doc-1" });
-    expect(indexDocumentContent).toHaveBeenCalledWith("user-1", "doc-1");
+    expect(indexDocumentContent).toHaveBeenCalledWith("user-1", "doc-1", {
+      localOnly: false,
+    });
+    expect(maybeAutoStageLabFacts).toHaveBeenCalledWith("user-1", "doc-1");
+  });
+
+  it("a deferred import indexes locally and stages no lab facts", async () => {
+    vi.mocked(indexDocumentContent).mockResolvedValue({
+      indexed: true,
+      source: "local-pdf",
+      tokenCount: 3,
+    } as never);
+    await runDocumentIndex({
+      userId: "user-1",
+      documentId: "doc-1",
+      localOnly: true,
+    });
+    expect(indexDocumentContent).toHaveBeenCalledWith("user-1", "doc-1", {
+      localOnly: true,
+    });
+    expect(maybeAutoStageLabFacts).not.toHaveBeenCalled();
   });
 
   it("ignores a payload missing ids without calling the tree", async () => {

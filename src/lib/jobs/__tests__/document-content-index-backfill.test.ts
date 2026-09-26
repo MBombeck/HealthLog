@@ -270,6 +270,10 @@ describe("runContentIndexBackfillForUser", () => {
       reason: "ok",
     });
     expect(upsertContentIndex).toHaveBeenCalledTimes(2);
+    // Imports held back from AI reading (#1038) are never candidates.
+    expect(
+      vi.mocked(prisma.inboundDocument.findMany).mock.calls[0]?.[0]?.where,
+    ).toMatchObject({ aiReadDeferred: false });
   });
 
   it("includes PDFs as candidates for an image-input provider and rasterises them", async () => {

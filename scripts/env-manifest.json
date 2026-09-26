@@ -139,6 +139,10 @@
           "purpose": "Per-user hourly ceiling for the document-AI actions (read/index, extract, suggest, summarise share one bucket). Default 6, clamped to 1-1000."
         },
         {
+          "name": "DOCUMENT_UPLOAD_LIMIT_PER_HOUR",
+          "purpose": "Hourly upload ceiling per document-upload token (Paperless workflow, import script). Default 120, clamped to 1-1000. Web and phone uploads keep their own bucket."
+        },
+        {
           "name": "LABS_OCR_LIMIT_PER_HOUR",
           "purpose": "Per-user hourly ceiling for lab-report scans (photo/PDF and browser-OCR text share one bucket). Default 6, clamped to 1-1000."
         }
@@ -288,6 +292,11 @@
           "name": "TRUST_PROXY_HOPS",
           "purpose": "Trusted reverse-proxy hop count; the client IP is read that many entries from the right of X-Forwarded-For.",
           "example": "1"
+        },
+        {
+          "name": "BACKUP_MAX_STORED_MB",
+          "purpose": "Largest stored backup of one account the app keeps, in megabytes of encrypted copy (2048 by default). A storage limit, independent of the app's memory: a backup past it fails with a message naming this variable, and the previous copy stays.",
+          "example": "2048"
         }
       ]
     }

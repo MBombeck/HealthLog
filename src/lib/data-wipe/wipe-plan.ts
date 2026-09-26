@@ -147,6 +147,14 @@ export const WIPE_MODELS = [
   "DocumentContentIndex",
   "DocumentThumbnail",
   "DocumentConditionLink",
+  // The memory of which imported documents the person deleted (#1038). The
+  // documents themselves go below; keeping the memory would make a fresh
+  // import after the wipe skip files for a decision about a record that no
+  // longer exists.
+  "DocumentImportKey",
+  // Further import keys that resolved to a document by content; a child of
+  // the document, removed before it so the counts are truthful.
+  "DocumentSourceAlias",
   "ExtractedFact",
   "ImportJob",
 

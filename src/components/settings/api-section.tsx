@@ -6,10 +6,12 @@ import {
   Check,
   ChevronDown,
   Copy,
+  FileUp,
   Key,
   Loader2,
   Trash2,
   Upload,
+  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -55,6 +57,7 @@ export function ApiSection() {
     <div className="space-y-6">
       <ApiEndpointsCard />
       <MeasurementTokensCard />
+      <DocumentTokensCard />
       <ApiTokensCard />
     </div>
   );
@@ -71,6 +74,64 @@ export function ApiSection() {
  */
 function MeasurementTokensCard() {
   const { t } = useTranslations();
+  return (
+    <IngestTokenCard
+      endpoint="/api/tokens/measurements"
+      icon={Upload}
+      slot="settings-measurements-token-created"
+      copy={{
+        title: t("settings.measurementsToken.title"),
+        description: t("settings.measurementsToken.description"),
+        detail: t("settings.measurementsToken.detail"),
+        scopeNote: t("settings.measurementsToken.scopeNote"),
+        createFailed: t("settings.measurementsToken.createFailed"),
+      }}
+    />
+  );
+}
+
+/**
+ * Mint a token another document system uploads through (#1038): a Paperless
+ * workflow or the import script. Same card, same no-list reasoning as the
+ * measurement one above.
+ */
+function DocumentTokensCard() {
+  const { t } = useTranslations();
+  return (
+    <IngestTokenCard
+      endpoint="/api/tokens/documents"
+      icon={FileUp}
+      slot="settings-documents-token-created"
+      copy={{
+        title: t("settings.documentsToken.title"),
+        description: t("settings.documentsToken.description"),
+        detail: t("settings.documentsToken.detail"),
+        scopeNote: t("settings.documentsToken.scopeNote"),
+        createFailed: t("settings.documentsToken.createFailed"),
+      }}
+    />
+  );
+}
+
+/** One single-scope mint: a name field, the token shown once, a copy button. */
+function IngestTokenCard({
+  endpoint,
+  icon,
+  slot,
+  copy,
+}: {
+  endpoint: "/api/tokens/measurements" | "/api/tokens/documents";
+  icon: LucideIcon;
+  slot: string;
+  copy: {
+    title: string;
+    description: string;
+    detail: string;
+    scopeNote: string;
+    createFailed: string;
+  };
+}) {
+  const { t } = useTranslations();
   const queryClient = useQueryClient();
   const [newName, setNewName] = useState("");
   const [newToken, setNewToken] = useState<string | null>(null);
@@ -84,7 +145,7 @@ function MeasurementTokensCard() {
     setTokenMsg(null);
     setNewToken(null);
     try {
-      const res = await apiFetchRaw("/api/tokens/measurements", {
+      const res = await apiFetchRaw(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // No scope field: the endpoint mints one shape, so there is nothing
@@ -101,7 +162,7 @@ function MeasurementTokensCard() {
         // The server's own message when it sent one — it names the actual
         // cause (switch off, rate limit, validation) — and a message about
         // this specific action when it did not.
-        setTokenMsg(json.error || t("settings.measurementsToken.createFailed"));
+        setTokenMsg(json.error || copy.createFailed);
       }
     } catch {
       setTokenMsg(t("common.networkError"));
@@ -125,17 +186,15 @@ function MeasurementTokensCard() {
   return (
     <SettingsCard>
       <SettingsCardHeader
-        icon={Upload}
-        title={t("settings.measurementsToken.title")}
-        description={t("settings.measurementsToken.description")}
+        icon={icon}
+        title={copy.title}
+        description={copy.description}
       />
 
       <div className="space-y-3">
-        <p className="text-sm leading-relaxed">
-          {t("settings.measurementsToken.detail")}
-        </p>
+        <p className="text-sm leading-relaxed">{copy.detail}</p>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          {t("settings.measurementsToken.scopeNote")}
+          {copy.scopeNote}
         </p>
 
         <form onSubmit={handleCreate} className="flex items-center gap-2">
@@ -162,7 +221,7 @@ function MeasurementTokensCard() {
         {newToken && (
           <div
             className="bg-success/10 rounded-lg p-3 text-sm"
-            data-slot="settings-measurements-token-created"
+            data-slot={slot}
           >
             <p className="text-success mb-1 font-medium">
               {t("settings.tokenCreated")}
@@ -222,6 +281,12 @@ function ApiEndpointsCard() {
       path: "/api/measurements/batch",
       auth: "Authorization: Bearer hlk_...",
       example: `{ "entries": [ { "hkIdentifier": "...", "value": 1, ... } ] }`,
+    },
+    {
+      method: "POST",
+      path: "/api/documents/inbound",
+      auth: "Authorization: Bearer hlk_...",
+      example: `multipart: file, title, documentDate, sourceSystem, sourceId`,
     },
   ];
 

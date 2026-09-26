@@ -15,6 +15,15 @@
  * (a same-user re-upload returns the existing live row, never a second copy),
  * an honoured `Idempotency-Key`, and optional `episodeIds[]` pre-linking.
  *
+ * v1.39.2 (#1038) — POST also admits a narrow `documents:write` token, the
+ * door another document system (a Paperless workflow, the import script)
+ * pushes through. Such a caller gets its own rate bucket, and a receipt
+ * (`{ id, duplicate }`) instead of the stored row: a credential that can only
+ * add files learns that a file exists, never how its owner filed it. Optional
+ * `sourceSystem` / `sourceId` fields key an import so a re-send is a
+ * duplicate, including after the person deleted the document; `aiRead=defer`
+ * holds back automatic AI reading for the upload.
+ *
  * GET lists the caller's documents with title/filename search, kind /
  * episode / year / date-range filters, sort, and keyset pagination — and
  * NEVER selects the encrypted blob column (`omit: { contentEncrypted: true }`).
@@ -29,6 +38,7 @@ import { NextResponse } from "next/server";
 
 import {
   apiHandler,
+  isScopedCredential,
   requireAuth,
   requireRecordAuth,
   type AuthContext,
@@ -58,10 +68,18 @@ import {
 import { enqueueDocumentIndex } from "@/lib/jobs/document-index";
 import { enqueueDocumentSummary } from "@/lib/jobs/document-summary";
 import { enqueueDocumentThumbnail } from "@/lib/jobs/document-thumbnail";
+import { DOCUMENTS_WRITE_SCOPE } from "@/lib/documents/scopes";
+import {
+  checkSourceLookupRateLimit,
+  findSourceKey,
+  rememberSourceAlias,
+  type SourceKeyMatch,
+} from "@/lib/documents/source-key";
 import {
   acquireDocumentUploadSlot,
   detectDocumentType,
   resolveDocumentLimits,
+  resolveDocumentUploadLimitPerHour,
 } from "@/lib/documents/upload-policy";
 import { withIdempotency } from "@/lib/idempotency";
 import { BodyTooLargeError, readBoundedBody } from "@/lib/labs/ocr-upload";
@@ -73,7 +91,9 @@ import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import {
   documentCreateSchema,
   documentListQuerySchema,
+  documentSourceKeySchema,
   toContentIndexSource,
+  type DocumentSourceSystemValue,
 } from "@/lib/validations/inbound-documents";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -116,15 +136,116 @@ class QuotaExceededError extends Error {
   }
 }
 
+/** What a single upload asked for, carried into the annotations. */
+interface UploadContext {
+  userId: string;
+  /** A narrow `documents:write` token, not a session or a `["*"]` token. */
+  scoped: boolean;
+  sourceSystem: DocumentSourceSystemValue | null;
+  aiDeferred: boolean;
+}
+
+/**
+ * The receipt a scoped caller gets in place of the stored row: the id and
+ * whether the upload was a duplicate. A write-only credential holder who
+ * knows a file's bytes learns that it is stored, not its title, filename,
+ * links or fact counts.
+ */
+function receiptResponse(
+  id: string | null,
+  status: 200 | 201,
+  flags: { duplicate: boolean; deleted?: boolean },
+): NextResponse {
+  const data = {
+    id,
+    duplicate: flags.duplicate,
+    ...(flags.deleted ? { deleted: true } : {}),
+  };
+  return NextResponse.json(
+    {
+      data,
+      error: null,
+      ...(flags.duplicate
+        ? {
+            meta: {
+              duplicate: true,
+              ...(flags.deleted ? { deleted: true } : {}),
+            },
+          }
+        : {}),
+    },
+    { status },
+  );
+}
+
+/**
+ * v1.39.2 (#1038) — a re-send of an imported document the person deleted.
+ * 200 and no new row, for every caller: the deletion was a decision, and an
+ * importer re-running over the same source must not undo it. `id` is the
+ * tombstoned row while it exists and null once the purge took it; there is no
+ * row left to serialise either way, so the answer is the receipt.
+ */
+function deletedResponse(ctx: UploadContext, id: string | null): NextResponse {
+  annotate({
+    action: { name: "documents.vault.upload" },
+    meta: {
+      documentId: id,
+      duplicate: true,
+      deleted: true,
+      scoped: ctx.scoped,
+      sourceSystem: ctx.sourceSystem,
+      aiDeferred: ctx.aiDeferred,
+    },
+  });
+  return receiptResponse(id, 200, { duplicate: true, deleted: true });
+}
+
+/**
+ * The same bytes have already been sent under too many source keys
+ * (`MAX_SOURCE_ALIASES_PER_DOCUMENT`). A conflict with what is stored, not a
+ * rate: nothing is remembered and nothing stored.
+ */
+function aliasLimitResponse(): NextResponse {
+  return apiError(
+    "This file is already stored under too many source ids.",
+    409,
+    { errorCode: "documents.inbound.sourceAliasLimit" },
+  );
+}
+
+/** Answer a source key that is already held: duplicate, or deleted. */
+function answerSourceKey(
+  ctx: UploadContext,
+  match: SourceKeyMatch,
+): Promise<NextResponse> | NextResponse {
+  return match.state === "live"
+    ? duplicateResponse(ctx, match.document)
+    : deletedResponse(ctx, match.id);
+}
+
 /**
  * §3.2 — a duplicate upload is NOT an error: return the existing live row
  * with `meta.duplicate: true` at the envelope level (the UI toasts "already
- * stored" and highlights the row).
+ * stored" and highlights the row). A scoped caller gets the receipt instead.
  */
 async function duplicateResponse(
-  userId: string,
+  ctx: UploadContext,
   existing: SerialisableDocument,
 ): Promise<NextResponse> {
+  annotate({
+    action: { name: "documents.vault.upload" },
+    meta: {
+      documentId: existing.id,
+      duplicate: true,
+      scoped: ctx.scoped,
+      sourceSystem: ctx.sourceSystem,
+      aiDeferred: ctx.aiDeferred,
+    },
+  });
+  if (ctx.scoped) {
+    return receiptResponse(existing.id, 200, { duplicate: true });
+  }
+  const userId = ctx.userId;
   const [links, visitLinks, groups] = await Promise.all([
     loadConditionLinks(userId, [existing.id]),
     loadDocumentEncounterLinks(userId, [existing.id]),
@@ -140,10 +261,6 @@ async function duplicateResponse(
     if (g.status !== "REJECTED") factCount += g._count._all;
     if (g.status === "PENDING") pendingCount += g._count._all;
   }
-  annotate({
-    action: { name: "documents.vault.upload" },
-    meta: { documentId: existing.id, duplicate: true },
-  });
   return NextResponse.json(
     {
       data: serialiseDocument(
@@ -165,18 +282,91 @@ async function duplicateResponse(
 /** Process one admitted upload. The caller owns and releases its memory slot. */
 async function processUpload(
   request: Request,
-  user: AuthContext["user"],
+  auth: AuthContext,
 ): Promise<Response> {
+  const { user } = auth;
+  const scoped = isScopedCredential(auth);
+
   // Opt-in module gate — even a valid Bearer token is refused when the surface
   // is off (it ships dark; the user turns it on deliberately).
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
   if (!gate.enabled) return gate.response;
 
+  // A source key may ride the query string. It is answered here, before the
+  // bucket is charged and before a byte of the body is read: a nightly
+  // re-sync of an archive HealthLog already holds costs neither. Both halves
+  // or neither; half a key is a mistake worth saying so about.
+  const url = new URL(request.url);
+  const querySystem = url.searchParams.get("sourceSystem");
+  const queryId = url.searchParams.get("sourceId");
+  let queryKey: {
+    sourceSystem: DocumentSourceSystemValue;
+    sourceId: string;
+  } | null = null;
+  if (querySystem !== null || queryId !== null) {
+    const parsedKey = documentSourceKeySchema.safeParse({
+      sourceSystem: querySystem ?? undefined,
+      sourceId: queryId ?? undefined,
+    });
+    if (!parsedKey.success) {
+      return apiValidationError(
+        "Invalid source key",
+        sanitiseZodIssues(parsedKey.error.issues),
+        422,
+        { errorCode: "documents.inbound.invalidMetadata" },
+      );
+    }
+    queryKey = parsedKey.data;
+    // Metered like the lookup route, on the same bucket: the check stores
+    // nothing and costs no upload slot, but it is not a free oracle either.
+    const lookupRl = await checkSourceLookupRateLimit(
+      scoped,
+      auth.session.id,
+      user.id,
+    );
+    if (!lookupRl.allowed) {
+      const response = apiError("Too many lookups. Try again later.", 429, {
+        errorCode: "documents.inbound.rateLimited",
+      });
+      for (const [k, v] of Object.entries(rateLimitHeaders(lookupRl))) {
+        response.headers.set(k, v);
+      }
+      return response;
+    }
+    const match = await findSourceKey(
+      user.id,
+      queryKey.sourceSystem,
+      queryKey.sourceId,
+    );
+    if (match) {
+      return answerSourceKey(
+        {
+          userId: user.id,
+          scoped,
+          sourceSystem: queryKey.sourceSystem,
+          aiDeferred: false,
+        },
+        match,
+      );
+    }
+  }
+
+  // A scoped token draws on its own bucket, keyed on the token (its id rides
+  // `session.id` on the Bearer path), so an import running overnight cannot
+  // use up the allowance the person's own uploads from the web or the phone
+  // draw on. The cookie / wildcard bucket is unchanged.
+  const bucketKey = scoped
+    ? `documents-upload:token:${auth.session.id}`
+    : `documents-upload:${user.id}`;
   const rl = await checkRateLimit(
-    `documents-upload:${user.id}`,
-    UPLOAD_LIMIT_PER_HOUR,
+    bucketKey,
+    scoped ? resolveDocumentUploadLimitPerHour() : UPLOAD_LIMIT_PER_HOUR,
     UPLOAD_WINDOW_MS,
   );
+  // Every upload that reaches the body pays its slot, stored or not. The cheap
+  // way to re-send is the query-string key above, answered before this line;
+  // handing slots back after a full body read would let a leaked token send
+  // the same bytes under id after id for free.
   if (!rl.allowed) {
     const response = apiError("Too many uploads. Try again later.", 429, {
       errorCode: "documents.inbound.rateLimited",
@@ -241,6 +431,9 @@ async function processUpload(
     documentDate: formData.get("documentDate") ?? undefined,
     episodeIds: rawEpisodeIds.length > 0 ? rawEpisodeIds : undefined,
     encounterIds: rawEncounterIds.length > 0 ? rawEncounterIds : undefined,
+    sourceSystem: formData.get("sourceSystem") ?? undefined,
+    sourceId: formData.get("sourceId") ?? undefined,
+    aiRead: formData.get("aiRead") ?? undefined,
   });
   if (!parsed.success) {
     return apiValidationError(
@@ -251,6 +444,40 @@ async function processUpload(
         errorCode: "documents.inbound.invalidMetadata",
       },
     );
+  }
+
+  // The key from the query string, or from the form fields; if a caller sends
+  // both they have to agree.
+  const formSystem = parsed.data.sourceSystem ?? null;
+  const formId = formSystem ? (parsed.data.sourceId ?? null) : null;
+  if (
+    queryKey &&
+    formSystem !== null &&
+    (formSystem !== queryKey.sourceSystem || formId !== queryKey.sourceId)
+  ) {
+    return apiError(
+      "The source key in the address and in the form differ.",
+      422,
+      { errorCode: "documents.inbound.invalidMetadata" },
+    );
+  }
+  const sourceSystem = queryKey?.sourceSystem ?? formSystem;
+  const sourceId = queryKey?.sourceId ?? formId;
+  const ctx: UploadContext = {
+    userId: user.id,
+    scoped,
+    sourceSystem,
+    aiDeferred: parsed.data.aiRead === "defer",
+  };
+
+  // A source key answers before the bytes are looked at: an import re-sending
+  // what it sent before is a duplicate, and one re-sending a document the
+  // person deleted is refused a second copy — live and tombstoned rows both
+  // count (the unique index has no `deleted_at` predicate), and past the purge
+  // the ledger remembers.
+  if (sourceSystem && sourceId && !queryKey) {
+    const match = await findSourceKey(user.id, sourceSystem, sourceId);
+    if (match) return answerSourceKey(ctx, match);
   }
 
   let buffer: Buffer;
@@ -313,7 +540,19 @@ async function processUpload(
     omit: { contentEncrypted: true },
   });
   if (existing) {
-    return duplicateResponse(user.id, existing);
+    // An import sending bytes that are already stored under another key (or
+    // none) is answered with that document — and the key is remembered for
+    // it, so once the person deletes the document this key stays deleted too.
+    if (sourceSystem && sourceId) {
+      const remembered = await rememberSourceAlias(
+        user.id,
+        existing.id,
+        sourceSystem,
+        sourceId,
+      );
+      if (remembered === "limit") return aliasLimitResponse();
+    }
+    return duplicateResponse(ctx, existing);
   }
 
   // Quota gate + insert + pre-links in ONE transaction. Usage counts every
@@ -369,6 +608,9 @@ async function processUpload(
           documentDate: parsed.data.documentDate
             ? isoDateToUtc(parsed.data.documentDate)
             : new Date(),
+          sourceSystem,
+          sourceId,
+          aiReadDeferred: ctx.aiDeferred,
         },
         omit: { contentEncrypted: true },
       });
@@ -395,21 +637,40 @@ async function processUpload(
     });
   } catch (err) {
     if (err instanceof QuotaExceededError) {
+      // The figures are the owner's; a write-only token learns only that the
+      // vault is full.
       return apiError("Storage quota exceeded.", 413, {
         errorCode: "documents.inbound.quotaExceeded",
         reason: "quotaExceeded",
-        quotaBytes: limits.quotaBytes,
-        usedBytes: err.usedBytes,
+        ...(scoped
+          ? {}
+          : { quotaBytes: limits.quotaBytes, usedBytes: err.usedBytes }),
       });
     }
     if (isP2002(err)) {
-      // A racing upload of the same bytes won the partial unique index.
-      // Surface the winner as the duplicate — same outcome as the fast path.
+      // A racing upload won one of the two partial unique indexes — the same
+      // source key, or the same bytes. Surface the winner exactly as the fast
+      // paths above would have.
+      if (sourceSystem && sourceId) {
+        const match = await findSourceKey(user.id, sourceSystem, sourceId);
+        if (match) return answerSourceKey(ctx, match);
+      }
       const winner = await prisma.inboundDocument.findFirst({
         where: { userId: user.id, contentSha256, deletedAt: null },
         omit: { contentEncrypted: true },
       });
-      if (winner) return duplicateResponse(user.id, winner);
+      if (winner) {
+        if (sourceSystem && sourceId) {
+          const remembered = await rememberSourceAlias(
+            user.id,
+            winner.id,
+            sourceSystem,
+            sourceId,
+          );
+          if (remembered === "limit") return aliasLimitResponse();
+        }
+        return duplicateResponse(ctx, winner);
+      }
     }
     throw err;
   }
@@ -417,7 +678,12 @@ async function processUpload(
   await auditLog("documents.inbound.store", {
     userId: user.id,
     ipAddress: getClientIp(request),
-    details: { documentId: document.id, mime: detected.mimeType },
+    details: {
+      documentId: document.id,
+      mime: detected.mimeType,
+      ...(scoped ? { scoped: true } : {}),
+      ...(sourceSystem ? { sourceSystem } : {}),
+    },
   });
 
   annotate({
@@ -428,6 +694,9 @@ async function processUpload(
       servingClass: detected.servingClass,
       linked: episodeIds.length,
       linkedVisits: encounterIds.length,
+      scoped,
+      sourceSystem,
+      aiDeferred: ctx.aiDeferred,
     },
   });
 
@@ -437,7 +706,15 @@ async function processUpload(
   // enqueue is not awaited and swallows its own errors (a missing boss or a
   // transient send failure is a silent no-op). Only fresh inserts enqueue — a
   // duplicate upload returns early above and never reaches here.
-  void enqueueDocumentIndex(user.id, document.id);
+  //
+  // `aiRead=defer` narrows it to the local text layer: an import of a whole
+  // archive must not turn into one provider call per file. The person reads
+  // them later, deliberately, from the document itself.
+  if (ctx.aiDeferred) {
+    void enqueueDocumentIndex(user.id, document.id, { localOnly: true });
+  } else {
+    void enqueueDocumentIndex(user.id, document.id);
+  }
 
   // Render a preview thumbnail in the background too (pure local compute — no
   // egress). Same fire-and-forget contract: the upload never blocks on or fails
@@ -453,7 +730,12 @@ async function processUpload(
   // provider-free text-layer path. The persisted summary shows on the detail
   // view. Same fire-and-forget contract: the upload never blocks on or fails
   // because of it. Only fresh inserts reach here (a duplicate returns early).
-  const documentAi = await getAiCapability("documentAi");
+  //
+  // A deferred upload skips it outright and keeps `summaryState: NONE`, so
+  // the detail sheet offers "Generate summary" rather than a pending state.
+  const documentAi = ctx.aiDeferred
+    ? { available: false as const, reason: "deferred" }
+    : await getAiCapability("documentAi");
   if (documentAi.available) {
     void enqueueDocumentSummary(user.id, document.id);
   } else {
@@ -462,6 +744,8 @@ async function processUpload(
       meta: { documentId: document.id, reason: documentAi.reason },
     });
   }
+
+  if (scoped) return receiptResponse(document.id, 201, { duplicate: false });
 
   const [links, visitLinks] = await Promise.all([
     loadConditionLinks(user.id, [document.id]),
@@ -483,7 +767,12 @@ async function processUpload(
 
 /** Authenticate and reserve memory capacity before any request-body read. */
 async function postUpload(request: Request): Promise<Response> {
-  const { user } = await requireAuth();
+  // One of the two routes that name `documents:write` (the other is the
+  // source-key lookup beside it). Every other vault leg —
+  // list, detail, original, thumbnail, bulk, AI — declares no scope and so
+  // refuses the token (`bearer-scope-enforcement-guard.test.ts`).
+  const auth = await requireAuth(DOCUMENTS_WRITE_SCOPE);
+  const { user } = auth;
   const releaseUploadSlot = acquireDocumentUploadSlot(user.id);
   if (!releaseUploadSlot) {
     const response = apiError(
@@ -499,7 +788,7 @@ async function postUpload(request: Request): Promise<Response> {
   }
 
   try {
-    return await processUpload(request, user);
+    return await processUpload(request, auth);
   } finally {
     releaseUploadSlot();
   }
@@ -517,7 +806,7 @@ export const POST = apiHandler(withIdempotency<[Request]>(postUpload));
  * letter is health data belonging to the record, and reading it is the whole
  * point of handing somebody the record.
  *
- * The POST above is NOT delegable and keeps `requireAuth()`. Uploading is not
+ * The POST above is NOT delegable and declares its own scope. Uploading is not
  * a verb the grant admits, and the module-level split matters here: the
  * resolver escalates any non-safe method to `"write"`, so the two arms have to
  * declare separately rather than share one line.

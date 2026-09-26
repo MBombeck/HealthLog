@@ -100,6 +100,7 @@ function reminderRow(
     snoozedUntil: null,
     lastSkippedAt: null,
     skipCount: 0,
+    lastNotifiedAt: null,
     enabled: true,
     vaccinationAntigen: null,
     createdAt: at,

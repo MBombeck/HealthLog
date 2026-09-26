@@ -22,6 +22,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslations } from "@/lib/i18n/context";
+import {
+  BodySiteFields,
+  type BodySiteSideValue,
+} from "@/components/body-sites/body-site-fields";
 
 import {
   useCreateEpisode,
@@ -89,6 +93,10 @@ export function NewEpisodeSheet({
   const [resolved, setResolved] = useState("");
   const [parentId, setParentId] = useState<string>(NONE);
   const [note, setNote] = useState("");
+  // v1.39.2 — where on the body. Offered on every type: an injury or a joint
+  // condition is the usual case, but nothing about a type rules a site out.
+  const [bodySite, setBodySite] = useState("");
+  const [laterality, setLaterality] = useState<BodySiteSideValue>(null);
 
   // Reset / hydrate the form each time the sheet opens — adjusted during
   // render keyed on the open transition (React's recommended alternative to a
@@ -105,6 +113,8 @@ export function NewEpisodeSheet({
     );
     setParentId(editEpisode?.parentConditionId ?? NONE);
     setNote(editEpisode?.note ?? "");
+    setBodySite(editEpisode?.bodySite ?? "");
+    setLaterality(editEpisode?.laterality ?? null);
   } else if (!open && wasOpen) {
     setWasOpen(false);
   }
@@ -135,6 +145,8 @@ export function NewEpisodeSheet({
             resolvedAt,
             parentConditionId,
             note: note.trim() === "" ? null : note,
+            bodySite: bodySite.trim() || null,
+            laterality,
           },
         });
       } else {
@@ -146,6 +158,8 @@ export function NewEpisodeSheet({
           resolvedAt,
           parentConditionId,
           note: note.trim() === "" ? null : note,
+          bodySite: bodySite.trim() || null,
+          laterality,
         });
       }
       onOpenChange(false);
@@ -203,6 +217,15 @@ export function NewEpisodeSheet({
             </SelectContent>
           </Select>
         </div>
+
+        <BodySiteFields
+          idPrefix="illness"
+          bodySite={bodySite}
+          laterality={laterality}
+          onBodySiteChange={setBodySite}
+          onLateralityChange={setLaterality}
+          hint={t("illness.new.bodySiteHint")}
+        />
 
         <div className="space-y-1.5">
           <Label>{t("illness.new.lifecycle")}</Label>

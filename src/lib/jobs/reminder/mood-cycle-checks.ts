@@ -134,6 +134,7 @@ export async function handleMeasurementReminderCheck(
           skipped_not_due: summary.skippedNotDue,
           skipped_outside_window: summary.skippedOutsideWindow,
           skipped_no_channel: summary.skippedNoChannel,
+          skipped_repeat_held: summary.skippedRepeatHeld,
           failed: summary.failed,
         },
       });

@@ -66,7 +66,7 @@ import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
 import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
 import { decryptNoteFromBytes } from "@/lib/labs/store";
 import { decryptContextFromBytes } from "@/lib/labs/biomarker-store";
-import { packBackupBlobStreaming } from "@/lib/export/backup-blob";
+import { legacyStreamedBlobFrom } from "@/__tests__/helpers/legacy-backup-blob";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { TWO_ENDED_MODELS, type TwoEndedModel } from "@/lib/export/backup-plan";
 import { POST } from "./restore-job-driver";
@@ -660,6 +660,9 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       label: "Iron deficiency",
       type: "CHRONIC",
       onsetAt: AT("2026-03-01T00:00:00.000Z"),
+      // v1.39.2 — a condition's body site and side travel too.
+      bodySiteEncrypted: encryptToBytes("Stomach"),
+      laterality: "BOTH",
     },
   });
   const illnessSymptom = await prisma.illnessSymptom.create({
@@ -823,6 +826,13 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       byteSize: documentBytes.byteLength,
       contentEncrypted,
       contentCodec: "binary2",
+      // Imported (#1038): the source key has to survive the trip, or a
+      // re-run of the importer after a restore stores the page twice.
+      sourceSystem: "PAPERLESS",
+      sourceId: "4711",
+      // Held back from automatic AI reading; a restore that dropped the
+      // marker would hand the page to the summary catch-up.
+      aiReadDeferred: true,
     },
   });
 
@@ -1356,7 +1366,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         // form, which is what every row written before any of this existed
         // looks like — an operator's newest usable copy may well be one of
         // those, so every arm has to reach the restore route.
-        data: await packBackupBlobStreaming(async (write) => {
+        data: await legacyStreamedBlobFrom(async (write) => {
           await write(streamedJson);
         }),
       },
@@ -1504,6 +1514,15 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     // id that happens to match one the seeding used.
     const vaultDocument = await prisma.inboundDocument.findFirstOrThrow({
       where: { userId: OWNER_ID },
+    });
+    expect({
+      sourceSystem: vaultDocument.sourceSystem,
+      sourceId: vaultDocument.sourceId,
+      aiReadDeferred: vaultDocument.aiReadDeferred,
+    }).toEqual({
+      sourceSystem: "PAPERLESS",
+      sourceId: "4711",
+      aiReadDeferred: true,
     });
     const threads = await prisma.coachConversation.findMany({
       where: { userId: OWNER_ID },
@@ -1955,6 +1974,24 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       condition: "Iron deficiency",
       createdAt: "2026-07-02T09:00:00.000Z",
     });
+
+    // The condition's body site and side (v1.39.2). A restore that dropped
+    // either would still return the right number of episodes; the site must
+    // come back as ciphertext that reads as what was typed, and the side as
+    // it was.
+    const sitedEpisode = await prisma.illnessEpisode.findFirstOrThrow({
+      where: { userId: OWNER_ID, label: "Iron deficiency" },
+      select: { bodySiteEncrypted: true, laterality: true },
+    });
+    expect(
+      {
+        bodySite: sitedEpisode.bodySiteEncrypted
+          ? decryptFromBytes(sitedEpisode.bodySiteEncrypted)
+          : null,
+        laterality: sitedEpisode.laterality,
+      },
+      "a condition's body site and side must survive the round trip",
+    ).toEqual({ bodySite: "Stomach", laterality: "BOTH" });
 
     // The staged fact, and the decision on it.
     //

@@ -947,6 +947,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "profile",
     why: "The record's procedure and surgery history: the visits of kind PROCEDURE that happened, searched by body site. The same rows the visit list serves, read one way, so it sits under the same domain and level; the search runs over the resolved user's own rows after the decrypt and cannot address anyone else's.",
   },
+  "app/api/body-sites/route.ts": {
+    domain: "profile",
+    why: "The body sites the record holds and, for a picked one, the procedures and conditions filed there. It starts from the visits, so it sits in their section and level. Conditions join only when the grant also covers illness and the record has the module on; otherwise the condition table is not read, and a procedure's links into a section the grant does not cover come back as unlabelled placeholders. Matching runs over the resolved user's own rows after the decrypt.",
+  },
   "app/api/encounters/suggest/route.ts": {
     domain: "profile",
     why: "Which of the record's visits a document or lab panel dated around a given day belongs to. A read over the same rows the visit list serves, reduced to a verdict — the caller learns nothing about the record it could not learn from the list itself, and the anchor it passes is a date rather than an id, so it cannot address a row.",
@@ -1952,8 +1956,12 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * v1.39.1 -- the procedure history adds one: a read on the record list at the
  * level and domain of the visit list it is a view of. 230 -> 231.
+ *
+ * v1.39.2 -- the body-site view adds one: a read on the record list in the
+ * visits' domain, with conditions joined only under an illness grant.
+ * 231 -> 232.
  */
-const FROZEN_ENTRY_COUNT = 231;
+const FROZEN_ENTRY_COUNT = 232;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

@@ -171,6 +171,14 @@ export interface DocumentBackupEntry {
   /** Refs #776 — the index-attempt record, carried verbatim (canonical DR). */
   lastIndexAttemptAt?: string | null;
   lastIndexOutcome?: string | null;
+  /**
+   * v1.39.2 (#1038) — where an imported document came from, both payload
+   * kinds. Optional so a file written before the fields existed still parses.
+   */
+  sourceSystem?: string | null;
+  sourceId?: string | null;
+  /** Canonical DR only: the import's hold on automatic AI reading. */
+  aiReadDeferred?: boolean;
 }
 
 export interface RecordsBackupOptions {
@@ -188,6 +196,7 @@ interface DisasterRecoveryDocumentRow {
   summaryState: string;
   lastIndexAttemptAt: Date | null;
   lastIndexOutcome: string | null;
+  aiReadDeferred: boolean;
   updatedAt: Date;
 }
 
@@ -200,6 +209,8 @@ type CanonicalIllnessDayLog = IllnessDayLogDTO & {
 
 type CanonicalIllnessEpisode = IllnessEpisodeDTO & {
   noteEncrypted?: string | null;
+  /** The body site's ciphertext, disaster-recovery purpose only (v1.39.2). */
+  bodySiteEncrypted?: string | null;
   deletedAt?: string | null;
   dayLogs: CanonicalIllnessDayLog[];
 };
@@ -296,6 +307,9 @@ export async function buildRecordsBackupSection(
           summaryState: true,
           lastIndexAttemptAt: true,
           lastIndexOutcome: true,
+          sourceSystem: true,
+          sourceId: true,
+          aiReadDeferred: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -314,6 +328,8 @@ export async function buildRecordsBackupSection(
           reportDate: true,
           documentDate: true,
           summaryEncrypted: true,
+          sourceSystem: true,
+          sourceId: true,
           createdAt: true,
         },
       });
@@ -430,6 +446,13 @@ export async function buildRecordsBackupSection(
         noteEncrypted: row.noteEncrypted
           ? Buffer.from(row.noteEncrypted).toString("base64")
           : null,
+        // Ciphertext verbatim, like the note: the disaster-recovery file never
+        // carries the site in the clear.
+        bodySite: null,
+        bodySiteEncrypted: row.bodySiteEncrypted
+          ? Buffer.from(row.bodySiteEncrypted).toString("base64")
+          : null,
+        laterality: row.laterality,
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),
         deletedAt: row.deletedAt?.toISOString() ?? null,
@@ -520,6 +543,8 @@ export async function buildRecordsBackupSection(
       documentDate: d.documentDate
         ? d.documentDate.toISOString().slice(0, 10)
         : null,
+      sourceSystem: d.sourceSystem,
+      sourceId: d.sourceId,
       createdAt: d.createdAt.toISOString(),
     };
 
@@ -542,6 +567,7 @@ export async function buildRecordsBackupSection(
         summaryState: dr.summaryState,
         lastIndexAttemptAt: dr.lastIndexAttemptAt?.toISOString() ?? null,
         lastIndexOutcome: dr.lastIndexOutcome,
+        aiReadDeferred: dr.aiReadDeferred,
       };
     }
 

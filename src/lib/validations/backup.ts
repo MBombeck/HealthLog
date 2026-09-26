@@ -81,6 +81,10 @@ import {
   emergencyBloodTypeSchema,
   organDonorStatusSchema,
 } from "@/lib/validations/emergency-profile";
+import {
+  DOCUMENT_SOURCE_ID_MAX,
+  DOCUMENT_SOURCE_SYSTEMS,
+} from "@/lib/validations/inbound-documents";
 import { REMINDER_EVENT_SOURCES } from "@/lib/measurement-reminders/satisfy";
 import {
   UNITS_PER_DOSE_MESSAGE,
@@ -1072,6 +1076,13 @@ const illnessEpisodeBackupSchema = z
     note: z.string().nullable().optional(),
     createdAt: isoDateTime.optional(),
     noteEncrypted: base64BytesSchema.nullable().optional(),
+    // v1.39.2 — the body site and side. Optional so a file written before
+    // they existed still parses; the condition restores with neither. The
+    // site rides as ciphertext in a disaster-recovery file and as plaintext
+    // in a portable one, exactly like the note beside it.
+    bodySite: z.string().max(200).nullable().optional(),
+    bodySiteEncrypted: base64BytesSchema.nullable().optional(),
+    laterality: z.enum(Laterality).nullable().optional(),
     deletedAt: isoDateTime.nullable().optional(),
     updatedAt: isoDateTime.optional(),
     dayLogs: z.array(illnessDayLogBackupSchema).default([]),
@@ -1621,6 +1632,11 @@ const documentBackupSchema = z
     // Free string on purpose: a future outcome value must not fail a restore.
     lastIndexAttemptAt: isoDateTime.nullable().optional(),
     lastIndexOutcome: z.string().nullable().optional(),
+    // v1.39.2 (#1038) — import provenance. Closed like the upload field, so a
+    // restore cannot write a system the detail sheet has no name for.
+    sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS).nullable().optional(),
+    sourceId: z.string().max(DOCUMENT_SOURCE_ID_MAX).nullable().optional(),
+    aiReadDeferred: z.boolean().optional(),
     summary: z.string().nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),

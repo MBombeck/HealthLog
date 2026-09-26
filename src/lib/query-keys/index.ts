@@ -256,6 +256,9 @@ export const illnessDependentKeys = [
   queryKeys.illness(),
   queryKeys.dashboardSnapshot(),
   queryKeys.dailyDigest(),
+  // v1.39.2 — a condition's body site is half of the body-site view and of
+  // the suggestions a body-site field offers.
+  queryKeys.bodySitesAll(),
 ];
 
 /**

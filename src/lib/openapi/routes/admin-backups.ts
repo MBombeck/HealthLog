@@ -7,8 +7,9 @@
  * Most of `/api/admin/backups/*` is deliberately unpublished: it is a
  * cookie-only console, `requireAdmin()` refuses every Bearer caller, and a
  * contract nobody can call against is a contract nobody reads. These two are
- * here for the opposite reason. Both open the encrypted copy in
- * `data_backups.data`, and both therefore have a refusal an operator meets on
+ * here for the opposite reason. Both open the encrypted stored copy (pieces in
+ * `data_backup_chunks`, or one value in `data_backups.data` for a copy written
+ * before v1.39.2), and both therefore have a refusal an operator meets on
  * the day a key rotation went one step too far — the case
  * `docs/ops/encryption-key-rotation.md` warns about. That refusal is a promise
  * (422, `backup.payload.undecryptable`, nothing changed) rather than whatever
@@ -138,7 +139,17 @@ const restoreJob = z
  */
 const undecryptableResponse = {
   description:
-    "The stored copy could not be opened: either the key that wrote it is no longer in `ENCRYPTION_KEYS` (a rotation that dropped the legacy entry too early), or the stored bytes are not the ones that were written. `meta.errorCode` = `backup.payload.undecryptable`. Nothing was changed.",
+    "The stored copy could not be opened: either the key that wrote it is no longer in `ENCRYPTION_KEYS` (a rotation that dropped the legacy entry too early), or the stored bytes are not the ones that were written (a stored piece missing, moved, altered, taken from another copy, or the copy cut short), or the row holds both a single value and pieces, which only an older release writing to it after an upgrade produces. Every piece is checked before any of the copy is read. `meta.errorCode` = `backup.payload.undecryptable`. Nothing was changed.",
+  content: { "application/json": { schema: errorEnvelope } },
+};
+
+/**
+ * A copy replaced by a newer one (the weekly backup) while it was being
+ * opened or read. Not damage: the reader starts again on the new copy.
+ */
+const replacedResponse = {
+  description:
+    "The stored copy was replaced by a newer one while it was being read. `meta.errorCode` = `backup_changed`. Nothing was changed; start again to use the new copy.",
   content: { "application/json": { schema: errorEnvelope } },
 };
 
@@ -180,6 +191,7 @@ export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "403": adminOnlyResponse,
         "404": notFoundResponse,
+        "409": replacedResponse,
         "422": undecryptableResponse,
         "500": {
           description:
@@ -229,7 +241,7 @@ export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "404": notFoundResponse,
         "409": {
           description:
-            "A restore of the same account is already queued or running (`meta.errorCode` = `backup.restore.active`, `meta.jobId` names it), or a request under the same `Idempotency-Key` is still in flight. Nothing was changed.",
+            "A restore of the same account is already queued or running (`meta.errorCode` = `backup.restore.active`, `meta.jobId` names it), the stored copy was replaced by a newer one while it was being checked (`meta.errorCode` = `backup_changed`), or a request under the same `Idempotency-Key` is still in flight. Nothing was changed.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "413": {

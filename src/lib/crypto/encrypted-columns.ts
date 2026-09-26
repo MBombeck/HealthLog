@@ -39,6 +39,13 @@
 
 export type EncryptedColumnKind = "string" | "bytes";
 
+/**
+ * The associated-data label a stored backup's pieces are sealed with. The same
+ * key seals other binary values (a stored document, for one); the label keeps
+ * a value sealed for another purpose from ever opening as a backup piece.
+ */
+export const BACKUP_CHUNK_AAD = "healthlog/data-backup-chunk/v1";
+
 export interface EncryptedColumn {
   /** Prisma model name (PascalCase, as declared in schema.prisma). */
   readonly model: string;
@@ -54,6 +61,25 @@ export interface EncryptedColumn {
    * multi-megabyte blobs, so an unbounded `findMany` would balloon memory.
    */
   readonly codecField?: string;
+  /**
+   * The codec every row of the column uses, for a column with one layout and
+   * no sibling column recording it. "binary2" is the binary `encryptBytes()`
+   * layout. Like `codecField`, it implies batching.
+   */
+  readonly codec?: "binary2";
+  /**
+   * The associated-data label every value of the column is sealed with
+   * (`encryptBytes(value, aad)`). Rotation re-seals under the same label.
+   */
+  readonly aad?: string;
+  /**
+   * The column holds single-value backups, which rotation does not re-seal in
+   * place but converts into pieces in `DataBackupChunk` under the active key,
+   * reading the value a slice at a time. Re-sealing in place needs the whole
+   * value in memory several times over, and one value can be a hundred
+   * megabytes.
+   */
+  readonly convertsToPieces?: true;
   /**
    * Walk this column in bounded id-cursor batches instead of one `findMany`.
    * Set it on any column whose rows are blobs rather than short strings — a
@@ -254,6 +280,9 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   { model: "LabResult", field: "noteEncrypted", kind: "bytes" },
   { model: "Biomarker", field: "contextEncrypted", kind: "bytes" },
   { model: "IllnessEpisode", field: "noteEncrypted", kind: "bytes" },
+  // v1.39.2 — where on the body a condition sits. The side beside it
+  // (`laterality`) stays plaintext, as on `Encounter`.
+  { model: "IllnessEpisode", field: "bodySiteEncrypted", kind: "bytes" },
   { model: "IllnessDayLog", field: "noteEncrypted", kind: "bytes" },
 
   // ───── v1.19.0 ECG waveform (Bytes column) ─────
@@ -377,11 +406,30 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // when nothing else works.
   //
   // Rotation re-encrypts the ciphertext WITHOUT touching the plaintext, so it
-  // is blind to the envelope inside: today a row is either the plain backup
-  // JSON or the `HLZ1:`-prefixed gzip form, and any further shape a future
-  // writer introduces rotates unchanged for the same reason. Batched, because
-  // a single row is megabytes.
-  { model: "DataBackup", field: "data", kind: "string", batched: true },
+  // is blind to the envelope inside: a row is the plain backup JSON, the
+  // `HLZ1:`-prefixed gzip form, or the single `~hlgcm1.` stream v1.38.6 to v1.39.1 wrote
+  // (re-sealed as a stream). Batched, because a single row is megabytes.
+  {
+    model: "DataBackup",
+    field: "data",
+    kind: "string",
+    batched: true,
+    convertsToPieces: true,
+  },
+
+  // ───── Whole-account backup, in pieces (Bytes, binary2, batched) ─────
+  // How every backup is stored from v1.39.2: ordered pieces of about a
+  // megabyte, each sealed with `encryptBytes()` (`backup-chunks.ts`). The
+  // column above keeps only copies written before that. Rotation re-seals a
+  // piece without reading what it holds; the header that binds it to its copy
+  // and position is inside the ciphertext, so it survives unchanged.
+  {
+    model: "DataBackupChunk",
+    field: "data",
+    kind: "bytes",
+    codec: "binary2",
+    aad: BACKUP_CHUNK_AAD,
+  },
 
   // ───── Idempotent-replay response cache (String, disposable) ─────
   // The cached response body, encrypted because the PHI-returning creates echo

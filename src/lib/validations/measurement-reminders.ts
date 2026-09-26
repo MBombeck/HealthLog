@@ -185,7 +185,7 @@ export const updateMeasurementReminderSchema = z
   .meta({
     id: "MeasurementReminderUpdate",
     description:
-      "Partial edit of a Vorsorge reminder. Omitted fields are left untouched; nextDueAt is recomputed server-side after the patch applies.",
+      "Partial edit of a Vorsorge reminder. Omitted fields are left untouched; nextDueAt is recomputed server-side when the cadence changes and otherwise kept (a notifyHour edit moves only the hour on the same due day).",
   });
 
 export type UpdateMeasurementReminderInput = z.infer<

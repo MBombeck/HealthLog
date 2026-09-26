@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.39.1
+  version: 1.39.2
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -2807,10 +2807,11 @@ paths:
         is no GENERIC mint any more — the POST at this exact path issued `["medication:ingest"]` and was removed,
         because that scope reached no ingest route while the pre-fail-closed default let it reach everything else. The
         credentials that work are minted where they are scoped: the per-medication API-endpoint toggle, `POST
-        /api/mcp/tokens` for a connector, and the sibling `POST /api/tokens/measurements` for third-party measurement
-        ingest. And unlike the revoke, this read is NOT gated on the operator's instance-wide API switch: that switch
-        governs the surfaces a token is for, not a token's ability to authenticate, so tokens stay live while it is off
-        and their owner has to be able to see them.
+        /api/mcp/tokens` for a connector, the sibling `POST /api/tokens/measurements` for third-party measurement
+        ingest, and `POST /api/tokens/documents` for document upload from another system. And unlike the revoke, this
+        read is NOT gated on the operator's instance-wide API switch: that switch governs the surfaces a token is for,
+        not a token's ability to authenticate, so tokens stay live while it is off and their owner has to be able to see
+        them.
       responses:
         "200":
           description: The caller's tokens, newest first.
@@ -2906,6 +2907,93 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422":
           description: Validation failed. The envelope carries every offending issue, not just the first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: More than 10 mints from this account in a minute. Nothing was minted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/tokens/documents:
+    post:
+      tags:
+        - Auth
+      summary: Mint a document-upload token
+      description: >-
+        Mints a Bearer scoped to exactly `documents:write` and audits the mint. THE RESPONSE CARRIES THE RAW TOKEN,
+        once; it is stored as an HMAC and no path re-reveals it.
+
+
+        **What it can do.** `POST /api/documents/inbound` on its owner's own record, and `GET
+        /api/documents/inbound/source`, which answers whether a source key is already held so an importer can skip a
+        download. Nothing else. It is the door another document system pushes through: a Paperless-ngx workflow posting
+        a newly tagged document, or an import script copying an archive. Uploads through it draw on a bucket of their
+        own, keyed on the token (default 120 an hour, operator-tunable via `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`), and get
+        back a receipt (`id`, `duplicate`, and `deleted` when the source key belongs to a document the owner deleted)
+        rather than the stored row.
+
+
+        **What it cannot do.** List, read, download, preview, edit, delete or bulk-act on a document, reach the
+        document-AI routes, act on a shared record, or mint another token. Every other route names no scope and refuses
+        it 403.
+
+
+        Minting requires a COOKIE SESSION, for the reason the measurement mint gives: a day-lived native access token
+        must not be able to leave behind a year-lived credential. Gated by the operator's instance-wide API switch. Body
+        capped at 16 KiB; 10 mints per user per minute, and at most 10 live document tokens held at once. Tokens appear
+        in `GET /api/tokens` and are revoked at `DELETE /api/tokens/{id}`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDocumentTokenRequest"
+      responses:
+        "201":
+          description: Token minted. The `token` field is the only copy of the secret.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateDocumentTokenEnvelope"
+        "400":
+          description: Body is not parseable JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401": *a1
+        "403":
+          description: The operator has switched the API off instance-wide. Nothing was minted. A Bearer caller is refused 401
+            before the switch is read.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: The account already holds 10 live document tokens (`meta.errorCode` = `tokens.documents.ceiling_reached`).
+            Nothing was minted. Revoke one at `DELETE /api/tokens/{id}`; only live tokens carrying `documents:write`
+            count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: Body exceeds 16 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "415":
+          description: Content-Type is not `application/json`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: Validation failed. The envelope carries every offending issue.
           content:
             application/json:
               schema:
@@ -13186,8 +13274,13 @@ paths:
       tags:
         - MeasurementReminders
       summary: List Vorsorge reminders (v1.17.1)
-      description: Returns the owner's live (non-tombstoned) Vorsorge reminders, sorted by server-computed nextDueAt ascending
-        (nulls last). Each row carries the canonical nextDueAt the client renders without recomputing.
+      description: "Returns the owner's live (non-tombstoned) Vorsorge reminders, sorted by server-computed nextDueAt
+        ascending (nulls last). Each row carries the canonical nextDueAt the client renders without recomputing. Since
+        v1.39.2 a reminder whose cycle is longer than seven days (intervalDays > 7, an rrule whose next occurrence is
+        more than seven days out) or that has no cadence keeps its nextDueAt after its reminder is sent, with or without
+        a measurementType: it stays due, then overdue, until it is satisfied (a matching reading or lab result, or
+        completed), skipped or snoozed, and the server repeats the reminder at most once every seven local days while it
+        stays open. A reminder on a weekly or shorter cycle still rolls on to its next slot after a delivered reminder."
       responses:
         "200":
           description: The owner's measurement reminders.
@@ -13258,8 +13351,11 @@ paths:
       tags:
         - MeasurementReminders
       summary: Edit a Vorsorge reminder (v1.17.1)
-      description: Partial edit; omitted fields are left untouched. nextDueAt is recomputed server-side after the cadence
-        merge. Owner-scoped.
+      description: Partial edit; omitted fields are left untouched. nextDueAt is recomputed server-side only when the edit
+        changes when the reminder recurs (intervalDays, rrule, anchorDate compared by value, or enabled switched back
+        on); that recompute also clears a snooze. A notifyHour-only edit keeps the due day and moves the hour on it. Any
+        other edit (label, location, measurementType) leaves nextDueAt as it is, so an open, overdue check-up stays due.
+        Owner-scoped.
       parameters:
         - in: path
           name: id
@@ -14032,6 +14128,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ListProceduresEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/body-sites:
+    get:
+      tags:
+        - Records
+      summary: List body sites, or what is filed at one
+      description: The body sites the record holds, across visits and conditions, and with `site` the visits and conditions
+        filed at that site with their linked documents, lab results and visits. The same list serves as suggestions for
+        a body-site field, so a site is written the same way twice. Body sites are encrypted at rest, so grouping and
+        matching run server-side after the decrypt, over at most 500 rows per kind. Read at the same section and level
+        as the visit list; conditions join only when the caller may read the illness section and the record has the
+        illness module on.
+      parameters:
+        - in: query
+          name: site
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+        - in: query
+          name: laterality
+          schema:
+            type: string
+            enum:
+              - LEFT
+              - RIGHT
+              - BOTH
+      responses:
+        "200":
+          description: The body sites, and the selection when one was named.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListBodySitesEnvelope"
         "401": *a1
         "403": *a9
         "422": *a4
@@ -15572,20 +15705,68 @@ paths:
       tags:
         - Documents
       summary: Store a document (no extraction)
-      description: "STORE-ONLY upload. Stores the raw document ENCRYPTED at rest with `status: STORED` and runs NO extraction
-        — provider-free, no AI consent / budget / egress. A file is always filable, even with no document-scan provider
+      description: >-
+        STORE-ONLY upload. Stores the raw document ENCRYPTED at rest with `status: STORED` and runs NO extraction —
+        provider-free, no AI consent / budget / egress. A file is always filable, even with no document-scan provider
         configured. `multipart/form-data`: a `file` plus optional `title`, `kind`, `documentDate` (YYYY-MM-DD), and
         repeated `episodeIds` form fields (pre-link to the caller's illness/condition episodes). Accepted types
         (magic-byte sniffed, never the wire Content-Type): PDF/JPEG/PNG/WebP/GIF render inline; Office
         (docx/xlsx/pptx/doc/xls/ppt), text/CSV/Markdown/RTF, TIFF, HEIC/HEIF, XML/JSON are stored verbatim and served
         download-only. HEIC is stored as-is but attachment-only — prefer transcoding to JPEG client-side for inline
-        preview parity. Error contract: `413` with `meta.reason = \"fileTooLarge\"` (+ `maxFileBytes`) or
-        `\"quotaExceeded\"` (+ `quotaBytes`, `usedBytes`); `415` with `meta.reason = \"unsupportedType\"`. A same-user
+        preview parity. Error contract: `413` with `meta.reason = "fileTooLarge"` (+ `maxFileBytes`) or
+        `"quotaExceeded"` (+ `quotaBytes`, `usedBytes`); `415` with `meta.reason = "unsupportedType"`. A same-user
         duplicate (same bytes) returns 200 + `meta.duplicate: true` with the existing row — not an error.
         `Idempotency-Key` honoured. Read `GET /api/documents/inbound/usage` for the effective limits before offering an
-        upload. AI extraction is a separate opt-in action — see `POST /api/documents/inbound/{id}/extract`."
+        upload. AI extraction is a separate opt-in action — see `POST /api/documents/inbound/{id}/extract`.
+
+
+        **Importing from another system (v1.39.2).** Optional `sourceSystem` (`PAPERLESS`, `PAPRA`, `OTHER`) and
+        `sourceId` (its id there, printable, up to 128 characters; needs `sourceSystem`) key the upload. A re-send with
+        a known key is a duplicate: 200 with the live row (`meta.duplicate: true`), or, when the owner DELETED that
+        document, 200 with `data.deleted: true` and `meta.deleted: true` and nothing stored; this holds after the 30-day
+        purge too. The key may also ride the query string (`?sourceSystem=…&sourceId=…`): a key the vault already holds
+        is then answered at once, the file is not stored or processed, and the request counts only toward the lookup
+        allowance shared with `GET /api/documents/inbound/source` (5000 an hour per token, per person for a session; 429
+        past it), not toward the hourly upload limit. A key in both places must agree (else 422). Every other upload
+        counts toward the hourly upload limit, duplicates included. A key that is answered with an existing document by
+        its bytes is remembered for that document, so deleting it keeps that key deleted too; one document takes at most
+        20 such keys, beyond which the upload is refused 409 (`documents.inbound.sourceAliasLimit`). `OTHER` is one
+        shared namespace per account: two different systems both sent as `OTHER` must not reuse each other's ids.
+        `aiRead=defer` holds back automatic AI reading for this upload: the thumbnail and a local text index still run,
+        the summary and lab staging do not, and the document stays out of every automatic AI path (the summary catch-up,
+        the automatic index, Index all for search) until the person reads it with AI or generates its summary. Absent,
+        behaviour is unchanged.
+
+
+        **Narrow token.** Also reachable with a `documents:write` Bearer (minted at `POST /api/tokens/documents`), which
+        reaches only this route and the source-key lookup `GET /api/documents/inbound/source`. Such a caller draws on a
+        bucket of its own, keyed on the token (default 120 an hour, `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`, clamped 1-1000;
+        the 429 carries `Retry-After` and `X-RateLimit-*`), and gets a `DocumentUploadReceipt` instead of the stored
+        row; its 413 `quotaExceeded` carries no `quotaBytes` / `usedBytes`. The response is an untagged union (row or
+        receipt) on purpose: a discriminator would need a new field on the row every existing client decodes. A cookie
+        or wildcard caller keeps the 60-an-hour per-user bucket and the full row. With the vault module off the answer
+        is 403 `module.disabled` for every caller.
       parameters:
         - *a6
+        - name: sourceSystem
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - PAPERLESS
+              - PAPRA
+              - OTHER
+          description: "Import source key, first half. Sent here (and, if also in the form, agreeing with it), a key the vault
+            already holds is answered at once: the file is not stored or processed and the request does not count toward
+            the hourly upload limit, only toward the lookup allowance shared with `GET /api/documents/inbound/source`."
+        - name: sourceId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+          description: Import source key, second half. Both halves or neither; half a key is 422.
       requestBody:
         required: true
         content:
@@ -15628,24 +15809,49 @@ paths:
                   type: array
                   items:
                     type: string
+                sourceSystem:
+                  description: Optional. The system an imported document comes from. Shown on the detail view.
+                  type: string
+                  enum:
+                    - PAPERLESS
+                    - PAPRA
+                    - OTHER
+                sourceId:
+                  description: Optional. The document's id in `sourceSystem`; requires it. Unique per account across live and deleted
+                    documents.
+                  type: string
+                  maxLength: 128
+                aiRead:
+                  description: Optional. `defer` holds back automatic AI reading for this upload (local index and thumbnail only).
+                  type: string
+                  enum:
+                    - defer
               required:
                 - file
       responses:
         "200":
-          description: "Duplicate — the same bytes are already stored: the existing row, with `meta.duplicate: true` at the
-            envelope level."
+          description: "Duplicate — the same bytes, or the same source key, are already stored: the existing row (a
+            `DocumentUploadReceipt` for a `documents:write` token), with `meta.duplicate: true` at the envelope level.
+            When the source key belongs to a document the owner deleted: a receipt with `deleted: true` and
+            `meta.deleted: true`, nothing stored."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InboundDocumentEnvelope"
+                $ref: "#/components/schemas/DocumentUploadEnvelope"
         "201":
-          description: The stored document.
+          description: The stored document (a `DocumentUploadReceipt` for a `documents:write` token).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InboundDocumentEnvelope"
+                $ref: "#/components/schemas/DocumentUploadEnvelope"
         "401": *a1
-        "409": *a7
+        "409":
+          description: The same bytes are already stored under 20 other import source ids (`documents.inbound.sourceAliasLimit`).
+            Nothing was stored or remembered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "413":
           description: "Too large: `meta.reason` is `fileTooLarge` (with `maxFileBytes`) or `quotaExceeded` (with `quotaBytes` +
             `usedBytes`)."
@@ -15660,6 +15866,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/documents/inbound/source:
+    get:
+      tags:
+        - Documents
+      summary: Look up an import source key
+      description: "Whether the vault already holds a document under this import source key, so an importer can skip a
+        document before downloading it from the source system. Answers exactly what an upload with the same key would:
+        `known`, the document `id` (null once a deleted document was purged), and whether the owner `deleted` it. Checks
+        the document's own key, keys remembered for it when an import sent the same bytes under another key, and the
+        keys of purged documents. Reachable with a `documents:write` Bearer (the scope's second and last route) or a
+        cookie session; stores nothing. 5000 lookups an hour per token (per person for a session), shared with the
+        upload's query-string key check; gated on the `inboundDocuments` module."
+      parameters:
+        - name: sourceSystem
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - PAPERLESS
+              - PAPRA
+              - OTHER
+        - name: sourceId
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 128
+      responses:
+        "200":
+          description: The answer for this key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentSourceLookupEnvelope"
+        "401": *a1
         "422": *a4
         "429": *a5
   /api/documents/inbound/capability:
@@ -18660,10 +18904,14 @@ paths:
         - Insights
       summary: The unified daily digest
       description: "Assembles the day's read from already-cached data: the nightly briefing lifted read-only from the insights
-        cache, the dashboard-snapshot health score / meds-today / sleep freshness, plus deterministic integration-status
-        and Vorsorge reads for the 'worth a look' rail. No provider call, no warm-on-mount. No module gate and no AI
-        gate: the digest is data, and the `insights` module is the AI analysis opt-out. Its AI parts follow their
-        capabilities, published in `ai`. Cookie or Bearer auth."
+        cache, the dashboard-snapshot health score / meds-today / sleep freshness, plus deterministic
+        integration-status, Vorsorge and visit reads for the 'worth a look' rail. The rail's `preventive_care` item
+        covers every check-up due today or overdue and names up to three of them; `upcoming_visit` items cover every
+        planned visit on the local today (also once it has started, until the day ends) in one item, and the next day
+        with a visit inside the next 48 hours in a second. A due check-up and today's visits always keep a place within
+        the three-item cap. No provider call, no warm-on-mount. No module gate and no AI gate: the digest is data, and
+        the `insights` module is the AI analysis opt-out. Its AI parts follow their capabilities, published in `ai`.
+        Cookie or Bearer auth."
       responses:
         "200":
           description: The daily digest.
@@ -20578,10 +20826,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: The stored copy was replaced by a newer one while it was being read. `meta.errorCode` = `backup_changed`.
+            Nothing was changed; start again to use the new copy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422":
           description: "The stored copy could not be opened: either the key that wrote it is no longer in `ENCRYPTION_KEYS` (a
-            rotation that dropped the legacy entry too early), or the stored bytes are not the ones that were written.
-            `meta.errorCode` = `backup.payload.undecryptable`. Nothing was changed."
+            rotation that dropped the legacy entry too early), or the stored bytes are not the ones that were written (a
+            stored piece missing, moved, altered, taken from another copy, or the copy cut short), or the row holds both
+            a single value and pieces, which only an older release writing to it after an upgrade produces. Every piece
+            is checked before any of the copy is read. `meta.errorCode` = `backup.payload.undecryptable`. Nothing was
+            changed."
           content:
             application/json:
               schema:
@@ -20637,8 +20895,9 @@ paths:
         "404": *a51
         "409":
           description: A restore of the same account is already queued or running (`meta.errorCode` = `backup.restore.active`,
-            `meta.jobId` names it), or a request under the same `Idempotency-Key` is still in flight. Nothing was
-            changed.
+            `meta.jobId` names it), the stored copy was replaced by a newer one while it was being checked
+            (`meta.errorCode` = `backup_changed`), or a request under the same `Idempotency-Key` is still in flight.
+            Nothing was changed.
           content:
             application/json:
               schema:
@@ -21981,6 +22240,21 @@ components:
         permission array is a literal, so no request can widen it. `name` is what the token is listed under — name it
         after the thing you are pasting it into, because that is what you will be reading when you decide whether to
         revoke it. `expiresInDays` defaults to 365."
+    CreateDocumentTokenRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        expiresInDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+      required:
+        - name
+      description: "Mint a document-upload Bearer. No `scope` field: the endpoint mints one shape. `name` is what the token is
+        listed under; name it after the system it is pasted into. `expiresInDays` defaults to 365."
     RegisterRequest:
       type: object
       properties:
@@ -26683,7 +26957,7 @@ components:
         enabled:
           type: boolean
       description: Partial edit of a Vorsorge reminder. Omitted fields are left untouched; nextDueAt is recomputed server-side
-        after the patch applies.
+        when the cadence changes and otherwise kept (a notifyHour edit moves only the hour on the same due day).
     MeasurementReminderSnooze:
       type: object
       properties:
@@ -27522,12 +27796,27 @@ components:
             - type: string
               maxLength: 2000
             - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+              maxLength: 200
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
       required:
         - label
         - type
       description: Open an illness/condition episode. `label` is the user-facing name; `type` + `lifecycle` classify it.
         `onsetAt` defaults to 'now' server-side when omitted. `parentConditionId` threads a FLARE/RECURRING bout under a
-        parent condition (must be an owned, live episode). The optional `note` is encrypted at rest.
+        parent condition (must be an owned, live episode). The optional `note` is encrypted at rest. `bodySite` (free
+        text, encrypted at rest) and `laterality` (LEFT / RIGHT / BOTH, null when not stated) say where on the body the
+        condition sits; both are optional on every type.
     UpdateIllnessEpisodeRequest:
       type: object
       properties:
@@ -27573,9 +27862,24 @@ components:
             - type: string
               maxLength: 2000
             - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+              maxLength: 200
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
       additionalProperties: false
-      description: Partial edit of an episode; an omitted key leaves the column untouched. A `null` `resolvedAt` re-opens a
-        resolved episode; a `null` `parentConditionId` detaches it from its parent. Rejects unknown keys.
+      description: "Partial edit of an episode; an omitted key leaves the column untouched. A `null` `resolvedAt` re-opens a
+        resolved episode; a `null` `parentConditionId` detaches it from its parent. `bodySite` and `laterality` follow
+        the same rule: an omitted key keeps the stored value, `null` (or a blank site) clears it, so a client that does
+        not know the fields never erases them. Rejects unknown keys."
     ResolveIllnessEpisodeRequest:
       type: object
       properties:
@@ -30516,30 +30820,31 @@ components:
                 auth.mfa.code_invalid, auth.missing, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
                 auth.scope.insufficient, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
                 backup.payload.undecryptable, backup.restore.active, backup.section.missing, backup.upload.too_large;
-                coach — coach.budget.exceeded, coach.conversation.invalidTitle, coach.conversation.notFound,
-                coach.fenced.attachmentConflict, coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound,
-                coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable,
-                coach.fenced.invalid, coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json,
-                coach-prefs.body.invalid_shape; consent — consent.ai.required; cycle — cycle.bulk.invalid,
-                cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range, cycle.cycles.invalid,
-                cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled, cycle.period.invalid,
-                cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json,
-                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; documents —
-                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
-                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
-                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
-                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
-                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
-                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
-                documents.inbound.localOcrDisabled, documents.inbound.notFound, documents.inbound.notIndexed,
-                documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
-                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
-                documents.inbound.restoreGone, documents.inbound.uploadBusy, documents.inbound.uploadTimeout,
-                documents.inbound.vaccinationNotFound; encounter — encounter.invalid, encounter.link.invalid,
-                encounter.practitioner-not-found, encounter.reminder-conflict, encounter.reminder-not-found; environment
-                — environment.invalid, environment.no_home, environment.range_too_large, environment.travel.not_found;
-                export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
-                feedback — feedback.body.invalid; health_score_config — health_score_config.invalid,
+                body-site — body-site.invalid; coach — coach.budget.exceeded, coach.conversation.invalidTitle,
+                coach.conversation.notFound, coach.fenced.attachmentConflict, coach.fenced.attachmentLimit,
+                coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired,
+                coach.fenced.attachmentUnavailable, coach.fenced.invalid, coach.request.invalid; coach-prefs —
+                coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape; consent — consent.ai.required; cycle —
+                cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range,
+                cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled,
+                cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs —
+                cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json;
+                documents — documents.chat.conversationNotFound, documents.chat.invalid,
+                documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
+                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
+                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
+                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
+                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
+                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notFound,
+                documents.inbound.notIndexed, documents.inbound.pdfNeedsAnthropic,
+                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
+                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
+                documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound;
+                encounter — encounter.invalid, encounter.link.invalid, encounter.practitioner-not-found,
+                encounter.reminder-conflict, encounter.reminder-not-found; environment — environment.invalid,
+                environment.no_home, environment.range_too_large, environment.travel.not_found; export —
+                export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid; feedback —
+                feedback.body.invalid; health_score_config — health_score_config.invalid,
                 health_score_config.too_narrow; illness — illness.day-log.invalid, illness.disabled,
                 illness.episode.chronic-no-resolve, illness.episode.invalid, illness.episode.invalid-window,
                 illness.episode.parent-not-found, illness.insights.invalid; import — import.write_failed; ingest —
@@ -30586,16 +30891,17 @@ components:
                 sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
                 sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
                 source-priority.body.invalid_json, source-priority.body.invalid_shape; tokens —
-                tokens.measurements.ceiling_reached; vaccination — vaccination.booster-invalid,
-                vaccination.booster-no-antigen, vaccination.booster-out-of-scope, vaccination.encounter-not-found,
-                vaccination.identity-required, vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
-                vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
-                workout.batch.too_large; (unprefixed) — about_me_conflict, ai_response_truncated, coach_prefs_conflict,
-                dashboard_layout_conflict, empty_file, health_score_config_conflict, insights_layout_conflict,
-                invalid_base_updated_at, json_carries_no_intake_time, json_not_an_array, medication_layout_conflict,
-                missing_required_columns, modules_conflict, mood_tag_layout_conflict, not_configured,
-                notification_prefs_conflict, oidc_only, private_origin_not_approved, private_origin_not_grantable,
-                rate_limited_self, too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
+                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached; vaccination —
+                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
+                vaccination.encounter-not-found, vaccination.identity-required, vaccination.invalid,
+                vaccination.link.invalid, vaccination.not-found, vaccination.practitioner-not-found; workout —
+                workout.batch.invalid, workout.batch.payload_too_large, workout.batch.too_large; (unprefixed) —
+                about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
+                health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
+                json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
+                modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
+                private_origin_not_approved, private_origin_not_grantable, rate_limited_self, too_many_rows,
+                unreadable_json, upstream_invalid_json, vapid_not_configured"
               type: string
             capability:
               description: "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`,
@@ -34650,6 +34956,24 @@ components:
                   - type: string
                     minLength: 1
                   - type: "null"
+              bodySite:
+                anyOf:
+                  - type: string
+                    maxLength: 200
+                  - type: "null"
+              bodySiteEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              laterality:
+                anyOf:
+                  - type: string
+                    enum:
+                      - LEFT
+                      - RIGHT
+                      - BOTH
+                  - type: "null"
               deletedAt:
                 anyOf:
                   - type: string
@@ -35068,6 +35392,21 @@ components:
                 anyOf:
                   - type: string
                   - type: "null"
+              sourceSystem:
+                anyOf:
+                  - type: string
+                    enum:
+                      - PAPERLESS
+                      - PAPRA
+                      - OTHER
+                  - type: "null"
+              sourceId:
+                anyOf:
+                  - type: string
+                    maxLength: 128
+                  - type: "null"
+              aiReadDeferred:
+                type: boolean
               summary:
                 anyOf:
                   - type: string
@@ -38407,6 +38746,42 @@ components:
         - expiresAt
       additionalProperties: false
       description: The one response that carries a usable measurement-ingest Bearer value.
+    CreateDocumentTokenEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateDocumentTokenResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CreateDocumentTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: The raw `hlk_` Bearer, RETURNED EXACTLY ONCE. It is stored only as an HMAC-SHA256 hash and cannot be
+            retrieved later. Treat it as a secret.
+        name:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - token
+        - name
+        - expiresAt
+      additionalProperties: false
+      description: The one response that carries a usable document-upload Bearer value.
     ApiTokenRevokeEnvelope:
       type: object
       properties:
@@ -61086,6 +61461,183 @@ components:
       additionalProperties: false
       description: One body site and side in the procedure history, with how many procedures carry it. Keyed case- and
         space-insensitively; `bodySite` is the first spelling seen.
+    ListBodySitesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/BodySiteList"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    BodySiteList:
+      type: object
+      properties:
+        sites:
+          type: array
+          items:
+            $ref: "#/components/schemas/BodySite"
+        selection:
+          type: object
+          properties:
+            bodySite:
+              type: string
+            laterality:
+              anyOf:
+                - type: string
+                  enum:
+                    - LEFT
+                    - RIGHT
+                    - BOTH
+                - type: "null"
+            visits:
+              type: array
+              items:
+                $ref: "#/components/schemas/Encounter"
+            conditions:
+              anyOf:
+                - type: array
+                  items:
+                    $ref: "#/components/schemas/BodySiteCondition"
+                - type: "null"
+          required:
+            - bodySite
+            - laterality
+            - visits
+            - conditions
+          additionalProperties: false
+      required:
+        - sites
+      additionalProperties: false
+      description: "The record's body sites, most records first, and with `site` the visits and conditions filed there, each
+        newest first with its links. `selection.conditions` is null (not empty) when the caller may not read conditions
+        in this record or the record has the illness module off. Links into a section the caller's grant does not cover
+        carry `redacted: true` and no label."
+    BodySite:
+      type: object
+      properties:
+        bodySite:
+          type: string
+        procedures:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        conditions:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        sides:
+          type: array
+          items:
+            $ref: "#/components/schemas/BodySiteSide"
+      required:
+        - bodySite
+        - procedures
+        - conditions
+        - sides
+      additionalProperties: false
+      description: One body site the record holds, across visits (procedures, mostly) and conditions. Keyed case-, accent- and
+        space-insensitively; `bodySite` is the first spelling met, newest record first. `conditions` is 0 when the
+        caller may not read conditions.
+    BodySiteSide:
+      type: object
+      properties:
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
+        count:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - laterality
+        - count
+      additionalProperties: false
+      description: "How many records sit on one side of a site. `laterality: null` counts the records whose side was not stated."
+    BodySiteCondition:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        type:
+          type: string
+          enum:
+            - INFECTION
+            - ALLERGY
+            - INJURY
+            - MENTAL_HEALTH
+            - AUTOIMMUNE
+            - CHRONIC
+            - OTHER
+        lifecycle:
+          type: string
+          enum:
+            - ACUTE
+            - CHRONIC_ONGOING
+            - RECURRING
+            - FLARE
+        onsetAt:
+          type: string
+        resolvedAt:
+          anyOf:
+            - type: string
+            - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
+        links:
+          type: object
+          properties:
+            documents:
+              type: array
+              items:
+                $ref: "#/components/schemas/EncounterLinkedTarget"
+            visits:
+              type: array
+              items:
+                $ref: "#/components/schemas/EncounterLinkedTarget"
+          required:
+            - documents
+            - visits
+          additionalProperties: false
+      required:
+        - id
+        - label
+        - type
+        - lifecycle
+        - onsetAt
+        - resolvedAt
+        - bodySite
+        - laterality
+        - links
+      additionalProperties: false
+      description: "A condition at the picked site, with the documents filed against it and the visits it was linked to. No
+        note: that is read on the condition itself. A document link comes back with `redacted: true` and no label or
+        date when the caller's grant does not cover documents."
     SuggestEncounterEnvelope:
       type: object
       properties:
@@ -62059,6 +62611,18 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        bodySite:
+          anyOf:
+            - type: string
+            - type: "null"
+        laterality:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
         createdAt:
           type: string
         updatedAt:
@@ -62072,12 +62636,15 @@ components:
         - resolvedAt
         - parentConditionId
         - note
+        - bodySite
+        - laterality
         - createdAt
         - updatedAt
       additionalProperties: false
       description: A stored illness/condition episode. `note` is the decrypted free-text (or null on a key-rotation gap —
         fail-soft, never 500). `resolvedAt` is null while the episode is open. `parentConditionId` links a
-        FLARE/RECURRING bout to its parent condition.
+        FLARE/RECURRING bout to its parent condition. `bodySite` is the decrypted body site (null when not stated or on
+        a key-rotation gap) and `laterality` its side.
     CreateIllnessEpisodeEnvelope:
       type: object
       properties:
@@ -63326,6 +63893,18 @@ components:
             - type: "null"
         hasThumbnail:
           type: boolean
+        sourceSystem:
+          anyOf:
+            - type: string
+              enum:
+                - PAPERLESS
+                - PAPRA
+                - OTHER
+            - type: "null"
+        sourceId:
+          anyOf:
+            - type: string
+            - type: "null"
         createdAt:
           type: string
         updatedAt:
@@ -63352,6 +63931,8 @@ components:
         - lastIndexAttemptAt
         - lastIndexOutcome
         - hasThumbnail
+        - sourceSystem
+        - sourceId
         - createdAt
         - updatedAt
       additionalProperties: false
@@ -63366,7 +63947,9 @@ components:
         attempt finished (successful or not; null when none ran); `lastIndexOutcome` says why that attempt produced no
         index, and is null when the attempt succeeded or none ran. `hasThumbnail` is true when a preview thumbnail has
         been rendered in the background (fetch it from `/api/documents/inbound/{id}/thumbnail`); false means no preview
-        yet or an unsupported type — show a placeholder. Treat an unknown `kind` value as OTHER when decoding.
+        yet or an unsupported type — show a placeholder. `sourceSystem` / `sourceId` say where an imported document came
+        from and its id there (both null for a document added in HealthLog); treat an unknown `sourceSystem` as OTHER
+        when decoding. Treat an unknown `kind` value as OTHER when decoding.
     DocumentConditionLink:
       type: object
       properties:
@@ -63399,11 +63982,13 @@ components:
         visit-kind ENUM CONSTANT rather than a rendered name: unlike a condition label, which is the person's own words,
         a visit kind is one of eight closed values whose human name the reader's own bundle owns, so publishing the
         constant is what lets a German reader and an English one each see it named correctly."
-    InboundDocumentEnvelope:
+    DocumentUploadEnvelope:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/InboundDocument"
+          anyOf:
+            - $ref: "#/components/schemas/InboundDocument"
+            - $ref: "#/components/schemas/DocumentUploadReceipt"
         error:
           type: "null"
         meta:
@@ -63415,6 +64000,60 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    DocumentUploadReceipt:
+      type: object
+      properties:
+        id:
+          anyOf:
+            - type: string
+            - type: "null"
+        duplicate:
+          type: boolean
+        deleted:
+          type: boolean
+          const: true
+      required:
+        - id
+        - duplicate
+      additionalProperties: false
+      description: "What an upload answers instead of the stored row. A narrow `documents:write` token always gets this shape
+        (`duplicate: false` on 201, `true` on 200): a credential that can only add files learns whether a file is
+        stored, not its title, filename or links. Every caller gets it when the upload's source key belongs to a
+        document the owner DELETED (`deleted: true`, 200, nothing stored); `id` is the tombstoned row, or null once the
+        30-day purge removed it."
+    DocumentSourceLookupEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DocumentSourceLookup"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DocumentSourceLookup:
+      type: object
+      properties:
+        known:
+          type: boolean
+        id:
+          anyOf:
+            - type: string
+            - type: "null"
+        deleted:
+          type: boolean
+      required:
+        - known
+        - id
+        - deleted
       additionalProperties: false
     DocumentAiCapabilityEnvelope:
       type: object
@@ -63700,6 +64339,18 @@ components:
             - type: "null"
         hasThumbnail:
           type: boolean
+        sourceSystem:
+          anyOf:
+            - type: string
+              enum:
+                - PAPERLESS
+                - PAPRA
+                - OTHER
+            - type: "null"
+        sourceId:
+          anyOf:
+            - type: string
+            - type: "null"
         createdAt:
           type: string
         updatedAt:
@@ -63755,6 +64406,8 @@ components:
         - lastIndexAttemptAt
         - lastIndexOutcome
         - hasThumbnail
+        - sourceSystem
+        - sourceId
         - createdAt
         - updatedAt
         - facts

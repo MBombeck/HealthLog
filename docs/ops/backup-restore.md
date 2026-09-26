@@ -254,69 +254,108 @@ that account's object being refused, and the reason is in the run's
 ## The weekly in-database backup (`data-backup`)
 
 Separate from the off-host job above, and easy to confuse with it. A second
-pg-boss job writes one `WEEKLY_AUTO` row per user into `data_backups.data` —
-the same JSON document, gzipped and then encrypted under `ENCRYPTION_KEY` /
+pg-boss job writes one `WEEKLY_AUTO` copy per user into the database, the same
+JSON document, gzipped and then encrypted under `ENCRYPTION_KEY` /
 `ENCRYPTION_KEYS`, staying inside the instance. It is what
-`/api/admin/backups/<id>/restore` reads.
+`/api/admin/backups/<id>/restore` reads, and an uploaded backup file is stored
+the same way.
 
-### Container memory
+### How a copy is stored
 
-This is the part that bites. The job runs inside the app process, so V8's heap
-limit is the app's heap limit, and a container capped at 1 GB gives Node a
-524 MB old-space limit by default. A long-lived record is bigger than it looks:
-several hundred thousand measurements serialise to a JSON document of a few
-hundred megabytes, and the writer used to need the object graph and that
-document resident at the same time. On a seeded account of 445 000 measurements
-under a 546 MB limit that is `FATAL ERROR: Reached heap limit` about thirty
-seconds in — and since the job shares the process, the whole instance restarted
-and every signed-in session on it went with it.
+From v1.39.2 a copy is kept as ordered pieces of about a megabyte in
+`data_backup_chunks`, with the list of pieces on its `data_backups` row. The
+writer produces the JSON a page at a time, gzips it as it goes and seals each
+megabyte of gzip output on its own with AES-256-GCM. Reading it back (restore,
+preview, download) takes the pieces one at a time. Nothing on either path holds
+the whole copy, so the size of a copy has nothing to do with the app's memory.
+Measured on an account of 2.6 million readings in the default 1 GB container,
+with the web server and the worker in one process: the backup took 87 seconds
+and stored 97 MB in 96 pieces, the preview 20 seconds, the download of the
+1.4 GB file 25 seconds, and the restore 264 seconds, which gave back every
+reading exactly. The container peaked at 567 MB and did not restart. What the
+backup, preview and download hold on top of the running app stays at a few tens
+of megabytes and does not grow with the account. A 512 MB container is too
+small for the app itself: its heap limit is 259 MB and a backup of any account,
+even one with 130 000 readings, runs it out of heap.
 
-Two things changed, and both matter to an operator:
+Each piece carries, inside its encryption, which copy it belongs to, its
+position, and whether it is the last. Before a restore deletes anything, every
+piece is checked: a piece that is missing, moved, altered, taken from another
+copy, or a copy that stops short of its last piece is refused with
+`backup.payload.undecryptable`, and the account is left as it was.
 
-- **The writer streams.** The three tables that grow without bound —
-  measurements, intake events, mood entries — are read a page at a time and
-  serialised straight into gzip and the cipher, and every other section is
-  released as soon as its JSON exists. On the same fixture doubled to 890 000
-  measurements, the pass completes inside a 296 MB heap limit; before the
-  change, half that record did not fit in 546 MB.
-- **It stops itself, on its own size.** The envelope writer counts the
-  encrypted bytes it has produced for an account and gives up on the account
-  whose stored copy would not fit this process — a fifth of V8's heap limit,
-  which is 105 MB on the 524 MB limit a 1 GB container gets. That backup then
-  fails for that one account, is counted in the run's `users_failed` and
-  `records_oversized` meta, and the pass carries on with everybody else. A
-  memory failure is a failed job rather than a restart for every user on the
-  host.
+The write is one transaction. Until the new copy is complete the previous one
+stays in place and readable; a run that fails halfway leaves it untouched. A
+second backup of the same account started while one is running (a manual run
+during the weekly one, say) waits for the first to finish and then replaces
+its copy; neither leaves a partial copy behind.
 
-If `records_oversized` is non-zero in `job.data_backup`, the answer is more
-memory, not a retry: raise the container's limit, or set
-`NODE_OPTIONS=--max-old-space-size=<MB>` to something under it. The limit is
-derived from the heap limit, so it rises with it.
+While a restore of an account's copy is queued or running, the weekly and
+manual backup leave that account's copy alone and back up everyone else. The
+run's `users_skipped_restoring` meta counts such accounts; the next run
+replaces the copy as usual. If a copy is replaced anyway while it is being
+read (a download or preview in progress when the weekly run finishes), the
+reader answers `409` with `backup_changed` and "The backup was replaced by a
+newer one while it was being read", not the undecryptable error, and a restore
+rolls back with nothing changed. Start it again to use the new copy. A
+download already sending when this happens stops partway; download again.
 
-The check deliberately reads bytes it produced and not the process's heap. A
-version that read the heap shipped in v1.38.6 and compared the whole process's
-live usage — garbage included — against 80 % of the limit. A Next.js server
-that has been up for a week sits at 400 MB of largely collectable heap, so the
-weekly pass aborted every account on the first chunk, including one whose whole
-stored copy is 1.2 MB, and reported success while doing it. If you are on
-v1.38.6, a `data-backup` run that finishes in seconds having backed up nothing
-is that defect and not your record.
+Copies written before v1.39.2 are a single value in `data_backups.data` and
+still restore, preview and download as they did. The next weekly run replaces
+the weekly copy in the new form, and a key rotation (below) converts every
+remaining one, including uploaded copies. Until then those older copies are
+read as one value, as before, which needs the memory they needed when they were
+written.
 
-### The stored column is the remaining ceiling
+Migration 0352 cannot be undone by going back to v1.39.1. That release reads
+only the single value, so it finds a copy in pieces empty, and if it writes a
+weekly copy into a row that has pieces, the row holds both forms. v1.39.2 then
+refuses to read that row, because nothing says which of the two is current
+("This backup holds both a single stored value and pieces ..."); the next
+weekly backup replaces it. If you must go back, restore the database backup
+you took before upgrading.
 
-`data_backups.data` is a single `text` column, so the finished artifact has to
-exist as one value before it can be written — that copy cannot be streamed
-away. It is the only thing left in the job that grows with the record: at a
-compressed blob of ~42 MB the pass peaks around 236 MB, and the growth from
-there is roughly twice the blob's size (the base64 answer, plus the driver's
-copy of it on the way to the wire). That is the ceiling the size check is set
-against — a fifth of the heap limit, so two copies plus the process's own live
-set still fit — and an account that reaches it fails as a job with a message
-naming both numbers. The fix at that point is to stop storing the artifact in
-one column: chunk it across rows, or keep only the off-host copy. Reading it back has the same
-shape, and worse: a restore parses the whole document, so the read path needs
-several times the blob in heap. An operator restoring a very large account
-should give the container more memory for the duration.
+### The size limit
+
+The one limit left is on storage: a copy of one account may take at most
+`BACKUP_MAX_STORED_MB` megabytes (default 2048). It exists so a runaway copy
+fails with a message instead of filling the database volume, which holds the
+old and the new copy side by side while a backup runs. An account past it fails
+for that account alone, is counted in the run's `users_failed` and
+`records_oversized` meta, and keeps its previous copy; the pass carries on with
+everybody else. The message names the setting. Raise it in `.env`, recreate the
+app container, and make sure the database volume has room for two copies of
+that size.
+
+Before v1.39.2 the limit was a fifth of the app's heap, 105 MB in a 1 GB
+container, because the copy had to pass through the app as one value. An
+account with 1.75 million readings was past it, and the only way round was more
+memory. That is no longer the case: `records_oversized` means the storage limit,
+never memory.
+
+The writer deliberately reads no heap gauge. A version that did shipped in
+v1.38.6 and compared the whole process's live usage, garbage included, against
+80 % of the limit. A Next.js server that has been up for a week sits at 400 MB
+of largely collectable heap, so the weekly pass aborted every account on the
+first chunk, including one whose whole stored copy is 1.2 MB, and reported
+success while doing it. If you are on v1.38.6, a `data-backup` run that finishes
+in seconds having backed up nothing is that defect and not your record.
+
+### Key rotation
+
+`scripts/rotate-encryption-key.ts` and the rotation in the admin console
+re-seal every piece under the active key, in small batches, without reading
+the backup inside. The link between a piece, its copy and its position is
+inside the encryption, so it comes through rotation unchanged.
+
+A copy still in the older single-value form (any of them, including the
+`~hlgcm1.` form v1.38.6 to v1.39.1 wrote) is not re-sealed in place, which would need the
+whole copy in memory several times over. Rotation converts it into pieces
+under the active key instead, one copy at a time, reading the stored value a
+few megabytes at a time; the copy keeps its date. The conversion of a copy is
+one transaction, so a copy that fails its check is left exactly as it was and
+counted as an error. Rotation up to v1.39.1 counted every `~hlgcm1.` copy
+as an error; run it again after updating before retiring the old key.
 
 ### What a restore replaces
 
@@ -352,5 +391,7 @@ Outcomes:
 - **Not configured** — deployments without the `BACKUP_S3_*` vars skip
   silently (wide-event warning only).
 
-The drill needs no IAM grant beyond the uploader's existing
-`GetObject` + `ListBucket`.
+The drill lists the bucket to find the newest object, so it needs
+`ListBucket` on top of the uploader's `PutObject`, `GetObject` and
+`AbortMultipartUpload`. Cloudflare R2's **Object Read & Write** token covers
+all four.

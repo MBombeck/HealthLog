@@ -1,44 +1,71 @@
 /**
- * The stored-backup envelope: compress, then encrypt.
+ * The stored-backup envelope: compress, then encrypt, then store in pieces.
  *
- * The weekly worker used to hand `encrypt(JSON.stringify(payload))` straight to
- * Postgres. For an account with a few hundred thousand measurements that means
- * the object graph, the JSON string, the base64 ciphertext (1.33× the JSON) and
- * the copy the database driver makes of it all alive at once — well over a
- * gigabyte for a record whose JSON is a few hundred megabytes. The run died of
- * memory, not of slow SQL.
- *
- * Compressing before the cipher is what makes the tail of that pipeline cheap:
+ * Compressing before the cipher is what makes the tail of the pipeline cheap:
  * health JSON is extremely repetitive, so everything downstream of the gzip
- * shrinks by an order of magnitude. The envelope has to stay readable both
- * ways — rows written before this change are plain `encrypt(json)` and must
- * keep restoring.
+ * shrinks by an order of magnitude. Every form a copy was ever stored in has to
+ * stay readable: plain `encrypt(json)`, the `HLZ1:` gzip form, and the single
+ * `~hlgcm1.` stream v1.39.1 wrote. From v1.39.2 a copy is written as sealed
+ * pieces (`packBackupChunks`), and the one limit on its size is a storage
+ * setting, not a share of the heap (#1031).
  */
 process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 import { randomBytes } from "node:crypto";
-import v8 from "node:v8";
+import { gunzipSync } from "node:zlib";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { encrypt } from "@/lib/crypto";
 import {
+  legacyStreamedBlob,
+  legacyStreamedBlobFrom,
+} from "@/__tests__/helpers/legacy-backup-blob";
+import {
   BackupBlobTooLargeError,
-  defaultBackupBlobLimit,
+  defaultBackupStoreLimit,
   packBackupBlob,
-  packBackupBlobInto,
-  packBackupBlobStreaming,
+  packBackupChunks,
   unpackBackupBlob,
 } from "../backup-blob";
+import { BACKUP_CHUNK_BYTES, openBackupChunk } from "../backup-chunks";
 
-/** Pack a whole string through the streaming writer, in small pieces. */
-async function packStreamed(json: string, pieceSize = 4_096): Promise<string> {
-  return packBackupBlobStreaming(async (write) => {
-    for (let at = 0; at < json.length; at += pieceSize) {
-      await write(json.slice(at, at + pieceSize));
-    }
-  });
+const STREAM = "0123456789abcdef0123456789abcdef";
+
+/** Pack a whole string in small pieces; answer the sealed pieces. */
+async function packChunked(
+  json: string,
+  pieceSize = 4_096,
+  maxBytes?: number,
+): Promise<Buffer[]> {
+  const sealed: Buffer[] = [];
+  await packBackupChunks(
+    async (piece, seq) => {
+      expect(seq).toBe(sealed.length);
+      sealed.push(piece);
+    },
+    STREAM,
+    async (write) => {
+      for (let at = 0; at < json.length; at += pieceSize) {
+        await write(json.slice(at, at + pieceSize));
+      }
+    },
+    maxBytes === undefined ? {} : { maxBytes },
+  );
+  return sealed;
+}
+
+/** Open every piece in order and gunzip the result. */
+function readChunked(sealed: Buffer[]): string {
+  const gz = sealed.map((piece, seq) =>
+    openBackupChunk(piece, {
+      streamId: STREAM,
+      seq,
+      last: seq === sealed.length - 1,
+    }),
+  );
+  return gunzipSync(Buffer.concat(gz)).toString("utf8");
 }
 
 /** A record-shaped string: many rows, few distinct keys. */
@@ -82,183 +109,76 @@ describe("backup blob envelope", () => {
     expect(() => unpackBackupBlob(mangled)).toThrow();
   });
 
-  it("reads back a streamed blob byte for byte", async () => {
+  it("still reads the single stream v1.39.1 stored", () => {
     const json = sampleJson(2_000);
-    expect(unpackBackupBlob(await packStreamed(json))).toBe(json);
+    expect(unpackBackupBlob(legacyStreamedBlob(json))).toBe(json);
   });
 
-  it("is indifferent to where the producer's pieces fall", async () => {
-    // Base64 encodes three bytes at a time, so a writer that carries its
-    // sub-group remainder across chunks wrongly still round-trips at some
-    // piece sizes and corrupts at others. Cover every residue class.
-    // Small on purpose: a one-byte piece size means one write per character,
-    // and the point of the case is the residue class, not the volume.
-    const json = sampleJson(20);
-    for (const pieceSize of [1, 2, 3, 7, 64, 1_000, 1_001, json.length]) {
-      expect(unpackBackupBlob(await packStreamed(json, pieceSize))).toBe(json);
-    }
-  });
-
-  it("compresses the streamed form as hard as the buffered one", async () => {
-    const json = sampleJson(5_000);
-    expect((await packStreamed(json)).length).toBeLessThan(json.length / 4);
-  });
-
-  it("keeps the three stored shapes readable side by side", async () => {
-    // An operator's newest usable copy may predate either change, and the
+  it("keeps the three single-value shapes readable side by side", async () => {
+    // An operator's newest usable copy may predate the pieces, and the
     // restore has to work for exactly that person. Plain, compressed and
     // streamed all decode through the one entry point.
     const json = sampleJson(50);
     expect(unpackBackupBlob(encrypt(json))).toBe(json);
     expect(unpackBackupBlob(packBackupBlob(json))).toBe(json);
-    expect(unpackBackupBlob(await packStreamed(json))).toBe(json);
+    expect(
+      unpackBackupBlob(
+        await legacyStreamedBlobFrom(async (write) => {
+          await write(json);
+        }),
+      ),
+    ).toBe(json);
   });
 
-  it("cannot be confused for a legacy blob", async () => {
-    // The marker starts with a tilde, which is in neither the key-id charset
-    // nor the base64 alphabet, so no value the older writers can produce
-    // begins with it and the two families never have to be sniffed apart.
-    const streamed = await packStreamed(sampleJson(10));
-    expect(streamed.startsWith("~")).toBe(true);
-    expect(packBackupBlob(sampleJson(10)).startsWith("~")).toBe(false);
-    expect(encrypt("x").startsWith("~")).toBe(false);
-  });
-
-  it("refuses a streamed blob whose authentication tag was altered", async () => {
-    const streamed = await packStreamed(sampleJson(20));
+  it("refuses a v1.39.1 stream whose authentication tag was altered", () => {
+    const streamed = legacyStreamedBlob(sampleJson(20));
     // The tag is the last 16 bytes of the payload, so the tail of the base64.
     const mangled = `${streamed.slice(0, -6)}${streamed.slice(-6) === "AAAAAA" ? "BBBBBB" : "AAAAAA"}`;
     expect(() => unpackBackupBlob(mangled)).toThrow();
   });
-
-  it("propagates a producer failure instead of storing a truncated blob", async () => {
-    await expect(
-      packBackupBlobStreaming(async (write) => {
-        await write('{"measurements":[');
-        throw new Error("row source failed");
-      }),
-    ).rejects.toThrow("row source failed");
-  });
-
-  it("stops the account whose stored copy would not fit this process", async () => {
-    // The stored blob is the one copy the pipeline has to hold whole, so it is
-    // the one thing here that grows without bound as a record grows. 4 KB is
-    // an absurd limit; the point is that the writer counts what it produced
-    // and stops on that, not on how full the heap happened to be.
-    const err = await packBackupBlobStreaming(
-      async (write) => {
-        await write(sampleJson(5_000));
-      },
-      { maxBytes: 4_096 },
-    ).catch((e: unknown) => e);
-
-    expect(err).toBeInstanceOf(BackupBlobTooLargeError);
-    const failure = err as BackupBlobTooLargeError;
-    expect(failure.limitBytes).toBe(4_096);
-    expect(failure.bytes).toBeGreaterThan(4_096);
-    // The message has to describe what was measured. It says how much
-    // ciphertext this account produced and what it may occupy — not how full
-    // the process's heap was, which is what the check this replaced reported.
-    expect(failure.message).toContain("of encrypted backup for one account");
-    expect(failure.message).toContain("over the 4 KB");
-    // The check this replaced reported "aborted at N MB of heap", which was a
-    // reading of the whole process and said nothing about the account.
-    expect(failure.message).not.toContain("of heap");
-  });
-
-  it("does not stop a record that fits, however dirty the heap is", async () => {
-    // Collectable garbage past 419 MB: 80 % of the 524 MB V8 limit a 1 GB
-    // container gets, which is the exact budget that aborted all four accounts
-    // on the live instance — the smallest of them a 1.2 MB demo record.
-    const CONTAINER_BUDGET = Math.floor(524 * 1024 * 1024 * 0.8);
-    // Capped against this process's own limit, so a runner started with a
-    // smaller heap measures a backup rather than an out-of-memory abort.
-    const target = Math.min(
-      CONTAINER_BUDGET + 8 * 1024 * 1024,
-      Math.floor(v8.getHeapStatistics().heap_size_limit * 0.6),
-    );
-    let garbage: unknown[] = [];
-    for (
-      let round = 0;
-      round < 2_000 && process.memoryUsage().heapUsed < target;
-      round++
-    ) {
-      const chunk = new Array(30_000);
-      for (let at = 0; at < 30_000; at++) chunk[at] = { k: round * at };
-      garbage.push(chunk);
-    }
-    const dirty = process.memoryUsage().heapUsed;
-    garbage = [];
-    void garbage;
-
-    const blob = await packStreamed(sampleJson(200));
-    expect(unpackBackupBlob(blob)).toBe(sampleJson(200));
-    // Not a vacuous pass: the heap really was carrying the pile it aimed at
-    // — a 1 GB container's whole budget where the runner has room for it —
-    // when the backup ran.
-    expect(dirty).toBeGreaterThanOrEqual(target);
-    expect(dirty).toBeGreaterThan(64 * 1024 * 1024);
-  });
-
-  it("derives the default limit from the heap limit, not from heap usage", async () => {
-    const limit = defaultBackupBlobLimit();
-    const before = limit;
-    // Allocate and hold: usage moves, the limit must not.
-    const held: unknown[] = [];
-    for (let round = 0; round < 40; round++) {
-      const chunk = new Array(30_000);
-      for (let at = 0; at < 30_000; at++) chunk[at] = { k: round * at };
-      held.push(chunk);
-    }
-    expect(defaultBackupBlobLimit()).toBe(before);
-    expect(held).toHaveLength(40);
-    expect(limit).toBeGreaterThan(16 * 1024 * 1024);
-  });
 });
 
-/**
- * Issue #1031: the weekly and manual backup kept the stored copy as one string
- * before writing it, and at 1.25 million measurements that string and the
- * driver's copies of it added about 640 MB to the process. `packBackupBlobInto`
- * hands the stored copy on in bounded pieces instead, as it is produced.
- */
-describe("piecewise envelope", () => {
-  /** JSON that gzip cannot shrink much, so the stored copy is several MB. */
+describe("the copy in sealed pieces", () => {
+  const savedLimit = process.env.BACKUP_MAX_STORED_MB;
+  afterEach(() => {
+    if (savedLimit === undefined) delete process.env.BACKUP_MAX_STORED_MB;
+    else process.env.BACKUP_MAX_STORED_MB = savedLimit;
+  });
+
+  /** JSON that gzip cannot shrink much, so the copy spans several pieces. */
   function incompressibleJson(bytes: number): string {
     return JSON.stringify({
       noise: randomBytes(Math.ceil((bytes * 3) / 4)).toString("base64"),
     });
   }
 
-  it("delivers pieces that concatenate to a blob reading back the exact JSON", async () => {
-    const json = sampleJson(3_000);
-    const pieces: string[] = [];
-    await packBackupBlobInto(
-      (piece) => {
-        pieces.push(piece);
-      },
-      async (write) => {
-        for (let at = 0; at < json.length; at += 4_096) {
-          await write(json.slice(at, at + 4_096));
-        }
-      },
-    );
-    expect(unpackBackupBlob(pieces.join(""))).toBe(json);
+  it("reads back the exact JSON, whatever the producer's piece size", async () => {
+    const json = sampleJson(20);
+    for (const pieceSize of [1, 3, 64, 1_001, json.length]) {
+      expect(readChunked(await packChunked(json, pieceSize))).toBe(json);
+    }
   });
 
-  it("hands pieces on while the producer is still writing, each one bounded", async () => {
-    const json = incompressibleJson(12 * 1024 * 1024);
-    const pieces: number[] = [];
-    let producing = false;
-    let piecesWhileProducing = 0;
-    const chunks: string[] = [];
+  it("compresses: a record-shaped copy is far smaller than its JSON", async () => {
+    const json = sampleJson(5_000);
+    const stored = (await packChunked(json)).reduce(
+      (sum, piece) => sum + piece.byteLength,
+      0,
+    );
+    expect(stored).toBeLessThan(json.length / 4);
+  });
 
-    await packBackupBlobInto(
-      (piece) => {
-        pieces.push(piece.length);
-        chunks.push(piece);
-        if (producing) piecesWhileProducing += 1;
+  it("hands on bounded pieces while the producer is still writing", async () => {
+    const json = incompressibleJson(5 * BACKUP_CHUNK_BYTES);
+    let producing = false;
+    let whileProducing = 0;
+    const sealed: Buffer[] = [];
+    await packBackupChunks(
+      async (piece) => {
+        sealed.push(piece);
+        if (producing) whileProducing += 1;
       },
+      STREAM,
       async (write) => {
         producing = true;
         for (let at = 0; at < json.length; at += 64 * 1024) {
@@ -266,15 +186,66 @@ describe("piecewise envelope", () => {
         }
         producing = false;
       },
-      { maxBytes: Number.MAX_SAFE_INTEGER },
     );
-
-    expect(pieces.length).toBeGreaterThan(2);
-    expect(piecesWhileProducing).toBeGreaterThan(1);
-    // The flush threshold is 4 MB; one gzip chunk's worth of slack on top.
-    for (const length of pieces) {
-      expect(length).toBeLessThan(4 * 1024 * 1024 + 256 * 1024);
+    expect(sealed.length).toBeGreaterThan(3);
+    expect(whileProducing).toBeGreaterThan(1);
+    // One piece's worth plus one gzip flush of slack, plus the seal.
+    for (const piece of sealed) {
+      expect(piece.byteLength).toBeLessThan(BACKUP_CHUNK_BYTES + 256 * 1024);
     }
-    expect(unpackBackupBlob(chunks.join(""))).toBe(json);
+    expect(readChunked(sealed)).toBe(json);
+  });
+
+  it("always ends with a piece marked as the last, even an empty one", async () => {
+    const sealed = await packChunked("{}");
+    expect(sealed).toHaveLength(1);
+    expect(readChunked(sealed)).toBe("{}");
+  });
+
+  it("propagates a producer failure instead of sealing a truncated copy", async () => {
+    const sealed: Buffer[] = [];
+    await expect(
+      packBackupChunks(
+        async (piece) => {
+          sealed.push(piece);
+        },
+        STREAM,
+        async (write) => {
+          await write('{"measurements":[');
+          throw new Error("row source failed");
+        },
+      ),
+    ).rejects.toThrow("row source failed");
+    // Nothing was marked as the last piece of a complete copy.
+    expect(sealed).toHaveLength(0);
+  });
+
+  it("stops at the stored-copy limit with a message an operator can act on", async () => {
+    const err = await packChunked(sampleJson(5_000), 4_096, 4_096).catch(
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(BackupBlobTooLargeError);
+    const failure = err as BackupBlobTooLargeError;
+    expect(failure.limitBytes).toBe(4_096);
+    expect(failure.bytes).toBeGreaterThan(4_096);
+    expect(failure.message).toContain("of encrypted backup for one account");
+    expect(failure.message).toContain("BACKUP_MAX_STORED_MB");
+    expect(failure.message).toContain("previous copy is unchanged");
+    // Memory is not the answer any more, so the message must not send the
+    // operator after it.
+    expect(failure.message).not.toMatch(/heap|memory|max-old-space-size/i);
+  });
+
+  it("sets the default limit by storage, not by this process's heap", () => {
+    delete process.env.BACKUP_MAX_STORED_MB;
+    expect(defaultBackupStoreLimit()).toBe(2048 * 1024 * 1024);
+    process.env.BACKUP_MAX_STORED_MB = "300";
+    expect(defaultBackupStoreLimit()).toBe(300 * 1024 * 1024);
+    // A value that is not a positive number falls back to the default
+    // rather than to zero, which would refuse every backup.
+    for (const junk of ["", "0", "-5", "lots"]) {
+      process.env.BACKUP_MAX_STORED_MB = junk;
+      expect(defaultBackupStoreLimit()).toBe(2048 * 1024 * 1024);
+    }
   });
 });

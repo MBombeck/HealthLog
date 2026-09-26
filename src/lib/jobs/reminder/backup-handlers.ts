@@ -7,7 +7,10 @@
 import { type Job, type JobWithMetadata } from "pg-boss";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { recordError } from "@/lib/jobs/worker-status";
-import { BackupBlobTooLargeError } from "@/lib/export/backup-blob";
+import {
+  BackupBlobTooLargeError,
+  BackupBusyError,
+} from "@/lib/export/backup-blob";
 import { storeBackupBlob } from "@/lib/export/store-backup-blob";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
@@ -132,6 +135,7 @@ export async function handleDataBackup(
       let backed = 0;
       let usersFailed = 0;
       let oversized = 0;
+      let skippedRestoring = 0;
       let largestBlobBytes = 0;
       // Kept for the failure report: without it the run that failed for
       // everybody names no reason at all, which is the shape this pass spent
@@ -140,19 +144,17 @@ export async function handleDataBackup(
       for (const user of users) {
         reportJobProgress({
           backup_user: user.id,
-          backup_users_done: backed + usersFailed,
+          backup_users_done: backed + usersFailed + skippedRestoring,
           backup_users_total: users.length,
         });
         try {
           // Streamed, compressed, then encrypted (the record contains
           // sensitive health information), and stored a piece at a time.
-          // Nothing between the database rows and the stored row exists as a
-          // whole in this process: the payload goes into gzip a page at a
-          // time, the cipher consumes gzip's output as it comes, and the
-          // ciphertext goes back to Postgres in pieces that one statement
-          // assembles into the row (`storeBackupBlob`). The stored copy used
-          // to be built here as one string first, which on a large record
-          // added several hundred megabytes to a container capped at 1 GB.
+          // Nothing between the database rows and the stored copy exists as
+          // a whole in this process: the payload goes into gzip a page at a
+          // time, and gzip's output is sealed and stored in pieces of about a
+          // megabyte (`storeBackupBlob`). The copy is kept as those pieces,
+          // so its size does not depend on this process's memory (#1031).
           const { bytes: storedBytes } = await storeBackupBlob(
             prisma,
             { userId: user.id, type: "WEEKLY_AUTO" },
@@ -164,15 +166,23 @@ export async function handleDataBackup(
           largestBlobBytes = Math.max(largestBlobBytes, storedBytes);
           backed++;
         } catch (err) {
+          // A restore of this account's current copy is queued or running.
+          // Replacing the copy would pull it out from under the restore, so
+          // the account keeps it and the next run tries again. Not a failure.
+          if (err instanceof BackupBusyError) {
+            skippedRestoring++;
+            evt.addWarning(
+              `Skipped user ${user.id}: a restore of the current copy is queued or running`,
+            );
+            continue;
+          }
           // One user's payload failing is that user's problem, not the pass's:
           // it rides out as a count so the weekly run is not retried for the
           // whole cohort.
           //
-          // A record whose stored copy does not fit this process lands here
-          // too, and that is the point of the size limit the envelope writer
-          // enforces: before it existed the same condition was an uncatchable
-          // V8 abort that restarted the instance, so one account's size was a
-          // denial of service on every other account on the host.
+          // A copy over the stored-copy limit (`BACKUP_MAX_STORED_MB`) lands
+          // here too, counted as oversized, with the setting to raise named
+          // in the message.
           usersFailed++;
           lastError = err;
           if (err instanceof BackupBlobTooLargeError) oversized++;
@@ -183,8 +193,8 @@ export async function handleDataBackup(
       // The stored size is the one number that says whether this pass is
       // heading back towards the wall it hit before: it tracks the record.
       evt.addMeta("data_backup_largest_blob_bytes", largestBlobBytes);
-      // How many accounts the envelope writer stopped rather than let the
-      // process die. Non-zero means this host needs more memory, not a retry.
+      // How many accounts' copies passed the stored-copy limit. Non-zero
+      // means raising `BACKUP_MAX_STORED_MB`, not a retry.
       evt.addMeta("data_backup_records_oversized", oversized);
       evt.setBackground({
         task_name: "job.data_backup",
@@ -196,6 +206,7 @@ export async function handleDataBackup(
         total: users.length,
         users_failed: usersFailed,
         records_oversized: oversized,
+        users_skipped_restoring: skippedRestoring,
       };
 
       // A pass that wrote nothing for anybody protected nobody, and saying
@@ -205,8 +216,9 @@ export async function handleDataBackup(
       // fan-out rule, and that account's own row ages on the backups page —
       // but zero out of a non-empty cohort is the pass failing rather than a
       // leg of it, so pg-boss records a failed run and the backups page reads
-      // it back through `readLastQueueRun`.
-      if (users.length > 0 && backed === 0) {
+      // it back through `readLastQueueRun`. An account skipped because its
+      // copy is being restored still has that copy, so it does not count.
+      if (users.length > 0 && backed === 0 && usersFailed > 0) {
         return jobFailed("no account could be backed up", lastError, did);
       }
 
