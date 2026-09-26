@@ -30,8 +30,9 @@ ALTER TABLE "measurement_reminders" ADD COLUMN "last_notified_at" TIMESTAMP(3);
 --        longer than seven days, a recurrence rule, or no cadence at all.
 --        Measurement reminders are included; whether it names a measurement
 --        type does not matter;
---      - it was not done or skipped after that send, and it carries no
---        snooze;
+--      - it was not done or skipped after that send, and no snooze reaches
+--        past it (a snooze that had already run out before the send is
+--        history, not a choice about this slot);
 --      - the send was its most recent claim, and the row's last write
 --        (`updated_at`) lands within a minute before to ten minutes after
 --        that claim. The roll-on is the write that follows a delivery by
@@ -42,7 +43,9 @@ ALTER TABLE "measurement_reminders" ADD COLUMN "last_notified_at" TIMESTAMP(3);
 --        and what the new behaviour no longer writes: more than a week past
 --        the send (a weekly or shorter cycle, including a rule that recurs
 --        within the week, still rolls on, so it is not repaired), or no due
---        date at all for a reminder with no cadence.
+--        date at all: a rule whose last occurrence was the one sent, which
+--        is still open unless it was done or skipped since. A course whose
+--        window ended before the send is excluded by the end-date guard.
 --
 --    The due date goes back to the instant of that send, which is the day
 --    the reminder went out and at its notify hour. `last_notified_at`
@@ -77,7 +80,7 @@ WHERE r."id" = lc."reminder_id"
     OR r."rrule" IS NOT NULL
     OR (r."interval_days" IS NULL AND r."rrule" IS NULL)
   )
-  AND r."snoozed_until" IS NULL
+  AND (r."snoozed_until" IS NULL OR r."snoozed_until" <= lc."sent_at")
   AND r."last_notified_at" IS NULL
   AND (r."last_satisfied_at" IS NULL OR r."last_satisfied_at" < lc."sent_at")
   AND (r."last_skipped_at" IS NULL OR r."last_skipped_at" < lc."sent_at")
@@ -86,11 +89,7 @@ WHERE r."id" = lc."reminder_id"
   AND r."updated_at" <= lc."sent_at" + INTERVAL '10 minutes'
   AND (
     r."next_due_at" > lc."sent_at" + INTERVAL '7 days 12 hours'
-    OR (
-      r."next_due_at" IS NULL
-      AND r."interval_days" IS NULL
-      AND r."rrule" IS NULL
-    )
+    OR r."next_due_at" IS NULL
   );
 
 -- 3. Show booked visits on the start page for people who chose its items
@@ -103,13 +102,17 @@ WHERE r."id" = lc."reminder_id"
 --    non-empty list that lacks it. An empty list is the whole rail turned off
 --    and stays empty. A person who has deliberately switched visits off since
 --    v1.37.2 cannot be told apart from one who never had the choice; they see
---    visits again and can switch them off once more, which now sticks.
+--    visits again and can switch them off once more, which now sticks. A
+--    stored value that is not a list is left alone rather than read.
 UPDATE "users"
 SET "dashboard_widgets_json" = jsonb_set(
       "dashboard_widgets_json",
       '{enabledHeroItemKinds}',
       ("dashboard_widgets_json" -> 'enabledHeroItemKinds') || '["upcoming_visit"]'::jsonb
     )
-WHERE jsonb_typeof("dashboard_widgets_json" -> 'enabledHeroItemKinds') = 'array'
-  AND jsonb_array_length("dashboard_widgets_json" -> 'enabledHeroItemKinds') > 0
-  AND NOT ("dashboard_widgets_json" -> 'enabledHeroItemKinds') ? 'upcoming_visit';
+WHERE CASE
+    WHEN jsonb_typeof("dashboard_widgets_json" -> 'enabledHeroItemKinds') = 'array'
+    THEN jsonb_array_length("dashboard_widgets_json" -> 'enabledHeroItemKinds') > 0
+      AND NOT ("dashboard_widgets_json" -> 'enabledHeroItemKinds') ? 'upcoming_visit'
+    ELSE FALSE
+  END;

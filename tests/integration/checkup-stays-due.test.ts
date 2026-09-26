@@ -226,7 +226,12 @@ describe("an open fortnightly questionnaire through the reminder tick", () => {
         source: "MANUAL",
       },
     });
-    const next = await tick(new Date(filledAt.getTime() + 15 * 60 * 1000));
+    // Outside the notify hour the open slot is not even polled (the
+    // eventful satisfy worker covers that moment); the next notify hour's
+    // poll resolves it.
+    const afternoon = await tick(new Date(filledAt.getTime() + 15 * 60 * 1000));
+    expect(afternoon.autoResolved).toBe(0);
+    const next = await tick(new Date(DUE.getTime() + 2 * DAY));
     expect(next.autoResolved).toBe(1);
     row = await prisma.measurementReminder.findUniqueOrThrow({
       where: { id: created.id },
@@ -339,6 +344,19 @@ describe("migration 0355", () => {
       },
       { id: "yearly-measurement", data: { measurementType: "WEIGHT" } },
       {
+        // A snooze that ran out before the send says nothing about this slot.
+        id: "old-snooze",
+        data: { snoozedUntil: new Date("2026-09-20T07:00:00.000Z") },
+      },
+      {
+        // A rule whose last occurrence was the one sent: rolled to nothing.
+        id: "rule-exhausted",
+        data: {
+          rrule: "FREQ=MONTHLY;UNTIL=20260930T000000Z",
+          nextDueAt: null,
+        },
+      },
+      {
         // An earlier cycle's send is older; the latest send decides.
         id: "monthly-many-sends",
         data: {
@@ -422,6 +440,15 @@ describe("migration 0355", () => {
       },
       { id: "appointment", data: { origin: "ENCOUNTER", rrule: null } },
       { id: "deleted", data: { deletedAt: ROLLED } },
+      {
+        // A course whose window closed before the send stays closed.
+        id: "course-ended",
+        data: {
+          rrule: "FREQ=DAILY",
+          nextDueAt: null,
+          endsOn: new Date("2026-09-25T00:00:00.000Z"),
+        },
+      },
       { id: "disabled", data: { enabled: false } },
       { id: "never-sent", claims: [] },
       {
@@ -483,6 +510,9 @@ describe("migration 0355", () => {
       dashboardWidgetsJson: { version: 1, widgets: [] },
     });
     await seedUser("hero-none");
+    await seedUser("hero-malformed", {
+      dashboardWidgetsJson: { version: 1, enabledHeroItemKinds: "all" },
+    });
 
     await runDataSteps();
     await runDataSteps();
@@ -500,5 +530,6 @@ describe("migration 0355", () => {
     ]);
     expect(await layout("hero-default")).toEqual({ version: 1, widgets: [] });
     expect(await layout("hero-none")).toBeNull();
+    expect((await layout("hero-malformed"))?.enabledHeroItemKinds).toBe("all");
   });
 });
