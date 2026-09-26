@@ -193,10 +193,17 @@ treated like any other upload.
 
 Papra's webhooks only say that something changed, not what the file is, and
 cannot carry a token, so Papra cannot post into HealthLog directly. Run the
-script on a schedule instead, for example nightly with cron:
+script on a schedule instead, for example nightly with cron. Keep the tokens
+in a file only you can read rather than in the crontab line:
+
+```sh
+# /opt/healthlog-import/env (chmod 600)
+HEALTHLOG_TOKEN=hlk_…
+PAPRA_TOKEN=…
+```
 
 ```cron
-15 3 * * * cd /opt/healthlog-import && HEALTHLOG_TOKEN=hlk_… PAPRA_TOKEN=… node import-documents.mjs papra --papra-url https://papra.example --papra-org <id> --healthlog-url https://health.example --tag Health --since 2026-01-01 >> import.log 2>&1
+15 3 * * * cd /opt/healthlog-import && set -a && . ./env && set +a && node import-documents.mjs papra --papra-url https://papra.example.com --papra-org <id> --healthlog-url https://health.example.com --tag Health --since 2026-01-01 >> import.log 2>&1
 ```
 
 Documents already copied are recognised and skipped, so a nightly run only
