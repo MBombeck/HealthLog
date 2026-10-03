@@ -230,7 +230,12 @@ export function ClinicianView({
             />
 
             {/* ── medications ──────────────────────────────────────── */}
-            <MedicationsSection t={t} report={report} scope={scope} />
+            <MedicationsSection
+              t={t}
+              report={report}
+              scope={scope}
+              fmtDate={fmtDate}
+            />
             <Glp1Section
               t={t}
               report={report}

@@ -24,6 +24,7 @@ import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { readDayMeanSeries } from "@/lib/insights/derived/baseline";
 import {
   buildComplianceMedicationContext,
+  COURSES_COMPLIANCE_SELECT,
   buildMedicationComplianceBundle,
   dailyComplianceRatesFromLedger,
   lastNonSkippedTakenAt,
@@ -420,6 +421,8 @@ export async function buildMedicationEfficacy(
       schedules: true,
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
+      // v1.40 (#1024) — the courses, so a gap between two expects nothing.
+      courses: COURSES_COMPLIANCE_SELECT,
       doseChanges: { orderBy: { effectiveFrom: "asc" } },
     },
   });

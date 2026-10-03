@@ -363,7 +363,9 @@
       },
       "contacts": "Contatti di emergenza",
       "notes": "Note aggiuntive"
-    }
+    },
+    "courseRange": "Ciclo dal {start} al {end}",
+    "courseSince": "Ciclo dal {start}"
   },
   "errorBoundary": {
     "title": "Qualcosa è andato storto",
@@ -2292,6 +2294,64 @@
       "placeholder": "ad es. 1,5 o 1 1/2",
       "invalid": "Inserisci un numero maggiore di 0 e fino a 100, ad esempio 1,5 o 1 1/2.",
       "preview": "Conta come {value} per dose"
+    },
+    "category": {
+      "custom": {
+        "add": "Nuova categoria",
+        "label": "Nome della categoria",
+        "labelPlaceholder": "es. Kit da viaggio",
+        "create": "Aggiungi",
+        "limitReached": "Hai raggiunto il limite di 20 categorie personali.",
+        "saveFailed": "Il salvataggio non è riuscito. Riprova.",
+        "bpGateNote": "L'analisi della pressione conta solo i farmaci nella categoria integrata Pressione sanguigna.",
+        "manage": "Gestisci categorie",
+        "manageDescription": "Le tue categorie, accanto a quelle integrate.",
+        "hidden": "Nascosta",
+        "count": "{count} farmaci",
+        "rename": "Rinomina",
+        "hide": "Nascondi nella selezione",
+        "show": "Mostra nella selezione",
+        "delete": "Elimina",
+        "deleteTitle": "Eliminare questa categoria?",
+        "deleteBody": "{count} farmaci di questa categoria passano in Altro. I farmaci restano.",
+        "movedToOther": "Categoria eliminata. {count} farmaci passano in Altro."
+      },
+      "filter": {
+        "label": "Categoria",
+        "all": "Tutte le categorie"
+      }
+    },
+    "course": {
+      "endedOn": "Ultimo ciclo terminato il {date}",
+      "nth": "Ciclo {n}",
+      "startNew": "Inizia un nuovo ciclo",
+      "editTitle": "Modifica ciclo",
+      "startsOn": "Primo giorno",
+      "endsOn": "Ultimo giorno (facoltativo)",
+      "note": "Nota (facoltativa)",
+      "notePlaceholder": "es. l’influenza di marzo",
+      "title": "Cicli",
+      "helper": "Quando l’hai preso. Le assunzioni sono previste solo dentro un ciclo.",
+      "none": "Preso in modo continuo, senza cicli separati.",
+      "range": "Dal {start} al {end}",
+      "since": "Dal {start}",
+      "meta": "Ciclo {n}, {status}, {taken} assunzioni",
+      "status": {
+        "current": "in corso",
+        "upcoming": "previsto",
+        "ended": "concluso"
+      },
+      "delete": "Elimina ciclo",
+      "deleteTitle": "Eliminare questo ciclo?",
+      "deleteBody": "Le date vengono rimosse; le assunzioni registrate restano nello storico.",
+      "deleteLastConfirm": "È l’unico ciclo. Senza di esso il farmaco risulta preso in modo continuo da quando l’hai aggiunto. Le assunzioni registrate restano.",
+      "error": {
+        "overlap": "Questo ciclo si sovrappone a un altro.",
+        "currentOpen": "Concludi il ciclo in corso prima di aggiungerne uno dopo.",
+        "oneShot": "Un farmaco una tantum ha un solo ciclo.",
+        "invalidRange": "L’ultimo giorno non può precedere il primo.",
+        "generic": "Il salvataggio non è riuscito. Riprova."
+      }
     }
   },
   "charts": {
@@ -8352,7 +8412,10 @@
     "doses": {
       "title": "Dosi registrate",
       "showing": "Sono mostrate le {shown} dosi più recenti su {total} registrate."
-    }
+    },
+    "course": "Ciclo {n}",
+    "courseRange": "dal {start} al {end}",
+    "courseSince": "dal {start}"
   },
   "cycle": {
     "symptomCategory": {
@@ -11287,6 +11350,7 @@
       "medicationIntakeImportFinished": "L'importazione delle dosi avviata da {name} è terminata",
       "medicationOneShotReconciled": "Un farmaco monodose è stato riaperto o chiuso dopo una dose registrata da {name}",
       "vaccinationBoosterPlanned": "{name} ha pianificato un richiamo",
+      "medicationCategoryCreate": "{name} ha aggiunto una categoria di farmaci",
       "symptomEventCreate": "{name} ha registrato un sintomo",
       "symptomEventUpdate": "{name} ha modificato una voce di sintomo",
       "symptomEventDelete": "{name} ha eliminato una voce di sintomo",

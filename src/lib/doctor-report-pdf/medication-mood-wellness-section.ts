@@ -1,4 +1,5 @@
 import type { jsPDF } from "jspdf";
+import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 import autoTable from "jspdf-autotable";
 import { adherenceRatePercent } from "../doctor-report-data";
 import {
@@ -67,7 +68,20 @@ export function buildMedicationMoodWellnessSection(
     doc.text(t("doctorReport.complianceTitle"), margin, y);
     y += 6;
 
-    const compRows = complianceEntries.map(([, c]) => {
+    // v1.40 (#1024) — a medication taken in courses names each course inside
+    // the window under its name, one line per course.
+    const courseLines = (id: string): string[] =>
+      (data.medications.find((m) => m.id === id)?.courses ?? []).map((c) =>
+        c.endsOn
+          ? t("doctorReport.courseRange", {
+              start: fmtDate(dateOnlyAtNoonUtc(c.startsOn).toISOString()),
+              end: fmtDate(dateOnlyAtNoonUtc(c.endsOn).toISOString()),
+            })
+          : t("doctorReport.courseSince", {
+              start: fmtDate(dateOnlyAtNoonUtc(c.startsOn).toISOString()),
+            }),
+      );
+    const compRows = complianceEntries.map(([id, c]) => {
       // v1.17 W1a — `total` is the ledger rate denominator (taken + missed,
       // deliberate skips excluded), so `taken / total` matches the app's
       // detail-page adherence %. The column is labelled "Expected" rather
@@ -77,7 +91,7 @@ export function buildMedicationMoodWellnessSection(
       const ratePct = adherenceRatePercent(c.taken, c.total);
       const rate = ratePct !== null ? `${num(ratePct, 0)}%` : "—";
       return [
-        c.name,
+        [c.name, ...courseLines(id)].join("\n"),
         String(c.taken),
         String(c.skipped),
         String(c.missed),

@@ -26,7 +26,7 @@ describe("sharing and handler inventories", () => {
   });
 
   it("keeps every admitted mutation uniquely addressable and fully controlled", () => {
-    expect(ADMITTED_MUTATING_HANDLERS).toHaveLength(83);
+    expect(ADMITTED_MUTATING_HANDLERS).toHaveLength(84);
     expect(
       new Set(
         ADMITTED_MUTATING_HANDLERS.map(

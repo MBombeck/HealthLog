@@ -137,6 +137,17 @@ export interface DoctorReportData {
       windowEnd: string;
       label: string | null;
     }>;
+    /**
+     * v1.40 (#1024) — the courses that overlap the report window, ascending
+     * (`YYYY-MM-DD`, both ends inclusive; `endsOn` null = open), with where
+     * the window's last day sits in each. Empty for a medication taken
+     * continuously. Optional so older fixtures typecheck.
+     */
+    courses?: Array<{
+      startsOn: string;
+      endsOn: string | null;
+      status: "UPCOMING" | "CURRENT" | "ENDED";
+    }>;
   }>;
   /**
    * v1.9.0 — acted medication-intake events over the report window, fed
@@ -537,6 +548,8 @@ export interface DoctorReportComplianceMedication {
   scheduleRevisions?: ScheduleRevisionLike[];
   /** v1.25 H-MED1 — pause eras so paused days drop out of the denominator. */
   pauseEras?: MedicationPauseEraLike[];
+  /** v1.40 (#1024) — the courses, so a gap between two expects nothing. */
+  courses?: { startsOn: Date; endsOn: Date | null }[];
 }
 
 /** A window-bounded intake row keyed to its medication. */

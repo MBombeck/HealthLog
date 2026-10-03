@@ -213,6 +213,20 @@ const medicationPauseEraSchema = z
   .passthrough();
 
 /**
+ * v1.40 (#1024) — one course of a medication: a calendar span (both ends
+ * inclusive, `YYYY-MM-DD`). The note travels decrypted in both purposes and
+ * is sealed again on restore, like the custom category label.
+ */
+const medicationCourseSchema = z
+  .object({
+    startsOn: z.iso.date(),
+    endsOn: z.iso.date().nullable(),
+    note: z.string().max(280).nullable().optional(),
+    createdAt: isoDateTime.optional(),
+  })
+  .passthrough();
+
+/**
  * One step of a titration: when the dose moved and to what.
  *
  * The note follows the side-effect contract — decrypted prose in a portable
@@ -333,6 +347,22 @@ const medicationEfficacyTargetSchema = z
   })
   .passthrough();
 
+/**
+ * v1.40 (#1041) — a medication category the account named itself. Carried
+ * with its decrypted label (the label is re-encrypted on restore under the
+ * restoring instance's key) and restored BEFORE the medications, whose
+ * `category` names it by `key`.
+ */
+const customMedicationCategorySchema = z
+  .object({
+    key: z.string().regex(/^custom:[0-9a-f-]{36}$/),
+    label: z.string().trim().min(1).max(40),
+    sortOrder: z.number().int().min(0).default(0),
+    isActive: z.boolean().default(true),
+    createdAt: isoDateTime.optional(),
+  })
+  .passthrough();
+
 const medicationSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -361,7 +391,8 @@ const medicationSchema = z
     // v1.39.4 — the clinical category. Absent in older files. A string, not
     // the enum: a file from a newer server may name a category this one does
     // not know, and the restore reads that as OTHER rather than refusing the
-    // whole file.
+    // whole file. Since v1.40 it may be `custom:<uuid>`, the key of an entry
+    // in `customMedicationCategories`.
     category: z.string().max(64).optional(),
     deliveryForm: z.enum(MedicationDeliveryForm).optional(),
     trackInjectionSites: z.boolean().optional(),
@@ -396,6 +427,10 @@ const medicationSchema = z
     // Same default again. A drug whose plan has never been replaced has no
     // archived era, and a file written before the eras travelled has no key.
     scheduleRevisions: z.array(medicationScheduleRevisionSchema).default([]),
+    // v1.40 (#1024) — NOT defaulted: absent means a file written before
+    // courses existed, and the restore then derives the one course the
+    // medication's own window describes, exactly as the migration did.
+    courses: z.array(medicationCourseSchema).optional(),
   })
   .passthrough();
 
@@ -1872,6 +1907,10 @@ export const backupPayloadSchema = z
     accountSettings: accountSettingsBackupSchema.nullable().default(null),
     measurements: z.array(measurementSchema).default([]),
     medications: z.array(medicationSchema).default([]),
+    // v1.40 — absent in older files, which carry no custom category either.
+    customMedicationCategories: z
+      .array(customMedicationCategorySchema)
+      .default([]),
     intakeEvents: z.array(intakeEventSchema).default([]),
     moodEntries: z.array(moodEntrySchema).default([]),
     // v1.15.0 — cycle-tracking tables. Default to empty arrays / null so a

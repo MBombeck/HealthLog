@@ -363,7 +363,9 @@
     "immunizationsColDate": "Date",
     "immunizationsColVaccine": "Vaccine",
     "immunizationsColDose": "Dose",
-    "immunizationsColLot": "Lot"
+    "immunizationsColLot": "Lot",
+    "courseRange": "Course {start} to {end}",
+    "courseSince": "Course since {start}"
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -2292,6 +2294,64 @@
       "placeholder": "e.g. 1.5 or 1 1/2",
       "invalid": "Enter a number above 0 and up to 100, for example 1.5 or 1 1/2.",
       "preview": "Counts as {value} per dose"
+    },
+    "category": {
+      "custom": {
+        "add": "New category",
+        "label": "Category name",
+        "labelPlaceholder": "e.g. Travel kit",
+        "create": "Add",
+        "limitReached": "You have reached the limit of 20 own categories.",
+        "saveFailed": "That did not save. Please try again.",
+        "bpGateNote": "Blood pressure insights only count medications in the built-in Blood pressure category.",
+        "manage": "Manage categories",
+        "manageDescription": "Your own categories, shown next to the built-in ones.",
+        "hidden": "Hidden",
+        "count": "{count} medications",
+        "rename": "Rename",
+        "hide": "Hide from the picker",
+        "show": "Show in the picker",
+        "delete": "Delete",
+        "deleteTitle": "Delete this category?",
+        "deleteBody": "{count} medications filed under it move to Other. The medications themselves stay.",
+        "movedToOther": "Category deleted. {count} medications moved to Other."
+      },
+      "filter": {
+        "label": "Category",
+        "all": "All categories"
+      }
+    },
+    "course": {
+      "endedOn": "Last course ended {date}",
+      "nth": "Course {n}",
+      "startNew": "Start a new course",
+      "editTitle": "Edit course",
+      "startsOn": "First day",
+      "endsOn": "Last day (optional)",
+      "note": "Note (optional)",
+      "notePlaceholder": "e.g. the flu in March",
+      "title": "Courses",
+      "helper": "When you took it. Doses are expected only inside a course.",
+      "none": "Taken continuously, no separate courses.",
+      "range": "{start} to {end}",
+      "since": "Since {start}",
+      "meta": "Course {n}, {status}, {taken} doses taken",
+      "status": {
+        "current": "running",
+        "upcoming": "upcoming",
+        "ended": "ended"
+      },
+      "delete": "Delete course",
+      "deleteTitle": "Delete this course?",
+      "deleteBody": "The dates go; the doses you logged stay in the history.",
+      "deleteLastConfirm": "This is the only course. Without it the medication counts as taken continuously since you added it. The logged doses stay.",
+      "error": {
+        "overlap": "This course shares days with another one.",
+        "currentOpen": "End the running course before adding one after it.",
+        "oneShot": "A one-time medication has a single course.",
+        "invalidRange": "The last day cannot be before the first.",
+        "generic": "That did not save. Please try again."
+      }
     }
   },
   "charts": {
@@ -8352,7 +8412,10 @@
     "doses": {
       "title": "Logged doses",
       "showing": "Showing the {shown} most recent of {total} logged doses."
-    }
+    },
+    "course": "Course {n}",
+    "courseRange": "{start} to {end}",
+    "courseSince": "since {start}"
   },
   "cycle": {
     "symptomCategory": {
@@ -11287,6 +11350,7 @@
       "medicationIntakeImportFinished": "The dose import {name} started has finished",
       "medicationOneShotReconciled": "A one-off medication was opened or closed after a dose {name} recorded",
       "vaccinationBoosterPlanned": "{name} planned a booster",
+      "medicationCategoryCreate": "{name} added a medication category",
       "symptomEventCreate": "{name} logged a symptom",
       "symptomEventUpdate": "{name} edited a symptom entry",
       "symptomEventDelete": "{name} deleted a symptom entry",

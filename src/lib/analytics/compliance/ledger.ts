@@ -13,10 +13,12 @@ import {
   type HistoryIntake,
 } from "@/lib/medications/scheduling/dose-history";
 import { userDayKey } from "@/lib/tz/resolver";
-import type {
-  ComplianceMedicationContext,
-  ComplianceSchedule,
-  IntakeEvent,
+import {
+  complianceMintWindow,
+  slotInsideCourses,
+  type ComplianceMedicationContext,
+  type ComplianceSchedule,
+  type IntakeEvent,
 } from "./types";
 import {
   intakeInstantsAtOrBefore,
@@ -113,14 +115,17 @@ export function buildComplianceLedgerRows(
   now: Date,
   windowConfig?: DoseWindowConfig,
 ): DoseHistoryRow[] {
+  // v1.40 (#1024) — expand over the span of every course; the slots between
+  // courses are dropped below.
+  const mintWindow = complianceMintWindow(ctx);
   const medication: BandMinterMedication = {
     id: "compliance-tally",
-    startsOn: ctx.startsOn,
-    endsOn: ctx.endsOn,
+    startsOn: mintWindow.startsOn,
+    endsOn: mintWindow.endsOn,
     oneShot: ctx.oneShot,
     createdAt: ctx.createdAt,
   };
-  const recurrenceCtx = toRecurrenceCtx(ctx, "compliance-tally");
+  const recurrenceCtx = toRecurrenceCtx(ctx, "compliance-tally", "courses");
   const canonicalSchedules = schedules.map((s, i) => {
     const canonical = toCanonicalSchedule(s, `compliance-tally-${i}`);
     // A legacy daily schedule carries only `windowStart` (no `timesOfDay`,
@@ -170,7 +175,13 @@ export function buildComplianceLedgerRows(
   // excluded from the denominator, exactly as the literature requires.
   const bands: SlotBand[] = [];
   for (const g of groups) {
-    if (g.hasExpectedSlots) bands.push(...g.bands);
+    // v1.40 (#1024) — a slot on a day between two courses was never
+    // expected. Dropped before the reconstruction, so a dose logged in the
+    // gap stays in the ledger as the off-schedule take it is (outside the
+    // denominator), which is also how the dose history shows it.
+    if (g.hasExpectedSlots) {
+      bands.push(...g.bands.filter((b) => slotInsideCourses(ctx, b.at)));
+    }
   }
 
   const intakes: HistoryIntake[] = events

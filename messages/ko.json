@@ -363,7 +363,9 @@
     "immunizationsColDate": "날짜",
     "immunizationsColVaccine": "백신",
     "immunizationsColDose": "차수",
-    "immunizationsColLot": "로트번호"
+    "immunizationsColLot": "로트번호",
+    "courseRange": "복용 기간 {start}부터 {end}까지",
+    "courseSince": "복용 기간 {start}부터"
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",
@@ -2292,6 +2294,64 @@
       "placeholder": "예: 1.5 또는 1 1/2",
       "invalid": "0보다 크고 100 이하인 숫자를 입력하세요. 예: 1.5 또는 1 1/2",
       "preview": "1회분당 {value}(으)로 계산돼요"
+    },
+    "category": {
+      "custom": {
+        "add": "새 카테고리",
+        "label": "카테고리 이름",
+        "labelPlaceholder": "예: 여행용 상비약",
+        "create": "추가",
+        "limitReached": "나만의 카테고리는 최대 20개까지 만들 수 있어요.",
+        "saveFailed": "저장하지 못했어요. 다시 시도해 주세요.",
+        "bpGateNote": "혈압 분석은 기본 제공되는 혈압 카테고리의 약만 계산해요.",
+        "manage": "카테고리 관리",
+        "manageDescription": "기본 카테고리 옆에 보이는 나만의 카테고리예요.",
+        "hidden": "숨김",
+        "count": "약 {count}개",
+        "rename": "이름 바꾸기",
+        "hide": "선택 목록에서 숨기기",
+        "show": "선택 목록에 표시",
+        "delete": "삭제",
+        "deleteTitle": "이 카테고리를 삭제할까요?",
+        "deleteBody": "이 카테고리의 약 {count}개가 기타로 옮겨져요. 약 자체는 그대로 남아요.",
+        "movedToOther": "카테고리를 삭제했어요. 약 {count}개가 기타로 옮겨졌어요."
+      },
+      "filter": {
+        "label": "카테고리",
+        "all": "모든 카테고리"
+      }
+    },
+    "course": {
+      "endedOn": "마지막 복용 기간이 {date}에 끝났어요",
+      "nth": "복용 기간 {n}",
+      "startNew": "새 복용 기간 시작",
+      "editTitle": "복용 기간 수정",
+      "startsOn": "첫날",
+      "endsOn": "마지막 날 (선택)",
+      "note": "메모 (선택)",
+      "notePlaceholder": "예: 3월 독감",
+      "title": "복용 기간",
+      "helper": "언제 복용했는지예요. 복용은 기간 안에서만 예정돼요.",
+      "none": "계속 복용 중이고, 따로 나눈 기간은 없어요.",
+      "range": "{start}부터 {end}까지",
+      "since": "{start}부터",
+      "meta": "복용 기간 {n}, {status}, {taken}회 복용",
+      "status": {
+        "current": "진행 중",
+        "upcoming": "예정",
+        "ended": "종료"
+      },
+      "delete": "복용 기간 삭제",
+      "deleteTitle": "이 복용 기간을 삭제할까요?",
+      "deleteBody": "날짜만 삭제되고, 기록한 복용은 기록에 남아요.",
+      "deleteLastConfirm": "유일한 복용 기간이에요. 삭제하면 이 약은 추가한 날부터 계속 복용한 것으로 봐요. 기록한 복용은 남아요.",
+      "error": {
+        "overlap": "이 기간이 다른 기간과 겹쳐요.",
+        "currentOpen": "진행 중인 기간을 끝낸 뒤에 다음 기간을 추가해 주세요.",
+        "oneShot": "일회성 약은 복용 기간이 하나뿐이에요.",
+        "invalidRange": "마지막 날은 첫날보다 앞설 수 없어요.",
+        "generic": "저장하지 못했어요. 다시 시도해 주세요."
+      }
     }
   },
   "charts": {
@@ -8352,7 +8412,10 @@
     "doses": {
       "title": "기록된 복용",
       "showing": "기록된 복용 {total}건 중 최근 {shown}건을 보여줘요."
-    }
+    },
+    "course": "복용 기간 {n}",
+    "courseRange": "{start}부터 {end}까지",
+    "courseSince": "{start}부터"
   },
   "cycle": {
     "symptomCategory": {
@@ -11287,6 +11350,7 @@
       "medicationIntakeImportFinished": "{name} 님이 시작한 복용 기록 불러오기가 끝났어요",
       "medicationOneShotReconciled": "{name} 님이 기록한 복용에 따라 일회성 약이 시작되거나 종료됐어요",
       "vaccinationBoosterPlanned": "{name} 님이 추가 접종을 계획했어요",
+      "medicationCategoryCreate": "{name} 님이 약 카테고리를 추가했어요",
       "symptomEventCreate": "{name}님이 증상을 기록했습니다",
       "symptomEventUpdate": "{name}님이 증상 기록을 편집했습니다",
       "symptomEventDelete": "{name}님이 증상 기록을 삭제했습니다",

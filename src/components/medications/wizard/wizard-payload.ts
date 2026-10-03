@@ -192,6 +192,24 @@ export function rowFromTreatment(
   }
 }
 
+/**
+ * v1.40 (#1041) — the custom category an edit hydrates to. A GLP-1
+ * medication is the GLP-1 row whatever its category says, as above.
+ */
+function customCategoryFields(
+  treatmentClass: string | undefined,
+  category: string | undefined,
+): {
+  customCategoryKey: string | null;
+  initialCustomCategoryKey: string | null;
+} {
+  const key =
+    treatmentClass !== "GLP1" && category?.startsWith("custom:")
+      ? category
+      : null;
+  return { customCategoryKey: key, initialCustomCategoryKey: key };
+}
+
 // ────────────────────────────────────────────────────────────────────
 // Wizard payload + per-schedule draft
 // ────────────────────────────────────────────────────────────────────
@@ -257,6 +275,15 @@ export interface WizardPayload {
    * Absent on create.
    */
   initialTreatmentRow?: WizardTreatmentRow | null;
+  /**
+   * v1.40 (#1041) — one of the person's own categories, picked from the
+   * custom rows under the built-in ones. Set together with `treatmentRow:
+   * "other"` (the treatment class a custom category files under); null when
+   * a built-in row is picked.
+   */
+  customCategoryKey?: string | null;
+  /** v1.40 — the custom category the edit hydrated to, for the same reason. */
+  initialCustomCategoryKey?: string | null;
   /**
    * v1.6.0 — route of administration. Drives the injection-site
    * rotation preview (shown when `INJECTION`) and, paired with
@@ -628,8 +655,12 @@ export function firstInvalidIndex(
 export interface CreateMedicationBody {
   name: string;
   dose: string;
-  /** Omitted on an edit that left the category row untouched (v1.39.4). */
-  category?: MedicationCategoryValue;
+  /**
+   * Omitted on an edit that left the category row untouched (v1.39.4). A
+   * built-in value or, since v1.40, the key of one of the person's own
+   * categories.
+   */
+  category?: MedicationCategoryValue | `custom:${string}`;
   treatmentClass?: MedicationTreatmentClass;
   /** v1.6.0 — route of administration (ORAL | INJECTION | OTHER). */
   deliveryForm: MedicationDeliveryForm;
@@ -843,16 +874,21 @@ export function buildCreateBody(
   // v1.39.4 — an edit that did not touch the category row leaves the stored
   // category (and treatment class) alone rather than re-deriving them from
   // the row, which cannot represent every stored value.
+  const customCategoryKey = committed.customCategoryKey ?? null;
   const keepStoredCategory =
     forMode === "edit" &&
     committed.initialTreatmentRow !== undefined &&
-    committed.treatmentRow === committed.initialTreatmentRow;
+    committed.treatmentRow === committed.initialTreatmentRow &&
+    customCategoryKey === (committed.initialCustomCategoryKey ?? null);
   const body: CreateMedicationBody = {
     name: committed.name.trim(),
     dose,
     ...(!keepStoredCategory && {
-      category: mapping.category,
-      treatmentClass: mapping.treatmentClass,
+      // v1.40 — a custom row files under the person's own category with the
+      // generic treatment class, like the built-in Other row.
+      category: (customCategoryKey ??
+        mapping.category) as CreateMedicationBody["category"],
+      treatmentClass: customCategoryKey ? "GENERIC" : mapping.treatmentClass,
     }),
     deliveryForm: committed.deliveryForm,
     ...(Number.isFinite(parsedDosesPerUnit) &&
@@ -1092,6 +1128,8 @@ export interface MedicationPayload {
   name: string;
   dose: string;
   category: string;
+  /** v1.40 — the label of a custom category; null for a built-in one. */
+  categoryLabel?: string | null;
   treatmentClass?: string;
   /** v1.6.0 — route of administration. Defaults to ORAL when absent. */
   deliveryForm?: string;
@@ -1239,6 +1277,7 @@ export function hydrateWizardPayload(
       initial.treatmentClass,
       initial.category,
     ),
+    ...customCategoryFields(initial.treatmentClass, initial.category),
     deliveryForm: normaliseDeliveryForm(initial.deliveryForm),
     dosesPerUnit:
       typeof initial.dosesPerUnit === "number" && initial.dosesPerUnit >= 1

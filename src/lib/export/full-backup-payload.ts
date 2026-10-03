@@ -20,6 +20,8 @@
  * one reaches the other; the integration suite pins the two outputs byte for
  * byte rather than trusting that sentence.
  */
+import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
+import { dayKeyOfDate } from "@/lib/medications/course-window";
 import { Buffer } from "node:buffer";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { readNote } from "@/lib/crypto/note-cipher";
@@ -128,7 +130,10 @@ import {
   buildAccountSettingsBackupSection,
   type AccountSettingsBackupSection,
 } from "@/lib/export/account-settings-backup";
-import { getMedicationCategories } from "@/lib/medication-category";
+import {
+  getMedicationCategories,
+  readMedicationCategoryLabelsForBackup,
+} from "@/lib/medication-category";
 
 export interface FullBackupCounts
   extends
@@ -740,6 +745,7 @@ export async function buildFullBackupPayload(
         schedules: true,
         sideEffects: { orderBy: { occurredAt: "desc" } },
         pauseEras: { orderBy: { pausedAt: "asc" } },
+        courses: { orderBy: { startsOn: "asc" } },
         doseChanges: { orderBy: { effectiveFrom: "asc" } },
         inventoryItems: { orderBy: { createdAt: "asc" } },
         inventoryEvents: { orderBy: { occurredAt: "asc" } },
@@ -976,13 +982,20 @@ export async function buildFullBackupPayload(
       : moodEntries!,
   };
 
-  // The clinical category lives in a raw side table rather than on the
-  // medication row, so no Prisma include reaches it. Before v1.39.4 no backup
-  // carried it and every restored medication came back as "Other".
+  // The clinical category lives in its own table rather than on the
+  // medication row and is read through the one helper that normalises it.
+  // Before v1.39.4 no backup carried it and every restored medication came
+  // back as "Other".
   const categoryByMedication = await getMedicationCategories(
     medications.map((m) => m.id),
     prisma,
   );
+  // v1.40 (#1041) — the account's own categories, restored before the
+  // medications that name them by key. Labels travel decrypted so a file
+  // restores on an instance with a different key; every one is carried,
+  // hidden ones included, because a medication can still be filed under it.
+  const customMedicationCategories =
+    await readMedicationCategoryLabelsForBackup(userId, prisma);
 
   // Where each archived era sits in its OWN drug's ordered list. Built once
   // here rather than per row, and scoped per medication because the supersede
@@ -1014,6 +1027,7 @@ export async function buildFullBackupPayload(
         : null,
     ...accountSettingsSection,
     measurements: bulk.measurements,
+    customMedicationCategories,
     medications: medications.map((m) => ({
       ...(disasterRecovery
         ? {
@@ -1121,6 +1135,15 @@ export async function buildFullBackupPayload(
         pausedAt: p.pausedAt.toISOString(),
         resumedAt: p.resumedAt ? p.resumedAt.toISOString() : null,
         createdAt: p.createdAt.toISOString(),
+      })),
+      // v1.40 (#1024) — the courses: "when did I last take this" lives here
+      // and nowhere else once a second course exists. The medication's own
+      // window above is the projection of the latest one.
+      courses: m.courses.map((c) => ({
+        startsOn: dayKeyOfDate(c.startsOn),
+        endsOn: c.endsOn ? dayKeyOfDate(c.endsOn) : null,
+        note: c.noteEncrypted ? decryptFromBytes(c.noteEncrypted) : null,
+        createdAt: c.createdAt.toISOString(),
       })),
       // Titration: when the dose moved, to what, and why. The drug comes
       // back at today's dose either way; without these the ramp that led to

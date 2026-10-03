@@ -3,6 +3,11 @@
 
 import type { ScheduleRevisionLike } from "@/lib/medications/scheduling/schedule-eras";
 import type { ScheduleType } from "@/lib/medications/scheduling/recurrence";
+import {
+  isInsideCourses,
+  type CourseSpan,
+} from "@/lib/medications/course-window";
+import { userDayKey } from "@/lib/tz/format";
 
 export interface IntakeEvent {
   takenAt: Date | null;
@@ -134,6 +139,16 @@ export const SCHEDULE_COMPLIANCE_SELECT = {
 } as const;
 
 /**
+ * v1.40 (#1024) — the ONE relation select for the courses a compliance
+ * computation threads into {@link buildComplianceMedicationContext}, the
+ * sibling of {@link SCHEDULE_COMPLIANCE_SELECT}.
+ */
+export const COURSES_COMPLIANCE_SELECT = {
+  select: { startsOn: true, endsOn: true },
+  orderBy: { startsOn: "asc" },
+} as const;
+
+/**
  * v1.7.0 SB-SCHED-2 — medication-level context the canonical engine
  * needs to expand expected slots. When supplied, `calculateCompliance`
  * routes the denominator through the engine; when omitted, every
@@ -162,6 +177,52 @@ export interface ComplianceMedicationContext {
    * callers without eras keep counting every expected slot.
    */
   pauseEras?: MedicationPauseEraLike[];
+  /**
+   * v1.40 (#1024) — the medication's courses. `startsOn`/`endsOn` above are
+   * the row's projection (the latest course). With two or more courses the
+   * retrospective minters expand over the span from the first course's start
+   * to the last one's end and drop every expected slot whose local day falls
+   * in no course, so a gap between courses expects nothing. Absent or a
+   * single course: today's behaviour, the projection window alone.
+   */
+  courses?: CourseSpan[];
+}
+
+/**
+ * v1.40 (#1024) — the window the retrospective minters expand over: the span
+ * of every course when there are several, else the medication's own window.
+ */
+export function complianceMintWindow(
+  ctx: Pick<ComplianceMedicationContext, "startsOn" | "endsOn" | "courses">,
+): {
+  startsOn: Date | null;
+  endsOn: Date | null;
+} {
+  const courses = ctx.courses;
+  if (!courses || courses.length < 2) {
+    return { startsOn: ctx.startsOn, endsOn: ctx.endsOn };
+  }
+  const sorted = [...courses].sort(
+    (a, b) => a.startsOn.getTime() - b.startsOn.getTime(),
+  );
+  return {
+    startsOn: sorted[0].startsOn,
+    endsOn: sorted[sorted.length - 1].endsOn,
+  };
+}
+
+/**
+ * v1.40 (#1024) — whether an expected slot at `at` belongs to a course. True
+ * for every slot when the medication has fewer than two courses (the
+ * projection window already bounds the expansion).
+ */
+export function slotInsideCourses(
+  ctx: Pick<ComplianceMedicationContext, "timeZone" | "courses">,
+  at: Date,
+): boolean {
+  const courses = ctx.courses;
+  if (!courses || courses.length < 2) return true;
+  return isInsideCourses(userDayKey(at, ctx.timeZone), courses);
 }
 
 /**
@@ -190,6 +251,8 @@ export function buildComplianceMedicationContext(
     scheduleRevisions?: ScheduleRevisionLike[];
     /** v1.25 H-MED1 — thread the pause eras when the caller carries them. */
     pauseEras?: MedicationPauseEraLike[];
+    /** v1.40 (#1024) — thread the courses when the caller carries them. */
+    courses?: CourseSpan[];
   },
   lastIntakeAt: Date | null,
   timeZone: string,
@@ -203,6 +266,7 @@ export function buildComplianceMedicationContext(
     timeZone,
     ...(med.scheduleRevisions && { scheduleRevisions: med.scheduleRevisions }),
     ...(med.pauseEras && { pauseEras: med.pauseEras }),
+    ...(med.courses && { courses: med.courses }),
   };
 }
 

@@ -384,6 +384,8 @@ export function calculateCompliance(
         lastIntakeAt: ctx.lastIntakeAt,
         timeZone: ctx.timeZone,
         scheduleRevisions: ctx.scheduleRevisions,
+        // v1.40 (#1024) — the streak walks the same course days the rate does.
+        courses: ctx.courses,
       }
     : undefined;
 
@@ -747,6 +749,8 @@ function buildTimelineForWindow(
     lastIntakeAt: ctx.lastIntakeAt,
     timeZone: ctx.timeZone,
     scheduleRevisions: ctx.scheduleRevisions,
+    // v1.40 (#1024) — the same course days the ledger counts.
+    courses: ctx.courses,
   };
 
   const normalisedEvents: IntakeEventLike[] = events

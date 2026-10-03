@@ -12,6 +12,9 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { findMany: vi.fn().mockResolvedValue([]) },
     medication: { findMany: vi.fn().mockResolvedValue([]) },
+    // v1.40 — the custom medication categories the backup carries.
+    medicationCategoryLabel: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationCategoryAssignment: { findMany: vi.fn().mockResolvedValue([]) },
     medicationIntakeEvent: { findMany: vi.fn().mockResolvedValue([]) },
     moodEntry: { findMany: vi.fn().mockResolvedValue([]) },
     moodTag: { findMany: vi.fn().mockResolvedValue([]) },

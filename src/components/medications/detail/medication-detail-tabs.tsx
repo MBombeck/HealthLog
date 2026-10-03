@@ -31,6 +31,8 @@
  * administration.
  */
 
+import type { MedicationCourseWire } from "@/components/medications/course-fields";
+import { CoursesRow } from "@/components/medications/sections/courses-section";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
   useCallback,
@@ -135,6 +137,8 @@ export interface MedicationDetailSnapshot {
   name: string;
   dose: string;
   category: string;
+  /** v1.40 — the label of a custom category; null for a built-in one. */
+  categoryLabel?: string | null;
   treatmentClass?: string;
   deliveryForm?: string;
   dosesPerUnit?: number | null;
@@ -172,6 +176,9 @@ export interface MedicationDetailSnapshot {
   trackIntake?: boolean;
   /** v1.39.4 (#1040) — where today sits in the course (server-resolved). */
   courseStatus?: "UPCOMING" | "CURRENT" | "ENDED";
+  /** v1.40 (#1024) — the server-resolved courses. */
+  courses?: MedicationCourseWire[];
+  canStartCourse?: boolean;
   recordedSchedules?: ScheduleSnapshot[];
   schedules: ScheduleSnapshot[];
 }
@@ -903,6 +910,16 @@ export function MedicationDetailTabs({
                 medicationId={id}
                 medicationName={medication.name}
                 active={medication.active}
+              />
+            </div>
+            {/* v1.40 (#1024) — the courses: when it was taken, and a new
+                course once the last one has ended. */}
+            <div className="py-3">
+              <CoursesRow
+                medicationId={id}
+                courses={medication.courses ?? []}
+                canStartCourse={medication.canStartCourse === true}
+                canEdit={!inSharedRecord}
               />
             </div>
             {/* The structural editor (the create/edit wizard) — name,

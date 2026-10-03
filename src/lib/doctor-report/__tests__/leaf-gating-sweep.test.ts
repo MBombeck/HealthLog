@@ -162,6 +162,7 @@ function seed() {
       ],
       scheduleRevisions: [],
       pauseEras: [],
+      courses: [],
       doseChanges: [
         {
           effectiveFrom: new Date("2026-01-05T00:00:00.000Z"),

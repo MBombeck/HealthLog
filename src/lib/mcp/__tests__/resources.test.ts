@@ -10,6 +10,9 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+vi.mock("@/lib/medication-category", () => ({
+  resolveMedicationCategories: vi.fn(),
+}));
 vi.mock("@/lib/doctor-report-data", () => ({
   collectDoctorReportData: vi.fn(),
 }));
@@ -27,6 +30,7 @@ import { prisma } from "@/lib/db";
 import { collectDoctorReportData } from "@/lib/doctor-report-data";
 import { buildCoachDataInventory } from "@/lib/ai/coach/tools/inventory";
 import { metricStatusDiscoveryRows } from "@/lib/mcp/rich-reads";
+import { resolveMedicationCategories } from "@/lib/medication-category";
 import type { McpAuthContext } from "../auth";
 
 const CTX: McpAuthContext = {
@@ -104,8 +108,15 @@ describe("healthlog://profile", () => {
 
 describe("healthlog://medications", () => {
   it("lists medications + schedules scoped to the session user", async () => {
+    vi.mocked(resolveMedicationCategories).mockResolvedValue({
+      "med-a": {
+        category: "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
+        categoryLabel: "Travel kit",
+      },
+    });
     vi.mocked(prisma.medication.findMany).mockResolvedValue([
       {
+        id: "med-a",
         name: "Med A",
         dose: "10mg",
         treatmentClass: "GENERIC",
@@ -139,6 +150,14 @@ describe("healthlog://medications", () => {
     expect(result.present).toBe(true);
     expect(result.count).toBe(1);
     expect(Array.isArray(result.medications)).toBe(true);
+    // v1.40 (#1041) — the custom category rides with its label, fenced as
+    // the person's own text.
+    expect(
+      (result.medications as Array<Record<string, unknown>>)[0],
+    ).toMatchObject({
+      category: "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
+      categoryLabel: "<<<USER_TEXT_START>>>Travel kit<<<USER_TEXT_END>>>",
+    });
   });
 
   it("returns { present: false } when no medications are tracked", async () => {

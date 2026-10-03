@@ -52,6 +52,13 @@ export const medicationKeys = {
    * layout PUT's response.
    */
   medicationListLayout: () => ["medication-list-layout"] as const,
+  /**
+   * v1.40 (#1041) — the record's own medication categories
+   * (`GET /api/medications/categories`). Under the `["medications"]` prefix:
+   * a delete moves medications to Other, so the list must refetch with it,
+   * and a medication write changes the per-category counts.
+   */
+  medicationCategories: () => ["medications", "categories"] as const,
   medicationCadence: (medicationId: string) =>
     ["medications", medicationId, "cadence"] as const,
   medicationGlp1Details: (medicationId: string) =>

@@ -266,6 +266,13 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // schedule + intake history intact.
   "src/app/api/medications/route.ts",
   "src/app/api/medications/layout/route.ts",
+  // v1.40 (#1041) — the person's own category vocabulary: the same row
+  // store, the same data-layer reasoning.
+  "src/app/api/medications/categories/route.ts",
+  "src/app/api/medications/categories/[key]/route.ts",
+  // v1.40 (#1024) — a medication's courses, same again.
+  "src/app/api/medications/[id]/courses/route.ts",
+  "src/app/api/medications/[id]/courses/[courseId]/route.ts",
   "src/app/api/medications/compliance/route.ts",
   "src/app/api/medications/intake/route.ts",
   "src/app/api/medications/intake/bulk/route.ts",

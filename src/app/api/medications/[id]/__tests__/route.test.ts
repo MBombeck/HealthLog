@@ -49,10 +49,20 @@ vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
   dayKeyForScheduledFor: vi.fn(() => "2026-06-10"),
   recomputeMedicationComplianceForDay: vi.fn().mockResolvedValue(undefined),
 }));
+// v1.40 (#1024) — the course writer and reader run against their own
+// integration suite; here they answer "no course, nothing refused".
+vi.mock("@/lib/medications/courses", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/medications/courses")>()),
+  resolveCourseFields: vi.fn(async () => new Map()),
+  checkCurrentWindow: vi.fn(async () => null),
+  setCurrentWindow: vi.fn(async () => undefined),
+}));
 vi.mock("@/lib/medication-category", () => ({
   deleteMedicationCategory: vi.fn().mockResolvedValue(undefined),
   getMedicationCategories: vi.fn().mockResolvedValue({}),
-  setMedicationCategory: vi.fn().mockResolvedValue(undefined),
+  resolveMedicationCategories: vi.fn().mockResolvedValue({}),
+  isAssignableCategory: vi.fn().mockResolvedValue(true),
+  setMedicationCategory: vi.fn().mockResolvedValue("OTHER"),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 vi.mock("@/lib/db-compat", () => ({
@@ -70,7 +80,16 @@ vi.mock("next/headers", () => ({
 import { PUT } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
-import { getMedicationCategories } from "@/lib/medication-category";
+import {
+  resolveCourseFields,
+  setCurrentWindow,
+} from "@/lib/medications/courses";
+import {
+  getMedicationCategories,
+  isAssignableCategory,
+  resolveMedicationCategories,
+  setMedicationCategory,
+} from "@/lib/medication-category";
 import { auditLog } from "@/lib/auth/audit";
 import {
   dayKeyForScheduledFor,
@@ -95,6 +114,14 @@ const ROUTE_CTX = { params: Promise.resolve({ id: "m1" }) };
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+  // v1.40 — the category and course helpers' defaults, which
+  // `resetAllMocks` clears.
+  vi.mocked(resolveCourseFields).mockResolvedValue(new Map());
+  vi.mocked(resolveMedicationCategories).mockResolvedValue({});
+  vi.mocked(isAssignableCategory).mockResolvedValue(true);
+  vi.mocked(setMedicationCategory).mockImplementation(
+    async (_id, category) => (category ?? "OTHER") as never,
+  );
   vi.mocked(prisma.medication.findUnique).mockResolvedValue({
     id: "m1",
     userId: "user-1",
@@ -176,10 +203,16 @@ describe("PUT /api/medications/[id] — v1.5 scheduling primitives", () => {
     vi.mocked(auditLog).mockResolvedValue(undefined);
     const res = await PUT(putReq({ endsOn: "2026-12-31" }), ROUTE_CTX);
     expect(res.status).toBe(200);
+    // v1.40 (#1024) — the window goes through the course writer, which
+    // writes the row and the latest course in one transaction; the plain
+    // row update no longer carries it.
     const call = lastUpdateCall();
-    expect(call.data.endsOn).toBeInstanceOf(Date);
-    expect((call.data.endsOn as Date).toISOString()).toBe(
-      new Date("2026-12-31").toISOString(),
+    expect(call.data).not.toHaveProperty("endsOn");
+    expect(setCurrentWindow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        medicationId: "m1",
+        endsOn: new Date("2026-12-31"),
+      }),
     );
   });
 
@@ -1054,7 +1087,8 @@ describe("PUT /api/medications/[id] — shipped client on a record-only medicati
     expect(prisma.medicationIntakeEvent.updateMany).not.toHaveBeenCalled();
     // Everything else in the save applies.
     expect(data).toMatchObject({ name: "Atorvastatin 20" });
-    expect(data).toHaveProperty("startsOn");
+    // v1.40 (#1024) — the window rides the course writer, not this update.
+    expect(setCurrentWindow).toHaveBeenCalled();
     // And it is still a record: the stored schedule comes back on record.
     const body = (await res.json()) as {
       data: {

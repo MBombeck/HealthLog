@@ -442,6 +442,7 @@ describe("POST /api/export/health-record — the selection reaches every format"
       schedules: [],
       scheduleRevisions: [],
       pauseEras: [],
+      courses: [],
       doseChanges: [],
       intakeEvents: [],
     };

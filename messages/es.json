@@ -363,7 +363,9 @@
       },
       "contacts": "Contactos de emergencia",
       "notes": "Notas adicionales"
-    }
+    },
+    "courseRange": "Tratamiento del {start} al {end}",
+    "courseSince": "Tratamiento desde el {start}"
   },
   "errorBoundary": {
     "title": "Algo ha salido mal",
@@ -2292,6 +2294,64 @@
       "placeholder": "p. ej., 1,5 o 1 1/2",
       "invalid": "Introduce un número mayor que 0 y hasta 100, por ejemplo 1,5 o 1 1/2.",
       "preview": "Cuenta como {value} por dosis"
+    },
+    "category": {
+      "custom": {
+        "add": "Nueva categoría",
+        "label": "Nombre de la categoría",
+        "labelPlaceholder": "p. ej. Botiquín de viaje",
+        "create": "Añadir",
+        "limitReached": "Has alcanzado el límite de 20 categorías propias.",
+        "saveFailed": "No se ha guardado. Inténtalo de nuevo.",
+        "bpGateNote": "El análisis de la presión arterial solo cuenta los medicamentos de la categoría integrada Presión arterial.",
+        "manage": "Gestionar categorías",
+        "manageDescription": "Tus propias categorías, junto a las integradas.",
+        "hidden": "Oculta",
+        "count": "{count} medicamentos",
+        "rename": "Renombrar",
+        "hide": "Ocultar en el selector",
+        "show": "Mostrar en el selector",
+        "delete": "Eliminar",
+        "deleteTitle": "¿Eliminar esta categoría?",
+        "deleteBody": "{count} medicamentos de esta categoría pasan a Otros. Los medicamentos se conservan.",
+        "movedToOther": "Categoría eliminada. {count} medicamentos pasan a Otros."
+      },
+      "filter": {
+        "label": "Categoría",
+        "all": "Todas las categorías"
+      }
+    },
+    "course": {
+      "endedOn": "El último tratamiento terminó el {date}",
+      "nth": "Tratamiento {n}",
+      "startNew": "Empezar un nuevo tratamiento",
+      "editTitle": "Editar tratamiento",
+      "startsOn": "Primer día",
+      "endsOn": "Último día (opcional)",
+      "note": "Nota (opcional)",
+      "notePlaceholder": "p. ej. la gripe de marzo",
+      "title": "Tratamientos",
+      "helper": "Cuándo lo tomaste. Solo se esperan tomas dentro de un tratamiento.",
+      "none": "Tomado de forma continua, sin tratamientos separados.",
+      "range": "Del {start} al {end}",
+      "since": "Desde el {start}",
+      "meta": "Tratamiento {n}, {status}, {taken} tomas",
+      "status": {
+        "current": "en curso",
+        "upcoming": "previsto",
+        "ended": "terminado"
+      },
+      "delete": "Eliminar tratamiento",
+      "deleteTitle": "¿Eliminar este tratamiento?",
+      "deleteBody": "Se eliminan las fechas; las tomas registradas siguen en el historial.",
+      "deleteLastConfirm": "Es el único tratamiento. Sin él, el medicamento cuenta como tomado de forma continua desde que lo añadiste. Las tomas registradas se conservan.",
+      "error": {
+        "overlap": "Este tratamiento coincide en días con otro.",
+        "currentOpen": "Termina el tratamiento en curso antes de añadir uno posterior.",
+        "oneShot": "Un medicamento de una sola vez tiene un único tratamiento.",
+        "invalidRange": "El último día no puede ser anterior al primero.",
+        "generic": "No se ha guardado. Inténtalo de nuevo."
+      }
     }
   },
   "charts": {
@@ -8352,7 +8412,10 @@
     "doses": {
       "title": "Dosis registradas",
       "showing": "Se muestran las {shown} dosis más recientes de {total} registradas."
-    }
+    },
+    "course": "Tratamiento {n}",
+    "courseRange": "del {start} al {end}",
+    "courseSince": "desde el {start}"
   },
   "cycle": {
     "symptomCategory": {
@@ -11287,6 +11350,7 @@
       "medicationIntakeImportFinished": "La importación de dosis que inició {name} ha terminado",
       "medicationOneShotReconciled": "Un medicamento de una sola toma se abrió o se cerró tras una dosis que registró {name}",
       "vaccinationBoosterPlanned": "{name} planificó un refuerzo",
+      "medicationCategoryCreate": "{name} añadió una categoría de medicamentos",
       "symptomEventCreate": "{name} registró un síntoma",
       "symptomEventUpdate": "{name} editó una entrada de síntoma",
       "symptomEventDelete": "{name} eliminó una entrada de síntoma",

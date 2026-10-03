@@ -682,6 +682,14 @@ export const ADMITTED_MUTATING_HANDLERS = [
     "create",
   ),
   handler(
+    "app/api/medications/categories/route.ts",
+    "/api/medications/categories",
+    "POST",
+    "medications",
+    "manage",
+    "create",
+  ),
+  handler(
     "app/api/nutrients/water/route.ts",
     "/api/nutrients/water",
     "POST",

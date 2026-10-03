@@ -12,7 +12,10 @@
  */
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
-import { SCHEDULE_COMPLIANCE_SELECT } from "@/lib/analytics/compliance";
+import {
+  COURSES_COMPLIANCE_SELECT,
+  SCHEDULE_COMPLIANCE_SELECT,
+} from "@/lib/analytics/compliance";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import pLimit from "p-limit";
 import type { MeasurementType } from "@/generated/prisma/client";
@@ -186,6 +189,8 @@ export async function buildTargetsResponse(user: AuthedUser) {
           schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
           scheduleRevisions: { orderBy: { validFrom: "asc" } },
           pauseEras: { select: { pausedAt: true, resumedAt: true } },
+          // v1.40 (#1024) — the courses, so a gap between two expects nothing.
+          courses: COURSES_COMPLIANCE_SELECT,
         },
         orderBy: { name: "asc" },
       });

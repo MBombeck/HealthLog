@@ -237,6 +237,10 @@ export function recordActivityVerbLine(
 
     case "medication.update":
       return t("recordSharing.activityVerb.medicationUpdate", { name });
+    case "medication.category.custom.create":
+      return t("recordSharing.activityVerb.medicationCategoryCreate", {
+        name,
+      });
     case "medication.delete":
       return t("recordSharing.activityVerb.medicationDelete", { name });
     case "medication.glp1.update":

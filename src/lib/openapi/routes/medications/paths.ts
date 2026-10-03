@@ -20,6 +20,10 @@ import {
   glp1PostBodySchema,
   bulkDeleteIntakeEventsSchema,
   updateIntakeEventSchema,
+  createMedicationCategoryLabelSchema,
+  updateMedicationCategoryLabelSchema,
+  createMedicationCourseSchema,
+  updateMedicationCourseSchema,
 } from "@/lib/validations/medication";
 import {
   scheduleRevisionCreateSchema,
@@ -50,12 +54,32 @@ const setMedicationEfficacyTargetRequest = efficacyTargetOverrideSchema.meta({
     "Set or clear the user's explicit efficacy-target override for a medication. `clear:true` removes the override so the resolver reverts to the derived (ATC class prefix → name inference) target; otherwise pin exactly ONE of `measurementType` (a metric series) / `biomarkerId` (a lab analyte). `userId` is never a field — ownership is narrowed through the medication (and the biomarker for a lab target).",
 });
 
+const createMedicationCategoryRequest =
+  createMedicationCategoryLabelSchema.meta({
+    id: "CreateMedicationCategoryRequest",
+    description:
+      "v1.40 — name a new medication category. The label is trimmed, 1 to 40 characters, and encrypted at rest.",
+  });
+
+const updateMedicationCategoryRequest =
+  updateMedicationCategoryLabelSchema.meta({
+    id: "UpdateMedicationCategoryRequest",
+    description:
+      "v1.40 — rename, reorder or hide a custom medication category. At least one field. Hiding (`isActive: false`) removes it from the picker; medications filed under it keep it.",
+  });
+
+const categoryKeyPath = z.object({
+  key: z.string().describe("`custom:<uuid>`, the category's key."),
+});
+
 const medicationEfficacyResponse = medicationEfficacyResponseSchema.meta({
   id: "MedicationEfficacyResponse",
   description:
     "Server-authoritative, strictly-descriptive efficacy view relating a medication to the outcome metric(s)/lab(s) its class is prescribed to move, around its start. Carries the resolved target(s) with their series, the start/dose-change/pause markers, a before/after-start comparison (honest `{present:false}` below the per-side data floor), an adherence lane (cadence-aware per-day rate, never recomputed), an optional conservative level-shift note, and the retarget options. There is NO verdict / score / assessment field by construction — the client renders numbers and neutral connective phrasing only, never a causal or dose-advice claim.",
 });
 import {
+  medicationCourseResource,
+  medicationCategoryLabelResource,
   medicationListEntry,
   medicationDetailEntry,
   medicationInventoryItemResource,
@@ -923,7 +947,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Create a medication with at least one schedule",
       description:
-        "Validates the body against `CreateMedicationRequest`, applies the v1.5 cross-field invariants (one-shot consistency, recurring default `FREQ=DAILY`, `timesOfDay` dual-write), and creates the medication + its schedules in a single Prisma write. Audits as `medication.create`. v1.28 — a mirror create (`externalSource` + `externalId`) re-posting a pair the caller already holds returns the existing medication with 200 instead of a duplicate. v1.32.25 — a NEW mirror create is refused with 422 (`meta.errorCode = medications.mirror.limit_exceeded`) once the caller already holds 30 medications mirrored from the same external source; an idempotent re-post of a medication already mirrored is unaffected, and native creates are never gated.",
+        "Validates the body against `CreateMedicationRequest`, applies the v1.5 cross-field invariants (one-shot consistency, recurring default `FREQ=DAILY`, `timesOfDay` dual-write), and creates the medication + its schedules in a single Prisma write. Audits as `medication.create`. v1.28 — a mirror create (`externalSource` + `externalId`) re-posting a pair the caller already holds returns the existing medication with 200 instead of a duplicate. v1.32.25 — a NEW mirror create is refused with 422 (`meta.errorCode = medications.mirror.limit_exceeded`) once the caller already holds 30 medications mirrored from the same external source; an idempotent re-post of a medication already mirrored is unaffected, and native creates are never gated. v1.40 — `category` may be the key of one of the caller's own categories; any other `custom:` key is 422 `medications.category.unknown`.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: createMedicationSchema } },
@@ -941,6 +965,262 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               ),
             },
           },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/medications/categories": {
+    get: {
+      tags: ["Medications"],
+      summary: "List the record's own medication categories",
+      description:
+        "v1.40 (#1041) — every custom category of the record, hidden ones included, in picker order (`sortOrder`, then creation), each with the number of medications filed under it. The built-in categories are not listed; they are the fixed values of `MedicationCategory`. Delegable at READ level over the `medications` section.",
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "The custom categories.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  categories: z.array(medicationCategoryLabelResource),
+                }),
+                "ListMedicationCategoriesResponse",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+    post: {
+      parameters: [idempotencyKeyParameter],
+      tags: ["Medications"],
+      summary: "Create a custom medication category",
+      description:
+        "v1.40 (#1041) — mints a `custom:<uuid>` key and stores the label encrypted. At most 20 per account, hidden ones included: one more is 422 `medications.category.limitReached`; an invalid body is 422 `medications.category.invalid`. Rate-limited 30/min keyed on the actor. Delegable at MANAGE level over the `medications` section. The label never reaches an audit row.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: createMedicationCategoryRequest },
+        },
+      },
+      responses: {
+        ...idempotentWrite(),
+        ...recordRefusal(),
+        "201": {
+          description: "The new category.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                medicationCategoryLabelResource,
+                "CreateMedicationCategoryResponse",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/medications/categories/{key}": {
+    patch: {
+      tags: ["Medications"],
+      summary: "Rename, reorder or hide a custom medication category",
+      description:
+        "v1.40 (#1041) — field-by-field update of one of the record's own categories. Another account's key, or a built-in value, is 404. Owner-only: not delegable, refused under a record switch. Rate-limited 30/min.",
+      requestParams: { path: categoryKeyPath },
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: updateMedicationCategoryRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The updated category.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                medicationCategoryLabelResource,
+                "UpdateMedicationCategoryResponse",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "Not one of the record's own categories.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+    delete: {
+      tags: ["Medications"],
+      summary: "Delete a custom medication category",
+      description:
+        "v1.40 (#1041) — deletes the category and, in the same transaction, moves every medication filed under it to OTHER; `movedCount` says how many moved. No medication is left pointing at a key that no longer exists. Another account's key, or a built-in value, is 404. Owner-only: not delegable, refused under a record switch.",
+      requestParams: { path: categoryKeyPath },
+      responses: {
+        "200": {
+          description: "Deleted.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  key: z.string(),
+                  movedCount: z
+                    .number()
+                    .int()
+                    .nonnegative()
+                    .describe("Medications moved to OTHER."),
+                }),
+                "DeleteMedicationCategoryResponse",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "Not one of the record's own categories.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/medications/{id}/courses": {
+    get: {
+      tags: ["Medications"],
+      summary: "Read a medication's courses",
+      description:
+        "v1.40 (#1024) — the same resolved course fields the list and detail reads carry. Owner-only.",
+      requestParams: { path: z.object({ id: z.string() }) },
+      responses: {
+        "200": {
+          description: "The courses.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  courses: z.array(medicationCourseResource),
+                  courseCount: z.number().int(),
+                  previousCourseEndedOn: z.iso.date().nullable(),
+                  canStartCourse: z.boolean(),
+                }),
+                "MedicationCoursesResponse",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "Medication not found (or another user's).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+    post: {
+      parameters: [idempotencyKeyParameter],
+      tags: ["Medications"],
+      summary: "Start a course",
+      description:
+        "v1.40 (#1024) — adds a course and, in the same transaction, rewrites the medication's `startsOn`/`endsOn` to the latest course, so reminders and `intakeActionable` follow with no further write. Refusals: 422 `medications.course.overlap`, `medications.course.currentOpen`, `medications.course.oneShot`, `medications.course.invalidRange`, `medications.course.invalid` (body). Owner-only.",
+      requestParams: { path: z.object({ id: z.string() }) },
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: createMedicationCourseSchema },
+        },
+      },
+      responses: {
+        ...idempotentWrite(),
+        "201": {
+          description: "The new course.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  id: z.string(),
+                  startsOn: z.iso.date(),
+                  endsOn: z.iso.date().nullable(),
+                }),
+                "CreateMedicationCourseResponse",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "Medication not found (or another user's).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/medications/{id}/courses/{courseId}": {
+    patch: {
+      tags: ["Medications"],
+      summary: "Edit a course",
+      description:
+        "v1.40 (#1024) — field by field; the medication's window is re-projected in the same transaction. Same refusals as the create. Owner-only.",
+      requestParams: {
+        path: z.object({ id: z.string(), courseId: z.string() }),
+      },
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: updateMedicationCourseSchema },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The edited course.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  id: z.string(),
+                  startsOn: z.iso.date(),
+                  endsOn: z.iso.date().nullable(),
+                }),
+                "UpdateMedicationCourseResponse",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "Course not found (`medications.course.notFound`), or another user's.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+    delete: {
+      tags: ["Medications"],
+      summary: "Delete a course",
+      description:
+        "v1.40 (#1024) — deletes the course and re-projects the medication's window. Deleting the only course makes the medication continuous again (both window columns cleared). Intakes are not touched. Owner-only.",
+      requestParams: {
+        path: z.object({ id: z.string(), courseId: z.string() }),
+      },
+      responses: {
+        "200": {
+          description: "Deleted.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ id: z.string(), deleted: z.literal(true) }),
+                "DeleteMedicationCourseResponse",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "Course not found (`medications.course.notFound`), or another user's.",
+          content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
       },
@@ -1055,7 +1335,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Replace a medication (partial fields)",
       description:
-        "Every field on the body is optional; omitted fields are left untouched. Supplying `schedules` REPLACES the medication's full schedule list (the route deletes existing rows before re-creating). Flipping `active` to false stamps `pausedAt`; flipping back to true clears it. v1.5 invariants on the `schedules` array match `POST /api/medications`. Audits as `medication.update`.",
+        "Every field on the body is optional; omitted fields are left untouched. Supplying `schedules` REPLACES the medication's full schedule list (the route deletes existing rows before re-creating). Flipping `active` to false stamps `pausedAt`; flipping back to true clears it. v1.5 invariants on the `schedules` array match `POST /api/medications`. Audits as `medication.update`. v1.40 — an absent `category` leaves the stored one untouched (send it only when the person changed it); a `custom:` key that is not the caller's is 422 `medications.category.unknown`. v1.40 (#1024) — `startsOn`/`endsOn` now edit the latest course (created when there is none); the same course refusals apply (422 `medications.course.*`), and clearing both on a medication with several courses is 422 `medications.course.windowRequired`.",
       requestParams: {
         path: z.object({ id: z.string() }),
       },

@@ -160,7 +160,7 @@ export interface FhirPeriod {
 export interface FhirMedicationStatement {
   resourceType: "MedicationStatement";
   id: string;
-  status: "active" | "completed" | "stopped" | "unknown";
+  status: "active" | "completed" | "intended" | "stopped" | "unknown";
   medicationCodeableConcept: FhirCodeableConcept;
   subject: FhirReference;
   effectivePeriod?: FhirPeriod;

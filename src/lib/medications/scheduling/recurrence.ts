@@ -496,11 +496,25 @@ function rollingDoseAnchor(
   // N calendar days after the local day of the last intake, not N × 24 h:
   // a late-evening dose across a DST change would otherwise slide onto the
   // wrong day.
-  return ctx.lastIntakeAt !== null
-    ? addCivilDays(
-        civilDayOfInstant(ctx.lastIntakeAt, ctx.timeZone),
-        intervalDays,
-      )
+  const fromIntake =
+    ctx.lastIntakeAt !== null
+      ? addCivilDays(
+          civilDayOfInstant(ctx.lastIntakeAt, ctx.timeZone),
+          intervalDays,
+        )
+      : null;
+  // v1.40 (#1024) — an intake whose next dose would fall before the course
+  // starts belongs to an earlier course (a new course after a gap): it does
+  // not anchor this one, whose first dose is due on its start day. An intake
+  // whose next dose falls on or after the start (a start moved forward by a
+  // few days) anchors exactly as before.
+  const startDay =
+    ctx.medication.startsOn !== null
+      ? civilDayOfDate(ctx.medication.startsOn)
+      : null;
+  return fromIntake !== null &&
+    (startDay === null || fromIntake.getTime() >= startDay.getTime())
+    ? fromIntake
     : anchorCivilDay(ctx);
 }
 

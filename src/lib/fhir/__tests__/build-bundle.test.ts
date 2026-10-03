@@ -458,6 +458,38 @@ describe("buildFhirDocumentBundle", () => {
     expect(meds[0].dosage?.[0].text).toBe("5mg");
   });
 
+  it("emits one statement per course with its period and status (v1.40, #1024)", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        medications: [
+          {
+            id: "med-tamiflu",
+            name: "Tamiflu",
+            dose: "75 mg",
+            schedules: [],
+            courses: [
+              { startsOn: "2026-03-01", endsOn: "2026-03-07", status: "ENDED" },
+              { startsOn: "2026-06-10", endsOn: null, status: "CURRENT" },
+            ],
+          },
+        ],
+      }),
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const meds = bundle.entry
+      .map((e) => e.resource)
+      .filter(
+        (r): r is FhirMedicationStatement =>
+          r.resourceType === "MedicationStatement",
+      );
+    expect(meds.map((m) => [m.status, m.effectivePeriod])).toEqual([
+      ["completed", { start: "2026-03-01", end: "2026-03-07" }],
+      ["active", { start: "2026-06-10" }],
+    ]);
+    expect(new Set(meds.map((m) => m.id)).size).toBe(2);
+  });
+
   it("keeps a text-only medicationCodeableConcept when no codes are stored", () => {
     const bundle = buildFhirDocumentBundle(
       makeData(),

@@ -13,6 +13,9 @@
  * A pure server component: no client hooks, no session, no markdown — every
  * value renders as escaped React text.
  */
+import { Fragment } from "react";
+
+import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 import type { MeasurementType } from "@/generated/prisma/client";
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import {
@@ -312,14 +315,22 @@ export function GlucoseSection({
 }
 
 /** The medication list with the adherence rate beside each drug. */
+/** A course day at noon UTC, so no viewer zone shifts it to a neighbour. */
+function courseNoon(dayKey: string): string {
+  return dateOnlyAtNoonUtc(dayKey).toISOString();
+}
+
 export function MedicationsSection({
   t,
   report,
   scope,
+  fmtDate,
 }: {
   t: Translate;
   report: DoctorReportData;
   scope: LeafScope;
+  /** Formats a calendar date for the viewer. */
+  fmtDate: (iso: string) => string;
 }) {
   const medications = scope.admits("MEDICATION_LIST")
     ? (report.medications ?? [])
@@ -344,15 +355,33 @@ export function MedicationsSection({
             ? `${Math.round((comp.taken / comp.total) * 100)}%`
             : null;
         return (
-          <StatRow
-            key={med.id}
-            label={med.dose ? `${med.name} — ${med.dose}` : med.name}
-            value={
-              rate
-                ? t("clinicianView.adherence", { rate })
-                : t("clinicianView.noAdherence")
-            }
-          />
+          <Fragment key={med.id}>
+            <StatRow
+              label={med.dose ? `${med.name} — ${med.dose}` : med.name}
+              value={
+                rate
+                  ? t("clinicianView.adherence", { rate })
+                  : t("clinicianView.noAdherence")
+              }
+            />
+            {/* v1.40 (#1024) — one row per course inside the window. */}
+            {(med.courses ?? []).map((course, index) => (
+              <StatRow
+                key={`${med.id}-course-${course.startsOn}`}
+                label={t("clinicianView.course", { n: index + 1 })}
+                value={
+                  course.endsOn
+                    ? t("clinicianView.courseRange", {
+                        start: fmtDate(courseNoon(course.startsOn)),
+                        end: fmtDate(courseNoon(course.endsOn)),
+                      })
+                    : t("clinicianView.courseSince", {
+                        start: fmtDate(courseNoon(course.startsOn)),
+                      })
+                }
+              />
+            ))}
+          </Fragment>
         );
       })}
       {complianceEntries

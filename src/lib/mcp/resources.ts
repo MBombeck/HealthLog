@@ -26,6 +26,9 @@
  * external-assistant boundary.
  */
 import { prisma } from "@/lib/db";
+import { fenceUserText } from "@/lib/ai/coach/data-fence";
+import { resolveMedicationCategories } from "@/lib/medication-category";
+import { dayKeyOfDate } from "@/lib/medications/course-window";
 import { annotate } from "@/lib/logging/context";
 import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
 import { buildCoachDataInventory } from "@/lib/ai/coach/tools/inventory";
@@ -130,6 +133,11 @@ function ageYears(dateOfBirth: Date | null): number | null {
  */
 const MODULE_DISABLED = { present: false, reason: "module_disabled" } as const;
 
+/** A person-written label, fenced as user text; null stays null. */
+function fenceOptional(text: string | null | undefined): string | null {
+  return text ? fenceUserText(text) : null;
+}
+
 function firstVar(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value[0] ?? "";
   return value ?? "";
@@ -185,7 +193,13 @@ export const MCP_RESOURCES: McpResourceDefinition[] = [
       }
       const medications = await prisma.medication.findMany({
         where: { userId: ctx.userId },
-        include: { schedules: true },
+        include: {
+          schedules: true,
+          courses: {
+            select: { startsOn: true, endsOn: true },
+            orderBy: { startsOn: "asc" },
+          },
+        },
         orderBy: { createdAt: "desc" },
       });
       annotate({
@@ -193,6 +207,9 @@ export const MCP_RESOURCES: McpResourceDefinition[] = [
         meta: { resource: "medications", present: medications.length > 0 },
       });
       if (medications.length === 0) return { present: false, count: 0 };
+      const categories = await resolveMedicationCategories(
+        medications.map((med) => med.id),
+      );
       return {
         present: true,
         count: medications.length,
@@ -200,6 +217,11 @@ export const MCP_RESOURCES: McpResourceDefinition[] = [
           name: med.name,
           dose: med.dose,
           treatmentClass: med.treatmentClass,
+          // v1.40 (#1041) — the clinical category: a built-in value or
+          // `custom:<uuid>`, with the person's own label (their text, fenced)
+          // for a custom one.
+          category: categories[med.id]?.category ?? "OTHER",
+          categoryLabel: fenceOptional(categories[med.id]?.categoryLabel),
           asNeeded: med.asNeeded,
           // v1.39.1 (#1033) — false: kept as a record, nothing is due and
           // no adherence applies; the schedules below are information.
@@ -207,6 +229,12 @@ export const MCP_RESOURCES: McpResourceDefinition[] = [
           paused: med.pausedAt !== null,
           startsOn: med.startsOn ? med.startsOn.toISOString() : null,
           endsOn: med.endsOn ? med.endsOn.toISOString() : null,
+          // v1.40 (#1024) — every course, so "when did they last take it" is
+          // answerable; startsOn/endsOn above stay the current course.
+          courses: (med.courses ?? []).map((c) => ({
+            startsOn: dayKeyOfDate(c.startsOn),
+            endsOn: c.endsOn ? dayKeyOfDate(c.endsOn) : null,
+          })),
           schedules: med.schedules.map((s) => ({
             label: s.label ?? null,
             dose: s.dose ?? null,

@@ -363,7 +363,9 @@
       },
       "contacts": "Contacts d'urgence",
       "notes": "Notes complémentaires"
-    }
+    },
+    "courseRange": "Traitement du {start} au {end}",
+    "courseSince": "Traitement depuis le {start}"
   },
   "errorBoundary": {
     "title": "Une erreur est survenue",
@@ -2292,6 +2294,64 @@
       "placeholder": "p. ex. 1,5 ou 1 1/2",
       "invalid": "Saisissez un nombre supérieur à 0 et jusqu’à 100, par exemple 1,5 ou 1 1/2.",
       "preview": "Compte comme {value} par dose"
+    },
+    "category": {
+      "custom": {
+        "add": "Nouvelle catégorie",
+        "label": "Nom de la catégorie",
+        "labelPlaceholder": "p. ex. Trousse de voyage",
+        "create": "Ajouter",
+        "limitReached": "Tu as atteint la limite de 20 catégories personnelles.",
+        "saveFailed": "L'enregistrement a échoué. Réessaie.",
+        "bpGateNote": "L'analyse de la tension ne compte que les médicaments de la catégorie intégrée Tension artérielle.",
+        "manage": "Gérer les catégories",
+        "manageDescription": "Tes propres catégories, à côté des catégories intégrées.",
+        "hidden": "Masquée",
+        "count": "{count} médicaments",
+        "rename": "Renommer",
+        "hide": "Masquer dans le sélecteur",
+        "show": "Afficher dans le sélecteur",
+        "delete": "Supprimer",
+        "deleteTitle": "Supprimer cette catégorie ?",
+        "deleteBody": "{count} médicaments de cette catégorie passent dans Autre. Les médicaments eux-mêmes restent.",
+        "movedToOther": "Catégorie supprimée. {count} médicaments passent dans Autre."
+      },
+      "filter": {
+        "label": "Catégorie",
+        "all": "Toutes les catégories"
+      }
+    },
+    "course": {
+      "endedOn": "Dernier traitement terminé le {date}",
+      "nth": "Traitement {n}",
+      "startNew": "Commencer un nouveau traitement",
+      "editTitle": "Modifier le traitement",
+      "startsOn": "Premier jour",
+      "endsOn": "Dernier jour (facultatif)",
+      "note": "Note (facultatif)",
+      "notePlaceholder": "p. ex. la grippe de mars",
+      "title": "Traitements",
+      "helper": "Quand tu l’as pris. Les prises ne sont attendues que pendant un traitement.",
+      "none": "Pris en continu, sans traitements séparés.",
+      "range": "Du {start} au {end}",
+      "since": "Depuis le {start}",
+      "meta": "Traitement {n}, {status}, {taken} prises",
+      "status": {
+        "current": "en cours",
+        "upcoming": "à venir",
+        "ended": "terminé"
+      },
+      "delete": "Supprimer le traitement",
+      "deleteTitle": "Supprimer ce traitement ?",
+      "deleteBody": "Les dates disparaissent ; les prises enregistrées restent dans l’historique.",
+      "deleteLastConfirm": "C’est le seul traitement. Sans lui, le médicament compte comme pris en continu depuis son ajout. Les prises enregistrées restent.",
+      "error": {
+        "overlap": "Ce traitement chevauche un autre.",
+        "currentOpen": "Termine le traitement en cours avant d’en ajouter un après.",
+        "oneShot": "Un médicament ponctuel n’a qu’un seul traitement.",
+        "invalidRange": "Le dernier jour ne peut pas précéder le premier.",
+        "generic": "L’enregistrement a échoué. Réessaie."
+      }
     }
   },
   "charts": {
@@ -8352,7 +8412,10 @@
     "doses": {
       "title": "Doses enregistrées",
       "showing": "Affichage des {shown} doses les plus récentes sur {total} enregistrées."
-    }
+    },
+    "course": "Traitement {n}",
+    "courseRange": "du {start} au {end}",
+    "courseSince": "depuis le {start}"
   },
   "cycle": {
     "symptomCategory": {
@@ -11287,6 +11350,7 @@
       "medicationIntakeImportFinished": "L'import de prises lancé par {name} est terminé",
       "medicationOneShotReconciled": "Un médicament à prise unique a été rouvert ou clos après une prise enregistrée par {name}",
       "vaccinationBoosterPlanned": "{name} a planifié un rappel",
+      "medicationCategoryCreate": "{name} a ajouté une catégorie de médicaments",
       "symptomEventCreate": "{name} a noté un symptôme",
       "symptomEventUpdate": "{name} a modifié une entrée de symptôme",
       "symptomEventDelete": "{name} a supprimé une entrée de symptôme",

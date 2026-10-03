@@ -38,10 +38,23 @@ const MEDICATION_CATEGORY_KEYS: Record<string, string> = {
   OTHER: "medications.categoryOther",
 };
 
+/**
+ * v1.40 (#1041) — a category the person named themselves arrives as
+ * `custom:<uuid>` with its decrypted label beside it (`categoryLabel` on the
+ * medication wire); that label wins. A custom key without a label (the server
+ * resolved it to nothing) reads as Other, like any unknown value.
+ */
 export function getMedicationCategoryLabel(
   category: string,
   t: Translator,
+  customLabel?: string | null,
 ): string {
+  if (customLabel) return customLabel;
   const key = MEDICATION_CATEGORY_KEYS[category] ?? "medications.categoryOther";
   return t(key);
 }
+
+/** The built-in category values, in the order the filter row lists them. */
+export const BUILT_IN_MEDICATION_CATEGORIES = Object.keys(
+  MEDICATION_CATEGORY_KEYS,
+);

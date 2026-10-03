@@ -17,12 +17,13 @@ import {
 } from "@/lib/analytics/correlations";
 import {
   buildComplianceMedicationContext,
+  COURSES_COMPLIANCE_SELECT,
   calculateCompliance,
   expectsDoses,
   lastNonSkippedTakenAt,
   SCHEDULE_COMPLIANCE_SELECT,
 } from "@/lib/analytics/compliance";
-import { getMedicationCategories } from "@/lib/medication-category";
+import { resolveMedicationCategories } from "@/lib/medication-category";
 import { resolveRestingPulseSeries } from "@/lib/analytics/resting-pulse";
 import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
 import {
@@ -393,6 +394,8 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
       // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
+      // v1.40 (#1024) — the courses, so a gap between two expects nothing.
+      courses: COURSES_COMPLIANCE_SELECT,
     },
   });
   // A medication with no schedule expects no dose, and `calculateCompliance`
@@ -401,8 +404,11 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
   // medication and would otherwise report perfect adherence.
   const medications = medicationRows.filter(expectsDoses);
 
-  const categoryMap = await getMedicationCategories(
+  const resolvedCategories = await resolveMedicationCategories(
     medications.map((m) => m.id),
+  );
+  const categoryMap = Object.fromEntries(
+    Object.entries(resolvedCategories).map(([id, r]) => [id, r.category]),
   );
 
   const medCompliance = [];
@@ -461,6 +467,8 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
       name: med.name,
       dose: med.dose,
       category: categoryMap[med.id] ?? "OTHER",
+      // v1.40 (#1041) — the label of a custom category; null for a built-in.
+      categoryLabel: resolvedCategories[med.id]?.categoryLabel ?? null,
       compliance7: c7.rate,
       compliance30: c30.rate,
       streak: c7.streak,

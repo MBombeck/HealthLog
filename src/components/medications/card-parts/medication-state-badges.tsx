@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { formatDate } from "@/lib/date-format";
+import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 
 interface MedicationStateBadgesProps {
   notificationsEnabled: boolean;
@@ -10,6 +11,13 @@ interface MedicationStateBadgesProps {
   recordOnly?: boolean;
   /** v1.39.4 (#1040) — the course's end date has passed. */
   courseEnded?: boolean;
+  /**
+   * v1.40 (#1024) — the server's `previousCourseEndedOn`: an ended course
+   * names its last day ("Last course ended 16 Jun").
+   */
+  lastCourseEndedOn?: string | null;
+  /** v1.40 (#1024) — the running course's number, when there are several. */
+  courseNumber?: number | null;
 }
 
 /**
@@ -24,8 +32,11 @@ export function MedicationStateBadges({
   pausedAt,
   recordOnly = false,
   courseEnded = false,
+  lastCourseEndedOn = null,
+  courseNumber = null,
 }: MedicationStateBadgesProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  const dateFormatPref = useDateFormatPreference();
 
   return (
     <>
@@ -44,7 +55,24 @@ export function MedicationStateBadges({
           className="text-xs"
           data-slot="medication-course-ended-badge"
         >
-          {t("medications.courseEndedBadge")}
+          {lastCourseEndedOn
+            ? t("medications.course.endedOn", {
+                date: formatDate(
+                  new Date(lastCourseEndedOn),
+                  dateFormatPref,
+                  locale,
+                ),
+              })
+            : t("medications.courseEndedBadge")}
+        </Badge>
+      )}
+      {!courseEnded && courseNumber !== null && (
+        <Badge
+          variant="secondary"
+          className="text-xs"
+          data-slot="medication-course-number-badge"
+        >
+          {t("medications.course.nth", { n: courseNumber })}
         </Badge>
       )}
       {!notificationsEnabled && !recordOnly && !courseEnded && (

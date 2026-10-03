@@ -27,6 +27,12 @@
  * W19e tests pin.
  */
 
+import {
+  isInsideCourses,
+  sortCourses,
+  type CourseSpan,
+} from "@/lib/medications/course-window";
+import { userDayKey } from "@/lib/tz/format";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import type { SlotBand } from "@/lib/medications/scheduling/attribution";
 import { type BandMinterMedication } from "@/lib/medications/scheduling/band-minter";
@@ -134,6 +140,36 @@ export interface CadenceEngineContext {
    * live THEN. Optional: callers without revisions keep live-only minting.
    */
   scheduleRevisions?: ScheduleRevisionLike[];
+  /**
+   * v1.40 (#1024) — the medication's courses. With two or more, every
+   * timeline here expands over the span of all of them and keeps only the
+   * slots on a course day, exactly as the compliance ledger does; fewer,
+   * and `startsOn`/`endsOn` alone bound it, as before.
+   */
+  courses?: CourseSpan[];
+}
+
+/** v1.40 (#1024) — the span a timeline expands over (see `courses`). */
+function mintWindow(engineCtx: CadenceEngineContext): {
+  startsOn: Date | null;
+  endsOn: Date | null;
+} {
+  const courses = engineCtx.courses;
+  if (!courses || courses.length < 2) {
+    return { startsOn: engineCtx.startsOn, endsOn: engineCtx.endsOn };
+  }
+  const sorted = sortCourses(courses);
+  return {
+    startsOn: sorted[0].startsOn,
+    endsOn: sorted[sorted.length - 1].endsOn,
+  };
+}
+
+/** v1.40 (#1024) — whether a slot at `at` lies on a course day. */
+function onCourseDay(engineCtx: CadenceEngineContext, at: Date): boolean {
+  const courses = engineCtx.courses;
+  if (!courses || courses.length < 2) return true;
+  return isInsideCourses(userDayKey(at, engineCtx.timeZone), courses);
 }
 
 /** Build a `CanonicalSchedule` from a `ScheduleLike` + its index. */
@@ -161,11 +197,12 @@ function toCanonical(
 function toRecurrenceContext(
   engineCtx: CadenceEngineContext,
 ): RecurrenceContext {
+  const window = mintWindow(engineCtx);
   return {
     medication: {
       id: "cadence-med",
-      startsOn: engineCtx.startsOn,
-      endsOn: engineCtx.endsOn,
+      startsOn: window.startsOn,
+      endsOn: window.endsOn,
       oneShot: engineCtx.oneShot,
       createdAt: engineCtx.createdAt,
     },
@@ -407,12 +444,14 @@ export function expandScheduleSlots(
             retro.now,
           )
         : occurrencesBetween(canonical, from, inclusiveTo, recurrenceCtx);
-    return occurrences.map((occ) => ({
-      day: startOfLocalDay(occ.at, timeZone),
-      windowStart: occ.at,
-      windowEnd: occ.graceUntil,
-      scheduleIndex,
-    }));
+    return occurrences
+      .filter((occ) => onCourseDay(engineCtx, occ.at))
+      .map((occ) => ({
+        day: startOfLocalDay(occ.at, timeZone),
+        windowStart: occ.at,
+        windowEnd: occ.graceUntil,
+        scheduleIndex,
+      }));
   }
 
   const recurrence = parseScheduleRecurrence(schedule.daysOfWeek);
@@ -864,18 +903,19 @@ function missedFromLedger(
   if (!engineCtx) return null;
   const from = new Date(asOf.getTime() - windowDays * DAY_MS);
   const userTz = engineCtx.timeZone || timeZone || "UTC";
+  const window = mintWindow(engineCtx);
   const medication: BandMinterMedication = {
     id: "missed-tally",
-    startsOn: engineCtx.startsOn,
-    endsOn: engineCtx.endsOn,
+    startsOn: window.startsOn,
+    endsOn: window.endsOn,
     oneShot: engineCtx.oneShot,
     createdAt: engineCtx.createdAt,
   };
   const recurrenceCtx: RecurrenceContext = {
     medication: {
       id: "missed-tally",
-      startsOn: engineCtx.startsOn,
-      endsOn: engineCtx.endsOn,
+      startsOn: window.startsOn,
+      endsOn: window.endsOn,
       oneShot: engineCtx.oneShot,
       createdAt: engineCtx.createdAt,
     },
@@ -911,7 +951,10 @@ function missedFromLedger(
   });
   const bands: SlotBand[] = [];
   for (const g of groups) {
-    if (g.hasExpectedSlots) bands.push(...g.bands);
+    // v1.40 (#1024) — only slots on a course day, as the compliance ledger.
+    if (g.hasExpectedSlots) {
+      bands.push(...g.bands.filter((b) => onCourseDay(engineCtx, b.at)));
+    }
   }
   const intakes: HistoryIntake[] = events
     .filter((e) => e.scheduledFor >= from && e.scheduledFor <= asOf)

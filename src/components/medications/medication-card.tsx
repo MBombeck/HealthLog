@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  currentCourseNumber,
+  type MedicationCourseFields,
+} from "@/components/medications/course-fields";
 import { useState, useEffect, useReducer } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -63,6 +67,8 @@ interface Medication {
   name: string;
   dose: string;
   category: string;
+  /** v1.40 — the label of a custom category; null for a built-in one. */
+  categoryLabel?: string | null;
   /**
    * v1.4.25 W4d — Prisma treatment-class discriminator. When set to
    * "GLP1" the parent should render the {@link Glp1MedicationCard}
@@ -127,6 +133,11 @@ interface Medication {
   intakeActionable?: boolean;
   /** v1.39.4 (#1040) — where today sits in the course. */
   courseStatus?: "UPCOMING" | "CURRENT" | "ENDED";
+  /** v1.40 (#1024) — the server-resolved course fields. */
+  courses?: MedicationCourseFields["courses"];
+  courseCount?: number;
+  previousCourseEndedOn?: string | null;
+  canStartCourse?: boolean;
   schedules: Schedule[];
 }
 
@@ -254,7 +265,11 @@ export function MedicationCard({
   // background/border tint. Defaults to "upcoming" (calm) when the display
   // block is absent (older mocks).
   const doseStatus = display?.currentDose.status ?? "upcoming";
-  const categoryLabel = getMedicationCategoryLabel(medication.category, t);
+  const categoryLabel = getMedicationCategoryLabel(
+    medication.category,
+    t,
+    medication.categoryLabel,
+  );
   const sortedSchedules = [...medication.schedules].sort(
     (a, b) =>
       a.windowStart.localeCompare(b.windowStart) ||
@@ -393,6 +408,8 @@ export function MedicationCard({
       pausedAt={medication.pausedAt}
       recordOnly={medication.trackIntake === false}
       courseEnded={medication.courseStatus === "ENDED"}
+      lastCourseEndedOn={medication.previousCourseEndedOn ?? null}
+      courseNumber={currentCourseNumber(medication)}
     />
   );
 

@@ -56,7 +56,10 @@ import type { ReferenceMetric } from "@/lib/reference-ranges";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { admitCoachSources, coachExclusions } from "@/lib/ai/coach/scope-gate";
-import { SCHEDULE_COMPLIANCE_SELECT } from "@/lib/analytics/compliance";
+import {
+  COURSES_COMPLIANCE_SELECT,
+  SCHEDULE_COMPLIANCE_SELECT,
+} from "@/lib/analytics/compliance";
 import type { BaselineProfile } from "@/lib/insights/derived";
 import { toProfileSex } from "@/lib/profile/sex";
 import {
@@ -650,6 +653,8 @@ async function buildCoachSnapshotImpl(
           },
           // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
           pauseEras: { select: { pausedAt: true, resumedAt: true } },
+          // v1.40 (#1024) — the courses, so a gap between two expects nothing.
+          courses: COURSES_COMPLIANCE_SELECT,
           intakeEvents: {
             // Tombstoned intake rows must never reach the Coach snapshot.
             where: { deletedAt: null, scheduledFor: { gte: cutoff } },

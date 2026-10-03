@@ -1,7 +1,8 @@
 "use client";
 
+import type { MedicationCourseFields } from "@/components/medications/course-fields";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -33,6 +34,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FilterBar, FilterBarSelect } from "@/components/ui/filter-bar";
+import { MedicationCategoriesSheet } from "@/components/medications/medication-categories-sheet";
+import { useMedicationCategories } from "@/components/medications/use-medication-categories";
+import {
+  ALL_MEDICATION_CATEGORIES,
+  effectiveCategoryFilter as resolveCategoryFilter,
+  filterMedicationsByCategory,
+  medicationCategoryOptions,
+} from "@/lib/medications/category-filter";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -74,6 +84,8 @@ interface Medication {
   name: string;
   dose: string;
   category: string;
+  /** v1.40 — the label of a custom category; null for a built-in one. */
+  categoryLabel?: string | null;
   /** v1.4.25 W4d — Prisma treatment class (GENERIC | GLP1). */
   treatmentClass?: string;
   /** v1.4.25 W4d — doses per pen/vial for inventory math. */
@@ -116,6 +128,11 @@ interface Medication {
   intakeActionable?: boolean;
   /** v1.39.4 (#1040) — where today sits in the course. */
   courseStatus?: "UPCOMING" | "CURRENT" | "ENDED";
+  /** v1.40 (#1024) — the server-resolved course fields. */
+  courses?: MedicationCourseFields["courses"];
+  courseCount?: number;
+  previousCourseEndedOn?: string | null;
+  canStartCourse?: boolean;
   /** v1.9.0 — optional WHO ATC classification code for the FHIR export. */
   atcCode?: string | null;
   /** v1.9.0 — optional RxNorm RxCUI (secondary FHIR coding). */
@@ -169,6 +186,63 @@ function MedicationCardSkeleton() {
   );
 }
 
+/**
+ * v1.40 (#1041) — the category filter is remembered for the browser session
+ * only, by design: no preference column, and a new visit starts on All.
+ */
+const CATEGORY_FILTER_STORAGE_KEY = "healthlog.medications.categoryFilter";
+const ALL_CATEGORIES = ALL_MEDICATION_CATEGORIES;
+
+const CATEGORY_FILTER_EVENT = "healthlog:medication-category-filter";
+
+function readStoredCategoryFilter(): string {
+  try {
+    return (
+      window.sessionStorage.getItem(CATEGORY_FILTER_STORAGE_KEY) ??
+      ALL_CATEGORIES
+    );
+  } catch {
+    return ALL_CATEGORIES;
+  }
+}
+
+function storeCategoryFilter(value: string) {
+  try {
+    if (value === ALL_CATEGORIES) {
+      window.sessionStorage.removeItem(CATEGORY_FILTER_STORAGE_KEY);
+    } else {
+      window.sessionStorage.setItem(CATEGORY_FILTER_STORAGE_KEY, value);
+    }
+  } catch {
+    // Storage blocked: the pick still applies until the page unmounts.
+  }
+  window.dispatchEvent(new Event(CATEGORY_FILTER_EVENT));
+}
+
+function subscribeCategoryFilter(onChange: () => void): () => void {
+  window.addEventListener(CATEGORY_FILTER_EVENT, onChange);
+  return () => window.removeEventListener(CATEGORY_FILTER_EVENT, onChange);
+}
+
+/**
+ * The stored pick, read through `useSyncExternalStore` so the server render
+ * (and the first client render) is All and the stored pick follows without a
+ * hydration mismatch. Blocked storage degrades to a per-view filter.
+ */
+function useCategoryFilter(): [string, (value: string) => void] {
+  const [fallback, setFallback] = useState<string | null>(null);
+  const stored = useSyncExternalStore(
+    subscribeCategoryFilter,
+    readStoredCategoryFilter,
+    () => ALL_CATEGORIES,
+  );
+  const set = useCallback((value: string) => {
+    setFallback(value);
+    storeCategoryFilter(value);
+  }, []);
+  return [fallback ?? stored, set];
+}
+
 export default function MedicationsPageClient() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
@@ -213,6 +287,15 @@ export default function MedicationsPageClient() {
   // v1.16.11 (#316) — "Alle fälligen einnehmen" confirm dialog. The header
   // button earns its slot only while ≥ 2 medications are currently due.
   const [takeAllOpen, setTakeAllOpen] = useState(false);
+  // v1.40 (#1041) — the category filter and the manage sheet it opens.
+  const [categoryFilter, setCategoryFilter] = useCategoryFilter();
+  const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
+  // Renaming, hiding and deleting a category stay with the owner (the edit
+  // route is owner-only, like the cycle symptom vocabulary's).
+  const canManageCategories = !inSharedRecord;
+  const customCategories = useMedicationCategories({
+    enabled: isAuthenticated && medicationsEnabled,
+  });
 
   // v1.16.10 — the persisted list presentation: cards vs table plus the
   // manual medication order, server-side per user
@@ -382,6 +465,19 @@ export default function MedicationsPageClient() {
   // Defensive against stale service-worker responses or any future API
   // shape change: only filter when we actually have an array.
   const medsArray = Array.isArray(medications) ? medications : [];
+  // v1.40 (#1041) — the categories in use, each once, labelled the way the
+  // card badge labels it. The filter offers only these, so a pick can never
+  // empty the list.
+  const categoriesInUse = medicationCategoryOptions(medsArray, t);
+  const effectiveCategoryFilter = resolveCategoryFilter(
+    categoryFilter,
+    categoriesInUse,
+  );
+  const hasCustomCategories = (customCategories.data ?? []).length > 0;
+  const showCategoryFilter =
+    medsArray.length > 0 &&
+    (categoriesInUse.length >= 2 || hasCustomCategories);
+
   // v1.16.10 — the user-defined manual order applies to BOTH views
   // (cards and table). Medications not in the saved order keep the
   // alphabetical default, appended after the ordered block.
@@ -394,6 +490,16 @@ export default function MedicationsPageClient() {
     layout.order,
   );
   const tableView = layout.view === "table";
+  // The filter narrows what the list shows; the due set and the log-intake
+  // dialog below keep reading every medication.
+  const shownActiveMeds = filterMedicationsByCategory(
+    activeMeds,
+    effectiveCategoryFilter,
+  );
+  const shownInactiveMeds = filterMedicationsByCategory(
+    inactiveMeds,
+    effectiveCategoryFilter,
+  );
 
   // v1.16.11 (#316) — the currently-due set, derived from the list payload
   // the page already holds via the SAME pipeline a card's pill runs (band
@@ -493,6 +599,34 @@ export default function MedicationsPageClient() {
         }
       />
 
+      {showCategoryFilter && !isLoading && !isError && (
+        <FilterBar
+          isFiltered={effectiveCategoryFilter !== ALL_CATEGORIES}
+          onReset={() => setCategoryFilter(ALL_CATEGORIES)}
+        >
+          <FilterBarSelect
+            label={t("medications.category.filter.label")}
+            value={effectiveCategoryFilter}
+            onValueChange={setCategoryFilter}
+            options={categoriesInUse}
+            allValue={ALL_CATEGORIES}
+            allLabel={t("medications.category.filter.all")}
+          />
+          {canManageCategories && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground min-h-11 shrink-0 rounded-full sm:min-h-9"
+              onClick={() => setManageCategoriesOpen(true)}
+              data-slot="medication-categories-manage"
+            >
+              {t("medications.category.custom.manage")}
+            </Button>
+          )}
+        </FilterBar>
+      )}
+
       {isLoading || isLayoutLoading ? (
         // v1.11.3 C4 — skeletons instead of a bare centred spinner so the
         // page reserves the loaded layout and does not jump when the
@@ -540,17 +674,17 @@ export default function MedicationsPageClient() {
         // gating, same mutation hooks as the cards; one row per
         // medication, inactive rows pinned after the active block.
         <MedicationTable
-          activeMedications={activeMeds}
-          inactiveMedications={inactiveMeds}
+          activeMedications={shownActiveMeds}
+          inactiveMedications={shownInactiveMeds}
           highlightId={highlightId}
         />
       ) : (
         <div className="space-y-6">
           {/* Active medications */}
-          {activeMeds.length > 0 && (
+          {shownActiveMeds.length > 0 && (
             <div className="space-y-3.5">
               <div className="grid gap-4 sm:grid-cols-2">
-                {activeMeds.map((med) =>
+                {shownActiveMeds.map((med) =>
                   // v1.16.11 — an as-needed medication always renders the
                   // generic card: the GLP-1 variant is built around the
                   // rolling injection cadence an as-needed med doesn't have.
@@ -577,13 +711,13 @@ export default function MedicationsPageClient() {
           )}
 
           {/* Inactive medications */}
-          {inactiveMeds.length > 0 && (
+          {shownInactiveMeds.length > 0 && (
             <div className="space-y-3.5">
               <h2 className="text-muted-foreground text-sm font-medium">
-                {t("common.inactive")} ({inactiveMeds.length})
+                {t("common.inactive")} ({shownInactiveMeds.length})
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                {inactiveMeds.map((med) =>
+                {shownInactiveMeds.map((med) =>
                   med.treatmentClass === "GLP1" && !med.asNeeded ? (
                     <Glp1MedicationCard
                       key={med.id}
@@ -651,6 +785,13 @@ export default function MedicationsPageClient() {
           open={takeAllOpen}
           onOpenChange={setTakeAllOpen}
           dueMedications={dueMeds}
+        />
+      )}
+
+      {manageCategoriesOpen && canManageCategories && (
+        <MedicationCategoriesSheet
+          open={manageCategoriesOpen}
+          onOpenChange={setManageCategoriesOpen}
         />
       )}
 

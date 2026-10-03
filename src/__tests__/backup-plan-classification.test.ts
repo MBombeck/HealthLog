@@ -508,14 +508,17 @@ describe("tables outside the schema have a backup verdict too", () => {
     });
   }
 
+  const CREATE_TABLE = /CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+"?(\w+)"?/gi;
+
+  function tablesIn(text: string): string[] {
+    return [...text.matchAll(CREATE_TABLE)].map((m) => m[1]);
+  }
+
   function rawTables(): string[] {
     const names = new Set<string>();
     for (const file of sourceFiles(SRC)) {
-      const text = readFileSync(file, "utf8");
-      for (const m of text.matchAll(
-        /CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+"?(\w+)"?/gi,
-      )) {
-        names.add(m[1]);
+      for (const name of tablesIn(readFileSync(file, "utf8"))) {
+        names.add(name);
       }
     }
     return [...names];
@@ -527,8 +530,30 @@ describe("tables outside the schema have a backup verdict too", () => {
     ),
   );
 
-  it("finds the raw tables it is meant to judge (no vacuous pass)", () => {
-    expect(rawTables()).toContain("medication_categories");
+  it("finds a raw table when one is written (no vacuous pass)", () => {
+    // The source holds none since v1.40, so the matcher is proven against the
+    // exact DDL the medication category helper used to run at runtime.
+    expect(
+      tablesIn(`
+        CREATE TABLE IF NOT EXISTS medication_categories (
+          medication_id TEXT PRIMARY KEY
+        );
+        create table if not exists "quoted_name" (id TEXT);
+      `),
+    ).toEqual(["medication_categories", "quoted_name"]);
+  });
+
+  it("keeps no verdict for a raw table the source no longer creates", () => {
+    const present = new Set(rawTables());
+    expect(Object.keys(RAW_SQL_TABLES).filter((t) => !present.has(t))).toEqual(
+      [],
+    );
+  });
+
+  it("judges the adopted medication category table as a schema model", () => {
+    expect(mappedTables.has("medication_categories")).toBe(true);
+    expect(BACKED_UP_MODELS).toContain("MedicationCategoryAssignment");
+    expect(TWO_ENDED_MODELS).toContain("MedicationCategoryAssignment");
   });
 
   it("gives every raw table that is not a schema model a verdict", () => {

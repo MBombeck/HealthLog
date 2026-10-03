@@ -15,8 +15,8 @@ const mocks = vi.hoisted(() => ({
 // The category side table is raw SQL on the shared client; the round trip
 // through it is proven in tests/integration/backup-round-trip.test.ts.
 vi.mock("@/lib/medication-category", () => ({
-  ensureMedicationCategoryTable: vi.fn(async () => {}),
   getMedicationCategories: vi.fn(async () => ({})),
+  readMedicationCategoryLabelsForBackup: vi.fn(async () => []),
   setMedicationCategory: vi.fn(async () => "OTHER"),
 }));
 vi.mock("@/lib/export/paged-measurements", () => ({
@@ -188,6 +188,23 @@ function makePrisma() {
               pausedAt: new Date("2026-07-15T08:00:00.000Z"),
               resumedAt: null,
               createdAt: new Date("2026-07-15T08:01:00.000Z"),
+            },
+          ],
+          // v1.40 (#1024) — one ended course with a note, one running.
+          courses: [
+            {
+              id: "course-march",
+              startsOn: new Date("2026-03-01T00:00:00.000Z"),
+              endsOn: new Date("2026-03-07T00:00:00.000Z"),
+              noteEncrypted: encryptToBytes("the March flu"),
+              createdAt: new Date("2026-03-01T08:00:00.000Z"),
+            },
+            {
+              id: "course-june",
+              startsOn: new Date("2026-06-10T00:00:00.000Z"),
+              endsOn: null,
+              noteEncrypted: null,
+              createdAt: new Date("2026-06-10T08:00:00.000Z"),
             },
           ],
           // A two-step ramp, one row carrying an encrypted note and one
@@ -744,6 +761,35 @@ describe("buildFullBackupPayload disaster-recovery mode", () => {
  * into a portable export and losing the note are opposite failures of the same
  * decision.
  */
+describe("buildFullBackupPayload — medication courses (v1.40, #1024)", () => {
+  it.each(["portable-export", "disaster-recovery"] as const)(
+    "carries every course with its note readable in a %s file",
+    async (purpose) => {
+      installSectionMocks();
+      const { payload } = await buildFullBackupPayload(
+        makePrisma() as never,
+        "user-1",
+        { purpose, exportedAt: new Date("2026-07-20T00:00:00.000Z") },
+      );
+      const parsed = parseBackupPayload(payload);
+      expect(parsed.medications[0].courses).toEqual([
+        {
+          startsOn: "2026-03-01",
+          endsOn: "2026-03-07",
+          note: "the March flu",
+          createdAt: "2026-03-01T08:00:00.000Z",
+        },
+        {
+          startsOn: "2026-06-10",
+          endsOn: null,
+          note: null,
+          createdAt: "2026-06-10T08:00:00.000Z",
+        },
+      ]);
+    },
+  );
+});
+
 describe("buildFullBackupPayload — medication side effects", () => {
   it("decrypts the note and emits no ciphertext in a portable export", async () => {
     installSectionMocks();

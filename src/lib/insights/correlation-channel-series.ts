@@ -22,6 +22,7 @@
 import { prisma } from "@/lib/db";
 import {
   buildComplianceMedicationContext,
+  COURSES_COMPLIANCE_SELECT,
   buildMedicationComplianceBundle,
   lastNonSkippedTakenAt,
   SCHEDULE_COMPLIANCE_SELECT,
@@ -89,6 +90,8 @@ export async function fetchComplianceSeries(
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
       // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
+      // v1.40 (#1024) — the courses, so a gap between two expects nothing.
+      courses: COURSES_COMPLIANCE_SELECT,
     },
     orderBy: { name: "asc" },
   });

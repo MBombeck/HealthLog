@@ -14,3 +14,4 @@ export * from "./schedule";
 export * from "./create-update";
 export * from "./intake";
 export * from "./inventory";
+export * from "./course";

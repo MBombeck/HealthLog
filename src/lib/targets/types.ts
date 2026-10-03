@@ -68,6 +68,8 @@ export interface TargetMedication {
   schedules: ComplianceSchedule[];
   scheduleRevisions?: ScheduleRevisionLike[];
   pauseEras?: MedicationPauseEraLike[];
+  /** v1.40 (#1024) — the courses, so a gap between two expects nothing. */
+  courses?: { startsOn: Date; endsOn: Date | null }[];
 }
 
 export interface TargetIntakeEvent extends IntakeEvent {

@@ -210,10 +210,11 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
     kind: "string",
   },
 
-  // ───── Custom labels (mood + cycle) ─────
+  // ───── Custom labels (mood, cycle, medication categories) ─────
   { model: "MoodTag", field: "labelEncrypted", kind: "string" },
   { model: "MoodTagCategory", field: "labelEncrypted", kind: "string" },
   { model: "CycleSymptom", field: "labelEncrypted", kind: "string" },
+  { model: "MedicationCategoryLabel", field: "labelEncrypted", kind: "bytes" },
 
   // ───── Notification + push secrets ─────
   { model: "NotificationChannel", field: "config", kind: "string" },
@@ -337,6 +338,7 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // note — the last plaintext PHI columns left after the v1.23 rollout.
   { model: "MedicationSideEffect", field: "notesEncrypted", kind: "bytes" },
   { model: "MedicationDoseChange", field: "noteEncrypted", kind: "bytes" },
+  { model: "MedicationCourse", field: "noteEncrypted", kind: "bytes" },
   { model: "MedicationInventoryItem", field: "notesEncrypted", kind: "bytes" },
 
   // ───── v1.39.3 custom-metric reading note (Bytes column) ─────

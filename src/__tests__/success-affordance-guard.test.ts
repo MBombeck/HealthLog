@@ -267,6 +267,10 @@ const PINNED_AFFORDANCES: Record<
   "src/components/medications/sections/inventory-section.tsx": {
     "toast.success": 1,
   },
+  // v1.40 — the delete names how many medications moved to Other.
+  "src/components/medications/medication-categories-sheet.tsx": {
+    "toast.success": 1,
+  },
   "src/components/medications/sections/notifications-section.tsx": {
     "toast.success": 1,
   },

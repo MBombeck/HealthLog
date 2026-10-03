@@ -1330,3 +1330,85 @@ describe("category on edit (v1.39.4)", () => {
     expect(body.category).toBe("SKIN");
   });
 });
+
+describe("custom categories (v1.40, #1041)", () => {
+  const KEY = "custom:11111111-1111-4111-8111-111111111111";
+  const OTHER_KEY = "custom:22222222-2222-4222-8222-222222222222";
+
+  function hydrate(category: string, treatmentClass = "GENERIC") {
+    return hydrateWizardPayload({
+      id: "m1",
+      name: "Tamiflu",
+      dose: "75 mg",
+      category,
+      treatmentClass,
+      notificationsEnabled: true,
+      startsOn: null,
+      endsOn: null,
+      oneShot: false,
+      schedules: [
+        {
+          windowStart: "08:00",
+          windowEnd: "09:00",
+          timesOfDay: ["08:00"],
+          rrule: "FREQ=DAILY",
+        },
+      ],
+    });
+  }
+
+  it("hydrates a custom category onto the Other row with its key", () => {
+    const payload = hydrate(KEY);
+    expect(payload.treatmentRow).toBe("other");
+    expect(payload.customCategoryKey).toBe(KEY);
+  });
+
+  it("keeps the custom category on an edit that leaves it alone", () => {
+    const body = buildCreateBody({ ...hydrate(KEY), name: "Renamed" }, "edit");
+    expect("category" in body).toBe(false);
+  });
+
+  it("sends the new key when the person picks another custom category", () => {
+    const body = buildCreateBody(
+      { ...hydrate(KEY), customCategoryKey: OTHER_KEY },
+      "edit",
+    );
+    expect(body.category).toBe(OTHER_KEY);
+    expect(body.treatmentClass).toBe("GENERIC");
+  });
+
+  it("sends the built-in value when the person moves it back to a built-in row", () => {
+    const body = buildCreateBody(
+      { ...hydrate(KEY), treatmentRow: "vitamin", customCategoryKey: null },
+      "edit",
+    );
+    expect(body.category).toBe("VITAMIN");
+  });
+
+  it("sends the built-in Other when the person picks the Other row itself", () => {
+    const body = buildCreateBody(
+      { ...hydrate(KEY), customCategoryKey: null },
+      "edit",
+    );
+    expect(body.category).toBe("OTHER");
+  });
+
+  it("files a new medication under a custom category on create", () => {
+    const body = buildCreateBody(
+      {
+        ...hydrate("VITAMIN"),
+        treatmentRow: "other",
+        customCategoryKey: KEY,
+      },
+      "create",
+    );
+    expect(body.category).toBe(KEY);
+    expect(body.treatmentClass).toBe("GENERIC");
+  });
+
+  it("keeps a GLP-1 medication on the GLP-1 row whatever its category", () => {
+    const payload = hydrate(KEY, "GLP1");
+    expect(payload.treatmentRow).toBe("glp1");
+    expect(payload.customCategoryKey).toBeNull();
+  });
+});

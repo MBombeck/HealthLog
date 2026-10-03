@@ -154,22 +154,50 @@ export function medicationStatementsFromReportData(
   const germanAtc = options.germanAtc ?? false;
   const statements: FhirMedicationStatement[] = [];
   let medSeq = 0;
+  // v1.40 (#1024) — a medication taken in courses is one statement per
+  // course inside the window, each with its `effectivePeriod` and a status
+  // read against the window's last day: `completed` once it has ended,
+  // `intended` before it starts, `active` otherwise. A medication taken
+  // continuously stays one `active` statement, as before.
   for (const med of data.medications) {
-    medSeq += 1;
-    const stmt: FhirMedicationStatement = {
-      resourceType: "MedicationStatement",
-      id: `med-${medSeq}`,
-      status: "active",
-      medicationCodeableConcept: medicationConcept(
-        med.name,
-        med.atcCode,
-        med.rxNormCode,
-        germanAtc,
-      ),
-      subject: patientRef,
-    };
-    if (med.dose) stmt.dosage = [{ text: med.dose }];
-    statements.push(stmt);
+    const concept = medicationConcept(
+      med.name,
+      med.atcCode,
+      med.rxNormCode,
+      germanAtc,
+    );
+    const courses = med.courses ?? [];
+    const spans: Array<{
+      status: FhirMedicationStatement["status"];
+      effectivePeriod?: { start: string; end?: string };
+    }> =
+      courses.length === 0
+        ? [{ status: "active" }]
+        : courses.map((c) => ({
+            status:
+              c.status === "ENDED"
+                ? "completed"
+                : c.status === "UPCOMING"
+                  ? "intended"
+                  : "active",
+            effectivePeriod: {
+              start: c.startsOn,
+              ...(c.endsOn ? { end: c.endsOn } : {}),
+            },
+          }));
+    for (const span of spans) {
+      medSeq += 1;
+      const stmt: FhirMedicationStatement = {
+        resourceType: "MedicationStatement",
+        id: `med-${medSeq}`,
+        status: span.status,
+        medicationCodeableConcept: concept,
+        subject: patientRef,
+        ...(span.effectivePeriod && { effectivePeriod: span.effectivePeriod }),
+      };
+      if (med.dose) stmt.dosage = [{ text: med.dose }];
+      statements.push(stmt);
+    }
   }
   return statements;
 }

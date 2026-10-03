@@ -73,6 +73,11 @@ export const WIPE_MODELS = [
   "MedicationInventoryItem",
   "MedicationIntakeImportJob",
   "MedicationComplianceRollup",
+  // The account's own category names (v1.40, #1041). No child rows; the
+  // medications that name one go with their own entry.
+  "MedicationCategoryLabel",
+  // The courses (v1.40, #1024), before the medications they cascade from.
+  "MedicationCourse",
 
   // ── Mood ────────────────────────────────────────────────────────────────
   // The day context, before the entry it hangs off: it cascades either way,

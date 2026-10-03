@@ -22,6 +22,9 @@ vi.mock("@/lib/db", () => ({
     $queryRaw: vi.fn(),
     measurement: { findMany: vi.fn(), count: vi.fn() },
     medication: { findMany: vi.fn() },
+    // v1.40 — the custom medication categories the backup carries.
+    medicationCategoryLabel: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationCategoryAssignment: { findMany: vi.fn().mockResolvedValue([]) },
     medicationIntakeEvent: { findMany: vi.fn(), count: vi.fn() },
     moodEntry: { findMany: vi.fn(), count: vi.fn() },
     moodTag: { findMany: vi.fn() },

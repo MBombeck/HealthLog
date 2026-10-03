@@ -23,6 +23,9 @@ vi.mock("@/lib/db", () => ({
     passkey: { count: vi.fn(async () => 0) },
     measurement: { findMany: vi.fn() },
     medication: { findMany: vi.fn() },
+    // v1.40 — the custom medication categories the backup carries.
+    medicationCategoryLabel: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationCategoryAssignment: { findMany: vi.fn().mockResolvedValue([]) },
     medicationIntakeEvent: { findMany: vi.fn() },
     moodEntry: { findMany: vi.fn() },
     moodTag: { findMany: vi.fn() },
@@ -130,6 +133,9 @@ beforeEach(() => {
   // `resetAllMocks` clears the inline defaults, and the full-backup payload
   // builder reads these unconditionally.
   vi.mocked(prisma.nutrientIntakeDay.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.medicationCategoryLabel.findMany).mockResolvedValue(
+    [] as never,
+  );
   vi.mocked(prisma.userHealthProfile.findUnique).mockResolvedValue(
     null as never,
   );

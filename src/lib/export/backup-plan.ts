@@ -77,6 +77,18 @@ export const BACKED_UP_MODELS = [
   "MedicationEfficacyTarget",
   "MedicationInventoryItem",
   "MedicationInventoryEvent",
+  // The clinical category the person filed each medication under. Before
+  // v1.40 this was a raw table the app created at runtime and judged under
+  // RAW_SQL_TABLES; it rides inside its medication (`category`) in both
+  // formats and is written back in the restore transaction. Without it every
+  // restored medication reads as Other.
+  "MedicationCategoryAssignment",
+  // The categories the person named themselves (v1.40, #1041). A medication
+  // filed under one carries its key; without the row the key reads as Other.
+  "MedicationCategoryLabel",
+  // The courses (v1.40, #1024). Once a second one exists the earlier spans
+  // live here and nowhere else; the medication row keeps only the latest.
+  "MedicationCourse",
 
   // ── Mood ──────────────────────────────────────────────────────────────────
   "MoodEntry",
@@ -259,6 +271,10 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   // create }` back), the way a medication's side effects do.
   "src/lib/export/symptoms-backup.ts",
   "src/lib/cycle/backup.ts",
+  // The medication category is read through the one helper that normalises
+  // it; the payload writer calls the helper rather than the delegate. The
+  // same "the caller delegates" shape as the measurement pager.
+  "src/lib/medication-category.ts",
 ];
 
 export const BACKUP_RESTORE_FILES: readonly string[] = [
@@ -278,6 +294,8 @@ export const BACKUP_RESTORE_FILES: readonly string[] = [
   "src/lib/export/ecg-backup.ts",
   "src/lib/export/symptoms-backup.ts",
   "src/lib/cycle/backup.ts",
+  // The restore writes the medication category through the same helper.
+  "src/lib/medication-category.ts",
 ];
 
 /**
@@ -306,6 +324,9 @@ export const TWO_ENDED_MODELS = [
   "MedicationSideEffect",
   "MedicationPauseEra",
   "MedicationDoseChange",
+  "MedicationCategoryAssignment",
+  "MedicationCategoryLabel",
+  "MedicationCourse",
   "MoodEntry",
   "MoodContext",
   "MoodEntryTagLink",
@@ -726,16 +747,13 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
  * every backup until v1.39.4. The guard beside this file finds each
  * `CREATE TABLE IF NOT EXISTS` in the source and demands a verdict here, or a
  * schema model mapped to the same name.
+ *
+ * Empty since v1.40: the one such table, `medication_categories`, is the
+ * `MedicationCategoryAssignment` model now and judged with the others.
  */
 export const RAW_SQL_TABLES: Readonly<
   Record<string, { verdict: "BACKED_UP" | "NOT_IN_BACKUP"; reason: string }>
-> = {
-  medication_categories: {
-    verdict: "BACKED_UP",
-    reason:
-      "The clinical category the person chose for each medication. Carried inside its medication in both backup formats and written back in the restore transaction; without it every restored medication reads as Other.",
-  },
-};
+> = {};
 
 /** Auth material: not user data, and excluded from the wipe for the same reason. */
 export const AUTH_MODELS_OUT_OF_SCOPE: readonly string[] = [

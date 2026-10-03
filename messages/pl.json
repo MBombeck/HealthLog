@@ -363,7 +363,9 @@
       },
       "contacts": "Kontakty w nagłych wypadkach",
       "notes": "Dodatkowe uwagi"
-    }
+    },
+    "courseRange": "Kuracja od {start} do {end}",
+    "courseSince": "Kuracja od {start}"
   },
   "errorBoundary": {
     "title": "Coś poszło nie tak",
@@ -2292,6 +2294,64 @@
       "placeholder": "np. 1,5 lub 1 1/2",
       "invalid": "Wpisz liczbę większą od 0 i nie większą niż 100, na przykład 1,5 lub 1 1/2.",
       "preview": "Liczy się jako {value} na dawkę"
+    },
+    "category": {
+      "custom": {
+        "add": "Nowa kategoria",
+        "label": "Nazwa kategorii",
+        "labelPlaceholder": "np. Apteczka podróżna",
+        "create": "Dodaj",
+        "limitReached": "Osiągnięto limit 20 własnych kategorii.",
+        "saveFailed": "Nie udało się zapisać. Spróbuj ponownie.",
+        "bpGateNote": "Analiza ciśnienia uwzględnia tylko leki z wbudowanej kategorii Ciśnienie krwi.",
+        "manage": "Zarządzaj kategoriami",
+        "manageDescription": "Twoje własne kategorie, obok wbudowanych.",
+        "hidden": "Ukryta",
+        "count": "Leki: {count}",
+        "rename": "Zmień nazwę",
+        "hide": "Ukryj w wyborze",
+        "show": "Pokaż w wyborze",
+        "delete": "Usuń",
+        "deleteTitle": "Usunąć tę kategorię?",
+        "deleteBody": "Leki w tej kategorii ({count}) przejdą do kategorii Inne. Same leki zostaną.",
+        "movedToOther": "Kategoria usunięta. Leki przeniesione do kategorii Inne: {count}."
+      },
+      "filter": {
+        "label": "Kategoria",
+        "all": "Wszystkie kategorie"
+      }
+    },
+    "course": {
+      "endedOn": "Ostatnia kuracja zakończyła się {date}",
+      "nth": "Kuracja {n}",
+      "startNew": "Rozpocznij nową kurację",
+      "editTitle": "Edytuj kurację",
+      "startsOn": "Pierwszy dzień",
+      "endsOn": "Ostatni dzień (opcjonalnie)",
+      "note": "Notatka (opcjonalnie)",
+      "notePlaceholder": "np. grypa w marcu",
+      "title": "Kuracje",
+      "helper": "Kiedy go przyjmowano. Dawki są oczekiwane tylko w trakcie kuracji.",
+      "none": "Przyjmowany stale, bez osobnych kuracji.",
+      "range": "Od {start} do {end}",
+      "since": "Od {start}",
+      "meta": "Kuracja {n}, {status}, przyjęte dawki: {taken}",
+      "status": {
+        "current": "trwa",
+        "upcoming": "zaplanowana",
+        "ended": "zakończona"
+      },
+      "delete": "Usuń kurację",
+      "deleteTitle": "Usunąć tę kurację?",
+      "deleteBody": "Daty zostaną usunięte; zapisane dawki zostaną w historii.",
+      "deleteLastConfirm": "To jedyna kuracja. Bez niej lek liczy się jako przyjmowany stale od dodania. Zapisane dawki zostaną.",
+      "error": {
+        "overlap": "Ta kuracja pokrywa się z inną.",
+        "currentOpen": "Zakończ trwającą kurację, zanim dodasz kolejną po niej.",
+        "oneShot": "Lek jednorazowy ma tylko jedną kurację.",
+        "invalidRange": "Ostatni dzień nie może być przed pierwszym.",
+        "generic": "Nie udało się zapisać. Spróbuj ponownie."
+      }
     }
   },
   "charts": {
@@ -8352,7 +8412,10 @@
     "doses": {
       "title": "Zarejestrowane dawki",
       "showing": "Pokazano {shown} najnowszych z {total} zarejestrowanych dawek."
-    }
+    },
+    "course": "Kuracja {n}",
+    "courseRange": "od {start} do {end}",
+    "courseSince": "od {start}"
   },
   "cycle": {
     "symptomCategory": {
@@ -11287,6 +11350,7 @@
       "medicationIntakeImportFinished": "Import przyjęć rozpoczęty przez {name} zakończył się",
       "medicationOneShotReconciled": "Lek jednorazowy został otwarty lub zamknięty po dawce zapisanej przez {name}",
       "vaccinationBoosterPlanned": "{name} zaplanował dawkę przypominającą",
+      "medicationCategoryCreate": "{name} dodał kategorię leków",
       "symptomEventCreate": "{name} zapisał(a) objaw",
       "symptomEventUpdate": "{name} edytował(a) wpis objawu",
       "symptomEventDelete": "{name} usunął(-ęła) wpis objawu",

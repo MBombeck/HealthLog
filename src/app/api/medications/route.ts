@@ -10,13 +10,27 @@ import {
   returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
-import { createMedicationSchema } from "@/lib/validations/medication";
+import {
+  courseRefusalResponse,
+  resolveCourseFields,
+} from "@/lib/medications/courses";
+import {
+  dateOfDayKey,
+  dayKeyOfDate,
+  validateCourses,
+} from "@/lib/medications/course-window";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
+import {
+  createMedicationSchema,
+  isCustomMedicationCategoryKey,
+} from "@/lib/validations/medication";
 import {
   unstableExternalIdMeta,
   unstableExternalIdShape,
 } from "@/lib/validations/external-id";
 import {
-  getMedicationCategories,
+  isAssignableCategory,
+  resolveMedicationCategories,
   setMedicationCategory,
 } from "@/lib/medication-category";
 import { serializeScheduleRecurrence } from "@/lib/medication-schedule";
@@ -78,9 +92,11 @@ async function respondWithExistingMirror(
   },
 ): Promise<Response> {
   let category = "OTHER";
+  let categoryLabel: string | null = null;
   try {
-    const categories = await getMedicationCategories([medication.id]);
-    category = categories[medication.id] ?? "OTHER";
+    const categories = await resolveMedicationCategories([medication.id]);
+    category = categories[medication.id]?.category ?? "OTHER";
+    categoryLabel = categories[medication.id]?.categoryLabel ?? null;
   } catch {
     getEvent()?.addWarning("Medication categories could not be loaded");
   }
@@ -107,6 +123,7 @@ async function respondWithExistingMirror(
       ),
     ),
     category,
+    categoryLabel,
   });
 }
 
@@ -173,6 +190,16 @@ async function postMedication(request: NextRequest): Promise<Response> {
     asNeeded,
     trackIntake,
   } = parsed.data;
+
+  // v1.40 (#1041) — a custom category must be one of this record's own.
+  if (
+    category !== undefined &&
+    !(await isAssignableCategory(user.id, category))
+  ) {
+    return apiError("Unknown medication category", 422, {
+      errorCode: "medications.category.unknown",
+    });
+  }
 
   // v1.28 — idempotent mirror create. A mirrored medication (Apple
   // Health) is keyed by the `(userId, externalSource, externalId)`
@@ -266,6 +293,31 @@ async function postMedication(request: NextRequest): Promise<Response> {
   const normalisedEndsOn =
     oneShot === true && startsOn ? startsOn : (endsOn ?? undefined);
 
+  // v1.40 (#1024) — a medication created with a window starts with one
+  // course; the row projects it. An end without a start has always meant
+  // "running since creation", so the course starts today (or on the end day,
+  // when that lies earlier). No window: no course, chronic since creation.
+  let initialCourse: { startsOn: Date; endsOn: Date | null } | null = null;
+  if (startsOn || normalisedEndsOn) {
+    const todayKey = userDayKey(new Date(), user.timezone || DEFAULT_TIMEZONE);
+    const endKey = normalisedEndsOn ? dayKeyOfDate(normalisedEndsOn) : null;
+    initialCourse = {
+      startsOn:
+        startsOn ??
+        dateOfDayKey(endKey && endKey < todayKey ? endKey : todayKey),
+      endsOn: normalisedEndsOn ?? null,
+    };
+    const refusal = validateCourses(
+      [initialCourse],
+      todayKey,
+      oneShot === true,
+    );
+    if (refusal) {
+      const r = courseRefusalResponse(refusal);
+      return apiError(r.message, r.status, { errorCode: r.errorCode });
+    }
+  }
+
   const createMedication = () =>
     prisma.medication.create({
       data: {
@@ -306,6 +358,17 @@ async function postMedication(request: NextRequest): Promise<Response> {
         // v1.5 scheduling primitives — pass-through when supplied.
         ...(startsOn !== undefined && { startsOn }),
         ...(normalisedEndsOn !== undefined && { endsOn: normalisedEndsOn }),
+        ...(initialCourse && {
+          startsOn: initialCourse.startsOn,
+          endsOn: initialCourse.endsOn,
+          courses: {
+            create: {
+              userId: user.id,
+              startsOn: initialCourse.startsOn,
+              endsOn: initialCourse.endsOn,
+            },
+          },
+        }),
         ...(oneShot !== undefined && { oneShot }),
         // v1.16.11 — as-needed flag, field-by-field. An asNeeded create
         // carries an empty `scheduleInputs`, so the nested create below
@@ -413,6 +476,10 @@ async function postMedication(request: NextRequest): Promise<Response> {
     medication.id,
     category,
   );
+  const categoryLabel = isCustomMedicationCategoryKey(normalizedCategory)
+    ? ((await resolveMedicationCategories([medication.id]))[medication.id]
+        ?.categoryLabel ?? null)
+    : null;
 
   await auditLog("medication.create", {
     userId: user.id,
@@ -446,6 +513,15 @@ async function postMedication(request: NextRequest): Promise<Response> {
         ),
       ),
       category: normalizedCategory,
+      categoryLabel,
+      // v1.40 (#1024) — the courses, as every medication read carries them.
+      ...(
+        await resolveCourseFields(
+          [medication],
+          new Date(),
+          user.timezone || DEFAULT_TIMEZONE,
+        )
+      ).get(medication.id),
     },
     201,
   );

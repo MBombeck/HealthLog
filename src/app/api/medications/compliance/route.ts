@@ -1,5 +1,6 @@
 import pLimit from "p-limit";
 
+import { COURSES_COMPLIANCE_SELECT } from "@/lib/analytics/compliance";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
@@ -59,6 +60,8 @@ export const GET = apiHandler(async () => {
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
       // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
+      // v1.40 (#1024) — the courses, so a gap between two expects nothing.
+      courses: COURSES_COMPLIANCE_SELECT,
     },
     orderBy: { createdAt: "desc" },
   });

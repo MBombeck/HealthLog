@@ -242,6 +242,52 @@ describe("occurrencesBetween — RRULE MONTHLY / YEARLY", () => {
 // ────────────────────────────────────────────────────────────────────
 
 describe("occurrencesBetween — rolling", () => {
+  it("keeps anchoring on an intake when the start was only moved forward a little (v1.40)", () => {
+    // Weekly. Last dose Jun 8; the start was then moved to Jun 10. The next
+    // dose stays Jun 15 (last dose + 7), as it was before courses existed.
+    const NOW = d("2026-06-11T12:00:00Z");
+    const schedule = makeSchedule({
+      rollingIntervalDays: 7,
+      timesOfDay: ["08:00"],
+    });
+    const ctx = makeCtx({
+      lastIntakeAt: d("2026-06-08T06:00:00Z"),
+      medication: { startsOn: d("2026-06-10T00:00:00Z") },
+    });
+    const slots = occurrencesBetween(
+      schedule,
+      NOW,
+      new Date(NOW.getTime() + 14 * 24 * 60 * 60 * 1000),
+      ctx,
+    );
+    expect(slots.map((o) => o.at.toISOString())).toEqual([
+      "2026-06-15T06:00:00.000Z",
+    ]);
+  });
+
+  it("does not let an intake from a previous course anchor a new one (v1.40, #1024)", () => {
+    // The previous course's last dose was months ago; the new course starts
+    // in two days. Its first dose is due on its start day, not on
+    // "last intake + 7" (which lies in the past) or on start + 7.
+    const NOW = d("2026-06-10T12:00:00Z");
+    const schedule = makeSchedule({
+      rollingIntervalDays: 7,
+      timesOfDay: ["08:00"],
+    });
+    const ctx = makeCtx({
+      lastIntakeAt: d("2026-03-05T07:00:00Z"),
+      medication: { startsOn: d("2026-06-12T00:00:00Z") },
+    });
+    const slots = occurrencesBetween(
+      schedule,
+      NOW,
+      new Date(NOW.getTime() + 14 * 24 * 60 * 60 * 1000),
+      ctx,
+    );
+    expect(slots).toHaveLength(1);
+    expect(slots[0].at.toISOString()).toBe("2026-06-12T06:00:00.000Z");
+  });
+
   it("rollingIntervalDays=7 + lastIntakeAt=T-3d emits one at T+4d", () => {
     const NOW = d("2026-06-10T12:00:00Z");
     const lastIntake = new Date(NOW.getTime() - 3 * 24 * 60 * 60 * 1000);

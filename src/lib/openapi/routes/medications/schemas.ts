@@ -33,11 +33,102 @@ import { MEDICATION_IMPORT_SKIP_REASONS } from "@/lib/jobs/medication-intake-imp
 // schema description AND enforced by the route + a DB CHECK constraint
 // so iOS code-gen surfaces the mutual exclusion.
 
-export const medicationCategoryEnum = z.enum(MEDICATION_CATEGORY_VALUES).meta({
+// v1.40 (#1041) — widened from the built-in enum to a string: a category is
+// a built-in value or the `custom:<uuid>` key of one of the caller's own
+// categories. The component id stays `MedicationCategory` so a generated
+// client keeps its type name; a client decodes unknown values tolerantly and
+// shows `categoryLabel` when present.
+export const medicationCategoryEnum = z.string().meta({
   id: "MedicationCategory",
-  description:
-    "Clinical taxonomy stored in the `medication_categories` side-table. Orthogonal to `MedicationTreatmentClass`.",
+  description: `Clinical category. One of the built-in values (${MEDICATION_CATEGORY_VALUES.join(", ")}) or, since v1.40, \`custom:<uuid>\`, the key of one of the caller's own categories (see \`GET /api/medications/categories\`), whose label rides beside it as \`categoryLabel\`. A client must decode an unknown value tolerantly and must not write \`category\` back unless the person changed it. Orthogonal to \`MedicationTreatmentClass\`.`,
 });
+
+const medicationCategoryLabelField = z
+  .string()
+  .nullable()
+  .describe(
+    "v1.40 — the decrypted label of a custom category (`category` = `custom:<uuid>`); null for a built-in category, which a client localises from `category`. Read-only.",
+  );
+
+export const medicationCourseResource = z
+  .object({
+    id: z.string(),
+    startsOn: z.iso
+      .date()
+      .describe("First day of the course, inclusive (`YYYY-MM-DD`)."),
+    endsOn: z.iso
+      .date()
+      .nullable()
+      .describe("Last day, inclusive. NULL = open (only the latest course)."),
+    status: z
+      .enum(["UPCOMING", "CURRENT", "ENDED"])
+      .describe("Where today, on the person's clock, sits in this course."),
+    takenDoses: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe(
+        "Doses logged as taken whose slot falls on a day of this course.",
+      ),
+    note: z
+      .string()
+      .nullable()
+      .describe("The person's note on this course. Encrypted at rest."),
+  })
+  .meta({
+    id: "MedicationCourse",
+    description:
+      "v1.40 (#1024) — one course of a medication. Courses never overlap and every course except the latest has ended, so the medication's `startsOn`/`endsOn`/`courseStatus`/`intakeActionable` are always those of the latest course.",
+  });
+
+const medicationCourseFields = {
+  courses: z
+    .array(medicationCourseResource)
+    .describe(
+      "v1.40 — every course, ascending by start. Empty for a medication taken continuously since creation. Server-resolved; render it, do not recompute it.",
+    ),
+  courseCount: z.number().int().nonnegative(),
+  previousCourseEndedOn: z.iso
+    .date()
+    .nullable()
+    .describe(
+      "v1.40 — the last day of the most recent course that has ended (answers 'when did I last take it'); null when none has.",
+    ),
+  canStartCourse: z
+    .boolean()
+    .describe(
+      "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active, not one-time, has a course and every course has ended.",
+    ),
+};
+
+export const medicationCategoryLabelResource = z
+  .object({
+    key: z
+      .string()
+      .describe(
+        "`custom:<uuid>`, the value a medication's `category` carries when it is filed under this category.",
+      ),
+    label: z.string().describe("The person's own label, 1 to 40 characters."),
+    sortOrder: z
+      .number()
+      .int()
+      .describe("Position in the picker and the filter row, ascending."),
+    isActive: z
+      .boolean()
+      .describe(
+        "false = hidden from the picker. Medications filed under a hidden category keep it.",
+      ),
+    medicationCount: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe("How many of the record's medications are filed under it."),
+  })
+  .meta({
+    id: "MedicationCategoryLabel",
+    description:
+      "v1.40 (#1041) — a medication category the person named themselves, shown next to the built-in ones. At most 20 per account (hidden ones count).",
+  });
 
 export const medicationTreatmentClassEnum = z
   .enum(MEDICATION_TREATMENT_CLASS_VALUES)
@@ -250,6 +341,8 @@ export const medicationResource = z
 export const medicationListEntry = medicationResource
   .extend({
     category: medicationCategoryEnum,
+    categoryLabel: medicationCategoryLabelField,
+    ...medicationCourseFields,
     // v1.32.25 — mirrored-medication provenance echoed on the list read so
     // the web UI and an operator can tell a mirror row from a native one.
     externalSource: z
@@ -315,6 +408,8 @@ export const medicationListEntry = medicationResource
 export const medicationDetailEntry = medicationResource
   .extend({
     category: medicationCategoryEnum,
+    categoryLabel: medicationCategoryLabelField,
+    ...medicationCourseFields,
     courseStatus: z
       .enum(["UPCOMING", "CURRENT", "ENDED"])
       .describe(

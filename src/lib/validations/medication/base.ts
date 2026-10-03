@@ -63,8 +63,8 @@ export const rxNormCodeField = z
     "Optional RxNorm RxCUI (numeric, US identifier, e.g. `2601723`). Secondary coding emitted under `http://www.nlm.nih.gov/research/umls/rxnorm` alongside any ATC code, never instead of the free-text name. NULL clears it; absent leaves it untouched.",
   );
 /**
- * Clinical-category values stored in the `medication_categories` side-
- * table (TEXT column). v1.5.4 adds `DIABETES` and `ANTIBIOTIC` so the
+ * Clinical-category values stored in the `medication_categories` table
+ * (TEXT column, the `MedicationCategoryAssignment` model). v1.5.4 adds `DIABETES` and `ANTIBIOTIC` so the
  * wizard's Step 2 taxonomy can write a first-class bucket for those
  * two rows instead of collapsing them into `OTHER`. The column is a
  * plain TEXT field — no Prisma enum exists to migrate; the Zod values
@@ -90,6 +90,63 @@ export const MEDICATION_CATEGORY_VALUES = [
 ] as const;
 export type MedicationCategoryValue =
   (typeof MEDICATION_CATEGORY_VALUES)[number];
+
+/**
+ * v1.40 (#1041) — a category the person named themselves is addressed by the
+ * key of its `MedicationCategoryLabel` row, `custom:<uuid>`. The `category`
+ * field on the medication wire is a built-in value or such a key.
+ */
+export const CUSTOM_MEDICATION_CATEGORY_PREFIX = "custom:";
+
+/** Per-account ceiling on custom medication categories (hidden ones count). */
+export const MAX_CUSTOM_MEDICATION_CATEGORIES = 20;
+
+const CUSTOM_MEDICATION_CATEGORY_KEY = /^custom:[0-9a-f-]{36}$/;
+
+/** Is `value` a custom-category key rather than a built-in value? */
+export function isCustomMedicationCategoryKey(value: string): boolean {
+  return value.startsWith(CUSTOM_MEDICATION_CATEGORY_PREFIX);
+}
+
+/**
+ * The `category` a create or update body may carry: a built-in value or a
+ * well-formed custom key. Ownership of a custom key is checked by the route
+ * (422 `medications.category.unknown`), not here.
+ */
+export const medicationCategoryInputSchema = z
+  .union([
+    z.enum(MEDICATION_CATEGORY_VALUES),
+    z.string().regex(CUSTOM_MEDICATION_CATEGORY_KEY, "Unknown category"),
+  ])
+  .describe(
+    "A built-in clinical category (BLOOD_PRESSURE, VITAMIN, SUPPLEMENT, PAIN_RELIEF, ALLERGY, DIGESTIVE, THYROID, HORMONE, SKIN, SLEEP_AID, DIABETES, ANTIBIOTIC, MENTAL_HEALTH, OTHER) or `custom:<uuid>`, the key of one of the caller's own categories.",
+  );
+
+const customCategoryLabelSchema = z
+  .string()
+  .trim()
+  .min(1, "Label must not be empty")
+  .max(40, "Label must be at most 40 characters");
+
+/** `POST /api/medications/categories` body. */
+export const createMedicationCategoryLabelSchema = z.object({
+  label: customCategoryLabelSchema,
+});
+
+/** `PATCH /api/medications/categories/{key}` body: at least one field. */
+export const updateMedicationCategoryLabelSchema = z
+  .object({
+    label: customCategoryLabelSchema.optional(),
+    sortOrder: z.number().int().min(0).max(1000).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    (v) =>
+      v.label !== undefined ||
+      v.sortOrder !== undefined ||
+      v.isActive !== undefined,
+    "At least one field is required",
+  );
 
 /**
  * v1.4.25 W4d — Prisma-level treatment class. Orthogonal to

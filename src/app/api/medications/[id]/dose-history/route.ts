@@ -14,6 +14,11 @@
  * Ownership-scoped via `assertMedicationOwnership`; rate-limited; reads only
  * `deletedAt: null` rows.
  */
+import {
+  complianceMintWindow,
+  COURSES_COMPLIANCE_SELECT,
+  slotInsideCourses,
+} from "@/lib/analytics/compliance";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
@@ -130,6 +135,9 @@ export const GET = apiHandler(
         // v1.16.3 — archived schedule eras: past days mint against the
         // schedule that was live THEN.
         scheduleRevisions: { orderBy: { validFrom: "asc" } },
+        // v1.40 (#1024) — the courses, so the history shows every course's
+        // slots, the same ones the compliance rate counts.
+        courses: COURSES_COMPLIANCE_SELECT,
       },
     });
     if (!medication) {
@@ -204,10 +212,20 @@ export const GET = apiHandler(
       }, to.getTime()),
     );
 
-    const bandMedication: BandMinterMedication = {
-      id: medication.id,
+    // v1.40 (#1024) — mint over the span of every course and keep only the
+    // slots on a course day, the rule the compliance ledger applies, so the
+    // history lists exactly the misses the rate counts.
+    const courseCtx = {
       startsOn: medication.startsOn,
       endsOn: medication.endsOn,
+      timeZone: userTz,
+      courses: medication.courses,
+    };
+    const mintWindow = complianceMintWindow(courseCtx);
+    const bandMedication: BandMinterMedication = {
+      id: medication.id,
+      startsOn: mintWindow.startsOn,
+      endsOn: mintWindow.endsOn,
       oneShot: medication.oneShot,
       createdAt: medication.createdAt,
     };
@@ -256,7 +274,9 @@ export const GET = apiHandler(
     let family: BandFamily = "none";
     for (const g of groups) {
       if (g.hasExpectedSlots) {
-        bands.push(...g.bands);
+        bands.push(
+          ...g.bands.filter((b) => slotInsideCourses(courseCtx, b.at)),
+        );
         if (family === "none") family = g.family;
       }
     }

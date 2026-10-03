@@ -1,5 +1,6 @@
 "use client";
 
+import type { MedicationCourseFields } from "@/components/medications/course-fields";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useEffect, useReducer, useState } from "react";
 import Link from "next/link";
@@ -33,7 +34,12 @@ import { reduceCurrentWindowStatus } from "@/lib/medications/window-status";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
 import { formatTime } from "@/lib/format";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
-import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { formatDate } from "@/lib/date-format";
+import {
+  useDateFormatPreference,
+  useFormatters,
+  useTranslations,
+} from "@/lib/i18n/context";
 import { formatDose } from "@/lib/medications/format-dose";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
@@ -104,6 +110,11 @@ export interface TableMedication {
    */
   intakeActionable?: boolean;
   courseStatus?: "UPCOMING" | "CURRENT" | "ENDED";
+  /** v1.40 (#1024) — the server-resolved course fields. */
+  courses?: MedicationCourseFields["courses"];
+  courseCount?: number;
+  previousCourseEndedOn?: string | null;
+  canStartCourse?: boolean;
   /** v1.16.10 — dose-derived stock from the list payload; null = inventory tracking off. */
   stockDosesRemaining?: number | null;
   /** v1.37.19 — server-resolved slot-aware runway (days); null = off/no cadence. */
@@ -412,6 +423,7 @@ function MedicationTableRowItem({
   highlighted = false,
 }: MedicationTableRowItemProps) {
   const { t, locale } = useTranslations();
+  const dateFormatPref = useDateFormatPreference();
   const fmt = useFormatters();
   const weekdayLabel = useWeekdayLabel();
 
@@ -542,7 +554,15 @@ function MedicationTableRowItem({
         className="text-muted-foreground"
         data-slot="medication-table-course-ended-marker"
       >
-        {t("medications.courseEndedBadge")}
+        {medication.previousCourseEndedOn
+          ? t("medications.course.endedOn", {
+              date: formatDate(
+                new Date(medication.previousCourseEndedOn),
+                dateFormatPref,
+                locale,
+              ),
+            })
+          : t("medications.courseEndedBadge")}
       </span>
     );
   } else if (medication.asNeeded) {

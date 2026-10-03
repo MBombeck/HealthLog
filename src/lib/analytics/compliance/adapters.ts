@@ -9,10 +9,11 @@ import {
   type Occurrence,
   type RecurrenceContext,
 } from "@/lib/medications/scheduling/recurrence";
-import type {
-  ComplianceIntakeInstant,
-  ComplianceMedicationContext,
-  ComplianceSchedule,
+import {
+  complianceMintWindow,
+  type ComplianceIntakeInstant,
+  type ComplianceMedicationContext,
+  type ComplianceSchedule,
 } from "./types";
 
 /**
@@ -48,12 +49,22 @@ export function rollingIntakeInstants(
 export function toRecurrenceCtx(
   ctx: ComplianceMedicationContext,
   idTag: string,
+  /**
+   * v1.40 (#1024) — `"courses"` expands over the span of every course (the
+   * retrospective minters, which then drop the slots between courses);
+   * the default is the medication's own window (the forward-looking cycle).
+   */
+  span: "current" | "courses" = "current",
 ): RecurrenceContext {
+  const window =
+    span === "courses"
+      ? complianceMintWindow(ctx)
+      : { startsOn: ctx.startsOn, endsOn: ctx.endsOn };
   return {
     medication: {
       id: idTag,
-      startsOn: ctx.startsOn,
-      endsOn: ctx.endsOn,
+      startsOn: window.startsOn,
+      endsOn: window.endsOn,
       oneShot: ctx.oneShot,
       createdAt: ctx.createdAt,
     },

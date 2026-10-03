@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  currentCourseNumber,
+  type MedicationCourseFields,
+} from "@/components/medications/course-fields";
 import { useEffect, useReducer, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -96,6 +100,8 @@ export interface Glp1Medication {
   name: string;
   dose: string;
   category: string;
+  /** v1.40 — the label of a custom category; null for a built-in one. */
+  categoryLabel?: string | null;
   treatmentClass?: string;
   dosesPerUnit?: number | null;
   /** v1.6.0 — route of administration (drives the injection-site prompt). */
@@ -142,6 +148,11 @@ export interface Glp1Medication {
   intakeActionable?: boolean;
   /** v1.39.4 (#1040) — where today sits in the course. */
   courseStatus?: "UPCOMING" | "CURRENT" | "ENDED";
+  /** v1.40 (#1024) — the server-resolved course fields. */
+  courses?: MedicationCourseFields["courses"];
+  courseCount?: number;
+  previousCourseEndedOn?: string | null;
+  canStartCourse?: boolean;
   schedules: ScheduleLite[];
 }
 
@@ -454,6 +465,8 @@ export function Glp1MedicationCard({
       pausedAt={medication.pausedAt}
       recordOnly={medication.trackIntake === false}
       courseEnded={medication.courseStatus === "ENDED"}
+      lastCourseEndedOn={medication.previousCourseEndedOn ?? null}
+      courseNumber={currentCourseNumber(medication)}
     />
   );
 
@@ -476,7 +489,11 @@ export function Glp1MedicationCard({
     />
   );
 
-  const categoryLabel = getMedicationCategoryLabel(medication.category, t);
+  const categoryLabel = getMedicationCategoryLabel(
+    medication.category,
+    t,
+    medication.categoryLabel,
+  );
 
   // The upcoming-injection line value. The card owns this VALUE content —
   // the liked relative-day phrasing ("Samstag 13.7. (in 7 Tagen)") — while

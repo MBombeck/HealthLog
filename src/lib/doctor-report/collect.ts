@@ -15,6 +15,7 @@
  *
  * Pure data assembly — no auth, no rate limit, no audit. Idempotent.
  */
+import { courseStatusOn, dayKeyOfDate } from "@/lib/medications/course-window";
 import { prisma } from "@/lib/db";
 import {
   getEffectiveRange,
@@ -34,7 +35,10 @@ import {
 } from "@/lib/analytics/sleep-night";
 import { buildCycleExportSummary } from "@/lib/cycle/export-data";
 import { resolveModuleMap } from "@/lib/modules/gate";
-import { SCHEDULE_COMPLIANCE_SELECT } from "@/lib/analytics/compliance";
+import {
+  COURSES_COMPLIANCE_SELECT,
+  SCHEDULE_COMPLIANCE_SELECT,
+} from "@/lib/analytics/compliance";
 import { MEASUREMENT_LEAF_IDS } from "@/lib/report-selection/catalogue";
 import type { ReportSelection } from "@/lib/report-selection/selection";
 import {
@@ -256,25 +260,54 @@ export async function collectDoctorReportData(
             // whenever it was entered. Dose history and the last intake stop
             // at the window's end too, so a report for March does not show a
             // dose set in June.
+            //
+            // v1.40 (#1024) — a medication taken in courses is part of the
+            // window when one of its courses overlaps it; the row's own
+            // window is only the latest course. One without courses keeps
+            // the rule above.
             where: {
               userId,
               active: true,
-              AND: [
+              OR: [
                 {
-                  OR: [
-                    { startsOn: { lte: lastDay } },
-                    { startsOn: null, createdAt: { lte: end } },
-                    {
-                      intakeEvents: {
-                        some: {
-                          deletedAt: null,
-                          scheduledFor: { gte: start, lte: end },
-                        },
-                      },
+                  courses: {
+                    some: {
+                      startsOn: { lte: lastDay },
+                      OR: [{ endsOn: null }, { endsOn: { gte: firstDay } }],
                     },
+                  },
+                },
+                {
+                  // A dose logged inside the window outside every course (the
+                  // person knows better than the window) still places it.
+                  courses: { some: {} },
+                  intakeEvents: {
+                    some: {
+                      deletedAt: null,
+                      scheduledFor: { gte: start, lte: end },
+                    },
+                  },
+                },
+                {
+                  courses: { none: {} },
+                  AND: [
+                    {
+                      OR: [
+                        { startsOn: { lte: lastDay } },
+                        { startsOn: null, createdAt: { lte: end } },
+                        {
+                          intakeEvents: {
+                            some: {
+                              deletedAt: null,
+                              scheduledFor: { gte: start, lte: end },
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    { OR: [{ endsOn: null }, { endsOn: { gte: firstDay } }] },
                   ],
                 },
-                { OR: [{ endsOn: null }, { endsOn: { gte: firstDay } }] },
               ],
             },
             include: {
@@ -292,6 +325,8 @@ export async function collectDoctorReportData(
                 },
               },
               pauseEras: { select: { pausedAt: true, resumedAt: true } },
+              // v1.40 (#1024) — the courses, so a gap between two expects nothing.
+              courses: COURSES_COMPLIANCE_SELECT,
               doseChanges: {
                 where: { effectiveFrom: { lte: end } },
                 orderBy: { effectiveFrom: "asc" },
@@ -438,6 +473,7 @@ export async function collectDoctorReportData(
       schedules: m.schedules,
       scheduleRevisions: m.scheduleRevisions,
       pauseEras: m.pauseEras,
+      courses: m.courses,
     })),
     intakeEvents.map((e) => ({
       medicationId: e.medicationId,
@@ -682,6 +718,18 @@ export async function collectDoctorReportData(
             windowEnd: s.windowEnd,
             label: s.label,
           })),
+          // v1.40 (#1024) — the courses inside the window, one line each.
+          courses: m.courses
+            .filter(
+              (c) =>
+                c.startsOn.getTime() <= lastDay.getTime() &&
+                (c.endsOn === null || c.endsOn.getTime() >= firstDay.getTime()),
+            )
+            .map((c) => ({
+              startsOn: dayKeyOfDate(c.startsOn),
+              endsOn: c.endsOn ? dayKeyOfDate(c.endsOn) : null,
+              status: courseStatusOn(c, dayKeyOfDate(lastDay)),
+            })),
         }))
       : [],
     medicationAdministrations: gate.admits("MEDICATION_ADMINISTRATIONS")

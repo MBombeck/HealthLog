@@ -14,10 +14,18 @@ import { updateMedicationSchema } from "@/lib/validations/medication";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
   deleteMedicationCategory,
-  getMedicationCategories,
+  isAssignableCategory,
+  resolveMedicationCategories,
   setMedicationCategory,
 } from "@/lib/medication-category";
 import { serializeScheduleRecurrence } from "@/lib/medication-schedule";
+import {
+  checkCurrentWindow,
+  CourseWriteError,
+  courseRefusalResponse,
+  resolveCourseFields,
+  setCurrentWindow,
+} from "@/lib/medications/courses";
 import {
   schedulesMateriallyDiffer,
   toRevisionPayloadEntry,
@@ -103,9 +111,11 @@ export const GET = apiHandler(
     }
 
     let category = "OTHER";
+    let categoryLabel: string | null = null;
     try {
-      const categories = await getMedicationCategories([id]);
-      category = categories[id] ?? "OTHER";
+      const categories = await resolveMedicationCategories([id]);
+      category = categories[id]?.category ?? "OTHER";
+      categoryLabel = categories[id]?.categoryLabel ?? null;
     } catch {
       // Category enrichment is optional
     }
@@ -235,6 +245,15 @@ export const GET = apiHandler(
             Number(medication.unitsPerDose),
           );
 
+    // v1.40 (#1024) — the courses, resolved on the server.
+    const courseFields = (
+      await resolveCourseFields(
+        [medication],
+        now,
+        user.timezone || DEFAULT_TIMEZONE,
+      )
+    ).get(id);
+
     return apiSuccess({
       ...medication,
       unitsPerDose: Number(medication.unitsPerDose),
@@ -242,6 +261,8 @@ export const GET = apiHandler(
       // intake tracking is off (see `scheduleWireFields`).
       ...scheduleWireFields(medication.trackIntake, schedulesDto),
       category,
+      categoryLabel,
+      ...courseFields,
       nextDueAt: display ? display.at.toISOString() : null,
       nextDueOverdue: display?.overdue ?? false,
       // v1.39.4 (#1040) — see `resolveIntakeActionability`.
@@ -265,7 +286,10 @@ export const PUT = apiHandler(
     // below excludes every actioned row — and the previous cadence is the one
     // genuinely unrecoverable part, which is what C7 puts in the audit row.
     // The DELETE beside it stays refused.
-    const { user } = await requireRecordAuth("manage", "medications");
+    const { user, authMethod } = await requireRecordAuth(
+      "manage",
+      "medications",
+    );
 
     const { id } = await params;
     // v1.5.5 C-E3-3 — route ownership check through the shared helper
@@ -290,6 +314,9 @@ export const PUT = apiHandler(
         name: true,
         dose: true,
         endsOn: true,
+        // v1.40 (#1024) — the course check below needs the stored window.
+        startsOn: true,
+        oneShot: true,
         _count: { select: { schedules: true } },
       },
     });
@@ -382,6 +409,16 @@ export const PUT = apiHandler(
       trackIntake,
       reminderGraceMinutes: topLevelGraceMinutes,
     } = input;
+
+    // v1.40 (#1041) — a custom category must be one of this record's own.
+    if (
+      category !== undefined &&
+      !(await isAssignableCategory(user.id, category))
+    ) {
+      return apiError("Unknown medication category", 422, {
+        errorCode: "medications.category.unknown",
+      });
+    }
 
     // v1.39.1 (#1033) — intake tracking transition. Off keeps the schedule
     // as a record; the live era from here on expects nothing.
@@ -479,6 +516,34 @@ export const PUT = apiHandler(
     // Normalise endsOn for one-shot. `oneShot === true` + `startsOn`
     // means the dose is the start date; endsOn auto-matches.
     const normalisedEndsOn = oneShot === true && startsOn ? startsOn : endsOn;
+
+    // v1.40 (#1024) — the window a PUT sets is the latest course. Check it
+    // against the other courses BEFORE the row changes, so a refused window
+    // leaves the medication as it was.
+    const touchesWindow =
+      startsOn !== undefined ||
+      normalisedEndsOn !== undefined ||
+      oneShot !== undefined;
+    const nextWindow = {
+      startsOn: startsOn !== undefined ? startsOn : existing.startsOn,
+      endsOn:
+        normalisedEndsOn !== undefined ? normalisedEndsOn : existing.endsOn,
+    };
+    const courseTz = user.timezone || DEFAULT_TIMEZONE;
+    if (touchesWindow) {
+      const refusal = await checkCurrentWindow({
+        userId: user.id,
+        medicationId: id,
+        timeZone: courseTz,
+        ...nextWindow,
+        oneShot: oneShot ?? existing.oneShot,
+        createdAt: existing.createdAt,
+      });
+      if (refusal) {
+        const r = courseRefusalResponse(refusal);
+        return apiError(r.message, r.status, { errorCode: r.errorCode });
+      }
+    }
 
     const pausedAtPatch =
       active === undefined
@@ -893,8 +958,10 @@ export const PUT = apiHandler(
       // v1.5 scheduling primitives — pass-through when supplied.
       // `startsOn` / `endsOn` are `Date | null | undefined` (the
       // schema lets the user clear them explicitly with null).
-      ...(startsOn !== undefined && { startsOn }),
-      ...(normalisedEndsOn !== undefined && { endsOn: normalisedEndsOn }),
+      // v1.40 (#1024) — `startsOn` / `endsOn` are not written here: the
+      // course writer below writes them together with the course they
+      // project, in one transaction, so the row and its courses cannot
+      // disagree if one of the two writes fails.
       ...(oneShot !== undefined && { oneShot }),
       // v1.16.11 — as-needed flag, field-by-field (the invariants above
       // already guaranteed the medication ends schedule-consistent).
@@ -988,10 +1055,49 @@ export const PUT = apiHandler(
       }
     }
 
-    const normalizedCategory =
-      category !== undefined
-        ? await setMedicationCategory(id, category)
-        : ((await getMedicationCategories([id]))[id] ?? "OTHER");
+    // v1.40 (#1024) — write the window onto the latest course and project it
+    // back, then serve the projected row.
+    if (touchesWindow) {
+      let projected;
+      try {
+        projected = await setCurrentWindow({
+          userId: user.id,
+          medicationId: id,
+          timeZone: courseTz,
+          ...nextWindow,
+        });
+      } catch (err) {
+        // A concurrent course write landed between the check above and this
+        // transaction. Nothing of the window was written.
+        if (err instanceof CourseWriteError) {
+          const r = courseRefusalResponse(err.refusal);
+          return apiError(r.message, r.status, { errorCode: r.errorCode });
+        }
+        throw err;
+      }
+      medication = { ...medication, ...projected };
+    }
+
+    // v1.40 (#1041) — an iPhone app build that predates custom categories
+    // decodes an unknown category as OTHER and sends it back on every edit,
+    // which would overwrite the person's own category with OTHER. A native
+    // client (Bearer) sending OTHER over a custom category keeps the custom
+    // one; moving a custom category back to OTHER stays possible on the web.
+    let categoryToWrite = category;
+    if (category === "OTHER" && authMethod === "bearer") {
+      const current = (await resolveMedicationCategories([id]))[id];
+      if (current?.category.startsWith("custom:")) {
+        categoryToWrite = undefined;
+        annotate({
+          action: { name: "medication.update.custom_category_kept" },
+          meta: { entity_id: id },
+        });
+      }
+    }
+    if (categoryToWrite !== undefined)
+      await setMedicationCategory(id, categoryToWrite);
+    const resolvedCategory = (await resolveMedicationCategories([id]))[id];
+    const normalizedCategory = resolvedCategory?.category ?? "OTHER";
 
     await auditLog("medication.update", {
       userId: user.id,
@@ -1054,6 +1160,11 @@ export const PUT = apiHandler(
         ),
       ),
       category: normalizedCategory,
+      categoryLabel: resolvedCategory?.categoryLabel ?? null,
+      // v1.40 (#1024) — the courses, as every medication read carries them.
+      ...(await resolveCourseFields([medication], new Date(), courseTz)).get(
+        id,
+      ),
     });
   },
 );

@@ -97,7 +97,7 @@ vi.mock("@/lib/ai/capabilities/gate", () => ({
 }));
 
 vi.mock("@/lib/medication-category", () => ({
-  getMedicationCategories: vi.fn(async () => ({})),
+  resolveMedicationCategories: vi.fn(async () => ({})),
 }));
 
 // The route no longer gates on the `insights` module (the AI analysis
@@ -117,7 +117,7 @@ import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
 import { prisma } from "@/lib/db";
 import { buildComprehensiveAggregate } from "@/lib/insights/comprehensive-aggregator";
 import { checkAnalyticsReadRateLimit } from "@/lib/rate-limit";
-import { getMedicationCategories } from "@/lib/medication-category";
+import { resolveMedicationCategories } from "@/lib/medication-category";
 import { __resetAllCachesForTests, caches } from "@/lib/cache/server-cache";
 
 const SESSION_OK = {
@@ -922,8 +922,8 @@ describe("GET /api/insights/comprehensive — mood × metric local-day pairing (
       (
         prisma.medicationIntakeEvent.findMany as ReturnType<typeof vi.fn>
       ).mockResolvedValue(intakeEvents);
-      vi.mocked(getMedicationCategories).mockResolvedValue({
-        "med-bp": "BLOOD_PRESSURE",
+      vi.mocked(resolveMedicationCategories).mockResolvedValue({
+        "med-bp": { category: "BLOOD_PRESSURE", categoryLabel: null },
       });
     }
 
@@ -1127,8 +1127,8 @@ describe("GET /api/insights/comprehensive — an unlogged day is not a zero", ()
         skipped: e.skipped,
       })),
     );
-    vi.mocked(getMedicationCategories).mockResolvedValue({
-      "med-bp": "BLOOD_PRESSURE",
+    vi.mocked(resolveMedicationCategories).mockResolvedValue({
+      "med-bp": { category: "BLOOD_PRESSURE", categoryLabel: null },
     });
   }
 

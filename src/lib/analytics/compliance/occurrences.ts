@@ -3,10 +3,11 @@
 
 import { occurrencesAcrossEras } from "@/lib/medications/scheduling/schedule-eras";
 import type { Occurrence } from "@/lib/medications/scheduling/recurrence";
-import type {
-  ComplianceIntakeInstant,
-  ComplianceMedicationContext,
-  ComplianceSchedule,
+import {
+  slotInsideCourses,
+  type ComplianceIntakeInstant,
+  type ComplianceMedicationContext,
+  type ComplianceSchedule,
 } from "./types";
 import {
   expandComplianceOccurrences,
@@ -36,7 +37,7 @@ export function expectedSlotCountForDay(
   ctx: ComplianceMedicationContext,
   intakes?: ComplianceIntakeInstant[],
 ): number {
-  const recurrenceCtx = toRecurrenceCtx(ctx, "compliance-daily");
+  const recurrenceCtx = toRecurrenceCtx(ctx, "compliance-daily", "courses");
   const now = new Date();
   const retro =
     intakes && schedules.some((s) => s.rollingIntervalDays != null)
@@ -63,7 +64,8 @@ export function expectedSlotCountForDay(
         retro,
       ),
     { oneShot: ctx.oneShot },
-  ).length;
+    // v1.40 (#1024) — a day between two courses expects nothing.
+  ).filter((o) => slotInsideCourses(ctx, o.at)).length;
 }
 
 /**
@@ -95,7 +97,7 @@ export function expectedSlotsBetween(
   ctx: ComplianceMedicationContext,
   intakes?: ComplianceIntakeInstant[],
 ): Occurrence[] {
-  const recurrenceCtx = toRecurrenceCtx(ctx, "compliance-slots");
+  const recurrenceCtx = toRecurrenceCtx(ctx, "compliance-slots", "courses");
   const effectiveFrom =
     ctx.createdAt.getTime() > from.getTime() ? ctx.createdAt : from;
   // v1.13.x — for a ROLLING schedule the expected grid is reconstructed from
@@ -123,5 +125,6 @@ export function expectedSlotsBetween(
         retro,
       ),
     { oneShot: ctx.oneShot },
-  );
+    // v1.40 (#1024) — a day between two courses expects nothing.
+  ).filter((o) => slotInsideCourses(ctx, o.at));
 }

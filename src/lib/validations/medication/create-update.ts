@@ -1,7 +1,7 @@
 import { z } from "zod/v4";
 
 import {
-  MEDICATION_CATEGORY_VALUES,
+  medicationCategoryInputSchema,
   MEDICATION_DELIVERY_FORM_VALUES,
   MEDICATION_TREATMENT_CLASS_VALUES,
   atcCodeField,
@@ -99,7 +99,7 @@ export const createMedicationSchema = z
   .object({
     name: z.string().min(1).max(100),
     dose: z.string().min(1).max(50),
-    category: z.enum(MEDICATION_CATEGORY_VALUES).optional(),
+    category: medicationCategoryInputSchema.optional(),
     /** v1.4.25 W4d — treatment-class discriminator (GENERIC | GLP1). */
     treatmentClass: z.enum(MEDICATION_TREATMENT_CLASS_VALUES).optional(),
     /** v1.4.25 W4d — doses per pen/vial for inventory tracking.
@@ -267,7 +267,7 @@ export const updateMedicationSchema = z
   .object({
     name: z.string().min(1).max(100).optional(),
     dose: z.string().min(1).max(50).optional(),
-    category: z.enum(MEDICATION_CATEGORY_VALUES).optional(),
+    category: medicationCategoryInputSchema.optional(),
     treatmentClass: z.enum(MEDICATION_TREATMENT_CLASS_VALUES).optional(),
     dosesPerUnit: z.number().int().min(1).max(1000).nullable().optional(),
     /** v1.16.10 — inventory units one dose consumes. Default 1.

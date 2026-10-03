@@ -24,6 +24,7 @@ import { Glp1SubstanceCurveSummary } from "@/components/insights/glp1-substance-
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { TileHeader } from "@/components/insights/tile-header";
 import { apiGet } from "@/lib/api/api-fetch";
+import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 
 /**
  * v1.4.25 W4 — `/insights/medications`.
@@ -44,7 +45,10 @@ interface MedicationEntry {
   id: string;
   name: string;
   dose: string;
-  category: "BLOOD_PRESSURE" | "VITAMIN" | "OTHER";
+  /** A built-in category value or `custom:<uuid>` (v1.40). */
+  category: string;
+  /** v1.40 — the label of a custom category; null for a built-in one. */
+  categoryLabel?: string | null;
   compliance7: number;
   compliance30: number;
   streak: number;
@@ -234,12 +238,11 @@ export default function InsightsMedikamentePage() {
           // card carried (7d/30d bars, taken/skipped/missed, heatmap,
           // per-med assistant sentence) stays — only the vertical rhythm
           // tightens.
-          const categoryLabel =
-            med.category === "BLOOD_PRESSURE"
-              ? t("medications.categoryBloodPressure")
-              : med.category === "VITAMIN"
-                ? t("medications.categoryVitamin")
-                : t("medications.categoryOther");
+          const categoryLabel = getMedicationCategoryLabel(
+            med.category,
+            t,
+            med.categoryLabel,
+          );
           return (
             <Card key={med.id} className="gap-2 py-3 md:py-4">
               <CardHeader>

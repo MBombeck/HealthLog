@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { COURSES_COMPLIANCE_SELECT } from "@/lib/analytics/compliance";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess, apiError } from "@/lib/api-response";
@@ -74,6 +75,8 @@ export const GET = apiHandler(
               scheduleRevisions: { orderBy: { validFrom: "asc" } },
               // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
               pauseEras: { select: { pausedAt: true, resumedAt: true } },
+              // v1.40 (#1024) — the courses, so a gap between two expects nothing.
+              courses: COURSES_COMPLIANCE_SELECT,
             },
           });
           // Privacy gate — same sealed 404 for "absent" and "not yours".

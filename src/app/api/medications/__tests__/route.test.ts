@@ -51,9 +51,19 @@ vi.mock("@/lib/cache/server-cache", () => ({
   caches: { medicationsList: {} },
   __resetAllCachesForTests: vi.fn(),
 }));
+// v1.40 (#1024) — the course writer and reader run against their own
+// integration suite; here they answer "no course, nothing refused".
+vi.mock("@/lib/medications/courses", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/medications/courses")>()),
+  resolveCourseFields: vi.fn(async () => new Map()),
+  checkCurrentWindow: vi.fn(async () => null),
+  setCurrentWindow: vi.fn(async () => undefined),
+}));
 vi.mock("@/lib/medication-category", () => ({
   getMedicationCategories: vi.fn().mockResolvedValue({}),
-  setMedicationCategory: vi.fn().mockResolvedValue(undefined),
+  resolveMedicationCategories: vi.fn().mockResolvedValue({}),
+  isAssignableCategory: vi.fn().mockResolvedValue(true),
+  setMedicationCategory: vi.fn().mockResolvedValue("OTHER"),
 }));
 vi.mock("@/lib/tz/local-day", async (importOriginal) => ({
   // The schedule engine reads the real local-day helpers; only the today
@@ -81,7 +91,13 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { cachedSwr } from "@/lib/cache/server-cache";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
-import { getMedicationCategories } from "@/lib/medication-category";
+import { resolveCourseFields } from "@/lib/medications/courses";
+import {
+  getMedicationCategories,
+  isAssignableCategory,
+  resolveMedicationCategories,
+  setMedicationCategory,
+} from "@/lib/medication-category";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -99,6 +115,14 @@ function postReq(body: unknown): NextRequest {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+  // v1.40 — the category and course helpers' defaults, which
+  // `resetAllMocks` clears.
+  vi.mocked(resolveCourseFields).mockResolvedValue(new Map());
+  vi.mocked(resolveMedicationCategories).mockResolvedValue({});
+  vi.mocked(isAssignableCategory).mockResolvedValue(true);
+  vi.mocked(setMedicationCategory).mockImplementation(
+    async (_id, category) => (category ?? "OTHER") as never,
+  );
   // v1.32.25 — default the mirror growth-guard count below the cap so the
   // pre-existing mirror-create tests hit the create path, not the guard.
   vi.mocked(prisma.medication.count).mockResolvedValue(0 as never);

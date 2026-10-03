@@ -24,6 +24,7 @@ import {
 } from "@/lib/analytics/compliance";
 import type { DoseHistoryRow } from "@/lib/medications/scheduling/dose-history";
 import { annotate } from "@/lib/logging/context";
+import { courseStatusOn } from "@/lib/medications/course-window";
 import { isoWeekKey, tzDayKey, tzWeekday } from "../snapshot-series";
 import type {
   CoachProvenance,
@@ -53,6 +54,22 @@ interface ComplianceBlockContext {
   metrics: Set<CoachProvenanceMetric>;
   counts: NonNullable<CoachProvenance["counts"]>;
   registerBlock: (key: string, source: CoachScopeSource) => void;
+}
+
+function courseSummary(
+  meds: readonly ComplianceBlockMedication[],
+  now: Date,
+  userTz: string,
+): { courses?: { takenInCourses: number; noCourseRunning: number } } {
+  const todayKey = tzDayKey(now, userTz);
+  const several = meds.filter((m) => (m.courses?.length ?? 0) >= 2);
+  if (several.length === 0) return {};
+  const idle = several.filter((m) =>
+    (m.courses ?? []).every((c) => courseStatusOn(c, todayKey) !== "CURRENT"),
+  ).length;
+  return {
+    courses: { takenInCourses: several.length, noCourseRunning: idle },
+  };
 }
 
 export function buildComplianceBlock(
@@ -183,6 +200,11 @@ export function buildComplianceBlock(
           ? Math.round((complianceTaken / complianceDenominator) * 100)
           : null,
       timeline: { recent: recentRows, weekly: weeklyRows },
+      // v1.40 (#1024) — how many medications are taken in separate courses,
+      // and how many of those have no course running today. Their days
+      // between courses expect no dose, so a quiet stretch there is not a
+      // lapse; the rate above already leaves those days out.
+      ...courseSummary(complianceMeds, now, userTz),
     };
     metrics.add("compliance");
     counts.compliance = countable.length;

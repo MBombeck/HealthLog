@@ -27,6 +27,12 @@
  * replacement is still one transaction, so a failure part-way leaves the
  * account exactly as it was.
  */
+import { DEFAULT_TIMEZONE, userDayKey, validTimezoneOr } from "@/lib/tz/format";
+import {
+  courseFromWindow,
+  dateOfDayKey,
+  projectCourseWindow,
+} from "@/lib/medications/course-window";
 import { Buffer } from "node:buffer";
 
 import { prisma, toJson } from "@/lib/db";
@@ -109,7 +115,8 @@ import { restoreEcgData } from "@/lib/export/ecg-backup";
 import { restoreSymptomsData } from "@/lib/export/symptoms-backup";
 import { restoredMedicationCreatedAt } from "@/lib/export/medication-created-at";
 import {
-  ensureMedicationCategoryTable,
+  encryptCategoryLabel,
+  mintCustomMedicationCategoryKey,
   setMedicationCategory,
 } from "@/lib/medication-category";
 import { invalidateUserData } from "@/lib/cache/invalidate";
@@ -684,10 +691,6 @@ export async function restoreBackup(
     skipped: RestoreSkipSummary;
     accountSettings: AccountSettingsRestoreResult;
   };
-  // The category side table is created lazily. Doing that here, before the
-  // transaction, keeps its DDL (which takes a table lock) out of a
-  // transaction that already holds row locks on the same table.
-  await ensureMedicationCategoryTable();
   try {
     report("clearing");
     outcome = await prisma.$transaction(
@@ -1058,6 +1061,46 @@ export async function restoreBackup(
         // is where an operator has to go to see what the position meant, and
         // an id would be one the restore never wrote.
         const unresolvedRevisionLinks: string[] = [];
+        // v1.40 (#1041) — the account's own medication categories, before
+        // the medications that name them by key. Delete-then-recreate like
+        // the medications themselves. A key held by another account on this
+        // instance (a portable file from elsewhere) is re-minted, and the
+        // medications below are mapped onto the new key.
+        await tx.medicationCategoryLabel.deleteMany({
+          where: { userId: ownerId },
+        });
+        const categoryKeyRemap = new Map<string, string>();
+        for (const c of payload.customMedicationCategories) {
+          const taken = await tx.medicationCategoryLabel.findUnique({
+            where: { key: c.key },
+            select: { id: true },
+          });
+          const key = taken ? mintCustomMedicationCategoryKey() : c.key;
+          if (key !== c.key) categoryKeyRemap.set(c.key, key);
+          await tx.medicationCategoryLabel.create({
+            data: {
+              userId: ownerId,
+              key,
+              labelEncrypted: encryptCategoryLabel(c.label),
+              sortOrder: c.sortOrder,
+              isActive: c.isActive,
+              ...(c.createdAt ? { createdAt: new Date(c.createdAt) } : {}),
+            },
+          });
+        }
+
+        // v1.40 (#1024) — the zone a derived course's creation day is read
+        // in: the file's own account settings, else the account's stored one.
+        const restoreTz = validTimezoneOr(
+          payload.accountSettings?.timezone ??
+            (
+              await tx.user.findUnique({
+                where: { id: ownerId },
+                select: { timezone: true },
+              })
+            )?.timezone,
+          DEFAULT_TIMEZONE,
+        );
         let medicationIndex = 0;
         reportSection("medications");
         const restoreStartedAt = new Date();
@@ -1267,11 +1310,59 @@ export async function restoreBackup(
           });
           restoredMedicationIds.add(created.id);
           if (!medByName.has(m.name)) medByName.set(m.name, created.id);
-          // v1.39.4 — the clinical category lives in a side table keyed on the
+          // v1.39.4 — the clinical category lives in its own table keyed on the
           // medication id, so it is written after the row exists and inside the
           // same transaction. OTHER is what a missing row already reads as.
           if (m.category && m.category !== "OTHER") {
-            await setMedicationCategory(created.id, m.category, tx);
+            await setMedicationCategory(
+              created.id,
+              categoryKeyRemap.get(m.category) ?? m.category,
+              tx,
+            );
+          }
+
+          // v1.40 (#1024) — the courses, then the window they project. A file
+          // written before courses existed carries none; the medication's own
+          // window then describes its one course, derived exactly as the
+          // migration's backfill did (an end-only window runs from creation,
+          // or from its end day when that lies earlier).
+          const courseRows: Array<{
+            startsOn: Date;
+            endsOn: Date | null;
+            note: string | null;
+            createdAt?: Date;
+          }> =
+            m.courses !== undefined
+              ? m.courses.map((c) => ({
+                  startsOn: dateOfDayKey(c.startsOn),
+                  endsOn: c.endsOn ? dateOfDayKey(c.endsOn) : null,
+                  note: c.note ?? null,
+                  ...(c.createdAt ? { createdAt: new Date(c.createdAt) } : {}),
+                }))
+              : (() => {
+                  const derived = courseFromWindow(
+                    created.startsOn,
+                    created.endsOn,
+                    userDayKey(created.createdAt, restoreTz),
+                  );
+                  return derived ? [{ ...derived, note: null }] : [];
+                })();
+          if (courseRows.length > 0) {
+            await tx.medicationCourse.createMany({
+              data: courseRows.map((c) => ({
+                medicationId: created.id,
+                userId: ownerId,
+                startsOn: c.startsOn,
+                endsOn: c.endsOn,
+                noteEncrypted: c.note ? encryptToBytes(c.note) : null,
+                ...(c.createdAt ? { createdAt: c.createdAt } : {}),
+              })),
+            });
+            const window = projectCourseWindow(courseRows);
+            await tx.medication.update({
+              where: { id: created.id },
+              data: { startsOn: window.startsOn, endsOn: window.endsOn },
+            });
           }
 
           // ── The archived schedule eras, in two passes ────────────────
