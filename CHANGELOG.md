@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.40.0] — 2026-10-04
+
+Back up the encryption key and refuse a key that cannot open the data;
+several courses and custom categories for medications; custom symptoms;
+document reads in the background; sick notes; lab unit refusal and charts
+that follow the source priority.
+
+### Added
+
+- **Encryption key backup step (migration 0365).** Admin step with key id,
+  fingerprint and per-platform guidance (`HEALTHLOG_PLATFORM`), an optional
+  "check my copy" that compares and discards the pasted key, a reminder that
+  returns when the key changes.
+- **Boot key check.** A canary per key id, probed oldest values first across
+  string and Bytes columns; a proven mismatch answers 503
+  `encryption.key_mismatch` everywhere except `/api/health` and
+  `/api/version`, MCP included, and starts no worker; an unproven result
+  serves, warns and re-checks. `ENCRYPTION_KEY_CHECK=warn` as a last resort.
+- **Medication courses and custom categories (#1024, #1041, migration
+  0368).** Several courses per medication; compliance, streak, cadence and
+  dose history count every course and never the gaps; existing dated
+  medications become one course each. Own categories as `custom:<id>` with
+  `categoryLabel`; the runtime category table is now in the schema.
+- **Custom symptoms (#981, migration 0369).** Up to eight definitions, events
+  with a 0 to 10 intensity, a capture kind, one correlation channel per
+  symptom, a Coach block; gated on the Illness module.
+- **Document AI as background runs (#1090, migrations 0366 and 0370).**
+  Index, summary, suggestions and extraction accept `Prefer: respond-async`;
+  the lab scan always runs in the background; `GET /api/ai-runs/{id}`.
+- **`SICK_NOTE` document kind.**
+- **Natural durations (#1101)** in the sleep field.
+
+### Fixed
+
+- **Lab unit mismatch (#1094).** A reading in another unit than its marker is
+  refused (`labs.unit.mismatch`) on every write path; a marker's unit is
+  locked while it has readings (`biomarkers.unit.locked`).
+- **Source priority in series (#1108).** Pulse, HRV and SpO2 series read the
+  ladder's source per day; unranked types keep every source.
+- **Sign-in over plain http (#1097).** Refused with
+  `auth.session.insecure_transport` before a password, code or challenge is
+  used; the sign-in page says so first.
+- **Chart window (#1102).** Ends at the end of today in the profile time zone.
+- **Workouts.** The insight cap survives a delete (migration 0367); a changed
+  `manual:` resubmit updates the workout and its paragraph.
+- **Display.** Clinician decimals in the owner's locale, stated dates east of
+  UTC+12, archive month grouping, lab list columns without a range, icon
+  picker touch targets and labels, symptom entry load errors.
+
+### Changed
+
+- Quick-entry forms load on demand; the four eager route baselines are
+  lowered to the new measurements.
+
 ## [1.39.9] — 2026-10-03
 
 Workouts can be logged by hand, the body fat tile opens its own page, and
