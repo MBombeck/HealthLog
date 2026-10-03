@@ -77,6 +77,11 @@ const PUBLISHED_TO_USERS = [
       "the admin's encryption key backup step, which opens on that platform",
   },
   {
+    name: "ENCRYPTION_KEY_CHECK",
+    shownBy:
+      "the key mismatch page and the start-up log, which offer it as the last resort",
+  },
+  {
     name: "AUDIT_LOG_RETENTION_DAYS",
     shownBy: "the shared-access activity window and the revoke dialog",
   },

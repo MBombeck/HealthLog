@@ -328,6 +328,11 @@
           "example": "compose"
         },
         {
+          "name": "ENCRYPTION_KEY_CHECK",
+          "purpose": "The start-up encryption key check. enforce (default) refuses to serve when the configured key does not open the stored data; warn only logs the finding, names it as a warning on /api/health, serves anyway and records no key until the check passes. A last resort for a refusal the operator is certain is false; it disables a safety check.",
+          "example": "enforce"
+        },
+        {
           "name": "TRUST_PROXY_HOPS",
           "purpose": "Trusted reverse-proxy hop count; the client IP is read that many entries from the right of X-Forwarded-For.",
           "example": "1"

@@ -7657,6 +7657,7 @@
       "fixDatabase": "Oppure fai puntare DATABASE_URL al database che appartiene a questa chiave.",
       "fixFresh": "Oppure ricomincia con un database vuoto. I vecchi dati e i loro backup si leggono solo con la vecchia chiave.",
       "restartNote": "Riavvia HealthLog dopo la modifica.",
+      "lastResort": "Ultima risorsa, solo se sei certo che la chiave sia giusta e nessuna delle tre soluzioni vale: imposta {setting} e riavvia. HealthLog serve comunque e si limita a registrare il problema nel log. Così si disattiva un controllo di sicurezza: con una chiave sbagliata ogni valore cifrato fallisce e i nuovi dati vengono scritti con quella chiave.",
       "codes": "Per chi gestisce il server: le richieste API rispondono 503 con il codice di errore {code}, e /api/health indica il motivo {reason}."
     }
   },

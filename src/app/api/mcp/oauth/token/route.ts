@@ -32,6 +32,7 @@ import { NextRequest } from "next/server";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
+import { refuseOAuthOnKeyMismatch } from "@/lib/boot/key-mismatch-refusal";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { auditLog } from "@/lib/auth/audit";
 import { issueApiToken } from "@/lib/auth/issue-token";
@@ -201,6 +202,10 @@ async function finalizeTokenPair(
 
 export async function POST(request: NextRequest): Promise<Response> {
   return withBackgroundEvent("mcp.oauth.token", async () => {
+    // The boot key check refused this process: mint nothing, write nothing.
+    const refusal = refuseOAuthOnKeyMismatch();
+    if (refusal) return refusal;
+
     // M1 — fail closed without a pinned origin; M4 — honour the operator's
     // global API kill-switch. Either off and the bridge mints no tokens.
     if (!isMcpOriginConfigured() || !(await isApiGloballyEnabled())) {

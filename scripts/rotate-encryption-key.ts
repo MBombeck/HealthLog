@@ -17,6 +17,10 @@
  * non-zero, because an operator reads a zero here as permission to drop the
  * previous key, and "nothing left" and "never looked" must not print alike.
  *
+ * After a complete, error-free run it checks every other configured key id
+ * for remaining values and removes the boot key check's record (canary) of
+ * each id that holds none, naming the columns of each id that still does.
+ *
  * Usage:
  *   ENCRYPTION_KEYS='{"v1":"<old>","v2":"<new>"}' \
  *   ENCRYPTION_ACTIVE_KEY_ID=v2 \
@@ -27,6 +31,7 @@ import { Buffer } from "node:buffer";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { decrypt, encrypt, extractKeyId, getActiveKeyId } from "@/lib/crypto";
+import { retireCanariesWithoutData } from "@/lib/crypto/canary";
 import {
   rotateColumn,
   type CorpusClient,
@@ -1034,6 +1039,30 @@ async function main() {
         `drop the previous key:\n  ${notWalked.join("\n  ")}`,
     );
   }
+
+  // ───── Key-check records of retired key ids ─────
+  // The boot key check keeps one canary per configured key id. Once no
+  // registered column holds a single value under an id, that id's key can
+  // leave ENCRYPTION_KEYS, and its canary goes with it: left behind, it would
+  // refuse a later, different key configured under the same id. Only after a
+  // complete, error-free run; the existence check walks every column itself
+  // rather than trusting the counts above.
+  if (notWalked.length === 0 && totalErrors === 0) {
+    const { removed, remaining } = await retireCanariesWithoutData(prisma);
+    for (const [keyId, columns] of Object.entries(remaining)) {
+      console.log(
+        `\nKey id '${keyId}': values remain in ${columns.length} column(s); ` +
+          `keep its key:\n  ${columns.join("\n  ")}`,
+      );
+    }
+    for (const keyId of removed) {
+      console.log(
+        `\nKey id '${keyId}': no values remain. Its key-check record was ` +
+          `removed; its key can now leave ENCRYPTION_KEYS.`,
+      );
+    }
+  }
+
   await prisma.$disconnect();
   if (notWalked.length > 0) process.exit(4);
   process.exit(totalErrors > 0 ? 3 : 0);

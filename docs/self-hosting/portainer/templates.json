@@ -37,6 +37,12 @@
           "default": "portainer"
         },
         {
+          "name": "ENCRYPTION_KEY_CHECK",
+          "label": "Encryption key check",
+          "description": "enforce refuses to serve when the key does not open the stored data. warn only logs it: a last resort for a refusal you are certain is false; it disables a safety check.",
+          "default": "enforce"
+        },
+        {
           "name": "SESSION_COOKIE_SECURE",
           "label": "Session cookie Secure flag",
           "description": "Set to false for plain-HTTP / LAN access, or login fails. Set to true only behind an HTTPS reverse proxy.",

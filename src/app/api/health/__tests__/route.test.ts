@@ -140,3 +140,26 @@ describe("GET /api/health while the encryption key does not match", () => {
     expect(body).toEqual({ status: "ok" });
   });
 });
+
+describe("GET /api/health under ENCRYPTION_KEY_CHECK=warn", () => {
+  it("names the mismatch as a warning and stays ok", async () => {
+    const { setKeyMismatchWarning } =
+      await import("@/lib/boot/key-mismatch-state");
+    vi.stubEnv("HEALTHLOG_PROCESS_TYPE", "web");
+    getGlobalBoss.mockReturnValue({});
+    setKeyMismatchWarning({
+      keyIds: ["v1"],
+      detectedAt: "2026-10-03T00:00:00Z",
+    });
+    try {
+      const { response, body } = await health();
+      expect(response.status).toBe(200);
+      expect(body).toEqual({
+        status: "ok",
+        warning: "encryption_key_mismatch",
+      });
+    } finally {
+      setKeyMismatchWarning(null);
+    }
+  });
+});

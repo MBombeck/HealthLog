@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import {
+  getKeyMismatchWarning,
   isKeyMismatch,
   KEY_MISMATCH_HEALTH_REASON,
 } from "@/lib/boot/key-mismatch-state";
@@ -31,6 +32,12 @@ export const GET = apiHandler(async () => {
   // it is the one place a catalog install's status page reads.
   const keyMismatch = isKeyMismatch();
   const reason = keyMismatch ? KEY_MISMATCH_HEALTH_REASON : undefined;
+  // Under ENCRYPTION_KEY_CHECK=warn the same finding does not refuse; it is
+  // named as a warning and leaves the status alone.
+  const warning =
+    !keyMismatch && getKeyMismatchWarning()
+      ? KEY_MISMATCH_HEALTH_REASON
+      : undefined;
   const status =
     !keyMismatch &&
     dbOk &&
@@ -51,6 +58,7 @@ export const GET = apiHandler(async () => {
       {
         status,
         ...(reason ? { reason } : {}),
+        ...(warning ? { warning } : {}),
         timestamp: new Date().toISOString(),
         database: dbOk ? "connected" : "disconnected",
         worker: worker.running ? "running" : "stopped",
@@ -63,7 +71,7 @@ export const GET = apiHandler(async () => {
   }
 
   return NextResponse.json(
-    { status, ...(reason ? { reason } : {}) },
+    { status, ...(reason ? { reason } : {}), ...(warning ? { warning } : {}) },
     { status: statusCode, headers: cacheHeaders },
   );
 });

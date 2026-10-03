@@ -50,6 +50,7 @@ import {
   resolveMcpAuthContext,
   SCOPE_HEALTH_READ,
 } from "@/lib/mcp";
+import { refuseOnKeyMismatch } from "@/lib/boot/key-mismatch-refusal";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { annotate } from "@/lib/logging/context";
 import { isModuleEnabled } from "@/lib/modules/gate";
@@ -135,6 +136,12 @@ function readBearer(request: Request): string | null {
 
 async function handleMcp(request: Request): Promise<Response> {
   return withBackgroundEvent("mcp.request", async () => {
+    // 00. KEY CHECK — the boot key check found that the configured encryption
+    //     key does not open this database. The write tools would seal new
+    //     rows under it, so refuse before anything else, as apiHandler does.
+    const refusal = refuseOnKeyMismatch();
+    if (refusal) return refusal;
+
     // 0. ORIGIN — refuse a cross-origin browser request before anything else.
     if (!originAllowed(request)) {
       annotate({ action: { name: "mcp.origin.rejected" } });

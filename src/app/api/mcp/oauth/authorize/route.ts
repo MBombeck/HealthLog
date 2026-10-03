@@ -29,6 +29,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { annotate } from "@/lib/logging/context";
+import { refuseOAuthOnKeyMismatch } from "@/lib/boot/key-mismatch-refusal";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { auditLog } from "@/lib/auth/audit";
 import { getSession } from "@/lib/auth/session";
@@ -344,10 +345,15 @@ function ensureAuthorizeCsp(response: Response): Response {
 }
 
 export async function GET(request: NextRequest): Promise<Response> {
+  // The boot key check refused this process: no grant is issued or stored.
+  const refusal = refuseOAuthOnKeyMismatch();
+  if (refusal) return ensureAuthorizeCsp(refusal);
   return ensureAuthorizeCsp(await authorizeGet(request));
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
+  const refusal = refuseOAuthOnKeyMismatch();
+  if (refusal) return ensureAuthorizeCsp(refusal);
   return ensureAuthorizeCsp(await authorizePost(request));
 }
 

@@ -7657,6 +7657,7 @@
       "fixDatabase": "Albo ustaw DATABASE_URL na bazę danych, która należy do tego klucza.",
       "fixFresh": "Albo zacznij od nowa z pustą bazą. Stare dane i ich kopie można odczytać tylko starym kluczem.",
       "restartNote": "Po zmianie uruchom HealthLog ponownie.",
+      "lastResort": "Ostateczność, tylko jeśli masz pewność, że klucz jest właściwy, a żadna z trzech dróg nie pasuje: ustaw {setting} i uruchom ponownie. HealthLog będzie wtedy działać mimo to i tylko zapisze wynik w logu. To wyłącza kontrolę bezpieczeństwa: przy złym kluczu każda zaszyfrowana wartość zawiedzie, a nowe dane zostaną zapisane tym kluczem.",
       "codes": "Dla administratora: żądania API odpowiadają 503 z kodem błędu {code}, a /api/health podaje powód {reason}."
     }
   },

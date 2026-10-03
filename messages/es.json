@@ -7657,6 +7657,7 @@
       "fixDatabase": "O haz que DATABASE_URL apunte a la base de datos que corresponde a esta clave.",
       "fixFresh": "O empieza de cero con una base de datos vacía. Los datos antiguos y sus copias solo se pueden leer con la clave antigua.",
       "restartNote": "Reinicia HealthLog después del cambio.",
+      "lastResort": "Último recurso, solo si estás seguro de que la clave es correcta y ninguna de las tres opciones sirve: define {setting} y reinicia. HealthLog sirve igualmente y solo registra el hallazgo. Esto desactiva una comprobación de seguridad: con una clave incorrecta falla cada valor cifrado y los datos nuevos se escriben con esa clave.",
       "codes": "Para el administrador: las peticiones a la API responden 503 con el código de error {code}, y /api/health indica el motivo {reason}."
     }
   },

@@ -135,6 +135,11 @@ x-healthlog-env: &healthlog_env
   # compose | truenas | coolify | unraid | portainer. Only chooses which
   # instructions the admin's "Back up your encryption key" step shows first.
   HEALTHLOG_PLATFORM: "${HEALTHLOG_PLATFORM:-}"
+  # enforce (default) | warn. The start-up encryption key check refuses to
+  # serve when the key does not open the stored data; warn only logs it and
+  # serves anyway. A last resort for a refusal you are certain is false: it
+  # disables a safety check. See docs/self-hosting/getting-started.md.
+  ENCRYPTION_KEY_CHECK: "${ENCRYPTION_KEY_CHECK:-}"
   BACKUP_ENCRYPTION_KEY: "${BACKUP_ENCRYPTION_KEY:-}"
   BACKUP_ENCRYPTION_PREVIOUS_KEYS: "${BACKUP_ENCRYPTION_PREVIOUS_KEYS:-}"
   BACKUP_S3_ENDPOINT: "${BACKUP_S3_ENDPOINT:-}"

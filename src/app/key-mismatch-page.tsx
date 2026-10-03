@@ -31,6 +31,11 @@ export function KeyMismatchPage({ locale }: { locale: Locale }) {
         <p className="text-muted-foreground text-sm">
           {t("admin.keyMismatch.restartNote")}
         </p>
+        <p className="text-muted-foreground text-sm">
+          {t("admin.keyMismatch.lastResort", {
+            setting: "ENCRYPTION_KEY_CHECK=warn",
+          })}
+        </p>
         <p className="text-muted-foreground text-xs">
           {t("admin.keyMismatch.codes", {
             code: "encryption.key_mismatch",

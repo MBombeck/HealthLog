@@ -103,6 +103,13 @@ under `v1` (the synthetic id assigned to the existing `ENCRYPTION_KEY`).
    a full `Columns walked` line. Both read the same registry the rotation
    walks.
 
+   A run that walked every column without an error also removes the boot
+   key check's record of each previous key id that no longer holds a single
+   value (`encryption_key_canaries`); the script prints which ids it removed
+   and, for an id that still holds values, the columns that do. With the record
+   gone, the id can later carry a different key without the start-up check
+   refusing it.
+
    A zero only means "nothing left" when the run also says it walked every
    registered column. A zero from a run that skipped columns means "never
    looked", and dropping the old key on it makes those rows permanently

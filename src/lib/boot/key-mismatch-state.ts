@@ -22,10 +22,29 @@ export interface KeyMismatchState {
 }
 
 const STATE_SYMBOL = Symbol.for("healthlog.encryptionKeyMismatch");
+const WARNING_SYMBOL = Symbol.for("healthlog.encryptionKeyMismatchWarning");
 
 type GlobalWithState = typeof globalThis & {
   [STATE_SYMBOL]?: KeyMismatchState | null;
+  [WARNING_SYMBOL]?: KeyMismatchState | null;
 };
+
+/**
+ * `ENCRYPTION_KEY_CHECK`: `enforce` (the default, and what any other value
+ * means) refuses on a mismatch; `warn` runs the check, logs it, reports it as
+ * a warning on `/api/health`, and serves anyway. `warn` is the operator's way
+ * out of a refusal they are certain is false at a first boot, where there is
+ * no recorded key yet whose row they could delete. It disables a safety
+ * check: a process with the wrong key then serves errors on every encrypted
+ * value and writes new rows under that key.
+ */
+export type KeyCheckMode = "enforce" | "warn";
+
+export function getKeyCheckMode(): KeyCheckMode {
+  return process.env.ENCRYPTION_KEY_CHECK?.trim().toLowerCase() === "warn"
+    ? "warn"
+    : "enforce";
+}
 
 /** The paths that keep answering while the process refuses everything else. */
 export const KEY_MISMATCH_EXEMPT_PATHS: ReadonlySet<string> = new Set([
@@ -49,4 +68,16 @@ export function isKeyMismatch(): boolean {
 
 export function setKeyMismatchState(state: KeyMismatchState | null): void {
   (globalThis as GlobalWithState)[STATE_SYMBOL] = state;
+}
+
+/**
+ * A mismatch the check found while `ENCRYPTION_KEY_CHECK=warn`: recorded so
+ * `/api/health` can name it as a warning, never read by the refusal.
+ */
+export function getKeyMismatchWarning(): KeyMismatchState | null {
+  return (globalThis as GlobalWithState)[WARNING_SYMBOL] ?? null;
+}
+
+export function setKeyMismatchWarning(state: KeyMismatchState | null): void {
+  (globalThis as GlobalWithState)[WARNING_SYMBOL] = state;
 }

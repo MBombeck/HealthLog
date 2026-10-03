@@ -7657,6 +7657,7 @@
       "fixDatabase": "Oder lass DATABASE_URL auf die Datenbank zeigen, die zu diesem Schlüssel gehört.",
       "fixFresh": "Oder starte neu mit einer leeren Datenbank. Die alten Daten und ihre Sicherungen lassen sich nur mit dem alten Schlüssel lesen.",
       "restartNote": "Starte HealthLog nach der Änderung neu.",
+      "lastResort": "Letzter Ausweg, nur wenn du sicher bist, dass der Schlüssel stimmt, und keiner der drei Wege passt: setze {setting} und starte neu. HealthLog liefert dann trotzdem aus und schreibt den Befund nur ins Log. Damit ist eine Sicherheitsprüfung abgeschaltet: Mit einem falschen Schlüssel scheitert jeder verschlüsselte Wert, und neue Daten werden unter diesem Schlüssel geschrieben.",
       "codes": "Für den Betrieb: API-Anfragen antworten mit 503 und dem Fehlercode {code}, /api/health meldet den Grund {reason}."
     }
   },

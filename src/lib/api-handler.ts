@@ -53,11 +53,7 @@ import {
   assertRecordSessionFence,
   attachRecordContextEcho,
 } from "./sharing/record-session-fence";
-import {
-  isKeyMismatch,
-  KEY_MISMATCH_ERROR_CODE,
-  KEY_MISMATCH_EXEMPT_PATHS,
-} from "./boot/key-mismatch-state";
+import { refuseOnKeyMismatch } from "./boot/key-mismatch-refusal";
 import {
   capturedRateLimit,
   rateLimitResponseHeaders,
@@ -266,17 +262,9 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
           // The boot key check found that the configured encryption key
           // cannot open this database. Refuse before auth, before the
           // handler: nothing here may read or write encrypted data.
-          if (isKeyMismatch() && !KEY_MISMATCH_EXEMPT_PATHS.has(url.pathname)) {
-            annotate({ action: { name: "encryption.key_mismatch.refused" } });
-            response = NextResponse.json(
-              {
-                data: null,
-                error:
-                  "The server's encryption key does not match its database. The operator has to restore the original key or point the server at the matching database.",
-                meta: { errorCode: KEY_MISMATCH_ERROR_CODE },
-              },
-              { status: 503, headers: { "Retry-After": "300" } },
-            );
+          const refusal = refuseOnKeyMismatch(url.pathname);
+          if (refusal) {
+            response = refusal;
           } else {
             response = await handler(...args);
           }

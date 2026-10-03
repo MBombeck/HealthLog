@@ -267,6 +267,43 @@ every API request answers `503` with `meta.errorCode`
 Restore the original key, point `DATABASE_URL` at the matching database, or
 start with an empty database; then restart.
 
+The check remembers the key it first saw for each key id in the table
+`encryption_key_canaries`. Before it records a key, it reads the oldest
+encrypted values in the database and records the key only if they open, or
+if the database holds no encrypted value under that key id at all. When the
+stored data proves neither (a single unreadable value, the oldest values
+failing while newer ones open, or a probe that ran out of time), the app
+keeps serving, records nothing, logs a warning that starts with
+`[boot] Encryption key check inconclusive`, and checks again at the next
+start.
+
+If you are certain the configured key is the one your data was written
+with, and the check still refuses because it recorded a different key
+earlier, reset the check for that key id and restart. The refusal in the log
+prints the exact statement; for the default key id it is:
+
+```bash
+docker compose exec -T db psql -U healthlog healthlog \
+  -c "DELETE FROM encryption_key_canaries WHERE key_id = 'v1';"
+docker compose restart app
+```
+
+The next start probes the stored data again and records the key only if
+that data opens with it. Do this only when you are sure: if the key is in
+fact wrong, the app serves errors on every encrypted value instead of the
+one clear refusal. After a key rotation the rotation script removes the
+record of a retired key id itself, once it reports that no values remain
+under that id.
+
+At a first start there is no record yet, so there is nothing to reset. If
+the check refuses there and you are certain the key is right, the last
+resort is `ENCRYPTION_KEY_CHECK=warn` (default `enforce`): the check still
+runs and logs its full result, `/api/health` names it as
+`warning: "encryption_key_mismatch"` without failing, requests are served,
+and no key is recorded while the check does not pass. This disables a
+safety check. With a wrong key every encrypted value fails and new rows are
+written under that key, so remove the setting once the key is confirmed.
+
 ## Backup and restore
 
 Your database is the only stateful piece — back it up, and back up the

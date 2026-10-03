@@ -16,6 +16,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { annotate } from "@/lib/logging/context";
+import { refuseOAuthOnKeyMismatch } from "@/lib/boot/key-mismatch-refusal";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
@@ -68,6 +69,10 @@ function oauthError(
 
 export async function POST(request: NextRequest): Promise<Response> {
   return withBackgroundEvent("mcp.oauth.register", async () => {
+    // The boot key check refused this process: mint nothing, write nothing.
+    const refusal = refuseOAuthOnKeyMismatch();
+    if (refusal) return refusal;
+
     const rl = await checkAuthSurfaceRateLimit(
       request,
       "mcp:oauth:register",

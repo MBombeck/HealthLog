@@ -7657,6 +7657,7 @@
       "fixDatabase": "Ou fais pointer DATABASE_URL vers la base de données qui correspond à cette clé.",
       "fixFresh": "Ou repars de zéro avec une base vide. Les anciennes données et leurs sauvegardes ne se lisent qu'avec l'ancienne clé.",
       "restartNote": "Redémarre HealthLog après la modification.",
+      "lastResort": "Dernier recours, seulement si tu es sûr que la clé est la bonne et qu'aucune des trois solutions ne convient : définis {setting} et redémarre. HealthLog sert alors quand même et se contente de journaliser le constat. Cela désactive une vérification de sécurité : avec une mauvaise clé, chaque valeur chiffrée échoue et les nouvelles données sont écrites sous cette clé.",
       "codes": "Pour l'administrateur : les requêtes API répondent 503 avec le code d'erreur {code}, et /api/health indique la raison {reason}."
     }
   },

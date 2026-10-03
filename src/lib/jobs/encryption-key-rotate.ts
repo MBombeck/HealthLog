@@ -32,6 +32,10 @@ import {
   type CorpusClient,
 } from "@/lib/crypto/encryption-corpus";
 import { getWorkerPrisma } from "@/lib/jobs/reminder/shared";
+import {
+  retireCanariesWithoutData,
+  type CanaryClient,
+} from "@/lib/crypto/canary";
 
 export const ENCRYPTION_KEY_ROTATE_QUEUE = "encryption-key-rotate";
 export const ENCRYPTION_KEY_ROTATE_CONCURRENCY = 1;
@@ -62,9 +66,20 @@ export async function runEncryptionKeyRotation(
   totalErrors: number;
   totalDropped: number;
   stoppedEarly: boolean;
+  /** Key ids whose boot key-check record this run removed. */
+  retiredKeyIds: string[];
 }> {
   const prisma = getWorkerPrisma();
   const out = await rotateCorpus(prisma as unknown as CorpusClient, shouldStop);
+  // A complete, error-free pass: remove the boot key check's record of every
+  // other key id that no longer holds a value in any registered column, so
+  // its key can leave ENCRYPTION_KEYS and the id can never refuse a later,
+  // different key. The existence check walks every column itself.
+  const retiredKeyIds =
+    !out.stoppedEarly && out.totalErrors === 0
+      ? (await retireCanariesWithoutData(prisma as unknown as CanaryClient))
+          .removed
+      : [];
   return {
     activeKeyId: out.activeKeyId,
     totalScanned: out.totalScanned,
@@ -72,6 +87,7 @@ export async function runEncryptionKeyRotation(
     totalErrors: out.totalErrors,
     totalDropped: out.totalDropped,
     stoppedEarly: out.stoppedEarly,
+    retiredKeyIds,
   };
 }
 
@@ -98,6 +114,7 @@ export async function handleEncryptionKeyRotate(
           rotated: result.totalRotated,
           errors: result.totalErrors,
           dropped: result.totalDropped,
+          retiredKeyIds: result.retiredKeyIds,
         },
       });
       // Per-row errors are the fail-closed skip of a row under a key the

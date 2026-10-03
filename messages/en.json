@@ -7657,6 +7657,7 @@
       "fixDatabase": "Or point DATABASE_URL at the database that belongs to this key.",
       "fixFresh": "Or start fresh with an empty database. The old data and its backups can only be read with the old key.",
       "restartNote": "Restart HealthLog after the change.",
+      "lastResort": "Last resort, only if you are certain the key is right and none of the three applies: set {setting} and restart. HealthLog then serves anyway and only logs the finding. This disables a safety check: with a wrong key every encrypted value fails and new data is written under that key.",
       "codes": "For the operator: API requests answer 503 with error code {code}, and /api/health reports reason {reason}."
     }
   },
