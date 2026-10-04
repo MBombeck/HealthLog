@@ -467,13 +467,15 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    # Conservative memory ceiling for a small host. HEALTHLOG_PROCESS_TYPE=all
-    # bundles the AI/rollup worker into this same process, and unbounded that
-    # workload can grow large enough under load to starve Postgres of memory
-    # on a shared host. 1g is a starting point, not a measured ceiling — raise
-    # it with APP_MEMORY_LIMIT in .env if the app gets OOM-killed under real
-    # load.
-    mem_limit: "${APP_MEMORY_LIMIT:-1g}"
+    # Memory ceiling for the app. HEALTHLOG_PROCESS_TYPE=all bundles the
+    # AI/rollup/backup worker into this same process, and unbounded that
+    # workload can grow large enough to starve Postgres on a shared host.
+    # Node sizes its heap from this limit: 1g gives a 524 MB heap, which a
+    # long-used account fills in normal operation, so garbage collection
+    # stalls requests for seconds and a weekly backup can crash the process.
+    # 1536m gives 792 MB. On a host with 2 GB or less, lower it with
+    # APP_MEMORY_LIMIT in .env; on a busy instance, raise it.
+    mem_limit: "${APP_MEMORY_LIMIT:-1536m}"
     healthcheck:
       test:
         [
@@ -511,7 +513,7 @@ services:
   #     options:
   #       max-size: "10m"
   #       max-file: "3"
-  #   mem_limit: "${WORKER_MEMORY_LIMIT:-1g}"
+  #   mem_limit: "${WORKER_MEMORY_LIMIT:-1536m}"
 
   db:
     # Pinned to the concrete minor instead of the floating `16-alpine`
