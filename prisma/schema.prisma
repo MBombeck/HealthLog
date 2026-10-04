@@ -765,6 +765,7 @@ model User {
   dataBackups                               DataBackup[]
   backupRestoreJobs                         BackupRestoreJob[]
   offhostBackupState                        OffhostBackupState?
+  backupPassAttempts                        BackupPassAttempt[]
   achievements                              UserAchievement[]
   recommendationFeedback                    RecommendationFeedback[]
   idempotencyKeys                           IdempotencyKey[]
@@ -5160,7 +5161,7 @@ model DataBackup {
   /// What the restore preview shows for this copy, worked out while the copy
   /// was written (`src/lib/export/backup-preview.ts`): the section counts, the
   /// schema version, and the inner key ids with the sections they sit in and
-  /// one sample value each, so the key verdict is taken again against this
+  /// the shortest value of each section, so the key verdict is taken again against this
   /// server's keys every time it is read. It names the copy it describes and
   /// is ignored once the copy changes. Plain JSON on purpose: counts and dates
   /// only, and the samples are ciphertext already, which a key rotation must
@@ -5333,6 +5334,32 @@ model OffhostBackupState {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("offhost_backup_state")
+}
+
+/// Where one account stands in a backup pass that walks every account (the
+/// weekly copy, `data-backup`, and the nightly off-host upload,
+/// `data-backup-offhost`): when the pass last started the account and when it
+/// last got past it, stored or failed in a way the pass caught. A start newer
+/// than the finish, with no run of that pass active, is an attempt the
+/// process died under: a restart, or a container killed for memory by a
+/// record too large for it. The pass takes such an account last, so one
+/// account cannot keep every account after it from a copy, and the admin
+/// backups page names it.
+/// Consumers: `orderInterruptedLast()` in both passes, and
+/// `readBackupPassActivity()` behind `GET /api/admin/backups`.
+model BackupPassAttempt {
+  userId     String    @map("user_id")
+  /// The pass's queue name: `data-backup` or `data-backup-offhost`.
+  pass       String
+  /// When the pass last started on this account.
+  startedAt  DateTime  @map("started_at")
+  /// When the pass last got past it. NULL until it has once.
+  finishedAt DateTime? @map("finished_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, pass])
+  @@map("backup_pass_attempts")
 }
 
 /// Per application key id, when the nightly off-host run last put an object

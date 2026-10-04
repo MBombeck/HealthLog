@@ -7436,6 +7436,12 @@
         "scheduleFailedDescription": "{when} : {reason}",
         "scheduleFailedNoReason": "aucune raison enregistrée",
         "scheduleRemedy": "Lancez une sauvegarde maintenant et vérifiez qu'une nouvelle ligne apparaît. Si elle échoue à nouveau, le journal du worker indique le compte sur lequel elle s'est arrêtée.",
+        "activity": {
+          "running": "En cours depuis {when}.",
+          "interruptedTitle": "Une exécution s'est arrêtée en cours de route sans reprendre",
+          "interruptedAccount": "{username} : commencée {when}, jamais terminée",
+          "interruptedRemedy": "L'application a très probablement redémarré ou manqué de mémoire pendant l'écriture de cette copie. La prochaine exécution traite ces comptes en dernier, afin que tous les autres reçoivent leur copie d'abord. Si cela se reproduit, donnez plus de mémoire au conteneur."
+        },
         "download": "Télécharger",
         "downloadAria": "Télécharger la sauvegarde de {username}",
         "downloadFailed": "Échec du téléchargement",

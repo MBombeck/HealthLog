@@ -7415,6 +7415,12 @@
         "scheduleFailedDescription": "{when}: {reason}",
         "scheduleFailedNoReason": "기록된 사유 없음",
         "scheduleRemedy": "지금 백업을 실행하고 새 항목이 나타나는지 확인하세요. 다시 실패하면 워커 로그에 중단된 계정이 표시됩니다.",
+        "activity": {
+          "running": "{when}부터 실행 중입니다.",
+          "interruptedTitle": "실행이 도중에 멈추고 다시 돌아오지 않았습니다",
+          "interruptedAccount": "{username}: {when}에 시작, 끝나지 않음",
+          "interruptedRemedy": "이 사본을 쓰는 동안 앱이 다시 시작되었거나 메모리가 부족했을 가능성이 큽니다. 다음 실행은 이 계정들을 마지막에 처리하므로 다른 계정이 먼저 사본을 받습니다. 계속 반복되면 컨테이너에 메모리를 더 할당하세요."
+        },
         "download": "다운로드",
         "downloadAria": "{username}의 백업 다운로드",
         "downloadFailed": "다운로드하지 못했어요",

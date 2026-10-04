@@ -76,6 +76,9 @@ interface FailingQueueRow {
  */
 const TIMEOUT_MESSAGE = /^(job timed out|handler execution exceeded \d+s)$/;
 
+/** What pg-boss writes when a job with a heartbeat stopped sending one. */
+const HEARTBEAT_MESSAGE = /^job heartbeat timeout$/;
+
 /**
  * Say what a bare timeout means. "job timed out" alone sent an operator
  * nowhere: pg-boss writes the same words for a pass that was too slow for its
@@ -111,6 +114,13 @@ function presentError(
   if (trimmed.length === 0) return "";
   if (TIMEOUT_MESSAGE.test(trimmed))
     return explainTimeout(trimmed, expireSeconds);
+  if (HEARTBEAT_MESSAGE.test(trimmed)) {
+    return (
+      `${trimmed}: the process running it stopped answering, most often ` +
+      `because the app restarted or ran out of memory while it ran; a restart ` +
+      `shows in the container's restart count and log.`
+    );
+  }
   const redacted = redactSecrets(trimmed);
   return redacted.length > MAX_ERROR_CHARS
     ? `${redacted.slice(0, MAX_ERROR_CHARS)}…`
@@ -335,6 +345,30 @@ export async function readActiveJobsStartedBefore(
         startedAt: row.started_on!.toISOString(),
         expireSeconds: row.expire_seconds,
       }));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * When the run of `queue` that is in progress now started, or null when none
+ * is (or the queue schema cannot be read). The oldest active job, so a retry
+ * of a run reads as the run it continues only once it has been picked up.
+ */
+export async function readQueueRunningSince(
+  queue: string,
+): Promise<string | null> {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ started_on: Date | null }>>`
+      SELECT started_on
+      FROM pgboss.job
+      WHERE name = ${queue}
+        AND state = 'active'
+        AND started_on IS NOT NULL
+      ORDER BY started_on ASC
+      LIMIT 1
+    `;
+    return rows[0]?.started_on?.toISOString() ?? null;
   } catch {
     return null;
   }

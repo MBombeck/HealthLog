@@ -35,6 +35,13 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { createRawStreamEncryptor, decryptRawStream } from "@/lib/crypto";
 import { createBackupKeyIdTextScanner } from "@/lib/export/backup-key-ids";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
+import {
+  markBackupAttemptFinished,
+  markBackupAttemptStarted,
+  orderInterruptedLast,
+  readInterruptedBackupAttempts,
+} from "@/lib/jobs/backup-pass-attempts";
+import { BACKUP_HEARTBEAT_SECONDS } from "@/lib/jobs/data-backup-policy";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { envValue } from "@/lib/env";
 
@@ -50,6 +57,18 @@ const TAG_LENGTH = 16;
  * the same budget and a lock (`lockedPass`) leaves room for the night's pass.
  */
 export const OFFHOST_BACKUP_EXPIRE_SECONDS = 4 * 60 * 60;
+
+export const OFFHOST_BACKUP_QUEUE = "data-backup-offhost";
+
+/**
+ * What the nightly schedule sends with: the four hours above, and the
+ * heartbeat that notices a process that died under the pass within minutes
+ * rather than at the end of them (`BACKUP_HEARTBEAT_SECONDS`).
+ */
+export const OFFHOST_BACKUP_SEND_OPTIONS = {
+  expireInSeconds: OFFHOST_BACKUP_EXPIRE_SECONDS,
+  heartbeatSeconds: BACKUP_HEARTBEAT_SECONDS,
+} as const;
 
 export interface OffhostBackupConfig {
   endpoint: string;
@@ -909,10 +928,17 @@ export async function runOffhostBackup(
   // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: off-host object key date, the name the restore drill and the purge look up
   const dateKey = (runStartedAt ?? now).toISOString().slice(0, 10);
 
-  const users = await prisma.user.findMany({
-    select: { id: true },
-    orderBy: { id: "asc" },
-  });
+  // By id, with an account whose last walk never came back behind the rest:
+  // a record that killed the process once would otherwise lead every retry
+  // and keep every account after it out of the bucket
+  // (`backup-pass-attempts.ts`).
+  const users = orderInterruptedLast(
+    await prisma.user.findMany({
+      select: { id: true },
+      orderBy: { id: "asc" },
+    }),
+    await readInterruptedBackupAttempts(prisma, OFFHOST_BACKUP_QUEUE),
+  );
   const doneThisRun = new Set<string>();
   if (runStartedAt) {
     const done = await prisma.offhostBackupState.findMany({
@@ -946,6 +972,12 @@ export async function runOffhostBackup(
     // admin encryption view uses them to say how long a retired key is still
     // needed for what is in the bucket.
     const keyScanner = createBackupKeyIdTextScanner();
+    await markBackupAttemptStarted(
+      prisma,
+      OFFHOST_BACKUP_QUEUE,
+      user.id,
+      accountStartedAt,
+    );
     try {
       objectBytes = await uploadEncryptedBackup(
         s3,
@@ -998,6 +1030,10 @@ export async function runOffhostBackup(
       evt?.addWarning(
         `offhost-backup user ${user.id} failed: ${message.slice(0, 200)}`,
       );
+    } finally {
+      // Past this account, whatever the outcome: only a process that died
+      // under it leaves the start without a finish.
+      await markBackupAttemptFinished(prisma, OFFHOST_BACKUP_QUEUE, user.id);
     }
 
     // The per-account ledger, and deliberately NOT inside the upload's `try`.

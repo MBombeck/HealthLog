@@ -262,6 +262,49 @@ describe("runOffhostBackup", () => {
     expect(first.create.lastSuccessAt).toBeInstanceOf(Date);
   });
 
+  it("takes an account whose last attempt never came back last", async () => {
+    const s3 = makeS3Mock();
+    const attempts = {
+      findMany: vi.fn().mockResolvedValue([
+        // u1's last walk started and never finished: the process died
+        // under it, and walking by id would put it first again.
+        {
+          userId: "u1",
+          startedAt: new Date("2026-05-07T03:00:00Z"),
+          finishedAt: null,
+        },
+      ]),
+      upsert: vi.fn().mockResolvedValue({}),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    };
+    const prisma = {
+      ...purgeLedgerMocks(),
+      offhostBackupState: { upsert: vi.fn() },
+      backupPassAttempt: attempts,
+      user: {
+        count: vi.fn().mockResolvedValue(1),
+        findMany: vi.fn().mockResolvedValue([{ id: "u1" }, { id: "u2" }]),
+      },
+    };
+
+    const report = await runOffhostBackup(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma as any,
+      s3,
+      new Date("2026-05-08T03:00:00Z"),
+    );
+    expect(report.uploaded).toBe(2);
+    expect(s3.putStream.mock.calls.map(([key]) => key)).toEqual([
+      "2026-05-08/user-u2.json.enc",
+      "2026-05-08/user-u1.json.enc",
+    ]);
+    expect(attempts.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { pass: "data-backup-offhost" } }),
+    );
+    expect(attempts.upsert).toHaveBeenCalledTimes(2);
+    expect(attempts.updateMany).toHaveBeenCalledTimes(2);
+  });
+
   it("takes back the copy of an account deleted while it was written", async () => {
     const s3 = makeS3Mock();
     const ledger = purgeLedgerMocks();

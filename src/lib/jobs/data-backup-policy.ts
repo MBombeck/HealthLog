@@ -34,6 +34,22 @@
 
 export const DATA_BACKUP_QUEUE = "data-backup";
 
+/**
+ * How long a backup job may go without a sign of life before pg-boss fails it
+ * (and retries it, within `retryLimit`). The worker refreshes the heartbeat
+ * every half of this while the handler runs, so only a process that died under
+ * the job stops it: a restart, or a container killed for memory. Without it
+ * such a job sat `active` until its expiry, two hours for this pass and four
+ * for the off-host one, and the admin page showed nothing wrong in between.
+ *
+ * Five minutes rather than pg-boss's floor of ten seconds: the refresh is a
+ * timer on the event loop, and serialising one large section of a record can
+ * hold the loop for a while. A refresh every two and a half minutes survives
+ * that; a crash is still noticed at the next supervision tick after five.
+ */
+export const BACKUP_HEARTBEAT_SECONDS = 5 * 60;
+
 export const DATA_BACKUP_SEND_OPTIONS = {
   expireInSeconds: 2 * 60 * 60,
+  heartbeatSeconds: BACKUP_HEARTBEAT_SECONDS,
 } as const;

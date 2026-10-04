@@ -157,6 +157,15 @@ describe("restore preview kept with the copy", () => {
     const row = await prisma.dataBackup.findFirstOrThrow({
       where: { userId: admin.id, type: "WEEKLY_AUTO" },
     });
+    // The pass marked the account started and then finished: only a process
+    // that died under it would leave the start alone.
+    const attempt = await prisma.backupPassAttempt.findUniqueOrThrow({
+      where: { userId_pass: { userId: admin.id, pass: "data-backup" } },
+    });
+    expect(attempt.finishedAt).not.toBeNull();
+    expect(attempt.finishedAt!.getTime()).toBeGreaterThanOrEqual(
+      attempt.startedAt.getTime(),
+    );
     expect(row.preview).toMatchObject({
       version: 1,
       copy: `chunks:${row.chunkStreamId}:${row.chunkCount}`,

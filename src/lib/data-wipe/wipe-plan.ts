@@ -242,6 +242,9 @@ export const WIPE_MODELS = [
   // (`requestOffhostPurge`); this row, saying when they were written, is about
   // this account and goes with it.
   "OffhostBackupState",
+  // Where this account stands in the two backup passes. About this account,
+  // and meaningless without it.
+  "BackupPassAttempt",
   "AuditLog",
   "ConsentReceipt",
   "UserKnownDevice",

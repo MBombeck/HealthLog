@@ -36,7 +36,10 @@ import {
 } from "@/lib/jobs/pr-detection";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { lockedPass, WHOLE_PASS } from "@/lib/jobs/long-pass";
-import { OFFHOST_BACKUP_EXPIRE_SECONDS } from "@/lib/jobs/offhost-backup";
+import {
+  OFFHOST_BACKUP_QUEUE,
+  OFFHOST_BACKUP_SEND_OPTIONS,
+} from "@/lib/jobs/offhost-backup";
 import {
   MEDICATION_INVENTORY_EXPIRE_QUEUE,
   MEDICATION_INVENTORY_EXPIRE_CRON,
@@ -291,7 +294,6 @@ const AUDIT_LOG_CLEANUP_CRON = "15 3 * * *"; // daily at 03:15 (Europe/Berlin)
 
 const INTAKE_SLOT_DEDUP_CRON = "28 3 * * *";
 
-const OFFHOST_BACKUP_QUEUE = "data-backup-offhost";
 // 02:30 Europe/Berlin — runs after audit-log/idempotency cleanups so old
 // rows are gone before they're snapshotted, but before the existing
 // in-DB DATA_BACKUP at 03:00 (Sundays only) so the off-host copy is
@@ -568,11 +570,7 @@ const schedules: ScheduleEntry[] = [
     STEP_UP_ELEVATION_CLEANUP_CRON,
     cronIsTheRetry,
   ],
-  [
-    OFFHOST_BACKUP_QUEUE,
-    OFFHOST_BACKUP_CRON,
-    { expireInSeconds: OFFHOST_BACKUP_EXPIRE_SECONDS },
-  ],
+  [OFFHOST_BACKUP_QUEUE, OFFHOST_BACKUP_CRON, OFFHOST_BACKUP_SEND_OPTIONS],
   [RESTORE_DRILL_QUEUE, RESTORE_DRILL_CRON],
   // Nightly backstop for the purge the deletion kicks straight away: a
   // request the bucket refused, or one written while the queue was down.

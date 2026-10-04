@@ -25,9 +25,14 @@ import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { DATA_BACKUP_QUEUE } from "@/lib/jobs/data-backup-policy";
-import { readLastQueueRun } from "@/lib/jobs/job-failures";
+import {
+  readLastQueueRun,
+  readQueueRunningSince,
+} from "@/lib/jobs/job-failures";
+import { readBackupPassActivity } from "@/lib/jobs/backup-pass-attempts";
 import { summariseBackupSchedule } from "@/lib/jobs/backup-schedule-status";
 import {
+  OFFHOST_BACKUP_QUEUE,
   offhostBackupConfigured,
   probeOffhostLifecycle,
 } from "@/lib/jobs/offhost-backup";
@@ -177,6 +182,14 @@ export const GET = apiHandler(async () => {
       lastAttemptAt: { not: null },
     },
   };
+  const [weeklyRunningSince, offhostRunningSince] = await Promise.all([
+    readQueueRunningSince(DATA_BACKUP_QUEUE),
+    readQueueRunningSince(OFFHOST_BACKUP_QUEUE),
+  ]);
+  const [scheduleActivity, offhostActivity] = await Promise.all([
+    readBackupPassActivity(prisma, DATA_BACKUP_QUEUE, weeklyRunningSince),
+    readBackupPassActivity(prisma, OFFHOST_BACKUP_QUEUE, offhostRunningSince),
+  ]);
   const [purgeCount, oldestPurge, lifecycle] = await Promise.all([
     prisma.offhostPurgeRequest.count({ where: stillInBucket }),
     prisma.offhostPurgeRequest.findFirst({
@@ -201,8 +214,10 @@ export const GET = apiHandler(async () => {
       lastRun: await readLastQueueRun(DATA_BACKUP_QUEUE),
       now,
     }),
+    scheduleActivity,
     offhost: {
       configured,
+      activity: offhostActivity,
       periodHours: OFFHOST_BACKUP_PERIOD_HOURS,
       // An unconfigured host has nothing to list, and the card says so rather
       // than painting an empty table that reads as "no problems".

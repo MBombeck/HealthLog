@@ -252,6 +252,22 @@ A run where SOME account got a copy still succeeds, with the rest counted in
 `offhost_backup_failed`. Failing the whole queue over one account's object
 would re-upload everybody's on every retry.
 
+### A run the process died under
+
+Both backup jobs carry a pg-boss heartbeat of five minutes. While a run is
+alive the worker refreshes it; a run whose process died (a restart, or a
+container killed for memory) stops refreshing, and pg-boss fails the job with
+`job heartbeat timeout` within minutes instead of leaving it `active` until its
+two- or four-hour expiry. The retries the queue already allows then pick it up.
+
+Each pass also notes when it started and when it got past every account
+(`backup_pass_attempts`). An account whose last attempt started and never
+finished is the one the process died under, and the next run takes it last, so
+one record too large for the container cannot keep every account after it from
+a copy. **Admin console → Backups** shows when the run in progress started and
+names such an account under both the weekly and the off-host card. Seeing the
+same account there twice means it needs more memory than the container has.
+
 ### Which account has no copy
 
 The counts above say how many accounts were uploaded, never which. An account

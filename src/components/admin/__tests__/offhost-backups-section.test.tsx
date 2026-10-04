@@ -24,6 +24,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { OffhostBackupsSection } from "../offhost-backups-section";
 
 const QUIET = {
+  activity: { runningSince: null, interrupted: [] },
   pendingDeletions: { count: 0, oldestRequestedAt: null, lastFailure: null },
   lifecycle: { state: "configured" as const, expirationDays: 30 },
 };
@@ -126,6 +127,7 @@ describe("<OffhostBackupsSection>", () => {
       configured: true,
       periodHours: 24,
       rows: [],
+      activity: { runningSince: null, interrupted: [] },
       pendingDeletions: {
         count: 2,
         oldestRequestedAt: "2026-09-20T10:00:00.000Z",
@@ -148,5 +150,27 @@ describe("<OffhostBackupsSection>", () => {
     });
     expect(html).toContain("after 30 days");
     expect(html).not.toContain('data-slot="offhost-pending-deletions"');
+  });
+
+  it("names an account a run died under, and says since when one runs", () => {
+    const html = render({
+      configured: true,
+      periodHours: 24,
+      rows: [],
+      ...QUIET,
+      activity: {
+        runningSince: "2026-10-04T02:30:00.000Z",
+        interrupted: [
+          {
+            userId: "u1",
+            username: "account-one",
+            startedAt: "2026-10-03T02:31:00.000Z",
+          },
+        ],
+      },
+    });
+    expect(html).toContain('data-slot="backup-pass-running"');
+    expect(html).toContain('data-interrupted-username="account-one"');
+    expect(html).toContain("never finished");
   });
 });

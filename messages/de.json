@@ -7436,6 +7436,12 @@
         "scheduleFailedDescription": "{when}: {reason}",
         "scheduleFailedNoReason": "kein Grund aufgezeichnet",
         "scheduleRemedy": "Starte jetzt eine Sicherung und prüfe, ob eine frische Zeile erscheint. Schlägt sie erneut fehl, nennt das Worker-Protokoll das Konto, an dem sie stehen geblieben ist.",
+        "activity": {
+          "running": "Läuft seit {when}.",
+          "interruptedTitle": "Ein Lauf ist mittendrin abgebrochen und nicht zurückgekehrt",
+          "interruptedAccount": "{username}: begonnen {when}, nie beendet",
+          "interruptedRemedy": "Wahrscheinlich wurde die App neu gestartet oder ihr ging beim Schreiben dieser Kopie der Speicher aus. Der nächste Lauf nimmt diese Konten zuletzt, damit alle anderen zuerst ihre Kopie bekommen. Passiert es wieder, gib dem Container mehr Speicher."
+        },
         "download": "Herunterladen",
         "downloadAria": "Backup für {username} herunterladen",
         "downloadFailed": "Download fehlgeschlagen",

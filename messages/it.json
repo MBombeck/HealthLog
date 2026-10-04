@@ -7436,6 +7436,12 @@
         "scheduleFailedDescription": "{when}: {reason}",
         "scheduleFailedNoReason": "nessun motivo registrato",
         "scheduleRemedy": "Avvia subito un backup e verifica che compaia una riga nuova. Se fallisce di nuovo, il log del worker indica l'account su cui si è fermato.",
+        "activity": {
+          "running": "In corso dal {when}.",
+          "interruptedTitle": "Un'esecuzione si è interrotta a metà e non è più ripartita",
+          "interruptedAccount": "{username}: iniziata {when}, mai terminata",
+          "interruptedRemedy": "Molto probabilmente l'app si è riavviata o ha esaurito la memoria mentre scriveva questa copia. La prossima esecuzione prende questi account per ultimi, così tutti gli altri ricevono prima la loro copia. Se succede di nuovo, assegna più memoria al container."
+        },
         "download": "Scarica",
         "downloadAria": "Scarica il backup di {username}",
         "downloadFailed": "Download non riuscito",
