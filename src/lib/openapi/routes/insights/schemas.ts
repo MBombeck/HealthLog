@@ -18,7 +18,7 @@ import {
   SPARKLINE_MAX_POINTS,
 } from "@/lib/insights/derived/types";
 import { ANALYTICS_RANGES } from "@/lib/analytics/range-delta";
-import { PROVIDER_CHAIN_TYPES } from "@/lib/ai/provider-chain";
+import { providerChainPutSchema } from "@/lib/validations/ai-provider";
 import { PERIOD_DAYS } from "@/lib/insights/narrative/period-narrative";
 import { aiCapabilityState } from "../profile";
 
@@ -2531,36 +2531,11 @@ export const providerChainResponse = z
       "The account's AI-provider chain as the settings surface reads it. Provider TYPES and boolean state only — no key, token or account id is ever on this wire.",
   });
 
-export const providerChainPutRequest = z
-  .object({
-    chain: z
-      .array(
-        z.object({
-          providerType: z
-            .enum(PROVIDER_CHAIN_TYPES as unknown as [string, ...string[]])
-            .describe(
-              "Closed allow-list. The mock provider is excluded from it structurally, which is what keeps production from reaching one.",
-            ),
-          priority: z
-            .number()
-            .int()
-            .optional()
-            .describe(
-              "ACCEPTED AND IGNORED. Priority is recomputed from the array's insertion order, so a stale client cannot persist a chain whose displayed order disagrees with its stored one. Send the order you want as the order of the array.",
-            ),
-          enabled: z.boolean(),
-        }),
-      )
-      .min(1)
-      .describe(
-        "The whole chain, in the order it should be walked. At least one entry and at most one per known provider type; a repeated type is refused.",
-      ),
-  })
-  .meta({
-    id: "ProviderChainPutRequest",
-    description:
-      "Replaces the account's provider chain wholesale. No credential is written or read here — only which provider types exist, in what order, and which are enabled.",
-  });
+export const providerChainPutRequest = providerChainPutSchema.meta({
+  id: "ProviderChainPutRequest",
+  description:
+    "Replaces the account's provider chain wholesale. No credential is written or read here — only which provider types exist, in what order, which are enabled, and the reasoning setting of the Local and OpenAI-compatible entries.",
+});
 
 // ── Read-only advisor + generation (`/api/insights/generate`) ─────────
 

@@ -1,5 +1,6 @@
 import type { AIProvider, CompletionResult } from "./types";
 import { bindResponseTimeout } from "./effective-timeout";
+import { bindReasoningEffort } from "./reasoning-effort";
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { CodexClient, resolveCodexVisionSlug } from "./codex-client";
@@ -501,13 +502,19 @@ export async function resolveProvider(userId: string): Promise<AIProvider> {
       role: true,
       managedProfileAt: true,
       aiResponseTimeoutSeconds: true,
+      aiProviderChain: true,
     },
   });
   // The record's response-timeout setting rides on whatever this returns, on
   // every branch, the operator-key fallback for a managed profile included:
-  // the person waiting on the record is who the call serves.
+  // the person waiting on the record is who the call serves. The reasoning
+  // effort (#1126) rides the same way; it only lands on a Local or gateway
+  // instance, so the operator fallback never picks one up.
   const bind = (provider: AIProvider): AIProvider =>
-    bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds);
+    bindReasoningEffort(
+      bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds),
+      userRow?.aiProviderChain,
+    );
   const policy = providerCredentialPolicy(
     authority,
     userRow?.managedProfileAt ?? null,
@@ -533,18 +540,23 @@ export async function resolveProvider(userId: string): Promise<AIProvider> {
 }
 
 /**
- * The record owner's `aiResponseTimeoutSeconds`, for `resolveProviderForTest`,
- * whose many branches (saved config, unsaved override, the chain) are bound in
- * one place on the way out. The other two resolvers read it with their row.
+ * The record owner's `aiResponseTimeoutSeconds` and `aiProviderChain`, for
+ * `resolveProviderForTest`, whose many branches (saved config, unsaved
+ * override, the chain) are bound in one place on the way out. The other two
+ * resolvers read them with their row.
  */
-async function readResponseTimeoutSeconds(
-  userId: string,
-): Promise<number | null> {
+async function readBoundSettings(userId: string): Promise<{
+  aiResponseTimeoutSeconds: number | null;
+  aiProviderChain: unknown;
+}> {
   const row = await prisma.user.findUnique({
     where: { id: userId },
-    select: { aiResponseTimeoutSeconds: true },
+    select: { aiResponseTimeoutSeconds: true, aiProviderChain: true },
   });
-  return row?.aiResponseTimeoutSeconds ?? null;
+  return {
+    aiResponseTimeoutSeconds: row?.aiResponseTimeoutSeconds ?? null,
+    aiProviderChain: row?.aiProviderChain ?? null,
+  };
 }
 
 /**
@@ -595,9 +607,12 @@ export async function resolveProviderChain(
       aiResponseTimeoutSeconds: true,
     },
   });
-  // See `resolveProvider`: every instance carries the record's setting.
+  // See `resolveProvider`: every instance carries the record's settings.
   const bind = (provider: AIProvider): AIProvider =>
-    bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds);
+    bindReasoningEffort(
+      bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds),
+      userRow?.aiProviderChain,
+    );
   const policy = providerCredentialPolicy(
     authority,
     userRow?.managedProfileAt ?? null,
@@ -1184,10 +1199,13 @@ export async function resolveProviderForTest(
 ): Promise<AIProvider> {
   // The test runs under the same timeout generation would, so a slow local
   // model that needs a raised setting is not reported as dead by the test.
+  // The same holds for the entry's reasoning effort (#1126): a thinking model
+  // that only answers with reasoning switched off must test green with it off.
   const provider = await resolveProviderForTestUnbound(userId, override);
-  return bindResponseTimeout(
-    provider,
-    await readResponseTimeoutSeconds(userId),
+  const settings = await readBoundSettings(userId);
+  return bindReasoningEffort(
+    bindResponseTimeout(provider, settings.aiResponseTimeoutSeconds),
+    settings.aiProviderChain,
   );
 }
 

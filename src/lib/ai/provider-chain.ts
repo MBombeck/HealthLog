@@ -18,6 +18,13 @@
  * `PROVIDER_CHAIN_DEFAULT`.
  */
 
+import {
+  isReasoningEffort,
+  isReasoningProviderType,
+  type ReasoningEffort,
+  type ReasoningProviderType,
+} from "./reasoning-effort";
+
 /**
  * Provider tags used in the chain. `admin-openai` is the legacy
  * `AppSettings.adminAiKeyEncrypted` fallback (so misconfigured users
@@ -63,6 +70,8 @@ export interface ProviderChainEntry {
   providerType: ProviderChainType;
   priority: number;
   enabled: boolean;
+  /** Only ever set on a `REASONING_PROVIDER_TYPES` entry. Absent = Default. */
+  reasoningEffort?: ReasoningEffort;
 }
 
 /**
@@ -113,6 +122,7 @@ export function parseProviderChain(
       providerType?: unknown;
       priority?: unknown;
       enabled?: unknown;
+      reasoningEffort?: unknown;
     };
     const providerType = candidate.providerType;
     if (typeof providerType !== "string") continue;
@@ -128,10 +138,18 @@ export function parseProviderChain(
         : valid.length + 1;
     const enabled =
       typeof candidate.enabled === "boolean" ? candidate.enabled : true;
+    // A reasoning effort survives only on an entry that may carry one and
+    // only with a known value; anything else reads as Default.
+    const reasoningEffort =
+      isReasoningProviderType(providerType) &&
+      isReasoningEffort(candidate.reasoningEffort)
+        ? candidate.reasoningEffort
+        : undefined;
     valid.push({
       providerType: providerType as ProviderChainType,
       priority,
       enabled,
+      ...(reasoningEffort ? { reasoningEffort } : {}),
     });
   }
 
@@ -153,6 +171,39 @@ export function serializeProviderChain(
       providerType: e.providerType,
       priority: e.priority,
       enabled: e.enabled,
+      ...(e.reasoningEffort ? { reasoningEffort: e.reasoningEffort } : {}),
     })),
   );
+}
+
+/**
+ * The chain to persist after setting (or, with `null`, clearing) one entry's
+ * reasoning effort from that provider's own settings form.
+ *
+ * The setting lives on the chain entry, so a chain that was never customised
+ * is materialised from the default first. A provider that is not in the chain
+ * at all gets a DISABLED entry to hold the value: the setting must reach the
+ * provider when it is resolved as the selected one, and a disabled entry is
+ * inert everywhere else (every reader filters on `enabled`). Clearing on an
+ * absent entry writes nothing new.
+ */
+export function chainWithReasoningEffort(
+  rawChain: unknown,
+  providerType: ReasoningProviderType,
+  effort: ReasoningEffort | null,
+): ProviderChainEntry[] {
+  const chain = parseProviderChain(rawChain).map((e) => ({ ...e }));
+  const entry = chain.find((e) => e.providerType === providerType);
+  if (entry) {
+    if (effort) entry.reasoningEffort = effort;
+    else delete entry.reasoningEffort;
+  } else if (effort) {
+    chain.push({
+      providerType,
+      priority: Math.max(0, ...chain.map((e) => e.priority)) + 1,
+      enabled: false,
+      reasoningEffort: effort,
+    });
+  }
+  return chain;
 }

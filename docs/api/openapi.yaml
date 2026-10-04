@@ -25857,6 +25857,28 @@ components:
               minimum: 10
               maximum: 600
             - type: "null"
+        localReasoningEffort:
+          description: Reasoning setting of the Local provider entry, stored on that entry of the provider chain. `none` = Off,
+            `null` = Default (nothing sent). Omitted leaves it untouched.
+          anyOf:
+            - type: string
+              enum:
+                - none
+                - low
+                - medium
+                - high
+            - type: "null"
+        compatReasoningEffort:
+          description: Reasoning setting of the OpenAI-compatible gateway entry, stored on that entry of the provider chain.
+            `none` = Off, `null` = Default (nothing sent). Omitted leaves it untouched.
+          anyOf:
+            - type: string
+              enum:
+                - none
+                - low
+                - medium
+                - high
+            - type: "null"
       description: "Partial update of the calling user's AI-provider configuration. An omitted key is left untouched; `null`
         (or an empty string, on the string fields) clears the column. At least one recognised key must be present, or
         the write is refused. Key material is write-only: it is encrypted on the way in and never returned. Unknown keys
@@ -27073,6 +27095,7 @@ components:
       properties:
         chain:
           minItems: 1
+          maxItems: 7
           type: array
           items:
             type: object
@@ -27098,15 +27121,30 @@ components:
                 maximum: 9007199254740991
               enabled:
                 type: boolean
+              reasoningEffort:
+                description: Only on a `local` or `openai-compatible` entry; refused on any other. Omitted keeps the value already
+                  stored for that provider, `null` restores Default, `none` / `low` / `medium` / `high` are sent as
+                  `reasoning_effort`.
+                anyOf:
+                  - type: string
+                    enum:
+                      - none
+                      - low
+                      - medium
+                      - high
+                  - type: "null"
             required:
               - providerType
               - enabled
+            additionalProperties: false
           description: The whole chain, in the order it should be walked. At least one entry and at most one per known provider
             type; a repeated type is refused.
       required:
         - chain
+      additionalProperties: false
       description: Replaces the account's provider chain wholesale. No credential is written or read here — only which
-        provider types exist, in what order, and which are enabled.
+        provider types exist, in what order, which are enabled, and the reasoning setting of the Local and
+        OpenAI-compatible entries.
     InsightsFeedbackRequest:
       type: object
       properties:
@@ -48545,6 +48583,27 @@ components:
             - type: "null"
           description: v1.22 (#89) — per-user response timeout for AI generation, in seconds (10–600). Null = the built-in
             comprehensive-briefing default (~120 s). Mainly for slow local/self-hosted backends.
+        localReasoningEffort:
+          anyOf:
+            - type: string
+              enum:
+                - none
+                - low
+                - medium
+                - high
+            - type: "null"
+          description: "#1126 — reasoning setting of the Local provider entry, sent as `reasoning_effort` (`none` = Off). Null =
+            Default: the key is not sent."
+        compatReasoningEffort:
+          anyOf:
+            - type: string
+              enum:
+                - none
+                - low
+                - medium
+                - high
+            - type: "null"
+          description: "#1126 — the same for the OpenAI-compatible gateway entry."
         serverProviderHealth:
           type: string
           enum:
@@ -48589,6 +48648,8 @@ components:
         - compatModel
         - hasCompatKey
         - responseTimeoutSeconds
+        - localReasoningEffort
+        - compatReasoningEffort
         - serverProviderHealth
         - serverProviderOffer
         - serverProviderConsent

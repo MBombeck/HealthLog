@@ -10,6 +10,7 @@ import {
   rememberJsonModeDialect,
 } from "./json-dialect";
 import { aiEgressPolicyFor } from "./local-host-allowlist";
+import type { ReasoningEffort } from "./reasoning-effort";
 import {
   buildOpenAIMessages,
   buildOpenAITools,
@@ -62,6 +63,11 @@ export class OpenAIClient implements AIProvider {
   readonly type: OpenAIProviderType;
   /** See `AIProvider.responseTimeoutSeconds`; stamped by the resolver. */
   responseTimeoutSeconds: number | null = null;
+  /**
+   * See `AIProvider.reasoningEffort`; stamped by the resolver. Only the
+   * gateway tag ever sends it (`isGateway` below), whatever is stamped here.
+   */
+  reasoningEffort: ReasoningEffort | null = null;
   private config: OpenAIClientConfig;
 
   constructor(config: OpenAIClientConfig) {
@@ -150,6 +156,11 @@ export class OpenAIClient implements AIProvider {
             : {}),
           ...(tools ? { tools } : {}),
           ...(params.toolChoice ? { tool_choice: params.toolChoice } : {}),
+          // #1126 — the gateway entry's reasoning setting; Default sends
+          // nothing. `api.openai.com` and Codex never get it.
+          ...(this.isGateway && this.reasoningEffort
+            ? { reasoning_effort: this.reasoningEffort }
+            : {}),
         }),
       },
       // 60 s ceiling so a tar-pit upstream cannot pin a worker

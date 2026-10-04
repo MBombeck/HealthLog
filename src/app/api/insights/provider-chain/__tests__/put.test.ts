@@ -53,6 +53,8 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
       update: vi.fn(),
+      // #1126 — the stored chain, read for the reasoning settings it carries.
+      findUnique: vi.fn(async () => null),
     },
   },
 }));
@@ -171,5 +173,94 @@ describe("PUT /api/insights/provider-chain", () => {
       { providerType: "openai", priority: 1, enabled: true },
       { providerType: "codex", priority: 2, enabled: true },
     ]);
+  });
+
+  // #1126 — the reasoning setting rides on the local / openai-compatible
+  // entries. The chain editor only reorders and toggles, so saving the order
+  // must not wipe a value it never sent.
+  describe("reasoning setting", () => {
+    function storedChain(chain: unknown) {
+      vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+        aiProviderChain: chain,
+      } as never);
+    }
+    async function put(chain: unknown[]) {
+      vi.mocked(prisma.user.update).mockResolvedValueOnce({} as never);
+      return (PUT as (req: Request) => Promise<Response>)(
+        jsonRequest({ chain }),
+      );
+    }
+    function persisted() {
+      return vi.mocked(prisma.user.update).mock.calls[0][0].data
+        .aiProviderChain;
+    }
+
+    it("persists a value sent on a local entry", async () => {
+      storedChain(null);
+      const res = await put([
+        { providerType: "local", enabled: true, reasoningEffort: "none" },
+        { providerType: "openai", enabled: true },
+      ]);
+      expect(res.status).toBe(200);
+      expect(persisted()).toEqual([
+        {
+          providerType: "local",
+          priority: 1,
+          enabled: true,
+          reasoningEffort: "none",
+        },
+        { providerType: "openai", priority: 2, enabled: true },
+      ]);
+    });
+
+    it("keeps the stored value when the body leaves it out", async () => {
+      storedChain([
+        { providerType: "openai", priority: 1, enabled: true },
+        {
+          providerType: "openai-compatible",
+          priority: 2,
+          enabled: false,
+          reasoningEffort: "high",
+        },
+      ]);
+      await put([
+        { providerType: "openai-compatible", enabled: true },
+        { providerType: "openai", enabled: true },
+      ]);
+      expect(persisted()).toEqual([
+        {
+          providerType: "openai-compatible",
+          priority: 1,
+          enabled: true,
+          reasoningEffort: "high",
+        },
+        { providerType: "openai", priority: 2, enabled: true },
+      ]);
+    });
+
+    it("clears it on null", async () => {
+      storedChain([
+        {
+          providerType: "local",
+          priority: 1,
+          enabled: true,
+          reasoningEffort: "low",
+        },
+      ]);
+      await put([
+        { providerType: "local", enabled: true, reasoningEffort: null },
+      ]);
+      expect(persisted()).toEqual([
+        { providerType: "local", priority: 1, enabled: true },
+      ]);
+    });
+
+    it("refuses it on an entry that cannot carry it", async () => {
+      const res = await put([
+        { providerType: "anthropic", enabled: true, reasoningEffort: "none" },
+      ]);
+      expect(res.status).toBe(422);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
   });
 });
