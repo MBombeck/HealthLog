@@ -441,10 +441,12 @@ the restart.
 
 Since v1.16.4 a pg-boss job (`data-restore-drill`, cron `11 4 1 * *` —
 04:11 on the 1st of each month) exercises the read path end-to-end:
-fetch the most recent backup object from the bucket, decrypt it under
-the current `BACKUP_ENCRYPTION_KEY`, JSON-parse it, and sanity-check
-the payload shape. It performs **no database restore** — it validates
-the artefact, not the import path.
+fetch every backup object of the most recent date from the bucket (one per
+account), decrypt each under the current `BACKUP_ENCRYPTION_KEY`, JSON-parse
+it, and sanity-check the payload shape. It performs **no database restore** —
+it validates the artefacts, not the import path. Each account is checked and
+reported on its own: one object that fails is named, and the others are still
+read.
 
 Outcomes:
 
@@ -454,14 +456,16 @@ Outcomes:
   uploader has stalled (or the lifecycle rule is too aggressive). The
   drill pages via the worker error reporter (stderr + GlitchTip).
 - **Failure** — empty bucket, fetch error, decryption failure (wrong or
-  rotated key), malformed JSON: pages the same way. A decryption
+  rotated key), malformed JSON: pages the same way, once per failing object,
+  with the object key and how many accounts were checked. A decryption
   failure right after a `BACKUP_ENCRYPTION_KEY` change means the new
   key cannot read the existing objects: put the old key into
   `BACKUP_ENCRYPTION_PREVIOUS_KEYS` (see "Rotating the off-host key").
 - **Content under a missing application key** — the object opens, but its
   content was written under an `ENCRYPTION_KEYS` entry this server no longer
-  has, or under an id whose key material changed. The drill decrypts one value
-  per key id it finds, and pages naming the key. A restore of that object
+  has, or under an id whose key material changed. The drill decrypts the
+  shortest value of each section under every key id it finds, and pages naming
+  the key when none of them opens. A restore of that object
   would write back rows nobody can open; put the key back before restoring.
 - **Not configured** — deployments without the `BACKUP_S3_*` vars skip
   silently (wide-event warning only).

@@ -93,11 +93,14 @@ describe("runRestoreDrill", () => {
       "_healthcheck/123.bin": Buffer.from([0x42]),
     });
     const report = await runRestoreDrill(s3, new Date("2026-06-02T04:11:00Z"));
-    expect(report.objectKey).toBe("2026-06-01/user-abc.json.enc");
+    expect(report.accounts.map((a) => a.objectKey)).toEqual([
+      "2026-06-01/user-abc.json.enc",
+    ]);
+    expect(report.failed).toEqual([]);
     expect(report.dateKey).toBe("2026-06-01");
     expect(report.ageDays).toBe(1);
     expect(report.stale).toBe(false);
-    expect(report.recordCounts).toEqual({
+    expect(report.accounts[0].recordCounts).toEqual({
       measurements: 2,
       medications: 1,
       intakeEvents: 0,
@@ -107,6 +110,30 @@ describe("runRestoreDrill", () => {
     // Read-only drill: nothing is ever written or deleted.
     expect(s3.putObject).not.toHaveBeenCalled();
     expect(s3.deleteObject).not.toHaveBeenCalled();
+  });
+
+  it("checks every account of the newest date and names the one that fails", async () => {
+    const tampered = Buffer.from(backupObject({ userId: "user-aaa" }));
+    tampered[tampered.length - 1] ^= 0xff;
+    const s3 = makeS3Mock({
+      "2026-05-31/user-old.json.enc": backupObject(),
+      "2026-06-01/user-aaa.json.enc": tampered,
+      "2026-06-01/user-mmm.json.enc": backupObject({ userId: "user-mmm" }),
+      // The alphabetically last object, the only one the drill used to read.
+      "2026-06-01/user-zzz.json.enc": backupObject({ userId: "user-zzz" }),
+    });
+    const report = await runRestoreDrill(s3, new Date("2026-06-02T04:11:00Z"));
+    expect(report.accounts.map((a) => [a.objectKey, a.ok])).toEqual([
+      ["2026-06-01/user-aaa.json.enc", false],
+      ["2026-06-01/user-mmm.json.enc", true],
+      ["2026-06-01/user-zzz.json.enc", true],
+    ]);
+    expect(report.failed.map((a) => a.objectKey)).toEqual([
+      "2026-06-01/user-aaa.json.enc",
+    ]);
+    expect(s3.getObject).not.toHaveBeenCalledWith(
+      "2026-05-31/user-old.json.enc",
+    );
   });
 
   it("flags the report stale when the newest backup is older than the threshold", async () => {
@@ -132,13 +159,16 @@ describe("runRestoreDrill", () => {
     });
     const now = new Date("2026-06-02T04:11:00Z");
     const report = await runRestoreDrill(s3, now);
-    expect(report.innerKeyIds).toEqual(["old"]);
+    expect(report.accounts[0].innerKeyIds).toEqual(["old"]);
+    expect(report.failed).toEqual([]);
+    const failure = async () =>
+      (await runRestoreDrill(s3, now)).failed.map((a) => a.error).join("\n");
 
     // The rotation ran, and the operator dropped the old key.
     vi.stubEnv("ENCRYPTION_KEYS", JSON.stringify({ cur: "22".repeat(32) }));
     vi.stubEnv("ENCRYPTION_ACTIVE_KEY_ID", "cur");
     _resetCryptoCacheForTests();
-    await expect(runRestoreDrill(s3, now)).rejects.toThrow(/'old'/);
+    expect(await failure()).toMatch(/'old'/);
 
     // Same id, different key material behind it.
     vi.stubEnv(
@@ -146,9 +176,7 @@ describe("runRestoreDrill", () => {
       JSON.stringify({ old: "33".repeat(32), cur: "22".repeat(32) }),
     );
     _resetCryptoCacheForTests();
-    await expect(runRestoreDrill(s3, now)).rejects.toThrow(
-      /does not open the values/,
-    );
+    expect(await failure()).toMatch(/does not open the values/);
     vi.unstubAllEnvs();
     _resetCryptoCacheForTests();
   });
@@ -158,21 +186,25 @@ describe("runRestoreDrill", () => {
     await expect(runRestoreDrill(s3)).rejects.toThrow(/no backup objects/);
   });
 
-  it("throws when the object cannot be decrypted (wrong key / tampering)", async () => {
+  it("fails the account whose object cannot be decrypted (wrong key / tampering)", async () => {
     const tampered = Buffer.from(backupObject());
     tampered[tampered.length - 1] ^= 0xff;
     const s3 = makeS3Mock({ "2026-06-01/user-abc.json.enc": tampered });
-    await expect(runRestoreDrill(s3)).rejects.toThrow();
+    const report = await runRestoreDrill(s3);
+    expect(report.failed.map((a) => a.objectKey)).toEqual([
+      "2026-06-01/user-abc.json.enc",
+    ]);
   });
 
-  it("throws when the payload is missing core fields", async () => {
+  it("fails the account whose payload is missing core fields", async () => {
     const s3 = makeS3Mock({
       "2026-06-01/user-abc.json.enc": encryptBackup(
         JSON.stringify({ exportedAt: "2026-06-01T02:30:00.000Z" }),
         KEY,
       ),
     });
-    await expect(runRestoreDrill(s3)).rejects.toThrow(/missing core fields/);
+    const report = await runRestoreDrill(s3);
+    expect(report.failed[0].error).toMatch(/missing core fields/);
   });
 
   it("throws OffhostBackupNotConfiguredError when the S3 vars are unset", async () => {

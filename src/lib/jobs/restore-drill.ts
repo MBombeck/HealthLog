@@ -9,9 +9,10 @@
  * rotation mishap or a bucket-side corruption would only surface on
  * the day a real restore is needed.
  *
- * This drill closes that gap once a month: fetch the most recent
- * backup object, decrypt it, JSON-parse it, and sanity-check the
- * payload shape. It deliberately performs NO database restore — the
+ * This drill closes that gap once a month: fetch every backup object of
+ * the most recent date (one per account), decrypt it, JSON-parse it,
+ * sanity-check the payload shape, and open inner values under each
+ * application key it needs. Each account is reported on its own. It deliberately performs NO database restore — the
  * drill validates the artefact, not the import path. The result is
  * surfaced through the wide-event meta on success and through
  * `reportWorkerError` (stderr + GlitchTip) on any failure, so a broken
@@ -53,11 +54,12 @@ const MAX_BACKUP_AGE_DAYS = 3;
 
 const BACKUP_KEY_PATTERN = /^(\d{4}-\d{2}-\d{2})\/user-.+\.json\.enc$/;
 
-export interface RestoreDrillReport {
+/** What the drill found for one account's object. */
+export interface RestoreDrillAccount {
   objectKey: string;
-  dateKey: string;
-  ageDays: number;
-  stale: boolean;
+  ok: boolean;
+  /** Why the object could not be restored on this server; set when not ok. */
+  error?: string;
   ciphertextBytes: number;
   plaintextBytes: number;
   /** Application key ids the object's inner ciphertext needs, each proven to open. */
@@ -70,17 +72,108 @@ export interface RestoreDrillReport {
   };
 }
 
+export interface RestoreDrillReport {
+  dateKey: string;
+  ageDays: number;
+  stale: boolean;
+  /** Every object of the newest date, in key order. */
+  accounts: RestoreDrillAccount[];
+  /** The accounts whose object did not pass. */
+  failed: RestoreDrillAccount[];
+}
+
 function countArray(value: unknown): number {
   return Array.isArray(value) ? value.length : 0;
 }
 
+const EMPTY_COUNTS: RestoreDrillAccount["recordCounts"] = {
+  measurements: 0,
+  medications: 0,
+  intakeEvents: 0,
+  moodEntries: 0,
+};
+
 /**
- * Fetch → decrypt → parse the most recent off-host backup object.
+ * Fetch → decrypt → parse → key-check one object. Throws on every failure
+ * mode: fetch error, bad envelope / wrong key, malformed JSON, payload
+ * missing its core fields, inner ciphertext this server cannot open.
+ */
+async function drillObject(
+  s3: S3Like,
+  cfg: NonNullable<ReturnType<typeof loadOffhostConfig>>,
+  objectKey: string,
+  account: RestoreDrillAccount,
+): Promise<void> {
+  const ciphertext = await s3.getObject(objectKey);
+  account.ciphertextBytes = ciphertext.length;
+  // Read as a stream, never as one string: the JSON of a large record is
+  // longer than any string V8 can hold (#1031). The bulk tables are counted,
+  // not kept.
+  const source = openBackupObject(ciphertext, offhostKeyRing(cfg), objectKey);
+  async function* counted() {
+    for await (const chunk of source()) {
+      account.plaintextBytes += chunk.byteLength;
+      yield chunk;
+    }
+  }
+  // The envelope opening proves the off-host key. It proves nothing about
+  // the application keys the ciphertext INSIDE was written under, and that
+  // is the half a key rotation breaks: a restore of this object writes those
+  // values back verbatim. So every inner key id is collected, and values
+  // under each key are actually decrypted.
+  const keys = new BackupKeyIdCollector();
+  let scanned;
+  try {
+    scanned = await scanBackupJson(counted(), {
+      streamKeys: new Set(["measurements", "intakeEvents", "moodEntries"]),
+      onElement: (key, element) => keys.visit(element, key),
+    });
+  } catch (err) {
+    if (err instanceof BackupJsonError) {
+      throw new Error(`decrypted but is not a JSON object: ${err.message}`);
+    }
+    throw err;
+  }
+  const payload = scanned.document;
+  const streamedCounts = scanned.streamedCounts;
+  if (
+    typeof payload.exportedAt !== "string" ||
+    typeof payload.userId !== "string" ||
+    streamedCounts.measurements === undefined
+  ) {
+    throw new Error(
+      "parses but is missing core fields (exportedAt / userId / measurements).",
+    );
+  }
+  account.recordCounts = {
+    measurements: streamedCounts.measurements,
+    medications: countArray(payload.medications),
+    intakeEvents: streamedCounts.intakeEvents ?? 0,
+    moodEntries: streamedCounts.moodEntries ?? 0,
+  };
+
+  keys.visit(payload);
+  const keyVerdict = assessBackupKeys(keys, {
+    ignoreSections: new Set(["appSettings"]),
+  });
+  account.innerKeyIds = keyVerdict.keyIds;
+  const keyProblem = describeBackupKeyProblem(keyVerdict);
+  if (keyProblem) {
+    throw new Error(
+      `opens, but its content could not be restored on this server. ${keyProblem}`,
+    );
+  }
+}
+
+/**
+ * Fetch → decrypt → parse every off-host backup object of the newest date,
+ * one account at a time.
  *
  * Read-only against the bucket (GetObject + ListObjects — both inside
- * the uploader's existing IAM grant). Throws on every failure mode:
- * not configured, empty bucket, fetch error, bad envelope / wrong key,
- * malformed JSON, payload missing its core fields.
+ * the uploader's existing IAM grant). Throws when there is nothing to check
+ * (not configured, empty bucket); a failure of one account's object is
+ * recorded against that account and the others are still checked, so one
+ * account cannot turn the drill red without being named, nor hide another.
  */
 export async function runRestoreDrill(
   s3Override?: S3Like,
@@ -95,8 +188,8 @@ export async function runRestoreDrill(
   const s3 = s3Override ?? (await getS3Client(cfg));
 
   // Date-prefixed keys (`YYYY-MM-DD/user-<id>.json.enc`) sort
-  // lexicographically in chronological order, so the newest object is
-  // simply the maximum matching key. `_healthcheck/` probes and any
+  // lexicographically in chronological order, so the newest date is the
+  // date of the maximum matching key. `_healthcheck/` probes and any
   // foreign objects in the bucket are filtered out by the pattern.
   const objects = await s3.listObjects("");
   const backupKeys = objects
@@ -108,62 +201,30 @@ export async function runRestoreDrill(
       `Restore drill found no backup objects in bucket "${cfg.bucket}" — the nightly off-host upload is not producing artefacts.`,
     );
   }
-  const objectKey = backupKeys[backupKeys.length - 1];
-  const dateKey = BACKUP_KEY_PATTERN.exec(objectKey)![1];
+  const dateKey = BACKUP_KEY_PATTERN.exec(
+    backupKeys[backupKeys.length - 1],
+  )![1];
+  const newest = backupKeys.filter((k) => k.startsWith(`${dateKey}/`));
 
-  const ciphertext = await s3.getObject(objectKey);
-  // Read as a stream, never as one string: the JSON of a large record is
-  // longer than any string V8 can hold (#1031). The bulk tables are counted,
-  // not kept.
-  const source = openBackupObject(ciphertext, offhostKeyRing(cfg), objectKey);
-  let plaintextBytes = 0;
-  async function* counted() {
-    for await (const chunk of source()) {
-      plaintextBytes += chunk.byteLength;
-      yield chunk;
+  const accounts: RestoreDrillAccount[] = [];
+  for (const objectKey of newest) {
+    const account: RestoreDrillAccount = {
+      objectKey,
+      ok: true,
+      ciphertextBytes: 0,
+      plaintextBytes: 0,
+      innerKeyIds: [],
+      recordCounts: { ...EMPTY_COUNTS },
+    };
+    try {
+      await drillObject(s3, cfg, objectKey, account);
+    } catch (err) {
+      account.ok = false;
+      account.error = `Restore drill: backup object "${objectKey}" ${
+        err instanceof Error ? err.message : String(err)
+      }`;
     }
-  }
-  // The envelope opening proves the off-host key. It proves nothing about
-  // the application keys the ciphertext INSIDE was written under, and that
-  // is the half a key rotation breaks: a restore of this object writes those
-  // values back verbatim. So every inner key id is collected, and one value
-  // per key is actually decrypted.
-  const keys = new BackupKeyIdCollector();
-  let scanned;
-  try {
-    scanned = await scanBackupJson(counted(), {
-      streamKeys: new Set(["measurements", "intakeEvents", "moodEntries"]),
-      onElement: (key, element) => keys.visit(element, key),
-    });
-  } catch (err) {
-    if (err instanceof BackupJsonError) {
-      throw new Error(
-        `Restore drill: backup object "${objectKey}" decrypted but is not a JSON object: ${err.message}`,
-      );
-    }
-    throw err;
-  }
-  const payload = scanned.document;
-  const streamedCounts = scanned.streamedCounts;
-  if (
-    typeof payload.exportedAt !== "string" ||
-    typeof payload.userId !== "string" ||
-    streamedCounts.measurements === undefined
-  ) {
-    throw new Error(
-      `Restore drill: backup object "${objectKey}" parses but is missing core fields (exportedAt / userId / measurements).`,
-    );
-  }
-
-  keys.visit(payload);
-  const keyVerdict = assessBackupKeys(keys, {
-    ignoreSections: new Set(["appSettings"]),
-  });
-  const keyProblem = describeBackupKeyProblem(keyVerdict);
-  if (keyProblem) {
-    throw new Error(
-      `Restore drill: backup object "${objectKey}" opens, but its content could not be restored on this server. ${keyProblem}`,
-    );
+    accounts.push(account);
   }
 
   const ageDays = Math.floor(
@@ -173,19 +234,11 @@ export async function runRestoreDrill(
   );
 
   return {
-    objectKey,
     dateKey,
     ageDays,
     stale: ageDays > MAX_BACKUP_AGE_DAYS,
-    ciphertextBytes: ciphertext.length,
-    plaintextBytes,
-    innerKeyIds: keyVerdict.keyIds,
-    recordCounts: {
-      measurements: streamedCounts.measurements,
-      medications: countArray(payload.medications),
-      intakeEvents: streamedCounts.intakeEvents ?? 0,
-      moodEntries: streamedCounts.moodEntries ?? 0,
-    },
+    accounts,
+    failed: accounts.filter((a) => !a.ok),
   };
 }
 
@@ -203,48 +256,65 @@ export async function handleRestoreDrill(
   return withBackgroundEvent("job.restore_drill", async (evt) => {
     try {
       const report = await runRestoreDrill();
-      evt.addMeta("restore_drill_object_key", report.objectKey);
-      evt.addMeta("restore_drill_age_days", report.ageDays);
-      evt.addMeta("restore_drill_ciphertext_bytes", report.ciphertextBytes);
-      evt.addMeta("restore_drill_plaintext_bytes", report.plaintextBytes);
+      const total = (pick: (a: RestoreDrillAccount) => number) =>
+        report.accounts.reduce((sum, a) => sum + pick(a), 0);
+      const meta = {
+        restore_drill_date: report.dateKey,
+        restore_drill_age_days: report.ageDays,
+        restore_drill_accounts: report.accounts.length,
+        restore_drill_accounts_failed: report.failed.length,
+        restore_drill_ciphertext_bytes: total((a) => a.ciphertextBytes),
+        restore_drill_plaintext_bytes: total((a) => a.plaintextBytes),
+        restore_drill_measurements: total((a) => a.recordCounts.measurements),
+        restore_drill_medications: total((a) => a.recordCounts.medications),
+        restore_drill_intake_events: total((a) => a.recordCounts.intakeEvents),
+        restore_drill_mood_entries: total((a) => a.recordCounts.moodEntries),
+        restore_drill_stale: report.stale,
+      };
+      for (const [key, value] of Object.entries(meta)) evt.addMeta(key, value);
       evt.addMeta(
-        "restore_drill_measurements",
-        report.recordCounts.measurements,
+        "restore_drill_inner_key_ids",
+        [...new Set(report.accounts.flatMap((a) => a.innerKeyIds))]
+          .sort()
+          .join(","),
       );
-      evt.addMeta("restore_drill_medications", report.recordCounts.medications);
-      evt.addMeta(
-        "restore_drill_intake_events",
-        report.recordCounts.intakeEvents,
-      );
-      evt.addMeta(
-        "restore_drill_mood_entries",
-        report.recordCounts.moodEntries,
-      );
-      evt.addMeta("restore_drill_stale", report.stale);
-      evt.addMeta("restore_drill_inner_key_ids", report.innerKeyIds.join(","));
+      // One page per account that did not pass, naming its object, so the
+      // operator sees which account it is and that the others passed.
+      for (const account of report.failed) {
+        evt.addWarning(account.error ?? `${account.objectKey} failed`);
+        await reportWorkerError(
+          RESTORE_DRILL_QUEUE,
+          new Error(account.error ?? `${account.objectKey} failed`),
+          {
+            objectKey: account.objectKey,
+            accountsChecked: report.accounts.length,
+            accountsFailed: report.failed.length,
+          },
+        );
+      }
       if (report.stale) {
         await reportWorkerError(
           RESTORE_DRILL_QUEUE,
           new Error(
             `Newest off-host backup is ${report.ageDays} days old (threshold ${MAX_BACKUP_AGE_DAYS}) — the nightly upload chain has stalled.`,
           ),
-          { objectKey: report.objectKey, ageDays: report.ageDays },
+          { dateKey: report.dateKey, ageDays: report.ageDays },
+        );
+      }
+      if (report.failed.length > 0) {
+        // Already paged above, per account. A retry reads the same objects
+        // and cannot change the verdict before the next upload.
+        return jobFailed(
+          `restore drill: ${report.failed.length} of ${report.accounts.length} accounts failed`,
+          new Error(report.failed.map((a) => a.objectKey).join(", ")),
+          meta,
         );
       }
       // A stale chain is a verdict about the uploader, not a failure of the
-      // drill: the artefact was fetched, decrypted and parsed, and the page
+      // drill: the artefacts were fetched, decrypted and parsed, and the page
       // above already reached the operator. Failing the job here would retry a
       // reading that cannot change until the next upload lands.
-      return jobDone({
-        restore_drill_age_days: report.ageDays,
-        restore_drill_ciphertext_bytes: report.ciphertextBytes,
-        restore_drill_plaintext_bytes: report.plaintextBytes,
-        restore_drill_measurements: report.recordCounts.measurements,
-        restore_drill_medications: report.recordCounts.medications,
-        restore_drill_intake_events: report.recordCounts.intakeEvents,
-        restore_drill_mood_entries: report.recordCounts.moodEntries,
-        restore_drill_stale: report.stale,
-      });
+      return jobDone(meta);
     } catch (err) {
       if (err instanceof OffhostBackupNotConfiguredError) {
         evt.addWarning(`restore-drill skipped: ${err.message}`);
