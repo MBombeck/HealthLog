@@ -121,6 +121,7 @@ describe("handleDataBackup canonical DR payload", () => {
     expect(mocks.store.mock.calls[0]![0]).toEqual({
       userId: "user-dr",
       type: "WEEKLY_AUTO",
+      preview: expect.any(Function),
     });
     const encrypted = mocks.store.mock.calls[0]![1] as string;
     const payload = JSON.parse(encrypted) as {

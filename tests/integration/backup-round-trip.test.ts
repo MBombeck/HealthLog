@@ -78,6 +78,8 @@ import {
 import { legacyStreamedBlobFrom } from "@/__tests__/helpers/legacy-backup-blob";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { BackupKeyIdCollector } from "@/lib/export/backup-key-ids";
+import { createBackupPreviewCollector } from "@/lib/export/backup-preview";
+import { parseBackupPayload, summarizeBackup } from "@/lib/validations/backup";
 import {
   TWO_ENDED_MODELS,
   USER_COLUMN_BACKUP_CLASS,
@@ -1492,19 +1494,38 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     // below then covers BOTH, since the row that gets restored comes from the
     // streamed bytes.
     let streamedJson = "";
-    await streamFullBackupJson(
+    const previewCollector = createBackupPreviewCollector();
+    const streamedCounts = await streamFullBackupJson(
       prisma,
       OWNER_ID,
       (chunk) => {
         streamedJson += chunk;
       },
-      { purpose: "disaster-recovery", exportedAt },
+      {
+        purpose: "disaster-recovery",
+        exportedAt,
+        observe: previewCollector.observe,
+      },
     );
     expect(
       streamedJson,
       "the streaming writer and the materialising builder disagree; the " +
         "weekly backup no longer contains what this test proves restorable",
     ).toBe(JSON.stringify(payload));
+
+    // The weekly copy's restore preview is taken from the writer's counts and
+    // the sections it was shown, never by reading the copy. On an account
+    // with a row in every model, it has to say what a full read of the copy
+    // says, count for count and key use for key use.
+    const fromWriter = previewCollector.finish(streamedCounts);
+    expect(fromWriter).not.toBeNull();
+    expect(
+      fromWriter!.summary,
+      "the preview taken from the writer's counts disagrees with a full read",
+    ).toEqual(summarizeBackup(parseBackupPayload(streamedJson)));
+    const readBack = new BackupKeyIdCollector();
+    readBack.visit(JSON.parse(streamedJson));
+    expect(fromWriter!.keys.toStored()).toEqual(readBack.toStored());
 
     // The tombstone has to be IN the file. A disaster-recovery payload that
     // carries only live rows is smaller and cheaper and wrong: the restore
@@ -3757,13 +3778,26 @@ describe("every column of every two-ended model survives a real restore", () => 
 
     const exportedAt = new Date("2026-08-01T00:00:00.000Z");
     let json = "";
-    await streamFullBackupJson(
+    const previewCollector = createBackupPreviewCollector();
+    const counts = await streamFullBackupJson(
       prisma,
       OWNER_ID,
       (chunk) => {
         json += chunk;
       },
-      { purpose: "disaster-recovery", exportedAt },
+      {
+        purpose: "disaster-recovery",
+        exportedAt,
+        observe: previewCollector.observe,
+      },
+    );
+    // Every sealed column is filled here: the key uses the preview takes from
+    // the sections as they are written are the ones a read of the file finds.
+    const keysReadBack = new BackupKeyIdCollector();
+    keysReadBack.visit(JSON.parse(json));
+    expect(keysReadBack.keyIds().length).toBeGreaterThan(0);
+    expect(previewCollector.finish(counts)!.keys.toStored()).toEqual(
+      keysReadBack.toStored(),
     );
 
     // ── No ciphertext in a portable file ──────────────────────────────────

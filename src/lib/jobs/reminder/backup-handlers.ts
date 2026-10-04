@@ -12,6 +12,8 @@ import {
   BackupBusyError,
 } from "@/lib/export/backup-blob";
 import { storeBackupBlob } from "@/lib/export/store-backup-blob";
+import { createBackupPreviewCollector } from "@/lib/export/backup-preview";
+import type { FullBackupCounts } from "@/lib/export/full-backup-payload";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
@@ -182,13 +184,23 @@ export async function handleDataBackup(
           // time, and gzip's output is sealed and stored in pieces of about a
           // megabyte (`storeBackupBlob`). The copy is kept as those pieces,
           // so its size does not depend on this process's memory (#1031).
+          // The restore preview is taken from the writer's own counts and
+          // the sections as they are written, never by parsing the copy.
+          const preview = createBackupPreviewCollector();
+          let counts: FullBackupCounts | undefined;
           const { bytes: storedBytes } = await storeBackupBlob(
             prisma,
-            { userId: user.id, type: "WEEKLY_AUTO" },
-            (write) =>
-              streamFullBackupJson(prisma, user.id, write, {
+            {
+              userId: user.id,
+              type: "WEEKLY_AUTO",
+              preview: () => (counts ? preview.finish(counts) : null),
+            },
+            async (write) => {
+              counts = await streamFullBackupJson(prisma, user.id, write, {
                 purpose: "disaster-recovery",
-              }),
+                observe: preview.observe,
+              });
+            },
           );
           largestBlobBytes = Math.max(largestBlobBytes, storedBytes);
           backed++;

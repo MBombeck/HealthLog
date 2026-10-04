@@ -35,9 +35,9 @@ import {
   type PackBackupOptions,
 } from "@/lib/export/backup-blob";
 import { createBackupKeyIdTextScanner } from "@/lib/export/backup-key-ids";
+import type { BackupKeyIdCollector } from "@/lib/export/backup-key-ids";
 import {
   buildBackupPreview,
-  createBackupPreviewScanner,
   SINGLE_VALUE_IDENTITY_HEAD,
   singleValueIdentity,
   storedCopyIdentity,
@@ -48,6 +48,7 @@ import {
   newChunkStreamId,
 } from "@/lib/export/backup-chunks";
 import { BackupFormsConflictError } from "@/lib/export/stored-backup";
+import type { BackupSummary } from "@/lib/validations/backup";
 
 /**
  * How long the storing transaction may stay open. The job around it expires
@@ -79,6 +80,16 @@ export interface StoreBackupBlobInput {
    * the row under the wrong owner.
    */
   ownerAfterRead?: () => string;
+  /**
+   * What the restore preview shows for the copy, asked once the producer has
+   * finished (`backup-preview.ts`): the producer knows the counts and the
+   * key uses without reading the copy back. Null, or absent, leaves the row
+   * without a preview, and the preview route reads the copy once instead.
+   */
+  preview?: () => {
+    summary: BackupSummary;
+    keys: BackupKeyIdCollector;
+  } | null;
 }
 
 type Tx = Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
@@ -126,9 +137,6 @@ export async function storeBackupBlob(
       // what is inside them, so this is what tells an operator how long a
       // retired key is still needed (`GET /api/admin/encryption/status`).
       const keyScanner = createBackupKeyIdTextScanner();
-      // And what the restore preview shows, from the same pass, so the
-      // preview never has to read the copy back (`backup-preview.ts`).
-      const previewScanner = createBackupPreviewScanner();
       const { chunks, bytes } = await packBackupChunks(
         async (sealed, seq) => {
           await tx.dataBackupChunk.create({
@@ -140,12 +148,11 @@ export async function storeBackupBlob(
         (write) =>
           producer(async (chunk) => {
             keyScanner.feed(chunk);
-            await previewScanner.feed(chunk);
             await write(chunk);
           }),
         options,
       );
-      const scanned = await previewScanner.finish();
+      const scanned = input.preview?.() ?? null;
 
       // Again at the end: a restore may have been queued while this ran. The
       // window left is the few milliseconds to the commit, and a restore

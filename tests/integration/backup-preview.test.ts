@@ -9,8 +9,9 @@
  * and its preview kept; a key dropped after the copy was written is still
  * named, because the verdict is taken again at every read.
  *
- * Mutations that must turn this red: drop the preview scanner from
- * `storeBackupBlob` (no preview on the row, the route opens the copy), or
+ * Mutations that must turn this red: drop the `preview` the weekly job or
+ * the upload route hands `storeBackupBlob` (no preview on the row, the route
+ * opens the copy), or
  * answer from the stored verdict instead of taking it again (the dropped key
  * is not named).
  */
