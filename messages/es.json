@@ -6080,6 +6080,17 @@
         "title": "Planes del Coach",
         "description": "Los planes que acordaste con el Coach, para leerlos o eliminarlos.",
         "open": "Abrir planes"
+      },
+      "reasoning": {
+        "label": "Razonamiento",
+        "hint": "Los modelos de razonamiento como Gemma o Qwen piensan antes de responder. Si lo desactivas, todo el presupuesto de respuesta se queda para la respuesta.",
+        "options": {
+          "default": "Predeterminado",
+          "none": "Desactivado",
+          "low": "Bajo",
+          "medium": "Medio",
+          "high": "Alto"
+        }
       }
     },
     "dashboard": {
@@ -7555,7 +7566,11 @@
         "restoreFailureKeyMissing": "La copia necesita la clave de cifrado {keys}, con la que este servidor no puede abrirla. Vuelve a añadir la clave a ENCRYPTION_KEYS, reinicia e inicia de nuevo la restauración.",
         "restoreFailureForeignReference": "El archivo apunta a registros que pertenecen a otra cuenta. No se escribió nada.",
         "previewKeyMissing": "Esta copia no se puede restaurar en este servidor: necesita la clave de cifrado {keys}. Vuelve a añadir la clave a ENCRYPTION_KEYS y reinicia primero.",
-        "restoreSkippedSymptomEpisodeReference": "Entrada de síntoma vinculada a una enfermedad que el archivo no contiene (se conserva sin el vínculo)"
+        "restoreSkippedSymptomEpisodeReference": "Entrada de síntoma vinculada a una enfermedad que el archivo no contiene (se conserva sin el vínculo)",
+        "restoreSkippedCycleCiphertext": "Nota o etiqueta del ciclo cifrada con una clave que este servidor no tiene (el día o el síntoma se conserva sin ella)",
+        "restoreSkippedMoodLabelCiphertext": "Nombre de etiqueta o grupo de ánimo cifrado con una clave que este servidor no tiene (se conserva sin el nombre)",
+        "restoreSkippedVisitCiphertext": "Texto de visita o profesional cifrado con una clave que este servidor no tiene (se conserva sin él)",
+        "restoreSkippedVaccinationCiphertext": "Nota de vacunación cifrada con una clave que este servidor no tiene (la dosis se conserva sin ella)"
       },
       "danger-zone": {
         "title": "Zona de peligro",

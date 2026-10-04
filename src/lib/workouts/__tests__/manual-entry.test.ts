@@ -242,7 +242,7 @@ describe("buildManualWorkoutEntry — validation", () => {
 describe("the form's defaults", () => {
   it("opens with a blank start; the field caps at the current minute", () => {
     expect(wallClockNow(NOW, "Europe/Berlin")).toBe("2026-09-15T14:00");
-    expect(emptyManualWorkoutDraft(NOW, "Asia/Seoul")).toMatchObject({
+    expect(emptyManualWorkoutDraft()).toMatchObject({
       sportType: "",
       start: "",
       hours: "",

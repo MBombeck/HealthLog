@@ -11,6 +11,19 @@
  * the record the request claims is folded into `key` (see `cellKey`), so the
  * tuple identifies a request to one person's record rather than a request by
  * one person. A caller acting only as themselves is unaffected, byte for byte.
+ *
+ * A cell also remembers WHICH request it answered: a SHA-256 of the canonical
+ * request body (`requestFingerprint`). A key names one request, not a slot, and
+ * a client that reuses a key for a second, different request must not be
+ * handed the first request's response. Native clients up to 1.1.0 sent the two
+ * halves of a manual blood pressure as two POSTs under one key; the second half
+ * replayed the first's 201 and was never written. A lookup therefore replays,
+ * or reports in-flight, only for the same body. A different body — or a row
+ * written before fingerprints existed — runs the handler normally without
+ * claiming or caching anything, and the existing cell stays for its own
+ * retries. This is deliberately not the IETF draft's 422: refusing would turn
+ * every affected client's second write into a visible error with no way for
+ * the person to recover the value.
  */
 import type { NextRequest } from "next/server";
 import { headers } from "next/headers";
@@ -109,6 +122,155 @@ export interface IdempotencyContext {
   key: string;
   method: string;
   path: string;
+  /** See `requestFingerprint`. Never the body itself. */
+  fingerprint: string;
+}
+
+/**
+ * How much of a body the fingerprint reads before it stops. The wrapper runs
+ * before the handler's own bounded readers and upload slots, so it must not
+ * buffer an arbitrarily large body on their behalf: reading the clone holds
+ * what it has read in the original's queue until the handler consumes it.
+ * Every JSON write the cache fronts is far below this; the one multipart route
+ * (document upload) is above it, and there the prefix plus the declared length
+ * identifies a retry of the same upload, with the route's own content hash as
+ * the duplicate check behind it.
+ */
+const FINGERPRINT_MAX_BYTES = 1024 * 1024;
+
+/**
+ * JSON with every object's keys sorted, recursively. Arrays keep their order —
+ * it is part of the request. Exported for its unit tests.
+ */
+export function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((v) => canonicalJson(v)).join(",")}]`;
+  }
+  if (value !== null && typeof value === "object") {
+    const entries = Object.keys(value)
+      .sort()
+      .map(
+        (k) =>
+          `${JSON.stringify(k)}:${canonicalJson((value as Record<string, unknown>)[k])}`,
+      );
+    return `{${entries.join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * Replace every occurrence of the multipart boundary named in `contentType`
+ * with a fixed token. Any other body is returned as it is.
+ */
+function withoutMultipartBoundary(
+  body: Uint8Array,
+  contentType: string | null,
+): Uint8Array {
+  if (!contentType || !/^multipart\//i.test(contentType)) return body;
+  const match = /;\s*boundary="?([^";]+)"?/i.exec(contentType);
+  if (!match) return body;
+  const boundary = Buffer.from(match[1], "utf8");
+  const token = Buffer.from("boundary", "utf8");
+  const source = Buffer.from(body.buffer, body.byteOffset, body.byteLength);
+  const parts: Buffer[] = [];
+  let from = 0;
+  for (;;) {
+    const at = source.indexOf(boundary, from);
+    if (at === -1) break;
+    parts.push(source.subarray(from, at), token);
+    from = at + boundary.length;
+  }
+  if (parts.length === 0) return body;
+  parts.push(source.subarray(from));
+  return new Uint8Array(Buffer.concat(parts));
+}
+
+/**
+ * The fingerprint of a request: SHA-256 hex over method, path and the body in
+ * canonical form. A body that parses as JSON is hashed as `canonicalJson`, so
+ * the same object serialised with a different key order is the same request;
+ * anything else (multipart, plain text, an empty body) is hashed as its raw
+ * bytes. `truncatedAt` marks a body cut at `FINGERPRINT_MAX_BYTES`, hashed as
+ * that raw prefix together with the declared length. A multipart body has its
+ * boundary replaced by a fixed token first: a client that rebuilds the form
+ * for a retry picks a fresh random boundary, and the same upload must still
+ * replay. Exported for unit tests.
+ */
+export function requestFingerprint(
+  method: string,
+  path: string,
+  rawBody: Uint8Array,
+  truncatedAt: string | null = null,
+  contentType: string | null = null,
+): string {
+  const body = withoutMultipartBoundary(rawBody, contentType);
+  const hash = createHash("sha256")
+    .update(method)
+    .update("\0")
+    .update(path)
+    .update("\0");
+  if (truncatedAt !== null) {
+    return hash.update(`partial:${truncatedAt}\0`).update(body).digest("hex");
+  }
+  if (body.length > 0) {
+    try {
+      const text = new TextDecoder("utf-8", { fatal: true }).decode(body);
+      return hash
+        .update("json:")
+        .update(canonicalJson(JSON.parse(text)))
+        .digest("hex");
+    } catch {
+      // Not UTF-8 or not JSON — fall through to the raw bytes.
+    }
+  }
+  return hash.update("raw:").update(body).digest("hex");
+}
+
+/**
+ * Read the request's body from a clone, at most `FINGERPRINT_MAX_BYTES`, and
+ * fingerprint it. The original request keeps its body for the handler.
+ */
+async function fingerprintRequest(
+  request: Request | NextRequest,
+  path: string,
+): Promise<string> {
+  const stream = request.clone().body;
+  if (!stream)
+    return requestFingerprint(request.method, path, new Uint8Array());
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let truncated = false;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (total + value.byteLength > FINGERPRINT_MAX_BYTES) {
+      chunks.push(value.subarray(0, FINGERPRINT_MAX_BYTES - total));
+      total = FINGERPRINT_MAX_BYTES;
+      truncated = true;
+      // Cancelling this branch of the tee stops it from queueing the rest of
+      // the body, and leaves the handler's branch intact. Not awaited: a tee
+      // branch's cancel settles only once BOTH branches are done, which is
+      // after the handler has run.
+      void reader.cancel().catch(() => {});
+      break;
+    }
+    chunks.push(value);
+    total += value.byteLength;
+  }
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return requestFingerprint(
+    request.method,
+    path,
+    body,
+    truncated ? (request.headers.get("content-length") ?? "unknown") : null,
+    request.headers.get("content-type"),
+  );
 }
 
 function getIdempotencyKey(request: Request | NextRequest): string | null {
@@ -125,10 +287,16 @@ function getIdempotencyKey(request: Request | NextRequest): string | null {
  *   - `{ kind: "pending" }` — another request holds an in-flight claim
  *                             for this key; the caller must NOT run the
  *                             handler again.
+ *   - `{ kind: "mismatch" }` — the live row answered a different body (or
+ *                             predates fingerprints); the caller runs the
+ *                             handler without claiming or caching.
  *   - `null`                — no live row; the caller may claim + run.
  */
 type CacheLookup =
-  { kind: "replay"; response: NextResponse } | { kind: "pending" } | null;
+  | { kind: "replay"; response: NextResponse }
+  | { kind: "pending" }
+  | { kind: "mismatch" }
+  | null;
 
 /**
  * Look up the state of a (userId, key, method, path) tuple. Distinguishes
@@ -155,6 +323,13 @@ async function findCached(ctx: IdempotencyContext): Promise<CacheLookup> {
       .delete({ where: { id: row.id } })
       .catch(() => {});
     return null;
+  }
+
+  // Checked before both the pending and the replay arm: a different request
+  // under the same key is neither in flight nor answered. A legacy row's null
+  // never equals a fingerprint.
+  if (row.requestFingerprint !== ctx.fingerprint) {
+    return { kind: "mismatch" };
   }
 
   if (row.responseStatus === PENDING_STATUS) {
@@ -208,6 +383,7 @@ async function claimKey(ctx: IdempotencyContext): Promise<boolean> {
         key: ctx.key,
         method: ctx.method,
         path: ctx.path,
+        requestFingerprint: ctx.fingerprint,
         responseStatus: PENDING_STATUS,
         responseBody: "",
         expiresAt: new Date(Date.now() + PENDING_TTL_MS),
@@ -233,6 +409,7 @@ async function releaseClaim(ctx: IdempotencyContext): Promise<void> {
         key: ctx.key,
         method: ctx.method,
         path: ctx.path,
+        requestFingerprint: ctx.fingerprint,
         responseStatus: PENDING_STATUS,
       },
     })
@@ -312,6 +489,7 @@ async function persistCached(
         key: ctx.key,
         method: ctx.method,
         path: ctx.path,
+        requestFingerprint: ctx.fingerprint,
       },
       data: {
         responseStatus: response.status,
@@ -502,6 +680,23 @@ async function narrowTokenFacet(): Promise<string | null> {
   return apiToken.permissions.includes("*") ? null : `t:${apiToken.id}`;
 }
 
+/**
+ * Run a request whose key is already taken by a different body: the handler
+ * runs exactly as it would without a key, and nothing is claimed or cached, so
+ * the existing cell keeps answering its own retries.
+ */
+function runUncached<Args extends [Request | NextRequest, ...unknown[]]>(
+  ctx: IdempotencyContext,
+  handler: (...args: Args) => Promise<Response>,
+  args: Args,
+): Promise<Response> {
+  annotate({
+    action: { name: "idempotency.key.body_mismatch" },
+    meta: { method: ctx.method, path: ctx.path },
+  });
+  return handler(...args);
+}
+
 export function withIdempotency<
   Args extends [Request | NextRequest, ...unknown[]],
 >(
@@ -589,14 +784,27 @@ export function withIdempotency<
     if (tokenFacet !== null) facets.push(tokenFacet);
 
     const url = new URL(request.url);
+    const fingerprint = await fingerprintRequest(request, url.pathname).catch(
+      () => null,
+    );
+    if (fingerprint === null) {
+      // The body could not be read for the fingerprint (already consumed, or
+      // the stream failed). Without knowing which request this is, no cell
+      // may answer for it; the handler meets the body problem itself.
+      return handler(...args);
+    }
     const ctx: IdempotencyContext = {
       userId,
       key: cellKey(key, claimedRecord, facets),
       method: request.method,
       path: url.pathname,
+      fingerprint,
     };
 
     const cached = await findCached(ctx);
+    if (cached?.kind === "mismatch") {
+      return runUncached(ctx, handler, args);
+    }
     if (cached?.kind === "replay") {
       return cached.response;
     }
@@ -617,6 +825,13 @@ export function withIdempotency<
     // one caller may execute the side-effect for a given key.
     const won = await claimKey(ctx);
     if (!won) {
+      // The racing claim may be a different request under the same key —
+      // the two halves of one reading posted together. That one is not a
+      // duplicate of this one and must still run.
+      const raced = await findCached(ctx);
+      if (raced?.kind === "mismatch") {
+        return runUncached(ctx, handler, args);
+      }
       annotate({
         action: { name: "idempotency.inflight_conflict" },
         meta: { method: ctx.method, path: ctx.path },

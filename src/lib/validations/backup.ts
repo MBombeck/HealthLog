@@ -625,6 +625,15 @@ const cycleSymptomSeveritySchema = z
   })
   .passthrough();
 
+/** The sensitive-category envelope's five fields, as a portable file carries them. */
+const cycleSensitiveFieldsSchema = z.object({
+  sexualActivity: z.boolean().optional(),
+  protectedSex: z.boolean().nullable().optional(),
+  pregnancyTest: z.enum(HomeTestResult).nullable().optional(),
+  progesteroneTest: z.enum(HomeTestResult).nullable().optional(),
+  contraceptive: z.enum(ContraceptiveKind).nullable().optional(),
+});
+
 const cycleDayLogSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -644,8 +653,20 @@ const cycleDayLogSchema = z
     pregnancyTest: z.enum(HomeTestResult).nullable().optional(),
     progesteroneTest: z.enum(HomeTestResult).nullable().optional(),
     contraceptive: z.enum(ContraceptiveKind).nullable().optional(),
+    // Free text travels like every other note: a disaster-recovery file
+    // carries the ciphertext (`*Encrypted`), a portable file the readable
+    // value (`note`, `sensitive`), which the restore seals under the
+    // receiving host's key. A portable file written before v1.40 carries the
+    // ciphertext too; the restore keeps only what this host can open.
     sensitiveEncrypted: z.string().nullable().optional(),
     notesEncrypted: z.string().nullable().optional(),
+    note: z.string().nullable().optional(),
+    // The five intent fields the sensitive-category envelope holds, or the
+    // unreadable marker when the writing host could not open the envelope.
+    sensitive: z
+      .union([cycleSensitiveFieldsSchema, z.string()])
+      .nullable()
+      .optional(),
     source: z.enum(MeasurementSource).optional(),
     externalId: z.string().nullable().optional(),
     tz: z.string().nullable().optional(),
@@ -696,10 +717,12 @@ const customMoodTagSchema = z
     isActive: z.boolean().default(true),
     icon: z.string().nullable().optional(),
     sortOrder: z.number().int().default(0),
-    // The user's own words for the tag, encrypted at rest and carried
-    // verbatim. Without it the tag comes back as a bare key and the person
-    // who named it "Migräne" gets `custom:cm3x9…` instead.
+    // The user's own words for the tag. Without it the tag comes back as a
+    // bare key and the person who named it "Migräne" gets `custom:cm3x9…`
+    // instead. Ciphertext on a disaster-recovery file, readable `label` on a
+    // portable one; the restore seals the readable value under its own key.
     labelEncrypted: z.string().nullable().optional(),
+    label: z.string().nullable().optional(),
     // The scale a RATED factor was recorded on. `inverse` marks a factor
     // where a HIGH value is bad (stress, conflict). Dropping it does not lose
     // a label, it silently reverses the meaning of every rating already
@@ -752,7 +775,10 @@ const customCycleSymptomSchema = z
     sortOrder: z.number().int().default(0),
     isActive: z.boolean().default(true),
     // Same reasoning as the mood tag's: the user's own words live here.
+    // Ciphertext on a disaster-recovery file, readable `label` on a portable
+    // one (the day-log note's split).
     labelEncrypted: z.string().nullable().optional(),
+    label: z.string().nullable().optional(),
   })
   .passthrough();
 
@@ -1181,8 +1207,9 @@ const symptomDefinitionBackupSchema = z
  *
  * `id` is required on both records, unlike the lab result above: a link
  * addresses an encounter and its far side by id and nothing else on either row
- * is unique enough to rebuild the reference from. The ciphertext columns ride
- * verbatim as base64 — a visit note is never decrypted into the file.
+ * is unique enough to rebuild the reference from. Free text follows the note
+ * contract: ciphertext as base64 on a disaster-recovery file, the readable
+ * value on a portable one (sealed under the receiving host's key on restore).
  */
 const practitionerBackupSchema = z
   .object({
@@ -1196,6 +1223,7 @@ const practitionerBackupSchema = z
     locationEncrypted: base64BytesSchema.nullable().optional(),
     phoneEncrypted: base64BytesSchema.nullable().optional(),
     noteEncrypted: base64BytesSchema.nullable().optional(),
+    note: z.string().nullable().optional(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
     deletedAt: isoDateTime.nullable().optional(),
@@ -1214,6 +1242,10 @@ const encounterBackupSchema = z
     // v1.39.1 — the procedure's body site and side. Optional so a file written
     // before they existed still parses; the visit restores with neither.
     bodySiteEncrypted: base64BytesSchema.nullable().optional(),
+    // The readable reason, outcome and body site of a portable file.
+    reason: z.string().nullable().optional(),
+    outcome: z.string().nullable().optional(),
+    bodySite: z.string().nullable().optional(),
     laterality: z.enum(Laterality).nullable().optional(),
     // Remapped against the restored reminders (they travel since v1.37.20);
     // dropped to NULL, with the drop named, only when the file lacks the row.
@@ -1255,7 +1287,9 @@ const vaccinationBackupSchema = z
     // Remapped against the restored reminders (they travel since v1.37.20);
     // dropped to NULL, with the drop named, only when the file lacks the row.
     reminderId: z.string().nullable().optional(),
+    // Ciphertext on a disaster-recovery file, readable on a portable one.
     noteEncrypted: base64BytesSchema.nullable().optional(),
+    note: z.string().nullable().optional(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
     deletedAt: isoDateTime.nullable().optional(),
@@ -1618,7 +1652,9 @@ const customMoodTagCategorySchema = z
     icon: z.string().nullable().optional(),
     sortOrder: z.number().int().optional(),
     isActive: z.boolean().optional(),
+    // Same split as the custom tag's label.
     labelEncrypted: z.string().nullable().optional(),
+    label: z.string().nullable().optional(),
   })
   .passthrough();
 

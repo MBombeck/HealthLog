@@ -35,7 +35,11 @@
  *     guarantee `src/lib/vaccinations/__tests__/catalog-integrity.test.ts`
  *     holds.
  */
-import { Buffer } from "node:buffer";
+import {
+  encodeSealedBytes,
+  openSealedBytesForExport,
+  sealBytesForRestore,
+} from "@/lib/export/sealed-text";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type { VaccinationSite } from "@/generated/prisma/client";
 
@@ -72,8 +76,10 @@ export interface VaccinationBackupEntry {
    * lacks the reminder.
    */
   reminderId: string | null;
-  /** Base64 ciphertext, carried verbatim — never decrypted into the file. */
-  noteEncrypted: string | null;
+  /** Base64 ciphertext; disaster-recovery payloads only. */
+  noteEncrypted?: string | null;
+  /** The note readable; portable payloads only. */
+  note?: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -94,12 +100,6 @@ export interface VaccinationsBackupSection {
 export interface VaccinationsBackupCounts {
   vaccinations: number;
   vaccinationLinks: number;
-}
-
-/** Base64 for a `Bytes` ciphertext column, or null when the column is empty. */
-function encodeCiphertext(value: Uint8Array | null): string | null {
-  if (!value || value.byteLength === 0) return null;
-  return Buffer.from(value).toString("base64");
 }
 
 /**
@@ -172,7 +172,14 @@ export async function buildVaccinationsBackupSection(
       practitionerId: row.practitionerId,
       encounterId: row.encounterId,
       reminderId: row.reminderId,
-      noteEncrypted: encodeCiphertext(row.noteEncrypted),
+      ...(disasterRecovery
+        ? { noteEncrypted: encodeSealedBytes(row.noteEncrypted) }
+        : {
+            note: openSealedBytesForExport(
+              row.noteEncrypted,
+              "vaccination note",
+            ),
+          }),
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       ...(disasterRecovery
@@ -240,15 +247,9 @@ export type RestoredVaccination = Pick<
       | "encounterId"
       | "reminderId"
       | "noteEncrypted"
+      | "note"
     >
   > & { deletedAt?: string | null };
-
-function decodeCiphertext(encoded: string): Uint8Array<ArrayBuffer> {
-  const decoded = Buffer.from(encoded, "base64");
-  const bytes = new Uint8Array(new ArrayBuffer(decoded.byteLength));
-  bytes.set(decoded);
-  return bytes;
-}
 
 /**
  * Re-create the account's immunization log and its document links.
@@ -307,6 +308,8 @@ export async function restoreVaccinationsData(
   const droppedPractitioners: string[] = [];
   const droppedEncounters: string[] = [];
   const droppedReminders: string[] = [];
+  // Sealed notes this host's keys do not open, by file path.
+  const unopened: string[] = [];
 
   if (payload.vaccinations.length > 0) {
     await tx.vaccinationRecord.createMany({
@@ -349,10 +352,12 @@ export async function restoreVaccinationsData(
           practitionerId,
           encounterId,
           reminderId,
-          noteEncrypted:
-            entry.noteEncrypted == null
-              ? null
-              : decodeCiphertext(entry.noteEncrypted),
+          noteEncrypted: sealBytesForRestore(
+            entry.noteEncrypted,
+            entry.note,
+            `vaccinations.${entry.id}.noteEncrypted`,
+            unopened,
+          ),
           createdAt: new Date(entry.createdAt),
           updatedAt: new Date(entry.updatedAt),
           deletedAt: entry.deletedAt ? new Date(entry.deletedAt) : null,
@@ -379,6 +384,7 @@ export async function restoreVaccinationsData(
     [...new Set(droppedReminders)],
     droppedReminders,
   );
+  recordUnknownKeys(skips, "vaccinationCiphertext", unopened, unopened);
 
   const restoredVaccinations = new Set(
     payload.vaccinations.map((entry) => entry.id),

@@ -1,3 +1,4 @@
+import type { ReasoningEffort } from "./reasoning-effort";
 import { z } from "zod/v4";
 
 // ─── Insight Result Schema ─────────────────────────────────
@@ -123,6 +124,13 @@ export interface AIProvider {
    * `null` / absent → the surface's `timeoutMs`, else the 60 s default.
    */
   responseTimeoutSeconds?: number | null;
+  /**
+   * #1126 — the `reasoning_effort` the record owner chose for this provider's
+   * chain entry, stamped by the resolver (`bindReasoningEffort`). Only the
+   * Local client and the OpenAI-compatible gateway read it, and only they are
+   * ever stamped with a value. `null` / absent → Default: the key is not sent.
+   */
+  reasoningEffort?: ReasoningEffort | null;
   generateCompletion(params: CompletionParams): Promise<CompletionResult>;
   /**
    * v1.22 (#89) — optional true-streaming variant. A provider that can emit

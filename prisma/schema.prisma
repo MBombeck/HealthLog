@@ -5545,15 +5545,19 @@ model ProviderHealth {
 /// (userId, key, method, path) so retries within the TTL replay the
 /// original outcome instead of producing a duplicate side-effect.
 model IdempotencyKey {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  key            String
-  method         String
-  path           String
-  responseStatus Int      @map("response_status")
-  responseBody   String   @map("response_body") // serialized JSON envelope
-  expiresAt      DateTime @map("expires_at")
-  createdAt      DateTime @default(now()) @map("created_at")
+  id                 String   @id @default(cuid())
+  userId             String   @map("user_id")
+  key                String
+  method             String
+  path               String
+  responseStatus     Int      @map("response_status")
+  responseBody       String   @map("response_body") // serialized JSON envelope
+  /// SHA-256 of the canonical request body, scoped by method and path. A
+  /// lookup replays only when it matches; a different body under the same key
+  /// runs normally. Null on rows written before it existed, which never match.
+  requestFingerprint String?  @map("request_fingerprint")
+  expiresAt          DateTime @map("expires_at")
+  createdAt          DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

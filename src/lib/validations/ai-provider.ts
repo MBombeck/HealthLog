@@ -16,6 +16,12 @@
  */
 import { z } from "zod/v4";
 
+import { PROVIDER_CHAIN_TYPES } from "@/lib/ai/provider-chain";
+import {
+  isReasoningProviderType,
+  REASONING_EFFORTS,
+} from "@/lib/ai/reasoning-effort";
+
 /** The five provider kinds a user may select. */
 export const AI_PROVIDER_KINDS = [
   "OPENAI",
@@ -37,6 +43,17 @@ export const aiProviderKindSchema = z.enum(AI_PROVIDER_KINDS);
  * interchangeably to mean "clear", and both have always cleared.
  */
 const clearableString = z.string().nullable();
+
+/**
+ * #1126 — a provider entry's reasoning setting. `null` is "Default": nothing
+ * is sent and the model decides. `none` is "Off".
+ */
+export const reasoningEffortSchema = z
+  .enum(REASONING_EFFORTS)
+  .nullable()
+  .describe(
+    "Reasoning setting for a Local or OpenAI-compatible provider, sent as `reasoning_effort` in the `/chat/completions` body. `none` switches reasoning off, which stops a thinking model (Gemma, Qwen and the like) spending the answer budget on reasoning. `null` is Default: the key is not sent at all and the model decides.",
+  );
 
 /**
  * `PATCH /api/user/ai-provider` — a partial update of the provider config.
@@ -93,6 +110,22 @@ export const aiProviderPatchSchema = z.object({
     .max(600, "Response timeout must be between 10 and 600 seconds")
     .nullable()
     .optional(),
+  /**
+   * #1126 — the reasoning setting of the Local entry. Stored on the entry in
+   * the provider chain; a chain never customised is materialised from the
+   * default to hold it. `null` restores Default.
+   */
+  localReasoningEffort: reasoningEffortSchema
+    .optional()
+    .describe(
+      "Reasoning setting of the Local provider entry, stored on that entry of the provider chain. `none` = Off, `null` = Default (nothing sent). Omitted leaves it untouched.",
+    ),
+  /** #1126 — the same for the OpenAI-compatible gateway entry. */
+  compatReasoningEffort: reasoningEffortSchema
+    .optional()
+    .describe(
+      "Reasoning setting of the OpenAI-compatible gateway entry, stored on that entry of the provider chain. `none` = Off, `null` = Default (nothing sent). Omitted leaves it untouched.",
+    ),
 });
 
 export type AiProviderPatchInput = z.infer<typeof aiProviderPatchSchema>;
@@ -115,3 +148,61 @@ export const aiTestOverrideSchema = z
   .strict();
 
 export type AiTestOverrideInput = z.infer<typeof aiTestOverrideSchema>;
+
+/**
+ * One entry of `PUT /api/insights/provider-chain`. Shared by the route and the
+ * OpenAPI registry, so the published contract and the parser are one object.
+ */
+export const providerChainEntrySchema = z
+  .object({
+    providerType: z
+      .enum(PROVIDER_CHAIN_TYPES)
+      .describe(
+        "Closed allow-list. The mock provider is excluded from it structurally, which is what keeps production from reaching one.",
+      ),
+    // Priority is recomputed server-side from insertion order so a stale
+    // client cannot persist a chain whose displayed order disagrees with
+    // its priority field. The number is accepted (and may be present) but
+    // ignored on the wire.
+    priority: z
+      .number()
+      .int()
+      .optional()
+      .describe(
+        "ACCEPTED AND IGNORED. Priority is recomputed from the array's insertion order, so a stale client cannot persist a chain whose displayed order disagrees with its stored one. Send the order you want as the order of the array.",
+      ),
+    enabled: z.boolean(),
+    reasoningEffort: reasoningEffortSchema
+      .optional()
+      .describe(
+        "Only on a `local` or `openai-compatible` entry; refused on any other. Omitted keeps the value already stored for that provider, `null` restores Default, `none` / `low` / `medium` / `high` are sent as `reasoning_effort`.",
+      ),
+  })
+  .strict()
+  .superRefine((entry, ctx) => {
+    if (
+      entry.reasoningEffort !== undefined &&
+      !isReasoningProviderType(entry.providerType)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["reasoningEffort"],
+        message:
+          "A reasoning setting applies to the local and openai-compatible providers only",
+      });
+    }
+  });
+
+export const providerChainPutSchema = z
+  .object({
+    chain: z
+      .array(providerChainEntrySchema)
+      .min(1, "Chain must contain at least one provider")
+      .max(PROVIDER_CHAIN_TYPES.length, "Too many providers")
+      .describe(
+        "The whole chain, in the order it should be walked. At least one entry and at most one per known provider type; a repeated type is refused.",
+      ),
+  })
+  .strict();
+
+export type ProviderChainPutInput = z.infer<typeof providerChainPutSchema>;

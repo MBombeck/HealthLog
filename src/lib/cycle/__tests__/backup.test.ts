@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { _resetCryptoCacheForTests, encrypt } from "@/lib/crypto";
+import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
 
 import { buildCycleBackupSection } from "../backup";
 
@@ -234,5 +237,89 @@ describe("a symptom the account created survives the round trip", () => {
     // The restore distinguishes them, so the builder must be explicit.
     const section = await buildCycleBackupSection(client([]), "user-1", {});
     expect(section.customSymptoms).toEqual([]);
+  });
+});
+
+describe("a portable file carries the cycle free text readable", () => {
+  // Ciphertext in a portable file is noise on any host with another key, so
+  // the note, the sensitive envelope and a custom label travel opened, and
+  // the restore seals them under the receiving host's key.
+  const savedKey = process.env.ENCRYPTION_KEY;
+  beforeEach(() => {
+    process.env.ENCRYPTION_KEY = "ab".repeat(32);
+    _resetCryptoCacheForTests();
+  });
+  afterEach(() => {
+    process.env.ENCRYPTION_KEY = savedKey;
+    _resetCryptoCacheForTests();
+  });
+
+  function client(dayLog: Record<string, unknown>, label: string | null) {
+    return {
+      cycleProfile: { findUnique: vi.fn().mockResolvedValue(null) },
+      menstrualCycle: { findMany: vi.fn().mockResolvedValue([]) },
+      cycleDayLog: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { date: "2026-07-02", symptomLinks: [], ...dayLog },
+          ]),
+      },
+      cycleSymptom: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            key: "custom_ache",
+            labelKey: "cycle.symptom.custom_ache",
+            categoryId: "cat-1",
+            icon: null,
+            sortOrder: 0,
+            isActive: true,
+            labelEncrypted: label,
+          },
+        ]),
+      },
+    } as never;
+  }
+
+  it("opens each sealed value and carries no ciphertext", async () => {
+    const section = await buildCycleBackupSection(
+      client(
+        {
+          notesEncrypted: encrypt("Cramps at four"),
+          sensitiveEncrypted: encrypt(
+            JSON.stringify({ sexualActivity: true, contraceptive: "ORAL" }),
+          ),
+        },
+        encrypt("Back ache"),
+      ),
+      "user-1",
+      {},
+    );
+    const day = section.cycleDayLogs[0];
+    expect(day.note).toBe("Cramps at four");
+    expect(day.sensitive).toEqual({
+      sexualActivity: true,
+      contraceptive: "ORAL",
+    });
+    expect(day).not.toHaveProperty("notesEncrypted");
+    expect(day).not.toHaveProperty("sensitiveEncrypted");
+    expect(section.customSymptoms[0].label).toBe("Back ache");
+    expect(section.customSymptoms[0]).not.toHaveProperty("labelEncrypted");
+  });
+
+  it("writes the unreadable marker where this host cannot open a value", async () => {
+    const section = await buildCycleBackupSection(
+      client(
+        {
+          notesEncrypted: "v9.bm90LWEtcmVhbC1jaXBoZXJ0ZXh0LWF0LWFsbC1yZWFsbHk=",
+        },
+        null,
+      ),
+      "user-1",
+      {},
+    );
+    expect(section.cycleDayLogs[0].note).toBe(UNREADABLE_EXPORT_MARKER);
+    expect(section.cycleDayLogs[0].sensitive).toBeNull();
+    expect(section.customSymptoms[0].label).toBeNull();
   });
 });

@@ -19,6 +19,7 @@ import {
   buildAccountSettingsBackupSection,
 } from "@/lib/export/account-settings-backup";
 import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
+import { reasoningEffortFor } from "@/lib/ai/reasoning-effort";
 
 /** A 1x1 PNG, the smallest image the avatar upload accepts. */
 const PNG_1X1 =
@@ -188,6 +189,38 @@ describe("admitAccountSettings", () => {
       "thresholdsJson.PULSE",
       "thresholdsJson.RETIRED_METRIC",
     ]);
+  });
+
+  // #1126 — the reasoning setting lives on the provider chain entries, so
+  // the chain column carries it through a backup unchanged.
+  it("carries the provider chain's reasoning settings through a round trip", async () => {
+    const chain = [
+      {
+        providerType: "local",
+        priority: 1,
+        enabled: true,
+        reasoningEffort: "none",
+      },
+      {
+        providerType: "openai-compatible",
+        priority: 2,
+        enabled: false,
+        reasoningEffort: "high",
+      },
+      { providerType: "openai", priority: 3, enabled: true },
+    ];
+    const { accountSettings } = await buildAccountSettingsBackupSection(
+      prismaReturning(rowWith({ aiProviderChain: chain })),
+      "u1",
+      { purpose: "disaster-recovery" },
+    );
+    const restored = admitAccountSettings(
+      JSON.parse(JSON.stringify(accountSettings)),
+      ctx,
+    ).data.aiProviderChain;
+    expect(restored).toEqual(chain);
+    expect(reasoningEffortFor(restored, "local")).toBe("none");
+    expect(reasoningEffortFor(restored, "openai-compatible")).toBe("high");
   });
 
   it("writes a database null for a JSON setting the file clears", () => {
