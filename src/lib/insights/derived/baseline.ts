@@ -282,7 +282,12 @@ export async function readDayMeanSeries(
     timeZone: timeZone ?? "UTC",
     valueRange: plausibleMetricRange(type),
   });
-  const points = days.map((d) => ({ day: d.day, mean: d.sum / d.n }));
+  // A pulse day is the mean of its local hours' means (`dayMean`, see
+  // `day-mean.ts`); every other type's day is the mean of its readings.
+  const points = days.map((d) => ({
+    day: d.day,
+    mean: d.dayMean ?? d.sum / d.n,
+  }));
   if (points.length === 0) {
     return { points: [], source: "none" };
   }

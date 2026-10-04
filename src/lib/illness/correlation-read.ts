@@ -30,6 +30,7 @@ import { prisma } from "@/lib/db";
 import { readBestGranularityRollups } from "@/lib/rollups/measurement-read-wmy";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
+import { dayValue } from "@/lib/measurements/day-mean";
 import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
 import { reconstructNights } from "@/lib/insights/derived/sleep-score";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
@@ -250,18 +251,24 @@ async function readWindowMeans(
     select: { value: true, measuredAt: true },
   });
   if (rows.length === 0) return { points: [], source: "none" };
-  const byDay = new Map<string, { sum: number; count: number; max: number }>();
+  const byDay = new Map<string, { rows: typeof rows; max: number }>();
   for (const row of rows) {
     const day = dayKeyForUserTz(row.measuredAt, tz);
-    const acc = byDay.get(day) ?? { sum: 0, count: 0, max: -Infinity };
-    acc.sum += row.value;
-    acc.count += 1;
+    const acc = byDay.get(day) ?? { rows: [], max: -Infinity };
+    acc.rows.push(row);
     acc.max = Math.max(acc.max, row.value);
     byDay.set(day, acc);
   }
+  // The day's mean is the type's day value (`day-mean.ts`): the mean of its
+  // local hours' means for pulse, the mean of its readings otherwise. The
+  // max stays over every reading.
   const points = [...byDay.entries()]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([day, acc]) => ({ day, mean: acc.sum / acc.count, max: acc.max }));
+    .map(([day, acc]) => ({
+      day,
+      mean: dayValue(type, acc.rows, tz) as number,
+      max: acc.max,
+    }));
   return { points, source: "live" };
 }
 

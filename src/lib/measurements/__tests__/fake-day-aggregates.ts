@@ -19,6 +19,8 @@ import type {
   SourceDayAggregateRow,
 } from "@/lib/measurements/day-aggregates";
 import { userDayKey } from "@/lib/tz/format";
+import { dayValue } from "@/lib/measurements/day-mean";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 
 export function foldDayAggregates(
   rows: ReadonlyArray<{ measuredAt: Date; value: number }>,
@@ -74,7 +76,30 @@ export async function fakeReadDayAggregates(
     orderBy: { measuredAt: "asc" },
     select: { measuredAt: true, value: true },
   })) ?? []) as Array<{ measuredAt: Date; value: number }>;
-  return foldDayAggregates(rows, opts);
+  const days = foldDayAggregates(rows, opts);
+  if (!usesHourlyMeanDay(opts.type)) return days;
+  // Mirror the SQL's hourly-mean day: the mean of the (day, segment)'s local
+  // hours' means.
+  const starts = opts.segmentStarts ?? [];
+  return days.map((d) => {
+    const members = rows.filter((r) => {
+      const t = r.measuredAt.getTime();
+      if (t < opts.since.getTime()) return false;
+      if (opts.until && t > opts.until.getTime()) return false;
+      if (
+        opts.valueRange &&
+        (r.value < opts.valueRange.min || r.value > opts.valueRange.max)
+      ) {
+        return false;
+      }
+      return (
+        userDayKey(r.measuredAt, opts.timeZone) === d.day &&
+        starts.filter((s) => t < s.getTime()).length === d.segment
+      );
+    });
+    const dayMean = dayValue(opts.type, members, opts.timeZone);
+    return dayMean === null ? d : { ...d, dayMean };
+  });
 }
 
 /**

@@ -27,6 +27,8 @@ import type {
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { isValidTimezone } from "@/lib/tz/format";
+import { dayWeightedRowsSql } from "@/lib/measurements/day-mean";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 
 export interface DayAggregateRow {
   /** Calendar day in the requested zone, `YYYY-MM-DD`. */
@@ -37,6 +39,21 @@ export interface DayAggregateRow {
   sum: number;
   min: number;
   max: number;
+  /**
+   * For a type whose day is the mean of its hours' means (pulse, see
+   * `day-mean.ts`): `SUM(value * day_weight)` and `SUM(day_weight)` over the
+   * row's readings. A whole day's weights add up to one, so `weightedSum /
+   * weightSum` is the day value and the same ratio over several rows the mean
+   * of their days. Absent for every other type.
+   */
+  weightedSum?: number;
+  weightSum?: number;
+  /**
+   * The row's value for an hourly-mean type, `weightedSum / weightSum`: the
+   * mean of its local hours' means. Absent for every other type, whose value
+   * stays `sum / n`. Read it as `dayMean ?? sum / n`.
+   */
+  dayMean?: number;
 }
 
 export interface ReadDayAggregatesOptions {
@@ -77,6 +94,10 @@ export async function readDayAggregates(
           ),
           " + ",
         )})`;
+
+  if (usesHourlyMeanDay(opts.type)) {
+    return readHourlyMeanDayAggregates(opts, timeZone, until, range, segment);
+  }
 
   // The day and segment are computed once per row in `src` and grouped by
   // name, so the bound zone / boundary parameters never have to match
@@ -122,6 +143,74 @@ export async function readDayAggregates(
     sum: Number(r.sum),
     min: Number(r.min),
     max: Number(r.max),
+  }));
+}
+
+/**
+ * `readDayAggregates` for an hourly-mean type: the same rows, plus the day
+ * weights of `day-mean.ts` cut in the same zone, so a day's hours count once
+ * each however densely they were sampled.
+ */
+async function readHourlyMeanDayAggregates(
+  opts: ReadDayAggregatesOptions,
+  timeZone: string,
+  until: Prisma.Sql,
+  range: Prisma.Sql,
+  segment: Prisma.Sql,
+): Promise<DayAggregateRow[]> {
+  const rows = await (opts.db ?? prisma).$queryRaw<
+    Array<{
+      day: string;
+      segment: number;
+      n: number;
+      sum: number;
+      min: number;
+      max: number;
+      wsum: number;
+      wdays: number;
+    }>
+  >`
+    WITH base AS (
+      SELECT m.*
+      FROM measurements m
+      WHERE m."user_id" = ${opts.userId}
+        AND m."type" = ${opts.type}::measurement_type
+        AND m."deleted_at" IS NULL
+        AND m."measured_at" >= ${opts.since}
+        ${until}
+        ${range}
+    ),
+    src AS (
+      SELECT
+        to_char((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}, 'YYYY-MM-DD') AS day,
+        ${segment} AS segment,
+        m."value" AS value,
+        m.day_weight AS day_weight
+      FROM ${dayWeightedRowsSql("base", timeZone)} m
+    )
+    SELECT
+      day,
+      segment::int                             AS segment,
+      COUNT(*)::int                            AS n,
+      SUM(value)::double precision             AS sum,
+      MIN(value)::double precision             AS min,
+      MAX(value)::double precision             AS max,
+      SUM(value * day_weight)::double precision AS wsum,
+      SUM(day_weight)::double precision        AS wdays
+    FROM src
+    GROUP BY day, segment
+    ORDER BY day ASC, segment DESC
+  `;
+  return rows.map((r) => ({
+    day: r.day,
+    segment: Number(r.segment),
+    n: Number(r.n),
+    sum: Number(r.sum),
+    min: Number(r.min),
+    max: Number(r.max),
+    weightedSum: Number(r.wsum),
+    weightSum: Number(r.wdays),
+    dayMean: Number(r.wsum) / Number(r.wdays),
   }));
 }
 
