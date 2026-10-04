@@ -54,6 +54,11 @@ diastolic value; document previews work again.
   PDFs render with pdfjs font, cmap and wasm data and a registered fallback
   font instead of absent system fonts, and an all-blank render reports
   `raster-failed`. The thumbnail job logs why a preview is missing.
+- **Portable backups.** Cycle free text, custom mood labels, visit notes
+  and vaccination notes are carried readable and re-encrypted on restore
+  instead of as the source server's ciphertext; custom mood tags restore
+  without mood entries; a round-trip guard fails on any ciphertext in a
+  portable file. A medication update and its course share one transaction.
 - **Lab unit mismatch (#1094).** A reading in another unit than its marker is
   refused (`labs.unit.mismatch`) on every write path; a marker's unit is
   locked while it has readings (`biomarkers.unit.locked`).
