@@ -623,3 +623,96 @@ describe("GET /api/user/ai-provider — the shared-provider offer", () => {
     }
   });
 });
+
+// #1126 — the Local and gateway entries' reasoning setting, written from the
+// provider forms onto the chain entry and read back from it.
+describe("PATCH /api/user/ai-provider — reasoning setting (#1126)", () => {
+  const patch = PATCH as (req: Request) => Promise<Response>;
+  function storedChain(chain: unknown) {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProviderChain: chain,
+    } as never);
+  }
+  function written() {
+    return vi.mocked(prisma.user.update).mock.calls[0]?.[0].data as
+      Record<string, unknown> | undefined;
+  }
+
+  it("stores Off on the local entry of a chain that was never customised", async () => {
+    storedChain(null);
+    const res = await patch(
+      patchRequest({ provider: "LOCAL", localReasoningEffort: "none" }),
+    );
+    expect(res.status).toBe(200);
+    const chain = written()?.aiProviderChain as Array<{
+      providerType: string;
+      reasoningEffort?: string;
+    }>;
+    expect(chain.find((e) => e.providerType === "local")).toMatchObject({
+      enabled: true,
+      reasoningEffort: "none",
+    });
+    expect(chain.filter((e) => e.reasoningEffort)).toHaveLength(1);
+  });
+
+  it("holds the gateway's value on a disabled entry when the chain lacks it", async () => {
+    storedChain([{ providerType: "local", priority: 1, enabled: true }]);
+    await patch(patchRequest({ compatReasoningEffort: "high" }));
+    expect(written()?.aiProviderChain).toEqual([
+      { providerType: "local", priority: 1, enabled: true },
+      {
+        providerType: "openai-compatible",
+        priority: 2,
+        enabled: false,
+        reasoningEffort: "high",
+      },
+    ]);
+  });
+
+  it("does not touch the chain when Default is restated on a default chain", async () => {
+    storedChain(null);
+    await patch(
+      patchRequest({ provider: "LOCAL", localReasoningEffort: null }),
+    );
+    expect(written()).toEqual({ aiProvider: "LOCAL" });
+  });
+
+  it("answers 200 for a body that only restates Default", async () => {
+    storedChain(null);
+    const res = await patch(patchRequest({ localReasoningEffort: null }));
+    expect(res.status).toBe(200);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses a value outside the five", async () => {
+    const res = await patch(patchRequest({ localReasoningEffort: "max" }));
+    expect(res.status).toBe(422);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/user/ai-provider — reasoning setting (#1126)", () => {
+  it("reads both values from the chain, null for Default", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProvider: "LOCAL",
+      aiProviderChain: [
+        {
+          providerType: "local",
+          priority: 1,
+          enabled: true,
+          reasoningEffort: "none",
+        },
+      ],
+    } as never);
+    vi.mocked(resolveProviderAvailability).mockResolvedValue({
+      aiAvailable: true,
+      managedBy: "local",
+    });
+    const res = await (GET as () => Promise<Response>)();
+    const body = (await res.json()) as {
+      data: { localReasoningEffort: unknown; compatReasoningEffort: unknown };
+    };
+    expect(body.data.localReasoningEffort).toBe("none");
+    expect(body.data.compatReasoningEffort).toBeNull();
+  });
+});
