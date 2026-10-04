@@ -126,19 +126,19 @@ describe("generateThumbnail", () => {
   it("returns { ok: false } for an unsupported MIME type", async () => {
     await expect(
       generateThumbnail(Buffer.from("plain text"), "text/plain"),
-    ).resolves.toEqual({ ok: false });
+    ).resolves.toEqual({ ok: false, reason: "unsupported-type" });
   });
 
   it("returns { ok: false } and never throws on malformed image bytes", async () => {
     await expect(
       generateThumbnail(Buffer.from("not a real image"), "image/png"),
-    ).resolves.toEqual({ ok: false });
+    ).resolves.toEqual({ ok: false, reason: "error" });
   });
 
   it("returns { ok: false } on a malformed PDF", async () => {
     await expect(
       generateThumbnail(Buffer.from("not a pdf"), "application/pdf"),
-    ).resolves.toEqual({ ok: false });
+    ).resolves.toEqual({ ok: false, reason: "raster-failed" });
   });
 
   it("refuses a decompression bomb before decoding (pixel cap)", async () => {
@@ -153,6 +153,7 @@ describe("generateThumbnail", () => {
     bomb.writeUInt32BE(30_000, 20); // height
     await expect(generateThumbnail(bomb, "image/png")).resolves.toEqual({
       ok: false,
+      reason: "pixel-cap",
     });
   });
 
@@ -164,6 +165,6 @@ describe("generateThumbnail", () => {
     loadImageMock.mockResolvedValueOnce({ width: 30_000, height: 30_000 });
     await expect(
       generateThumbnail(Buffer.from("desynced jpeg bytes"), "image/jpeg"),
-    ).resolves.toEqual({ ok: false });
+    ).resolves.toEqual({ ok: false, reason: "pixel-cap" });
   });
 });

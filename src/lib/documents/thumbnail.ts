@@ -157,9 +157,23 @@ export interface Thumbnail {
   height: number;
 }
 
+/**
+ * Why no preview was made. `unsupported-type` is the expected answer for an
+ * Office file or a text document; every other reason means a preview should
+ * have existed, so the thumbnail job logs it as a warning.
+ */
+export type ThumbnailSkipReason =
+  | "unsupported-type"
+  | "native-canvas-unsupported"
+  | "pixel-cap"
+  | "raster-failed"
+  | "empty-render"
+  | "error";
+
 /** Best-effort generation outcome — never an exception. */
 export type ThumbnailResult =
-  { ok: true; thumbnail: Thumbnail } | { ok: false };
+  | { ok: true; thumbnail: Thumbnail }
+  | { ok: false; reason: ThumbnailSkipReason };
 
 // Minimal structural types for the slice of `@napi-rs/canvas` this module uses.
 // A type-only shape (erased at build) so we never eagerly evaluate the module
@@ -229,7 +243,7 @@ export async function generateThumbnail(
         action: { name: "documents.thumbnail.rejected" },
         meta: { reason: "native_canvas_unsupported" },
       });
-      return { ok: false };
+      return { ok: false, reason: "native-canvas-unsupported" };
     }
     // Lazy import: keeps @napi-rs/canvas (+ transitively pdfjs on the PDF path)
     // out of the eager server chunk. Resolved on first generation, then cached.
@@ -244,7 +258,7 @@ export async function generateThumbnail(
           action: { name: "documents.thumbnail.rejected" },
           meta: { source: "image", reason: "pixel_cap", pixels },
         });
-        return { ok: false };
+        return { ok: false, reason: "pixel-cap" };
       }
       const image = await napi.loadImage(bytes);
       // Post-decode backstop: the header sniff returns null on any marker
@@ -260,10 +274,10 @@ export async function generateThumbnail(
             pixels: image.width * image.height,
           },
         });
-        return { ok: false };
+        return { ok: false, reason: "pixel-cap" };
       }
       const thumb = drawScaledJpeg(napi, image);
-      if (!thumb) return { ok: false };
+      if (!thumb) return { ok: false, reason: "empty-render" };
       annotate({
         action: { name: "documents.thumbnail.ok" },
         meta: { source: "image", width: thumb.width, height: thumb.height },
@@ -274,11 +288,13 @@ export async function generateThumbnail(
     if (mimeType === "application/pdf") {
       // Page 1 only — a preview never renders the whole document.
       const raster = await rasterizePdf(bytes, 1);
-      if (!raster.ok || raster.images.length === 0) return { ok: false };
+      if (!raster.ok || raster.images.length === 0) {
+        return { ok: false, reason: "raster-failed" };
+      }
       const pageJpeg = Buffer.from(raster.images[0]!.dataBase64, "base64");
       const image = await napi.loadImage(pageJpeg);
       const thumb = drawScaledJpeg(napi, image);
-      if (!thumb) return { ok: false };
+      if (!thumb) return { ok: false, reason: "empty-render" };
       annotate({
         action: { name: "documents.thumbnail.ok" },
         meta: { source: "pdf", width: thumb.width, height: thumb.height },
@@ -287,7 +303,7 @@ export async function generateThumbnail(
     }
 
     // Every other MIME (Office/text/TIFF/HEIC/XML/JSON) — no preview.
-    return { ok: false };
+    return { ok: false, reason: "unsupported-type" };
   } catch (err) {
     annotate({
       action: { name: "documents.thumbnail.failed" },
@@ -297,6 +313,6 @@ export async function generateThumbnail(
         message: err instanceof Error ? err.message.slice(0, 300) : String(err),
       },
     });
-    return { ok: false };
+    return { ok: false, reason: "error" };
   }
 }
