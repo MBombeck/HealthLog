@@ -122,11 +122,17 @@ export interface ImportJobResult {
   clinical: { skipped: number };
   /**
    * Records left out because HealthLog wrote them into Apple Health itself and
-   * already holds them under their own source: `byMarker` carry the app's
-   * origin marker, `matchedManual` match a manual entry (same type and value,
-   * within 2 s) from before the marker existed.
+   * already holds them under their own source, each counted once however often
+   * the export repeats it: `byMarker` carry the app's origin marker,
+   * `byExternalId` carry a HealthLog row id as `HKExternalUUID` (samples from
+   * before the marker existed), `matchedManual` match a manual entry (same type
+   * and value, within 2 s) without either.
    */
-  writtenByHealthLog: { byMarker: number; matchedManual: number };
+  writtenByHealthLog: {
+    byMarker: number;
+    byExternalId: number;
+    matchedManual: number;
+  };
   /**
    * v1.15.0 — reproductive HealthKit samples routed into CYCLE day-logs
    * (NOT Measurement). Absent / zeroed when the account has no cycle
@@ -173,6 +179,29 @@ interface PreparedMeasurement {
   externalSourceVersion: string | null;
   sleepStage: Prisma.MeasurementCreateInput["sleepStage"];
   deviceType: string | null;
+}
+
+/**
+ * A quantity `<Record>` read up to its open tag. Its contribution is committed
+ * at the close tag, once its `<MetadataEntry>` children have been read.
+ */
+interface PendingRecord {
+  /** Queue the record; `healthLogId` is the `HKExternalUUID` it carried. */
+  commit: (healthLogId: string | null) => void;
+  ownOrigin: boolean;
+  healthLogId: string | null;
+  /** The record's sample identity, computed only when it is left out. */
+  sampleKey: () => string;
+}
+
+/** Apple's export name for `HKMetadataKeyExternalUUID`. */
+const HK_EXTERNAL_UUID_METADATA_KEY = "HKExternalUUID";
+
+/** The two halves of a blood pressure reading are one kind for an id match. */
+function kindOf(type: MeasurementType): string {
+  return type === "BLOOD_PRESSURE_SYS" || type === "BLOOD_PRESSURE_DIA"
+    ? "BLOOD_PRESSURE"
+    : type;
 }
 
 /** Flush row written to the `Workout` table. */
@@ -417,6 +446,8 @@ export async function streamParseExportXml(
     dayKey: string;
     rawValue: string | undefined;
     protectionUsed?: boolean;
+    sampleKey: string;
+    ownOrigin: boolean;
   } | null = null;
 
   // Cumulative fold: type -> local day -> hashed source identity -> subtotal.
@@ -427,14 +458,27 @@ export async function streamParseExportXml(
   // A record's contribution is committed at its close tag, once its child
   // `<MetadataEntry>` rows are read: one of them can mark the sample as written
   // by HealthLog itself, which has to keep it out of the import.
-  let pendingRecord: { commit: () => void; ownOrigin: boolean } | null = null;
-  const writtenByHealthLog = { byMarker: 0, matchedManual: 0 };
+  let pendingRecord: PendingRecord | null = null;
+  const writtenByHealthLog = { byMarker: 0, byExternalId: 0, matchedManual: 0 };
+  // An export can carry the same sample twice (a correlation's records also
+  // stand on their own), so a left-out sample is counted by its sample key.
+  const countedOwn = new Set<string>();
+  const countOwn = (
+    reason: keyof typeof writtenByHealthLog,
+    sampleKey: string,
+  ): void => {
+    if (countedOwn.has(sampleKey)) return;
+    countedOwn.add(sampleKey);
+    writtenByHealthLog[reason] += 1;
+  };
+  // The `HKExternalUUID` a queued spot row carried, checked at flush.
+  const healthLogIdOf = new Map<PreparedMeasurement, string>();
   // A `<Correlation>` (a blood pressure reading) wraps its records, and the
   // marker may sit on the correlation itself, before or after them. Its records
   // are held until it closes, then all kept or all left out together.
   let currentCorrelation: {
     ownOrigin: boolean;
-    held: Array<{ commit: () => void; ownOrigin: boolean }>;
+    held: PendingRecord[];
   } | null = null;
   // Spot-row batch awaiting flush.
   const spotBatch: PreparedMeasurement[] = [];
@@ -492,54 +536,134 @@ export async function streamParseExportXml(
   };
 
   // ── Flush helpers ──────────────────────────────────────────
-  // A manual entry the app mirrored into Apple Health before it stamped its
-  // origin marker comes back in the export as a second copy of the reading.
-  // Leave it out when a MANUAL row of the same type and value sits within 2 s.
-  // Only MANUAL: Withings and import rows reach Apple Health through the app's
-  // mirror, which always sets the marker, so a value-and-time match against
-  // them would only add false positives. Same rule and tolerance as the sync
-  // path (`cross-source-merge.ts`).
+  // A sample the app wrote before it stamped its origin marker still carries
+  // the HealthLog row id as `HKExternalUUID`. A hit on one of this account's
+  // rows (deleted ones included: the sample is ours either way) of the same
+  // kind is an exact match. Blood pressure is one row per half, while the app
+  // stamps both samples of a reading with one id (the systolic row's, the
+  // diastolic row's in older builds), so either half matches either id.
+  const withoutHealthLogIds = async (
+    rows: PreparedMeasurement[],
+  ): Promise<PreparedMeasurement[]> => {
+    const ids = new Set<string>();
+    for (const row of rows) {
+      const id = healthLogIdOf.get(row);
+      if (id) ids.add(id);
+    }
+    if (ids.size === 0) return rows;
+    const known = await prisma.measurement.findMany({
+      where: { userId, id: { in: [...ids] } },
+      select: { id: true, type: true },
+    });
+    if (known.length === 0) return rows;
+    const typeOf = new Map(known.map((row) => [row.id, row.type]));
+    return rows.filter((row) => {
+      const id = healthLogIdOf.get(row);
+      const rowType = id ? typeOf.get(id) : undefined;
+      if (!rowType || kindOf(rowType) !== kindOf(row.type)) return true;
+      countOwn("byExternalId", row.externalId);
+      return false;
+    });
+  };
+
+  // A manual entry mirrored with neither the marker nor an id comes back as a
+  // second copy of the reading. Leave it out when a MANUAL row of the same
+  // type and value sits within 2 s. Only MANUAL: Withings and import rows are
+  // written into Apple Health by the server-to-Health mirror, which has always
+  // stamped the row id, so a value-and-time match against them would only add
+  // false positives. Same rule and tolerance as the sync path
+  // (`cross-source-merge.ts`).
+  //
+  // The types that hold MANUAL rows are read once per import, so a batch of a
+  // type the account never typed in asks nothing, and a batch that does asks
+  // one time window per type rather than one clause per row.
+  let manualTypes: Promise<Set<MeasurementType>> | null = null;
   const withoutManualMirrors = async (
     rows: PreparedMeasurement[],
   ): Promise<PreparedMeasurement[]> => {
     if (rows.length === 0) return rows;
+    manualTypes ??= prisma.measurement
+      .groupBy({
+        by: ["type"],
+        where: { userId, source: "MANUAL", deletedAt: null },
+      })
+      .then((groups) => new Set(groups.map((group) => group.type)));
+    const typed = await manualTypes;
+    const windows = new Map<MeasurementType, { from: number; to: number }>();
+    for (const row of rows) {
+      if (!typed.has(row.type)) continue;
+      const at = row.measuredAt.getTime();
+      const window = windows.get(row.type);
+      if (!window) windows.set(row.type, { from: at, to: at });
+      else {
+        if (at < window.from) window.from = at;
+        if (at > window.to) window.to = at;
+      }
+    }
+    if (windows.size === 0) return rows;
     const candidates = await prisma.measurement.findMany({
       where: {
         userId,
         source: "MANUAL",
         deletedAt: null,
-        OR: rows.map((row) => ({
-          type: row.type,
+        OR: [...windows].map(([type, window]) => ({
+          type,
           measuredAt: {
-            gte: new Date(row.measuredAt.getTime() - MEASURED_AT_TOLERANCE_MS),
-            lte: new Date(row.measuredAt.getTime() + MEASURED_AT_TOLERANCE_MS),
+            gte: new Date(window.from - MEASURED_AT_TOLERANCE_MS),
+            lte: new Date(window.to + MEASURED_AT_TOLERANCE_MS),
           },
         })),
       },
       select: { type: true, source: true, value: true, measuredAt: true },
+      orderBy: { measuredAt: "asc" },
     });
     if (candidates.length === 0) return rows;
+    const byType = new Map<MeasurementType, typeof candidates>();
+    for (const candidate of candidates) {
+      const list = byType.get(candidate.type);
+      if (list) list.push(candidate);
+      else byType.set(candidate.type, [candidate]);
+    }
     return rows.filter((row) => {
-      const mirrored = candidates.some((candidate) =>
-        isSameReadingAcrossSource(
+      const list = byType.get(row.type);
+      if (!list) return true;
+      const at = row.measuredAt.getTime();
+      // First candidate not earlier than the tolerance window.
+      let lo = 0;
+      let hi = list.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (list[mid].measuredAt.getTime() < at - MEASURED_AT_TOLERANCE_MS)
+          lo = mid + 1;
+        else hi = mid;
+      }
+      for (let i = lo; i < list.length; i++) {
+        if (list[i].measuredAt.getTime() > at + MEASURED_AT_TOLERANCE_MS) break;
+        const mirrored = isSameReadingAcrossSource(
           {
             type: row.type,
             source: "APPLE_HEALTH",
             value: row.value,
             measuredAt: row.measuredAt,
           },
-          candidate,
-        ),
-      );
-      if (mirrored) writtenByHealthLog.matchedManual += 1;
-      return !mirrored;
+          list[i],
+        );
+        if (mirrored) {
+          countOwn("matchedManual", row.externalId);
+          return false;
+        }
+      }
+      return true;
     });
   };
 
   const flushSpotBatch = async (): Promise<void> => {
     if (spotBatch.length === 0) return;
     const incoming = spotBatch.splice(0, spotBatch.length);
-    const chunk = await withoutManualMirrors(incoming);
+    const chunk = await withoutManualMirrors(
+      await withoutHealthLogIds(incoming),
+    );
+    for (const row of incoming) healthLogIdOf.delete(row);
     for (const row of chunk) widenSpan(row.measuredAt);
     const insertedArrivals: Array<{
       id: string;
@@ -916,7 +1040,18 @@ export async function streamParseExportXml(
           Date.parse(attrs.endDate ?? attrs.startDate ?? ""),
         )
           ? null
-          : { hkType, dayKey, rawValue: attrs.value };
+          : {
+              hkType,
+              dayKey,
+              rawValue: attrs.value,
+              sampleKey: hashSampleKey(
+                hkType,
+                attrs.value ?? "",
+                attrs.startDate,
+                attrs.endDate,
+              ),
+              ownOrigin: false,
+            };
         return;
       }
 
@@ -978,7 +1113,15 @@ export async function streamParseExportXml(
 
       pendingRecord = {
         ownOrigin: false,
-        commit: () => {
+        healthLogId: null,
+        sampleKey: () =>
+          hashSampleKey(
+            hkType,
+            attrs.value ?? "",
+            attrs.startDate,
+            attrs.endDate,
+          ),
+        commit: (healthLogId) => {
           if (CUMULATIVE_HK_TYPES.has(mapped.type)) {
             const dayKey = dayKeyForUserTz(mapped.takenAt, userTimezone);
             const sourceHash = hashCumulativeSourceIdentity(
@@ -1007,7 +1150,7 @@ export async function streamParseExportXml(
               attrs.startDate,
               attrs.endDate,
             );
-            spotBatch.push({
+            const row: PreparedMeasurement = {
               userId,
               type: mapped.type,
               value: mapped.value,
@@ -1017,7 +1160,9 @@ export async function streamParseExportXml(
               externalSourceVersion: attrs.sourceVersion ?? null,
               sleepStage: mapped.sleepStage ?? null,
               deviceType: null,
-            });
+            };
+            spotBatch.push(row);
+            if (healthLogId) healthLogIdOf.set(row, healthLogId);
           }
         },
       };
@@ -1107,7 +1252,11 @@ export async function streamParseExportXml(
       if (isHealthLogOriginEntry(attrs.key, attrs.value)) {
         // On a record, or on the correlation that wraps it.
         if (pendingRecord) pendingRecord.ownOrigin = true;
+        else if (currentCycleRecord) currentCycleRecord.ownOrigin = true;
         else if (currentCorrelation) currentCorrelation.ownOrigin = true;
+      }
+      if (pendingRecord && attrs.key === HK_EXTERNAL_UUID_METADATA_KEY) {
+        pendingRecord.healthLogId = attrs.value || null;
       }
       // Attach the SexualActivity protection flag to the open cycle record.
       // Apple writes `HKMetadataKeySexualActivityProtectionUsed` with a
@@ -1157,17 +1306,17 @@ export async function streamParseExportXml(
       const rec = pendingRecord;
       pendingRecord = null;
       if (currentCorrelation) currentCorrelation.held.push(rec);
-      else if (rec.ownOrigin) writtenByHealthLog.byMarker += 1;
-      else rec.commit();
+      else if (rec.ownOrigin) countOwn("byMarker", rec.sampleKey());
+      else rec.commit(rec.healthLogId);
     }
     if (tagName === "Correlation" && currentCorrelation) {
       const correlation = currentCorrelation;
       currentCorrelation = null;
       for (const rec of correlation.held) {
         if (correlation.ownOrigin || rec.ownOrigin) {
-          writtenByHealthLog.byMarker += 1;
+          countOwn("byMarker", rec.sampleKey());
         } else {
-          rec.commit();
+          rec.commit(rec.healthLogId);
         }
       }
     }
@@ -1178,6 +1327,11 @@ export async function streamParseExportXml(
     if (tagName === "Record" && currentCycleRecord) {
       const rec = currentCycleRecord;
       currentCycleRecord = null;
+      if (rec.ownOrigin) {
+        // A day HealthLog mirrored into Apple Health from its own day-log.
+        countOwn("byMarker", rec.sampleKey);
+        return;
+      }
       const consumed = cycleAccumulator.consume(
         rec.hkType,
         rec.dayKey,
