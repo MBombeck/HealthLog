@@ -15,6 +15,12 @@
  * kind icon), and `runDocumentThumbnail` returns cleanly so pg-boss does not
  * retry it. Only an unexpected throw (a DB hiccup) propagates for retry.
  *
+ * Each run is one background wide event (`job.document_thumbnail`). A run
+ * that should have produced a preview and did not is raised to `warn` with
+ * the reason, so a document left with its kind icon is explained in the log.
+ * Without the event every annotation below went nowhere: a whole class of
+ * PDFs went without previews for weeks and the log never said so.
+ *
  * The queue MUST be registered in the maintenance registrar
  * (`src/lib/jobs/reminder/register-maintenance.ts`) so pg-boss provisions it.
  */
@@ -25,6 +31,7 @@ import {
 } from "@/lib/documents/store";
 import { generateThumbnail } from "@/lib/documents/thumbnail";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { withBackgroundEvent } from "@/lib/logging/background";
 import { annotate } from "@/lib/logging/context";
 
 export const DOCUMENT_THUMBNAIL_QUEUE = "document-thumbnail";
@@ -49,7 +56,20 @@ export async function runDocumentThumbnail(
 ): Promise<void> {
   const { userId, documentId } = payload;
   if (!userId || !documentId) return;
+  await withBackgroundEvent("job.document_thumbnail", async (evt) => {
+    evt.addMeta("document_id", documentId);
+    await renderThumbnail(userId, documentId, (reason) => {
+      evt.addMeta("thumbnail_missing_reason", reason);
+      evt.elevateLevel("warn");
+    });
+  });
+}
 
+async function renderThumbnail(
+  userId: string,
+  documentId: string,
+  warn: (reason: string) => void,
+): Promise<void> {
   // Owner-scoped load; the blob column is selected ONLY here (the job that
   // renders the preview), never in the list/detail queries. Skip a document
   // that already has a thumbnail so a re-enqueue is a cheap no-op.
@@ -84,6 +104,7 @@ export async function runDocumentThumbnail(
       action: { name: "documents.thumbnail.decryptFailed" },
       meta: { documentId },
     });
+    warn("decrypt-failed");
     return;
   }
 
@@ -91,8 +112,11 @@ export async function runDocumentThumbnail(
   if (!result.ok) {
     annotate({
       action: { name: "documents.thumbnail.run" },
-      meta: { documentId, generated: false },
+      meta: { documentId, generated: false, mimeType: document.mimeType },
     });
+    // An Office or text document has no preview by design; anything else
+    // was meant to get one.
+    if (result.reason !== "unsupported-type") warn(result.reason);
     return;
   }
 
