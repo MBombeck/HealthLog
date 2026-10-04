@@ -7555,7 +7555,8 @@
         "restoreFailureForeignReference": "The file points at records that belong to another account. Nothing was written.",
         "previewKeyMissing": "This backup cannot be restored on this server: it needs encryption key {keys}. Add the key back to ENCRYPTION_KEYS and restart first.",
         "restoreSkippedSymptomEpisodeReference": "Symptom entry linked to an illness the file does not contain (kept without the link)",
-        "restoreSkippedCycleCiphertext": "Cycle note or label sealed with a key this server does not hold (day or symptom kept without it)"
+        "restoreSkippedCycleCiphertext": "Cycle note or label sealed with a key this server does not hold (day or symptom kept without it)",
+        "restoreSkippedMoodLabelCiphertext": "Mood tag or group name sealed with a key this server does not hold (kept without its name)"
       },
       "danger-zone": {
         "title": "Danger Zone",

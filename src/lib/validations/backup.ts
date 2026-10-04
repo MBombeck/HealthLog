@@ -717,10 +717,12 @@ const customMoodTagSchema = z
     isActive: z.boolean().default(true),
     icon: z.string().nullable().optional(),
     sortOrder: z.number().int().default(0),
-    // The user's own words for the tag, encrypted at rest and carried
-    // verbatim. Without it the tag comes back as a bare key and the person
-    // who named it "Migräne" gets `custom:cm3x9…` instead.
+    // The user's own words for the tag. Without it the tag comes back as a
+    // bare key and the person who named it "Migräne" gets `custom:cm3x9…`
+    // instead. Ciphertext on a disaster-recovery file, readable `label` on a
+    // portable one; the restore seals the readable value under its own key.
     labelEncrypted: z.string().nullable().optional(),
+    label: z.string().nullable().optional(),
     // The scale a RATED factor was recorded on. `inverse` marks a factor
     // where a HIGH value is bad (stress, conflict). Dropping it does not lose
     // a label, it silently reverses the meaning of every rating already
@@ -1642,7 +1644,9 @@ const customMoodTagCategorySchema = z
     icon: z.string().nullable().optional(),
     sortOrder: z.number().int().optional(),
     isActive: z.boolean().optional(),
+    // Same split as the custom tag's label.
     labelEncrypted: z.string().nullable().optional(),
+    label: z.string().nullable().optional(),
   })
   .passthrough();
 

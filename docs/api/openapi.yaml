@@ -36796,6 +36796,10 @@ components:
                 anyOf:
                   - type: string
                   - type: "null"
+              label:
+                anyOf:
+                  - type: string
+                  - type: "null"
             required:
               - id
               - key
@@ -36850,6 +36854,10 @@ components:
                 minimum: -9007199254740991
                 maximum: 9007199254740991
               labelEncrypted:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              label:
                 anyOf:
                   - type: string
                   - type: "null"

@@ -40,9 +40,12 @@ import type {
   PrismaClient,
   SecondarySymptom,
 } from "@/generated/prisma/client";
-import { decrypt, encrypt } from "@/lib/crypto";
+import {
+  openSealedForExport,
+  sealForRestore,
+  UNOPENED,
+} from "@/lib/export/sealed-text";
 import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
-import { getEvent } from "@/lib/logging/context";
 import type { BackupPayload } from "@/lib/validations/backup";
 import {
   recordUnknownKeys,
@@ -189,26 +192,12 @@ export interface CycleSensitiveFields {
   contraceptive?: string | null;
 }
 
-/** Open a sealed value for a portable file, or the unreadable marker. */
-function openForExport(sealed: string, field: string): string {
-  try {
-    return decrypt(sealed);
-  } catch (err) {
-    getEvent()?.addWarning(
-      `cycle ${field} decrypt failed: ${
-        err instanceof Error ? err.message : String(err)
-      }`,
-    );
-    return UNREADABLE_EXPORT_MARKER;
-  }
-}
-
 /** The sensitive envelope opened for a portable file, or the marker. */
 function openSensitiveForExport(
   sealed: string | null,
 ): CycleSensitiveFields | string | null {
   if (!sealed) return null;
-  const opened = openForExport(sealed, "sensitive envelope");
+  const opened = openSealedForExport(sealed, "cycle sensitive envelope");
   if (opened === UNREADABLE_EXPORT_MARKER) return opened;
   try {
     return JSON.parse(opened) as CycleSensitiveFields;
@@ -330,7 +319,7 @@ export async function buildCycleBackupSection(
         : {
             sensitive: openSensitiveForExport(d.sensitiveEncrypted),
             note: d.notesEncrypted
-              ? openForExport(d.notesEncrypted, "day-log note")
+              ? openSealedForExport(d.notesEncrypted, "cycle day-log note")
               : null,
           }),
       source: d.source,
@@ -353,7 +342,7 @@ export async function buildCycleBackupSection(
         ? { labelEncrypted: sym.labelEncrypted }
         : {
             label: sym.labelEncrypted
-              ? openForExport(sym.labelEncrypted, "symptom label")
+              ? openSealedForExport(sym.labelEncrypted, "cycle symptom label")
               : null,
           }),
     })),
@@ -445,39 +434,6 @@ function severityOrNull(value: number | null | undefined): number | null {
     value <= 4
     ? value
     : null;
-}
-
-/** A readable value the file could not supply: the writer could not open it. */
-const UNOPENED = Symbol("unopened");
-
-/**
- * The sealed column value for one free-text field from the file.
- *
- * Ciphertext is written back only when this host opens it — a value sealed
- * under a key this host does not hold (or the same key id over other key
- * material) would be a row nobody can read. A readable value is sealed under
- * this host's active key. Anything kept out is recorded under `path`.
- */
-function sealForRestore(
-  sealed: string | null | undefined,
-  readable: string | null | undefined | typeof UNOPENED,
-  path: string,
-  unopened: string[],
-): string | null {
-  if (sealed) {
-    try {
-      decrypt(sealed);
-      return sealed;
-    } catch {
-      unopened.push(path);
-      return null;
-    }
-  }
-  if (readable === UNOPENED) {
-    unopened.push(path);
-    return null;
-  }
-  return readable ? encrypt(readable) : null;
 }
 
 function enumOrNull<T extends string>(

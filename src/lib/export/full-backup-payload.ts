@@ -25,6 +25,7 @@ import { dayKeyOfDate } from "@/lib/medications/course-window";
 import { Buffer } from "node:buffer";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { readNote } from "@/lib/crypto/note-cipher";
+import { openSealedForExport } from "@/lib/export/sealed-text";
 import { iterateMeasurementPages } from "@/lib/export/paged-measurements";
 import { BACKUP_SCHEMA_VERSION } from "@/lib/validations/backup";
 import {
@@ -1284,8 +1285,18 @@ export async function buildFullBackupPayload(
       icon: category.icon,
       sortOrder: category.sortOrder,
       isActive: category.isActive,
-      // Ciphertext verbatim, like the tag label beside it.
-      labelEncrypted: category.labelEncrypted,
+      // The person's own words: ciphertext in a disaster-recovery payload,
+      // readable in a portable one (see `sealed-text.ts`).
+      ...(disasterRecovery
+        ? { labelEncrypted: category.labelEncrypted }
+        : {
+            label: category.labelEncrypted
+              ? openSealedForExport(
+                  category.labelEncrypted,
+                  "mood category label",
+                )
+              : null,
+          }),
     })),
     hiddenMoodTags: hiddenMoodTags.map((hidden) => ({
       key: hidden.moodTag.key,
@@ -1300,9 +1311,15 @@ export async function buildFullBackupPayload(
       isActive: tag.isActive,
       icon: tag.icon,
       sortOrder: tag.sortOrder,
-      // Ciphertext verbatim, like every other *Encrypted column in a DR
-      // payload: the same instance's key reads it back unchanged.
-      labelEncrypted: tag.labelEncrypted,
+      // Ciphertext in a disaster-recovery payload (the same instance's key
+      // reads it back), readable in a portable one (see `sealed-text.ts`).
+      ...(disasterRecovery
+        ? { labelEncrypted: tag.labelEncrypted }
+        : {
+            label: tag.labelEncrypted
+              ? openSealedForExport(tag.labelEncrypted, "mood tag label")
+              : null,
+          }),
       scaleMin: tag.scaleMin,
       scaleMax: tag.scaleMax,
       inverse: tag.inverse,

@@ -160,6 +160,11 @@
  * Writing it back would store a value no reader can open, so the FIELD is kept
  * out and the day or the symptom restores without it. Its key is the path in
  * the file (`cycleDayLogs.<date>.notesEncrypted`), never the value.
+ *
+ * The seventeenth, `moodLabelCiphertext`, is the same for the label of a mood
+ * tag or mood category the account created
+ * (`customMoodTags.<key>.labelEncrypted`): the tag or category restores, under
+ * its key, without the person's own name for it.
  */
 export type SkippedCatalogue =
   | "cycleSymptom"
@@ -181,7 +186,8 @@ export type SkippedCatalogue =
   | "checkupClosure"
   | "accountSetting"
   | "symptomEpisodeReference"
-  | "cycleCiphertext";
+  | "cycleCiphertext"
+  | "moodLabelCiphertext";
 
 /** One key this instance does not know, and the links it cost. */
 export interface SkippedCatalogueKey {

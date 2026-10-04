@@ -66,6 +66,7 @@ import {
   listTenantEdges,
 } from "@/lib/export/tenant-boundary";
 import { encryptNote } from "@/lib/crypto/note-cipher";
+import { sealForRestore } from "@/lib/export/sealed-text";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
 import { encryptNoteToBytes } from "@/lib/labs/store";
@@ -1533,6 +1534,8 @@ export async function restoreBackup(
           // Upserted by key for the same reason the tags below are: `key` is
           // globally unique, so a seeded category that later claims the key
           // must be left alone rather than overwritten by a restore.
+          // Labels this host's keys do not open, by file path.
+          const unopenedMoodLabels: string[] = [];
           for (const category of payload.customMoodTagCategories) {
             await tx.moodTagCategory.upsert({
               where: { key: category.key },
@@ -1544,7 +1547,12 @@ export async function restoreBackup(
                 icon: category.icon ?? null,
                 sortOrder: category.sortOrder ?? 0,
                 isActive: category.isActive ?? true,
-                labelEncrypted: category.labelEncrypted ?? null,
+                labelEncrypted: sealForRestore(
+                  category.labelEncrypted,
+                  category.label,
+                  `customMoodTagCategories.${category.key}.labelEncrypted`,
+                  unopenedMoodLabels,
+                ),
               },
               update: {},
             });
@@ -1567,7 +1575,12 @@ export async function restoreBackup(
                 isActive: tag.isActive,
                 icon: tag.icon ?? null,
                 sortOrder: tag.sortOrder,
-                labelEncrypted: tag.labelEncrypted ?? null,
+                labelEncrypted: sealForRestore(
+                  tag.labelEncrypted,
+                  tag.label,
+                  `customMoodTags.${tag.key}.labelEncrypted`,
+                  unopenedMoodLabels,
+                ),
                 scaleMin: tag.scaleMin,
                 scaleMax: tag.scaleMax,
                 inverse: tag.inverse,
@@ -1577,6 +1590,12 @@ export async function restoreBackup(
               update: {},
             });
           }
+          recordUnknownKeys(
+            skips,
+            "moodLabelCiphertext",
+            unopenedMoodLabels,
+            unopenedMoodLabels,
+          );
 
           // Which tags the account hid. Delete-then-recreate like every
           // other section, and resolved by KEY: what people hide is almost
