@@ -20,7 +20,11 @@ import {
   type Translate,
 } from "../health-score-pillar-detail";
 
-let mockAuthUser: { unitPreference: string; glucoseUnit: string } = {
+let mockAuthUser: {
+  unitPreference: string;
+  glucoseUnit: string;
+  timezone?: string;
+} = {
   unitPreference: "metric",
   glucoseUnit: "mg/dL",
 };
@@ -624,20 +628,49 @@ describe("<HealthScoreCard> composite states", () => {
     const html = render(
       <HealthScoreCard
         report={scoredReport({
-          restMode: { active: true, since: "2026-07-20", episodeCount: 1 },
+          restMode: {
+            active: true,
+            since: "2026-07-19T23:30:00.000Z",
+            episodeCount: 1,
+          },
         })}
         tension={{ band: "yellow", positive: ["sleep"], negative: ["rhr"] }}
         returnToBand={{ metricType: "RESTING_HEART_RATE", daysInside: 6 }}
       />,
     );
     const rest = atRest(html);
-    expect(rest).toContain("Rest Mode active since 2026-07-20");
+    // The onset is an instant; it reads as the day it falls on in the
+    // profile timezone, in the user's date format, never as raw ISO.
+    expect(rest).toMatch(/Rest Mode active since \d{2}\/\d{2}\/2026\./);
+    expect(rest).not.toContain("T23:30:00");
     expect(rest).toContain('data-slot="health-score-tension"');
     expect(rest).toContain('data-slot="health-score-return-to-band"');
     // The contributor key and the metric type are localised, never raw.
     expect(rest).toContain("Resting heart rate");
     expect(rest).not.toContain("RESTING_HEART_RATE");
     expect(rest).not.toContain(">rhr<");
+  });
+
+  it("reads the Rest Mode onset as the day in the profile timezone", () => {
+    mockAuthUser = {
+      unitPreference: "metric",
+      glucoseUnit: "mg/dL",
+      timezone: "Europe/Berlin",
+    };
+    const html = render(
+      <HealthScoreCard
+        report={scoredReport({
+          restMode: {
+            active: true,
+            since: "2026-07-19T23:30:00.000Z",
+            episodeCount: 1,
+          },
+        })}
+      />,
+    );
+    const rest = atRest(html);
+    expect(rest).toMatch(/Rest Mode active since (07\/20\/2026|20\/07\/2026)/);
+    expect(rest).not.toContain("2026-07-19T");
   });
 
   it("shows the weekly gain as a chip beside the label", () => {

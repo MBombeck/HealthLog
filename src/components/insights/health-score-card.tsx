@@ -24,6 +24,8 @@ import {
   type PillarDetailContext,
 } from "@/components/insights/health-score-pillar-detail";
 import { useAuth } from "@/hooks/use-auth";
+import { formatDate } from "@/lib/date-format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { resolveGlucoseUnit } from "@/lib/glucose";
 import type {
@@ -31,7 +33,7 @@ import type {
   ScoreBand,
   ScorePillarResult,
 } from "@/lib/analytics/score/types";
-import { useTranslations } from "@/lib/i18n/context";
+import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 import { SCORE_PILLAR_LABEL_KEYS } from "@/lib/score-config/labels";
 import { cn } from "@/lib/utils";
 
@@ -265,7 +267,8 @@ export function HealthScoreCard({
   onRetry,
   className,
 }: HealthScoreCardProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  const dateFormat = useDateFormatPreference();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const regionId = useId();
@@ -528,7 +531,16 @@ export function HealthScoreCard({
             className="text-muted-foreground text-xs"
           >
             {t("insights.healthScore.restMode", {
-              since: report.restMode.since ?? t("insights.healthScore.none"),
+              since: report.restMode.since
+                ? formatDate(
+                    userDayKey(
+                      new Date(report.restMode.since),
+                      user?.timezone || DEFAULT_TIMEZONE,
+                    ),
+                    dateFormat,
+                    locale,
+                  )
+                : t("insights.healthScore.none"),
             })}
           </p>
         ) : null}
