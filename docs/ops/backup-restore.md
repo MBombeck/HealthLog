@@ -210,8 +210,8 @@ let a new model land without one.
 
 This is the part that bites, and it bit the nightly job a release after it bit
 the weekly one. The job runs inside the app process, so V8's heap limit is the
-app's heap limit, and a container capped at 1 GB gives Node a 524 MB old-space
-limit by default. A long-lived Next.js server is already holding a large share
+app's heap limit. Node sizes it from the container's memory cap: 1 GB gives a
+524 MB old-space limit, the compose default of 1536m (since 1.40.1) gives 792 MB. A long-lived Next.js server is already holding a large share
 of that before the job starts.
 
 The uploader used to build the whole backup JSON as one string, gzipped
@@ -305,7 +305,7 @@ writer produces the JSON a page at a time, gzips it as it goes and seals each
 megabyte of gzip output on its own with AES-256-GCM. Reading it back (restore,
 preview, download) takes the pieces one at a time. Nothing on either path holds
 the whole copy, so the size of a copy has nothing to do with the app's memory.
-Measured on an account of 2.6 million readings in the default 1 GB container,
+Measured on an account of 2.6 million readings in a 1 GB container,
 with the web server and the worker in one process: the backup took 87 seconds
 and stored 97 MB in 96 pieces, the preview 20 seconds, the download of the
 1.4 GB file 25 seconds, and the restore 264 seconds, which gave back every
