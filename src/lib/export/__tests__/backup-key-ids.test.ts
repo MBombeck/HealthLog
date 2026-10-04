@@ -10,7 +10,13 @@ import { Buffer } from "node:buffer";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { _resetCryptoCacheForTests, encrypt, encryptBytes } from "@/lib/crypto";
+import {
+  _resetCryptoCacheForTests,
+  encrypt,
+  encryptBytes,
+  encryptUnderKeyId,
+} from "@/lib/crypto";
+import { WORKOUT_ROUTE_GEOMETRY_AAD } from "@/lib/crypto/encrypted-columns";
 import {
   assessBackupKeys,
   BackupKeyIdCollector,
@@ -170,6 +176,105 @@ describe("assessBackupKeys", () => {
     const verdict = assessBackupKeys(collector);
     expect(verdict.missing).toEqual([]);
     expect(verdict.unreadable).toEqual(["old"]);
+  });
+});
+
+describe("legacy values and the probe", () => {
+  /**
+   * A text column written before key ids existed: bare base64 of
+   * nonce, tag and ciphertext. A 14-character secret seals to 42 bytes,
+   * 56 characters, which is exactly the shape an instance's stored AI key
+   * has, and the shortest v1 value in a typical copy.
+   */
+  const legacyText = (plain: string) =>
+    encryptUnderKeyId(plain, "v1").slice("v1.".length);
+
+  beforeEach(() => useKeys({ v1: K1, cur: K2 }, "v1"));
+
+  it("reads a legacy text value as a string, not as an encoded Bytes column", () => {
+    const value = legacyText("sk-abcdefghijk");
+    expect(value).toHaveLength(56);
+    expect(innerCiphertextKeyId(value)).toEqual({
+      keyId: "v1",
+      form: "string",
+    });
+  });
+
+  function drFile() {
+    return {
+      userId: "u1",
+      appSettings: { adminAiKeyEncrypted: legacyText("sk-abcdefghijk") },
+      coachConversations: [
+        {
+          titleEncrypted: encrypt("a conversation about sleep"),
+          messages: [{ contentEncrypted: encrypt("how did I sleep?") }],
+        },
+      ],
+      measurements: [{ notesEncrypted: bytesString("after the run") }],
+    };
+  }
+
+  it("passes a copy whose legacy instance setting and v1 values the key opens", () => {
+    const collector = new BackupKeyIdCollector();
+    collector.visit(drFile());
+    for (const ignoreSections of [undefined, new Set(["appSettings"])]) {
+      const verdict = assessBackupKeys(collector, { ignoreSections });
+      expect(verdict.keyIds).toEqual(["v1"]);
+      expect(verdict.missing).toEqual([]);
+      expect(verdict.unreadable).toEqual([]);
+    }
+  });
+
+  it("passes the same copy after its preview is stored and read back", () => {
+    const collector = new BackupKeyIdCollector();
+    collector.visit(drFile());
+    const stored = JSON.parse(JSON.stringify(collector.toStored()));
+    const verdict = assessBackupKeys(BackupKeyIdCollector.fromStored(stored), {
+      ignoreSections: new Set(["appSettings"]),
+    });
+    expect(verdict.unreadable).toEqual([]);
+  });
+
+  it("does not let a section the caller ignores decide the verdict", () => {
+    const fine = encrypt("a note the key opens");
+    useKeys({ v1: K3, cur: K2 }, "v1");
+    const impostor = legacyText("sk-abcdefghijk");
+    useKeys({ v1: K1, cur: K2 }, "v1");
+    const collector = new BackupKeyIdCollector();
+    collector.visit({
+      appSettings: { adminAiKeyEncrypted: impostor },
+      measurements: [{ notesEncrypted: `${fine}` }],
+    });
+    expect(
+      assessBackupKeys(collector, { ignoreSections: new Set(["appSettings"]) })
+        .unreadable,
+    ).toEqual([]);
+    // Asked for back, the instance settings do count, and the value there
+    // is the only one: the verdict still passes because the other opens.
+    expect(assessBackupKeys(collector).unreadable).toEqual([]);
+  });
+
+  it("opens a bound binary value with the label its column seals it under", () => {
+    const route = encryptBytes(
+      Buffer.from('{"type":"LineString","coordinates":[]}'),
+      WORKOUT_ROUTE_GEOMETRY_AAD,
+    ).toString("base64");
+    const collector = new BackupKeyIdCollector();
+    collector.visit({ workoutRoutes: [{ geometryEncrypted: route }] });
+    expect(assessBackupKeys(collector).unreadable).toEqual([]);
+  });
+
+  it("still refuses a copy the configured v1 key genuinely does not open", () => {
+    const file = drFile();
+    useKeys({ v1: K3, cur: K2 }, "cur");
+    const collector = new BackupKeyIdCollector();
+    collector.visit(file);
+    for (const ignoreSections of [undefined, new Set(["appSettings"])]) {
+      const verdict = assessBackupKeys(collector, { ignoreSections });
+      expect(verdict.missing).toEqual([]);
+      expect(verdict.unreadable).toEqual(["v1"]);
+      expect(describeBackupKeyProblem(verdict)).toContain("'v1'");
+    }
   });
 });
 

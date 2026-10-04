@@ -10,8 +10,8 @@
  * once anyway, on its way into the pieces, so the counts are taken there.
  *
  * What is kept. The `summarizeBackup` counts of the copy, its schema version,
- * and the inner key ids with the sections they sit in and one sample value
- * each. The verdicts are not kept: whether this release can restore the
+ * and the inner key ids with the sections they sit in and the shortest
+ * value of each section. The verdicts are not kept: whether this release can restore the
  * schema version, and whether this server holds the keys the copy needs, can
  * both change after the copy was written, so the route takes them again from
  * these inputs on every read.
@@ -60,12 +60,24 @@ const storedPreviewSchema = z.object({
       keyId: z.string(),
       count: z.number().int().nonnegative(),
       sections: z.array(z.string()),
+      samples: z
+        .array(
+          z.object({
+            value: z.string(),
+            form: z.enum(["string", "bytes-string", "binary"]),
+            section: z.string().optional(),
+            member: z.string().optional(),
+          }),
+        )
+        .optional(),
+      // A preview stored by v1.40.0 or earlier kept one sample per key.
       sample: z
         .object({
           value: z.string(),
           form: z.enum(["string", "bytes-string", "binary"]),
         })
-        .nullable(),
+        .nullable()
+        .optional(),
     }),
   ),
 });
