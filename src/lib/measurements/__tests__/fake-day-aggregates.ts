@@ -81,22 +81,31 @@ export async function fakeReadDayAggregates(
   // Mirror the SQL's hourly-mean day: the mean of the (day, segment)'s local
   // hours' means.
   const starts = opts.segmentStarts ?? [];
+  // Group once by (day, segment) with the fold's own filters, so a long
+  // series stays linear instead of re-filtering every row per day.
+  const membersByKey = new Map<
+    string,
+    Array<{ measuredAt: Date; value: number }>
+  >();
+  for (const r of rows) {
+    const t = r.measuredAt.getTime();
+    if (t < opts.since.getTime()) continue;
+    if (opts.until && t > opts.until.getTime()) continue;
+    if (
+      opts.valueRange &&
+      (r.value < opts.valueRange.min || r.value > opts.valueRange.max)
+    ) {
+      continue;
+    }
+    const key = `${userDayKey(r.measuredAt, opts.timeZone)}|${
+      starts.filter((st) => t < st.getTime()).length
+    }`;
+    const list = membersByKey.get(key);
+    if (list) list.push(r);
+    else membersByKey.set(key, [r]);
+  }
   return days.map((d) => {
-    const members = rows.filter((r) => {
-      const t = r.measuredAt.getTime();
-      if (t < opts.since.getTime()) return false;
-      if (opts.until && t > opts.until.getTime()) return false;
-      if (
-        opts.valueRange &&
-        (r.value < opts.valueRange.min || r.value > opts.valueRange.max)
-      ) {
-        return false;
-      }
-      return (
-        userDayKey(r.measuredAt, opts.timeZone) === d.day &&
-        starts.filter((s) => t < s.getTime()).length === d.segment
-      );
-    });
+    const members = membersByKey.get(`${d.day}|${d.segment}`) ?? [];
     const dayMean = dayValue(opts.type, members, opts.timeZone);
     return dayMean === null ? d : { ...d, dayMean };
   });
