@@ -21,6 +21,13 @@
  * Schedule: 04:11 on the 1st of each month (`11 4 1 * *`), after the
  * 02:30 nightly upload and the 03:xx cleanup window, on a minute slot
  * no other cron uses.
+ *
+ * The drill reads every account's object, so it runs as a long pass: an
+ * explicit expiry (`RESTORE_DRILL_EXPIRE_SECONDS`), a stop between accounts
+ * on the job's budget, a lock so two drills never overlap (`lockedPass` at
+ * the binding), and no retry. A retry would re-read the same objects and
+ * page the same failed accounts a second and third time; each account is
+ * reported once per run, and the next drill is the retry.
  */
 import type { Job } from "pg-boss";
 import { BackupJsonError, scanBackupJson } from "@/lib/export/backup-json-scan";
@@ -38,11 +45,27 @@ import {
   type S3Like,
 } from "@/lib/jobs/offhost-backup";
 import { reportWorkerError } from "@/lib/jobs/report-worker-error";
+import { jobBudget } from "@/lib/jobs/job-budget";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
 
 export const RESTORE_DRILL_QUEUE = "data-restore-drill";
 export const RESTORE_DRILL_CRON = "11 4 1 * *";
+
+/**
+ * Four hours, the off-host upload's own window: the drill downloads and
+ * stream-parses every object that upload wrote in one night.
+ */
+export const RESTORE_DRILL_EXPIRE_SECONDS = 4 * 60 * 60;
+
+/**
+ * What the monthly schedule sends with: the expiry above and no retry
+ * (`retryLimit: 0`, the maintenance schedules' `cronIsTheRetry`).
+ */
+export const RESTORE_DRILL_SEND_OPTIONS = {
+  expireInSeconds: RESTORE_DRILL_EXPIRE_SECONDS,
+  retryLimit: 0,
+} as const;
 
 /**
  * A drill run that finds the newest backup older than this is reported
@@ -80,6 +103,8 @@ export interface RestoreDrillReport {
   accounts: RestoreDrillAccount[];
   /** The accounts whose object did not pass. */
   failed: RestoreDrillAccount[];
+  /** Objects of the newest date the run stopped before, on its budget. */
+  unchecked: number;
 }
 
 function countArray(value: unknown): number {
@@ -178,6 +203,7 @@ async function drillObject(
 export async function runRestoreDrill(
   s3Override?: S3Like,
   now: Date = new Date(),
+  shouldStop: () => boolean = () => false,
 ): Promise<RestoreDrillReport> {
   const cfg = loadOffhostConfig();
   if (!cfg) {
@@ -208,6 +234,8 @@ export async function runRestoreDrill(
 
   const accounts: RestoreDrillAccount[] = [];
   for (const objectKey of newest) {
+    // Between accounts, never inside one: the job's budget is spent.
+    if (shouldStop()) break;
     const account: RestoreDrillAccount = {
       objectKey,
       ok: true,
@@ -239,6 +267,7 @@ export async function runRestoreDrill(
     stale: ageDays > MAX_BACKUP_AGE_DAYS,
     accounts,
     failed: accounts.filter((a) => !a.ok),
+    unchecked: newest.length - accounts.length,
   };
 }
 
@@ -252,10 +281,10 @@ export async function runRestoreDrill(
 export async function handleRestoreDrill(
   jobs: Job<object>[],
 ): Promise<JobOutcome> {
-  void jobs;
+  const shouldStop = jobBudget(jobs);
   return withBackgroundEvent("job.restore_drill", async (evt) => {
     try {
-      const report = await runRestoreDrill();
+      const report = await runRestoreDrill(undefined, new Date(), shouldStop);
       const total = (pick: (a: RestoreDrillAccount) => number) =>
         report.accounts.reduce((sum, a) => sum + pick(a), 0);
       const meta = {
@@ -270,6 +299,7 @@ export async function handleRestoreDrill(
         restore_drill_intake_events: total((a) => a.recordCounts.intakeEvents),
         restore_drill_mood_entries: total((a) => a.recordCounts.moodEntries),
         restore_drill_stale: report.stale,
+        restore_drill_unchecked: report.unchecked,
       };
       for (const [key, value] of Object.entries(meta)) evt.addMeta(key, value);
       evt.addMeta(
@@ -301,9 +331,18 @@ export async function handleRestoreDrill(
           { dateKey: report.dateKey, ageDays: report.ageDays },
         );
       }
+      if (report.unchecked > 0) {
+        await reportWorkerError(
+          RESTORE_DRILL_QUEUE,
+          new Error(
+            `Restore drill stopped on its time budget with ${report.unchecked} of ${report.accounts.length + report.unchecked} backup objects unchecked.`,
+          ),
+          { dateKey: report.dateKey, unchecked: report.unchecked },
+        );
+      }
       if (report.failed.length > 0) {
-        // Already paged above, per account. A retry reads the same objects
-        // and cannot change the verdict before the next upload.
+        // Already paged above, per account. The queue does not retry: a
+        // retry reads the same objects and would page the same accounts again.
         return jobFailed(
           `restore drill: ${report.failed.length} of ${report.accounts.length} accounts failed`,
           new Error(report.failed.map((a) => a.objectKey).join(", ")),

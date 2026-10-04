@@ -83,6 +83,7 @@ import {
   handleRestoreDrill,
   RESTORE_DRILL_CRON,
   RESTORE_DRILL_QUEUE,
+  RESTORE_DRILL_SEND_OPTIONS,
 } from "@/lib/jobs/restore-drill";
 import {
   BACKUP_RESTORE_QUEUE,
@@ -551,8 +552,10 @@ const allQueues = [
 // a bulk DELETE or UPDATE that timed out will time out again on an immediate
 // retry, so pg-boss's default two would run the same doomed statement three
 // times a night. The queues without it are the ones whose failure is
-// transient — the TLS probe, the off-host upload, the restore drill, the
-// per-user environment fetch — and those still want the default retries.
+// transient — the TLS probe, the off-host upload, the per-user environment
+// fetch — and those still want the default retries. The restore drill sends
+// `retryLimit: 0` in its own options for the other reason: it pages each
+// failed account itself, and a retry would page the same accounts again.
 const schedules: ScheduleEntry[] = [
   // v1.25 (W-ENV) — daily 02:10 Europe/Berlin discovery tick (empty payload)
   // that fans out one per-user environment fetch per opted-in account.
@@ -571,7 +574,7 @@ const schedules: ScheduleEntry[] = [
     cronIsTheRetry,
   ],
   [OFFHOST_BACKUP_QUEUE, OFFHOST_BACKUP_CRON, OFFHOST_BACKUP_SEND_OPTIONS],
-  [RESTORE_DRILL_QUEUE, RESTORE_DRILL_CRON],
+  [RESTORE_DRILL_QUEUE, RESTORE_DRILL_CRON, RESTORE_DRILL_SEND_OPTIONS],
   // Nightly backstop for the purge the deletion kicks straight away: a
   // request the bucket refused, or one written while the queue was down.
   [OFFHOST_PURGE_QUEUE, OFFHOST_PURGE_CRON, cronIsTheRetry],
@@ -832,11 +835,13 @@ export async function registerMaintenanceQueues(
     { localConcurrency: 1, includeMetadata: true },
     lockedPass(OFFHOST_BACKUP_QUEUE, () => WHOLE_PASS, handleOffhostBackup),
   );
+  // Locked: a drill that outlives a restart or a manual run never reads the
+  // bucket beside another one.
   await createAndWork(
     boss,
     RESTORE_DRILL_QUEUE,
     { localConcurrency: 1 },
-    handleRestoreDrill,
+    lockedPass(RESTORE_DRILL_QUEUE, () => WHOLE_PASS, handleRestoreDrill),
   );
   await createAndWork(
     boss,

@@ -36,6 +36,7 @@ import { DOCUMENT_AI_RUN_EXPIRE_SECONDS } from "@/lib/jobs/document-ai-run";
 import { DATA_BACKUP_SEND_OPTIONS } from "@/lib/jobs/data-backup-policy";
 import { OFFHOST_BACKUP_EXPIRE_SECONDS } from "@/lib/jobs/offhost-backup";
 import { BACKUP_RESTORE_EXPIRE_SECONDS } from "@/lib/jobs/backup-restore";
+import { RESTORE_DRILL_EXPIRE_SECONDS } from "@/lib/jobs/restore-drill";
 import { APPLE_HEALTH_IMPORT_SEND_OPTIONS } from "@/lib/jobs/apple-health-import-worker";
 import { MEDICATION_INTAKE_IMPORT_SEND_OPTIONS } from "@/lib/jobs/medication-intake-import";
 
@@ -267,7 +268,14 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     exclusive: "lockedPass",
     why: "Uploads every account's record off-host.",
   },
-  "data-restore-drill": short("Fetches and stream-parses one off-host object."),
+  "data-restore-drill": {
+    runtime: "long",
+    expireInSeconds: RESTORE_DRILL_EXPIRE_SECONDS,
+    expiryVia: ["RESTORE_DRILL_SEND_OPTIONS"],
+    stop: { file: "lib/jobs/restore-drill.ts", fn: "handleRestoreDrill" },
+    exclusive: "lockedPass",
+    why: "Fetches and stream-parses every account's newest off-host object.",
+  },
   "offhost-backup-purge": short("At most 200 delete requests per run."),
   "backup-restore": {
     runtime: "long",
