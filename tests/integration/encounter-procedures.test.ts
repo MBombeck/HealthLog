@@ -343,7 +343,10 @@ describe("the backup", () => {
     const entry = section.encounters.find((row) => row.id === created.id);
     expect(entry?.kind).toBe("PROCEDURE");
     expect(entry?.laterality).toBe("BOTH");
-    expect(entry?.bodySiteEncrypted).toEqual(expect.any(String));
+    // A portable section carries the site readable, never the ciphertext; the
+    // restore seals it under this host's key.
+    expect(entry?.bodySite).toBe("Hüfte");
+    expect(entry).not.toHaveProperty("bodySiteEncrypted");
 
     // Through the file schema, as a restore reads it: a field the schema does
     // not know would be dropped here and come back as null.

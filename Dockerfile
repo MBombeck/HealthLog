@@ -54,6 +54,9 @@ RUN NODE_OPTIONS=--max-old-space-size=8192 pnpm build
 # name; see the note there for why guessing was wrong.
 RUN node -p "require('/app/node_modules/pdfjs-dist/package.json').version" \
       > /app/.pdfjs-version
+# The same for @napi-rs/canvas, whose native binary must match its JS loader.
+RUN node -p "require('/app/node_modules/@napi-rs/canvas/package.json').version" \
+      > /app/.canvas-version
 
 # ── Stage 3: Production runner ─────────────────────────────
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runner
@@ -120,21 +123,41 @@ RUN node -e "require.resolve('pg-boss'); require.resolve('pg')"
 # @napi-rs/canvas" → "Cannot polyfill DOMMatrix" → rasterize ReferenceError);
 # (2) @napi-rs/canvas's own loader then resolves its platform binary. Hoist BOTH
 # the canvas package and the musl binary package to /app/node_modules/@napi-rs
-# via symlink into the .pnpm store, and also drop the prebuilt .node into the
-# canvas dir so the loader's local-file fallback (`require('./skia.<triple>.node')`)
-# is belt-and-suspenders. Per-arch buildx installs only the matching musl triple.
+# via symlink into the .pnpm store, and drop the prebuilt .node into the canvas
+# dir: the loader tries that local file (`require('./skia.<triple>.node')`)
+# before the platform package, so it decides which binary runs.
+#
+# Hoist the version the app pins, by name, exactly like pdfjs-dist below. The
+# store holds a second, older canvas that pdf-parse's own pdfjs-dist pulls in,
+# and this step used to take whichever `find | head -1` returned first. It
+# returned the old binary, which then sat next to the new loader: rendering
+# still worked, but `loadImage` called an `Image.decode` the old binary does
+# not have, and every preview thumbnail failed with "image.decode is not a
+# function". Name the version, and fail the build when the binary that lands
+# in the canvas dir is not that version's.
+COPY --from=builder /app/.canvas-version /tmp/.canvas-version
 RUN set -e; \
-    CANVAS_DIR="$(find /app/node_modules/.pnpm -maxdepth 4 -type d -path '*@napi-rs+canvas@*/node_modules/@napi-rs/canvas' 2>/dev/null | head -1)"; \
-    MUSL_DIR="$(find /app/node_modules/.pnpm -maxdepth 4 -type d -path '*@napi-rs+canvas-linux-*-musl@*/node_modules/@napi-rs/canvas-linux-*-musl' 2>/dev/null | head -1)"; \
-    NODE_BIN="$(find /app/node_modules/.pnpm -maxdepth 5 -name 'skia.linux-*-musl.node' 2>/dev/null | head -1)"; \
-    if [ -n "$CANVAS_DIR" ]; then \
-      mkdir -p /app/node_modules/@napi-rs; \
-      ln -sfn "$CANVAS_DIR" /app/node_modules/@napi-rs/canvas; \
-      [ -n "$MUSL_DIR" ] && ln -sfn "$MUSL_DIR" "/app/node_modules/@napi-rs/$(basename "$MUSL_DIR")"; \
-      [ -n "$NODE_BIN" ] && cp "$NODE_BIN" "$CANVAS_DIR/"; \
-      chown -R nextjs:nodejs /app/node_modules/@napi-rs; \
-      echo "canvas hoisted for pdfjs: $CANVAS_DIR (musl=$MUSL_DIR)"; \
-    else echo "WARN: @napi-rs/canvas not found; PDF rasterization will degrade to local text"; fi
+    CANVAS_VERSION="$(cat /tmp/.canvas-version)"; \
+    rm -f /tmp/.canvas-version; \
+    CANVAS_DIR="/app/node_modules/.pnpm/@napi-rs+canvas@${CANVAS_VERSION}/node_modules/@napi-rs/canvas"; \
+    MUSL_DIR="$(find /app/node_modules/.pnpm -maxdepth 4 -type d -path "*@napi-rs+canvas-linux-*-musl@${CANVAS_VERSION}/node_modules/@napi-rs/canvas-linux-*-musl" 2>/dev/null | head -1)"; \
+    if [ ! -d "$CANVAS_DIR" ] || [ -z "$MUSL_DIR" ]; then \
+      echo "ERROR: pinned @napi-rs/canvas@${CANVAS_VERSION} or its musl binary did not reach the traced image."; \
+      echo "Present instead:"; \
+      find /app/node_modules/.pnpm -maxdepth 1 -name '@napi-rs+canvas*' 2>/dev/null; \
+      exit 1; \
+    fi; \
+    NODE_BIN="$(find "$MUSL_DIR" -maxdepth 1 -name 'skia.linux-*-musl.node' | head -1)"; \
+    [ -n "$NODE_BIN" ] || { echo "ERROR: no skia binary in $MUSL_DIR"; exit 1; }; \
+    mkdir -p /app/node_modules/@napi-rs; \
+    ln -sfn "$CANVAS_DIR" /app/node_modules/@napi-rs/canvas; \
+    ln -sfn "$MUSL_DIR" "/app/node_modules/@napi-rs/$(basename "$MUSL_DIR")"; \
+    cp "$NODE_BIN" "$CANVAS_DIR/"; \
+    chown -R nextjs:nodejs /app/node_modules/@napi-rs; \
+    BIN_VERSION="$(node -p "require('$MUSL_DIR/package.json').version")"; \
+    [ "$BIN_VERSION" = "$CANVAS_VERSION" ] || { echo "ERROR: canvas binary is $BIN_VERSION, loader is $CANVAS_VERSION"; exit 1; }; \
+    cmp -s "$NODE_BIN" "$CANVAS_DIR/$(basename "$NODE_BIN")" || { echo "ERROR: the canvas dir holds a different binary"; exit 1; }; \
+    echo "canvas hoisted for pdfjs: $CANVAS_DIR (binary $BIN_VERSION from $MUSL_DIR)"
 
 # pdfjs-dist is `serverExternalPackages` (NOT bundled — the bundled copy's render
 # path breaks in the standalone image), so the server does a runtime bare

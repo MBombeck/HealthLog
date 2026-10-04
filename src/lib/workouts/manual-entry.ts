@@ -118,10 +118,7 @@ export function wallClockNow(now: Date, timezone: string): string {
   return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}`;
 }
 
-export function emptyManualWorkoutDraft(
-  now: Date,
-  timezone: string,
-): ManualWorkoutDraft {
+export function emptyManualWorkoutDraft(): ManualWorkoutDraft {
   return {
     sportType: "",
     // Blank on purpose (#1085): a blank start means "it just ended", so the

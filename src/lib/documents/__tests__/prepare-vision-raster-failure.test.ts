@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { Buffer } from "node:buffer";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 /**
  * Refs #776 — the raster-failed chain, end to end through the REAL
@@ -67,5 +69,18 @@ describe("raster-failed end to end (#776)", () => {
     );
     const vision = await prepareVisionInput(DOC as never, true);
     expect(vision).toMatchObject({ ok: true });
+  });
+
+  it("a PDF whose pages all render blank is rasterFailed, not an image of nothing (#1124)", async () => {
+    // Text in render mode 3 only: pdfjs opens it and draws an empty page.
+    // Before the blank-page guard this went to the provider as one white
+    // JPEG and came back as a near-empty transcript indexed as a success.
+    vi.mocked(decryptDocumentContent).mockReturnValue(
+      readFileSync(
+        join(process.cwd(), "tests/fixtures/pdf/invisible-text-only.pdf"),
+      ) as never,
+    );
+    const vision = await prepareVisionInput(DOC as never, false);
+    expect(vision).toEqual({ ok: false, reason: "rasterFailed" });
   });
 });

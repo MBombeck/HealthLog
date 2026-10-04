@@ -23,6 +23,7 @@ import {
   resetJsonModeDialectCache,
   type JsonModeDialect,
 } from "./json-dialect";
+import type { ReasoningEffort } from "./reasoning-effort";
 
 interface LocalClientConfig {
   apiKey?: string | null;
@@ -108,6 +109,8 @@ export class LocalOpenAICompatibleClient implements AIProvider {
   readonly type = "local" as const;
   /** See `AIProvider.responseTimeoutSeconds`; stamped by the resolver. */
   responseTimeoutSeconds: number | null = null;
+  /** See `AIProvider.reasoningEffort`; stamped by the resolver. */
+  reasoningEffort: ReasoningEffort | null = null;
   /** Local servers commonly reject an unknown `tools` field — never send it. */
   readonly supportsTools = false;
   private config: LocalClientConfig;
@@ -164,6 +167,12 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       // most OpenAI-compatible local servers honour it; servers that
       // ignore it simply disregard the field. Omitted when unset.
       ...(params.seed !== undefined ? { seed: params.seed } : {}),
+      // #1126 — the entry's reasoning setting. Default sends nothing, so the
+      // body of a setup that never touched it stays byte-identical; "Off" is
+      // `none`, which stops a thinking model spending the answer budget.
+      ...(this.reasoningEffort
+        ? { reasoning_effort: this.reasoningEffort }
+        : {}),
       // v1.28.28 (#470) — the JSON surfaces opt in via `responseFormat:
       // "json"`. Default dialect sends the STANDARD OpenAI field (the
       // top-level Ollama-native `format: "json"` this client used to send

@@ -339,4 +339,116 @@ test.describe("Settings → AI provider dropdown UX (B2)", () => {
         .locator('button[type="submit"]'),
     ).toBeEnabled();
   });
+
+  // #1126 — the Reasoning select on the Local and OpenAI-compatible forms
+  // saves with the form, and at phone width it sits in the same column as
+  // the model field without pushing the page sideways.
+  test("reasoning setting saves from the Local and gateway forms at 390 px", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const patchBodies: Array<Record<string, unknown>> = [];
+    let providerState: Record<string, unknown> = {
+      provider: "LOCAL",
+      model: null,
+      baseUrl: "http://localhost:11434/v1",
+      responseTimeoutSeconds: null,
+      hasAnthropicKey: false,
+      anthropicKeyPreview: null,
+      hasLocalKey: false,
+      hasOpenaiKey: false,
+      openaiKeyPreview: null,
+      compatBaseUrl: "https://gateway.example.org/v1",
+      compatModel: "qwen3",
+      hasCompatKey: false,
+      localReasoningEffort: null,
+      compatReasoningEffort: null,
+    };
+    await page.route("**/api/insights/settings", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            codexStatus: "disconnected",
+            codexConnectedAt: null,
+            hasAdminKey: false,
+            codexOauthConfigured: true,
+            privacyMode: "aggregated",
+            lastInsightAt: null,
+          },
+          error: null,
+        }),
+      }),
+    );
+    await page.route("**/api/user/ai-provider", async (route) => {
+      if (route.request().method() === "PATCH") {
+        const body = route.request().postDataJSON() as Record<string, unknown>;
+        patchBodies.push(body);
+        providerState = { ...providerState, ...body };
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ data: providerState, error: null }),
+      });
+    });
+    await page.route("**/api/insights/provider-chain", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            activeProvider: "local",
+            cachedActiveProvider: null,
+            configuredChain: [
+              { providerType: "local", enabled: true, available: true },
+            ],
+          },
+          error: null,
+        }),
+      }),
+    );
+
+    const providerHydrated = page.waitForResponse("**/api/user/ai-provider");
+    await page.goto("/settings/ai?provider=local", {
+      waitUntil: "domcontentloaded",
+    });
+    await providerHydrated;
+
+    const localForm = page.getByTestId("ai-provider-config-local");
+    const localReasoning = page.locator("#ai-local-reasoning");
+    await expect(localReasoning).toHaveValue("");
+    // Same column, same width as the model select above it.
+    const [modelBox, reasoningBox] = await Promise.all([
+      page.locator("#ai-local-model").boundingBox(),
+      localReasoning.boundingBox(),
+    ]);
+    expect(reasoningBox?.x).toBe(modelBox?.x);
+    expect(reasoningBox?.width).toBe(modelBox?.width);
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+
+    await localReasoning.selectOption("none");
+    await localForm.locator('button[type="submit"]').click();
+    await expect.poll(() => patchBodies.length).toBe(1);
+    expect(patchBodies[0].localReasoningEffort).toBe("none");
+
+    await page
+      .getByTestId("ai-active-provider-select")
+      .selectOption("openai-compatible");
+    const compatForm = page.getByTestId("ai-provider-config-openai-compatible");
+    const compatReasoning = page.locator("#ai-compat-reasoning");
+    await expect(compatReasoning).toHaveValue("");
+    await compatReasoning.selectOption("high");
+    await compatForm.locator('button[type="submit"]').click();
+    await expect.poll(() => patchBodies.length).toBe(2);
+    expect(patchBodies[1].compatReasoningEffort).toBe("high");
+    expect(patchBodies[1]).not.toHaveProperty("localReasoningEffort");
+  });
 });

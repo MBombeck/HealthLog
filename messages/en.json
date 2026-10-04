@@ -6081,6 +6081,17 @@
         "title": "Coach plans",
         "description": "The plans you agreed with the Coach, to read or remove.",
         "open": "Open plans"
+      },
+      "reasoning": {
+        "label": "Reasoning",
+        "hint": "Reasoning models such as Gemma or Qwen think before they answer. Off leaves the whole answer budget for the answer itself.",
+        "options": {
+          "default": "Default",
+          "none": "Off",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        }
       }
     },
     "dashboard": {
@@ -7556,7 +7567,11 @@
         "restoreFailureKeyMissing": "The backup needs encryption key {keys}, which this server cannot open it with. Add the key back to ENCRYPTION_KEYS, restart, and start the restore again.",
         "restoreFailureForeignReference": "The file points at records that belong to another account. Nothing was written.",
         "previewKeyMissing": "This backup cannot be restored on this server: it needs encryption key {keys}. Add the key back to ENCRYPTION_KEYS and restart first.",
-        "restoreSkippedSymptomEpisodeReference": "Symptom entry linked to an illness the file does not contain (kept without the link)"
+        "restoreSkippedSymptomEpisodeReference": "Symptom entry linked to an illness the file does not contain (kept without the link)",
+        "restoreSkippedCycleCiphertext": "Cycle note or label sealed with a key this server does not hold (day or symptom kept without it)",
+        "restoreSkippedMoodLabelCiphertext": "Mood tag or group name sealed with a key this server does not hold (kept without its name)",
+        "restoreSkippedVisitCiphertext": "Visit or practitioner text sealed with a key this server does not hold (kept without it)",
+        "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)"
       },
       "danger-zone": {
         "title": "Danger Zone",

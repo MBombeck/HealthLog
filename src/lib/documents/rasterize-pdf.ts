@@ -31,6 +31,9 @@
  * preserves the "a bad document never aborts an upload/batch" contract.
  */
 import { Buffer } from "node:buffer";
+import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 
 import { annotate } from "@/lib/logging/context";
 
@@ -59,6 +62,14 @@ export const RASTER_TARGET_LONG_EDGE = 1600;
 
 /** JPEG quality (0-100). ~80 keeps text legible at a fraction of PNG's bytes. */
 export const RASTER_JPEG_QUALITY = 80;
+
+/**
+ * A rendered page counts as blank when fewer than this share of its pixels
+ * are dark. One short line of 16 pt text on an A4 page is ~0.1 %; a page
+ * number alone sits near this floor. A page set that is blank throughout is
+ * not a reading of the document, whatever the provider would make of it.
+ */
+export const RASTER_MIN_INK_RATIO = 0.0001;
 
 /** One rasterized page, shaped as a vision `input_image` part. */
 export interface RasterImage {
@@ -98,9 +109,17 @@ interface PdfCanvas {
   height: number;
   toBuffer(mime: "image/jpeg", quality?: number): Buffer;
 }
+interface PdfContext2D {
+  getImageData(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): { data: Uint8ClampedArray };
+}
 interface PdfCanvasAndContext {
   canvas: PdfCanvas;
-  context: unknown;
+  context: PdfContext2D;
 }
 interface PdfCanvasFactory {
   create(width: number, height: number): PdfCanvasAndContext;
@@ -125,12 +144,127 @@ interface PdfLoadingTask {
   destroy(): Promise<void>;
 }
 interface PdfjsModule {
-  getDocument(opts: {
-    data: Uint8Array;
-    verbosity?: number;
-    isEvalSupported?: boolean;
-    useSystemFonts?: boolean;
-  }): PdfLoadingTask;
+  getDocument(opts: PdfDocumentOptions): PdfLoadingTask;
+}
+interface PdfDocumentOptions {
+  data: Uint8Array;
+  verbosity?: number;
+  isEvalSupported?: boolean;
+  useSystemFonts?: boolean;
+  standardFontDataUrl?: string;
+  cMapUrl?: string;
+  cMapPacked?: boolean;
+  wasmUrl?: string;
+}
+interface GlobalFontsLike {
+  registerFromPath(path: string, nameAlias?: string): unknown;
+}
+
+/**
+ * Where pdfjs finds the data it does not carry in its JS: the standard 14
+ * fonts (a PDF that names Helvetica or Times without embedding them), the
+ * CMaps (CID fonts with a predefined encoding), and the wasm image decoders
+ * (JPEG 2000, JBIG2). In a browser pdfjs fetches these from a URL; under Node
+ * they are read from disk, and without a directory pdfjs simply draws the text
+ * without glyphs.
+ *
+ * The runtime image carries no system fonts at all, so nothing else catches
+ * that: a letter set in a non-embedded font rendered as an empty page in the
+ * container while it rendered correctly on a workstation, where the operating
+ * system's fonts stood in. The image-only provider then read the empty page
+ * and returned a line of nothing.
+ *
+ * Resolved from the working directory with Node's own resolution, which is
+ * what finds the hoisted `node_modules/pdfjs-dist` in the standalone image
+ * and the pnpm link in a checkout. The specifier is assembled at runtime so
+ * the bundler leaves the lookup alone. The ICC profile option is not set: its
+ * loader needs a synchronous XMLHttpRequest that Node lacks, and pdfjs falls
+ * back to each colour space's alternate.
+ */
+export interface PdfjsAssets {
+  standardFontDataUrl: string;
+  cMapUrl: string;
+  wasmUrl: string;
+  /** The Liberation Sans faces registered as the generic fallback families. */
+  fallbackFonts: string[];
+}
+
+let cachedAssets: PdfjsAssets | null | undefined;
+
+export function resolvePdfjsAssets(): PdfjsAssets | null {
+  if (cachedAssets !== undefined) return cachedAssets;
+  cachedAssets = null;
+  try {
+    const anchor = createRequire(join(process.cwd(), "package.json"));
+    const root = dirname(
+      anchor.resolve(["pdfjs-dist", "package.json"].join("/")),
+    );
+    const fonts = join(root, "standard_fonts");
+    const assets: PdfjsAssets = {
+      standardFontDataUrl: `${fonts}/`,
+      cMapUrl: `${join(root, "cmaps")}/`,
+      wasmUrl: `${join(root, "wasm")}/`,
+      fallbackFonts: [
+        "LiberationSans-Regular.ttf",
+        "LiberationSans-Bold.ttf",
+        "LiberationSans-Italic.ttf",
+        "LiberationSans-BoldItalic.ttf",
+      ].map((file) => join(fonts, file)),
+    };
+    if (
+      existsSync(join(fonts, "FoxitSerif.pfb")) &&
+      existsSync(join(root, "cmaps", "UniJIS-UTF16-H.bcmap")) &&
+      existsSync(join(root, "wasm", "openjpeg.wasm")) &&
+      assets.fallbackFonts.every((file) => existsSync(file))
+    ) {
+      cachedAssets = assets;
+    }
+  } catch {
+    // Unresolvable: render without the data, as before, and say so below.
+  }
+  return cachedAssets;
+}
+
+let fallbackFamiliesRegistered = false;
+
+/**
+ * Give the canvas a face for the generic families pdfjs falls back to.
+ *
+ * When pdfjs cannot use a font program (a damaged or unsupported embedded
+ * font, or a non-embedded face outside the standard 14) it draws the text
+ * with the canvas' own `fillText` under the PDF's font name and a generic
+ * family. With no system fonts in the image that text vanished. Registering
+ * Liberation Sans, which pdfjs ships, under `sans-serif`, `serif` and
+ * `monospace` makes it legible instead. Once per process.
+ */
+async function registerFallbackFamilies(assets: PdfjsAssets): Promise<void> {
+  if (fallbackFamiliesRegistered) return;
+  fallbackFamiliesRegistered = true;
+  const { GlobalFonts } = (await import("@napi-rs/canvas")) as unknown as {
+    GlobalFonts: GlobalFontsLike;
+  };
+  for (const family of ["sans-serif", "serif", "monospace"]) {
+    for (const file of assets.fallbackFonts) {
+      GlobalFonts.registerFromPath(file, family);
+    }
+  }
+}
+
+/** Share of dark pixels on a rendered page (luminance below half). */
+function inkRatio(context: PdfContext2D, width: number, height: number) {
+  const { data } = context.getImageData(0, 0, width, height);
+  let dark = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i]! + data[i + 1]! + data[i + 2]! < 384) dark++;
+  }
+  const pixels = data.length / 4;
+  return pixels > 0 ? dark / pixels : 0;
+}
+
+/** Test hook: the asset lookup and the font registration are per process. */
+export function __resetPdfjsAssetsForTests(): void {
+  cachedAssets = undefined;
+  fallbackFamiliesRegistered = false;
 }
 
 /**
@@ -163,11 +297,31 @@ export async function rasterizePdf(
     const pdfjs =
       (await import("pdfjs-dist/legacy/build/pdf.mjs")) as unknown as PdfjsModule;
 
+    const assets = resolvePdfjsAssets();
+    if (assets) {
+      await registerFallbackFamilies(assets);
+    } else {
+      annotate({
+        action: { name: "documents.rasterize.assetsMissing" },
+        meta: { reason: "pdfjs_assets_unresolved" },
+      });
+    }
+
     task = pdfjs.getDocument({
       data: new Uint8Array(buffer),
       verbosity: 0, // VerbosityLevel.ERRORS — no console spam on odd PDFs.
       isEvalSupported: false, // never eval font programs (defence in depth).
-      useSystemFonts: true,
+      // There are no system fonts to use: substitutes come from pdfjs' own
+      // standard font data and the fallback families registered above.
+      useSystemFonts: false,
+      ...(assets
+        ? {
+            standardFontDataUrl: assets.standardFontDataUrl,
+            cMapUrl: assets.cMapUrl,
+            cMapPacked: true,
+            wasmUrl: assets.wasmUrl,
+          }
+        : {}),
     });
     doc = await task.promise;
 
@@ -175,6 +329,7 @@ export async function rasterizePdf(
     const cap = Math.min(Math.max(1, maxPages), RASTER_MAX_PAGES);
     const pageCount = Math.min(doc.numPages, cap);
     const images: RasterImage[] = [];
+    let blankPages = 0;
 
     for (let pageNumber = 1; pageNumber <= pageCount; pageNumber++) {
       const page = await doc.getPage(pageNumber);
@@ -196,6 +351,12 @@ export async function rasterizePdf(
           viewport,
           canvas: cc.canvas,
         }).promise;
+        if (
+          inkRatio(cc.context, cc.canvas.width, cc.canvas.height) <
+          RASTER_MIN_INK_RATIO
+        ) {
+          blankPages++;
+        }
         const jpeg = cc.canvas.toBuffer("image/jpeg", RASTER_JPEG_QUALITY);
         images.push({
           mediaType: "image/jpeg",
@@ -217,9 +378,19 @@ export async function rasterizePdf(
       });
       return { ok: false, reason: "render-failed" };
     }
+    if (blankPages === images.length) {
+      // Every rendered page came out empty. Sending those to a vision model
+      // buys a transcript of nothing that would be indexed as a success; say
+      // the render failed instead, so the read reports `raster-failed`.
+      annotate({
+        action: { name: "documents.rasterize.failed" },
+        meta: { reason: "blank_pages", pages: images.length },
+      });
+      return { ok: false, reason: "render-failed" };
+    }
     annotate({
       action: { name: "documents.rasterize.ok" },
-      meta: { pages: images.length, cappedFrom: doc.numPages },
+      meta: { pages: images.length, cappedFrom: doc.numPages, blankPages },
     });
     return { ok: true, images, pageCount: doc.numPages };
   } catch (err) {
