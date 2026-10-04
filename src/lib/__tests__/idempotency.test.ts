@@ -990,6 +990,38 @@ describe("request fingerprint", () => {
     expect(sys).not.toBe(dia);
   });
 
+  it("reads a rebuilt multipart form with a fresh boundary as the same upload", () => {
+    const form = (boundary: string, name: string) =>
+      enc(
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\nContent-Type: application/pdf\r\n\r\n%PDF-1.4 body\r\n--${boundary}--\r\n`,
+      );
+    const type = (boundary: string) =>
+      `multipart/form-data; boundary=${boundary}`;
+    const first = requestFingerprint(
+      "POST",
+      "/api/documents",
+      form("----formdata-a1", "brief.pdf"),
+      null,
+      type("----formdata-a1"),
+    );
+    const retry = requestFingerprint(
+      "POST",
+      "/api/documents",
+      form("----formdata-b2", "brief.pdf"),
+      null,
+      type("----formdata-b2"),
+    );
+    expect(retry).toBe(first);
+    const other = requestFingerprint(
+      "POST",
+      "/api/documents",
+      form("----formdata-b2", "other.pdf"),
+      null,
+      type("----formdata-b2"),
+    );
+    expect(other).not.toBe(first);
+  });
+
   it("hashes a non-JSON or empty body as its raw bytes", () => {
     const text = requestFingerprint("POST", "/p", enc("not json"));
     expect(text).toBe(requestFingerprint("POST", "/p", enc("not json")));

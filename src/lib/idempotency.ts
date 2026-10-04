@@ -159,19 +159,51 @@ export function canonicalJson(value: unknown): string {
 }
 
 /**
+ * Replace every occurrence of the multipart boundary named in `contentType`
+ * with a fixed token. Any other body is returned as it is.
+ */
+function withoutMultipartBoundary(
+  body: Uint8Array,
+  contentType: string | null,
+): Uint8Array {
+  if (!contentType || !/^multipart\//i.test(contentType)) return body;
+  const match = /;\s*boundary="?([^";]+)"?/i.exec(contentType);
+  if (!match) return body;
+  const boundary = Buffer.from(match[1], "utf8");
+  const token = Buffer.from("boundary", "utf8");
+  const source = Buffer.from(body.buffer, body.byteOffset, body.byteLength);
+  const parts: Buffer[] = [];
+  let from = 0;
+  for (;;) {
+    const at = source.indexOf(boundary, from);
+    if (at === -1) break;
+    parts.push(source.subarray(from, at), token);
+    from = at + boundary.length;
+  }
+  if (parts.length === 0) return body;
+  parts.push(source.subarray(from));
+  return new Uint8Array(Buffer.concat(parts));
+}
+
+/**
  * The fingerprint of a request: SHA-256 hex over method, path and the body in
  * canonical form. A body that parses as JSON is hashed as `canonicalJson`, so
  * the same object serialised with a different key order is the same request;
  * anything else (multipart, plain text, an empty body) is hashed as its raw
  * bytes. `truncatedAt` marks a body cut at `FINGERPRINT_MAX_BYTES`, hashed as
- * that raw prefix together with the declared length. Exported for unit tests.
+ * that raw prefix together with the declared length. A multipart body has its
+ * boundary replaced by a fixed token first: a client that rebuilds the form
+ * for a retry picks a fresh random boundary, and the same upload must still
+ * replay. Exported for unit tests.
  */
 export function requestFingerprint(
   method: string,
   path: string,
-  body: Uint8Array,
+  rawBody: Uint8Array,
   truncatedAt: string | null = null,
+  contentType: string | null = null,
 ): string {
+  const body = withoutMultipartBoundary(rawBody, contentType);
   const hash = createHash("sha256")
     .update(method)
     .update("\0")
@@ -237,6 +269,7 @@ async function fingerprintRequest(
     path,
     body,
     truncated ? (request.headers.get("content-length") ?? "unknown") : null,
+    request.headers.get("content-type"),
   );
 }
 
