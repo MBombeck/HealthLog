@@ -34,11 +34,20 @@ const REFERENCE_OPTIONS: Intl.DateTimeFormatOptions = {
 };
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// One reference formatter per zone: building a fresh Intl.DateTimeFormat for
+// each of ~36k comparisons pushed the test past its timeout on CI runners.
+const referenceFormatters = new Map<string, Intl.DateTimeFormat>();
+
 function reference(date: Date, tz: string) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    ...REFERENCE_OPTIONS,
-    timeZone: tz,
-  }).formatToParts(date);
+  let fmt = referenceFormatters.get(tz);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat("en-US", {
+      ...REFERENCE_OPTIONS,
+      timeZone: tz,
+    });
+    referenceFormatters.set(tz, fmt);
+  }
+  const parts = fmt.formatToParts(date);
   const get = (type: string) => parts.find((p) => p.type === type)!.value;
   const hour = Number(get("hour")) % 24;
   const wall = {
@@ -103,7 +112,7 @@ describe("zone offset memo", () => {
         expect(formatInUserTz(date, tz, "datetime")).toBe(ref.datetime);
       }
     }
-  });
+  }, 20_000);
 
   it("matches Intl on a warm memo for scattered instants across decades", () => {
     let seed = 7;
