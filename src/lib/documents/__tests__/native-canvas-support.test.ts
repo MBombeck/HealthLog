@@ -115,6 +115,6 @@ describe("generateThumbnail behind a closed gate", () => {
       Buffer.from([0xff, 0xd8, 0xff]),
       "image/jpeg",
     );
-    expect(result).toEqual({ ok: false });
+    expect(result).toEqual({ ok: false, reason: "native-canvas-unsupported" });
   });
 });
