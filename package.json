@@ -104,7 +104,7 @@
     "web-push": "^3.6.7",
     "yaml": "^2.8.4",
     "zod": "^4.4.3",
-    "zod-openapi": "^6.0.1",
+    "zod-openapi": "^6.0.2",
     "zxcvbn-typescript": "^5.0.1"
   },
   "devDependencies": {
