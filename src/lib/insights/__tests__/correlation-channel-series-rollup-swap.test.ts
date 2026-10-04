@@ -239,6 +239,50 @@ describe("rollup ↔ raw parity — multi-source day (source collapse)", () => {
   });
 });
 
+describe("pulse from the DAY rollup tier", () => {
+  it("reads each source's stored DAY mean (the hourly-mean day), not its readings' sum over count", async () => {
+    mockCoverage([["PULSE", true]]);
+    // The stored DAY mean of pulse is the mean of the day's hours' means (90),
+    // while its readings average 127.5. A second source on another day is
+    // single-source and kept as is.
+    rollupFindMany.mockResolvedValue([
+      {
+        type: "PULSE",
+        bucketStart: new Date(`${utcDayKey(at(8, 7))}T00:00:00.000Z`),
+        count: 8,
+        mean: 90,
+        sumValue: 1020,
+      },
+    ]);
+    const result = await fetchMeasurementDailySeriesTiered(
+      USER,
+      "Europe/Berlin",
+      SINCE(),
+      ["PULSE"],
+    );
+    expect(result.rollupTypes).toEqual(["PULSE"]);
+    expect(result.byType.get("PULSE")).toEqual([
+      { day: utcDayKey(at(8, 7)), value: 90 },
+    ]);
+  });
+
+  it("weighs each source's day once on a day two sources report", async () => {
+    mockCoverage([["PULSE", true]]);
+    const bucketStart = new Date(`${utcDayKey(at(8, 7))}T00:00:00.000Z`);
+    rollupFindMany.mockResolvedValue([
+      { type: "PULSE", bucketStart, count: 900, mean: 70, sumValue: 900 * 120 },
+      { type: "PULSE", bucketStart, count: 3, mean: 60, sumValue: 180 },
+    ]);
+    const result = await fetchMeasurementDailySeriesTiered(
+      USER,
+      "Europe/Berlin",
+      SINCE(),
+      ["PULSE"],
+    );
+    expect(result.byType.get("PULSE")![0].value).toBeCloseTo(65, 10);
+  });
+});
+
 describe("rollup ↔ raw parity — far-from-UTC profile timezone", () => {
   const savedTz = process.env.TZ;
   afterAll(() => {

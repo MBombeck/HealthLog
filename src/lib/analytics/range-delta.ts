@@ -41,6 +41,10 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import {
+  windowWeighting,
+  type WindowWeighting,
+} from "@/lib/measurements/day-statistic";
+import {
   reconstructSleepNights,
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
@@ -88,6 +92,7 @@ export function sliceWindowDelta(
   rows: RollupBucketRow[],
   windowDays: number,
   now: number,
+  weighting: WindowWeighting = "count",
 ): { current: WindowAggregate; previous: WindowAggregate } {
   const currentStart = now - windowDays * DAY_MS;
   const previousStart = now - 2 * windowDays * DAY_MS;
@@ -102,8 +107,8 @@ export function sliceWindowDelta(
     }
   }
   return {
-    current: aggregateWmyBuckets(currentRows),
-    previous: aggregateWmyBuckets(previousRows),
+    current: aggregateWmyBuckets(currentRows, weighting),
+    previous: aggregateWmyBuckets(previousRows, weighting),
   };
 }
 
@@ -334,6 +339,7 @@ export async function computeRangeDelta(
     resolved.rows,
     windowDays,
     now,
+    windowWeighting(type),
   );
   const { delta, deltaPct } = composeDelta(current, previous);
   return {

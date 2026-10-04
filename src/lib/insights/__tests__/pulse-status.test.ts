@@ -347,3 +347,52 @@ describe("generatePulseStatusForUser — token-leak hardening (v1.4.27 F16)", ()
     expect(notes[0].text).toContain("Your pulse is stable.");
   });
 });
+
+describe("generatePulseStatusForUser — a pulse day is the mean of its hours", () => {
+  it("gives the latest day and the summary the hours' and days' means", async () => {
+    // Yesterday: a workout hour of twelve readings at 150 and three resting
+    // hours at 60 (day value 82.5). The day before: one reading at 60. The
+    // plain mean of yesterday's fifteen readings would be 132.
+    const now = new Date();
+    const midnight = (daysAgo: number) =>
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+      daysAgo * dayMs;
+    const records: Array<{ value: number; measuredAt: Date }> = [];
+    for (let i = 0; i < 12; i++) {
+      records.push({
+        value: 150,
+        measuredAt: new Date(midnight(1) + 10 * 3_600_000 + i * 300_000),
+      });
+    }
+    for (const h of [12, 14, 16]) {
+      records.push({
+        value: 60,
+        measuredAt: new Date(midnight(1) + h * 3_600_000),
+      });
+    }
+    records.push({
+      value: 60,
+      measuredAt: new Date(midnight(2) + 8 * 3_600_000),
+    });
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dateOfBirth: null,
+      gender: null,
+      timezone: "UTC",
+    } as never);
+    vi.mocked(prisma.measurement.findMany).mockImplementation(((args: {
+      where: { type: string };
+    }) =>
+      Promise.resolve(
+        args.where.type === "PULSE" ? [...records].reverse() : [],
+      )) as never);
+    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
+    const captured: { userPrompt: string | null } = { userPrompt: null };
+    stubCompletion('{"summary":"OK"}', captured);
+
+    await generatePulseStatusForUser("user-pulse-hours", { locale: "en" });
+
+    const snapshot = JSON.parse(captured.userPrompt!.match(/\{[\s\S]*\}/)![0]);
+    expect(snapshot.pulse.latestDayFocus.value).toBe(82.5);
+    expect(snapshot.pulse.summary.mean).toBe(71.25);
+  });
+});

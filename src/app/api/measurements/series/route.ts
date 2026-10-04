@@ -26,6 +26,13 @@ import type { MeasurementType, SleepStage } from "@/generated/prisma/client";
 import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
 import { VALUE_RANGES } from "@/lib/validations/measurement";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
+import {
+  dayWeightedRows,
+  readingsMean,
+  windowMeanSql,
+  zoneDayFrame,
+} from "@/lib/measurements/day-mean";
 import { seriesRowsFrom } from "@/lib/measurements/series-canonical";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
@@ -462,6 +469,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
     ]);
     const type = KIND_TO_TYPE[kind];
     const seriesRows = seriesRowsFrom(priorityJson, type, days);
+    // A day of a type with an activity-dependent sampling rate (pulse) is the
+    // mean of its local hours' means, each hour once, so a workout hour with
+    // hundreds of times the readings does not outweigh the rest of the day (see
+    // `day-statistic.ts`). The hour grain is already one mean per hour.
+    const hourWeighted = grain === "day" && usesHourlyMeanDay(type);
     const bucketRows = await prisma.$queryRawUnsafe<
       Array<{
         bucket_start: Date;
@@ -470,7 +482,39 @@ export const GET = apiHandler(async (request: NextRequest) => {
         max_value: number;
       }>
     >(
-      `
+      hourWeighted
+        ? `
+      WITH localized AS (
+        SELECT
+          m."value",
+          m."value_min",
+          m."value_max",
+          date_trunc(
+            'hour',
+            (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE $3
+          ) AS local_hour
+        FROM ${seriesRows}
+        WHERE m."measured_at" >= $4
+      ),
+      hourly AS (
+        SELECT
+          date_trunc($2, local_hour)                              AS local_day,
+          AVG("value")                                            AS hour_mean,
+          MIN(COALESCE("value_min", "value"))                     AS min_value,
+          MAX(COALESCE("value_max", "value"))                     AS max_value
+        FROM localized
+        GROUP BY local_hour
+      )
+      SELECT
+        local_day AT TIME ZONE $3                                AS bucket_start,
+        AVG(hour_mean)::double precision                         AS mean,
+        MIN(min_value)::double precision                         AS min_value,
+        MAX(max_value)::double precision                         AS max_value
+      FROM hourly
+      GROUP BY local_day
+      ORDER BY bucket_start ASC
+    `
+        : `
       WITH localized AS (
         SELECT
           m."value",
@@ -501,17 +545,50 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // strip's mean/min/max/stdDev/count are the same figures the raw path
     // computed: `AVG`/`MIN`/`MAX` over `value`, `STDDEV_POP` matching the
     // JS population-variance helper, exact row count. Aggregate-only —
-    // no row transfer.
-    const [rawAgg] = await prisma.$queryRawUnsafe<
-      Array<{
-        n: number;
-        mean: number | null;
-        min: number | null;
-        max: number | null;
-        sd: number | null;
-      }>
-    >(
-      `
+    // no row transfer. For an hourly-mean type (pulse) the mean is the mean
+    // of the local days' values, each day the mean of its local hours'
+    // means, so it is the mean of the day points the chart draws; count,
+    // min, max and the spread stay over every reading.
+    const [rawAgg] = usesHourlyMeanDay(type)
+      ? await prisma.$queryRawUnsafe<
+          Array<{
+            n: number;
+            mean: number | null;
+            min: number | null;
+            max: number | null;
+            sd: number | null;
+          }>
+        >(
+          `
+      WITH src AS (
+        SELECT m.*
+        FROM ${seriesRows}
+        WHERE m."measured_at" >= $2
+      )
+      SELECT
+        COUNT(*)::int                            AS n,
+        ${windowMeanSql({ typeColumn: 'm."type"', value: 'm."value"', weight: "m.day_weight" })}::double precision
+                                                 AS mean,
+        MIN(m."value")::double precision         AS min,
+        MAX(m."value")::double precision         AS max,
+        STDDEV_POP(m."value")::double precision  AS sd
+      FROM ${dayWeightedRows("src", zoneDayFrame("$3"))} m
+      GROUP BY m."type"
+    `,
+          user.id,
+          since,
+          userTz,
+        )
+      : await prisma.$queryRawUnsafe<
+          Array<{
+            n: number;
+            mean: number | null;
+            min: number | null;
+            max: number | null;
+            sd: number | null;
+          }>
+        >(
+          `
       SELECT
         COUNT(*)::int                            AS n,
         AVG(m."value")::double precision         AS mean,
@@ -521,9 +598,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
       FROM ${seriesRows}
       WHERE m."measured_at" >= $2
     `,
-      user.id,
-      since,
-    );
+          user.id,
+          since,
+        );
     const round2 = (v: number) => Math.round(v * 100) / 100;
     const dayId = (d: Date) =>
       grain === "day"
@@ -701,6 +778,25 @@ export const GET = apiHandler(async (request: NextRequest) => {
           valueMax: row.valueMax ?? null,
         };
       });
+      // An hourly-mean type's strip mean is the mean of its local days'
+      // values, each day the mean of its local hours' means, so a dense
+      // workout hour does not outweigh the rest of the window. Count, min,
+      // max and the spread stay over every reading.
+      if (usesHourlyMeanDay(type) && rows.length > 0) {
+        const userTz = await resolveUserTimezone(user.id);
+        const values = rows.map((r) => r.value);
+        const rawSummary = summarize(
+          rows.map((r) => ({ date: r.measuredAt, value: r.value })),
+        );
+        const mean = readingsMean(type, rows, userTz);
+        statsOverride = {
+          mean: mean === null ? 0 : Math.round(mean * 100) / 100,
+          min: rawSummary.min ?? 0,
+          max: rawSummary.max ?? 0,
+          stdDev: stdDev(values),
+          count: rawSummary.count,
+        };
+      }
     } else {
       points = rows.map((r) => ({
         id: r.id,

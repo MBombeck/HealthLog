@@ -34,6 +34,7 @@ import {
   type ComponentType,
 } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
 import { ChartEmptyState } from "./chart-empty-state";
 import { ChartErrorState } from "./chart-error-state";
@@ -2240,7 +2241,14 @@ export function HealthChart({
                           }
                         }
                         rows.push({
-                          name: item.name ?? dataKey,
+                          // Name the statistic where it is not the plain mean
+                          // of the readings: a day of pulse is the mean of its
+                          // hours' means.
+                          name: usesHourlyMeanDay(dataKey)
+                            ? t("charts.tooltipHourlyMean", {
+                                metric: item.name ?? dataKey,
+                              })
+                            : (item.name ?? dataKey),
                           value: `${formatTooltipValue(item.value)}${
                             unit ? ` ${unit}` : ""
                           }`,

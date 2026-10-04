@@ -133,13 +133,21 @@ export function buildCoreMetricsBlocks(
 
   if (ctx.sources.has("pulse") && ctx.features.pulse) {
     const rows = byType("PULSE");
+    // A pulse day is the mean of its hours' means, a week the mean of its
+    // days (`day-mean.ts`).
     ctx.snapshot.pulse = {
       aggregate: ctx.features.pulse,
       timeline: {
-        recent: buildDailyValueRows(rows, ctx.recentCutoff, ctx.userTz),
+        recent: buildDailyValueRows(
+          rows,
+          ctx.recentCutoff,
+          ctx.userTz,
+          "PULSE",
+        ),
         weekly: bucketWeekly(
           rows.filter((row) => row.measuredAt < ctx.recentCutoff),
           ctx.userTz,
+          "PULSE",
         ),
         ...(ctx.coarseTails.pulse ? { coarse: ctx.coarseTails.pulse } : {}),
       },

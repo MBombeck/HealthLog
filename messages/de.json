@@ -2437,13 +2437,15 @@
     "loadErrorTitle": "Diagramm konnte nicht geladen werden",
     "loadErrorReload": "Neu laden",
     "sparseDataCaption": "Mehr Messtage füllen den Trend.",
+    "tooltipHourlyMean": "{metric} (Durchschnitt der Stunden)",
     "dataTable": {
       "toggle": "Datenpunkte ({count})",
       "columnDate": "Datum",
       "noValue": "Kein Wert",
       "captionDay": "Eine Zeile pro Tag für {metric} — genau die Punkte, die das Diagramm zeichnet.",
       "captionWeek": "Eine Zeile pro Woche für {metric}, der Mittelwert der Tage dieser Woche — genau die Punkte, die das Diagramm zeichnet.",
-      "captionMonth": "Eine Zeile pro Monat für {metric}, der Mittelwert der Tage dieses Monats — genau die Punkte, die das Diagramm zeichnet."
+      "captionMonth": "Eine Zeile pro Monat für {metric}, der Mittelwert der Tage dieses Monats — genau die Punkte, die das Diagramm zeichnet.",
+      "hourlyMeanNote": "{metric} ist der Tagesdurchschnitt, bei dem jede Stunde einmal zählt, damit ein Training nicht den Rest des Tages überwiegt."
     },
     "personalBaseline": "Dein Mittel",
     "deltaVsBaseline": "{delta} vs. dein Mittel",

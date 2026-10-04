@@ -145,6 +145,39 @@ describe("buildMeasurementDailySeries — grain consistency (v1.29.6)", () => {
 
     expect(points).toEqual([{ day: "2026-06-04", value: 62 }]);
   });
+
+  it("makes a pulse day the mean of its local hours' means, not of its readings", () => {
+    // A dense workout hour (six readings at 150) and two resting hours at 60.
+    // The plain mean would be (6 * 150 + 120) / 8 = 127.5; each hour once
+    // gives (150 + 60 + 60) / 3 = 90.
+    const rows: MeasurementSeriesRow[] = [
+      ...[0, 10, 20, 30, 40, 50].map((m) =>
+        row(`2026-06-04T10:${String(m).padStart(2, "0")}:00.000Z`, 150),
+      ),
+      row("2026-06-04T12:00:00.000Z", 60),
+      row("2026-06-04T14:00:00.000Z", 60),
+    ];
+    expect(buildMeasurementDailySeries("PULSE", rows, "UTC", null)).toEqual([
+      { day: "2026-06-04", value: 90 },
+    ]);
+    // HRV keeps the plain mean of its readings.
+    expect(
+      buildMeasurementDailySeries("HEART_RATE_VARIABILITY", rows, "UTC", null),
+    ).toEqual([{ day: "2026-06-04", value: 127.5 }]);
+  });
+
+  it("reads the pulse hours on the profile zone's own clock", () => {
+    // Asia/Kolkata (UTC+05:30): 10:20Z and 10:40Z are 15:50 and 16:10 local,
+    // two local hours (100 and 40), though one UTC hour.
+    const rows: MeasurementSeriesRow[] = [
+      row("2026-06-04T10:20:00.000Z", 100),
+      row("2026-06-04T10:25:00.000Z", 100),
+      row("2026-06-04T10:40:00.000Z", 40),
+    ];
+    expect(
+      buildMeasurementDailySeries("PULSE", rows, "Asia/Kolkata", null),
+    ).toEqual([{ day: "2026-06-04", value: 70 }]);
+  });
 });
 
 describe("fetchMeasurementWindowSeries — desc+cap+resort (v1.30.3 QA F1/F2/F3)", () => {

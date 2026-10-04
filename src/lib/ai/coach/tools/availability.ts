@@ -44,7 +44,9 @@
  * is enough for the Coach to answer the question instead of only naming it.
  */
 import { prisma } from "@/lib/db";
-import type { MeasurementType } from "@/generated/prisma/client";
+import { Prisma, type MeasurementType } from "@/generated/prisma/client";
+import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { annotate } from "@/lib/logging/context";
@@ -155,13 +157,18 @@ async function readMeasurementBounds(
     _max: { measuredAt: true, value: true },
     _avg: { value: true },
   });
+  const dayMeans = await readHourlyMeanTypeMeans(userId, types);
   const out = new Map<MeasurementType, RawBounds>();
   for (const row of rows) {
     const firstAt = row._min.measuredAt;
     const lastAt = row._max.measuredAt;
     const min = row._min.value;
     const max = row._max.value;
-    const mean = row._avg.value;
+    // A pulse mean is the mean of its days, each the mean of its hours'
+    // means, so a dense workout hour does not stand in for the history.
+    const mean = usesHourlyMeanDay(row.type)
+      ? (dayMeans.get(`${row.type}|${row.unit}`) ?? null)
+      : row._avg.value;
     if (!firstAt || !lastAt) continue;
     const existing = out.get(row.type);
     const unitEntry =
@@ -193,6 +200,50 @@ async function readMeasurementBounds(
     if (firstAt < existing.firstAt) existing.firstAt = firstAt;
     if (lastAt > existing.lastAt) existing.lastAt = lastAt;
     delete existing.series;
+  }
+  return out;
+}
+
+/**
+ * The all-time mean per type and unit for the hourly-mean types among
+ * `types` (pulse, see `day-mean.ts`): the mean of the user's local days, each
+ * the mean of its local hours' means. Empty when none of `types` is one.
+ */
+async function readHourlyMeanTypeMeans(
+  userId: string,
+  types: readonly MeasurementType[],
+): Promise<Map<string, number>> {
+  const hourly = types.filter((t) => usesHourlyMeanDay(t));
+  const out = new Map<string, number>();
+  if (hourly.length === 0) return out;
+  const tz = await resolveUserTimezone(userId);
+  const rows = await prisma.$queryRaw<
+    Array<{ type: string; unit: string | null; mean: number | null }>
+  >`
+    WITH src AS (
+      SELECT *
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+        AND m."deleted_at" IS NULL
+        AND m."type" IN (${Prisma.join(
+          hourly.map((t) => Prisma.sql`${t}::measurement_type`),
+        )})
+    )
+    SELECT
+      m."type"::text AS type,
+      m."unit" AS unit,
+      ${Prisma.raw(
+        windowMeanSql({
+          typeColumn: 'm."type"',
+          value: 'm."value"',
+          weight: "m.day_weight",
+        }),
+      )}::double precision AS mean
+    FROM ${dayWeightedRowsSql("src", tz)} m
+    GROUP BY m."type", m."unit"
+  `;
+  for (const r of rows) {
+    if (r.mean !== null) out.set(`${r.type}|${r.unit}`, Number(r.mean));
   }
   return out;
 }

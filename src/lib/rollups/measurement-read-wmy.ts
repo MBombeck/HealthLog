@@ -37,6 +37,7 @@ import type {
 } from "@/generated/prisma/client";
 
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
+import type { WindowWeighting } from "@/lib/measurements/day-statistic";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import {
@@ -54,6 +55,8 @@ import {
 export interface RollupBucketRow {
   bucketStart: Date;
   count: number;
+  /** Days of the bucket that hold a reading (1 for a DAY row). */
+  days?: number;
   mean: number;
   sd: number | null;
   slope: number | null;
@@ -162,7 +165,10 @@ export async function readBestGranularityRollups(
  * stats do not compose across coarser buckets and the consumers that
  * need them stay on live SQL.
  */
-export function aggregateWmyBuckets(rows: RollupBucketRow[]): {
+export function aggregateWmyBuckets(
+  rows: RollupBucketRow[],
+  weighting: WindowWeighting = "count",
+): {
   count: number;
   min: number | null;
   max: number | null;
@@ -174,13 +180,20 @@ export function aggregateWmyBuckets(rows: RollupBucketRow[]): {
   }
   let totalCount = 0;
   let sumWeighted = 0;
+  let totalWeight = 0;
   let sumCumulative = 0;
   let sawSum = false;
   let min = Infinity;
   let max = -Infinity;
   for (const row of rows) {
     totalCount += row.count;
-    sumWeighted += row.count * row.mean;
+    // Each reading weighs one, or, for a type whose DAY value is the mean of
+    // its hourly means (pulse), each DAY weighs one: a bucket weighs the days
+    // it holds. See `aggregateBuckets` in measurement-read.ts.
+    const weight =
+      weighting === "day" ? (row.count > 0 ? (row.days ?? 1) : 0) : row.count;
+    sumWeighted += weight * row.mean;
+    totalWeight += weight;
     if (row.sumValue !== null && Number.isFinite(row.sumValue)) {
       sumCumulative += row.sumValue;
       sawSum = true;
@@ -188,14 +201,14 @@ export function aggregateWmyBuckets(rows: RollupBucketRow[]): {
     if (row.minValue < min) min = row.minValue;
     if (row.maxValue > max) max = row.maxValue;
   }
-  if (totalCount === 0) {
+  if (totalCount === 0 || totalWeight === 0) {
     return { count: 0, min: null, max: null, mean: null, sum: null };
   }
   return {
     count: totalCount,
     min: Number.isFinite(min) ? min : null,
     max: Number.isFinite(max) ? max : null,
-    mean: sumWeighted / totalCount,
+    mean: sumWeighted / totalWeight,
     sum: sawSum ? sumCumulative : null,
   };
 }
@@ -234,6 +247,7 @@ async function readGranularity(
   return rows.map((r) => ({
     bucketStart: r.bucketStart,
     count: r.count,
+    days: r.days,
     mean: r.mean,
     sd: r.sd,
     slope: r.slope,

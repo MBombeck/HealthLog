@@ -15,6 +15,7 @@ import {
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import type { ChartBucketType } from "@/lib/charts/bucket-time-series";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 
 /**
  * The data points behind the chart, as a table.
@@ -132,6 +133,21 @@ export function ChartDataTable({
         <Table>
           <TableCaption className="mt-2 text-left text-xs">
             {t(BUCKET_CAPTION_KEY[bucket], { metric: metricLabel })}
+            {/* Name the statistic where it is not the plain mean of the
+                readings: a day of pulse is the mean of its hours' means. */}
+            {columns
+              .filter((column) => usesHourlyMeanDay(column.key))
+              .map((column) => (
+                <span
+                  key={column.key}
+                  data-slot="chart-data-table-statistic"
+                  className="mt-1 block"
+                >
+                  {t("charts.dataTable.hourlyMeanNote", {
+                    metric: column.label,
+                  })}
+                </span>
+              ))}
           </TableCaption>
           <TableHeader>
             <TableRow>

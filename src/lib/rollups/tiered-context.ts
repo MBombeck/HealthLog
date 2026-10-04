@@ -40,6 +40,9 @@ import {
 } from "./measurement-rollups";
 import { probeRollupCoverage } from "./measurement-coverage";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
+import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
+import { Prisma } from "@/generated/prisma/client";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -270,9 +273,11 @@ async function readRecentDaily(
     since,
     timeZone: tz,
   });
+  // A pulse day is the mean of its local hours' means (`dayMean`, see
+  // `day-mean.ts`); every other type's day is the mean of its readings.
   return days.map((d) => ({
     date: d.day,
-    value: round(d.sum / d.n),
+    value: round(d.dayMean ?? d.sum / d.n),
     count: d.n,
   }));
 }
@@ -316,6 +321,9 @@ async function readBandLive(
   tzKey?: string,
 ): Promise<RollupBucket[]> {
   const unit = BAND_TRUNC_UNIT[granularity];
+  if (usesHourlyMeanDay(type)) {
+    return readHourlyMeanBandLive(userId, type, unit, from, to, tzKey);
+  }
   try {
     const rows = tzKey
       ? await prisma.$queryRaw<
@@ -383,6 +391,78 @@ async function readBandLive(
   } catch {
     // The band builder never throws — an unreadable band degrades to
     // empty exactly like the rollup path always has.
+    return [];
+  }
+}
+
+/**
+ * `readBandLive` for a type whose day is the mean of its hours' means (pulse,
+ * `day-mean.ts`): a bucket's mean is the mean of its days, each the mean of
+ * its hours, so a workout's dense samples do not outweigh the rest of the
+ * bucket. Count, min, max and the spread stay over every reading. The bucket
+ * boundary is the one the plain branch uses; hours and days are cut in the
+ * user's zone when `tzKey` is set, in the session's (UTC) frame otherwise.
+ */
+async function readHourlyMeanBandLive(
+  userId: string,
+  type: MeasurementType,
+  unit: "day" | "week" | "month" | "year",
+  from: Date,
+  to: Date,
+  tzKey?: string,
+): Promise<RollupBucket[]> {
+  const mean = Prisma.raw(
+    windowMeanSql({
+      typeColumn: 'm."type"',
+      value: 'm."value"',
+      weight: "m.day_weight",
+    }),
+  );
+  const bucket = tzKey
+    ? Prisma.sql`date_trunc(${unit}, m."measured_at" AT TIME ZONE ${tzKey})`
+    : Prisma.sql`date_trunc(${unit}, m."measured_at")`;
+  try {
+    const rows = await prisma.$queryRaw<
+      Array<{
+        bucket_start: Date;
+        count: number;
+        mean: number;
+        min_value: number;
+        max_value: number;
+        sd: number | null;
+      }>
+    >`
+      WITH src AS (
+        SELECT * FROM measurements m
+        WHERE m."user_id" = ${userId}
+          AND m."type" = ${type}::"measurement_type"
+          AND m."deleted_at" IS NULL
+          AND m."measured_at" >= ${from}
+          AND m."measured_at" < ${to}
+      )
+      SELECT
+        ${bucket}                                AS bucket_start,
+        COUNT(*)::int                            AS count,
+        ${mean}::double precision                AS mean,
+        MIN(m."value")::double precision         AS min_value,
+        MAX(m."value")::double precision         AS max_value,
+        STDDEV_POP(m."value")::double precision  AS sd
+      FROM ${dayWeightedRowsSql("src", tzKey ?? null)} m
+      GROUP BY 1, m."type"
+      ORDER BY 1
+    `;
+    return rows.map((r) => ({
+      bucketStart: new Date(r.bucket_start),
+      count: Number(r.count),
+      mean: Number(r.mean),
+      minValue: Number(r.min_value),
+      maxValue: Number(r.max_value),
+      sd: r.sd === null ? null : Number(r.sd),
+      slope: null,
+      r2: null,
+    }));
+  } catch {
+    // Degrades to empty, like the plain branch.
     return [];
   }
 }

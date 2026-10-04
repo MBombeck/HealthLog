@@ -2429,13 +2429,15 @@
     "loadErrorTitle": "차트를 불러오지 못했어요",
     "loadErrorReload": "다시 불러오기",
     "sparseDataCaption": "날이 쌓이면 추이가 채워져요.",
+    "tooltipHourlyMean": "{metric} (시간별 평균)",
     "dataTable": {
       "toggle": "데이터 포인트 ({count})",
       "columnDate": "날짜",
       "noValue": "값 없음",
       "captionDay": "{metric} 하루당 한 행, 차트가 그리는 값과 같아요.",
       "captionWeek": "{metric} 한 주당 한 행, 그 주 일별 평균 — 차트가 그리는 값과 같아요.",
-      "captionMonth": "{metric} 한 달당 한 행, 그달 일별 평균 — 차트가 그리는 값과 같아요."
+      "captionMonth": "{metric} 한 달당 한 행, 그달 일별 평균 — 차트가 그리는 값과 같아요.",
+      "hourlyMeanNote": "{metric}은(는) 하루의 평균이며 각 시간을 한 번씩만 반영하므로, 운동이 하루의 나머지보다 더 크게 반영되지 않습니다."
     },
     "personalBaseline": "내 평소값",
     "deltaVsBaseline": "평소값 대비 {delta}",

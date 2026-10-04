@@ -45,6 +45,8 @@ function bucket(
     clinicalTar2Count: 0,
     clinicalLowRiskSum: null,
     clinicalHighRiskSum: null,
+    hourMeanSum: null,
+    hourCount: null,
   };
 }
 

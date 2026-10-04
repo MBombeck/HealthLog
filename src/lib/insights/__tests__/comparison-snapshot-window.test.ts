@@ -23,6 +23,7 @@ import { summarize, type DataPoint } from "@/lib/analytics/trends";
 const findUnique = vi.fn();
 const measurementFindMany = vi.fn();
 const measurementAggregate = vi.fn();
+const queryRaw = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -33,6 +34,7 @@ vi.mock("@/lib/db", () => ({
       findMany: (...a: unknown[]) => measurementFindMany(...a),
       aggregate: (...a: unknown[]) => measurementAggregate(...a),
     },
+    $queryRaw: (...a: unknown[]) => queryRaw(...a),
   },
 }));
 // SLEEP_DURATION branch helpers — most tests never exercise the sleep
@@ -84,6 +86,8 @@ beforeEach(() => {
   measurementFindMany.mockResolvedValue([]);
   // No measurements by default; individual tests override per call.
   measurementAggregate.mockResolvedValue({ _avg: { value: null } });
+  // Pulse reads its day-weighted window mean through one raw query per window.
+  queryRaw.mockResolvedValue([]);
 });
 
 describe("buildComparisonSnapshotForUser — aggregate windows", () => {
@@ -131,9 +135,10 @@ describe("buildComparisonSnapshotForUser — aggregate windows", () => {
       expect(lteMs).toBeGreaterThanOrEqual(before - 30 * DAY);
       expect(lteMs).toBeLessThanOrEqual(after - 30 * DAY);
     }
-    // Six non-sleep types × 2 windows = 12 aggregate reads; no raw non-sleep read.
-    expect(currentCalls.length).toBe(6);
-    expect(baselineCalls.length).toBe(6);
+    // Five non-sleep, non-pulse types × 2 windows = 10 aggregate reads; no raw
+    // non-sleep read. Pulse reads its day-weighted mean instead (below).
+    expect(currentCalls.length).toBe(5);
+    expect(baselineCalls.length).toBe(5);
   });
 
   it("reads SLEEP_DURATION through the raw ~400-day findMany, never aggregate", async () => {
@@ -163,7 +168,7 @@ describe("buildComparisonSnapshotForUser — aggregate windows", () => {
             .measuredAt,
       )
       .filter((m): m is { gt: Date; lte: Date } => m.lte != null);
-    expect(baselineCalls.length).toBe(6);
+    expect(baselineCalls.length).toBe(5);
     for (const w of baselineCalls) {
       const gtMs = w.gt.getTime();
       const lteMs = w.lte.getTime();
@@ -172,6 +177,27 @@ describe("buildComparisonSnapshotForUser — aggregate windows", () => {
       expect(lteMs).toBeGreaterThanOrEqual(before - 365 * DAY);
       expect(lteMs).toBeLessThanOrEqual(after - 365 * DAY);
     }
+  });
+});
+
+describe("buildComparisonSnapshotForUser — pulse", () => {
+  // A pulse window average is the mean of its days, each the mean of its
+  // hours' means, so a workout's dense readings do not decide the delta. A
+  // bare AVG cannot express it, so pulse never goes through the aggregate.
+  it("reads pulse through the day-weighted query, never the reading AVG", async () => {
+    queryRaw
+      .mockResolvedValueOnce([{ mean: 64 }])
+      .mockResolvedValueOnce([{ mean: 60 }]);
+    const snapshot = await buildComparisonSnapshotForUser("u1");
+    const pulseAggregates = measurementAggregate.mock.calls.filter(
+      (c) => (c[0] as { where: { type: string } }).where.type === "PULSE",
+    );
+    expect(pulseAggregates).toHaveLength(0);
+    expect(queryRaw).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(queryRaw.mock.calls[0])).toContain("day_weight");
+    const pulse = snapshot!.metrics.find((m) => m.type === "pulse");
+    expect(pulse).toMatchObject({ unit: "bpm" });
+    expect([pulse!.currentAvg, pulse!.baselineAvg].sort()).toEqual([60, 64]);
   });
 });
 

@@ -94,6 +94,30 @@ function stripFactorCrosstab(
 }
 
 /**
+ * One cross metric's daily buckets for the mood correlations. The type is
+ * passed through, so a pulse day is the mean of its hours' means (see
+ * `day-mean.ts`) and a workout hour does not decide the day the mood is
+ * paired with; every other type keeps its plain daily mean.
+ */
+export function crossMetricDailySeries(
+  measurements: ReadonlyArray<{
+    type: string;
+    measuredAt: Date;
+    value: number;
+  }>,
+  type: string,
+  now: Date,
+  tz: string,
+): ReturnType<typeof applyPayloadBudget> {
+  return applyPayloadBudget(
+    measurements
+      .filter((m) => m.type === type)
+      .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
+    { now, tz, type },
+  );
+}
+
+/**
  * Public entry — unchanged signature. Prepares the card (cache-read,
  * read-only miss, snapshot build, hash gate) then, when the LLM is still
  * needed, runs ONE completion through the shared single-card path. The
@@ -389,25 +413,23 @@ export async function prepareMoodStatusForUser(
     annotate({ meta: { cross_metric_truncated: true } });
   }
 
-  const weightSeries = applyPayloadBudget(
-    measurements
-      .filter((m) => m.type === "WEIGHT")
-      .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
-    { now, tz: userTz },
+  const weightSeries = crossMetricDailySeries(
+    measurements,
+    "WEIGHT",
+    now,
+    userTz,
   );
-
-  const sysSeries = applyPayloadBudget(
-    measurements
-      .filter((m) => m.type === "BLOOD_PRESSURE_SYS")
-      .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
-    { now, tz: userTz },
+  const sysSeries = crossMetricDailySeries(
+    measurements,
+    "BLOOD_PRESSURE_SYS",
+    now,
+    userTz,
   );
-
-  const pulseSeries = applyPayloadBudget(
-    measurements
-      .filter((m) => m.type === "PULSE")
-      .map((m) => ({ measuredAt: m.measuredAt, value: m.value })),
-    { now, tz: userTz },
+  const pulseSeries = crossMetricDailySeries(
+    measurements,
+    "PULSE",
+    now,
+    userTz,
   );
 
   // Correlations between mood and other metrics — pair on dayOffset so

@@ -78,6 +78,7 @@ import {
   loadLabResults,
 } from "./clinical-records";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { readingsMean } from "@/lib/measurements/day-mean";
 
 const DENSE_REPORT_RAW_WINDOW_DAYS = 90;
 
@@ -446,8 +447,19 @@ export async function collectDoctorReportData(
   const stats: Record<string, DoctorReportStats> = {};
   for (const [type, entries] of Object.entries(byType)) {
     const values = entries.map((e) => e.value);
+    // A day of pulse is the mean of its local hours' means and the period
+    // average the mean of its days (`day-mean.ts`); every other type keeps the
+    // mean of its readings. The dense types' stats are replaced below.
     stats[type] = {
-      avg: values.reduce((a, b) => a + b, 0) / values.length,
+      avg:
+        readingsMean(
+          type,
+          entries.map((e) => ({
+            value: e.value,
+            measuredAt: new Date(e.measuredAt),
+          })),
+          reportTz,
+        ) ?? 0,
       ...minMaxOf(values),
       count: values.length,
       latest: values[values.length - 1],

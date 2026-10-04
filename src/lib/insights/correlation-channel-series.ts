@@ -63,6 +63,8 @@ import type {
 } from "@/generated/prisma/client";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import { dateOnlyKey } from "@/lib/tz/date-only";
+import { hourMeanRows } from "@/lib/measurements/day-mean";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { decryptSymptomText } from "@/lib/symptoms/server";
 import {
   MAX_ACTIVE_SYMPTOM_DEFINITIONS,
@@ -689,8 +691,15 @@ export function buildMeasurementDailySeries(
   if (CUMULATIVE_HK_TYPES.has(type)) {
     return buildCumulativeDailySeries(type, rows, tz, priorityJson);
   }
+  // A day of pulse is the mean of its local hours' means (`day-mean.ts`):
+  // collapse each local hour to its mean first, so the daily mean below
+  // weighs every hour once. Every other type passes through unchanged.
   return toDailyMeans(
-    rows.map((r) => ({ value: r.value, at: r.at })),
+    hourMeanRows(
+      type,
+      rows.map((r) => ({ value: r.value, measuredAt: r.at })),
+      tz,
+    ).map((r) => ({ value: r.value, at: r.measuredAt })),
     tz,
   );
 }
@@ -808,6 +817,7 @@ function isRollupSwapEligible(type: MeasurementType): boolean {
  * mean exactly up to float addition order.
  */
 function composeRollupDailyMeans(
+  type: MeasurementType,
   rows: Array<{
     bucketStart: Date;
     count: number;
@@ -815,10 +825,14 @@ function composeRollupDailyMeans(
     sumValue: number | null;
   }>,
 ): DailySeriesPoint[] {
+  // A pulse DAY row's stored `mean` is the mean of its hours' means
+  // (`day-mean.ts`), which `sumValue / count` would undo; each source's day
+  // then weighs one. Every other type keeps the count-weighted compose.
+  const hourly = usesHourlyMeanDay(type);
   const byDay = new Map<string, { sum: number; count: number }>();
   for (const r of rows) {
     if (r.count <= 0) continue;
-    const sum = r.sumValue ?? r.mean * r.count;
+    const sum = hourly ? r.mean : (r.sumValue ?? r.mean * r.count);
     if (!Number.isFinite(sum)) continue;
     // DAY buckets are minted at UTC midnight; the UTC date IS the bucket's
     // day key (the same convention graded-series and the derived baselines
@@ -826,7 +840,7 @@ function composeRollupDailyMeans(
     const day = dateOnlyKey(r.bucketStart);
     const acc = byDay.get(day) ?? { sum: 0, count: 0 };
     acc.sum += sum;
-    acc.count += r.count;
+    acc.count += hourly ? 1 : r.count;
     byDay.set(day, acc);
   }
   return [...byDay.entries()]
@@ -920,7 +934,10 @@ export async function fetchMeasurementDailySeriesTiered(
         rowsByType.set(bucket.type, list);
       }
       for (const type of covered) {
-        const series = composeRollupDailyMeans(rowsByType.get(type) ?? []);
+        const series = composeRollupDailyMeans(
+          type,
+          rowsByType.get(type) ?? [],
+        );
         if (series.length === 0) {
           // Coverage said "has buckets" but the window resolved empty —
           // backfill pending or all data older than the window. Fall back

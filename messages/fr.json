@@ -2437,13 +2437,15 @@
     "loadErrorTitle": "Impossible de charger le graphique",
     "loadErrorReload": "Recharger",
     "sparseDataCaption": "Davantage de jours étofferont la tendance.",
+    "tooltipHourlyMean": "{metric} (moyenne des heures)",
     "dataTable": {
       "toggle": "Points de données ({count})",
       "columnDate": "Date",
       "noValue": "Aucune valeur",
       "captionDay": "Une ligne par jour pour {metric} : les mêmes points que ceux tracés par le graphique.",
       "captionWeek": "Une ligne par semaine pour {metric}, la moyenne des jours de cette semaine : les mêmes points que ceux tracés par le graphique.",
-      "captionMonth": "Une ligne par mois pour {metric}, la moyenne des jours de ce mois : les mêmes points que ceux tracés par le graphique."
+      "captionMonth": "Une ligne par mois pour {metric}, la moyenne des jours de ce mois : les mêmes points que ceux tracés par le graphique.",
+      "hourlyMeanNote": "{metric} est la moyenne de chaque jour, chaque heure comptant une seule fois, afin qu'un entraînement ne pèse pas plus que le reste de la journée."
     },
     "personalBaseline": "Ta moyenne",
     "deltaVsBaseline": "{delta} vs. ta moyenne",

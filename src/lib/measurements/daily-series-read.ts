@@ -16,6 +16,7 @@ import {
   type AggregateGrain,
 } from "@/lib/measurements/range-aggregation";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
+import { HOURLY_MEAN_DAY_TYPES } from "@/lib/measurements/day-statistic";
 import { readTieredRollupSeries } from "@/lib/rollups/measurement-read-wmy";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import { annotate } from "@/lib/logging/context";
@@ -192,6 +193,11 @@ export async function readLiveBuckets(opts: {
     .map((t) => `'${t}'`)
     .join(",");
   const isCumulative = Prisma.raw(`c."type"::text IN (${cumulativeList})`);
+  // Types whose day is the mean of its per-local-hour means (see
+  // `day-statistic.ts`). Closed code constants, spliced as enum literals.
+  const hourlyMeanList = Prisma.raw(
+    [...HOURLY_MEAN_DAY_TYPES].map((t) => `'${t}'::measurement_type`).join(","),
+  );
   const rankRaw = Prisma.raw(
     buildSourceRankCase(priorityJson, 'p."type"', 'p."source"'),
   );
@@ -236,17 +242,50 @@ export async function readLiveBuckets(opts: {
         ${typeFilter}
       GROUP BY m."type", m."source", 3
     ),
+    -- A day of a type with an activity-dependent sampling rate is the mean of
+    -- its local hours' means, each hour once, not the mean of its readings: a
+    -- workout hour holds hundreds of times as many readings as a resting one.
+    -- Empty for every other type.
+    hour_mean AS (
+      SELECT h."type", h."source", h.day,
+             AVG(h.hour_mean)::double precision AS day_mean
+      FROM (
+        SELECT
+          m."type",
+          m."source",
+          date_trunc('day', (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}) AS day,
+          date_trunc('hour', (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}) AS hr,
+          AVG(m."value") AS hour_mean
+        FROM measurements m
+        WHERE m."user_id" = ${userId}
+          AND m."measured_at" >= ${from}
+          AND m."measured_at" <= ${to}
+          AND m."deleted_at" IS NULL
+          AND m."type" IN (${hourlyMeanList})
+          ${typeFilter}
+        GROUP BY m."type", m."source", 3, 4
+      ) h
+      GROUP BY h."type", h."source", h.day
+    ),
     canon AS (
       SELECT DISTINCT ON (p."type", p.day)
-        p."type", p.day, p.total, p.cnt, p.min_value, p.max_value
+        p."type", p.day, p.total, p.cnt, p.min_value, p.max_value, hm.day_mean
       FROM per_source p
+      LEFT JOIN hour_mean hm
+        ON hm."type" = p."type" AND hm."source" = p."source" AND hm.day = p.day
       ORDER BY p."type", p.day, (${rankRaw}), p."source"::text
     ),
     folded AS (
       SELECT
         c."type",
         date_trunc(${unit}, c.day) AS d,
-        (CASE WHEN ${isCumulative} THEN SUM(c.total) ELSE SUM(c.total) / SUM(c.cnt) END)::double precision AS avg,
+        (CASE
+           WHEN ${isCumulative} THEN SUM(c.total)
+           -- Hourly-mean types: every day once, so a window of days does not
+           -- hand a workout day its thousands of readings as weight.
+           WHEN COUNT(c.day_mean) = COUNT(*) THEN AVG(c.day_mean)
+           ELSE SUM(c.total) / SUM(c.cnt)
+         END)::double precision AS avg,
         SUM(c.cnt)::int AS cnt,
         MIN(c.min_value) AS min_value,
         MAX(c.max_value) AS max_value

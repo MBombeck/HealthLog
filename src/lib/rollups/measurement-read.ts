@@ -28,6 +28,10 @@ import type {
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
+import {
+  windowWeighting,
+  type WindowWeighting,
+} from "@/lib/measurements/day-statistic";
 import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
 import {
@@ -386,8 +390,19 @@ export function hasPendingAccumulatorBackfill(
  * Combine DAY buckets into the linearly-composable window stats —
  * `count`, `min`, `max`, `mean`. SD / slope / R² are intentionally
  * NOT computed here because they don't compose across DAY rollups.
+ *
+ * `weighting` decides how the days make up the window mean. By default each
+ * day weighs its sample count, which is the plain mean over every reading. For
+ * a type whose DAY value is the mean of its hourly means (pulse, see
+ * `day-statistic.ts`) pass `"day"`: every day weighs one. Weighting days by how
+ * many samples they hold would hand a workout day, with its thousands of
+ * samples, the same outsized share the hourly mean exists to take away.
+ * `count` stays the number of readings either way.
  */
-export function aggregateBuckets(rows: DailyMeanRow[]): {
+export function aggregateBuckets(
+  rows: DailyMeanRow[],
+  weighting: WindowWeighting = "count",
+): {
   count: number;
   min: number | null;
   max: number | null;
@@ -398,22 +413,26 @@ export function aggregateBuckets(rows: DailyMeanRow[]): {
   }
   let totalCount = 0;
   let sumWeighted = 0;
+  let totalWeight = 0;
   let min = Infinity;
   let max = -Infinity;
   for (const r of rows) {
     totalCount += r.count;
-    sumWeighted += r.count * r.mean;
+    // A day with no readings carries no weight under either rule.
+    const weight = weighting === "day" ? (r.count > 0 ? 1 : 0) : r.count;
+    sumWeighted += weight * r.mean;
+    totalWeight += weight;
     if (r.minValue < min) min = r.minValue;
     if (r.maxValue > max) max = r.maxValue;
   }
-  if (totalCount === 0) {
+  if (totalCount === 0 || totalWeight === 0) {
     return { count: 0, min: null, max: null, mean: null };
   }
   return {
     count: totalCount,
     min: Number.isFinite(min) ? min : null,
     max: Number.isFinite(max) ? max : null,
-    mean: sumWeighted / totalCount,
+    mean: sumWeighted / totalWeight,
   };
 }
 
@@ -518,10 +537,18 @@ const COARSE_TRUNC_UNIT: Record<Exclude<RollupGranularity, "DAY">, string> = {
  * `sd`, `slope` and `r2` come from the summed regression accumulators
  * (`composeRegression`) and are `null` when a day lacks them.
  */
-function composeFoldedBucket(row: FoldedBucketRow): CanonicalRollupBucket {
+function composeFoldedBucket(
+  row: FoldedBucketRow,
+  weighting: WindowWeighting = "count",
+): CanonicalRollupBucket {
   const count = Number(row.count);
   const sumY = Number(row.sum_y);
-  const mean = sumY / count;
+  // The mean of every reading: what the regression below composes from.
+  const sampleMean = sumY / count;
+  const dayMean = Number(row.sum_day_mean) / Number(row.days);
+  // The bucket's own `mean`: every reading, or, for a type whose DAY value is
+  // the mean of its hourly means (pulse), every day once.
+  const mean = weighting === "day" ? dayMean : sampleMean;
   const accumulatorsComplete =
     row.sum_x !== null &&
     row.sum_xy !== null &&
@@ -533,14 +560,14 @@ function composeFoldedBucket(row: FoldedBucketRow): CanonicalRollupBucket {
   const sumYy = accumulatorsComplete ? Number(row.sum_yy) : null;
   const regression = accumulatorsComplete
     ? composeRegression([
-        { count, mean, sumValue: sumY, sumX, sumXy, sumXx, sumYy },
+        { count, mean: sampleMean, sumValue: sumY, sumX, sumXy, sumXx, sumYy },
       ])
     : { slope: null, r2: null, sdPop: null };
   return {
     bucketStart: new Date(row.bucket_start),
     count,
     days: Number(row.days),
-    dayMean: Number(row.sum_day_mean) / Number(row.days),
+    dayMean,
     mean,
     minValue: Number(row.min_value),
     maxValue: Number(row.max_value),
@@ -691,10 +718,13 @@ export async function readCanonicalRollupBuckets(opts: {
   `;
   const fromMs = from.getTime();
   const toMs = to?.getTime() ?? null;
-  return rows.map(composeFoldedBucket).filter((b) => {
-    const start = b.bucketStart.getTime();
-    if (start < fromMs) return false;
-    if (toMs === null) return true;
-    return opts.toInclusive ? start <= toMs : start < toMs;
-  });
+  const weighting = windowWeighting(type);
+  return rows
+    .map((r) => composeFoldedBucket(r, weighting))
+    .filter((b) => {
+      const start = b.bucketStart.getTime();
+      if (start < fromMs) return false;
+      if (toMs === null) return true;
+      return opts.toInclusive ? start <= toMs : start < toMs;
+    });
 }

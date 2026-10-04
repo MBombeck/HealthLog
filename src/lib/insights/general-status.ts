@@ -216,9 +216,11 @@ export async function prepareGeneralStatusForUser(
         }));
       if (records.length === 0) return [];
 
-      const series = applyPayloadBudget(records, { now, tz: userTz });
+      // `type` makes a pulse day the mean of its hours' means and a pulse
+      // window the mean of its days (`day-mean.ts`); other types unchanged.
+      const series = applyPayloadBudget(records, { now, tz: userTz, type });
       dailyByType.set(type, series);
-      const graded = buildGradedSeriesFromPoints(records, now, userTz);
+      const graded = buildGradedSeriesFromPoints(records, now, userTz, type);
 
       return [
         [

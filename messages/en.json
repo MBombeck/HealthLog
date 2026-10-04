@@ -2437,13 +2437,15 @@
     "loadErrorTitle": "Chart could not be loaded",
     "loadErrorReload": "Reload",
     "sparseDataCaption": "More days will fill out the trend.",
+    "tooltipHourlyMean": "{metric} (average of the hours)",
     "dataTable": {
       "toggle": "Data points ({count})",
       "columnDate": "Date",
       "noValue": "No value",
       "captionDay": "One row per day of {metric}, the same points the chart draws.",
       "captionWeek": "One row per week of {metric}, the average of that week's days — the same points the chart draws.",
-      "captionMonth": "One row per month of {metric}, the average of that month's days — the same points the chart draws."
+      "captionMonth": "One row per month of {metric}, the average of that month's days — the same points the chart draws.",
+      "hourlyMeanNote": "{metric} is each day's average, with every hour counting once, so a workout does not outweigh the rest of the day."
     },
     "personalBaseline": "Your normal",
     "deltaVsBaseline": "{delta} vs. your normal",

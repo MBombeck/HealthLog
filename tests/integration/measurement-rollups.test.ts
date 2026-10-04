@@ -439,15 +439,28 @@ describe("measurement rollups — integration", () => {
       Array<{ type: string; day: string; mean_value: number }>
     >`
       SELECT
-        m."type"::text AS type,
-        TO_CHAR(date_trunc('day', m."measured_at"), 'YYYY-MM-DD') AS day,
-        (ROUND((AVG(m."value"))::numeric, 2))::double precision AS mean_value
-      FROM measurements m
-      WHERE m."user_id" = ${user.id}
-        AND m."measured_at" >= ${ninetyDaysAgo}
-        AND m."type" IN ('WEIGHT', 'BLOOD_PRESSURE_SYS', 'PULSE')
-      GROUP BY m."type", date_trunc('day', m."measured_at")
-      ORDER BY m."type", day ASC
+        h."type"::text AS type,
+        TO_CHAR(h.day, 'YYYY-MM-DD') AS day,
+        -- A day of pulse is the mean of its hours' means (day-statistic.ts);
+        -- every other type is the plain mean of its readings.
+        (ROUND((CASE WHEN h."type" = 'PULSE'
+                     THEN AVG(h.hour_mean) ELSE AVG(h.plain_mean) END)::numeric, 2))::double precision AS mean_value
+      FROM (
+        SELECT
+          m."type",
+          date_trunc('day', m."measured_at") AS day,
+          AVG(m."value") AS hour_mean,
+          AVG(m."value") AS plain_mean
+        FROM measurements m
+        WHERE m."user_id" = ${user.id}
+          AND m."measured_at" >= ${ninetyDaysAgo}
+          AND m."type" IN ('WEIGHT', 'BLOOD_PRESSURE_SYS', 'PULSE')
+        GROUP BY m."type", date_trunc('day', m."measured_at"),
+                 CASE WHEN m."type" = 'PULSE'
+                      THEN date_trunc('hour', m."measured_at") END
+      ) h
+      GROUP BY h."type", h.day
+      ORDER BY h."type", day ASC
     `;
 
     const liveByType = new Map<string, Array<{ day: string; value: number }>>();

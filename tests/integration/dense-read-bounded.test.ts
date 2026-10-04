@@ -29,6 +29,8 @@ import { buildGradedSeriesWithRollups } from "@/lib/insights/graded-series";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
 import { foldDayAggregates } from "@/lib/measurements/__tests__/fake-day-aggregates";
 import { localHmAsUtc } from "@/lib/tz/local-day";
+import { dayValue } from "@/lib/measurements/day-mean";
+import { userDayKey } from "@/lib/tz/format";
 
 vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
@@ -202,7 +204,31 @@ describe("pulse status over a dense stream (#1023)", () => {
       rows.map((r) => ({ measuredAt: r.at, value: r.value })),
       opts,
     );
-    expect(sql).toEqual(memory);
+    // Pulse rows also carry the hourly-mean day (`day-mean.ts`); the plain
+    // fold fields agree with the in-memory fold, and each row's day value is
+    // the mean of its local hours' means over the same readings.
+    expect(
+      sql.map(
+        ({ dayMean: _d, weightedSum: _w, weightSum: _s, ...plain }) => plain,
+      ),
+    ).toEqual(memory);
+    for (const row of sql) {
+      const members = rows.filter(
+        (r) =>
+          r.value >= 20 &&
+          r.value <= 300 &&
+          userDayKey(r.at, tz) === row.day &&
+          opts.segmentStarts.filter((s) => r.at < s).length === row.segment,
+      );
+      expect(row.dayMean).toBeCloseTo(
+        dayValue(
+          "PULSE",
+          members.map((r) => ({ value: r.value, measuredAt: r.at })),
+          tz,
+        )!,
+        9,
+      );
+    }
     // Sanity: the impossible value was dropped and the edge row split off.
     expect(sql.reduce((n, r) => n + r.n, 0)).toBe(5);
   });

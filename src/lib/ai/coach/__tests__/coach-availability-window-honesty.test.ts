@@ -48,6 +48,9 @@ interface GroupRow {
 }
 let measurementRows: GroupRow[] = [];
 let measurementThrows = false;
+/** What the day-weighted pulse query returns, per `type|unit`. */
+let pulseDayMeans: Array<{ type: string; unit: string | null; mean: number }> =
+  [];
 const workoutAggregate = vi.fn();
 const moodAggregate = vi.fn();
 const intakeAggregate = vi.fn();
@@ -66,6 +69,7 @@ vi.mock("@/lib/db", () => ({
         );
       },
     },
+    $queryRaw: () => Promise.resolve(pulseDayMeans),
     workout: { aggregate: (a: unknown) => workoutAggregate(a) },
     moodEntry: { aggregate: (a: unknown) => moodAggregate(a) },
     medicationIntakeEvent: { aggregate: (a: unknown) => intakeAggregate(a) },
@@ -386,6 +390,33 @@ describe("classifyAvailability", () => {
 });
 
 describe("probeCoachAvailability", () => {
+  // A pulse history's mean is the mean of its days, each the mean of its
+  // hours' means; the reading AVG a workout's dense samples tip is not what
+  // the Coach is told.
+  it("states the day-weighted pulse mean, not the reading mean", async () => {
+    measurementRows = [
+      {
+        type: "PULSE",
+        unit: "bpm",
+        _count: { _all: 930 },
+        _min: { measuredAt: new Date("2026-07-20T00:05:00Z"), value: 60 },
+        _max: { measuredAt: new Date("2026-07-20T23:55:00Z"), value: 150 },
+        _avg: { value: 127.7 },
+      },
+    ];
+    pulseDayMeans = [{ type: "PULSE", unit: "bpm", mean: 63.75 }];
+    const probed = await probeCoachAvailability(
+      "u1",
+      new Map([["pulse", { kind: "measurement", types: ["PULSE"] }]]),
+      { now: NOW },
+    );
+    pulseDayMeans = [];
+    const series = [...probed.values()][0]?.series;
+    expect(series).toEqual([
+      expect.objectContaining({ series: "PULSE", mean: 63.8, count: 930 }),
+    ]);
+  });
+
   it("returns no entry for a domain the record is empty for", async () => {
     measurementRows = [];
     const probed = await probeCoachAvailability(

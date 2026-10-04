@@ -2437,13 +2437,15 @@
     "loadErrorTitle": "No se pudo cargar el gráfico",
     "loadErrorReload": "Recargar",
     "sparseDataCaption": "Más días completarán la tendencia.",
+    "tooltipHourlyMean": "{metric} (promedio de las horas)",
     "dataTable": {
       "toggle": "Puntos de datos ({count})",
       "columnDate": "Fecha",
       "noValue": "Sin valor",
       "captionDay": "Una fila por día de {metric}: los mismos puntos que dibuja el gráfico.",
       "captionWeek": "Una fila por semana de {metric}, la media de los días de esa semana: los mismos puntos que dibuja el gráfico.",
-      "captionMonth": "Una fila por mes de {metric}, la media de los días de ese mes: los mismos puntos que dibuja el gráfico."
+      "captionMonth": "Una fila por mes de {metric}, la media de los días de ese mes: los mismos puntos que dibuja el gráfico.",
+      "hourlyMeanNote": "{metric} es el promedio de cada día, con cada hora contando una sola vez, para que un entrenamiento no pese más que el resto del día."
     },
     "personalBaseline": "Tu media",
     "deltaVsBaseline": "{delta} vs. tu media",

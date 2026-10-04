@@ -10,6 +10,7 @@
  */
 import { collapseMeasurementsToCanonical } from "@/lib/doctor-report-helpers";
 import { glucoseContextBucket } from "@/lib/glucose";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import type { DoctorReportStats } from "@/lib/doctor-report-types";
 import type { GlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
 import type { DenseMeasurementBucket } from "./dense-buckets";
@@ -61,6 +62,8 @@ export function summariseDenseBuckets(
       max: number;
       latestAt: Date;
       latest: number;
+      hourMeanSum: number;
+      hourCount: number;
     }
   >();
   for (const row of canonical) {
@@ -76,11 +79,15 @@ export function summariseDenseBuckets(
         max: row.maxValue,
         latestAt: row.latestAt,
         latest: row.latestValue,
+        hourMeanSum: row.hourMeanSum ?? 0,
+        hourCount: row.hourCount ?? 0,
       });
       continue;
     }
     current.count += row.count;
     current.sum += row.sumValue;
+    current.hourMeanSum += row.hourMeanSum ?? 0;
+    current.hourCount += row.hourCount ?? 0;
     current.min = Math.min(current.min, row.minValue);
     current.max = Math.max(current.max, row.maxValue);
     if (row.latestAt > current.latestAt) {
@@ -109,12 +116,26 @@ export function summariseDenseBuckets(
     }
   };
 
+  // For an hourly-mean type (pulse, see `day-mean.ts`) a day is the mean of
+  // its local hours' means and the period average the mean of its days, so a
+  // workout hour's dense samples do not outweigh the rest of the day, nor a
+  // workout day the rest of the period. Count, min and max stay over every
+  // reading. Every other type keeps the mean of its readings.
+  const dayMeans = new Map<string, { sum: number; days: number }>();
   for (const row of byTypeDay.values()) {
+    const value =
+      usesHourlyMeanDay(row.type) && row.hourCount > 0
+        ? row.hourMeanSum / row.hourCount
+        : row.sum / row.count;
     (byType[row.type] ??= []).push({
-      value: row.sum / row.count,
+      value,
       measuredAt: row.bucketStart.toISOString(),
     });
     accumulate(statsAcc, row.type, row);
+    const dm = dayMeans.get(row.type) ?? { sum: 0, days: 0 };
+    dm.sum += value;
+    dm.days += 1;
+    dayMeans.set(row.type, dm);
   }
 
   for (const row of canonical) {
@@ -137,9 +158,13 @@ export function summariseDenseBuckets(
   }
   const stats: DenseMeasurementSummary["stats"] = {};
   for (const [key, value] of statsAcc) {
+    const dm = dayMeans.get(key);
     stats[key] = {
       count: value.count,
-      avg: value.sum / value.count,
+      avg:
+        usesHourlyMeanDay(key) && dm !== undefined && dm.days > 0
+          ? dm.sum / dm.days
+          : value.sum / value.count,
       min: value.min,
       max: value.max,
       latest: value.latest,

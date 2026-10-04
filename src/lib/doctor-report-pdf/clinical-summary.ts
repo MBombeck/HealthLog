@@ -8,6 +8,7 @@ import type {
   DoctorReportNumberFormatter,
   DoctorReportTranslator,
 } from "./render-context";
+import { dayValueRows } from "@/lib/measurements/day-mean";
 
 export function getBmiClassificationKey(bmi: number): string {
   if (bmi < 18.5) return "doctorReport.bmiUnderweight";
@@ -76,7 +77,22 @@ export function buildClinicalSummaryLines(
     const series = data.measurements[type];
     const stat = data.stats[type];
     if (!series || series.length === 0 || !stat) continue;
-    const arrow = trendArrow(series.map((point) => point.value));
+    // A pulse series on the raw path holds every reading, so halves of it
+    // are halves by reading count and a dense workout hour tips the arrow.
+    // Compare day values instead, each the mean of its hours' means (see
+    // `day-mean.ts`); the report's day points already are one per day. Days
+    // are UTC days: the arrow needs only their order. Every other type keeps
+    // its points as they are.
+    const arrow = trendArrow(
+      dayValueRows(
+        type,
+        series.map((point) => ({
+          value: point.value,
+          measuredAt: new Date(point.measuredAt),
+        })),
+        "UTC",
+      ).map((point) => point.value),
+    );
     lines.push(
       t("doctorReport.summaryTrend", {
         label: t(MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType] ?? ""),

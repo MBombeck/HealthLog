@@ -65,3 +65,47 @@ describe("aggregateBuckets", () => {
     expect(result.mean).toBe(82);
   });
 });
+
+describe("aggregateBuckets, one weight per day", () => {
+  // A workout day (many readings) and a rest day (few). By readings the window
+  // mean is dominated by the workout day; with one weight per day it is the
+  // mean of the two days' means.
+  const workout: DailyMeanRow = {
+    day: new Date("2026-05-08T00:00:00.000Z"),
+    count: 900,
+    mean: 64,
+    minValue: 60,
+    maxValue: 150,
+  };
+  const rest: DailyMeanRow = {
+    day: new Date("2026-05-09T00:00:00.000Z"),
+    count: 100,
+    mean: 56,
+    minValue: 50,
+    maxValue: 70,
+  };
+
+  it("weighs a day by its readings by default", () => {
+    const result = aggregateBuckets([workout, rest]);
+    expect(result.mean).toBeCloseTo((900 * 64 + 100 * 56) / 1000, 9);
+  });
+
+  it("weighs every day once when asked, and still counts every reading", () => {
+    const result = aggregateBuckets([workout, rest], "day");
+    expect(result.mean).toBeCloseTo((64 + 56) / 2, 9);
+    expect(result.count).toBe(1000);
+    expect(result.min).toBe(50);
+    expect(result.max).toBe(150);
+  });
+
+  it("gives a day with no readings no weight under either rule", () => {
+    const empty: DailyMeanRow = { ...rest, count: 0, mean: 999 };
+    expect(aggregateBuckets([workout, empty], "day").mean).toBe(64);
+    expect(aggregateBuckets([empty], "day")).toEqual({
+      count: 0,
+      min: null,
+      max: null,
+      mean: null,
+    });
+  });
+});

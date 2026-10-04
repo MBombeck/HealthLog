@@ -31,6 +31,7 @@
 import type { MeasurementType } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
+import { windowWeighting } from "@/lib/measurements/day-statistic";
 import { annotate } from "@/lib/logging/context";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { moduleForMeasurementType } from "@/lib/modules/measurement-scope";
@@ -854,7 +855,10 @@ async function snapshotMetricWindow(
     windowDays,
   );
   if (!read || read.rows.length === 0) return null;
-  const agg = aggregateWmyBuckets(read.rows);
+  const agg = aggregateWmyBuckets(
+    read.rows,
+    windowWeighting(metric.measurementType),
+  );
   if (agg.count === 0) return null;
   return {
     label: metric.label,
@@ -895,7 +899,10 @@ async function snapshotMetricRange(
     return t >= fromMs && t <= toMs;
   });
   if (rows.length === 0) return null;
-  const agg = aggregateWmyBuckets(rows);
+  const agg = aggregateWmyBuckets(
+    rows,
+    windowWeighting(metric.measurementType),
+  );
   if (agg.count === 0) return null;
   return {
     label: metric.label,

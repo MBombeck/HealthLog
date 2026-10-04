@@ -724,3 +724,44 @@ describe("server tier vs client caption ladder", () => {
     }
   });
 });
+
+describe("aggregateWmyBuckets, one weight per day", () => {
+  // A week of seven days and a week of two, both read at their own mean. With
+  // one weight per day the longer week counts for its seven days, not for its
+  // readings.
+  const week = (
+    days: number,
+    count: number,
+    mean: number,
+  ): Parameters<typeof aggregateWmyBuckets>[0][number] => ({
+    bucketStart: new Date("2026-05-04T00:00:00.000Z"),
+    count,
+    days,
+    mean,
+    sd: null,
+    slope: null,
+    r2: null,
+    sumValue: null,
+    minValue: mean - 5,
+    maxValue: mean + 5,
+  });
+
+  it("weighs a bucket by its readings by default", () => {
+    const result = aggregateWmyBuckets([week(7, 3000, 60), week(2, 1000, 90)]);
+    expect(result.mean).toBeCloseTo((3000 * 60 + 1000 * 90) / 4000, 9);
+  });
+
+  it("weighs a bucket by the days it holds when asked", () => {
+    const result = aggregateWmyBuckets(
+      [week(7, 3000, 60), week(2, 1000, 90)],
+      "day",
+    );
+    expect(result.mean).toBeCloseTo((7 * 60 + 2 * 90) / 9, 9);
+    expect(result.count).toBe(4000);
+  });
+
+  it("treats a row with no day count as one day", () => {
+    const row = { ...week(1, 10, 70), days: undefined };
+    expect(aggregateWmyBuckets([row], "day").mean).toBe(70);
+  });
+});

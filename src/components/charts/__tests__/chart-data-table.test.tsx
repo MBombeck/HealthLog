@@ -135,4 +135,65 @@ describe("<ChartDataTable>", () => {
       /data-slot="table-container"[^>]*class="[^"]*overflow-x-auto/,
     );
   });
+
+  describe("naming the statistic", () => {
+    const pulsePoints = points(3).map((p) => ({ ...p, PULSE: 64 }));
+    const pulseProps = (over: Partial<ChartDataTableProps> = {}) =>
+      props({
+        points: pulsePoints,
+        columns: [{ key: "PULSE", label: "Pulse" }],
+        unit: "bpm",
+        metricLabel: "Pulse",
+        ...over,
+      });
+
+    it("says a day of pulse is the average of its hours, so a workout does not outweigh the day", () => {
+      const html = render(<ChartDataTable {...pulseProps()} />);
+      expect(html).toContain('data-slot="chart-data-table-statistic"');
+      expect(html).toContain(
+        "Pulse is each day&#x27;s average, with every hour counting once",
+      );
+    });
+
+    it("says it in German too", () => {
+      const html = renderToStaticMarkup(
+        <I18nProvider initialLocale="de">
+          <ChartDataTable {...pulseProps()} />
+        </I18nProvider>,
+      );
+      expect(html).toContain("jede Stunde einmal zählt");
+    });
+
+    it("says it for the week and month grains as well", () => {
+      for (const bucket of ["week", "month"] as const) {
+        expect(
+          render(<ChartDataTable {...pulseProps({ bucket })} />),
+        ).toContain('data-slot="chart-data-table-statistic"');
+      }
+    });
+
+    it("adds nothing for a metric that is the plain mean of its readings", () => {
+      const html = render(<ChartDataTable {...props()} />);
+      expect(html).not.toContain('data-slot="chart-data-table-statistic"');
+    });
+
+    it("names only the pulse column when it shares a table with others", () => {
+      const html = render(
+        <ChartDataTable
+          {...props({
+            points: pulsePoints,
+            columns: [
+              { key: "BLOOD_PRESSURE_SYS", label: "Systolic" },
+              { key: "PULSE", label: "Pulse" },
+            ],
+          })}
+        />,
+      );
+      expect(
+        html.match(/data-slot="chart-data-table-statistic"/g),
+      ).toHaveLength(1);
+      expect(html).toContain("Pulse is each day");
+      expect(html).not.toContain("Systolic is each day");
+    });
+  });
 });

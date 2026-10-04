@@ -17,6 +17,8 @@
  */
 
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
+import { readingsMean } from "@/lib/measurements/day-mean";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -61,6 +63,13 @@ export interface BucketOptions {
    * Berlin; this threads the user TZ the display surfaces already use.
    */
   tz?: string;
+  /**
+   * The measurement type, when known. For a type whose day is the mean of its
+   * hours' means (pulse, `day-mean.ts`) a daily bucket's value is that day
+   * value and a monthly bucket's the mean of its days; `n` stays the number
+   * of readings.
+   */
+  type?: string;
 }
 
 /**
@@ -144,6 +153,26 @@ export function bucketSeries(
 
   const daily = new Map<number, { sum: number; n: number }>();
   const monthly = new Map<number, { sum: number; n: number }>();
+  // An hourly-mean type keeps each bucket's readings for its mean of days.
+  const hourly = options.type !== undefined && usesHourlyMeanDay(options.type);
+  const dailyRows = new Map<
+    number,
+    Array<{ measuredAt: Date; value: number }>
+  >();
+  const monthlyRows = new Map<
+    number,
+    Array<{ measuredAt: Date; value: number }>
+  >();
+  const keep = (
+    rows: Map<number, Array<{ measuredAt: Date; value: number }>>,
+    key: number,
+    record: { measuredAt: Date; value: number },
+  ) => {
+    if (!hourly) return;
+    const list = rows.get(key);
+    if (list) list.push(record);
+    else rows.set(key, [record]);
+  };
 
   // monthOffset 12 → first 30-day window past the daily horizon. Keeping
   // the labelling stable regardless of `dailyDays` so prompts stay
@@ -160,6 +189,7 @@ export function bucketSeries(
       bucket.sum += record.value;
       bucket.n += 1;
       daily.set(offset, bucket);
+      keep(dailyRows, offset, record);
       continue;
     }
 
@@ -170,13 +200,24 @@ export function bucketSeries(
     bucket.sum += record.value;
     bucket.n += 1;
     monthly.set(monthOffset, bucket);
+    keep(monthlyRows, monthOffset, record);
   }
+  const meanOf = (
+    rows: Map<number, Array<{ measuredAt: Date; value: number }>>,
+    key: number,
+    agg: { sum: number; n: number },
+  ) => {
+    const list = rows.get(key);
+    return list
+      ? (readingsMean(options.type!, list, tz) ?? agg.sum / agg.n)
+      : agg.sum / agg.n;
+  };
 
   const dailyOut: DailyBucket[] = Array.from(daily.entries())
     .sort(([a], [b]) => a - b)
     .map(([dayOffset, agg]) => ({
       dayOffset,
-      value: round(agg.sum / agg.n),
+      value: round(meanOf(dailyRows, dayOffset, agg)),
       n: agg.n,
     }));
 
@@ -184,7 +225,7 @@ export function bucketSeries(
     .sort(([a], [b]) => a - b)
     .map(([monthOffset, agg]) => ({
       monthOffset,
-      value: round(agg.sum / agg.n),
+      value: round(meanOf(monthlyRows, monthOffset, agg)),
       n: agg.n,
     }));
 
