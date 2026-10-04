@@ -49,6 +49,8 @@ import {
   withIdempotency,
   defaultUserIdResolver,
   isCachableStatus,
+  canonicalJson,
+  requestFingerprint,
 } from "../idempotency";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
@@ -80,6 +82,13 @@ function makeRequest(
     body: method === "GET" ? undefined : JSON.stringify({ ok: true }),
   });
 }
+
+/** The fingerprint `makeRequest("POST", …)` produces. */
+const OK_BODY_FINGERPRINT = requestFingerprint(
+  "POST",
+  "/api/example",
+  new TextEncoder().encode(JSON.stringify({ ok: true })),
+);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -144,6 +153,11 @@ describe("withIdempotency", () => {
         data: { responseBody: string; responseStatus: number };
       }
     ).data;
+    const claimedFingerprint = (
+      vi.mocked(prisma.idempotencyKey.create).mock.calls[0][0] as {
+        data: { requestFingerprint: string };
+      }
+    ).data.requestFingerprint;
 
     // Second call: cache hit returns persisted envelope.
     vi.mocked(prisma.idempotencyKey.findUnique).mockResolvedValueOnce({
@@ -152,6 +166,7 @@ describe("withIdempotency", () => {
       key: "abc-12345678",
       method: "POST",
       path: "/api/example",
+      requestFingerprint: claimedFingerprint,
       responseStatus: persistedBody.responseStatus,
       responseBody: persistedBody.responseBody,
       expiresAt: new Date(Date.now() + 86_400_000),
@@ -296,6 +311,7 @@ describe("withIdempotency concurrency claim (A3)", () => {
       key: "abc-12345678",
       method: "POST",
       path: "/api/example",
+      requestFingerprint: OK_BODY_FINGERPRINT,
       responseStatus: 0,
       responseBody: "",
       expiresAt: new Date(Date.now() + 60_000),
@@ -926,5 +942,197 @@ describe("the record-session fence sits above the replay cache", () => {
     expect(res.status).toBe(201);
     expect(prisma.idempotencyKey.findUnique).toHaveBeenCalledTimes(1);
     expect(handler).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("request fingerprint", () => {
+  const enc = (text: string) => new TextEncoder().encode(text);
+
+  it("sorts object keys recursively and keeps array order", () => {
+    expect(canonicalJson({ b: 1, a: { d: [3, 1], c: null } })).toBe(
+      '{"a":{"c":null,"d":[3,1]},"b":1}',
+    );
+    expect(canonicalJson([{ y: 1, x: 2 }, "s"])).toBe('[{"x":2,"y":1},"s"]');
+  });
+
+  it("treats the same JSON object in a different key order as one request", () => {
+    const a = requestFingerprint("POST", "/p", enc('{"type":"X","value":1}'));
+    const b = requestFingerprint(
+      "POST",
+      "/p",
+      enc('{ "value": 1, "type": "X" }'),
+    );
+    expect(a).toBe(b);
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("tells nested values and array order apart", () => {
+    const base = requestFingerprint("POST", "/p", enc('{"a":{"b":[1,2]}}'));
+    expect(requestFingerprint("POST", "/p", enc('{"a":{"b":[2,1]}}'))).not.toBe(
+      base,
+    );
+    expect(requestFingerprint("POST", "/p", enc('{"a":{"b":[1,3]}}'))).not.toBe(
+      base,
+    );
+  });
+
+  it("tells the two halves of a blood pressure apart", () => {
+    const sys = requestFingerprint(
+      "POST",
+      "/api/measurements",
+      enc('{"type":"BLOOD_PRESSURE_SYS","value":120}'),
+    );
+    const dia = requestFingerprint(
+      "POST",
+      "/api/measurements",
+      enc('{"type":"BLOOD_PRESSURE_DIA","value":80}'),
+    );
+    expect(sys).not.toBe(dia);
+  });
+
+  it("hashes a non-JSON or empty body as its raw bytes", () => {
+    const text = requestFingerprint("POST", "/p", enc("not json"));
+    expect(text).toBe(requestFingerprint("POST", "/p", enc("not json")));
+    expect(text).not.toBe(requestFingerprint("POST", "/p", enc("not json!")));
+    const empty = requestFingerprint("DELETE", "/p", new Uint8Array());
+    expect(empty).toBe(requestFingerprint("DELETE", "/p", new Uint8Array()));
+    expect(empty).not.toBe(text);
+    // Invalid UTF-8 is raw bytes, not an error.
+    expect(() =>
+      requestFingerprint("POST", "/p", new Uint8Array([0xff, 0xfe])),
+    ).not.toThrow();
+  });
+
+  it("is scoped by method and path", () => {
+    const body = enc('{"a":1}');
+    const base = requestFingerprint("POST", "/p", body);
+    expect(requestFingerprint("PUT", "/p", body)).not.toBe(base);
+    expect(requestFingerprint("POST", "/q", body)).not.toBe(base);
+  });
+});
+
+describe("withIdempotency with a different body under one key", () => {
+  function postWith(body: unknown): NextRequest {
+    return new NextRequest("http://localhost/api/example", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "idempotency-key": "abc-12345678",
+      },
+      body: JSON.stringify(body),
+    });
+  }
+
+  function liveRow(fingerprint: string | null, responseStatus: number) {
+    return {
+      id: "idem-1",
+      userId: "u-1",
+      key: "abc-12345678",
+      method: "POST",
+      path: "/api/example",
+      requestFingerprint: fingerprint,
+      responseStatus,
+      responseBody: "",
+      expiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+    } as never;
+  }
+
+  it.each([
+    ["a completed row for another body", "f".repeat(64), 201],
+    ["an in-flight claim for another body", "f".repeat(64), 0],
+    ["a legacy row without a fingerprint", null, 201],
+  ])(
+    "runs the handler without claiming or caching over %s",
+    async (_label, fingerprint, status) => {
+      vi.mocked(prisma.idempotencyKey.findUnique).mockResolvedValueOnce(
+        liveRow(fingerprint, status),
+      );
+      const handler = vi.fn(async () =>
+        NextResponse.json({ data: "dia", error: null }, { status: 201 }),
+      );
+      const wrapped = withIdempotency<[NextRequest]>(
+        handler,
+        async () => "u-1",
+      );
+      const res = await wrapped(postWith({ type: "BLOOD_PRESSURE_DIA" }));
+
+      expect(res.status).toBe(201);
+      expect(res.headers.get("X-Idempotent-Replay")).toBeNull();
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(prisma.idempotencyKey.create).not.toHaveBeenCalled();
+      expect(prisma.idempotencyKey.updateMany).not.toHaveBeenCalled();
+      expect(prisma.idempotencyKey.deleteMany).not.toHaveBeenCalled();
+      expect(prisma.idempotencyKey.delete).not.toHaveBeenCalled();
+    },
+  );
+
+  it("runs the handler when a racing claim for another body wins the insert", async () => {
+    vi.mocked(prisma.idempotencyKey.create).mockRejectedValueOnce(
+      Object.assign(new Error("unique"), { code: "P2002" }),
+    );
+    // First lookup: nothing yet. Second, after the collision: the other body.
+    vi.mocked(prisma.idempotencyKey.findUnique)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(liveRow("f".repeat(64), 0));
+    const handler = vi.fn(async () =>
+      NextResponse.json({ data: "dia", error: null }, { status: 201 }),
+    );
+    const wrapped = withIdempotency<[NextRequest]>(handler, async () => "u-1");
+    const res = await wrapped(postWith({ type: "BLOOD_PRESSURE_DIA" }));
+
+    expect(res.status).toBe(201);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(prisma.idempotencyKey.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("stores the fingerprint, never the body, on the claim", async () => {
+    const handler = vi.fn(async () =>
+      NextResponse.json({ data: "ok", error: null }, { status: 201 }),
+    );
+    const wrapped = withIdempotency<[NextRequest]>(handler, async () => "u-1");
+    await wrapped(postWith({ type: "BLOOD_PRESSURE_SYS", value: 123 }));
+
+    const claim = (
+      vi.mocked(prisma.idempotencyKey.create).mock.calls[0][0] as {
+        data: Record<string, unknown>;
+      }
+    ).data;
+    expect(claim.requestFingerprint).toBe(
+      requestFingerprint(
+        "POST",
+        "/api/example",
+        new TextEncoder().encode(
+          JSON.stringify({ type: "BLOOD_PRESSURE_SYS", value: 123 }),
+        ),
+      ),
+    );
+    expect(JSON.stringify(claim)).not.toContain("BLOOD_PRESSURE_SYS");
+  });
+
+  it("leaves the body readable for the handler", async () => {
+    const handler = vi.fn(async (req: NextRequest) =>
+      NextResponse.json({ data: await req.json(), error: null }),
+    );
+    const wrapped = withIdempotency<[NextRequest]>(handler, async () => "u-1");
+    const res = await wrapped(postWith({ type: "WEIGHT", value: 70 }));
+    expect((await res.json()).data).toEqual({ type: "WEIGHT", value: 70 });
+  });
+
+  it("reads at most a bounded prefix of a large body and still hands the whole body on", async () => {
+    const big = "x".repeat(3 * 1024 * 1024);
+    const handler = vi.fn(async (req: NextRequest) =>
+      NextResponse.json({ data: (await req.text()).length, error: null }),
+    );
+    const wrapped = withIdempotency<[NextRequest]>(handler, async () => "u-1");
+    const res = await wrapped(
+      new NextRequest("http://localhost/api/example", {
+        method: "POST",
+        headers: { "idempotency-key": "abc-12345678" },
+        body: big,
+      }),
+    );
+    expect((await res.json()).data).toBe(big.length);
+    expect(prisma.idempotencyKey.create).toHaveBeenCalledTimes(1);
   });
 });
