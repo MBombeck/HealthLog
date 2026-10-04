@@ -5373,7 +5373,9 @@
             "rowsImported": "{count} rows imported so far",
             "doneSummary": "Done — {imported} of {read} records imported, {skipped} clinical records skipped.",
             "doneNothing": "Nothing was imported from that archive: 0 of {read} records landed.",
-            "writtenByHealthLog": "{count} records that HealthLog wrote into Apple Health itself were left out, because they are already in your data.",
+            "writtenByHealthLogOne": "{count} record that HealthLog wrote into Apple Health itself was left out, because it is already in your data.",
+            "writtenByHealthLogOther": "{count} records that HealthLog wrote into Apple Health itself were left out, because they are already in your data.",
+            "writtenByHealthLogFew": "{count} records that HealthLog wrote into Apple Health itself were left out, because they are already in your data.",
             "ecgResult": "ECGs: {discovered} discovered, {imported} imported, {updated} updated, {skipped} skipped, {failed} failed. ECG failures do not discard supported records imported from export.xml.",
             "estimateWarning": "Cumulative totals for {count} day(s) were estimated from the largest export source. Native Apple Health statistics remain authoritative.",
             "phase": {

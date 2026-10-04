@@ -5373,7 +5373,9 @@
             "rowsImported": "Bisher {count} Einträge importiert",
             "doneSummary": "Fertig — {imported} von {read} Datensätzen importiert, {skipped} klinische Datensätze übersprungen.",
             "doneNothing": "Aus diesem Archiv wurde nichts importiert: 0 von {read} Datensätzen sind angekommen.",
-            "writtenByHealthLog": "{count} Einträge, die HealthLog selbst in Apple Health geschrieben hat, wurden ausgelassen, weil sie schon in deinen Daten sind.",
+            "writtenByHealthLogOne": "{count} Eintrag, den HealthLog selbst in Apple Health geschrieben hat, wurde ausgelassen, weil er schon in deinen Daten ist.",
+            "writtenByHealthLogOther": "{count} Einträge, die HealthLog selbst in Apple Health geschrieben hat, wurden ausgelassen, weil sie schon in deinen Daten sind.",
+            "writtenByHealthLogFew": "{count} Einträge, die HealthLog selbst in Apple Health geschrieben hat, wurden ausgelassen, weil sie schon in deinen Daten sind.",
             "ecgResult": "EKGs: {discovered} gefunden, {imported} importiert, {updated} aktualisiert, {skipped} übersprungen, {failed} fehlgeschlagen. Fehler bei EKGs verwerfen keine unterstützten Datensätze, die aus export.xml importiert wurden.",
             "estimateWarning": "Kumulative Summen für {count} Tag(e) wurden anhand der größten Exportquelle geschätzt. Native Apple-Health-Statistiken bleiben maßgeblich.",
             "phase": {
