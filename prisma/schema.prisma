@@ -766,6 +766,7 @@ model User {
   backupRestoreJobs                         BackupRestoreJob[]
   offhostBackupState                        OffhostBackupState?
   backupPassAttempts                        BackupPassAttempt[]
+  documentThumbnailFailures                 DocumentThumbnailFailure[]
   achievements                              UserAchievement[]
   recommendationFeedback                    RecommendationFeedback[]
   idempotencyKeys                           IdempotencyKey[]
@@ -8396,28 +8397,29 @@ model InboundDocument {
   /// explicitly reads it with AI or generates its summary.
   aiReadDeferred     Boolean               @default(false) @map("ai_read_deferred")
 
-  facts           ExtractedFact[]
-  conditionLinks  DocumentConditionLink[]
+  facts            ExtractedFact[]
+  conditionLinks   DocumentConditionLink[]
   /// 1:1 blind content-search index (encrypted extracted text + HMAC token
   /// array). Absent until the document is indexed; cascades on delete.
-  contentIndex    DocumentContentIndex?
+  contentIndex     DocumentContentIndex?
   /// 1:1 encrypted preview thumbnail (small JPEG, AES-256-GCM at rest).
   /// Absent until the background thumbnail job runs; a side table (not a
   /// column) so the list/detail `omit: { contentEncrypted }` queries never
   /// drag the blob into the SELECT. Cascades on delete.
-  thumbnail       DocumentThumbnail?
+  thumbnail        DocumentThumbnail?
+  thumbnailFailure DocumentThumbnailFailure?
   /// v1.29.x (S7) — coach-conversation attachments (m:n via
   /// `CoachConversationDocument`). Deleting this document cascades its join rows
   /// away (its text leaves every conversation's context) but never the
   /// conversation itself — a fenced thread survives via its sticky flag.
-  chatAttachments CoachConversationDocument[]
+  chatAttachments  CoachConversationDocument[]
   /// share-link memberships (m:n via `ClinicianShareLinkDocument`).
   /// Cascades: deleting this document removes it from every share it was on.
-  shareLinks      ClinicianShareLinkDocument[]
+  shareLinks       ClinicianShareLinkDocument[]
   /// Further import source keys that resolved to this document by content.
-  sourceAliases   DocumentSourceAlias[]
+  sourceAliases    DocumentSourceAlias[]
   /// Background AI reads of this document (v1.40). Transient; cascades.
-  aiRuns          DocumentAiRun[]
+  aiRuns           DocumentAiRun[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -8707,6 +8709,34 @@ model DocumentThumbnail {
 
   @@index([userId])
   @@map("document_thumbnails")
+}
+
+/// Why a document has no preview thumbnail, kept so the boot-time backfill
+/// stops queueing a document whose render cannot succeed. A PDF whose first
+/// page renders blank was queued, rendered, refused and queued again at
+/// every boot, without end. A deterministic refusal (`raster-failed`,
+/// `empty-render`, `pixel-cap`) is final after one attempt; any other reason
+/// gets three. Either way the document is tried again once it changes
+/// (`updatedAt` past `failedAt`), and a direct enqueue (an upload) still
+/// renders it. A preview that is made deletes the row.
+/// Consumers: `runThumbnailBackfillForUser()` and
+/// `enqueueBootTimeThumbnailBackfill()` in
+/// `src/lib/jobs/document-thumbnail-backfill.ts`.
+model DocumentThumbnailFailure {
+  documentId String   @id @map("document_id")
+  userId     String   @map("user_id")
+  /// The renderer's reason (`ThumbnailSkipReason`), or `decrypt-failed`.
+  reason     String
+  /// Renders that failed since the last success or change.
+  attempts   Int      @default(1)
+  /// When the newest of them failed.
+  failedAt   DateTime @map("failed_at")
+
+  document InboundDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("document_thumbnail_failures")
 }
 
 // ─── Nutrient intake (v1.28) ───────────────────────────────────────

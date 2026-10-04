@@ -15,6 +15,11 @@
  * drops out of the set the moment its thumbnail row lands, so the walk
  * converges and a re-run picks up where the cap left off.
  *
+ * A document whose render failed for good drops out too
+ * (`DocumentThumbnailFailure`, see {@link thumbnailRetryDue}): a PDF whose
+ * first page renders blank never gets a thumbnail, and without the record it
+ * was queued again at every boot, without end.
+ *
  * The queue MUST be registered in the maintenance registrar
  * (`src/lib/jobs/reminder/register-maintenance.ts`) so pg-boss provisions it.
  */
@@ -45,6 +50,39 @@ const THUMBNAILABLE_MIMES = [
   "application/pdf",
 ] as const;
 
+/**
+ * Render refusals that the same bytes will always get again: the first page
+ * renders blank, the render comes out empty, the image is past the pixel cap.
+ * One attempt settles them.
+ */
+const FINAL_THUMBNAIL_FAILURES = [
+  "raster-failed",
+  "empty-render",
+  "pixel-cap",
+] as const;
+
+/** Attempts any other failure (a throw, a key that did not open) gets. */
+export const MAX_THUMBNAIL_ATTEMPTS = 3;
+
+/**
+ * Whether a document whose render failed is due another try: never after a
+ * final refusal or the last attempt, unless the document changed since. The
+ * boot discovery's SQL states the same rule.
+ */
+export function thumbnailRetryDue(
+  failure: { reason: string; attempts: number; failedAt: Date } | null,
+  documentUpdatedAt: Date,
+): boolean {
+  if (!failure) return true;
+  if (documentUpdatedAt > failure.failedAt) return true;
+  if (
+    (FINAL_THUMBNAIL_FAILURES as readonly string[]).includes(failure.reason)
+  ) {
+    return false;
+  }
+  return failure.attempts < MAX_THUMBNAIL_ATTEMPTS;
+}
+
 export interface ThumbnailBackfillPayload {
   userId: string;
   enqueuedAt?: string;
@@ -67,22 +105,37 @@ export async function runThumbnailBackfillForUser(
 
   for (;;) {
     if (enqueued >= MAX_ENQUEUES_PER_RUN) break;
-    const rows: { id: string }[] = await prisma.inboundDocument.findMany({
+    const rows: Array<{
+      id: string;
+      updatedAt: Date;
+      thumbnailFailure: {
+        reason: string;
+        attempts: number;
+        failedAt: Date;
+      } | null;
+    }> = await prisma.inboundDocument.findMany({
       where: {
         userId,
         deletedAt: null,
         mimeType: { in: [...THUMBNAILABLE_MIMES] },
         thumbnail: { is: null },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        updatedAt: true,
+        thumbnailFailure: {
+          select: { reason: true, attempts: true, failedAt: true },
+        },
+      },
       orderBy: { id: "asc" },
       take: PAGE_SIZE,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
     if (rows.length === 0) break;
 
-    for (const { id } of rows) {
+    for (const { id, updatedAt, thumbnailFailure } of rows) {
       if (enqueued >= MAX_ENQUEUES_PER_RUN) break;
+      if (!thumbnailRetryDue(thumbnailFailure, updatedAt)) continue;
       const { enqueued: ok } = await enqueueDocumentThumbnail(userId, id);
       if (ok) enqueued += 1;
     }
@@ -119,13 +172,26 @@ export async function enqueueBootTimeThumbnailBackfill(): Promise<{
   // `(user_id, mime_type) WHERE deleted_at IS NULL` bounds the document-side
   // scan; `document_thumbnails.document_id` is already UNIQUE (the 1:1
   // relation) so the `t.id IS NULL` anti-join is index-driven.
+  //
+  // A document whose render failed for good is left out by the rule
+  // `thumbnailRetryDue` states, so an account whose only missing previews
+  // cannot be made is not queued at every boot.
   const rows = await prisma.$queryRaw<{ user_id: string }[]>`
     SELECT DISTINCT d.user_id AS user_id
     FROM inbound_documents d
     LEFT JOIN document_thumbnails t ON t.document_id = d.id
+    LEFT JOIN document_thumbnail_failures f ON f.document_id = d.id
     WHERE d.deleted_at IS NULL
       AND d.mime_type IN (${Prisma.join([...THUMBNAILABLE_MIMES])})
-      AND t.id IS NULL`;
+      AND t.id IS NULL
+      AND (
+        f.document_id IS NULL
+        OR d.updated_at > f.failed_at
+        OR (
+          f.reason NOT IN (${Prisma.join([...FINAL_THUMBNAIL_FAILURES])})
+          AND f.attempts < ${MAX_THUMBNAIL_ATTEMPTS}
+        )
+      )`;
 
   let enqueued = 0;
   for (const { user_id: userId } of rows) {

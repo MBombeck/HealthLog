@@ -153,6 +153,7 @@ export const WIPE_MODELS = [
   // ── Documents ───────────────────────────────────────────────────────────
   "DocumentContentIndex",
   "DocumentThumbnail",
+  "DocumentThumbnailFailure",
   "DocumentConditionLink",
   // The memory of which imported documents the person deleted (#1038). The
   // documents themselves go below; keeping the memory would make a fresh

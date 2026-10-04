@@ -620,6 +620,8 @@ export const DERIVED_MODELS: Readonly<Record<string, string>> = {
     "A search index over `InboundDocument` text; rebuilt by the indexer.",
   DocumentThumbnail:
     "Rendered from the stored document bytes on demand. Those bytes travel in a disaster-recovery payload, so the picture rebuilds itself on first view; a portable export carries metadata only, and there the thumbnail has nothing to rebuild from — but neither does the document, so nothing is lost that the export did not already disclose.",
+  DocumentThumbnailFailure:
+    "Why a document's preview could not be rendered on this host, kept so the boot backfill stops retrying it. The receiving host renders the restored document itself, and its own failure, if any, writes the row again; carrying this one would stop a host whose renderer can draw the page from ever trying.",
   ArrivalReaction:
     "Derived from what changed since the last visit; recomputed per visit.",
   DismissedPriorityItem:

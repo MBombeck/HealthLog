@@ -9,25 +9,37 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * never has a preview stays at info.
  */
 
-const { evt, findFirst, upsert, generateThumbnail, withBackgroundEvent } =
-  vi.hoisted(() => {
-    const evt = { addMeta: vi.fn(), elevateLevel: vi.fn() };
-    return {
-      evt,
-      findFirst: vi.fn(),
-      upsert: vi.fn(),
-      generateThumbnail: vi.fn(),
-      withBackgroundEvent: vi.fn(
-        async (_name: string, fn: (e: typeof evt) => Promise<unknown>) =>
-          fn(evt),
-      ),
-    };
-  });
+const {
+  evt,
+  findFirst,
+  upsert,
+  failureUpsert,
+  failureDelete,
+  generateThumbnail,
+  withBackgroundEvent,
+} = vi.hoisted(() => {
+  const evt = { addMeta: vi.fn(), elevateLevel: vi.fn() };
+  return {
+    evt,
+    findFirst: vi.fn(),
+    upsert: vi.fn(),
+    failureUpsert: vi.fn(),
+    failureDelete: vi.fn(),
+    generateThumbnail: vi.fn(),
+    withBackgroundEvent: vi.fn(
+      async (_name: string, fn: (e: typeof evt) => Promise<unknown>) => fn(evt),
+    ),
+  };
+});
 
 vi.mock("@/lib/db", () => ({
   prisma: {
     inboundDocument: { findFirst },
     documentThumbnail: { upsert },
+    documentThumbnailFailure: {
+      upsert: failureUpsert,
+      deleteMany: failureDelete,
+    },
   },
 }));
 vi.mock("@/lib/documents/store", () => ({
@@ -94,5 +106,75 @@ describe("runDocumentThumbnail wide event", () => {
     await runDocumentThumbnail({ userId: "user-1", documentId: "doc-1" });
     expect(upsert).toHaveBeenCalledOnce();
     expect(evt.elevateLevel).not.toHaveBeenCalled();
+  });
+
+  it("keeps a render failure so the backfill can stop queueing the document", async () => {
+    generateThumbnail.mockResolvedValue({ ok: false, reason: "raster-failed" });
+    await runDocumentThumbnail({ userId: "user-1", documentId: "doc-1" });
+    expect(failureUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { documentId: "doc-1" },
+        create: expect.objectContaining({
+          userId: "user-1",
+          reason: "raster-failed",
+          attempts: 1,
+        }),
+        update: expect.objectContaining({ attempts: { increment: 1 } }),
+      }),
+    );
+  });
+
+  it("keeps no failure for a type that never has a preview, and clears one when a preview is made", async () => {
+    findFirst.mockResolvedValue({ ...DOC, mimeType: "text/plain" });
+    generateThumbnail.mockResolvedValue({
+      ok: false,
+      reason: "unsupported-type",
+    });
+    await runDocumentThumbnail({ userId: "user-1", documentId: "doc-1" });
+    expect(failureUpsert).not.toHaveBeenCalled();
+
+    findFirst.mockResolvedValue(DOC);
+    generateThumbnail.mockResolvedValue({
+      ok: true,
+      thumbnail: { jpeg: Buffer.from([0xff, 0xd8]), width: 2, height: 3 },
+    });
+    await runDocumentThumbnail({ userId: "user-1", documentId: "doc-1" });
+    expect(failureDelete).toHaveBeenCalledWith({
+      where: { documentId: "doc-1" },
+    });
+  });
+});
+
+describe("thumbnailRetryDue", () => {
+  const at = new Date("2026-10-01T00:00:00Z");
+  const before = new Date("2026-09-30T00:00:00Z");
+  const after = new Date("2026-10-02T00:00:00Z");
+
+  it("retries a document with no failure, and one that changed since", async () => {
+    const { thumbnailRetryDue } =
+      await import("../document-thumbnail-backfill");
+    expect(thumbnailRetryDue(null, before)).toBe(true);
+    expect(
+      thumbnailRetryDue(
+        { reason: "raster-failed", attempts: 1, failedAt: at },
+        after,
+      ),
+    ).toBe(true);
+  });
+
+  it("settles a deterministic refusal after one try and a throw after three", async () => {
+    const { thumbnailRetryDue } =
+      await import("../document-thumbnail-backfill");
+    for (const reason of ["raster-failed", "empty-render", "pixel-cap"]) {
+      expect(
+        thumbnailRetryDue({ reason, attempts: 1, failedAt: at }, before),
+      ).toBe(false);
+    }
+    expect(
+      thumbnailRetryDue({ reason: "error", attempts: 2, failedAt: at }, before),
+    ).toBe(true);
+    expect(
+      thumbnailRetryDue({ reason: "error", attempts: 3, failedAt: at }, before),
+    ).toBe(false);
   });
 });
