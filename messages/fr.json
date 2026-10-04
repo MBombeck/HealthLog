@@ -7556,7 +7556,9 @@
         "previewKeyMissing": "Cette sauvegarde ne peut pas être restaurée sur ce serveur : elle a besoin de la clé de chiffrement {keys}. Remettez d'abord la clé dans ENCRYPTION_KEYS et redémarrez.",
         "restoreSkippedSymptomEpisodeReference": "Entrée de symptôme liée à une maladie absente du fichier (conservée sans le lien)",
         "restoreSkippedCycleCiphertext": "Note ou libellé du cycle chiffré avec une clé que ce serveur ne possède pas (jour ou symptôme conservé sans)",
-        "restoreSkippedMoodLabelCiphertext": "Nom d’étiquette ou de groupe d’humeur chiffré avec une clé que ce serveur ne possède pas (conservé sans son nom)"
+        "restoreSkippedMoodLabelCiphertext": "Nom d’étiquette ou de groupe d’humeur chiffré avec une clé que ce serveur ne possède pas (conservé sans son nom)",
+        "restoreSkippedVisitCiphertext": "Texte de consultation ou de praticien chiffré avec une clé que ce serveur ne possède pas (conservé sans)",
+        "restoreSkippedVaccinationCiphertext": "Note de vaccination chiffrée avec une clé que ce serveur ne possède pas (dose conservée sans)"
       },
       "danger-zone": {
         "title": "Zone de danger",

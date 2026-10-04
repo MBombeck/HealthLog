@@ -165,6 +165,12 @@
  * tag or mood category the account created
  * (`customMoodTags.<key>.labelEncrypted`): the tag or category restores, under
  * its key, without the person's own name for it.
+ *
+ * The eighteenth and nineteenth, `visitCiphertext` and `vaccinationCiphertext`,
+ * are the same again for the free text of the visits record (a practitioner's
+ * note, address and phone; a visit's reason, outcome and body site) and of a
+ * vaccination's note (`vaccinations.<id>.noteEncrypted`). The row restores
+ * without the field.
  */
 export type SkippedCatalogue =
   | "cycleSymptom"
@@ -187,7 +193,9 @@ export type SkippedCatalogue =
   | "accountSetting"
   | "symptomEpisodeReference"
   | "cycleCiphertext"
-  | "moodLabelCiphertext";
+  | "moodLabelCiphertext"
+  | "visitCiphertext"
+  | "vaccinationCiphertext";
 
 /** One key this instance does not know, and the links it cost. */
 export interface SkippedCatalogueKey {

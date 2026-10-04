@@ -7556,7 +7556,9 @@
         "previewKeyMissing": "Esta copia no se puede restaurar en este servidor: necesita la clave de cifrado {keys}. Vuelve a añadir la clave a ENCRYPTION_KEYS y reinicia primero.",
         "restoreSkippedSymptomEpisodeReference": "Entrada de síntoma vinculada a una enfermedad que el archivo no contiene (se conserva sin el vínculo)",
         "restoreSkippedCycleCiphertext": "Nota o etiqueta del ciclo cifrada con una clave que este servidor no tiene (el día o el síntoma se conserva sin ella)",
-        "restoreSkippedMoodLabelCiphertext": "Nombre de etiqueta o grupo de ánimo cifrado con una clave que este servidor no tiene (se conserva sin el nombre)"
+        "restoreSkippedMoodLabelCiphertext": "Nombre de etiqueta o grupo de ánimo cifrado con una clave que este servidor no tiene (se conserva sin el nombre)",
+        "restoreSkippedVisitCiphertext": "Texto de visita o profesional cifrado con una clave que este servidor no tiene (se conserva sin él)",
+        "restoreSkippedVaccinationCiphertext": "Nota de vacunación cifrada con una clave que este servidor no tiene (la dosis se conserva sin ella)"
       },
       "danger-zone": {
         "title": "Zona de peligro",

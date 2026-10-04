@@ -464,6 +464,12 @@ function catalogueLabel(
   if (catalogue === "symptomEpisodeReference") {
     return t("admin.section.backups.restoreSkippedSymptomEpisodeReference");
   }
+  if (catalogue === "visitCiphertext") {
+    return t("admin.section.backups.restoreSkippedVisitCiphertext");
+  }
+  if (catalogue === "vaccinationCiphertext") {
+    return t("admin.section.backups.restoreSkippedVaccinationCiphertext");
+  }
   if (catalogue === "moodLabelCiphertext") {
     return t("admin.section.backups.restoreSkippedMoodLabelCiphertext");
   }

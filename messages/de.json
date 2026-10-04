@@ -7556,7 +7556,9 @@
         "previewKeyMissing": "Diese Sicherung lässt sich auf diesem Server nicht wiederherstellen: Sie braucht den Verschlüsselungsschlüssel {keys}. Nimm den Schlüssel zuerst wieder in ENCRYPTION_KEYS auf und starte neu.",
         "restoreSkippedSymptomEpisodeReference": "Symptom-Eintrag mit Verknüpfung zu einer Erkrankung, die die Datei nicht enthält (ohne Verknüpfung behalten)",
         "restoreSkippedCycleCiphertext": "Zyklus-Notiz oder -Bezeichnung mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Tag oder Symptom ohne sie behalten)",
-        "restoreSkippedMoodLabelCiphertext": "Name eines Stimmungs-Tags oder einer Gruppe mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne Namen behalten)"
+        "restoreSkippedMoodLabelCiphertext": "Name eines Stimmungs-Tags oder einer Gruppe mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne Namen behalten)",
+        "restoreSkippedVisitCiphertext": "Text zu Arztbesuch oder Praxis mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne ihn behalten)",
+        "restoreSkippedVaccinationCiphertext": "Impf-Notiz mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Impfung ohne sie behalten)"
       },
       "danger-zone": {
         "title": "Gefahrenzone",

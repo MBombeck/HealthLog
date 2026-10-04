@@ -38448,6 +38448,10 @@ components:
                   - type: string
                     minLength: 1
                   - type: "null"
+              note:
+                anyOf:
+                  - type: string
+                  - type: "null"
               createdAt:
                 type: string
                 minLength: 1
@@ -38514,6 +38518,18 @@ components:
                 anyOf:
                   - type: string
                     minLength: 1
+                  - type: "null"
+              reason:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              outcome:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              bodySite:
+                anyOf:
+                  - type: string
                   - type: "null"
               laterality:
                 anyOf:
@@ -38670,6 +38686,10 @@ components:
                 anyOf:
                   - type: string
                     minLength: 1
+                  - type: "null"
+              note:
+                anyOf:
+                  - type: string
                   - type: "null"
               createdAt:
                 type: string

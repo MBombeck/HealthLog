@@ -1207,8 +1207,9 @@ const symptomDefinitionBackupSchema = z
  *
  * `id` is required on both records, unlike the lab result above: a link
  * addresses an encounter and its far side by id and nothing else on either row
- * is unique enough to rebuild the reference from. The ciphertext columns ride
- * verbatim as base64 — a visit note is never decrypted into the file.
+ * is unique enough to rebuild the reference from. Free text follows the note
+ * contract: ciphertext as base64 on a disaster-recovery file, the readable
+ * value on a portable one (sealed under the receiving host's key on restore).
  */
 const practitionerBackupSchema = z
   .object({
@@ -1222,6 +1223,7 @@ const practitionerBackupSchema = z
     locationEncrypted: base64BytesSchema.nullable().optional(),
     phoneEncrypted: base64BytesSchema.nullable().optional(),
     noteEncrypted: base64BytesSchema.nullable().optional(),
+    note: z.string().nullable().optional(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
     deletedAt: isoDateTime.nullable().optional(),
@@ -1240,6 +1242,10 @@ const encounterBackupSchema = z
     // v1.39.1 — the procedure's body site and side. Optional so a file written
     // before they existed still parses; the visit restores with neither.
     bodySiteEncrypted: base64BytesSchema.nullable().optional(),
+    // The readable reason, outcome and body site of a portable file.
+    reason: z.string().nullable().optional(),
+    outcome: z.string().nullable().optional(),
+    bodySite: z.string().nullable().optional(),
     laterality: z.enum(Laterality).nullable().optional(),
     // Remapped against the restored reminders (they travel since v1.37.20);
     // dropped to NULL, with the drop named, only when the file lacks the row.
@@ -1281,7 +1287,9 @@ const vaccinationBackupSchema = z
     // Remapped against the restored reminders (they travel since v1.37.20);
     // dropped to NULL, with the drop named, only when the file lacks the row.
     reminderId: z.string().nullable().optional(),
+    // Ciphertext on a disaster-recovery file, readable on a portable one.
     noteEncrypted: base64BytesSchema.nullable().optional(),
+    note: z.string().nullable().optional(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
     deletedAt: isoDateTime.nullable().optional(),

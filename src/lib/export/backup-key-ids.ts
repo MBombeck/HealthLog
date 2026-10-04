@@ -101,9 +101,10 @@ export function isEncryptedMember(name: string): boolean {
  * Sections whose restore opens every inner value with this host's keys itself,
  * and keeps out (and names in the skip report) any value it cannot open.
  *
- * The cycle day-logs, custom cycle symptoms and custom mood tags and mood
- * categories are here because a portable file written before v1.40 carried
- * their free text as the stored ciphertext,
+ * The cycle day-logs, custom cycle symptoms, custom mood tags and mood
+ * categories, practitioners, visits and vaccinations are here because a
+ * portable file written before v1.40 carried their free text as the stored
+ * ciphertext,
  * not as readable text. Such a file is still restorable onto another host:
  * what that host can open comes back, what it cannot stays out of the row and
  * is reported. Refusing the whole file over a note would cost every other
@@ -117,6 +118,9 @@ export const RESTORE_SELF_VERIFIED_SECTIONS: ReadonlySet<string> = new Set([
   "customSymptoms",
   "customMoodTags",
   "customMoodTagCategories",
+  "practitioners",
+  "encounters",
+  "vaccinations",
 ]);
 
 interface KeyUse {
