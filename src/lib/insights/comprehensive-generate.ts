@@ -78,6 +78,9 @@ import {
   type ComparisonBaseline,
 } from "@/lib/dashboard-layout";
 import type { MeasurementType, Prisma } from "@/generated/prisma/client";
+import { Prisma as PrismaSql } from "@/generated/prisma/client";
+import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { insightResultSchema, type InsightResult } from "@/lib/ai/types";
 import { resolveProvider, resolveProviderChain } from "@/lib/ai/provider";
 import { AllProvidersFailedError } from "@/lib/ai/provider-runner";
@@ -322,6 +325,48 @@ function parseComprehensiveResult(
 }
 
 /**
+ * The window average of an hourly-mean type (pulse, see `day-mean.ts`) for
+ * the comparison snapshot: the mean of the user's local days in the window,
+ * each the mean of its local hours' means, so the current-vs-baseline delta
+ * compares the statistic the dashboard tile shows rather than a reading mean
+ * a workout tips.
+ */
+export async function hourlyMeanWindowAverage(
+  userId: string,
+  type: MeasurementType,
+  measuredAt: { gt: Date; lte?: Date },
+): Promise<number | null> {
+  const tz = await resolveUserTimezone(userId);
+  const upper =
+    measuredAt.lte === undefined
+      ? PrismaSql.empty
+      : PrismaSql.sql`AND m."measured_at" <= ${measuredAt.lte}`;
+  const [row] = await prisma.$queryRaw<Array<{ mean: number | null }>>`
+    WITH src AS (
+      SELECT *
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+        AND m."type" = ${type}::measurement_type
+        AND m."deleted_at" IS NULL
+        AND m."measured_at" > ${measuredAt.gt}
+        ${upper}
+    )
+    SELECT ${PrismaSql.raw(
+      windowMeanSql({
+        typeColumn: 'm."type"',
+        value: 'm."value"',
+        weight: "m.day_weight",
+      }),
+    )}::double precision AS mean
+    FROM ${dayWeightedRowsSql("src", tz)} m
+    GROUP BY m."type"
+  `;
+  return row?.mean === null || row?.mean === undefined
+    ? null
+    : Number(row.mean);
+}
+
+/**
  * Comparison-snapshot builder — shared with the on-demand route. Returns
  * null when the user's comparison toggle is off (most users), so the
  * prompt builder skips the context block entirely.
@@ -406,11 +451,14 @@ export async function buildComparisonSnapshotForUser(
     type: MeasurementType,
     measuredAt: { gt: Date; lte?: Date },
   ): Promise<number | null> => {
-    const agg = await prisma.measurement.aggregate({
-      where: { userId, type, deletedAt: null, measuredAt },
-      _avg: { value: true },
-    });
-    const avg = agg._avg.value;
+    const avg = usesHourlyMeanDay(type)
+      ? await hourlyMeanWindowAverage(userId, type, measuredAt)
+      : (
+          await prisma.measurement.aggregate({
+            where: { userId, type, deletedAt: null, measuredAt },
+            _avg: { value: true },
+          })
+        )._avg.value;
     return avg === null ? null : Math.round(avg * 100) / 100;
   };
 
