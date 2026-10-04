@@ -13,6 +13,7 @@
  */
 
 import { getDateTimeFormat } from "./intl-cache";
+import { wallClockFromOffset, zoneOffsetMs } from "./zone-offset";
 
 export const DEFAULT_TIMEZONE = "Europe/Berlin";
 
@@ -52,6 +53,9 @@ const WALL_CLOCK_PARTS_OPTIONS: Omit<Intl.DateTimeFormatOptions, "timeZone"> =
  */
 const OFFSET_ZONE = /^[+-]\d/;
 
+const validityByZone = new Map<string, boolean>();
+const MAX_VALIDITY_ENTRIES = 256;
+
 /**
  * Validate a timezone string: a named IANA zone (or `UTC`) the runtime
  * accepts. Returns `false` for anything else. Cheap (microseconds) — call
@@ -67,6 +71,12 @@ export function isValidTimezone(tz: string): boolean {
   if (!tz || typeof tz !== "string" || tz.length === 0 || tz.length > 64) {
     return false;
   }
+  // The answer for a given name never changes within a process, and the
+  // day-key helpers below ask it once per row; `resolvedOptions()` allocates
+  // a fresh options object on every call.
+  const memo = validityByZone.get(tz);
+  if (memo !== undefined) return memo;
+  let valid: boolean;
   try {
     // The memo only caches successful constructions, so probing an
     // invalid zone through it cannot poison the formatter map — and a
@@ -76,10 +86,13 @@ export function isValidTimezone(tz: string): boolean {
       tz,
       VALIDATION_OPTIONS,
     ).resolvedOptions().timeZone;
-    return !OFFSET_ZONE.test(resolved);
+    valid = !OFFSET_ZONE.test(resolved);
   } catch {
-    return false;
+    valid = false;
   }
+  if (validityByZone.size >= MAX_VALIDITY_ENTRIES) validityByZone.clear();
+  validityByZone.set(tz, valid);
+  return valid;
 }
 
 /**
@@ -275,7 +288,23 @@ interface WallClockParts {
   second: string;
 }
 
+function pad2(value: number): string {
+  return value < 10 ? `0${value}` : String(value);
+}
+
 function wallClockParts(date: Date, tz: string): WallClockParts {
+  const offsetMs = zoneOffsetMs(date, tz);
+  if (offsetMs !== null) {
+    const at = wallClockFromOffset(date, offsetMs);
+    return {
+      year: String(at.year),
+      month: pad2(at.month),
+      day: pad2(at.day),
+      hour: pad2(at.hour),
+      minute: pad2(at.minute),
+      second: pad2(at.second),
+    };
+  }
   const fmt = getDateTimeFormat("en-CA", tz, WALL_CLOCK_PARTS_OPTIONS);
   const parts = fmt.formatToParts(date);
   const get = (type: Intl.DateTimeFormatPartTypes): string =>
@@ -319,6 +348,12 @@ function formatIsoWithOffset(date: Date, tz: string): string {
  * difference between the wall-clock parts and the UTC parts.
  */
 export function tzOffsetMinutes(date: Date, tz: string): number {
+  const offsetMs = zoneOffsetMs(date, tz);
+  if (offsetMs !== null) {
+    // Same arithmetic as below: the wall clock is read to the whole second,
+    // so the sub-second part of the instant shifts the rounded result.
+    return Math.round((offsetMs - (date.getTime() % 1000)) / 60000);
+  }
   const fmt = getDateTimeFormat("en-CA", tz, WALL_CLOCK_PARTS_OPTIONS);
   const parts = fmt.formatToParts(date);
   const get = (type: Intl.DateTimeFormatPartTypes): number =>

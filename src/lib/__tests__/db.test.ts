@@ -2,7 +2,7 @@
  * Pool configuration stays unit-tested here so connection ceilings and wait
  * timeouts cannot silently fall back to separate library defaults.
  */
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildSessionOptions,
@@ -127,5 +127,34 @@ describe("buildSessionOptions", () => {
   it("returns undefined (no options) when the timeout is disabled", () => {
     process.env.DATABASE_STATEMENT_TIMEOUT_MS = "0";
     expect(buildSessionOptions()).toBeUndefined();
+  });
+});
+
+describe("process-wide Prisma client", () => {
+  const globalSlot = globalThis as unknown as { prisma?: unknown };
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    delete globalSlot.prisma;
+    vi.resetModules();
+  });
+
+  it("shares one client across separate copies of the module in production", async () => {
+    // A production build loads this module once per server bundle; each copy
+    // must resolve the same client rather than constructing its own.
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv(
+      "DATABASE_URL",
+      "postgresql://healthlog:test@db:5432/healthlog?connection_limit=20",
+    );
+    delete globalSlot.prisma;
+
+    vi.resetModules();
+    const first = (await import("../db")).prisma;
+    vi.resetModules();
+    const second = (await import("../db")).prisma;
+
+    expect(second).toBe(first);
+    expect(globalSlot.prisma).toBe(first);
   });
 });

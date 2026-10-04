@@ -106,11 +106,16 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
+// One client per process, in production too. A production build gives every
+// server bundle its own copy of this module (the route handlers, the RSC/SSR
+// renderer, and the instrumentation bundle that boots the workers), so a
+// module-scoped client alone meant three of them: three query-compiler states
+// of roughly 28 MB each on a heap that V8 caps near 520 MB in a 1 GiB
+// container, and three pg pools each sized to the whole per-process
+// connection budget above. Parking the client on `globalThis` makes every
+// copy of the module resolve the same one.
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+globalForPrisma.prisma = prisma;
 
 // Prisma's `InputJsonValue` requires an explicit index signature that
 // typed application shapes (Zod-validated, hand-written interfaces)

@@ -19,6 +19,7 @@
  * silent drift a real failure mode.
  */
 import { getDateTimeFormat } from "./intl-cache";
+import { wallClockFromOffset, zoneOffsetMs } from "./zone-offset";
 
 export interface WallClockParts {
   year: number;
@@ -190,6 +191,8 @@ export function wallClockInTz(
       weekday: date.getDay(),
     };
   }
+  const offsetMs = zoneOffsetMs(date, tz);
+  if (offsetMs !== null) return wallClockFromOffset(date, offsetMs);
   const parts = getDateTimeFormat(
     "en-US",
     tz,
