@@ -5,10 +5,25 @@
  * never drift. Mirrors the `backupPayloadSchema` cycle shapes.
  *
  * Reads are scoped to `userId` + `deletedAt: null` and exclude predicted
- * (forecast) cycle rows — only observed history round-trips. `notesEncrypted`
- * is carried as the ciphertext envelope VERBATIM: the backup never decrypts
- * the day-log note, so a wrong-surface plaintext leak is impossible and the
- * owner's note round-trips encrypted at rest.
+ * (forecast) cycle rows — only observed history round-trips.
+ *
+ * ## Free text follows the note contract
+ *
+ * Three columns are sealed: the day-log note, the sensitive-category envelope
+ * and a custom symptom's label. A disaster-recovery file carries them as the
+ * stored ciphertext, which the same instance's key reads back. A portable file
+ * carries them readable (`note`, `sensitive`, `label`), and the restore seals
+ * them under the receiving host's key, because a portable file exists to be
+ * moved, and ciphertext from one host is noise on another.
+ *
+ * Until v1.40 the portable file carried the ciphertext too, so a note restored
+ * onto a host with a different key was unreadable for good. Such a file is
+ * still accepted: every ciphertext value in it is opened with this host's keys
+ * before it is written, and one that does not open is kept out of the row and
+ * named in the skip report (`cycleCiphertext`), never written back as
+ * ciphertext nobody can read. The same check covers a disaster-recovery file,
+ * which is why `RESTORE_SELF_VERIFIED_SECTIONS` lets these sections past the
+ * restore's key preflight.
  */
 import type {
   CervicalMucus,
@@ -25,6 +40,12 @@ import type {
   PrismaClient,
   SecondarySymptom,
 } from "@/generated/prisma/client";
+import {
+  openSealedForExport,
+  sealForRestore,
+  UNOPENED,
+} from "@/lib/export/sealed-text";
+import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
 import type { BackupPayload } from "@/lib/validations/backup";
 import {
   recordUnknownKeys,
@@ -91,8 +112,17 @@ export interface CycleBackupSection {
     pregnancyTest: string | null;
     progesteroneTest: string | null;
     contraceptive: string | null;
-    sensitiveEncrypted: string | null;
-    notesEncrypted: string | null;
+    /** Ciphertext; present on a disaster-recovery payload. */
+    sensitiveEncrypted?: string | null;
+    /** Ciphertext; present on a disaster-recovery payload. */
+    notesEncrypted?: string | null;
+    /** Plaintext; present on a portable payload. */
+    note?: string | null;
+    /**
+     * The sensitive-category envelope opened; present on a portable payload.
+     * The unreadable marker when this instance could not open it.
+     */
+    sensitive?: CycleSensitiveFields | string | null;
     source: string;
     externalId: string | null;
     tz: string | null;
@@ -142,16 +172,38 @@ export interface CycleBackupSection {
     sortOrder: number;
     isActive: boolean;
     /**
-     * The user's own words for the symptom, carried as ciphertext verbatim.
+     * The user's own words for the symptom: ciphertext on a disaster-recovery
+     * payload, plaintext (`label`) on a portable one.
      *
-     * The builder has always emitted it and this interface did not declare it,
-     * which held while the payload was assembled key by key and stopped holding
-     * the moment the section is spread onto the wire: an undeclared field is a
-     * field the wire type says is not there. Declared, so the type describes
-     * the file.
+     * Declared rather than left to the spread, because an undeclared field is
+     * a field the wire type says is not there.
      */
-    labelEncrypted: string | null;
+    labelEncrypted?: string | null;
+    label?: string | null;
   }>;
+}
+
+/** The five intent fields the sensitive-category envelope holds. */
+export interface CycleSensitiveFields {
+  sexualActivity?: boolean;
+  protectedSex?: boolean | null;
+  pregnancyTest?: string | null;
+  progesteroneTest?: string | null;
+  contraceptive?: string | null;
+}
+
+/** The sensitive envelope opened for a portable file, or the marker. */
+function openSensitiveForExport(
+  sealed: string | null,
+): CycleSensitiveFields | string | null {
+  if (!sealed) return null;
+  const opened = openSealedForExport(sealed, "cycle sensitive envelope");
+  if (opened === UNREADABLE_EXPORT_MARKER) return opened;
+  try {
+    return JSON.parse(opened) as CycleSensitiveFields;
+  } catch {
+    return UNREADABLE_EXPORT_MARKER;
+  }
 }
 
 /**
@@ -259,8 +311,17 @@ export async function buildCycleBackupSection(
       pregnancyTest: d.pregnancyTest,
       progesteroneTest: d.progesteroneTest,
       contraceptive: d.contraceptive,
-      sensitiveEncrypted: d.sensitiveEncrypted,
-      notesEncrypted: d.notesEncrypted,
+      ...(disasterRecovery
+        ? {
+            sensitiveEncrypted: d.sensitiveEncrypted,
+            notesEncrypted: d.notesEncrypted,
+          }
+        : {
+            sensitive: openSensitiveForExport(d.sensitiveEncrypted),
+            note: d.notesEncrypted
+              ? openSealedForExport(d.notesEncrypted, "cycle day-log note")
+              : null,
+          }),
       source: d.source,
       externalId: d.externalId,
       tz: d.tz,
@@ -277,7 +338,13 @@ export async function buildCycleBackupSection(
       icon: sym.icon,
       sortOrder: sym.sortOrder,
       isActive: sym.isActive,
-      labelEncrypted: sym.labelEncrypted,
+      ...(disasterRecovery
+        ? { labelEncrypted: sym.labelEncrypted }
+        : {
+            label: sym.labelEncrypted
+              ? openSealedForExport(sym.labelEncrypted, "cycle symptom label")
+              : null,
+          }),
     })),
   };
 }
@@ -383,8 +450,9 @@ function enumOrNull<T extends string>(
  * inside an existing transaction. Delete-then-recreate, matching the
  * measurement/mood restore contract. Symptom links are re-resolved against
  * the seeded catalogue by key, and each one gets back the 1-4 intensity the
- * file recorded for it, or none if the file recorded none. `notesEncrypted` is
- * written back as the ciphertext envelope verbatim — never re-encrypted.
+ * file recorded for it, or none if the file recorded none. Sealed free text
+ * comes back as the file-header comment describes: readable values sealed
+ * under this host's key, ciphertext written back only when this host opens it.
  *
  * A key that resolves against nothing is dropped from the day's links and
  * recorded on `skips`. It is a required argument rather than an optional one:
@@ -400,6 +468,9 @@ export async function restoreCycleData(
   payload: BackupPayload,
   skips: RestoreSkipLog,
 ): Promise<CycleRestoreCleared> {
+  // Sealed values from the file this host's keys do not open, by file path.
+  const unopened: string[] = [];
+
   // Wipe (child links cascade off the day-log delete).
   const dayLogs = await tx.cycleDayLog.deleteMany({
     where: { userId: ownerId },
@@ -488,7 +559,12 @@ export async function restoreCycleData(
         icon: sym.icon ?? null,
         sortOrder: sym.sortOrder,
         isActive: sym.isActive,
-        labelEncrypted: sym.labelEncrypted ?? null,
+        labelEncrypted: sealForRestore(
+          sym.labelEncrypted,
+          sym.label,
+          `customSymptoms.${sym.key}.labelEncrypted`,
+          unopened,
+        ),
       },
       // `key` is globally unique, so a seeded key would collide. Leave the
       // catalogue row alone: the account's links resolve against it either way.
@@ -591,9 +667,22 @@ export async function restoreCycleData(
         pregnancyTest: enumOrNull(d.pregnancyTest, HOME_TESTS),
         progesteroneTest: enumOrNull(d.progesteroneTest, HOME_TESTS),
         contraceptive: enumOrNull(d.contraceptive, CONTRACEPTIVES),
-        // Both ciphertext envelopes written back verbatim — never re-encrypted.
-        sensitiveEncrypted: d.sensitiveEncrypted ?? null,
-        notesEncrypted: d.notesEncrypted ?? null,
+        sensitiveEncrypted: sealForRestore(
+          d.sensitiveEncrypted,
+          d.sensitive === undefined || d.sensitive === null
+            ? d.sensitive
+            : typeof d.sensitive === "string"
+              ? UNOPENED
+              : JSON.stringify(d.sensitive),
+          `cycleDayLogs.${d.date}.sensitiveEncrypted`,
+          unopened,
+        ),
+        notesEncrypted: sealForRestore(
+          d.notesEncrypted,
+          d.note,
+          `cycleDayLogs.${d.date}.notesEncrypted`,
+          unopened,
+        ),
         source: enumOrNull(d.source, CYCLE_SOURCES) ?? "MANUAL",
         externalId: d.externalId ?? null,
         tz: d.tz ?? null,
@@ -607,6 +696,8 @@ export async function restoreCycleData(
       },
     });
   }
+
+  recordUnknownKeys(skips, "cycleCiphertext", unopened, unopened);
 
   return {
     cycles: cycles.count,

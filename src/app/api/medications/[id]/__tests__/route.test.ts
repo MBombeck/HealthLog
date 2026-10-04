@@ -114,6 +114,11 @@ const ROUTE_CTX = { params: Promise.resolve({ id: "m1" }) };
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+  // The PUT writes inside one interactive transaction; run its callback
+  // against the same mocked client.
+  vi.mocked(prisma.$transaction).mockImplementation((async (
+    fn: (tx: typeof prisma) => unknown,
+  ) => fn(prisma)) as never);
   // v1.40 — the category and course helpers' defaults, which
   // `resetAllMocks` clears.
   vi.mocked(resolveCourseFields).mockResolvedValue(new Map());
@@ -203,9 +208,9 @@ describe("PUT /api/medications/[id] — v1.5 scheduling primitives", () => {
     vi.mocked(auditLog).mockResolvedValue(undefined);
     const res = await PUT(putReq({ endsOn: "2026-12-31" }), ROUTE_CTX);
     expect(res.status).toBe(200);
-    // v1.40 (#1024) — the window goes through the course writer, which
-    // writes the row and the latest course in one transaction; the plain
-    // row update no longer carries it.
+    // v1.40 (#1024) — the window goes through the course writer, inside the
+    // same transaction as the row update; the plain row update no longer
+    // carries it.
     const call = lastUpdateCall();
     expect(call.data).not.toHaveProperty("endsOn");
     expect(setCurrentWindow).toHaveBeenCalledWith(
@@ -213,6 +218,7 @@ describe("PUT /api/medications/[id] — v1.5 scheduling primitives", () => {
         medicationId: "m1",
         endsOn: new Date("2026-12-31"),
       }),
+      prisma,
     );
   });
 

@@ -36645,6 +36645,54 @@ components:
                 anyOf:
                   - type: string
                   - type: "null"
+              note:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              sensitive:
+                anyOf:
+                  - anyOf:
+                      - type: object
+                        properties:
+                          sexualActivity:
+                            type: boolean
+                          protectedSex:
+                            anyOf:
+                              - type: boolean
+                              - type: "null"
+                          pregnancyTest:
+                            anyOf:
+                              - type: string
+                                enum:
+                                  - NEGATIVE
+                                  - POSITIVE
+                                  - INDETERMINATE
+                              - type: "null"
+                          progesteroneTest:
+                            anyOf:
+                              - type: string
+                                enum:
+                                  - NEGATIVE
+                                  - POSITIVE
+                                  - INDETERMINATE
+                              - type: "null"
+                          contraceptive:
+                            anyOf:
+                              - type: string
+                                enum:
+                                  - NONE
+                                  - UNSPECIFIED
+                                  - IMPLANT
+                                  - INJECTION
+                                  - IUD
+                                  - INTRAVAGINAL_RING
+                                  - ORAL
+                                  - PATCH
+                                  - EMERGENCY
+                              - type: "null"
+                        additionalProperties: false
+                      - type: string
+                  - type: "null"
               source:
                 type: string
                 enum:
@@ -36748,6 +36796,10 @@ components:
                 anyOf:
                   - type: string
                   - type: "null"
+              label:
+                anyOf:
+                  - type: string
+                  - type: "null"
             required:
               - key
               - labelKey
@@ -36781,6 +36833,10 @@ components:
               isActive:
                 type: boolean
               labelEncrypted:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              label:
                 anyOf:
                   - type: string
                   - type: "null"
@@ -36838,6 +36894,10 @@ components:
                 minimum: -9007199254740991
                 maximum: 9007199254740991
               labelEncrypted:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              label:
                 anyOf:
                   - type: string
                   - type: "null"
@@ -38428,6 +38488,10 @@ components:
                   - type: string
                     minLength: 1
                   - type: "null"
+              note:
+                anyOf:
+                  - type: string
+                  - type: "null"
               createdAt:
                 type: string
                 minLength: 1
@@ -38494,6 +38558,18 @@ components:
                 anyOf:
                   - type: string
                     minLength: 1
+                  - type: "null"
+              reason:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              outcome:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              bodySite:
+                anyOf:
+                  - type: string
                   - type: "null"
               laterality:
                 anyOf:
@@ -38650,6 +38726,10 @@ components:
                 anyOf:
                   - type: string
                     minLength: 1
+                  - type: "null"
+              note:
+                anyOf:
+                  - type: string
                   - type: "null"
               createdAt:
                 type: string

@@ -7566,7 +7566,11 @@
         "restoreFailureKeyMissing": "Il backup richiede la chiave di cifratura {keys}, con cui questo server non riesce ad aprirlo. Aggiungi di nuovo la chiave a ENCRYPTION_KEYS, riavvia e avvia di nuovo il ripristino.",
         "restoreFailureForeignReference": "Il file rimanda a voci che appartengono a un altro account. Non è stato scritto nulla.",
         "previewKeyMissing": "Questo backup non può essere ripristinato su questo server: richiede la chiave di cifratura {keys}. Aggiungi prima di nuovo la chiave a ENCRYPTION_KEYS e riavvia.",
-        "restoreSkippedSymptomEpisodeReference": "Voce di sintomo collegata a una malattia assente dal file (mantenuta senza collegamento)"
+        "restoreSkippedSymptomEpisodeReference": "Voce di sintomo collegata a una malattia assente dal file (mantenuta senza collegamento)",
+        "restoreSkippedCycleCiphertext": "Nota o etichetta del ciclo cifrata con una chiave che questo server non possiede (giorno o sintomo mantenuto senza)",
+        "restoreSkippedMoodLabelCiphertext": "Nome di tag o gruppo dell’umore cifrato con una chiave che questo server non possiede (mantenuto senza nome)",
+        "restoreSkippedVisitCiphertext": "Testo di visita o professionista cifrato con una chiave che questo server non possiede (mantenuto senza)",
+        "restoreSkippedVaccinationCiphertext": "Nota di vaccinazione cifrata con una chiave che questo server non possiede (dose mantenuta senza)"
       },
       "danger-zone": {
         "title": "Zona pericolosa",

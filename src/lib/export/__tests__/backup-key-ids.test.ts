@@ -138,6 +138,30 @@ describe("assessBackupKeys", () => {
     ).toEqual([]);
   });
 
+  it("leaves the cycle sections to the restore, which opens each value itself", () => {
+    // A same-id impostor in a cycle note must neither refuse the file nor be
+    // picked as the sample that proves the key for the sections that need it.
+    const fine = encrypt("a measurement note under the real key");
+    useKeys({ old: K3, cur: K2 }, "old");
+    const impostor = encrypt("x");
+    useKeys({ old: K1, cur: K2 }, "cur");
+    const file = {
+      measurements: [{ notesEncrypted: fine }],
+      cycleDayLogs: [
+        { notesEncrypted: impostor },
+        { notesEncrypted: `gone.${Buffer.alloc(40).toString("base64")}` },
+      ],
+      customSymptoms: [
+        { labelEncrypted: `gone.${Buffer.alloc(40).toString("base64")}` },
+      ],
+    };
+    const collector = new BackupKeyIdCollector();
+    collector.visit(file);
+    const verdict = assessBackupKeys(collector);
+    expect(verdict.missing).toEqual([]);
+    expect(verdict.unreadable).toEqual([]);
+  });
+
   it("catches an id that is configured with different key material", () => {
     const file = fileWrittenUnderOld();
     useKeys({ old: K3, cur: K2 }, "cur");
