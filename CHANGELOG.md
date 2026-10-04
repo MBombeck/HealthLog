@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.40.1] — 2026-10-04
+
+Restore opens older encrypted values again; faster pages on a long-used
+server; a day of pulse is the mean of its hours; Apple Health imports leave
+out HealthLog's own samples; more memory for the app by default.
+
+### Fixed
+
+- **Restore key probe.** A legacy unprefixed ciphertext was read as a base64
+  string and refused a restore the key opens; legacy values open as strings,
+  probes come only from sections that count, binary probes use their AAD.
+  The drill checks every account of the newest date.
+- **Daily pulse (#1107, migration 0372).** A day is the mean of its local
+  hours' means and a window the mean of its days, in every reader; stored
+  pulse rollups are recomputed. Count, min and max stay over every reading.
+- **Apple Health import (#1109).** Records carrying HealthLog's origin
+  marker or a HealthLog id are left out and counted; cycle samples too.
+- **Blood pressure series.** One source per day for both values.
+- **Backups.** Heartbeat on both backup jobs; per-account attempts recorded
+  (migration 0373), interrupted accounts go last; the preview is built from
+  the writer's counts.
+- **Document previews.** A permanent render failure is recorded (migration 0374) instead of re-queued at every start.
+- **Umami.** Events from a tracker built with a custom endpoint are proxied
+  to the configured Umami host.
+- **Display.** Rest Mode shows its start date; the favicon is transparent;
+  the sidebar no longer flashes scrollbars while it expands.
+
+### Changed
+
+- **Performance.** One Prisma client per process instead of one per bundle;
+  the rollup coverage probe uses a loose index scan and concurrent readers
+  share one probe; timezone offsets are memoised per hour; chart text is
+  measured outside `<body>`; Insights mounts lower sections near the
+  viewport; a nav prefetch is not re-sent on mount; MCP single-metric reads
+  build only the requested metric; the backup schema loads on first use.
+- **Lab list (#1057).** The range bar and name use a wide card.
+- **Compose.** `APP_MEMORY_LIMIT` defaults to `1536m` (792 MB heap).
+- Dependencies: next 16.3.8, eslint-config-next 16.3.8, zod-openapi 6.0.2,
+  testcontainers 12.2.0, p-limit 7.3.3.
+
 ## [1.40.0] — 2026-10-04
 
 Back up the encryption key and refuse a key that cannot open the data;
