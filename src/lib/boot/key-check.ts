@@ -25,8 +25,9 @@ const INCONCLUSIVE_EXPLANATION: Record<InconclusiveReason, string> = {
   "single-value": "the only stored value found under that id did not open.",
   mixed:
     "the oldest stored values under that id do not open, newer ones do. " +
-    "That is what a wrong key that served for a while leaves behind; check " +
-    "that this is the key the database was first written with.",
+    "Either the old rows were sealed under a key that is gone, or a wrong " +
+    "key served for a while and wrote the newer ones; check that this is " +
+    "the key the database was first written with.",
   unsampled:
     "the values stored under that id are too large to probe at start-up.",
   incomplete:

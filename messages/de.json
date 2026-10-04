@@ -3546,6 +3546,7 @@
         "sportLabel": "Aktivität",
         "sportPlaceholder": "Aktivität wählen",
         "startLabel": "Beginn",
+        "startHint": "Leer lassen, wenn du gerade fertig bist: Dann zählt es die Dauer von jetzt zurück.",
         "durationLabel": "Dauer",
         "distanceLabel": "Distanz ({unit})",
         "energyLabel": "Aktive Energie (kcal)",

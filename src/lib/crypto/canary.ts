@@ -49,7 +49,8 @@
  *     problem: a wrong key opens nothing. Values newer than the first opening
  *     one do not count against it; they are what a wrong-key process would
  *     have left behind. The canary is written.
- *   - `fails`: two or more values were tried and none opened. That is what a
+ *   - `fails`: two or more of the oldest values were tried and none opened,
+ *     AND none of the newest values opens either (see below). That is what a
  *     wrong key looks like; the process refuses (mismatch).
  *   - `none`: every column answered, and none holds a single value under the
  *     key id. A genuinely fresh install (or a new id added for rotation); the
@@ -63,6 +64,41 @@
  *     Serving rather than refusing because a refusal takes a correctly keyed
  *     server down with 503 on every request; not sealing because that would
  *     lock the right key out later.
+ *
+ * Before the oldest values may refuse, the newest are asked: the same columns,
+ * the same `PROBE_ROWS_PER_COLUMN`, in reverse order, and the newest
+ * `PROBE_SAMPLE_LIMIT` of those tried. If any opens, the verdict is
+ * `inconclusive` (`mixed`), never `fails`. An install reinstalled under a
+ * fresh key long ago holds old rows sealed under a key that is gone and all
+ * current data under the key it runs with; it works today, and refusing it
+ * would take it down on upgrade. The newest values only ever turn a refusal
+ * into a warning. They never seal: a newest-only open is exactly what a wrong
+ * key that served for a while leaves behind, so sealing stays with the
+ * oldest-first rule above. A newest pass that cannot finish (time budget,
+ * unreadable column) is `incomplete`, not `fails`.
+ *
+ * Every probe query is bounded on its own: it runs in a transaction with
+ * `SET LOCAL statement_timeout` (`PROBE_STATEMENT_TIMEOUT_MS`), so one large
+ * or locked table ends that column with an error, and the probe with
+ * `incomplete`, instead of holding up the boot. The `ORDER BY` is the plain
+ * timestamp-then-key order (and its exact mirror for the newest pass), which
+ * a btree index on the timestamp serves in either direction; the primary key
+ * is always indexed. The time budget is checked between columns.
+ *
+ * ## When the outcome is `mismatch`
+ *
+ * Exactly three ways, and no other:
+ *
+ *   1. a stored canary for a configured key id does not open under that key
+ *      (or opens to another value);
+ *   2. no canary, and the probe says `fails`: at least two of the oldest
+ *      values were tried and none opened, and none of the newest values
+ *      opened either;
+ *   3. the first seal was lost to another process and the canary it wrote
+ *      does not open under this process's key.
+ *
+ * Everything else (an unreadable or timed-out column, an exhausted budget,
+ * a single value, mixed old and new) serves.
  *
  * The first seal can race another process. `ON CONFLICT DO NOTHING` keeps the
  * row the other process wrote; when this process's insert affected no row,
@@ -110,6 +146,9 @@ export const PROBE_VALUE_MAX_BYTES = 2 * 1024 * 1024;
 /** How long the probe may take before it gives up as `inconclusive`. */
 export const PROBE_BUDGET_MS = 10_000;
 
+/** How long one probe query may run before the server cancels it. */
+export const PROBE_STATEMENT_TIMEOUT_MS = 2_000;
+
 /** The key id the legacy bare-base64 string format belongs to. */
 const LEGACY_KEY_ID = "v1";
 
@@ -128,6 +167,19 @@ export interface CanaryClient {
     ...values: unknown[]
   ): Promise<T>;
   $executeRawUnsafe?(query: string, ...values: unknown[]): Promise<number>;
+  $transaction?<R>(
+    fn: (tx: ProbeTransaction) => Promise<R>,
+    options?: { maxWait?: number; timeout?: number },
+  ): Promise<R>;
+}
+
+/** The slice of a transaction client one bounded probe query needs. */
+export interface ProbeTransaction {
+  $executeRaw(
+    query: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<number>;
+  $queryRawUnsafe<T = unknown>(query: string, ...values: unknown[]): Promise<T>;
 }
 
 /** One stored value under the key id, as the probe sees it. */
@@ -140,15 +192,19 @@ export interface ProbeRow {
   ts: Date | null;
 }
 
+/** Which end of a column's write-time order a sample is read from. */
+export type SampleOrder = "oldest" | "newest";
+
 /**
- * Reads up to `limit` of the oldest values under `keyId` in one column, oldest
- * first. Throws when the column cannot be read; an empty array means the
- * column holds no value under that id.
+ * Reads up to `limit` of the oldest (or newest) values under `keyId` in one
+ * column, in that order. Throws when the column cannot be read; an empty
+ * array means the column holds no value under that id.
  */
 export type ColumnSampler = (
   column: EncryptedColumn,
   keyId: string,
   limit: number,
+  order: SampleOrder,
 ) => Promise<ProbeRow[]>;
 
 export type InconclusiveReason =
@@ -225,6 +281,46 @@ export function probeValueOpens(
   }
 }
 
+type Pooled = { column: EncryptedColumn; row: ProbeRow; order: number };
+
+/**
+ * One value pool from every column, in `order`. Null when the budget ran out
+ * or a column could not be read.
+ */
+async function samplePool(
+  sampler: ColumnSampler,
+  keyId: string,
+  deadline: number,
+  columns: readonly EncryptedColumn[],
+  order: SampleOrder,
+): Promise<{ pool: Pooled[]; present: number } | null> {
+  const pool: Pooled[] = [];
+  let present = 0;
+  for (const column of columns) {
+    if (Date.now() > deadline) return null;
+    let rows: ProbeRow[];
+    try {
+      rows = await sampler(column, keyId, PROBE_ROWS_PER_COLUMN, order);
+    } catch {
+      return null;
+    }
+    present += rows.length;
+    for (const row of rows) {
+      if (row.value !== null) pool.push({ column, row, order: pool.length });
+    }
+  }
+  if (Date.now() > deadline) return null;
+  // Oldest first; rows without a timestamp after every row with one. The
+  // newest pass is the exact mirror.
+  const sign = order === "oldest" ? 1 : -1;
+  pool.sort((a, b) => {
+    const ta = a.row.ts?.getTime() ?? Number.POSITIVE_INFINITY;
+    const tb = b.row.ts?.getTime() ?? Number.POSITIVE_INFINITY;
+    return ta === tb ? a.order - b.order : sign * (ta - tb);
+  });
+  return { pool, present };
+}
+
 /**
  * Probe the stored values under `keyId`; see the module comment for what each
  * verdict means and why.
@@ -235,40 +331,14 @@ export async function probeExistingData(
   deadline: number,
   columns: readonly EncryptedColumn[] = ENCRYPTED_COLUMNS,
 ): Promise<ProbeResult> {
-  const pool: Array<{ column: EncryptedColumn; row: ProbeRow; order: number }> =
-    [];
-  let present = 0;
-  for (const column of columns) {
-    if (Date.now() > deadline) {
-      return { verdict: "inconclusive", reason: "incomplete" };
-    }
-    let rows: ProbeRow[];
-    try {
-      rows = await sampler(column, keyId, PROBE_ROWS_PER_COLUMN);
-    } catch {
-      return { verdict: "inconclusive", reason: "incomplete" };
-    }
-    present += rows.length;
-    for (const row of rows) {
-      if (row.value !== null) pool.push({ column, row, order: pool.length });
-    }
-  }
-  if (Date.now() > deadline) {
-    return { verdict: "inconclusive", reason: "incomplete" };
-  }
-  if (present === 0) return { verdict: "none" };
-  if (pool.length === 0) {
+  const oldest = await samplePool(sampler, keyId, deadline, columns, "oldest");
+  if (oldest === null) return { verdict: "inconclusive", reason: "incomplete" };
+  if (oldest.present === 0) return { verdict: "none" };
+  if (oldest.pool.length === 0) {
     return { verdict: "inconclusive", reason: "unsampled" };
   }
 
-  // Oldest first; rows without a timestamp after every row with one.
-  pool.sort((a, b) => {
-    const ta = a.row.ts?.getTime() ?? Number.POSITIVE_INFINITY;
-    const tb = b.row.ts?.getTime() ?? Number.POSITIVE_INFINITY;
-    return ta === tb ? a.order - b.order : ta - tb;
-  });
-  const tried = pool.slice(0, PROBE_SAMPLE_LIMIT);
-
+  const tried = oldest.pool.slice(0, PROBE_SAMPLE_LIMIT);
   let failedBeforeFirstOpen = 0;
   for (const { column, row } of tried) {
     if (probeValueOpens(column, row, keyId)) {
@@ -278,9 +348,21 @@ export async function probeExistingData(
     }
     failedBeforeFirstOpen += 1;
   }
-  return tried.length >= 2
-    ? { verdict: "fails" }
-    : { verdict: "inconclusive", reason: "single-value" };
+  if (tried.length < 2) {
+    return { verdict: "inconclusive", reason: "single-value" };
+  }
+
+  // Every oldest value failed. Before refusing, ask the newest: one that
+  // opens means the configured key is the one the install writes with today.
+  // It never seals; it only keeps a working install serving.
+  const newest = await samplePool(sampler, keyId, deadline, columns, "newest");
+  if (newest === null) return { verdict: "inconclusive", reason: "incomplete" };
+  for (const { column, row } of newest.pool.slice(0, PROBE_SAMPLE_LIMIT)) {
+    if (probeValueOpens(column, row, keyId)) {
+      return { verdict: "inconclusive", reason: "mixed" };
+    }
+  }
+  return { verdict: "fails" };
 }
 
 // ─── The SQL sampler ────────────────────────────────────────────────────────
@@ -359,6 +441,7 @@ function columnQuery(
   column: EncryptedColumn,
   keyId: string,
   mode: "sample" | "exists",
+  order: SampleOrder = "oldest",
 ): { sql: string; params: unknown[] } {
   if (!KEY_ID.test(keyId)) throw new Error("Malformed key id");
   const c = quoteIdentifier(loc.column);
@@ -405,11 +488,16 @@ function columnQuery(
   const ts = loc.ts ? quoteIdentifier(loc.ts) : null;
   const codec = loc.codec ? quoteIdentifier(loc.codec) : "NULL";
   const max = Math.floor(PROBE_VALUE_MAX_BYTES);
+  // The newest order is the exact mirror of the oldest, so an index on the
+  // timestamp serves both (a backward scan for the newest).
+  const [dir, nulls] =
+    order === "oldest" ? ["ASC", "NULLS LAST"] : ["DESC", "NULLS FIRST"];
+  const pk = quoteIdentifier(loc.pk);
   const sql =
     `SELECT CASE WHEN octet_length(${c}) <= ${max} THEN ${c} END AS value, ` +
     `${codec} AS codec, ${ts ?? "NULL::timestamp"} AS ts ` +
     `FROM ${table} WHERE ${where} ` +
-    `ORDER BY ${ts ? `${ts} ASC NULLS LAST, ` : ""}${quoteIdentifier(loc.pk)} ASC ` +
+    `ORDER BY ${ts ? `${ts} ${dir} ${nulls}, ` : ""}${pk} ${dir} ` +
     `LIMIT ${bind(0)}`;
   return { sql, params };
 }
@@ -422,20 +510,42 @@ function requireUnsafe(client: CanaryClient) {
   return query.bind(client);
 }
 
-/** The production sampler: one bounded query per column. */
-export function sqlColumnSampler(client: CanaryClient): ColumnSampler {
-  const query = requireUnsafe(client);
-  return async (column, keyId, limit) => {
+/**
+ * The production sampler: one query per column, each in its own transaction
+ * under `SET LOCAL statement_timeout`, so a large or locked table throws
+ * (and the probe ends `incomplete`) instead of holding up the boot.
+ */
+export function sqlColumnSampler(
+  client: CanaryClient,
+  options: { statementTimeoutMs?: number } = {},
+): ColumnSampler {
+  const transaction = client.$transaction;
+  if (typeof transaction !== "function") {
+    throw new Error("The database client cannot run the probe queries");
+  }
+  const run = transaction.bind(client);
+  const timeoutMs = Math.max(
+    1,
+    Math.floor(options.statementTimeoutMs ?? PROBE_STATEMENT_TIMEOUT_MS),
+  );
+  return async (column, keyId, limit, order) => {
     const loc = resolveColumnLocation(client, column);
-    const { sql, params } = columnQuery(loc, column, keyId, "sample");
+    const { sql, params } = columnQuery(loc, column, keyId, "sample", order);
     params[params.length - 1] = limit;
-    const rows = await query<
-      Array<{
-        value: string | Uint8Array | null;
-        codec: string | null;
-        ts: Date | null;
-      }>
-    >(sql, ...params);
+    type Row = {
+      value: string | Uint8Array | null;
+      codec: string | null;
+      ts: Date | null;
+    };
+    const rows = await run(
+      async (tx) => {
+        await tx.$executeRaw`SELECT set_config('statement_timeout', ${String(timeoutMs)}, true)`;
+        return tx.$queryRawUnsafe<Row[]>(sql, ...params);
+      },
+      // The transaction outlives its statement by a margin, so the server's
+      // cancellation, not the client's, is what ends a slow query.
+      { maxWait: timeoutMs, timeout: timeoutMs + 5_000 },
+    );
     return rows.map((r) => ({
       value: r.value,
       codec: r.codec,

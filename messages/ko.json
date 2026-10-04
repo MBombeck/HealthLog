@@ -3546,6 +3546,7 @@
         "sportLabel": "활동",
         "sportPlaceholder": "활동 선택",
         "startLabel": "시작",
+        "startHint": "방금 끝났다면 비워 두세요. 지금부터 시간을 거꾸로 계산합니다.",
         "durationLabel": "시간",
         "distanceLabel": "거리({unit})",
         "energyLabel": "활동 에너지(kcal)",

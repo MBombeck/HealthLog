@@ -23,6 +23,7 @@ import {
   keyMismatchLogBlock,
   probeValueOpens,
   resolveColumnLocation,
+  sqlColumnSampler,
   type CanaryClient,
   type ColumnSampler,
 } from "../canary";
@@ -62,6 +63,8 @@ function fakeClient(opts: {
   probe?: Record<string, Seeded[]>;
   /** Make the sampler throw for these columns. */
   unreadable?: string[];
+  /** Make the sampler throw for every column when asked for its newest values. */
+  newestUnreadable?: boolean;
   /** Another process seals this id (with this ciphertext) just before us. */
   race?: { keyId: string; ciphertext: string };
 }) {
@@ -92,9 +95,12 @@ function fakeClient(opts: {
       return 1;
     },
   } as unknown as CanaryClient;
-  const sampler: ColumnSampler = async (column, keyId, limit) => {
+  const sampler: ColumnSampler = async (column, keyId, limit, order) => {
     const key = `${column.model}.${column.field}`;
     if (opts.unreadable?.includes(key)) throw new Error("relation missing");
+    if (opts.newestUnreadable && order === "newest") {
+      throw new Error("canceling statement due to statement timeout");
+    }
     const rows = (opts.probe?.[key] ?? []).map((v) =>
       typeof v === "string" || v instanceof Uint8Array
         ? { value: v, ts: null as Date | null, codec: null }
@@ -113,15 +119,15 @@ function fakeClient(opts: {
         extractKeyIdFromBytes(b) === keyId
       );
     });
-    return under
+    const oldestFirst = under
       .map((r, i) => ({ r, i }))
       .sort((a, b) => {
         const ta = a.r.ts?.getTime() ?? Infinity;
         const tb = b.r.ts?.getTime() ?? Infinity;
         return ta === tb ? a.i - b.i : ta - tb;
-      })
-      .slice(0, limit)
-      .map(({ r }) => r);
+      });
+    if (order === "newest") oldestFirst.reverse();
+    return oldestFirst.slice(0, limit).map(({ r }) => r);
   };
   const check = (budget?: number) =>
     checkEncryptionKeyCanaries(client, { sampler, probeBudgetMs: budget });
@@ -369,6 +375,103 @@ describe("encryption key canary", () => {
     });
   });
 
+  describe("the newest values are asked before a refusal", () => {
+    /**
+     * Eight old values (two in each of four columns, so the oldest-first
+     * pool holds nothing else) sealed under `oldKey`, and two newer values
+     * per column sealed under `newKey`. Returns the fake, configured with
+     * KEY_B.
+     */
+    function seedOldThenNew(oldKey: string, newKey: string) {
+      configureKey(oldKey);
+      const old = [
+        encrypt("old 1"),
+        encrypt("old 2"),
+        encrypt("old 3"),
+        encrypt("old 4"),
+        encryptToBytes("old note 1"),
+        encryptToBytes("old note 2"),
+        encryptToBytes("old note 3"),
+        encryptToBytes("old note 4"),
+      ];
+      configureKey(newKey);
+      const recent = [
+        encrypt("new 1"),
+        encrypt("new 2"),
+        encrypt("new 3"),
+        encrypt("new 4"),
+        encryptToBytes("new note 1"),
+        encryptToBytes("new note 2"),
+        encryptToBytes("new note 3"),
+        encryptToBytes("new note 4"),
+      ];
+      configureKey(KEY_B);
+      const columns = [
+        "User.codexAccessTokenEncrypted",
+        "User.codexRefreshTokenEncrypted",
+        "MoodEntry.noteEncrypted",
+        "Measurement.notesEncrypted",
+      ];
+      const probe: Record<string, Seeded[]> = {};
+      columns.forEach((key, i) => {
+        probe[key] = [
+          { value: recent[2 * i], ts: `2026-09-0${i + 1}` },
+          { value: old[2 * i], ts: `2023-0${i + 1}-01` },
+          { value: recent[2 * i + 1], ts: `2026-09-1${i + 1}` },
+          { value: old[2 * i + 1], ts: `2023-0${i + 1}-02` },
+        ];
+      });
+      return probe;
+    }
+
+    it("old rows under a lost key and current data under the configured key: mixed, not a mismatch", async () => {
+      // A database reinstalled under a fresh key long ago: the old rows are
+      // sealed under a key nobody has any more, and everything written since
+      // opens under the configured one. Refusing would take a working
+      // install down on upgrade.
+      const { inserts, canaries, check } = fakeClient({
+        probe: seedOldThenNew(KEY_A, KEY_B),
+      });
+      expect(await check()).toEqual(
+        ok({ inconclusive: [{ keyId: "v1", reason: "mixed" }] }),
+      );
+      // A newest-only open never seals.
+      expect(inserts).toEqual([]);
+      expect(canaries.size).toBe(0);
+    });
+
+    it("old rows under A and newer rows under B, configured B, is never sealed or verified", async () => {
+      const { inserts, check } = fakeClient({
+        probe: seedOldThenNew(KEY_A, KEY_B),
+      });
+      const outcome = await check();
+      expect(outcome.state).toBe("ok");
+      if (outcome.state !== "ok") return;
+      expect(outcome.written).toEqual([]);
+      expect(outcome.verified).toEqual([]);
+      expect(inserts).toEqual([]);
+    });
+
+    it("old AND newest values that all fail are a mismatch", async () => {
+      const { inserts, check } = fakeClient({
+        probe: seedOldThenNew(KEY_A, KEY_A),
+      });
+      expect(await check()).toEqual({ state: "mismatch", keyIds: ["v1"] });
+      expect(inserts).toEqual([]);
+    });
+
+    it("the newest values that cannot be read are inconclusive, never a mismatch", async () => {
+      const { inserts, check } = fakeClient({
+        probe: seedOldThenNew(KEY_A, KEY_A),
+        newestUnreadable: true,
+      });
+      expect(await check()).toEqual(
+        ok({ inconclusive: [{ keyId: "v1", reason: "incomplete" }] }),
+      );
+      expect(inserts).toEqual([]);
+    });
+  });
+
   describe("nothing unproven seals", () => {
     it("a probe out of time is inconclusive, even over data that opens", async () => {
       const { inserts, check } = fakeClient({
@@ -515,6 +618,86 @@ describe("the SQL sampler's column map", () => {
     expect(resolveColumnLocation(client, backupPieces).ts).toBeNull();
     const user = ENCRYPTED_COLUMNS.find((c) => c.model === "User")!;
     expect(resolveColumnLocation(client, user).ts).toBe("updated_at");
+  });
+});
+
+describe("the SQL sampler's bounds", () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    configureKey(KEY_A);
+  });
+
+  /** A client whose probe queries the server cancels at the timeout. */
+  function timingOutClient() {
+    const model = new PrismaClient({
+      adapter: new PrismaPg({
+        connectionString: "postgres://x:y@127.0.0.1:1/x",
+      }),
+    }) as unknown as { _runtimeDataModel: unknown };
+    const settings: unknown[][] = [];
+    const statements: string[] = [];
+    const transactionOptions: unknown[] = [];
+    const tx = {
+      async $executeRaw(_q: TemplateStringsArray, ...values: unknown[]) {
+        settings.push(values);
+        return 1;
+      },
+      async $queryRawUnsafe(sql: string) {
+        statements.push(sql);
+        throw new Error("canceling statement due to statement timeout");
+      },
+    };
+    const client = {
+      _runtimeDataModel: model._runtimeDataModel,
+      $queryRaw: async () => [],
+      $executeRaw: async () => {
+        throw new Error("nothing may be sealed");
+      },
+      $queryRawUnsafe: async () => [],
+      async $transaction(
+        fn: (t: typeof tx) => Promise<unknown>,
+        options: unknown,
+      ) {
+        transactionOptions.push(options);
+        return fn(tx);
+      },
+    } as unknown as CanaryClient;
+    return { client, settings, statements, transactionOptions };
+  }
+
+  it("a probe query cancelled at its statement timeout is inconclusive, not a hang or a mismatch", async () => {
+    const fake = timingOutClient();
+    expect(await checkEncryptionKeyCanaries(fake.client)).toEqual(
+      ok({ inconclusive: [{ keyId: "v1", reason: "incomplete" }] }),
+    );
+    // Every probe query runs under a transaction-local statement timeout.
+    expect(fake.settings).toEqual([["2000"]]);
+    expect(fake.statements).toHaveLength(1);
+    expect(fake.transactionOptions[0]).toMatchObject({ timeout: 7_000 });
+  });
+
+  it("reads the newest values in the exact mirror of the oldest order", async () => {
+    const fake = timingOutClient();
+    const sampler = sqlColumnSampler(fake.client, { statementTimeoutMs: 50 });
+    const user = ENCRYPTED_COLUMNS.find((c) => c.model === "User")!;
+    await expect(sampler(user, "v1", 2, "oldest")).rejects.toThrow();
+    await expect(sampler(user, "v1", 2, "newest")).rejects.toThrow();
+    expect(fake.settings).toEqual([["50"], ["50"]]);
+    expect(fake.statements[0]).toContain(
+      'ORDER BY "updated_at" ASC NULLS LAST, "id" ASC LIMIT',
+    );
+    expect(fake.statements[1]).toContain(
+      'ORDER BY "updated_at" DESC NULLS FIRST, "id" DESC LIMIT',
+    );
+  });
+
+  it("refuses to run without transactions rather than run unbounded", () => {
+    const client = {
+      $queryRaw: async () => [],
+      $executeRaw: async () => 0,
+      $queryRawUnsafe: async () => [],
+    } as unknown as CanaryClient;
+    expect(() => sqlColumnSampler(client)).toThrow();
   });
 });
 

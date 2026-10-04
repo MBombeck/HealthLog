@@ -56,6 +56,7 @@ import {
   canaryPlaintext,
   checkEncryptionKeyCanaries,
   retireCanariesWithoutData,
+  sqlColumnSampler,
   type CanaryClient,
 } from "@/lib/crypto/canary";
 import {
@@ -357,6 +358,79 @@ describe("boot key check: what decides, and what may seal (real Postgres)", () =
     expect(await runBootKeyCheck(prisma)).toBe(false);
     expect(isKeyMismatch()).toBe(false);
     expect(await prisma.encryptionKeyCanary.count()).toBe(1);
+  });
+
+  it("old rows under a lost key, newer rows under the configured key: serves, warns, seals nothing", async () => {
+    const prisma = getPrismaClient();
+    // Sealed under a key that is gone: the eight oldest values the probe
+    // reads first (two per column, four columns).
+    await seedUser("lost-1", new Date("2023-01-01T00:00:00Z"), sealNow);
+    await seedUser("lost-2", new Date("2023-02-01T00:00:00Z"), sealNow);
+    // Everything since, under the key the install runs with today.
+    useKey(KEY_B);
+    for (let i = 0; i < 4; i++) {
+      await seedUser(
+        `current-${i}`,
+        new Date(Date.UTC(2025, 0, 1 + i)),
+        sealNow,
+      );
+    }
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await runBootKeyCheck(prisma)).toBe(false);
+    expect(isKeyMismatch()).toBe(false);
+    expect(errors).not.toHaveBeenCalled();
+    expect(warn.mock.calls[0]?.[0]).toContain("inconclusive");
+    warn.mockRestore();
+    errors.mockRestore();
+    expect(await prisma.encryptionKeyCanary.count()).toBe(0);
+    expect(await checkEncryptionKeyCanaries(prisma)).toEqual({
+      state: "ok",
+      written: [],
+      verified: [],
+      inconclusive: [{ keyId: "v1", reason: "mixed" }],
+    });
+  });
+
+  it("old AND newest values that do not open still refuse", async () => {
+    const prisma = getPrismaClient();
+    await seedUser("a-1", new Date("2023-01-01T00:00:00Z"), sealNow);
+    await seedUser("a-2", new Date("2023-02-01T00:00:00Z"), sealNow);
+    for (let i = 0; i < 4; i++) {
+      await seedUser(`a-new-${i}`, new Date(Date.UTC(2025, 0, 1 + i)), sealNow);
+    }
+    useKey(KEY_B);
+    expect(await checkEncryptionKeyCanaries(prisma)).toEqual({
+      state: "mismatch",
+      keyIds: ["v1"],
+    });
+    expect(await prisma.encryptionKeyCanary.count()).toBe(0);
+  });
+
+  it("a probe query held up by a lock gives up at its statement timeout: inconclusive, not a hang", async () => {
+    const prisma = getPrismaClient();
+    await seedUser("locked", new Date("2024-01-01T00:00:00Z"), sealNow);
+    const outcome = await prisma.$transaction(
+      async (tx) => {
+        // Another session holds the table: every read of it waits.
+        await tx.$executeRaw`LOCK TABLE users IN ACCESS EXCLUSIVE MODE`;
+        const started = Date.now();
+        const result = await checkEncryptionKeyCanaries(prisma, {
+          sampler: sqlColumnSampler(prisma, { statementTimeoutMs: 200 }),
+        });
+        return { result, elapsed: Date.now() - started };
+      },
+      { timeout: 20_000 },
+    );
+    expect(outcome.result).toEqual({
+      state: "ok",
+      written: [],
+      verified: [],
+      inconclusive: [{ keyId: "v1", reason: "incomplete" }],
+    });
+    expect(outcome.elapsed).toBeLessThan(5_000);
+    expect(await prisma.encryptionKeyCanary.count()).toBe(0);
   });
 
   it("losing the first-seal race to another key is a mismatch, not ok", async () => {

@@ -3546,6 +3546,7 @@
         "sportLabel": "Attività",
         "sportPlaceholder": "Scegli un’attività",
         "startLabel": "Inizio",
+        "startHint": "Lascia vuoto se hai appena finito: la durata viene contata a ritroso da adesso.",
         "durationLabel": "Durata",
         "distanceLabel": "Distanza ({unit})",
         "energyLabel": "Energia attiva (kcal)",

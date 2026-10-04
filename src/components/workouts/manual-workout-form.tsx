@@ -276,12 +276,18 @@ export function ManualWorkoutForm({
           value={draft.start}
           onChange={(value) => update("start", value)}
           max={wallClockNow(new Date(), timezone)}
-          required
-          aria-required="true"
           aria-invalid={!!errors.start || undefined}
-          aria-describedby={describedBy("start", `${ids.start}-error`)}
+          aria-describedby={[
+            `${ids.start}-hint`,
+            describedBy("start", `${ids.start}-error`),
+          ]
+            .filter(Boolean)
+            .join(" ")}
           data-testid="manual-workout-start"
         />
+        <p id={`${ids.start}-hint`} className="text-muted-foreground text-xs">
+          {t("insights.workouts.manual.startHint")}
+        </p>
         <FieldError id={`${ids.start}-error`} message={fieldError("start")} />
       </div>
 

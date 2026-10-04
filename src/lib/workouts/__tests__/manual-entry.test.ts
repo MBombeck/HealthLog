@@ -154,10 +154,29 @@ describe("buildManualWorkoutEntry — validation", () => {
     );
   });
 
-  it("asks for a start", () => {
-    expect(errorsOf({ start: "" }).start).toBe(
+  it("refuses a start it cannot read", () => {
+    expect(errorsOf({ start: "2026-09-15" }).start).toBe(
       "insights.workouts.manual.errors.startRequired",
     );
+  });
+
+  it("reads a blank start as now minus the duration (#1085)", () => {
+    // NOW is 12:00Z; 45 minutes logged right after finishing.
+    const result = buildManualWorkoutEntry(draft({ start: "" }), CTX);
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.entry.startedAt).toBe(
+      "2026-09-15T11:15:00.000Z",
+    );
+    expect(result.ok && result.entry.endedAt).toBe("2026-09-15T12:00:00.000Z");
+  });
+
+  it("never reports a blank start as ending in the future", () => {
+    const result = buildManualWorkoutEntry(
+      draft({ start: "", hours: "3", minutes: "0" }),
+      CTX,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.entry.endedAt).toBe("2026-09-15T12:00:00.000Z");
   });
 
   it("refuses a zero duration", () => {
@@ -221,11 +240,11 @@ describe("buildManualWorkoutEntry — validation", () => {
 });
 
 describe("the form's defaults", () => {
-  it("opens on the current minute in the profile zone", () => {
+  it("opens with a blank start; the field caps at the current minute", () => {
     expect(wallClockNow(NOW, "Europe/Berlin")).toBe("2026-09-15T14:00");
     expect(emptyManualWorkoutDraft(NOW, "Asia/Seoul")).toMatchObject({
       sportType: "",
-      start: "2026-09-15T21:00",
+      start: "",
       hours: "",
       minutes: "",
     });

@@ -124,7 +124,9 @@ export function emptyManualWorkoutDraft(
 ): ManualWorkoutDraft {
   return {
     sportType: "",
-    start: wallClockNow(now, timezone),
+    // Blank on purpose (#1085): a blank start means "it just ended", so the
+    // workout is saved as starting `duration` before now.
+    start: "",
     hours: "",
     minutes: "",
     distance: "",
@@ -191,16 +193,17 @@ function manualWorkoutSchema(ctx: ManualWorkoutContext) {
         });
       }
 
-      const startedAt = startToUtc(d.start, ctx.timezone);
-      if (startedAt === null) {
+      const startBlank = d.start.trim() === "";
+      const startedAt = startBlank ? null : startToUtc(d.start, ctx.timezone);
+      if (!startBlank && startedAt === null) {
         issue.addIssue({
           code: "custom",
           path: ["start"],
           message: `${ERR}.startRequired`,
         });
       } else if (
-        startedAt.getTime() >
-        ctx.now.getTime() + FUTURE_TOLERANCE_MS
+        startedAt !== null &&
+        startedAt.getTime() > ctx.now.getTime() + FUTURE_TOLERANCE_MS
       ) {
         issue.addIssue({
           code: "custom",
@@ -236,8 +239,8 @@ function manualWorkoutSchema(ctx: ManualWorkoutContext) {
             message: `${ERR}.durationTooLong`,
           });
         } else if (
-          // The default start is "now", so a workout logged right after it
-          // finished would otherwise be stored as ending in the future.
+          // Only a start the person entered can push the end past now; a
+          // blank start is read as "now minus the duration".
           startedAt !== null &&
           startedAt.getTime() + sec * 1000 >
             ctx.now.getTime() + FUTURE_TOLERANCE_MS
@@ -306,10 +309,13 @@ export function buildManualWorkoutEntry(
   }
 
   // Every branch below was proven by the schema above.
-  const startedAt = startToUtc(draft.start, ctx.timezone)!;
   const durationSec =
     ((parseWhole(draft.hours) ?? 0) * 60 + (parseWhole(draft.minutes) ?? 0)) *
     60;
+  const startedAt =
+    draft.start.trim() === ""
+      ? new Date(ctx.now.getTime() - durationSec * 1000)
+      : startToUtc(draft.start, ctx.timezone)!;
   const distance = parseDecimal(draft.distance);
   const energy = parseDecimal(draft.energyKcal);
 
