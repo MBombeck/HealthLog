@@ -7441,6 +7441,12 @@
         "scheduleFailedDescription": "{when}: {reason}",
         "scheduleFailedNoReason": "nie zapisano przyczyny",
         "scheduleRemedy": "Uruchom kopię teraz i sprawdź, czy pojawi się nowy wiersz. Jeśli znowu się nie powiedzie, log workera wskaże konto, na którym się zatrzymał.",
+        "activity": {
+          "running": "Trwa od {when}.",
+          "interruptedTitle": "Przebieg przerwał się w połowie i nie wrócił",
+          "interruptedAccount": "{username}: rozpoczęto {when}, nigdy nie zakończono",
+          "interruptedRemedy": "Najpewniej aplikacja uruchomiła się ponownie albo zabrakło jej pamięci podczas zapisu tej kopii. Następny przebieg weźmie te konta na końcu, aby wszystkie pozostałe dostały kopię wcześniej. Jeśli to się powtórzy, przydziel kontenerowi więcej pamięci."
+        },
         "download": "Pobierz",
         "downloadAria": "Pobierz kopię zapasową dla {username}",
         "downloadFailed": "Pobieranie nie powiodło się",

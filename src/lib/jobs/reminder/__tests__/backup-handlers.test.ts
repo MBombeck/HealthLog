@@ -71,6 +71,11 @@ function buildPrismaMock(
   return {
     user: { findMany: vi.fn().mockResolvedValue(users) },
     dataBackup: { findMany: vi.fn().mockResolvedValue([]) },
+    backupPassAttempt: {
+      findMany: vi.fn().mockResolvedValue([]),
+      upsert: vi.fn().mockResolvedValue({}),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
   };
 }
 
@@ -121,6 +126,7 @@ describe("handleDataBackup canonical DR payload", () => {
     expect(mocks.store.mock.calls[0]![0]).toEqual({
       userId: "user-dr",
       type: "WEEKLY_AUTO",
+      preview: expect.any(Function),
     });
     const encrypted = mocks.store.mock.calls[0]![1] as string;
     const payload = JSON.parse(encrypted) as {
@@ -276,5 +282,45 @@ describe("handleDataBackup on a large instance", () => {
       ok: true,
       did: { backed: 2, stopped_early: true },
     });
+  });
+
+  it("takes an account whose last attempt never came back last, and marks every attempt", async () => {
+    const prisma = buildPrismaMock([
+      { id: "big", username: "big" },
+      { id: "small", username: "small" },
+      { id: "other", username: "other" },
+    ]);
+    // `big` has the oldest copy, so it would lead; its last attempt started
+    // and never finished: the process died under it.
+    prisma.dataBackup.findMany.mockResolvedValue([
+      { userId: "big", createdAt: new Date("2026-08-01T00:00:00Z") },
+      { userId: "small", createdAt: new Date("2026-09-01T00:00:00Z") },
+      { userId: "other", createdAt: new Date("2026-09-02T00:00:00Z") },
+    ]);
+    prisma.backupPassAttempt.findMany.mockResolvedValue([
+      {
+        userId: "big",
+        startedAt: new Date("2026-09-28T02:00:00Z"),
+        finishedAt: new Date("2026-09-21T02:30:00Z"),
+      },
+      {
+        userId: "small",
+        startedAt: new Date("2026-09-21T02:31:00Z"),
+        finishedAt: new Date("2026-09-21T02:32:00Z"),
+      },
+    ]);
+    mocks.getWorkerPrisma.mockReturnValue(prisma);
+
+    await handleDataBackup([]);
+
+    const order = mocks.store.mock.calls.map(
+      ([input]) => (input as { userId: string }).userId,
+    );
+    expect(order).toEqual(["small", "other", "big"]);
+    expect(prisma.backupPassAttempt.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { pass: "data-backup" } }),
+    );
+    expect(prisma.backupPassAttempt.upsert).toHaveBeenCalledTimes(3);
+    expect(prisma.backupPassAttempt.updateMany).toHaveBeenCalledTimes(3);
   });
 });

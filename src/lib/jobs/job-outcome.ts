@@ -190,7 +190,10 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   // v1.39.1 — the background restore of a stored backup, and the sweep that
   // re-queues one a stopped worker left running. Counts and a claim flag.
   "restore_claimed",
+  "restore_drill_accounts",
+  "restore_drill_accounts_failed",
   "restore_drill_age_days",
+  "restore_drill_date",
   "restore_drill_ciphertext_bytes",
   "restore_drill_intake_events",
   "restore_drill_measurements",

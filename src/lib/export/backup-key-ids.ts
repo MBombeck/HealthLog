@@ -21,7 +21,9 @@
  *   - a Bytes column, base64-encoded, holding the string codec as UTF-8;
  *   - a Bytes column, base64-encoded, holding the binary codec
  *     (`0x02 | keyIdLen | keyId | iv | tag | ct`);
- *   - a legacy value with no key id, which only the `v1` key opens.
+ *   - a legacy value with no key id, which only the `v1` key opens: in a
+ *     text column the bare base64 itself, in a Bytes column that base64
+ *     again, encoded.
  *
  * Two readers share the classification: a walk over a parsed document (the
  * restore, the preview, the upload and the restore drill already hold one),
@@ -31,6 +33,7 @@
 import { Buffer } from "node:buffer";
 
 import { decrypt, decryptBytes, getConfiguredKeyIds } from "@/lib/crypto";
+import { ENCRYPTED_COLUMNS } from "@/lib/crypto/encrypted-columns";
 
 /** The key id a value with no key id prefix was written under. */
 export const LEGACY_INNER_KEY_ID = "v1";
@@ -39,6 +42,8 @@ const KEY_ID = /^[A-Za-z0-9_-]{1,32}$/;
 const VERSIONED = /^([A-Za-z0-9_-]{1,32})\.[A-Za-z0-9+/=]+$/;
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 const BASE64_TAIL = /^[A-Za-z0-9+/=]*$/;
+/** Every byte of a decoded head is a base64 character. */
+const BASE64_TEXT = /^[A-Za-z0-9+/=]+$/;
 const BYTES_CODEC_VERSION = 0x02;
 const MIN_CIPHERTEXT_CHARS = 40;
 
@@ -89,7 +94,16 @@ export function innerCiphertextKeyId(value: string): InnerCiphertext | null {
     return { keyId: text.slice(0, dot), form: "bytes-string" };
   }
   // No key id anywhere: the legacy layout, which `decrypt` opens with `v1`.
-  return { keyId: LEGACY_INNER_KEY_ID, form: "bytes-string" };
+  // Which column it came from decides how it opens. A Bytes column holding a
+  // legacy value carries base64 TEXT, encoded once more, so its decoded head
+  // reads as base64 characters. A text column holds the bare base64 of the
+  // nonce, tag and ciphertext, whose decoded head is random bytes: reading
+  // that as an encoded Bytes column would base64-decode it once too often,
+  // and the key that opens it would look like the wrong one.
+  return {
+    keyId: LEGACY_INNER_KEY_ID,
+    form: BASE64_TEXT.test(text) ? "bytes-string" : "string",
+  };
 }
 
 /** Whether a member name holds inner ciphertext. */
@@ -123,13 +137,58 @@ export const RESTORE_SELF_VERIFIED_SECTIONS: ReadonlySet<string> = new Set([
   "vaccinations",
 ]);
 
+/**
+ * One value kept to prove a key opens what it was written under: the
+ * shortest of its section, so the probe of a section the caller will not
+ * write never stands in for one it will.
+ */
+export interface KeySample {
+  value: string;
+  form: InnerCiphertextForm;
+  /**
+   * The section it was found in. Absent on a preview stored before samples
+   * were kept per section; such a sample is probed whatever is ignored.
+   */
+  section?: string;
+  /** The member it sat under, which names the label a binary value needs. */
+  member?: string;
+}
+
 interface KeyUse {
   /** How many values need this key. */
   count: number;
   /** The top-level sections they sit in (`measurements`, `appSettings`, …). */
   sections: Set<string>;
-  /** The shortest value seen, kept to prove the key actually opens it. */
-  sample: { value: string; form: InnerCiphertextForm } | null;
+  /** The shortest openable value of each section, keyed by section. */
+  samples: Map<string, KeySample>;
+}
+
+/**
+ * The associated-data label a binary value under `member` is sealed with,
+ * from the encrypted-column registry: `undefined` for an unlabelled column
+ * (a document's content), null when no binary column has that name or two
+ * with that name use different labels. A null value is not probed: GCM
+ * cannot tell a wrong label from a wrong key, so opening it without the
+ * right one would accuse the key.
+ */
+const BINARY_MEMBER_AAD: ReadonlyMap<string, string | undefined | null> =
+  (() => {
+    const map = new Map<string, string | undefined | null>();
+    for (const column of ENCRYPTED_COLUMNS) {
+      if (column.codec !== "binary2" && column.codecField === undefined) {
+        continue;
+      }
+      if (!map.has(column.field)) map.set(column.field, column.aad);
+      else if (map.get(column.field) !== column.aad)
+        map.set(column.field, null);
+    }
+    return map;
+  })();
+
+function binaryAad(member: string | undefined): string | undefined | null {
+  if (member === undefined) return null;
+  const aad = BINARY_MEMBER_AAD.get(member);
+  return aad === undefined && !BINARY_MEMBER_AAD.has(member) ? null : aad;
 }
 
 /** A sample longer than this is not kept; opening it proves nothing more. */
@@ -142,25 +201,30 @@ const MAX_SAMPLE_CHARS = 64 * 1024;
 export class BackupKeyIdCollector {
   private readonly uses = new Map<string, KeyUse>();
 
-  /** Record one inner value found in `section`. */
-  add(section: string, value: string): void {
+  /** Record one inner value found in `section`, under `member`. */
+  add(section: string, value: string, member?: string): void {
     const found = innerCiphertextKeyId(value);
     if (!found) return;
     let use = this.uses.get(found.keyId);
     if (!use) {
-      use = { count: 0, sections: new Set(), sample: null };
+      use = { count: 0, sections: new Set(), samples: new Map() };
       this.uses.set(found.keyId, use);
     }
     use.count += 1;
     use.sections.add(section);
     // A sample from a self-verified section proves nothing the restore needs:
-    // a value there that does not open is skipped, not fatal.
+    // a value there that does not open is skipped, not fatal. A binary value
+    // whose label is not known cannot prove anything either.
     if (
-      !RESTORE_SELF_VERIFIED_SECTIONS.has(section) &&
-      value.length <= MAX_SAMPLE_CHARS &&
-      (!use.sample || value.length < use.sample.value.length)
+      RESTORE_SELF_VERIFIED_SECTIONS.has(section) ||
+      value.length > MAX_SAMPLE_CHARS ||
+      (found.form === "binary" && binaryAad(member) === null)
     ) {
-      use.sample = { value, form: found.form };
+      return;
+    }
+    const kept = use.samples.get(section);
+    if (!kept || value.length < kept.value.length) {
+      use.samples.set(section, { value, form: found.form, section, member });
     }
   }
 
@@ -184,7 +248,7 @@ export class BackupKeyIdCollector {
   private walk(value: unknown, section: string, member: string | null): void {
     if (typeof value === "string") {
       if (member !== null && isEncryptedMember(member)) {
-        this.add(section, value);
+        this.add(section, value, member);
       }
       return;
     }
@@ -227,7 +291,9 @@ export class BackupKeyIdCollector {
         keyId,
         count: use.count,
         sections: [...use.sections].sort(),
-        sample: use.sample ? { ...use.sample } : null,
+        samples: [...use.samples.values()]
+          .sort((a, b) => (a.section ?? "").localeCompare(b.section ?? ""))
+          .map((sample) => ({ ...sample })),
       }));
   }
 
@@ -235,10 +301,16 @@ export class BackupKeyIdCollector {
   static fromStored(stored: readonly StoredKeyUse[]): BackupKeyIdCollector {
     const collector = new BackupKeyIdCollector();
     for (const entry of stored) {
+      const samples = new Map<string, KeySample>();
+      for (const sample of entry.samples ?? []) {
+        samples.set(sample.section ?? "", { ...sample });
+      }
+      // A preview stored before samples were kept per section has one.
+      if (entry.sample) samples.set("", { ...entry.sample });
       collector.uses.set(entry.keyId, {
         count: entry.count,
         sections: new Set(entry.sections),
-        sample: entry.sample ? { ...entry.sample } : null,
+        samples,
       });
     }
     return collector;
@@ -250,7 +322,10 @@ export interface StoredKeyUse {
   keyId: string;
   count: number;
   sections: string[];
-  sample: { value: string; form: InnerCiphertextForm } | null;
+  /** The shortest openable value of each section. */
+  samples?: KeySample[];
+  /** The one sample a preview stored before v1.40.1 kept. */
+  sample?: { value: string; form: InnerCiphertextForm } | null;
 }
 
 export interface BackupKeyAssessment {
@@ -267,23 +342,52 @@ export interface BackupKeyAssessment {
   affectedValues: number;
 }
 
-function openSample(sample: { value: string; form: InnerCiphertextForm }) {
-  switch (sample.form) {
+/**
+ * Open one sample. The layout is read again from the value rather than taken
+ * from the record: a preview stored by v1.40.0 holds legacy text values
+ * marked as encoded Bytes columns, and must not keep accusing the key.
+ */
+function openSample(sample: KeySample) {
+  const form = innerCiphertextKeyId(sample.value)?.form ?? sample.form;
+  switch (form) {
     case "string":
       decrypt(sample.value);
       return;
     case "bytes-string":
       decrypt(Buffer.from(sample.value, "base64").toString("utf8"));
       return;
-    case "binary":
-      decryptBytes(Buffer.from(sample.value, "base64"));
+    case "binary": {
+      const aad = binaryAad(sample.member);
+      if (aad === null) throw new Error("No label known for a binary sample");
+      decryptBytes(Buffer.from(sample.value, "base64"), aad);
       return;
+    }
   }
 }
 
+function opensAny(samples: readonly KeySample[]): boolean {
+  for (const sample of samples) {
+    try {
+      openSample(sample);
+      return true;
+    } catch {
+      // The next section's sample may still prove the key.
+    }
+  }
+  return false;
+}
+
 /**
- * Hold what the file needs against what this host has, and open one value per
- * key to prove the key under that id is the right one.
+ * Hold what the file needs against what this host has, and open values under
+ * each key to prove the key under that id is the right one.
+ *
+ * The probes come only from sections the verdict counts: one per section,
+ * the shortest. A key is unreadable when none of them opens. One copy is
+ * written by one host at one moment, when each key id had one key material
+ * behind it, so a configured key that opens any of its values is the key the
+ * copy was written with; a single value that does not open is damage to that
+ * value, and refusing the whole restore over it would cost every other part
+ * of the account.
  *
  * `ignoreSections` leaves out sections the caller will not write: the
  * instance settings, when the operator has not asked for them back. The
@@ -320,10 +424,14 @@ export function assessBackupKeys(
       affectedValues += use.count;
       continue;
     }
-    if (!use.sample) continue;
-    try {
-      openSample(use.sample);
-    } catch {
+    const probes = [...use.samples.values()].filter(
+      (sample) =>
+        sample.section === undefined ||
+        (!ignore.has(sample.section) &&
+          !RESTORE_SELF_VERIFIED_SECTIONS.has(sample.section)),
+    );
+    if (probes.length === 0) continue;
+    if (!opensAny(probes)) {
       unreadable.push(keyId);
       affectedValues += use.count;
     }

@@ -22,9 +22,14 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  BACKUP_HEARTBEAT_SECONDS,
   DATA_BACKUP_QUEUE,
   DATA_BACKUP_SEND_OPTIONS,
 } from "../data-backup-policy";
+import {
+  OFFHOST_BACKUP_QUEUE,
+  OFFHOST_BACKUP_SEND_OPTIONS,
+} from "../offhost-backup";
 
 const read = (file: string) => readFileSync(join(process.cwd(), file), "utf8");
 
@@ -39,10 +44,27 @@ describe("data-backup — pg-boss send policy", () => {
     );
   });
 
-  it("the weekly schedule carries the policy", () => {
+  it("notices a process that died under either pass within minutes, not hours", () => {
+    // pg-boss refuses less than ten seconds; more than a few minutes and a
+    // dead pass sits `active` for as long as an operator would look.
+    expect(BACKUP_HEARTBEAT_SECONDS).toBeGreaterThanOrEqual(10);
+    expect(BACKUP_HEARTBEAT_SECONDS).toBeLessThanOrEqual(10 * 60);
+    expect(DATA_BACKUP_SEND_OPTIONS.heartbeatSeconds).toBe(
+      BACKUP_HEARTBEAT_SECONDS,
+    );
+    expect(OFFHOST_BACKUP_QUEUE).toBe("data-backup-offhost");
+    expect(OFFHOST_BACKUP_SEND_OPTIONS.heartbeatSeconds).toBe(
+      BACKUP_HEARTBEAT_SECONDS,
+    );
+  });
+
+  it("the weekly and nightly schedules carry the policy", () => {
     const source = read("src/lib/jobs/reminder/register-maintenance.ts");
     expect(source).toMatch(
       /\[\s*DATA_BACKUP_QUEUE,\s*DATA_BACKUP_CRON,\s*DATA_BACKUP_SEND_OPTIONS,?\s*\]/,
+    );
+    expect(source).toMatch(
+      /\[\s*OFFHOST_BACKUP_QUEUE,\s*OFFHOST_BACKUP_CRON,\s*OFFHOST_BACKUP_SEND_OPTIONS,?\s*\]/,
     );
   });
 

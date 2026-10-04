@@ -21,6 +21,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { CloudUpload } from "lucide-react";
+import { BackupPassActivityNotice } from "@/components/admin/backup-pass-activity";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Badge } from "@/components/ui/badge";
@@ -182,6 +183,7 @@ export function OffhostBackupsSection() {
         />
       ) : offhost ? (
         <div className="space-y-2">
+          <BackupPassActivityNotice activity={offhost.activity} />
           <ul className="space-y-2" data-slot="offhost-backup-rows">
             {offhost.rows.map((row) => (
               <AccountRow key={row.userId} row={row} />

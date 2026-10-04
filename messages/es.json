@@ -7441,6 +7441,12 @@
         "scheduleFailedDescription": "{when}: {reason}",
         "scheduleFailedNoReason": "sin motivo registrado",
         "scheduleRemedy": "Ejecuta una copia ahora y comprueba que aparece una fila nueva. Si vuelve a fallar, el registro del worker indica la cuenta en la que se detuvo.",
+        "activity": {
+          "running": "En curso desde {when}.",
+          "interruptedTitle": "Una ejecución se detuvo a medias y no volvió",
+          "interruptedAccount": "{username}: empezó {when}, nunca terminó",
+          "interruptedRemedy": "Lo más probable es que la aplicación se reiniciara o se quedara sin memoria al escribir esta copia. La próxima ejecución deja estas cuentas para el final, así las demás reciben su copia primero. Si se repite, dale más memoria al contenedor."
+        },
         "download": "Descargar",
         "downloadAria": "Descargar copia de seguridad de {username}",
         "downloadFailed": "La descarga falló",

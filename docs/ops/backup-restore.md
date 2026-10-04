@@ -252,6 +252,22 @@ A run where SOME account got a copy still succeeds, with the rest counted in
 `offhost_backup_failed`. Failing the whole queue over one account's object
 would re-upload everybody's on every retry.
 
+### A run the process died under
+
+Both backup jobs carry a pg-boss heartbeat of five minutes. While a run is
+alive the worker refreshes it; a run whose process died (a restart, or a
+container killed for memory) stops refreshing, and pg-boss fails the job with
+`job heartbeat timeout` within minutes instead of leaving it `active` until its
+two- or four-hour expiry. The retries the queue already allows then pick it up.
+
+Each pass also notes when it started and when it got past every account
+(`backup_pass_attempts`). An account whose last attempt started and never
+finished is the one the process died under, and the next run takes it last, so
+one record too large for the container cannot keep every account after it from
+a copy. **Admin console → Backups** shows when the run in progress started and
+names such an account under both the weekly and the off-host card. Seeing the
+same account there twice means it needs more memory than the container has.
+
 ### Which account has no copy
 
 The counts above say how many accounts were uploaded, never which. An account
@@ -441,10 +457,12 @@ the restart.
 
 Since v1.16.4 a pg-boss job (`data-restore-drill`, cron `11 4 1 * *` —
 04:11 on the 1st of each month) exercises the read path end-to-end:
-fetch the most recent backup object from the bucket, decrypt it under
-the current `BACKUP_ENCRYPTION_KEY`, JSON-parse it, and sanity-check
-the payload shape. It performs **no database restore** — it validates
-the artefact, not the import path.
+fetch every backup object of the most recent date from the bucket (one per
+account), decrypt each under the current `BACKUP_ENCRYPTION_KEY`, JSON-parse
+it, and sanity-check the payload shape. It performs **no database restore** —
+it validates the artefacts, not the import path. Each account is checked and
+reported on its own: one object that fails is named, and the others are still
+read.
 
 Outcomes:
 
@@ -454,14 +472,16 @@ Outcomes:
   uploader has stalled (or the lifecycle rule is too aggressive). The
   drill pages via the worker error reporter (stderr + GlitchTip).
 - **Failure** — empty bucket, fetch error, decryption failure (wrong or
-  rotated key), malformed JSON: pages the same way. A decryption
+  rotated key), malformed JSON: pages the same way, once per failing object,
+  with the object key and how many accounts were checked. A decryption
   failure right after a `BACKUP_ENCRYPTION_KEY` change means the new
   key cannot read the existing objects: put the old key into
   `BACKUP_ENCRYPTION_PREVIOUS_KEYS` (see "Rotating the off-host key").
 - **Content under a missing application key** — the object opens, but its
   content was written under an `ENCRYPTION_KEYS` entry this server no longer
-  has, or under an id whose key material changed. The drill decrypts one value
-  per key id it finds, and pages naming the key. A restore of that object
+  has, or under an id whose key material changed. The drill decrypts the
+  shortest value of each section under every key id it finds, and pages naming
+  the key when none of them opens. A restore of that object
   would write back rows nobody can open; put the key back before restoring.
 - **Not configured** — deployments without the `BACKUP_S3_*` vars skip
   silently (wide-event warning only).

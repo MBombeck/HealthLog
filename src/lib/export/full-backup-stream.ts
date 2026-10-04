@@ -79,14 +79,27 @@ const PROGRESS_EVERY_ROWS = 50_000;
  * The counts for the three deferred tables are filled in as their rows go
  * past, so a caller gets the same numbers the materialising builder reports.
  */
+export interface StreamFullBackupOptions extends FullBackupOptions {
+  /**
+   * Shown each top-level member's value just before it is written, and each
+   * row of the three bulk tables as it passes, under the member's name. For
+   * a reader that needs to see the copy as it is written (the stored copy's
+   * preview, `backup-preview.ts`) without parsing the JSON a second time.
+   * It must not keep what it is shown: the writer releases each section as
+   * soon as it is written, and that is what bounds its memory.
+   */
+  observe?: (member: string, value: unknown) => void;
+}
+
 export async function streamFullBackupJson(
   prisma: PrismaClient,
   userId: string,
   sink: BackupJsonSink,
-  options: FullBackupOptions = {},
+  options: StreamFullBackupOptions = {},
 ): Promise<FullBackupCounts> {
+  const { observe, ...payloadOptions } = options;
   const { payload, counts } = await buildFullBackupPayload(prisma, userId, {
-    ...options,
+    ...payloadOptions,
     deferBulk: true,
   });
 
@@ -126,6 +139,7 @@ export async function streamFullBackupJson(
       await write("[");
       let rows = 0;
       for await (const row of value.rows()) {
+        observe?.(key, row);
         await write(
           rows === 0 ? JSON.stringify(row) : `,${JSON.stringify(row)}`,
         );
@@ -137,6 +151,7 @@ export async function streamFullBackupJson(
       await write("]");
       bulkCounts[key] = rows;
     } else {
+      observe?.(key, value);
       await write(JSON.stringify(value));
     }
     delete payload[key];

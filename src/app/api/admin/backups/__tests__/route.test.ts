@@ -19,16 +19,24 @@ vi.mock("@/lib/api-handler", () => ({
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 
+const runningSinceMock = vi.fn(
+  async (_queue: string): Promise<string | null> => null,
+);
 vi.mock("@/lib/jobs/job-failures", () => ({
   readLastQueueRun: vi.fn(async () => null),
+  readQueueRunningSince: (queue: string) => runningSinceMock(queue),
 }));
 
 const queryRawMock = vi.fn();
 const findManyMock = vi.fn();
+const attemptsMock = vi.fn();
 vi.mock("@/lib/db", () => ({
   prisma: {
     $queryRaw: (...a: unknown[]) => queryRawMock(...a),
     user: { findMany: (...a: unknown[]) => findManyMock(...a) },
+    backupPassAttempt: {
+      findMany: (...a: unknown[]) => attemptsMock(...a),
+    },
     offhostPurgeRequest: {
       count: async () => 2,
       findFirst: async () => ({
@@ -41,6 +49,7 @@ vi.mock("@/lib/db", () => ({
 
 const configuredMock = vi.fn(() => true);
 vi.mock("@/lib/jobs/offhost-backup", () => ({
+  OFFHOST_BACKUP_QUEUE: "data-backup-offhost",
   offhostBackupConfigured: () => configuredMock(),
   probeOffhostLifecycle: async () => ({
     state: "missing",
@@ -64,6 +73,8 @@ beforeEach(() => {
   configuredMock.mockReturnValue(true);
   queryRawMock.mockResolvedValue([]);
   findManyMock.mockResolvedValue([]);
+  attemptsMock.mockResolvedValue([]);
+  runningSinceMock.mockResolvedValue(null);
 });
 
 describe("GET /api/admin/backups — off-host freshness", () => {
@@ -223,6 +234,54 @@ describe("GET /api/admin/backups — off-host freshness", () => {
       count: 2,
       oldestRequestedAt: "2026-09-20T10:00:00.000Z",
       lastFailure: "AccessDenied",
+    });
+  });
+});
+
+describe("GET /api/admin/backups — a run in progress and one a process died under", () => {
+  it("names the account an earlier run never came back from, and says since when one runs", async () => {
+    const runningSince = "2026-10-04T02:00:00.000Z";
+    runningSinceMock.mockImplementation(async (queue: string) =>
+      queue === "data-backup" ? runningSince : null,
+    );
+    findManyMock.mockResolvedValue([
+      { id: "u1", username: "account-one", offhostBackupState: null },
+      { id: "u2", username: "account-two", offhostBackupState: null },
+    ]);
+    attemptsMock.mockImplementation(
+      async ({ where }: { where: { pass: string } }) =>
+        where.pass === "data-backup"
+          ? [
+              // Died under an earlier run.
+              {
+                userId: "u1",
+                startedAt: new Date("2026-09-27T02:10:00.000Z"),
+                finishedAt: new Date("2026-09-20T02:30:00.000Z"),
+              },
+              // The account the run in progress is on now.
+              {
+                userId: "u2",
+                startedAt: new Date("2026-10-04T02:05:00.000Z"),
+                finishedAt: null,
+              },
+            ]
+          : [],
+    );
+
+    const body = await read();
+    expect(body.scheduleActivity).toEqual({
+      runningSince,
+      interrupted: [
+        {
+          userId: "u1",
+          username: "account-one",
+          startedAt: "2026-09-27T02:10:00.000Z",
+        },
+      ],
+    });
+    expect(body.offhost.activity).toEqual({
+      runningSince: null,
+      interrupted: [],
     });
   });
 });

@@ -105,6 +105,7 @@ async function renderThumbnail(
       meta: { documentId },
     });
     warn("decrypt-failed");
+    await recordThumbnailFailure(userId, document.id, "decrypt-failed");
     return;
   }
 
@@ -117,6 +118,15 @@ async function renderThumbnail(
     // An Office or text document has no preview by design; anything else
     // was meant to get one.
     if (result.reason !== "unsupported-type") warn(result.reason);
+    // Kept, so the boot-time backfill stops queueing a document whose render
+    // cannot succeed. An unsupported type is never queued by it; a host
+    // without the canvas build never runs it.
+    if (
+      result.reason !== "unsupported-type" &&
+      result.reason !== "native-canvas-unsupported"
+    ) {
+      await recordThumbnailFailure(userId, document.id, result.reason);
+    }
     return;
   }
 
@@ -144,9 +154,30 @@ async function renderThumbnail(
     },
   });
 
+  await prisma.documentThumbnailFailure.deleteMany({
+    where: { documentId: document.id },
+  });
+
   annotate({
     action: { name: "documents.thumbnail.run" },
     meta: { documentId, generated: true, byteSize: jpeg.byteLength },
+  });
+}
+
+/**
+ * Note that a render failed, counting the attempts since the last success
+ * (`DocumentThumbnailFailure`). `userId` comes from the scoped load.
+ */
+async function recordThumbnailFailure(
+  userId: string,
+  documentId: string,
+  reason: string,
+): Promise<void> {
+  const failedAt = new Date();
+  await prisma.documentThumbnailFailure.upsert({
+    where: { documentId },
+    create: { documentId, userId, reason, attempts: 1, failedAt },
+    update: { reason, attempts: { increment: 1 }, failedAt },
   });
 }
 

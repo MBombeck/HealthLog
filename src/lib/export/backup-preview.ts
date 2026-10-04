@@ -7,11 +7,16 @@
  * For an account of 1.8 million readings on slow hardware that took two
  * minutes, the dialog gave up long before, and the operator was told the
  * contents could not be read (#1031). The copy passes through this process
- * once anyway, on its way into the pieces, so the counts are taken there.
+ * once anyway, on its way into the pieces, so the counts are taken there:
+ * the weekly copy's from its writer's own counts and the sections it is
+ * about to write, an upload's from the file the upload route has already
+ * validated. Neither parses the copy a second time; the v1.39.6 scanner that
+ * did kept every section but the bulk tables parsed beside the writer's own,
+ * a second copy of the record inside the weekly job.
  *
  * What is kept. The `summarizeBackup` counts of the copy, its schema version,
- * and the inner key ids with the sections they sit in and one sample value
- * each. The verdicts are not kept: whether this release can restore the
+ * and the inner key ids with the sections they sit in and the shortest
+ * value of each section. The verdicts are not kept: whether this release can restore the
  * schema version, and whether this server holds the keys the copy needs, can
  * both change after the copy was written, so the route takes them again from
  * these inputs on every read.
@@ -28,13 +33,9 @@ import {
   BackupKeyIdCollector,
   type StoredKeyUse,
 } from "@/lib/export/backup-key-ids";
-import { scanBackupJson } from "@/lib/export/backup-json-scan";
+import type { FullBackupCounts } from "@/lib/export/full-backup-payload";
 import type { StoredBackupRef } from "@/lib/export/stored-backup";
-import {
-  backupPayloadSchema,
-  summarizeBackup,
-  type BackupSummary,
-} from "@/lib/validations/backup";
+import type { BackupSummary } from "@/lib/validations/backup";
 
 export interface BackupPreview {
   version: 1;
@@ -60,12 +61,24 @@ const storedPreviewSchema = z.object({
       keyId: z.string(),
       count: z.number().int().nonnegative(),
       sections: z.array(z.string()),
+      samples: z
+        .array(
+          z.object({
+            value: z.string(),
+            form: z.enum(["string", "bytes-string", "binary"]),
+            section: z.string().optional(),
+            member: z.string().optional(),
+          }),
+        )
+        .optional(),
+      // A preview stored by v1.40.0 or earlier kept one sample per key.
       sample: z
         .object({
           value: z.string(),
           form: z.enum(["string", "bytes-string", "binary"]),
         })
-        .nullable(),
+        .nullable()
+        .optional(),
     }),
   ),
 });
@@ -126,98 +139,112 @@ export function storedPreviewFor(
 }
 
 /**
- * The sections that grow with a record. Their elements are counted and their
- * key ids read as they pass, and never kept, so the scan holds no more of the
- * copy than the writer itself does (`full-backup-stream.ts`).
+ * The summary fields that are counts, each also counted by the writer
+ * (`FullBackupCounts`). The type below fails to compile when the summary
+ * gains a count the writer does not report.
  */
-const STREAMED = new Set(["measurements", "intakeEvents", "moodEntries"]);
+const SUMMARY_COUNTS = [
+  "measurements",
+  "medications",
+  "intakeEvents",
+  "medicationSideEffects",
+  "medicationEfficacyTargets",
+  "medicationScheduleRevisions",
+  "moodEntries",
+  "cycles",
+  "cycleDayLogs",
+  "labResults",
+  "nutrientDays",
+  "biomarkers",
+  "illnessEpisodes",
+  "illnessDayLogs",
+  "allergies",
+  "familyHistory",
+  "workouts",
+  "documents",
+  "documentConditionLinks",
+  "extractedFacts",
+  "healthProfile",
+  "healthProfileFactRevisions",
+  "customMetrics",
+  "customMetricEntries",
+  "correlationPatterns",
+  "intradayProfiles",
+  "healthScoreRecords",
+  "onboardingRecords",
+  "practitioners",
+  "encounters",
+  "encounterLinks",
+  "vaccinations",
+  "vaccinationLinks",
+  "measurementReminders",
+  "measurementReminderEvents",
+  "coachConversations",
+  "coachMessages",
+  "coachFacts",
+  "coachPlans",
+  "coachReminders",
+  "mentalHealthAssessments",
+  "consentReceipts",
+  "personalRecords",
+  "userAchievements",
+  "environmentContexts",
+  "environmentTravelLocations",
+  "ecgRecordings",
+] as const satisfies readonly (keyof BackupSummary & keyof FullBackupCounts)[];
 
-export interface BackupPreviewScanner {
+type UncountedSummaryField = Exclude<
+  keyof BackupSummary,
+  (typeof SUMMARY_COUNTS)[number] | "schemaVersion" | "userId" | "exportedAt"
+>;
+const everySummaryCountIsCounted: [UncountedSummaryField] extends [never]
+  ? true
+  : UncountedSummaryField = true;
+void everySummaryCountIsCounted;
+
+export interface BackupPreviewCollector {
+  /** Pass as `observe` to `streamFullBackupJson`. */
+  observe(member: string, value: unknown): void;
   /**
-   * Hand over the next piece of the JSON. Resolves once the scan has taken
-   * it, so a writer never runs more than a piece ahead of the scan.
+   * The counts and key uses, once the writer has finished; null when the
+   * copy did not name its schema version, owner and date.
    */
-  feed(piece: string | Uint8Array): Promise<void>;
-  /**
-   * The counts and key uses, once every piece has been fed; null when the
-   * JSON was not a backup the schema accepts. Never rejects: a copy is
-   * stored whether or not its preview could be worked out.
-   */
-  finish(): Promise<{
+  finish(counts: FullBackupCounts): {
     summary: BackupSummary;
     keys: BackupKeyIdCollector;
-  } | null>;
+  } | null;
 }
 
 /**
- * Work out a preview from a copy's JSON as it is written. The counts are the
- * ones the preview route derives from the stored copy (`summarizeBackup` over
- * the parsed file), the three bulk sections counted rather than parsed.
+ * Work out a weekly copy's preview from what its writer already has in hand:
+ * each section as it is written, for the key uses, and the writer's own
+ * counts. Nothing is parsed and nothing is kept but the key samples, so the
+ * preview costs the pass no memory that grows with the record.
  */
-export function createBackupPreviewScanner(): BackupPreviewScanner {
-  const queue: Array<{ chunk: Uint8Array; taken: () => void }> = [];
-  let ended = false;
-  let stopped = false;
-  let wake: (() => void) | null = null;
-  const signal = () => {
-    const w = wake;
-    wake = null;
-    w?.();
-  };
-
-  async function* pieces(): AsyncGenerator<Uint8Array> {
-    for (;;) {
-      const next = queue.shift();
-      if (next) {
-        next.taken();
-        yield next.chunk;
-        continue;
-      }
-      if (ended) return;
-      await new Promise<void>((resolve) => {
-        wake = resolve;
-      });
-    }
-  }
-
+export function createBackupPreviewCollector(): BackupPreviewCollector {
   const keys = new BackupKeyIdCollector();
-  const result = scanBackupJson(pieces(), {
-    streamKeys: STREAMED,
-    onElement: (key, element) => keys.visit(element, key),
-  })
-    .then(({ document, streamedCounts }) => {
-      keys.visit(document);
-      const parsed = backupPayloadSchema.safeParse(document);
-      if (!parsed.success) return null;
-      const summary: BackupSummary = {
-        ...summarizeBackup(parsed.data),
-        measurements: streamedCounts.measurements ?? 0,
-        intakeEvents: streamedCounts.intakeEvents ?? 0,
-        moodEntries: streamedCounts.moodEntries ?? 0,
-      };
-      return { summary, keys };
-    })
-    .catch(() => null)
-    .finally(() => {
-      // A scan that stopped early takes nothing more: release the writer.
-      stopped = true;
-      for (const waiting of queue.splice(0)) waiting.taken();
-    });
-
+  const header: Partial<
+    Record<"schemaVersion" | "userId" | "exportedAt", string>
+  > = {};
   return {
-    feed(piece) {
-      if (stopped) return Promise.resolve();
-      const chunk =
-        typeof piece === "string" ? Buffer.from(piece, "utf8") : piece;
-      return new Promise<void>((taken) => {
-        queue.push({ chunk, taken });
-        signal();
-      });
+    observe(member, value) {
+      if (
+        (member === "schemaVersion" ||
+          member === "userId" ||
+          member === "exportedAt") &&
+        typeof value === "string"
+      ) {
+        header[member] = value;
+        return;
+      }
+      keys.visit(value, member);
     },
-    finish() {
-      ended = true;
-      signal();
-      return result;
+    finish(counts) {
+      const { schemaVersion, userId, exportedAt } = header;
+      if (!schemaVersion || !userId || !exportedAt) return null;
+      const summary = { schemaVersion, userId, exportedAt } as BackupSummary;
+      for (const field of SUMMARY_COUNTS) summary[field] = counts[field];
+      return { summary, keys };
     },
   };
 }

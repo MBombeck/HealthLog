@@ -221,6 +221,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
   let measurementCount = 0;
   let owner: { id: string; username: string } | null = null;
 
+  // Filled while the file is read; the preview is the summary this route
+  // answers with and the key uses it already holds (`backup-preview.ts`).
+  const keys = new BackupKeyIdCollector();
   let created: { id: string };
   try {
     created = await storeBackupBlob(
@@ -229,6 +232,16 @@ export const POST = apiHandler(async (request: NextRequest) => {
         userId: admin.id,
         type: uploadType,
         ownerAfterRead: () => owner!.id,
+        preview: () =>
+          payload
+            ? {
+                summary: {
+                  ...summarizeBackup(payload),
+                  measurements: measurementCount,
+                },
+                keys,
+              }
+            : null,
       },
       async (write) => {
         // One pass: every chunk is stored as it is checked, and a check that
@@ -240,7 +253,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
           }
         }
         let firstWithoutId: number | null = null;
-        const keys = new BackupKeyIdCollector();
         let scanned;
         try {
           scanned = await scanBackupJson(storedAsRead(), {

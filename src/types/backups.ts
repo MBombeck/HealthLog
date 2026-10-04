@@ -9,6 +9,7 @@
  * both sides a route-handler-independent shared type home; the route
  * keeps owning the HTTP contract, the component keeps owning the UI.
  */
+import type { BackupPassActivity } from "@/lib/jobs/backup-pass-attempts";
 import type { BackupScheduleStatus } from "@/lib/jobs/backup-schedule-status";
 import type { OffhostBackupFreshness } from "@/lib/jobs/offhost-backup-freshness";
 
@@ -54,6 +55,8 @@ export interface OffhostAccountRow {
 export interface OffhostBackupOverview {
   /** Whether this host has the variables the nightly job needs. */
   configured: boolean;
+  /** The run in progress, and accounts a run died under. */
+  activity: BackupPassActivity;
   /** Hours between two scheduled runs — the number behind the verdicts. */
   periodHours: number;
   /** One row per account. Empty when off-host backup is not configured. */
@@ -87,6 +90,11 @@ export interface BackupsList {
    * made six weeks ago and one made on Sunday look identical in a table.
    */
   schedule: BackupScheduleStatus;
+  /**
+   * The weekly run in progress, and accounts a run died under: a start
+   * without a finish, which a crash leaves and a caught failure does not.
+   */
+  scheduleActivity: BackupPassActivity;
   /**
    * The off-host leg. A weekly row in this table says the copy that lives in
    * this database is current; it says nothing about whether anything reached

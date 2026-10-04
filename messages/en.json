@@ -7441,6 +7441,12 @@
         "scheduleFailedDescription": "{when}: {reason}",
         "scheduleFailedNoReason": "no reason recorded",
         "scheduleRemedy": "Run a backup now and check that a fresh row appears. If it fails again, the worker log names the account it stopped on.",
+        "activity": {
+          "running": "Running since {when}.",
+          "interruptedTitle": "A run stopped partway and never came back",
+          "interruptedAccount": "{username}: started {when}, never finished",
+          "interruptedRemedy": "The app most likely restarted or ran out of memory while writing this copy. The next run takes these accounts last, so every other account gets its copy first. If it keeps happening, give the container more memory."
+        },
         "download": "Download",
         "downloadAria": "Download backup for {username}",
         "downloadFailed": "Download failed",

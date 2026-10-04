@@ -1,8 +1,9 @@
 /**
  * The preview worked out while a copy is written has to say what the preview
  * route used to derive by reading the stored copy: the same counts, the same
- * key uses. Held here against that derivation over the same file, fed in
- * pieces that split values, strings and multi-byte characters.
+ * key uses. Held here against that derivation over the same file; the
+ * integration round trip holds the writer's real counts to it on an account
+ * with a row in every model.
  */
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -14,10 +15,11 @@ import {
 } from "@/lib/export/backup-key-ids";
 import {
   buildBackupPreview,
-  createBackupPreviewScanner,
+  createBackupPreviewCollector,
   storedCopyIdentity,
   storedPreviewFor,
 } from "@/lib/export/backup-preview";
+import type { FullBackupCounts } from "@/lib/export/full-backup-payload";
 import { backupPayloadSchema, summarizeBackup } from "@/lib/validations/backup";
 
 const ts = "2026-07-19T07:00:00.000Z";
@@ -69,52 +71,52 @@ const FILE = {
   ],
 };
 
-async function scan(pieces: Array<string | Uint8Array>) {
-  const scanner = createBackupPreviewScanner();
-  for (const piece of pieces) await scanner.feed(piece);
-  return scanner.finish();
-}
-
-function split(text: string, size: number): Uint8Array[] {
-  const bytes = Buffer.from(text, "utf8");
-  const out: Uint8Array[] = [];
-  for (let at = 0; at < bytes.length; at += size) {
-    out.push(bytes.subarray(at, at + size));
+/** What the weekly writer shows the collector, member by member. */
+const BULK = new Set(["measurements", "intakeEvents", "moodEntries"]);
+function observeAsTheWriterDoes(
+  file: Record<string, unknown>,
+  observe: (member: string, value: unknown) => void,
+) {
+  for (const [member, value] of Object.entries(file)) {
+    if (BULK.has(member))
+      for (const row of value as unknown[]) observe(member, row);
+    else observe(member, value);
   }
-  return out;
 }
 
-describe("createBackupPreviewScanner", () => {
-  const json = JSON.stringify(FILE);
-  // What the preview route derived from a stored copy.
+/** The writer's counts for FILE: every count the summary reads, and more. */
+function countsOf(file: typeof FILE): FullBackupCounts {
+  const summary = summarizeBackup(backupPayloadSchema.parse(file));
+  const { schemaVersion, userId, exportedAt, ...counts } = summary;
+  void schemaVersion;
+  void userId;
+  void exportedAt;
+  return { ...counts, medicationPauseEras: 0 } as unknown as FullBackupCounts;
+}
+
+describe("createBackupPreviewCollector", () => {
+  // What the preview route derives from a stored copy.
   const expected = summarizeBackup(backupPayloadSchema.parse(FILE));
   const expectedKeys = new BackupKeyIdCollector();
   expectedKeys.visit(FILE);
 
-  it.each([1, 7, 64, 100_000])(
-    "counts what the full read counts, in pieces of %i bytes",
-    async (size) => {
-      const result = await scan(split(json, size));
-      expect(result).not.toBeNull();
-      expect(result!.summary).toEqual(expected);
-      expect(result!.summary.measurements).toBe(3);
-      expect(result!.summary.intakeEvents).toBe(2);
-      expect(result!.summary.moodEntries).toBe(1);
-      expect(result!.summary.illnessDayLogs).toBe(2);
-      expect(result!.keys.toStored()).toEqual(expectedKeys.toStored());
-      expect(result!.keys.keyIds()).toEqual(["v3"]);
-    },
-  );
-
-  it("takes text pieces the way the weekly writer hands them over", async () => {
-    const result = await scan([json.slice(0, 50), json.slice(50)]);
+  it("says what a full read of the copy says", () => {
+    const collector = createBackupPreviewCollector();
+    observeAsTheWriterDoes(FILE, collector.observe);
+    const result = collector.finish(countsOf(FILE));
+    expect(result).not.toBeNull();
     expect(result!.summary).toEqual(expected);
+    expect(result!.summary.illnessDayLogs).toBe(2);
+    expect(result!.keys.toStored()).toEqual(expectedKeys.toStored());
+    expect(result!.keys.keyIds()).toEqual(["v3"]);
   });
 
-  it("answers null for a file that is not a backup, and never holds the writer", async () => {
-    expect(await scan(["{ not json", "more", "and more"])).toBeNull();
-    expect(await scan([JSON.stringify({ schemaVersion: 2 })])).toBeNull();
-    expect(await scan([json.slice(0, 40)])).toBeNull();
+  it("answers null for a copy that does not name its version, owner and date", () => {
+    const collector = createBackupPreviewCollector();
+    const { userId, ...rest } = FILE;
+    void userId;
+    observeAsTheWriterDoes(rest, collector.observe);
+    expect(collector.finish(countsOf(FILE))).toBeNull();
   });
 });
 

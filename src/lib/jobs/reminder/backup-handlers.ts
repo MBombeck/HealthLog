@@ -12,6 +12,8 @@ import {
   BackupBusyError,
 } from "@/lib/export/backup-blob";
 import { storeBackupBlob } from "@/lib/export/store-backup-blob";
+import { createBackupPreviewCollector } from "@/lib/export/backup-preview";
+import type { FullBackupCounts } from "@/lib/export/full-backup-payload";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
@@ -21,6 +23,13 @@ import {
 } from "@/lib/jobs/offhost-backup";
 import { getWorkerPrisma } from "./shared";
 import { reportJobProgress } from "@/lib/jobs/job-observer";
+import {
+  markBackupAttemptFinished,
+  markBackupAttemptStarted,
+  orderInterruptedLast,
+  readInterruptedBackupAttempts,
+} from "@/lib/jobs/backup-pass-attempts";
+import { DATA_BACKUP_QUEUE } from "@/lib/jobs/data-backup-policy";
 
 export interface DataBackupPayload {
   triggeredAt: string;
@@ -139,20 +148,31 @@ export async function handleDataBackup(
   return withBackgroundEvent("job.data_backup", async (evt) => {
     const prisma = getWorkerPrisma();
     try {
-      const [accounts, copies] = await Promise.all([
+      const [accounts, copies, interrupted] = await Promise.all([
         prisma.user.findMany({ select: { id: true, username: true } }),
         prisma.dataBackup.findMany({
           where: { type: "WEEKLY_AUTO" },
           select: { userId: true, createdAt: true },
         }),
+        readInterruptedBackupAttempts(prisma, DATA_BACKUP_QUEUE),
       ]);
       const copiedAt = new Map(
         copies.map((copy) => [copy.userId, copy.createdAt.getTime()]),
       );
-      // No copy yet sorts first, then the oldest copy.
-      const users = [...accounts].sort(
-        (a, b) => (copiedAt.get(a.id) ?? -1) - (copiedAt.get(b.id) ?? -1),
+      // No copy yet sorts first, then the oldest copy. An account whose last
+      // attempt never came back goes behind all of them: it is the one with
+      // the oldest copy, so it would lead every retry, and a record that
+      // killed the process once would keep every account after it from a
+      // copy (`backup-pass-attempts.ts`).
+      const users = orderInterruptedLast(
+        [...accounts].sort(
+          (a, b) => (copiedAt.get(a.id) ?? -1) - (copiedAt.get(b.id) ?? -1),
+        ),
+        interrupted,
       );
+      if (interrupted.size > 0) {
+        evt.addMeta("data_backup_interrupted_accounts", interrupted.size);
+      }
       let stoppedEarly = false;
 
       let backed = 0;
@@ -174,6 +194,7 @@ export async function handleDataBackup(
           backup_users_done: backed + usersFailed + skippedRestoring,
           backup_users_total: users.length,
         });
+        await markBackupAttemptStarted(prisma, DATA_BACKUP_QUEUE, user.id);
         try {
           // Streamed, compressed, then encrypted (the record contains
           // sensitive health information), and stored a piece at a time.
@@ -182,13 +203,23 @@ export async function handleDataBackup(
           // time, and gzip's output is sealed and stored in pieces of about a
           // megabyte (`storeBackupBlob`). The copy is kept as those pieces,
           // so its size does not depend on this process's memory (#1031).
+          // The restore preview is taken from the writer's own counts and
+          // the sections as they are written, never by parsing the copy.
+          const preview = createBackupPreviewCollector();
+          let counts: FullBackupCounts | undefined;
           const { bytes: storedBytes } = await storeBackupBlob(
             prisma,
-            { userId: user.id, type: "WEEKLY_AUTO" },
-            (write) =>
-              streamFullBackupJson(prisma, user.id, write, {
+            {
+              userId: user.id,
+              type: "WEEKLY_AUTO",
+              preview: () => (counts ? preview.finish(counts) : null),
+            },
+            async (write) => {
+              counts = await streamFullBackupJson(prisma, user.id, write, {
                 purpose: "disaster-recovery",
-              }),
+                observe: preview.observe,
+              });
+            },
           );
           largestBlobBytes = Math.max(largestBlobBytes, storedBytes);
           backed++;
@@ -214,6 +245,10 @@ export async function handleDataBackup(
           lastError = err;
           if (err instanceof BackupBlobTooLargeError) oversized++;
           evt.addWarning(`Failed for user ${user.id}: ${err}`);
+        } finally {
+          // Past this account, whatever the outcome: only a process that died
+          // under it leaves the start without a finish.
+          await markBackupAttemptFinished(prisma, DATA_BACKUP_QUEUE, user.id);
         }
       }
 

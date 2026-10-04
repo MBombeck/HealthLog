@@ -620,6 +620,8 @@ export const DERIVED_MODELS: Readonly<Record<string, string>> = {
     "A search index over `InboundDocument` text; rebuilt by the indexer.",
   DocumentThumbnail:
     "Rendered from the stored document bytes on demand. Those bytes travel in a disaster-recovery payload, so the picture rebuilds itself on first view; a portable export carries metadata only, and there the thumbnail has nothing to rebuild from — but neither does the document, so nothing is lost that the export did not already disclose.",
+  DocumentThumbnailFailure:
+    "Why a document's preview could not be rendered on this host, kept so the boot backfill stops retrying it. The receiving host renders the restored document itself, and its own failure, if any, writes the row again; carrying this one would stop a host whose renderer can draw the page from ever trying.",
   ArrivalReaction:
     "Derived from what changed since the last visit; recomputed per visit.",
   DismissedPriorityItem:
@@ -706,6 +708,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "The record of a restore this host ran from one of its own stored copies. It names a backup row that exists only in this database, so carrying it would describe a restore the receiving host never performed.",
   OffhostBackupState:
     "When this host last put this account's copy in this operator's bucket, and how big it was. It describes one deployment's relationship with one bucket, so restoring it elsewhere would assert an off-host copy that host has never written.",
+  BackupPassAttempt:
+    "When this host's backup passes last started and finished this account, kept so a pass the process died under is taken last next time and named on the backups page. It describes this deployment's own runs, so restoring it elsewhere would report an interrupted run that host never had, or hide one it did.",
   DocumentImportKey:
     "The source keys of imported documents the person deleted and the purge then removed, kept so a re-run of the importer does not store them again. The backup carries only live documents, so the tombstones that hold the same memory before the purge do not travel either; carrying the ledger alone would restore half of one decision. After a restore, a deliberate re-import can bring such a document back, and the person deletes it again.",
   DocumentAiRun:

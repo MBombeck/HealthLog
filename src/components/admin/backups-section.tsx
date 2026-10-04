@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { BackupPassActivityNotice } from "@/components/admin/backup-pass-activity";
 import { Badge } from "@/components/ui/badge";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -1148,6 +1149,9 @@ export function BackupsSection() {
 
       {data?.schedule ? (
         <ScheduleHealthNotice schedule={data.schedule} />
+      ) : null}
+      {data?.scheduleActivity ? (
+        <BackupPassActivityNotice activity={data.scheduleActivity} />
       ) : null}
 
       {/* Upload card — separate from the table so admins can ingest a

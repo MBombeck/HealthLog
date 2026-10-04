@@ -259,7 +259,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "data-backup-offhost": {
     runtime: "long",
     expireInSeconds: OFFHOST_BACKUP_EXPIRE_SECONDS,
-    expiryVia: ["OFFHOST_BACKUP_EXPIRE_SECONDS"],
+    expiryVia: ["OFFHOST_BACKUP_SEND_OPTIONS"],
     stop: {
       file: "lib/jobs/reminder/backup-handlers.ts",
       fn: "handleOffhostBackup",
