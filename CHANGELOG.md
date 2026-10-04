@@ -5,7 +5,8 @@
 Back up the encryption key and refuse a key that cannot open the data;
 several courses and custom categories for medications; custom symptoms;
 document reads in the background; sick notes; lab unit refusal and charts
-that follow the source priority.
+that follow the source priority; blood pressure no longer loses its
+diastolic value; document previews work again.
 
 ### Added
 
@@ -31,6 +32,11 @@ that follow the source priority.
   the lab scan always runs in the background; `GET /api/ai-runs/{id}`.
 - **`SICK_NOTE` document kind.**
 - **Natural durations (#1101)** in the sleep field.
+- **Reasoning effort per provider (#1126).** The Local and OpenAI-compatible
+  forms gain a Reasoning select (Default, Off, Low, Medium, High), stored on
+  the provider's chain entry; Default sends nothing, Off sends
+  `reasoning_effort: "none"`. A rejection of that field no longer switches
+  the endpoint's JSON mode off.
 
 ### Fixed
 
