@@ -597,7 +597,7 @@ async function runRollupAggregate(
  * every reading, so the band and the windowed slope are untouched.
  *
  * Hours and days are UTC, matching the UTC day this tier buckets by; migration
- * 0373 applies the same statistic to rows stored before it.
+ * 0372 applies the same statistic to rows stored before it.
  */
 async function applyHourlyMeanDay(
   db: Pick<typeof prisma, "$queryRawUnsafe">,

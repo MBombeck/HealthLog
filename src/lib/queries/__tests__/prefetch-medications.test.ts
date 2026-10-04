@@ -125,6 +125,28 @@ describe("refetchMedicationsOnMount", () => {
     unsubscribe();
   });
 
+  it("refetches a prefetched read that was invalidated before the mount", async () => {
+    // Hover the nav link, then log a dose elsewhere before the page mounts:
+    // the dose invalidates the medication reads, and the prefetched answer
+    // no longer holds the compliance the user just changed.
+    const { client, calls } = setup();
+    prefetchMedicationsList(client);
+    await vi.waitFor(() => expect(calls("/api/medications")).toBe(1));
+    await vi.waitFor(() =>
+      expect(client.getQueryState(queryKeys.medications())?.status).toBe(
+        "success",
+      ),
+    );
+    await client.invalidateQueries({ queryKey: queryKeys.medications() });
+    expect(client.getQueryState(queryKeys.medications())?.isInvalidated).toBe(
+      true,
+    );
+
+    const { refetched, unsubscribe } = await mountList(client);
+    expect(refetched).toBe(true);
+    unsubscribe();
+  });
+
   it("still refetches on mount when the cache holds an older read", async () => {
     const { client } = setup();
     const queryFn = vi.fn(async () => []);

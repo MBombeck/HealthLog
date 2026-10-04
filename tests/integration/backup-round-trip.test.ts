@@ -1495,7 +1495,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     // below then covers BOTH, since the row that gets restored comes from the
     // streamed bytes.
     let streamedJson = "";
-    const previewCollector = createBackupPreviewCollector();
+    const previewCollector = await createBackupPreviewCollector();
     const streamedCounts = await streamFullBackupJson(
       prisma,
       OWNER_ID,
@@ -3779,7 +3779,7 @@ describe("every column of every two-ended model survives a real restore", () => 
 
     const exportedAt = new Date("2026-08-01T00:00:00.000Z");
     let json = "";
-    const previewCollector = createBackupPreviewCollector();
+    const previewCollector = await createBackupPreviewCollector();
     const counts = await streamFullBackupJson(
       prisma,
       OWNER_ID,

@@ -36,3 +36,40 @@ export async function revealDeferredSections(page: Page): Promise<void> {
     .toBe(0);
   await page.evaluate(() => document.querySelector("main")?.scrollTo(0, 0));
 }
+
+/**
+ * `revealDeferredSections`, then wait until the reads the newly mounted
+ * sections fired have landed: no request in flight for 750 ms. A
+ * `waitForLoadState("networkidle")` cannot do this: the page reached that
+ * state once already, so it resolves at once, and a count of zero taken then
+ * passes before a deferred section has painted anything.
+ */
+export async function revealDeferredSectionsSettled(page: Page): Promise<void> {
+  let inFlight = 0;
+  const started = () => {
+    inFlight += 1;
+  };
+  const ended = () => {
+    inFlight -= 1;
+  };
+  page.on("request", started);
+  page.on("requestfinished", ended);
+  page.on("requestfailed", ended);
+  try {
+    await revealDeferredSections(page);
+    let quietSince = Date.now();
+    await expect
+      .poll(
+        () => {
+          if (inFlight > 0) quietSince = Date.now();
+          return Date.now() - quietSince >= 750;
+        },
+        { timeout: 20_000, intervals: [100] },
+      )
+      .toBe(true);
+  } finally {
+    page.off("request", started);
+    page.off("requestfinished", ended);
+    page.off("requestfailed", ended);
+  }
+}

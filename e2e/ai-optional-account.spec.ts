@@ -25,6 +25,7 @@ import {
   seedStoredBriefing,
 } from "./setup/ai-optional-fixture";
 import { expect, test } from "./setup/test";
+import { revealDeferredSectionsSettled } from "./utils/deferred-sections";
 
 test.use({ storageState: AI_OPTIONAL_STORAGE_STATE_PATH });
 test.describe.configure({ mode: "serial" });
@@ -36,12 +37,18 @@ test.afterAll(async () => {
   await resetAiOptionalAccount();
 });
 
+/**
+ * The overview with every section mounted. Sections past the first three
+ * render as an empty sentinel until they near the viewport, so a count of
+ * zero taken before they mount would pass whatever they paint.
+ */
 async function openOverview(page: Page): Promise<void> {
   await page.goto("/insights");
   await expect(page.locator('[data-slot="insights-hero-strip"]')).toBeVisible({
     timeout: 20_000,
   });
   await page.waitForLoadState("networkidle");
+  await revealDeferredSectionsSettled(page);
 }
 
 test("J5: withdrawing AI consent deletes the notes written under it", async ({
@@ -80,12 +87,12 @@ test("J4: the Coach memory stays readable and deletable with the Coach hidden", 
   const title = `Stored conversation ${Date.now()}`;
   await seedHiddenCoachWithConversation(title);
 
-  // Hide Coach takes the Coach page and its launcher away...
-  await page.goto("/insights");
-  await expect(page.locator('[data-slot="insights-hero-strip"]')).toBeVisible({
-    timeout: 20_000,
-  });
+  // Hide Coach takes the Coach page, its launcher and every per-card
+  // hand-off away...
+  await openOverview(page);
   await expect(page.locator('[data-slot="coach-fab"]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="ask-coach-action"]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="ask-coach-icon"]')).toHaveCount(0);
 
   // ...and Settings, AI lists what the Coach stored.
   await page.goto("/settings/ai");

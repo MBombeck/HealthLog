@@ -9,7 +9,12 @@
  * twice and the rollups count it twice.
  *
  * Asserted against a real Postgres:
- *   - a record carrying the marker is left out, and counted;
+ *   - a record carrying the marker and a row id of this account is left out,
+ *     and counted; the marker alone proves nothing about this account (a move
+ *     to a new instance without a backup), so a marked record whose id is
+ *     missing, unknown or another account's is imported, a deleted row of this
+ *     account still counts, and a marked cycle day counts only when the
+ *     account holds a day-log on it;
  *   - a record without it lands as before;
  *   - the marker is read from a child `<MetadataEntry>` that follows the
  *     record's open tag, so the record is committed at its close tag;
@@ -56,13 +61,46 @@ ${records}
 
 const weight = (value: number, end: string, children = "") =>
   `  <Record type="HKQuantityTypeIdentifierBodyMass" sourceName="Health" unit="kg" startDate="${end}" endDate="${end}" value="${value}">${children}</Record>`;
-const OWN = `<MetadataEntry key="dev.healthlog.app.origin" value="healthlog"/>`;
+const MARKER = `<MetadataEntry key="dev.healthlog.app.origin" value="healthlog"/>`;
+const ext = (id: string) =>
+  `<MetadataEntry key="HKExternalUUID" value="${id}"/>`;
+/** The row the app mirrored: a weight of this account, its id on the sample. */
+const OWN_WEIGHT_ID = "own-weight-row";
+const OWN_SYS_ID = "own-sys-row";
+const OWN = `${MARKER}${ext(OWN_WEIGHT_ID)}`;
+const OWN_BP = `${MARKER}${ext(OWN_SYS_ID)}`;
 const OTHER = `<MetadataEntry key="HKWasUserEntered" value="1"/>`;
+
+/**
+ * A row of this account the samples point at. Withings and ten minutes off the
+ * samples, so neither the series under test nor the manual-value match sees it.
+ */
+async function seedOwnRow(
+  userId: string,
+  id: string,
+  type: "WEIGHT" | "BLOOD_PRESSURE_SYS" | "ACTIVITY_STEPS",
+  deletedAt: Date | null = null,
+) {
+  await prisma.measurement.create({
+    data: {
+      id,
+      userId,
+      type,
+      value: type === "ACTIVITY_STEPS" ? 1000 : 70,
+      unit:
+        type === "WEIGHT" ? "kg" : type === "ACTIVITY_STEPS" ? "steps" : "mmHg",
+      source: "WITHINGS",
+      measuredAt: new Date("2026-05-14T06:10:00.000Z"),
+      deletedAt,
+    },
+  });
+}
 
 async function run(records: string) {
   const user = await prisma.user.create({
     data: { username: "own-samples", email: "own@example.test", role: "USER" },
   });
+  await seedOwnRow(user.id, OWN_WEIGHT_ID, "WEIGHT");
   const result = await streamParseExportXml({
     xmlPath: writeXml(records),
     userId: user.id,
@@ -139,6 +177,7 @@ describe("blood pressure correlations and self-closing records", () => {
     const user = await prisma.user.create({
       data: { username: "own-bp", email: "bp@example.test", role: "USER" },
     });
+    await seedOwnRow(user.id, OWN_SYS_ID, "BLOOD_PRESSURE_SYS");
     const result = await streamParseExportXml({
       xmlPath: writeXml(records),
       userId: user.id,
@@ -148,6 +187,7 @@ describe("blood pressure correlations and self-closing records", () => {
     const rows = await prisma.measurement.findMany({
       where: {
         userId: user.id,
+        source: "APPLE_HEALTH",
         type: { in: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"] },
       },
       orderBy: [{ type: "asc" }],
@@ -173,7 +213,7 @@ describe("blood pressure correlations and self-closing records", () => {
         [bpRecord("Systolic", 121, AT), bpRecord("Diastolic", 79, AT)].join(
           "\n",
         ),
-        `\n    ${OWN}`,
+        `\n    ${OWN_BP}`,
       ),
     );
     expect(values).toEqual([]);
@@ -186,7 +226,7 @@ describe("blood pressure correlations and self-closing records", () => {
       bpRecord("Diastolic", 79, AT),
     ].join("\n");
     const { values } = await runBp(
-      `  <Correlation type="HKCorrelationTypeIdentifierBloodPressure" sourceName="Health" startDate="${AT}" endDate="${AT}">\n${records}\n    ${OWN}\n  </Correlation>`,
+      `  <Correlation type="HKCorrelationTypeIdentifierBloodPressure" sourceName="Health" startDate="${AT}" endDate="${AT}">\n${records}\n    ${OWN_BP}\n  </Correlation>`,
     );
     expect(values).toEqual([]);
   });
@@ -195,7 +235,7 @@ describe("blood pressure correlations and self-closing records", () => {
     const { values } = await runBp(
       correlation(
         [
-          bpRecord("Systolic", 121, AT, `\n      ${OWN}\n    `),
+          bpRecord("Systolic", 121, AT, `\n      ${OWN_BP}\n    `),
           bpRecord("Diastolic", 79, AT),
         ].join("\n"),
       ),
@@ -210,7 +250,7 @@ describe("blood pressure correlations and self-closing records", () => {
           [bpRecord("Systolic", 121, AT), bpRecord("Diastolic", 79, AT)].join(
             "\n",
           ),
-          `\n    ${OWN}`,
+          `\n    ${OWN_BP}`,
         ),
         bpRecord("Systolic", 130, "2026-05-14 09:00:00 +0200"),
       ].join("\n"),
@@ -230,10 +270,11 @@ describe("the synthetic export fixture", () => {
   // `export-own-origin.synthetic.xml` is invented, in the shape Apple's DTD
   // documents. It shows the parser reads a file laid out like an export; it
   // cannot show that Apple writes a custom metadata key verbatim.
-  it("leaves out the two marked records and imports the other three", async () => {
+  it("leaves out the marked record this account holds and imports the other four", async () => {
     const user = await prisma.user.create({
       data: { username: "own-fixture", email: "fx@example.test", role: "USER" },
     });
+    await seedOwnRow(user.id, "00000000-0000-0000-0000-000000000001", "WEIGHT");
     const result = await streamParseExportXml({
       xmlPath: join(
         process.cwd(),
@@ -247,9 +288,9 @@ describe("the synthetic export fixture", () => {
       where: { userId: user.id, type: "WEIGHT", source: "APPLE_HEALTH" },
       orderBy: { measuredAt: "asc" },
     });
-    expect(rows.map((r) => r.value)).toEqual([80.2, 80.4, 80.5]);
+    expect(rows.map((r) => r.value)).toEqual([80.2, 80.3, 80.4, 80.5]);
     expect(result.writtenByHealthLog).toEqual({
-      byMarker: 2,
+      byMarker: 1,
       byExternalId: 0,
       matchedManual: 0,
     });
@@ -421,8 +462,6 @@ describe("the manual-mirror lookup stays off the hot path", () => {
 
 describe("a sample whose HKExternalUUID is a HealthLog row id", () => {
   const AT = "2026-05-14 08:00:00 +0200";
-  const ext = (id: string) =>
-    `<MetadataEntry key="HKExternalUUID" value="${id}"/>`;
 
   async function runWith(
     seed: (userId: string) => Promise<Record<string, string>>,
@@ -524,11 +563,12 @@ describe("a sample whose HKExternalUUID is a HealthLog row id", () => {
 describe("each sample left out is counted once", () => {
   it("does not count a marked record twice when it appears top level and inside its correlation", async () => {
     const AT = "2026-05-14 08:00:00 +0200";
-    const sys = bpRecord("Systolic", 121, AT, `\n      ${OWN}\n    `);
-    const dia = bpRecord("Diastolic", 79, AT, `\n      ${OWN}\n    `);
+    const sys = bpRecord("Systolic", 121, AT, `\n      ${OWN_BP}\n    `);
+    const dia = bpRecord("Diastolic", 79, AT, `\n      ${OWN_BP}\n    `);
     const user = await prisma.user.create({
       data: { username: "own-once", email: "once@example.test", role: "USER" },
     });
+    await seedOwnRow(user.id, OWN_SYS_ID, "BLOOD_PRESSURE_SYS");
     const result = await streamParseExportXml({
       xmlPath: writeXml(
         [sys, dia, correlation([sys, dia].join("\n"))].join("\n"),
@@ -542,7 +582,7 @@ describe("each sample left out is counted once", () => {
 });
 
 describe("a cycle sample HealthLog wrote itself", () => {
-  it("is left out of the day-log import", async () => {
+  it("is left out on a day this account holds, imported on a day it does not", async () => {
     const user = await prisma.user.create({
       data: {
         username: "own-cycle",
@@ -552,11 +592,20 @@ describe("a cycle sample HealthLog wrote itself", () => {
         timezone: "Europe/Berlin",
       },
     });
+    // The day the app mirrored from: a day-log of this account.
+    await prisma.cycleDayLog.create({
+      data: { userId: user.id, date: "2026-03-02", flow: "MEDIUM" },
+    });
     const flow = (day: string, children = "") =>
       `  <Record type="HKCategoryTypeIdentifierMenstrualFlow" sourceName="Health" value="HKCategoryValueMenstrualFlowMedium" startDate="${day} 08:00:00 +0000" endDate="${day} 08:00:00 +0000">${children}</Record>`;
     const result = await streamParseExportXml({
       xmlPath: writeXml(
-        [flow("2026-03-02", OWN), flow("2026-03-03")].join("\n"),
+        [
+          flow("2026-03-02", MARKER),
+          flow("2026-03-03"),
+          // Marked, but no day-log here: a move to a new instance.
+          flow("2026-03-04", MARKER),
+        ].join("\n"),
       ),
       userId: user.id,
       userTimezone: "Europe/Berlin",
@@ -566,7 +615,119 @@ describe("a cycle sample HealthLog wrote itself", () => {
       where: { userId: user.id },
       orderBy: { date: "asc" },
     });
-    expect(days.map((d) => d.date)).toEqual(["2026-03-03"]);
+    expect(days.map((d) => d.date)).toEqual([
+      "2026-03-02",
+      "2026-03-03",
+      "2026-03-04",
+    ]);
+    // The held day stays the account's own: the marked sample did not
+    // re-import it as an Apple Health day.
+    expect(days[0].source).toBe("MANUAL");
+    expect(result.writtenByHealthLog.byMarker).toBe(1);
+  });
+});
+
+describe("a marked record this account does not hold", () => {
+  // A move to a new instance without a backup: the export still carries the
+  // marker on every value the app mirrored, but none of the rows exist here.
+  it("is imported when the id is missing, unknown or another account's", async () => {
+    const other = await prisma.user.create({
+      data: { username: "own-move-2", email: "mv2@example.test", role: "USER" },
+    });
+    await seedOwnRow(other.id, "foreign-weight-row", "WEIGHT");
+    const user = await prisma.user.create({
+      data: { username: "own-move", email: "mv@example.test", role: "USER" },
+    });
+    const result = await streamParseExportXml({
+      xmlPath: writeXml(
+        [
+          weight(80.1, "2026-05-14 08:00:00 +0200", MARKER),
+          weight(
+            80.2,
+            "2026-05-14 09:00:00 +0200",
+            `${MARKER}${ext("00000000-0000-4000-8000-000000000009")}`,
+          ),
+          weight(
+            80.3,
+            "2026-05-14 10:00:00 +0200",
+            `${MARKER}${ext("foreign-weight-row")}`,
+          ),
+        ].join("\n"),
+      ),
+      userId: user.id,
+      userTimezone: "Europe/Berlin",
+      prisma,
+    });
+    const rows = await prisma.measurement.findMany({
+      where: { userId: user.id, type: "WEIGHT", source: "APPLE_HEALTH" },
+      orderBy: { measuredAt: "asc" },
+    });
+    expect(rows.map((r) => r.value)).toEqual([80.1, 80.2, 80.3]);
+    expect(result.writtenByHealthLog).toEqual({
+      byMarker: 0,
+      byExternalId: 0,
+      matchedManual: 0,
+    });
+  });
+
+  it("is still left out when its id names a deleted row of this account", async () => {
+    const user = await prisma.user.create({
+      data: {
+        username: "own-deleted",
+        email: "del@example.test",
+        role: "USER",
+      },
+    });
+    await seedOwnRow(user.id, OWN_WEIGHT_ID, "WEIGHT", new Date());
+    const result = await streamParseExportXml({
+      xmlPath: writeXml(weight(80.1, "2026-05-14 08:00:00 +0200", OWN)),
+      userId: user.id,
+      userTimezone: "Europe/Berlin",
+      prisma,
+    });
+    const rows = await prisma.measurement.findMany({
+      where: { userId: user.id, type: "WEIGHT", source: "APPLE_HEALTH" },
+    });
+    expect(rows).toHaveLength(0);
+    expect(result.writtenByHealthLog.byMarker).toBe(1);
+  });
+
+  it("adds a marked cumulative sample to its day unless its id is this account's", async () => {
+    const user = await prisma.user.create({
+      data: { username: "own-steps", email: "st@example.test", role: "USER" },
+    });
+    await seedOwnRow(user.id, "own-steps-row", "ACTIVITY_STEPS");
+    const steps = (value: number, at: string, children: string) =>
+      `  <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Health" unit="count" startDate="${at}" endDate="${at}" value="${value}">${children}</Record>`;
+    const result = await streamParseExportXml({
+      xmlPath: writeXml(
+        [
+          steps(
+            700,
+            "2026-05-14 08:00:00 +0200",
+            `${MARKER}${ext("own-steps-row")}`,
+          ),
+          steps(
+            300,
+            "2026-05-14 09:00:00 +0200",
+            `${MARKER}${ext("not-a-row")}`,
+          ),
+          steps(200, "2026-05-14 10:00:00 +0200", ""),
+        ].join("\n"),
+      ),
+      userId: user.id,
+      userTimezone: "Europe/Berlin",
+      prisma,
+    });
+    const rows = await prisma.measurement.findMany({
+      where: {
+        userId: user.id,
+        type: "ACTIVITY_STEPS",
+        source: "APPLE_HEALTH",
+      },
+    });
+    // 300 + 200: the 700 the app mirrored from this account's row stays out.
+    expect(rows.map((r) => r.value)).toEqual([500]);
     expect(result.writtenByHealthLog.byMarker).toBe(1);
   });
 });

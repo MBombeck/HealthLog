@@ -163,7 +163,11 @@ the knob as `DB_CONNECTION_LIMIT`, baked into `DATABASE_URL` as
 `connection_limit`; `DATABASE_POOL_MAX` remains a working explicit
 override. Resolution order: `DB_CONNECTION_LIMIT`, then
 `DATABASE_POOL_MAX`, then the `connection_limit` URL parameter, then
-the default of 20.
+the default of 20. In the bundled single-container setup
+(`HEALTHLOG_PROCESS_TYPE=all`) the web requests and the background
+worker run in one process and share that one Prisma pool, so a budget
+sized for the web traffic alone leaves the worker's jobs queueing for
+the same connections.
 
 Plan total Postgres slots as **container_count × budget**.
 A stock Postgres 16 container ships with `max_connections = 100`, so

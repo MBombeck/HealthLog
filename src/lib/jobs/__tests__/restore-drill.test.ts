@@ -7,7 +7,9 @@ import {
   runRestoreDrill,
   RESTORE_DRILL_CRON,
   RESTORE_DRILL_QUEUE,
+  RESTORE_DRILL_SEND_OPTIONS,
 } from "../restore-drill";
+import { QUEUE_RUNTIME } from "../queue-runtime";
 
 vi.mock("../report-worker-error", () => ({
   reportWorkerError: vi.fn().mockResolvedValue(undefined),
@@ -84,6 +86,36 @@ describe("runRestoreDrill", () => {
   it("exports the agreed queue name and monthly cron slot", () => {
     expect(RESTORE_DRILL_QUEUE).toBe("data-restore-drill");
     expect(RESTORE_DRILL_CRON).toBe("11 4 1 * *");
+  });
+
+  it("runs as a locked long pass that pages each account once per run", () => {
+    // Every account's object is read, so the pg-boss default of fifteen
+    // minutes is no ceiling for it; no retry, so a failed account is paged
+    // once per run instead of three times.
+    expect(RESTORE_DRILL_SEND_OPTIONS.expireInSeconds).toBeGreaterThan(15 * 60);
+    expect(RESTORE_DRILL_SEND_OPTIONS.retryLimit).toBe(0);
+    expect(QUEUE_RUNTIME[RESTORE_DRILL_QUEUE]).toMatchObject({
+      runtime: "long",
+      exclusive: "lockedPass",
+    });
+  });
+
+  it("stops between accounts on its budget and counts the ones it did not reach", async () => {
+    const s3 = makeS3Mock({
+      "2026-06-01/user-aaa.json.enc": backupObject({ userId: "user-aaa" }),
+      "2026-06-01/user-mmm.json.enc": backupObject({ userId: "user-mmm" }),
+      "2026-06-01/user-zzz.json.enc": backupObject({ userId: "user-zzz" }),
+    });
+    let asked = 0;
+    const report = await runRestoreDrill(
+      s3,
+      new Date("2026-06-02T04:11:00Z"),
+      () => ++asked > 1,
+    );
+    expect(report.accounts.map((a) => a.objectKey)).toEqual([
+      "2026-06-01/user-aaa.json.enc",
+    ]);
+    expect(report.unchecked).toBe(2);
   });
 
   it("fetches, decrypts, and parses the newest backup object", async () => {

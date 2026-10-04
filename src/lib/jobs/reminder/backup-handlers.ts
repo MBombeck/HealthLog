@@ -27,7 +27,7 @@ import {
   markBackupAttemptFinished,
   markBackupAttemptStarted,
   orderInterruptedLast,
-  readInterruptedBackupAttempts,
+  readAccountsToTakeLast,
 } from "@/lib/jobs/backup-pass-attempts";
 import { DATA_BACKUP_QUEUE } from "@/lib/jobs/data-backup-policy";
 
@@ -154,7 +154,7 @@ export async function handleDataBackup(
           where: { type: "WEEKLY_AUTO" },
           select: { userId: true, createdAt: true },
         }),
-        readInterruptedBackupAttempts(prisma, DATA_BACKUP_QUEUE),
+        readAccountsToTakeLast(prisma, DATA_BACKUP_QUEUE),
       ]);
       const copiedAt = new Map(
         copies.map((copy) => [copy.userId, copy.createdAt.getTime()]),
@@ -163,7 +163,9 @@ export async function handleDataBackup(
       // attempt never came back goes behind all of them: it is the one with
       // the oldest copy, so it would lead every retry, and a record that
       // killed the process once would keep every account after it from a
-      // copy (`backup-pass-attempts.ts`).
+      // copy. Only until a later run has started on another account, so a
+      // pass that stops on its budget still reaches it the run after
+      // (`backup-pass-attempts.ts`).
       const users = orderInterruptedLast(
         [...accounts].sort(
           (a, b) => (copiedAt.get(a.id) ?? -1) - (copiedAt.get(b.id) ?? -1),
@@ -205,7 +207,7 @@ export async function handleDataBackup(
           // so its size does not depend on this process's memory (#1031).
           // The restore preview is taken from the writer's own counts and
           // the sections as they are written, never by parsing the copy.
-          const preview = createBackupPreviewCollector();
+          const preview = await createBackupPreviewCollector();
           let counts: FullBackupCounts | undefined;
           const { bytes: storedBytes } = await storeBackupBlob(
             prisma,
