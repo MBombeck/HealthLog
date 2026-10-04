@@ -1,5 +1,5 @@
 /**
- * Migration 0373 rewrites the `mean` of stored PULSE rollup rows to the
+ * Migration 0372 rewrites the `mean` of stored PULSE rollup rows to the
  * hourly-mean statistic, and touches nothing else.
  *
  * The rows are first built by the writer, then their `mean` is set to a
@@ -26,7 +26,7 @@ const MIGRATION = readFileSync(
     process.cwd(),
     "prisma",
     "migrations",
-    "0373_pulse_hourly_mean_day",
+    "0372_pulse_hourly_mean_day",
     "migration.sql",
   ),
   "utf8",
@@ -131,7 +131,7 @@ const meanOf = (all: Row[], type: string, granularity: string, at?: number) =>
       (at === undefined || r.bucket_start.getTime() === at),
   )?.mean;
 
-describe("migration 0373", () => {
+describe("migration 0372", () => {
   it("covers all four granularities of both types", () => {
     for (const type of ["PULSE", "HEART_RATE_VARIABILITY"]) {
       for (const g of ["DAY", "WEEK", "MONTH", "YEAR"]) {
