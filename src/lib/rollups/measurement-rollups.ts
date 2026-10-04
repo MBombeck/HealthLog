@@ -588,11 +588,16 @@ async function runRollupAggregate(
 
 /**
  * For a type whose DAY value is the mean of its per-hour means (see
- * `day-statistic.ts`), replace the DAY bucket's `mean`. Only `mean` changes:
+ * `day-statistic.ts`), replace the bucket's `mean`: a DAY bucket's is the mean
+ * of its hours' means, a WEEK / MONTH / YEAR bucket's the mean of its days'
+ * values, each day once. The coarse rows are not read for their mean (every
+ * coarse read folds the DAY tier, `readCanonicalRollupBuckets`), but a stored
+ * row should not contradict the tier it is folded from. Only `mean` changes:
  * `count`, `min`, `max` and the sums the regression composes from stay over
  * every reading, so the band and the windowed slope are untouched.
  *
- * Hours are UTC hours, matching the UTC day this tier buckets by.
+ * Hours and days are UTC, matching the UTC day this tier buckets by; migration
+ * 0373 applies the same statistic to rows stored before it.
  */
 async function applyHourlyMeanDay(
   db: Pick<typeof prisma, "$queryRawUnsafe">,
@@ -604,7 +609,10 @@ async function applyHourlyMeanDay(
   },
   rows: RollupRow[],
 ): Promise<RollupRow[]> {
-  if (input.granularity !== "DAY") return rows;
+  const truncUnit = DATE_TRUNC_UNIT[input.granularity];
+  if (!["day", "week", "month", "year"].includes(truncUnit)) {
+    throw new Error(`unexpected granularity: ${input.granularity}`);
+  }
   const types = [
     ...new Set(
       rows
@@ -623,22 +631,28 @@ async function applyHourlyMeanDay(
     Array<{ type: string; source: string; bucket_start: Date; mean: number }>
   >(
     `
-    SELECT h."type"::text AS type,
-           h."source"::text AS source,
-           date_trunc('day', h.hr) AS bucket_start,
-           AVG(h.hour_mean)::double precision AS mean
+    SELECT d."type"::text AS type,
+           d."source"::text AS source,
+           date_trunc('${truncUnit}', d.day) AS bucket_start,
+           AVG(d.day_mean)::double precision AS mean
     FROM (
-      SELECT m."type", m."source",
-             date_trunc('hour', m."measured_at") AS hr,
-             AVG(m."value") AS hour_mean
-      FROM measurements m
-      WHERE m."user_id" = $1
-        AND m."type" IN (${typeList})
-        AND m."measured_at" >= $2
-        AND m."measured_at" <  $3
-        AND m."deleted_at" IS NULL
-      GROUP BY m."type", m."source", date_trunc('hour', m."measured_at")
-    ) h
+      SELECT h."type", h."source",
+             date_trunc('day', h.hr) AS day,
+             AVG(h.hour_mean) AS day_mean
+      FROM (
+        SELECT m."type", m."source",
+               date_trunc('hour', m."measured_at") AS hr,
+               AVG(m."value") AS hour_mean
+        FROM measurements m
+        WHERE m."user_id" = $1
+          AND m."type" IN (${typeList})
+          AND m."measured_at" >= $2
+          AND m."measured_at" <  $3
+          AND m."deleted_at" IS NULL
+        GROUP BY m."type", m."source", date_trunc('hour', m."measured_at")
+      ) h
+      GROUP BY 1, 2, 3
+    ) d
     GROUP BY 1, 2, 3
   `,
     input.userId,
