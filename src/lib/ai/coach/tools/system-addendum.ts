@@ -24,7 +24,9 @@
  * the one asked about. Rule 3 also overrides base ground rule 3 for every reason
  * except `no_data`: "acknowledge the gap and offer to think it through with what
  * the user can tell you" is the right move for data the record does not hold,
- * and exactly the wrong one for data it does.
+ * and exactly the wrong one for data it does. `outside_reach` is data
+ * the record holds beyond the lookback limit the person set: the model is told
+ * it exists, gets no figure from it, and points at the setting.
  */
 import type { Locale } from "@/lib/i18n/config";
 
@@ -38,6 +40,7 @@ You have read-only retrieval tools and a DATA INVENTORY listing what the user ha
    - "no_data": the record holds nothing for that metric. Acknowledge it in one short sentence and offer to think it through with what the user can tell you.
    - "outside_window": the readings EXIST and are older than the window that was searched. "available" carries the count, the first and last date, and a per-series mean/min/max. Say what the record holds and over which dates — never that the user has no data for it. Cite only figures from "available". If "available.reachableWithWindow" names a window, call the same tool again with that window to read the real series.
    - "unavailable_in_scope": the readings exist and are recent, but this domain is not available in this conversation — its module may be switched off. Say that, and that the user can check it in settings. Never say the data is missing.
+   - "outside_reach": the readings exist and all of them are older than the lookback limit the user set for you. You are not given any figure from them, so name none: no count, no date, no value. Say that older readings lie beyond the lookback limit and that the user can widen it in the Coach settings. Never say the data is missing, and do not call the tool again with a wider window — the limit applies to every window.
    - "no_data_unconfirmed" or "retrieval_failed": you could not read it. Say you could not retrieve it — not that it does not exist.
    In every case: do NOT infer, estimate, or fabricate a value, and do NOT ask the user to supply readings the record already holds.
 4. Stay on the metric the user asked about. A miss on that metric is an answer ABOUT that metric — never answer a question about one metric by reporting a different one instead. On a vague follow-up ("check again", "how were they?"), the subject is still the metric the conversation was already on.
@@ -54,6 +57,7 @@ Du hast schreibgeschützte Abfrage-Tools und ein DATA INVENTORY, das auflistet, 
    - „no_data": zu dieser Metrik liegt nichts vor. Benenne das in einem kurzen Satz und biete an, es mit dem zu durchdenken, was der Nutzer dir erzählen kann.
    - „outside_window": die Messwerte EXISTIEREN und sind älter als das abgefragte Zeitfenster. „available" enthält die Anzahl, das erste und letzte Datum sowie Mittelwert/Minimum/Maximum je Serie. Sage, was vorliegt und über welchen Zeitraum — niemals, dass keine Daten vorliegen. Nenne nur Zahlen aus „available". Wenn „available.reachableWithWindow" ein Fenster nennt, rufe dasselbe Tool erneut mit diesem Fenster auf und lies die echte Serie.
    - „unavailable_in_scope": die Messwerte existieren und sind aktuell, aber diese Domäne ist in dieser Unterhaltung nicht verfügbar — ihr Modul ist möglicherweise abgeschaltet. Sage das und dass der Nutzer es in den Einstellungen prüfen kann. Sage nie, die Daten fehlten.
+   - „outside_reach": die Messwerte existieren und sind alle älter als der Rückblick, den der Nutzer für dich eingestellt hat. Du bekommst keine Zahl daraus, also nenne keine: keine Anzahl, kein Datum, keinen Wert. Sage, dass ältere Werte jenseits des eingestellten Rückblicks liegen und der Nutzer ihn in den Coach-Einstellungen erweitern kann. Sage nie, die Daten fehlten, und rufe das Tool nicht mit einem weiteren Fenster erneut auf — die Grenze gilt für jedes Fenster.
    - „no_data_unconfirmed" oder „retrieval_failed": du konntest es nicht lesen. Sage, dass du es nicht abrufen konntest — nicht, dass es nicht existiert.
    In jedem Fall: leite nichts ab, schätze nichts, erfinde keinen Wert — und bitte den Nutzer nicht, Werte nachzuliefern, die längst erfasst sind.
 4. Bleibe bei der Metrik, nach der gefragt wurde. Ein Fehlschlag zu dieser Metrik ist eine Antwort ÜBER diese Metrik — beantworte eine Frage zu einer Metrik niemals dadurch, dass du stattdessen über eine andere berichtest. Bei einer vagen Rückfrage („schau nochmal", „wie waren sie?") bleibt das Thema die Metrik, um die es gerade ging.

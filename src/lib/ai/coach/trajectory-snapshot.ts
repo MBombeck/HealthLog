@@ -21,6 +21,13 @@
  * raw rows via the baseline reader.
  */
 import {
+  UNBOUNDED_REACH,
+  capDays,
+  isBounded,
+  type CoachHistoryReach,
+} from "./history-reach";
+import {
+  TRAJECTORY_DEFAULT_WINDOW_DAYS,
   computeTrajectory,
   isDerivedOk,
   TRAJECTORY_TYPES,
@@ -88,7 +95,12 @@ export async function buildTrajectorySnapshotBlock(
   userId: string,
   profile: BaselineProfile,
   now: Date,
+  /** The Coach's lookback limit: the fit reads no further back than it. */
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<Record<string, TrajectorySnapshotEntry> | null> {
+  const windowOpts = isBounded(reach)
+    ? { windowDays: capDays(TRAJECTORY_DEFAULT_WINDOW_DAYS, reach) }
+    : {};
   const block: Record<string, TrajectorySnapshotEntry> = {};
 
   for (const type of TRAJECTORY_TYPES) {
@@ -96,7 +108,11 @@ export async function buildTrajectorySnapshotBlock(
     // must never sink the whole Coach turn — drop it and carry on.
     let derived;
     try {
-      derived = await computeTrajectory(userId, profile, { type, now });
+      derived = await computeTrajectory(userId, profile, {
+        type,
+        now,
+        ...windowOpts,
+      });
     } catch {
       continue;
     }

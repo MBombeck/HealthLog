@@ -107,6 +107,19 @@ describe("deriveFollowUps — the rules", () => {
     });
   });
 
+  it("offers no chip that would read past the Coach's lookback limit", () => {
+    const limited = (defaultWindow: "last30days" | "last90days") =>
+      derive({
+        history: LONG_HISTORY,
+        prefs: { ...DEFAULT_COACH_PREFS, defaultWindow },
+      }).map((c) => c.kind);
+    // 30 days: the period before needs 60, a year ago 395, the wider window
+    // is 90 days. None fits.
+    expect(limited("last30days")).toEqual([]);
+    // 90 days: the period before (60 days) and the 90-day window fit.
+    expect(limited("last90days")).toEqual(["previous_period", "widen_window"]);
+  });
+
   it("offers a year ago and a wider window only when the history reaches back", () => {
     expect(derive({ history: LONG_HISTORY }).map((c) => c.kind)).toEqual([
       "previous_period",

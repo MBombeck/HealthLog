@@ -17,6 +17,11 @@ import { useTranslations } from "@/lib/i18n/context";
 import { useCoachPrefs, useSaveCoachPrefs } from "@/hooks/use-coach-prefs";
 import { CLUSTER_SOURCES } from "@/lib/ai/coach/clusters";
 import {
+  COACH_HISTORY_WINDOWS,
+  HISTORY_REACH_DAYS,
+  lookbackText,
+} from "@/lib/ai/coach/history-reach";
+import {
   DEFAULT_COACH_CLUSTERS,
   coachDataClusterEnum,
   type CoachDataCluster,
@@ -45,12 +50,12 @@ import {
 const CLUSTER_OPTIONS: ReadonlyArray<CoachDataCluster> =
   coachDataClusterEnum.options;
 
-const WINDOW_OPTIONS: ReadonlyArray<CoachDefaultWindow> = [
-  "last7days",
-  "last30days",
-  "last90days",
-  "allTime",
-];
+/**
+ * The lookback options, narrowest first. The choice is a limit
+ * the server enforces on every Coach read (`history-reach.ts`), so the text
+ * under the picker says what is read, with the numbers the readers use.
+ */
+const WINDOW_OPTIONS = COACH_HISTORY_WINDOWS;
 
 export interface SourcesRailProps {
   className?: string;
@@ -67,7 +72,7 @@ export interface SourcesRailProps {
 }
 
 export function SourcesRail({ className, activeScopeLabel }: SourcesRailProps) {
-  const { t } = useTranslations();
+  const { t, tCount } = useTranslations();
 
   const { data: prefs } = useCoachPrefs();
   const save = useSaveCoachPrefs();
@@ -80,6 +85,8 @@ export function SourcesRail({ className, activeScopeLabel }: SourcesRailProps) {
     prefs?.dataClusters ?? DEFAULT_COACH_CLUSTERS,
   );
   const activeWindow: CoachDefaultWindow = prefs?.defaultWindow ?? "allTime";
+  const activeText = lookbackText(activeWindow);
+  const bounded = HISTORY_REACH_DAYS[activeWindow] !== null;
   const [pending, setPending] = useState<CoachDataCluster | "window" | null>(
     null,
   );
@@ -151,15 +158,15 @@ export function SourcesRail({ className, activeScopeLabel }: SourcesRailProps) {
         </div>
       ) : null}
 
-      {/* Window selector — persists to `coachPrefs.defaultWindow` so the
-          chosen timeframe sticks across drawer opens and matches what
-          the cog sheet shows. */}
+      {/* Lookback limit — persists to `coachPrefs.defaultWindow`. The line
+          under the picker states what the Coach reads at this setting, with
+          the numbers the server readers use. */}
       <div data-slot="coach-sources-window" className="flex flex-col gap-1">
         <label
           htmlFor="coach-sources-window-select"
           className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
         >
-          {t("insights.coach.windowLabel")}
+          {t("insights.coach.lookback.label")}
         </label>
         <Select
           value={activeWindow}
@@ -171,17 +178,32 @@ export function SourcesRail({ className, activeScopeLabel }: SourcesRailProps) {
             data-slot="coach-sources-window-trigger"
             size="default"
             className="h-9 text-sm"
+            aria-describedby="coach-sources-window-detail"
           >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {WINDOW_OPTIONS.map((w) => (
               <SelectItem key={w} value={w} className="text-sm">
-                {t(`insights.coach.window.${w}`)}
+                {t(
+                  `insights.coach.lookback.option.${w}`,
+                  lookbackText(w).optionParams,
+                )}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        <p
+          id="coach-sources-window-detail"
+          data-slot="coach-sources-window-detail"
+          className="text-muted-foreground text-xs leading-snug"
+        >
+          {t(
+            `insights.coach.lookback.${activeText.detailKey}`,
+            activeText.detailParams,
+          )}
+          {bounded ? ` ${t("insights.coach.lookback.note")}` : null}
+        </p>
       </div>
 
       {/* Persisted cluster toggles — the same set the settings cog
@@ -201,11 +223,15 @@ export function SourcesRail({ className, activeScopeLabel }: SourcesRailProps) {
               data-slot="coach-sources-row"
               data-source={cluster}
               data-active={checked ? "true" : "false"}
+              // A switched-off row is told apart by its frame (dashed, no
+              // fill) and its switch, never by fading the text: opacity over
+              // muted text fell below WCAG AA in both themes.
               className={cn(
-                "border-border/60 bg-muted/30 flex items-center gap-2.5",
-                "rounded-lg border px-3",
+                "flex items-center gap-2.5 rounded-lg border px-3",
                 "min-h-11 py-2",
-                !checked && "opacity-60",
+                checked
+                  ? "border-border/60 bg-muted/30"
+                  : "border-border border-dashed bg-transparent",
               )}
             >
               <div className="flex min-w-0 flex-1 flex-col">
@@ -216,9 +242,7 @@ export function SourcesRail({ className, activeScopeLabel }: SourcesRailProps) {
                   {t(`insights.coach.cluster.${cluster}.label`)}
                 </label>
                 <span className="text-muted-foreground text-xs leading-snug">
-                  {t("insights.coach.sourcesMemberCount", {
-                    count: memberCount,
-                  })}
+                  {tCount("insights.coach.sourcesMemberCount", memberCount)}
                 </span>
               </div>
               {pending === cluster ? (

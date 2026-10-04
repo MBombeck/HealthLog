@@ -22,6 +22,12 @@ import {
   type BaselineProfile,
 } from "@/lib/insights/derived";
 import { prisma } from "@/lib/db";
+import {
+  UNBOUNDED_REACH,
+  capDays,
+  isBounded,
+  type CoachHistoryReach,
+} from "./history-reach";
 
 /**
  * Trailing window the recovery dedup probes for a WHOOP-native row — matches
@@ -29,6 +35,28 @@ import { prisma } from "@/lib/db";
  * COMPUTED proxy?" is answered against the same set of days.
  */
 const RECOVERY_DEDUP_WINDOW_DAYS = 14;
+
+/**
+ * The window each engine reads when called without one (its own
+ * `DEFAULT_WINDOW_DAYS`). Under a lookback limit each metric is computed over
+ * the shorter of the two, and an engine that then lacks history reports
+ * insufficient, which drops the line.
+ */
+const DERIVED_DEFAULT_WINDOW_DAYS: Readonly<
+  Partial<Record<DerivedMetricId, number>>
+> = {
+  READINESS: 30,
+  RECOVERY_SCORE: 14,
+  STRESS_SCORE: 14,
+  STRAIN_SCORE: 14,
+  SLEEP_SCORE: 30,
+  HRV_BALANCE: 30,
+  FITNESS_AGE: 180,
+  VASCULAR_AGE_DELTA: 365,
+};
+
+/** The coincident-deviation flag's own default window. */
+const COINCIDENT_DEFAULT_WINDOW_DAYS = 30;
 
 /** The high-signal derived metrics worth a Coach prompt slot. The vitals
  *  baseline is omitted — the per-vital aggregate block already carries those
@@ -226,8 +254,20 @@ export async function buildDerivedSnapshotBlock(
   profile: BaselineProfile,
   now: Date,
   tz?: string,
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<DerivedSnapshotBlock | null> {
   const block: Record<string, DerivedSnapshotEntry> = {};
+  // Unlimited: no window is passed, so every engine keeps its own default.
+  const limitedDays = (metric: DerivedMetricId) =>
+    isBounded(reach)
+      ? {
+          windowDays: capDays(
+            DERIVED_DEFAULT_WINDOW_DAYS[metric] ??
+              COINCIDENT_DEFAULT_WINDOW_DAYS,
+            reach,
+          ),
+        }
+      : {};
 
   // v1.21.0 (C3 / D3) — the coincident-deviation flag, fired-only. Computed
   // off the one shared profile alongside the scores; fail-soft to null so a
@@ -238,6 +278,9 @@ export async function buildDerivedSnapshotBlock(
   const coincidentPromise = computeCoincidentDeviation(userId, profile, {
     now,
     ...(tz ? { tz } : {}),
+    ...(isBounded(reach)
+      ? { windowDays: capDays(COINCIDENT_DEFAULT_WINDOW_DAYS, reach) }
+      : {}),
   }).catch(() => null);
 
   // The metrics are independent passthrough reads off the one shared profile —
@@ -249,7 +292,13 @@ export async function buildDerivedSnapshotBlock(
       try {
         return {
           metric,
-          derived: await computeDerivedMetric({ metric, userId, profile, now }),
+          derived: await computeDerivedMetric({
+            metric,
+            userId,
+            profile,
+            now,
+            ...limitedDays(metric),
+          }),
         };
       } catch {
         return { metric, derived: null };
@@ -303,7 +352,8 @@ export async function buildDerivedSnapshotBlock(
         deletedAt: null,
         measuredAt: {
           gte: new Date(
-            now.getTime() - RECOVERY_DEDUP_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+            now.getTime() -
+              capDays(RECOVERY_DEDUP_WINDOW_DAYS, reach) * 24 * 60 * 60 * 1000,
           ),
           lte: now,
         },

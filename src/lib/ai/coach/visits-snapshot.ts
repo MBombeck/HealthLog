@@ -27,6 +27,11 @@
  * model). `userId` is narrowed from the authenticated session by the caller and
  * feeds the Prisma `where` field-by-field; it is never an input.
  */
+import {
+  UNBOUNDED_REACH,
+  reachFloor,
+  type CoachHistoryReach,
+} from "./history-reach";
 import { prisma } from "@/lib/db";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
@@ -123,7 +128,13 @@ function toEntry(row: EncounterRow): CoachVisitEntry {
 export async function buildVisitsSnapshotBlock(
   userId: string,
   now: Date = new Date(),
+  /**
+   * The Coach's lookback limit: upcoming appointments are not history and
+   * stay; the last visit counts only when it lies inside the limit.
+   */
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<CoachVisitsBlock | null> {
+  const floor = reachFloor(reach, now);
   const horizon = new Date(now.getTime() + UPCOMING_HORIZON_DAYS * 86_400_000);
   const practitionerInclude = {
     practitioner: { select: { name: true, specialty: true } },
@@ -149,7 +160,7 @@ export async function buildVisitsSnapshotBlock(
         userId,
         deletedAt: null,
         status: "DONE",
-        occurredAt: { lte: now },
+        occurredAt: floor ? { lte: now, gte: floor } : { lte: now },
       },
       orderBy: { occurredAt: "desc" },
       include: practitionerInclude,

@@ -32,6 +32,7 @@ vi.mock("@/lib/ai/provider-runner", () => ({
 
 import { runCoachToolLoop } from "@/lib/ai/coach/tools/loop";
 import { COACH_TOOL_DEFS } from "@/lib/ai/coach/tools/definitions";
+import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
 
 const baseArgs = {
   userId: "u1",
@@ -39,6 +40,7 @@ const baseArgs = {
   system: "sys",
   messages: [{ role: "user" as const, content: "how did I sleep?" }],
   tools: COACH_TOOL_DEFS,
+  reach: UNBOUNDED_REACH,
 };
 
 describe("coach tool loop — which results reach the grounding guard", () => {

@@ -18,6 +18,7 @@
  * Server-only — `readCoachCorrelations` reads `@/lib/db`. Fail-soft: a null
  * return (no surviving driver / read hiccup) attaches nothing.
  */
+import { UNBOUNDED_REACH, type CoachHistoryReach } from "./history-reach";
 import type { Locale } from "@/lib/i18n/config";
 import {
   readCoachCorrelations,
@@ -53,8 +54,10 @@ export async function buildCorrelationsSnapshotBlock(
    * the locale, so it says it.
    */
   locale: Locale,
+  /** The Coach's lookback limit, applied to the scan window. */
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<CorrelationsSnapshotBlock | null> {
-  const result = await readCoachCorrelations(userId, locale);
+  const result = await readCoachCorrelations(userId, locale, { reach });
   if (!result.present || !result.drivers || result.drivers.length === 0) {
     return null;
   }

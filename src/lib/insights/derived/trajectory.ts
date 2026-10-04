@@ -56,6 +56,8 @@ import { daysBetweenDateKeys, shiftDateKey } from "@/lib/tz/format";
 
 /** Trailing window the fit reads (days). Matches the baseline engine. */
 const DEFAULT_WINDOW_DAYS = 30;
+/** The window `computeTrajectory` reads when called without one. */
+export const TRAJECTORY_DEFAULT_WINDOW_DAYS = DEFAULT_WINDOW_DAYS;
 /** Default short projection horizon (days). Deliberately conservative. */
 const DEFAULT_HORIZON_DAYS = 14;
 /** Hard ceiling on the horizon — the literature warns off long horizons. */

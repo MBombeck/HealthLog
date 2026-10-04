@@ -23,6 +23,7 @@
  * single completion — the caller falls back to the snapshot path BEFORE
  * entering this loop, so this is the safety floor, not the primary route.
  */
+import type { CoachHistoryReach } from "@/lib/ai/coach/history-reach";
 import { annotate } from "@/lib/logging/context";
 import { runRawCompletionWithFallback } from "@/lib/ai/provider-runner";
 import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
@@ -124,6 +125,11 @@ export async function runCoachToolLoop(args: {
    * under one cache key — one snapshot build per turn instead of N.
    */
   sharedScope?: CoachScope;
+  /**
+   * The person's Coach lookback limit. Required: every tool call of a chat
+   * turn is clamped to it, and a caller that forgot it would read past it.
+   */
+  reach: CoachHistoryReach;
   ledger?: ProviderHealthLedger;
   /** Aborts the per-round provider calls on client disconnect. */
   signal?: AbortSignal;
@@ -167,6 +173,7 @@ export async function runCoachToolLoop(args: {
     maxTokens,
     fallbackWindow,
     sharedScope,
+    reach,
     ledger,
     signal,
     timeoutMs,
@@ -261,6 +268,7 @@ export async function runCoachToolLoop(args: {
           rawArguments: call.arguments,
           fallbackWindow,
           sharedScope,
+          reach,
           ...(turn ? { turn } : {}),
         });
         // v1.39.4 — the settled callback gets the table; the model never

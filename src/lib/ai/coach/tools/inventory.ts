@@ -31,13 +31,20 @@ import {
   FULL_INVENTORY_SOURCE_SET,
 } from "./source-keys";
 import {
+  OUTSIDE_REACH_REASON,
   classifyAvailability,
+  probeBeyondReach,
   probeCoachAvailability,
   subjectForTool,
   type CoachAvailabilitySubject,
   type CoachDomainAvailability,
 } from "./availability";
 import { isCoachToolName } from "./definitions";
+import {
+  UNBOUNDED_REACH,
+  clampWindow,
+  type CoachHistoryReach,
+} from "@/lib/ai/coach/history-reach";
 
 /**
  * What the record holds for a domain the WINDOW read found nothing for. Absent
@@ -45,11 +52,14 @@ import { isCoachToolName } from "./definitions";
  * that this window could not reach. Model-facing only — no i18n.
  */
 export interface InventoryAvailability {
-  /** `outside_window` or `unavailable_in_scope` — see `availability.ts`. */
+  /**
+   * `outside_window`, `unavailable_in_scope` or `outside_reach` — see
+   * `availability.ts`. An `outside_reach` row carries no figures at all.
+   */
   state: string;
-  count: number;
-  firstDate: string;
-  lastDate: string;
+  count?: number;
+  firstDate?: string;
+  lastDate?: string;
   /** A window the model may re-call with to reach the rows, or null. */
   reachableWithWindow: string | null;
 }
@@ -82,6 +92,8 @@ export interface CoachDataInventory {
   cycleEnabled: boolean;
   /** The window the inventory was built against. */
   window: string;
+  /** The person's lookback limit, or undefined when there is none. */
+  lookbackLimit?: string;
   /**
    * v1.21.0 (D5-1) — the exact full-source scope this inventory's snapshot was
    * built against. The route threads it to the tool loop so every per-tool read
@@ -114,6 +126,8 @@ const METRIC_SERIES_DOMAINS: Array<{
 export async function buildCoachDataInventory(
   userId: string,
   scope: CoachScope | undefined,
+  /** The person's lookback limit; the probe and every row answer to it. */
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<CoachDataInventory> {
   // v1.21.0 (C2-2) — probe presence against the FULL source set, not the
   // user's narration-cluster default. `effectiveScope` only carried the
@@ -124,10 +138,13 @@ export async function buildCoachDataInventory(
   // figure read — it only widens what the inventory advertises.
   const probeScope: CoachScope = {
     sources: [...FULL_INVENTORY_SOURCE_SET],
-    window: scope?.window,
+    window:
+      scope?.window === undefined
+        ? undefined
+        : clampWindow(scope.window, reach),
   };
   const [snapshot, cycleEnabled] = await Promise.all([
-    buildCoachSnapshot(userId, probeScope),
+    buildCoachSnapshot(userId, probeScope, { reach }),
     isCycleAvailableForUser(userId),
   ]);
   const sections = snapshot.sections;
@@ -223,7 +240,7 @@ export async function buildCoachDataInventory(
   // advertised as if it had never been recorded, and rule 2 then tells the model
   // not to fetch it at all. That is the reported defect: the tool never even
   // runs, so nothing downstream can recover the distinction.
-  await attachAvailability(userId, entries, scope?.window);
+  await attachAvailability(userId, entries, probeScope.window, reach);
 
   // restMode rides the illness section.
   const illness = sections.illness as { restMode?: boolean } | undefined;
@@ -236,6 +253,7 @@ export async function buildCoachDataInventory(
     restMode,
     cycleEnabled,
     window: scopeBlock?.window ?? scope?.window ?? "last30days",
+    ...(reach.days !== null ? { lookbackLimit: reach.window } : {}),
     probeScope,
   };
 }
@@ -256,6 +274,7 @@ async function attachAvailability(
   userId: string,
   entries: InventoryEntry[],
   window: CoachScopeWindow | undefined,
+  reach: CoachHistoryReach,
 ): Promise<void> {
   const subjects = new Map<string, CoachAvailabilitySubject>();
   const keyed = new Map<string, InventoryEntry>();
@@ -273,8 +292,13 @@ async function attachAvailability(
   }
   if (subjects.size === 0) return;
   let probed: Map<string, CoachDomainAvailability>;
+  let beyond: Set<string>;
   try {
-    probed = await probeCoachAvailability(userId, subjects);
+    probed = await probeCoachAvailability(userId, subjects, { reach });
+    // Under a limit, a domain with nothing inside it may still hold rows
+    // older than it. Those are named as beyond the limit, with no figures.
+    const unprobed = new Map([...subjects].filter(([key]) => !probed.has(key)));
+    beyond = await probeBeyondReach(userId, unprobed, reach);
   } catch (err) {
     // The manifest degrades to the pre-fix precision (every unreached domain
     // reads "absent"), which is why this is a catch and not a throw — but a
@@ -290,6 +314,14 @@ async function attachAvailability(
     action: { name: "coach.inventory.availability" },
     meta: { probed: subjects.size, stored: probed.size },
   });
+  for (const key of beyond) {
+    const entry = keyed.get(key);
+    if (!entry) continue;
+    entry.availability = {
+      state: OUTSIDE_REACH_REASON,
+      reachableWithWindow: null,
+    };
+  }
   for (const [key, available] of probed) {
     const entry = keyed.get(key);
     if (!entry) continue;
@@ -351,6 +383,11 @@ export function renderDataInventory(inventory: CoachDataInventory): string {
     'This lists which of the user\'s data exists and how to fetch it. Never cite a figure you did not fetch with a tool this turn. Three states per domain: "present" — fetch it with the named tool. "absent" — the record holds nothing for it, ever. "outside window" / "not in scope" — the record DOES hold readings, listed with their count and date range; that is not absence, so never say the user has no data for it, and call its tool anyway (the result reports what the record holds and, when a window would reach it, which one to re-call with).',
   );
   lines.push(`Window: ${inventory.window}.`);
+  if (inventory.lookbackLimit) {
+    lines.push(
+      `Lookback limit: ${inventory.lookbackLimit}. The user set how far back you may read; nothing older reaches you, whatever window a tool is called with. "BEYOND LOOKBACK" marks a domain whose readings are all older than that: do not call its tool, say older readings lie beyond the lookback set in the Coach settings, and name no figures.`,
+    );
+  }
   if (inventory.restMode) {
     lines.push(
       "The user is currently in REST MODE (recovering from illness) — frame any activity guidance gently.",
@@ -376,6 +413,7 @@ function renderState(entry: InventoryEntry): string {
   if (entry.present) return "present";
   const a = entry.availability;
   if (!a) return "absent";
+  if (a.state === OUTSIDE_REACH_REASON) return "BEYOND LOOKBACK";
   // Terse by design: the preamble states once what these two states mean and
   // that neither is absence. Repeating that per row would double a manifest
   // that rides every single turn.

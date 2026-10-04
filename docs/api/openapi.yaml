@@ -25929,7 +25929,10 @@ components:
             - last7days
             - last30days
             - last90days
+            - lastYear
             - allTime
+          description: "How far back the Coach may read, in every answer: snapshot, retrieval tools and summaries alike. `allTime`
+            (the default) is no limit. Formerly only the starting window; `lastYear` came with the limit."
         dataClusters:
           maxItems: 10
           type: array
@@ -32076,7 +32079,10 @@ components:
                 - last7days
                 - last30days
                 - last90days
+                - lastYear
                 - allTime
+              description: "How far back the Coach may read, in every answer: snapshot, retrieval tools and summaries alike. `allTime`
+                (the default) is no limit. Formerly only the starting window; `lastYear` came with the limit."
             dataClusters:
               maxItems: 10
               type: array
@@ -48822,7 +48828,10 @@ components:
             - last7days
             - last30days
             - last90days
+            - lastYear
             - allTime
+          description: "How far back the Coach may read, in every answer: snapshot, retrieval tools and summaries alike. `allTime`
+            (the default) is no limit. Formerly only the starting window; `lastYear` came with the limit."
         dataClusters:
           maxItems: 10
           type: array
@@ -77933,7 +77942,10 @@ components:
             - last7days
             - last30days
             - last90days
+            - lastYear
             - allTime
+          description: "How far back the Coach may read, in every answer: snapshot, retrieval tools and summaries alike. `allTime`
+            (the default) is no limit. Formerly only the starting window; `lastYear` came with the limit."
         dataClusters:
           maxItems: 10
           type: array

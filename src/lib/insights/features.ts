@@ -144,10 +144,14 @@ export interface MoodDimensionFeature {
  */
 async function buildMoodDimensionFeatures(
   userId: string,
+  floor: Date | null,
 ): Promise<MoodDimensionFeature[] | undefined> {
   const tz = await resolveUserTimezone(userId);
   const { t } = getServerTranslator("en");
-  const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const since = laterDate(
+    new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+    floor,
+  );
   const rows = await prisma.moodEntry.findMany({
     where: { userId, deletedAt: null, moodLoggedAt: { gte: since } },
     orderBy: { moodLoggedAt: "desc" },
@@ -224,7 +228,15 @@ async function buildMoodDimensionFeatures(
  * Bounded: the same 90-day window the dimensions use, and the comparison's own
  * cap on how many rows survive.
  */
-async function buildMoodContextBlock(userId: string): Promise<{
+/** The later of `date` and an optional floor. */
+function laterDate(date: Date, floor: Date | null): Date {
+  return floor !== null && floor.getTime() > date.getTime() ? floor : date;
+}
+
+async function buildMoodContextBlock(
+  userId: string,
+  floor: Date | null,
+): Promise<{
   context?: {
     note: string;
     comparisons: Array<{
@@ -237,7 +249,10 @@ async function buildMoodContextBlock(userId: string): Promise<{
     }>;
   };
 }> {
-  const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const since = laterDate(
+    new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+    floor,
+  );
   const rows = await prisma.moodEntry.findMany({
     where: {
       userId,
@@ -315,11 +330,14 @@ async function buildMoodContextBlock(userId: string): Promise<{
  * block-level `asOf`. Absent entirely when nobody has answered a dimension,
  * so an account that only ever taps a face carries neither key.
  */
-async function buildMoodDimensionBlock(userId: string): Promise<{
+async function buildMoodDimensionBlock(
+  userId: string,
+  floor: Date | null,
+): Promise<{
   dimensions?: MoodDimensionFeature[];
   dimensionsAsOfNote?: string;
 }> {
-  const dimensions = await buildMoodDimensionFeatures(userId);
+  const dimensions = await buildMoodDimensionFeatures(userId, floor);
   if (!dimensions) return {};
   return {
     dimensions,
@@ -971,8 +989,18 @@ const FEATURE_MEASUREMENT_ROW_CAP = 6000;
 export async function extractFeatures(
   userId: string,
   includeRaw: boolean,
-  options: { sinceDays?: number } = {},
+  options: {
+    sinceDays?: number;
+    /**
+     * The Coach's lookback floor. Given, nothing older than it is read: the
+     * `allTime*` figures cover the history from the floor on, the mood
+     * history and its sub-blocks start at it, and the mood forecast, a model
+     * fitted on the whole history, is left out.
+     */
+    historyFloor?: Date;
+  } = {},
 ): Promise<AggregatedFeatures | RawFeatures> {
+  const historyFloor = options.historyFloor ?? null;
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -1037,12 +1065,11 @@ export async function extractFeatures(
   // materialisation) so the labels stay honest. Unbounded reads (sinceCutoff
   // null) already see the whole history and skip the extra query.
   const allTimeExtremes = sinceCutoff
-    ? await readAllTimeExtremes(userId, [
-        "WEIGHT",
-        "BLOOD_PRESSURE_SYS",
-        "BLOOD_PRESSURE_DIA",
-        "PULSE",
-      ])
+    ? await readAllTimeExtremes(
+        userId,
+        ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "PULSE"],
+        historyFloor,
+      )
     : null;
 
   const byType = (type: string) => measurements.filter((m) => m.type === type);
@@ -1407,7 +1434,10 @@ export async function extractFeatures(
   void ensureUserMoodRollupsFresh(userId);
   // Five-year window mirrors the mood-rollup writer default; covers
   // every realistic user history span without an unbounded scan.
-  const moodSince = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
+  const moodSince = laterDate(
+    new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+    historyFloor,
+  );
   const moodRollupDayRows = await readMoodDayRollups(userId, moodSince);
 
   type MoodDayPoint = {
@@ -1429,7 +1459,11 @@ export async function extractFeatures(
     // Latest score = newest individual entry (one bounded row).
     const latestEntry = await prisma.moodEntry.findFirst({
       // v1.7.0 sync — exclude tombstoned rows.
-      where: { userId, deletedAt: null },
+      where: {
+        userId,
+        deletedAt: null,
+        ...(historyFloor ? { moodLoggedAt: { gte: historyFloor } } : {}),
+      },
       orderBy: { moodLoggedAt: "desc" },
       select: { score: true },
     });
@@ -1437,7 +1471,10 @@ export async function extractFeatures(
   } else {
     // Coverage-fallback. Bounded 1-year walk (instead of the legacy
     // unbounded `findMany`) so even a cache miss is capped.
-    const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+    const oneYearAgo = laterDate(
+      new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+      historyFloor,
+    );
     const moodEntriesRaw = await prisma.moodEntry.findMany({
       // v1.7.0 sync — exclude tombstoned rows.
       where: { userId, deletedAt: null, moodLoggedAt: { gte: oneYearAgo } },
@@ -1523,9 +1560,9 @@ export async function extractFeatures(
       latest: moodLatestScore,
       trend30,
       totalEntries: moodTotalEntries,
-      ...(await buildMoodDimensionBlock(userId)),
-      ...(await buildMoodContextBlock(userId)),
-      ...(await buildMoodPrognosisBlock(userId)),
+      ...(await buildMoodDimensionBlock(userId, historyFloor)),
+      ...(await buildMoodContextBlock(userId, historyFloor)),
+      ...(historyFloor ? {} : await buildMoodPrognosisBlock(userId)),
       coverage: {
         count: moodTotalEntries,
         spanDays,
@@ -1705,7 +1742,10 @@ export async function extractFeatures(
     // findMany loop. Same shape as the v1.3.0 fix to /api/insights/comprehensive
     // (the previous N+1 the v3 audit closed). 90 days is the longest window
     // calculateCompliance uses below, so we don't need the full intake history.
-    const ninetyDaysAgo = new Date(Date.now() - 90 * 86_400_000);
+    const ninetyDaysAgo = laterDate(
+      new Date(Date.now() - 90 * 86_400_000),
+      historyFloor,
+    );
     const allEvents = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId,

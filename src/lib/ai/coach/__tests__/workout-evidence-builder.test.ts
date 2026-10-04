@@ -73,11 +73,14 @@ describe("workout evidence builder", () => {
       durationSec: 2400,
       storedSamples: [{ tSec: 0, mean: 120 }],
     });
+    // No limit passed: the builder hands the unlimited reach on, and
+    // `buildSportContext` decides whether its 180 days fit.
     expect(buildSportContext).toHaveBeenCalledWith(
       "u1",
       "running",
       { workouts: ["APPLE_HEALTH"] },
       "w1",
+      { window: "allTime", days: null },
     );
     expect(buildEvidence).toHaveBeenCalledWith(
       expect.objectContaining({
