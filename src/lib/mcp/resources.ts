@@ -460,6 +460,7 @@ export const MCP_RESOURCE_TEMPLATES: McpResourceTemplateDefinition[] = [
       const metric = firstVar(variables.type);
       const result = await executeCoachTool({
         userId: ctx.userId,
+        sourceSnapshot: true,
         name: "get_metric_series",
         rawArguments: JSON.stringify({ metric }),
       });
@@ -483,6 +484,7 @@ export const MCP_RESOURCE_TEMPLATES: McpResourceTemplateDefinition[] = [
       const window = firstVar(variables.window);
       const result = await executeCoachTool({
         userId: ctx.userId,
+        sourceSnapshot: true,
         name: "get_metric_series",
         rawArguments: JSON.stringify(window ? { metric, window } : { metric }),
       });

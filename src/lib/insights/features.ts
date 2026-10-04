@@ -54,7 +54,10 @@ import {
   computeSignalsOfDay,
   type SignalOfDay,
 } from "@/lib/insights/signals-of-day";
-import type { RollupGranularity } from "@/generated/prisma/client";
+import type {
+  MeasurementType,
+  RollupGranularity,
+} from "@/generated/prisma/client";
 
 import { resolveWeightTargetOverride } from "@/lib/analytics/effective-range";
 import {
@@ -959,430 +962,15 @@ export function avgInWindow(
 const INTEGRATION_BLOCK_MIN_WINDOW_DAYS = 180;
 
 /**
- * v1.25 — newest-first row cap on the bulk measurement read in
- * `extractFeatures`. Mirrors the Coach snapshot's `SNAPSHOT_MEASUREMENT_ROW_CAP`
- * (6000): the prompt / insights aggregates only ever fold this read into a
- * bounded set of summaries, so a year of dense PULSE / glucose rows is wasted
- * I/O on the shared pool for a heavy-data tenant. Full-history extremes come
- * from `readAllTimeExtremes`, not this read, so the cap stays correct.
+ * The mood feature block and the per-day points it was built from. Split out of
+ * `extractFeatures` so a caller that needs only this block (the single-metric
+ * Coach read) runs exactly the same reads without the rest of the function.
  */
-const FEATURE_MEASUREMENT_ROW_CAP = 6000;
-
-export async function extractFeatures(
-  userId: string,
-  includeRaw: boolean,
-  options: { sinceDays?: number } = {},
-): Promise<AggregatedFeatures | RawFeatures> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      heightCm: true,
-      dateOfBirth: true,
-      gender: true,
-      thresholdsJson: true,
-    },
-  });
-
-  const now = Date.now();
-
-  // Fetch measurements. Default = ALL (full temporal context for the
-  // dashboard / insights generator). Callers that only consume the
-  // ≤90-day windows (Coach snapshot per turn) pass `sinceDays: 90` so
-  // the per-turn I/O stays bounded — `findMany({ where: { userId } })`
-  // is unbounded by user-history size and gets paid once per Coach turn
-  // for power users with multi-year Withings imports.
-  const sinceDays = options.sinceDays;
-  const sinceCutoff =
-    typeof sinceDays === "number" && sinceDays > 0
-      ? new Date(now - sinceDays * 24 * 60 * 60 * 1000)
-      : null;
-  // v1.25 — newest-first cap on the bulk feature read, mirroring the Coach
-  // snapshot (`SNAPSHOT_MEASUREMENT_ROW_CAP`). Callers pass windows of 365-400
-  // days, and PULSE / glucose are 200k-row-class types, so an uncapped read
-  // pulled hundreds of thousands of rows per Coach turn and nightly briefing
-  // only to fold them into a handful of summaries. Read newest-first, cap, then
-  // reverse so every downstream consumer (`byType`, `summarize`, BP pairing,
-  // sleep reconstruction, oldest/newest span) still sees ascending order. The
-  // cap is safe even unbounded: the genuine all-time extremes are sourced
-  // separately via `readAllTimeExtremes` on the bounded branch, so capping only
-  // sheds the deepest rows of the bulk read and never relabels an extreme.
-  const measurements = await prisma.measurement
-    .findMany({
-      where: sinceCutoff
-        ? { userId, measuredAt: { gte: sinceCutoff }, deletedAt: null }
-        : { userId, deletedAt: null },
-      orderBy: { measuredAt: "desc" },
-      take: FEATURE_MEASUREMENT_ROW_CAP,
-      // Project only the columns every downstream consumer reads (`byType`,
-      // `summarize`, BP pairing, and `reconstructSleepNights`'s `SleepStageRow`).
-      // The PULSE / glucose windows are 200k-row-class; pulling every column
-      // (notes, externalId, …) is pure wasted I/O on the shared Prisma pool.
-      select: {
-        type: true,
-        value: true,
-        measuredAt: true,
-        sleepStage: true,
-        source: true,
-        deviceType: true,
-      },
-    })
-    // Restore ascending order so order-sensitive consumers (oldest/newest span,
-    // BP pairing, sleep reconstruction) see the same shape as before the cap.
-    .then((rows) => rows.reverse());
-
-  // v1.18.11 P1 — when the bulk read is bounded to a recent window, the
-  // windowed `summarize()` no longer covers the full history, so the `allTime*`
-  // fields would silently become "last `sinceDays` days" extremes. Source the
-  // genuine full-history min / max / mean from one grouped aggregation (no row
-  // materialisation) so the labels stay honest. Unbounded reads (sinceCutoff
-  // null) already see the whole history and skip the extra query.
-  const allTimeExtremes = sinceCutoff
-    ? await readAllTimeExtremes(userId, [
-        "WEIGHT",
-        "BLOOD_PRESSURE_SYS",
-        "BLOOD_PRESSURE_DIA",
-        "PULSE",
-      ])
-    : null;
-
-  const byType = (type: string) => measurements.filter((m) => m.type === type);
-  // The zone pulse days are read in; resolved only when there is pulse to read.
-  const pulseTz = measurements.some((m) => m.type === "PULSE")
-    ? await resolveUserTimezone(userId)
-    : DEFAULT_TIMEZONE;
-
-  const bpTargets = getBpTargets(user?.dateOfBirth ?? null);
-
-  // Compute overall data span
-  const oldestMeasurement =
-    measurements.length > 0 ? measurements[0].measuredAt : null;
-  const newestMeasurement =
-    measurements.length > 0
-      ? measurements[measurements.length - 1].measuredAt
-      : null;
-  const overallSpanDays =
-    oldestMeasurement && newestMeasurement
-      ? Math.round(
-          (newestMeasurement.getTime() - oldestMeasurement.getTime()) /
-            (24 * 60 * 60 * 1000),
-        )
-      : 0;
-
-  // Compute age
-  let ageYears: number | null = null;
-  if (user?.dateOfBirth) {
-    const dob = user.dateOfBirth;
-    const today = new Date();
-    ageYears = today.getFullYear() - dob.getFullYear();
-    const monthDiff = today.getMonth() - dob.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-      ageYears--;
-    }
-  }
-
-  const features: AggregatedFeatures = {
-    context: {
-      heightCm: user?.heightCm ?? null,
-      hasBpTargets: !!bpTargets,
-      totalMeasurements: measurements.length,
-      dataSpanDays: overallSpanDays,
-      oldestMeasurementDaysAgo: oldestMeasurement
-        ? Math.round(
-            (now - oldestMeasurement.getTime()) / (24 * 60 * 60 * 1000),
-          )
-        : null,
-      newestMeasurementDaysAgo: newestMeasurement
-        ? Math.round(
-            (now - newestMeasurement.getTime()) / (24 * 60 * 60 * 1000),
-          )
-        : null,
-      ageYears,
-      gender: user?.gender ?? null,
-    },
-  };
-
-  // Weight
-  const weightData = byType("WEIGHT");
-  if (weightData.length > 0) {
-    const summary = summarize(toDataPoints(weightData));
-    const bmi =
-      user?.heightCm && summary.latest
-        ? parseFloat((summary.latest / (user.heightCm / 100) ** 2).toFixed(1))
-        : null;
-
-    features.weight = {
-      latest: summary.latest!,
-      avg7: summary.avg7,
-      avg30: summary.avg30,
-      avg90: avgInWindow(weightData, now, 90),
-      // v1.18.11 P1 — full-history extremes from the grouped aggregation when
-      // the bulk read is windowed; the in-window summary otherwise.
-      allTimeAvg: allTimeExtremes
-        ? roundMean(allTimeExtremes.get("WEIGHT")?.mean ?? null)
-        : summary.count > 0
-          ? summary.mean
-          : null,
-      allTimeMin: allTimeExtremes
-        ? (allTimeExtremes.get("WEIGHT")?.min ?? null)
-        : summary.count > 0
-          ? summary.min
-          : null,
-      allTimeMax: allTimeExtremes
-        ? (allTimeExtremes.get("WEIGHT")?.max ?? null)
-        : summary.count > 0
-          ? summary.max
-          : null,
-      slope30: summary.slope30?.slope ?? null,
-      outlierCount: summary.anomalyCount ?? 0,
-      bmi,
-      coverage: computeCoverage(weightData, now),
-    };
-    const weightTarget = buildWeightTargetFeature(
-      resolveWeightTargetOverride(user?.thresholdsJson),
-      { avg7: summary.avg7, latest: summary.latest },
-    );
-    if (weightTarget) features.weight.target = weightTarget;
-  }
-
-  // Blood Pressure
-  const sysData = byType("BLOOD_PRESSURE_SYS");
-  const diaData = byType("BLOOD_PRESSURE_DIA");
-  if (sysData.length > 0 || diaData.length > 0) {
-    const sysSummary =
-      sysData.length > 0 ? summarize(toDataPoints(sysData)) : null;
-    const diaSummary =
-      diaData.length > 0 ? summarize(toDataPoints(diaData)) : null;
-
-    let pctInTarget: number | null = null;
-    if (bpTargets) {
-      const sysByTime = new Map(
-        sysData.map((m) => [m.measuredAt.getTime(), m.value]),
-      );
-      let inTargetCount = 0;
-      let pairedCount = 0;
-      for (const dia of diaData) {
-        const sysVal = sysByTime.get(dia.measuredAt.getTime());
-        if (sysVal === undefined) continue;
-        pairedCount++;
-        // v1.4.16 A2 — one-sided ceiling semantics with hypotension
-        // floor. See lib/analytics/bp-in-target.ts.
-        if (isBpReadingInTarget(sysVal, dia.value, bpTargets)) {
-          inTargetCount++;
-        }
-      }
-      pctInTarget =
-        pairedCount > 0
-          ? Math.round((inTargetCount / pairedCount) * 100)
-          : null;
-    }
-
-    features.bloodPressure = {
-      avgSys30: sysSummary?.avg30 ?? null,
-      avgDia30: diaSummary?.avg30 ?? null,
-      avgSys90: sysData.length > 0 ? avgInWindow(sysData, now, 90) : null,
-      avgDia90: diaData.length > 0 ? avgInWindow(diaData, now, 90) : null,
-      // v1.18.11 P1 — full-history extremes when the bulk read is windowed.
-      allTimeAvgSys: allTimeExtremes
-        ? roundMean(allTimeExtremes.get("BLOOD_PRESSURE_SYS")?.mean ?? null)
-        : sysSummary?.count
-          ? sysSummary.mean
-          : null,
-      allTimeAvgDia: allTimeExtremes
-        ? roundMean(allTimeExtremes.get("BLOOD_PRESSURE_DIA")?.mean ?? null)
-        : diaSummary?.count
-          ? diaSummary.mean
-          : null,
-      allTimeMinSys: allTimeExtremes
-        ? (allTimeExtremes.get("BLOOD_PRESSURE_SYS")?.min ?? null)
-        : sysSummary?.count
-          ? sysSummary.min
-          : null,
-      allTimeMaxSys: allTimeExtremes
-        ? (allTimeExtremes.get("BLOOD_PRESSURE_SYS")?.max ?? null)
-        : sysSummary?.count
-          ? sysSummary.max
-          : null,
-      allTimeMinDia: allTimeExtremes
-        ? (allTimeExtremes.get("BLOOD_PRESSURE_DIA")?.min ?? null)
-        : diaSummary?.count
-          ? diaSummary.min
-          : null,
-      allTimeMaxDia: allTimeExtremes
-        ? (allTimeExtremes.get("BLOOD_PRESSURE_DIA")?.max ?? null)
-        : diaSummary?.count
-          ? diaSummary.max
-          : null,
-      slopeSys30: sysSummary?.slope30?.slope ?? null,
-      slopeDia30: diaSummary?.slope30?.slope ?? null,
-      sdSys30: (() => {
-        const fromMs = now - 30 * 24 * 60 * 60 * 1000;
-        const vals = sysData
-          .filter((m) => m.measuredAt.getTime() >= fromMs)
-          .map((m) => m.value);
-        return stdDev(vals);
-      })(),
-      sdDia30: (() => {
-        const fromMs = now - 30 * 24 * 60 * 60 * 1000;
-        const vals = diaData
-          .filter((m) => m.measuredAt.getTime() >= fromMs)
-          .map((m) => m.value);
-        return stdDev(vals);
-      })(),
-      pulsePressure30: (() => {
-        const avgSys = sysSummary?.avg30 ?? null;
-        const avgDia = diaSummary?.avg30 ?? null;
-        if (avgSys === null || avgDia === null) return null;
-        return Math.round((avgSys - avgDia) * 10) / 10;
-      })(),
-      pctInTarget,
-      coverage: computeCoverage(
-        [...sysData, ...diaData].sort(
-          (a, b) => a.measuredAt.getTime() - b.measuredAt.getTime(),
-        ),
-        now,
-      ),
-    };
-  }
-
-  // Pulse
-  const pulseData = byType("PULSE");
-  if (pulseData.length > 0) {
-    const summary = summarize(toDataPoints(pulseData));
-    // A day of pulse is the mean of its local hours' means and a window the
-    // mean of its days (see `day-mean.ts`): `summarize` means every reading,
-    // so the means come from the shared helper over the same windows.
-    const pulseDays = { type: "PULSE", tz: pulseTz };
-    const pulseMean = (fromDaysAgo: number) =>
-      avgInWindow(pulseData, now, fromDaysAgo, 0, pulseDays);
-    const allPulse = readingsMean("PULSE", pulseData, pulseTz);
-    features.pulse = {
-      avg7: pulseMean(7),
-      avg30: pulseMean(30),
-      avg90: pulseMean(90),
-      // v1.18.11 P1 — full-history extremes when the bulk read is windowed.
-      allTimeAvg: allTimeExtremes
-        ? roundMean(allTimeExtremes.get("PULSE")?.mean ?? null)
-        : allPulse === null
-          ? null
-          : Math.round(allPulse * 100) / 100,
-      allTimeMin: allTimeExtremes
-        ? (allTimeExtremes.get("PULSE")?.min ?? null)
-        : summary.count > 0
-          ? summary.min
-          : null,
-      allTimeMax: allTimeExtremes
-        ? (allTimeExtremes.get("PULSE")?.max ?? null)
-        : summary.count > 0
-          ? summary.max
-          : null,
-      slope30: summary.slope30?.slope ?? null,
-      anomalyCount: summary.anomalyCount ?? 0,
-      coverage: computeCoverage(pulseData, now),
-    };
-  }
-
-  // Body Fat
-  const fatData = byType("BODY_FAT");
-  if (fatData.length > 0) {
-    const summary = summarize(toDataPoints(fatData));
-    features.bodyFat = {
-      latest: summary.latest,
-      avg30: summary.avg30,
-      slope30: summary.slope30?.slope ?? null,
-      coverage: computeCoverage(fatData, now),
-    };
-  }
-
-  // Grip strength (kg) — clinical-depth signal; the briefing narrates the
-  // trajectory, the sex-aware EWGSOP2 floor stays at the display edge.
-  const gripData = byType("GRIP_STRENGTH");
-  if (gripData.length > 0) {
-    const summary = summarize(toDataPoints(gripData));
-    features.gripStrength = {
-      latest: summary.latest,
-      avg30: summary.avg30,
-      slope30: summary.slope30?.slope ?? null,
-      coverage: computeCoverage(gripData, now),
-    };
-  }
-
-  // Waist circumference (cm) + waist-to-height ratio. WHtR is computed from the
-  // freshest circumference and the user's height (the same canonical derivation
-  // the detail page uses); omitted when height is unknown.
-  const waistData = byType("WAIST_CIRCUMFERENCE");
-  if (waistData.length > 0) {
-    const summary = summarize(toDataPoints(waistData));
-    const whtrLatest =
-      user?.heightCm && summary.latest
-        ? Math.round((summary.latest / user.heightCm) * 100) / 100
-        : null;
-    features.waist = {
-      latest: summary.latest,
-      avg30: summary.avg30,
-      slope30: summary.slope30?.slope ?? null,
-      whtrLatest,
-      coverage: computeCoverage(waistData, now),
-    };
-  }
-
-  // Pain (0–10 NRS, lower-better) — surface a sustained or rising pain burden.
-  const painData = byType("PAIN_NRS");
-  if (painData.length > 0) {
-    const summary = summarize(toDataPoints(painData));
-    features.pain = {
-      latest: summary.latest,
-      avg7: summary.avg7,
-      avg30: summary.avg30,
-      slope30: summary.slope30?.slope ?? null,
-      coverage: computeCoverage(painData, now),
-    };
-  }
-
-  // Sleep Duration
-  //
-  // SLEEP_DURATION is stored ONE ROW PER STAGE per night, so summarising the
-  // raw stage rows would average individual stages (and double-count a bare
-  // ASLEEP aggregate against its granular CORE/DEEP/REM twin). Route the
-  // feature block through the per-night dedup reconstruction — the same helper
-  // the dashboard / series / status path use — so `avg7` / `avg30` / `latest`
-  // are per-night TIME-ASLEEP totals in minutes, never stage averages.
-  const sleepData = byType("SLEEP_DURATION");
-  if (sleepData.length > 0) {
-    const [sleepTz, sleepPriority] = await Promise.all([
-      resolveUserTimezone(userId),
-      loadUserSourcePriority(userId),
-    ]);
-    const sleepNights = reconstructSleepNights(
-      sleepData as unknown as SleepStageRow[],
-      sleepTz,
-      sleepPriority,
-    ).filter((n) => n.asleepMinutes > 0);
-    const summary = summarize(
-      sleepNights.map((n) => ({ date: n.measuredAt, value: n.asleepMinutes })),
-    );
-    features.sleep = {
-      avg7: summary.avg7,
-      avg30: summary.avg30,
-      latest: summary.latest,
-      coverage: computeCoverage(
-        sleepNights.map((n) => ({ measuredAt: n.measuredAt })),
-        now,
-      ),
-    };
-  }
-
-  // Activity Steps
-  const activityData = byType("ACTIVITY_STEPS");
-  if (activityData.length > 0) {
-    const summary = summarize(toDataPoints(activityData));
-    features.activity = {
-      avg7: summary.avg7,
-      avg30: summary.avg30,
-      latest: summary.latest,
-      coverage: computeCoverage(activityData, now),
-    };
-  }
-
+async function readMoodFeature(userId: string): Promise<{
+  feature: AggregatedFeatures["mood"];
+  dailyPoints: Array<{ measuredAt: Date; value: number; count: number }>;
+}> {
+  let feature: AggregatedFeatures["mood"];
   // Mood
   //
   // v1.4.40 — swap the unbounded `prisma.moodEntry.findMany` for the
@@ -1516,7 +1104,7 @@ export async function extractFeatures(
         ? Math.round((spanDays / (moodTotalEntries - 1)) * 10) / 10
         : null;
 
-    features.mood = {
+    feature = {
       scale: "1=LAUSIG, 2=SCHLECHT, 3=OKAY, 4=GUT, 5=SUPER_GUT",
       avg7: avg(last7),
       avg30: avg(last30),
@@ -1539,6 +1127,482 @@ export async function extractFeatures(
       },
     };
   }
+
+  return { feature, dailyPoints: moodDailyPoints };
+}
+
+/**
+ * v1.25 — newest-first row cap on the bulk measurement read in
+ * `extractFeatures`. Mirrors the Coach snapshot's `SNAPSHOT_MEASUREMENT_ROW_CAP`
+ * (6000): the prompt / insights aggregates only ever fold this read into a
+ * bounded set of summaries, so a year of dense PULSE / glucose rows is wasted
+ * I/O on the shared pool for a heavy-data tenant. Full-history extremes come
+ * from `readAllTimeExtremes`, not this read, so the cap stays correct.
+ */
+const FEATURE_MEASUREMENT_ROW_CAP = 6000;
+
+/**
+ * The feature blocks the single-metric Coach read can ask for on their own.
+ * Each is built from exactly the reads the full extraction runs for it.
+ */
+export type ScopedFeatureBlock = "weight" | "bloodPressure" | "pulse" | "mood";
+
+const SCOPED_BLOCK_TYPES: Readonly<
+  Record<ScopedFeatureBlock, readonly MeasurementType[]>
+> = {
+  weight: ["WEIGHT"],
+  bloodPressure: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
+  pulse: ["PULSE"],
+  mood: [],
+};
+
+export async function extractFeatures(
+  userId: string,
+  includeRaw: boolean,
+  options: {
+    sinceDays?: number;
+    /**
+     * Build only these blocks (plus `context`) and return. Each block is
+     * identical to the one the full extraction builds: the bulk read keeps its
+     * all-type newest-first cap, so the rows a block sees do not change. Used
+     * by the single-metric Coach read, which reads one block and nothing else.
+     */
+    only?: ReadonlySet<ScopedFeatureBlock>;
+  } = {},
+): Promise<AggregatedFeatures | RawFeatures> {
+  const only = options.only;
+  const wants = (block: ScopedFeatureBlock) => !only || only.has(block);
+  const allTimeTypes = (["weight", "bloodPressure", "pulse"] as const).flatMap(
+    (block) => (wants(block) ? SCOPED_BLOCK_TYPES[block] : []),
+  );
+  // The bulk read feeds every block except mood; a mood-only read skips it.
+  const needsMeasurementRows = !only || allTimeTypes.length > 0;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      heightCm: true,
+      dateOfBirth: true,
+      gender: true,
+      thresholdsJson: true,
+    },
+  });
+
+  const now = Date.now();
+
+  // Fetch measurements. Default = ALL (full temporal context for the
+  // dashboard / insights generator). Callers that only consume the
+  // ≤90-day windows (Coach snapshot per turn) pass `sinceDays: 90` so
+  // the per-turn I/O stays bounded — `findMany({ where: { userId } })`
+  // is unbounded by user-history size and gets paid once per Coach turn
+  // for power users with multi-year Withings imports.
+  const sinceDays = options.sinceDays;
+  const sinceCutoff =
+    typeof sinceDays === "number" && sinceDays > 0
+      ? new Date(now - sinceDays * 24 * 60 * 60 * 1000)
+      : null;
+  // v1.25 — newest-first cap on the bulk feature read, mirroring the Coach
+  // snapshot (`SNAPSHOT_MEASUREMENT_ROW_CAP`). Callers pass windows of 365-400
+  // days, and PULSE / glucose are 200k-row-class types, so an uncapped read
+  // pulled hundreds of thousands of rows per Coach turn and nightly briefing
+  // only to fold them into a handful of summaries. Read newest-first, cap, then
+  // reverse so every downstream consumer (`byType`, `summarize`, BP pairing,
+  // sleep reconstruction, oldest/newest span) still sees ascending order. The
+  // cap is safe even unbounded: the genuine all-time extremes are sourced
+  // separately via `readAllTimeExtremes` on the bounded branch, so capping only
+  // sheds the deepest rows of the bulk read and never relabels an extreme.
+  const measurements = !needsMeasurementRows
+    ? []
+    : await prisma.measurement
+        .findMany({
+          where: sinceCutoff
+            ? { userId, measuredAt: { gte: sinceCutoff }, deletedAt: null }
+            : { userId, deletedAt: null },
+          orderBy: { measuredAt: "desc" },
+          take: FEATURE_MEASUREMENT_ROW_CAP,
+          // Project only the columns every downstream consumer reads (`byType`,
+          // `summarize`, BP pairing, and `reconstructSleepNights`'s `SleepStageRow`).
+          // The PULSE / glucose windows are 200k-row-class; pulling every column
+          // (notes, externalId, …) is pure wasted I/O on the shared Prisma pool.
+          select: {
+            type: true,
+            value: true,
+            measuredAt: true,
+            sleepStage: true,
+            source: true,
+            deviceType: true,
+          },
+        })
+        // Restore ascending order so order-sensitive consumers (oldest/newest span,
+        // BP pairing, sleep reconstruction) see the same shape as before the cap.
+        .then((rows) => rows.reverse());
+
+  // v1.18.11 P1 — when the bulk read is bounded to a recent window, the
+  // windowed `summarize()` no longer covers the full history, so the `allTime*`
+  // fields would silently become "last `sinceDays` days" extremes. Source the
+  // genuine full-history min / max / mean from one grouped aggregation (no row
+  // materialisation) so the labels stay honest. Unbounded reads (sinceCutoff
+  // null) already see the whole history and skip the extra query.
+  // Grouped by type, so asking for fewer types leaves each one's figures as
+  // they were.
+  const allTimeExtremes = sinceCutoff
+    ? await readAllTimeExtremes(
+        userId,
+        only
+          ? allTimeTypes
+          : ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "PULSE"],
+      )
+    : null;
+
+  const byType = (type: string) => measurements.filter((m) => m.type === type);
+  // The zone pulse days are read in; resolved only when there is pulse to read.
+  const pulseTz = measurements.some((m) => m.type === "PULSE")
+    ? await resolveUserTimezone(userId)
+    : DEFAULT_TIMEZONE;
+
+  const bpTargets = getBpTargets(user?.dateOfBirth ?? null);
+
+  // Compute overall data span
+  const oldestMeasurement =
+    measurements.length > 0 ? measurements[0].measuredAt : null;
+  const newestMeasurement =
+    measurements.length > 0
+      ? measurements[measurements.length - 1].measuredAt
+      : null;
+  const overallSpanDays =
+    oldestMeasurement && newestMeasurement
+      ? Math.round(
+          (newestMeasurement.getTime() - oldestMeasurement.getTime()) /
+            (24 * 60 * 60 * 1000),
+        )
+      : 0;
+
+  // Compute age
+  let ageYears: number | null = null;
+  if (user?.dateOfBirth) {
+    const dob = user.dateOfBirth;
+    const today = new Date();
+    ageYears = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      ageYears--;
+    }
+  }
+
+  const features: AggregatedFeatures = {
+    context: {
+      heightCm: user?.heightCm ?? null,
+      hasBpTargets: !!bpTargets,
+      totalMeasurements: measurements.length,
+      dataSpanDays: overallSpanDays,
+      oldestMeasurementDaysAgo: oldestMeasurement
+        ? Math.round(
+            (now - oldestMeasurement.getTime()) / (24 * 60 * 60 * 1000),
+          )
+        : null,
+      newestMeasurementDaysAgo: newestMeasurement
+        ? Math.round(
+            (now - newestMeasurement.getTime()) / (24 * 60 * 60 * 1000),
+          )
+        : null,
+      ageYears,
+      gender: user?.gender ?? null,
+    },
+  };
+
+  // Weight
+  const weightData = byType("WEIGHT");
+  if (wants("weight") && weightData.length > 0) {
+    const summary = summarize(toDataPoints(weightData));
+    const bmi =
+      user?.heightCm && summary.latest
+        ? parseFloat((summary.latest / (user.heightCm / 100) ** 2).toFixed(1))
+        : null;
+
+    features.weight = {
+      latest: summary.latest!,
+      avg7: summary.avg7,
+      avg30: summary.avg30,
+      avg90: avgInWindow(weightData, now, 90),
+      // v1.18.11 P1 — full-history extremes from the grouped aggregation when
+      // the bulk read is windowed; the in-window summary otherwise.
+      allTimeAvg: allTimeExtremes
+        ? roundMean(allTimeExtremes.get("WEIGHT")?.mean ?? null)
+        : summary.count > 0
+          ? summary.mean
+          : null,
+      allTimeMin: allTimeExtremes
+        ? (allTimeExtremes.get("WEIGHT")?.min ?? null)
+        : summary.count > 0
+          ? summary.min
+          : null,
+      allTimeMax: allTimeExtremes
+        ? (allTimeExtremes.get("WEIGHT")?.max ?? null)
+        : summary.count > 0
+          ? summary.max
+          : null,
+      slope30: summary.slope30?.slope ?? null,
+      outlierCount: summary.anomalyCount ?? 0,
+      bmi,
+      coverage: computeCoverage(weightData, now),
+    };
+    const weightTarget = buildWeightTargetFeature(
+      resolveWeightTargetOverride(user?.thresholdsJson),
+      { avg7: summary.avg7, latest: summary.latest },
+    );
+    if (weightTarget) features.weight.target = weightTarget;
+  }
+
+  // Blood Pressure
+  const sysData = byType("BLOOD_PRESSURE_SYS");
+  const diaData = byType("BLOOD_PRESSURE_DIA");
+  if (wants("bloodPressure") && (sysData.length > 0 || diaData.length > 0)) {
+    const sysSummary =
+      sysData.length > 0 ? summarize(toDataPoints(sysData)) : null;
+    const diaSummary =
+      diaData.length > 0 ? summarize(toDataPoints(diaData)) : null;
+
+    let pctInTarget: number | null = null;
+    if (bpTargets) {
+      const sysByTime = new Map(
+        sysData.map((m) => [m.measuredAt.getTime(), m.value]),
+      );
+      let inTargetCount = 0;
+      let pairedCount = 0;
+      for (const dia of diaData) {
+        const sysVal = sysByTime.get(dia.measuredAt.getTime());
+        if (sysVal === undefined) continue;
+        pairedCount++;
+        // v1.4.16 A2 — one-sided ceiling semantics with hypotension
+        // floor. See lib/analytics/bp-in-target.ts.
+        if (isBpReadingInTarget(sysVal, dia.value, bpTargets)) {
+          inTargetCount++;
+        }
+      }
+      pctInTarget =
+        pairedCount > 0
+          ? Math.round((inTargetCount / pairedCount) * 100)
+          : null;
+    }
+
+    features.bloodPressure = {
+      avgSys30: sysSummary?.avg30 ?? null,
+      avgDia30: diaSummary?.avg30 ?? null,
+      avgSys90: sysData.length > 0 ? avgInWindow(sysData, now, 90) : null,
+      avgDia90: diaData.length > 0 ? avgInWindow(diaData, now, 90) : null,
+      // v1.18.11 P1 — full-history extremes when the bulk read is windowed.
+      allTimeAvgSys: allTimeExtremes
+        ? roundMean(allTimeExtremes.get("BLOOD_PRESSURE_SYS")?.mean ?? null)
+        : sysSummary?.count
+          ? sysSummary.mean
+          : null,
+      allTimeAvgDia: allTimeExtremes
+        ? roundMean(allTimeExtremes.get("BLOOD_PRESSURE_DIA")?.mean ?? null)
+        : diaSummary?.count
+          ? diaSummary.mean
+          : null,
+      allTimeMinSys: allTimeExtremes
+        ? (allTimeExtremes.get("BLOOD_PRESSURE_SYS")?.min ?? null)
+        : sysSummary?.count
+          ? sysSummary.min
+          : null,
+      allTimeMaxSys: allTimeExtremes
+        ? (allTimeExtremes.get("BLOOD_PRESSURE_SYS")?.max ?? null)
+        : sysSummary?.count
+          ? sysSummary.max
+          : null,
+      allTimeMinDia: allTimeExtremes
+        ? (allTimeExtremes.get("BLOOD_PRESSURE_DIA")?.min ?? null)
+        : diaSummary?.count
+          ? diaSummary.min
+          : null,
+      allTimeMaxDia: allTimeExtremes
+        ? (allTimeExtremes.get("BLOOD_PRESSURE_DIA")?.max ?? null)
+        : diaSummary?.count
+          ? diaSummary.max
+          : null,
+      slopeSys30: sysSummary?.slope30?.slope ?? null,
+      slopeDia30: diaSummary?.slope30?.slope ?? null,
+      sdSys30: (() => {
+        const fromMs = now - 30 * 24 * 60 * 60 * 1000;
+        const vals = sysData
+          .filter((m) => m.measuredAt.getTime() >= fromMs)
+          .map((m) => m.value);
+        return stdDev(vals);
+      })(),
+      sdDia30: (() => {
+        const fromMs = now - 30 * 24 * 60 * 60 * 1000;
+        const vals = diaData
+          .filter((m) => m.measuredAt.getTime() >= fromMs)
+          .map((m) => m.value);
+        return stdDev(vals);
+      })(),
+      pulsePressure30: (() => {
+        const avgSys = sysSummary?.avg30 ?? null;
+        const avgDia = diaSummary?.avg30 ?? null;
+        if (avgSys === null || avgDia === null) return null;
+        return Math.round((avgSys - avgDia) * 10) / 10;
+      })(),
+      pctInTarget,
+      coverage: computeCoverage(
+        [...sysData, ...diaData].sort(
+          (a, b) => a.measuredAt.getTime() - b.measuredAt.getTime(),
+        ),
+        now,
+      ),
+    };
+  }
+
+  // Pulse
+  const pulseData = byType("PULSE");
+  if (wants("pulse") && pulseData.length > 0) {
+    const summary = summarize(toDataPoints(pulseData));
+    // A day of pulse is the mean of its local hours' means and a window the
+    // mean of its days (see `day-mean.ts`): `summarize` means every reading,
+    // so the means come from the shared helper over the same windows.
+    const pulseDays = { type: "PULSE", tz: pulseTz };
+    const pulseMean = (fromDaysAgo: number) =>
+      avgInWindow(pulseData, now, fromDaysAgo, 0, pulseDays);
+    const allPulse = readingsMean("PULSE", pulseData, pulseTz);
+    features.pulse = {
+      avg7: pulseMean(7),
+      avg30: pulseMean(30),
+      avg90: pulseMean(90),
+      // v1.18.11 P1 — full-history extremes when the bulk read is windowed.
+      allTimeAvg: allTimeExtremes
+        ? roundMean(allTimeExtremes.get("PULSE")?.mean ?? null)
+        : allPulse === null
+          ? null
+          : Math.round(allPulse * 100) / 100,
+      allTimeMin: allTimeExtremes
+        ? (allTimeExtremes.get("PULSE")?.min ?? null)
+        : summary.count > 0
+          ? summary.min
+          : null,
+      allTimeMax: allTimeExtremes
+        ? (allTimeExtremes.get("PULSE")?.max ?? null)
+        : summary.count > 0
+          ? summary.max
+          : null,
+      slope30: summary.slope30?.slope ?? null,
+      anomalyCount: summary.anomalyCount ?? 0,
+      coverage: computeCoverage(pulseData, now),
+    };
+  }
+
+  if (only) {
+    if (only.has("mood")) {
+      const moodRead = await readMoodFeature(userId);
+      if (moodRead.feature) features.mood = moodRead.feature;
+    }
+    return features;
+  }
+
+  // Body Fat
+  const fatData = byType("BODY_FAT");
+  if (fatData.length > 0) {
+    const summary = summarize(toDataPoints(fatData));
+    features.bodyFat = {
+      latest: summary.latest,
+      avg30: summary.avg30,
+      slope30: summary.slope30?.slope ?? null,
+      coverage: computeCoverage(fatData, now),
+    };
+  }
+
+  // Grip strength (kg) — clinical-depth signal; the briefing narrates the
+  // trajectory, the sex-aware EWGSOP2 floor stays at the display edge.
+  const gripData = byType("GRIP_STRENGTH");
+  if (gripData.length > 0) {
+    const summary = summarize(toDataPoints(gripData));
+    features.gripStrength = {
+      latest: summary.latest,
+      avg30: summary.avg30,
+      slope30: summary.slope30?.slope ?? null,
+      coverage: computeCoverage(gripData, now),
+    };
+  }
+
+  // Waist circumference (cm) + waist-to-height ratio. WHtR is computed from the
+  // freshest circumference and the user's height (the same canonical derivation
+  // the detail page uses); omitted when height is unknown.
+  const waistData = byType("WAIST_CIRCUMFERENCE");
+  if (waistData.length > 0) {
+    const summary = summarize(toDataPoints(waistData));
+    const whtrLatest =
+      user?.heightCm && summary.latest
+        ? Math.round((summary.latest / user.heightCm) * 100) / 100
+        : null;
+    features.waist = {
+      latest: summary.latest,
+      avg30: summary.avg30,
+      slope30: summary.slope30?.slope ?? null,
+      whtrLatest,
+      coverage: computeCoverage(waistData, now),
+    };
+  }
+
+  // Pain (0–10 NRS, lower-better) — surface a sustained or rising pain burden.
+  const painData = byType("PAIN_NRS");
+  if (painData.length > 0) {
+    const summary = summarize(toDataPoints(painData));
+    features.pain = {
+      latest: summary.latest,
+      avg7: summary.avg7,
+      avg30: summary.avg30,
+      slope30: summary.slope30?.slope ?? null,
+      coverage: computeCoverage(painData, now),
+    };
+  }
+
+  // Sleep Duration
+  //
+  // SLEEP_DURATION is stored ONE ROW PER STAGE per night, so summarising the
+  // raw stage rows would average individual stages (and double-count a bare
+  // ASLEEP aggregate against its granular CORE/DEEP/REM twin). Route the
+  // feature block through the per-night dedup reconstruction — the same helper
+  // the dashboard / series / status path use — so `avg7` / `avg30` / `latest`
+  // are per-night TIME-ASLEEP totals in minutes, never stage averages.
+  const sleepData = byType("SLEEP_DURATION");
+  if (sleepData.length > 0) {
+    const [sleepTz, sleepPriority] = await Promise.all([
+      resolveUserTimezone(userId),
+      loadUserSourcePriority(userId),
+    ]);
+    const sleepNights = reconstructSleepNights(
+      sleepData as unknown as SleepStageRow[],
+      sleepTz,
+      sleepPriority,
+    ).filter((n) => n.asleepMinutes > 0);
+    const summary = summarize(
+      sleepNights.map((n) => ({ date: n.measuredAt, value: n.asleepMinutes })),
+    );
+    features.sleep = {
+      avg7: summary.avg7,
+      avg30: summary.avg30,
+      latest: summary.latest,
+      coverage: computeCoverage(
+        sleepNights.map((n) => ({ measuredAt: n.measuredAt })),
+        now,
+      ),
+    };
+  }
+
+  // Activity Steps
+  const activityData = byType("ACTIVITY_STEPS");
+  if (activityData.length > 0) {
+    const summary = summarize(toDataPoints(activityData));
+    features.activity = {
+      avg7: summary.avg7,
+      avg30: summary.avg30,
+      latest: summary.latest,
+      coverage: computeCoverage(activityData, now),
+    };
+  }
+
+  // Mood — see `readMoodFeature`.
+  const moodRead = await readMoodFeature(userId);
+  const moodDailyPoints = moodRead.dailyPoints;
+  if (moodRead.feature) features.mood = moodRead.feature;
 
   // Cross-metric correlations
   const weightPoints = toDataPoints(weightData);

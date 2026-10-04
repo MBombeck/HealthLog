@@ -344,6 +344,7 @@ describe("get_metric_series", () => {
 
     expect(executeCoachTool).toHaveBeenCalledWith({
       userId: "user-1",
+      sourceSnapshot: true,
       name: "get_metric_series",
       rawArguments: JSON.stringify({ metric: "bp", window: "last90days" }),
     });
