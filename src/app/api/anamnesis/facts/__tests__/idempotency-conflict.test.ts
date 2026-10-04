@@ -58,9 +58,12 @@ vi.mock("@/lib/profile/health-facts", () => ({
 
 import { NextRequest } from "next/server";
 import { POST } from "../route";
+import { requestFingerprint } from "@/lib/idempotency";
 
 /** The pending sentinel `findCached` recognises as "another call is running". */
 const PENDING_STATUS = 0;
+
+const BODY = JSON.stringify({ kind: "SMOKING_STATUS", value: "FORMER" });
 
 function request(): NextRequest {
   return new NextRequest("http://localhost/api/anamnesis/facts", {
@@ -69,7 +72,7 @@ function request(): NextRequest {
       "content-type": "application/json",
       "idempotency-key": "key-in-flight",
     },
-    body: JSON.stringify({ kind: "SMOKING_STATUS", value: "FORMER" }),
+    body: BODY,
   });
 }
 
@@ -99,6 +102,12 @@ describe("idempotency 409 envelope, over the real route", () => {
   it("serves `error` as a string when a request is already in flight", async () => {
     mocks.findUnique.mockResolvedValue({
       id: "idem-1",
+      // The same request in flight: a different body would run instead.
+      requestFingerprint: requestFingerprint(
+        "POST",
+        "/api/anamnesis/facts",
+        new TextEncoder().encode(BODY),
+      ),
       responseStatus: PENDING_STATUS,
       responseBody: "",
       expiresAt: new Date(Date.now() + 60_000),

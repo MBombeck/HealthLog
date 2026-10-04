@@ -34,6 +34,20 @@ that follow the source priority.
 
 ### Fixed
 
+- **Blood pressure saved without its diastolic value (iOS #15, migration
+  0371).** The iPhone app sends the two halves of a manual reading as two
+  requests under one `Idempotency-Key`, and the server answered the second
+  with the first one's cached response. The replay cache now stores a SHA-256
+  fingerprint of method, path and body (JSON canonicalised, a multipart
+  boundary normalised) and replays only the same request; a different body
+  under the same key is saved. Readings saved before this stay incomplete;
+  `docs/ops/blood-pressure-missing-diastolic.md` lists them.
+- **Document previews and scanned PDFs (#1124).** The image hoisted an older
+  `@napi-rs/canvas` binary next to the pinned loader, so every thumbnail
+  failed; the build now hoists the pinned version and fails on a mismatch.
+  PDFs render with pdfjs font, cmap and wasm data and a registered fallback
+  font instead of absent system fonts, and an all-blank render reports
+  `raster-failed`. The thumbnail job logs why a preview is missing.
 - **Lab unit mismatch (#1094).** A reading in another unit than its marker is
   refused (`labs.unit.mismatch`) on every write path; a marker's unit is
   locked while it has readings (`biomarkers.unit.locked`).

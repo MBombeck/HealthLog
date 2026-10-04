@@ -171,8 +171,9 @@ tells you which rows to retry.
 ## Retries and duplicates
 
 Send an `Idempotency-Key` header with a value your automation can reproduce for
-the same reading. A retry with the same key returns the original response
-instead of writing a second row:
+the same reading. A retry with the same key and the same body returns the
+original response instead of writing a second row. A different body under the
+same key is a different reading and is written:
 
 ```yaml
 headers:
