@@ -259,3 +259,52 @@ describe("generateGeneralStatusForUser — token-leak hardening (v1.4.27 F16)", 
     expect(notes[0].text).not.toContain("metric:");
   });
 });
+
+describe("generateGeneralStatusForUser — a pulse day is the mean of its hours", () => {
+  it("folds pulse days and buckets by hours and days, other types unchanged", async () => {
+    // Yesterday: a workout hour of twelve readings at 150 and three resting
+    // hours at 60 (day value 82.5); the day before one reading at 60. The
+    // plain mean of yesterday's fifteen readings would be 132.
+    const now = new Date();
+    const midnight = (daysAgo: number) =>
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+      daysAgo * dayMs;
+    const at = (daysAgo: number, h: number, m = 0) =>
+      new Date(midnight(daysAgo) + h * 3_600_000 + m * 60_000);
+    const rows: Array<{ type: string; value: number; measuredAt: Date }> = [];
+    for (const type of ["PULSE", "WEIGHT"]) {
+      for (let i = 0; i < 12; i++) {
+        rows.push({ type, value: 150, measuredAt: at(1, 10, i * 5) });
+      }
+      for (const h of [12, 14, 16]) {
+        rows.push({ type, value: 60, measuredAt: at(1, h) });
+      }
+      rows.push({ type, value: 60, measuredAt: at(2, 8) });
+    }
+    rows.sort((a, b) => b.measuredAt.getTime() - a.measuredAt.getTime());
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dateOfBirth: null,
+      timezone: "UTC",
+    } as never);
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue(rows as never);
+    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
+      [] as never,
+    );
+    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
+    const captured: { userPrompt: string | null } = { userPrompt: null };
+    stubCompletion('{"summary":"OK"}', captured);
+
+    await generateGeneralStatusForUser("user-pulse-hours", { locale: "en" });
+
+    const snapshot = JSON.parse(captured.userPrompt!.match(/\{[\s\S]*\}/)![0]);
+    const pulse = snapshot.measurementSeries.PULSE;
+    expect(pulse.summary.mean).toBe(71.25);
+    expect(pulse.series.recent.map((d: { mean: number }) => d.mean)).toEqual([
+      60, 82.5,
+    ]);
+    const weight = snapshot.measurementSeries.WEIGHT;
+    expect(weight.series.recent.map((d: { mean: number }) => d.mean)).toEqual([
+      60, 132,
+    ]);
+  });
+});

@@ -57,6 +57,8 @@ import {
   readDayAggregates,
   type DayAggregateRow,
 } from "@/lib/measurements/day-aggregates";
+import { readingsMean } from "@/lib/measurements/day-mean";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { userDayKey } from "@/lib/tz/format";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -169,6 +171,20 @@ interface Agg {
   min: number;
   max: number;
   n: number;
+  /**
+   * Day-weighted sums for a type whose day is the mean of its hours' means
+   * (`DayAggregateRow.weightedSum` / `weightSum`); the bucket mean is then
+   * their ratio, the mean of its days. Absent for every other type.
+   */
+  ws?: number;
+  wd?: number;
+}
+
+/** A bucket's mean: of its days for an hourly-mean type, of its readings otherwise. */
+function aggMean(a: Agg): number {
+  return a.wd !== undefined && a.wd > 0 && a.ws !== undefined
+    ? a.ws / a.wd
+    : a.sum / a.n;
 }
 
 function foldInto(map: Map<string, Agg>, key: string, value: number): void {
@@ -214,8 +230,24 @@ export function buildGradedSeriesFromPoints(
   points: Point[],
   now: Date,
   timeZone: string,
+  /**
+   * The measurement type, when known. For a type whose day is the mean of its
+   * hours' means (pulse, `day-mean.ts`) every bucket's mean is the mean of its
+   * days; min, max and n stay over the readings.
+   */
+  type?: string,
 ): GradedSeries {
   const nowMs = now.getTime();
+  const hourly = type !== undefined && usesHourlyMeanDay(type);
+  const members = new Map<Agg, Point[]>();
+  const foldPoint = (map: Map<string, Agg>, key: string, p: Point) => {
+    foldInto(map, key, p.value);
+    if (!hourly) return;
+    const agg = map.get(key)!;
+    const list = members.get(agg);
+    if (list) list.push(p);
+    else members.set(agg, [p]);
+  };
 
   const recentAgg = new Map<string, Agg>();
   const weeklyAgg = new Map<string, Agg>();
@@ -231,18 +263,23 @@ export function buildGradedSeriesFromPoints(
     // Every bucket is a period of the user's own calendar.
     const { year, month, day } = localYmd(p.measuredAt, timeZone);
     if (ageMs < RECENT_WINDOW_MS) {
-      foldInto(recentAgg, `${year}-${month}-${day}`, p.value);
+      foldPoint(recentAgg, `${year}-${month}-${day}`, p);
     } else if (ageMs < WEEKLY_WINDOW_MS) {
-      foldInto(weeklyAgg, isoWeekKeyOfYmd(year, month, day), p.value);
+      foldPoint(weeklyAgg, isoWeekKeyOfYmd(year, month, day), p);
     } else if (ageMs < MONTHLY_WINDOW_MS) {
-      foldInto(monthlyAgg, `${year}-${month}`, p.value);
+      foldPoint(monthlyAgg, `${year}-${month}`, p);
     } else {
       const yk = year;
-      foldInto(yearlyAgg, yk, p.value);
+      foldPoint(yearlyAgg, yk, p);
       const list = yearlyValues.get(yk);
       if (list) list.push(p.value);
       else yearlyValues.set(yk, [p.value]);
     }
+  }
+
+  for (const [agg, list] of members) {
+    agg.ws = readingsMean(type!, list, timeZone) ?? agg.sum / agg.n;
+    agg.wd = 1;
   }
 
   const recent: RecentDayBucket[] = Array.from(recentAgg.entries())
@@ -250,7 +287,7 @@ export function buildGradedSeriesFromPoints(
       date,
       min: round(a.min),
       max: round(a.max),
-      mean: round(a.sum / a.n),
+      mean: round(aggMean(a)),
       n: a.n,
     }))
     .sort((x, y) => x.date.localeCompare(y.date));
@@ -260,7 +297,7 @@ export function buildGradedSeriesFromPoints(
       weekISO,
       min: round(a.min),
       max: round(a.max),
-      mean: round(a.sum / a.n),
+      mean: round(aggMean(a)),
       n: a.n,
     }))
     .sort((x, y) => x.weekISO.localeCompare(y.weekISO));
@@ -270,7 +307,7 @@ export function buildGradedSeriesFromPoints(
       month,
       min: round(a.min),
       max: round(a.max),
-      mean: round(a.sum / a.n),
+      mean: round(aggMean(a)),
       n: a.n,
     }))
     .sort((x, y) => x.month.localeCompare(y.month));
@@ -280,7 +317,7 @@ export function buildGradedSeriesFromPoints(
       year,
       min: round(a.min),
       max: round(a.max),
-      mean: round(a.sum / a.n),
+      mean: round(aggMean(a)),
       n: a.n,
       // Order the readings oldest → newest for the slope. The map kept
       // insertion order; `points` arrives caller-ordered, so re-sort by
@@ -304,8 +341,20 @@ function mergeInto(
     existing.n += row.n;
     if (row.min < existing.min) existing.min = row.min;
     if (row.max > existing.max) existing.max = row.max;
+    if (row.weightedSum !== undefined && row.weightSum !== undefined) {
+      existing.ws = (existing.ws ?? 0) + row.weightedSum;
+      existing.wd = (existing.wd ?? 0) + row.weightSum;
+    }
   } else {
-    map.set(key, { sum: row.sum, min: row.min, max: row.max, n: row.n });
+    map.set(key, {
+      sum: row.sum,
+      min: row.min,
+      max: row.max,
+      n: row.n,
+      ...(row.weightedSum !== undefined && row.weightSum !== undefined
+        ? { ws: row.weightedSum, wd: row.weightSum }
+        : {}),
+    });
   }
 }
 
@@ -359,7 +408,9 @@ async function readGradedDayAggregates(
  * The graded series folded from per-day aggregates (segment = age class).
  *
  * recent / weekly / monthly and every bucket's min / max / mean / n match
- * the raw-row fold exactly. The yearly slope is taken over the day means in
+ * the raw-row fold exactly, except that a type whose day is the mean of its
+ * hours' means (pulse, `day-mean.ts`) takes each bucket's mean over its days
+ * (the rows' `weightedSum` / `weightSum`), each day the mean of its hours. The yearly slope is taken over the day means in
  * date order rather than over individual readings: a direction signal either
  * way, and the only form that stays bounded on a dense stream.
  */
@@ -386,7 +437,10 @@ export function buildGradedSeriesFromDayAggregates(
     } else {
       mergeInto(yearlyAgg, year, row);
       const list = yearlyValues.get(year);
-      const dayMean = row.sum / row.n;
+      const dayMean =
+        row.weightedSum !== undefined && row.weightSum
+          ? row.weightedSum / row.weightSum
+          : row.sum / row.n;
       if (list) list.push(dayMean);
       else yearlyValues.set(year, [dayMean]);
     }
@@ -398,7 +452,7 @@ export function buildGradedSeriesFromDayAggregates(
         key,
         min: round(a.min),
         max: round(a.max),
-        mean: round(a.sum / a.n),
+        mean: round(aggMean(a)),
         n: a.n,
       }))
       .sort((x, y) => x.key.localeCompare(y.key));

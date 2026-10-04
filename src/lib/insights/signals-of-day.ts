@@ -54,13 +54,14 @@ export interface SignalOfDay {
 export function computeHistoricalComparison(
   records: Array<{ value: number; measuredAt: Date }>,
   now: number,
+  day?: { type: string; tz: string },
 ): {
   current7dAvg: number | null;
   previous30dAvg: number | null;
   change: number | null;
 } {
-  const current7dAvg = avgInWindow(records, now, 7, 0);
-  const previous30dAvg = avgInWindow(records, now, 37, 7);
+  const current7dAvg = avgInWindow(records, now, 7, 0, day);
+  const previous30dAvg = avgInWindow(records, now, 37, 7, day);
   const change =
     current7dAvg !== null && previous30dAvg !== null
       ? Math.round((current7dAvg - previous30dAvg) * 100) / 100
@@ -98,6 +99,7 @@ function buildSignal(
   records: Array<{ value: number; measuredAt: Date }>,
   now: number,
   unit?: string,
+  day?: { type: string; tz: string },
 ): SignalOfDay | null {
   if (records.length === 0) return null;
   const newest = records[records.length - 1];
@@ -112,8 +114,10 @@ function buildSignal(
   );
   if (win30.length < 3) return null;
 
-  const avg7 = avgInWindow(records, now, 7);
-  const avg30 = avgInWindow(records, now, 30);
+  // For pulse each window is the mean of its day values (`day-mean.ts`); the
+  // spread and the anomaly stay over the readings.
+  const avg7 = avgInWindow(records, now, 7, 0, day);
+  const avg30 = avgInWindow(records, now, 30, 0, day);
   const spread30 = stdDev(win30.map((rec) => rec.value));
   const deltaVs7 = avg7 !== null ? r2(newest.value - avg7) : null;
   const deltaVs30 = avg30 !== null ? r2(newest.value - avg30) : null;
@@ -186,6 +190,8 @@ function buildSignal(
 export function computeSignalsOfDay(
   byType: (type: string) => Array<{ value: number; measuredAt: Date }>,
   now: number,
+  /** The zone pulse days are read in (`day-mean.ts`). */
+  pulseTz: string = "UTC",
 ): SignalOfDay[] {
   const candidates: SignalOfDay[] = [];
   const push = (s: SignalOfDay | null) => {
@@ -213,7 +219,12 @@ export function computeSignalsOfDay(
       "bpm",
     ),
   );
-  push(buildSignal("pulse", "pulse", byType("PULSE"), now, "bpm"));
+  push(
+    buildSignal("pulse", "pulse", byType("PULSE"), now, "bpm", {
+      type: "PULSE",
+      tz: pulseTz,
+    }),
+  );
   // Weight and glucose are canonical here and carry no unit: the reader's
   // unit is attached where the signal is converted for the prompt
   // (`featuresInReaderUnits`), so no canonical symbol can leak into one.

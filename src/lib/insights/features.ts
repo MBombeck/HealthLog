@@ -14,7 +14,9 @@ import {
   SCHEDULE_COMPLIANCE_SELECT,
 } from "@/lib/analytics/compliance";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
-import { userDayKey } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
+import { readingsMean } from "@/lib/measurements/day-mean";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { isCurrentForTodayClaim } from "@/lib/insights/measurement-freshness";
 import { computeMoodDimensionSeries } from "@/lib/insights/mood-dimension-series";
 import { computeContextMoodComparison } from "@/lib/insights/mood-context-crosstab";
@@ -914,12 +916,19 @@ function computeCoverage(
   };
 }
 
-/** Compute average of values within a time window (days ago from now). */
+/**
+ * Compute average of values within a time window (days ago from now).
+ *
+ * `day` names the type and the zone its days are read in. For a type whose
+ * day is the mean of its hours' means (pulse, see `day-mean.ts`) the window
+ * is then the mean of its day values; every other type keeps the plain mean.
+ */
 export function avgInWindow(
   records: Array<{ value: number; measuredAt: Date }>,
   now: number,
   fromDaysAgo: number,
   toDaysAgo: number = 0,
+  day?: { type: string; tz: string },
 ): number | null {
   const fromMs = now - fromDaysAgo * 24 * 60 * 60 * 1000;
   const toMs = now - toDaysAgo * 24 * 60 * 60 * 1000;
@@ -928,6 +937,10 @@ export function avgInWindow(
     return t >= fromMs && t <= toMs;
   });
   if (filtered.length === 0) return null;
+  if (day && usesHourlyMeanDay(day.type)) {
+    const mean = readingsMean(day.type, filtered, day.tz);
+    return mean === null ? null : Math.round(mean * 100) / 100;
+  }
   const sum = filtered.reduce((s, r) => s + r.value, 0);
   return Math.round((sum / filtered.length) * 100) / 100;
 }
@@ -1033,6 +1046,10 @@ export async function extractFeatures(
     : null;
 
   const byType = (type: string) => measurements.filter((m) => m.type === type);
+  // The zone pulse days are read in; resolved only when there is pulse to read.
+  const pulseTz = measurements.some((m) => m.type === "PULSE")
+    ? await resolveUserTimezone(userId)
+    : DEFAULT_TIMEZONE;
 
   const bpTargets = getBpTargets(user?.dateOfBirth ?? null);
 
@@ -1231,16 +1248,23 @@ export async function extractFeatures(
   const pulseData = byType("PULSE");
   if (pulseData.length > 0) {
     const summary = summarize(toDataPoints(pulseData));
+    // A day of pulse is the mean of its local hours' means and a window the
+    // mean of its days (see `day-mean.ts`): `summarize` means every reading,
+    // so the means come from the shared helper over the same windows.
+    const pulseDays = { type: "PULSE", tz: pulseTz };
+    const pulseMean = (fromDaysAgo: number) =>
+      avgInWindow(pulseData, now, fromDaysAgo, 0, pulseDays);
+    const allPulse = readingsMean("PULSE", pulseData, pulseTz);
     features.pulse = {
-      avg7: summary.avg7,
-      avg30: summary.avg30,
-      avg90: avgInWindow(pulseData, now, 90),
+      avg7: pulseMean(7),
+      avg30: pulseMean(30),
+      avg90: pulseMean(90),
       // v1.18.11 P1 — full-history extremes when the bulk read is windowed.
       allTimeAvg: allTimeExtremes
         ? roundMean(allTimeExtremes.get("PULSE")?.mean ?? null)
-        : summary.count > 0
-          ? summary.mean
-          : null,
+        : allPulse === null
+          ? null
+          : Math.round(allPulse * 100) / 100,
       allTimeMin: allTimeExtremes
         ? (allTimeExtremes.get("PULSE")?.min ?? null)
         : summary.count > 0
@@ -1650,6 +1674,7 @@ export async function extractFeatures(
     features.historicalComparison.pulse = computeHistoricalComparison(
       pulseData,
       now,
+      { type: "PULSE", tz: pulseTz },
     );
   }
 
@@ -1768,7 +1793,7 @@ export async function extractFeatures(
   // in-memory measurement set (no extra DB round-trip). Lands inside the
   // compacted features payload, so it feeds both the briefing prompt AND the
   // content-hash gate — a fresh daily signal forces the briefing to refresh.
-  const signalsOfDay = computeSignalsOfDay(byType, now);
+  const signalsOfDay = computeSignalsOfDay(byType, now, pulseTz);
   if (signalsOfDay.length > 0) {
     features.signalsOfDay = signalsOfDay;
   }

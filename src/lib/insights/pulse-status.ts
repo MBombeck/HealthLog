@@ -229,7 +229,12 @@ export async function preparePulseStatusForUser(
   // `applyPayloadBudget` daily buckets still drive the derived stats
   // below (latest, in-target %, delta). They are NOT embedded in the
   // prompt — the compact graded series replaces the full daily array.
-  const pulseSeries = applyPayloadBudget(pulsePoints, { now, tz: userTz });
+  // A pulse day is the mean of its hours' means (`day-mean.ts`).
+  const pulseSeries = applyPayloadBudget(pulsePoints, {
+    now,
+    tz: userTz,
+    type: "PULSE",
+  });
   // Primary metric: recent / weekly fold from the bounded raw read, the
   // monthly / yearly tail comes from the MONTH / YEAR rollup tier (with
   // a full-history in-memory fallback on a cold-tier coverage miss).

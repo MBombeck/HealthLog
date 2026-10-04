@@ -8,6 +8,8 @@
  * is one-way (snapshot → series), never back.
  */
 import { userDayKey } from "@/lib/tz/format";
+import { dayValue, readingsMean } from "@/lib/measurements/day-mean";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import {
   applyDisplayTransform,
   type DisplayTransform,
@@ -135,11 +137,33 @@ function dailyMeans<T extends { measuredAt: Date; value: number }>(
   return grouped;
 }
 
+function groupRowsByDay(
+  rows: Array<{ measuredAt: Date; value: number }>,
+  tz: string,
+): Map<string, Array<{ measuredAt: Date; value: number }>> {
+  const out = new Map<string, Array<{ measuredAt: Date; value: number }>>();
+  for (const r of rows) {
+    const key = tzDayKey(r.measuredAt, tz);
+    const list = out.get(key);
+    if (list) list.push(r);
+    else out.set(key, [r]);
+  }
+  return out;
+}
+
+/**
+ * `type`, when given, names the measurement type: for a type whose day is the
+ * mean of its hours' means (pulse, `day-mean.ts`) a week's mean is the mean of
+ * its days and a day's value that day value. `count` stays the readings.
+ */
 export function bucketWeekly(
   rows: Array<{ measuredAt: Date; value: number }>,
   tz: string,
+  type?: string,
 ): WeeklyBucket[] {
+  const hourly = type !== undefined && usesHourlyMeanDay(type);
   const grouped = new Map<string, number[]>();
+  const members = new Map<string, Array<{ measuredAt: Date; value: number }>>();
   for (const r of rows) {
     const key = isoWeekKey(r.measuredAt, tz);
     const list = grouped.get(key);
@@ -148,15 +172,23 @@ export function bucketWeekly(
     } else {
       grouped.set(key, [r.value]);
     }
+    if (hourly) {
+      const kept = members.get(key);
+      if (kept) kept.push(r);
+      else members.set(key, [r]);
+    }
   }
   return Array.from(grouped.entries())
-    .map(([weekISO, values]) => ({
-      weekISO,
-      mean:
-        Math.round((values.reduce((s, v) => s + v, 0) / values.length) * 10) /
-        10,
-      count: values.length,
-    }))
+    .map(([weekISO, values]) => {
+      const mean = hourly
+        ? (readingsMean(type!, members.get(weekISO) ?? [], tz) ?? 0)
+        : values.reduce((s, v) => s + v, 0) / values.length;
+      return {
+        weekISO,
+        mean: Math.round(mean * 10) / 10,
+        count: values.length,
+      };
+    })
     .sort((a, b) => a.weekISO.localeCompare(b.weekISO));
 }
 
@@ -164,12 +196,19 @@ export function buildDailyValueRows(
   rows: Array<{ measuredAt: Date; value: number }>,
   recentCutoff: Date,
   tz: string,
+  type?: string,
 ): DailyValueRow[] {
   const recent = rows.filter((r) => r.measuredAt >= recentCutoff);
   const grouped = dailyMeans(recent, tz);
+  const hourly = type !== undefined && usesHourlyMeanDay(type);
+  const members = hourly
+    ? groupRowsByDay(recent, tz)
+    : new Map<string, Array<{ measuredAt: Date; value: number }>>();
   return Array.from(grouped.entries())
     .map(([date, info]) => {
-      const mean = info.values.reduce((s, v) => s + v, 0) / info.values.length;
+      const mean = hourly
+        ? (dayValue(type!, members.get(date) ?? [], tz) ?? 0)
+        : info.values.reduce((s, v) => s + v, 0) / info.values.length;
       return {
         date,
         weekday: tzWeekday(info.date, tz),

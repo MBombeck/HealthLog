@@ -624,3 +624,61 @@ describe("extractFeatures — S10 ECG device-verdict descriptor", () => {
     expect(call?.select?.rhythmClassification).toBe(true);
   });
 });
+
+describe("extractFeatures — a day of pulse is the mean of its hours' means", () => {
+  /**
+   * Two days: one with a workout hour of twelve readings at 150 and three
+   * resting hours of one reading at 60 (day value 82.5), one with a single
+   * resting reading at 60. Every window weighs each day once: 71.25. The plain
+   * mean over the seventeen readings would be about 123.5.
+   */
+  function pulseRows() {
+    const now = new Date();
+    const midnight = (daysAgo: number) =>
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+      daysAgo * dayMs;
+    const workout = midnight(2);
+    const rows: Array<{ type: string; value: number; measuredAt: Date }> = [];
+    for (let i = 0; i < 12; i += 1) {
+      rows.push({
+        type: "PULSE",
+        value: 150,
+        measuredAt: new Date(workout + 10 * 3_600_000 + i * 5 * 60_000),
+      });
+    }
+    for (const h of [12, 14, 16]) {
+      rows.push({
+        type: "PULSE",
+        value: 60,
+        measuredAt: new Date(workout + h * 3_600_000),
+      });
+    }
+    rows.push({
+      type: "PULSE",
+      value: 60,
+      measuredAt: new Date(midnight(3) + 8 * 3_600_000),
+    });
+    // The bulk read is newest-first; the builder reverses it.
+    return rows
+      .map((r) => ({
+        ...r,
+        sleepStage: null,
+        source: "APPLE_HEALTH",
+        deviceType: null,
+      }))
+      .sort((a, b) => b.measuredAt.getTime() - a.measuredAt.getTime());
+  }
+
+  it("weighs each day once in every pulse window and in the all-time mean", async () => {
+    prismaMock.measurement.findMany.mockResolvedValue(pulseRows());
+    const f = await extractFeatures("user-pulse-day", false);
+    expect(f.pulse?.avg7).toBe(71.25);
+    expect(f.pulse?.avg30).toBe(71.25);
+    expect(f.pulse?.avg90).toBe(71.25);
+    expect(f.pulse?.allTimeAvg).toBe(71.25);
+    // Extremes stay over every reading.
+    expect(f.pulse?.allTimeMin).toBe(60);
+    expect(f.pulse?.allTimeMax).toBe(150);
+    expect(f.historicalComparison?.pulse?.current7dAvg).toBe(71.25);
+  });
+});
