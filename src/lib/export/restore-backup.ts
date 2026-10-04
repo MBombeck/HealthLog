@@ -1515,6 +1515,130 @@ export async function restoreBackup(
         }
 
         reportSection("mood");
+        // The account's own categories, tags and hidden set are written
+        // whether or not the file carries a mood entry: an account that set
+        // up its mood vocabulary before logging a single entry has them too,
+        // and they used to be written only inside the entries branch.
+        // The account's own CATEGORIES go in before its tags. A custom
+        // tag's `categoryId` is a real foreign key, so writing the tag
+        // first threw `mood_tags_category_id_fkey` and rolled the entire
+        // restore back — an account that had grouped its own mood factors
+        // could not be restored at all, and the failure named a constraint
+        // rather than the thing that was missing.
+        //
+        // Upserted by key for the same reason the tags below are: `key` is
+        // globally unique, so a seeded category that later claims the key
+        // must be left alone rather than overwritten by a restore.
+        // Labels this host's keys do not open, by file path.
+        const unopenedMoodLabels: string[] = [];
+        for (const category of payload.customMoodTagCategories) {
+          await tx.moodTagCategory.upsert({
+            where: { key: category.key },
+            create: {
+              id: category.id,
+              userId: ownerId,
+              key: category.key,
+              labelKey: category.labelKey,
+              icon: category.icon ?? null,
+              sortOrder: category.sortOrder ?? 0,
+              isActive: category.isActive ?? true,
+              labelEncrypted: sealForRestore(
+                category.labelEncrypted,
+                category.label,
+                `customMoodTagCategories.${category.key}.labelEncrypted`,
+                unopenedMoodLabels,
+              ),
+            },
+            update: {},
+          });
+        }
+
+        // Re-create the account's own tag definitions first. The lookup
+        // below used to ask only for the seeded catalogue (`userId: null`),
+        // so a single custom rated tag made the whole restore throw
+        // "Unknown mood factor keys" — the file was complete and unusable.
+        for (const tag of payload.customMoodTags) {
+          await tx.moodTag.upsert({
+            where: { key: tag.key },
+            create: {
+              ...(tag.id ? { id: tag.id } : {}),
+              userId: ownerId,
+              key: tag.key,
+              labelKey: tag.labelKey,
+              categoryId: tag.categoryId,
+              kind: tag.kind,
+              isActive: tag.isActive,
+              icon: tag.icon ?? null,
+              sortOrder: tag.sortOrder,
+              labelEncrypted: sealForRestore(
+                tag.labelEncrypted,
+                tag.label,
+                `customMoodTags.${tag.key}.labelEncrypted`,
+                unopenedMoodLabels,
+              ),
+              scaleMin: tag.scaleMin,
+              scaleMax: tag.scaleMax,
+              inverse: tag.inverse,
+            },
+            // `key` is globally unique, so a seeded key would collide.
+            // Leave the catalogue row alone; the links resolve either way.
+            update: {},
+          });
+        }
+        recordUnknownKeys(
+          skips,
+          "moodLabelCiphertext",
+          unopenedMoodLabels,
+          unopenedMoodLabels,
+        );
+
+        // Which tags the account hid. Delete-then-recreate like every
+        // other section, and resolved by KEY: what people hide is almost
+        // always a seeded tag, whose id differs on every instance.
+        //
+        // A key this instance no longer knows costs one hidden row and is
+        // REPORTED. Dropping it silently would un-hide a factor the person
+        // had deliberately taken out of their mood editor, and they would
+        // have no way to know why it came back.
+        await tx.moodTagHidden.deleteMany({ where: { userId: ownerId } });
+        if (payload.hiddenMoodTags.length > 0) {
+          const hiddenKeys = payload.hiddenMoodTags.map((h) => h.key);
+          const hiddenRows = await tx.moodTag.findMany({
+            where: {
+              key: { in: [...new Set(hiddenKeys)] },
+              OR: [{ userId: null }, { userId: ownerId }],
+            },
+            select: { id: true, key: true },
+          });
+          const hiddenByKey = new Map(
+            hiddenRows.map((row) => [row.key, row.id]),
+          );
+          const unresolvedHidden: string[] = [];
+          const writableHidden = payload.hiddenMoodTags.filter((entry) => {
+            if (hiddenByKey.has(entry.key)) return true;
+            unresolvedHidden.push(entry.key);
+            return false;
+          });
+          if (writableHidden.length > 0) {
+            await tx.moodTagHidden.createMany({
+              data: writableHidden.map((entry) => ({
+                userId: ownerId,
+                moodTagId: hiddenByKey.get(entry.key)!,
+                ...(entry.createdAt
+                  ? { createdAt: new Date(entry.createdAt) }
+                  : {}),
+              })),
+              skipDuplicates: true,
+            });
+          }
+          recordUnknownKeys(
+            skips,
+            "moodTag",
+            [...new Set(unresolvedHidden)],
+            unresolvedHidden,
+          );
+        }
+
         if (payload.moodEntries.length > 0) {
           const referencedFactorKeys = payload.moodEntries.flatMap((entry) =>
             entry.factors.map((factor) => factor.key),
@@ -1524,126 +1648,6 @@ export async function restoreBackup(
             (entry) => entry.structuredTags,
           );
           const tagKeys = [...new Set(referencedTagKeys)];
-          // The account's own CATEGORIES go in before its tags. A custom
-          // tag's `categoryId` is a real foreign key, so writing the tag
-          // first threw `mood_tags_category_id_fkey` and rolled the entire
-          // restore back — an account that had grouped its own mood factors
-          // could not be restored at all, and the failure named a constraint
-          // rather than the thing that was missing.
-          //
-          // Upserted by key for the same reason the tags below are: `key` is
-          // globally unique, so a seeded category that later claims the key
-          // must be left alone rather than overwritten by a restore.
-          // Labels this host's keys do not open, by file path.
-          const unopenedMoodLabels: string[] = [];
-          for (const category of payload.customMoodTagCategories) {
-            await tx.moodTagCategory.upsert({
-              where: { key: category.key },
-              create: {
-                id: category.id,
-                userId: ownerId,
-                key: category.key,
-                labelKey: category.labelKey,
-                icon: category.icon ?? null,
-                sortOrder: category.sortOrder ?? 0,
-                isActive: category.isActive ?? true,
-                labelEncrypted: sealForRestore(
-                  category.labelEncrypted,
-                  category.label,
-                  `customMoodTagCategories.${category.key}.labelEncrypted`,
-                  unopenedMoodLabels,
-                ),
-              },
-              update: {},
-            });
-          }
-
-          // Re-create the account's own tag definitions first. The lookup
-          // below used to ask only for the seeded catalogue (`userId: null`),
-          // so a single custom rated tag made the whole restore throw
-          // "Unknown mood factor keys" — the file was complete and unusable.
-          for (const tag of payload.customMoodTags) {
-            await tx.moodTag.upsert({
-              where: { key: tag.key },
-              create: {
-                ...(tag.id ? { id: tag.id } : {}),
-                userId: ownerId,
-                key: tag.key,
-                labelKey: tag.labelKey,
-                categoryId: tag.categoryId,
-                kind: tag.kind,
-                isActive: tag.isActive,
-                icon: tag.icon ?? null,
-                sortOrder: tag.sortOrder,
-                labelEncrypted: sealForRestore(
-                  tag.labelEncrypted,
-                  tag.label,
-                  `customMoodTags.${tag.key}.labelEncrypted`,
-                  unopenedMoodLabels,
-                ),
-                scaleMin: tag.scaleMin,
-                scaleMax: tag.scaleMax,
-                inverse: tag.inverse,
-              },
-              // `key` is globally unique, so a seeded key would collide.
-              // Leave the catalogue row alone; the links resolve either way.
-              update: {},
-            });
-          }
-          recordUnknownKeys(
-            skips,
-            "moodLabelCiphertext",
-            unopenedMoodLabels,
-            unopenedMoodLabels,
-          );
-
-          // Which tags the account hid. Delete-then-recreate like every
-          // other section, and resolved by KEY: what people hide is almost
-          // always a seeded tag, whose id differs on every instance.
-          //
-          // A key this instance no longer knows costs one hidden row and is
-          // REPORTED. Dropping it silently would un-hide a factor the person
-          // had deliberately taken out of their mood editor, and they would
-          // have no way to know why it came back.
-          await tx.moodTagHidden.deleteMany({ where: { userId: ownerId } });
-          if (payload.hiddenMoodTags.length > 0) {
-            const hiddenKeys = payload.hiddenMoodTags.map((h) => h.key);
-            const hiddenRows = await tx.moodTag.findMany({
-              where: {
-                key: { in: [...new Set(hiddenKeys)] },
-                OR: [{ userId: null }, { userId: ownerId }],
-              },
-              select: { id: true, key: true },
-            });
-            const hiddenByKey = new Map(
-              hiddenRows.map((row) => [row.key, row.id]),
-            );
-            const unresolvedHidden: string[] = [];
-            const writableHidden = payload.hiddenMoodTags.filter((entry) => {
-              if (hiddenByKey.has(entry.key)) return true;
-              unresolvedHidden.push(entry.key);
-              return false;
-            });
-            if (writableHidden.length > 0) {
-              await tx.moodTagHidden.createMany({
-                data: writableHidden.map((entry) => ({
-                  userId: ownerId,
-                  moodTagId: hiddenByKey.get(entry.key)!,
-                  ...(entry.createdAt
-                    ? { createdAt: new Date(entry.createdAt) }
-                    : {}),
-                })),
-                skipDuplicates: true,
-              });
-            }
-            recordUnknownKeys(
-              skips,
-              "moodTag",
-              [...new Set(unresolvedHidden)],
-              unresolvedHidden,
-            );
-          }
-
           const factorRows =
             factorKeys.length === 0
               ? []

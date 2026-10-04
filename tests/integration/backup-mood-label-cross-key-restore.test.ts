@@ -122,30 +122,16 @@ async function restore(ownerId: string, payload: unknown) {
   });
 }
 
-/**
- * One mood entry. The restore writes the account's own tags and categories
- * inside its mood-entry branch, so a file without entries never reaches them.
- */
-async function seedMoodEntry(userId: string) {
-  await getPrismaClient().moodEntry.create({
-    data: {
-      userId,
-      date: "2026-07-01",
-      mood: "GUT",
-      score: 4,
-      source: "MOODLOG",
-      moodLoggedAt: new Date("2026-07-01T20:00:00.000Z"),
-    },
-  });
-}
-
 describe("custom mood labels in a portable file restored under another key", () => {
+  // Neither case logs a mood entry: an account's own tags and categories
+  // travel whether or not it has entries (they used to be written only inside
+  // the restore's entries branch, and a vocabulary set up before the first
+  // entry did not come back).
   it("come back readable under the receiving host's key", async () => {
     const prisma = getPrismaClient();
     const owner = await seedOwner();
 
     useKeys(HOST_A, "a");
-    await seedMoodEntry(owner.id);
     const category = await prisma.moodTagCategory.create({
       data: {
         userId: owner.id,
@@ -200,7 +186,6 @@ describe("custom mood labels in a portable file restored under another key", () 
 
     // The shape a portable file had before the fix: labels as ciphertext.
     useKeys(HOST_B, "b");
-    await seedMoodEntry(owner.id);
     const { payload: built } = await buildFullBackupPayload(prisma, owner.id);
     const file = JSON.parse(JSON.stringify(built)) as Record<string, unknown>;
     file.customMoodTagCategories = [
