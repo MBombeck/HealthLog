@@ -59,9 +59,8 @@ import {
 import { annotate } from "@/lib/logging/context";
 import {
   isCompatibleSchemaVersion,
-  parseBackupPayload,
   summarizeBackup,
-} from "@/lib/validations/backup";
+} from "@/lib/validations/backup-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +122,8 @@ async function readPreview(
 
   try {
     const streamed = await readStreamedBackup(source);
+    // Loaded on first use, not at import (see `backup-summary.ts`).
+    const { parseBackupPayload } = await import("@/lib/validations/backup");
     const payload = parseBackupPayload(streamed.raw);
     const summary = {
       ...summarizeBackup(payload),

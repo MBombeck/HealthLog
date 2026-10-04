@@ -2,10 +2,8 @@ import { createCipheriv, randomBytes } from "node:crypto";
 import type { Readable } from "node:stream";
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import {
-  BACKUP_SCHEMA_VERSION,
-  backupPayloadSchema,
-} from "@/lib/validations/backup";
+import { backupPayloadSchema } from "@/lib/validations/backup";
+import { BACKUP_SCHEMA_VERSION } from "@/lib/validations/backup-summary";
 
 const mocks = vi.hoisted(() => ({
   buildFullBackupPayload: vi.fn(),

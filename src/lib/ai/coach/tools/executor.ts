@@ -47,6 +47,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { buildCoachSnapshot } from "@/lib/ai/coach/snapshot";
+import { buildCoachSourceSnapshot } from "@/lib/ai/coach/source-snapshot";
 import { admitCoachSources, coachExclusions } from "@/lib/ai/coach/scope-gate";
 import type { CoachPrefs } from "@/lib/validations/coach-prefs";
 import { readMessageResults } from "@/lib/ai/coach/persistence";
@@ -241,11 +242,25 @@ export async function executeCoachTool(args: {
    * already-built cache entry instead of rebuilding a single-source snapshot.
    */
   sharedScope?: CoachScope;
+  /**
+   * Build a single-metric read from that source's own rows
+   * (`source-snapshot.ts`) rather than from a Coach snapshot. Set by the MCP
+   * surface, whose reads have no turn snapshot to land on and keep only the
+   * one section; the section is the same either way.
+   */
+  sourceSnapshot?: boolean;
   /** v1.39.4 — the chat turn, when the call runs inside one. */
   turn?: CoachToolTurnContext;
 }): Promise<CoachToolResult> {
-  const { userId, name, rawArguments, fallbackWindow, sharedScope, turn } =
-    args;
+  const {
+    userId,
+    name,
+    rawArguments,
+    fallbackWindow,
+    sharedScope,
+    sourceSnapshot = false,
+    turn,
+  } = args;
 
   if (!isCoachToolName(name) && name !== SHOW_RESULT_TOOL_NAME) {
     annotate({
@@ -277,6 +292,7 @@ export async function executeCoachTool(args: {
             fallbackWindow,
             sharedScope,
             turn,
+            sourceSnapshot,
           );
     annotate({
       action: { name: "coach.tool.executed" },
@@ -304,6 +320,7 @@ async function dispatch(
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
   turn: CoachToolTurnContext | undefined,
+  sourceSnapshot: boolean,
 ): Promise<CoachToolResult> {
   const result = await dispatchRead(
     name,
@@ -312,6 +329,7 @@ async function dispatch(
     fallbackWindow,
     sharedScope,
     turn,
+    sourceSnapshot,
   );
   if (!turn || !result.present || result.table) return result;
   return withProjectedTable(
@@ -331,10 +349,17 @@ async function dispatchRead(
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
   turn: CoachToolTurnContext | undefined,
+  sourceSnapshot: boolean,
 ): Promise<CoachToolResult> {
   switch (name) {
     case "get_metric_series":
-      return getMetricSeries(userId, rawArgs, fallbackWindow, sharedScope);
+      return getMetricSeries(
+        userId,
+        rawArgs,
+        fallbackWindow,
+        sharedScope,
+        sourceSnapshot,
+      );
     case "get_glucose_panel":
       return getGlucosePanel(userId, rawArgs, fallbackWindow, sharedScope);
     case "get_sleep":
@@ -388,6 +413,7 @@ async function getMetricSeries(
   rawArgs: unknown,
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
+  sourceSnapshot: boolean,
 ): Promise<CoachToolResult> {
   const parsed = getMetricSeriesArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_metric_series", parsed.error);
@@ -413,10 +439,15 @@ async function getMetricSeries(
     return { present: false, reason: "unsupported_metric" };
   }
 
-  const snapshot = await buildCoachSnapshot(
-    userId,
-    scopeFor([metric], window, fallbackWindow, sharedScope),
-  );
+  // An MCP read needs one section and nothing else, so it is built from that
+  // source's own rows: the same section, without the context blocks a Coach
+  // turn carries. See `source-snapshot.ts`.
+  const snapshot = sourceSnapshot
+    ? await buildCoachSourceSnapshot(userId, metric, window ?? fallbackWindow)
+    : await buildCoachSnapshot(
+        userId,
+        scopeFor([metric], window, fallbackWindow, sharedScope),
+      );
   const section = pickSection(snapshot.sections, sectionKey);
   if (section === undefined) {
     return emptyRead(

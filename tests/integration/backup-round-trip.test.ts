@@ -79,7 +79,8 @@ import { legacyStreamedBlobFrom } from "@/__tests__/helpers/legacy-backup-blob";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { BackupKeyIdCollector } from "@/lib/export/backup-key-ids";
 import { createBackupPreviewCollector } from "@/lib/export/backup-preview";
-import { parseBackupPayload, summarizeBackup } from "@/lib/validations/backup";
+import { parseBackupPayload } from "@/lib/validations/backup";
+import { summarizeBackup } from "@/lib/validations/backup-summary";
 import {
   TWO_ENDED_MODELS,
   USER_COLUMN_BACKUP_CLASS,

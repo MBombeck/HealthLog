@@ -67,13 +67,15 @@ const summarizeMock = vi.fn();
 const compatibleMock = vi.fn((version: string) => version !== "99");
 vi.mock("@/lib/validations/backup", () => ({
   parseBackupPayload: (...a: unknown[]) => parseMock(...a),
-  summarizeBackup: (...a: unknown[]) => summarizeMock(...a),
-  isCompatibleSchemaVersion: (version: string) => compatibleMock(version),
   // The measurements are read as a stream and counted one by one.
-  BACKUP_SCHEMA_VERSION: "2",
   backupMeasurementSchema: {
     safeParse: (value: unknown) => ({ success: true, data: value }),
   },
+}));
+vi.mock("@/lib/validations/backup-summary", () => ({
+  summarizeBackup: (...a: unknown[]) => summarizeMock(...a),
+  isCompatibleSchemaVersion: (version: string) => compatibleMock(version),
+  BACKUP_SCHEMA_VERSION: "2",
 }));
 
 import { GET } from "../route";

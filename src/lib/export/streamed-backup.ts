@@ -23,11 +23,22 @@
  */
 import { BackupKeyIdCollector } from "@/lib/export/backup-key-ids";
 import { scanBackupJson } from "@/lib/export/backup-json-scan";
-import {
-  BACKUP_SCHEMA_VERSION,
+import type {
+  BackupMeasurement,
   backupMeasurementSchema,
-  type BackupMeasurement,
 } from "@/lib/validations/backup";
+import { BACKUP_SCHEMA_VERSION } from "@/lib/validations/backup-summary";
+
+type MeasurementSchema = typeof backupMeasurementSchema;
+
+/**
+ * The element schema, loaded with the rest of `backup.ts` on the first read
+ * rather than at import: the module sits on the boot path of the restore job
+ * and the schema is ~12 MB of heap (`backup-summary.ts`).
+ */
+async function loadMeasurementSchema(): Promise<MeasurementSchema> {
+  return (await import("@/lib/validations/backup")).backupMeasurementSchema;
+}
 
 /** The file's bytes, from the start, every time it is called. */
 export type BackupSource = () => AsyncIterable<Uint8Array>;
@@ -69,8 +80,12 @@ export interface StreamedBackup {
   ): Promise<void>;
 }
 
-function parseMeasurement(element: unknown, index: number): BackupMeasurement {
-  const parsed = backupMeasurementSchema.safeParse(element);
+function parseMeasurement(
+  schema: MeasurementSchema,
+  element: unknown,
+  index: number,
+): BackupMeasurement {
+  const parsed = schema.safeParse(element);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     throw new StreamedBackupInvalidError(
@@ -98,6 +113,7 @@ export async function readStreamedBackup(
   source: BackupSource,
   options: ReadStreamedBackupOptions = {},
 ): Promise<StreamedBackup> {
+  const schema = await loadMeasurementSchema();
   let firstWithoutId: number | null = null;
   let bytes = 0;
   const keys = new BackupKeyIdCollector();
@@ -110,7 +126,7 @@ export async function readStreamedBackup(
   const { document, streamedCounts } = await scanBackupJson(counted(), {
     streamKeys: STREAMED,
     onElement: (_key, element, index) => {
-      const row = parseMeasurement(element, index);
+      const row = parseMeasurement(schema, element, index);
       if (!row.id && firstWithoutId === null) firstWithoutId = index;
       keys.visit(element, MEASUREMENTS);
       options.onMeasurementChecked?.(index + 1);
@@ -146,7 +162,7 @@ export async function readStreamedBackup(
         streamKeys: STREAMED,
         skipKeys,
         onElement: async (_key, element, index) => {
-          batch.push(parseMeasurement(element, index));
+          batch.push(parseMeasurement(schema, element, index));
           if (batch.length >= size) {
             const full = batch;
             batch = [];

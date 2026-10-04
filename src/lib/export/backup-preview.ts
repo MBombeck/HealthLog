@@ -35,7 +35,7 @@ import {
 } from "@/lib/export/backup-key-ids";
 import type { FullBackupCounts } from "@/lib/export/full-backup-payload";
 import type { StoredBackupRef } from "@/lib/export/stored-backup";
-import type { BackupSummary } from "@/lib/validations/backup";
+import type { BackupSummary } from "@/lib/validations/backup-summary";
 
 export interface BackupPreview {
   version: 1;
