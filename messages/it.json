@@ -6080,6 +6080,17 @@
         "title": "Piani del Coach",
         "description": "I piani concordati con il Coach, da leggere o rimuovere.",
         "open": "Apri i piani"
+      },
+      "reasoning": {
+        "label": "Ragionamento",
+        "hint": "I modelli di ragionamento come Gemma o Qwen pensano prima di rispondere. Se lo disattivi, tutto il budget della risposta resta per la risposta stessa.",
+        "options": {
+          "default": "Predefinito",
+          "none": "Disattivato",
+          "low": "Basso",
+          "medium": "Medio",
+          "high": "Alto"
+        }
       }
     },
     "dashboard": {

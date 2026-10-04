@@ -5,6 +5,8 @@
  * this module under `src/components/settings/ai/`.
  */
 
+import type { ReasoningEffort } from "@/lib/ai/reasoning-effort";
+
 export interface InsightsSettings {
   codexStatus: string;
   codexConnectedAt: string | null;
@@ -40,7 +42,14 @@ export interface UserAIProvider {
   hasCompatKey: boolean;
   // v1.22 (#89) — per-user response timeout, in seconds (null = default).
   responseTimeoutSeconds: number | null;
+  // #1126 — reasoning setting of the Local and gateway entries (null =
+  // Default). Absent on a payload from a server older than the field.
+  localReasoningEffort?: ReasoningEffort | null;
+  compatReasoningEffort?: ReasoningEffort | null;
 }
+
+/** #1126 — the `reasoning_effort` values; "Off" is `none`. */
+export type { ReasoningEffort };
 
 /**
  * v1.4.16 phase B2 — provider tags exposed to the UI. Mirrors
