@@ -41,7 +41,6 @@ export const PUBLIC_PATHS = [
   "/api/version",
   "/api/notifications/vapid",
   "/api/monitoring/",
-  "/api/send",
   "/api/withings/webhook",
   // v1.11.0 — WHOOP webhook (`recovery.updated` / `sleep.updated` /
   // `workout.updated`, + `*.deleted`). Authenticated by the path-segment

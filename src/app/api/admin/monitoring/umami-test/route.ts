@@ -4,36 +4,16 @@ import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { getPublicMonitoringSettings } from "@/lib/monitoring-settings";
+import {
+  resolveUmamiCollectPath,
+  resolveUmamiSendUrls,
+} from "@/lib/monitoring/umami";
 import { safeFetch } from "@/lib/safe-fetch";
 
 export const dynamic = "force-dynamic";
 
 function redact(text: string): string {
   return text.replace(/https?:\/\/\S+/gi, "[url]");
-}
-
-function resolveUmamiSendUrls(scriptUrl: string | null): string[] {
-  if (!scriptUrl) return [];
-  try {
-    const parsed = new URL(scriptUrl);
-    const origin = parsed.origin;
-    const pathSegments = parsed.pathname.split("/").filter(Boolean);
-    const segments = [...pathSegments];
-
-    if (segments.length > 0 && segments[segments.length - 1]?.includes(".")) {
-      segments.pop();
-    }
-
-    const prefix = segments.length > 0 ? `/${segments.join("/")}` : "";
-    const candidates = [
-      `${origin}${prefix}/api/send`,
-      `${origin}/api/send`,
-      `${origin}/umami/api/send`,
-    ];
-    return Array.from(new Set(candidates));
-  } catch {
-    return [];
-  }
 }
 
 function resolveAppUrl(request: NextRequest): URL {
@@ -63,7 +43,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Umami script URL and website ID must be configured", 422);
   }
 
-  const targetUrls = resolveUmamiSendUrls(settings.umamiScriptUrl);
+  // The collect path is compiled into the operator's tracker build
+  // (`COLLECT_API_ENDPOINT`), so the test posts where the tracker would.
+  const collectPath = await resolveUmamiCollectPath(settings.umamiScriptUrl);
+  if (collectPath === null) {
+    return apiError("Umami script could not be fetched", 502);
+  }
+  const targetUrls = resolveUmamiSendUrls(settings.umamiScriptUrl, collectPath);
   if (targetUrls.length === 0) {
     return apiError("Umami script URL is invalid", 422);
   }
