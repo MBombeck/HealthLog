@@ -39,7 +39,7 @@ import {
   markBackupAttemptFinished,
   markBackupAttemptStarted,
   orderInterruptedLast,
-  readInterruptedBackupAttempts,
+  readAccountsToTakeLast,
 } from "@/lib/jobs/backup-pass-attempts";
 import { BACKUP_HEARTBEAT_SECONDS } from "@/lib/jobs/data-backup-policy";
 import { annotate, getEvent } from "@/lib/logging/context";
@@ -930,14 +930,15 @@ export async function runOffhostBackup(
 
   // By id, with an account whose last walk never came back behind the rest:
   // a record that killed the process once would otherwise lead every retry
-  // and keep every account after it out of the bucket
-  // (`backup-pass-attempts.ts`).
+  // and keep every account after it out of the bucket. Behind them for one
+  // run only, so a pass that stops on its budget still reaches it the run
+  // after (`backup-pass-attempts.ts`).
   const users = orderInterruptedLast(
     await prisma.user.findMany({
       select: { id: true },
       orderBy: { id: "asc" },
     }),
-    await readInterruptedBackupAttempts(prisma, OFFHOST_BACKUP_QUEUE),
+    await readAccountsToTakeLast(prisma, OFFHOST_BACKUP_QUEUE),
   );
   const doneThisRun = new Set<string>();
   if (runStartedAt) {
