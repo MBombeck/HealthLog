@@ -1,6 +1,7 @@
 "use client";
 
 import { RangeBar } from "@/components/targets/range-bar";
+import { cn } from "@/lib/utils";
 
 import { useLabNumber } from "./use-lab-format";
 
@@ -16,11 +17,14 @@ export function LabReferenceRangeBar({
   referenceLow,
   referenceHigh,
   unit,
+  className,
 }: {
   value: number | null;
   referenceLow: number | null;
   referenceHigh: number | null;
   unit: string;
+  /** Extra classes on the bar's wrapper; it caps itself at 12rem by default. */
+  className?: string;
 }) {
   const labNumber = useLabNumber();
   const hasLow = referenceLow !== null && Number.isFinite(referenceLow);
@@ -48,7 +52,7 @@ export function LabReferenceRangeBar({
   return (
     <div
       data-slot="lab-reference-range-bar"
-      className="w-full max-w-48 shrink-0"
+      className={cn("w-full max-w-48 shrink-0", className)}
       aria-label={rangeLabel}
     >
       <RangeBar

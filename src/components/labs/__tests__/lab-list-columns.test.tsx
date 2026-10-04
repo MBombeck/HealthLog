@@ -106,4 +106,63 @@ describe("<LabList> columns", () => {
     const html = renderList([reading({})]);
     expect(html).toMatch(/class="[^"]*lucide-chevron-right[^"]*lg:invisible/);
   });
+
+  describe("on a wide list", () => {
+    const NARROW_TIER =
+      "lg:@max-5xl:grid-cols-[minmax(0,1fr)_max-content_12rem_72px_auto]";
+    const WIDE_TIER =
+      "@5xl:grid-cols-[minmax(0,1fr)_max-content_minmax(12rem,18rem)_72px_auto]";
+
+    it("makes the card a container, so the columns follow the list's width, not the window's", () => {
+      const html = renderList([reading({})]);
+      expect(html).toMatch(/<div[^>]*class="[^"]*@container[^"]*"/);
+    });
+
+    it("leaves the lg table as it was and adds a wider tier from @5xl, the two excluding each other", () => {
+      const html = renderList([reading({})]);
+      expect(html).toContain(NARROW_TIER);
+      expect(html).toContain(WIDE_TIER);
+      // Name, badge, bar, trend and chevron: five columns in both tiers.
+      expect(NARROW_TIER.split("_")).toHaveLength(5);
+      expect(WIDE_TIER.split("_")).toHaveLength(5);
+    });
+
+    it("keeps the trend column as wide as its 72px sparkline in both tiers", () => {
+      expect(NARROW_TIER.split("_")[3]).toBe("72px");
+      expect(WIDE_TIER.split("_")[3]).toBe("72px");
+    });
+
+    it("keeps the name column the flexible one in both tiers", () => {
+      expect(NARROW_TIER).toContain("[minmax(0,1fr)_");
+      expect(WIDE_TIER).toContain("[minmax(0,1fr)_");
+    });
+
+    it("lets the range bar fill its column from lg, and caps it on a phone", () => {
+      const html = renderList([reading({})]);
+      expect(html).toMatch(
+        /data-slot="lab-reference-range-bar"[^>]*class="[^"]*max-w-48[^"]*lg:max-w-none/,
+      );
+      // The slot no longer pins the bar to 12rem itself.
+      expect(html).not.toContain("lg:w-48");
+    });
+
+    it("wraps a long analyte name from lg up and truncates it on a phone", () => {
+      const longName = "A".repeat(20) + " " + "B".repeat(100);
+      const html = renderList([reading({ analyte: longName })]);
+      expect(html).toContain(longName);
+      const cls = html.match(
+        /data-slot="lab-list-analyte"[^>]*class="([^"]*)"|class="([^"]*)"[^>]*data-slot="lab-list-analyte"/,
+      );
+      const classes = (cls?.[1] ?? cls?.[2] ?? "").split(" ");
+      expect(classes).toContain("truncate");
+      for (const c of [
+        "lg:overflow-visible",
+        "lg:whitespace-normal",
+        "lg:text-clip",
+        "lg:[overflow-wrap:anywhere]",
+      ]) {
+        expect(classes).toContain(c);
+      }
+    });
+  });
 });

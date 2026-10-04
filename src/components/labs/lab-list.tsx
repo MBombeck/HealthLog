@@ -93,8 +93,11 @@ function RangeBadgeCell({ status }: { status: LabResultDto["rangeStatus"] }) {
 
 function LabRangeBarSlot({ reading }: { reading: LabResultDto }) {
   return (
-    <div className={cn("w-full lg:w-48", MOBILE_CELL.rangeBar)}>
+    <div className={cn("w-full", MOBILE_CELL.rangeBar)}>
+      {/* A phone keeps the bar's own 12rem cap; from `lg` the bar fills its
+          column, which is 12rem until the list is wide enough to grow it. */}
       <LabReferenceRangeBar
+        className="lg:max-w-none"
         value={reading.value}
         referenceLow={reading.referenceLow}
         referenceHigh={reading.referenceHigh}
@@ -255,15 +258,26 @@ export function LabList({ onAddFirst }: { onAddFirst?: () => void } = {}) {
             {t("labs.showingLatestOf", { shown, total })}
           </p>
         ) : null}
-        <Card>
-          <CardContent className="divide-border grid grid-cols-1 divide-y p-0 lg:grid-cols-[minmax(0,1fr)_max-content_12rem_72px_auto] lg:gap-x-3">
+        {/* `@container` makes the columns follow the width the list has, not the
+            window's: below `@5xl` (64rem of card) the row is the `lg` table it
+            always was (the two tiers exclude each other, so the result does not
+            depend on the order the CSS is emitted in), from there up the range
+            bar takes part of the extra width instead of all of it going to the
+            name. The trend column stays 72px in both tiers: the sparkline is a
+            fixed 72px glyph, and a wider column would only open an empty strip
+            between it and the chevron. */}
+        <Card className="@container">
+          <CardContent className="divide-border grid grid-cols-1 divide-y p-0 lg:gap-x-3 lg:@max-5xl:grid-cols-[minmax(0,1fr)_max-content_12rem_72px_auto] @5xl:grid-cols-[minmax(0,1fr)_max-content_minmax(12rem,18rem)_72px_auto]">
             {groups.map((group) => {
               const inner = (
                 <div className={cn("min-w-0 flex-1", MOBILE_CELL.reading)}>
                   <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                    {/* One line with an ellipsis on a phone; from `lg` the name
+                        wraps instead, so a long one (the schema allows 120
+                        characters) always reads in full. */}
                     <span
                       data-slot="lab-list-analyte"
-                      className="truncate font-medium"
+                      className="truncate font-medium lg:overflow-visible lg:[overflow-wrap:anywhere] lg:text-clip lg:whitespace-normal"
                     >
                       {group.analyte}
                     </span>
