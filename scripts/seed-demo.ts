@@ -1766,10 +1766,32 @@ async function seed() {
       [convoId, userId, "Blood pressure trend", convoStart],
     );
 
+    // The provenance uses the contract tokens (`bp`, `resting_hr`, `sleep`):
+    // the client names an area only through a known token, so a token it
+    // cannot name never reaches the page. The steps give the answer its
+    // "Looked at 3 sources" header the way a live turn would; they carry no
+    // counts, since a count is the server's tally and the seed does not
+    // run a tool.
+    const seedStep = (
+      id: string,
+      tool: string,
+      domain: string,
+      domainLabel: string,
+    ) => ({
+      id,
+      tool,
+      labelKey: "coach.step.readWindow",
+      label: `Checking: ${domainLabel}, last 30 days`,
+      domain,
+      window: "last30days",
+      status: "done",
+    });
     const coachTurns: Array<{
       role: string;
       content: string;
       metricSourceJson?: string;
+      tokensUsed?: number;
+      model?: string;
     }> = [
       {
         role: "user",
@@ -1785,9 +1807,16 @@ async function seed() {
           "paying off — worth staying consistent with the morning measurements " +
           "so the trend stays easy to read.",
         metricSourceJson: JSON.stringify({
-          window: "last30days",
-          metrics: ["bloodPressure", "restingHeartRate", "sleep"],
+          windows: ["last30days"],
+          metrics: ["bp", "resting_hr", "sleep"],
+          steps: [
+            seedStep("s1", "get_metric_series", "bp", "Blood pressure"),
+            seedStep("s2", "get_metric_series", "resting_hr", "Resting HR"),
+            seedStep("s3", "get_sleep", "sleep", "Sleep"),
+          ],
         }),
+        tokensUsed: 1840,
+        model: aiModel,
       },
     ];
     for (let t = 0; t < coachTurns.length; t++) {
@@ -1795,8 +1824,8 @@ async function seed() {
       const ts = new Date(convoStart.getTime() + t * 60_000);
       const encrypted = Buffer.from(encryptToBytes(turn.content));
       await client.query(
-        `INSERT INTO coach_messages (id, conversation_id, role, encrypted_content, metric_source_json, provider_type, prompt_version, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        `INSERT INTO coach_messages (id, conversation_id, role, encrypted_content, metric_source_json, provider_type, prompt_version, tokens_used, model, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           cuid(),
           convoId,
@@ -1805,6 +1834,8 @@ async function seed() {
           turn.metricSourceJson ?? null,
           turn.role === "assistant" ? aiProvider : null,
           turn.role === "assistant" ? "demo" : null,
+          turn.tokensUsed ?? null,
+          turn.model ?? null,
           ts,
         ],
       );
