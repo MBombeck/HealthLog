@@ -20,7 +20,8 @@ import {
   storedPreviewFor,
 } from "@/lib/export/backup-preview";
 import type { FullBackupCounts } from "@/lib/export/full-backup-payload";
-import { backupPayloadSchema, summarizeBackup } from "@/lib/validations/backup";
+import { backupPayloadSchema } from "@/lib/validations/backup";
+import { summarizeBackup } from "@/lib/validations/backup-summary";
 
 const ts = "2026-07-19T07:00:00.000Z";
 /** A bytes-column value holding the string codec under key id `v3`. */
