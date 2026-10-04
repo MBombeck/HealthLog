@@ -2877,7 +2877,6 @@
       "sourcesFresh": "Aggiornate",
       "sourcesStale": "Datate",
       "sourcesFooter": "Il coach legge solo i dati che hai collegato.",
-      "evidenceLabel": "Su cosa si basa?",
       "metric": {
         "bp": "Pressione arteriosa",
         "weight": "Peso",
@@ -2956,10 +2955,6 @@
       "settingsSave": "Salva",
       "settingsSaved": "Salvato",
       "settingsCancel": "Annulla",
-      "feedbackHelpful": "Utile",
-      "feedbackUnhelpful": "Poco utile",
-      "feedbackThanks": "Grazie per il segnale.",
-      "feedbackError": "Impossibile salvare il feedback",
       "dailyLimitTitle": "Limite giornaliero raggiunto",
       "dailyLimitBody": "Limite giornaliero raggiunto. Il budget si reimposta a mezzanotte (UTC).",
       "providerRateLimitTitle": "Provider con rate-limit",
@@ -3113,7 +3108,16 @@
       "errorNotPermitted": "Il Coach non è disponibile in una cartella che qualcuno condivide con te.",
       "errorUnavailable": "Il Coach non è riuscito a controllare le sue impostazioni. Riprova tra un momento.",
       "errorOperatorOff": "L'IA è disattivata su questo server, quindi il Coach non può rispondere.",
-      "errorCoachOff": "Il Coach è disattivato. Puoi riattivarlo in Impostazioni, Moduli."
+      "errorCoachOff": "Il Coach è disattivato. Puoi riattivarlo in Impostazioni, Moduli.",
+      "answer": {
+        "scrollToBottom": "Vai all'ultimo messaggio",
+        "rememberDone": "Memorizzato",
+        "timeYesterday": "ieri {time}",
+        "timeEarlier": "{date}, {time}",
+        "areasDoneOne": "1 area consultata",
+        "areasDoneFew": "{count} aree consultate",
+        "areasDoneOther": "{count} aree consultate"
+      }
     },
     "relativeJustNow": "proprio ora",
     "relativeMinutesAgoOne": "{count} minuto fa",

@@ -154,7 +154,7 @@ const baseConversation: CoachConversationDetailDTO = {
 };
 
 describe("<MessageThread>", () => {
-  it("dates a table copied from an earlier answer by that answer, and widens the reply for it", () => {
+  it("dates a table copied from an earlier answer by that answer, in the full-width answer column", () => {
     const reused: CoachResultTable = {
       ref: "r1",
       source: {
@@ -211,7 +211,7 @@ describe("<MessageThread>", () => {
       // m2 was written on 10 May; the copy in m3 names that day.
       expect(html).toMatch(/From an earlier answer \([^)]*10[^)]*\)/);
       expect(html).toMatch(
-        /<div class="flex max-w-\[calc\(80%-2\.625rem\)\] flex-col gap-2 w-full">/,
+        /data-slot="coach-answer-column" class="[^"]*\bw-full\b[^"]*"/,
       );
     } finally {
       storedResults.value = undefined;
@@ -248,12 +248,13 @@ describe("<MessageThread>", () => {
     );
   });
 
-  it("renders source chips below an assistant bubble that carries provenance", () => {
+  it("folds an older message's provenance into the areas header, never a raw key", () => {
     const html = render(<MessageThread conversation={baseConversation} />);
-    expect(html).toContain('data-slot="coach-source-chips"');
-    expect(html).toContain('data-metric="bp"');
-    expect(html).toContain("last 30 days");
-    expect(html).toContain("n=26");
+    expect(html).toContain('data-slot="coach-turn-steps-done"');
+    expect(html).toContain("Looked at 1 area");
+    expect(html).not.toContain('data-slot="coach-source-chips"');
+    expect(html).not.toContain("insights.coach.metric.");
+    expect(html).not.toContain("n=26");
   });
 
   it("renders an in-flight streaming bubble alongside persisted history", () => {
@@ -447,11 +448,7 @@ describe("<MessageThread>", () => {
     );
   });
 
-  it("renders the evidence-block disclosure when keyValues is non-empty (EN)", () => {
-    // v1.4.22 — the Coach surfaces load-bearing numbers in a
-    // collapsible "What I'm looking at" disclosure under the assistant
-    // bubble. Verify the structure renders correctly and the entries
-    // show label / value / unit / window.
+  it("shows no evidence disclosure and no raw key values under an answer", () => {
     const withKeyValues: CoachConversationDetailDTO = {
       ...baseConversation,
       messages: [
@@ -468,63 +465,30 @@ describe("<MessageThread>", () => {
                 unit: "mmHg",
                 window: "last7days",
               },
-              {
-                label: "avg30 systolic",
-                value: "134",
-                unit: "mmHg",
-                window: "last30days",
-              },
             ],
           },
         },
       ],
     };
     const html = render(<MessageThread conversation={withKeyValues} />);
-    expect(html).toContain('data-slot="coach-evidence"');
-    expect(html).toContain("What I&#x27;m looking at");
-    expect(html).toContain('data-slot="coach-evidence-list"');
-    const rows = (html.match(/data-slot="coach-evidence-row"/g) ?? []).length;
-    expect(rows).toBe(2);
-    // v1.4.25 W5 — per-row source labels were dropped. The values +
-    // units + window framing stay; the redundant `kv.label` prefix
-    // (e.g. "avg7 systolic:") does not appear.
-    expect(html).not.toContain("avg7 systolic");
-    expect(html).not.toContain("avg30 systolic");
-    expect(html).toContain("138 mmHg");
-    expect(html).toContain("(last7days)");
-    expect(html).toContain("134 mmHg");
-    // Disclosure is collapsed by default (no `open` attribute).
-    expect(html).not.toMatch(/<details[^>]*\bopen\b/);
+    expect(html).not.toContain('data-slot="coach-evidence"');
+    expect(html).not.toContain("What I&#x27;m looking at");
+    expect(html).not.toContain("138 mmHg");
+    // The areas the answer drew on stay reachable from the header.
+    expect(html).toContain("Looked at 1 area");
   });
 
-  it("renders the evidence-block label in German under 'de' locale", () => {
-    const withKeyValues: CoachConversationDetailDTO = {
-      ...baseConversation,
-      messages: [
-        baseConversation.messages[0],
-        {
-          ...baseConversation.messages[1],
-          metricSource: {
-            windows: ["last30days"],
-            metrics: ["bp"],
-            keyValues: [
-              {
-                label: "avg30 systolisch",
-                value: "138",
-                unit: "mmHg",
-                window: "last30days",
-              },
-            ],
-          },
-        },
-      ],
-    };
-    const html = render(<MessageThread conversation={withKeyValues} />, "de");
-    expect(html).toContain("Worauf bezieht sich das?");
+  it("names the areas header in German under 'de'", () => {
+    const html = render(
+      <MessageThread conversation={baseConversation} />,
+      "de",
+    );
+    expect(html).toContain("1 Bereich angesehen");
+    expect(html).not.toContain("Worauf bezieht sich das?");
   });
 
-  it("renders entries without unit or window cleanly", () => {
-    const withKeyValues: CoachConversationDetailDTO = {
+  it("leaves out a metric token the bundle cannot name", () => {
+    const unknown: CoachConversationDetailDTO = {
       ...baseConversation,
       messages: [
         baseConversation.messages[0],
@@ -532,38 +496,15 @@ describe("<MessageThread>", () => {
           ...baseConversation.messages[1],
           metricSource: {
             windows: [],
-            metrics: ["compliance"],
-            keyValues: [{ label: "30-day adherence", value: "96" }],
+            // A token an older seed wrote; it names nothing.
+            metrics: ["bloodPressure" as never, "general"],
           },
         },
       ],
     };
-    const html = render(<MessageThread conversation={withKeyValues} />);
-    // v1.4.25 W5 — `kv.label` no longer renders; only the value
-    // bubbles up. The row still mounts so the value is visible.
-    expect(html).not.toContain("30-day adherence");
-    expect(html).toContain('data-slot="coach-evidence-row"');
-    expect(html).toMatch(/<strong[^>]*>\s*96\s*<\/strong>/);
-  });
-
-  it("folds the source chips into the collapsed disclosure (no key-values)", () => {
-    // v1.12.0 — the provenance block is now a single collapsed
-    // disclosure. baseConversation.messages[1].metricSource carries
-    // metrics + windows but no `keyValues`, so the disclosure renders
-    // (collapsed, with the chips inside) but the key-value list does
-    // not. The chips no longer paint outside / above the disclosure.
-    const html = render(<MessageThread conversation={baseConversation} />);
-    expect(html).toContain('data-slot="coach-evidence"');
-    expect(html).toContain('data-slot="coach-source-chips"');
-    expect(html).not.toContain('data-slot="coach-evidence-list"');
-    // Collapsed by default.
-    expect(html).not.toMatch(/<details[^>]*\bopen\b/);
-    // The chips render inside the `<details>` shell, not as a sibling
-    // above it.
-    const detailsIdx = html.indexOf('data-slot="coach-evidence"');
-    const chipsIdx = html.indexOf('data-slot="coach-source-chips"');
-    expect(detailsIdx).toBeGreaterThanOrEqual(0);
-    expect(chipsIdx).toBeGreaterThan(detailsIdx);
+    const html = render(<MessageThread conversation={unknown} />);
+    expect(html).not.toContain('data-slot="coach-turn-steps"');
+    expect(html).not.toContain("bloodPressure");
   });
 
   it("renders no disclosure when there is no provenance at all", () => {
@@ -579,7 +520,7 @@ describe("<MessageThread>", () => {
     };
     const html = render(<MessageThread conversation={noProvenance} />);
     expect(html).not.toContain('data-slot="coach-evidence"');
-    expect(html).not.toContain('data-slot="coach-source-chips"');
+    expect(html).not.toContain('data-slot="coach-turn-steps"');
   });
 
   it("renders the user bubble with the self-hosted avatar when one is set (v1.5.5)", () => {
@@ -689,40 +630,53 @@ describe("<MessageThread>", () => {
     expect(html).not.toContain('data-slot="coach-remember-message"');
   });
 
-  it("reveals the remember control on bubble hover/focus at sm+, keeps it visible on touch", () => {
+  it("reveals the user action row on bubble hover/focus at sm+, keeps it visible on touch", () => {
     const html = render(<MessageThread conversation={baseConversation} />);
-    const button = html.match(
-      /<button[^>]*data-slot="coach-remember-message"[^>]*>/,
+    const row = html.match(
+      /<div[^>]*data-slot="coach-user-actions"[^>]*>/,
     )?.[0];
-    expect(button).toBeTruthy();
+    expect(row).toBeTruthy();
     // Hidden only behind BOTH gates — `sm:` viewport AND a
     // hover-capable pointer — so touch devices (no hover media) keep
-    // the control always visible.
-    expect(button).toContain("sm:[@media(hover:hover)]:opacity-0");
-    expect(button).toContain(
+    // the row always visible.
+    expect(row).toContain("sm:[@media(hover:hover)]:opacity-0");
+    expect(row).toContain(
       "sm:[@media(hover:hover)]:group-hover/user-bubble:opacity-100",
     );
-    expect(button).toContain(
+    expect(row).toContain(
       "sm:[@media(hover:hover)]:group-focus-within/user-bubble:opacity-100",
     );
-    // The bubble column is the named hover/focus group.
     expect(html).toContain("group/user-bubble");
   });
 
-  it("hands focus to the settled confirmation instead of dropping it to body", () => {
-    // The settled branch unmounts the button the user just activated;
-    // the status paragraph takes the focus (`tabIndex={-1}` +
-    // programmatic focus on settle). SSR cannot exercise the focus
-    // call, so the wiring is pinned structurally.
+  it("puts remember in the user's action row, not on a line of its own", () => {
+    const html = render(<MessageThread conversation={baseConversation} />);
+    const row = html.match(
+      /<div[^>]*data-slot="coach-user-actions"[^>]*>([\s\S]*?)<\/div>/,
+    )?.[1];
+    expect(row).toBeTruthy();
+    const copy = row!.indexOf('data-slot="coach-remember-message"');
+    const time = row!.indexOf('data-slot="coach-message-time"');
+    expect(copy).toBeGreaterThan(-1);
+    expect(time).toBeGreaterThan(copy);
+    expect(html).not.toContain('data-slot="coach-remember-message-done"');
+  });
+
+  it("keeps the remember button mounted once it has settled, so focus stays on it", () => {
+    // A disabled or unmounted button drops keyboard focus to <body>; the
+    // settled button only turns inert. SSR cannot click, so the wiring is
+    // pinned structurally.
     const src = readFileSync(
       join(
         process.cwd(),
-        "src/components/insights/coach-panel/chat-bubble.tsx",
+        "src/components/insights/coach-panel/message-actions.tsx",
       ),
       "utf8",
     );
-    expect(src).toContain("statusRef.current?.focus()");
-    expect(src).toMatch(/ref=\{statusRef\}\s*\n\s*tabIndex=\{-1\}/);
+    expect(src).toContain("aria-disabled={inert || undefined}");
+    expect(src).not.toMatch(
+      /data-slot="coach-remember-message"[\s\S]{0,400}(?<![-\w])disabled=\{/,
+    );
   });
 
   // v1.4.25 W5 — distinct daily-limit vs provider-rate-limit copy.

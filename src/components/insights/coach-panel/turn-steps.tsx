@@ -13,11 +13,17 @@
  * server's enums and counts; a row never shows a value, a tool argument or
  * model text.
  *
+ * The open list also says how the answer was worked out (the method line)
+ * and holds the tables the answer read without pointing at them. An older
+ * message saved before steps existed folds into "Looked at 3 areas" and
+ * lists the areas from its provenance, without counts; a metric token the
+ * bundle has no name for is left out rather than shown as a raw key.
+ *
  * Screen readers hear each completed step once, through a polite status
  * region, at most one announcement per `ANNOUNCE_THROTTLE_MS` (the latest
  * wins). A reloaded conversation announces nothing.
  */
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   Check,
   ChevronRight,
@@ -36,12 +42,33 @@ import {
   coachPeriodLabelKey,
   coachWindowLabelKey,
 } from "@/lib/ai/coach/dialog-keys";
-import type { CoachStep } from "@/lib/ai/coach/types";
+import type {
+  CoachMethod,
+  CoachProvenanceMetric,
+  CoachStep,
+} from "@/lib/ai/coach/types";
+
+import { CoachMethodLine } from "./method-line";
 
 export interface CoachTurnStepsProps {
   steps: CoachStep[];
   /** True while the turn is still running. */
   active: boolean;
+}
+
+export interface CoachTurnStepsDetailProps extends CoachTurnStepsProps {
+  /**
+   * The provenance metrics, for a message saved before steps existed. Read
+   * only when `steps` is empty.
+   */
+  areas?: readonly CoachProvenanceMetric[];
+  /** How the answer was worked out; shown at the end of the open list. */
+  method?: CoachMethod | null;
+  /**
+   * The tables the answer read without pointing at them, shown last in the
+   * open list. Pass it only when there is something to show.
+   */
+  dataUsed?: ReactNode;
 }
 
 /** The shortest gap between two screen-reader announcements. */
@@ -238,6 +265,26 @@ function StepIcon({ step, active }: { step: CoachStep; active: boolean }) {
   );
 }
 
+/**
+ * The areas an older message drew on, in the order its provenance lists
+ * them, by their display names. A token without a name in the bundle is
+ * dropped, and so is `general`, which names no area of the record.
+ */
+export function legacyAreaLabels(
+  areas: readonly CoachProvenanceMetric[] | undefined,
+  t: Translate,
+): string[] {
+  const out: string[] = [];
+  for (const area of areas ?? []) {
+    if (area === "general") continue;
+    const key = `insights.coach.metric.${area}`;
+    const label = t(key);
+    if (label === key || out.includes(label)) continue;
+    out.push(label);
+  }
+  return out;
+}
+
 /** The rows under the header: one per step, in the order they started. */
 export function CoachTurnStepList({
   id,
@@ -250,7 +297,7 @@ export function CoachTurnStepList({
       id={id}
       data-slot="coach-turn-steps-list"
       aria-label={t(COACH_STEP_UI_KEYS.listLabel)}
-      className="border-border/60 mt-1.5 ml-1.5 flex flex-col gap-1 border-l pl-2.5"
+      className="flex flex-col gap-1"
     >
       {steps.map((step) => {
         const { title, meta } = describeStep(step, t, tCount);
@@ -279,7 +326,66 @@ export function CoachTurnStepList({
   );
 }
 
-export function CoachTurnSteps({ steps, active }: CoachTurnStepsProps) {
+/**
+ * The open list: the steps (or an older message's areas), then the method
+ * line, then the tables the answer read. One left rule holds them together.
+ */
+export function CoachTurnStepsPanel({
+  id,
+  steps,
+  active,
+  areaLabels,
+  method,
+  dataUsed,
+}: CoachTurnStepsProps & {
+  id?: string;
+  areaLabels: string[];
+  method?: CoachMethod | null;
+  dataUsed?: ReactNode;
+}) {
+  const { t } = useTranslations();
+  return (
+    <div
+      id={id}
+      data-slot="coach-turn-steps-panel"
+      className="border-border/60 mt-1.5 ml-1.5 flex min-w-0 flex-col gap-2 border-l pl-2.5"
+    >
+      {steps.length > 0 ? (
+        <CoachTurnStepList steps={steps} active={active} />
+      ) : areaLabels.length > 0 ? (
+        <ul
+          data-slot="coach-turn-areas"
+          aria-label={t(COACH_STEP_UI_KEYS.listLabel)}
+          className="flex flex-col gap-1"
+        >
+          {areaLabels.map((label) => (
+            <li
+              key={label}
+              data-slot="coach-turn-area"
+              className="text-foreground/80 flex items-start gap-1.5 leading-relaxed"
+            >
+              <Check
+                aria-hidden="true"
+                className="text-muted-foreground mt-0.5 size-3 shrink-0"
+              />
+              <span className="min-w-0">{label}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {!active && <CoachMethodLine method={method ?? null} />}
+      {!active && dataUsed}
+    </div>
+  );
+}
+
+export function CoachTurnSteps({
+  steps,
+  active,
+  areas,
+  method,
+  dataUsed,
+}: CoachTurnStepsDetailProps) {
   const { t, tCount } = useTranslations();
   const listId = useId();
   // Closed by default; the reader's toggle holds until the turn ends, and
@@ -294,14 +400,31 @@ export function CoachTurnSteps({ steps, active }: CoachTurnStepsProps) {
     t(COACH_STEP_UI_KEYS.announceDone, { label: rowText(step, t, tCount) }),
   );
 
-  if (steps.length === 0) return null;
+  const areaLabels = steps.length === 0 ? legacyAreaLabels(areas, t) : [];
+  const hasMethod = !active && !!method?.text;
+  const hasDataUsed = !active && dataUsed != null && dataUsed !== false;
+  if (
+    steps.length === 0 &&
+    areaLabels.length === 0 &&
+    !hasMethod &&
+    !hasDataUsed
+  ) {
+    return null;
+  }
   const open = openOverride ?? false;
   const current = active ? currentStep(steps) : null;
+  const header = current
+    ? null
+    : steps.length > 0
+      ? tCount("coach.step.headerDone", countSources(steps))
+      : areaLabels.length > 0
+        ? tCount("insights.coach.answer.areasDone", areaLabels.length)
+        : t(COACH_STEP_UI_KEYS.listLabel);
 
   return (
     <div
       data-slot="coach-turn-steps"
-      className="flex max-w-full flex-col text-xs"
+      className="flex w-full max-w-full min-w-0 flex-col self-stretch text-xs"
     >
       <button
         type="button"
@@ -345,11 +468,20 @@ export function CoachTurnSteps({ steps, active }: CoachTurnStepsProps) {
           </span>
         ) : (
           <span data-slot="coach-turn-steps-done" className="min-w-0 truncate">
-            {tCount("coach.step.headerDone", countSources(steps))}
+            {header}
           </span>
         )}
       </button>
-      {open && <CoachTurnStepList id={listId} steps={steps} active={active} />}
+      {open && (
+        <CoachTurnStepsPanel
+          id={listId}
+          steps={steps}
+          active={active}
+          areaLabels={areaLabels}
+          method={method}
+          dataUsed={hasDataUsed ? dataUsed : null}
+        />
+      )}
       <span
         role="status"
         aria-live="polite"

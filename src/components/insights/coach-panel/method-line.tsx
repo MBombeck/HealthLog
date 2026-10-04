@@ -1,11 +1,10 @@
 "use client";
 
 /**
- * v1.39.4 — how an answer was worked out, as one muted line inside the
- * evidence disclosure: sources, windows, counts and aggregation, rendered
+ * v1.39.4 — how an answer was worked out, as one muted line at the end of
+ * the open steps list: sources, windows, counts and aggregation, rendered
  * on the server in the request locale. Never a health value, so it sits in
- * the meta tier beside the key values it explains rather than repeating
- * them.
+ * the meta tier.
  */
 import { useTranslations } from "@/lib/i18n/context";
 import { COACH_METHOD_KEYS } from "@/lib/ai/coach/dialog-keys";

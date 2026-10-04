@@ -2877,7 +2877,6 @@
       "sourcesFresh": "Aktualne",
       "sourcesStale": "Nieaktualne",
       "sourcesFooter": "Coach czyta tylko dane, które podłączyłeś.",
-      "evidenceLabel": "Na czym to się opiera?",
       "metric": {
         "bp": "Ciśnienie krwi",
         "weight": "Waga",
@@ -2956,10 +2955,6 @@
       "settingsSave": "Zapisz",
       "settingsSaved": "Zapisano",
       "settingsCancel": "Anuluj",
-      "feedbackHelpful": "Przydatne",
-      "feedbackUnhelpful": "Mało przydatne",
-      "feedbackThanks": "Dzięki za sygnał.",
-      "feedbackError": "Nie udało się zapisać opinii",
       "dailyLimitTitle": "Osiągnięto dzienny limit",
       "dailyLimitBody": "Osiągnięto dzienny limit. Limit resetuje się o północy (UTC).",
       "providerRateLimitTitle": "Dostawca z ograniczeniem",
@@ -3113,7 +3108,16 @@
       "errorNotPermitted": "Coach nie jest dostępny w kartotece, którą ktoś Ci udostępnił.",
       "errorUnavailable": "Coach nie mógł teraz sprawdzić swoich ustawień. Spróbuj ponownie za chwilę.",
       "errorOperatorOff": "AI jest wyłączone na tym serwerze, więc Coach nie może odpowiedzieć.",
-      "errorCoachOff": "Coach jest wyłączony. Możesz go ponownie włączyć w Ustawieniach, Moduły."
+      "errorCoachOff": "Coach jest wyłączony. Możesz go ponownie włączyć w Ustawieniach, Moduły.",
+      "answer": {
+        "scrollToBottom": "Przejdź do najnowszej wiadomości",
+        "rememberDone": "Zapamiętano",
+        "timeYesterday": "wczoraj {time}",
+        "timeEarlier": "{date}, {time}",
+        "areasDoneOne": "Sprawdzono 1 obszar",
+        "areasDoneFew": "Sprawdzono {count} obszary",
+        "areasDoneOther": "Sprawdzono {count} obszarów"
+      }
     },
     "relativeJustNow": "przed chwilą",
     "relativeMinutesAgoOne": "{count} minutę temu",

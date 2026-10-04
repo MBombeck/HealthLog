@@ -173,7 +173,14 @@ const PINNED_AFFORDANCES: Record<
     CheckCircle2: 2,
     "toast.success": 1,
   },
-  "src/components/insights/coach-panel/chat-bubble.tsx": { "text-success": 4 },
+  // The Coach message action row: the copy tick after the clipboard write
+  // resolved, and the remember icon and toast only for the self-context entry
+  // the tap wrote (`adopted`); an entry that was already there gets a neutral
+  // icon and `toast.info`.
+  "src/components/insights/coach-panel/message-actions.tsx": {
+    "text-success": 2,
+    "toast.success": 1,
+  },
   // The copy tick on a result table: shown only after the clipboard write
   // resolved, so it reports a copy that happened; nothing is written to the
   // record.

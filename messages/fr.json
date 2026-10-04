@@ -2877,7 +2877,6 @@
       "sourcesFresh": "À jour",
       "sourcesStale": "Obsolètes",
       "sourcesFooter": "Le coach ne lit que les données que tu as connectées.",
-      "evidenceLabel": "Sur quoi est-ce fondé ?",
       "metric": {
         "bp": "Tension artérielle",
         "weight": "Poids",
@@ -2956,10 +2955,6 @@
       "settingsSave": "Enregistrer",
       "settingsSaved": "Enregistré",
       "settingsCancel": "Annuler",
-      "feedbackHelpful": "Utile",
-      "feedbackUnhelpful": "Peu utile",
-      "feedbackThanks": "Merci pour l’indication.",
-      "feedbackError": "Impossible d'enregistrer le retour",
       "dailyLimitTitle": "Limite quotidienne atteinte",
       "dailyLimitBody": "Limite quotidienne atteinte. Le quota se réinitialise à minuit (UTC).",
       "providerRateLimitTitle": "Fournisseur limité en débit",
@@ -3113,7 +3108,16 @@
       "errorNotPermitted": "Le Coach n'est pas disponible dans un dossier que quelqu'un partage avec vous.",
       "errorUnavailable": "Le Coach n'a pas pu vérifier ses réglages pour l'instant. Réessayez dans un instant.",
       "errorOperatorOff": "L'IA est désactivée sur ce serveur, le Coach ne peut donc pas répondre.",
-      "errorCoachOff": "Le Coach est désactivé. Vous pouvez le réactiver dans Réglages, Modules."
+      "errorCoachOff": "Le Coach est désactivé. Vous pouvez le réactiver dans Réglages, Modules.",
+      "answer": {
+        "scrollToBottom": "Aller au dernier message",
+        "rememberDone": "Mémorisé",
+        "timeYesterday": "hier {time}",
+        "timeEarlier": "{date}, {time}",
+        "areasDoneOne": "1 domaine consulté",
+        "areasDoneFew": "{count} domaines consultés",
+        "areasDoneOther": "{count} domaines consultés"
+      }
     },
     "relativeJustNow": "à l’instant",
     "relativeMinutesAgoOne": "il y a {count} minute",

@@ -1,6 +1,13 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -8,9 +15,10 @@ import { scrollBehaviorForUser } from "@/lib/motion";
 import { useTranslations } from "@/lib/i18n/context";
 
 import { PlanProposalCards } from "./plan-proposal-card";
-import { ChatBubble } from "./chat-bubble";
-import { CoachFollowUpChips } from "./follow-up-chips";
+import { ChatBubble, type FollowUpOffer } from "./chat-bubble";
 import { CoachMessageDatesProvider } from "./coach-results";
+import { ScrollToBottomButton } from "./scroll-to-bottom-button";
+import { focusCoachComposer } from "./composer-focus";
 import {
   EMPTY_LIVE_TURN_KEYS,
   messageRenderKey,
@@ -50,6 +58,9 @@ export {
  * list grows OR the streaming-content length changes. The user can
  * scroll up to read history; we suppress auto-scroll until the next
  * "new message" tick if they're not already pinned to the bottom.
+ * Away from the end, a round button fades in over the thread's foot and
+ * brings the reader back (`ScrollToBottomButton`); a reply streaming in
+ * meanwhile never pulls the view down by itself.
  *
  * Visual identity: user bubbles right-aligned, Dracula purple accent;
  * assistant bubbles left-aligned with the gradient sparkle avatar
@@ -268,14 +279,10 @@ export function MessageThread({
   const { t } = useTranslations();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const wasPinnedRef = useRef(true);
-
-  // v1.4.27 F14 — the evidence disclosure used to honour an opt-in
-  // `coachPrefs.showEvidenceByDefault` flag that surfaced the raw
-  // measurement values unconditionally. The flag created an UX trap
-  // (the maintainer 2026-05-15: "literal metric values exposed under every
-  // bubble") so the disclosure is now collapsed by default for every
-  // reply. The user expands by click; the pref is retired in the
-  // settings sheet so nothing flips it back on.
+  // The same pinned state as a render value, for the jump-to-latest button.
+  // The ref stays the source for the auto-scroll (it must not wait for a
+  // render); the state follows it at most once per frame.
+  const [pinned, setPinned] = useState(true);
 
   const messages: CoachMessageDTO[] = useMemo(
     () => conversation?.messages ?? [],
@@ -334,18 +341,63 @@ export function MessageThread({
     optimisticActive && optimisticUser ? optimisticUser.content : null,
   );
 
-  const chips = latestFollowUps(messages, streaming);
+  // The chips go to the bubble of the message that offered them, so they
+  // sit in that answer's column. One object per offer, so the memoised
+  // bubble sees the same value until the offer itself changes.
+  const latest = latestFollowUps(messages, streaming);
+  const chipsMessageId = latest?.messageId ?? null;
+  const chipsArray = latest?.followUps ?? null;
+  const chips: FollowUpOffer | null = useMemo(
+    () =>
+      chipsMessageId && chipsArray
+        ? { messageId: chipsMessageId, followUps: chipsArray }
+        : null,
+    [chipsMessageId, chipsArray],
+  );
+  const chipsFor = (messageId: string | null | undefined) =>
+    onFollowUp && chips && messageId === chips.messageId
+      ? {
+          followUps: chips,
+          followUpsDisabled: !!streaming?.inProgress,
+          onFollowUp,
+        }
+      : {};
+
+  const hasThread =
+    messages.length > 0 ||
+    streamingActive ||
+    optimisticActive ||
+    interleavedItems.length > 0;
 
   // Track scroll position so we don't yank the viewport when the user
-  // is browsing earlier turns.
+  // is browsing earlier turns. Re-attached when the thread mounts (the
+  // empty state renders no scroller).
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
+    let frame = 0;
     const onScroll = () => {
       wasPinnedRef.current = isPinnedToBottom(el);
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        setPinned(isPinnedToBottom(el));
+      });
     };
     el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [hasThread]);
+
+  const scrollToLatest = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    wasPinnedRef.current = true;
+    setPinned(true);
+    el.scrollTo({ top: el.scrollHeight, behavior: scrollBehaviorForUser() });
+    focusCoachComposer();
   }, []);
 
   // Auto-scroll on new messages OR streaming-content growth, but only
@@ -389,12 +441,7 @@ export function MessageThread({
     return () => vv.removeEventListener("resize", handleResize);
   }, []);
 
-  if (
-    messages.length === 0 &&
-    !streamingActive &&
-    !optimisticActive &&
-    interleavedItems.length === 0
-  ) {
+  if (!hasThread) {
     return (
       <div
         data-slot="coach-message-thread"
@@ -417,150 +464,152 @@ export function MessageThread({
 
   return (
     <CoachMessageDatesProvider dates={messageDates}>
+      {/* The positioning frame for the jump-to-latest button. It takes the
+          thread's place in the flex column; the scroller inside stays the
+          one scroll container. */}
       <div
-        ref={scrollerRef}
-        data-slot="coach-message-thread"
-        className={cn(
-          // v1.18.6.1 — `min-h-0 flex-1` (not `h-full`) so the scroll region
-          // resolves its height from the flex parent rather than a 100%-of-auto
-          // chain that let the thread grow instead of scroll.
-          // v1.18.7 — calmer vertical rhythm (gap-6) and more generous top/
-          // bottom breathing room so the conversation reads like a document,
-          // not a chat log packed against the chrome.
-          "flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 sm:px-6",
-          // v1.18.6 (CCH-01) / v1.18.7 — on the wide page surface an edge-to-
-          // edge thread sprawled the prose past a readable measure. Centre the
-          // content on a narrower, calmer Claude/ChatGPT-like column
-          // (`max-w-2xl`) via an `mx-auto` inner gutter; the scrollbar still
-          // rides the surface edge. The drawer surface is already narrow, so
-          // the cap only bites on the wide page surface.
-          "[&>*]:mx-auto [&>*]:w-full [&>*]:max-w-2xl",
-          "scroll-smooth",
-          // v1.18.7 — thin, rounded, subtle scrollbar (WebKit + Firefox),
-          // component-scoped via Tailwind arbitrary variants so globals.css
-          // stays untouched. Replaces the default boxy/angular track.
-          COACH_SCROLLBAR,
-        )}
+        data-slot="coach-message-thread-frame"
+        className="relative flex min-h-0 flex-1 flex-col"
       >
-        {[
-          ...messages.map((m, idx) => {
-            // v1.16.5 — a guided question renders directly above the user
-            // message that answered it.
-            const guidedBefore = placement.before.get(m.id);
-            // v1.22 — "Try again": resolve the user message that produced this
-            // assistant reply (the nearest preceding user turn) so the surface
-            // can resubmit it. Null when there is none → no regenerate action.
-            let precedingUserContent: string | null = null;
-            if (m.role === "assistant" && onRegenerate) {
-              for (let j = idx - 1; j >= 0; j--) {
-                if (messages[j].role === "user") {
-                  precedingUserContent = messages[j].content;
-                  break;
+        <div
+          ref={scrollerRef}
+          data-slot="coach-message-thread"
+          className={cn(
+            // v1.18.6.1 — `min-h-0 flex-1` (not `h-full`) so the scroll region
+            // resolves its height from the flex parent rather than a 100%-of-auto
+            // chain that let the thread grow instead of scroll.
+            // v1.18.7 — calmer vertical rhythm (gap-6) and more generous top/
+            // bottom breathing room so the conversation reads like a document,
+            // not a chat log packed against the chrome.
+            "flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 sm:px-6",
+            // v1.18.6 (CCH-01) / v1.18.7 — on the wide page surface an edge-to-
+            // edge thread sprawled the prose past a readable measure. Centre the
+            // content on a narrower, calmer Claude/ChatGPT-like column
+            // (`max-w-2xl`) via an `mx-auto` inner gutter; the scrollbar still
+            // rides the surface edge. The drawer surface is already narrow, so
+            // the cap only bites on the wide page surface.
+            "[&>*]:mx-auto [&>*]:w-full [&>*]:max-w-2xl",
+            "scroll-smooth",
+            // v1.18.7 — thin, rounded, subtle scrollbar (WebKit + Firefox),
+            // component-scoped via Tailwind arbitrary variants so globals.css
+            // stays untouched. Replaces the default boxy/angular track.
+            COACH_SCROLLBAR,
+          )}
+        >
+          {[
+            ...messages.map((m, idx) => {
+              // v1.16.5 — a guided question renders directly above the user
+              // message that answered it.
+              const guidedBefore = placement.before.get(m.id);
+              // v1.22 — "Try again": resolve the user message that produced this
+              // assistant reply (the nearest preceding user turn) so the surface
+              // can resubmit it. Null when there is none → no regenerate action.
+              let precedingUserContent: string | null = null;
+              if (m.role === "assistant" && onRegenerate) {
+                for (let j = idx - 1; j >= 0; j--) {
+                  if (messages[j].role === "user") {
+                    precedingUserContent = messages[j].content;
+                    break;
+                  }
                 }
               }
-            }
-            const bubble = (
-              <ChatBubble
-                role={m.role}
-                content={m.content}
-                metricSource={m.metricSource}
-                conversationId={conversation?.id ?? null}
-                providerType={m.providerType}
-                messageId={m.id}
-                tokensUsed={m.tokensUsed}
-                model={m.model}
-                createdAt={m.createdAt}
-                // The turn that just streamed keeps its live tables, so the
-                // swap to the persisted copy does not refetch and remount them.
-                {...(m.id === streaming?.messageId &&
-                streaming.results.length > 0
-                  ? { results: streaming.results }
-                  : {})}
-                onRegenerate={
-                  precedingUserContent !== null && onRegenerate
-                    ? () => onRegenerate(precedingUserContent as string)
-                    : undefined
-                }
-              />
-            );
-            const key = messageRenderKey(liveKeys, m.id);
-            return (
-              <Fragment key={key}>
-                {guidedBefore?.node}
-                {m.role === "assistant" ? (
-                  <AssistantTurn turnKey={key} live={false}>
-                    {bubble}
-                  </AssistantTurn>
-                ) : (
-                  bubble
-                )}
-              </Fragment>
-            );
-          }),
-          // v1.16.5 — guided question whose answer is still optimistic-only.
-          ...placement.beforeOptimistic.map((i) => (
-            <Fragment key={i.key}>{i.node}</Fragment>
-          )),
-          // v1.4.25 W5 — the optimistic user bubble sits between the
-          // persisted history and the streaming assistant placeholder, so
-          // the visible order matches the person's mental model. The send
-          // hook drops it once the persisted twin lands.
-          optimisticActive && optimisticUser ? (
-            <ChatBubble
-              key={optimisticUser.localId}
-              role="user"
-              content={optimisticUser.content}
-            />
-          ) : null,
-          streamingActive && streaming ? (
-            // Same key, fragment and wrapper as its persisted copy above.
-            <Fragment key={liveKeys.current ?? "coach-turn-live"}>
-              {null}
-              <AssistantTurn
-                turnKey={liveKeys.current ?? "coach-turn-live"}
-                live
-              >
+              const bubble = (
                 <ChatBubble
-                  role="assistant"
-                  content={streaming.content}
-                  metricSource={streaming.metricSource}
-                  suggestion={streaming.suggestion}
-                  suggestedAction={streaming.suggestedAction}
-                  steps={streaming.steps}
-                  results={streaming.results}
-                  providerType={streaming.inProgress ? "streaming" : null}
-                  inProgress={streaming.inProgress}
-                  errorCode={streaming.errorCode}
-                  // v1.18.9 — live word-fade + the just-landed token footer.
-                  streaming
-                  usage={streaming.usage}
+                  role={m.role}
+                  content={m.content}
+                  metricSource={m.metricSource}
+                  conversationId={conversation?.id ?? null}
+                  providerType={m.providerType}
+                  messageId={m.id}
+                  tokensUsed={m.tokensUsed}
+                  model={m.model}
+                  createdAt={m.createdAt}
+                  // The turn that just streamed keeps its live tables, so the
+                  // swap to the persisted copy does not refetch and remount them.
+                  {...(m.id === streaming?.messageId &&
+                  streaming.results.length > 0
+                    ? { results: streaming.results }
+                    : {})}
+                  {...(m.role === "assistant" ? chipsFor(m.id) : {})}
+                  onRegenerate={
+                    precedingUserContent !== null && onRegenerate
+                      ? () => onRegenerate(precedingUserContent as string)
+                      : undefined
+                  }
                 />
-              </AssistantTurn>
-            </Fragment>
-          ) : null,
-        ]}
-        {/* v1.39.4 — follow-up chips under the latest assistant turn only. */}
-        {onFollowUp && chips ? (
-          <CoachFollowUpChips
-            followUps={chips.followUps}
-            messageId={chips.messageId}
-            disabled={!!streaming?.inProgress}
-            onSelect={onFollowUp}
-          />
-        ) : null}
-        {/* v1.16.5 — thread tail: the current guided question and/or the
+              );
+              const key = messageRenderKey(liveKeys, m.id);
+              return (
+                <Fragment key={key}>
+                  {guidedBefore?.node}
+                  {m.role === "assistant" ? (
+                    <AssistantTurn turnKey={key} live={false}>
+                      {bubble}
+                    </AssistantTurn>
+                  ) : (
+                    bubble
+                  )}
+                </Fragment>
+              );
+            }),
+            // v1.16.5 — guided question whose answer is still optimistic-only.
+            ...placement.beforeOptimistic.map((i) => (
+              <Fragment key={i.key}>{i.node}</Fragment>
+            )),
+            // v1.4.25 W5 — the optimistic user bubble sits between the
+            // persisted history and the streaming assistant placeholder, so
+            // the visible order matches the person's mental model. The send
+            // hook drops it once the persisted twin lands.
+            optimisticActive && optimisticUser ? (
+              <ChatBubble
+                key={optimisticUser.localId}
+                role="user"
+                content={optimisticUser.content}
+              />
+            ) : null,
+            streamingActive && streaming ? (
+              // Same key, fragment and wrapper as its persisted copy above.
+              <Fragment key={liveKeys.current ?? "coach-turn-live"}>
+                {null}
+                <AssistantTurn
+                  turnKey={liveKeys.current ?? "coach-turn-live"}
+                  live
+                >
+                  <ChatBubble
+                    role="assistant"
+                    content={streaming.content}
+                    metricSource={streaming.metricSource}
+                    suggestion={streaming.suggestion}
+                    suggestedAction={streaming.suggestedAction}
+                    steps={streaming.steps}
+                    results={streaming.results}
+                    providerType={streaming.inProgress ? "streaming" : null}
+                    inProgress={streaming.inProgress}
+                    errorCode={streaming.errorCode}
+                    // v1.18.9 — live word-fade + the just-landed token footer.
+                    streaming
+                    usage={streaming.usage}
+                    {...chipsFor(streaming.messageId)}
+                  />
+                </AssistantTurn>
+              </Fragment>
+            ) : null,
+          ]}
+          {/* v1.16.5 — thread tail: the current guided question and/or the
           closing summary follow the last completed turn. */}
-        {placement.tail.map((i) => (
-          <Fragment key={i.key}>{i.node}</Fragment>
-        ))}
-        {/* Plan-proposal confirm cards for THIS conversation. The extractor
+          {placement.tail.map((i) => (
+            <Fragment key={i.key}>{i.node}</Fragment>
+          ))}
+          {/* Plan-proposal confirm cards for THIS conversation. The extractor
           runs after the turn (memory-refresh worker), so the block appears at
           the thread tail once the proposal lands rather than under a specific
           bubble; the component itself slow-polls and renders nothing while
           the conversation has no open proposal. */}
-        {conversation ? (
-          <PlanProposalCards conversationId={conversation.id} />
-        ) : null}
+          {conversation ? (
+            <PlanProposalCards conversationId={conversation.id} />
+          ) : null}
+        </div>
+        <ScrollToBottomButton visible={!pinned} onClick={scrollToLatest} />
       </div>
     </CoachMessageDatesProvider>
   );

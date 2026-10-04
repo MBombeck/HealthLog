@@ -550,10 +550,11 @@ test.describe("Coach dialog", () => {
       await expect(figure).toBeVisible();
       await expect(table).toBeHidden();
 
-      // The method line sits in the evidence disclosure.
-      await firstBubble.locator('[data-slot="coach-evidence-summary"]').click();
+      // The method line closes the open steps list.
       await expect(
-        firstBubble.locator('[data-slot="coach-method-line"]'),
+        steps.locator(
+          '[data-slot="coach-turn-steps-panel"] [data-slot="coach-method-line"]',
+        ),
       ).toContainText(TURN_ONE_METHOD.text);
 
       // 3. A follow-up chip sends which chip it was.

@@ -2877,7 +2877,6 @@
       "sourcesFresh": "Aktuell",
       "sourcesStale": "Veraltet",
       "sourcesFooter": "Der Coach liest nur Daten, die du verbunden hast.",
-      "evidenceLabel": "Worauf bezieht sich das?",
       "metric": {
         "bp": "Blutdruck",
         "weight": "Gewicht",
@@ -2956,10 +2955,6 @@
       "settingsSave": "Speichern",
       "settingsSaved": "Gespeichert",
       "settingsCancel": "Abbrechen",
-      "feedbackHelpful": "Hilfreich",
-      "feedbackUnhelpful": "Nicht ganz",
-      "feedbackThanks": "Danke für das Signal.",
-      "feedbackError": "Feedback konnte nicht gespeichert werden",
       "dailyLimitTitle": "Heute-Limit erreicht",
       "dailyLimitBody": "Tageslimit erreicht. Das Budget setzt sich um Mitternacht (UTC) zurück.",
       "providerRateLimitTitle": "Provider rate-limited",
@@ -3113,7 +3108,16 @@
       "errorNotPermitted": "Der Coach ist in einer Akte, die jemand mit dir teilt, nicht verfügbar.",
       "errorUnavailable": "Der Coach konnte seine Einstellungen gerade nicht prüfen. Bitte versuch es gleich noch einmal.",
       "errorOperatorOff": "KI ist auf diesem Server abgeschaltet, deshalb kann der Coach nicht antworten.",
-      "errorCoachOff": "Der Coach ist ausgeschaltet. Du kannst ihn unter Einstellungen, Module wieder einschalten."
+      "errorCoachOff": "Der Coach ist ausgeschaltet. Du kannst ihn unter Einstellungen, Module wieder einschalten.",
+      "answer": {
+        "scrollToBottom": "Zur neuesten Nachricht",
+        "rememberDone": "Gemerkt",
+        "timeYesterday": "gestern {time}",
+        "timeEarlier": "{date}, {time}",
+        "areasDoneOne": "1 Bereich angesehen",
+        "areasDoneFew": "{count} Bereiche angesehen",
+        "areasDoneOther": "{count} Bereiche angesehen"
+      }
     },
     "relativeJustNow": "gerade eben",
     "relativeMinutesAgoOne": "vor {count} Minute",

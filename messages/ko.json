@@ -2877,7 +2877,6 @@
       "sourcesFresh": "최신",
       "sourcesStale": "오래됨",
       "sourcesFooter": "코치는 연결한 데이터만 읽어요.",
-      "evidenceLabel": "내가 보고 있는 것",
       "metric": {
         "bp": "혈압",
         "weight": "체중",
@@ -2956,10 +2955,6 @@
       "settingsSave": "저장",
       "settingsSaved": "저장됨",
       "settingsCancel": "취소",
-      "feedbackHelpful": "도움됨",
-      "feedbackUnhelpful": "아쉬움",
-      "feedbackThanks": "알려줘서 고마워요.",
-      "feedbackError": "피드백을 저장하지 못했어요",
       "dailyLimitTitle": "하루 한도 도달",
       "dailyLimitBody": "하루 한도에 도달했어요. 사용량은 UTC 자정에 초기화돼요.",
       "providerRateLimitTitle": "제공자 요청 제한",
@@ -3113,7 +3108,16 @@
       "errorNotPermitted": "다른 사람이 공유한 기록 안에서는 코치를 사용할 수 없습니다.",
       "errorUnavailable": "코치가 지금 설정을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
       "errorOperatorOff": "이 서버에서 AI가 꺼져 있어 코치가 답변할 수 없습니다.",
-      "errorCoachOff": "코치가 꺼져 있습니다. 설정의 모듈에서 다시 켤 수 있습니다."
+      "errorCoachOff": "코치가 꺼져 있습니다. 설정의 모듈에서 다시 켤 수 있습니다.",
+      "answer": {
+        "scrollToBottom": "최신 메시지로 이동",
+        "rememberDone": "기억함",
+        "timeYesterday": "어제 {time}",
+        "timeEarlier": "{date} {time}",
+        "areasDoneOne": "영역 1개 확인",
+        "areasDoneFew": "영역 {count}개 확인",
+        "areasDoneOther": "영역 {count}개 확인"
+      }
     },
     "relativeJustNow": "방금",
     "relativeMinutesAgoOne": "{count}분 전",
