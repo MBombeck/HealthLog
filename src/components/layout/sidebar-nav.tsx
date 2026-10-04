@@ -55,6 +55,14 @@ import {
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "healthlog-sidebar-collapsed";
 
 /**
+ * The expanded sidebar's content width: `w-64` minus the rail's 1 px
+ * `border-r`, so the column fills the expanded rail exactly. Applied as a
+ * floor while expanded, it keeps the content at its final layout during the
+ * width transition (see the `sidebar-column` comment in the render).
+ */
+export const SIDEBAR_EXPANDED_CONTENT_WIDTH = "min-w-[calc(16rem-1px)]";
+
+/**
  * The stored collapse choice: `true` / `false`, or `null` when this browser
  * has none (or storage is unavailable), which lets the viewport default decide.
  */
@@ -554,119 +562,139 @@ export function SidebarNav() {
       <aside
         aria-label={t("nav.sidebar")}
         className={cn(
-          "bg-sidebar border-sidebar-border relative hidden h-full flex-shrink-0 border-r transition-[width] duration-200 motion-reduce:transition-none md:flex md:flex-col",
+          "bg-sidebar border-sidebar-border relative hidden h-full flex-shrink-0 overflow-hidden border-r transition-[width] duration-200 motion-reduce:transition-none md:flex md:flex-col",
           collapsed ? "w-16" : "w-64",
         )}
       >
-        {/* Logo band. Height + bottom border come from `SHELL_HEADER_BAND`,
+        {/* The rail animates its width; the content does not. Expanded, this
+            column lays out at the final width from the first frame
+            (`SIDEBAR_EXPANDED_CONTENT_WIDTH`) and the rail's
+            `overflow-hidden` reveals it as the width grows. Laying the
+            labels out against the growing width instead wrapped every
+            multi-word label, pushed the list past the nav's height and its
+            rows past its width, and the nav's `overflow-y-auto` painted both
+            scrollbars for the length of the transition. Collapsing needs no
+            floor: the icon rows already fit the narrowing rail. */}
+        <div
+          data-slot="sidebar-column"
+          className={cn(
+            "flex h-full w-full flex-col",
+            !collapsed && SIDEBAR_EXPANDED_CONTENT_WIDTH,
+          )}
+        >
+          {/* Logo band. Height + bottom border come from `SHELL_HEADER_BAND`,
             which the top bar reads too, so the two borders draw one
             continuous line. The band owns the 4rem; the link inside
             stretches with `h-full` and never restates a height. */}
-        <div
-          data-slot="sidebar-header"
-          className={cn(
-            "border-sidebar-border",
-            SHELL_HEADER_BAND,
-            collapsed ? "px-3" : "px-6",
-          )}
-        >
-          <Link
-            href="/"
+          <div
+            data-slot="sidebar-header"
             className={cn(
-              "flex h-full items-center",
-              collapsed ? "justify-center px-0" : "gap-2",
+              "border-sidebar-border",
+              SHELL_HEADER_BAND,
+              collapsed ? "px-3" : "px-6",
             )}
           >
-            <Logo className="text-primary shrink-0" size={24} />
-            {!collapsed && (
-              <span className="text-lg font-bold tracking-tight">
-                HealthLog
-              </span>
-            )}
-          </Link>
-        </div>
-
-        <nav
-          aria-label={t("nav.mainNavigation")}
-          className={cn("flex-1 overflow-y-auto", collapsed ? "p-1.5" : "p-3")}
-        >
-          <div className="space-y-1">
-            {visibleNavItems.map((item) => {
-              const isActive = isNavDestinationActive(
-                item.href,
-                pathname,
-                visibleNavItems,
-              );
-              const label = t(item.tKey);
-
-              if (collapsed) {
-                return (
-                  <Tooltip key={item.href}>
-                    <TooltipTrigger asChild>
-                      <Link
-                        href={item.href}
-                        aria-current={isActive ? "page" : undefined}
-                        data-tour-id={item.tourId}
-                        {...(item.href === "/medications" ? medsIntent : {})}
-                        className={cn(
-                          "flex items-center justify-center rounded-lg p-2.5 transition-colors",
-                          isActive
-                            ? "bg-primary/10 text-primary"
-                            : "text-foreground hover:bg-accent",
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" sideOffset={8}>
-                      {label}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={isActive ? "page" : undefined}
-                  data-tour-id={item.tourId}
-                  {...(item.href === "/medications" ? medsIntent : {})}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-foreground hover:bg-accent",
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {label}
-                </Link>
-              );
-            })}
+            <Link
+              href="/"
+              className={cn(
+                "flex h-full items-center",
+                collapsed ? "justify-center px-0" : "gap-2",
+              )}
+            >
+              <Logo className="text-primary shrink-0" size={24} />
+              {!collapsed && (
+                <span className="text-lg font-bold tracking-tight">
+                  HealthLog
+                </span>
+              )}
+            </Link>
           </div>
-        </nav>
 
-        {/* Bottom utility links — the shared utility tail (minus
+          <nav
+            aria-label={t("nav.mainNavigation")}
+            className={cn(
+              "flex-1 overflow-y-auto",
+              collapsed ? "p-1.5" : "p-3",
+            )}
+          >
+            <div className="space-y-1">
+              {visibleNavItems.map((item) => {
+                const isActive = isNavDestinationActive(
+                  item.href,
+                  pathname,
+                  visibleNavItems,
+                );
+                const label = t(item.tKey);
+
+                if (collapsed) {
+                  return (
+                    <Tooltip key={item.href}>
+                      <TooltipTrigger asChild>
+                        <Link
+                          href={item.href}
+                          aria-current={isActive ? "page" : undefined}
+                          data-tour-id={item.tourId}
+                          {...(item.href === "/medications" ? medsIntent : {})}
+                          className={cn(
+                            "flex items-center justify-center rounded-lg p-2.5 transition-colors",
+                            isActive
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground hover:bg-accent",
+                          )}
+                        >
+                          <item.icon className="h-4 w-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" sideOffset={8}>
+                        {label}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    data-tour-id={item.tourId}
+                    {...(item.href === "/medications" ? medsIntent : {})}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground hover:bg-accent",
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+
+          {/* Bottom utility links — the shared utility tail (minus
             Notifications, which lives in the avatar menu) with the
             role-gated Admin entry inserted before Settings. The collapse
             control heads the group, so it sits directly above Admin for an
             administrator and directly above Settings for everyone else. */}
-        <div className={cn("space-y-1 pb-1", collapsed ? "px-1.5" : "px-3")}>
-          <SidebarCollapseToggle
-            collapsed={collapsed}
-            onToggle={toggleCollapsed}
-          />
-          {footerUtilityItems
-            .filter((item) => !isSettingsUtilityDestination(item))
-            .map((item) => renderUtilityLink(item))}
-          {renderAdminLink()}
-          {footerUtilityItems
-            .filter((item) => isSettingsUtilityDestination(item))
-            .map((item) => renderUtilityLink(item))}
-        </div>
+          <div className={cn("space-y-1 pb-1", collapsed ? "px-1.5" : "px-3")}>
+            <SidebarCollapseToggle
+              collapsed={collapsed}
+              onToggle={toggleCollapsed}
+            />
+            {footerUtilityItems
+              .filter((item) => !isSettingsUtilityDestination(item))
+              .map((item) => renderUtilityLink(item))}
+            {renderAdminLink()}
+            {footerUtilityItems
+              .filter((item) => isSettingsUtilityDestination(item))
+              .map((item) => renderUtilityLink(item))}
+          </div>
 
-        <SidebarUserSection collapsed={collapsed} />
+          <SidebarUserSection collapsed={collapsed} />
+        </div>
       </aside>
     </TooltipProvider>
   );
