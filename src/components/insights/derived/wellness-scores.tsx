@@ -245,6 +245,10 @@ export function WellnessScores({
         />
         <div
           data-slot="wellness-scores-grid"
+          // `aria-label` needs a role to name; a bare <div> may not carry one
+          // (axe: aria-prohibited-attr). `status` is the loading region's
+          // role and already implies the polite live region.
+          role="status"
           aria-busy="true"
           aria-live="polite"
           aria-label={t("insights.derived.scores.loadingLabel")}

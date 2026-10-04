@@ -945,6 +945,9 @@ export function VitalsDashboard({ batch, layout, className }: DashboardProps) {
           />
           <div
             data-slot="vitals-dashboard-grid"
+            // The loading label needs a role to name (axe:
+            // aria-prohibited-attr); the loaded grid carries neither.
+            role={isLoading ? "status" : undefined}
             aria-busy={isLoading}
             aria-live="polite"
             aria-label={
