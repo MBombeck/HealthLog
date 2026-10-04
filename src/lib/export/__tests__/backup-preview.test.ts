@@ -101,8 +101,8 @@ describe("createBackupPreviewCollector", () => {
   const expectedKeys = new BackupKeyIdCollector();
   expectedKeys.visit(FILE);
 
-  it("says what a full read of the copy says", () => {
-    const collector = createBackupPreviewCollector();
+  it("says what a full read of the copy says", async () => {
+    const collector = await createBackupPreviewCollector();
     observeAsTheWriterDoes(FILE, collector.observe);
     const result = collector.finish(countsOf(FILE));
     expect(result).not.toBeNull();
@@ -112,12 +112,70 @@ describe("createBackupPreviewCollector", () => {
     expect(result!.keys.keyIds()).toEqual(["v3"]);
   });
 
-  it("answers null for a copy that does not name its version, owner and date", () => {
-    const collector = createBackupPreviewCollector();
+  it("answers null for a copy that does not name its version, owner and date", async () => {
+    const collector = await createBackupPreviewCollector();
     const { userId, ...rest } = FILE;
     void userId;
     observeAsTheWriterDoes(rest, collector.observe);
     expect(collector.finish(countsOf(FILE))).toBeNull();
+  });
+});
+
+describe("createBackupPreviewCollector against the schema", () => {
+  // A copy the schema refuses must not be described as restorable: a null
+  // preview sends the preview route to read the copy, which says why not.
+  async function previewOf(file: Record<string, unknown>) {
+    const collector = await createBackupPreviewCollector();
+    observeAsTheWriterDoes(file, collector.observe);
+    return collector.finish(countsOf(FILE));
+  }
+
+  it("answers null when a bulk row violates the schema", async () => {
+    const measurements = FILE.measurements.map((m, i) =>
+      i === 1 ? { ...m, measuredAt: "not a date" } : m,
+    );
+    expect(await previewOf({ ...FILE, measurements })).toBeNull();
+  });
+
+  it("answers null when a whole section violates the schema", async () => {
+    const labResults = [{ ...FILE.labResults[0], takenAt: 42 }];
+    expect(await previewOf({ ...FILE, labResults })).toBeNull();
+  });
+
+  it("answers null when the header does not parse", async () => {
+    expect(
+      await previewOf({ ...FILE, exportedAt: "yesterday-ish" }),
+    ).toBeNull();
+  });
+
+  it("answers null for a canonical copy with a measurement without an id", async () => {
+    const measurements = FILE.measurements.map((m, i) =>
+      i === 0 ? { ...m, id: undefined } : m,
+    );
+    expect(await previewOf({ ...FILE, measurements })).toBeNull();
+  });
+
+  it("agrees with the whole-document parse on every case above", () => {
+    // The oracle: each refused file is refused by the full schema too.
+    const bad = [
+      {
+        ...FILE,
+        measurements: FILE.measurements.map((m, i) =>
+          i === 1 ? { ...m, measuredAt: "not a date" } : m,
+        ),
+      },
+      { ...FILE, labResults: [{ ...FILE.labResults[0], takenAt: 42 }] },
+      { ...FILE, exportedAt: "yesterday-ish" },
+      {
+        ...FILE,
+        measurements: FILE.measurements.map((m, i) =>
+          i === 0 ? { ...m, id: undefined } : m,
+        ),
+      },
+    ];
+    for (const file of bad) {
+      expect(backupPayloadSchema.safeParse(file).success).toBe(false);
+    }
   });
 });
 

@@ -207,7 +207,7 @@ export async function handleDataBackup(
           // so its size does not depend on this process's memory (#1031).
           // The restore preview is taken from the writer's own counts and
           // the sections as they are written, never by parsing the copy.
-          const preview = createBackupPreviewCollector();
+          const preview = await createBackupPreviewCollector();
           let counts: FullBackupCounts | undefined;
           const { bytes: storedBytes } = await storeBackupBlob(
             prisma,
