@@ -10983,7 +10983,27 @@
       "sleepPending": "Il sonno di stanotte non è ancora arrivato: la lettura di oggi è provvisoria.",
       "worthALook": "Da tenere d'occhio",
       "allClear": "Oggi nulla richiede la tua attenzione.",
-      "ringLink": "Apri i dettagli di {metric}"
+      "ringLink": "Apri i dettagli di {metric}",
+      "heading": "Oggi",
+      "steadyWeeksOne": "Stabile da {count} settimana",
+      "steadyWeeksFew": "Stabile da {count} settimane",
+      "steadyWeeksOther": "Stabile da {count} settimane",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "da {low} a {high} {unit}",
+      "vital": {
+        "RESTING_HEART_RATE": "Frequenza cardiaca a riposo",
+        "HEART_RATE_VARIABILITY": "Variabilità della frequenza cardiaca",
+        "RESPIRATORY_RATE": "Frequenza respiratoria",
+        "OXYGEN_SATURATION": "Saturazione di ossigeno",
+        "BODY_TEMPERATURE": "Temperatura corporea",
+        "SKIN_TEMPERATURE": "Temperatura cutanea",
+        "BLOOD_PRESSURE_SYS": "Pressione sistolica",
+        "BLOOD_PRESSURE_DIA": "Pressione diastolica",
+        "BLOOD_GLUCOSE": "Glicemia",
+        "PULSE": "Polso",
+        "WEIGHT": "Peso",
+        "generic": "Un parametro vitale"
+      }
     },
     "milestone": {
       "metric": {
@@ -11018,6 +11038,68 @@
           "title": "Un mese nell'intervallo",
           "body": "Un mese intero con la tua {metric} nel tuo intervallo abituale. Meravigliosamente costante."
         }
+      }
+    },
+    "lead": {
+      "vitalOutside": {
+        "above": "{metric} è a {value}, sopra il tuo intervallo abituale di {range}.",
+        "below": "{metric} è a {value}, sotto il tuo intervallo abituale di {range}."
+      },
+      "vitalsOutside": {
+        "aboveOne": "{metric} è a {value}, sopra il tuo intervallo abituale di {range}, e anche {count} altro parametro vitale è fuori dal suo intervallo.",
+        "aboveFew": "{metric} è a {value}, sopra il tuo intervallo abituale di {range}, e anche altri {count} parametri vitali sono fuori dal loro intervallo.",
+        "aboveOther": "{metric} è a {value}, sopra il tuo intervallo abituale di {range}, e anche altri {count} parametri vitali sono fuori dal loro intervallo.",
+        "belowOne": "{metric} è a {value}, sotto il tuo intervallo abituale di {range}, e anche {count} altro parametro vitale è fuori dal suo intervallo.",
+        "belowFew": "{metric} è a {value}, sotto il tuo intervallo abituale di {range}, e anche altri {count} parametri vitali sono fuori dal loro intervallo.",
+        "belowOther": "{metric} è a {value}, sotto il tuo intervallo abituale di {range}, e anche altri {count} parametri vitali sono fuori dal loro intervallo."
+      },
+      "sleep": {
+        "more": "Stanotte hai dormito {duration}, {diff} in più del solito.",
+        "less": "Stanotte hai dormito {duration}, {diff} in meno del solito.",
+        "usual": "Stanotte hai dormito {duration}, vicino al tuo solito.",
+        "plain": "Stanotte hai dormito {duration}."
+      },
+      "vitalsInRangeOne": "Il tuo ultimo parametro vitale è nel suo intervallo abituale.",
+      "vitalsInRangeFew": "Tutti i tuoi {count} ultimi parametri vitali sono nel loro intervallo abituale.",
+      "vitalsInRangeOther": "Tutti i tuoi {count} ultimi parametri vitali sono nel loro intervallo abituale.",
+      "vitalInRange": "{metric} è a {value}, nel tuo intervallo abituale di {range}."
+    },
+    "todayFact": {
+      "restMode": {
+        "label": "Modalità riposo",
+        "value": "Giorno {day}"
+      },
+      "medications": {
+        "label": "Farmaci",
+        "value": "{taken} di {scheduled} presi"
+      },
+      "appointment": {
+        "label": "Appuntamento",
+        "today": "Oggi {time}, {what}",
+        "tomorrow": "Domani {time}, {what}"
+      },
+      "sleep": {
+        "label": "Stanotte",
+        "plain": "{duration}",
+        "usual": "{duration}, vicino al solito",
+        "more": "{duration}, {diff} in più del solito",
+        "less": "{duration}, {diff} in meno del solito"
+      },
+      "vitals": {
+        "label": "Parametri vitali",
+        "allInOne": "{count} controllato, nel tuo intervallo",
+        "allInFew": "{count} controllati, tutti nel tuo intervallo",
+        "allInOther": "{count} controllati, tutti nel tuo intervallo",
+        "oneOut": {
+          "above": "{metric} sopra il tuo intervallo",
+          "below": "{metric} sotto il tuo intervallo"
+        },
+        "someOut": "{count} su {total} fuori dal tuo intervallo"
+      },
+      "cycle": {
+        "label": "Ciclo",
+        "value": "{phase}, giorno {day}",
+        "dayOnly": "Giorno {day}"
       }
     }
   },

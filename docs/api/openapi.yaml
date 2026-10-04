@@ -72427,6 +72427,15 @@ components:
                     so this is what distinguishes a narrow score from a broad one. Optional so older cached digests
                     without the field stay valid.
                   $ref: "#/components/schemas/HealthScoreBasis"
+                steadyWeeks:
+                  description: Whole weeks the score has held where it is (same band, within two points, computed the same way), read off
+                    the stored daily scores. Null when it has not held for two weeks, when the stored record does not
+                    reach today, or when the score moved. Shown in place of a delta, never beside one.
+                  anyOf:
+                    - type: integer
+                      exclusiveMinimum: 0
+                      maximum: 9007199254740991
+                    - type: "null"
               required:
                 - value
                 - band
@@ -72469,8 +72478,56 @@ components:
           anyOf:
             - type: string
             - type: "null"
-          description: First sentence of the cached briefing paragraph. Null while the `briefing` capability is unavailable;
-            `line` then falls to its deterministic floor.
+          description: "The first sentence of the cached briefing paragraph that says something: a greeting or a sentence that
+            only repeats the score is skipped. Null while the `briefing` capability is unavailable or when no sentence
+            qualifies; `line` then falls to its deterministic floor."
+        lead:
+          anyOf:
+            - type: object
+              properties:
+                text:
+                  type: string
+                source:
+                  type: string
+                  enum:
+                    - reaction
+                    - briefing
+                    - signal
+                  description: "`reaction` and `briefing` are cached model text; `signal` is the deterministic sentence about the day's
+                    strongest signal."
+              required:
+                - text
+                - source
+              additionalProperties: false
+            - type: "null"
+          description: "The Today hero's lead line, resolved: the reaction line or a briefing sentence while their capabilities
+            are available, otherwise a deterministic sentence about the day's strongest signal (a vital outside its
+            personal range, an unusual night, vitals in range, last night). Null when there is nothing to say. When the
+            deterministic sentence is built from a fact, that fact is left out of `today`. Additive since v1.40."
+        today:
+          maxItems: 5
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyTodayFact"
+          description: "The Today overview: up to 5 statements about the day in priority order (Rest Mode, medications taken
+            today, an appointment today or tomorrow that is not already on the rail, last night's sleep, vitals against
+            their personal range, cycle day), never padded. A fact about a switched-off module is absent. A narrow
+            surface shows the first 4. Additive since v1.40."
+        restMode:
+          anyOf:
+            - type: object
+              properties:
+                day:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                  description: 1-based day of the episode on the reader's calendar.
+              required:
+                - day
+              additionalProperties: false
+            - type: "null"
+          description: "Rest Mode: present while an illness episode is active and the illness module is on, else null. Additive
+            since v1.40."
         line:
           type: string
           description: "Push / lock-screen line: cached-AI lead with a deterministic floor."
@@ -72535,6 +72592,9 @@ components:
         - score
         - topSignal
         - briefingLead
+        - lead
+        - today
+        - restMode
         - line
         - worthALook
         - justIn
@@ -72543,6 +72603,39 @@ components:
       additionalProperties: false
       description: The one data spine of the daily-value system — composed from already-cached data, never a fresh AI call.
         Consumed by the Today surface, the daily push, and a future iOS widget.
+    DailyTodayFact:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - rest_mode
+            - medications
+            - appointment
+            - sleep
+            - vitals
+            - cycle
+          description: Closed fact kind.
+        label:
+          type: string
+          description: Localised label (resolved server-side).
+        value:
+          type: string
+          description: Localised value (resolved server-side).
+        href:
+          type: string
+          description: The page the fact belongs to.
+        moduleKey:
+          description: The module that admitted the fact; absent for core data.
+          type: string
+      required:
+        - kind
+        - label
+        - value
+        - href
+      additionalProperties: false
+      description: One statement about the day on the Today overview. A fact never asks the reader to do anything; the rail is
+        the only place that does.
     DailyPriorityItem:
       type: object
       properties:

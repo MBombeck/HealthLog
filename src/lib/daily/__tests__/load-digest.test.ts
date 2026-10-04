@@ -21,7 +21,20 @@ vi.mock("@/lib/db", () => ({
     personalRecord: { findMany: vi.fn().mockResolvedValue([]) },
     arrivalReaction: { findMany: vi.fn().mockResolvedValue([]) },
     encounter: { findMany: vi.fn().mockResolvedValue([]) },
+    healthScoreRecord: { findMany: vi.fn().mockResolvedValue([]) },
   },
+}));
+
+vi.mock("@/lib/insights/derived/coincident-deviation", () => ({
+  computeCoincidentDeviation: vi.fn(),
+}));
+
+vi.mock("@/lib/illness/rest-mode", () => ({
+  resolveRestMode: vi.fn(),
+}));
+
+vi.mock("@/lib/cycle/today-verdict", () => ({
+  readTodayCycle: vi.fn(),
 }));
 
 vi.mock("@/lib/dashboard/snapshot-read", () => ({
@@ -38,6 +51,9 @@ vi.mock("@/lib/rollups/measurement-coverage", () => ({
 
 vi.mock("@/lib/insights/derived/baseline", () => ({
   readDayMeanSeries: vi.fn().mockResolvedValue({ points: [], source: "none" }),
+  loadBaselineProfile: vi
+    .fn()
+    .mockResolvedValue({ ageYears: 40, sex: "FEMALE", heightCm: 170 }),
 }));
 
 vi.mock("@/lib/analytics/intraday-pulse-io", () => ({
@@ -73,6 +89,9 @@ import {
   aiCapabilityToServe,
 } from "@/lib/ai/capabilities/gate";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
+import { computeCoincidentDeviation } from "@/lib/insights/derived/coincident-deviation";
+import { resolveRestMode } from "@/lib/illness/rest-mode";
+import { readTodayCycle } from "@/lib/cycle/today-verdict";
 import {
   AI_AVAILABLE,
   aiUnavailable,
@@ -117,6 +136,16 @@ beforeEach(() => {
   vi.mocked(loadIntradayPulse).mockResolvedValue({ tension: null } as never);
   vi.mocked(aiCapabilityForRecord).mockResolvedValue(AI_AVAILABLE);
   vi.mocked(aiCapabilityToServe).mockResolvedValue(AI_AVAILABLE);
+  vi.mocked(computeCoincidentDeviation).mockResolvedValue({
+    status: "insufficient",
+  } as never);
+  vi.mocked(resolveRestMode).mockResolvedValue({
+    active: false,
+    since: null,
+    episodeCount: 0,
+    episodes: [],
+  });
+  vi.mocked(readTodayCycle).mockResolvedValue(null);
 });
 
 describe("loadDailyDigest — milestone day", () => {
@@ -478,5 +507,189 @@ describe("loadDailyDigest — due check-ups and today's visits", () => {
     const digest = await loadDailyDigest(USER, NOW);
 
     expect(digest.worthALook.map((i) => i.kind)).toContain("preventive_care");
+  });
+});
+
+describe("loadDailyDigest — Today overview inputs", () => {
+  // Visits are left off the rail here so the Today line is the one place
+  // they appear; with the rail kind on, the line steps aside (see
+  // `today-overview.test.ts`).
+  const NO_VISIT_RAIL = PRIORITY_ITEM_KINDS.filter(
+    (kind) => kind !== "upcoming_visit",
+  );
+
+  function visit(at: string, name = "GP") {
+    return {
+      id: `v-${at}`,
+      kind: "ROUTINE",
+      occurredAt: new Date(at),
+      practitioner: { name },
+    };
+  }
+
+  // 21:30Z on 17 July is 23:30 in Berlin (CEST): the last half hour of the
+  // local day. A visit at 23:45 local is still today; one at 00:30 local is
+  // tomorrow, although both fall on the same UTC date.
+  const LATE_EVENING = new Date("2026-07-17T21:30:00.000Z");
+
+  it("puts a 23:45 visit under today and a 00:30 visit under tomorrow, late in the evening", async () => {
+    vi.mocked(prisma.encounter.findMany).mockResolvedValueOnce([
+      visit("2026-07-17T21:45:00.000Z", "Dr. Late"),
+    ] as never);
+    const today = await loadDailyDigest(USER, LATE_EVENING, {
+      enabledItemKinds: NO_VISIT_RAIL,
+    });
+    expect(today.today).toEqual([
+      expect.objectContaining({
+        kind: "appointment",
+        value: "daily.todayFact.appointment.today",
+      }),
+    ]);
+
+    vi.mocked(prisma.encounter.findMany).mockResolvedValueOnce([
+      visit("2026-07-17T22:30:00.000Z", "Dr. Early"),
+    ] as never);
+    const tomorrow = await loadDailyDigest(USER, LATE_EVENING, {
+      enabledItemKinds: NO_VISIT_RAIL,
+    });
+    expect(tomorrow.today).toEqual([
+      expect.objectContaining({
+        kind: "appointment",
+        value: "daily.todayFact.appointment.tomorrow",
+      }),
+    ]);
+  });
+
+  it("reads the same instants on a New York clock", async () => {
+    const NY_USER = { ...USER, timezone: "America/New_York" } as User;
+    vi.mocked(prisma.encounter.findMany).mockResolvedValueOnce([
+      visit("2026-07-17T22:30:00.000Z"),
+    ] as never);
+    // 17:30 in New York: the 18:30 visit is still today there.
+    const digest = await loadDailyDigest(NY_USER, LATE_EVENING, {
+      enabledItemKinds: NO_VISIT_RAIL,
+    });
+    expect(digest.today[0]?.value).toBe("daily.todayFact.appointment.today");
+  });
+
+  it("renders the visit time in the profile zone and hour-cycle preference", async () => {
+    const { getServerTranslator } =
+      await import("@/lib/i18n/server-translator");
+    const seen: Array<Record<string, unknown> | undefined> = [];
+    vi.mocked(getServerTranslator).mockReturnValueOnce({
+      t: (key: string, params?: Record<string, unknown>) => {
+        if (key === "daily.todayFact.appointment.today") seen.push(params);
+        return key;
+      },
+    } as never);
+    vi.mocked(prisma.encounter.findMany).mockResolvedValueOnce([
+      visit("2026-07-17T21:45:00.000Z", "Dr. Late"),
+    ] as never);
+    await loadDailyDigest(
+      { ...USER, timeFormat: "H12" } as User,
+      LATE_EVENING,
+      { enabledItemKinds: NO_VISIT_RAIL },
+    );
+    expect(seen[0]).toEqual({ time: "11:45 PM", what: "Dr. Late" });
+  });
+
+  it("passes Rest Mode through, counted on the reader's own calendar", async () => {
+    vi.mocked(resolveRestMode).mockResolvedValueOnce({
+      active: true,
+      // 22:00Z on 14 July is already 15 July in Berlin: day 3 on 17 July.
+      since: "2026-07-14T22:00:00.000Z",
+      episodeCount: 1,
+      episodes: [],
+    });
+    const digest = await loadDailyDigest(USER, NOW);
+    expect(digest.restMode).toEqual({ day: 3 });
+    expect(digest.today[0]).toMatchObject({ kind: "rest_mode" });
+  });
+
+  it("does not read Rest Mode or the cycle while their modules are off", async () => {
+    vi.mocked(resolveModuleMap).mockResolvedValueOnce({
+      illness: false,
+      cycle: false,
+    } as never);
+    const digest = await loadDailyDigest(USER, NOW);
+    expect(resolveRestMode).not.toHaveBeenCalled();
+    expect(readTodayCycle).not.toHaveBeenCalled();
+    expect(digest.restMode).toBeNull();
+  });
+
+  it("reads the cycle in the profile timezone and keeps a failed read quiet", async () => {
+    vi.mocked(readTodayCycle).mockRejectedValueOnce(new Error("boom"));
+    const digest = await loadDailyDigest(USER, NOW);
+    expect(readTodayCycle).toHaveBeenCalledWith(USER.id, "Europe/Berlin", NOW);
+    expect(digest.today.some((f) => f.kind === "cycle")).toBe(false);
+  });
+
+  it("builds the deterministic lead from the vitals read when AI is off", async () => {
+    vi.mocked(readDashboardSnapshotCached).mockResolvedValueOnce({
+      ...SNAPSHOT,
+      body: {
+        ...SNAPSHOT.body,
+        briefingAi: aiUnavailable("user_disabled"),
+      },
+    } as never);
+    vi.mocked(aiCapabilityToServe).mockResolvedValue(
+      aiUnavailable("user_disabled"),
+    );
+    vi.mocked(computeCoincidentDeviation).mockResolvedValueOnce({
+      status: "ok",
+      value: {
+        fired: false,
+        contributing: [],
+        day: "2026-07-17",
+        illnessExplained: false,
+        vitals: [
+          {
+            type: "RESTING_HEART_RATE",
+            value: 61,
+            center: 54,
+            low: 50,
+            high: 58,
+            outside: true,
+            direction: "above",
+            daysAgo: 0,
+          },
+        ],
+      },
+    } as never);
+    const digest = await loadDailyDigest(USER, NOW);
+    expect(digest.lead).toEqual({
+      text: "daily.lead.vitalOutside.above",
+      source: "signal",
+    });
+    expect(digest.briefingLead).toBeNull();
+  });
+
+  it("publishes how long the score has held", async () => {
+    vi.mocked(readDashboardSnapshotCached).mockResolvedValueOnce({
+      ...SNAPSHOT,
+      body: {
+        ...SNAPSHOT.body,
+        healthScore: {
+          score: 94,
+          band: "GREEN",
+          delta: null,
+          deltaReason: "below_noise_floor",
+        },
+      },
+    } as never);
+    const rows = Array.from({ length: 22 }, (_, i) => ({
+      dayKey: new Date(Date.parse("2026-07-17T12:00:00Z") - i * 86_400_000)
+        .toISOString()
+        .slice(0, 10),
+      composite: 94,
+      band: "GREEN",
+      scoreVersion: 4,
+      composition: ["BLOOD_PRESSURE"],
+    }));
+    vi.mocked(prisma.healthScoreRecord.findMany).mockResolvedValueOnce(
+      rows as never,
+    );
+    const digest = await loadDailyDigest(USER, NOW);
+    expect(digest.score?.steadyWeeks).toBe(3);
   });
 });

@@ -115,6 +115,9 @@ test.describe("authenticated dashboard render", () => {
             score: { value: 82, band: "green", delta: 2 },
             topSignal: null,
             briefingLead: "Your week is trending steady.",
+            lead: { text: "Your week is trending steady.", source: "briefing" },
+            today: [],
+            restMode: null,
             line: "Your week is trending steady.",
             worthALook: [
               {

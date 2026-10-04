@@ -55,12 +55,19 @@ import {
   COACH_CHECKIN_ADJUST_INTENT,
 } from "@/lib/daily/coach-checkin-intents";
 import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
+import type { Locale } from "@/lib/i18n/config";
+import {
+  buildTodayOverview,
+  type TodayCycle,
+  type TodayFact,
+  type TodayLead,
+  type TodayRestMode,
+  type TodaySleep,
+  type TodayVital,
+} from "@/lib/daily/today-overview";
 
 /** At most three rail items — a glance, never a wall (§2.5, never padded). */
 export const MAX_WORTH_A_LOOK = 3;
-
-/** Trim a briefing-lead sentence to a lock-screen-friendly length. */
-const MAX_LINE_LENGTH = 160;
 
 const MS_PER_DAY = 86_400_000;
 
@@ -123,6 +130,14 @@ export interface DailyDigestScore {
    * broad one. Omitted by older cached digests, like its siblings above.
    */
   scoreBasis?: ScoreBasis;
+  /**
+   * Whole weeks the score has held where it is (same band, within two
+   * points, computed the same way), read off the stored daily scores. Null
+   * when it has not held for two weeks, when the stored record does not
+   * reach today, or when the score moved. Optional so older cached digests
+   * stay valid.
+   */
+  steadyWeeks?: number | null;
 }
 
 /** A broken integration, deterministically derived from `IntegrationStatus`. */
@@ -170,6 +185,12 @@ export interface DailyDigestUpcomingVisit {
    * builder never needs the timezone.
    */
   dayOffset: number;
+  /**
+   * The start time on the person's own clock, in their profile timezone,
+   * rendered by the IO seam ("09:30"). Optional so a fixture that predates
+   * the Today overview stays valid; the overview skips a visit without it.
+   */
+  timeLabel?: string;
 }
 
 /**
@@ -370,6 +391,21 @@ export interface DailyDigestInput {
    * valid; the builder treats a missing value as "nothing landed today".
    */
   arrivals?: readonly DailyDigestArrival[];
+  /**
+   * The reader's locale, for the overview's count-bearing strings. Optional
+   * so a fixture that predates the overview stays valid (English then).
+   */
+  locale?: Locale;
+  /** Rest Mode, when an illness episode is active (illness module). */
+  restMode?: TodayRestMode | null;
+  /** Last night's sleep, when it is in the record (sleep module). */
+  sleepLastNight?: TodaySleep | null;
+  /** Each banded vital's standing against its personal range. */
+  vitals?: readonly TodayVital[];
+  /** Today's place in the cycle (cycle module). */
+  cycle?: TodayCycle | null;
+  /** Whole weeks the score has held; see `DailyDigestScore.steadyWeeks`. */
+  scoreSteadyWeeks?: number | null;
 }
 
 export interface DailyDigest {
@@ -387,8 +423,27 @@ export interface DailyDigest {
    * fan-out on every read, exactly the warm-on-mount load the plan forbids.
    */
   topSignal: DailyBriefingSignal | null;
-  /** First sentence of the cached briefing paragraph, read-only. */
+  /**
+   * The first sentence of the cached briefing paragraph that says something:
+   * a greeting ("Good morning.") or a sentence that only repeats the score is
+   * skipped. Read-only.
+   */
   briefingLead: string | null;
+  /**
+   * The hero's lead line, resolved: the reaction line or a briefing sentence
+   * while AI text is available, otherwise a deterministic sentence about the
+   * day's strongest signal. Null when there is nothing to say.
+   */
+  lead: TodayLead | null;
+  /**
+   * The Today overview: up to five statements about the day (Rest Mode,
+   * medications, an appointment today or tomorrow, last night, vitals,
+   * cycle), in priority order, never padded. A narrow screen shows the
+   * first four.
+   */
+  today: TodayFact[];
+  /** Whether an illness episode is active (Rest Mode), and since which day. */
+  restMode: TodayRestMode | null;
   /** The push / lock-screen line (cached-AI lead with a deterministic floor). */
   line: string;
   /** Bounded 0–3 rail items, never padded. */
@@ -415,19 +470,6 @@ export interface DailyDigest {
   reactionLine: string | null;
   /** Why the briefing lead, the reaction line or the check-in are absent. */
   ai: DailyDigestAi;
-}
-
-/** First sentence of a paragraph, trimmed; null when empty. */
-function firstSentence(paragraph: string | null | undefined): string | null {
-  if (!paragraph) return null;
-  const trimmed = paragraph.trim();
-  if (!trimmed) return null;
-  const match = trimmed.match(/^[\s\S]*?[.!?](?:\s|$)/);
-  let sentence = (match ? match[0] : trimmed).trim();
-  if (sentence.length > MAX_LINE_LENGTH) {
-    sentence = `${sentence.slice(0, MAX_LINE_LENGTH - 1).trimEnd()}…`;
-  }
-  return sentence.length > 0 ? sentence : null;
 }
 
 /** Title-case a lowercase integration token for user-facing copy. */
@@ -962,19 +1004,23 @@ function buildEcgNewRecordingItem(
 }
 
 /**
- * The push / lock-screen line: prefer the warmer cached briefing lead, fall
- * back to the top signal's headline, then a deterministic score floor, then
- * the honest all-clear. NEVER a fresh AI call — every branch reads cache or a
- * deterministic string, so a keyless self-hoster still gets a first-class line.
+ * The push / lock-screen line: the warmer cached briefing lead first, then
+ * the top signal's headline, then the deterministic sentence about the day's
+ * strongest signal, then a score floor, then the honest all-clear. The
+ * reaction line is left out on purpose: it answers something that landed
+ * during the day, and the morning push is sent before anything has. NEVER a
+ * fresh AI call — every branch reads cache or a deterministic string, so a
+ * keyless self-hoster still gets a first-class line.
  */
 function composeLine(
-  briefingLead: string | null,
+  overview: { briefingLead: string | null; lead: TodayLead | null },
   topSignal: DailyBriefingSignal | null,
   score: DailyDigestScore | null,
   t: Translate,
 ): string {
-  if (briefingLead) return briefingLead;
+  if (overview.briefingLead) return overview.briefingLead;
   if (topSignal?.headline) return topSignal.headline.trim();
+  if (overview.lead?.source === "signal") return overview.lead.text;
   if (score) return t("daily.line.score", { score: score.value });
   return t("daily.line.allClear");
 }
@@ -1034,7 +1080,6 @@ export function buildDailyDigest(
   // is the builder's own backstop, so the DTO cannot carry it by accident.
   const briefing = input.ai.briefing.available ? input.briefing : null;
   const topSignal = briefing?.signalsOfDay?.[0] ?? null;
-  const briefingLead = firstSentence(briefing?.paragraph);
 
   // The day's most recently LANDED arrival drives both reaction fields. The
   // sample timestamp may be hours old (sleep synced after waking, an offline
@@ -1170,15 +1215,58 @@ export function buildDailyDigest(
           (item) => !item.itemKey || !input.dismissedItemKeys.has(item.itemKey),
         );
 
+  const rail = capWithPinned(visible, pinned, MAX_WORTH_A_LOOK);
+
+  const overview = buildTodayOverview(
+    {
+      locale: input.locale ?? "en",
+      modules: input.modules,
+      reactionLine,
+      briefing,
+      scoreValue: input.score?.value ?? null,
+      medsToday: input.medsToday,
+      visits: (input.upcomingVisits ?? []).flatMap((visit) =>
+        visit.timeLabel === undefined ||
+        Number.isNaN(new Date(visit.occurredAt).getTime())
+          ? []
+          : [
+              {
+                id: visit.id,
+                dayOffset: visit.dayOffset,
+                timeLabel: visit.timeLabel,
+                what:
+                  visit.practitionerName ??
+                  t(encounterKindLabelKey(visit.kind as EncounterKind)),
+              },
+            ],
+      ),
+      rail,
+      restMode: input.restMode ?? null,
+      sleep: input.sleepLastNight ?? null,
+      vitals: input.vitals ?? [],
+      cycle: input.cycle ?? null,
+    },
+    t,
+  );
+
+  const score: DailyDigestScore | null = input.score
+    ? { ...input.score, steadyWeeks: input.scoreSteadyWeeks ?? null }
+    : null;
+
   return {
     generatedAt: input.now.toISOString(),
     phase,
     sleepPending,
-    score: input.score,
+    score,
     topSignal,
-    briefingLead,
-    line: composeLine(briefingLead, topSignal, input.score, t),
-    worthALook: capWithPinned(visible, pinned, MAX_WORTH_A_LOOK),
+    briefingLead: overview.briefingLead,
+    lead: overview.lead,
+    today: overview.today,
+    restMode: moduleEnabled(input.modules, "illness")
+      ? (input.restMode ?? null)
+      : null,
+    line: composeLine(overview, topSignal, input.score, t),
+    worthALook: rail,
     justIn,
     reactionLine,
     ai: input.ai,
