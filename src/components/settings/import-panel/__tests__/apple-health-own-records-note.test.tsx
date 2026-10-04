@@ -24,13 +24,18 @@ function bundle(locale: Locale): MessageBundle {
 }
 
 function render(locale: Locale, count: number): string {
-  return renderToStaticMarkup(
-    <I18nProvider initialLocale={locale} initialMessages={bundle(locale)}>
-      <AppleHealthOwnRecordsNote count={count} />
-    </I18nProvider>,
-  )
-    .replace(/<[^>]+>/g, "")
-    .trim();
+  return (
+    renderToStaticMarkup(
+      <I18nProvider initialLocale={locale} initialMessages={bundle(locale)}>
+        <AppleHealthOwnRecordsNote count={count} />
+      </I18nProvider>,
+    )
+      // Text between the tags; a test reading its own static markup, not a
+      // sanitiser for untrusted input.
+      .split(/<[^>]*>/)
+      .join("")
+      .trim()
+  );
 }
 
 describe("<AppleHealthOwnRecordsNote>", () => {
