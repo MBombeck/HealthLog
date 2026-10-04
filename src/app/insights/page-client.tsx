@@ -30,6 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { HeroStrip } from "@/components/insights/hero-strip";
 import { AiSetupHint } from "@/components/insights/ai-setup-hint";
+import { DeferUntilNear } from "@/components/insights/defer-until-near";
 import { OverviewSectionBoundary } from "@/components/insights/overview-section-boundary";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 import { useCycleRingDial } from "@/components/cycle/use-cycle";
@@ -235,6 +236,19 @@ const CycleRingTile = dynamic(
     })),
   { ssr: false },
 );
+
+/**
+ * How many overview sections, in the account's own order, mount with the
+ * page. The rest mount as they come near the visible area
+ * (`DeferUntilNear`). On entry the overview used to fire every section's
+ * reads at once (about twenty requests on a seeded account, trends,
+ * narrative, cycle, signals, rhythm events, health status, breathing, labs
+ * and ECG included), and the server queued them behind each other, so the
+ * hero and the first sections waited on cards far below the fold. The first
+ * three always sit within the first two screens; everything after them is
+ * further down on every viewport measured (phone and desktop).
+ */
+const EAGER_OVERVIEW_SECTIONS = 3;
 
 /**
  * v1.4.25 W4d — Insights mother page.
@@ -548,6 +562,11 @@ export default function InsightsPageClient() {
 
   const orderedSectionIds = orderedVisibleSectionIds(layout);
   const everySectionHidden = orderedSectionIds.length === 0;
+  // Sections whose gate is off resolve to `null` and take no slot, so the
+  // eager / deferred split below counts only what actually renders.
+  const renderedSectionIds = orderedSectionIds.filter(
+    (id) => SECTION_REGISTRY[id] !== null,
+  );
 
   return (
     // v1.12.7 (L3) — one consistent vertical rhythm down the overview. The
@@ -621,12 +640,18 @@ export default function InsightsPageClient() {
            registry, so the `space-y-6` rhythm closes the gap with no hole.
            Each registry node is wrapped in a keyed Fragment so React keeps a
            stable identity across a reorder. */
-        orderedSectionIds.map((id) => (
+        renderedSectionIds.map((id, index) => (
           <Fragment key={id}>
-            {SECTION_REGISTRY[id] === null ? null : (
+            {index < EAGER_OVERVIEW_SECTIONS ? (
               <OverviewSectionBoundary sectionId={id}>
                 {SECTION_REGISTRY[id]}
               </OverviewSectionBoundary>
+            ) : (
+              <DeferUntilNear id={id}>
+                <OverviewSectionBoundary sectionId={id}>
+                  {SECTION_REGISTRY[id]}
+                </OverviewSectionBoundary>
+              </DeferUntilNear>
             )}
           </Fragment>
         ))

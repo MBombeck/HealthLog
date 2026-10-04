@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+import { UMAMI_PROXY_PREFIX } from "@/lib/monitoring/umami-paths";
+
 interface UmamiScriptProps {
   enabled: boolean;
   websiteId: string | null;
@@ -22,8 +24,14 @@ export function UmamiScript({ enabled, websiteId }: UmamiScriptProps) {
     script.defer = true;
     script.src = "/api/monitoring/umami-script";
     script.setAttribute("data-website-id", websiteId);
-    // Force same-origin tracking endpoint so CSP stays strict.
-    script.setAttribute("data-host-url", window.location.origin);
+    // Send events to the same-origin proxy so CSP stays strict. The tracker
+    // appends its own collect path (`/api/send`, or whatever the operator's
+    // Umami build renamed it to), and every path under the prefix reaches
+    // the proxy route.
+    script.setAttribute(
+      "data-host-url",
+      `${window.location.origin}${UMAMI_PROXY_PREFIX}`,
+    );
 
     if (existing) {
       existing.replaceWith(script);

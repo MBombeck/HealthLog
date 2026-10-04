@@ -320,7 +320,7 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   "/api/monitoring/glitchtip": { kind: "internalOps", methods: ["POST"] },
   "/api/monitoring/settings": { kind: "internalOps", methods: ["GET"] },
   "/api/monitoring/umami-script": { kind: "internalOps", methods: ["GET"] },
-  "/api/send": { kind: "internalOps", methods: ["POST"] },
+  "/api/monitoring/umami/{path}": { kind: "internalOps", methods: ["POST"] },
   "/api/mcp/oauth/authorize": {
     kind: "mcpTransport",
     methods: ["GET", "POST"],

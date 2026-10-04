@@ -23,7 +23,16 @@
  *    "recharts" directly.
  *  - Types stay importable from the component files directly (type-only
  *    imports are value-free and don't drag the chunk in).
+ *
+ * Loading this module also moves Recharts' text-measurement span out of
+ * `<body>` before the first chart measures anything; see
+ * `text-measurement-host.ts` for why that read was the dashboard's largest
+ * main-thread cost.
  */
+
+import { installTextMeasurementHost } from "./text-measurement-host";
+
+installTextMeasurementHost();
 
 export { HealthChart } from "./health-chart";
 export { MoodChart } from "./mood-chart";

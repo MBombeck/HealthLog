@@ -29,20 +29,92 @@ import { apiGet } from "@/lib/api/api-fetch";
  */
 export const MEDICATIONS_LIST_STALE_TIME_MS = 15_000;
 
+/**
+ * How long after a prefetch STARTED its data still counts as this visit's
+ * fresh read. Wide enough to span hover → click → route commit → mount on a
+ * slow device; far below any gap in which another surface could have
+ * written something the user would expect to see.
+ */
+export const MEDICATIONS_PREFETCH_COVERS_MOUNT_MS = 10_000;
+
+type MedicationsRead = "list" | "compliance";
+
+/** When the last prefetch that actually went to the network started. */
+const prefetchStartedAt = new Map<MedicationsRead, number>();
+
+function prefetchRead(
+  queryClient: QueryClient,
+  read: MedicationsRead,
+  queryKey: readonly unknown[],
+  path: string,
+  signal?: AbortSignal,
+): void {
+  const state = queryClient.getQueryState(queryKey);
+  const willFetch =
+    state?.fetchStatus !== "fetching" &&
+    (!state ||
+      state.dataUpdatedAt < Date.now() - MEDICATIONS_LIST_STALE_TIME_MS);
+  if (willFetch) prefetchStartedAt.set(read, Date.now());
+  void queryClient.prefetchQuery({
+    queryKey,
+    queryFn: () => apiGet(path, { signal }),
+    staleTime: MEDICATIONS_LIST_STALE_TIME_MS,
+  });
+}
+
 export function prefetchMedicationsList(
   queryClient: QueryClient,
   signal?: AbortSignal,
 ): void {
-  void queryClient.prefetchQuery({
-    queryKey: queryKeys.medications(),
-    queryFn: () => apiGet("/api/medications", { signal }),
-    staleTime: MEDICATIONS_LIST_STALE_TIME_MS,
-  });
-  void queryClient.prefetchQuery({
-    queryKey: queryKeys.medicationComplianceSummary(),
-    queryFn: () => apiGet("/api/medications/compliance", { signal }),
-    staleTime: MEDICATIONS_LIST_STALE_TIME_MS,
-  });
+  prefetchRead(
+    queryClient,
+    "list",
+    queryKeys.medications(),
+    "/api/medications",
+    signal,
+  );
+  prefetchRead(
+    queryClient,
+    "compliance",
+    queryKeys.medicationComplianceSummary(),
+    "/api/medications/compliance",
+    signal,
+  );
+}
+
+/**
+ * `refetchOnMount` for the medications reads that must re-verify on every
+ * visit (#316: a take or skip on another device produces no event here).
+ *
+ * Still "always", except when the cached data is the answer to a prefetch
+ * that this same navigation fired moments ago: the hover / touch / focus
+ * intent on the nav link, or the route-commit preload. Leaving the page ends
+ * that navigation (`forgetMedicationsPrefetch`). Re-asking then sent
+ * the identical request a second time, a few hundred milliseconds after the
+ * first answer landed, on every visit to the page. A return to the page with
+ * an older cache entry, or a direct load, still refetches on mount.
+ */
+export function refetchMedicationsOnMount(
+  read: MedicationsRead,
+): (query: { state: { dataUpdatedAt: number } }) => boolean | "always" {
+  return (query) => {
+    const startedAt = prefetchStartedAt.get(read);
+    const answeredThisVisit =
+      startedAt !== undefined &&
+      query.state.dataUpdatedAt >= startedAt &&
+      Date.now() - startedAt < MEDICATIONS_PREFETCH_COVERS_MOUNT_MS;
+    return answeredThisVisit ? false : "always";
+  };
+}
+
+/**
+ * End the visit a recorded prefetch belongs to. Called whenever the route is
+ * anything but `/medications`, so a prefetch only ever excuses the mounts of
+ * the visit it was fired for: leave the page and come back within seconds,
+ * and the remount still re-verifies.
+ */
+export function forgetMedicationsPrefetch(): void {
+  prefetchStartedAt.clear();
 }
 
 /**

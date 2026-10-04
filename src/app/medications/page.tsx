@@ -39,7 +39,9 @@ import MedicationsPageClient from "./page-client";
  *    event, so the list must re-verify on every mount. With the prefetch in
  *    place the hydrated cards paint immediately and that refetch runs in the
  *    background — the "empty then fills" flash is gone WITHOUT dropping the
- *    freshness guarantee.
+ *    freshness guarantee. The one exception is data a prefetch fired by this
+ *    same navigation just fetched (`refetchMedicationsOnMount`): that already
+ *    is the re-verification, so it is not sent twice.
  *  - Record identity: the session comes from `getUnswitchedSession()`, which
  *    answers null while the browser is acting on somebody else's record.
  *    `/api/medications` IS delegable, so the client cell corrects itself on its

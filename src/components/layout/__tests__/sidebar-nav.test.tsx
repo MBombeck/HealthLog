@@ -57,6 +57,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider } from "@/lib/i18n/context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
+  SIDEBAR_EXPANDED_CONTENT_WIDTH,
   SidebarCollapseToggle,
   SidebarNav,
   readSidebarCollapsedPref,
@@ -496,5 +497,65 @@ describe("<SidebarNav> collapse preference persistence", () => {
     const toggle = html.indexOf('data-slot="sidebar-collapse-toggle"');
     expect(toggle).toBeGreaterThan(html.indexOf("</nav>"));
     expect(html.indexOf('href="/admin"')).toBeGreaterThan(toggle);
+  });
+});
+
+/**
+ * The rail animates `width` between `w-16` and `w-64`. Expanding used to lay
+ * the labels out against the growing width: multi-word labels wrapped, the
+ * rows overran the nav, and its `overflow-y-auto` painted a vertical and a
+ * horizontal scrollbar for the length of the transition. The content now
+ * lays out at its final width from the first frame and the rail clips it, so
+ * nothing inside can overflow a scroll container while the width moves.
+ */
+describe("<SidebarNav> width transition never overflows the nav", () => {
+  const KEY = "healthlog-sidebar-collapsed";
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    mockMountedRef.value = false;
+  });
+
+  function asideClass(html: string): string {
+    return /<aside[^>]*class="([^"]*)"/.exec(html)?.[1] ?? "";
+  }
+  function columnClass(html: string): string {
+    return (
+      /data-slot="sidebar-column"[^>]*class="([^"]*)"|class="([^"]*)"[^>]*data-slot="sidebar-column"/
+        .exec(html)
+        ?.slice(1)
+        .find(Boolean) ?? ""
+    );
+  }
+
+  it("clips the content to the animating rail", () => {
+    const aside = asideClass(render());
+    expect(aside).toContain("transition-[width]");
+    expect(aside.split(" ")).toContain("overflow-hidden");
+  });
+
+  it("lays the expanded column out at the expanded rail's content width", () => {
+    const column = columnClass(render());
+    expect(column.split(" ")).toContain(SIDEBAR_EXPANDED_CONTENT_WIDTH);
+    // `w-64` minus the rail's 1 px `border-r`: a wider floor would push the
+    // right padding under the clip, a narrower one would let the labels
+    // re-flow while the width grows.
+    expect(SIDEBAR_EXPANDED_CONTENT_WIDTH).toBe("min-w-[calc(16rem-1px)]");
+    expect(asideClass(render()).split(" ")).toContain("border-r");
+  });
+
+  it("drops the floor on the collapsed rail, so the icons follow the narrowing width", () => {
+    const store = new Map([[KEY, "true"]]);
+    vi.stubGlobal("window", globalThis);
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+    });
+    mockMountedRef.value = true;
+    const html = render();
+    expect(asideClass(html).split(" ")).toContain("w-16");
+    expect(columnClass(html).split(" ")).not.toContain(
+      SIDEBAR_EXPANDED_CONTENT_WIDTH,
+    );
   });
 });

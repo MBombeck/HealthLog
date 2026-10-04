@@ -34,7 +34,10 @@ import {
   getRecordSessionTransition,
   subscribeToRecordSessionTransition,
 } from "@/lib/query-keys/record-session-transition";
-import { prefetchMedicationsList } from "@/lib/queries/prefetch-medications";
+import {
+  forgetMedicationsPrefetch,
+  prefetchMedicationsList,
+} from "@/lib/queries/prefetch-medications";
 import {
   getRecordScope,
   subscribeToRecordScope,
@@ -245,6 +248,10 @@ function DashboardSnapshotPreloader() {
     // intent, so this is the fallback for direct loads + reloads.
     if (pathname === "/medications") {
       prefetchMedicationsList(queryClient, controller.signal);
+    } else {
+      // Off the page: a later prefetch starts a new visit, and an earlier one
+      // must not excuse the next mount's re-verification.
+      forgetMedicationsPrefetch();
     }
     // A transition to an unresolved, refused, or different record scope must
     // abort a preloader before its response can be adopted by the next route.
