@@ -1,19 +1,83 @@
 # Changelog
 
-## [Unreleased]
+## [1.40.0] — 2026-10-04
+
+Back up the encryption key and refuse a key that cannot open the data;
+several courses and custom categories for medications; custom symptoms;
+document reads in the background; sick notes; lab unit refusal and charts
+that follow the source priority; blood pressure no longer loses its
+diastolic value; document previews work again.
+
+### Added
+
+- **Encryption key backup step (migration 0365).** Admin step with key id,
+  fingerprint and per-platform guidance (`HEALTHLOG_PLATFORM`), an optional
+  "check my copy" that compares and discards the pasted key, a reminder that
+  returns when the key changes.
+- **Boot key check.** A canary per key id, probed oldest values first across
+  string and Bytes columns; a proven mismatch answers 503
+  `encryption.key_mismatch` everywhere except `/api/health` and
+  `/api/version`, MCP included, and starts no worker; an unproven result
+  serves, warns and re-checks. `ENCRYPTION_KEY_CHECK=warn` as a last resort.
+- **Medication courses and custom categories (#1024, #1041, migration
+  0368).** Several courses per medication; compliance, streak, cadence and
+  dose history count every course and never the gaps; existing dated
+  medications become one course each. Own categories as `custom:<id>` with
+  `categoryLabel`; the runtime category table is now in the schema.
+- **Custom symptoms (#981, migration 0369).** Up to eight definitions, events
+  with a 0 to 10 intensity, a capture kind, one correlation channel per
+  symptom, a Coach block; gated on the Illness module.
+- **Document AI as background runs (#1090, migrations 0366 and 0370).**
+  Index, summary, suggestions and extraction accept `Prefer: respond-async`;
+  the lab scan always runs in the background; `GET /api/ai-runs/{id}`.
+- **`SICK_NOTE` document kind.**
+- **Natural durations (#1101)** in the sleep field.
+- **Reasoning effort per provider (#1126).** The Local and OpenAI-compatible
+  forms gain a Reasoning select (Default, Off, Low, Medium, High), stored on
+  the provider's chain entry; Default sends nothing, Off sends
+  `reasoning_effort: "none"`. A rejection of that field no longer switches
+  the endpoint's JSON mode off.
 
 ### Fixed
 
-- **Blood pressure saved without its diastolic value.** The iPhone app (up to
-  1.0.3, and TestFlight 1.1.0) sends the two halves of a manual reading as two
+- **Blood pressure saved without its diastolic value (iOS #15, migration
+  0371).** The iPhone app sends the two halves of a manual reading as two
   requests under one `Idempotency-Key`, and the server answered the second
-  with the first one's cached response instead of saving it. The replay cache
-  now stores a SHA-256 fingerprint of the request body (migration 0371,
-  `idempotency_keys.request_fingerprint`) and replays only the same body; a
-  different body under the same key is saved normally. Readings saved before
-  this fix stay incomplete: delete the incomplete reading and enter it again
-  with both values and the original time. Operators can list affected
-  readings with the query in `docs/ops/blood-pressure-missing-diastolic.md`.
+  with the first one's cached response. The replay cache now stores a SHA-256
+  fingerprint of method, path and body (JSON canonicalised, a multipart
+  boundary normalised) and replays only the same request; a different body
+  under the same key is saved. Readings saved before this stay incomplete;
+  `docs/ops/blood-pressure-missing-diastolic.md` lists them.
+- **Document previews and scanned PDFs (#1124).** The image hoisted an older
+  `@napi-rs/canvas` binary next to the pinned loader, so every thumbnail
+  failed; the build now hoists the pinned version and fails on a mismatch.
+  PDFs render with pdfjs font, cmap and wasm data and a registered fallback
+  font instead of absent system fonts, and an all-blank render reports
+  `raster-failed`. The thumbnail job logs why a preview is missing.
+- **Portable backups.** Cycle free text, custom mood labels, visit notes
+  and vaccination notes are carried readable and re-encrypted on restore
+  instead of as the source server's ciphertext; custom mood tags restore
+  without mood entries; a round-trip guard fails on any ciphertext in a
+  portable file. A medication update and its course share one transaction.
+- **Lab unit mismatch (#1094).** A reading in another unit than its marker is
+  refused (`labs.unit.mismatch`) on every write path; a marker's unit is
+  locked while it has readings (`biomarkers.unit.locked`).
+- **Source priority in series (#1108).** Pulse, HRV and SpO2 series read the
+  ladder's source per day; unranked types keep every source.
+- **Sign-in over plain http (#1097).** Refused with
+  `auth.session.insecure_transport` before a password, code or challenge is
+  used; the sign-in page says so first.
+- **Chart window (#1102).** Ends at the end of today in the profile time zone.
+- **Workouts.** The insight cap survives a delete (migration 0367); a changed
+  `manual:` resubmit updates the workout and its paragraph.
+- **Display.** Clinician decimals in the owner's locale, stated dates east of
+  UTC+12, archive month grouping, lab list columns without a range, icon
+  picker touch targets and labels, symptom entry load errors.
+
+### Changed
+
+- Quick-entry forms load on demand; the four eager route baselines are
+  lowered to the new measurements.
 
 ## [1.39.9] — 2026-10-03
 
