@@ -93,11 +93,18 @@ export function prefetchMedicationsList(
  * the identical request a second time, a few hundred milliseconds after the
  * first answer landed, on every visit to the page. A return to the page with
  * an older cache entry, or a direct load, still refetches on mount.
+ *
+ * An invalidated entry always refetches: a dose logged elsewhere in the app
+ * between the prefetch and the mount invalidates these reads, and the
+ * prefetched answer is then the stale one.
  */
 export function refetchMedicationsOnMount(
   read: MedicationsRead,
-): (query: { state: { dataUpdatedAt: number } }) => boolean | "always" {
+): (query: {
+  state: { dataUpdatedAt: number; isInvalidated: boolean };
+}) => boolean | "always" {
   return (query) => {
+    if (query.state.isInvalidated) return "always";
     const startedAt = prefetchStartedAt.get(read);
     const answeredThisVisit =
       startedAt !== undefined &&
