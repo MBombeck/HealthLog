@@ -323,57 +323,69 @@ function windowAsCourse(
  * Clearing both on a medication with one course deletes it (chronic again,
  * the pre-course meaning of no dates); on one with several it is refused,
  * because it would silently drop the history.
+ *
+ * `tx` runs the write inside the caller's transaction, so the PUT's row
+ * update and this course write commit or roll back together: a refusal here
+ * then leaves nothing of the PUT behind.
  */
 export async function setCurrentWindow(
   args: WriteContext & { startsOn: Date | null; endsOn: Date | null },
+  tx?: Tx,
+): Promise<ProjectedWindow> {
+  return tx
+    ? writeCurrentWindow(tx, args)
+    : prisma.$transaction((own) => writeCurrentWindow(own, args));
+}
+
+async function writeCurrentWindow(
+  tx: Tx,
+  args: WriteContext & { startsOn: Date | null; endsOn: Date | null },
 ): Promise<ProjectedWindow> {
   const todayKey = userDayKey(args.now ?? new Date(), args.timeZone);
-  return prisma.$transaction(async (tx) => {
-    await lockMedication(tx, args.medicationId);
-    const { medication, courses } = await loadOwned(
-      tx,
-      args.userId,
-      args.medicationId,
-    );
-    const latest = sortCourses(courses).at(-1);
+  await lockMedication(tx, args.medicationId);
+  const { medication, courses } = await loadOwned(
+    tx,
+    args.userId,
+    args.medicationId,
+  );
+  const latest = sortCourses(courses).at(-1);
 
-    if (args.startsOn === null && args.endsOn === null) {
-      if (!latest) return project(tx, args.medicationId);
-      if (courses.length > 1) throw new CourseWriteError("windowRequired");
-      await tx.medicationCourse.delete({ where: { id: latest.id } });
-      return project(tx, args.medicationId);
-    }
-
-    const next = windowAsCourse(
-      args.startsOn,
-      args.endsOn,
-      latest,
-      medication.createdAt,
-      args.timeZone,
-    );
-
-    if (latest) {
-      refuseIfInvalid(
-        courses.map((c) => (c.id === latest.id ? next : c)),
-        todayKey,
-        medication.oneShot,
-      );
-      await tx.medicationCourse.update({
-        where: { id: latest.id },
-        data: next,
-      });
-    } else {
-      refuseIfInvalid([next], todayKey, medication.oneShot);
-      await tx.medicationCourse.create({
-        data: {
-          medicationId: args.medicationId,
-          userId: args.userId,
-          ...next,
-        },
-      });
-    }
+  if (args.startsOn === null && args.endsOn === null) {
+    if (!latest) return project(tx, args.medicationId);
+    if (courses.length > 1) throw new CourseWriteError("windowRequired");
+    await tx.medicationCourse.delete({ where: { id: latest.id } });
     return project(tx, args.medicationId);
-  });
+  }
+
+  const next = windowAsCourse(
+    args.startsOn,
+    args.endsOn,
+    latest,
+    medication.createdAt,
+    args.timeZone,
+  );
+
+  if (latest) {
+    refuseIfInvalid(
+      courses.map((c) => (c.id === latest.id ? next : c)),
+      todayKey,
+      medication.oneShot,
+    );
+    await tx.medicationCourse.update({
+      where: { id: latest.id },
+      data: next,
+    });
+  } else {
+    refuseIfInvalid([next], todayKey, medication.oneShot);
+    await tx.medicationCourse.create({
+      data: {
+        medicationId: args.medicationId,
+        userId: args.userId,
+        ...next,
+      },
+    });
+  }
+  return project(tx, args.medicationId);
 }
 
 /**
