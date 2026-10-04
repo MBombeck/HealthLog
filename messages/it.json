@@ -5375,6 +5375,9 @@
             "rowsImported": "{count} righe importate finora",
             "doneSummary": "Fatto: {imported} di {read} record importati, {skipped} record clinici saltati.",
             "doneNothing": "Da questo archivio non è stato importato nulla: sono arrivati 0 record su {read}.",
+            "writtenByHealthLogOne": "{count} registrazione che HealthLog ha scritto in Salute è stata esclusa, perché è già nei tuoi dati.",
+            "writtenByHealthLogOther": "{count} registrazioni che HealthLog ha scritto in Salute sono state escluse, perché sono già nei tuoi dati.",
+            "writtenByHealthLogFew": "{count} registrazioni che HealthLog ha scritto in Salute sono state escluse, perché sono già nei tuoi dati.",
             "ecgResult": "ECG: {discovered} rilevati, {imported} importati, {updated} aggiornati, {skipped} ignorati e {failed} non riusciti. Gli errori ECG non eliminano i record supportati importati da export.xml.",
             "estimateWarning": "I totali cumulativi di {count} giorno/i sono stati stimati dalla fonte di esportazione più alta. Le statistiche native di Apple Salute restano autorevoli.",
             "phase": {

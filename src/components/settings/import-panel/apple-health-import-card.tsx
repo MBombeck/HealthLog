@@ -31,6 +31,12 @@ interface JobStatus {
     totals?: { recordsRead?: number; rowsUpserted?: number };
     clinical?: { skipped?: number };
     cumulativeEstimates?: { days?: number; rows?: number };
+    /** Records HealthLog wrote into Apple Health itself, left out here. */
+    writtenByHealthLog?: {
+      byMarker?: number;
+      byExternalId?: number;
+      matchedManual?: number;
+    };
     /** HK types deferred by design — read but not (yet) imported. */
     deferred?: Record<string, number>;
     /** Per-key drop counters — plain HK types are unsupported-by-design,
@@ -247,6 +253,22 @@ export function AppleHealthSkipLines({
   );
 }
 
+/** How many records the import left out because HealthLog wrote them. */
+export function AppleHealthOwnRecordsNote({ count }: { count: number }) {
+  const { tCount } = useTranslations();
+  return (
+    <p
+      data-testid="import-apple-health-own-skipped"
+      className="text-muted-foreground text-sm"
+    >
+      {tCount(
+        "settings.sections.export.import.appleHealth.writtenByHealthLog",
+        count,
+      )}
+    </p>
+  );
+}
+
 export function AppleHealthImportCard() {
   const { t } = useTranslations();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -342,6 +364,10 @@ export function AppleHealthImportCard() {
   const status = statusQuery.data ?? null;
   const isRunning = status !== null && !TERMINAL_STATES.includes(status.status);
   const isDone = status?.status === "done";
+  const ownRecordsSkipped =
+    (status?.result?.writtenByHealthLog?.byMarker ?? 0) +
+    (status?.result?.writtenByHealthLog?.byExternalId ?? 0) +
+    (status?.result?.writtenByHealthLog?.matchedManual ?? 0);
   const isFailed = status?.status === "failed";
   const busy = uploading || isRunning;
   const percent = status?.progress?.percent ?? null;
@@ -491,6 +517,9 @@ export function AppleHealthImportCard() {
               failed: ecg?.failed ?? 0,
             })}
           </p>
+        )}
+        {isDone && ownRecordsSkipped > 0 && (
+          <AppleHealthOwnRecordsNote count={ownRecordsSkipped} />
         )}
         {isDone && (status?.result?.cumulativeEstimates?.days ?? 0) > 0 && (
           <AppleHealthEstimateWarning

@@ -5375,6 +5375,9 @@
             "rowsImported": "Zaimportowano dotąd {count} wierszy",
             "doneSummary": "Gotowe — zaimportowano {imported} z {read} rekordów, pominięto {skipped} rekordów klinicznych.",
             "doneNothing": "Z tego archiwum nic nie zaimportowano: dotarło 0 z {read} rekordów.",
+            "writtenByHealthLogOne": "Pominięto {count} wpis, który HealthLog sam zapisał w Apple Health, ponieważ jest już w Twoich danych.",
+            "writtenByHealthLogOther": "Pominięto {count} wpisów, które HealthLog sam zapisał w Apple Health, ponieważ są już w Twoich danych.",
+            "writtenByHealthLogFew": "Pominięto {count} wpisy, które HealthLog sam zapisał w Apple Health, ponieważ są już w Twoich danych.",
             "ecgResult": "EKG: wykryto {discovered}, zaimportowano {imported}, zaktualizowano {updated}, pominięto {skipped}, nie powiodło się {failed}. Błędy EKG nie usuwają obsługiwanych rekordów zaimportowanych z pliku export.xml.",
             "estimateWarning": "Łączne wartości dla {count} dni oszacowano na podstawie największego źródła w eksporcie. Natywne statystyki Apple Health pozostają nadrzędne.",
             "phase": {

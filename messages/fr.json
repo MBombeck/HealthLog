@@ -5375,6 +5375,9 @@
             "rowsImported": "{count} lignes importées jusqu'ici",
             "doneSummary": "Terminé — {imported} enregistrements sur {read} importés, {skipped} enregistrements cliniques ignorés.",
             "doneNothing": "Rien n'a été importé de cette archive : 0 enregistrement sur {read} est arrivé.",
+            "writtenByHealthLogOne": "{count} enregistrement que HealthLog a écrit lui-même dans Santé a été ignoré, car il figure déjà dans vos données.",
+            "writtenByHealthLogOther": "{count} enregistrements que HealthLog a écrits lui-même dans Santé ont été ignorés, car ils figurent déjà dans vos données.",
+            "writtenByHealthLogFew": "{count} enregistrements que HealthLog a écrits lui-même dans Santé ont été ignorés, car ils figurent déjà dans vos données.",
             "ecgResult": "ECG : {discovered} détectés, {imported} importés, {updated} mis à jour, {skipped} ignorés et {failed} échoués. Les erreurs d’ECG n’annulent pas les enregistrements compatibles importés depuis export.xml.",
             "estimateWarning": "Les totaux cumulés de {count} jour(s) ont été estimés à partir de la source d’export la plus élevée. Les statistiques Apple Santé natives restent la référence.",
             "phase": {

@@ -297,6 +297,7 @@ function makeDiscardingPrisma(sample: () => void) {
           externalId: row.externalId,
         }));
       },
+      groupBy: async () => [],
       findMany: async () => [],
       findFirst: async () => null,
       update: async () => {

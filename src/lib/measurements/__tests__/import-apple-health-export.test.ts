@@ -271,6 +271,21 @@ function makeFakePrisma(
         }
         return returned;
       },
+      // The import reads once which types hold MANUAL rows.
+      groupBy: async ({
+        where,
+      }: {
+        where: { userId: string; source: string };
+      }) =>
+        [
+          ...new Set(
+            measurements
+              .filter(
+                (m) => m.userId === where.userId && m.source === where.source,
+              )
+              .map((m) => m.type),
+          ),
+        ].map((type) => ({ type })),
       findMany: async ({
         where,
       }: {

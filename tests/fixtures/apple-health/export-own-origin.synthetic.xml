@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SYNTHETIC FIXTURE. Not an export from a real person or device.
+
+  Written by hand to the shape Apple's export.xml documents in its own DTD
+  (abridged below): a <Record> may hold <MetadataEntry key= value=> children.
+  Every value, date and id is invented. What it cannot show is whether Apple's
+  exporter writes a custom metadata key such as dev.healthlog.app.origin
+  verbatim; that has to be checked against a real export (see #1109).
+
+  Records, in order:
+    1. weight 80.1  carries the HealthLog origin marker        -> left out
+    2. weight 80.2  user-entered, no marker                    -> imported
+    3. weight 80.3  marker among other metadata entries        -> left out
+    4. weight 80.4  no metadata at all                         -> imported
+    5. weight 80.5  origin key with another value              -> imported
+-->
+<!DOCTYPE HealthData [
+<!ELEMENT HealthData (ExportDate, Me, Record*)>
+<!ATTLIST HealthData locale CDATA #REQUIRED>
+<!ELEMENT ExportDate EMPTY>
+<!ATTLIST ExportDate value CDATA #REQUIRED>
+<!ELEMENT Me EMPTY>
+<!ELEMENT Record (MetadataEntry*)>
+<!ATTLIST Record
+  type          CDATA #REQUIRED
+  unit          CDATA #IMPLIED
+  value         CDATA #IMPLIED
+  sourceName    CDATA #REQUIRED
+  sourceVersion CDATA #IMPLIED
+  device        CDATA #IMPLIED
+  creationDate  CDATA #IMPLIED
+  startDate     CDATA #REQUIRED
+  endDate       CDATA #REQUIRED>
+<!ELEMENT MetadataEntry EMPTY>
+<!ATTLIST MetadataEntry key CDATA #REQUIRED value CDATA #REQUIRED>
+]>
+<HealthData locale="en_US">
+ <ExportDate value="2026-05-20 12:00:00 +0200"/>
+ <Me/>
+ <Record type="HKQuantityTypeIdentifierBodyMass" sourceName="SyntheticApp" unit="kg" creationDate="2026-05-14 08:00:02 +0200" startDate="2026-05-14 08:00:00 +0200" endDate="2026-05-14 08:00:00 +0200" value="80.1">
+  <MetadataEntry key="dev.healthlog.app.origin" value="healthlog"/>
+  <MetadataEntry key="HKExternalUUID" value="00000000-0000-0000-0000-000000000001"/>
+ </Record>
+ <Record type="HKQuantityTypeIdentifierBodyMass" sourceName="SyntheticApp" unit="kg" creationDate="2026-05-14 09:00:02 +0200" startDate="2026-05-14 09:00:00 +0200" endDate="2026-05-14 09:00:00 +0200" value="80.2">
+  <MetadataEntry key="HKWasUserEntered" value="1"/>
+ </Record>
+ <Record type="HKQuantityTypeIdentifierBodyMass" sourceName="SyntheticApp" unit="kg" creationDate="2026-05-14 10:00:02 +0200" startDate="2026-05-14 10:00:00 +0200" endDate="2026-05-14 10:00:00 +0200" value="80.3">
+  <MetadataEntry key="HKWasUserEntered" value="1"/>
+  <MetadataEntry key="dev.healthlog.app.origin" value="healthlog"/>
+ </Record>
+ <Record type="HKQuantityTypeIdentifierBodyMass" sourceName="SyntheticApp" unit="kg" creationDate="2026-05-14 11:00:02 +0200" startDate="2026-05-14 11:00:00 +0200" endDate="2026-05-14 11:00:00 +0200" value="80.4"/>
+ <Record type="HKQuantityTypeIdentifierBodyMass" sourceName="SyntheticApp" unit="kg" creationDate="2026-05-14 12:00:02 +0200" startDate="2026-05-14 12:00:00 +0200" endDate="2026-05-14 12:00:00 +0200" value="80.5">
+  <MetadataEntry key="dev.healthlog.app.origin" value="some-other-app"/>
+ </Record>
+</HealthData>
