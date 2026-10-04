@@ -969,42 +969,11 @@ export const PUT = apiHandler(
           }),
         };
 
-        const withoutNotifications = { ...baseUpdateData } as Record<
-          string,
-          unknown
-        >;
-        delete withoutNotifications.notificationsEnabled;
-        const hasPausedAtPatch = Object.keys(pausedAtPatch).length > 0;
-        const hasNotificationsPatch = notificationsEnabled !== undefined;
-
-        const updateCandidates: Array<Record<string, unknown>> = [
-          { ...baseUpdateData, ...pausedAtPatch },
-        ];
-        if (hasPausedAtPatch) {
-          updateCandidates.push(baseUpdateData);
-        }
-        if (hasNotificationsPatch) {
-          updateCandidates.push({ ...withoutNotifications, ...pausedAtPatch });
-          if (hasPausedAtPatch) {
-            updateCandidates.push(withoutNotifications);
-          }
-        }
-
-        let updated;
-        let lastUpdateErr: unknown;
-        for (const candidate of updateCandidates) {
-          try {
-            updated = await tx.medication.update({
-              where: { id },
-              data: candidate,
-              include: { schedules: true },
-            });
-            break;
-          } catch (updateErr) {
-            lastUpdateErr = updateErr;
-          }
-        }
-        if (!updated) throw lastUpdateErr;
+        const updated = await tx.medication.update({
+          where: { id },
+          data: { ...baseUpdateData, ...pausedAtPatch },
+          include: { schedules: true },
+        });
 
         // v1.25 H-MED1 — durable pause intervals. The `pausedAt` column is a
         // single live marker that resume clears, so the paused window is
