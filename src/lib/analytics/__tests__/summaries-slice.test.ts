@@ -45,11 +45,9 @@ vi.mock("@/lib/logging/context", () => ({
 // 90-day FILTER caps the slice itself writes — is exercised without
 // coupling the slice unit test to the rank builder's enum-whitelist
 // internals.
-vi.mock("@/lib/analytics/source-rank-sql", () => ({
-  buildSourceRankCase: vi.fn(() => "90"),
-  canonicalMeasurementsFrom: vi.fn(
-    (_rank: string, sinceInterval?: string) =>
-      `(
+vi.mock("@/lib/analytics/source-rank-sql", () => {
+  const cte = (_rank: string, sinceInterval?: string) =>
+    `
         SELECT mm.*
         FROM measurements mm
         WHERE mm."user_id" = $1
@@ -58,13 +56,15 @@ vi.mock("@/lib/analytics/source-rank-sql", () => ({
             sinceInterval
               ? `AND mm."measured_at" >= NOW() - INTERVAL '${sinceInterval}'`
               : ""
-          }
-      ) m`,
-  ),
-}));
+          }`;
+  return {
+    buildSourceRankCase: vi.fn(() => "90"),
+    canonicalMeasurementsCte: vi.fn(cte),
+  };
+});
 
 import { prisma } from "@/lib/db";
-import { canonicalMeasurementsFrom } from "@/lib/analytics/source-rank-sql";
+import { canonicalMeasurementsCte } from "@/lib/analytics/source-rank-sql";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
 import { computeSummariesSlice } from "../summaries-slice";
 
@@ -79,7 +79,7 @@ const ROLLUP_FIND_MANY = prisma.measurementRollup
   .findMany as unknown as ReturnType<typeof vi.fn>;
 const ROLLUP_FIND_FIRST = prisma.measurementRollup
   .findFirst as unknown as ReturnType<typeof vi.fn>;
-const CANONICAL_FROM = canonicalMeasurementsFrom as unknown as ReturnType<
+const CANONICAL_FROM = canonicalMeasurementsCte as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -609,11 +609,12 @@ describe("computeSummariesSlice", () => {
       expect(narrowsCap?.length).toBeGreaterThanOrEqual(1);
 
       // v1.11.1 — the cold-fallback `windowed` scan delegates its outer
-      // 90-day cap to `canonicalMeasurementsFrom(rank, "90 days")`. The
+      // 90-day cap to `canonicalMeasurementsCte(rank, "90 days")` (a CTE
+      // now, so the day weights can read it twice). The
       // helper lives in `@/lib/analytics/source-rank-sql` (stubbed
       // above), so pin the contract at the call boundary: the slice
       // must ask for the 90-day window.
-      expect(canonicalMeasurementsFrom).toHaveBeenCalledWith(
+      expect(canonicalMeasurementsCte).toHaveBeenCalledWith(
         expect.any(String),
         "90 days",
       );
@@ -621,7 +622,7 @@ describe("computeSummariesSlice", () => {
       // 15-year scan-DoS floor (far beyond any real history) so a
       // coverage-miss cold read can't trigger an unbounded full-partition
       // scan. It no longer calls the helper without an interval.
-      expect(canonicalMeasurementsFrom).toHaveBeenCalledWith(
+      expect(canonicalMeasurementsCte).toHaveBeenCalledWith(
         expect.any(String),
         "15 years",
       );

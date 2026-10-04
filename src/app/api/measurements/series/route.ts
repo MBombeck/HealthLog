@@ -27,6 +27,12 @@ import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
 import { VALUE_RANGES } from "@/lib/validations/measurement";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
+import {
+  dayWeightedRows,
+  readingsMean,
+  windowMeanSql,
+  zoneDayFrame,
+} from "@/lib/measurements/day-mean";
 import { seriesRowsFrom } from "@/lib/measurements/series-canonical";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
@@ -487,17 +493,50 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // strip's mean/min/max/stdDev/count are the same figures the raw path
     // computed: `AVG`/`MIN`/`MAX` over `value`, `STDDEV_POP` matching the
     // JS population-variance helper, exact row count. Aggregate-only —
-    // no row transfer.
-    const [rawAgg] = await prisma.$queryRawUnsafe<
-      Array<{
-        n: number;
-        mean: number | null;
-        min: number | null;
-        max: number | null;
-        sd: number | null;
-      }>
-    >(
-      `
+    // no row transfer. For an hourly-mean type (pulse) the mean is the mean
+    // of the local days' values, each day the mean of its local hours'
+    // means, so it is the mean of the day points the chart draws; count,
+    // min, max and the spread stay over every reading.
+    const [rawAgg] = usesHourlyMeanDay(type)
+      ? await prisma.$queryRawUnsafe<
+          Array<{
+            n: number;
+            mean: number | null;
+            min: number | null;
+            max: number | null;
+            sd: number | null;
+          }>
+        >(
+          `
+      WITH src AS (
+        SELECT m.*
+        FROM ${seriesRows}
+        WHERE m."measured_at" >= $2
+      )
+      SELECT
+        COUNT(*)::int                            AS n,
+        ${windowMeanSql({ typeColumn: 'm."type"', value: 'm."value"', weight: "m.day_weight" })}::double precision
+                                                 AS mean,
+        MIN(m."value")::double precision         AS min,
+        MAX(m."value")::double precision         AS max,
+        STDDEV_POP(m."value")::double precision  AS sd
+      FROM ${dayWeightedRows("src", zoneDayFrame("$3"))} m
+      GROUP BY m."type"
+    `,
+          user.id,
+          since,
+          userTz,
+        )
+      : await prisma.$queryRawUnsafe<
+          Array<{
+            n: number;
+            mean: number | null;
+            min: number | null;
+            max: number | null;
+            sd: number | null;
+          }>
+        >(
+          `
       SELECT
         COUNT(*)::int                            AS n,
         AVG(m."value")::double precision         AS mean,
@@ -507,9 +546,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
       FROM ${seriesRows}
       WHERE m."measured_at" >= $2
     `,
-      user.id,
-      since,
-    );
+          user.id,
+          since,
+        );
     const round2 = (v: number) => Math.round(v * 100) / 100;
     const dayId = (d: Date) =>
       grain === "day"
@@ -687,6 +726,25 @@ export const GET = apiHandler(async (request: NextRequest) => {
           valueMax: row.valueMax ?? null,
         };
       });
+      // An hourly-mean type's strip mean is the mean of its local days'
+      // values, each day the mean of its local hours' means, so a dense
+      // workout hour does not outweigh the rest of the window. Count, min,
+      // max and the spread stay over every reading.
+      if (usesHourlyMeanDay(type) && rows.length > 0) {
+        const userTz = await resolveUserTimezone(user.id);
+        const values = rows.map((r) => r.value);
+        const rawSummary = summarize(
+          rows.map((r) => ({ date: r.measuredAt, value: r.value })),
+        );
+        const mean = readingsMean(type, rows, userTz);
+        statsOverride = {
+          mean: mean === null ? 0 : Math.round(mean * 100) / 100,
+          min: rawSummary.min ?? 0,
+          max: rawSummary.max ?? 0,
+          stdDev: stdDev(values),
+          count: rawSummary.count,
+        };
+      }
     } else {
       points = rows.map((r) => ({
         id: r.id,
