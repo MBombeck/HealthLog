@@ -19,7 +19,7 @@ Every JSON route answers the same shape: `{ data, error }`, with `meta` on the e
 - Refresh tokens rotate per device and are one-time-use. Reusing an old one revokes that device's whole token family, on purpose. Persist the newest pair atomically and never retry a refresh with a token that already succeeded once.
 - Bearer token scopes are fail-closed. A token minted for one purpose does not open unrelated routes, and a route that does not declare a scope refuses narrow tokens outright. Expect `403` to be a normal, recoverable answer, not an anomaly.
 - Admin surfaces are cookie-session only, by construction. A native client cannot be an admin client, whatever scopes its token carries. Do not build admin features.
-- Mutations accept an `Idempotency-Key` header. Replays answer with the original result plus `X-Idempotent-Replay`, so retrying on a dropped connection is safe. Use it for anything a user would notice twice.
+- Mutations accept an `Idempotency-Key` header. A repeat of the same key with the same body answers with the original result plus `X-Idempotent-Replay`, so retrying on a dropped connection is safe. A different body under the same key is treated as a new request, not a replay; still, give each distinct write its own key. Use it for anything a user would notice twice.
 
 ## Data semantics worth knowing before you sync
 

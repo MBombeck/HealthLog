@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- **Blood pressure saved without its diastolic value.** The iPhone app (up to
+  1.0.3, and TestFlight 1.1.0) sends the two halves of a manual reading as two
+  requests under one `Idempotency-Key`, and the server answered the second
+  with the first one's cached response instead of saving it. The replay cache
+  now stores a SHA-256 fingerprint of the request body (migration 0371,
+  `idempotency_keys.request_fingerprint`) and replays only the same body; a
+  different body under the same key is saved normally. Readings saved before
+  this fix stay incomplete: delete the incomplete reading and enter it again
+  with both values and the original time. Operators can list affected
+  readings with the query in `docs/ops/blood-pressure-missing-diastolic.md`.
+
 ## [1.39.9] — 2026-10-03
 
 Workouts can be logged by hand, the body fat tile opens its own page, and
