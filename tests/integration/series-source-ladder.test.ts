@@ -55,6 +55,7 @@ const TZ = "Europe/Berlin";
 const DUAL = "ladder-dual";
 const DENSE = "ladder-dense";
 const SOLO = "ladder-solo";
+const BP_MIX = "ladder-bp-mix";
 const NOW = new Date(Math.floor(Date.now() / 60_000) * 60_000 - 60_000);
 const DAY = 86_400_000;
 
@@ -128,7 +129,7 @@ async function series(userId: string, kind: string, days: number) {
 
 beforeAll(async () => {
   await truncateAllTables(prisma);
-  for (const id of [DUAL, DENSE, SOLO]) {
+  for (const id of [DUAL, DENSE, SOLO, BP_MIX]) {
     await prisma.user.create({ data: { id, username: id, timezone: TZ } });
     invalidateUserTimezone(id);
   }
@@ -201,6 +202,29 @@ beforeAll(async () => {
     );
   }
 
+  // Blood pressure where one source holds only half of a reading. Day 1: the
+  // cuff's systolic 150 is live but its diastolic was deleted, while Apple
+  // Health holds the same moment as a full 125/85. Day 2: the cuff's only
+  // systolic that day is a sub-floor 0 next to a diastolic 80, while Apple
+  // Health holds 126/86. A per-type pick takes the cuff's systolic and Apple's
+  // diastolic on day 1 and pairs them across sources, and on day 2 picks the
+  // cuff for a systolic the floor then removes, which empties the day.
+  await prisma.measurement.createMany({
+    data: [
+      row(BP_MIX, "BLOOD_PRESSURE_SYS", "mmHg", "WITHINGS", 150, at(1, 10)),
+      {
+        ...row(BP_MIX, "BLOOD_PRESSURE_DIA", "mmHg", "WITHINGS", 95, at(1, 10)),
+        deletedAt: new Date(),
+      },
+      row(BP_MIX, "BLOOD_PRESSURE_SYS", "mmHg", "APPLE_HEALTH", 125, at(1, 10)),
+      row(BP_MIX, "BLOOD_PRESSURE_DIA", "mmHg", "APPLE_HEALTH", 85, at(1, 10)),
+      row(BP_MIX, "BLOOD_PRESSURE_SYS", "mmHg", "WITHINGS", 0, at(2, 10)),
+      row(BP_MIX, "BLOOD_PRESSURE_DIA", "mmHg", "WITHINGS", 80, at(2, 10)),
+      row(BP_MIX, "BLOOD_PRESSURE_SYS", "mmHg", "APPLE_HEALTH", 126, at(2, 12)),
+      row(BP_MIX, "BLOOD_PRESSURE_DIA", "mmHg", "APPLE_HEALTH", 86, at(2, 12)),
+    ],
+  });
+
   // A single-source account.
   await prisma.measurement.createMany({
     data: [1, 2, 3, 4].map((d) =>
@@ -271,6 +295,20 @@ describe("blood pressure follows the ladder", () => {
   it("keeps a non-physiological systolic out of the series", async () => {
     await setLadder(DUAL, { bloodPressure: ["APPLE_HEALTH", "WITHINGS"] });
     expect((await bpSeries()).every((p) => p.value >= 40)).toBe(true);
+  });
+});
+
+describe("blood pressure keeps a reading's two halves from one source", () => {
+  it("never pairs one source's systolic with another source's diastolic", async () => {
+    await setLadder(BP_MIX, { bloodPressure: ["WITHINGS", "APPLE_HEALTH"] });
+    const points = (await series(BP_MIX, "bloodPressure", 30)).points;
+    // Day 1 is the cuff's day: its systolic stands alone rather than borrowing
+    // Apple's diastolic. Day 2 is Apple's, because the cuff has no systolic
+    // that passes the floor there.
+    expect(points.map((p) => [p.value, p.secondary])).toEqual([
+      [126, 86],
+      [150, null],
+    ]);
   });
 });
 

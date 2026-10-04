@@ -27,6 +27,7 @@ import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
 import { VALUE_RANGES } from "@/lib/validations/measurement";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { seriesRowsFrom } from "@/lib/measurements/series-canonical";
+import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
 
@@ -329,65 +330,106 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // enforced — a seed-era systolic-0, iOS #33 — must never surface as the
     // latest reading. Floors mirror VALUE_RANGES (the input validator's min);
     // this is a read-side selection guard, not a tightening of the write floor.
-    // Each of the two types reads the ladder-winning source per day (see
-    // `seriesRowsFrom`), like the other kinds, so a second provider is not
-    // blended into the pairs and a reading present in both appears once.
-    const bpPriority = await loadUserSourcePriority(user.id);
-    const readBp = (
-      type: "BLOOD_PRESSURE_SYS" | "BLOOD_PRESSURE_DIA",
-      floor: number,
-    ) =>
-      prisma
-        .$queryRawUnsafe<
-          Array<{ id: string; value: number; measured_at: Date }>
-        >(
-          `
-      SELECT m."id", m."value", m."measured_at"
-      FROM ${seriesRowsFrom(bpPriority, type, days)}
-      WHERE m."measured_at" >= $2
-        AND m."value" >= $3
+    //
+    // The ladder picks ONE source per day for the reading, not one per type:
+    // the source is chosen from the day's systolic rows that pass the floor,
+    // and both halves are read from it. Two per-type picks diverge whenever a
+    // source holds only half of a reading on a day (a deleted diastolic, a
+    // sub-floor systolic, an orphaned sample), and the pairing below then
+    // joined one source's systolic to another source's diastolic. Picking on
+    // floor-passing systolic rows also keeps a corrupt row from claiming a day
+    // it then contributes nothing to. The day is the UTC day, as in every
+    // other ladder read (`canonicalMeasurementsCte`), and the pick looks at
+    // the whole edge day, not only the slice after `since`.
+    //
+    // `rank` is the closed-enum whitelist splice from `buildSourceRankCase`;
+    // every request value is a positional parameter.
+    const rank = buildSourceRankCase(
+      await loadUserSourcePriority(user.id),
+      '"type"',
+      '"source"',
+    );
+    const bpRows = await prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        type: "BLOOD_PRESSURE_SYS" | "BLOOD_PRESSURE_DIA";
+        source: string;
+        value: number;
+        measured_at: Date;
+      }>
+    >(
+      `
+      SELECT m."id", m."type"::text AS type, m."source"::text AS source,
+             m."value", m."measured_at"
+      FROM measurements m
+      JOIN (
+        SELECT DISTINCT ON (date_trunc('day', "measured_at"))
+          date_trunc('day', "measured_at") AS d,
+          "source"                         AS canon
+        FROM measurements
+        WHERE "user_id" = $1
+          AND "type" = 'BLOOD_PRESSURE_SYS'::"measurement_type"
+          AND "deleted_at" IS NULL
+          AND "value" >= $3
+          AND "measured_at" >= date_trunc('day', $2::timestamptz)
+        ORDER BY date_trunc('day', "measured_at"), (${rank}), "source"::text
+      ) c
+        ON c.d = date_trunc('day', m."measured_at")
+        AND c.canon = m."source"
+      WHERE m."user_id" = $1
+        AND m."deleted_at" IS NULL
+        AND m."measured_at" >= $2
+        AND (
+          (m."type" = 'BLOOD_PRESSURE_SYS'::"measurement_type" AND m."value" >= $3)
+          OR (m."type" = 'BLOOD_PRESSURE_DIA'::"measurement_type" AND m."value" >= $4)
+        )
       ORDER BY m."measured_at" ASC, m."id" ASC
     `,
-          user.id,
-          since,
-          floor,
-        )
-        .then((rows) =>
-          rows.map((r) => ({
-            id: r.id,
-            value: r.value,
-            measuredAt: r.measured_at,
-          })),
-        );
-    const [sys, dia] = await Promise.all([
-      readBp("BLOOD_PRESSURE_SYS", VALUE_RANGES.BLOOD_PRESSURE_SYS.min),
-      readBp("BLOOD_PRESSURE_DIA", VALUE_RANGES.BLOOD_PRESSURE_DIA.min),
-    ]);
+      user.id,
+      since,
+      VALUE_RANGES.BLOOD_PRESSURE_SYS.min,
+      VALUE_RANGES.BLOOD_PRESSURE_DIA.min,
+    );
+    const sys = bpRows.filter((r) => r.type === "BLOOD_PRESSURE_SYS");
+    // Diastolic rows per source: a pair is only ever made inside one source,
+    // which also holds across midnight, where the two days may have picked
+    // different sources.
+    const diaBySource = new Map<string, typeof bpRows>();
+    for (const r of bpRows) {
+      if (r.type !== "BLOOD_PRESSURE_DIA") continue;
+      const list = diaBySource.get(r.source);
+      if (list) list.push(r);
+      else diaBySource.set(r.source, [r]);
+    }
 
     // Pair by closest timestamp within ±5 minutes. Both reads arrive
     // sorted ascending, so the nearest-diastolic index is non-decreasing
-    // across the systolic walk — a two-pointer merge finds each pair in
-    // O(sys + dia) instead of the previous full diastolic rescan per
-    // systolic row (O(sys × dia) — quadratic on dense imports). Ties keep
-    // the earlier diastolic row, matching the old scan's strict-`<` keep.
+    // across the systolic walk — a two-pointer merge (one pointer per
+    // source) finds each pair in O(sys + dia) instead of the previous full
+    // diastolic rescan per systolic row (O(sys × dia) — quadratic on dense
+    // imports). Ties keep the earlier diastolic row, matching the old
+    // scan's strict-`<` keep.
     const PAIR_WINDOW_MS = 5 * 60_000;
-    let diaIdx = 0;
+    const diaIdx = new Map<string, number>();
     points = sys.map((s) => {
-      const sysMs = s.measuredAt.getTime();
+      const sysMs = s.measured_at.getTime();
+      const dia = diaBySource.get(s.source) ?? [];
+      let idx = diaIdx.get(s.source) ?? 0;
       while (
-        diaIdx + 1 < dia.length &&
-        Math.abs(dia[diaIdx + 1].measuredAt.getTime() - sysMs) <
-          Math.abs(dia[diaIdx].measuredAt.getTime() - sysMs)
+        idx + 1 < dia.length &&
+        Math.abs(dia[idx + 1].measured_at.getTime() - sysMs) <
+          Math.abs(dia[idx].measured_at.getTime() - sysMs)
       ) {
-        diaIdx += 1;
+        idx += 1;
       }
-      const best = dia[diaIdx];
+      diaIdx.set(s.source, idx);
+      const best = dia[idx];
       const paired =
         best !== undefined &&
-        Math.abs(best.measuredAt.getTime() - sysMs) <= PAIR_WINDOW_MS;
+        Math.abs(best.measured_at.getTime() - sysMs) <= PAIR_WINDOW_MS;
       return {
         id: s.id,
-        at: s.measuredAt.toISOString(),
+        at: s.measured_at.toISOString(),
         value: s.value,
         secondary: paired ? best.value : null,
       };

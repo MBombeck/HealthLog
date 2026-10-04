@@ -90,10 +90,32 @@ function adaptSeriesSql(sql: string): Promise<unknown> {
       id: string;
       value: number;
       measuredAt: Date;
+      source?: string;
       valueMin?: number | null;
       valueMax?: number | null;
     }>
   >;
+  // The blood-pressure read selects both halves in one statement, each row
+  // carrying its type and source.
+  if (sql.includes(`'BLOOD_PRESSURE_DIA'::"measurement_type"`)) {
+    return Promise.all(
+      (["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"] as const).map((t) =>
+        find({ where: { type: t } }).then((rows) =>
+          rows.map((r) => ({
+            id: r.id,
+            type: t,
+            source: r.source ?? "MANUAL",
+            value: r.value,
+            measured_at: r.measuredAt,
+          })),
+        ),
+      ),
+    ).then(([sys, dia]) =>
+      [...sys, ...dia].sort(
+        (a, b) => a.measured_at.getTime() - b.measured_at.getTime(),
+      ),
+    );
+  }
   return find({ where: { type } }).then((rows) =>
     rows.map((r) => ({
       id: r.id,
@@ -208,6 +230,54 @@ describe("GET /api/measurements/series", () => {
       ["s2", 82], // d2/d3 tie at 2 min — earlier row wins
       ["s3", 86], // nearest is d4 (1 min)
       ["s4", null], // nothing within ±5 min
+    ]);
+  });
+
+  it("pairs a systolic only with a diastolic from its own source", async () => {
+    // Across midnight the two days may have picked different sources; the
+    // nearest diastolic then belongs to another source and must not be used.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const at = (iso: string) => new Date(iso);
+    vi.mocked(prisma.measurement.findMany).mockImplementation(((
+      args: unknown,
+    ) => {
+      const a = args as { where: { type: string } };
+      if (a.where.type === "BLOOD_PRESSURE_SYS") {
+        return Promise.resolve([
+          {
+            id: "s1",
+            value: 150,
+            source: "WITHINGS",
+            measuredAt: at("2026-05-01T23:59:00Z"),
+          },
+          {
+            id: "s2",
+            value: 125,
+            source: "APPLE_HEALTH",
+            measuredAt: at("2026-05-02T00:01:00Z"),
+          },
+        ]) as never;
+      }
+      if (a.where.type === "BLOOD_PRESSURE_DIA") {
+        return Promise.resolve([
+          {
+            id: "d2",
+            value: 85,
+            source: "APPLE_HEALTH",
+            measuredAt: at("2026-05-02T00:01:00Z"),
+          },
+        ]) as never;
+      }
+      return Promise.resolve([]) as never;
+    }) as never);
+    const res = await GET(req("kind=bloodPressure&days=30"));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { points: Array<{ id: string; secondary: number | null }> };
+    };
+    expect(body.data.points.map((p) => [p.id, p.secondary])).toEqual([
+      ["s1", null],
+      ["s2", 85],
     ]);
   });
 
