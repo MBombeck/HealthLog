@@ -1,13 +1,21 @@
 /**
  * The marker HealthLog's iOS app stamps on every HealthKit sample it writes
- * itself (a manual entry, or a Withings or import row it mirrors into Apple
- * Health). The sample also carries the HealthLog measurement id as
- * `HKExternalUUID`.
+ * itself, next to `HKExternalUUID` (the HealthLog row id): a manual entry saved
+ * from the app, and any Withings, import or manual row the server-to-Health
+ * mirror writes. Builds from before the marker existed wrote the id alone.
  *
  * Such a sample is already in the database under its own source. When the same
  * sample comes back through an Apple Health export it is a second copy of that
- * reading, so the export import leaves it out. This is the same predicate the
- * app's own sync filter uses, and a stable contract with the app.
+ * reading, so the export import leaves it out.
+ *
+ * This is not the predicate the app's own sync uses. The app decides "our own
+ * echo" from `HKExternalUUID` plus the sample's authoring source being the app
+ * itself (`HealthKitSampleOwnership.isOwnEcho`); it keeps this marker for the
+ * deletion path, where a deleted object exposes its metadata but no source. An
+ * export names its source only by a display name, so the import cannot repeat
+ * the source check and reads the marker instead, and for samples from before
+ * the marker, `HKExternalUUID` against the account's own row ids. The key and
+ * value are a stable contract with the app.
  */
 export const HEALTHLOG_ORIGIN_METADATA_KEY = "dev.healthlog.app.origin";
 export const HEALTHLOG_ORIGIN_METADATA_VALUE = "healthlog";
