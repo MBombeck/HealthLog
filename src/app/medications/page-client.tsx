@@ -55,6 +55,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { apiGet } from "@/lib/api/api-fetch";
+import { refetchMedicationsOnMount } from "@/lib/queries/prefetch-medications";
 import { useMedicationComplianceSummaryAll } from "@/lib/queries/use-medication-compliance-summary";
 import { useMedicationListLayout } from "@/lib/queries/use-medication-list-layout";
 import { applyMedicationOrder } from "@/lib/medications/medication-order";
@@ -345,7 +346,9 @@ export default function MedicationsPageClient() {
     // client cache can't know to invalidate a cross-device write. "always"
     // makes a return-visit fetch fresh; the per-user server cache keeps it
     // cheap. Mutation-driven invalidation still covers same-tab writes.
-    refetchOnMount: "always",
+    // A prefetch this same navigation fired (nav-link intent, route commit)
+    // already is that fresh fetch, so it is not sent twice.
+    refetchOnMount: refetchMedicationsOnMount("list"),
   });
 
   // v1.30.1 M12 — pull-to-refresh parity with labs/checkups/mood/measurements.

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
+import { refetchMedicationsOnMount } from "@/lib/queries/prefetch-medications";
 import type { ComplianceDisplay } from "@/lib/analytics/compliance";
 
 /**
@@ -69,9 +70,10 @@ export function useMedicationComplianceSummary(medicationId: string): {
     // another surface (the iOS app) leaves this stale for up to the
     // window, so refetch on every mount: returning to the page reflects
     // cross-device intakes without a manual reload. The batched read is
-    // one request per visit, server-cached.
+    // one request per visit, server-cached. A prefetch fired by this same
+    // navigation already is that request (see `refetchMedicationsOnMount`).
     staleTime: 5 * 60 * 1000,
-    refetchOnMount: "always",
+    refetchOnMount: refetchMedicationsOnMount("compliance"),
     select: (rows: MedicationComplianceSummaryEntry[]) =>
       rows.find((row) => row.medicationId === medicationId) ?? null,
   });
@@ -92,7 +94,7 @@ export function useMedicationComplianceSummaryAll(): {
     queryFn: fetchComplianceSummary,
     staleTime: 5 * 60 * 1000,
     // v1.16.12 (#316) — fresh on return-navigation (see the per-row hook).
-    refetchOnMount: "always",
+    refetchOnMount: refetchMedicationsOnMount("compliance"),
   });
   return { data };
 }
