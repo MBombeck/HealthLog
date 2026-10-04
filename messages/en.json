@@ -10431,11 +10431,13 @@
       "searchPlaceholder": "Search title or filename…",
       "typeGroup": "Document type",
       "conditionGroup": "Condition",
+      "procedureGroup": "Procedures and surgeries",
       "yearGroup": "Year",
       "clear": "Clear filters",
       "typeAll": "All types",
       "typeCount": "{count} types",
       "conditionAll": "All conditions",
+      "procedureAll": "All procedures",
       "yearAll": "All years"
     },
     "card": {

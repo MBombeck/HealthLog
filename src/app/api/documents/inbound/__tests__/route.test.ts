@@ -580,6 +580,82 @@ describe("GET /api/documents/inbound (list)", () => {
     expect(body.data.nextCursor).toBe("d1");
   });
 
+  it("narrows to one procedure through the visit link, owner-scoped", async () => {
+    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([
+      docRow({ id: "d1" }),
+    ] as never);
+    const res = await get(
+      new Request("http://localhost/api/documents/inbound?encounterId=enc-1"),
+    );
+    expect(res.status).toBe(200);
+    const where = vi.mocked(prisma.inboundDocument.findMany).mock.calls[0]![0]!
+      .where!;
+    // The link filter rides beside the owner and the tombstone predicates, so
+    // another account's visit id can only ever match nothing of this one.
+    expect(where).toEqual({
+      userId: "user-1",
+      deletedAt: null,
+      encounterLinks: { some: { encounterId: "enc-1" } },
+    });
+  });
+
+  it("AND-combines the procedure filter with kind, year and condition", async () => {
+    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([] as never);
+    const res = await get(
+      new Request(
+        "http://localhost/api/documents/inbound?encounterId=enc-1&kind=IMAGING&year=2025&episodeId=ep-1",
+      ),
+    );
+    expect(res.status).toBe(200);
+    const where = vi.mocked(prisma.inboundDocument.findMany).mock.calls[0]![0]!
+      .where!;
+    expect(where.encounterLinks).toEqual({ some: { encounterId: "enc-1" } });
+    expect(where.conditionLinks).toEqual({ some: { episodeId: "ep-1" } });
+    expect(where.kind).toEqual({ in: ["IMAGING"] });
+    expect(where.documentDate).toEqual({
+      gte: new Date(Date.UTC(2025, 0, 1)),
+      lt: new Date(Date.UTC(2026, 0, 1)),
+    });
+    expect(where.userId).toBe("user-1");
+  });
+
+  it("pages a procedure-filtered list on the keyset cursor", async () => {
+    const rows = Array.from({ length: 3 }, (_, i) => docRow({ id: `d${i}` }));
+    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue(rows as never);
+    const res = await get(
+      new Request(
+        "http://localhost/api/documents/inbound?encounterId=enc-1&limit=2&cursor=d9",
+      ),
+    );
+    const body = await res.json();
+    expect(body.data.documents.map((d: { id: string }) => d.id)).toEqual([
+      "d0",
+      "d1",
+    ]);
+    expect(body.data.nextCursor).toBe("d1");
+    const arg = vi.mocked(prisma.inboundDocument.findMany).mock.calls[0]![0]!;
+    expect(arg.where!.encounterLinks).toEqual({
+      some: { encounterId: "enc-1" },
+    });
+    expect(arg.cursor).toEqual({ id: "d9" });
+    expect(arg.skip).toBe(1);
+    expect(arg.take).toBe(3);
+  });
+
+  it("422s an empty or over-long encounterId", async () => {
+    let res = await get(
+      new Request("http://localhost/api/documents/inbound?encounterId="),
+    );
+    expect(res.status).toBe(422);
+    res = await get(
+      new Request(
+        `http://localhost/api/documents/inbound?encounterId=${"x".repeat(41)}`,
+      ),
+    );
+    expect(res.status).toBe(422);
+    expect(prisma.inboundDocument.findMany).not.toHaveBeenCalled();
+  });
+
   it("422s on a bad sort value", async () => {
     const res = await get(
       new Request("http://localhost/api/documents/inbound?sort=nope"),

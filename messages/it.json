@@ -10431,11 +10431,13 @@
       "searchPlaceholder": "Cerca titolo o nome file…",
       "typeGroup": "Tipo di documento",
       "conditionGroup": "Patologia",
+      "procedureGroup": "Procedure e interventi chirurgici",
       "yearGroup": "Anno",
       "clear": "Cancella filtri",
       "typeAll": "Tutti i tipi",
       "typeCount": "{count} tipi",
       "conditionAll": "Tutte le patologie",
+      "procedureAll": "Tutte le procedure",
       "yearAll": "Tutti gli anni"
     },
     "card": {

@@ -10431,11 +10431,13 @@
       "searchPlaceholder": "Szukaj tytułu lub nazwy pliku…",
       "typeGroup": "Typ dokumentu",
       "conditionGroup": "Schorzenie",
+      "procedureGroup": "Zabiegi i operacje",
       "yearGroup": "Rok",
       "clear": "Wyczyść filtry",
       "typeAll": "Wszystkie typy",
       "typeCount": "{count} typy",
       "conditionAll": "Wszystkie schorzenia",
+      "procedureAll": "Wszystkie zabiegi",
       "yearAll": "Wszystkie lata"
     },
     "card": {

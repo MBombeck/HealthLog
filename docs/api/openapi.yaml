@@ -16410,7 +16410,8 @@ paths:
           required: false
           schema:
             type: string
-          description: Only documents linked to this visit.
+          description: Only documents linked to this visit. The procedure filter sends a `linkedProcedures` id from the usage
+            read; an id that is not one of the caller's visits matches nothing.
         - name: year
           in: query
           required: false
@@ -16744,8 +16745,11 @@ paths:
       summary: Storage usage + effective limits
       description: "The caller's vault usage and effective limits: `usedBytes` (every non-purged row — tombstones inside the
         30-day undo grace still count), `quotaBytes` (per-user override ?? instance default), `maxFileBytes`
-        (admin-tunable per-file cap), `acceptedExtensions` for picker `accept` lists, and `linkedEpisodes` (episodes
-        carrying at least one live document link — the condition-filter chips). Read this before offering an upload."
+        (admin-tunable per-file cap), `acceptedExtensions` for picker `accept` lists, `linkedEpisodes` (episodes
+        carrying at least one live document link — the condition-filter chips), and `linkedProcedures` (visits of kind
+        PROCEDURE carrying at least one live document link, newest first — the procedure-filter choices; pass one's
+        `encounterId` to the list's `encounterId` filter). `linkedProcedures` is empty when a sharing grant does not
+        cover the visits section. Read this before offering an upload."
       responses:
         "200":
           description: Usage + limits.
@@ -68514,6 +68518,45 @@ components:
               - episodeId
               - name
             additionalProperties: false
+        linkedProcedures:
+          type: array
+          items:
+            type: object
+            properties:
+              encounterId:
+                type: string
+              occurredAt:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              reason:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              bodySite:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              laterality:
+                anyOf:
+                  - type: string
+                    enum:
+                      - LEFT
+                      - RIGHT
+                      - BOTH
+                  - type: "null"
+              practitionerName:
+                anyOf:
+                  - type: string
+                  - type: "null"
+            required:
+              - encounterId
+              - occurredAt
+              - reason
+              - bodySite
+              - laterality
+              - practitionerName
+            additionalProperties: false
         assistAvailable:
           type: boolean
           description: "Whether a document read can run for this record now: a provider can serve it and the `documentAi`
@@ -68539,6 +68582,7 @@ components:
         - maxFileBytes
         - acceptedExtensions
         - linkedEpisodes
+        - linkedProcedures
         - assistAvailable
         - contentIndex
       additionalProperties: false

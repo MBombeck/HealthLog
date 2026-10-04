@@ -10431,11 +10431,13 @@
       "searchPlaceholder": "Buscar por título o nombre de archivo…",
       "typeGroup": "Tipo de documento",
       "conditionGroup": "Afección",
+      "procedureGroup": "Procedimientos y cirugías",
       "yearGroup": "Año",
       "clear": "Borrar filtros",
       "typeAll": "Todos los tipos",
       "typeCount": "{count} tipos",
       "conditionAll": "Todas las afecciones",
+      "procedureAll": "Todos los procedimientos",
       "yearAll": "Todos los años"
     },
     "card": {

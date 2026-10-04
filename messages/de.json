@@ -10431,11 +10431,13 @@
       "searchPlaceholder": "Titel oder Dateiname suchen…",
       "typeGroup": "Dokumenttyp",
       "conditionGroup": "Erkrankung",
+      "procedureGroup": "Eingriffe und Operationen",
       "yearGroup": "Jahr",
       "clear": "Filter zurücksetzen",
       "typeAll": "Alle Typen",
       "typeCount": "{count} Typen",
       "conditionAll": "Alle Erkrankungen",
+      "procedureAll": "Alle Eingriffe",
       "yearAll": "Alle Jahre"
     },
     "card": {
