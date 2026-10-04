@@ -218,6 +218,13 @@ beforeAll(async () => {
   // The mood feature warms its rollup tier fire-and-forget on first read;
   // settle it now so both builds read the same tier.
   await ensureUserMoodRollupsFresh(userId);
+  // Planner statistics for the rows just written. Without them the
+  // all-time pulse aggregate (`readAllTimeExtremes`, day-weighted for pulse)
+  // plans against an empty table and runs for ~14 s per call until
+  // autovacuum's analyze happens to land, which on a loaded runner took the
+  // first case past its 60 s budget. A production table always has
+  // statistics, so this measures what production runs.
+  await prisma.$executeRawUnsafe("ANALYZE measurements, measurement_rollups");
 }, 120_000);
 
 describe("get_metric_series built from one source's rows", () => {
