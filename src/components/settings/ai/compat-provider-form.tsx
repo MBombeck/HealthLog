@@ -19,7 +19,12 @@ import { apiPatch } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
-import { uiToLegacyProviderEnum, type UserAIProvider } from "./shared";
+import { ReasoningEffortField } from "./reasoning-effort-field";
+import {
+  uiToLegacyProviderEnum,
+  type ReasoningEffort,
+  type UserAIProvider,
+} from "./shared";
 
 export function CompatProviderForm({
   userProvider,
@@ -32,6 +37,7 @@ export function CompatProviderForm({
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
+  const [reasoning, setReasoning] = useState<ReasoningEffort | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const submitInFlightRef = useRef(false);
@@ -40,13 +46,14 @@ export function CompatProviderForm({
   // render-time pattern the sibling forms use (no setState-in-effect).
   const seededKey =
     userProvider != null
-      ? `${userProvider.compatBaseUrl ?? ""}|${userProvider.compatModel ?? ""}`
+      ? `${userProvider.compatBaseUrl ?? ""}|${userProvider.compatModel ?? ""}|${userProvider.compatReasoningEffort ?? ""}`
       : null;
   const [previousSeed, setPreviousSeed] = useState<string | null>(null);
   if (seededKey && seededKey !== previousSeed) {
     setPreviousSeed(seededKey);
     setBaseUrl(userProvider?.compatBaseUrl ?? "");
     setModel(userProvider?.compatModel ?? "");
+    setReasoning(userProvider?.compatReasoningEffort ?? null);
   }
 
   const saveMutation = useMutation({
@@ -55,6 +62,7 @@ export function CompatProviderForm({
         provider: uiToLegacyProviderEnum("openai-compatible"),
         compatBaseUrl: baseUrl.trim() || null,
         compatModel: model.trim() || null,
+        compatReasoningEffort: reasoning,
       };
       if (apiKey.trim()) body.compatKey = apiKey.trim();
       await apiPatch("/api/user/ai-provider", body);
@@ -130,6 +138,11 @@ export function CompatProviderForm({
           {t("settings.ai.compat.modelHint")}
         </p>
       </div>
+      <ReasoningEffortField
+        id="ai-compat-reasoning"
+        value={reasoning}
+        onChange={setReasoning}
+      />
 
       <div>
         <Button

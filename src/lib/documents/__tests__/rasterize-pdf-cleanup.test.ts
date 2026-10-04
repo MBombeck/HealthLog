@@ -18,9 +18,16 @@ vi.mock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
       canvasFactory: {
         create: () => ({
           canvas: {
+            width: 1,
+            height: 1,
             toBuffer: () => Buffer.from([0xff, 0xd8]),
           },
-          context: {},
+          // One black pixel: an inked page, so the blank-page guard passes.
+          context: {
+            getImageData: () => ({
+              data: new Uint8ClampedArray([0, 0, 0, 255]),
+            }),
+          },
         }),
       },
       getPage: async () => ({

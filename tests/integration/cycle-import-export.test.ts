@@ -6,8 +6,8 @@
  *     into CYCLE day-logs (NOT Measurement), gated on cycle-tracking enabled,
  *     merging same-day samples into one row with first-write-wins re-import
  *   - the full-backup cycle section round-trips through
- *     `buildCycleBackupSection` → `restoreCycleData` with `notesEncrypted`
- *     preserved verbatim and symptom links re-resolved by key
+ *     `buildCycleBackupSection` → `restoreCycleData` with the note carried
+ *     readable, re-sealed on restore, and symptom links re-resolved by key
  */
 import { writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -17,6 +17,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { streamParseExportXml } from "@/lib/measurements/import-apple-health-export";
 import { buildCycleBackupSection, restoreCycleData } from "@/lib/cycle/backup";
+import { decrypt, encrypt } from "@/lib/crypto";
 import type { RestoreSkipLog } from "@/lib/export/restore-skips";
 import { parseBackupPayload } from "@/lib/validations/backup";
 
@@ -163,7 +164,7 @@ describe("cycle import — reproductive HK samples route to CycleDayLog", () => 
 });
 
 describe("cycle backup — round-trips through build + restore", () => {
-  it("preserves notesEncrypted ciphertext and symptom links by key", async () => {
+  it("carries the note readable and re-seals it, with symptom links by key", async () => {
     const prisma = getPrismaClient();
 
     const cycle = await prisma.menstrualCycle.create({
@@ -184,7 +185,7 @@ describe("cycle backup — round-trips through build + restore", () => {
         cervixPosition: "HIGH",
         cervixFirmness: "SOFT",
         cervixOpening: "OPEN",
-        notesEncrypted: "v1:abc123:cipher-envelope",
+        notesEncrypted: encrypt("Cramps in the evening"),
         source: "MANUAL",
       },
     });
@@ -207,9 +208,9 @@ describe("cycle backup — round-trips through build + restore", () => {
     const section = await buildCycleBackupSection(prisma, USER_ID);
     expect(section.cycles).toHaveLength(1);
     expect(section.cycleDayLogs).toHaveLength(1);
-    expect(section.cycleDayLogs[0].notesEncrypted).toBe(
-      "v1:abc123:cipher-envelope",
-    );
+    // A portable section carries the note readable, never the ciphertext.
+    expect(section.cycleDayLogs[0].note).toBe("Cramps in the evening");
+    expect(section.cycleDayLogs[0]).not.toHaveProperty("notesEncrypted");
     expect(section.cycleDayLogs[0].symptomKeys).toEqual(["cramps"]);
 
     const payload = parseBackupPayload({
@@ -234,7 +235,7 @@ describe("cycle backup — round-trips through build + restore", () => {
       include: { symptomLinks: { include: { symptom: true } } },
     });
     expect(restored).toHaveLength(1);
-    expect(restored[0].notesEncrypted).toBe("v1:abc123:cipher-envelope");
+    expect(decrypt(restored[0].notesEncrypted!)).toBe("Cramps in the evening");
     expect(restored[0].cervixPosition).toBe("HIGH");
     expect(restored[0].cervixFirmness).toBe("SOFT");
     expect(restored[0].cervixOpening).toBe("OPEN");

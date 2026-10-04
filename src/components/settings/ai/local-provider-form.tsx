@@ -17,10 +17,12 @@ import { apiPatch } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
+import { ReasoningEffortField } from "./reasoning-effort-field";
 import {
   CUSTOM_MODEL_SENTINEL,
   LOCAL_MODEL_PRESETS,
   uiToLegacyProviderEnum,
+  type ReasoningEffort,
   type UserAIProvider,
 } from "./shared";
 
@@ -36,17 +38,20 @@ export function LocalProviderForm({
   const [apiKey, setApiKey] = useState("");
   const [modelChoice, setModelChoice] = useState<string>("");
   const [customModel, setCustomModel] = useState("");
+  const [reasoning, setReasoning] = useState<ReasoningEffort | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const submitInFlightRef = useRef(false);
 
   const seededKey =
     userProvider != null
-      ? `${userProvider.provider ?? ""}|${userProvider.model ?? ""}|${userProvider.baseUrl ?? ""}`
+      ? `${userProvider.provider ?? ""}|${userProvider.model ?? ""}|${userProvider.baseUrl ?? ""}|${userProvider.localReasoningEffort ?? ""}`
       : null;
   const [previousSeed, setPreviousSeed] = useState<string | null>(null);
   if (seededKey && seededKey !== previousSeed) {
     setPreviousSeed(seededKey);
+    // Stored on the chain entry, so it seeds whichever provider is selected.
+    setReasoning(userProvider?.localReasoningEffort ?? null);
     if (userProvider?.provider === "LOCAL") {
       setBaseUrl(userProvider.baseUrl ?? "");
       const saved = userProvider.model ?? "";
@@ -71,6 +76,7 @@ export function LocalProviderForm({
         provider: uiToLegacyProviderEnum("local"),
         baseUrl: baseUrl.trim() || null,
         model: effectiveModel || null,
+        localReasoningEffort: reasoning,
       };
       if (apiKey.trim()) body.localKey = apiKey.trim();
       await apiPatch("/api/user/ai-provider", body);
@@ -168,6 +174,11 @@ export function LocalProviderForm({
           />
         </div>
       )}
+      <ReasoningEffortField
+        id="ai-local-reasoning"
+        value={reasoning}
+        onChange={setReasoning}
+      />
 
       <div>
         <Button

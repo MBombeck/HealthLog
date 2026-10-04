@@ -152,6 +152,25 @@
  * real foreign key, so the POINTER is dropped and the occurrence restores
  * unlinked. A portable export omits soft-deleted episodes, which is the
  * ordinary way an occurrence ends up naming one the file does not carry.
+ *
+ * The sixteenth, `cycleCiphertext`, is not a reference at all. It names a
+ * sealed cycle value (a day-log note, the sensitive-category envelope, a
+ * custom symptom's label) the file carried as ciphertext this host's keys do
+ * not open — a portable file written before v1.40 on a host with another key.
+ * Writing it back would store a value no reader can open, so the FIELD is kept
+ * out and the day or the symptom restores without it. Its key is the path in
+ * the file (`cycleDayLogs.<date>.notesEncrypted`), never the value.
+ *
+ * The seventeenth, `moodLabelCiphertext`, is the same for the label of a mood
+ * tag or mood category the account created
+ * (`customMoodTags.<key>.labelEncrypted`): the tag or category restores, under
+ * its key, without the person's own name for it.
+ *
+ * The eighteenth and nineteenth, `visitCiphertext` and `vaccinationCiphertext`,
+ * are the same again for the free text of the visits record (a practitioner's
+ * note, address and phone; a visit's reason, outcome and body site) and of a
+ * vaccination's note (`vaccinations.<id>.noteEncrypted`). The row restores
+ * without the field.
  */
 export type SkippedCatalogue =
   | "cycleSymptom"
@@ -172,7 +191,11 @@ export type SkippedCatalogue =
   | "scheduleRevisionLink"
   | "checkupClosure"
   | "accountSetting"
-  | "symptomEpisodeReference";
+  | "symptomEpisodeReference"
+  | "cycleCiphertext"
+  | "moodLabelCiphertext"
+  | "visitCiphertext"
+  | "vaccinationCiphertext";
 
 /** One key this instance does not know, and the links it cost. */
 export interface SkippedCatalogueKey {

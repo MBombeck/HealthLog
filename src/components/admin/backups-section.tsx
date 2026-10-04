@@ -464,6 +464,18 @@ function catalogueLabel(
   if (catalogue === "symptomEpisodeReference") {
     return t("admin.section.backups.restoreSkippedSymptomEpisodeReference");
   }
+  if (catalogue === "visitCiphertext") {
+    return t("admin.section.backups.restoreSkippedVisitCiphertext");
+  }
+  if (catalogue === "vaccinationCiphertext") {
+    return t("admin.section.backups.restoreSkippedVaccinationCiphertext");
+  }
+  if (catalogue === "moodLabelCiphertext") {
+    return t("admin.section.backups.restoreSkippedMoodLabelCiphertext");
+  }
+  if (catalogue === "cycleCiphertext") {
+    return t("admin.section.backups.restoreSkippedCycleCiphertext");
+  }
   if (catalogue === "medicationTarget") {
     return t("admin.section.backups.restoreSkippedMedicationTarget");
   }

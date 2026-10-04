@@ -77,6 +77,7 @@ import {
 } from "@/lib/labs/biomarker-store";
 import { legacyStreamedBlobFrom } from "@/__tests__/helpers/legacy-backup-blob";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
+import { BackupKeyIdCollector } from "@/lib/export/backup-key-ids";
 import {
   TWO_ENDED_MODELS,
   USER_COLUMN_BACKUP_CLASS,
@@ -3694,6 +3695,12 @@ function lostColumns(
   return { lost: lost.sort(), compared };
 }
 
+/**
+ * Sections a portable file may carry stored ciphertext in, each with the
+ * reason. Empty: every sealed column travels readable in a portable file.
+ */
+const PORTABLE_CIPHERTEXT_ALLOWED: ReadonlyMap<string, string> = new Map();
+
 describe("every column of every two-ended model survives a real restore", () => {
   it("brings each column back with the value it left with", async () => {
     const prisma = getPrismaClient();
@@ -3758,6 +3765,58 @@ describe("every column of every two-ended model survives a real restore", () => 
       },
       { purpose: "disaster-recovery", exportedAt },
     );
+
+    // ── No ciphertext in a portable file ──────────────────────────────────
+    //
+    // Every sealed column is filled at this point, so the portable file of
+    // this account is the one place a column still exported as stored
+    // ciphertext shows up. A portable file is read and restored on hosts
+    // with other keys; ciphertext in it is noise there, and a restore either
+    // refuses the file or writes values nobody can open. That class was
+    // fixed one section at a time (cycle, mood labels, visits, vaccinations)
+    // and kept coming back, because each builder decides its own encoding.
+    // This reads what the builders actually wrote, rather than how their
+    // source is spelt. Limit: it sees members named `…Encrypted` only, the
+    // naming the key preflight relies on too.
+    const sealedIn = (text: string) => {
+      const collector = new BackupKeyIdCollector();
+      collector.visit(JSON.parse(text));
+      const sections = new Map<string, number>();
+      for (const [, use] of collector.entries()) {
+        for (const section of use.sections) {
+          sections.set(section, (sections.get(section) ?? 0) + use.count);
+        }
+      }
+      return sections;
+    };
+    // The floor: the same matcher over the disaster-recovery file of the same
+    // account, which carries every sealed column as ciphertext. A matcher
+    // that finds nothing there would make the portable check pass vacuously.
+    const drSealed = sealedIn(json);
+    expect(
+      [...drSealed.values()].reduce((a, b) => a + b, 0),
+    ).toBeGreaterThanOrEqual(40);
+    expect(drSealed.size).toBeGreaterThanOrEqual(15);
+    let portableJson = "";
+    await streamFullBackupJson(
+      prisma,
+      OWNER_ID,
+      (chunk) => {
+        portableJson += chunk;
+      },
+      { purpose: "portable-export", exportedAt },
+    );
+    const portableSealed = [...sealedIn(portableJson).keys()].filter(
+      (section) => !PORTABLE_CIPHERTEXT_ALLOWED.has(section),
+    );
+    expect(
+      portableSealed,
+      "a portable file carries these sections' sealed columns as stored " +
+        "ciphertext. Carry them readable (`src/lib/export/sealed-text.ts`) " +
+        "and seal them again on restore, or name the section in " +
+        "PORTABLE_CIPHERTEXT_ALLOWED with the reason",
+    ).toEqual([]);
+
     await prisma.user.delete({ where: { id: OWNER_ID } });
     await createOwner(prisma);
     const backup = await prisma.dataBackup.create({

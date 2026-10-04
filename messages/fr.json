@@ -6082,6 +6082,17 @@
         "title": "Plans du Coach",
         "description": "Les plans convenus avec le Coach, à lire ou à supprimer.",
         "open": "Ouvrir les plans"
+      },
+      "reasoning": {
+        "label": "Raisonnement",
+        "hint": "Les modèles de raisonnement comme Gemma ou Qwen réfléchissent avant de répondre. Désactivé, tout le budget de réponse sert à la réponse elle-même.",
+        "options": {
+          "default": "Par défaut",
+          "none": "Désactivé",
+          "low": "Faible",
+          "medium": "Moyen",
+          "high": "Élevé"
+        }
       }
     },
     "dashboard": {
@@ -7557,7 +7568,11 @@
         "restoreFailureKeyMissing": "La sauvegarde a besoin de la clé de chiffrement {keys}, avec laquelle ce serveur ne peut pas l'ouvrir. Remettez la clé dans ENCRYPTION_KEYS, redémarrez, puis relancez la restauration.",
         "restoreFailureForeignReference": "Le fichier renvoie à des éléments qui appartiennent à un autre compte. Rien n'a été écrit.",
         "previewKeyMissing": "Cette sauvegarde ne peut pas être restaurée sur ce serveur : elle a besoin de la clé de chiffrement {keys}. Remettez d'abord la clé dans ENCRYPTION_KEYS et redémarrez.",
-        "restoreSkippedSymptomEpisodeReference": "Entrée de symptôme liée à une maladie absente du fichier (conservée sans le lien)"
+        "restoreSkippedSymptomEpisodeReference": "Entrée de symptôme liée à une maladie absente du fichier (conservée sans le lien)",
+        "restoreSkippedCycleCiphertext": "Note ou libellé du cycle chiffré avec une clé que ce serveur ne possède pas (jour ou symptôme conservé sans)",
+        "restoreSkippedMoodLabelCiphertext": "Nom d’étiquette ou de groupe d’humeur chiffré avec une clé que ce serveur ne possède pas (conservé sans son nom)",
+        "restoreSkippedVisitCiphertext": "Texte de consultation ou de praticien chiffré avec une clé que ce serveur ne possède pas (conservé sans)",
+        "restoreSkippedVaccinationCiphertext": "Note de vaccination chiffrée avec une clé que ce serveur ne possède pas (dose conservée sans)"
       },
       "danger-zone": {
         "title": "Zone de danger",

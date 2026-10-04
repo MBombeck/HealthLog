@@ -391,7 +391,8 @@ export const profileEmailRateLimitResponse = {
  *
  * Scope, so nobody reads more into it than is there: only POST, PUT, PATCH and
  * DELETE are covered (`SUPPORTED_METHODS`), the key is scoped per user and per
- * `(method, path)`, and `isCachableStatus` refuses to cache 5xx or the
+ * `(method, path)`, a replay needs the same body (a different body under the
+ * same key runs as a new write and is neither replayed nor refused), and `isCachableStatus` refuses to cache 5xx or the
  * transient 401 / 403 / 408 / 429 — a retry after one of those runs for real.
  *
  * `src/__tests__/idempotency-contract-publication.test.ts` holds this to the
@@ -410,7 +411,7 @@ export const idempotencyKeyParameter = {
     maxLength: 128,
   },
   description:
-    "Makes this write safe to retry. Send the same key again and the first response is replayed rather than the work repeated, marked with `X-Idempotent-Replay: true`. A key that does not match the pattern is IGNORED rather than refused — the write then proceeds unprotected and looks exactly like a request that carried no key, so validate the key on your side. Scoped per user and per (method, path): the same key on a different route is a different key. While a first request under this key is still in flight, a second is refused with 409 rather than queued.",
+    "Makes this write safe to retry. Send the same key with the same body again and the first response is replayed rather than the work repeated, marked with `X-Idempotent-Replay: true`. The body is compared as JSON with key order ignored; a different body under the same key is not a retry and runs as a new write, while the first response stays stored for retries of the first request. A key that does not match the pattern is IGNORED rather than refused — the write then proceeds unprotected and looks exactly like a request that carried no key, so validate the key on your side. Scoped per user and per (method, path): the same key on a different route is a different key. While a first request under this key is still in flight, a second with the same body is refused with 409 rather than queued.",
 };
 
 /**

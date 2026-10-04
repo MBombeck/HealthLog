@@ -36,6 +36,7 @@ import {
 } from "@/lib/validations/user-prefs";
 import {
   aiProviderPatchSchema,
+  reasoningEffortSchema,
   aiTestOverrideSchema,
 } from "@/lib/validations/ai-provider";
 import {
@@ -674,6 +675,12 @@ const aiProviderResponse = z
       .describe(
         "v1.22 (#89) — per-user response timeout for AI generation, in seconds (10–600). Null = the built-in comprehensive-briefing default (~120 s). Mainly for slow local/self-hosted backends.",
       ),
+    localReasoningEffort: reasoningEffortSchema.describe(
+      "#1126 — reasoning setting of the Local provider entry, sent as `reasoning_effort` (`none` = Off). Null = Default: the key is not sent.",
+    ),
+    compatReasoningEffort: reasoningEffortSchema.describe(
+      "#1126 — the same for the OpenAI-compatible gateway entry.",
+    ),
     // v1.38.19 — the setup flow's last screen used to promise
     // that insights "work for you right away" as soon as `managedBy` read
     // `server`. That is a presence read; it never knew whether the key

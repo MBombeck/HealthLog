@@ -116,7 +116,7 @@ export function ManualWorkoutForm({
   // a submit after an edit updates the row the first submit stored.
   const [externalId] = useState(newManualWorkoutExternalId);
   const [draft, setDraft] = useState<ManualWorkoutDraft>(() =>
-    emptyManualWorkoutDraft(new Date(), timezone),
+    emptyManualWorkoutDraft(),
   );
   const [errors, setErrors] = useState<
     Partial<Record<ManualWorkoutField, string>>

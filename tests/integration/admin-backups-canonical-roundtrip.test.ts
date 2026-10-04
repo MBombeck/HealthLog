@@ -391,8 +391,10 @@ describe("canonical disaster-recovery backup round-trip", () => {
         cervixFirmness: "FIRM",
         cervixOpening: "CLOSED",
         sexualActivity: false,
-        sensitiveEncrypted: "sensitive-cycle-dr",
-        notesEncrypted: "notes-cycle-dr",
+        // Real ciphertext: the restore writes a sealed value back only when
+        // this host opens it.
+        sensitiveEncrypted: encrypt(JSON.stringify({ sexualActivity: false })),
+        notesEncrypted: encrypt("notes-cycle-dr"),
         source: "APPLE_HEALTH",
         externalId: "cycle-day-external-dr",
         tz: "Europe/London",

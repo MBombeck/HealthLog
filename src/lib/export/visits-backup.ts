@@ -33,7 +33,6 @@
  *     result ids, so a lab link in one cannot resolve; a disaster-recovery
  *     payload carries every id and they all do.
  */
-import { Buffer } from "node:buffer";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type {
   EncounterKind,
@@ -42,6 +41,11 @@ import type {
 } from "@/generated/prisma/client";
 
 import { encryptNote } from "@/lib/crypto/note-cipher";
+import {
+  encodeSealedBytes,
+  openSealedBytesForExport,
+  sealBytesForRestore,
+} from "@/lib/export/sealed-text";
 import { readPractitionerContact } from "@/lib/practitioners/dto";
 import {
   recordUnknownKeys,
@@ -71,8 +75,10 @@ export interface PractitionerBackupEntry {
   locationEncrypted?: string | null;
   /** Base64 ciphertext of the phone number, disaster-recovery payloads only. */
   phoneEncrypted?: string | null;
-  /** Base64 ciphertext, carried verbatim — never decrypted into the file. */
-  noteEncrypted: string | null;
+  /** Base64 ciphertext; disaster-recovery payloads only. */
+  noteEncrypted?: string | null;
+  /** The note readable; portable payloads only. */
+  note?: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -87,10 +93,15 @@ export interface EncounterBackupEntry {
   status: EncounterStatus;
   kind: EncounterKind;
   practitionerId: string | null;
-  reasonEncrypted: string | null;
-  outcomeEncrypted: string | null;
+  /** Base64 ciphertext; disaster-recovery payloads only. */
+  reasonEncrypted?: string | null;
+  outcomeEncrypted?: string | null;
   /** The procedure's body site, ciphertext like the two above (v1.39.1). */
-  bodySiteEncrypted: string | null;
+  bodySiteEncrypted?: string | null;
+  /** The three readable; portable payloads only. */
+  reason?: string | null;
+  outcome?: string | null;
+  bodySite?: string | null;
   laterality: Laterality | null;
   /**
    * The appointment's reminder row, which restores in the same run since
@@ -122,12 +133,6 @@ export interface VisitsBackupCounts {
   practitioners: number;
   encounters: number;
   encounterLinks: number;
-}
-
-/** Base64 for a `Bytes` ciphertext column, or null when the column is empty. */
-function encodeCiphertext(value: Uint8Array | null): string | null {
-  if (!value || value.byteLength === 0) return null;
-  return Buffer.from(value).toString("base64");
 }
 
 /**
@@ -256,10 +261,10 @@ export async function buildVisitsBackupSection(
         ? {
             location: null,
             phone: null,
-            locationEncrypted: encodeCiphertext(
+            locationEncrypted: encodeSealedBytes(
               row.locationEncrypted ?? encryptNote(row.location),
             ),
-            phoneEncrypted: encodeCiphertext(
+            phoneEncrypted: encodeSealedBytes(
               row.phoneEncrypted ?? encryptNote(row.phone),
             ),
           }
@@ -275,7 +280,14 @@ export async function buildVisitsBackupSection(
               "phone",
             ),
           }),
-      noteEncrypted: encodeCiphertext(row.noteEncrypted),
+      ...(disasterRecovery
+        ? { noteEncrypted: encodeSealedBytes(row.noteEncrypted) }
+        : {
+            note: openSealedBytesForExport(
+              row.noteEncrypted,
+              "practitioner note",
+            ),
+          }),
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       ...(disasterRecovery
@@ -288,9 +300,26 @@ export async function buildVisitsBackupSection(
       status: row.status,
       kind: row.kind,
       practitionerId: row.practitionerId,
-      reasonEncrypted: encodeCiphertext(row.reasonEncrypted),
-      outcomeEncrypted: encodeCiphertext(row.outcomeEncrypted),
-      bodySiteEncrypted: encodeCiphertext(row.bodySiteEncrypted),
+      ...(disasterRecovery
+        ? {
+            reasonEncrypted: encodeSealedBytes(row.reasonEncrypted),
+            outcomeEncrypted: encodeSealedBytes(row.outcomeEncrypted),
+            bodySiteEncrypted: encodeSealedBytes(row.bodySiteEncrypted),
+          }
+        : {
+            reason: openSealedBytesForExport(
+              row.reasonEncrypted,
+              "visit reason",
+            ),
+            outcome: openSealedBytesForExport(
+              row.outcomeEncrypted,
+              "visit outcome",
+            ),
+            bodySite: openSealedBytesForExport(
+              row.bodySiteEncrypted,
+              "visit body site",
+            ),
+          }),
       laterality: row.laterality,
       reminderId: row.reminderId,
       createdAt: row.createdAt.toISOString(),
@@ -380,6 +409,7 @@ export type RestoredPractitioner = Pick<
       | "locationEncrypted"
       | "phoneEncrypted"
       | "noteEncrypted"
+      | "note"
     >
   > & { deletedAt?: string | null };
 
@@ -394,17 +424,13 @@ export type RestoredEncounter = Pick<
       | "reasonEncrypted"
       | "outcomeEncrypted"
       | "bodySiteEncrypted"
+      | "reason"
+      | "outcome"
+      | "bodySite"
       | "laterality"
       | "reminderId"
     >
   > & { deletedAt?: string | null };
-
-function decodeCiphertext(encoded: string): Uint8Array<ArrayBuffer> {
-  const decoded = Buffer.from(encoded, "base64");
-  const bytes = new Uint8Array(new ArrayBuffer(decoded.byteLength));
-  bytes.set(decoded);
-  return bytes;
-}
 
 /**
  * Re-create the account's visits, address book and link rows.
@@ -440,6 +466,9 @@ export async function restoreVisitsData(
     where: { userId: ownerId },
   });
 
+  // Sealed values this host's keys do not open, by file path.
+  const unopened: string[] = [];
+
   if (payload.practitioners.length > 0) {
     await tx.practitioner.createMany({
       data: payload.practitioners.map((entry) => ({
@@ -451,18 +480,24 @@ export async function restoreVisitsData(
         // v1.39.4 — ciphertext wins when a disaster-recovery file carried it;
         // a portable file's (or an older file's) readable value is sealed
         // under this instance's key. The readable columns are never written.
-        locationEncrypted:
-          entry.locationEncrypted != null
-            ? decodeCiphertext(entry.locationEncrypted)
-            : encryptNote(entry.location),
-        phoneEncrypted:
-          entry.phoneEncrypted != null
-            ? decodeCiphertext(entry.phoneEncrypted)
-            : encryptNote(entry.phone),
-        noteEncrypted:
-          entry.noteEncrypted == null
-            ? null
-            : decodeCiphertext(entry.noteEncrypted),
+        locationEncrypted: sealBytesForRestore(
+          entry.locationEncrypted,
+          entry.location,
+          `practitioners.${entry.id}.locationEncrypted`,
+          unopened,
+        ),
+        phoneEncrypted: sealBytesForRestore(
+          entry.phoneEncrypted,
+          entry.phone,
+          `practitioners.${entry.id}.phoneEncrypted`,
+          unopened,
+        ),
+        noteEncrypted: sealBytesForRestore(
+          entry.noteEncrypted,
+          entry.note,
+          `practitioners.${entry.id}.noteEncrypted`,
+          unopened,
+        ),
         createdAt: new Date(entry.createdAt),
         updatedAt: new Date(entry.updatedAt),
         deletedAt: entry.deletedAt ? new Date(entry.deletedAt) : null,
@@ -517,20 +552,26 @@ export async function restoreVisitsData(
           status: entry.status,
           kind: entry.kind,
           practitionerId,
-          reasonEncrypted:
-            entry.reasonEncrypted == null
-              ? null
-              : decodeCiphertext(entry.reasonEncrypted),
-          outcomeEncrypted:
-            entry.outcomeEncrypted == null
-              ? null
-              : decodeCiphertext(entry.outcomeEncrypted),
+          reasonEncrypted: sealBytesForRestore(
+            entry.reasonEncrypted,
+            entry.reason,
+            `encounters.${entry.id}.reasonEncrypted`,
+            unopened,
+          ),
+          outcomeEncrypted: sealBytesForRestore(
+            entry.outcomeEncrypted,
+            entry.outcome,
+            `encounters.${entry.id}.outcomeEncrypted`,
+            unopened,
+          ),
           // Absent in a file written before v1.39.1: the visit comes back
           // with no site, which is what it had.
-          bodySiteEncrypted:
-            entry.bodySiteEncrypted == null
-              ? null
-              : decodeCiphertext(entry.bodySiteEncrypted),
+          bodySiteEncrypted: sealBytesForRestore(
+            entry.bodySiteEncrypted,
+            entry.bodySite,
+            `encounters.${entry.id}.bodySiteEncrypted`,
+            unopened,
+          ),
           laterality: entry.laterality ?? null,
           reminderId,
           createdAt: new Date(entry.createdAt),
@@ -553,6 +594,7 @@ export async function restoreVisitsData(
     [...new Set(droppedReminders)],
     droppedReminders,
   );
+  recordUnknownKeys(skips, "visitCiphertext", unopened, unopened);
 
   const restoredEncounters = new Set(payload.encounters.map((e) => e.id));
 
