@@ -223,8 +223,9 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
             </div>
           </div>
 
-          {/* Data clusters + analysis window live on ONE owner: the
-              sources rail inside the chat ("What I draw on"). This card
+          {/* Data clusters + analysis window live on ONE owner: "What I
+              can see" behind the Coach's settings gear, which
+              `/coach?settings=data` opens directly. This card
               used to render its own copies of both controls; two writable
               surfaces for the same persisted fields is exactly the
               redundancy the rail was built to end. A pointer replaces
@@ -237,7 +238,7 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
             >
               {t("insights.coach.settingsSourcesPointer")}{" "}
               <Link
-                href="/coach"
+                href="/coach?settings=data"
                 className="text-foreground underline underline-offset-2"
               >
                 {t("insights.coach.settingsSourcesPointerLink")}

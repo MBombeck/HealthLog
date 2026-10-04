@@ -88,6 +88,13 @@ export interface ResponsiveSheetProps {
    * default, so the width now resolves from this single source.
    */
   contentWidth?: "md" | "lg" | "2xl" | "3xl" | "4xl" | "6xl";
+  /**
+   * Where focus goes when the surface closes. Radix returns it to a
+   * `Dialog.Trigger`, and this primitive has none, so a caller whose opener
+   * should get focus back (a gear, a menu button) hands it over here: call
+   * `event.preventDefault()` and focus the opener.
+   */
+  onCloseAutoFocus?: (event: Event) => void;
   children: React.ReactNode;
 }
 
@@ -136,6 +143,7 @@ export function ResponsiveSheet({
   bodyClassName,
   showCloseButton = true,
   contentWidth = "md",
+  onCloseAutoFocus,
   children,
 }: ResponsiveSheetProps) {
   const isMobile = useIsMobile();
@@ -144,6 +152,7 @@ export function ResponsiveSheet({
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
+          onCloseAutoFocus={onCloseAutoFocus}
           side="bottom"
           showCloseButton={showCloseButton}
           data-slot="responsive-sheet-content"
@@ -246,6 +255,7 @@ export function ResponsiveSheet({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        onCloseAutoFocus={onCloseAutoFocus}
         showCloseButton={showCloseButton}
         data-slot="responsive-sheet-content"
         data-variant="dialog"

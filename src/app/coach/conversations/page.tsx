@@ -24,8 +24,8 @@ import {
   useCoachConversationHistory,
   useDeleteCoachConversationWithUndo,
 } from "@/components/insights/coach-panel/use-coach";
-import type { CoachConversationDTO } from "@/lib/ai/coach/types";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
+import { groupConversationsByRecency } from "@/lib/insights/coach-conversation-groups";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useAiCapabilityAnswer } from "@/hooks/use-ai-capability";
 import { useLoadMoreSentinel } from "@/hooks/use-load-more-sentinel";
@@ -58,58 +58,6 @@ import { cn } from "@/lib/utils";
  * wrapper matches the Coach page so the two surfaces share one chrome.
  */
 
-type RecencyGroupId = "today" | "yesterday" | "thisWeek" | "earlier";
-
-interface RecencyGroup {
-  id: RecencyGroupId;
-  labelKey: string;
-  conversations: CoachConversationDTO[];
-}
-
-/**
- * Bucket conversations by LOCAL calendar recency. `updatedAt` is an ISO
- * string; comparisons run against local day boundaries so "Today" tracks
- * the user's own midnight, not UTC.
- */
-function groupByRecency(conversations: CoachConversationDTO[]): RecencyGroup[] {
-  const now = new Date();
-  const startOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  ).getTime();
-  const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
-  // "This week" = the six days before yesterday (a rolling 7-day window
-  // that already excludes today + yesterday, which have their own groups).
-  const startOfWeek = startOfToday - 6 * 24 * 60 * 60 * 1000;
-
-  const groups: Record<RecencyGroupId, CoachConversationDTO[]> = {
-    today: [],
-    yesterday: [],
-    thisWeek: [],
-    earlier: [],
-  };
-
-  for (const conversation of conversations) {
-    const updated = new Date(conversation.updatedAt).getTime();
-    if (updated >= startOfToday) groups.today.push(conversation);
-    else if (updated >= startOfYesterday) groups.yesterday.push(conversation);
-    else if (updated >= startOfWeek) groups.thisWeek.push(conversation);
-    else groups.earlier.push(conversation);
-  }
-
-  return (
-    [
-      { id: "today", labelKey: "insights.coach.history.groupToday" },
-      { id: "yesterday", labelKey: "insights.coach.history.groupYesterday" },
-      { id: "thisWeek", labelKey: "insights.coach.history.groupThisWeek" },
-      { id: "earlier", labelKey: "insights.coach.history.groupEarlier" },
-    ] as const
-  )
-    .map((g) => ({ ...g, conversations: groups[g.id] }))
-    .filter((g) => g.conversations.length > 0);
-}
-
 function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
   const { t, locale } = useTranslations();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -139,7 +87,7 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
   );
   const isSearching = debouncedFilter.trim().length > 0;
 
-  const groups = useMemo(() => groupByRecency(visible), [visible]);
+  const groups = useMemo(() => groupConversationsByRecency(visible), [visible]);
 
   // Same callback-ref pattern as the rail: a `useState` setter (not a plain
   // `useRef`) so the sentinel hook's `root` re-fires its effect once the

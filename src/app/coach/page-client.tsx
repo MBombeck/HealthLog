@@ -81,6 +81,13 @@ import { coachScopeSourceSchema } from "@/lib/ai/coach/types";
  *     this is a prefill, not an auto-send.
  * Both are ignored once `?c=` or `?doc=` pin an existing/scoped thread — scope
  * only ever applies to a fresh conversation's first turn.
+ *
+ * The conversations panel on the right of the thread carries the history,
+ * New chat and the settings gear (the composer's `+` menu is gone). Picking a
+ * conversation or starting a new one rewrites `?c=` in place, so a reload
+ * stays on the open thread. `?settings=data` (the link from Settings → Coach)
+ * opens the gear on "What I can see"; the param is consumed on mount and
+ * dropped from the URL so a reload does not reopen the overlay.
  */
 function CoachPageBody() {
   const searchParams = useSearchParams();
@@ -117,6 +124,21 @@ function CoachPageBody() {
     ? { metric: scopeResult.data }
     : null;
   const seedPrefill = freshChat ? searchParams.get("ask") : null;
+
+  // Read once: the panel consumes it on mount, then the URL loses it.
+  const [openSettingsOnData] = useState(
+    () => searchParams.get("settings") === "data",
+  );
+  useEffect(() => {
+    if (!openSettingsOnData) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("settings");
+    window.history.replaceState(
+      window.history.state,
+      "",
+      url.pathname + url.search,
+    );
+  }, [openSettingsOnData]);
 
   // #781 — a navigation away mid-reply recorded the interrupted conversation
   // (see `COACH_INTERRUPTED_STORAGE_KEY` in `use-coach.ts`). Returning to the
@@ -200,6 +222,7 @@ function CoachPageBody() {
       // unread coach-initiated exception and the interrupted first-turn
       // resume (#781, whose conversation id never reached the client).
       autoOpenMostRecent={hasUnreadCoachMessage || resumeInterruptedLatest}
+      openSettingsOnData={openSettingsOnData}
     />
   );
 }
