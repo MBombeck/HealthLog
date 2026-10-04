@@ -9,6 +9,7 @@ import {
   PHONE_WIDTHS,
   settleForOverflowMeasurement,
 } from "./utils/horizontal-overflow";
+import { revealDeferredSections } from "./utils/deferred-sections";
 
 /**
  * The content-heavy routes must not scroll sideways at any phone width.
@@ -73,6 +74,9 @@ test.describe("content-heavy routes have no horizontal page scroll at phone widt
       for (const width of PHONE_WIDTHS) {
         await page.setViewportSize({ width, height: 851 });
         await page.goto(routeCase.path, { waitUntil: "domcontentloaded" });
+        // Measure the whole page, the overview sections that wait for the
+        // viewport included, or a wide card far down would go unmeasured.
+        if (routeCase.path === "/insights") await revealDeferredSections(page);
         await expect(page.locator(routeCase.ready).first()).toBeVisible();
         await settleForOverflowMeasurement(page);
         await expectNoHorizontalOverflow(page, `${routeCase.path} @${width}px`);
@@ -93,6 +97,7 @@ test.describe("content-heavy routes have no horizontal page scroll at phone widt
     await mockPopulatedInsights(page);
     await page.setViewportSize({ width: 390, height: 851 });
     await page.goto("/insights", { waitUntil: "domcontentloaded" });
+    await revealDeferredSections(page);
 
     const signals = page.locator('[data-slot="coincident-deviation-section"]');
     await expect(signals).toBeVisible();
@@ -129,6 +134,7 @@ test.describe("content-heavy routes have no horizontal page scroll at phone widt
     await mockPopulatedInsights(page);
     await page.setViewportSize({ width: 390, height: 851 });
     await page.goto("/insights", { waitUntil: "domcontentloaded" });
+    await revealDeferredSections(page);
 
     // Wait on the CAPTION, not the heading: the card first paints a skeleton
     // whose heading carries no action slot, then swaps to the resolved shell.
@@ -179,6 +185,7 @@ test.describe("content-heavy routes have no horizontal page scroll at phone widt
     await mockPopulatedInsights(page);
     await page.setViewportSize({ width: 390, height: 851 });
     await page.goto("/insights", { waitUntil: "domcontentloaded" });
+    await revealDeferredSections(page);
     // Wait for the same readiness signal and settle step every route case
     // above uses. This was the one test in the file that measured and injected
     // straight after `domcontentloaded`, against a tree that was still

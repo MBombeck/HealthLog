@@ -6,6 +6,7 @@ import { STORAGE_STATE_PATH } from "./setup/global-setup";
 import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
 import { openMenu } from "./open-menu";
 import { POPULATED_SUMMARIES } from "./utils/mock-dashboard-snapshot";
+import { revealDeferredSections } from "./utils/deferred-sections";
 
 type AxeViolation = Awaited<
   ReturnType<AxeBuilder["analyze"]>
@@ -41,6 +42,8 @@ type RouteCase = {
   name: string;
   path: string;
   painted: (page: Page) => Locator;
+  /** Runs after navigation, before the painted gate (e.g. mount deferred sections). */
+  prepare?: (page: Page) => Promise<void>;
 };
 
 const THEMES: readonly Theme[] = ["light", "dark"];
@@ -325,6 +328,7 @@ async function visitAndScan(
 ): Promise<AxeViolation[]> {
   return test.step(`${theme} ${routeCase.name}`, async () => {
     await page.goto(routeCase.path, { waitUntil: "domcontentloaded" });
+    await routeCase.prepare?.(page);
     return scanPaintedState(
       page,
       theme,
@@ -773,6 +777,8 @@ const INSIGHTS_ROUTES: readonly RouteCase[] = [
   {
     name: "/insights overview",
     path: "/insights",
+    // Scan the whole overview, the sections that mount near the viewport too.
+    prepare: revealDeferredSections,
     // The vitals grid, settled. The scores strip is not a stable gate: it
     // unmounts for an account with no score yet, and since v1.39 it no longer
     // keeps an empty cell for a cycle ring that has no dial to draw.

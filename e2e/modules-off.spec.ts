@@ -25,6 +25,7 @@ import type { Page } from "@playwright/test";
 import { MODULES_STORAGE_STATE_PATH } from "./setup/global-setup";
 import { modulesSeedState } from "./setup/modules-fixture";
 import { expect, test } from "./setup/test";
+import { revealDeferredSections } from "./utils/deferred-sections";
 
 test.use({ storageState: MODULES_STORAGE_STATE_PATH });
 test.describe.configure({ mode: "serial" });
@@ -130,6 +131,8 @@ test("mood and medications, switched off, leave every surface they own", async (
   await expect(
     page.locator('[data-slot="insights-tab-strip-pill"][href="/insights"]'),
   ).toBeVisible({ timeout: 20_000 });
+  // The trends row sits below the sections that mount with the page.
+  await revealDeferredSections(page);
   await expect(page.locator('[data-slot="trends-row"]')).toBeVisible();
   await expect(page.locator(moodPill)).toHaveCount(0);
   await expect(page.locator(medsPill)).toHaveCount(0);
