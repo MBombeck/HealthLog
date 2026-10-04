@@ -55,6 +55,7 @@ const TZ = "Europe/Berlin";
 const DUAL = "ladder-dual";
 const DENSE = "ladder-dense";
 const SOLO = "ladder-solo";
+const BP_MIX = "ladder-bp-mix";
 const NOW = new Date(Math.floor(Date.now() / 60_000) * 60_000 - 60_000);
 const DAY = 86_400_000;
 
@@ -114,7 +115,12 @@ async function series(userId: string, kind: string, days: number) {
   return (
     (await res.json()) as {
       data: {
-        points: Array<{ id: string; at: string; value: number }>;
+        points: Array<{
+          id: string;
+          at: string;
+          value: number;
+          secondary: number | null;
+        }>;
         stats: { count: number; mean: number; min: number; max: number };
       };
     }
@@ -123,7 +129,7 @@ async function series(userId: string, kind: string, days: number) {
 
 beforeAll(async () => {
   await truncateAllTables(prisma);
-  for (const id of [DUAL, DENSE, SOLO]) {
+  for (const id of [DUAL, DENSE, SOLO, BP_MIX]) {
     await prisma.user.create({ data: { id, username: id, timezone: TZ } });
     invalidateUserTimezone(id);
   }
@@ -146,6 +152,25 @@ beforeAll(async () => {
     dual.push(row(DUAL, "WEIGHT", "kg", "MANUAL", 80 + d, at(d)));
     dual.push(row(DUAL, "WEIGHT", "kg", "WITHINGS", 80 + d, at(d)));
   }
+  // Blood pressure: Apple Health (120/80, 122/82) on days 1-2, Withings
+  // (140/90, 142/92) on days 2-3. Day 2 has both sources; day 1 only Apple,
+  // day 3 only Withings. A sub-floor systolic (0) on day 1 must stay out.
+  const bp = (
+    source: MeasurementSource,
+    d: number,
+    sys: number,
+    dia: number,
+  ) => {
+    dual.push(row(DUAL, "BLOOD_PRESSURE_SYS", "mmHg", source, sys, at(d, 10)));
+    dual.push(row(DUAL, "BLOOD_PRESSURE_DIA", "mmHg", source, dia, at(d, 10)));
+  };
+  bp("APPLE_HEALTH", 1, 120, 80);
+  bp("APPLE_HEALTH", 2, 122, 82);
+  bp("WITHINGS", 2, 142, 92);
+  bp("WITHINGS", 3, 140, 90);
+  dual.push(
+    row(DUAL, "BLOOD_PRESSURE_SYS", "mmHg", "APPLE_HEALTH", 0, at(1, 20)),
+  );
   // Glucose has no ladder: both sources must stay.
   for (const d of [1, 2]) {
     dual.push(row(DUAL, "BLOOD_GLUCOSE", "mg/dL", "APPLE_HEALTH", 100, at(d)));
@@ -176,6 +201,29 @@ beforeAll(async () => {
       source,
     );
   }
+
+  // Blood pressure where one source holds only half of a reading. Day 1: the
+  // cuff's systolic 150 is live but its diastolic was deleted, while Apple
+  // Health holds the same moment as a full 125/85. Day 2: the cuff's only
+  // systolic that day is a sub-floor 0 next to a diastolic 80, while Apple
+  // Health holds 126/86. A per-type pick takes the cuff's systolic and Apple's
+  // diastolic on day 1 and pairs them across sources, and on day 2 picks the
+  // cuff for a systolic the floor then removes, which empties the day.
+  await prisma.measurement.createMany({
+    data: [
+      row(BP_MIX, "BLOOD_PRESSURE_SYS", "mmHg", "WITHINGS", 150, at(1, 10)),
+      {
+        ...row(BP_MIX, "BLOOD_PRESSURE_DIA", "mmHg", "WITHINGS", 95, at(1, 10)),
+        deletedAt: new Date(),
+      },
+      row(BP_MIX, "BLOOD_PRESSURE_SYS", "mmHg", "APPLE_HEALTH", 125, at(1, 10)),
+      row(BP_MIX, "BLOOD_PRESSURE_DIA", "mmHg", "APPLE_HEALTH", 85, at(1, 10)),
+      row(BP_MIX, "BLOOD_PRESSURE_SYS", "mmHg", "WITHINGS", 0, at(2, 10)),
+      row(BP_MIX, "BLOOD_PRESSURE_DIA", "mmHg", "WITHINGS", 80, at(2, 10)),
+      row(BP_MIX, "BLOOD_PRESSURE_SYS", "mmHg", "APPLE_HEALTH", 126, at(2, 12)),
+      row(BP_MIX, "BLOOD_PRESSURE_DIA", "mmHg", "APPLE_HEALTH", 86, at(2, 12)),
+    ],
+  });
 
   // A single-source account.
   await prisma.measurement.createMany({
@@ -217,6 +265,50 @@ describe("pulse follows the ladder (raw read, 30 days)", () => {
     // One mean per local day: Apple's days 1-3 are 62, Fitbit's days 4-5 are 92.
     expect(byDay).toEqual([62, 62, 62, 92, 92]);
     expect(data.stats.count).toBe(15);
+  });
+});
+
+describe("blood pressure follows the ladder", () => {
+  const bpSeries = async () => (await series(DUAL, "bloodPressure", 30)).points;
+
+  it("shows the ladder's source on a day both cover, and the other where only it exists", async () => {
+    await setLadder(DUAL, { bloodPressure: ["APPLE_HEALTH", "WITHINGS"] });
+    const points = await bpSeries();
+    // Day 1 Apple, day 2 Apple (Withings' 142/92 is out), day 3 only Withings.
+    expect(points.map((p) => [p.value, p.secondary])).toEqual([
+      [140, 90],
+      [122, 82],
+      [120, 80],
+    ]);
+  });
+
+  it("flips with the ladder", async () => {
+    await setLadder(DUAL, { bloodPressure: ["WITHINGS", "APPLE_HEALTH"] });
+    const points = await bpSeries();
+    expect(points.map((p) => [p.value, p.secondary])).toEqual([
+      [140, 90],
+      [142, 92],
+      [120, 80],
+    ]);
+  });
+
+  it("keeps a non-physiological systolic out of the series", async () => {
+    await setLadder(DUAL, { bloodPressure: ["APPLE_HEALTH", "WITHINGS"] });
+    expect((await bpSeries()).every((p) => p.value >= 40)).toBe(true);
+  });
+});
+
+describe("blood pressure keeps a reading's two halves from one source", () => {
+  it("never pairs one source's systolic with another source's diastolic", async () => {
+    await setLadder(BP_MIX, { bloodPressure: ["WITHINGS", "APPLE_HEALTH"] });
+    const points = (await series(BP_MIX, "bloodPressure", 30)).points;
+    // Day 1 is the cuff's day: its systolic stands alone rather than borrowing
+    // Apple's diastolic. Day 2 is Apple's, because the cuff has no systolic
+    // that passes the floor there.
+    expect(points.map((p) => [p.value, p.secondary])).toEqual([
+      [126, 86],
+      [150, null],
+    ]);
   });
 });
 
