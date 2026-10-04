@@ -36,12 +36,20 @@ export type RollupCoverageMap = Map<string, boolean>;
 
 /**
  * Probe DAY-bucket coverage for every type the user has measurements
- * for. The join is anchored on the smaller `DISTINCT type FROM
- * measurements` set so the planner picks the per-type
- * `(user_id, type, measured_at)` index path; the LEFT JOIN onto the
- * rollup table uses the `(user_id, type, granularity, bucket_start)`
- * composite primary key. A `COUNT > 0` per partition keeps the result
- * shape stable even when a type has zero buckets.
+ * for, in one round-trip.
+ *
+ * The distinct-type set is read as a loose index scan: a recursive CTE
+ * that hops from one type to the next along the partial
+ * `(user_id, type, measured_at)` live index, one index descent per type
+ * instead of a walk over every live row the user has. Coverage is an
+ * `EXISTS` per type on the rollup index, which stops at the first DAY
+ * bucket rather than counting them all.
+ *
+ * The earlier shape, `SELECT DISTINCT type` joined to a `COUNT(r.*)`
+ * over every DAY bucket, read all of a user's live rows and all of their
+ * DAY buckets on each call; on a tenant with years of Apple Health data
+ * the planner chose a sequential scan of `measurement_rollups` for the
+ * join. It returns the same map; only the reads changed.
  */
 export async function probeRollupCoverage(
   userId: string,
@@ -49,20 +57,39 @@ export async function probeRollupCoverage(
   const rows = await prisma.$queryRaw<
     Array<{ type: string; has_buckets: boolean }>
   >`
+    WITH RECURSIVE live_types AS (
+      (
+        SELECT "type"
+        FROM measurements
+        WHERE user_id = ${userId}
+          AND "deleted_at" IS NULL
+        ORDER BY "type"
+        LIMIT 1
+      )
+      UNION ALL
+      SELECT (
+        SELECT m."type"
+        FROM measurements m
+        WHERE m.user_id = ${userId}
+          AND m."deleted_at" IS NULL
+          AND m."type" > live_types."type"
+        ORDER BY m."type"
+        LIMIT 1
+      )
+      FROM live_types
+      WHERE live_types."type" IS NOT NULL
+    )
     SELECT
-      m."type"::text                 AS type,
-      COUNT(r.*) > 0                 AS has_buckets
-    FROM (
-      SELECT DISTINCT "type"
-      FROM measurements
-      WHERE user_id = ${userId}
-        AND "deleted_at" IS NULL
-    ) m
-    LEFT JOIN measurement_rollups r
-      ON  r.user_id     = ${userId}
-      AND r."type"      = m."type"
-      AND r.granularity = 'DAY'
-    GROUP BY m."type"
+      t."type"::text AS type,
+      EXISTS (
+        SELECT 1
+        FROM measurement_rollups r
+        WHERE r.user_id     = ${userId}
+          AND r."type"      = t."type"
+          AND r.granularity = 'DAY'
+      ) AS has_buckets
+    FROM live_types t
+    WHERE t."type" IS NOT NULL
   `;
   const coverage: RollupCoverageMap = new Map();
   for (const row of rows) {
