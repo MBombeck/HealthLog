@@ -111,7 +111,7 @@ describe("<LabList> columns", () => {
     const NARROW_TIER =
       "lg:@max-5xl:grid-cols-[minmax(0,1fr)_max-content_12rem_72px_auto]";
     const WIDE_TIER =
-      "@5xl:grid-cols-[minmax(0,1fr)_max-content_minmax(12rem,18rem)_minmax(72px,8rem)_auto]";
+      "@5xl:grid-cols-[minmax(0,1fr)_max-content_minmax(12rem,18rem)_72px_auto]";
 
     it("makes the card a container, so the columns follow the list's width, not the window's", () => {
       const html = renderList([reading({})]);
@@ -125,6 +125,11 @@ describe("<LabList> columns", () => {
       // Name, badge, bar, trend and chevron: five columns in both tiers.
       expect(NARROW_TIER.split("_")).toHaveLength(5);
       expect(WIDE_TIER.split("_")).toHaveLength(5);
+    });
+
+    it("keeps the trend column as wide as its 72px sparkline in both tiers", () => {
+      expect(NARROW_TIER.split("_")[3]).toBe("72px");
+      expect(WIDE_TIER.split("_")[3]).toBe("72px");
     });
 
     it("keeps the name column the flexible one in both tiers", () => {

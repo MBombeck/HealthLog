@@ -19,7 +19,8 @@ import {
  *
  *   - below 64 rem of card the row is the `lg` table it always was, and the
  *     range bar keeps its 12 rem;
- *   - from 64 rem the bar follows its column up to 18 rem.
+ *   - from 64 rem the bar follows its column up to 18 rem, and the trend
+ *     column stays as wide as its 72 px sparkline.
  *
  * From `lg` a long name wraps instead of being cut off. The tiers are measured
  * on the card's width and not the viewport's, so the spec reads the card and
@@ -93,6 +94,16 @@ test.describe("the lab list uses its width", () => {
           expect(w).toBeLessThanOrEqual(18 * REM + 1);
         }
       }
+
+      // The trend column is exactly as wide as the sparkline it holds, in both
+      // tiers. The sparkline is a fixed 72 px glyph; a wider column would only
+      // open an empty strip between it and the chevron.
+      const tracks = await page
+        .locator('[data-slot="lab-list"] [data-slot="card-content"]')
+        .first()
+        .evaluate((node) => getComputedStyle(node).gridTemplateColumns);
+      const trendTrack = tracks.split(" ")[3];
+      expect(trendTrack, `trend column in "${tracks}"`).toBe("72px");
 
       // The widest windows must actually reach the wide tier, or the branch
       // above never ran.

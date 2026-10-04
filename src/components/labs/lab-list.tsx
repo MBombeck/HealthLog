@@ -261,10 +261,13 @@ export function LabList({ onAddFirst }: { onAddFirst?: () => void } = {}) {
         {/* `@container` makes the columns follow the width the list has, not the
             window's: below `@5xl` (64rem of card) the row is the `lg` table it
             always was (the two tiers exclude each other, so the result does not
-            depend on the order the CSS is emitted in), from there up the range bar and the trend take part of
-            the extra width instead of all of it going to the name. */}
+            depend on the order the CSS is emitted in), from there up the range
+            bar takes part of the extra width instead of all of it going to the
+            name. The trend column stays 72px in both tiers: the sparkline is a
+            fixed 72px glyph, and a wider column would only open an empty strip
+            between it and the chevron. */}
         <Card className="@container">
-          <CardContent className="divide-border grid grid-cols-1 divide-y p-0 lg:gap-x-3 lg:@max-5xl:grid-cols-[minmax(0,1fr)_max-content_12rem_72px_auto] @5xl:grid-cols-[minmax(0,1fr)_max-content_minmax(12rem,18rem)_minmax(72px,8rem)_auto]">
+          <CardContent className="divide-border grid grid-cols-1 divide-y p-0 lg:gap-x-3 lg:@max-5xl:grid-cols-[minmax(0,1fr)_max-content_12rem_72px_auto] @5xl:grid-cols-[minmax(0,1fr)_max-content_minmax(12rem,18rem)_72px_auto]">
             {groups.map((group) => {
               const inner = (
                 <div className={cn("min-w-0 flex-1", MOBILE_CELL.reading)}>
