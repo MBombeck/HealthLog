@@ -6080,6 +6080,17 @@
         "title": "Coach-Pläne",
         "description": "Die Pläne, die du mit dem Coach vereinbart hast, zum Lesen oder Entfernen.",
         "open": "Pläne öffnen"
+      },
+      "reasoning": {
+        "label": "Nachdenken",
+        "hint": "Reasoning-Modelle wie Gemma oder Qwen denken nach, bevor sie antworten. Schaltest du es aus, bleibt das ganze Antwortbudget für die Antwort selbst.",
+        "options": {
+          "default": "Standard",
+          "none": "Aus",
+          "low": "Niedrig",
+          "medium": "Mittel",
+          "high": "Hoch"
+        }
       }
     },
     "dashboard": {

@@ -6080,6 +6080,17 @@
         "title": "Coach plans",
         "description": "The plans you agreed with the Coach, to read or remove.",
         "open": "Open plans"
+      },
+      "reasoning": {
+        "label": "Reasoning",
+        "hint": "Reasoning models such as Gemma or Qwen think before they answer. Off leaves the whole answer budget for the answer itself.",
+        "options": {
+          "default": "Default",
+          "none": "Off",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        }
       }
     },
     "dashboard": {

@@ -6080,6 +6080,17 @@
         "title": "Plany z Coachem",
         "description": "Plany uzgodnione z Coachem, do przeczytania lub usunięcia.",
         "open": "Otwórz plany"
+      },
+      "reasoning": {
+        "label": "Rozumowanie",
+        "hint": "Modele rozumujące, takie jak Gemma czy Qwen, myślą przed odpowiedzią. Po wyłączeniu cały budżet odpowiedzi idzie na samą odpowiedź.",
+        "options": {
+          "default": "Domyślnie",
+          "none": "Wyłączone",
+          "low": "Niskie",
+          "medium": "Średnie",
+          "high": "Wysokie"
+        }
       }
     },
     "dashboard": {

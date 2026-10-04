@@ -20,6 +20,12 @@ import {
 } from "@/lib/sharing/provider-work-authority";
 import { annotate } from "@/lib/logging/context";
 import { aiProviderPatchSchema } from "@/lib/validations/ai-provider";
+import {
+  chainWithReasoningEffort,
+  parseProviderChain,
+  serializeProviderChain,
+} from "@/lib/ai/provider-chain";
+import { reasoningEffortFor } from "@/lib/ai/reasoning-effort";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +48,8 @@ export const GET = apiHandler(async () => {
       aiCompatModel: true,
       // v1.22 (#89)
       aiResponseTimeoutSeconds: true,
+      // #1126 — the reasoning settings live on the chain entries.
+      aiProviderChain: true,
       // v1.38.19 — a managed profile is never the party that gives
       // consent for itself; the offer below has to know.
       managedProfileAt: true,
@@ -141,6 +149,13 @@ export const GET = apiHandler(async () => {
     hasCompatKey: Boolean(u?.aiCompatKeyEncrypted),
     // v1.22 (#89) — per-user response timeout, in seconds (null = default).
     responseTimeoutSeconds: u?.aiResponseTimeoutSeconds ?? null,
+    // #1126 — the Local and gateway entries' reasoning settings (null =
+    // Default), read from the chain where they are stored.
+    localReasoningEffort: reasoningEffortFor(u?.aiProviderChain, "local"),
+    compatReasoningEffort: reasoningEffortFor(
+      u?.aiProviderChain,
+      "openai-compatible",
+    ),
     // v1.38.19 — see the block above. A tri-state and two booleans;
     // no count, no timestamp and no other account is inferable from them.
     serverProviderHealth,
@@ -297,7 +312,45 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     updates.aiResponseTimeoutSeconds = body.responseTimeoutSeconds;
   }
 
-  if (Object.keys(updates).length === 0) {
+  // ── #1126 — reasoning settings of the Local and gateway entries ──
+  // Stored on the entry in `aiProviderChain` rather than in a column of their
+  // own, so the setting is per entry and a chain can mix a thinking model with
+  // one that does not know the field. See `chainWithReasoningEffort` for how a
+  // default chain, or a provider absent from the chain, holds the value.
+  const reasoningTouched =
+    body.localReasoningEffort !== undefined ||
+    body.compatReasoningEffort !== undefined;
+  if (reasoningTouched) {
+    const current = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { aiProviderChain: true },
+    });
+    let chain: unknown = current?.aiProviderChain ?? null;
+    if (body.localReasoningEffort !== undefined) {
+      chain = chainWithReasoningEffort(
+        chain,
+        "local",
+        body.localReasoningEffort,
+      );
+    }
+    if (body.compatReasoningEffort !== undefined) {
+      chain = chainWithReasoningEffort(
+        chain,
+        "openai-compatible",
+        body.compatReasoningEffort,
+      );
+    }
+    // Written only when it changed: restating Default on a chain that was
+    // never customised must not freeze today's default chain into the row.
+    const before = serializeProviderChain(
+      parseProviderChain(current?.aiProviderChain ?? null),
+    );
+    if (serializeProviderChain(parseProviderChain(chain)) !== before) {
+      updates.aiProviderChain = chain;
+    }
+  }
+
+  if (Object.keys(updates).length === 0 && !reasoningTouched) {
     return apiError("No valid fields", 422, {
       errorCode: "ai_provider.no_fields",
     });
@@ -317,7 +370,9 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     updates.aiBaseUrl = null;
   }
 
-  await prisma.user.update({ where: { id: user.id }, data: updates });
+  if (Object.keys(updates).length > 0) {
+    await prisma.user.update({ where: { id: user.id }, data: updates });
+  }
 
   return apiSuccess({ updated: true });
 });

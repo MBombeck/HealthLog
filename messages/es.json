@@ -6080,6 +6080,17 @@
         "title": "Planes del Coach",
         "description": "Los planes que acordaste con el Coach, para leerlos o eliminarlos.",
         "open": "Abrir planes"
+      },
+      "reasoning": {
+        "label": "Razonamiento",
+        "hint": "Los modelos de razonamiento como Gemma o Qwen piensan antes de responder. Si lo desactivas, todo el presupuesto de respuesta se queda para la respuesta.",
+        "options": {
+          "default": "Predeterminado",
+          "none": "Desactivado",
+          "low": "Bajo",
+          "medium": "Medio",
+          "high": "Alto"
+        }
       }
     },
     "dashboard": {
