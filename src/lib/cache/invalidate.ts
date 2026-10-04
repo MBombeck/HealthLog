@@ -18,6 +18,8 @@
  * the write endpoint's `apiSuccess()` return. No `await` overhead.
  */
 
+import { forgetCoverageProbe } from "@/lib/rollups/coverage-inflight";
+
 import { caches } from "./server-cache";
 
 /**
@@ -68,6 +70,9 @@ export function invalidateUserMeasurements(
   userId: string,
   opts?: { evict?: boolean },
 ): void {
+  // A coverage probe already running read the set before this write; the
+  // next reader must not join it.
+  forgetCoverageProbe(userId);
   // The `${userId}|` prefix covers the slim / thick analytics cells, the
   // iOS summary cell, AND the v1.7.0 dashboard snapshot
   // (`${userId}|dashboard-snapshot`) in one pass.

@@ -20,6 +20,7 @@
  * read regardless of how many types the user has logged.
  */
 import { prisma } from "@/lib/db";
+import { joinCoverageProbe } from "@/lib/rollups/coverage-inflight";
 import { ROLLUP_FOLD_WINDOW_MS } from "@/lib/rollups/measurement-rollups";
 
 /**
@@ -50,10 +51,17 @@ export type RollupCoverageMap = Map<string, boolean>;
  * DAY buckets on each call; on a tenant with years of Apple Health data
  * the planner chose a sequential scan of `measurement_rollups` for the
  * join. It returns the same map; only the reads changed.
+ *
+ * Concurrent probes for one account share the query already in flight (see
+ * `coverage-inflight.ts`); each caller still receives its own map.
  */
-export async function probeRollupCoverage(
+export function probeRollupCoverage(
   userId: string,
 ): Promise<RollupCoverageMap> {
+  return joinCoverageProbe(userId, () => readRollupCoverage(userId));
+}
+
+async function readRollupCoverage(userId: string): Promise<RollupCoverageMap> {
   const rows = await prisma.$queryRaw<
     Array<{ type: string; has_buckets: boolean }>
   >`
