@@ -7554,7 +7554,8 @@
         "restoreFailureKeyMissing": "Kopia wymaga klucza szyfrowania {keys}, którym ten serwer nie może jej otworzyć. Dodaj klucz z powrotem do ENCRYPTION_KEYS, uruchom ponownie i rozpocznij przywracanie jeszcze raz.",
         "restoreFailureForeignReference": "Plik wskazuje na wpisy należące do innego konta. Nic nie zostało zapisane.",
         "previewKeyMissing": "Tej kopii nie da się przywrócić na tym serwerze: wymaga klucza szyfrowania {keys}. Najpierw dodaj klucz z powrotem do ENCRYPTION_KEYS i uruchom ponownie.",
-        "restoreSkippedSymptomEpisodeReference": "Wpis objawu powiązany z chorobą, której nie ma w pliku (zachowany bez powiązania)"
+        "restoreSkippedSymptomEpisodeReference": "Wpis objawu powiązany z chorobą, której nie ma w pliku (zachowany bez powiązania)",
+        "restoreSkippedCycleCiphertext": "Notatka lub etykieta cyklu zaszyfrowana kluczem, którego ten serwer nie ma (dzień lub objaw zachowany bez niej)"
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",

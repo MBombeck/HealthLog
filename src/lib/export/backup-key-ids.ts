@@ -97,6 +97,25 @@ export function isEncryptedMember(name: string): boolean {
   return name.endsWith("Encrypted") && name.length > "Encrypted".length;
 }
 
+/**
+ * Sections whose restore opens every inner value with this host's keys itself,
+ * and keeps out (and names in the skip report) any value it cannot open.
+ *
+ * The cycle day-logs and custom cycle symptoms are here because a portable
+ * file written before v1.40 carried their free text as the stored ciphertext,
+ * not as readable text. Such a file is still restorable onto another host:
+ * what that host can open comes back, what it cannot stays out of the row and
+ * is reported. Refusing the whole file over a note would cost every other
+ * part of the account. The trade, stated: a disaster-recovery copy whose ONLY
+ * missing key sits in these sections restores with those values reported as
+ * skipped instead of being refused; any other section needing the key still
+ * refuses it, which in practice is every real copy.
+ */
+export const RESTORE_SELF_VERIFIED_SECTIONS: ReadonlySet<string> = new Set([
+  "cycleDayLogs",
+  "customSymptoms",
+]);
+
 interface KeyUse {
   /** How many values need this key. */
   count: number;
@@ -127,7 +146,10 @@ export class BackupKeyIdCollector {
     }
     use.count += 1;
     use.sections.add(section);
+    // A sample from a self-verified section proves nothing the restore needs:
+    // a value there that does not open is skipped, not fatal.
     if (
+      !RESTORE_SELF_VERIFIED_SECTIONS.has(section) &&
       value.length <= MAX_SAMPLE_CHARS &&
       (!use.sample || value.length < use.sample.value.length)
     ) {
@@ -257,7 +279,9 @@ function openSample(sample: { value: string; form: InnerCiphertextForm }) {
  * key to prove the key under that id is the right one.
  *
  * `ignoreSections` leaves out sections the caller will not write: the
- * instance settings, when the operator has not asked for them back.
+ * instance settings, when the operator has not asked for them back. The
+ * sections in {@link RESTORE_SELF_VERIFIED_SECTIONS} are always left out,
+ * because their restore checks each value itself.
  */
 export function assessBackupKeys(
   collector: BackupKeyIdCollector,
@@ -274,7 +298,14 @@ export function assessBackupKeys(
   for (const [keyId, use] of [...collector.entries()].sort(([a], [b]) =>
     a.localeCompare(b),
   )) {
-    if ([...use.sections].every((section) => ignore.has(section))) continue;
+    if (
+      [...use.sections].every(
+        (section) =>
+          ignore.has(section) || RESTORE_SELF_VERIFIED_SECTIONS.has(section),
+      )
+    ) {
+      continue;
+    }
     keyIds.push(keyId);
     configured ??= new Set(getConfiguredKeyIds());
     if (!configured.has(keyId)) {

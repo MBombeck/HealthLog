@@ -625,6 +625,15 @@ const cycleSymptomSeveritySchema = z
   })
   .passthrough();
 
+/** The sensitive-category envelope's five fields, as a portable file carries them. */
+const cycleSensitiveFieldsSchema = z.object({
+  sexualActivity: z.boolean().optional(),
+  protectedSex: z.boolean().nullable().optional(),
+  pregnancyTest: z.enum(HomeTestResult).nullable().optional(),
+  progesteroneTest: z.enum(HomeTestResult).nullable().optional(),
+  contraceptive: z.enum(ContraceptiveKind).nullable().optional(),
+});
+
 const cycleDayLogSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -644,8 +653,20 @@ const cycleDayLogSchema = z
     pregnancyTest: z.enum(HomeTestResult).nullable().optional(),
     progesteroneTest: z.enum(HomeTestResult).nullable().optional(),
     contraceptive: z.enum(ContraceptiveKind).nullable().optional(),
+    // Free text travels like every other note: a disaster-recovery file
+    // carries the ciphertext (`*Encrypted`), a portable file the readable
+    // value (`note`, `sensitive`), which the restore seals under the
+    // receiving host's key. A portable file written before v1.40 carries the
+    // ciphertext too; the restore keeps only what this host can open.
     sensitiveEncrypted: z.string().nullable().optional(),
     notesEncrypted: z.string().nullable().optional(),
+    note: z.string().nullable().optional(),
+    // The five intent fields the sensitive-category envelope holds, or the
+    // unreadable marker when the writing host could not open the envelope.
+    sensitive: z
+      .union([cycleSensitiveFieldsSchema, z.string()])
+      .nullable()
+      .optional(),
     source: z.enum(MeasurementSource).optional(),
     externalId: z.string().nullable().optional(),
     tz: z.string().nullable().optional(),
@@ -752,7 +773,10 @@ const customCycleSymptomSchema = z
     sortOrder: z.number().int().default(0),
     isActive: z.boolean().default(true),
     // Same reasoning as the mood tag's: the user's own words live here.
+    // Ciphertext on a disaster-recovery file, readable `label` on a portable
+    // one (the day-log note's split).
     labelEncrypted: z.string().nullable().optional(),
+    label: z.string().nullable().optional(),
   })
   .passthrough();
 
