@@ -86,4 +86,54 @@ test.describe("sidebar width transition", () => {
       expect(tallest).toBeLessThanOrEqual(restHeight + 1);
     }
   });
+
+  test("on a short window the list scrolls behind a visible edge, never under the footer", async ({
+    page,
+  }) => {
+    // Short enough that the list cannot fit between the logo band and the
+    // footer group. The rail used to cut the last visible entry off right at
+    // the Collapse row with nothing marking the edge, which read as the
+    // footer covering the entry.
+    await page.setViewportSize({ width: 1280, height: 600 });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const nav = page.locator("aside nav").first();
+    const footer = page.locator('aside [data-slot="sidebar-footer"]');
+    await expect(nav).toBeVisible();
+    await expect(footer).toHaveAttribute("data-nav-overflows", "true");
+    const borderTop = await footer.evaluate(
+      (el) => getComputedStyle(el).borderTopWidth,
+    );
+    expect(borderTop).toBe("1px");
+
+    // Scrolled to its end, the last entry sits wholly inside the list,
+    // above the footer, and is the element under its own centre.
+    const end = await nav.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+      const links = [...el.querySelectorAll("a")];
+      const last = links[links.length - 1] as HTMLElement;
+      const r = last.getBoundingClientRect();
+      const navBox = el.getBoundingClientRect();
+      const footerTop = (
+        document.querySelector('aside [data-slot="sidebar-footer"]') as Element
+      ).getBoundingClientRect().top;
+      const hit = document.elementFromPoint(
+        r.left + r.width / 2,
+        r.top + r.height / 2,
+      );
+      return {
+        insideList: r.bottom <= navBox.bottom + 0.5,
+        aboveFooter: r.bottom <= footerTop + 0.5,
+        hitsItself: last.contains(hit),
+      };
+    });
+    expect(end).toEqual({
+      insideList: true,
+      aboveFooter: true,
+      hitsItself: true,
+    });
+
+    // With room to spare there is no edge: the default rail is unchanged.
+    await page.setViewportSize({ width: 1280, height: 1400 });
+    await expect(footer).not.toHaveAttribute("data-nav-overflows", "true");
+  });
 });

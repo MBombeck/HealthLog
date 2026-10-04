@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   LogOut,
@@ -311,6 +311,27 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
 }
 
 /**
+ * Whether the nav list is taller than the room the rail leaves it, i.e.
+ * whether it scrolls. Re-measured when the nav (viewport height) or the list
+ * (entries arriving as modules resolve) changes size.
+ */
+function useNavOverflows(navRef: React.RefObject<HTMLElement | null>): boolean {
+  const [overflows, setOverflows] = useState(false);
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || typeof ResizeObserver === "undefined") return;
+    // Strict: any overflow, the same test that gives the list a scrollbar.
+    const update = () => setOverflows(nav.scrollHeight > nav.clientHeight);
+    const observer = new ResizeObserver(update);
+    observer.observe(nav);
+    if (nav.firstElementChild) observer.observe(nav.firstElementChild);
+    update();
+    return () => observer.disconnect();
+  }, [navRef]);
+  return overflows;
+}
+
+/**
  * The sidebar's collapse / expand control, drawn as a footer nav row.
  *
  * It sits at the bottom of the sidebar, directly above the footer entries
@@ -425,6 +446,9 @@ export function SidebarNav() {
     readSidebarCollapsedPref,
   );
   const collapsed = mounted ? (collapsedPref ?? tabletOrBelow) : false;
+
+  const navRef = useRef<HTMLElement | null>(null);
+  const navOverflows = useNavOverflows(navRef);
 
   function toggleCollapsed() {
     const next = !collapsed;
@@ -611,6 +635,7 @@ export function SidebarNav() {
           </div>
 
           <nav
+            ref={navRef}
             aria-label={t("nav.mainNavigation")}
             className={cn(
               "flex-1 overflow-y-auto",
@@ -679,7 +704,21 @@ export function SidebarNav() {
             role-gated Admin entry inserted before Settings. The collapse
             control heads the group, so it sits directly above Admin for an
             administrator and directly above Settings for everyone else. */}
-          <div className={cn("space-y-1 pb-1", collapsed ? "px-1.5" : "px-3")}>
+          {/* On a short window the list scrolls under this group. Without an
+              edge the last visible row ran straight into the Collapse row,
+              cut off mid-entry, and read as the footer covering it (macOS
+              hides the scrollbar that would have said otherwise). While the
+              list overflows, the group draws the same hairline the user
+              section does, so the boundary reads as a scroll edge. */}
+          <div
+            data-slot="sidebar-footer"
+            data-nav-overflows={navOverflows ? "true" : undefined}
+            className={cn(
+              "space-y-1 pb-1",
+              collapsed ? "px-1.5" : "px-3",
+              navOverflows && "border-sidebar-border border-t pt-1",
+            )}
+          >
             <SidebarCollapseToggle
               collapsed={collapsed}
               onToggle={toggleCollapsed}
