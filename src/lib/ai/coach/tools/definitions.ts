@@ -215,7 +215,7 @@ export const COACH_TOOL_DEFS: AiToolDef[] = [
   {
     name: "get_metric_series",
     description:
-      "Fetch the user's own time series for ONE metric: blood pressure (bp), weight, pulse, or any synced series (hrv, resting_hr, steps, sleep duration, body composition, gait, audio exposure, vo2_max, …). Returns an aggregate plus a recent-daily and weekly timeline. Call once per metric you need; call several in parallel for a multi-metric question. Returns { present: false } with a reason when nothing came back: no_data (never recorded), outside_window (recorded, but older than the window searched — the result carries the count, date range and aggregate, and the window to re-call with), unavailable_in_scope, or no_data_unconfirmed.",
+      "Fetch the user's own time series for ONE metric: blood pressure (bp), weight, pulse, or any synced series (hrv, resting_hr, steps, sleep duration, body composition, gait, audio exposure, vo2_max, …). Returns an aggregate plus a recent-daily and weekly timeline reaching back at most 12 months (older history only as the coarse monthly and yearly means); for a longer history or a table, call get_metric_table yourself. Call once per metric you need; call several in parallel for a multi-metric question. Returns { present: false } with a reason when nothing came back: no_data (never recorded), outside_window (recorded, but older than the window searched — the result carries the count, date range and aggregate, and the window to re-call with), unavailable_in_scope, or no_data_unconfirmed.",
     parameters: {
       type: "object",
       additionalProperties: false,
