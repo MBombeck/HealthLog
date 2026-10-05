@@ -864,3 +864,21 @@ describe("signal line — a metric is named by whole words, not by fragments", (
     expect(lineFor(lead, metric)).toEqual({ headline: null, delta: DELTA });
   });
 });
+
+describe("lead length — the ellipsis counts toward the budget", () => {
+  it("stays within 160 characters for text without a single space", () => {
+    // A digit keeps it from reading as a greeting (too few words).
+    const unbroken = `${"a".repeat(400)}1.`;
+    const lead = firstSubstantiveSentence(unbroken, null) ?? "";
+    expect(lead.endsWith("…")).toBe(true);
+    expect(lead.length).toBeLessThanOrEqual(160);
+  });
+
+  it("stays within 160 characters when the last space sits at the budget", () => {
+    const text = `${"b".repeat(159)} ${"c".repeat(39)}1.`;
+    const lead = firstSubstantiveSentence(text, null) ?? "";
+    expect(lead.length).toBeLessThanOrEqual(160);
+    // The space at the edge still ends a whole word.
+    expect(lead).toBe(`${"b".repeat(159)}…`);
+  });
+});

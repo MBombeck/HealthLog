@@ -275,9 +275,13 @@ function fitsLead(text: string): boolean {
  */
 function shortenAtWord(text: string): string {
   if (fitsLead(text)) return text;
-  const room = text.slice(0, MAX_LEAD_LENGTH);
-  const space = room.lastIndexOf(" ");
-  const head = (space > 0 ? room.slice(0, space) : room)
+  // One character of the budget goes to the ellipsis itself, so the kept
+  // head is at most MAX - 1 long: a space at that index still ends a whole
+  // word, and text with no space at all is cut hard one short of the budget.
+  const space = text.slice(0, MAX_LEAD_LENGTH).lastIndexOf(" ");
+  const head = (
+    space > 0 ? text.slice(0, space) : text.slice(0, MAX_LEAD_LENGTH - 1)
+  )
     .trimEnd()
     .replace(/[\s,;:–—-]+$/u, "");
   return `${head}…`;
