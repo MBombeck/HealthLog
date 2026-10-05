@@ -149,6 +149,37 @@ describe("firstSubstantiveSentence", () => {
     ).toBe("Sleep dipped slightly last night.");
   });
 
+  it("keeps a sentence where the score's digits are part of another figure", () => {
+    // Score 52, and a sleep duration that happens to end in 52 minutes.
+    expect(
+      firstSubstantiveSentence("You slept 7 h 52 min, a solid night.", 52),
+    ).toBe("You slept 7 h 52 min, a solid night.");
+    expect(
+      firstSubstantiveSentence("Your resting heart rate is 52 bpm.", 52),
+    ).toBe("Your resting heart rate is 52 bpm.");
+    expect(
+      firstSubstantiveSentence("You walked 52 minutes more than usual.", 52),
+    ).toBe("You walked 52 minutes more than usual.");
+  });
+
+  it("still skips the score sentence in every shipped language", () => {
+    for (const sentence of [
+      "Your health score is 52.",
+      "Dein Gesundheitsscore heute liegt bei 52.",
+      "Tu puntuación de salud hoy es 52.",
+      "Ton score de santé aujourd'hui est de 52.",
+      "Il tuo punteggio di salute oggi è 52.",
+      "오늘 건강 점수는 52점이에요.",
+      "Twój dzisiejszy wynik zdrowia to 52.",
+      "You are at 52/100 today.",
+    ]) {
+      expect(
+        firstSubstantiveSentence(`${sentence} Sleep dipped last night.`, 52),
+        sentence,
+      ).toBe("Sleep dipped last night.");
+    }
+  });
+
   it("keeps decimals inside one sentence", () => {
     expect(
       firstSubstantiveSentence("You slept 7.5 hours, a solid night.", null),
