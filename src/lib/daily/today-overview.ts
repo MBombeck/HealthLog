@@ -18,7 +18,7 @@
  *     fact leaves the list; an appointment already on the rail is not repeated
  *     under Today.
  */
-import type { DailyBriefing } from "@/lib/ai/schema";
+import type { DailyBriefing, DailyBriefingSignal } from "@/lib/ai/schema";
 import type { CyclePhase } from "@/lib/cycle/types";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { Locale } from "@/lib/i18n/config";
@@ -154,8 +154,20 @@ export interface TodayOverviewInput {
   cycle: TodayCycle | null;
 }
 
+/**
+ * The muted line under the lead: the briefing's top signal, minus whatever
+ * the lead already says. `headline` is null when the lead covers the signal's
+ * metric; the line is absent altogether when nothing is left.
+ */
+export interface TodaySignalLine {
+  headline: string | null;
+  delta: string | null;
+}
+
 export interface TodayOverview {
   lead: TodayLead | null;
+  /** The supporting line under an AI lead, already de-duplicated. */
+  signalLine: TodaySignalLine | null;
   today: TodayFact[];
   /** The first substantive briefing sentence, for `briefingLead`. */
   briefingLead: string | null;
@@ -317,6 +329,78 @@ function cleanReactionLine(
     text = next.replace(/\s+/g, " ");
   }
   return text.length > 0 ? text : null;
+}
+
+/** Lowercase letters and digits only, for a wording-insensitive compare. */
+function normalise(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+/** Whether `text` already says what `phrase` says, wording aside. */
+function restates(text: string, phrase: string): boolean {
+  const p = normalise(phrase);
+  return p.length > 0 && normalise(text).includes(p);
+}
+
+/**
+ * How each briefing metric is named in prose, in every shipped language. The
+ * lead is model text in the reader's language, so "does the lead already talk
+ * about this metric" is a question about words. Stems, not whole words, so
+ * inflected forms ("Blutdrucks", "tętna") still match. A metric missing here
+ * simply falls back to the headline comparison.
+ */
+const METRIC_TERMS: Partial<
+  Record<DailyBriefingSignal["sourceMetric"], RegExp>
+> = {
+  bp: /blood\s*pressure|blutdruck|presi[oó]n\s+arterial|tensi[oó]n\s+arterial|pression\s+art[ée]rielle|tension\s+art[ée]rielle|pressione\s+(arteriosa|sanguigna)|ci[sś]nieni|혈압/iu,
+  weight: /weight|gewicht|peso|poids|wag[ai]|체중|몸무게/iu,
+  glp1_plateau: /weight|gewicht|peso|poids|wag[ai]|체중|몸무게/iu,
+  pulse: /pulse|puls|pouls|polso|t[eę]tn|맥박/iu,
+  resting_hr:
+    /resting\s+(heart\s*rate|pulse)|ruhepuls|ruhe-?herzfrequenz|en\s+reposo|au\s+repos|a\s+riposo|spoczynkow|안정\s*시?\s*심박/iu,
+  hrv: /\bhrv\b|heart[-\s]*rate\s+variability|herzfrequenzvariabilit|variabilidad|variabilit[ée]|zmienno[sś][cć]|심박\s*변이/iu,
+  sleep:
+    /sleep|slept|schlaf|geschlafen|sue[nñ]o|dormi|sommeil|sonno|sen\b|snu|spa[lł]|수면|잠/iu,
+  steps: /steps|schritte|pasos|passi|krok|걸음/iu,
+  mood: /mood|stimmung|[aá]nimo|humeur|umore|nastr[oó]j|기분/iu,
+  compliance:
+    /medication|dose|medikament|einnahme|medicaci[oó]n|m[ée]dicament|farmac|lek[iów]|복약|약물/iu,
+  body_temp: /temperature|temperatur|temperatura|temp[ée]rature|체온/iu,
+  vo2_max: /vo2|vo₂/iu,
+};
+
+/** Whether the lead already talks about the metric a signal is drawn from. */
+function leadCoversMetric(
+  lead: string,
+  metric: DailyBriefingSignal["sourceMetric"],
+): boolean {
+  return METRIC_TERMS[metric]?.test(lead) ?? false;
+}
+
+/**
+ * The line under the lead, decided here so every client shows the same one.
+ *
+ * Only an AI lead carries it (a deterministic lead is already the strongest
+ * signal). When the lead already talks about the top signal's metric, or
+ * says its headline outright, the headline goes and the delta stands alone;
+ * with no delta left there is no line.
+ */
+function buildSignalLine(
+  lead: TodayLead | null,
+  signal: DailyBriefingSignal | null,
+): TodaySignalLine | null {
+  if (!lead || lead.source === "signal" || !signal) return null;
+  const headline = signal.headline?.trim() || null;
+  const delta = signal.delta?.trim() || null;
+  const covered =
+    (headline !== null && restates(lead.text, headline)) ||
+    leadCoversMetric(lead.text, signal.sourceMetric);
+  const keptDelta = delta && !restates(lead.text, delta) ? delta : null;
+  if (!covered && headline) return { headline, delta: keptDelta };
+  return keptDelta ? { headline: null, delta: keptDelta } : null;
 }
 
 /** Vitals that may speak about today: module on, reading current. */
@@ -654,6 +738,10 @@ export function buildTodayOverview(
 
   return {
     lead,
+    signalLine: buildSignalLine(
+      lead,
+      input.briefing?.signalsOfDay?.[0] ?? null,
+    ),
     today: facts.slice(0, MAX_TODAY_FACTS),
     briefingLead,
   };

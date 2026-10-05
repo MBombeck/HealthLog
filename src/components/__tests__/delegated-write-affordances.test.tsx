@@ -354,6 +354,7 @@ const DIGEST: DailyDigest = {
   sleepPending: false,
   score: null,
   topSignal: null,
+  signalLine: null,
   briefingLead: "A steady week so far.",
   lead: { text: "A steady week so far.", source: "briefing" },
   today: [],

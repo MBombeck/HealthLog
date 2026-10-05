@@ -177,6 +177,23 @@ export const dailyDigestResponse = z
       .describe(
         "The Today hero's lead line, resolved: the reaction line or a briefing sentence while their capabilities are available, otherwise a deterministic sentence about the day's strongest signal (a vital outside its personal range, an unusual night, vitals in range, last night). Null when there is nothing to say. When the deterministic sentence is built from a fact, that fact is left out of `today`. Additive since v1.40.",
       ),
+    signalLine: z
+      .object({
+        headline: z
+          .string()
+          .nullable()
+          .describe(
+            "The top signal's headline, or null when the lead already talks about its metric.",
+          ),
+        delta: z
+          .string()
+          .nullable()
+          .describe("The top signal's delta, when it has one."),
+      })
+      .nullable()
+      .describe(
+        "The muted line under an AI lead, decided on the server so every client shows the same one: the top signal minus what the lead already says. Null under a deterministic lead, without a top signal, or when the lead already says everything the signal would. Additive since v1.40.3.",
+      ),
     today: z
       .array(todayFactSchema)
       .max(MAX_TODAY_FACTS)

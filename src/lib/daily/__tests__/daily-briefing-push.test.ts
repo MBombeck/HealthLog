@@ -37,6 +37,7 @@ function makeDigest(over: Partial<DailyDigest> = {}): DailyDigest {
     sleepPending: false,
     score: { value: 82, band: "good", delta: 1 },
     topSignal: null,
+    signalLine: null,
     briefingLead: "Sleep looked solid last night.",
     lead: { text: "Sleep looked solid last night.", source: "briefing" },
     today: [],

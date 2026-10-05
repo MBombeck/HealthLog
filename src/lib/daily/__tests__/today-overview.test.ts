@@ -703,3 +703,93 @@ describe("lead length — whole sentences, never a word cut in half", () => {
     wordsAreWhole(lead, LONG);
   });
 });
+
+describe("signal line under the lead — nothing said twice", () => {
+  const BP_HEADLINE =
+    "Your latest blood pressure is sitting in the optimal band.";
+  const BP_DELTA = "↓ ~10 mmHg systolic vs the start of the window";
+
+  function withSignal(
+    paragraph: string,
+    signal: Partial<NonNullable<DailyBriefing["signalsOfDay"]>[number]> = {},
+  ): DailyBriefing {
+    return {
+      paragraph,
+      signalsOfDay: [
+        {
+          sourceMetric: "bp",
+          tone: "good",
+          headline: BP_HEADLINE,
+          nudge: "Keep the routine.",
+          delta: BP_DELTA,
+          ...signal,
+        },
+      ],
+      keyFindings: [],
+    };
+  }
+
+  it("keeps only the delta when the lead already talks about the metric", () => {
+    const o = buildTodayOverview(
+      input({
+        briefing: withSignal(
+          "Your most recent blood pressure sits comfortably in the optimal band, and resting heart rate is low.",
+        ),
+      }),
+      t,
+    );
+    expect(o.lead?.source).toBe("briefing");
+    expect(o.signalLine).toEqual({ headline: null, delta: BP_DELTA });
+  });
+
+  it("drops the line when the lead covers the metric and there is no delta", () => {
+    const o = buildTodayOverview(
+      input({
+        briefing: withSignal("Blood pressure held steady all week.", {
+          delta: null,
+        }),
+      }),
+      t,
+    );
+    expect(o.signalLine).toBeNull();
+  });
+
+  it("recognises the metric in the reader's language", () => {
+    const de = getServerTranslator("de").t;
+    const o = buildTodayOverview(
+      input({
+        locale: "de",
+        briefing: withSignal(
+          "Dein Blutdruck lag die ganze Woche im optimalen Bereich.",
+          { headline: "Dein Blutdruck liegt im optimalen Bereich." },
+        ),
+      }),
+      de,
+    );
+    expect(o.signalLine).toEqual({ headline: null, delta: BP_DELTA });
+  });
+
+  it("keeps headline and delta when the lead is about something else", () => {
+    const o = buildTodayOverview(
+      input({ briefing: withSignal("Last night's sleep ran long and deep.") }),
+      t,
+    );
+    expect(o.signalLine).toEqual({ headline: BP_HEADLINE, delta: BP_DELTA });
+  });
+
+  it("carries no line when the headline itself is the lead", () => {
+    const o = buildTodayOverview(
+      input({ briefing: withSignal("Your health score is 94.") }),
+      t,
+    );
+    expect(o.lead?.text).toBe(BP_HEADLINE);
+    expect(o.signalLine).toEqual({ headline: null, delta: BP_DELTA });
+  });
+
+  it("carries no line under a deterministic lead or without a briefing", () => {
+    expect(
+      buildTodayOverview(input({ vitals: [vital()] }), t).signalLine,
+    ).toBeNull();
+    expect(buildTodayOverview(input(), t).signalLine).toBeNull();
+  });
+});
