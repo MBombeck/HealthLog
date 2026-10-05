@@ -10923,8 +10923,8 @@
   },
   "daily": {
     "line": {
-      "score": "Tu puntuación de salud hoy es {score}.",
-      "allClear": "Hoy nada necesita tu atención."
+      "allClear": "Hoy nada necesita tu atención.",
+      "scoreReady": "Tu puntuación de salud de hoy está lista."
     },
     "push": {
       "title": "Tu resumen matinal",

@@ -10923,8 +10923,8 @@
   },
   "daily": {
     "line": {
-      "score": "Dein Gesundheitsscore heute liegt bei {score}.",
-      "allClear": "Heute braucht nichts deine Aufmerksamkeit."
+      "allClear": "Heute braucht nichts deine Aufmerksamkeit.",
+      "scoreReady": "Dein Gesundheitsscore für heute ist da."
     },
     "push": {
       "title": "Dein Morgenüberblick",

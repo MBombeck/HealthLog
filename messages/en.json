@@ -10923,8 +10923,8 @@
   },
   "daily": {
     "line": {
-      "score": "Your health score today is {score}.",
-      "allClear": "Nothing needs your attention today."
+      "allClear": "Nothing needs your attention today.",
+      "scoreReady": "Your health score for today is ready."
     },
     "push": {
       "title": "Your morning briefing",

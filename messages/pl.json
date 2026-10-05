@@ -10923,8 +10923,8 @@
   },
   "daily": {
     "line": {
-      "score": "Twój dzisiejszy wynik zdrowia to {score}.",
-      "allClear": "Dziś nic nie wymaga Twojej uwagi."
+      "allClear": "Dziś nic nie wymaga Twojej uwagi.",
+      "scoreReady": "Twój dzisiejszy wynik zdrowia jest gotowy."
     },
     "push": {
       "title": "Twoje poranne podsumowanie",

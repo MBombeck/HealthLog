@@ -198,7 +198,7 @@ export const dailyDigestResponse = z
     line: z
       .string()
       .describe(
-        "Push / lock-screen line: cached-AI lead with a deterministic floor.",
+        "Push / lock-screen line: cached-AI lead with a deterministic floor. Carries no number (no reading, dose or score), since it is shown on a locked phone; the in-app `lead` keeps its figures.",
       ),
     worthALook: z
       .array(priorityItemSchema)

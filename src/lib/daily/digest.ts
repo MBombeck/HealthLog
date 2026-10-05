@@ -1009,6 +1009,9 @@ function buildEcgNewRecordingItem(
   };
 }
 
+/** Whether a sentence carries a figure: a reading, a dose, a score. */
+const HAS_NUMBER = /\p{Nd}/u;
+
 /**
  * The push / lock-screen line: the warmer cached briefing lead first, then
  * the top signal's headline, then the deterministic sentence about the day's
@@ -1017,6 +1020,11 @@ function buildEcgNewRecordingItem(
  * during the day, and the morning push is sent before anything has. NEVER a
  * fresh AI call — every branch reads cache or a deterministic string, so a
  * keyless self-hoster still gets a first-class line.
+ *
+ * The line is shown on a locked phone, so it carries no number: a candidate
+ * with a figure in it is passed over for the next, and the score floor says
+ * the score is ready rather than what it is. The hero's lead keeps its
+ * numbers; it is read inside the app.
  */
 function composeLine(
   overview: { briefingLead: string | null; lead: TodayLead | null },
@@ -1024,10 +1032,15 @@ function composeLine(
   score: DailyDigestScore | null,
   t: Translate,
 ): string {
-  if (overview.briefingLead) return overview.briefingLead;
-  if (topSignal?.headline) return topSignal.headline.trim();
-  if (overview.lead?.source === "signal") return overview.lead.text;
-  if (score) return t("daily.line.score", { score: score.value });
+  const candidates = [
+    overview.briefingLead,
+    topSignal?.headline?.trim() || null,
+    overview.lead?.source === "signal" ? overview.lead.text : null,
+  ];
+  for (const candidate of candidates) {
+    if (candidate && !HAS_NUMBER.test(candidate)) return candidate;
+  }
+  if (score) return t("daily.line.scoreReady");
   return t("daily.line.allClear");
 }
 
