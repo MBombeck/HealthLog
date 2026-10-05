@@ -24,7 +24,7 @@
   <a href="https://testflight.apple.com/join/bucuTBpa">iOS TestFlight</a>
 </p>
 
-<img width="2434" height="1247" alt="HealthLog dashboard: health metric tiles with 7-day trends, blood-pressure and weight charts, dark theme" src="docs/assets/dashboard-hero.jpeg" />
+<img width="2434" height="1247" alt="HealthLog dashboard in dark theme: the Today overview with a lead sentence, the health score ring, Today facts and worth-a-look cards, above metric tiles with 7-day trends" src="docs/assets/dashboard-hero.jpeg" />
 <p align="center">
   <img src="docs/assets/Insights.png"
        alt="Insights"
