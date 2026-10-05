@@ -294,7 +294,7 @@ function HistoryRow({
         title={c.title}
         data-slot="coach-history-select"
         className={cn(
-          "flex min-h-11 w-full min-w-0 items-center gap-1.5 rounded-md py-2 pr-11 pl-2 text-left text-sm transition-colors sm:min-h-9",
+          "flex min-h-11 w-full min-w-0 items-center gap-1.5 rounded-md py-2 pr-11 pl-2 text-left text-sm transition-colors pointer-fine:min-h-9",
           "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
           // The open conversation reads like the open page in the left
           // navigation: the same primary wash, so the two rails agree.
@@ -334,7 +334,7 @@ function HistoryRow({
               })}
               data-slot="coach-history-row-menu"
               className={cn(
-                "text-muted-foreground hover:text-foreground absolute top-1/2 right-0 size-11 -translate-y-1/2 sm:right-1 sm:size-9",
+                "text-muted-foreground hover:text-foreground absolute top-1/2 right-0 size-11 -translate-y-1/2 pointer-fine:right-1 pointer-fine:size-9",
                 // Pointer devices reveal it on hover or focus; touch shows it
                 // always, since there is no hover to reveal it with.
                 "[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within/row:opacity-100 [@media(hover:hover)]:group-hover/row:opacity-100 [@media(hover:hover)]:data-[state=open]:opacity-100",

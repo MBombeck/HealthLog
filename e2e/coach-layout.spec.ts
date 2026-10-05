@@ -269,6 +269,22 @@ async function expectPanelFlush(page: Page, width: number, height: number) {
   expect(geometry.borders).toEqual(["0px", "0px", "0px", "1px"]);
 }
 
+/** Rendered heights of the docked panel's header buttons and first row. */
+async function panelControlHeights(page: Page) {
+  const height = async (slot: string) =>
+    Math.round(
+      (await panel(page)
+        .locator(`[data-slot="${slot}"]`)
+        .first()
+        .boundingBox())!.height,
+    );
+  return {
+    plans: await height("coach-panel-plans"),
+    gear: await height("coach-settings"),
+    row: await height("coach-history-select"),
+  };
+}
+
 async function shot(page: Page, testInfo: TestInfo, name: string) {
   const path = testInfo.outputPath(`${name}.png`);
   await page.screenshot({ path });
@@ -401,6 +417,39 @@ test.describe("Coach page frame", () => {
       await expect(toggle(page)).toBeFocused();
     });
   }
+
+  test("1280 fine pointer: compact header buttons and rows", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await mockCoach(page);
+    await openCoach(page);
+    expect(await panelControlHeights(page)).toEqual({
+      plans: 28,
+      gear: 28,
+      row: 36,
+    });
+  });
+
+  test.describe("touch", () => {
+    // A touch tablet in landscape docks the panel too; the controls keep the
+    // 44 px floor because the size follows the input, not the width.
+    test.use({ hasTouch: true });
+
+    test("1280 touch: header buttons and rows keep the 44 px floor", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await mockCoach(page);
+      await openCoach(page);
+      await expect(panel(page)).toHaveAttribute("data-state", "open");
+      expect(await panelControlHeights(page)).toEqual({
+        plans: 44,
+        gear: 44,
+        row: 44,
+      });
+    });
+  });
 
   test("1440: picking a row opens it and New chat clears it, both in the URL", async ({
     page,

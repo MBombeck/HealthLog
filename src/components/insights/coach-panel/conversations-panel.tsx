@@ -49,6 +49,15 @@ import { useDeleteCoachConversationWithUndo } from "./use-coach";
  */
 export const COACH_PANEL_ID = "coach-conversations-panel";
 
+/**
+ * The panel header's icon buttons: 28 px beside a fine pointer, the 44 px
+ * touch floor otherwise. Keyed on the input, not the viewport width, so a
+ * tablet in landscape (touch, docked panel) keeps the touch size.
+ */
+export const PANEL_HEADER_BUTTON =
+  "text-muted-foreground hover:text-foreground size-11 shrink-0 pointer-fine:size-7";
+const PANEL_HEADER_ICON = "size-5 pointer-fine:size-4";
+
 const noSubscription = () => () => {};
 
 /**
@@ -162,7 +171,7 @@ export function ConversationsPanel({
         asChild
         variant="ghost"
         size="icon"
-        className="text-muted-foreground hover:text-foreground size-11 shrink-0 md:size-7"
+        className={PANEL_HEADER_BUTTON}
       >
         <Link
           href="/coach/plans"
@@ -170,7 +179,7 @@ export function ConversationsPanel({
           aria-label={t("coach.plans.title")}
           title={t("coach.plans.title")}
         >
-          <Target className="size-5 md:size-4" aria-hidden="true" />
+          <Target className={PANEL_HEADER_ICON} aria-hidden="true" />
         </Link>
       </Button>
       <CoachSettingsOverlay
@@ -180,7 +189,7 @@ export function ConversationsPanel({
           if (!next) setSettingsOnData(false);
         }}
         focusData={settingsOnData}
-        className="md:size-7 [&_svg]:size-5 md:[&_svg]:size-4"
+        className="pointer-fine:size-7 [&_svg]:size-5 pointer-fine:[&_svg]:size-4"
       />
       {inSheet ? (
         <SheetClose asChild>
@@ -191,9 +200,9 @@ export function ConversationsPanel({
             data-slot="coach-panel-close"
             aria-label={t("common.close")}
             title={t("common.close")}
-            className="text-muted-foreground hover:text-foreground size-11 shrink-0 md:size-7"
+            className={PANEL_HEADER_BUTTON}
           >
-            <X className="size-5 md:size-4" aria-hidden="true" />
+            <X className={PANEL_HEADER_ICON} aria-hidden="true" />
           </Button>
         </SheetClose>
       ) : null}

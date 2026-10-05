@@ -78,7 +78,7 @@ export function CoachSettingsOverlay({
       aria-expanded={open}
       onClick={isPhone ? () => onOpenChange(true) : undefined}
       className={cn(
-        "text-muted-foreground hover:text-foreground size-11 shrink-0 sm:size-9",
+        "text-muted-foreground hover:text-foreground size-11 shrink-0 pointer-fine:size-9",
         className,
       )}
     >
