@@ -242,6 +242,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.5
         version: 4.1.5(vitest@4.1.11)
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
       eslint:
         specifier: ^9
         version: 9.39.3(jiti@2.7.0)(supports-color@7.2.0)
