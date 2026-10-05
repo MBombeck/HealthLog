@@ -2,13 +2,7 @@
 
 import { useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import {
-  PanelRightClose,
-  PanelRightOpen,
-  SquarePen,
-  Target,
-  X,
-} from "lucide-react";
+import { PanelRightClose, PanelRightOpen, Plus, Target, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,10 +12,18 @@ import {
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { ShellSidePanel } from "@/components/layout/shell-side-panel";
+import { SHELL_HEADER_BAND } from "@/components/layout/shell-metrics";
 import { TopBarActions } from "@/components/layout/top-bar-actions";
 import { useCoachPanelOpen } from "@/hooks/use-coach-panel-open";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { CoachSettingsOverlay } from "./coach-settings-overlay";
 import { HistoryRail } from "./history-rail";
@@ -37,10 +39,15 @@ import { useDeleteCoachConversationWithUndo } from "./use-coach";
  * Below 1280 px it is a sheet from the right that opens when asked and
  * closes again when a conversation is picked or a new chat starts.
  *
- * The toggle sits at the trailing edge of the top bar and, while the docked
- * panel is open, beside the panel's leading edge. The panel header
- * carries the title, a link to Plans, the settings gear and, in the sheet,
- * a close button. The round New chat button sits at the bottom right.
+ * Docked, the panel is a column of the shell beside the content column
+ * (top bar and page): it runs the full height of the window, and the top bar
+ * ends at its left edge. The panel's header row is the top bar's band, so
+ * the two bottom borders draw one line. Shut, it is gone entirely (no rail)
+ * and the top bar runs to the window's edge. The toggle is the last item of
+ * the top bar, so it sits against the open panel and at the window's edge
+ * when the panel is shut. The panel header carries the title, a link to
+ * Plans, the settings gear and, in the sheet, a close button. The round New
+ * chat button sits at the panel's bottom right.
  *
  * Keyboard: Escape closes the docked panel when focus is inside it and
  * nothing inside (a row menu, the rename field, the settings popover) has
@@ -86,6 +93,52 @@ export interface ConversationsPanelProps {
    * the "What I can see" section. Read once, on mount.
    */
   openSettingsOnData?: boolean;
+}
+
+/**
+ * The panel's open/shut toggle, the last item of the top bar. 28 px beside a
+ * fine pointer, the 44 px touch floor otherwise; the tooltip names it.
+ */
+function PanelToggle({
+  ref,
+  expanded,
+  label,
+  onToggle,
+  className,
+}: {
+  ref: React.Ref<HTMLButtonElement>;
+  expanded: boolean;
+  label: string;
+  onToggle: () => void;
+  className?: string;
+}) {
+  const Icon = expanded ? PanelRightOpen : PanelRightClose;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          ref={ref}
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onToggle}
+          aria-controls={COACH_PANEL_ID}
+          aria-expanded={expanded}
+          aria-label={label}
+          data-slot="coach-panel-toggle"
+          className={cn(PANEL_HEADER_BUTTON, className)}
+        >
+          {/* Mirrored, so the chevron points the way the panel moves on a
+              click: right to shut it, left to open it. */}
+          <Icon
+            className={cn(PANEL_HEADER_ICON, "-scale-x-100")}
+            aria-hidden="true"
+          />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{label}</TooltipContent>
+    </Tooltip>
+  );
 }
 
 export function ConversationsPanel({
@@ -156,7 +209,20 @@ export function ConversationsPanel({
   const header = (inSheet: boolean) => (
     <div
       data-slot="coach-conversations-panel-header"
-      className="border-border flex shrink-0 items-center gap-2 border-b p-3"
+      // Docked, the row reserves the safe-area inset the top bar reserves,
+      // so a standalone PWA on a tablet does not tuck it under the status
+      // bar; the band keeps its height (border-box), like the top bar.
+      style={
+        inSheet ? undefined : { paddingTop: "env(safe-area-inset-top, 0px)" }
+      }
+      // Docked, the row is the top bar's band (height and bottom border
+      // from `SHELL_HEADER_BAND`), so the two borders draw one line.
+      className={cn(
+        "flex shrink-0 items-center gap-2",
+        inSheet
+          ? "border-border border-b p-3"
+          : cn("border-sidebar-border px-3", SHELL_HEADER_BAND),
+      )}
     >
       {inSheet ? (
         <SheetTitle className="min-w-0 flex-1 truncate text-lg leading-tight font-semibold">
@@ -224,87 +290,73 @@ export function ConversationsPanel({
         onUndoDeleteActive={(id) => onSelect(id)}
         className="min-h-0 flex-1"
       />
-      <Button
-        type="button"
-        size="icon"
-        onClick={() => {
-          onNewChat();
-          afterPick();
-        }}
-        data-slot="coach-panel-new-chat"
-        aria-label={t("insights.coach.newChat")}
-        title={t("insights.coach.newChat")}
-        className="absolute right-4 bottom-4 size-12 rounded-full shadow-md"
-      >
-        <SquarePen className="size-5" aria-hidden="true" />
-      </Button>
+      {/* New chat: a round filled button floating at the panel's bottom
+          right; the list pads its own scroll area so the last row clears it. */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            size="icon"
+            onClick={() => {
+              onNewChat();
+              afterPick();
+            }}
+            data-slot="coach-panel-new-chat"
+            aria-label={t("insights.coach.newChat")}
+            className="absolute right-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] size-12 rounded-full shadow-lg md:right-6 md:bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
+          >
+            <Plus className="size-6" aria-hidden="true" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="left">
+          {t("insights.coach.newChat")}
+        </TooltipContent>
+      </Tooltip>
     </>
   );
 
   return (
-    <>
+    <TooltipProvider delayDuration={300}>
       <TopBarActions>
-        <Button
+        <PanelToggle
           ref={toggleRef}
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={toggle}
-          aria-controls={COACH_PANEL_ID}
-          aria-expanded={expanded}
-          aria-label={toggleLabel}
-          title={toggleLabel}
-          data-slot="coach-panel-toggle"
-          className={cn(
-            "text-muted-foreground hover:text-foreground size-11",
-            // Docked and open, the toggle keeps the panel's width as its
-            // right margin, so it stays beside the panel's leading edge and
-            // travels with it as the panel opens and shuts.
-            "transition-[margin] duration-200 ease-linear motion-reduce:transition-none",
-            docked && dockedOpen && "mr-72",
-          )}
-        >
-          {/* Mirrored, so the chevron points the way the panel moves on a
-              click: right to shut it, left to open it. */}
-          {expanded ? (
-            <PanelRightOpen
-              className="size-5 -scale-x-100"
-              aria-hidden="true"
-            />
-          ) : (
-            <PanelRightClose
-              className="size-5 -scale-x-100"
-              aria-hidden="true"
-            />
-          )}
-        </Button>
+          expanded={expanded}
+          label={toggleLabel}
+          onToggle={toggle}
+        />
       </TopBarActions>
 
       {docked ? (
-        <aside
-          id={COACH_PANEL_ID}
-          aria-label={t("insights.coach.historyTitle")}
-          data-slot="coach-conversations-panel"
-          data-state={dockedOpen ? "open" : "closed"}
-          inert={!dockedOpen}
-          onKeyDown={(event) => {
-            if (event.key !== "Escape" || event.defaultPrevented) return;
-            event.preventDefault();
-            closeDocked();
-          }}
-          className={cn(
-            // The width animates; the inner column keeps 18rem and is pinned
-            // to the panel's left edge, so it slides out to the right instead
-            // of squeezing. The thread column beside it never changes width.
-            "bg-background relative shrink-0 overflow-hidden",
-            "transition-[width] duration-200 ease-linear motion-reduce:transition-none",
-            dockedOpen ? "w-72" : "w-0",
-          )}
-        >
-          <div className="border-border absolute inset-y-0 left-0 flex w-72 flex-col border-l">
-            {body(false)}
-          </div>
-        </aside>
+        <ShellSidePanel>
+          <aside
+            id={COACH_PANEL_ID}
+            aria-label={t("insights.coach.historyTitle")}
+            data-slot="coach-conversations-panel"
+            data-state={dockedOpen ? "open" : "closed"}
+            inert={!dockedOpen}
+            onKeyDown={(event) => {
+              if (event.key !== "Escape" || event.defaultPrevented) return;
+              event.preventDefault();
+              closeDocked();
+            }}
+            className={cn(
+              // A column of the shell's content row (`ShellSidePanel`), so it
+              // runs from the top of the window to the bottom beside the top
+              // bar. The width animates (offcanvas: shut, nothing of it
+              // shows); the inner column
+              // keeps 18rem and is pinned to the panel's left edge, so it
+              // slides out to the right instead of squeezing. The thread column
+              // keeps its width; only its centring moves.
+              "bg-sidebar text-sidebar-foreground relative h-full shrink-0 overflow-hidden",
+              "transition-[width] duration-200 ease-linear motion-reduce:transition-none",
+              dockedOpen ? "w-72" : "w-0",
+            )}
+          >
+            <div className="border-sidebar-border absolute inset-y-0 left-0 flex w-72 flex-col border-l">
+              {body(false)}
+            </div>
+          </aside>
+        </ShellSidePanel>
       ) : (
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent
@@ -347,6 +399,6 @@ export function ConversationsPanel({
           </SheetContent>
         </Sheet>
       )}
-    </>
+    </TooltipProvider>
   );
 }
