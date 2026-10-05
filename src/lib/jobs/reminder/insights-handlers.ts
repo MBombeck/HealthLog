@@ -334,7 +334,9 @@ export async function handleInsightPregenerateJob(
       // GERMAN, so a forced warm produced German prose for a French reader.
       const locale = normalizeLocale(job.data.locale);
       try {
-        const summary = await forceWarmUser(getWorkerPrisma(), userId, locale);
+        const summary = await forceWarmUser(getWorkerPrisma(), userId, locale, {
+          today: job.data.today === true,
+        });
         evt.addMeta(
           "force_warm",
           `${summary.comprehensive}:${summary.assessmentsWarmed}+${summary.metricAssessmentsWarmed}`,

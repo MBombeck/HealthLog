@@ -38,6 +38,7 @@ import { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import type { Locale } from "@/lib/i18n/config";
 import { briefingForToday } from "@/lib/daily/briefing-today";
+import { requestTodayBriefingWarm } from "@/lib/daily/briefing-today-warm";
 import { readBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
 import { userDayKey } from "@/lib/tz/format";
 
@@ -175,15 +176,28 @@ export async function readDashboardSnapshotCached(
   // capability is available, decided on every read rather than baked into
   // the cached body. The record's own state decides, whoever is reading, so a
   // delegate sees the owner's briefing exactly when the owner would.
+  const now = options.now ?? new Date();
+  const generatedAt = readBriefingGeneratedAt(user.insightsCachedText);
   const body = applyBriefingForToday(
     applyBriefingCapability(cached, briefingAi),
-    {
-      generatedAt: readBriefingGeneratedAt(user.insightsCachedText),
-      timezone: user.timezone,
-      language: locale,
-      now: options.now ?? new Date(),
-    },
+    { generatedAt, timezone: user.timezone, language: locale, now },
   );
+
+  // The day's first read with no briefing written today, or the first read
+  // after a signal metric's first reading of the day, asks for a briefing
+  // for today (`briefing-today-warm.ts`). Never awaited by the read beyond
+  // its claim, never thrown.
+  if (briefingAi.available) {
+    const lastSeen = cached.tiles?.lastSeenByType ?? {};
+    void requestTodayBriefingWarm({
+      userId: user.id,
+      locale,
+      timezone: user.timezone,
+      generatedAt,
+      lastSeenAt: (type) => lastSeen[type]?.lastSeenAt ?? null,
+      now,
+    }).catch(() => undefined);
+  }
 
   return { body, locale };
 }

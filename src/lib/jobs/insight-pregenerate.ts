@@ -898,6 +898,14 @@ export async function forceWarmUser(
     ) => Promise<number>;
     /** Injected for the test — defaults to `new Date()`. */
     now?: Date;
+    /**
+     * A briefing-for-today warm (`enqueueTodayBriefingWarm`): the
+     * comprehensive briefing only, past the one-hour freshness gate. The
+     * failure backoff, the daily forced-warm cap and the generation's own
+     * content-hash gate still hold, so a warm with nothing new to read
+     * costs no provider call.
+     */
+    today?: boolean;
   } = {},
 ): Promise<ForceWarmResult> {
   // v1.18.11 P3 — one feature-cache scope for the whole forced warm of this
@@ -1001,6 +1009,7 @@ export async function forceWarmUser(
       const cachedAt = freshness?.insightsCachedAt ?? null;
       const failedAt = freshness?.insightsWarmFailedAt ?? null;
       const isFresh =
+        !options.today &&
         cachedAt !== null &&
         now.getTime() - cachedAt.getTime() < FORCE_WARM_FRESH_MS;
       const inBackoff =
@@ -1125,7 +1134,9 @@ export async function forceWarmUser(
     // comprehensive is safe and bounded by their own per-card budgets. The only
     // outcome that has nothing to warm is a missing provider, and the
     // generators detect that themselves at near-zero cost.
-    if (statusText.available) {
+    // A today warm is about the briefing alone; the cards refill through
+    // their own read path when someone opens them.
+    if (statusText.available && !options.today) {
       // Refill-only (v1.16.8): a card already generated today is a cheap
       // cache read; a cold card runs its generator, whose content-hash gate
       // skips the LLM when the underlying data did not change. There is no

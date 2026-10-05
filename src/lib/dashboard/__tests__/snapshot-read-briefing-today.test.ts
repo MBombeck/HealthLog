@@ -6,7 +6,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { User } from "@/generated/prisma/client";
-import { AI_AVAILABLE } from "@/__tests__/helpers/ai-capability-fixtures";
+import {
+  AI_AVAILABLE,
+  aiUnavailable,
+} from "@/__tests__/helpers/ai-capability-fixtures";
 
 const BRIEFING = {
   paragraph: "Your pulse is well above its usual level today.",
@@ -52,8 +55,15 @@ vi.mock("@/lib/dashboard/snapshot", async (importOriginal) => ({
 vi.mock("@/lib/i18n/server-locale", () => ({
   resolveServerLocale: async () => "en",
 }));
+const capability = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock("@/lib/ai/capabilities/gate", () => ({
-  aiCapabilityToServe: async () => AI_AVAILABLE,
+  aiCapabilityToServe: async () => capability.current,
+}));
+const requestTodayBriefingWarm = vi.hoisted(() =>
+  vi.fn(async (_input: unknown) => undefined),
+);
+vi.mock("@/lib/daily/briefing-today-warm", () => ({
+  requestTodayBriefingWarm,
 }));
 
 const { readDashboardSnapshotCached } = await import("../snapshot-read");
@@ -75,6 +85,8 @@ function user(generatedAt: string | null): User {
 }
 
 beforeEach(() => {
+  capability.current = AI_AVAILABLE;
+  requestTodayBriefingWarm.mockClear();
   __resetAllCachesForTests();
   current = body("2026-10-04T06:50:00.000Z");
 });
@@ -121,5 +133,34 @@ describe("readDashboardSnapshotCached — the briefing's own day", () => {
     expect(read.briefing?.signalsOfDay?.[0]?.delta).toBe(
       "+34 bpm vs your 30-day average",
     );
+  });
+});
+
+describe("readDashboardSnapshotCached — asking for today's briefing", () => {
+  it("hands the read's view of the day to the today warm", async () => {
+    await readDashboardSnapshotCached(
+      user("2026-10-04T02:30:00.000Z"),
+      undefined,
+      {
+        now: NOW,
+      },
+    );
+    expect(requestTodayBriefingWarm).toHaveBeenCalledTimes(1);
+    const arg = requestTodayBriefingWarm.mock.calls[0][0] as {
+      generatedAt: string;
+      timezone: string;
+      now: Date;
+      lastSeenAt: (type: string) => string | null;
+    };
+    expect(arg.generatedAt).toBe("2026-10-04T02:30:00.000Z");
+    expect(arg.timezone).toBe("Europe/Berlin");
+    expect(arg.now).toBe(NOW);
+    expect(arg.lastSeenAt("PULSE")).toBe("2026-10-04T06:50:00.000Z");
+  });
+
+  it("asks for nothing while the briefing capability is unavailable", async () => {
+    capability.current = aiUnavailable("consent_required");
+    await readDashboardSnapshotCached(user(null), undefined, { now: NOW });
+    expect(requestTodayBriefingWarm).not.toHaveBeenCalled();
   });
 });
