@@ -363,12 +363,12 @@ describe("a step row copied out of the list", () => {
       "de",
     );
     // What a selection copies: every text node except the unselectable ones.
+    // Reads this test's own static markup; not a sanitiser for input.
     const copied = html
-      .replace(
-        /<span[^>]*class="[^"]*\bselect-none\b[^"]*"[^>]*>[^<]*<\/span>/g,
-        "",
-      )
-      .replace(/<[^>]+>/g, "")
+      .split(/<span[^>]*class="[^"]*\bselect-none\b[^"]*"[^>]*>[^<]*<\/span>/)
+      .join("")
+      .split(/<[^>]*>/)
+      .join("")
       .replace(/\s+/g, " ")
       .trim();
     expect(copied).toBe("Gewicht · letzte 90 Tage");

@@ -41,7 +41,10 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  * Screenshots are attached to the report (no pixel baselines).
  */
 
-const NOW = Date.now();
+// A fixed midday, pinned in the browser too (see beforeEach): the panel groups
+// conversations by the browser's local day, so a run just after midnight in
+// the runner's or the profile's zone would move "an hour ago" into yesterday.
+const NOW = Date.parse("2026-06-04T12:00:00Z");
 const HOUR = 60 * 60 * 1000;
 
 interface Conversation {
@@ -406,6 +409,7 @@ test.describe("Coach page frame", () => {
       testInfo.project.name !== "chromium-desktop",
       "each case sets its own viewport; the desktop project runs them all",
     );
+    await page.clock.setFixedTime(new Date(NOW));
     await serveAiBlock(page, aiBlockAvailable());
     await page.emulateMedia({ reducedMotion: "reduce" });
   });
