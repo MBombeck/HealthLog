@@ -617,3 +617,89 @@ describe("locales", () => {
     );
   });
 });
+
+describe("lead length — whole sentences, never a word cut in half", () => {
+  // The shape a live briefing produced: one sentence well past the lead's
+  // budget, which used to be sliced mid-word ("…sleep landed r…").
+  const LONG =
+    "Today's picture is a calm one: your most recent blood pressure sits comfortably in the optimal band, resting heart rate is low, and last night's sleep landed right on your usual.";
+
+  /** Every word of the lead is a whole word of the source text. */
+  function wordsAreWhole(lead: string, source: string) {
+    const sourceWords = new Set(source.split(/\s+/));
+    const words = lead.replace(/…$/, "").trim().split(/\s+/);
+    for (const word of words) {
+      expect(
+        sourceWords.has(word) ||
+          [...sourceWords].some((w) => w.replace(/[,;:]$/, "") === word),
+      ).toBe(true);
+    }
+  }
+
+  it("leads with the first sentence when it fits", () => {
+    const o = buildTodayOverview(
+      input({
+        briefing: briefing(
+          "Your blood pressure sat in the optimal band all week. Sleep was steady too.",
+        ),
+      }),
+      t,
+    );
+    expect(o.lead?.text).toBe(
+      "Your blood pressure sat in the optimal band all week.",
+    );
+  });
+
+  it("does not cut an over-long first sentence; the headline leads instead", () => {
+    const o = buildTodayOverview(
+      input({
+        briefing: briefing(
+          LONG,
+          "Your latest blood pressure is sitting in the optimal band.",
+        ),
+      }),
+      t,
+    );
+    expect(o.lead).toEqual({
+      text: "Your latest blood pressure is sitting in the optimal band.",
+      source: "briefing",
+    });
+  });
+
+  it("falls to the deterministic sentence before it would cut model text", () => {
+    const o = buildTodayOverview(
+      input({ briefing: briefing(LONG), vitals: [vital()] }),
+      t,
+    );
+    expect(o.lead?.source).toBe("signal");
+    expect(o.lead?.text).not.toContain("…");
+  });
+
+  it("shortens at a word boundary only when nothing else is left", () => {
+    const o = buildTodayOverview(input({ briefing: briefing(LONG) }), t);
+    const text = o.lead?.text ?? "";
+    expect(text.length).toBeLessThanOrEqual(160);
+    expect(text.endsWith("…")).toBe(true);
+    wordsAreWhole(text, LONG);
+    expect(text).not.toMatch(/[,;:]…$/);
+  });
+
+  it("keeps whole reaction sentences that fit and drops the one that does not", () => {
+    const o = buildTodayOverview(
+      input({
+        reactionLine: `A solid night, deeper than your recent stretch. ${LONG}`,
+      }),
+      t,
+    );
+    expect(o.lead).toEqual({
+      text: "A solid night, deeper than your recent stretch.",
+      source: "reaction",
+    });
+  });
+
+  it("keeps briefingLead word-safe for the push line", () => {
+    const lead = firstSubstantiveSentence(LONG, null) ?? "";
+    expect(lead.length).toBeLessThanOrEqual(160);
+    wordsAreWhole(lead, LONG);
+  });
+});

@@ -249,45 +249,74 @@ function repeatsScore(sentence: string, score: number | null): boolean {
   return false;
 }
 
-function clampLead(sentence: string): string {
-  return sentence.length > MAX_LEAD_LENGTH
-    ? `${sentence.slice(0, MAX_LEAD_LENGTH - 1).trimEnd()}…`
-    : sentence;
+/** Whether a sentence (or a run of them) fits the lead's length budget. */
+function fitsLead(text: string): boolean {
+  return text.length <= MAX_LEAD_LENGTH;
+}
+
+/**
+ * Shorten text that does not fit, at a word boundary, as the last resort.
+ *
+ * Slicing at a character count cut words in half ("…sleep landed r…"). The
+ * cut now falls on the last space inside the budget, and trailing clause
+ * punctuation goes with it, so what is left ends on a whole word.
+ */
+function shortenAtWord(text: string): string {
+  if (fitsLead(text)) return text;
+  const room = text.slice(0, MAX_LEAD_LENGTH);
+  const space = room.lastIndexOf(" ");
+  const head = (space > 0 ? room.slice(0, space) : room)
+    .trimEnd()
+    .replace(/[\s,;:–—-]+$/u, "");
+  return `${head}…`;
+}
+
+/** The sentences of a paragraph that say something, in order. */
+function substantiveSentences(
+  paragraph: string | null | undefined,
+  score: number | null,
+): string[] {
+  if (!paragraph) return [];
+  return sentences(paragraph).filter(
+    (s) => !isGreetingOnly(s) && !repeatsScore(s, score),
+  );
 }
 
 /**
  * The first sentence of a paragraph that says something: not a greeting, and
  * not a restatement of the score inside the ring. Null when no sentence
  * qualifies, so the caller falls through to the next source rather than
- * showing filler.
+ * showing filler. A sentence past the length budget is shortened at a word
+ * boundary; it feeds `briefingLead` and the push line, which have no other
+ * source to fall to.
  */
 export function firstSubstantiveSentence(
   paragraph: string | null | undefined,
   score: number | null,
 ): string | null {
-  if (!paragraph) return null;
-  for (const sentence of sentences(paragraph)) {
-    if (isGreetingOnly(sentence)) continue;
-    if (repeatsScore(sentence, score)) continue;
-    return clampLead(sentence);
-  }
-  return null;
+  const first = substantiveSentences(paragraph, score)[0];
+  return first ? shortenAtWord(first) : null;
 }
 
 /**
  * The model's reaction line, minus any greeting or score sentence. Unlike the
  * briefing it may keep more than one sentence: it is written to be read whole.
+ * It keeps whole sentences from the start while they fit the budget, and is
+ * null when even the first one does not, so the lead falls to a source that
+ * can be shown complete.
  */
 function cleanReactionLine(
   line: string | null,
   score: number | null,
 ): string | null {
   if (!line) return null;
-  const kept = sentences(line).filter(
-    (s) => !isGreetingOnly(s) && !repeatsScore(s, score),
-  );
-  const text = kept.join(" ").replace(/\s+/g, " ").trim();
-  return text.length > 0 ? clampLead(text) : null;
+  let text = "";
+  for (const sentence of substantiveSentences(line, score)) {
+    const next = text ? `${text} ${sentence}` : sentence;
+    if (!fitsLead(next.replace(/\s+/g, " "))) break;
+    text = next.replace(/\s+/g, " ");
+  }
+  return text.length > 0 ? text : null;
 }
 
 /** Vitals that may speak about today: module on, reading current. */
@@ -562,6 +591,11 @@ function cycleFact(input: TodayOverviewInput, t: Translate): TodayFact | null {
  * their capabilities are available; the deterministic sentence is what makes
  * the card whole without them.
  *
+ * A lead is shown whole or not at all: model text that does not fit
+ * {@link MAX_LEAD_LENGTH} gives way to the next source, and only when no
+ * source fits is the first model sentence shortened, at a word boundary. The
+ * budget is also what keeps the hero's height steady from day to day.
+ *
  * Facts follow a fixed priority (Rest Mode, medications, an appointment today
  * or tomorrow, last night, vitals, cycle) and are capped at
  * {@link MAX_TODAY_FACTS}. The list is never padded: a quiet account gets as
@@ -573,26 +607,37 @@ export function buildTodayOverview(
 ): TodayOverview {
   const sleep = moduleOn(input.modules, "sleep") ? input.sleep : null;
 
-  const briefingLead = firstSubstantiveSentence(
-    input.briefing?.paragraph,
-    input.scoreValue,
-  );
+  const briefingSentence =
+    substantiveSentences(input.briefing?.paragraph, input.scoreValue)[0] ??
+    null;
+  const briefingLead = briefingSentence
+    ? shortenAtWord(briefingSentence)
+    : null;
   const reaction = cleanReactionLine(input.reactionLine, input.scoreValue);
-  const headline = input.briefing?.signalsOfDay?.[0]?.headline?.trim() || null;
+  const rawHeadline =
+    input.briefing?.signalsOfDay?.[0]?.headline?.trim() || null;
+  const headline =
+    rawHeadline && !repeatsScore(rawHeadline, input.scoreValue)
+      ? rawHeadline
+      : null;
 
   let lead: TodayLead | null = null;
   let consumed: TodayFactKind | null = null;
   if (reaction) {
     lead = { text: reaction, source: "reaction" };
-  } else if (briefingLead) {
-    lead = { text: briefingLead, source: "briefing" };
-  } else if (headline && !repeatsScore(headline, input.scoreValue)) {
-    lead = { text: clampLead(headline), source: "briefing" };
+  } else if (briefingSentence && fitsLead(briefingSentence)) {
+    lead = { text: briefingSentence, source: "briefing" };
+  } else if (headline && fitsLead(headline)) {
+    lead = { text: headline, source: "briefing" };
   } else {
     const signal = signalLead(input, sleep, t);
     if (signal) {
       lead = { text: signal.text, source: "signal" };
       consumed = signal.consumes;
+    } else if (briefingLead) {
+      lead = { text: briefingLead, source: "briefing" };
+    } else if (headline) {
+      lead = { text: shortenAtWord(headline), source: "briefing" };
     }
   }
 
