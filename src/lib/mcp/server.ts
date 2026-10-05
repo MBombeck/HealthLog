@@ -26,6 +26,7 @@ import { MCP_WRITE_TOOLS } from "./write-tools";
 import { MCP_RESOURCES, MCP_RESOURCE_TEMPLATES } from "./resources";
 import { MCP_PROMPTS } from "./prompts";
 import { resolveBaseOrigin } from "./oauth/config";
+import { advertiseToolSchemasAs2020 } from "./schema-dialect";
 
 export const MCP_SERVER_NAME = "healthlog";
 export const MCP_SERVER_VERSION = "1.0.0";
@@ -84,7 +85,9 @@ export function createMcpServer(ctx: McpAuthContext): McpServer {
 
   // Register one tool definition. Shared by the read registry and the
   // write-scoped registry so the wire shape can never fork between them.
+  const registeredTools = new Map<string, McpToolDefinition>();
   const registerTool = (tool: McpToolDefinition) => {
+    registeredTools.set(tool.name, tool);
     server.registerTool(
       tool.name,
       {
@@ -129,6 +132,11 @@ export function createMcpServer(ctx: McpAuthContext): McpServer {
       registerTool(tool);
     }
   }
+
+  // Advertise every tool schema as JSON Schema 2020-12 instead of the SDK's
+  // draft-07, which strict clients refuse (#1170). After the last
+  // registerTool, so the wrap covers every tool this session sees.
+  advertiseToolSchemasAs2020(server, registeredTools);
 
   for (const prompt of MCP_PROMPTS) {
     server.registerPrompt(
