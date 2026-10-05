@@ -17,6 +17,7 @@ vi.mock("@/lib/logging/context", () => ({
 import type { CoachFollowUp } from "@/lib/ai/coach/types";
 
 import { followUpContextHint, resolveFollowUp } from "../resolve";
+import { isRedundantViewChip } from "../view-chip";
 
 const PREVIOUS: CoachFollowUp = {
   id: "f1",
@@ -143,6 +144,37 @@ describe("resolveFollowUp", () => {
     expect(out?.contextHint).toBe(
       "FOLLOW-UP: the person tapped the previous_period chip under your last answer. Fetch get_metric_table metric=bp window=last30days period=previous granularity=week and compare it with the current period. The table from your last answer is m3.r1: use show_result for it, do not fetch it again.",
     );
+  });
+
+  it("still resolves a stored view chip the read path now hides", async () => {
+    // A reply stored before view chips were withheld for a table the answer
+    // shows with its own toggle. Reading the reply back drops the chip, so a
+    // current client never offers it; an older client that still shows it
+    // gets an answer on a tap, because the resolver reads the raw stored
+    // chips. Intended: the chip was a valid offer when it was stored.
+    const shown = {
+      ...PRIOR[0].results[0],
+      displayed: true,
+    };
+    for (const kind of ["as_table", "as_chart"] as const) {
+      const chip: CoachFollowUp = {
+        ...AS_CHART,
+        kind,
+        labelKey: `coach.followUp.${kind === "as_chart" ? "asChart" : "asTable"}`,
+      };
+      expect(isRedundantViewChip(chip, [shown])).toBe(true);
+      findMany.mockResolvedValue([
+        assistant("m-last", [PREVIOUS, chip], { results: [shown] }),
+      ]);
+      const out = await resolveFollowUp({
+        userId: "u1",
+        conversationId: "c1",
+        followUp: { messageId: "m-last", id: "f2" },
+      });
+      expect(out?.followUp).toEqual(chip);
+      expect(out?.followUp.reuse).toBe(true);
+    }
+    expect(staleReasons()).toEqual([]);
   });
 
   it("looks past an interrupted turn's marker", async () => {
