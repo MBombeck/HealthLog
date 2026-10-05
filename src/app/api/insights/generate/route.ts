@@ -11,6 +11,7 @@
  * write breaks that convergence — the settling seam tests pin the client
  * half, this comment is the server half of the contract.
  */
+import { withBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import {
@@ -1051,7 +1052,9 @@ export const POST = apiHandler((request: NextRequest) =>
       },
       data: {
         insightsCachedAt: new Date(),
-        insightsCachedText: JSON.stringify(insights),
+        insightsCachedText: JSON.stringify(
+          withBriefingGeneratedAt(insights, new Date()),
+        ),
         insightsCachedLocale: locale,
         insightsSnapshotHash: hashInsightSnapshot({
           features: compactFeatures,

@@ -363,6 +363,67 @@ describe("loadDailyDigest — AI parts", () => {
   });
 });
 
+describe("loadDailyDigest — the briefing's own day", () => {
+  const BRIEFING = {
+    paragraph: "Last night's sleep came in a little short of your usual.",
+    signalsOfDay: [
+      {
+        sourceMetric: "sleep",
+        tone: "info",
+        headline: "Shorter night",
+        nudge: "An earlier night would suit it.",
+        delta: null,
+      },
+    ],
+    keyFindings: [],
+  };
+
+  function withBriefing(cachedText: string) {
+    vi.mocked(readDashboardSnapshotCached).mockResolvedValueOnce({
+      ...SNAPSHOT,
+      // The row was stamped this morning, as every warm stamps it.
+      body: {
+        ...SNAPSHOT.body,
+        briefing: BRIEFING,
+        briefingUpdatedAt: "2026-07-17T02:30:00.000Z",
+      },
+    } as never);
+    return { ...USER, insightsCachedText: cachedText } as User;
+  }
+
+  it("does not serve yesterday's text that a warm only re-stamped", async () => {
+    // Generated yesterday; the unchanged-hash warm at 04:30 refreshed only
+    // insightsCachedAt.
+    const user = withBriefing(
+      JSON.stringify({
+        dailyBriefing: BRIEFING,
+        briefingGeneratedAt: "2026-07-16T02:30:00.000Z",
+      }),
+    );
+    const digest = await loadDailyDigest(user, NOW);
+    expect(digest.briefingLead).toBeNull();
+    expect(digest.topSignal).toBeNull();
+  });
+
+  it("does not serve a payload that predates the generation moment", async () => {
+    const user = withBriefing(JSON.stringify({ dailyBriefing: BRIEFING }));
+    const digest = await loadDailyDigest(user, NOW);
+    expect(digest.topSignal).toBeNull();
+  });
+
+  it("serves text generated today", async () => {
+    const user = withBriefing(
+      JSON.stringify({
+        dailyBriefing: BRIEFING,
+        briefingGeneratedAt: "2026-07-17T02:30:00.000Z",
+      }),
+    );
+    const digest = await loadDailyDigest(user, NOW);
+    expect(digest.briefingLead).toBe(BRIEFING.paragraph);
+    expect(digest.topSignal?.sourceMetric).toBe("sleep");
+  });
+});
+
 /** A reminder row as the preventive read selects it; due this morning. */
 function reminderRow(over: Record<string, unknown> = {}) {
   return {

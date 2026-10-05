@@ -142,7 +142,7 @@ describe("briefingForToday", () => {
   it("drops a pulse signal whose last reading was yesterday at 08:50", () => {
     const out = briefingForToday(BRIEFING, {
       ...BERLIN,
-      updatedAt: "2026-10-05T04:00:00Z",
+      generatedAt: "2026-10-05T04:00:00Z",
       lastSeenAt: (type) => (type === "PULSE" ? "2026-10-04T06:50:00Z" : null),
     });
     expect(out?.signalsOfDay?.map((s) => s.sourceMetric)).toEqual(["sleep"]);
@@ -151,7 +151,7 @@ describe("briefingForToday", () => {
   it("keeps a pulse signal measured today, with its delta in whole beats", () => {
     const out = briefingForToday(BRIEFING, {
       ...BERLIN,
-      updatedAt: "2026-10-05T04:00:00Z",
+      generatedAt: "2026-10-05T04:00:00Z",
       lastSeenAt: (type) => (type === "PULSE" ? "2026-10-05T06:50:00Z" : null),
     });
     expect(out?.signalsOfDay?.[0]?.delta).toBe(
@@ -164,8 +164,18 @@ describe("briefingForToday", () => {
     expect(
       briefingForToday(BRIEFING, {
         ...BERLIN,
-        updatedAt: "2026-10-04T21:30:00Z",
+        generatedAt: "2026-10-04T21:30:00Z",
         lastSeenAt: () => "2026-10-04T21:00:00Z",
+      }),
+    ).toBeNull();
+  });
+
+  it("serves no briefing whose generation moment is unknown", () => {
+    expect(
+      briefingForToday(BRIEFING, {
+        ...BERLIN,
+        generatedAt: null,
+        lastSeenAt: () => "2026-10-05T06:50:00Z",
       }),
     ).toBeNull();
   });
@@ -173,7 +183,7 @@ describe("briefingForToday", () => {
   it("decides the day in the reader's zone", () => {
     // 05:00 UTC on the 5th is the evening of the 4th in Los Angeles.
     const ctx = {
-      updatedAt: "2026-10-05T05:00:00Z",
+      generatedAt: "2026-10-05T05:00:00Z",
       lastSeenAt: () => "2026-10-05T05:00:00Z",
       language: "en" as const,
     };

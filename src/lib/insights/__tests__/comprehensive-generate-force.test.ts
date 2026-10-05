@@ -310,6 +310,12 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     expect(data.insightsSnapshotHash).toBe(FEATURES_HASH);
     // The cache row records the language it was generated in.
     expect(data.insightsCachedLocale).toBe("de");
+    // New text carries the moment it was generated, which the "is this
+    // briefing from today" check reads instead of insightsCachedAt.
+    const stored = JSON.parse(data.insightsCachedText as string);
+    expect(Date.parse(stored.briefingGeneratedAt)).toBeGreaterThan(
+      Date.now() - 60_000,
+    );
     // v1.16.8 — the blanket per-status eviction is gone.
     expect(auditDeleteMany).not.toHaveBeenCalled();
   });

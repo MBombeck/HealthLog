@@ -161,8 +161,13 @@ export function formatSignalDelta(
 }
 
 export interface BriefingForTodayContext {
-  /** When the cached briefing was written (ISO), or null when unknown. */
-  updatedAt: string | null;
+  /**
+   * When the briefing's content was generated (ISO, from the payload's
+   * `briefingGeneratedAt`), or null when the payload predates the field.
+   * Never the cache row's `insightsCachedAt`: that moves on every warm,
+   * including the unchanged-hash refresh that keeps yesterday's text.
+   */
+  generatedAt: string | null;
   /** The newest reading of a measurement type (ISO), or null when none. */
   lastSeenAt: (type: string) => string | null;
   /** The reader's zone and today's day key in it. */
@@ -173,8 +178,8 @@ export interface BriefingForTodayContext {
 }
 
 /**
- * The briefing as the Today surfaces may use it: null when it was written on
- * an earlier calendar day, otherwise with every reading-backed signal whose
+ * The briefing as the Today surfaces may use it: null when its content was
+ * generated on an earlier calendar day, or at an unknown time, otherwise with every reading-backed signal whose
  * metric was not measured today removed and every remaining delta re-read at
  * its metric's precision.
  */
@@ -184,8 +189,8 @@ export function briefingForToday(
 ): DailyBriefing | null {
   if (!briefing) return null;
   if (
-    ctx.updatedAt !== null &&
-    userDayKey(new Date(ctx.updatedAt), ctx.timezone) !== ctx.todayLocalDate
+    ctx.generatedAt === null ||
+    userDayKey(new Date(ctx.generatedAt), ctx.timezone) !== ctx.todayLocalDate
   ) {
     return null;
   }

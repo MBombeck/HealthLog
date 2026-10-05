@@ -84,6 +84,7 @@ import { addDays, dayDiff } from "@/lib/cycle/day-math";
 import { makeFormatters, resolveIntlLocale } from "@/lib/format-locale";
 import { vitalDisplayDecimals } from "@/lib/measurements/vital-precision";
 import { briefingForToday } from "@/lib/daily/briefing-today";
+import { readBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
 import type {
   DateFormatPreference,
   TimeFormatPreference,
@@ -938,7 +939,7 @@ export async function loadDailyDigest(
       // earlier day is not served as today's read, and a signal whose
       // metric has no reading today is dropped (`briefing-today.ts`).
       briefing: briefingForToday(snapshot.briefing, {
-        updatedAt: snapshot.briefingUpdatedAt,
+        generatedAt: readBriefingGeneratedAt(user.insightsCachedText),
         lastSeenAt: (type) =>
           snapshot.tiles.lastSeenByType[type]?.lastSeenAt ?? null,
         timezone: user.timezone,
