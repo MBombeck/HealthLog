@@ -26,6 +26,7 @@ import { BottomNav } from "./bottom-nav";
 import { DemoBanner } from "./demo-banner";
 import { OfflineBanner } from "./offline-banner";
 import { SharedRecordBanner } from "./shared-record-banner";
+import { ShellSidePanelOutlet } from "./shell-side-panel";
 import { SharedRecordUnavailable } from "./shared-record-unavailable";
 import {
   ModulePageGate,
@@ -507,6 +508,12 @@ export function AuthShell({
               </div>
             </main>
           </div>
+          {/* A page's side panel (the Coach's docked conversations) is a
+              column of this row, beside the top bar and `<main>`: it runs
+              the row's full height, from the top of the window to the
+              bottom, and the top bar ends at its left edge. Empty and out of
+              the row on every other page. */}
+          <ShellSidePanelOutlet className="flex min-h-0 shrink-0 empty:hidden" />
           <BottomNav />
         </div>
       </div>

@@ -55,6 +55,7 @@ import {
 } from "./message-thread";
 import { CoachClarificationCard } from "./clarification-card";
 import { CoachSettingsOverlay } from "./coach-settings-overlay";
+import { CoachTopBarTrail } from "./coach-top-bar-trail";
 import { ConversationsPanel } from "./conversations-panel";
 import { MobileRailTray } from "./mobile-rail-tray";
 import { SelfContextAdoptOffer } from "./self-context-adopt-offer";
@@ -1202,6 +1203,11 @@ export function CoachConversation({
           className="flex min-h-0 min-w-0 flex-1 flex-col"
         >
           {docScopeBanner}
+          <CoachTopBarTrail
+            conversationTitle={
+              heroActive ? null : (conversation?.title ?? null)
+            }
+          />
           {!heroActive ? <h1 className="sr-only">{title}</h1> : null}
           {heroActive ? (
             <CoachHero composer={composerNode} scopeHint={scopeHint} />

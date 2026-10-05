@@ -15,7 +15,10 @@ import {
   visibleUtilityDestinations,
 } from "@/components/layout/nav-model";
 import { SHELL_HEADER_BAND } from "@/components/layout/shell-metrics";
-import { TopBarActionsOutlet } from "@/components/layout/top-bar-actions";
+import {
+  TopBarActionsOutlet,
+  TopBarContextOutlet,
+} from "@/components/layout/top-bar-actions";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -104,14 +107,19 @@ export function TopBar() {
         <span className="font-bold tracking-tight">HealthLog</span>
       </Link>
 
-      {/* Desktop: empty spacer (user controls are in sidebar) */}
-      <div className="hidden md:block" />
+      {/* Desktop: the page's context, where a page gives one (the Coach's
+          trail); otherwise an empty spacer. User controls are in the
+          sidebar. */}
+      <TopBarContextOutlet className="hidden min-w-0 flex-1 items-center md:flex" />
 
       {/* Page-owned actions (the Coach's conversations toggle). `ml-auto`
           keeps them at the trailing edge, right before the mobile avatar
           menu; `empty:hidden` takes the slot out of the row on every page
           that leaves it empty, so the header lays out exactly as before. */}
-      <TopBarActionsOutlet className="ml-auto flex items-center gap-1 empty:hidden" />
+      {/* On desktop the last action sits 12 px from the bar's trailing edge
+          (`md:-mr-3` against `md:px-6`), so a panel toggle stands against the
+          panel it controls. */}
+      <TopBarActionsOutlet className="ml-auto flex shrink-0 items-center gap-1 empty:hidden md:-mr-3" />
 
       {/* Mobile-only auth section (desktop uses sidebar user section) */}
       <div className="flex items-center gap-2 md:hidden">

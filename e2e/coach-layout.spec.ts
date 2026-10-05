@@ -16,7 +16,11 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  *      and the reading column (thread and composer) is exactly as wide with
  *      the panel open as with it closed. The choice survives a reload. The
  *      panel is flush with the viewport's right edge (no scrollbar gutter
- *      beside it) and runs from the top bar to the bottom edge.
+ *      beside it) and runs from the top of the window to the bottom; the
+ *      top bar ends at its left edge and the panel's header border is the
+ *      top bar's. The toggle is the bar's last item, within 16 px of its
+ *      right edge, open and shut; shut, no pixel of the panel shows and the
+ *      bar runs to the window's edge. New chat is a round 48 px plus.
  *   2. Escape inside the docked panel closes it and returns focus to the
  *      toggle.
  *   3. A row's menu renames by keyboard (Escape cancels without closing the
@@ -28,7 +32,7 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  *   5. axe finds nothing on the open panel or the open settings, in the
  *      light and the dark theme.
  *   6. At 390 px the panel is a dialog sheet with New chat 16 px from the
- *      right edge; Escape closes it and focus returns to the toggle. The gear
+ *      right edge (24 px in the docked panel); Escape closes it and focus returns to the toggle. The gear
  *      opens a bottom sheet that closes on Escape back to the gear. Nothing
  *      scrolls sideways.
  *
@@ -233,10 +237,10 @@ async function expectNoSidewaysScroll(page: Page) {
 }
 
 /**
- * The docked panel is flush with the viewport: its right edge is the
- * viewport's (no scrollbar gutter beside it), it runs from the top bar's
- * bottom edge to the bottom of the viewport, and its own border is the left
- * one only.
+ * The docked panel is flush with the window: its right edge is the
+ * viewport's (no scrollbar gutter beside it), it runs from the top of the
+ * window to the bottom, the top bar ends at its left edge, its header row's
+ * bottom border is the top bar's, and its own border is the left one only.
  */
 async function expectPanelFlush(page: Page, width: number, height: number) {
   const geometry = await page.evaluate(() => {
@@ -244,15 +248,22 @@ async function expectPanelFlush(page: Page, width: number, height: number) {
       '[data-slot="coach-conversations-panel"]',
     )!;
     const inner = aside.firstElementChild as HTMLElement;
+    const header = aside.querySelector(
+      '[data-slot="coach-conversations-panel-header"]',
+    )!;
     const bar = document.querySelector('[data-slot="top-bar"]')!;
     const main = document.getElementById("main-content")!;
     const style = getComputedStyle(inner);
     const box = aside.getBoundingClientRect();
+    const barBox = bar.getBoundingClientRect();
     return {
       right: box.right,
       top: box.top,
       bottom: box.bottom,
-      barBottom: bar.getBoundingClientRect().bottom,
+      left: box.left,
+      headerBottom: header.getBoundingClientRect().bottom,
+      barBottom: barBox.bottom,
+      barRight: barBox.right,
       gutter: main.offsetWidth - main.clientWidth,
       borders: [
         style.borderTopWidth,
@@ -263,10 +274,58 @@ async function expectPanelFlush(page: Page, width: number, height: number) {
     };
   });
   expect(geometry.right).toBe(width);
-  expect(geometry.top).toBe(geometry.barBottom);
+  expect(geometry.top).toBe(0);
   expect(geometry.bottom).toBe(height);
+  expect(geometry.barRight).toBe(geometry.left);
+  expect(geometry.headerBottom).toBe(geometry.barBottom);
   expect(geometry.gutter).toBe(0);
   expect(geometry.borders).toEqual(["0px", "0px", "0px", "1px"]);
+}
+
+/**
+ * The toggle is the last item of the top bar (the account menu that follows
+ * it on phones is not rendered from `md`), and its right edge is within
+ * 16 px of the bar's right edge.
+ */
+async function expectToggleAtBarEnd(page: Page) {
+  const at = await page.evaluate(() => {
+    const bar = document.querySelector('[data-slot="top-bar"]')!;
+    const shown = [...bar.querySelectorAll("*")].filter(
+      (el) => el.getClientRects().length > 0,
+    );
+    const toggle = bar.querySelector('[data-slot="coach-panel-toggle"]')!;
+    const rightmost = Math.max(
+      ...shown.map((el) => el.getBoundingClientRect().right),
+    );
+    return {
+      gap:
+        bar.getBoundingClientRect().right -
+        toggle.getBoundingClientRect().right,
+      last: toggle.getBoundingClientRect().right >= rightmost,
+      lastChild:
+        toggle.closest('[data-slot="top-bar-actions"]')?.lastElementChild ===
+        toggle,
+    };
+  });
+  expect(at.last, "nothing in the bar stands right of the toggle").toBe(true);
+  expect(at.lastChild).toBe(true);
+  expect(at.gap).toBeGreaterThanOrEqual(0);
+  expect(at.gap).toBeLessThanOrEqual(16);
+}
+
+/** New chat: a round 48 px button with the plus glyph. */
+async function expectFab(page: Page) {
+  const fab = panel(page).locator('[data-slot="coach-panel-new-chat"]');
+  const box = (await fab.boundingBox())!;
+  expect([Math.round(box.width), Math.round(box.height)]).toEqual([48, 48]);
+  expect(
+    await fab.evaluate((el) =>
+      parseFloat(getComputedStyle(el).borderTopLeftRadius),
+    ),
+    "round",
+  ).toBeGreaterThanOrEqual(24);
+  await expect(fab.locator("svg.lucide-plus")).toHaveCount(1);
+  await expect(fab).toHaveAttribute("aria-label", "New chat");
 }
 
 /** Rendered heights of the docked panel's header buttons and first row. */
@@ -374,12 +433,13 @@ test.describe("Coach page frame", () => {
       const aside = (await panel(page).boundingBox())!;
       expect(aside.x).toBeGreaterThanOrEqual(open.threadX + open.thread);
       await expectPanelFlush(page, width, 900);
-      // Open, the toggle stands beside the panel's leading edge.
-      const openToggle = (await toggle(page).boundingBox())!;
-      expect(openToggle.x + openToggle.width).toBeLessThanOrEqual(aside.x);
-      expect(aside.x - (openToggle.x + openToggle.width)).toBeLessThanOrEqual(
-        24,
-      );
+      // Open, the toggle is the top bar's last item, against the panel.
+      await expectToggleAtBarEnd(page);
+      await expectFab(page);
+      // The bar says where the reader is: the page, then the conversation.
+      await expect(
+        page.locator('[data-slot="coach-top-bar-trail"]'),
+      ).toHaveText(/Coach.*Blood pressure this week/);
       await expectNoSidewaysScroll(page);
       await shot(page, testInfo, `coach-frame-${width}-open`);
 
@@ -388,13 +448,26 @@ test.describe("Coach page frame", () => {
       await waitForWidth(panel(page), 0);
       await expect(toggle(page)).toHaveAttribute("aria-expanded", "false");
       const closed = await columnWidths(page);
-      // Closed, it returns to the trailing edge of the top bar.
+      // Closed, the panel is entirely off-screen, the top bar runs to the
+      // window's edge and the toggle is still its last item.
       await expect
-        .poll(async () => {
-          const box = (await toggle(page).boundingBox())!;
-          return Math.round(width - (box.x + box.width));
-        })
-        .toBeLessThanOrEqual(24);
+        .poll(() =>
+          page.evaluate(
+            () =>
+              document
+                .querySelector('[data-slot="top-bar"]')!
+                .getBoundingClientRect().right,
+          ),
+        )
+        .toBe(width);
+      expect(
+        await panel(page).evaluate((el) => {
+          const box = el.getBoundingClientRect();
+          return box.width === 0 || box.left >= window.innerWidth;
+        }),
+        "no pixel of the shut panel shows",
+      ).toBe(true);
+      await expectToggleAtBarEnd(page);
       expect(Math.abs(closed.thread - open.thread)).toBeLessThanOrEqual(1);
       expect(Math.abs(closed.composer - open.composer)).toBeLessThanOrEqual(1);
       // Closed, nothing inside the panel is reachable.
@@ -475,10 +548,14 @@ test.describe("Coach page frame", () => {
     const fab = panel(page).locator('[data-slot="coach-panel-new-chat"]');
     const fabBox = (await fab.boundingBox())!;
     const asideBox = (await panel(page).boundingBox())!;
+    // 24 px in from the panel's corner from `md`, 16 px on a phone.
     expect(asideBox.x + asideBox.width - (fabBox.x + fabBox.width)).toBeCloseTo(
-      16,
+      24,
       0,
     );
+    expect(
+      asideBox.y + asideBox.height - (fabBox.y + fabBox.height),
+    ).toBeCloseTo(24, 0);
     await fab.click();
     await expect(page).toHaveURL(/\/coach$/);
     await expect(
@@ -705,9 +782,15 @@ test.describe("Coach page frame", () => {
     await expect(sheet).toBeVisible();
     await expect(toggle(page)).toHaveAttribute("aria-expanded", "true");
     const fab = sheet.locator('[data-slot="coach-panel-new-chat"]');
-    const fabBox = (await fab.boundingBox())!;
-    expect(390 - (fabBox.x + fabBox.width)).toBeCloseTo(16, 0);
-    expect(fabBox.width).toBeGreaterThanOrEqual(44);
+    // Measured once the sheet has slid in.
+    await expect
+      .poll(async () => {
+        const box = (await fab.boundingBox())!;
+        return Math.round(390 - (box.x + box.width));
+      })
+      .toBe(16);
+    expect((await fab.boundingBox())!.width).toBe(48);
+    await expect(fab.locator("svg.lucide-plus")).toHaveCount(1);
     await shot(page, testInfo, "coach-frame-390-panel");
 
     await page.keyboard.press("Escape");
