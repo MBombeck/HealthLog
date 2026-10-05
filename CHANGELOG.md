@@ -10,9 +10,11 @@ move behind an info icon; no view chip for a result that already toggles.
 - **Coach panel.** Flush against the right edge, full height below the top
   bar, its own scroll area; the shell renders `/coach` without its container
   gutter. The toggle uses mirrored panel icons and moves with the panel.
+  Its buttons and rows go compact only beside a mouse or trackpad; with
+  touch they keep the 44 px target at any width, a tablet included.
 - **Answer row.** Copy, read aloud, retry, an info icon and the time in one
   left-aligned group; the info icon shows model and token count on hover,
-  focus or tap.
+  focus or tap, and Enter or Space keeps it open.
 - **Follow-ups.** No "show as chart/table" chip when the answer's result
   already offers that toggle; also for stored answers.
 
