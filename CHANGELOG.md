@@ -10,6 +10,8 @@ Small fixes to the Today overview and the numbers behind it.
   decided on the server: when the lead already talks about the top signal's
   metric, only the delta remains, and the line is null when nothing is left.
   Every client shows the same line.
+- **`basis` on health-status deviations.** `day` for the usual whole-day
+  range, `sameHours` for the usual range at this time of day.
 
 ### Fixed
 
@@ -22,12 +24,15 @@ Small fixes to the Today overview and the numbers behind it.
 - A personal usual range never collapses to a single value ("61–61 bpm"):
   it keeps at least the measurement's own day-to-day spread, so the next
   ordinary reading is not counted as outside it.
-- Glucose today is compared with the same hours of earlier days. A fasting
-  morning no longer reads as below the range of whole days.
-- Encrypting stored text in place no longer makes old Coach conversations
-  look recently active, and the Coach memory summary no longer moves a
-  conversation either. Measurement and mood notes keep their sync position
-  through the same kind of rewrite.
+- Glucose today is compared with the same hours of earlier days, up to the
+  time of today's latest reading. A fasting morning no longer reads as below
+  the range of whole days, and the range named is the usual one for this
+  time of day.
+- Encrypting stored text in place or rotating the encryption key no longer
+  makes old Coach conversations look recently active, and the Coach memory
+  summary no longer moves a conversation either. Measurements, mood entries
+  and every other encrypted record keep their sync position through the
+  same kind of rewrite.
 - Conversations an earlier release made look recently active move back to
   their last message (migration 0375).
 
