@@ -181,14 +181,27 @@ function TryAgainButton({ onRegenerate }: { onRegenerate: () => void }) {
 }
 
 /**
+ * Whether the details tooltip is open after a click on its icon, given its
+ * state when the pointer went down (`null`: no pointer went down, so Enter
+ * or Space activated the button). A tap or a mouse click toggles from that
+ * state, before the primitive's own pointer-down close ran. A keyboard
+ * activation always opens: focus has already opened the tooltip, and a
+ * toggle would close it on Enter. Escape is the keyboard's way out.
+ */
+export function answerInfoOpenAfterClick(
+  openAtPointerDown: boolean | null,
+): boolean {
+  return openAtPointerDown === null ? true : !openAtPointerDown;
+}
+
+/**
  * The model and token count of an answer, behind an info icon. A tooltip,
  * opened the three ways a reader can reach it: hovering the icon, focusing
  * it from the keyboard, and tapping it on a touch screen, where there is no
  * hover. A second tap, a tap elsewhere or Escape closes it.
  *
- * The tap is handled here because the tooltip primitive closes on every
- * click: the click toggles from the state the tooltip had when the pointer
- * went down, before the primitive's own pointer-down close ran.
+ * The click is handled here because the tooltip primitive closes on every
+ * click (`answerInfoOpenAfterClick` decides instead).
  */
 function AnswerInfoButton({ lines }: { lines: string[] }) {
   const { t } = useTranslations();
@@ -210,9 +223,8 @@ function AnswerInfoButton({ lines }: { lines: string[] }) {
             onClick={(event) => {
               // Keep the primitive from closing it again on this click.
               event.preventDefault();
-              const was = openAtPointerDown.current;
+              setOpen(answerInfoOpenAfterClick(openAtPointerDown.current));
               openAtPointerDown.current = null;
-              setOpen(was === null ? (current) => !current : !was);
             }}
           >
             <Info className="size-4" aria-hidden="true" />

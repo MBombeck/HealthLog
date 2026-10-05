@@ -50,7 +50,11 @@ vi.mock("../read-aloud", async (importOriginal) => {
 });
 
 import { ChatBubble, areChatBubblePropsEqual } from "../chat-bubble";
-import { answerInfoLines, messageTimeText } from "../message-actions";
+import {
+  answerInfoLines,
+  answerInfoOpenAfterClick,
+  messageTimeText,
+} from "../message-actions";
 
 function render(node: React.ReactNode, locale: "en" | "de" = "en") {
   return renderToStaticMarkup(
@@ -300,5 +304,17 @@ describe("answerInfoLines", () => {
       "Modell: gpt-4o",
       "1.234 Tokens",
     ]);
+  });
+});
+
+describe("answerInfoOpenAfterClick", () => {
+  it("opens on Enter or Space, never closes, though focus opened it already", () => {
+    // A keyboard activation fires no pointer-down.
+    expect(answerInfoOpenAfterClick(null)).toBe(true);
+  });
+
+  it("toggles on a tap or a click from the state at pointer-down", () => {
+    expect(answerInfoOpenAfterClick(false)).toBe(true);
+    expect(answerInfoOpenAfterClick(true)).toBe(false);
   });
 });

@@ -16,8 +16,8 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  *      bubble's left edge and no taller than one 44 px target: copy, read
  *      aloud, try again, details, then the time. The model and the tokens
  *      are not text on the row; the details icon shows them in a tooltip on
- *      keyboard focus (desktop) and on a tap (phone), and a second tap or
- *      Escape closes it.
+ *      keyboard focus (desktop) and on a tap (phone); Enter and Space keep it
+ *      open, and a second tap or Escape closes it.
  *   2. The follow-up chips sit in the answer's column: their left edge is
  *      the bubble's, their text is the answer's size, and a chip is at most
  *      36 px tall beside a pointer and at least 44 px on a phone.
@@ -296,8 +296,14 @@ test.describe("Coach answer layout", () => {
     await expect(tip).toContainText("1,234 tokens");
     await expect(info).toHaveAttribute("aria-describedby", /.+/);
     await shoot(page, testInfo, `answer-info-${viewport.label}`);
-    if (desktop) await page.keyboard.press("Escape");
-    else await info.tap();
+    if (desktop) {
+      // Enter and Space on the focused icon keep it open; Escape closes it.
+      for (const key of ["Enter", "Space"]) {
+        await page.keyboard.press(key);
+        await expect(tip).toBeVisible();
+      }
+      await page.keyboard.press("Escape");
+    } else await info.tap();
     await expect(tip).toHaveCount(0);
 
     // 2. The chips in the answer's column, at the answer's size.
