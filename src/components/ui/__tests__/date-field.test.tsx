@@ -111,13 +111,13 @@ describe("<DateField>", () => {
     expect(html).toContain('aria-label="Open date picker"');
   });
 
-  it("uses the Input focus vocabulary — a ring that hugs the box, no offset", () => {
-    // Drift guard: the field must share the app's focus ring (soft 3 px, no
-    // offset) so the highlight never paints wider than the div or jumps on
-    // focus. The old hard `ring-offset-2` ring is banned here.
+  it("uses the Input focus vocabulary — a neutral border, no ring", () => {
+    // Drift guard: the field shares the app's text-field focus (the border
+    // turns the neutral input-focus tone, no ring), so the highlight never
+    // paints wider than the div or jumps on focus.
     const html = render(<DateField value="2026-02-19" />);
-    expect(html).toContain("focus-within:ring-ring/50");
-    expect(html).toContain("focus-within:ring-[3px]");
+    expect(html).toContain("focus-within:border-input-focus");
+    expect(html).not.toMatch(/focus-within:ring-/);
     expect(html).not.toContain("ring-offset-2");
     expect(html).not.toContain("ring-offset-background");
   });

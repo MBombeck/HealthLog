@@ -132,12 +132,12 @@ describe("<TimeField> SSR", () => {
     expect(html).toContain("min-h-11");
     expect(html).toContain("sm:h-10");
   });
-  it("uses the Input focus vocabulary — a ring that hugs the box, no offset", () => {
-    // Drift guard shared with <DateField>: soft 3 px ring, no offset, so the
+  it("uses the Input focus vocabulary — a neutral border, no ring", () => {
+    // Drift guard shared with <DateField>: neutral border, no ring, so the
     // highlight never overflows the div or jumps on focus.
     const html = render(<TimeField value="08:30" />, "de");
-    expect(html).toContain("focus-within:ring-ring/50");
-    expect(html).toContain("focus-within:ring-[3px]");
+    expect(html).toContain("focus-within:border-input-focus");
+    expect(html).not.toMatch(/focus-within:ring-/);
     expect(html).not.toContain("ring-offset-2");
     expect(html).not.toContain("ring-offset-background");
   });

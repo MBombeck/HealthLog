@@ -56,15 +56,15 @@ const FIELD_HEIGHT_CLASSES = "min-h-11 h-11 sm:min-h-10 sm:h-10";
 // ~230 px no matter what width the parent hands it, and the surplus spills out
 // of whatever dialog or sheet it sits in. See the matching note on the overlay
 // input below; both ends are needed, one alone still floors the box.
-// The focus vocabulary matches `<Input>` exactly: a soft translucent 3 px ring
-// that hugs the border box with no offset. The earlier `ring-2 ring-offset-2`
+// The focus vocabulary matches `<Input>` exactly: the border turns the neutral
+// `input-focus` tone, with no ring. The earlier `ring-2 ring-offset-2`
 // painted a hard 4 px ring OUTSIDE the box — wider than the field's div and
 // visibly mismatched next to the app's other inputs, and it shifted the
 // highlight box on focus. `text-base md:text-sm` mirrors `<Input>` too: a
 // sub-16 px input triggers iOS Safari's focus auto-zoom, which reads as a
 // layout jump; 16 px below `md:` suppresses it.
 const FIELD_BASE_CLASSES =
-  "border-input bg-background text-foreground placeholder:text-muted-foreground relative flex w-full min-w-0 items-center rounded-md border ps-3 pe-2 text-base md:text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] focus-within:outline-none";
+  "border-input bg-background text-foreground placeholder:text-muted-foreground relative flex w-full min-w-0 items-center rounded-md border ps-3 pe-2 text-base md:text-sm shadow-xs transition-[color,box-shadow] focus-within:border-input-focus focus-within:outline-none";
 
 export interface DateFieldProps {
   id?: string;
