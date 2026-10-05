@@ -216,13 +216,44 @@ export const DEFAULT_COACH_PREFS: CoachPrefs = {
 
 /**
  * Parse a row's `coachPrefsJson` Json blob into a typed `CoachPrefs`,
- * falling back to defaults when the row is null OR the persisted shape
- * has drifted (a forward-compat field rename, an admin-side hand-edit,
- * etc.). Keeps the call sites at `src/lib/ai/coach/snapshot.ts` and
- * `src/lib/ai/coach/system-prompt.ts` free of the null/parse plumbing.
+ * falling back to defaults when the row is null. Keeps the call sites at
+ * `src/lib/ai/coach/snapshot.ts` and `src/lib/ai/coach/system-prompt.ts`
+ * free of the null/parse plumbing.
+ *
+ * A drifted shape (a value a newer version wrote and this one reads after a
+ * rollback, a hand-edit) is salvaged field by field: an invalid field falls
+ * back to its own default and every valid one stays. Parsing the blob as a
+ * whole used to drop everything on one bad field, metric exclusions
+ * included, which turned an unknown lookback value into a privacy loss. The
+ * two lists keep their known entries, so an unknown metric or cluster
+ * narrows what the Coach reads rather than widening it.
  */
 export function parseCoachPrefs(raw: unknown): CoachPrefs {
   if (raw == null) return DEFAULT_COACH_PREFS;
-  const parsed = coachPrefsSchema.safeParse(raw);
-  return parsed.success ? parsed.data : DEFAULT_COACH_PREFS;
+  const whole = coachPrefsSchema.safeParse(raw);
+  if (whole.success) return whole.data;
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    return DEFAULT_COACH_PREFS;
+  }
+  const source = raw as Record<string, unknown>;
+  const salvaged: Record<string, unknown> = {};
+  for (const [key, field] of Object.entries(coachPrefsSchema.shape)) {
+    if (!(key in source)) continue;
+    const value = knownItemsOnly(key, source[key]);
+    if (field.safeParse(value).success) salvaged[key] = value;
+  }
+  if (Object.keys(salvaged).length === 0) return DEFAULT_COACH_PREFS;
+  return coachPrefsSchema.parse(salvaged);
+}
+
+/** The entries of a list preference this version knows; other values as is. */
+function knownItemsOnly(key: string, value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  const item =
+    key === "excludeMetrics"
+      ? coachExcludeMetricEnum
+      : key === "dataClusters"
+        ? coachDataClusterEnum
+        : null;
+  return item ? value.filter((entry) => item.safeParse(entry).success) : value;
 }

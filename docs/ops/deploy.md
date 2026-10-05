@@ -78,6 +78,12 @@ roll back:
 dev --create-only --name vX_Y_Z_rollback_<col>`), edit the SQL,
    commit, and re-deploy. Never `migrate resolve --rolled-back` against
    production unless you've taken a fresh `pg_dump` first.
+4. Rolling back from v1.40.2 or later to v1.40.1 or earlier: an account
+   that saved the Coach lookback "Last year" reads its whole Coach
+   preference blob as defaults on the older version, metric exclusions
+   included, until the setting is saved again. Ask affected accounts to
+   pick another lookback before the rollback, or re-save their exclusions
+   after it.
 
 ## Catalog templates
 
