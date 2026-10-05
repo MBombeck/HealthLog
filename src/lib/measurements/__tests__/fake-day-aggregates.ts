@@ -19,8 +19,20 @@ import type {
   SourceDayAggregateRow,
 } from "@/lib/measurements/day-aggregates";
 import { userDayKey } from "@/lib/tz/format";
+import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { dayValue } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
+
+/** `HH:MM:SS` of an instant on the wall clock of `timeZone`. */
+function localClock(at: Date, timeZone: string): string {
+  const c = wallClockInTz(at, timeZone);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(c.hour)}:${pad(c.minute)}:${pad(c.second)}`;
+}
+
+function normaliseClock(clock: string): string {
+  return clock.length === 5 ? `${clock}:00` : clock;
+}
 
 export function foldDayAggregates(
   rows: ReadonlyArray<{ measuredAt: Date; value: number }>,
@@ -32,6 +44,13 @@ export function foldDayAggregates(
     const t = r.measuredAt.getTime();
     if (t < opts.since.getTime()) continue;
     if (opts.until && t > opts.until.getTime()) continue;
+    if (
+      opts.upToLocalTime &&
+      localClock(r.measuredAt, opts.timeZone) >
+        normaliseClock(opts.upToLocalTime)
+    ) {
+      continue;
+    }
     if (
       opts.valueRange &&
       (r.value < opts.valueRange.min || r.value > opts.valueRange.max)

@@ -234,3 +234,95 @@ describe("computeCoincidentDeviation", () => {
     expect(restModeMock.resolveRestMode).not.toHaveBeenCalled();
   });
 });
+
+describe("glucose — a day in progress is compared with the same hours", () => {
+  /** Fourteen whole days: fasting 85 at 07:00, then 160 and 150 after meals. */
+  function glucoseDays(times: string[], values: number[]) {
+    return Array.from({ length: 14 }, (_, i) =>
+      times.map((time, j) => ({
+        value: values[j],
+        measuredAt: new Date(
+          `2026-05-${String(18 + i).padStart(2, "0")}T${time}:00Z`,
+        ),
+      })),
+    ).flat();
+  }
+  const rhrFlat = Array.from({ length: 10 }, (_, i) => ({
+    value: 58,
+    measuredAt: new Date(
+      `2026-05-${String(20 + i).padStart(2, "0")}T06:00:00Z`,
+    ),
+  }));
+
+  it("does not call a fasting morning 'below your range' against whole days", async () => {
+    // 08:00 today: only the fasting reading is in. Against whole-day means
+    // (~132) it read as below the range; against the same hours (85) it is
+    // an ordinary morning.
+    findMany.mockImplementation(async (args: { where: { type: string } }) => {
+      if (args.where.type === "BLOOD_GLUCOSE") {
+        return [
+          ...glucoseDays(["07:00", "13:00", "19:00"], [85, 160, 150]),
+          { value: 86, measuredAt: new Date("2026-06-02T07:00:00Z") },
+        ];
+      }
+      if (args.where.type === "RESTING_HEART_RATE") return rhrFlat;
+      return [];
+    });
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: NOW,
+      tz: "UTC",
+    });
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    const glucose = result.value.vitals.find((v) => v.type === "BLOOD_GLUCOSE");
+    expect(glucose).toBeDefined();
+    expect(glucose!.daysAgo).toBe(0);
+    expect(glucose!.value).toBe(86);
+    expect(glucose!.direction).toBe("in");
+    expect(glucose!.center).toBe(85);
+  });
+
+  it("still flags a morning that is low against earlier mornings", async () => {
+    findMany.mockImplementation(async (args: { where: { type: string } }) => {
+      if (args.where.type === "BLOOD_GLUCOSE") {
+        return [
+          ...glucoseDays(["07:00", "13:00", "19:00"], [85, 160, 150]),
+          { value: 62, measuredAt: new Date("2026-06-02T07:00:00Z") },
+        ];
+      }
+      if (args.where.type === "RESTING_HEART_RATE") return rhrFlat;
+      return [];
+    });
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: NOW,
+      tz: "UTC",
+    });
+    if (result.status !== "ok") throw new Error("expected ok");
+    const glucose = result.value.vitals.find((v) => v.type === "BLOOD_GLUCOSE");
+    expect(glucose!.direction).toBe("below");
+  });
+
+  it("says nothing about today when earlier days have no readings at this hour", async () => {
+    findMany.mockImplementation(async (args: { where: { type: string } }) => {
+      if (args.where.type === "BLOOD_GLUCOSE") {
+        return [
+          ...glucoseDays(["19:00"], [150]),
+          { value: 86, measuredAt: new Date("2026-06-02T07:00:00Z") },
+        ];
+      }
+      if (args.where.type === "RESTING_HEART_RATE") return rhrFlat;
+      if (args.where.type === "HEART_RATE_VARIABILITY") {
+        return rhrFlat.map((r) => ({ ...r, value: 60 }));
+      }
+      return [];
+    });
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: NOW,
+      tz: "UTC",
+    });
+    if (result.status !== "ok") throw new Error("expected ok");
+    expect(
+      result.value.vitals.find((v) => v.type === "BLOOD_GLUCOSE"),
+    ).toBeUndefined();
+  });
+});

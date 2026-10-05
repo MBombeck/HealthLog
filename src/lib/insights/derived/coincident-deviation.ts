@@ -36,11 +36,20 @@ import {
   deriveCoverage,
   nowProvenanceTimestamp,
 } from "./coverage";
-import { computeVitalsBaseline, type BaselineProfile } from "./baseline";
+import {
+  buildBaselineBand,
+  computeVitalsBaseline,
+  type BaselineProfile,
+} from "./baseline";
+import { readDayAggregates } from "@/lib/measurements/day-aggregates";
+import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { VITALS_BASELINE_TYPES } from "./registry";
 import type { Derived, DerivedProvenanceSource } from "./types";
 import { resolveRestMode } from "@/lib/illness/rest-mode";
-import { isPlausibleMetricValue } from "@/lib/measurements/value-domain";
+import {
+  isPlausibleMetricValue,
+  plausibleMetricRange,
+} from "@/lib/measurements/value-domain";
 import {
   dayKeyAgeInDays,
   isCurrentForTodayClaim,
@@ -60,6 +69,75 @@ const MAX_LATEST_DAY_ROWS = 50;
 export const COINCIDENT_FIRE_THRESHOLD = 2;
 /** Need ≥ this many banded vitals before the flag can even coincide. */
 export const COINCIDENT_MIN_BANDS = 2;
+
+/**
+ * Vitals whose day mean depends on how much of the day has passed.
+ *
+ * Glucose climbs after every meal, so a day's mean at ten in the morning is a
+ * fasting mean, and a band built from whole days sits well above it: a
+ * perfectly ordinary morning read as "below your range". For these types a
+ * day still in progress is compared with the same hours of the earlier days
+ * (each day cut at the current local clock time), never with whole days.
+ */
+const SAME_HOURS_TYPES: ReadonlySet<MeasurementType> = new Set([
+  "BLOOD_GLUCOSE",
+]);
+
+/** Earlier days with readings in the same hours before today is compared. */
+export const SAME_HOURS_MIN_DAYS = 7;
+
+/**
+ * Today's standing for a same-hours type, from per-day aggregates already cut
+ * at the current local clock time. Pure. Null when today has no reading in
+ * those hours or fewer than {@link SAME_HOURS_MIN_DAYS} earlier days do: then
+ * there is nothing like-for-like to compare today with, and no verdict.
+ */
+export function sameHoursStanding(
+  days: readonly { day: string; n: number; sum: number }[],
+  todayKey: string,
+  type: MeasurementType,
+): { value: number; low: number; high: number; center: number } | null {
+  const today = days.find((d) => d.day === todayKey && d.n > 0);
+  if (!today) return null;
+  const earlier = days
+    .filter((d) => d.day < todayKey && d.n > 0)
+    .map((d) => d.sum / d.n);
+  if (earlier.length < SAME_HOURS_MIN_DAYS) return null;
+  const band = buildBaselineBand(earlier, type);
+  if (!band) return null;
+  return {
+    value: today.sum / today.n,
+    low: band.low,
+    high: band.high,
+    center: band.center,
+  };
+}
+
+/** The current local clock time in `tz`, `HH:MM:SS`. */
+function localClockNow(now: Date, tz: string): string {
+  const c = wallClockInTz(now, tz);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(c.hour)}:${pad(c.minute)}:${pad(c.second)}`;
+}
+
+/** Per-day aggregates of the window, each day cut at the current clock. */
+async function readSameHoursDays(
+  userId: string,
+  type: MeasurementType,
+  windowDays: number,
+  now: Date,
+  tz: string,
+) {
+  return readDayAggregates({
+    userId,
+    type,
+    since: new Date(now.getTime() - windowDays * MS_PER_DAY),
+    until: now,
+    timeZone: tz,
+    valueRange: plausibleMetricRange(type),
+    upToLocalTime: localClockNow(now, tz),
+  });
+}
 
 /** One vital's standing against its personal band today. */
 export interface VitalDeviation {
@@ -242,28 +320,52 @@ export async function computeCoincidentDeviation(
         now,
         coverage,
       });
-      if (baseline.status !== "ok") return { type, baseline, latest: null };
+      if (baseline.status !== "ok") {
+        return { type, baseline, latest: null, sameHours: null };
+      }
       const latest = await readLatestDayMean(userId, type, windowDays, now, tz);
-      return { type, baseline, latest };
+      // A day still in progress is compared with the same hours of earlier
+      // days, not with their whole-day band (see `SAME_HOURS_TYPES`).
+      const sameHours =
+        latest && latest.day === todayKey && SAME_HOURS_TYPES.has(type)
+          ? sameHoursStanding(
+              await readSameHoursDays(userId, type, windowDays, now, tz),
+              todayKey,
+              type,
+            )
+          : undefined;
+      return { type, baseline, latest, sameHours };
     }),
   );
-  for (const { type, baseline, latest } of perType) {
+  for (const { type, baseline, latest, sameHours } of perType) {
     if (baseline.status !== "ok") continue;
     if (baseline.provenance.source === "DAY") anyDaySource = true;
     if (!latest) continue;
+    // A same-hours type with no like-for-like basis for today yet says
+    // nothing about today rather than hold a partial day against whole ones.
+    if (sameHours === null) continue;
     if (latest.day > latestDay) latestDay = latest.day;
     if (baseline.coverage.historyDays > maxHistoryDays) {
       maxHistoryDays = baseline.coverage.historyDays;
     }
     vitals.push(
-      classifyDeviation(
-        type,
-        latest.value,
-        baseline.value.low,
-        baseline.value.high,
-        baseline.value.center,
-        dayKeyAgeInDays(latest.day, todayKey) ?? Number.POSITIVE_INFINITY,
-      ),
+      sameHours
+        ? classifyDeviation(
+            type,
+            sameHours.value,
+            sameHours.low,
+            sameHours.high,
+            sameHours.center,
+            0,
+          )
+        : classifyDeviation(
+            type,
+            latest.value,
+            baseline.value.low,
+            baseline.value.high,
+            baseline.value.center,
+            dayKeyAgeInDays(latest.day, todayKey) ?? Number.POSITIVE_INFINITY,
+          ),
     );
   }
 
