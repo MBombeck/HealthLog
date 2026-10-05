@@ -141,15 +141,15 @@ describe("<HistoryRail>", () => {
     expect(html).toContain("Your conversations will appear here.");
   });
 
-  it("mounts the search input with the localised placeholder", () => {
+  it("carries no search field (search lives on the full conversations page)", () => {
     const client = makeClientWithConversations(samplePage);
     const html = render(
       <HistoryRail activeId={null} onSelect={() => {}} />,
       client,
     );
-    expect(html).toMatch(
-      /data-slot="coach-history-search"[^>]*placeholder="Search conversations…"/,
-    );
+    expect(html).toContain('data-slot="coach-history-list"');
+    expect(html).not.toContain('type="search"');
+    expect(html).not.toContain("Search conversations");
   });
 
   it("uses German strings when locale is 'de'", () => {

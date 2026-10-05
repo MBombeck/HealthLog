@@ -472,7 +472,7 @@ test.describe("Coach page frame", () => {
       expect(Math.abs(closed.composer - open.composer)).toBeLessThanOrEqual(1);
       // Closed, nothing inside the panel is reachable.
       await expect(
-        panel(page).locator('[data-slot="coach-history-search"]'),
+        panel(page).locator('[data-slot="coach-history-select"]').first(),
       ).not.toBeInViewport();
       await expectNoSidewaysScroll(page);
       await shot(page, testInfo, `coach-frame-${width}-closed`);
@@ -484,7 +484,10 @@ test.describe("Coach page frame", () => {
       // Open again, then Escape from inside closes it, focus to the toggle.
       await toggle(page).click();
       await expect(panel(page)).toHaveAttribute("data-state", "open");
-      await panel(page).locator('[data-slot="coach-history-search"]').focus();
+      await panel(page)
+        .locator('[data-slot="coach-history-select"]')
+        .first()
+        .focus();
       await page.keyboard.press("Escape");
       await expect(panel(page)).toHaveAttribute("data-state", "closed");
       await expect(toggle(page)).toBeFocused();

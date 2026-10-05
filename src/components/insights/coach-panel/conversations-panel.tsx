@@ -366,9 +366,8 @@ export function ConversationsPanel({
             data-slot="coach-conversations-panel"
             className="w-[22rem] max-w-[90vw] gap-0 p-0 sm:max-w-[22rem]"
             onOpenAutoFocus={(event) => {
-              // Land on the sheet itself, not its first control: on a phone
-              // focusing the search field would raise the keyboard over the
-              // list the person opened the sheet to read.
+              // Land on the sheet itself, not its first control, so opening
+              // the sheet does not paint a focus ring on a header button.
               event.preventDefault();
               (event.currentTarget as HTMLElement | null)?.focus();
             }}

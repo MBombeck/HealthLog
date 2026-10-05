@@ -176,7 +176,7 @@ export function CoachDrawer({
 
   // v1.21.4 (Coach-UI B) — the drawer's "Conversations" affordance now hands
   // off to the dedicated conversation-history page (`/coach/conversations`),
-  // which renders the search + recency-grouped list as a sibling of the
+  // which renders the recency-grouped list as a sibling of the
   // Coach page. The former `?view=conversations` in-page slide-in drawer is
   // gone; selecting a row there routes back to `/coach?c=<id>`.
   const handleOpenConversations = useCallback(() => {
