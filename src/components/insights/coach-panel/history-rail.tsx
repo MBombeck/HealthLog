@@ -294,7 +294,7 @@ function HistoryRow({
         title={c.title}
         data-slot="coach-history-select"
         className={cn(
-          "flex min-h-11 w-full min-w-0 items-center gap-1.5 rounded-lg py-2 pr-11 pl-2 text-left text-sm transition-colors",
+          "flex min-h-11 w-full min-w-0 items-center gap-1.5 rounded-md py-2 pr-11 pl-2 text-left text-sm transition-colors sm:min-h-9",
           "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
           // The open conversation reads like the open page in the left
           // navigation: the same primary wash, so the two rails agree.

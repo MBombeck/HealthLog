@@ -74,14 +74,24 @@ export function moduleOwningPath(pathname: string): ModuleKey | undefined {
  * only after the account payload resolved, so the map is never read on a
  * hydration render.
  */
+/** True when the module that owns `pathname` is switched off. */
+export function isModulePageOff(
+  pathname: string,
+  modules: Partial<Record<ModuleKey, boolean>> | null | undefined,
+): boolean {
+  const moduleKey = moduleOwningPath(pathname);
+  return moduleKey !== undefined && modules?.[moduleKey] === false;
+}
+
 export function ModulePageGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
   const { t } = useTranslations();
 
   const moduleKey = moduleOwningPath(pathname);
-  const off = moduleKey !== undefined && user?.modules?.[moduleKey] === false;
-  if (!off) return <>{children}</>;
+  if (moduleKey === undefined || !isModulePageOff(pathname, user?.modules)) {
+    return <>{children}</>;
+  }
 
   const destination = NAV_DESTINATIONS.find((d) =>
     isNavDestinationActive(d.href, pathname),

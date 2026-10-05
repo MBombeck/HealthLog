@@ -146,14 +146,14 @@ export function ConversationsPanel({
   const header = (inSheet: boolean) => (
     <div
       data-slot="coach-conversations-panel-header"
-      className="border-border flex h-14 shrink-0 items-center gap-1 border-b pr-2 pl-3"
+      className="border-border flex shrink-0 items-center gap-2 border-b p-3"
     >
       {inSheet ? (
-        <SheetTitle className="min-w-0 flex-1 truncate text-sm font-semibold">
+        <SheetTitle className="min-w-0 flex-1 truncate text-lg leading-tight font-semibold">
           {t("insights.coach.historyTitle")}
         </SheetTitle>
       ) : (
-        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">
+        <h2 className="min-w-0 flex-1 truncate text-lg leading-tight font-semibold">
           {t("insights.coach.historyTitle")}
         </h2>
       )}
@@ -161,7 +161,7 @@ export function ConversationsPanel({
         asChild
         variant="ghost"
         size="icon"
-        className="text-muted-foreground hover:text-foreground size-11 shrink-0 sm:size-9"
+        className="text-muted-foreground hover:text-foreground size-11 shrink-0 md:size-7"
       >
         <Link
           href="/coach/plans"
@@ -169,7 +169,7 @@ export function ConversationsPanel({
           aria-label={t("coach.plans.title")}
           title={t("coach.plans.title")}
         >
-          <Target className="size-4" aria-hidden="true" />
+          <Target className="size-5 md:size-4" aria-hidden="true" />
         </Link>
       </Button>
       <CoachSettingsOverlay
@@ -179,6 +179,7 @@ export function ConversationsPanel({
           if (!next) setSettingsOnData(false);
         }}
         focusData={settingsOnData}
+        className="md:size-7 [&_svg]:size-5 md:[&_svg]:size-4"
       />
       {inSheet ? (
         <SheetClose asChild>
@@ -189,9 +190,9 @@ export function ConversationsPanel({
             data-slot="coach-panel-close"
             aria-label={t("common.close")}
             title={t("common.close")}
-            className="text-muted-foreground hover:text-foreground size-11 shrink-0 sm:size-9"
+            className="text-muted-foreground hover:text-foreground size-11 shrink-0 md:size-7"
           >
-            <X className="size-4" aria-hidden="true" />
+            <X className="size-5 md:size-4" aria-hidden="true" />
           </Button>
         </SheetClose>
       ) : null}

@@ -14,7 +14,9 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  *
  *   1. From 1280 px the panel docks beside the thread, open on a first visit,
  *      and the reading column (thread and composer) is exactly as wide with
- *      the panel open as with it closed. The choice survives a reload.
+ *      the panel open as with it closed. The choice survives a reload. The
+ *      panel is flush with the viewport's right edge (no scrollbar gutter
+ *      beside it) and runs from the top bar to the bottom edge.
  *   2. Escape inside the docked panel closes it and returns focus to the
  *      toggle.
  *   3. A row's menu renames by keyboard (Escape cancels without closing the
@@ -230,6 +232,43 @@ async function expectNoSidewaysScroll(page: Page) {
   expect(overflow.main).toBeLessThanOrEqual(0);
 }
 
+/**
+ * The docked panel is flush with the viewport: its right edge is the
+ * viewport's (no scrollbar gutter beside it), it runs from the top bar's
+ * bottom edge to the bottom of the viewport, and its own border is the left
+ * one only.
+ */
+async function expectPanelFlush(page: Page, width: number, height: number) {
+  const geometry = await page.evaluate(() => {
+    const aside = document.querySelector(
+      '[data-slot="coach-conversations-panel"]',
+    )!;
+    const inner = aside.firstElementChild as HTMLElement;
+    const bar = document.querySelector('[data-slot="top-bar"]')!;
+    const main = document.getElementById("main-content")!;
+    const style = getComputedStyle(inner);
+    const box = aside.getBoundingClientRect();
+    return {
+      right: box.right,
+      top: box.top,
+      bottom: box.bottom,
+      barBottom: bar.getBoundingClientRect().bottom,
+      gutter: main.offsetWidth - main.clientWidth,
+      borders: [
+        style.borderTopWidth,
+        style.borderRightWidth,
+        style.borderBottomWidth,
+        style.borderLeftWidth,
+      ],
+    };
+  });
+  expect(geometry.right).toBe(width);
+  expect(geometry.top).toBe(geometry.barBottom);
+  expect(geometry.bottom).toBe(height);
+  expect(geometry.gutter).toBe(0);
+  expect(geometry.borders).toEqual(["0px", "0px", "0px", "1px"]);
+}
+
 async function shot(page: Page, testInfo: TestInfo, name: string) {
   const path = testInfo.outputPath(`${name}.png`);
   await page.screenshot({ path });
@@ -318,6 +357,7 @@ test.describe("Coach page frame", () => {
       // The panel sits right of the column, never over it.
       const aside = (await panel(page).boundingBox())!;
       expect(aside.x).toBeGreaterThanOrEqual(open.threadX + open.thread);
+      await expectPanelFlush(page, width, 900);
       await expectNoSidewaysScroll(page);
       await shot(page, testInfo, `coach-frame-${width}-open`);
 
