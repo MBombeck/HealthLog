@@ -3138,7 +3138,9 @@
         "saving": "Wird gespeichert…",
         "saveFailed": "Die Änderung ließ sich nicht speichern.",
         "allSettings": "Alle KI-Einstellungen",
-        "providerNotActive": "{provider} konnte nicht übernehmen: Es fehlt eine funktionierende Anmeldung oder ein Schlüssel. Richte das in den KI-Einstellungen ein."
+        "providerNotActive": "{provider} konnte nicht übernehmen: Es fehlt eine funktionierende Anmeldung oder ein Schlüssel. Richte das in den KI-Einstellungen ein.",
+        "operatorCodex": "ChatGPT (vom Betreiber bereitgestellt)",
+        "operatorManaged": "Diese Verbindung verwaltet der Betreiber deines Servers. Sobald einer deiner eigenen Anbieter eingerichtet ist, antwortet er zuerst."
       },
       "answer": {
         "scrollToBottom": "Zur neuesten Nachricht",

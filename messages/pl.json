@@ -3138,7 +3138,9 @@
         "saving": "Zapisywanie…",
         "saveFailed": "Nie udało się zapisać zmiany.",
         "allSettings": "Wszystkie ustawienia AI",
-        "providerNotActive": "{provider} nie mógł przejąć odpowiedzi: brak działającego logowania lub klucza. Skonfiguruj go w ustawieniach AI."
+        "providerNotActive": "{provider} nie mógł przejąć odpowiedzi: brak działającego logowania lub klucza. Skonfiguruj go w ustawieniach AI.",
+        "operatorCodex": "ChatGPT (udostępniony przez operatora)",
+        "operatorManaged": "Tym połączeniem zarządza operator Twojego serwera. Gdy skonfigurujesz własnego dostawcę, to on odpowie jako pierwszy."
       },
       "answer": {
         "scrollToBottom": "Przejdź do najnowszej wiadomości",

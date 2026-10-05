@@ -3138,7 +3138,9 @@
         "saving": "Guardando…",
         "saveFailed": "No se pudo guardar el cambio.",
         "allSettings": "Todos los ajustes de IA",
-        "providerNotActive": "{provider} no pudo encargarse: no tiene un inicio de sesión ni una clave que funcionen. Configúralo en los ajustes de IA."
+        "providerNotActive": "{provider} no pudo encargarse: no tiene un inicio de sesión ni una clave que funcionen. Configúralo en los ajustes de IA.",
+        "operatorCodex": "ChatGPT (compartido por el operador)",
+        "operatorManaged": "El operador de tu servidor gestiona esta conexión. Cuando configures uno de tus propios proveedores, responderá primero."
       },
       "answer": {
         "scrollToBottom": "Ir al último mensaje",

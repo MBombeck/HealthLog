@@ -82,6 +82,19 @@ export function switchDidNotTake(
   return fresh.activeProvider !== chosen;
 }
 
+/**
+ * The provider the server answers with when the select has no option for it:
+ * the operator's central Codex (never a chain entry), or an entry that answers
+ * without being offered. Shown as a disabled option so the select tells the
+ * truth instead of showing its first option as active.
+ */
+export function activeOutsideOptions(
+  active: string | null,
+  options: readonly string[],
+): string | null {
+  return active !== null && !options.includes(active) ? active : null;
+}
+
 export type ModelControl =
   | { kind: "preset"; presets: readonly string[]; value: string | null }
   | { kind: "gateway"; value: string | null }
@@ -201,6 +214,8 @@ export function CoachModelPicker() {
   const model = modelControlFor(active, userProvider);
   const reasoning = reasoningFieldFor(active, userProvider);
   const busy = switchProvider.isPending || patchProvider.isPending;
+  // The server may answer with `admin-codex`, which the UI's type omits.
+  const unlisted = activeOutsideOptions(active as string | null, options);
 
   if (chainQuery.isError || providerQuery.isError) {
     return (
@@ -259,12 +274,27 @@ export function CoachModelPicker() {
               {t("insights.coach.frame.noProvider")}
             </option>
           ) : null}
+          {unlisted ? (
+            <option value={unlisted} disabled>
+              {unlisted === "admin-codex"
+                ? t("insights.coach.frame.operatorCodex")
+                : t(`settings.ai.providerChain.types.${unlisted}`)}
+            </option>
+          ) : null}
           {options.map((p) => (
             <option key={p} value={p}>
               {t(`settings.ai.providerChain.types.${p}`)}
             </option>
           ))}
         </NativeSelect>
+        {unlisted === "admin-codex" ? (
+          <p
+            data-slot="coach-quick-provider-operator"
+            className="text-muted-foreground mt-1 text-xs"
+          >
+            {t("insights.coach.frame.operatorManaged")}
+          </p>
+        ) : null}
       </div>
 
       {model.kind === "preset" ? (

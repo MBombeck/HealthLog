@@ -3138,7 +3138,9 @@
         "saving": "Enregistrement…",
         "saveFailed": "Impossible d’enregistrer cette modification.",
         "allSettings": "Tous les paramètres IA",
-        "providerNotActive": "{provider} n'a pas pu prendre le relais : aucune connexion ni clé valide. Configurez-le dans les réglages IA."
+        "providerNotActive": "{provider} n'a pas pu prendre le relais : aucune connexion ni clé valide. Configurez-le dans les réglages IA.",
+        "operatorCodex": "ChatGPT (partagé par l'opérateur)",
+        "operatorManaged": "L'opérateur de votre serveur gère cette connexion. Dès qu'un de vos propres fournisseurs est configuré, c'est lui qui répond en premier."
       },
       "answer": {
         "scrollToBottom": "Aller au dernier message",

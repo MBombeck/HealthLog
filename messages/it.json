@@ -3138,7 +3138,9 @@
         "saving": "Salvataggio…",
         "saveFailed": "Impossibile salvare la modifica.",
         "allSettings": "Tutte le impostazioni IA",
-        "providerNotActive": "{provider} non è subentrato: manca un accesso o una chiave funzionante. Configuralo nelle impostazioni IA."
+        "providerNotActive": "{provider} non è subentrato: manca un accesso o una chiave funzionante. Configuralo nelle impostazioni IA.",
+        "operatorCodex": "ChatGPT (condiviso dall'operatore)",
+        "operatorManaged": "Questa connessione è gestita dall'operatore del tuo server. Quando configuri uno dei tuoi fornitori, risponde per primo."
       },
       "answer": {
         "scrollToBottom": "Vai all'ultimo messaggio",

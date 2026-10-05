@@ -3138,7 +3138,9 @@
         "saving": "Saving…",
         "saveFailed": "That change could not be saved.",
         "allSettings": "All AI settings",
-        "providerNotActive": "{provider} could not take over: it has no working sign-in or key. Set it up in AI settings."
+        "providerNotActive": "{provider} could not take over: it has no working sign-in or key. Set it up in AI settings.",
+        "operatorCodex": "ChatGPT (shared by the operator)",
+        "operatorManaged": "Your server's operator manages this connection. Once one of your own providers is set up, it answers first."
       },
       "answer": {
         "scrollToBottom": "Jump to the latest message",
