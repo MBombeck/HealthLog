@@ -2922,13 +2922,6 @@
         "skin_temp": "Température cutanée",
         "workouts": "Entraînements"
       },
-      "window": {
-        "last7days": "7 derniers jours",
-        "last30days": "30 derniers jours",
-        "last90days": "90 derniers jours",
-        "lastYear": "12 derniers mois",
-        "allTime": "toute la période (12 mois en détail)"
-      },
       "settingsAriaLabel": "Paramètres du coach",
       "settingsTitle": "Paramètres du coach",
       "settingsDescription": "Configure comment le coach te parle.",

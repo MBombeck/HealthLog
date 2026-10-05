@@ -2922,13 +2922,6 @@
         "skin_temp": "피부 온도",
         "workouts": "운동"
       },
-      "window": {
-        "last7days": "최근 7일",
-        "last30days": "최근 30일",
-        "last90days": "최근 90일",
-        "lastYear": "최근 12개월",
-        "allTime": "전체 기간(상세 12개월)"
-      },
       "settingsAriaLabel": "코치 설정",
       "settingsTitle": "코치 설정",
       "settingsDescription": "코치가 대화하는 방식을 조절해요.",

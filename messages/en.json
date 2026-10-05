@@ -2922,13 +2922,6 @@
         "skin_temp": "Skin temperature",
         "workouts": "Workouts"
       },
-      "window": {
-        "last7days": "last 7 days",
-        "last30days": "last 30 days",
-        "last90days": "last 90 days",
-        "lastYear": "last 12 months",
-        "allTime": "all time (12 months of detail)"
-      },
       "settingsAriaLabel": "Coach settings",
       "settingsTitle": "Coach settings",
       "settingsDescription": "Tune how the Coach talks with you.",
