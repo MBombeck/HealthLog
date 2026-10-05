@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   PanelRightClose,
@@ -48,6 +48,25 @@ import { useDeleteCoachConversationWithUndo } from "./use-coach";
  */
 export const COACH_PANEL_ID = "coach-conversations-panel";
 
+const noSubscription = () => () => {};
+
+/**
+ * Whether the phone sheet is open. A settings deep link opens it only once
+ * the viewport is known: the server and hydration renders take the narrow
+ * (sheet) layout, so opening it from the first render flashed the sheet on
+ * a desktop before the docked panel replaced it.
+ */
+export function sheetShown(state: {
+  chosen: boolean;
+  deepLinkPending: boolean;
+  hydrated: boolean;
+  docked: boolean;
+}): boolean {
+  return (
+    state.chosen || (state.deepLinkPending && state.hydrated && !state.docked)
+  );
+}
+
 export interface ConversationsPanelProps {
   activeId: string | null;
   onSelect: (id: string) => void;
@@ -75,7 +94,26 @@ export function ConversationsPanel({
   // A settings deep-link shows the panel without rewriting the remembered
   // choice; the next toggle settles it.
   const [revealed, setRevealed] = useState(openSettingsOnData);
-  const [sheetOpen, setSheetOpen] = useState(openSettingsOnData);
+  const hydrated = useSyncExternalStore(
+    noSubscription,
+    () => true,
+    () => false,
+  );
+  const [deepLinkPending, setDeepLinkPending] = useState(openSettingsOnData);
+  const [sheetChosen, setSheetChosen] = useState(false);
+  const sheetOpen = sheetShown({
+    chosen: sheetChosen,
+    deepLinkPending,
+    hydrated,
+    docked,
+  });
+  // On a docked viewport the deep link is served by `revealed`; it must not
+  // open the sheet later if the window narrows.
+  if (deepLinkPending && hydrated && docked) setDeepLinkPending(false);
+  const setSheetOpen = (next: boolean) => {
+    setDeepLinkPending(false);
+    setSheetChosen(next);
+  };
   const [settingsOpen, setSettingsOpen] = useState(openSettingsOnData);
   const [settingsOnData, setSettingsOnData] = useState(openSettingsOnData);
 
