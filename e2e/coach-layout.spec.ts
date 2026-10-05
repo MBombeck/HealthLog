@@ -358,6 +358,12 @@ test.describe("Coach page frame", () => {
       const aside = (await panel(page).boundingBox())!;
       expect(aside.x).toBeGreaterThanOrEqual(open.threadX + open.thread);
       await expectPanelFlush(page, width, 900);
+      // Open, the toggle stands beside the panel's leading edge.
+      const openToggle = (await toggle(page).boundingBox())!;
+      expect(openToggle.x + openToggle.width).toBeLessThanOrEqual(aside.x);
+      expect(aside.x - (openToggle.x + openToggle.width)).toBeLessThanOrEqual(
+        24,
+      );
       await expectNoSidewaysScroll(page);
       await shot(page, testInfo, `coach-frame-${width}-open`);
 
@@ -366,6 +372,13 @@ test.describe("Coach page frame", () => {
       await waitForWidth(panel(page), 0);
       await expect(toggle(page)).toHaveAttribute("aria-expanded", "false");
       const closed = await columnWidths(page);
+      // Closed, it returns to the trailing edge of the top bar.
+      await expect
+        .poll(async () => {
+          const box = (await toggle(page).boundingBox())!;
+          return Math.round(width - (box.x + box.width));
+        })
+        .toBeLessThanOrEqual(24);
       expect(Math.abs(closed.thread - open.thread)).toBeLessThanOrEqual(1);
       expect(Math.abs(closed.composer - open.composer)).toBeLessThanOrEqual(1);
       // Closed, nothing inside the panel is reachable.

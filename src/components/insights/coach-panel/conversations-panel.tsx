@@ -37,7 +37,8 @@ import { useDeleteCoachConversationWithUndo } from "./use-coach";
  * Below 1280 px it is a sheet from the right that opens when asked and
  * closes again when a conversation is picked or a new chat starts.
  *
- * The toggle sits at the trailing edge of the top bar. The panel header
+ * The toggle sits at the trailing edge of the top bar and, while the docked
+ * panel is open, beside the panel's leading edge. The panel header
  * carries the title, a link to Plans, the settings gear and, in the sheet,
  * a close button. The round New chat button sits at the bottom right.
  *
@@ -245,12 +246,27 @@ export function ConversationsPanel({
           aria-label={toggleLabel}
           title={toggleLabel}
           data-slot="coach-panel-toggle"
-          className="text-muted-foreground hover:text-foreground size-11"
+          className={cn(
+            "text-muted-foreground hover:text-foreground size-11",
+            // Docked and open, the toggle keeps the panel's width as its
+            // right margin, so it stays beside the panel's leading edge and
+            // travels with it as the panel opens and shuts.
+            "transition-[margin] duration-200 ease-linear motion-reduce:transition-none",
+            docked && dockedOpen && "mr-72",
+          )}
         >
+          {/* Mirrored, so the chevron points the way the panel moves on a
+              click: right to shut it, left to open it. */}
           {expanded ? (
-            <PanelRightClose className="size-5" aria-hidden="true" />
+            <PanelRightOpen
+              className="size-5 -scale-x-100"
+              aria-hidden="true"
+            />
           ) : (
-            <PanelRightOpen className="size-5" aria-hidden="true" />
+            <PanelRightClose
+              className="size-5 -scale-x-100"
+              aria-hidden="true"
+            />
           )}
         </Button>
       </TopBarActions>
