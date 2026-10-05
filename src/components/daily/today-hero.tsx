@@ -322,76 +322,77 @@ export function TodayHero({
      null score paints the ring's honest provisional face at the same
      footprint, so the column never collapses. The meta lines under it are
      capped to the dial's width on a phone so the column stays compact. */
-  const scoreColumn = (size: "sm" | "responsive") => {
-    const phoneMeta = size === "responsive" && "max-w-20 md:max-w-none";
-    return (
-      <div
-        className={cn(
-          "flex shrink-0 flex-col gap-1 md:items-end",
-          // The phone dial sits flush with the card's trailing edge, mirroring
-          // the lead's leading one. Its meta lines align under it and are no
-          // wider than the dial, so the lead keeps the width beside it.
-          size === "responsive"
-            ? "items-end text-right"
-            : "items-center text-center",
-        )}
+  const hasScoreMeta =
+    (deltaShown && digest.score?.delta != null) || !!steadyLine || !!basisLine;
+
+  const scoreRing = (size: "sm" | "responsive", className?: string) => (
+    <div data-slot="today-hero-score" className={className}>
+      {/* The ring opens the Insights overview — the destination the
+          health-score card owns — so every hero ring is a door, not a
+          poster. */}
+      <Link
+        href="/insights"
+        aria-label={t("daily.today.ringLink", {
+          metric: t("daily.today.scoreLabel"),
+        })}
+        className="focus-visible:ring-ring/50 block rounded-full focus-visible:ring-2 focus-visible:outline-none"
       >
-        <div data-slot="today-hero-score">
-          {/* The ring opens the Insights overview — the destination the
-            health-score card owns — so every hero ring is a door, not a
-            poster. */}
-          <Link
-            href="/insights"
-            aria-label={t("daily.today.ringLink", {
-              metric: t("daily.today.scoreLabel"),
-            })}
-            className="focus-visible:ring-ring/50 block rounded-full focus-visible:ring-2 focus-visible:outline-none"
-          >
-            <ScoreRing
-              score={digest.score?.value ?? null}
-              band={digest.score ? (digest.score.band as ScoreBand) : undefined}
-              size={size}
-              flat
-              label={t("daily.today.scoreLabel")}
-            />
-          </Link>
-        </div>
-        {deltaShown && digest.score?.delta != null ? (
-          <span
-            data-slot="today-hero-score-delta"
-            className={cn(
-              "text-muted-foreground text-xs tabular-nums",
-              phoneMeta,
-            )}
-          >
-            {formatDelta(digest.score.delta, t)}
-          </span>
-        ) : null}
-        {steadyLine ? (
-          <span
-            data-slot="today-hero-score-steady"
-            className={cn(
-              "text-muted-foreground text-xs text-balance",
-              phoneMeta,
-            )}
-          >
-            {steadyLine}
-          </span>
-        ) : null}
-        {basisLine ? (
-          <span
-            data-slot="today-hero-score-basis"
-            className={cn(
-              "text-muted-foreground text-xs text-balance md:max-w-[11rem] md:text-right",
-              size === "responsive" ? "max-w-20" : "max-w-[11rem]",
-            )}
-          >
-            {basisLine}
-          </span>
-        ) : null}
-      </div>
-    );
-  };
+        <ScoreRing
+          score={digest.score?.value ?? null}
+          band={digest.score ? (digest.score.band as ScoreBand) : undefined}
+          size={size}
+          flat
+          label={t("daily.today.scoreLabel")}
+        />
+      </Link>
+    </div>
+  );
+
+  /* The score's meta lines: its delta, how long it has held, and what it
+     rests on. On the phone's full-width row the basis sentence keeps one
+     line; beside a dial it wraps at the dial column's width. */
+  const scoreMetaLines = (size: "sm" | "responsive") => (
+    <>
+      {deltaShown && digest.score?.delta != null ? (
+        <span
+          data-slot="today-hero-score-delta"
+          className="text-muted-foreground text-xs tabular-nums"
+        >
+          {formatDelta(digest.score.delta, t)}
+        </span>
+      ) : null}
+      {steadyLine ? (
+        <span
+          data-slot="today-hero-score-steady"
+          className="text-muted-foreground text-xs text-balance"
+        >
+          {steadyLine}
+        </span>
+      ) : null}
+      {basisLine ? (
+        <span
+          data-slot="today-hero-score-basis"
+          className={cn(
+            "text-muted-foreground text-xs text-balance md:max-w-[11rem] md:text-right",
+            size === "sm" && "max-w-[11rem]",
+          )}
+        >
+          {basisLine}
+        </span>
+      ) : null}
+    </>
+  );
+
+  /* Health score ring — `flat` (no sweep/bloom), server-computed band. A
+     null score paints the ring's honest provisional face at the same
+     footprint, so the column never collapses. The compact all-clear keeps
+     the ring and its meta lines in one centred column. */
+  const compactScoreColumn = (
+    <div className="flex shrink-0 flex-col items-center gap-1 text-center md:items-end">
+      {scoreRing("sm")}
+      {scoreMetaLines("sm")}
+    </div>
+  );
 
   const heroShellClassName = cn(
     // The tile strip's surface plus the ONE sanctioned Today atmosphere:
@@ -460,7 +461,7 @@ export function TodayHero({
                   second row below the dial. */}
               {sleepPendingNote}
             </div>
-            {scoreColumn("sm")}
+            {compactScoreColumn}
           </div>
         ) : (
           /* The day's read: the narrative lead on the reading edge, the
@@ -496,20 +497,43 @@ export function TodayHero({
                 className={cn(
                   "min-w-0",
                   leadBlock
-                    ? "col-span-2 row-start-2 md:col-span-1 md:col-start-1"
+                    ? cn(
+                        "col-span-2 md:col-span-1 md:col-start-1 md:row-start-2",
+                        hasScoreMeta ? "row-start-3" : "row-start-2",
+                      )
                     : "col-start-1 row-start-1",
                 )}
               >
                 {todayBlock}
               </div>
             ) : null}
+            {/* One column from md up (the ring, its meta lines under it,
+                trailing edge), as before. Below md the column dissolves
+                (`contents`) into two grid items: the dial in the top-right
+                cell beside the lead, and the meta lines on a full-width row
+                right after the read row, flush with the dial's edge: under
+                the dial beside a short lead, under a long lead's last line.
+                In the dial's 80 px column the German lines broke into three
+                to five rows each and pushed the facts down. */}
             <div
+              data-slot="today-hero-score-column"
               className={cn(
-                "col-start-2 row-start-1 self-start",
+                "contents md:col-start-2 md:row-start-1 md:flex md:shrink-0 md:flex-col md:items-end md:gap-1 md:self-start md:text-right",
                 leadBlock && todayBlock && "md:row-span-2",
               )}
             >
-              {scoreColumn("responsive")}
+              {scoreRing(
+                "responsive",
+                "col-start-2 row-start-1 self-start md:self-auto",
+              )}
+              {hasScoreMeta ? (
+                <div
+                  data-slot="today-hero-score-meta"
+                  className="col-span-2 row-start-2 -mt-3 flex flex-col items-end gap-1 text-right md:contents"
+                >
+                  {scoreMetaLines("responsive")}
+                </div>
+              ) : null}
             </div>
           </div>
         )}

@@ -435,3 +435,157 @@ test.describe("Today overview geometry", () => {
     expect(Math.abs(after.width - before.width)).toBeLessThanOrEqual(1);
   });
 });
+
+/**
+ * The phone in German, where the score's meta lines are longest. In the
+ * dial's 80 px column "−6 vs. dein Mittel" and the basis sentence broke into
+ * three to five rows each; a short lead then left a gap above the facts as
+ * tall as that column. The lines now run on their own row under the dial.
+ */
+const GERMAN_SCORE: DailyDigest["score"] = {
+  value: 63,
+  band: "yellow",
+  delta: -6,
+  deltaReason: null,
+  steadyWeeks: null,
+  scoreBasis: {
+    domains: 2,
+    recommended: 3,
+    tier: "partial",
+    physiological: true,
+  },
+};
+
+const GERMAN_FACTS: DailyDigest["today"] = [
+  {
+    kind: "medications",
+    label: "Medikamente",
+    value: "1 von 2 genommen",
+    href: "/medications",
+    moduleKey: "medications",
+  },
+  {
+    kind: "sleep",
+    label: "Letzte Nacht",
+    value: "5 Std. 45 Min., 42 Min. weniger als sonst",
+    href: "/insights/sleep",
+    moduleKey: "sleep",
+  },
+  {
+    kind: "vitals",
+    label: "Vitalwerte",
+    value: "Puls über deinem Bereich",
+    href: "/insights",
+  },
+];
+
+const GERMAN_STATES: Record<string, DailyDigest> = {
+  "de-short": {
+    ...BASE,
+    score: GERMAN_SCORE,
+    lead: { text: "Dein Puls liegt heute erhöht.", source: "signal" },
+    today: GERMAN_FACTS,
+  },
+  "de-long": {
+    ...BASE,
+    score: GERMAN_SCORE,
+    lead: {
+      text: "Dein Puls liegt heute Abend deutlich über seinem üblichen Niveau, nach einer kürzeren Nacht als sonst; ein ruhiger Abend täte ihm gut.",
+      source: "briefing",
+    },
+    signalLine: { headline: null, delta: "+34 bpm vs. dein 30-Tage-Mittel" },
+    today: GERMAN_FACTS,
+  },
+};
+
+test.describe("Today overview on a German phone", () => {
+  test.beforeEach(async ({ context }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium-desktop",
+      "viewport-driven spec; desktop project only",
+    );
+    const baseURL = testInfo.project.use.baseURL ?? "http://localhost:3000";
+    await context.addCookies([
+      { name: "healthlog-locale", value: "de", url: baseURL },
+    ]);
+  });
+
+  for (const viewport of VIEWPORTS.filter((v) => v.width < 768)) {
+    for (const [state, digest] of Object.entries(GERMAN_STATES)) {
+      test(`${state} at ${viewport.width}px`, async ({ page }) => {
+        await page.emulateMedia({
+          colorScheme: "dark",
+          reducedMotion: "reduce",
+        });
+        await page.addInitScript(() => {
+          window.localStorage.setItem("healthlog-theme", "dark");
+        });
+        await page.setViewportSize(viewport);
+        const hero = await openDashboard(page, digest);
+        await page.waitForLoadState("networkidle");
+        mkdirSync(SHOTS, { recursive: true });
+        await hero.screenshot({
+          path: join(SHOTS, `${viewport.name}-dark-${state}.png`),
+        });
+
+        const box = async (slot: string) =>
+          (await hero.locator(`[data-slot="${slot}"]`).first().boundingBox())!;
+        const ring = await box("score-ring");
+        const lead = await box("today-hero-lead");
+        const meta = await box("today-hero-score-meta");
+        const block = await box("today-hero-today");
+
+        // The dial keeps its size and its place beside the lead.
+        expect(Math.round(ring.width)).toBe(RING_PX.phone);
+        expect(lead.width).toBeGreaterThanOrEqual(MIN_LEAD_WIDTH);
+
+        // Each meta line reads on one line, flush with the dial's edge.
+        const lines = await hero
+          .locator('[data-slot="today-hero-score-meta"] > span')
+          .evaluateAll((spans) =>
+            spans.map((span) => {
+              const rect = span.getBoundingClientRect();
+              const lineHeight = parseFloat(getComputedStyle(span).lineHeight);
+              return {
+                rows: Math.round(rect.height / lineHeight),
+                right: rect.right,
+              };
+            }),
+          );
+        expect(lines.length).toBe(2);
+        for (const line of lines) {
+          expect(line.rows).toBe(1);
+          expect(
+            Math.abs(line.right - (ring.x + ring.width)),
+          ).toBeLessThanOrEqual(1);
+        }
+
+        // The meta row follows the read row at once: right under the dial
+        // beside a short lead, right under a long lead's last line.
+        // The lead's cell ends with its signal line when there is one.
+        const signalLine = hero.locator('[data-slot="today-hero-signal"]');
+        const signal =
+          (await signalLine.count()) > 0
+            ? await signalLine.boundingBox()
+            : null;
+        const leadBottom = signal
+          ? signal.y + signal.height
+          : lead.y + lead.height;
+        const readBottom = Math.max(ring.y + ring.height, leadBottom);
+        expect(meta.y - readBottom).toBeGreaterThanOrEqual(0);
+        expect(meta.y - readBottom).toBeLessThanOrEqual(6);
+
+        // No gap above the facts beyond one section step: they start one
+        // row gap (16 px) under whatever ends lowest, the lead or the meta.
+        const above = Math.max(leadBottom, meta.y + meta.height);
+        expect(block.y - above).toBeGreaterThanOrEqual(15);
+        expect(block.y - above).toBeLessThanOrEqual(17);
+
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        );
+        expect(overflow).toBeLessThanOrEqual(0);
+      });
+    }
+  }
+});

@@ -178,6 +178,10 @@ describe("daily-briefing re-roll on unchanged data", () => {
       { headline: "BP steady", tone: "good" },
     ]);
     expect(stored.summary).toBe("stable summary");
+    // New text, so a new generation moment.
+    expect(Date.parse(stored.briefingGeneratedAt)).toBeGreaterThan(
+      Date.now() - 60_000,
+    );
     expect(data.insightsBriefingRerollDate).toBe(todayKey);
     expect(invalidateUserInsights).toHaveBeenCalledWith("u1");
   });
@@ -223,5 +227,14 @@ describe("daily-briefing re-roll on unchanged data", () => {
           .insightsBriefingRerollDate !== undefined,
     );
     expect(write).toBeTruthy();
+    // The stamp refresh keeps yesterday's text and its generation moment:
+    // it writes no text at all.
+    expect(
+      userUpdate.mock.calls.some(
+        (c) =>
+          (c[0] as { data: Record<string, unknown> }).data
+            .insightsCachedText !== undefined,
+      ),
+    ).toBe(false);
   });
 });

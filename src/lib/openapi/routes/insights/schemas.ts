@@ -2545,7 +2545,7 @@ export const insightsGenerateReadResponse = z
       .record(z.string(), z.unknown())
       .nullable()
       .describe(
-        "The cached insight payload, verbatim from the account's cache row. Null when nothing is cached or the stored row failed to parse — the two are indistinguishable here, and the second also silently enqueues a repair.",
+        "The cached insight payload from the account's cache row, with its `dailyBriefing` resolved for today: null when the text was generated on an earlier calendar day in the account's timezone (or carries no `briefingGeneratedAt`, the moment it was generated), otherwise without the signals of the day whose reading-backed metric has no reading today, and with each signal delta at its metric's display precision in the reader's number format. Null when nothing is cached or the stored row failed to parse — the two are indistinguishable here, and the second also silently enqueues a repair.",
       ),
     cached: z
       .boolean()
@@ -2615,7 +2615,9 @@ export const insightsGeneratePostResponse = z
   .object({
     insights: z
       .record(z.string(), z.unknown())
-      .describe("The insight payload, fresh or cached depending on `cached`."),
+      .describe(
+        "The insight payload, fresh or cached depending on `cached`, with its `dailyBriefing` resolved for today exactly as on the read GET. A cached briefing generated on an earlier calendar day never short-circuits an account with a provider: like a briefingless cache, it regenerates, and degrades to the cached payload on an exhausted quota.",
+      ),
     cached: z.boolean(),
     cachedAt: z.iso
       .datetime({ offset: true })

@@ -607,8 +607,45 @@ describe("<TodayHero> Today overview", () => {
     // Full width under lead and ring below md, the leading column from md.
     expect(cellClass("today-hero-today")).toContain("col-span-2");
     expect(cellClass("today-hero-today")).toContain("md:col-span-1");
-    expect(cellClass("today-hero-score")).toContain("col-start-2");
-    expect(cellClass("today-hero-score")).toContain("md:row-span-2");
+    // The slot's own classes, for elements that are grid items themselves.
+    const slotClass = (slot: string) =>
+      new RegExp(`data-slot="${slot}" class="([^"]*)"`).exec(read)?.[1] ?? "";
+    // Below md the dial is the top-right cell and its meta lines a row of
+    // their own under it; from md up the column spans both rows as before.
+    expect(slotClass("today-hero-score")).toContain("col-start-2");
+    expect(slotClass("today-hero-score")).toContain("row-start-1");
+    expect(slotClass("today-hero-score-column")).toContain("contents");
+    expect(slotClass("today-hero-score-column")).toContain("md:row-span-2");
+  });
+
+  it("gives the score's meta lines a full-width row on a phone, not the dial's width", () => {
+    const html = render(
+      <TodayHero
+        digest={digest({
+          today: FACTS,
+          worthALook: [],
+          score: {
+            value: 63,
+            band: "yellow",
+            delta: -6,
+            deltaReason: null,
+            steadyWeeks: null,
+          },
+        })}
+      />,
+      "de",
+    );
+    const meta = /data-slot="today-hero-score-meta" class="([^"]*)"/.exec(
+      html,
+    )?.[1];
+    expect(meta).toContain("col-span-2");
+    expect(meta).toContain("md:contents");
+    // No line is capped to the 80 px dial any more.
+    expect(html).not.toContain("max-w-20");
+    // The facts move one row down to make room for it.
+    expect(html).toMatch(
+      /class="[^"]*row-start-3[^"]*"><div[^>]*data-slot="today-hero-today"/,
+    );
   });
 
   it("stacks each fact's label above its value, both on the reading edge", () => {

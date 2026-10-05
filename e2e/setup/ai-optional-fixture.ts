@@ -77,6 +77,8 @@ export async function resetAiOptionalAccount(): Promise<void> {
 export async function seedStoredBriefing(marker: string): Promise<void> {
   const insights = {
     dailyBriefing: { paragraph: marker, keyFindings: [] },
+    // Generated now: only text written today is served as today's read.
+    briefingGeneratedAt: new Date().toISOString(),
   };
   await withAccount(async (pool, userId) => {
     await pool.query(

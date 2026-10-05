@@ -279,6 +279,8 @@ function cachedBriefing(marker: string): string {
       paragraph: `Briefing for the ${marker}. Second sentence.`,
       keyFindings: [],
     },
+    // Generated now: only text written today is served as today's read.
+    briefingGeneratedAt: new Date().toISOString(),
   });
 }
 

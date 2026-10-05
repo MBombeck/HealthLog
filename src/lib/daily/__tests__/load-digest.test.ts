@@ -363,6 +363,15 @@ describe("loadDailyDigest — AI parts", () => {
   });
 });
 
+describe("loadDailyDigest — the briefing as the snapshot read resolved it", () => {
+  it("reads the snapshot on its own clock, so both agree on today", async () => {
+    await loadDailyDigest(USER, NOW);
+    expect(vi.mocked(readDashboardSnapshotCached).mock.calls[0][2]).toEqual(
+      expect.objectContaining({ now: NOW }),
+    );
+  });
+});
+
 /** A reminder row as the preventive read selects it; due this morning. */
 function reminderRow(over: Record<string, unknown> = {}) {
   return {
