@@ -260,9 +260,9 @@ export function ReadAloudButton({ content }: { content: string }) {
       className={COACH_ICON_BUTTON}
     >
       {speaking ? (
-        <VolumeX className="size-3.5" aria-hidden="true" />
+        <VolumeX className="size-4" aria-hidden="true" />
       ) : (
-        <Volume2 className="size-3.5" aria-hidden="true" />
+        <Volume2 className="size-4" aria-hidden="true" />
       )}
     </button>
   );

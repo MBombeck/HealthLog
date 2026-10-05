@@ -2,7 +2,9 @@
 
 /**
  * v1.39.4 — up to three follow-up chips under the latest assistant reply.
- * A tap sends the chip's label as the message with
+ * They sit inside the answer's own column, on the bubble's left edge and at
+ * the answer's text size, so they read as part of the reply rather than as
+ * thread chrome. A tap sends the chip's label as the message with
  * `followUp: { messageId, id }`; the server resolves what the chip asks for.
  *
  * The label is the server's rendering in the request locale. It is not
@@ -46,7 +48,7 @@ export function CoachFollowUpChips({
       aria-label={t(COACH_FOLLOW_UP_UI_KEYS.groupLabel)}
       data-slot="coach-follow-up-chips"
       data-message-id={messageId}
-      className="flex flex-wrap gap-2"
+      className="flex max-w-full flex-wrap gap-2"
     >
       {chips.map((chip) => (
         <Button
@@ -54,7 +56,10 @@ export function CoachFollowUpChips({
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11"
+          // The answer's own scale (text-sm, regular weight); the 44 px tap
+          // floor below `sm`, 36 px beside a pointer. A long label wraps
+          // inside the pill instead of pushing past the column at 390 px.
+          className="h-auto min-h-11 max-w-full rounded-full px-3 py-1.5 text-left text-sm leading-snug font-normal whitespace-normal sm:min-h-9"
           data-follow-up-id={chip.id}
           data-follow-up-kind={chip.kind}
           onClick={() => {

@@ -2877,7 +2877,6 @@
       "sourcesFresh": "Fresh",
       "sourcesStale": "Stale",
       "sourcesFooter": "The Coach reads only the data you've connected.",
-      "evidenceLabel": "What I'm looking at",
       "metric": {
         "bp": "Blood pressure",
         "weight": "Weight",
@@ -2956,10 +2955,6 @@
       "settingsSave": "Save",
       "settingsSaved": "Saved",
       "settingsCancel": "Cancel",
-      "feedbackHelpful": "Helpful",
-      "feedbackUnhelpful": "Not quite",
-      "feedbackThanks": "Thanks for the signal.",
-      "feedbackError": "Could not save feedback",
       "dailyLimitTitle": "Daily limit reached",
       "dailyLimitBody": "Daily limit reached. The budget refreshes at midnight UTC.",
       "providerRateLimitTitle": "Provider rate-limited",
@@ -3128,6 +3123,15 @@
         "saving": "Saving…",
         "saveFailed": "That change could not be saved.",
         "allSettings": "All AI settings"
+      },
+      "answer": {
+        "scrollToBottom": "Jump to the latest message",
+        "rememberDone": "Remembered",
+        "timeYesterday": "yesterday {time}",
+        "timeEarlier": "{date}, {time}",
+        "areasDoneOne": "Looked at 1 area",
+        "areasDoneFew": "Looked at {count} areas",
+        "areasDoneOther": "Looked at {count} areas"
       }
     },
     "relativeJustNow": "just now",
