@@ -11,10 +11,11 @@ dashboard card fits a phone; text fields lose the purple focus ring.
   shared per-turn snapshot capped at 24,000 characters; on accounts with many
   series whole blocks became a placeholder and the tool still answered
   `present: true`. A trimmed block is now re-read for the tool's own source,
-  a single-source read is condensed (summary, newest days, weekly and monthly
-  means) instead of emptied, a block without numbers answers
-  `retrieval_failed`, and the Coach calls the table tool itself for long
-  histories. The step list shows the reading count; no stray comma on copy.
+  a Coach tool's read of one source is condensed (summary, newest days,
+  weekly and monthly means) instead of emptied, a block without numbers
+  answers `retrieval_failed` to the Coach, and the Coach calls the table tool
+  itself for long histories. MCP reads are unchanged. The step list shows
+  the reading count; no stray comma on copy.
 - **"Today" from yesterday's readings.** Signals of the day, the vitals fact,
   the lead line, the health status and the morning push only speak about
   today from readings taken today in the profile timezone; a stored briefing

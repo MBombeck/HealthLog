@@ -276,8 +276,13 @@ async function readToolSnapshot(
   reach: CoachHistoryReach,
 ) {
   const scope = scopeFor(sources, window, fallbackWindow, sharedScope, reach);
+  if (scope !== sharedScope) {
+    return buildCoachSnapshot(userId, scope, {
+      reach,
+      condenseRequested: true,
+    });
+  }
   const snapshot = await buildCoachSnapshot(userId, scope, { reach });
-  if (scope !== sharedScope) return snapshot;
   const cut = sectionKeys.filter((key) =>
     snapshot.degradedBlocks?.includes(key),
   );
@@ -289,7 +294,7 @@ async function readToolSnapshot(
   return buildCoachSnapshot(
     userId,
     { sources, window: scope.window },
-    { reach },
+    { reach, condenseRequested: true },
   );
 }
 
@@ -567,6 +572,16 @@ async function getMetricSeries(
       reach,
     );
   }
+  if (sourceSnapshot) {
+    // MCP: the section exactly as it always was, without the figure check
+    // below: an MCP client reads `present` by its own contract (absence is
+    // "not recorded"), and its output stays byte for byte what it was.
+    return {
+      present: true,
+      data: { metric, section },
+      grounding: snapshot.referenceGrounding ?? undefined,
+    };
+  }
   // A block without a single figure (a bare unit, an `omitted` marker) is
   // not an answer: "present" with nothing in it is what the model then
   // repeats to the person. Say the read failed instead.
@@ -576,14 +591,6 @@ async function getMetricSeries(
       meta: { tool: "get_metric_series", metric },
     });
     return { present: false, reason: "retrieval_failed" };
-  }
-  if (sourceSnapshot) {
-    // MCP: the section exactly as it always was.
-    return {
-      present: true,
-      data: { metric, section },
-      grounding: snapshot.referenceGrounding ?? undefined,
-    };
   }
   // Outside MCP the read is a Coach snapshot, which counts what it read.
   const counts = (snapshot as Partial<CoachSnapshotResult>).provenance

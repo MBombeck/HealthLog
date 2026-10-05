@@ -199,13 +199,26 @@ export async function buildCoachSnapshot(
      * one, as it always did.
      */
     reach?: CoachHistoryReach;
+    /**
+     * A Coach tool reading one source: condense that source's blocks to the
+     * prompt budget instead of shedding them (`series-condense.ts`). Every
+     * other caller, MCP among them, keeps the plain budget pass, so its
+     * output is what it always was.
+     */
+    condenseRequested?: boolean;
   },
 ): Promise<CoachSnapshotResult> {
   const reach = options?.reach ?? UNBOUNDED_REACH;
-  const key = snapshotCacheKey(userId, scope, reach);
+  const condenseRequested = options?.condenseRequested === true;
+  const key = `${snapshotCacheKey(userId, scope, reach)}${condenseRequested ? "|condense" : ""}`;
   const cached = readSnapshotCache(key);
   if (cached) return cached;
-  const result = await buildCoachSnapshotImpl(userId, scope, reach);
+  const result = await buildCoachSnapshotImpl(
+    userId,
+    scope,
+    reach,
+    condenseRequested,
+  );
   writeSnapshotCache(key, result);
   return result;
 }
@@ -237,6 +250,7 @@ async function buildCoachSnapshotImpl(
   userId: string,
   scope: CoachScope | undefined,
   reach: CoachHistoryReach,
+  condenseRequested: boolean,
 ): Promise<CoachSnapshotResult> {
   // Prefs, module gates and the admitted sources — see `snapshot-prelude.ts`.
   // The lookback limit caps the narration window there, whatever the caller
@@ -1062,7 +1076,9 @@ async function buildCoachSnapshotImpl(
   // a metric page) asked for that source's blocks: those are condensed, never
   // emptied, and only after everything else has been shed.
   const requestedSource =
-    Array.isArray(scope?.sources) && scope.sources.length === 1
+    condenseRequested &&
+    Array.isArray(scope?.sources) &&
+    scope.sources.length === 1
       ? scope.sources[0]
       : null;
   const requestedBlocks = new Set(

@@ -21,11 +21,21 @@ import {
 } from "@/lib/ai/coach/series-condense";
 
 const buildCoachSnapshot =
-  vi.fn<(userId: string, scope?: unknown) => Promise<CoachSnapshotResult>>();
+  vi.fn<
+    (
+      userId: string,
+      scope?: unknown,
+      options?: unknown,
+    ) => Promise<CoachSnapshotResult>
+  >();
 vi.mock("@/lib/ai/coach/snapshot", async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  buildCoachSnapshot: (userId: string, scope?: unknown) =>
-    buildCoachSnapshot(userId, scope),
+  buildCoachSnapshot: (userId: string, scope?: unknown, options?: unknown) =>
+    buildCoachSnapshot(userId, scope, options),
+}));
+const buildCoachSourceSnapshot = vi.fn();
+vi.mock("@/lib/ai/coach/source-snapshot", () => ({
+  buildCoachSourceSnapshot: (...a: unknown[]) => buildCoachSourceSnapshot(...a),
 }));
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -306,5 +316,59 @@ describe("the prompt-budget pass on a single-source read", () => {
     expect(fat).not.toHaveProperty("omitted");
     expect(fat.summary).toMatchObject({ points: 534, last: 43 });
     expect(degraded.map((d) => d.key).at(-1)).toBe("fatMass");
+  });
+});
+
+describe("the MCP read stays as it was", () => {
+  beforeEach(() => {
+    buildCoachSnapshot.mockReset();
+    buildCoachSourceSnapshot.mockReset();
+  });
+
+  it("hands on the section as built, without the Coach's figure check", async () => {
+    buildCoachSourceSnapshot.mockResolvedValue({
+      sections: { fatMass: { unit: "kg" } },
+      referenceGrounding: null,
+    });
+    const result = await executeCoachTool({
+      userId: "u1",
+      name: "get_metric_series",
+      rawArguments: JSON.stringify({ metric: "fat_mass", window: "allTime" }),
+      sourceSnapshot: true,
+    });
+    expect(JSON.stringify(result)).toBe(
+      JSON.stringify({
+        present: true,
+        data: { metric: "fat_mass", section: { unit: "kg" } },
+      }),
+    );
+    expect(buildCoachSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("condenses only on a Coach read of one source", async () => {
+    buildCoachSnapshot.mockImplementation(async (_u, scope) =>
+      scope === SHARED
+        ? snapshot(
+            { fatMass: { omitted: "trimmed for prompt budget" } },
+            { degradedBlocks: ["fatMass"] },
+          )
+        : snapshot({ fatMass: FAT_MASS }),
+    );
+    // Shared build first (plain), then the re-read of the one source.
+    await series({ metric: "fat_mass", window: "allTime" });
+    expect(buildCoachSnapshot.mock.calls[0][2]).toEqual({
+      reach: UNBOUNDED_REACH,
+    });
+    expect(buildCoachSnapshot.mock.calls[1][2]).toEqual({
+      reach: UNBOUNDED_REACH,
+      condenseRequested: true,
+    });
+    // A window other than the turn's is its own single-source read.
+    buildCoachSnapshot.mockClear();
+    await series({ metric: "fat_mass", window: "last90days" });
+    expect(buildCoachSnapshot.mock.calls[0][2]).toEqual({
+      reach: UNBOUNDED_REACH,
+      condenseRequested: true,
+    });
   });
 });
