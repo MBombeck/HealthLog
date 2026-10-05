@@ -141,8 +141,13 @@ export function TodayHero({
   // a briefing sentence with content while AI text is available, otherwise a
   // deterministic sentence about the day's strongest signal. Greetings and a
   // sentence that only repeats the ring's number never reach it, so the hero
-  // renders it verbatim and decides nothing about it.
-  const lead = digest.lead?.text ?? null;
+  // renders it verbatim and decides nothing about it. A digest the service
+  // worker cached before the field existed has no `lead` at all; it falls
+  // back to the lines that version led with.
+  const lead =
+    digest.lead === undefined
+      ? (digest.reactionLine ?? digest.briefingLead ?? null)
+      : (digest.lead?.text ?? null);
   const topSignal = digest.topSignal;
   // The briefing's top signal rides under an AI lead as its supporting line,
   // and only with what the lead does not already say: a headline the lead
