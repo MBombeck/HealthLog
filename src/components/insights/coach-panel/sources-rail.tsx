@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Eye, Loader2, Target } from "lucide-react";
 import { toast } from "sonner";
 
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -162,12 +163,9 @@ export function SourcesRail({ className, activeScopeLabel }: SourcesRailProps) {
           under the picker states what the Coach reads at this setting, with
           the numbers the server readers use. */}
       <div data-slot="coach-sources-window" className="flex flex-col gap-1">
-        <label
-          htmlFor="coach-sources-window-select"
-          className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
-        >
+        <Label htmlFor="coach-sources-window-select" noColon>
           {t("insights.coach.lookback.label")}
-        </label>
+        </Label>
         <Select
           value={activeWindow}
           onValueChange={(v) => setWindow(v as CoachDefaultWindow)}
@@ -177,7 +175,7 @@ export function SourcesRail({ className, activeScopeLabel }: SourcesRailProps) {
             id="coach-sources-window-select"
             data-slot="coach-sources-window-trigger"
             size="default"
-            className="h-9 text-sm"
+            className="w-full text-sm"
             aria-describedby="coach-sources-window-detail"
           >
             <SelectValue />

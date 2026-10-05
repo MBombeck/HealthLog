@@ -212,7 +212,7 @@ export function CoachModelPicker() {
   return (
     <div data-slot="coach-model-picker" className="flex flex-col gap-4">
       <div>
-        <Label htmlFor="coach-quick-provider">
+        <Label htmlFor="coach-quick-provider" noColon>
           {t("insights.coach.frame.provider")}
         </Label>
         <NativeSelect
@@ -241,7 +241,7 @@ export function CoachModelPicker() {
 
       {model.kind === "preset" ? (
         <div>
-          <Label htmlFor="coach-quick-model">
+          <Label htmlFor="coach-quick-model" noColon>
             {t("settings.ai.modelLabel")}
           </Label>
           <NativeSelect
@@ -284,6 +284,7 @@ export function CoachModelPicker() {
       {reasoning ? (
         <ReasoningEffortField
           id="coach-quick-reasoning"
+          noColon
           value={reasoning.value}
           onChange={(next) => patchProvider.mutate({ [reasoning.field]: next })}
         />
@@ -324,7 +325,7 @@ function GatewayModelField({
         if (changed) onSave(draft.trim() || null);
       }}
     >
-      <Label htmlFor="coach-quick-gateway-model">
+      <Label htmlFor="coach-quick-gateway-model" noColon>
         {t("settings.ai.modelLabel")}
       </Label>
       <div className="flex items-center gap-2">
