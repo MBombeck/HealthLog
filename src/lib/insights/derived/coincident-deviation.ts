@@ -77,7 +77,8 @@ export const COINCIDENT_MIN_BANDS = 2;
  * fasting mean, and a band built from whole days sits well above it: a
  * perfectly ordinary morning read as "below your range". For these types a
  * day still in progress is compared with the same hours of the earlier days
- * (each day cut at the current local clock time), never with whole days.
+ * (each day cut at the local time of today's latest reading), never with
+ * whole days.
  */
 const SAME_HOURS_TYPES: ReadonlySet<MeasurementType> = new Set([
   "BLOOD_GLUCOSE",
@@ -113,20 +114,26 @@ export function sameHoursStanding(
   };
 }
 
-/** The current local clock time in `tz`, `HH:MM:SS`. */
-function localClockNow(now: Date, tz: string): string {
-  const c = wallClockInTz(now, tz);
+/** The local clock time of an instant in `tz`, `HH:MM:SS`. */
+function localClockOf(at: Date, tz: string): string {
+  const c = wallClockInTz(at, tz);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${pad(c.hour)}:${pad(c.minute)}:${pad(c.second)}`;
 }
 
-/** Per-day aggregates of the window, each day cut at the current clock. */
+/**
+ * Per-day aggregates of the window, each day cut at the local clock time of
+ * today's latest reading. Not at `now`: at two in the afternoon a day whose
+ * only reading is the 07:00 fasting value would otherwise be held against
+ * earlier days that include their lunch.
+ */
 async function readSameHoursDays(
   userId: string,
   type: MeasurementType,
   windowDays: number,
   now: Date,
   tz: string,
+  cutAt: Date,
 ) {
   return readDayAggregates({
     userId,
@@ -135,7 +142,7 @@ async function readSameHoursDays(
     until: now,
     timeZone: tz,
     valueRange: plausibleMetricRange(type),
-    upToLocalTime: localClockNow(now, tz),
+    upToLocalTime: localClockOf(cutAt, tz),
   });
 }
 
@@ -162,6 +169,14 @@ export interface VitalDeviation {
    * `contributing` below already does.
    */
   daysAgo: number;
+  /**
+   * `"sameHours"` when today's value was held against the same hours of the
+   * earlier days rather than their whole-day band (a day still in progress
+   * for a type whose day mean moves with the hour, see `SAME_HOURS_TYPES`).
+   * `low` / `high` are then the usual range for this time of day, and a
+   * surface naming them says so. Absent for the whole-day comparison.
+   */
+  basis?: "sameHours";
 }
 
 export interface CoincidentDeviationValue {
@@ -195,6 +210,7 @@ export function classifyDeviation(
   high: number,
   center: number,
   daysAgo: number = 0,
+  basis?: "sameHours",
 ): VitalDeviation {
   const above = value > high;
   const below = value < low;
@@ -207,6 +223,7 @@ export function classifyDeviation(
     outside: above || below,
     direction: above ? "above" : below ? "below" : "in",
     daysAgo,
+    ...(basis ? { basis } : {}),
   };
 }
 
@@ -241,7 +258,7 @@ async function readLatestDayMean(
   windowDays: number,
   now: Date,
   tz: string,
-): Promise<{ value: number; day: string } | null> {
+): Promise<{ value: number; day: string; lastAt: Date } | null> {
   const since = new Date(now.getTime() - windowDays * MS_PER_DAY);
   const rows = await prisma.measurement.findMany({
     where: { userId, type, deletedAt: null, measuredAt: { gte: since } },
@@ -268,7 +285,7 @@ export function latestDayMeanFromRows(
   rows: readonly { value: number; measuredAt: Date }[],
   type: MeasurementType,
   tz: string,
-): { value: number; day: string } | null {
+): { value: number; day: string; lastAt: Date } | null {
   const usable = rows.filter((r) => isPlausibleMetricValue(type, r.value));
   if (usable.length === 0) return null;
   // Derive the most-recent day defensively (do not assume the DB ordering)
@@ -282,6 +299,7 @@ export function latestDayMeanFromRows(
   return {
     value: sameDay.reduce((s, r) => s + r.value, 0) / sameDay.length,
     day,
+    lastAt: new Date(Math.max(...sameDay.map((r) => r.measuredAt.getTime()))),
   };
 }
 
@@ -329,7 +347,14 @@ export async function computeCoincidentDeviation(
       const sameHours =
         latest && latest.day === todayKey && SAME_HOURS_TYPES.has(type)
           ? sameHoursStanding(
-              await readSameHoursDays(userId, type, windowDays, now, tz),
+              await readSameHoursDays(
+                userId,
+                type,
+                windowDays,
+                now,
+                tz,
+                latest.lastAt,
+              ),
               todayKey,
               type,
             )
@@ -357,6 +382,7 @@ export async function computeCoincidentDeviation(
             sameHours.high,
             sameHours.center,
             0,
+            "sameHours",
           )
         : classifyDeviation(
             type,

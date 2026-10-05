@@ -282,6 +282,31 @@ describe("glucose — a day in progress is compared with the same hours", () => 
     expect(glucose!.center).toBe(85);
   });
 
+  it("cuts earlier days at today's latest reading, not at the clock", async () => {
+    // 14:00, and today holds only the 07:00 fasting value. Cut at 14:00 the
+    // earlier days include their 13:00 post-meal readings (mean ~122) and the
+    // morning read as low; cut at 07:00 they are fasting too.
+    findMany.mockImplementation(async (args: { where: { type: string } }) => {
+      if (args.where.type === "BLOOD_GLUCOSE") {
+        return [
+          ...glucoseDays(["07:00", "13:00", "19:00"], [85, 160, 150]),
+          { value: 84, measuredAt: new Date("2026-06-02T07:00:00Z") },
+        ];
+      }
+      if (args.where.type === "RESTING_HEART_RATE") return rhrFlat;
+      return [];
+    });
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: new Date("2026-06-02T14:00:00Z"),
+      tz: "UTC",
+    });
+    if (result.status !== "ok") throw new Error("expected ok");
+    const glucose = result.value.vitals.find((v) => v.type === "BLOOD_GLUCOSE");
+    expect(glucose!.direction).toBe("in");
+    expect(glucose!.center).toBe(85);
+    expect(glucose!.basis).toBe("sameHours");
+  });
+
   it("still flags a morning that is low against earlier mornings", async () => {
     findMany.mockImplementation(async (args: { where: { type: string } }) => {
       if (args.where.type === "BLOOD_GLUCOSE") {

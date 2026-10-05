@@ -30,6 +30,12 @@ export interface HealthStatusDeviation {
   high: number;
   /** Which side of the band the value falls on. */
   direction: "above" | "below";
+  /**
+   * What the band describes: the whole day (`day`), or the same hours of the
+   * earlier days (`sameHours`), for a day still in progress whose mean moves
+   * with the hour (glucose). A surface naming the range says which.
+   */
+  basis: "day" | "sameHours";
 }
 
 /** One dated, sustained level shift from the changepoint detector. */
@@ -75,6 +81,7 @@ export function summariseHealthStatus(
       low: v.low,
       high: v.high,
       direction: v.direction === "above" ? "above" : "below",
+      basis: v.basis ?? "day",
     }));
 
   const mappedShifts: HealthStatusShift[] = shifts.map((s) => ({

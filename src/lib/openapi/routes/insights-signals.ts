@@ -28,6 +28,11 @@ const healthStatusResponse = z
         low: z.number(),
         high: z.number(),
         direction: z.enum(["above", "below"]),
+        basis: z
+          .enum(["day", "sameHours"])
+          .describe(
+            "What `low`/`high` describe: the usual whole day (`day`), or the usual range for this time of day (`sameHours`), used for a day still in progress whose mean moves with the hour (glucose). Additive since v1.40.3.",
+          ),
       }),
     ),
     shifts: z.array(

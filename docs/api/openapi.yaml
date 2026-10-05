@@ -60433,6 +60433,14 @@ components:
                 enum:
                   - above
                   - below
+              basis:
+                type: string
+                enum:
+                  - day
+                  - sameHours
+                description: "What `low`/`high` describe: the usual whole day (`day`), or the usual range for this time of day
+                  (`sameHours`), used for a day still in progress whose mean moves with the hour (glucose). Additive
+                  since v1.40.3."
             required:
               - type
               - value
@@ -60440,6 +60448,7 @@ components:
               - low
               - high
               - direction
+              - basis
             additionalProperties: false
         shifts:
           type: array

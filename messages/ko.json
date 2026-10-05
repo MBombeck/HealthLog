@@ -4492,6 +4492,7 @@
       "shiftUp": "{vital} — 최근 평소 수준보다 올라갔어요.",
       "shiftDown": "{vital} — 최근 평소 수준보다 내려갔어요.",
       "rangeContext": "지금 {value}, 평소 {low}–{high}.",
+      "rangeContextTimeOfDay": "지금 {value}, 이 시간대 평소 {low}–{high}.",
       "shiftContext": "이전엔 약 {before}, 이후엔 {after}."
     },
     "breathingScreening": {
@@ -11018,6 +11019,7 @@
       "steadyWeeksOther": "{count}주째 안정적",
       "valueWithUnit": "{value} {unit}",
       "rangeWithUnit": "{low}~{high} {unit}",
+      "rangeAtThisTime": "이 시간대 기준 {range}",
       "vital": {
         "RESTING_HEART_RATE": "안정 시 심박수",
         "HEART_RATE_VARIABILITY": "심박 변이도",

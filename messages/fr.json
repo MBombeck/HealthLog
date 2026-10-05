@@ -4492,6 +4492,7 @@
       "shiftUp": "{vital} a augmenté par rapport à votre normale récente.",
       "shiftDown": "{vital} a diminué par rapport à votre normale récente.",
       "rangeContext": "Actuellement {value}, habituellement {low}–{high}.",
+      "rangeContextTimeOfDay": "Actuellement {value}, habituellement {low}–{high} à ce moment de la journée.",
       "shiftContext": "Environ {before} avant, {after} depuis."
     },
     "breathingScreening": {
@@ -11018,6 +11019,7 @@
       "steadyWeeksOther": "Stable depuis {count} semaines",
       "valueWithUnit": "{value} {unit}",
       "rangeWithUnit": "{low} à {high} {unit}",
+      "rangeAtThisTime": "{range} pour ce moment de la journée",
       "vital": {
         "RESTING_HEART_RATE": "Fréquence cardiaque au repos",
         "HEART_RATE_VARIABILITY": "Variabilité de la fréquence cardiaque",
