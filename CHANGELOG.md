@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.40.5] — 2026-10-05
+
+The Coach's conversation panel runs the full height of the window.
+
+### Changed
+
+- **Coach panel.** Docked, the panel runs from the top of the window to the
+  bottom, beside the top bar instead of below it, and its header line
+  continues the top bar's. Shut, nothing of it remains on screen.
+- **Top bar on the Coach.** It names the page and the open conversation, and
+  the panel toggle sits at its right end, against the panel.
+- **New chat.** A round button with a plus at the panel's bottom right.
+
 ## [1.40.4] — 2026-10-05
 
 The Coach's conversation panel docks to the right edge; model and tokens
