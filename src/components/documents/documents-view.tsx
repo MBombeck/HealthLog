@@ -3,7 +3,7 @@
 /**
  * The Dokumente vault — one wide, calm, filing-cabinet-fast surface.
  *
- * Filter state lives in the URL (`?q&kind&episode&year`) so every view is
+ * Filter state lives in the URL (`?q&kind&episode&encounter&year`) so every view is
  * shareable, back-button-safe, and deep-linkable from the illness page and
  * labs. Search debounces 200 ms and `/` focuses it. The timeline below is
  * virtualized; uploads appear optimistically above it in < 100 ms.
@@ -44,7 +44,10 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { useUrlFilterSync } from "@/hooks/use-url-filter-sync";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
 import { apiGet, apiPost } from "@/lib/api/api-fetch";
-import { encounterKindText } from "@/components/encounters/encounter-labels";
+import {
+  bodySiteText,
+  encounterKindText,
+} from "@/components/encounters/encounter-labels";
 import { useEncounters } from "@/hooks/use-encounters";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { EncounterKind } from "@/generated/prisma/client";
@@ -73,12 +76,14 @@ import { useReindexAll } from "./use-content-index";
 import { useDocumentUpload } from "./use-document-upload";
 import { usePageFileDrop } from "./use-page-file-drop";
 import {
+  buildProcedureChoices,
   buildVaultListApiSearch,
   countActiveFilters,
   documentDateKey,
   expandRangeSelection,
   hasProcessingDocument,
   parseVaultSearchParams,
+  type ProcedureFilterChoice,
   resolveBulkShareDocuments,
   SHARE_LINK_MAX_DOCUMENTS,
   vaultFiltersToSearch,
@@ -345,6 +350,17 @@ export function DocumentsView() {
     );
   };
 
+  const toggleEncounter = (encounterId: string) => {
+    applyFilters(
+      {
+        ...filters,
+        encounterId:
+          filters.encounterId === encounterId ? undefined : encounterId,
+      },
+      "push",
+    );
+  };
+
   const toggleYear = (year: number) => {
     applyFilters(
       { ...filters, year: filters.year === year ? undefined : year },
@@ -418,15 +434,19 @@ export function DocumentsView() {
     enqueueRef.current = upload.enqueue;
   }, [upload.enqueue]);
   const episodeIdFilter = filters.episodeId;
+  const encounterIdFilter = filters.encounterId;
   const enqueueFiles = useCallback(
     (files: File[]) => {
       if (files.length === 0) return;
-      enqueueRef.current(files, { episodeId: episodeIdFilter });
+      enqueueRef.current(files, {
+        episodeId: episodeIdFilter,
+        encounterId: encounterIdFilter,
+      });
       setUploadAnnouncement(
         t("documents.upload.queuedAnnouncement", { count: files.length }),
       );
     },
-    [episodeIdFilter, t],
+    [episodeIdFilter, encounterIdFilter, t],
   );
   const { dropActive } = usePageFileDrop(
     canManageDocuments ? enqueueFiles : undefined,
@@ -503,6 +523,42 @@ export function DocumentsView() {
         })),
     [visits.data, t, format],
   );
+
+  // Procedure choices: every procedure carrying at least one live document
+  // link, served by the usage endpoint for the same reason as the condition
+  // chips, plus the actively filtered visit when it is a procedure (see
+  // `buildProcedureChoices`).
+  const procedureChips = useMemo<ProcedureFilterChoice[]>(() => {
+    const activeVisit = filters.encounterId
+      ? [...(visits.data?.upcoming ?? []), ...(visits.data?.past ?? [])].find(
+          (v) => v.id === filters.encounterId && v.kind === "PROCEDURE",
+        )
+      : undefined;
+    return buildProcedureChoices(
+      usage.data?.linkedProcedures ?? [],
+      activeVisit
+        ? {
+            encounterId: activeVisit.id,
+            occurredAt: activeVisit.occurredAt,
+            reason: activeVisit.reason,
+            bodySite: activeVisit.bodySite,
+            laterality: activeVisit.laterality,
+            practitionerName: activeVisit.practitioner?.name ?? null,
+          }
+        : null,
+      {
+        kindName: encounterKindText(t, "PROCEDURE"),
+        siteText: (site, laterality) => bodySiteText(t, site, laterality),
+        formatDate: (iso) => format.date(iso),
+      },
+    );
+  }, [
+    usage.data?.linkedProcedures,
+    filters.encounterId,
+    visits.data,
+    t,
+    format,
+  ]);
 
   // Year segmenter: years present in the loaded corpus (+ the active year).
   const years = useMemo(() => {
@@ -921,6 +977,9 @@ export function DocumentsView() {
         conditionChips={conditionChips}
         activeEpisodeId={filters.episodeId}
         onToggleEpisode={toggleEpisode}
+        procedureChips={procedureChips}
+        activeEncounterId={filters.encounterId}
+        onToggleEncounter={toggleEncounter}
         years={years}
         activeYear={filters.year}
         onToggleYear={toggleYear}

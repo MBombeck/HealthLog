@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * The vault's sticky filter rail: debounced title/filename search plus three
+ * The vault's sticky filter rail: debounced title/filename search plus four
  * compact dropdown facets — type (multi-select, OR inside the facet),
- * condition (episodes that actually carry links, single-select), and year
- * (years present in the corpus, single-select) — and a one-tap clear with
- * the active-facet count.
+ * condition (episodes that actually carry links, single-select), procedure
+ * (procedures and surgeries that actually carry links, single-select), and
+ * year (years present in the corpus, single-select) — and a one-tap clear
+ * with the active-facet count.
  *
  * The controls sit on ONE row at every width: the search flexes and can
  * shrink to nothing while each dropdown trigger stays a fixed compact
@@ -24,6 +25,7 @@ import {
   ChevronDown,
   ListFilter,
   ScanSearch,
+  Scissors,
   Search,
   X,
 } from "lucide-react";
@@ -43,14 +45,21 @@ import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import type { InboundDocumentKindValue } from "@/lib/validations/inbound-documents";
 import { DOCUMENT_KIND_ICONS, DOCUMENT_KIND_ORDER } from "./document-kind-meta";
+import type { ProcedureFilterChoice } from "./vault-utils";
 
-/** Active-facet tint on a dropdown trigger — mirrors the app pill vocabulary. */
-const TRIGGER_ACTIVE = "border-primary/40 bg-primary/10 text-foreground";
+/**
+ * Active-facet tint on a dropdown trigger — mirrors the app pill vocabulary.
+ * An active trigger may also shrink (its label truncates further), so on a
+ * phone with several facets set the row gives up label width before it gives
+ * up the search field.
+ */
+const TRIGGER_ACTIVE =
+  "border-primary/40 bg-primary/10 text-foreground min-w-0 shrink";
 /** Shared trigger chrome: compact, fixed, never shrinks below its label. */
 const TRIGGER_CLASSES = "shrink-0 gap-1.5 font-normal";
 
 /**
- * The facet label is the whole point of the trigger — but three text labels
+ * The facet label is the whole point of the trigger — but four text labels
  * plus the search will not fit a 360px phone. So the label shows from `sm`
  * up, and on a phone only when the facet is ACTIVE (truncated), while the
  * leading icon always carries the facet identity. The trailing chevron is
@@ -59,7 +68,10 @@ const TRIGGER_CLASSES = "shrink-0 gap-1.5 font-normal";
  * pinned via `aria-label` so an icon-only trigger still announces its state.
  */
 function facetLabelClass(active: boolean): string {
-  return cn("max-w-28 truncate", active ? "inline" : "hidden sm:inline");
+  return cn(
+    "max-w-28 min-w-0 truncate",
+    active ? "inline" : "hidden sm:inline",
+  );
 }
 
 export interface ConditionChip {
@@ -76,6 +88,9 @@ export function DocumentFilterBar({
   conditionChips,
   activeEpisodeId,
   onToggleEpisode,
+  procedureChips,
+  activeEncounterId,
+  onToggleEncounter,
   years,
   activeYear,
   onToggleYear,
@@ -94,6 +109,9 @@ export function DocumentFilterBar({
   conditionChips: ConditionChip[];
   activeEpisodeId: string | undefined;
   onToggleEpisode: (episodeId: string) => void;
+  procedureChips: ProcedureFilterChoice[];
+  activeEncounterId: string | undefined;
+  onToggleEncounter: (encounterId: string) => void;
   years: number[];
   activeYear: number | undefined;
   onToggleYear: (year: number) => void;
@@ -120,6 +138,12 @@ export function DocumentFilterBar({
   const conditionLabel =
     activeCondition?.name ?? t("documents.filter.conditionAll");
 
+  const activeProcedure = procedureChips.find(
+    (chip) => chip.encounterId === activeEncounterId,
+  );
+  const procedureLabel =
+    activeProcedure?.name ?? t("documents.filter.procedureAll");
+
   const yearLabel =
     activeYear !== undefined
       ? String(activeYear)
@@ -132,10 +156,12 @@ export function DocumentFilterBar({
     >
       {/* One row at every width: the search flexes (min-w-0 → it can shrink to
           nothing), every dropdown trigger stays a fixed compact control, and
-          the clear pins to the trailing edge. `flex-nowrap` guarantees the bar
+          the clear pins to the trailing edge. The search keeps at least its
+          icon plus its padding (the `/` hint and its padding are desktop
+          only), so it never bleeds under the next control. `flex-nowrap` guarantees the bar
           never breaks to a second line. */}
       <div className="flex flex-nowrap items-center gap-2">
-        <div className="relative min-w-0 flex-1">
+        <div className="relative min-w-12 flex-1">
           <Search
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
             aria-hidden
@@ -147,7 +173,7 @@ export function DocumentFilterBar({
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={t("documents.filter.searchPlaceholder")}
             aria-label={t("documents.filter.searchLabel")}
-            className="pr-8 pl-9"
+            className="min-w-0 pr-3 pl-9 sm:pr-8"
             aria-keyshortcuts="/"
           />
           <kbd
@@ -246,6 +272,58 @@ export function DocumentFilterBar({
                   onCheckedChange={() => onToggleEpisode(chip.episodeId)}
                 >
                   <span className="max-w-56 truncate">{chip.name}</span>
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+
+        {/* Procedure — single-select; only rendered when procedures carry
+            links. Same cadence as the condition facet beside it. */}
+        {procedureChips.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-slot="document-procedure-filter"
+                aria-label={procedureLabel}
+                className={cn(
+                  TRIGGER_CLASSES,
+                  activeProcedure && TRIGGER_ACTIVE,
+                )}
+              >
+                <Scissors className="size-4 shrink-0" aria-hidden />
+                <span className={facetLabelClass(Boolean(activeProcedure))}>
+                  {procedureLabel}
+                </span>
+                <ChevronDown
+                  className="hidden size-3.5 opacity-60 sm:inline"
+                  aria-hidden
+                />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              aria-label={t("documents.filter.procedureGroup")}
+            >
+              <DropdownMenuLabel>
+                {t("documents.filter.procedureGroup")}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {procedureChips.map((chip) => (
+                <DropdownMenuCheckboxItem
+                  key={chip.encounterId}
+                  checked={chip.encounterId === activeEncounterId}
+                  onCheckedChange={() => onToggleEncounter(chip.encounterId)}
+                >
+                  <span className="flex min-w-0 flex-col">
+                    <span className="max-w-56 truncate">{chip.name}</span>
+                    <span className="text-muted-foreground max-w-56 truncate text-xs">
+                      {chip.detail}
+                    </span>
+                  </span>
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>

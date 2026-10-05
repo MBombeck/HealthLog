@@ -10,6 +10,7 @@
 import {
   DOCUMENT_LIST_DEFAULT_LIMIT,
   INBOUND_DOCUMENT_KINDS,
+  type DocumentLinkedProcedureDto,
   type InboundDocumentDto,
   type InboundDocumentKindValue,
 } from "@/lib/validations/inbound-documents";
@@ -454,4 +455,54 @@ export function documentCardKeyAction(key: string): DocumentCardKeyAction {
   if (key === " ") return "select";
   if (key === "Delete") return "delete";
   return null;
+}
+
+/** One procedure choice in the filter bar, labelled for the reader. */
+export interface ProcedureFilterChoice {
+  encounterId: string;
+  /** The heading the visits page shows for it. */
+  name: string;
+  /** Body site and date, the line that tells two same-named ones apart. */
+  detail: string;
+}
+
+/**
+ * The procedure filter's choices: the usage read's linked procedures, plus the
+ * actively filtered visit when it is a procedure that list does not hold (its
+ * last link was just removed, or a deep link names it). A filtered visit that
+ * is not a procedure adds nothing — it is not a procedure choice.
+ *
+ * Each is labelled the way the visits page heads the row: the reason, else the
+ * practice, else the kind's name. The body site (with its side) and the date
+ * ride the second line. Order is the server's, newest first, with the
+ * appended active visit last.
+ */
+export function buildProcedureChoices(
+  linked: readonly DocumentLinkedProcedureDto[],
+  active: DocumentLinkedProcedureDto | null,
+  labels: {
+    kindName: string;
+    siteText: (
+      bodySite: string | null,
+      laterality: DocumentLinkedProcedureDto["laterality"],
+    ) => string | null;
+    formatDate: (iso: string) => string;
+  },
+): ProcedureFilterChoice[] {
+  const sources = [...linked];
+  if (active && !sources.some((p) => p.encounterId === active.encounterId)) {
+    sources.push(active);
+  }
+  return sources.map((procedure) => {
+    const site = labels.siteText(procedure.bodySite, procedure.laterality);
+    const date = labels.formatDate(procedure.occurredAt);
+    return {
+      encounterId: procedure.encounterId,
+      name:
+        procedure.reason?.trim() ||
+        procedure.practitionerName?.trim() ||
+        labels.kindName,
+      detail: site ? `${site} · ${date}` : date,
+    };
+  });
 }

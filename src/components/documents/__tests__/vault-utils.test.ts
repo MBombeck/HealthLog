@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 import {
+  buildProcedureChoices,
   buildTimelineItems,
   buildVaultListApiSearch,
   classifyUploadFailure,
@@ -455,5 +456,65 @@ describe("documentCardKeyAction", () => {
     for (const key of ["Enter", "Escape", "a", "ArrowDown", "Del"]) {
       expect(documentCardKeyAction(key)).toBeNull();
     }
+  });
+});
+
+describe("buildProcedureChoices", () => {
+  const labels = {
+    kindName: "Procedure or surgery",
+    siteText: (site: string | null, side: string | null) =>
+      site ? (side ? `${site} (${side.toLowerCase()})` : site) : null,
+    formatDate: (iso: string) => iso.slice(0, 10),
+  };
+  const knee = {
+    encounterId: "enc-knee",
+    occurredAt: "2025-10-02T08:00:00.000Z",
+    reason: "Knee arthroscopy",
+    bodySite: "Knee",
+    laterality: "LEFT" as const,
+    practitionerName: "Day clinic",
+  };
+
+  it("heads each choice like the visits page: reason, else practice, else kind", () => {
+    const choices = buildProcedureChoices(
+      [
+        knee,
+        { ...knee, encounterId: "enc-2", reason: null, bodySite: null },
+        {
+          ...knee,
+          encounterId: "enc-3",
+          reason: "  ",
+          practitionerName: null,
+          laterality: null,
+        },
+      ],
+      null,
+      labels,
+    );
+    expect(choices).toEqual([
+      {
+        encounterId: "enc-knee",
+        name: "Knee arthroscopy",
+        detail: "Knee (left) · 2025-10-02",
+      },
+      { encounterId: "enc-2", name: "Day clinic", detail: "2025-10-02" },
+      {
+        encounterId: "enc-3",
+        name: "Procedure or surgery",
+        detail: "Knee · 2025-10-02",
+      },
+    ]);
+  });
+
+  it("keeps an active procedure the usage list no longer holds, once", () => {
+    const gone = { ...knee, encounterId: "enc-gone", reason: "Appendectomy" };
+    const choices = buildProcedureChoices([knee], gone, labels);
+    expect(choices.map((c) => c.encounterId)).toEqual(["enc-knee", "enc-gone"]);
+    // Already listed: not added a second time.
+    expect(buildProcedureChoices([knee], knee, labels)).toHaveLength(1);
+  });
+
+  it("offers nothing when no procedure carries a document", () => {
+    expect(buildProcedureChoices([], null, labels)).toEqual([]);
   });
 });

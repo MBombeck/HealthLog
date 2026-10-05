@@ -10450,11 +10450,13 @@
       "searchPlaceholder": "Rechercher un titre ou un nom de fichier…",
       "typeGroup": "Type de document",
       "conditionGroup": "Affection",
+      "procedureGroup": "Interventions et chirurgies",
       "yearGroup": "Année",
       "clear": "Effacer les filtres",
       "typeAll": "Tous les types",
       "typeCount": "{count} types",
       "conditionAll": "Toutes les affections",
+      "procedureAll": "Toutes les interventions",
       "yearAll": "Toutes les années"
     },
     "card": {

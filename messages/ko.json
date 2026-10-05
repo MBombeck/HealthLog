@@ -10450,11 +10450,13 @@
       "searchPlaceholder": "제목이나 파일명 검색…",
       "typeGroup": "문서 종류",
       "conditionGroup": "질환",
+      "procedureGroup": "시술 및 수술",
       "yearGroup": "연도",
       "clear": "필터 해제",
       "typeAll": "모든 종류",
       "typeCount": "{count}개 종류",
       "conditionAll": "모든 질환",
+      "procedureAll": "모든 시술",
       "yearAll": "모든 연도"
     },
     "card": {

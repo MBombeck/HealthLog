@@ -550,6 +550,81 @@ export async function seedNamespaceDocs(
   }
 }
 
+/** The procedure-filter fixture: two procedures, each with its own files. */
+export const PROCEDURE_KNEE_ID = "e2eprocknee0000000000001";
+export const PROCEDURE_APPENDIX_ID = "e2eprocappx0000000000001";
+export const PROCEDURE_DOC_PREFIX = "procfilter";
+
+/**
+ * Seed the procedure-filter fixture: three namespaced documents and two
+ * procedures — a knee arthroscopy (reason + body site + side) holding two of
+ * them, and an appendectomy holding the third. Dated far from the MRT report
+ * so the visits spec's ±7-day window never sees them. Idempotent: the rows
+ * upsert by fixed id and come back live, so a `resetEncounters` from the visits
+ * spec between runs is repaired by the next call.
+ */
+export async function ensureProcedureFixture(): Promise<void> {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("[vault-fixture] DATABASE_URL is not set");
+  await seedNamespaceDocs(PROCEDURE_DOC_PREFIX, 3);
+  const pool = new pg.Pool({ connectionString: url });
+  try {
+    const userId = await getUserId(pool);
+    const procedures = [
+      {
+        id: PROCEDURE_KNEE_ID,
+        at: "2024-03-12T08:00:00Z",
+        reason: "Knee arthroscopy",
+        site: "Knee",
+        side: "LEFT",
+        docs: [0, 1],
+      },
+      {
+        id: PROCEDURE_APPENDIX_ID,
+        at: "2023-06-20T08:00:00Z",
+        reason: "Appendectomy",
+        site: null,
+        side: null,
+        docs: [2],
+      },
+    ];
+    for (const p of procedures) {
+      await pool.query(
+        `INSERT INTO encounters
+           (id, user_id, occurred_at, status, kind, reason_encrypted,
+            body_site_encrypted, laterality, created_at, updated_at)
+         VALUES ($1, $2, $3, 'DONE', 'PROCEDURE', $4, $5, $6::laterality, NOW(), NOW())
+         ON CONFLICT (id) DO UPDATE SET
+           occurred_at = EXCLUDED.occurred_at, kind = 'PROCEDURE',
+           status = 'DONE', reason_encrypted = EXCLUDED.reason_encrypted,
+           body_site_encrypted = EXCLUDED.body_site_encrypted,
+           laterality = EXCLUDED.laterality, deleted_at = NULL,
+           updated_at = NOW()`,
+        [
+          p.id,
+          userId,
+          p.at,
+          encryptStringToBytes(p.reason),
+          p.site ? encryptStringToBytes(p.site) : null,
+          p.side,
+        ],
+      );
+      for (const n of p.docs) {
+        const docId = `e2e${PROCEDURE_DOC_PREFIX}${String(n).padStart(8, "0")}`;
+        await pool.query(
+          `INSERT INTO encounter_document_links
+             (id, encounter_id, document_id, user_id, created_at)
+           VALUES ($1, $2, $3, $4, NOW())
+           ON CONFLICT (encounter_id, document_id) DO NOTHING`,
+          [`${p.id.slice(0, 16)}lnk${n}`, p.id, docId, userId],
+        );
+      }
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
 /**
  * v1.28 — seed the clinician-share document trio (see the `SHARE_*_DOC_ID`
  * constants). Enables the vault module for the e2e user and upserts one
