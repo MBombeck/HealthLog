@@ -166,25 +166,46 @@ describe("<HistoryRail>", () => {
     expect(html).toContain("Deine Unterhaltungen erscheinen hier");
   });
 
-  it("renders the delete button for each conversation row", () => {
+  it("gives each row one labelled actions menu instead of inline buttons", () => {
     const client = makeClientWithConversations(samplePage);
     const html = render(
       <HistoryRail activeId={null} onSelect={() => {}} />,
       client,
     );
-    const buttons = html.match(/data-slot="coach-history-delete"/g) ?? [];
-    expect(buttons.length).toBe(2);
+    const menus =
+      html.match(/<button[^>]*data-slot="coach-history-row-menu"[^>]*>/g) ?? [];
+    expect(menus.length).toBe(2);
+    expect(menus[0]).toContain('aria-haspopup="menu"');
+    expect(html).toContain(
+      'aria-label="Actions for Why was BP higher on Monday?"',
+    );
+    // Rename and Delete sit inside the menu (portalled on open), so the row
+    // itself carries neither a pencil nor a trash button any more.
+    expect(html).not.toContain('data-slot="coach-conversation-rename"');
+    expect(html).not.toContain('data-slot="coach-history-delete"');
   });
 
-  it("renders an accessible rename button for each conversation row", () => {
+  it("marks the open conversation with aria-current", () => {
+    const client = makeClientWithConversations(samplePage);
+    const html = render(
+      <HistoryRail activeId="c2" onSelect={() => {}} />,
+      client,
+    );
+    const current = html.match(/<button[^>]*aria-current="true"[^>]*>/g) ?? [];
+    expect(current).toHaveLength(1);
+    expect(current[0]).toContain('title="Compare this week to last month"');
+  });
+
+  it("groups the rows under recency headings", () => {
     const client = makeClientWithConversations(samplePage);
     const html = render(
       <HistoryRail activeId={null} onSelect={() => {}} />,
       client,
     );
-    const buttons = html.match(/data-slot="coach-conversation-rename"/g) ?? [];
-    expect(buttons.length).toBe(2);
-    expect(html).toContain('aria-label="Rename conversation"');
+    // Both sample threads are months old, so they share the Earlier group.
+    expect(html.match(/data-slot="coach-history-group"/g)).toHaveLength(1);
+    expect(html).toContain('data-group="earlier"');
+    expect(html).toMatch(/<h3[^>]*>Earlier<\/h3>/);
   });
 
   // v1.30.2 (QoL H1) — infinite history: reachability beyond the first page.

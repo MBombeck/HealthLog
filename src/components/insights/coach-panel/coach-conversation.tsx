@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useReducer, useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   useMutation,
   useQueries,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Paperclip, Plus, Settings, Sparkles } from "lucide-react";
+import { Paperclip, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -56,6 +54,8 @@ import {
   type InterleavedThreadItem,
 } from "./message-thread";
 import { CoachClarificationCard } from "./clarification-card";
+import { CoachSettingsOverlay } from "./coach-settings-overlay";
+import { ConversationsPanel } from "./conversations-panel";
 import { MobileRailTray } from "./mobile-rail-tray";
 import { SelfContextAdoptOffer } from "./self-context-adopt-offer";
 import { SourcesRail } from "./sources-rail";
@@ -260,6 +260,23 @@ export interface CoachConversationProps {
    * the surface-toggle preserves scope. The page omits it.
    */
   registerConversationIdGetter?: (getter: () => string | null) => void;
+  /**
+   * Page surface only: `/coach?settings=data` (the link from Settings →
+   * Coach) opens the settings gear on "What I can see". Read once, on mount.
+   */
+  openSettingsOnData?: boolean;
+}
+
+/**
+ * The page's URL for a conversation: `/coach?c=<id>`, or bare `/coach` for a
+ * new chat. Written with `history.replaceState` (the App Router keeps
+ * `useSearchParams` in step with it) so a reload lands on the same thread
+ * without a server round trip or a new history entry per switch.
+ */
+function coachPageHref(conversationId: string | null): string {
+  return conversationId
+    ? `/coach?c=${encodeURIComponent(conversationId)}`
+    : "/coach";
 }
 
 export function CoachConversation({
@@ -280,9 +297,9 @@ export function CoachConversation({
   initialDocumentId,
   initialWorkoutId,
   registerConversationIdGetter,
+  openSettingsOnData = false,
 }: CoachConversationProps) {
   const { t } = useTranslations();
-  const router = useRouter();
 
   const [currentConversationId, setCurrentConversationId] = useState<
     string | null
@@ -292,6 +309,7 @@ export function CoachConversation({
   );
   const [historyTrayOpen, setHistoryTrayOpen] = useState(false);
   const [sourcesTrayOpen, setSourcesTrayOpen] = useState(false);
+  const [drawerSettingsOpen, setDrawerSettingsOpen] = useState(false);
   const [inputValue, setInputValue] = useResettableValue(prefill ?? "");
   // v1.16.4 — self-context backflow: `pendingAdopt` raises a quiet
   // offer to fold a clarifying-question answer back into the
@@ -354,9 +372,19 @@ export function CoachConversation({
   const attachDoc = useAttachCoachDocument(currentConversationId ?? "");
   const detachDoc = useDetachCoachDocument(currentConversationId ?? "");
 
+  // Page surface: keep `?c=` in step with the open thread, so a reload (or
+  // a shared tab) lands on it. The drawer has no URL of its own.
+  function syncPageUrl(conversationId: string | null) {
+    if (surface !== "page" || typeof window === "undefined") return;
+    const href = coachPageHref(conversationId);
+    if (window.location.pathname + window.location.search === href) return;
+    window.history.replaceState(window.history.state, "", href);
+  }
+
   const send = useSendCoachMessage({
     onDone: (resolvedId) => {
       setCurrentConversationId(resolvedId);
+      syncPageUrl(resolvedId);
     },
   });
 
@@ -791,6 +819,27 @@ export function CoachConversation({
     setActiveWorkoutId(null);
     dispatchGuided({ type: "RESET" });
     send.reset();
+    syncPageUrl(null);
+  }
+
+  // Open a stored conversation. Shared by the page's panel and the drawer's
+  // history tray, so a switch resets the same state on both surfaces.
+  function selectConversation(id: string) {
+    setCurrentConversationId(id);
+    setHistoryTrayOpen(false);
+    setPendingAdopt(null);
+    // v1.29.x (S7) — the selected thread's own `fenced` flag + `attachments`
+    // are authoritative; drop any staged `?doc=` seed so a pending attachment
+    // can't leak across a thread switch.
+    setPendingAttachmentIds([]);
+    dispatchGuided({ type: "RESET" });
+    // Drop the finished stream's trailing state, as `handleNewChat` does.
+    // Without it the previous thread's last assistant or error bubble renders
+    // appended to the newly selected thread — `streamingActive` stays true
+    // because that messageId is absent from the new thread's messages —
+    // until the next send.
+    send.reset();
+    syncPageUrl(id);
   }
 
   const title = conversation?.title ?? t("insights.coach.newChat");
@@ -840,10 +889,6 @@ export function CoachConversation({
   // forking any composer logic (dictation, auto-grow, send/stop, the
   // guided-question placeholder all behave identically in both spots).
   //
-  // v1.18.11 (W11) — on the page surface the composer is the control hub:
-  // it grows a leading `+` actions menu (new chat + open conversations) and
-  // a settings deep-link. The drawer keeps its own header for those, so the
-  // hub is page-only.
   // v1.29.x (S7) — the composer with its attachment chrome: the pills row + the
   // "still indexing" hint stack directly above the input, so they travel with
   // the composer into BOTH the new-chat hero and the docked conversation view.
@@ -894,9 +939,6 @@ export function CoachConversation({
             ? t("insights.coach.guided.answerPlaceholder")
             : undefined
         }
-        showHub={surface === "page"}
-        onNewChat={handleNewChat}
-        onOpenHistory={() => router.push("/coach/conversations")}
         attachEnabled={attachEnabled}
         onPickFromVault={() => setPickerOpen(true)}
         onUploadNew={handleUploadNew}
@@ -1140,50 +1182,56 @@ export function CoachConversation({
     </div>
   ) : null;
 
-  // v1.18.11 (W11) — the PAGE surface drops the top header bar and the
-  // rail-tray strip entirely. The composer is the single control hub; the
-  // thread (`[&>*]:max-w-2xl` inner gutter) and the docked composer
-  // (`mx-auto max-w-2xl`) share ONE centred, max-width-capped column so the
-  // composer never changes width between the new-chat hero and an active
-  // conversation. The drawer surface keeps its own header + body chrome
-  // (handled below) untouched.
+  // The PAGE surface has no header bar of its own. Conversations, New chat
+  // and the settings gear live in the conversations panel on the right; its
+  // toggle sits in the app's top bar. The drawer surface keeps its own header
+  // + body chrome (handled below).
   if (surface === "page") {
     return (
       <div
         data-slot="coach-conversation"
         data-variant={surface}
-        className={cn("flex min-h-0 flex-1 flex-col", className)}
+        className={cn("flex min-h-0 flex-1 flex-row", className)}
       >
-        {docScopeBanner}
-        {!heroActive ? <h1 className="sr-only">{title}</h1> : null}
-        {/* v1.21.4 (A) — the page-toolbar gear was removed; Settings now lives
-            in the composer's `+` actions menu alongside New chat and
-            Conversations, keeping the page chrome to the composer alone. */}
-        {heroActive ? (
-          <CoachHero composer={composerNode} scopeHint={scopeHint} />
-        ) : (
-          <>
-            <div className="flex min-h-0 flex-1 flex-col">
-              <MessageThread
-                conversation={conversation ?? null}
-                streaming={send.streaming}
-                optimisticUser={send.optimisticUser}
-                interleaved={interleaved}
-                onRegenerate={handleRegenerate}
-                onFollowUp={handleFollowUp}
-              />
-            </div>
-            {/* Docked composer — the SAME centred, capped column as the
-                thread (and the hero composer), so the width is constant
-                across the new-chat → conversation transition. */}
-            <div
-              data-slot="coach-page-composer"
-              className="shrink-0 px-4 pt-2 pb-3 sm:px-6 sm:pb-4"
-            >
-              <div className="mx-auto w-full max-w-2xl">{composerStack}</div>
-            </div>
-          </>
-        )}
+        {/* The conversation column. Its thread and composer keep one centred,
+            capped column (`max-w-2xl`) across the new-chat hero and an active
+            conversation, and that width does not change when the panel
+            beside it opens or closes: only the centring moves. */}
+        <div
+          data-slot="coach-page-main"
+          className="flex min-h-0 min-w-0 flex-1 flex-col"
+        >
+          {docScopeBanner}
+          {!heroActive ? <h1 className="sr-only">{title}</h1> : null}
+          {heroActive ? (
+            <CoachHero composer={composerNode} scopeHint={scopeHint} />
+          ) : (
+            <>
+              <div className="flex min-h-0 flex-1 flex-col">
+                <MessageThread
+                  conversation={conversation ?? null}
+                  streaming={send.streaming}
+                  optimisticUser={send.optimisticUser}
+                  interleaved={interleaved}
+                  onRegenerate={handleRegenerate}
+                  onFollowUp={handleFollowUp}
+                />
+              </div>
+              <div
+                data-slot="coach-page-composer"
+                className="shrink-0 px-4 pt-2 pb-3 sm:px-6 sm:pb-4"
+              >
+                <div className="mx-auto w-full max-w-2xl">{composerStack}</div>
+              </div>
+            </>
+          )}
+        </div>
+        <ConversationsPanel
+          activeId={currentConversationId}
+          onSelect={selectConversation}
+          onNewChat={handleNewChat}
+          openSettingsOnData={openSettingsOnData}
+        />
         {attachEnabled ? (
           <AttachmentPicker
             open={pickerOpen}
@@ -1249,24 +1297,13 @@ export function CoachConversation({
         >
           <Plus className="size-4" aria-hidden="true" />
         </Button>
-        {/* v1.16.1 — the Coach preferences moved into Settings → AI
-            (one place for model + behaviour). The header keeps a gear
-            that deep-links there instead of opening an in-chat sheet. */}
-        <Button
-          asChild
-          variant="ghost"
-          size="icon"
-          data-slot="coach-settings"
-          className="text-muted-foreground hover:text-foreground size-11 shrink-0"
-        >
-          <Link
-            href="/settings/ai"
-            aria-label={t("insights.coach.settingsAriaLabel")}
-            title={t("insights.coach.settingsAriaLabel")}
-          >
-            <Settings className="size-4" aria-hidden="true" />
-          </Link>
-        </Button>
+        {/* The same quick settings the page's panel opens: model and what
+            the Coach may read. Everything else stays in Settings → AI. */}
+        <CoachSettingsOverlay
+          open={drawerSettingsOpen}
+          onOpenChange={setDrawerSettingsOpen}
+          className="sm:size-11"
+        />
         {trailingHeaderActions}
       </header>
 
@@ -1299,22 +1336,7 @@ export function CoachConversation({
         historyRail={
           <HistoryRail
             activeId={currentConversationId}
-            onSelect={(id) => {
-              setCurrentConversationId(id);
-              setHistoryTrayOpen(false);
-              setPendingAdopt(null);
-              // v1.29.x (S7) — the selected thread's own `fenced` flag +
-              // `attachments` are now authoritative; drop any staged `?doc=`
-              // seed so a pending attachment can't leak across a thread switch.
-              setPendingAttachmentIds([]);
-              dispatchGuided({ type: "RESET" });
-              // Drop the finished stream's trailing state, as `handleNewChat`
-              // already does. Without it the previous thread's last assistant
-              // or error bubble renders appended to the newly selected thread
-              // — `streamingActive` stays true because that messageId is
-              // absent from the new thread's messages — until the next send.
-              send.reset();
-            }}
+            onSelect={selectConversation}
           />
         }
         sourcesOpen={sourcesTrayOpen}

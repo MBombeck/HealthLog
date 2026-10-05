@@ -229,10 +229,9 @@ describe("<CoachInput>", () => {
     expect(handler).toHaveBeenCalledWith("typed");
   });
 
-  it("omits the control-hub action row by default (drawer composer)", () => {
-    // v1.18.11 (W11) — the hub is page-only; without `showHub` the composer
-    // stays the single-row drawer layout (mic + send on one baseline) and
-    // grows no actions menu or settings deep-link.
+  it("renders the single-row composer with no actions menu", () => {
+    // The composer carries text, attach and send only; it grows no actions
+    // menu or settings deep-link on either surface.
     const html = render(
       <CoachInput value="" onChange={() => {}} onSubmit={() => {}} />,
     );
@@ -251,26 +250,25 @@ describe("<CoachInput>", () => {
         value=""
         onChange={() => {}}
         onSubmit={() => {}}
-        showHub
-        onNewChat={() => {}}
-        onOpenHistory={() => {}}
+        attachEnabled
+        onPickFromVault={() => {}}
+        onUploadNew={() => {}}
       />,
     );
     expect(html).toContain('data-slot="coach-input-controls"');
     expect(html).toContain('data-slot="coach-input-leading"');
-    expect(html).toContain('data-slot="coach-input-actions"');
-    expect(html).not.toContain('data-slot="coach-input-settings"');
+    expect(html).toContain('data-slot="coach-input-attach"');
     expect(html).not.toContain('data-slot="coach-input-mic"');
     expect(html).toContain('data-slot="coach-input-send"');
 
     // DOM and visual order agree at every breakpoint: the textarea comes first,
-    // followed by the leading actions and then Send.
+    // followed by the leading attach control and then Send.
     const textareaIdx = html.indexOf('data-slot="coach-input-textarea"');
-    const plusIdx = html.indexOf('data-slot="coach-input-actions"');
+    const attachIdx = html.indexOf('data-slot="coach-input-attach"');
     const sendIdx = html.indexOf('data-slot="coach-input-send"');
     expect(textareaIdx).toBeGreaterThan(-1);
-    expect(textareaIdx).toBeLessThan(plusIdx);
-    expect(plusIdx).toBeLessThan(sendIdx);
+    expect(textareaIdx).toBeLessThan(attachIdx);
+    expect(attachIdx).toBeLessThan(sendIdx);
 
     const controls = html.match(
       /<div[^>]*data-slot="coach-input-controls"[^>]*>/,
@@ -295,22 +293,28 @@ describe("<CoachInput>", () => {
     expect(controls?.[0]).toMatch(/\bself-end\b/);
   });
 
-  it("sizes the hub actions trigger to the 44px tap-target floor on phones", () => {
+  it("carries no conversation menu: New chat, Conversations and Settings live in the page's panel", () => {
     const html = render(
       <CoachInput
         value=""
         onChange={() => {}}
         onSubmit={() => {}}
-        showHub
-        onNewChat={() => {}}
-        onOpenHistory={() => {}}
+        attachEnabled
+        onPickFromVault={() => {}}
+        onUploadNew={() => {}}
       />,
     );
-    const actions = html.match(
-      /<button[^>]*data-slot="coach-input-actions"[^>]*>/,
+    expect(html).not.toContain('data-slot="coach-input-actions"');
+    expect(html).not.toContain("coach-input-action-new-chat");
+    expect(html).not.toContain("coach-input-action-history");
+    expect(html).not.toContain("coach-input-action-settings");
+    expect(html).not.toContain('href="/settings/ai"');
+    // The attach control stays, at the 44 px tap-target floor on phones.
+    const attach = html.match(
+      /<button[^>]*data-slot="coach-input-attach"[^>]*>/,
     );
-    expect(actions?.[0]).toMatch(/\bsize-11\b/);
-    expect(actions?.[0]).toMatch(/\bsm:size-9\b/);
+    expect(attach?.[0]).toMatch(/\bsize-11\b/);
+    expect(attach?.[0]).toMatch(/\bsm:size-9\b/);
   });
 
   it("renders the textarea at rows=1 initial state (W5 auto-grow baseline)", () => {

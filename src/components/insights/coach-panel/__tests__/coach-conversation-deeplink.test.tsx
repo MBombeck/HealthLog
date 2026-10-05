@@ -158,16 +158,16 @@ describe("<CoachConversation> page deep-link (#67)", () => {
     expect(html).toContain('data-slot="coach-hero"');
   });
 
-  // v1.21.4 (A) — the page-toolbar gear was removed; Settings now lives in the
-  // composer's `+` actions menu. The page chrome is the composer alone, so the
-  // surface exposes the `+` actions trigger and no standalone toolbar gear.
-  it("drops the page-toolbar gear and exposes the composer + actions menu", () => {
+  // The page carries no toolbar and the composer no `+` menu: New chat, the
+  // conversation list and the settings gear live in the conversations panel.
+  // On the server the panel is closed (it docks only once the client knows
+  // the viewport), so the SSR markup holds the conversation column alone.
+  it("renders the conversation column with no toolbar and no composer menu", () => {
     const html = render(<CoachConversation surface="page" />, makeClient());
-    // The old page toolbar + its gear are gone.
+    expect(html).toContain('data-slot="coach-page-main"');
     expect(html).not.toContain('data-slot="coach-page-settings"');
     expect(html).not.toContain('data-slot="coach-page-toolbar"');
-    // Settings now lives behind the composer's `+` actions menu (the menu
-    // content is portalled open-on-demand, so SSR shows only the trigger).
-    expect(html).toContain('data-slot="coach-input-actions"');
+    expect(html).not.toContain('data-slot="coach-input-actions"');
+    expect(html).not.toContain('href="/coach/conversations"');
   });
 });

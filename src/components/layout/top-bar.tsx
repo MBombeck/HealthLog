@@ -15,6 +15,7 @@ import {
   visibleUtilityDestinations,
 } from "@/components/layout/nav-model";
 import { SHELL_HEADER_BAND } from "@/components/layout/shell-metrics";
+import { TopBarActionsOutlet } from "@/components/layout/top-bar-actions";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -105,6 +106,12 @@ export function TopBar() {
 
       {/* Desktop: empty spacer (user controls are in sidebar) */}
       <div className="hidden md:block" />
+
+      {/* Page-owned actions (the Coach's conversations toggle). `ml-auto`
+          keeps them at the trailing edge, right before the mobile avatar
+          menu; `empty:hidden` takes the slot out of the row on every page
+          that leaves it empty, so the header lays out exactly as before. */}
+      <TopBarActionsOutlet className="ml-auto flex items-center gap-1 empty:hidden" />
 
       {/* Mobile-only auth section (desktop uses sidebar user section) */}
       <div className="flex items-center gap-2 md:hidden">

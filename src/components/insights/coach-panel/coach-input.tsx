@@ -7,17 +7,12 @@ import {
   useEffect,
   useRef,
 } from "react";
-import Link from "next/link";
 import {
   FolderOpen,
   Loader2,
-  MessagesSquare,
   Paperclip,
-  Plus,
   Send,
-  Settings,
   Square,
-  Target,
   Upload,
 } from "lucide-react";
 
@@ -55,10 +50,8 @@ import { COACH_COMPOSER_ID } from "./composer-focus";
  * the guard stack (system prompt, prose-grounding check, outbound
  * refusal), not a rendered disclaimer line.
  *
- * v1.18.11 (W11): the composer is the conversation's control hub on the
- * full-page Coach surface. When `showHub` is set it includes a `+` actions menu
- * for a new chat or conversation history. The drawer omits `showHub` because
- * its header already carries those actions.
+ * New chat, the conversation list and the settings gear live in the Coach
+ * page's conversations panel (and the drawer's header), not in the composer.
  *
  * Voice input was removed after repeated browser and permission failures made
  * the control unreliable. The composer now exposes only actions that work
@@ -96,27 +89,11 @@ export interface CoachInputProps {
    */
   placeholder?: string;
   /**
-   * v1.18.11 — mount the control-hub action row (leading `+` menu +
-   * settings link) inside the composer card. The page surface sets this;
-   * the drawer leaves it off and keeps the single-row composer.
-   */
-  showHub?: boolean;
-  /**
-   * v1.18.11 — start a fresh conversation. Wired into the `+` actions
-   * menu. Required when `showHub` is set.
-   */
-  onNewChat?: () => void;
-  /**
-   * v1.18.11 — open the left conversation-history drawer. Wired into the
-   * `+` actions menu. Required when `showHub` is set.
-   */
-  onOpenHistory?: () => void;
-  /**
    * v1.29.x (S7) — mount the document-attach trigger (a leading paperclip menu:
    * "Choose from documents" + "Upload new document"). Set by the parent only
    * when the `inboundDocuments` module is enabled for the user; hidden entirely
-   * otherwise. Separate from the `showHub` `+` actions menu — this affordance
-   * stages fenced document attachments, it does not manage conversations.
+   * otherwise. It stages fenced document attachments; conversations are managed
+   * in the page's conversations panel.
    */
   attachEnabled?: boolean;
   /**
@@ -177,9 +154,6 @@ export function CoachInput({
   inputId = COACH_COMPOSER_ID,
   autoFocusOnOpen = false,
   placeholder,
-  showHub = false,
-  onNewChat,
-  onOpenHistory,
   attachEnabled = false,
   onPickFromVault,
   onUploadNew,
@@ -293,61 +267,10 @@ export function CoachInput({
       </Button>
     );
 
-  // Leading `+` actions menu for the full-page Coach surface. The settings
-  // shortcut remains in this menu while the dedicated gear stays in the page
-  // toolbar.
-  const actionsButton = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          disabled={disabled}
-          data-slot="coach-input-actions"
-          aria-label={t("insights.coach.actionsMenu")}
-          title={t("insights.coach.actionsMenu")}
-          className="text-muted-foreground hover:text-foreground size-11 shrink-0 rounded-xl sm:size-9"
-        >
-          <Plus className="size-5 sm:size-4" aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" side="top" className="w-52">
-        <DropdownMenuItem
-          data-slot="coach-input-action-new-chat"
-          onSelect={() => onNewChat?.()}
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          {t("insights.coach.newChat")}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          data-slot="coach-input-action-history"
-          onSelect={() => onOpenHistory?.()}
-        >
-          <MessagesSquare className="size-4" aria-hidden="true" />
-          {t("insights.coach.historyTitle")}
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild data-slot="coach-input-action-plans">
-          <Link href="/coach/plans">
-            <Target className="size-4" aria-hidden="true" />
-            {t("coach.plans.title")}
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild data-slot="coach-input-action-settings">
-          <Link href="/settings/ai">
-            <Settings className="size-4" aria-hidden="true" />
-            {t("insights.coach.settings")}
-          </Link>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-
   // v1.29.x (S7) — the document-attach affordance: a leading paperclip menu
   // ("Choose from documents" opens the vault picker; "Upload new document"
   // opens the file input, reusing the existing `/api/documents/inbound`
-  // pipeline). Rendered only when the parent enables it (module-gated). It is a
-  // SEPARATE control from the `showHub` `+` actions menu — the two never merge.
+  // pipeline). Rendered only when the parent enables it (module-gated).
   const attachButton = attachEnabled ? (
     <>
       <input
@@ -474,14 +397,8 @@ export function CoachInput({
             className="flex shrink-0 items-center gap-1.5"
           >
             {attachButton}
-            {showHub ? actionsButton : null}
           </div>
-          <div
-            data-slot={showHub ? "coach-input-hub" : undefined}
-            className="flex shrink-0 items-center gap-1.5"
-          >
-            {sendButton}
-          </div>
+          <div className="flex shrink-0 items-center gap-1.5">{sendButton}</div>
         </div>
       </div>
     </form>

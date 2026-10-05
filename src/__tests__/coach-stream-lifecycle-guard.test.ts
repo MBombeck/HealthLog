@@ -63,18 +63,26 @@ describe("Coach streaming lifecycle", () => {
       "components/insights/coach-panel/coach-conversation.tsx",
     );
 
-    // Isolate the HistoryRail onSelect callback body.
+    // One switch handler, shared by the drawer's history tray and the page's
+    // conversations panel, so neither surface can skip the reset.
     const match = source.match(
-      /<HistoryRail[\s\S]*?onSelect=\{\([\s\S]*?\n\s*\}\}/,
+      /function selectConversation\(id: string\) \{[\s\S]*?\n {2}\}/,
     );
-    expect(match, "HistoryRail onSelect handler not found").not.toBeNull();
-    const onSelectBody = match![0];
-
+    expect(match, "selectConversation handler not found").not.toBeNull();
     expect(
-      onSelectBody.includes("send.reset()"),
+      match![0].includes("send.reset()"),
       "selecting another conversation must call send.reset() so the previous " +
         "thread's trailing stream state does not bleed into the new thread",
     ).toBe(true);
+
+    const selectSites = source.match(/onSelect=\{([^}]*)\}/g) ?? [];
+    expect(selectSites.length).toBeGreaterThanOrEqual(2);
+    for (const site of selectSites) {
+      expect(
+        site,
+        "every conversation picker routes through selectConversation",
+      ).toBe("onSelect={selectConversation}");
+    }
   });
 
   it("the unmount cleanup records the interrupted conversation before the abort (#781)", () => {

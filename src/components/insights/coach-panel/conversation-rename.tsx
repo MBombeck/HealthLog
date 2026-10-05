@@ -25,18 +25,39 @@ export function getConversationRenameKeyAction(
 export interface ConversationRenameProps {
   id: string;
   title: string;
-  compact?: boolean;
+  /**
+   * Controlled mode, for a surface that opens the editor from somewhere else
+   * (the conversations panel's row menu). When set, the component renders no
+   * trigger of its own: it shows the form while `editing` is true and reports
+   * the end of an edit (saved or cancelled) through `onEditingChange`.
+   */
+  editing?: boolean;
+  onEditingChange?: (editing: boolean) => void;
 }
 
 export function ConversationRename({
   id,
   title,
-  compact = false,
+  editing: controlledEditing,
+  onEditingChange,
 }: ConversationRenameProps) {
   const { t } = useTranslations();
   const rename = useRenameCoachConversation();
-  const [editing, setEditing] = useState(false);
+  const controlled = controlledEditing !== undefined;
+  const [localEditing, setLocalEditing] = useState(false);
+  const editing = controlled ? controlledEditing : localEditing;
   const [draft, setDraft] = useState(title);
+  // A controlled editor opens from outside, so it seeds its draft from the
+  // current title each time it opens (render-phase, no effect).
+  const [seededOpen, setSeededOpen] = useState(false);
+  if (controlled && editing !== seededOpen) {
+    setSeededOpen(editing);
+    if (editing) setDraft(title);
+  }
+  function setEditing(next: boolean) {
+    if (controlled) onEditingChange?.(next);
+    else setLocalEditing(next);
+  }
   const submittingRef = useRef(false);
 
   function cancel() {
@@ -82,23 +103,27 @@ export function ConversationRename({
     const action = getConversationRenameKeyAction(event.key);
     if (!action) return;
     event.preventDefault();
+    // Escape belongs to the editor while it is open: the panel and the sheet
+    // around it must not close on the same key press.
+    event.stopPropagation();
     if (action === "cancel") cancel();
     else void save();
   }
 
   if (!editing) {
+    if (controlled) return null;
     return (
       <Button
         type="button"
         variant="ghost"
-        size={compact ? "icon" : "icon-lg"}
+        size="icon-lg"
         onClick={() => {
           setDraft(title);
           setEditing(true);
         }}
         aria-label={t("insights.coach.rename.action")}
         data-slot="coach-conversation-rename"
-        className={cn("shrink-0", compact && "size-11")}
+        className="shrink-0"
       >
         <Pencil className="size-4" aria-hidden="true" />
       </Button>
@@ -115,7 +140,7 @@ export function ConversationRename({
       data-slot="coach-conversation-rename-form"
       className={cn(
         "bg-background absolute inset-y-1 left-1 z-10 flex min-w-0 items-center gap-1",
-        compact ? "right-14" : "right-16",
+        controlled ? "right-1" : "right-16",
       )}
     >
       <Input
