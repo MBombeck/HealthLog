@@ -201,6 +201,60 @@ describe("appendMessage — the dialog fields", () => {
     });
   });
 
+  it("reads a stored view chip back only where the answer's panel has no toggle for it", async () => {
+    // Stored before the rule: "as a table" for the shown chart (r1), whose
+    // panel already toggles, and "as a chart" for a table only used (r2).
+    const view = (id: string, kind: "as_chart" | "as_table", ref: string) => ({
+      ...FULL.followUps![0],
+      id,
+      kind,
+      labelKey: `coach.followUp.${kind === "as_chart" ? "asChart" : "asTable"}`,
+      label: kind === "as_chart" ? "Show as a chart" : "Show as a table",
+      anchor: { ref, domain: "bp" as const, window: "last30days" as const },
+      reuse: true,
+    });
+    const used = { ...SLEEP_META, displayed: false };
+    stubEchoCreate(
+      JSON.stringify({
+        windows: [],
+        metrics: [],
+        results: [META, used],
+        followUps: [
+          view("f0", "as_table", "r1"),
+          FULL.followUps![0],
+          view("f3", "as_chart", "r2"),
+        ],
+      }),
+    );
+    const out = await appendMessage({
+      conversationId: "c1",
+      role: "assistant",
+      content: "reply",
+      metricSource: { windows: [], metrics: [] },
+    });
+    expect(out.metricSource?.followUps?.map((c) => [c.id, c.kind])).toEqual([
+      ["f1", "previous_period"],
+      ["f3", "as_chart"],
+    ]);
+
+    // Only the redundant chip stored: the list reads back absent, not empty.
+    stubEchoCreate(
+      JSON.stringify({
+        windows: [],
+        metrics: [],
+        results: [META],
+        followUps: [view("f1", "as_table", "r1")],
+      }),
+    );
+    const bare = await appendMessage({
+      conversationId: "c1",
+      role: "assistant",
+      content: "reply",
+      metricSource: { windows: [], metrics: [] },
+    });
+    expect(bare.metricSource).not.toHaveProperty("followUps");
+  });
+
   it("strips a key the stored blob carries that the contract does not know", async () => {
     stubEchoCreate(
       JSON.stringify({

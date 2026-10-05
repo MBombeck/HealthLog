@@ -22,6 +22,8 @@ import {
 } from "@/lib/ai/coach/dialog-keys";
 import { METRIC_TABLE_EXCLUDED_SOURCES } from "@/lib/ai/coach/results/metric-table-tool";
 
+import { REUSE_FOLLOW_UP_KINDS } from "./view-chip";
+
 /** At most this many chips under one reply. */
 export const MAX_FOLLOW_UPS = 3;
 
@@ -35,12 +37,6 @@ export const FOLLOW_UP_KINDS: readonly CoachFollowUpKind[] = [
   "related_metric",
   "continue",
 ];
-
-/** Kinds answered from a table the conversation already holds. */
-export const REUSE_FOLLOW_UP_KINDS: ReadonlySet<CoachFollowUpKind> = new Set([
-  "as_chart",
-  "as_table",
-]);
 
 /**
  * Kinds the model may propose in a `---FOLLOWUPS---` block. `continue` is

@@ -23,6 +23,7 @@ import {
   coachStepSchema,
 } from "./stream-events";
 import { COACH_CONVERSATION_TITLE_MAX } from "./types";
+import { isRedundantViewChip } from "./follow-ups/view-chip";
 import { RESULTS_MAX_BYTES, fitResultsToStorage } from "./results/refs";
 import {
   isCheckupIntervalId,
@@ -323,7 +324,11 @@ function provenanceFromJson(raw: string | null): CoachProvenance | null {
     const steps = restoreSteps(parsed.steps);
     const method = restoreMethod(parsed.method);
     const results = restoreResultMetas(parsed.results);
-    const followUps = restoreFollowUps(parsed.followUps);
+    // A reply stored before view chips were withheld for a table the answer
+    // already shows with its own toggle reads back without them.
+    const followUps = restoreFollowUps(parsed.followUps)?.filter(
+      (chip) => !isRedundantViewChip(chip, results ?? []),
+    );
     const clarification = restoreClarification(parsed.clarification);
     const forcedFinal = parsed.forcedFinal === true;
     const continuationOf =
@@ -345,7 +350,7 @@ function provenanceFromJson(raw: string | null): CoachProvenance | null {
       ...(steps ? { steps } : {}),
       ...(method ? { method } : {}),
       ...(results ? { results } : {}),
-      ...(followUps ? { followUps } : {}),
+      ...(followUps && followUps.length > 0 ? { followUps } : {}),
       ...(clarification ? { clarification } : {}),
       ...(forcedFinal ? { forcedFinal: true as const } : {}),
       ...(continuationOf ? { continuationOf } : {}),

@@ -6,8 +6,10 @@
  *
  * A chip is offered only when what it asks for is grounded in this turn:
  *
- *   - `as_chart` / `as_table`: a table this turn produced (or copied) that
- *     has a chart; the chip names the view it is not shown in yet.
+ *   - `as_chart`: a table this turn produced that has a chart and that the
+ *     answer only used, so it sits folded under "Data used" as a table. A
+ *     table the answer displays with a chart carries its own chart/table
+ *     toggle, so it gets no view chip (`isRedundantViewChip`).
  *   - `previous_period`: a time series table of the current period, for a
  *     metric the table tool reads and the record holds.
  *   - `year_ago`: the same, over a window of at most 90 days, when the
@@ -59,6 +61,7 @@ import {
   widerWindow,
 } from "./catalog";
 import type { FollowUpProposal } from "./parse-sentinel";
+import { isRedundantViewChip } from "./view-chip";
 import {
   exceedsReach,
   fitsReach,
@@ -195,18 +198,14 @@ export function deriveFollowUps(args: {
       ...(source.granularity ? { granularity: source.granularity } : {}),
       period: source.period,
     };
-    if (meta.chartKind !== null) {
-      // The other view of what the answer shows: a table shown as a table
-      // offers its chart, a shown chart offers its table.
-      const showsChart = meta.displayed && meta.view !== "table";
-      candidates.push(
-        buildFollowUp({
-          kind: showsChart ? "as_table" : "as_chart",
-          anchor,
-          origin: "server",
-          locale,
-        }),
-      );
+    const viewChip = buildFollowUp({
+      kind: "as_chart",
+      anchor,
+      origin: "server",
+      locale,
+    });
+    if (meta.chartKind !== null && !isRedundantViewChip(viewChip, [meta])) {
+      candidates.push(viewChip);
     }
   }
 
