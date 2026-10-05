@@ -70,6 +70,18 @@ export function selectableProviders(
     .map((entry) => entry.providerType);
 }
 
+/**
+ * True when a saved switch did not take: the chain the server resolves after
+ * the save is not led by the provider the person chose. A provider whose key
+ * stops working between the read and the save lands here.
+ */
+export function switchDidNotTake(
+  chosen: ProviderType,
+  fresh: Pick<ProviderChainData, "activeProvider">,
+): boolean {
+  return fresh.activeProvider !== chosen;
+}
+
 export type ModelControl =
   | { kind: "preset"; presets: readonly string[]; value: string | null }
   | { kind: "gateway"; value: string | null }
@@ -139,6 +151,7 @@ export function CoachModelPicker() {
   });
 
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const onSaved = () => {
     setError(null);
@@ -152,11 +165,26 @@ export function CoachModelPicker() {
     );
 
   const switchProvider = useMutation({
-    mutationFn: (provider: ProviderType) =>
-      apiPut("/api/insights/provider-chain", {
+    mutationFn: async (provider: ProviderType) => {
+      setNotice(null);
+      await apiPut("/api/insights/provider-chain", {
         chain: chainWithFirst(chainQuery.data?.configuredChain ?? [], provider),
-      }),
-    onSuccess: onSaved,
+      });
+      // Read back what the server now resolves, so a switch that did not
+      // take is said rather than shown as the select jumping back.
+      return apiGet<ProviderChainData>("/api/insights/provider-chain");
+    },
+    onSuccess: (fresh, provider) => {
+      queryClient.setQueryData(queryKeys.insightsProviderChain(), fresh);
+      onSaved();
+      if (switchDidNotTake(provider, fresh)) {
+        setNotice(
+          t("insights.coach.frame.providerNotActive", {
+            provider: t(`settings.ai.providerChain.types.${provider}`),
+          }),
+        );
+      }
+    },
     onError: onFailed,
   });
   const patchProvider = useMutation({
@@ -292,6 +320,15 @@ export function CoachModelPicker() {
       {busy ? (
         <p role="status" className="text-muted-foreground text-xs">
           {t("insights.coach.frame.saving")}
+        </p>
+      ) : null}
+      {notice ? (
+        <p
+          role="status"
+          data-slot="coach-quick-provider-notice"
+          className="text-muted-foreground text-xs"
+        >
+          {notice}
         </p>
       ) : null}
       {error ? (

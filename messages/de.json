@@ -3137,7 +3137,8 @@
         "noProvider": "Kein Anbieter verfügbar",
         "saving": "Wird gespeichert…",
         "saveFailed": "Die Änderung ließ sich nicht speichern.",
-        "allSettings": "Alle KI-Einstellungen"
+        "allSettings": "Alle KI-Einstellungen",
+        "providerNotActive": "{provider} konnte nicht übernehmen: Es fehlt eine funktionierende Anmeldung oder ein Schlüssel. Richte das in den KI-Einstellungen ein."
       },
       "answer": {
         "scrollToBottom": "Zur neuesten Nachricht",

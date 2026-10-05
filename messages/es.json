@@ -3137,7 +3137,8 @@
         "noProvider": "Ningún proveedor disponible",
         "saving": "Guardando…",
         "saveFailed": "No se pudo guardar el cambio.",
-        "allSettings": "Todos los ajustes de IA"
+        "allSettings": "Todos los ajustes de IA",
+        "providerNotActive": "{provider} no pudo encargarse: no tiene un inicio de sesión ni una clave que funcionen. Configúralo en los ajustes de IA."
       },
       "answer": {
         "scrollToBottom": "Ir al último mensaje",

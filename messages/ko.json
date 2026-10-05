@@ -3137,7 +3137,8 @@
         "noProvider": "사용할 수 있는 제공자가 없어요",
         "saving": "저장 중…",
         "saveFailed": "변경 사항을 저장하지 못했어요.",
-        "allSettings": "모든 AI 설정"
+        "allSettings": "모든 AI 설정",
+        "providerNotActive": "{provider}(으)로 전환하지 못했습니다. 작동하는 로그인이나 키가 없습니다. AI 설정에서 설정하세요."
       },
       "answer": {
         "scrollToBottom": "최신 메시지로 이동",

@@ -3137,7 +3137,8 @@
         "noProvider": "Brak dostępnego dostawcy",
         "saving": "Zapisywanie…",
         "saveFailed": "Nie udało się zapisać zmiany.",
-        "allSettings": "Wszystkie ustawienia AI"
+        "allSettings": "Wszystkie ustawienia AI",
+        "providerNotActive": "{provider} nie mógł przejąć odpowiedzi: brak działającego logowania lub klucza. Skonfiguruj go w ustawieniach AI."
       },
       "answer": {
         "scrollToBottom": "Przejdź do najnowszej wiadomości",

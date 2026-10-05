@@ -10,6 +10,7 @@ import {
   modelControlFor,
   reasoningFieldFor,
   selectableProviders,
+  switchDidNotTake,
 } from "../coach-model-picker";
 
 const CHAIN: ProviderChainData["configuredChain"] = [
@@ -69,6 +70,23 @@ describe("selectableProviders", () => {
       "local",
       "admin-openai",
     ]);
+  });
+});
+
+describe("switchDidNotTake", () => {
+  it("is quiet when the chosen provider leads the chain the server resolves", () => {
+    expect(switchDidNotTake("openai", { activeProvider: "openai" })).toBe(
+      false,
+    );
+  });
+
+  it("speaks up when the server still answers with another provider", () => {
+    // A provider without a working key was saved to the front of the chain;
+    // the resolver skipped it and the select would jump back silently.
+    expect(switchDidNotTake("anthropic", { activeProvider: "openai" })).toBe(
+      true,
+    );
+    expect(switchDidNotTake("anthropic", { activeProvider: null })).toBe(true);
   });
 });
 

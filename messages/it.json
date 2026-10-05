@@ -3137,7 +3137,8 @@
         "noProvider": "Nessun fornitore disponibile",
         "saving": "Salvataggio…",
         "saveFailed": "Impossibile salvare la modifica.",
-        "allSettings": "Tutte le impostazioni IA"
+        "allSettings": "Tutte le impostazioni IA",
+        "providerNotActive": "{provider} non è subentrato: manca un accesso o una chiave funzionante. Configuralo nelle impostazioni IA."
       },
       "answer": {
         "scrollToBottom": "Vai all'ultimo messaggio",

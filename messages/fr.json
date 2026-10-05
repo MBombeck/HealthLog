@@ -3137,7 +3137,8 @@
         "noProvider": "Aucun fournisseur disponible",
         "saving": "Enregistrement…",
         "saveFailed": "Impossible d’enregistrer cette modification.",
-        "allSettings": "Tous les paramètres IA"
+        "allSettings": "Tous les paramètres IA",
+        "providerNotActive": "{provider} n'a pas pu prendre le relais : aucune connexion ni clé valide. Configurez-le dans les réglages IA."
       },
       "answer": {
         "scrollToBottom": "Aller au dernier message",

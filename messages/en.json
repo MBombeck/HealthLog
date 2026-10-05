@@ -3137,7 +3137,8 @@
         "noProvider": "No provider available",
         "saving": "Saving…",
         "saveFailed": "That change could not be saved.",
-        "allSettings": "All AI settings"
+        "allSettings": "All AI settings",
+        "providerNotActive": "{provider} could not take over: it has no working sign-in or key. Set it up in AI settings."
       },
       "answer": {
         "scrollToBottom": "Jump to the latest message",
