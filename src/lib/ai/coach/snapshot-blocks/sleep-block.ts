@@ -28,6 +28,7 @@ import {
 import { annotate } from "@/lib/logging/context";
 import type { ReferenceMetric } from "@/lib/reference-ranges";
 import { bucketWeekly, tzWeekday } from "../snapshot-series";
+import type { RegisterBlock } from "../series-condense";
 import type {
   CoachProvenance,
   CoachProvenanceMetric,
@@ -42,7 +43,7 @@ interface SleepTimelineBlockContext {
   snapshot: Record<string, unknown>;
   metrics: Set<CoachProvenanceMetric>;
   counts: NonNullable<CoachProvenance["counts"]>;
-  registerBlock: (key: string, source: CoachScopeSource) => void;
+  registerBlock: RegisterBlock;
   groundingValues: Map<ReferenceMetric, number>;
 }
 
@@ -130,7 +131,12 @@ export function buildSleepTimelineBlock(
     };
     metrics.add("sleep");
     counts.sleep = sleepRows.length;
-    registerBlock("sleep", "sleep");
+    registerBlock("sleep", "sleep", () => ({
+      value: nights.map((n) => ({
+        date: n.night,
+        value: Math.round(n.asleepMinutes),
+      })),
+    }));
     // W7 grounding: recent nightly asleep duration in HOURS against the
     // AASM 7–9 h band (the reference unit is hours; the snapshot stores
     // minutes). Mean over the recent nights the block already reconstructed.

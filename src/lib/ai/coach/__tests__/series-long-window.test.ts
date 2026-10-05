@@ -17,8 +17,9 @@ import {
   KEEP_SESSIONS,
   condenseSeriesBlock,
   isoWeekMonth,
-  summarisePoints,
+  summariseDaily,
   weeklyToMonthly,
+  type DailyPoint,
 } from "@/lib/ai/coach/series-condense";
 
 const buildCoachSnapshot =
@@ -71,6 +72,19 @@ function recent(count: number, value = (i: number) => 30 + i) {
   }));
 }
 
+/** `count` consecutive days from `start`, valued by `value(i)`. */
+function days(
+  count: number,
+  start: string,
+  value: (i: number) => number,
+): DailyPoint[] {
+  return Array.from({ length: count }, (_, i) => {
+    const at = new Date(`${start}T00:00:00Z`);
+    at.setUTCDate(at.getUTCDate() + i);
+    return { date: at.toISOString().slice(0, 10), value: value(i) };
+  });
+}
+
 describe("series-condense", () => {
   it("places an ISO week in the month of its Thursday", () => {
     expect(isoWeekMonth("2026-W01")).toBe("2026-01");
@@ -93,25 +107,50 @@ describe("series-condense", () => {
     ]);
   });
 
-  it("summarises points in time order", () => {
-    expect(
-      summarisePoints([
-        { at: "2026-09-02", value: 18 },
-        { at: "2025-W10", value: 21 },
-        { at: "2026-09-01", value: 17 },
-      ]),
-    ).toEqual({
-      from: "2025-W10",
-      to: "2026-09-02",
-      first: 21,
-      last: 18,
-      min: 17,
-      max: 21,
-      mean: 18.67,
-      change: -3,
-      points: 3,
+  it("summarises the daily values, each day weighing the same", () => {
+    // A year at 20, then a fortnight at 30: the fortnight is 14 of 379 days.
+    const year = days(379, "2025-09-01", (i) => (i < 365 ? 20 : 30));
+    const summary = summariseDaily([...year].reverse());
+    expect(summary).toEqual({
+      from: "2025-09-01",
+      to: "2026-09-14",
+      days: 379,
+      first: 20,
+      last: 30,
+      min: 20,
+      max: 30,
+      mean: 20.37,
+      firstWeekMean: 20,
+      latestWeekMean: 30,
+      change: 10,
     });
-    expect(summarisePoints([])).toBeNull();
+    expect(summariseDaily([])).toBeNull();
+  });
+
+  it("compares the first and latest calendar week, not two single days", () => {
+    // Noisy days: first day low, last day high, both weeks average 50.
+    const series = days(60, "2026-01-01", (i) =>
+      i === 0
+        ? 40
+        : i === 59
+          ? 60
+          : 50 + (i % 2 === 0 ? 1 : -1) * (i < 7 || i > 52 ? 0 : 3),
+    );
+    const summary = summariseDaily(series)!;
+    expect(summary.first).toBe(40);
+    expect(summary.last).toBe(60);
+    expect(summary.firstWeekMean).toBe(48.57);
+    expect(summary.latestWeekMean).toBe(51.43);
+    expect(summary.change).toBe(2.86);
+  });
+
+  it("gives a block no summary without its daily values", () => {
+    const block = {
+      unit: "kg",
+      timeline: { recent: recent(14), weekly: weeks(150) },
+    };
+    condenseSeriesBlock(block, 1, "fatMass");
+    expect(block).not.toHaveProperty("summary");
   });
 
   it("keeps numbers through every step and names what it cut", () => {
@@ -119,25 +158,25 @@ describe("series-condense", () => {
       unit: "kg",
       timeline: { recent: recent(14), weekly: weeks(150) },
     };
-    expect(condenseSeriesBlock(block, 1, "fatMass")).toBe(true);
+    const daily = { value: days(1050, "2023-10-25", (i) => (2000 + i) / 100) };
+    expect(condenseSeriesBlock(block, 1, "fatMass", daily)).toBe(true);
     expect(block.timeline.recent).toHaveLength(KEEP_DAILY_ROWS);
     expect(block.timeline.recent.at(-1)?.value).toBe(43);
-    expect(condenseSeriesBlock(block, 2, "fatMass")).toBe(true);
+    expect(condenseSeriesBlock(block, 2, "fatMass", daily)).toBe(true);
     expect(block.timeline).not.toHaveProperty("weekly");
     const monthly = (block.timeline as { monthly?: unknown[] }).monthly;
     expect(monthly!.length).toBeGreaterThan(30);
-    expect(condenseSeriesBlock(block, 3, "fatMass")).toBe(true);
+    expect(condenseSeriesBlock(block, 3, "fatMass", daily)).toBe(true);
     expect((block.timeline as { monthly?: unknown[] }).monthly).toHaveLength(
       KEEP_MONTHLY_ROWS,
     );
-    // The summary was taken before anything was cut: every week and day.
+    // The summary is the daily values', whatever the block still holds.
     const summary = (block as { summary?: Record<string, unknown> }).summary;
     expect(summary).toMatchObject({
-      from: "2023-W01",
-      to: "2026-09-14",
+      from: "2023-10-25",
+      days: 1050,
       first: 20,
-      last: 43,
-      points: 164,
+      last: 30.49,
     });
     expect((block as { condensed?: string[] }).condensed).toEqual([
       `daily values: newest ${KEEP_DAILY_ROWS} days kept`,
@@ -154,7 +193,10 @@ describe("series-condense", () => {
         weeklyDia: [{ weekISO: "2026-W30", mean: 85, count: 4 }],
       },
     };
-    condenseSeriesBlock(block, 2, "bloodPressure");
+    condenseSeriesBlock(block, 2, "bloodPressure", {
+      sys: days(40, "2026-07-24", (i) => (i < 33 ? 130 : 121)),
+      dia: days(40, "2026-07-24", (i) => (i < 33 ? 85 : 79)),
+    });
     expect(block).toMatchObject({
       summary: {
         sys: { first: 130, last: 121, change: -9 },
@@ -240,6 +282,10 @@ describe("get_metric_series inside a chat turn", () => {
     expect(data.section).toEqual(FAT_MASS);
     expect(data.readings).toBe(1460);
     expect(data.coverage).toContain("call get_metric_table yourself");
+    // The note says how the summary was taken, and claims no more.
+    expect(data.coverage).toContain("daily values over the whole read");
+    expect(data.coverage).toContain("latestWeekMean");
+    expect(data.coverage).not.toContain("every point");
   });
 
   it("keeps the shared build when the block was not cut there", async () => {
@@ -303,13 +349,19 @@ describe("series-condense reads each block in its own fields", () => {
         })),
       },
     };
-    condenseSeriesBlock(block, 1, "sleep");
+    const nights = {
+      value: [
+        ...days(49, "2026-07-20", () => 320),
+        ...days(14, "2026-09-10", (i) => 400 + i),
+      ],
+    };
+    condenseSeriesBlock(block, 1, "sleep", nights);
     expect(block).toMatchObject({
-      summary: { to: "2026-09-23", last: 413 },
+      summary: { to: "2026-09-23", last: 413, days: 63 },
     });
     expect(block.timeline.recent).toHaveLength(KEEP_DAILY_ROWS);
     expect(block.timeline.recent.at(-1)).toMatchObject({ minutes: 413 });
-    condenseSeriesBlock(block, 2, "sleep");
+    condenseSeriesBlock(block, 2, "sleep", nights);
     expect(
       (block.timeline as unknown as { monthly: unknown[] }).monthly,
     ).toEqual([
@@ -332,7 +384,12 @@ describe("series-condense reads each block in its own fields", () => {
         ],
       },
     };
-    condenseSeriesBlock(block, 2, "compliance");
+    condenseSeriesBlock(block, 2, "compliance", {
+      value: [
+        { date: "2026-09-30", value: 1 },
+        { date: "2026-10-01", value: 0.5 },
+      ],
+    });
     expect(block).toMatchObject({
       summary: { to: "2026-10-01", last: 0.5 },
       timeline: { monthly: [{ month: "2026-09", rate: 0.56, total: 16 }] },
@@ -350,8 +407,12 @@ describe("series-condense reads each block in its own fields", () => {
       panel: { tir: 0.8 },
       byContext: { FASTING: ctx(95), POST_MEAL: ctx(140) },
     };
-    expect(condenseSeriesBlock(block, 1, "glucose")).toBe(true);
-    expect(condenseSeriesBlock(block, 2, "glucose")).toBe(true);
+    const daily = {
+      FASTING: days(14, "2026-09-01", (i) => 95 + i),
+      POST_MEAL: days(14, "2026-09-01", (i) => 140 + i),
+    };
+    expect(condenseSeriesBlock(block, 1, "glucose", daily)).toBe(true);
+    expect(condenseSeriesBlock(block, 2, "glucose", daily)).toBe(true);
     expect(block).toMatchObject({
       summary: {
         FASTING: { last: 108, to: "2026-09-14" },
@@ -406,12 +467,16 @@ describe("the prompt-budget pass on a single-source read", () => {
       snap,
       new Map(clusters),
       new Set(["fatMass"]),
+      (key) =>
+        key === "fatMass"
+          ? { value: days(534, "2025-03-01", (i) => 20 + i / 100) }
+          : undefined,
     );
     expect(snap.steps).toEqual({ omitted: "trimmed for prompt budget" });
     expect(snap.walkingSpeed).toEqual({ omitted: "trimmed for prompt budget" });
     const fat = snap.fatMass as Record<string, unknown>;
     expect(fat).not.toHaveProperty("omitted");
-    expect(fat.summary).toMatchObject({ points: 534, last: 43 });
+    expect(fat.summary).toMatchObject({ days: 534, last: 25.33 });
     expect(degraded.map((d) => d.key).at(-1)).toBe("fatMass");
   });
 });
@@ -467,5 +532,32 @@ describe("the MCP read stays as it was", () => {
       reach: UNBOUNDED_REACH,
       condenseRequested: true,
     });
+  });
+});
+
+describe("dailyPoints", () => {
+  it("states each local day's value in the reader's unit", async () => {
+    const { dailyPoints } = await import("@/lib/ai/coach/snapshot-series");
+    const { getReadingTransform } =
+      await import("@/lib/measurements/display-transform");
+    const rows = [
+      { measuredAt: new Date("2026-09-01T06:00:00Z"), value: 80 },
+      { measuredAt: new Date("2026-09-01T20:00:00Z"), value: 82 },
+      { measuredAt: new Date("2026-09-02T06:00:00Z"), value: 81 },
+    ];
+    expect(dailyPoints(rows, "UTC")).toEqual([
+      { date: "2026-09-01", value: 81 },
+      { date: "2026-09-02", value: 81 },
+    ]);
+    const lb = dailyPoints(
+      rows,
+      "UTC",
+      undefined,
+      getReadingTransform("WEIGHT", {
+        ...DEFAULT_UNIT_PREFERENCES,
+        system: "imperial",
+      }),
+    );
+    expect(lb[0].value).toBeCloseTo(178.6, 0);
   });
 });

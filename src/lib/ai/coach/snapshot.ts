@@ -33,7 +33,12 @@ import {
   resolveSnapshotPrelude,
 } from "./snapshot-prelude";
 import { annotateSnapshotFreshness } from "./snapshot-freshness";
-import { condenseSeriesBlock, isCondensable } from "./series-condense";
+import {
+  condenseSeriesBlock,
+  isCondensable,
+  type DailySeries,
+  type RegisterBlock,
+} from "./series-condense";
 import { buildGlp1SnapshotBlock } from "./glp1-snapshot";
 import { buildDerivedSnapshotBlock } from "./derived-snapshot";
 import { buildCorrelationsSnapshotBlock } from "./correlations-snapshot";
@@ -349,10 +354,13 @@ async function buildCoachSnapshotImpl(
   // The source each block was built for, so a single-source read can tell
   // which blocks it asked for (see `degradeToBudget`).
   const blockSources = new Map<string, CoachScopeSource>();
-  const registerBlock = (key: string, source: CoachScopeSource) => {
+  // A series block's daily values, read only if the block is condensed.
+  const blockDaily = new Map<string, () => DailySeries>();
+  const registerBlock: RegisterBlock = (key, source, daily) => {
     const cluster = sourceCluster(source);
     if (cluster) blockClusters.set(key, cluster);
     blockSources.set(key, source);
+    if (daily) blockDaily.set(key, daily);
   };
 
   // v1.7.0 — record which clusters resolved active for this build so
@@ -1092,6 +1100,7 @@ async function buildCoachSnapshotImpl(
     compactSnapshot,
     blockClusters,
     requestedBlocks,
+    (key) => blockDaily.get(key)?.(),
   );
 
   // v1.18.6 (W7) — build the citation-aware reference-grounding block from the
@@ -1158,6 +1167,8 @@ export function degradeToBudget(
   snapshot: Record<string, unknown>,
   blockClusters: Map<string, CoachDataCluster>,
   requested: ReadonlySet<string> = new Set(),
+  /** A requested block's daily values, for its condensed summary. */
+  dailyOf: (key: string) => DailySeries | undefined = () => undefined,
 ): Array<{ key: string; cluster: CoachDataCluster; pass: number }> {
   const degraded: Array<{
     key: string;
@@ -1315,9 +1326,10 @@ export function degradeToBudget(
     // A requested series is condensed step by step and keeps its numbers
     // (`series-condense.ts`); it is never swapped for the `omitted` marker.
     if (requested.has(key) && isCondensable(key, snapshot[key])) {
+      const daily = dailyOf(key);
       for (const step of [1, 2, 3] as const) {
         if (size() <= MAX_SNAPSHOT_CHARS) break;
-        if (condenseSeriesBlock(snapshot[key], step, key)) {
+        if (condenseSeriesBlock(snapshot[key], step, key, daily)) {
           degraded.push({ key, cluster, pass: step });
         }
       }

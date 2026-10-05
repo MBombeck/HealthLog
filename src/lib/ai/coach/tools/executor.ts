@@ -619,7 +619,8 @@ async function getMetricSeries(
 const SERIES_COVERAGE_NOTE =
   "Daily values for the newest 14 days, weekly means before that, back at most 12 months; " +
   "timeline.coarse (when present) adds monthly and yearly means for older history. " +
-  "A 'condensed' list names what was cut to fit, and 'summary' holds first, last, min, max, mean and change over every point. " +
+  "A 'condensed' list names what was cut to fit. A 'summary', when present, is taken from the series' daily values over the whole read ('from' to 'to', 'days'): " +
+  "the first and last day, the lowest and highest day, the mean of the days, and 'change' = 'latestWeekMean' minus 'firstWeekMean' (the latest 7 calendar days against the first 7). " +
   "For the full history or a finer table, call get_metric_table yourself in this answer (window allTime, granularity month or week); do not ask the person first.";
 
 function isRecord(value: unknown): value is Record<string, unknown> {

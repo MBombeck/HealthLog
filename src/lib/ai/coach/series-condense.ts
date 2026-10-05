@@ -9,8 +9,11 @@
  * readings exist and holds no figure, and the model then says exactly that.
  *
  * A requested block is condensed instead. Before anything is cut it gains a
- * `summary` (first, last, min, max, mean and change over every point it held)
- * and each step after that keeps numbers:
+ * `summary` per series, taken from the series' daily values over the whole
+ * read (not from the block's mix of daily and weekly means, where fourteen
+ * days would weigh as much as fourteen weeks): the first and last day, the
+ * lowest and highest day, the mean of the days, and the change from the
+ * first week to the latest week. Each step after that keeps numbers:
  *
  *   1. the daily rows keep their newest `KEEP_DAILY_ROWS`;
  *   2. the weekly means fold into monthly means (count-weighted);
@@ -20,28 +23,61 @@
  * Every step it took is named in `condensed`, so the block says what it no
  * longer carries. Pure over its input: no I/O, no clock.
  */
-import { dateOnlyKey } from "@/lib/tz/date-only";
+import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import type { CoachScopeSource } from "./types";
 
 /** Daily rows a condensed block keeps, newest first in time order. */
 export const KEEP_DAILY_ROWS = 7;
 /** Monthly means a fully condensed block keeps. */
 export const KEEP_MONTHLY_ROWS = 6;
 
+/** One day's value of a series, in the reader's unit. */
+export interface DailyPoint {
+  /** `YYYY-MM-DD`, the person's local day. */
+  date: string;
+  value: number;
+}
+
+/**
+ * A block's daily values per series: `value` for a block with one series,
+ * else keyed like the summary (`sys`/`dia`, a glucose context).
+ */
+export type DailySeries = Readonly<Record<string, ReadonlyArray<DailyPoint>>>;
+
+/**
+ * How a block builder registers its block with the budget pass, and, for a
+ * series block, how to read its daily values should the block be condensed.
+ * The values are only computed then.
+ */
+export type RegisterBlock = (
+  key: string,
+  source: CoachScopeSource,
+  daily?: () => DailySeries,
+) => void;
+
+/** Days the first-week and latest-week means each span. */
+export const COMPARE_DAYS = 7;
+
 export interface SeriesSummary {
-  /** Earliest point's period: a day (`YYYY-MM-DD`) or an ISO week. */
+  /** First and last day with a value. */
   from: string;
-  /** Newest point's period. */
   to: string;
+  /** Days with a value; every figure below is over these days. */
+  days: number;
+  /** The first day's and the last day's value. */
   first: number;
   last: number;
+  /** The lowest and highest daily value. */
   min: number;
   max: number;
-  /** Mean of the points (daily and weekly means alike), not of readings. */
+  /** Mean of the daily values. */
   mean: number;
-  /** `last - first`. */
+  /** Mean of the days in the first `COMPARE_DAYS` calendar days. */
+  firstWeekMean: number;
+  /** Mean of the days in the latest `COMPARE_DAYS` calendar days. */
+  latestWeekMean: number;
+  /** `latestWeekMean - firstWeekMean`. */
   change: number;
-  /** How many points the figures above were taken over. */
-  points: number;
 }
 
 type Rec = Record<string, unknown>;
@@ -54,52 +90,47 @@ function round(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-/** ISO week `YYYY-Www` → the Monday that starts it, as `YYYY-MM-DD`. */
-function isoWeekMonday(weekISO: string): string | null {
-  const match = /^(\d{4})-W(\d{2})$/.exec(weekISO);
-  if (!match) return null;
-  const jan4 = new Date(Date.UTC(Number(match[1]), 0, 4));
-  const monday = new Date(jan4);
-  monday.setUTCDate(
-    jan4.getUTCDate() -
-      (jan4.getUTCDay() || 7) +
-      1 +
-      (Number(match[2]) - 1) * 7,
-  );
-  return dateOnlyKey(monday);
+/** The day `days` after a `YYYY-MM-DD` key, as a key. */
+function shiftDay(key: string, days: number): string {
+  const at = dayKeyAsUtcMidnight(key);
+  at.setUTCDate(at.getUTCDate() + days);
+  return dateOnlyKey(at);
 }
 
-/**
- * A sortable key for a point's period. A week and a day do not compare as
- * strings ("2026-W30" sorts after "2026-09-01"), so a week sorts by its
- * Monday.
- */
-function timeKey(at: string): string {
-  return isoWeekMonday(at) ?? at;
-}
-
-/** Summary over points (any order), or null when there are none. */
-export function summarisePoints(
-  points: ReadonlyArray<{ at: string; value: number }>,
+/** Summary over a series' daily values (any order), or null when empty. */
+export function summariseDaily(
+  points: ReadonlyArray<DailyPoint>,
 ): SeriesSummary | null {
-  const finite = points.filter((p) => Number.isFinite(p.value));
-  if (finite.length === 0) return null;
-  const sorted = [...finite].sort((a, b) =>
-    timeKey(a.at).localeCompare(timeKey(b.at)),
+  const days = points
+    .filter((p) => Number.isFinite(p.value))
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (days.length === 0) return null;
+  const values = days.map((d) => d.value);
+  const mean = (list: number[]) =>
+    list.reduce((s, v) => s + v, 0) / list.length;
+  const from = days[0].date;
+  const to = days[days.length - 1].date;
+  const firstEnd = shiftDay(from, COMPARE_DAYS - 1);
+  const latestStart = shiftDay(to, -(COMPARE_DAYS - 1));
+  const firstWeek = mean(
+    days.filter((d) => d.date <= firstEnd).map((d) => d.value),
   );
-  const values = sorted.map((p) => p.value);
-  const first = values[0];
-  const last = values[values.length - 1];
+  const latestWeek = mean(
+    days.filter((d) => d.date >= latestStart).map((d) => d.value),
+  );
   return {
-    from: sorted[0].at,
-    to: sorted[sorted.length - 1].at,
-    first,
-    last,
+    from,
+    to,
+    days: days.length,
+    first: values[0],
+    last: values[values.length - 1],
     min: Math.min(...values),
     max: Math.max(...values),
-    mean: round(values.reduce((s, v) => s + v, 0) / values.length),
-    change: round(last - first),
-    points: values.length,
+    mean: round(mean(values)),
+    firstWeekMean: round(firstWeek),
+    latestWeekMean: round(latestWeek),
+    change: round(latestWeek - firstWeek),
   };
 }
 
@@ -244,31 +275,13 @@ export function isCondensable(key: string, block: unknown): boolean {
   return tracksOf(kind, block).length > 0;
 }
 
-function trackSummary(track: Track): SeriesSummary | null {
-  const points: Array<{ at: string; value: number }> = [];
-  const weekly = track.container[track.weekly];
-  if (Array.isArray(weekly)) {
-    for (const b of weekly) {
-      if (!isRecord(b) || typeof b.weekISO !== "string") continue;
-      const value = b[track.weeklyValue];
-      if (typeof value === "number") points.push({ at: b.weekISO, value });
-    }
-  }
-  const recent = track.container.recent;
-  if (Array.isArray(recent)) {
-    for (const row of recent) {
-      if (!isRecord(row) || typeof row.date !== "string") continue;
-      const value = row[track.field];
-      if (typeof value === "number") points.push({ at: row.date, value });
-    }
-  }
-  return summarisePoints(points);
-}
-
-function blockSummary(tracks: ReadonlyArray<Track>): unknown {
+function blockSummary(
+  tracks: ReadonlyArray<Track>,
+  daily: DailySeries,
+): unknown {
   const out: Rec = {};
   for (const track of tracks) {
-    const summary = trackSummary(track);
+    const summary = summariseDaily(daily[track.name ?? "value"] ?? []);
     if (!summary) continue;
     if (track.name === null) return summary;
     out[track.name] = summary;
@@ -294,6 +307,12 @@ export function condenseSeriesBlock(
   block: unknown,
   step: 1 | 2 | 3,
   key: string,
+  /**
+   * The block's daily values over the whole read, for its summary. Without
+   * them the block gets no summary: a summary of what is left would not be
+   * a summary of the series.
+   */
+  daily?: DailySeries,
 ): boolean {
   if (!isRecord(block)) return false;
   const kind = seriesBlockKind(key);
@@ -316,8 +335,8 @@ export function condenseSeriesBlock(
   }
   const tracks = tracksOf(kind, block);
   if (tracks.length === 0) return false;
-  if (block.summary === undefined) {
-    const summary = blockSummary(tracks);
+  if (block.summary === undefined && daily) {
+    const summary = blockSummary(tracks, daily);
     if (summary !== undefined) block.summary = summary;
   }
   const containers = new Set(tracks.map((t) => t.container));

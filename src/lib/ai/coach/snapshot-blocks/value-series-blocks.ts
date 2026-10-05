@@ -8,8 +8,10 @@ import { sourceCluster } from "../clusters";
 import {
   bucketWeekly,
   buildDailyValueRows,
+  dailyPoints,
   timelineInUnit,
 } from "../snapshot-series";
+import type { RegisterBlock } from "../series-condense";
 import type {
   CoachProvenance,
   CoachProvenanceMetric,
@@ -252,7 +254,7 @@ interface ValueSeriesBlocksContext {
   snapshot: Record<string, unknown>;
   metrics: Set<CoachProvenanceMetric>;
   counts: NonNullable<CoachProvenance["counts"]>;
-  registerBlock: (key: string, source: CoachScopeSource) => void;
+  registerBlock: RegisterBlock;
   groundingValues: Map<ReferenceMetric, number>;
   /** The reader's units; every block is stated and labelled in them. */
   units: UnitPreferences;
@@ -311,7 +313,9 @@ export function buildValueSeriesBlocks(
     };
     ctx.metrics.add(block.metric);
     ctx.counts[block.metric] = rows.length;
-    ctx.registerBlock(block.snapshotKey, block.source);
+    ctx.registerBlock(block.snapshotKey, block.source, () => ({
+      value: dailyPoints(rows, ctx.userTz, undefined, transform),
+    }));
 
     const referenceMetric =
       typeof block.type === "string"
