@@ -57,6 +57,21 @@ export function moduleOwningPath(pathname: string): ModuleKey | undefined {
 }
 
 /**
+ * The module that owns `pathname` when it is switched off, otherwise
+ * undefined. The shell reads it too: a switched-off page renders the
+ * notice in the ordinary padded frame.
+ */
+export function switchedOffModule(
+  pathname: string,
+  modules: Partial<Record<ModuleKey, boolean>> | null | undefined,
+): ModuleKey | undefined {
+  const moduleKey = moduleOwningPath(pathname);
+  return moduleKey !== undefined && modules?.[moduleKey] === false
+    ? moduleKey
+    : undefined;
+}
+
+/**
  * A page of a module that is switched off answers with an inline notice that
  * names the reason, in one place for every module page: top-level pages
  * (`/mood`, `/labs` …) and Insights sub-pages (`/insights/mood`,
@@ -79,9 +94,8 @@ export function ModulePageGate({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { t } = useTranslations();
 
-  const moduleKey = moduleOwningPath(pathname);
-  const off = moduleKey !== undefined && user?.modules?.[moduleKey] === false;
-  if (!off) return <>{children}</>;
+  const moduleKey = switchedOffModule(pathname, user?.modules);
+  if (moduleKey === undefined) return <>{children}</>;
 
   const destination = NAV_DESTINATIONS.find((d) =>
     isNavDestinationActive(d.href, pathname),

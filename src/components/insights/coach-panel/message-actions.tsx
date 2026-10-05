@@ -3,10 +3,10 @@
 /**
  * The one action row under a Coach message, for both roles.
  *
- * Assistant: a single line. Left, the icon actions in reading order (copy,
- * read aloud, try again) followed by the time the answer was written; right,
- * the tokens and model the answer cost, as meta. The right group truncates
- * before the row would wrap, so the row is one line at 390 px too.
+ * Assistant: a single line, left-aligned. The icon actions in reading order
+ * (copy, read aloud, try again, details) followed by the time the answer was
+ * written. The details icon holds the model and the tokens the answer cost
+ * in a tooltip that opens on hover, on keyboard focus and on a tap.
  *
  * User: copy, remember, time, flush with the bubble's right edge.
  *
@@ -15,7 +15,7 @@
  * `opacity-0` rather than `invisible` keeps every control focusable, and
  * focus reveals the row.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -23,11 +23,18 @@ import {
   BookmarkPlus,
   Check,
   Copy,
+  Info,
   Loader2,
   RotateCcw,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { resolveIntlLocale } from "@/lib/format-locale";
 import type { Formatters } from "@/lib/format-locale";
@@ -85,27 +92,30 @@ export function messageTimeText(
 }
 
 /**
- * The answer's cost as one meta string: tokens with the model when both are
- * known, tokens alone otherwise, nothing without a count. The count is the
- * server's (`done.usage` live, `tokensUsed` on reload), formatted for the
- * reader's locale.
+ * What the details tooltip says about an answer: the model that wrote it and
+ * the tokens it cost, one line each, in that order, each only when known. The
+ * count is the server's (`done.usage` live, `tokensUsed` on reload),
+ * formatted for the reader's locale. Empty when neither is known, and then
+ * the row offers no details icon at all.
  */
-export function answerMetaText(
+export function answerInfoLines(
   tokens: number | null | undefined,
   model: string | null | undefined,
   locale: string,
   t: Translate,
-): string | null {
-  if (tokens == null) return null;
-  let count: string;
-  try {
-    count = new Intl.NumberFormat(locale).format(tokens);
-  } catch {
-    count = String(tokens);
+): string[] {
+  const lines: string[] = [];
+  if (model) lines.push(t("insights.coach.answer.infoModel", { model }));
+  if (tokens != null) {
+    let count: string;
+    try {
+      count = new Intl.NumberFormat(locale).format(tokens);
+    } catch {
+      count = String(tokens);
+    }
+    lines.push(t("insights.coach.tokensUsed", { count }));
   }
-  return model
-    ? t("insights.coach.tokensUsedWithModel", { count, model })
-    : t("insights.coach.tokensUsed", { count });
+  return lines;
 }
 
 function CopyMessageButton({
@@ -167,6 +177,70 @@ function TryAgainButton({ onRegenerate }: { onRegenerate: () => void }) {
     >
       <RotateCcw className="size-4" aria-hidden="true" />
     </button>
+  );
+}
+
+/**
+ * Whether the details tooltip is open after a click on its icon, given its
+ * state when the pointer went down (`null`: no pointer went down, so Enter
+ * or Space activated the button). A tap or a mouse click toggles from that
+ * state, before the primitive's own pointer-down close ran. A keyboard
+ * activation always opens: focus has already opened the tooltip, and a
+ * toggle would close it on Enter. Escape is the keyboard's way out.
+ */
+export function answerInfoOpenAfterClick(
+  openAtPointerDown: boolean | null,
+): boolean {
+  return openAtPointerDown === null ? true : !openAtPointerDown;
+}
+
+/**
+ * The model and token count of an answer, behind an info icon. A tooltip,
+ * opened the three ways a reader can reach it: hovering the icon, focusing
+ * it from the keyboard, and tapping it on a touch screen, where there is no
+ * hover. A second tap, a tap elsewhere or Escape closes it.
+ *
+ * The click is handled here because the tooltip primitive closes on every
+ * click (`answerInfoOpenAfterClick` decides instead).
+ */
+function AnswerInfoButton({ lines }: { lines: string[] }) {
+  const { t } = useTranslations();
+  const [open, setOpen] = useState(false);
+  const openAtPointerDown = useRef<boolean | null>(null);
+  const label = t("insights.coach.answer.info");
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip open={open} onOpenChange={setOpen}>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            data-slot="coach-answer-info"
+            aria-label={label}
+            className={COACH_ICON_BUTTON}
+            onPointerDown={() => {
+              openAtPointerDown.current = open;
+            }}
+            onClick={(event) => {
+              // Keep the primitive from closing it again on this click.
+              event.preventDefault();
+              setOpen(answerInfoOpenAfterClick(openAtPointerDown.current));
+              openAtPointerDown.current = null;
+            }}
+          >
+            <Info className="size-4" aria-hidden="true" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          data-slot="coach-answer-info-content"
+          className="flex flex-col gap-0.5 tabular-nums"
+        >
+          {lines.map((line) => (
+            <span key={line}>{line}</span>
+          ))}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -293,34 +367,23 @@ export function AssistantMessageActions({
   model,
 }: AssistantMessageActionsProps) {
   const { t, locale } = useTranslations();
-  const meta = answerMetaText(tokens, model, resolveIntlLocale(locale), t);
+  const info = answerInfoLines(tokens, model, resolveIntlLocale(locale), t);
   return (
     <div
       data-slot="coach-answer-actions"
       className={cn(
-        "flex w-full min-w-0 items-center justify-between gap-2 self-stretch",
+        "flex w-full min-w-0 items-center gap-0.5 self-stretch",
         REVEAL.assistant,
         "transition-opacity duration-150 motion-reduce:transition-none",
       )}
     >
-      <div
-        data-slot="coach-answer-actions-left"
-        className="flex shrink-0 items-center gap-0.5"
-      >
-        <CopyMessageButton content={content} strip />
-        {!streaming && <ReadAloudButton content={content} />}
-        {!streaming && onRegenerate && (
-          <TryAgainButton onRegenerate={onRegenerate} />
-        )}
-        {createdAt && <MessageTime iso={createdAt} />}
-      </div>
-      <p
-        data-slot="coach-answer-meta"
-        title={model ?? undefined}
-        className="text-muted-foreground min-w-0 truncate text-right text-xs tabular-nums"
-      >
-        {meta}
-      </p>
+      <CopyMessageButton content={content} strip />
+      {!streaming && <ReadAloudButton content={content} />}
+      {!streaming && onRegenerate && (
+        <TryAgainButton onRegenerate={onRegenerate} />
+      )}
+      {!streaming && info.length > 0 && <AnswerInfoButton lines={info} />}
+      {createdAt && <MessageTime iso={createdAt} />}
     </div>
   );
 }

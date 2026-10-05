@@ -3023,7 +3023,6 @@
       "thinkingExpandAria": "Show what the Coach considered",
       "thinkingDetail": "Answered from your health snapshot.",
       "tokensUsed": "{count} tokens",
-      "tokensUsedWithModel": "{count} tokens · {model}",
       "askAboutThis": "Ask the coach about this",
       "readStrip": {
         "label": "Usual range",
@@ -3143,7 +3142,9 @@
         "timeEarlier": "{date}, {time}",
         "areasDoneOne": "Looked at 1 area",
         "areasDoneFew": "Looked at {count} areas",
-        "areasDoneOther": "Looked at {count} areas"
+        "areasDoneOther": "Looked at {count} areas",
+        "info": "Answer details",
+        "infoModel": "Model: {model}"
       }
     },
     "relativeJustNow": "just now",

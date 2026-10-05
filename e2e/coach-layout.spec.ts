@@ -14,7 +14,9 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  *
  *   1. From 1280 px the panel docks beside the thread, open on a first visit,
  *      and the reading column (thread and composer) is exactly as wide with
- *      the panel open as with it closed. The choice survives a reload.
+ *      the panel open as with it closed. The choice survives a reload. The
+ *      panel is flush with the viewport's right edge (no scrollbar gutter
+ *      beside it) and runs from the top bar to the bottom edge.
  *   2. Escape inside the docked panel closes it and returns focus to the
  *      toggle.
  *   3. A row's menu renames by keyboard (Escape cancels without closing the
@@ -230,6 +232,59 @@ async function expectNoSidewaysScroll(page: Page) {
   expect(overflow.main).toBeLessThanOrEqual(0);
 }
 
+/**
+ * The docked panel is flush with the viewport: its right edge is the
+ * viewport's (no scrollbar gutter beside it), it runs from the top bar's
+ * bottom edge to the bottom of the viewport, and its own border is the left
+ * one only.
+ */
+async function expectPanelFlush(page: Page, width: number, height: number) {
+  const geometry = await page.evaluate(() => {
+    const aside = document.querySelector(
+      '[data-slot="coach-conversations-panel"]',
+    )!;
+    const inner = aside.firstElementChild as HTMLElement;
+    const bar = document.querySelector('[data-slot="top-bar"]')!;
+    const main = document.getElementById("main-content")!;
+    const style = getComputedStyle(inner);
+    const box = aside.getBoundingClientRect();
+    return {
+      right: box.right,
+      top: box.top,
+      bottom: box.bottom,
+      barBottom: bar.getBoundingClientRect().bottom,
+      gutter: main.offsetWidth - main.clientWidth,
+      borders: [
+        style.borderTopWidth,
+        style.borderRightWidth,
+        style.borderBottomWidth,
+        style.borderLeftWidth,
+      ],
+    };
+  });
+  expect(geometry.right).toBe(width);
+  expect(geometry.top).toBe(geometry.barBottom);
+  expect(geometry.bottom).toBe(height);
+  expect(geometry.gutter).toBe(0);
+  expect(geometry.borders).toEqual(["0px", "0px", "0px", "1px"]);
+}
+
+/** Rendered heights of the docked panel's header buttons and first row. */
+async function panelControlHeights(page: Page) {
+  const height = async (slot: string) =>
+    Math.round(
+      (await panel(page)
+        .locator(`[data-slot="${slot}"]`)
+        .first()
+        .boundingBox())!.height,
+    );
+  return {
+    plans: await height("coach-panel-plans"),
+    gear: await height("coach-settings"),
+    row: await height("coach-history-select"),
+  };
+}
+
 async function shot(page: Page, testInfo: TestInfo, name: string) {
   const path = testInfo.outputPath(`${name}.png`);
   await page.screenshot({ path });
@@ -318,6 +373,13 @@ test.describe("Coach page frame", () => {
       // The panel sits right of the column, never over it.
       const aside = (await panel(page).boundingBox())!;
       expect(aside.x).toBeGreaterThanOrEqual(open.threadX + open.thread);
+      await expectPanelFlush(page, width, 900);
+      // Open, the toggle stands beside the panel's leading edge.
+      const openToggle = (await toggle(page).boundingBox())!;
+      expect(openToggle.x + openToggle.width).toBeLessThanOrEqual(aside.x);
+      expect(aside.x - (openToggle.x + openToggle.width)).toBeLessThanOrEqual(
+        24,
+      );
       await expectNoSidewaysScroll(page);
       await shot(page, testInfo, `coach-frame-${width}-open`);
 
@@ -326,6 +388,13 @@ test.describe("Coach page frame", () => {
       await waitForWidth(panel(page), 0);
       await expect(toggle(page)).toHaveAttribute("aria-expanded", "false");
       const closed = await columnWidths(page);
+      // Closed, it returns to the trailing edge of the top bar.
+      await expect
+        .poll(async () => {
+          const box = (await toggle(page).boundingBox())!;
+          return Math.round(width - (box.x + box.width));
+        })
+        .toBeLessThanOrEqual(24);
       expect(Math.abs(closed.thread - open.thread)).toBeLessThanOrEqual(1);
       expect(Math.abs(closed.composer - open.composer)).toBeLessThanOrEqual(1);
       // Closed, nothing inside the panel is reachable.
@@ -348,6 +417,39 @@ test.describe("Coach page frame", () => {
       await expect(toggle(page)).toBeFocused();
     });
   }
+
+  test("1280 fine pointer: compact header buttons and rows", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await mockCoach(page);
+    await openCoach(page);
+    expect(await panelControlHeights(page)).toEqual({
+      plans: 28,
+      gear: 28,
+      row: 36,
+    });
+  });
+
+  test.describe("touch", () => {
+    // A touch tablet in landscape docks the panel too; the controls keep the
+    // 44 px floor because the size follows the input, not the width.
+    test.use({ hasTouch: true });
+
+    test("1280 touch: header buttons and rows keep the 44 px floor", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await mockCoach(page);
+      await openCoach(page);
+      await expect(panel(page)).toHaveAttribute("data-state", "open");
+      expect(await panelControlHeights(page)).toEqual({
+        plans: 44,
+        gear: 44,
+        row: 44,
+      });
+    });
+  });
 
   test("1440: picking a row opens it and New chat clears it, both in the URL", async ({
     page,

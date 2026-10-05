@@ -3023,7 +3023,6 @@
       "thinkingExpandAria": "Zeigen, was der Coach berücksichtigt hat",
       "thinkingDetail": "Beantwortet aus deinem Gesundheits-Snapshot.",
       "tokensUsed": "{count} Tokens",
-      "tokensUsedWithModel": "{count} Tokens · {model}",
       "askAboutThis": "Den Coach dazu fragen",
       "readStrip": {
         "label": "Üblicher Bereich",
@@ -3143,7 +3142,9 @@
         "timeEarlier": "{date}, {time}",
         "areasDoneOne": "1 Bereich angesehen",
         "areasDoneFew": "{count} Bereiche angesehen",
-        "areasDoneOther": "{count} Bereiche angesehen"
+        "areasDoneOther": "{count} Bereiche angesehen",
+        "info": "Details zur Antwort",
+        "infoModel": "Modell: {model}"
       }
     },
     "relativeJustNow": "gerade eben",

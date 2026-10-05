@@ -212,17 +212,17 @@ describe("a reuse chip", () => {
       messageId: h.LAST_ASSISTANT_ID,
       ref: "r1",
     });
-    const [chips] = framesOf<{ followUps: CoachFollowUp[] }>(
-      run.frames,
-      "followUps",
-    );
-    expect(chips.followUps.map((c) => c.kind)).toEqual(["as_chart"]);
+    // The result renders with its own chart/table toggle, so no chip
+    // offers the chart again.
+    expect(
+      framesOf<{ followUps: CoachFollowUp[] }>(run.frames, "followUps"),
+    ).toEqual([]);
     expect(m.appendMessage).toHaveBeenCalledWith(
       expect.objectContaining({ role: "assistant", providerType: "reuse" }),
     );
   });
 
-  it("answers 'as a chart' with the stored chart and offers the table view", async () => {
+  it("answers 'as a chart' with the stored chart and leaves the table to its toggle", async () => {
     conversationWithChips();
     const run = await tap("f3");
     expect(providerCalls).toHaveLength(0);
@@ -231,11 +231,9 @@ describe("a reuse chip", () => {
       "result",
     ).map((f) => f.result);
     expect(result.chart).toEqual(world.storedTables[0].chart);
-    const [chips] = framesOf<{ followUps: CoachFollowUp[] }>(
-      run.frames,
-      "followUps",
-    );
-    expect(chips.followUps.map((c) => c.kind)).toEqual(["as_table"]);
+    expect(
+      framesOf<{ followUps: CoachFollowUp[] }>(run.frames, "followUps"),
+    ).toEqual([]);
   });
 
   it("still passes the rate limit", async () => {

@@ -37,7 +37,8 @@ import { useDeleteCoachConversationWithUndo } from "./use-coach";
  * Below 1280 px it is a sheet from the right that opens when asked and
  * closes again when a conversation is picked or a new chat starts.
  *
- * The toggle sits at the trailing edge of the top bar. The panel header
+ * The toggle sits at the trailing edge of the top bar and, while the docked
+ * panel is open, beside the panel's leading edge. The panel header
  * carries the title, a link to Plans, the settings gear and, in the sheet,
  * a close button. The round New chat button sits at the bottom right.
  *
@@ -47,6 +48,15 @@ import { useDeleteCoachConversationWithUndo } from "./use-coach";
  * Radix owns Escape, the focus trap and the return.
  */
 export const COACH_PANEL_ID = "coach-conversations-panel";
+
+/**
+ * The panel header's icon buttons: 28 px beside a fine pointer, the 44 px
+ * touch floor otherwise. Keyed on the input, not the viewport width, so a
+ * tablet in landscape (touch, docked panel) keeps the touch size.
+ */
+export const PANEL_HEADER_BUTTON =
+  "text-muted-foreground hover:text-foreground size-11 shrink-0 pointer-fine:size-7";
+const PANEL_HEADER_ICON = "size-5 pointer-fine:size-4";
 
 const noSubscription = () => () => {};
 
@@ -146,14 +156,14 @@ export function ConversationsPanel({
   const header = (inSheet: boolean) => (
     <div
       data-slot="coach-conversations-panel-header"
-      className="border-border flex h-14 shrink-0 items-center gap-1 border-b pr-2 pl-3"
+      className="border-border flex shrink-0 items-center gap-2 border-b p-3"
     >
       {inSheet ? (
-        <SheetTitle className="min-w-0 flex-1 truncate text-sm font-semibold">
+        <SheetTitle className="min-w-0 flex-1 truncate text-lg leading-tight font-semibold">
           {t("insights.coach.historyTitle")}
         </SheetTitle>
       ) : (
-        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">
+        <h2 className="min-w-0 flex-1 truncate text-lg leading-tight font-semibold">
           {t("insights.coach.historyTitle")}
         </h2>
       )}
@@ -161,7 +171,7 @@ export function ConversationsPanel({
         asChild
         variant="ghost"
         size="icon"
-        className="text-muted-foreground hover:text-foreground size-11 shrink-0 sm:size-9"
+        className={PANEL_HEADER_BUTTON}
       >
         <Link
           href="/coach/plans"
@@ -169,7 +179,7 @@ export function ConversationsPanel({
           aria-label={t("coach.plans.title")}
           title={t("coach.plans.title")}
         >
-          <Target className="size-4" aria-hidden="true" />
+          <Target className={PANEL_HEADER_ICON} aria-hidden="true" />
         </Link>
       </Button>
       <CoachSettingsOverlay
@@ -179,6 +189,7 @@ export function ConversationsPanel({
           if (!next) setSettingsOnData(false);
         }}
         focusData={settingsOnData}
+        className="pointer-fine:size-7 [&_svg]:size-5 pointer-fine:[&_svg]:size-4"
       />
       {inSheet ? (
         <SheetClose asChild>
@@ -189,9 +200,9 @@ export function ConversationsPanel({
             data-slot="coach-panel-close"
             aria-label={t("common.close")}
             title={t("common.close")}
-            className="text-muted-foreground hover:text-foreground size-11 shrink-0 sm:size-9"
+            className={PANEL_HEADER_BUTTON}
           >
-            <X className="size-4" aria-hidden="true" />
+            <X className={PANEL_HEADER_ICON} aria-hidden="true" />
           </Button>
         </SheetClose>
       ) : null}
@@ -244,12 +255,27 @@ export function ConversationsPanel({
           aria-label={toggleLabel}
           title={toggleLabel}
           data-slot="coach-panel-toggle"
-          className="text-muted-foreground hover:text-foreground size-11"
+          className={cn(
+            "text-muted-foreground hover:text-foreground size-11",
+            // Docked and open, the toggle keeps the panel's width as its
+            // right margin, so it stays beside the panel's leading edge and
+            // travels with it as the panel opens and shuts.
+            "transition-[margin] duration-200 ease-linear motion-reduce:transition-none",
+            docked && dockedOpen && "mr-72",
+          )}
         >
+          {/* Mirrored, so the chevron points the way the panel moves on a
+              click: right to shut it, left to open it. */}
           {expanded ? (
-            <PanelRightClose className="size-5" aria-hidden="true" />
+            <PanelRightOpen
+              className="size-5 -scale-x-100"
+              aria-hidden="true"
+            />
           ) : (
-            <PanelRightOpen className="size-5" aria-hidden="true" />
+            <PanelRightClose
+              className="size-5 -scale-x-100"
+              aria-hidden="true"
+            />
           )}
         </Button>
       </TopBarActions>

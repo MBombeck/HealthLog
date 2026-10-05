@@ -165,20 +165,26 @@ describe("deriveFollowUps — the rules", () => {
     expect(all).toEqual([]);
   });
 
-  it("offers the chart back for a table shown as a table", () => {
-    const chips = derive({
-      results: [
-        table("bp", { chartKind: "line", displayed: true, view: "table" }),
-      ],
-    });
-    expect(chips[0]).toMatchObject({ kind: "as_chart", reuse: true });
+  it("offers no view chip for a table the answer shows with its chart", () => {
+    // The result panel renders its own chart/table toggle; a chip asking for
+    // either view would repeat it, whichever view the panel opens on.
+    for (const view of [undefined, "table" as const]) {
+      const chips = derive({
+        results: [
+          table("bp", {
+            chartKind: "line",
+            displayed: true,
+            ...(view ? { view } : {}),
+          }),
+        ],
+      });
+      expect(chips.some((c) => c.reuse)).toBe(false);
+    }
   });
 
-  it("offers the other view of a table that has a chart, as a reuse chip", () => {
-    const shown = derive({
-      results: [table("bp", { chartKind: "line", displayed: true })],
-    });
-    expect(shown[0]).toMatchObject({ kind: "as_table", reuse: true });
+  it("offers the chart of a table the answer only used, as a reuse chip", () => {
+    // Folded under "Data used" as a table, its toggle is out of sight; the
+    // chip brings it into the answer.
     const tucked = derive({
       results: [table("bp", { chartKind: "line", displayed: false })],
     });
@@ -404,6 +410,11 @@ describe("deriveFollowUps — property: every chip's domain was read this turn",
         }
         if (!chip.reuse) {
           expect(held.has(domain!), `seed ${seed}`).toBe(true);
+        } else {
+          // A view chip never repeats the toggle of a table the answer
+          // shows with its chart.
+          const meta = results.find((m) => m.ref === chip.anchor?.ref);
+          expect(meta?.displayed && meta.chartKind, `seed ${seed}`).toBeFalsy();
         }
       }
     }
