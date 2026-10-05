@@ -94,20 +94,22 @@ export const SAME_HOURS_MIN_DAYS = 7;
  * there is nothing like-for-like to compare today with, and no verdict.
  */
 export function sameHoursStanding(
-  days: readonly { day: string; n: number; sum: number }[],
+  days: readonly { day: string; n: number; sum: number; dayMean?: number }[],
   todayKey: string,
   type: MeasurementType,
 ): { value: number; low: number; high: number; center: number } | null {
+  // A type on the hourly-mean reader carries `dayMean` (the mean of its
+  // hours' means); every other type's day is the mean of its readings.
+  const value = (d: { n: number; sum: number; dayMean?: number }) =>
+    d.dayMean ?? d.sum / d.n;
   const today = days.find((d) => d.day === todayKey && d.n > 0);
   if (!today) return null;
-  const earlier = days
-    .filter((d) => d.day < todayKey && d.n > 0)
-    .map((d) => d.sum / d.n);
+  const earlier = days.filter((d) => d.day < todayKey && d.n > 0).map(value);
   if (earlier.length < SAME_HOURS_MIN_DAYS) return null;
   const band = buildBaselineBand(earlier, type);
   if (!band) return null;
   return {
-    value: today.sum / today.n,
+    value: value(today),
     low: band.low,
     high: band.high,
     center: band.center,

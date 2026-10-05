@@ -33,6 +33,7 @@ import {
   computeCoincidentDeviation,
   classifyDeviation,
   COINCIDENT_FIRE_THRESHOLD,
+  sameHoursStanding,
 } from "../coincident-deviation";
 
 const PROFILE = { ageYears: 40, sex: "MALE" as const };
@@ -349,5 +350,42 @@ describe("glucose — a day in progress is compared with the same hours", () => 
     expect(
       result.value.vitals.find((v) => v.type === "BLOOD_GLUCOSE"),
     ).toBeUndefined();
+  });
+});
+
+describe("sameHoursStanding", () => {
+  it("reads an hourly-mean day by its day mean, not by sum / n", () => {
+    // Twelve dense readings in one hour and one in another: the mean of the
+    // hours' means is 100, the raw mean is 140. A type on the hourly-mean
+    // reader carries `dayMean`, and that is the day's value.
+    const day = (d: string, dayMean: number) => ({
+      day: d,
+      n: 13,
+      sum: 140 * 13,
+      dayMean,
+    });
+    const days = [
+      ...Array.from({ length: 8 }, (_, i) =>
+        day(`2026-05-${String(20 + i).padStart(2, "0")}`, 100),
+      ),
+      day("2026-06-02", 101),
+    ];
+    const standing = sameHoursStanding(days, "2026-06-02", "BLOOD_GLUCOSE");
+    expect(standing?.value).toBe(101);
+    expect(standing?.center).toBe(100);
+  });
+
+  it("falls back to sum / n where the reader has no day mean", () => {
+    const days = [
+      ...Array.from({ length: 8 }, (_, i) => ({
+        day: `2026-05-${String(20 + i).padStart(2, "0")}`,
+        n: 2,
+        sum: 180,
+      })),
+      { day: "2026-06-02", n: 1, sum: 88 },
+    ];
+    const standing = sameHoursStanding(days, "2026-06-02", "BLOOD_GLUCOSE");
+    expect(standing?.value).toBe(88);
+    expect(standing?.center).toBe(90);
   });
 });
