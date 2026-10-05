@@ -343,6 +343,7 @@ export function CoachModelPicker() {
         <ReasoningEffortField
           id="coach-quick-reasoning"
           value={reasoning.value}
+          disabled={busy}
           onChange={(next) => patchProvider.mutate({ [reasoning.field]: next })}
         />
       ) : null}

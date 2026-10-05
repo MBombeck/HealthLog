@@ -107,6 +107,17 @@ describe("<CoachSettingsBody>", () => {
     expect(html).not.toMatch(/type="password"/);
   });
 
+  it("locks the reasoning select while a change is saving", async () => {
+    // Two writes in flight at once could land out of order and lose one;
+    // the provider and model selects already lock, the reasoning one too.
+    const source = (await import("node:fs")).readFileSync(
+      new URL("../coach-model-picker.tsx", import.meta.url),
+      "utf8",
+    );
+    const field = source.match(/<ReasoningEffortField[\s\S]*?\/>/)?.[0];
+    expect(field).toMatch(/disabled=\{busy\}/);
+  });
+
   it("names the data section so a deep link can land on it", () => {
     const html = render(<CoachSettingsBody />);
     expect(html).toMatch(

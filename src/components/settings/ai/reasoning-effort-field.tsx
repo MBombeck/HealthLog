@@ -14,10 +14,13 @@ import type { ReasoningEffort } from "./shared";
 
 export function ReasoningEffortField({
   id,
+  disabled = false,
   value,
   onChange,
 }: {
   id: string;
+  /** Locks the select while a write is in flight. */
+  disabled?: boolean;
   value: ReasoningEffort | null;
   onChange: (next: ReasoningEffort | null) => void;
 }) {
@@ -28,6 +31,7 @@ export function ReasoningEffortField({
       <NativeSelect
         id={id}
         value={value ?? ""}
+        disabled={disabled}
         onChange={(e) =>
           onChange(
             e.target.value === "" ? null : (e.target.value as ReasoningEffort),
