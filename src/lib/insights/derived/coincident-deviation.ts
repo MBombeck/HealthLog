@@ -52,7 +52,7 @@ import {
 } from "@/lib/measurements/value-domain";
 import {
   dayKeyAgeInDays,
-  isCurrentForTodayClaim,
+  isFromToday,
 } from "@/lib/insights/measurement-freshness";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
@@ -422,14 +422,14 @@ export async function computeCoincidentDeviation(
   }
 
   // Everything this flag says is about TODAY — the card is literally called
-  // "signals of the day" and every line it renders is present tense. A vital
-  // whose freshest reading is older than that cannot contribute to it: the
+  // "signals of the day" and its lines say "today". A vital whose freshest
+  // reading is from an earlier calendar day cannot contribute to it: the
   // reading describes the day it was taken on, and saying otherwise tells the
   // reader something about a day on which nothing was measured. Stale vitals
   // stay in `vitals` with their age, so the anatomy view still lists them and
   // nothing silently disappears.
   const contributing = vitals.filter(
-    (v) => v.outside && isCurrentForTodayClaim(v.daysAgo),
+    (v) => v.outside && isFromToday(v.daysAgo),
   );
   const fired = contributing.length >= COINCIDENT_FIRE_THRESHOLD;
 

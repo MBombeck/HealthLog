@@ -82,6 +82,8 @@ import { resolveRestMode } from "@/lib/illness/rest-mode";
 import { readTodayCycle, type TodayCycleRead } from "@/lib/cycle/today-verdict";
 import { addDays, dayDiff } from "@/lib/cycle/day-math";
 import { makeFormatters, resolveIntlLocale } from "@/lib/format-locale";
+import { vitalDisplayDecimals } from "@/lib/measurements/vital-precision";
+import { briefingForToday } from "@/lib/daily/briefing-today";
 import type {
   DateFormatPreference,
   TimeFormatPreference,
@@ -328,24 +330,6 @@ async function gatherScoreDays(
   }
 }
 
-/**
- * Display decimals per vital. The transform's own `decimals` covers the
- * converted units (lb, °F, mmol/L); the rest are whole numbers on every
- * device and in every chart that shows them.
- */
-function vitalDecimals(type: string, transformDecimals: number): number {
-  switch (type) {
-    case "BODY_TEMPERATURE":
-    case "SKIN_TEMPERATURE":
-    case "WEIGHT":
-      return 1;
-    case "BLOOD_GLUCOSE":
-      return transformDecimals;
-    default:
-      return 0;
-  }
-}
-
 /** Render one vital's value and range in the reader's units and locale. */
 function toTodayVital(
   vital: ExtrasVital,
@@ -354,7 +338,7 @@ function toTodayVital(
   t: (key: string, params?: Record<string, string | number>) => string,
 ): TodayVital {
   const transform = getReadingTransform(vital.type, units);
-  const decimals = vitalDecimals(vital.type, transform.decimals);
+  const decimals = vitalDisplayDecimals(vital.type, transform.decimals);
   const number = new Intl.NumberFormat(resolveIntlLocale(locale), {
     maximumFractionDigits: decimals,
     minimumFractionDigits: decimals,
@@ -950,7 +934,17 @@ export async function loadDailyDigest(
         snapshot.layout.enabledHeroItemKinds ??
         PRIORITY_ITEM_KINDS,
       score,
-      briefing: snapshot.briefing,
+      // Only what is still true about today: a briefing written on an
+      // earlier day is not served as today's read, and a signal whose
+      // metric has no reading today is dropped (`briefing-today.ts`).
+      briefing: briefingForToday(snapshot.briefing, {
+        updatedAt: snapshot.briefingUpdatedAt,
+        lastSeenAt: (type) =>
+          snapshot.tiles.lastSeenByType[type]?.lastSeenAt ?? null,
+        timezone: user.timezone,
+        todayLocalDate,
+        language: resolvedLocale,
+      }),
       medsToday: snapshot.medsToday,
       sleepLastSeenDaysAgo,
       morningRefreshedToday,

@@ -17,6 +17,10 @@
  * with a unit label added.
  */
 import {
+  roundToDisplay,
+  vitalDisplayDecimals,
+} from "@/lib/measurements/vital-precision";
+import {
   applyDisplayTransform,
   applyDisplayTransformDelta,
   getQuantityTransform,
@@ -61,19 +65,29 @@ export function signalInReaderUnits(
   const type = SIGNAL_TYPE[signal.metric];
   if (!type) return signal;
   const t = getReadingTransform(type, units);
+  // A signal is a statement the model repeats to the reader, so its figures
+  // carry the precision the reading is shown at. The metric branch of a
+  // transform is the identity and does not round, which handed the model
+  // "+0.37 kg" to restate.
+  const decimals = vitalDisplayDecimals(type, t.decimals);
+  const round = (value: Num): Num =>
+    typeof value === "number" ? roundToDisplay(value, decimals) : value;
   return {
     ...signal,
     unit: t.displayUnit,
-    latest: applyDisplayTransform(signal.latest, t),
-    avg7: abs(signal.avg7, t),
-    avg30: abs(signal.avg30, t),
-    deltaVs7: delta(signal.deltaVs7, t),
-    deltaVs30: delta(signal.deltaVs30, t),
-    spread30: delta(signal.spread30, t),
+    latest: roundToDisplay(applyDisplayTransform(signal.latest, t), decimals),
+    avg7: round(abs(signal.avg7, t)),
+    avg30: round(abs(signal.avg30, t)),
+    deltaVs7: round(delta(signal.deltaVs7, t)),
+    deltaVs30: round(delta(signal.deltaVs30, t)),
+    spread30: round(delta(signal.spread30, t)),
     recentAnomaly: signal.recentAnomaly
       ? {
           ...signal.recentAnomaly,
-          value: applyDisplayTransform(signal.recentAnomaly.value, t),
+          value: roundToDisplay(
+            applyDisplayTransform(signal.recentAnomaly.value, t),
+            decimals,
+          ),
         }
       : null,
   };

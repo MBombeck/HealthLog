@@ -1901,7 +1901,14 @@ export async function extractFeatures(
   // in-memory measurement set (no extra DB round-trip). Lands inside the
   // compacted features payload, so it feeds both the briefing prompt AND the
   // content-hash gate — a fresh daily signal forces the briefing to refresh.
-  const signalsOfDay = computeSignalsOfDay(byType, now, pulseTz);
+  // Each signal is a statement about today, which is a calendar day in the
+  // reader's own zone, so the zone is resolved for every account here, not
+  // only for the ones with pulse.
+  const signalsOfDay = computeSignalsOfDay(
+    byType,
+    now,
+    await resolveUserTimezone(userId),
+  );
   if (signalsOfDay.length > 0) {
     features.signalsOfDay = signalsOfDay;
   }

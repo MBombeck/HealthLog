@@ -24,7 +24,7 @@ import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { Locale } from "@/lib/i18n/config";
 import { pluralKey } from "@/lib/i18n/plural";
 import { formatDurationMinutes } from "@/lib/i18n/duration";
-import { isCurrentForTodayClaim } from "@/lib/insights/measurement-freshness";
+import { isFromToday } from "@/lib/insights/measurement-freshness";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { PriorityItem } from "@/lib/daily/priority-item";
 
@@ -486,11 +486,16 @@ function buildSignalLine(
   return keptDelta ? { headline: null, delta: keptDelta } : null;
 }
 
-/** Vitals that may speak about today: module on, reading current. */
+/**
+ * Vitals that may speak about today: module on, and a reading taken today in
+ * the reader's zone. Yesterday's reading is not today's, however recent: at
+ * nine in the evening a pulse from the previous morning would be narrated as
+ * the day's, on a day with no reading at all.
+ */
 function currentVitals(input: TodayOverviewInput): TodayVital[] {
   return input.vitals.filter(
     (v) =>
-      isCurrentForTodayClaim(v.daysAgo) &&
+      isFromToday(v.daysAgo) &&
       (v.moduleKey === null || moduleOn(input.modules, v.moduleKey)),
   );
 }

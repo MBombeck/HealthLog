@@ -43,6 +43,27 @@ export function isCurrentForTodayClaim(
 }
 
 /**
+ * Whether a reading was taken today, on the reader's own calendar.
+ *
+ * Stricter than {@link isCurrentForTodayClaim}, and the rule for every
+ * sentence that says "today" in so many words or compares today against a
+ * baseline: the Today overview on the dashboard, the signals of the day,
+ * the "vitals outside their range today" card. A reading from yesterday
+ * morning, read at nine in the evening, is not today's pulse, and saying so
+ * describes a day on which nothing was measured. A metric with no reading
+ * today is left out of those statements rather than worded with its age:
+ * the quieter of the two answers, and the one that never asks for a
+ * measurement nobody planned to take.
+ *
+ * `daysAgo` is the calendar distance in the reader's zone (as
+ * {@link dayKeyAgeInDays} computes it), never elapsed hours: 23:40 and
+ * 00:10 are different days, 00:10 and 23:50 the same one.
+ */
+export function isFromToday(daysAgo: number | null | undefined): boolean {
+  return daysAgo === 0;
+}
+
+/**
  * Whole days between two `YYYY-MM-DD` local-day keys (`then` before `today`).
  *
  * Both keys are already resolved in the reader's own timezone by the caller,
