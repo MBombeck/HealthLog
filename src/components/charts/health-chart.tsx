@@ -381,6 +381,27 @@ const BASE_TYPE_LABEL_KEYS: Record<string, string> = {
   OXYGEN_SATURATION: "charts.spo2",
 };
 
+/**
+ * The measurement label key for a type outside the chart's short labels:
+ * `RESTING_HEART_RATE` → `measurements.typeRestingHeartRate`. Derived rather
+ * than imported, because the full label map would ride into every route that
+ * draws a chart; `health-chart-type-label.test.tsx` pins that the derivation
+ * matches `MEASUREMENT_TYPE_LABEL_KEYS` for every type it is used for.
+ */
+export function measurementLabelKey(type: string): string {
+  return `measurements.type${type
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("")}`;
+}
+
+/**
+ * The name a series carries in the trend line, the legend, the tooltip and
+ * the spoken summary. The chart's own short labels come first; every other
+ * type takes its measurement label, so no overlay ever shows the raw enum
+ * (a resting-pulse trend read "RESTING_HEART_RATE").
+ */
 function getTypeLabel(
   type: string,
   valueMode: "raw" | "bmi",
@@ -390,7 +411,10 @@ function getTypeLabel(
     return "BMI";
   }
   const key = BASE_TYPE_LABEL_KEYS[type];
-  return key ? t(key) : type;
+  if (key) return t(key);
+  const measurementKey = measurementLabelKey(type);
+  const label = t(measurementKey);
+  return label === measurementKey ? type : label;
 }
 
 /**
