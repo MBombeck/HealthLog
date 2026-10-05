@@ -10,7 +10,9 @@ import type { CoachStep } from "@/lib/ai/coach/types";
 import {
   CoachTurnStepList,
   CoachTurnSteps,
+  CoachTurnStepsPanel,
   countSources,
+  legacyAreaLabels,
   currentStep,
   describeStep,
   nextAnnouncement,
@@ -262,5 +264,88 @@ describe("<CoachTurnStepList>", () => {
     );
     const text = (h: string) => h.replace(/<svg[\s\S]*?<\/svg>/g, "");
     expect(text(stored)).toBe(text(live));
+  });
+});
+
+describe("the open list: method and the tables the answer read", () => {
+  const METHOD = {
+    entries: [],
+    text: "Blood pressure, last 30 days, 9 readings, daily averages.",
+  };
+
+  it("ends with the method line and the data-used slot, after the steps", () => {
+    const html = render(
+      <CoachTurnStepsPanel
+        steps={[BP]}
+        active={false}
+        areaLabels={[]}
+        method={METHOD}
+        dataUsed={<div data-slot="coach-data-used">tables</div>}
+      />,
+    );
+    const steps = html.indexOf('data-slot="coach-turn-steps-list"');
+    const method = html.indexOf('data-slot="coach-method-line"');
+    const dataUsed = html.indexOf('data-slot="coach-data-used"');
+    expect(steps).toBeGreaterThan(-1);
+    expect(method).toBeGreaterThan(steps);
+    expect(dataUsed).toBeGreaterThan(method);
+    expect(html).toContain(METHOD.text);
+  });
+
+  it("holds the method back while the turn runs", () => {
+    const html = render(
+      <CoachTurnStepsPanel
+        steps={[LABS_RUNNING]}
+        active
+        areaLabels={[]}
+        method={METHOD}
+        dataUsed={<div data-slot="coach-data-used" />}
+      />,
+    );
+    expect(html).not.toContain("coach-method-line");
+    expect(html).not.toContain("coach-data-used");
+  });
+
+  it("lists an older message's areas, without counts", () => {
+    const html = render(
+      <CoachTurnStepsPanel
+        steps={[]}
+        active={false}
+        areaLabels={["Blood pressure", "Sleep"]}
+      />,
+    );
+    expect(html).toContain('data-slot="coach-turn-areas"');
+    expect((html.match(/data-slot="coach-turn-area"/g) ?? []).length).toBe(2);
+    expect(html).not.toMatch(/\d+ readings/);
+  });
+
+  it("shows a header for an answer that has only a method", () => {
+    const html = render(
+      <CoachTurnSteps steps={[]} active={false} method={METHOD} />,
+    );
+    expect(html).toContain("What the Coach looked at");
+  });
+});
+
+describe("legacyAreaLabels", () => {
+  const { t } = translators("en");
+
+  it("names the known areas and drops unknown tokens and general", () => {
+    expect(
+      legacyAreaLabels(
+        ["bp", "bloodPressure" as never, "general", "sleep", "bp"],
+        t,
+      ),
+    ).toEqual(["Blood pressure", "Sleep"]);
+  });
+
+  it("folds an older message into a count of areas", () => {
+    const html = render(
+      <CoachTurnSteps steps={[]} active={false} areas={["bp", "sleep"]} />,
+    );
+    expect(html).toContain("Looked at 2 areas");
+    expect(
+      render(<CoachTurnSteps steps={[]} active={false} areas={["bp"]} />, "de"),
+    ).toContain("1 Bereich angesehen");
   });
 });

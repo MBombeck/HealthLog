@@ -379,7 +379,8 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           in: "query",
           required: false,
           schema: { type: "string" },
-          description: "Only documents linked to this visit.",
+          description:
+            "Only documents linked to this visit. The procedure filter sends a `linkedProcedures` id from the usage read; an id that is not one of the caller's visits matches nothing.",
         },
         {
           name: "year",
@@ -665,7 +666,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Storage usage + effective limits",
       description:
-        "The caller's vault usage and effective limits: `usedBytes` (every non-purged row — tombstones inside the 30-day undo grace still count), `quotaBytes` (per-user override ?? instance default), `maxFileBytes` (admin-tunable per-file cap), `acceptedExtensions` for picker `accept` lists, and `linkedEpisodes` (episodes carrying at least one live document link — the condition-filter chips). Read this before offering an upload.",
+        "The caller's vault usage and effective limits: `usedBytes` (every non-purged row — tombstones inside the 30-day undo grace still count), `quotaBytes` (per-user override ?? instance default), `maxFileBytes` (admin-tunable per-file cap), `acceptedExtensions` for picker `accept` lists, `linkedEpisodes` (episodes carrying at least one live document link — the condition-filter chips), and `linkedProcedures` (visits of kind PROCEDURE carrying at least one live document link, newest first — the procedure-filter choices; pass one's `encounterId` to the list's `encounterId` filter). `linkedProcedures` is empty when a sharing grant does not cover the visits section. Read this before offering an upload.",
       responses: {
         ...recordRefusal(),
         "200": {
@@ -683,6 +684,18 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                       z.object({
                         episodeId: z.string(),
                         name: z.string(),
+                      }),
+                    ),
+                    linkedProcedures: z.array(
+                      z.object({
+                        encounterId: z.string(),
+                        occurredAt: z.iso.datetime({ offset: true }),
+                        reason: z.string().nullable(),
+                        bodySite: z.string().nullable(),
+                        laterality: z
+                          .enum(["LEFT", "RIGHT", "BOTH"])
+                          .nullable(),
+                        practitionerName: z.string().nullable(),
                       }),
                     ),
                     assistAvailable: z

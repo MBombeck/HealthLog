@@ -37,13 +37,19 @@
  * is always owner-scoped and safe to read), so the block is `null` only when the
  * account has no recent readings.
  */
+import {
+  COACH_LABS_LOOKBACK_MONTHS,
+  UNBOUNDED_REACH,
+  laterOfFloor,
+  type CoachHistoryReach,
+} from "./history-reach";
 import { classifyAgainstEffectiveRange } from "@/lib/labs/reference-range";
 import { resolveLabFields } from "@/lib/labs/serialise";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import { prisma } from "@/lib/db";
 
 /** Only readings within this many months enter the prompt. */
-const LOOKBACK_MONTHS = 12;
+const LOOKBACK_MONTHS = COACH_LABS_LOOKBACK_MONTHS;
 
 /** Cap on distinct biomarkers in the block (newest reading first). */
 const MAX_BIOMARKERS = 24;
@@ -107,9 +113,12 @@ export interface CoachLabsBlock {
 export async function buildLabsSnapshotBlock(
   userId: string,
   now: Date = new Date(),
+  /** The Coach's lookback limit: the shorter of it and the 12 months wins. */
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<CoachLabsBlock | null> {
-  const cutoff = new Date(now);
-  cutoff.setMonth(cutoff.getMonth() - LOOKBACK_MONTHS);
+  const monthsBack = new Date(now);
+  monthsBack.setMonth(monthsBack.getMonth() - LOOKBACK_MONTHS);
+  const cutoff = laterOfFloor(monthsBack, reach, now);
 
   // Newest reading first; we keep only the first row seen per biomarker so the
   // block carries the MOST RECENT value per analyte. Bounded fetch: at most a

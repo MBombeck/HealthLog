@@ -21,6 +21,7 @@ vi.mock("@/lib/ai/provider-runner", () => ({
 import { runCoachToolLoop } from "@/lib/ai/coach/tools/loop";
 import { COACH_TOOL_DEFS } from "@/lib/ai/coach/tools/definitions";
 import { createResultRefAllocator } from "../refs";
+import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
 
 function round(content: string, toolCalls?: unknown[]) {
   return {
@@ -80,6 +81,7 @@ describe("runCoachToolLoop — result tables", () => {
       system: "sys",
       messages: [{ role: "user", content: "q" }],
       tools: COACH_TOOL_DEFS,
+      reach: UNBOUNDED_REACH,
       turn,
       onCallSettled: (_call, result) => settled.push(result),
     });
@@ -123,6 +125,7 @@ describe("runCoachToolLoop — result tables", () => {
       systemOnceTableShown: "sys+tables",
       messages: [{ role: "user", content: "q" }],
       tools: COACH_TOOL_DEFS,
+      reach: UNBOUNDED_REACH,
       turn: {
         conversationId: "c1",
         locale: "en",

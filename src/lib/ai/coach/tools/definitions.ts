@@ -202,6 +202,15 @@ const WINDOW_ENUM = [
  * terse and brand-free; they tell the model WHEN to reach for each tool and
  * that an absent domain returns `{ present: false }` rather than an error.
  */
+/**
+ * Every `window` argument says the same thing: it defaults to the
+ * conversation's window and is cut to the lookback limit the person set. The
+ * definitions stay the same for every person (the prompt-cache prefix), so
+ * the limit itself rides the DATA INVENTORY, not this text.
+ */
+const WINDOW_ARG_DESCRIPTION =
+  "Analysis window. Defaults to the user's scope window. Never reaches further back than the lookback limit the user set: a wider window is cut to it.";
+
 export const COACH_TOOL_DEFS: AiToolDef[] = [
   {
     name: "get_metric_series",
@@ -220,7 +229,7 @@ export const COACH_TOOL_DEFS: AiToolDef[] = [
         window: {
           type: "string",
           enum: WINDOW_ENUM,
-          description: "Analysis window. Defaults to the user's scope window.",
+          description: WINDOW_ARG_DESCRIPTION,
         },
       },
     },
@@ -238,7 +247,7 @@ export const COACH_TOOL_DEFS: AiToolDef[] = [
           type: "string",
           enum: WINDOW_ENUM,
           description:
-            "Window for the per-context means. The clinical panel is always the fixed trailing 30 days.",
+            "Window for the per-context means, cut to the user's lookback limit like every window. The clinical panel is always the fixed trailing 30 days, and is left out when the lookback limit is shorter.",
         },
       },
     },
@@ -255,7 +264,7 @@ export const COACH_TOOL_DEFS: AiToolDef[] = [
         window: {
           type: "string",
           enum: WINDOW_ENUM,
-          description: "Analysis window. Defaults to the user's scope window.",
+          description: WINDOW_ARG_DESCRIPTION,
         },
       },
     },
@@ -272,7 +281,7 @@ export const COACH_TOOL_DEFS: AiToolDef[] = [
         window: {
           type: "string",
           enum: WINDOW_ENUM,
-          description: "Analysis window. Defaults to the user's scope window.",
+          description: WINDOW_ARG_DESCRIPTION,
         },
       },
     },
@@ -280,7 +289,7 @@ export const COACH_TOOL_DEFS: AiToolDef[] = [
   {
     name: "get_labs",
     description:
-      "Fetch the user's most recent lab results — the latest reading per biomarker over the last 12 months, or one named analyte. Returns { present: false } with a reason — no_data means no labs are on file, outside_window means panels exist but are older than the twelve months this tool reads.",
+      "Fetch the user's most recent lab results — the latest reading per biomarker over the last 12 months (or the user's lookback limit, when shorter), or one named analyte. Returns { present: false } with a reason — no_data means no labs are on file, outside_window means panels exist but are older than the twelve months this tool reads, outside_reach means they are older than the user's lookback limit.",
     parameters: {
       type: "object",
       additionalProperties: false,
@@ -317,7 +326,7 @@ export const COACH_TOOL_DEFS: AiToolDef[] = [
         window: {
           type: "string",
           enum: WINDOW_ENUM,
-          description: "Analysis window. Defaults to the user's scope window.",
+          description: WINDOW_ARG_DESCRIPTION,
         },
       },
     },
@@ -361,7 +370,7 @@ export const COACH_TOOL_DEFS: AiToolDef[] = [
         window: {
           type: "string",
           enum: WINDOW_ENUM,
-          description: "Analysis window. Defaults to the user's scope window.",
+          description: WINDOW_ARG_DESCRIPTION,
         },
         granularity: {
           type: "string",

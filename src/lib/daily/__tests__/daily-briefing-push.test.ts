@@ -38,6 +38,9 @@ function makeDigest(over: Partial<DailyDigest> = {}): DailyDigest {
     score: { value: 82, band: "good", delta: 1 },
     topSignal: null,
     briefingLead: "Sleep looked solid last night.",
+    lead: { text: "Sleep looked solid last night.", source: "briefing" },
+    today: [],
+    restMode: null,
     line: "Sleep looked solid last night.",
     worthALook: [],
     justIn: null,
@@ -102,10 +105,10 @@ describe("buildDailyBriefingPush", () => {
     const digest = makeDigest({
       briefingLead: null,
       topSignal: null,
-      line: "Your health score today is 82.",
+      line: "Your health score for today is ready.",
     });
     const { body } = buildDailyBriefingPush(digest, t);
-    expect(body).toBe("Your health score today is 82.");
+    expect(body).toBe("Your health score for today is ready.");
   });
 
   it("provisional: appends the honest sleep-pending wording", () => {

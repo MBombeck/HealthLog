@@ -350,6 +350,21 @@ export interface DocumentConditionLinkDto {
 }
 
 /**
+ * One procedure the vault can be filtered by. The visit's own words, decrypted
+ * server-side; the client composes the label the visits page shows (the
+ * reason, else the practice, else the kind) in the reader's locale.
+ */
+export interface DocumentLinkedProcedureDto {
+  encounterId: string;
+  /** ISO-8601 instant of the procedure. */
+  occurredAt: string;
+  reason: string | null;
+  bodySite: string | null;
+  laterality: "LEFT" | "RIGHT" | "BOTH" | null;
+  practitionerName: string | null;
+}
+
+/**
  * One visit link on a document DTO — "this letter belongs to that appointment".
  *
  * Carries the visit's KIND as the enum constant rather than a rendered name.
@@ -958,6 +973,14 @@ export interface DocumentUsageDto {
    * every linked document sits pages deep in the timeline.
    */
   linkedEpisodes: DocumentConditionLinkDto[];
+  /**
+   * Procedures and surgeries (visits of kind PROCEDURE) carrying at least one
+   * LIVE document link — the filter bar's procedure choices, sourced
+   * server-side for the same reason as `linkedEpisodes`. Empty when the
+   * caller's grant does not cover the visits section, because the label is
+   * the visit's own text.
+   */
+  linkedProcedures: DocumentLinkedProcedureDto[];
   /**
    * Whether the AI "Suggest details" action can run for this caller — true when
    * a provider (vision, or text + local OCR) is configured. The UI hides the

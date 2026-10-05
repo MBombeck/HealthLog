@@ -29,6 +29,15 @@
  *                      nothing and we could not establish whether older rows
  *                      exist, so the model is told exactly that rather than
  *                      being handed a confident absence it cannot verify.
+ *   `outside_reach` — rows exist, every one of them older than the lookback
+ *                      limit the person set for the Coach. Nothing about them
+ *                      is reported, not a count, a date or a mean: the limit
+ *                      says the Coach does not read them, and an aggregate is
+ *                      a reading. The model says older readings lie beyond the
+ *                      limit and can be opened in the Coach settings.
+ *
+ * Under a limit every probe below reads from inside it only, and
+ * `reachableWithWindow` never names a window wider than the limit.
  *
  * Cost. One grouped aggregate over `Measurement` for every measurement-backed
  * subject in the batch (indexed by `(userId, type, measuredAt)`, no rows
@@ -55,6 +64,12 @@ import type { CoachToolName } from "./definitions";
 import { COACH_SOURCE_MEASUREMENT_TYPES } from "@/lib/ai/coach/source-measurement-types";
 import { windowToDays } from "@/lib/ai/coach/snapshot-series";
 import { DEFAULT_WINDOW } from "@/lib/ai/coach/snapshot-cache";
+import {
+  UNBOUNDED_REACH,
+  exceedsReach,
+  reachFloor,
+  type CoachHistoryReach,
+} from "@/lib/ai/coach/history-reach";
 
 /** Which table a domain's existence has to be checked against. */
 export type CoachAvailabilitySubject =
@@ -119,9 +134,14 @@ const WINDOWS_WIDEST_LAST: readonly CoachScopeWindow[] = [
  * `lastYear` (see `windowToDays`), so a history older than that is genuinely
  * unreachable by re-calling with a wider window — and saying so is the point.
  */
-function reachableWindow(lastAt: Date, now: Date): CoachScopeWindow | null {
+function reachableWindow(
+  lastAt: Date,
+  now: Date,
+  reach: CoachHistoryReach,
+): CoachScopeWindow | null {
   const ageDays = (now.getTime() - lastAt.getTime()) / 86_400_000;
   for (const window of WINDOWS_WIDEST_LAST) {
+    if (exceedsReach(window, reach)) break;
     if (ageDays <= windowToDays(window)) return window;
   }
   return null;
@@ -148,16 +168,22 @@ interface RawBounds {
 async function readMeasurementBounds(
   userId: string,
   types: readonly MeasurementType[],
+  floor: Date | null,
 ): Promise<Map<MeasurementType, RawBounds>> {
   const rows = await prisma.measurement.groupBy({
     by: ["type", "unit"],
-    where: { userId, deletedAt: null, type: { in: [...types] } },
+    where: {
+      userId,
+      deletedAt: null,
+      type: { in: [...types] },
+      ...(floor ? { measuredAt: { gte: floor } } : {}),
+    },
     _count: { _all: true },
     _min: { measuredAt: true, value: true },
     _max: { measuredAt: true, value: true },
     _avg: { value: true },
   });
-  const dayMeans = await readHourlyMeanTypeMeans(userId, types);
+  const dayMeans = await readHourlyMeanTypeMeans(userId, types, floor);
   const out = new Map<MeasurementType, RawBounds>();
   for (const row of rows) {
     const firstAt = row._min.measuredAt;
@@ -212,6 +238,7 @@ async function readMeasurementBounds(
 async function readHourlyMeanTypeMeans(
   userId: string,
   types: readonly MeasurementType[],
+  floor: Date | null,
 ): Promise<Map<string, number>> {
   const hourly = types.filter((t) => usesHourlyMeanDay(t));
   const out = new Map<string, number>();
@@ -228,6 +255,7 @@ async function readHourlyMeanTypeMeans(
         AND m."type" IN (${Prisma.join(
           hourly.map((t) => Prisma.sql`${t}::measurement_type`),
         )})
+        ${floor ? Prisma.sql`AND m."measured_at" >= ${floor}` : Prisma.empty}
     )
     SELECT
       m."type"::text AS type,
@@ -252,10 +280,15 @@ async function readHourlyMeanTypeMeans(
 async function readTableBounds(
   userId: string,
   kind: Exclude<CoachAvailabilitySubject["kind"], "measurement">,
+  floor: Date | null,
 ): Promise<RawBounds | null> {
   if (kind === "mood") {
     const row = await prisma.moodEntry.aggregate({
-      where: { userId, deletedAt: null },
+      where: {
+        userId,
+        deletedAt: null,
+        ...(floor ? { moodLoggedAt: { gte: floor } } : {}),
+      },
       _count: { _all: true },
       _min: { moodLoggedAt: true },
       _max: { moodLoggedAt: true },
@@ -271,7 +304,7 @@ async function readTableBounds(
   if (kind === "workout") {
     // Workout deletes are hard deletes — there is no `deletedAt` to filter.
     const row = await prisma.workout.aggregate({
-      where: { userId },
+      where: { userId, ...(floor ? { startedAt: { gte: floor } } : {}) },
       _count: { _all: true },
       _min: { startedAt: true },
       _max: { startedAt: true },
@@ -286,7 +319,11 @@ async function readTableBounds(
   }
   if (kind === "intake") {
     const row = await prisma.medicationIntakeEvent.aggregate({
-      where: { userId, deletedAt: null },
+      where: {
+        userId,
+        deletedAt: null,
+        ...(floor ? { scheduledFor: { gte: floor } } : {}),
+      },
       _count: { _all: true },
       _min: { scheduledFor: true },
       _max: { scheduledFor: true },
@@ -300,7 +337,11 @@ async function readTableBounds(
       : null;
   }
   const row = await prisma.labResult.aggregate({
-    where: { userId, deletedAt: null },
+    where: {
+      userId,
+      deletedAt: null,
+      ...(floor ? { takenAt: { gte: floor } } : {}),
+    },
     _count: { _all: true },
     _min: { takenAt: true },
     _max: { takenAt: true },
@@ -345,11 +386,13 @@ function mergeBounds(parts: readonly RawBounds[]): RawBounds | null {
 export async function probeCoachAvailability(
   userId: string,
   subjects: ReadonlyMap<string, CoachAvailabilitySubject>,
-  options?: { now?: Date },
+  options?: { now?: Date; reach?: CoachHistoryReach },
 ): Promise<Map<string, CoachDomainAvailability>> {
   const out = new Map<string, CoachDomainAvailability>();
   if (subjects.size === 0) return out;
   const now = options?.now ?? new Date();
+  const reach = options?.reach ?? UNBOUNDED_REACH;
+  const floor = reachFloor(reach, now);
 
   const measurementTypes = new Set<MeasurementType>();
   const tableKinds = new Set<
@@ -366,11 +409,11 @@ export async function probeCoachAvailability(
   const [tz, measurementBounds, ...tableRows] = await Promise.all([
     resolveUserTimezone(userId),
     measurementTypes.size > 0
-      ? readMeasurementBounds(userId, [...measurementTypes])
+      ? readMeasurementBounds(userId, [...measurementTypes], floor)
       : Promise.resolve(new Map<MeasurementType, RawBounds>()),
     ...[...tableKinds].map(async (kind) => ({
       kind,
-      bounds: await readTableBounds(userId, kind),
+      bounds: await readTableBounds(userId, kind, floor),
     })),
   ]);
   const byKind = new Map(tableRows.map((r) => [r.kind, r.bounds]));
@@ -390,10 +433,115 @@ export async function probeCoachAvailability(
       firstDate: userDayKey(raw.firstAt, tz),
       lastDate: userDayKey(raw.lastAt, tz),
       ...(raw.series && raw.series.length > 0 ? { series: raw.series } : {}),
-      reachableWithWindow: reachableWindow(raw.lastAt, now),
+      reachableWithWindow: reachableWindow(raw.lastAt, now, reach),
     });
   }
   return out;
+}
+
+/**
+ * The subjects among `subjects` that hold rows older than the lookback limit.
+ * Existence only, one `findFirst` per subject: what lies beyond the limit is
+ * never counted or aggregated. Empty without a limit.
+ */
+export async function probeBeyondReach(
+  userId: string,
+  subjects: ReadonlyMap<string, CoachAvailabilitySubject>,
+  reach: CoachHistoryReach,
+  now: Date = new Date(),
+): Promise<Set<string>> {
+  const floor = reachFloor(reach, now);
+  const out = new Set<string>();
+  if (floor === null) return out;
+  await Promise.all(
+    [...subjects].map(async ([key, subject]) => {
+      if (await holdsRowsBefore(userId, subject, floor)) out.add(key);
+    }),
+  );
+  return out;
+}
+
+async function holdsRowsBefore(
+  userId: string,
+  subject: CoachAvailabilitySubject,
+  floor: Date,
+): Promise<boolean> {
+  switch (subject.kind) {
+    case "measurement":
+      return (
+        (await prisma.measurement.findFirst({
+          where: {
+            userId,
+            deletedAt: null,
+            type: { in: [...subject.types] },
+            measuredAt: { lt: floor },
+          },
+          select: { id: true },
+        })) !== null
+      );
+    case "mood":
+      return (
+        (await prisma.moodEntry.findFirst({
+          where: { userId, deletedAt: null, moodLoggedAt: { lt: floor } },
+          select: { id: true },
+        })) !== null
+      );
+    case "workout":
+      return (
+        (await prisma.workout.findFirst({
+          where: { userId, startedAt: { lt: floor } },
+          select: { id: true },
+        })) !== null
+      );
+    case "intake":
+      return (
+        (await prisma.medicationIntakeEvent.findFirst({
+          where: { userId, deletedAt: null, scheduledFor: { lt: floor } },
+          select: { id: true },
+        })) !== null
+      );
+    case "lab":
+      return (
+        (await prisma.labResult.findFirst({
+          where: { userId, deletedAt: null, takenAt: { lt: floor } },
+          select: { id: true },
+        })) !== null
+      );
+  }
+}
+
+/**
+ * True when the record holds illness episodes that began before the lookback
+ * floor. The illness domain has no row subject (its block is computed), so a
+ * limited read that comes back empty asks this to tell "never recorded" from
+ * "recorded, beyond the limit". Always false without a limit.
+ */
+export async function illnessBeyondReach(
+  userId: string,
+  reach: CoachHistoryReach,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const floor = reachFloor(reach, now);
+  if (floor === null) return false;
+  const row = await prisma.illnessEpisode.findFirst({
+    where: { userId, deletedAt: null, onsetAt: { lt: floor } },
+    select: { id: true },
+  });
+  return row !== null;
+}
+
+/**
+ * True when the record holds any logged cycle. Under a lookback limit the
+ * cycle block is left out whole (it predicts from every cycle), so an
+ * account with cycles is told they lie beyond the limit, and one without is
+ * told there are none.
+ */
+export async function cycleRecorded(userId: string): Promise<boolean> {
+  const row = await prisma.menstrualCycle.findFirst({
+    where: { userId, deletedAt: null },
+    select: { id: true },
+  });
+  return row !== null;
 }
 
 /**
@@ -410,7 +558,12 @@ const EMPTY_READ_REASONS = {
   unavailableInScope: "unavailable_in_scope",
   /** The probe failed; absence could not be established either way. */
   unconfirmed: "no_data_unconfirmed",
+  /** Rows exist, all of them older than the person's lookback limit. */
+  outsideReach: "outside_reach",
 } as const;
+
+/** The reason a read gives for data that lies only beyond the lookback limit. */
+export const OUTSIDE_REACH_REASON = EMPTY_READ_REASONS.outsideReach;
 
 /**
  * Split a "rows exist" verdict into the two cases that differ in what the model
@@ -456,8 +609,11 @@ export async function resolveEmptyRead(args: {
   subject: CoachAvailabilitySubject | null;
   searchedWindow: CoachScopeWindow | undefined;
   now?: Date;
+  /** The person's lookback limit; absent (MCP) is none. */
+  reach?: CoachHistoryReach;
 }): Promise<EmptyReadResult> {
   const { userId, domain, subject, searchedWindow } = args;
+  const reach = args.reach ?? UNBOUNDED_REACH;
   const searched = searchedWindow ? { searchedWindow } : {};
   // A domain with no row-backed subject (illness, cycle, correlations) is not
   // window-filtered from a table of rows — its block is computed or gated, so
@@ -470,8 +626,27 @@ export async function resolveEmptyRead(args: {
     availability = await probeCoachAvailability(
       userId,
       new Map([[domain, subject]]),
-      args.now ? { now: args.now } : undefined,
+      { ...(args.now ? { now: args.now } : {}), reach },
     );
+    if (!availability.has(domain)) {
+      const beyond = await probeBeyondReach(
+        userId,
+        new Map([[domain, subject]]),
+        reach,
+        args.now,
+      );
+      if (beyond.has(domain)) {
+        annotate({
+          action: { name: "coach.availability.resolved" },
+          meta: { domain, reason: EMPTY_READ_REASONS.outsideReach },
+        });
+        return {
+          present: false,
+          reason: EMPTY_READ_REASONS.outsideReach,
+          ...searched,
+        };
+      }
+    }
   } catch (err) {
     annotate({
       action: { name: "coach.availability.probe_failed" },

@@ -231,17 +231,25 @@ export async function computeCoincidentDeviation(
   const todayKey = userDayKey(now, tz);
 
   // Fan the baseline engine across the supported vitals. Each baseline read
-  // shares the one coverage probe (no per-vital re-probe).
-  for (const type of VITALS_BASELINE_TYPES) {
-    const baseline = await computeVitalsBaseline(userId, profile, {
-      type,
-      windowDays,
-      now,
-      coverage,
-    });
+  // shares the one coverage probe (no per-vital re-probe). The types are
+  // independent, so their reads run together; the results are folded in the
+  // registry's order, so the output does not depend on which finished first.
+  const perType = await Promise.all(
+    VITALS_BASELINE_TYPES.map(async (type) => {
+      const baseline = await computeVitalsBaseline(userId, profile, {
+        type,
+        windowDays,
+        now,
+        coverage,
+      });
+      if (baseline.status !== "ok") return { type, baseline, latest: null };
+      const latest = await readLatestDayMean(userId, type, windowDays, now, tz);
+      return { type, baseline, latest };
+    }),
+  );
+  for (const { type, baseline, latest } of perType) {
     if (baseline.status !== "ok") continue;
     if (baseline.provenance.source === "DAY") anyDaySource = true;
-    const latest = await readLatestDayMean(userId, type, windowDays, now, tz);
     if (!latest) continue;
     if (latest.day > latestDay) latestDay = latest.day;
     if (baseline.coverage.historyDays > maxHistoryDays) {

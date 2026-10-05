@@ -97,7 +97,7 @@ export interface EncounterDTO {
   updatedAt: string;
 }
 
-function decryptField(
+export function decryptField(
   value: Uint8Array | null,
   field: "reason" | "outcome" | "bodySite",
 ): string | null {

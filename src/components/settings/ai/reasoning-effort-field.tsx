@@ -14,20 +14,29 @@ import type { ReasoningEffort } from "./shared";
 
 export function ReasoningEffortField({
   id,
+  disabled = false,
   value,
   onChange,
+  noColon = false,
 }: {
   id: string;
+  /** Locks the select while a write is in flight. */
+  disabled?: boolean;
   value: ReasoningEffort | null;
   onChange: (next: ReasoningEffort | null) => void;
+  /** The Coach's quick settings label their fields without a colon. */
+  noColon?: boolean;
 }) {
   const { t } = useTranslations();
   return (
     <div>
-      <Label htmlFor={id}>{t("settings.ai.reasoning.label")}</Label>
+      <Label htmlFor={id} noColon={noColon}>
+        {t("settings.ai.reasoning.label")}
+      </Label>
       <NativeSelect
         id={id}
         value={value ?? ""}
+        disabled={disabled}
         onChange={(e) =>
           onChange(
             e.target.value === "" ? null : (e.target.value as ReasoningEffort),

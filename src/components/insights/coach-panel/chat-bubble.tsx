@@ -1,63 +1,39 @@
 "use client";
 
-import { memo, useCallback, useEffect, useId, useRef, useState } from "react";
+import { memo } from "react";
 import Link from "next/link";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import {
-  BookmarkPlus,
-  Bot,
-  Check,
-  ChevronRight,
-  Clock,
-  Copy,
-  Info,
-  Loader2,
-  RotateCcw,
-  Sparkles,
-  ThumbsDown,
-  ThumbsUp,
-  User,
-} from "lucide-react";
+import { Bot, Info, RotateCcw, Sparkles, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useTranslations, useFormatters } from "@/lib/i18n/context";
-import { ApiError, apiPost } from "@/lib/api/api-fetch";
-import { queryKeys } from "@/lib/query-keys";
+import { useTranslations } from "@/lib/i18n/context";
 import { useAuth } from "@/hooks/use-auth";
-import { ABOUT_ME_FIELD_MAX_CHARS } from "@/lib/validations/about-me";
 import {
   parseChartTokens,
-  stripChartTokens,
   tokenToMetric,
   type ChartToken,
 } from "@/lib/insights/chart-tokens";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { ProseBlocks } from "@/components/insights/prose-blocks";
 
-import { SourceChips } from "./source-chips";
 import { ReminderSuggestionCard } from "./reminder-suggestion-card";
 import { SuggestedActionCard } from "./suggested-action-card";
 import { StreamedProse } from "./streamed-prose";
-import { MessageTokenFooter } from "./message-token-footer";
 import { CoachTurnSteps } from "./turn-steps";
 import { CoachResults, countResultsInSection } from "./coach-results";
-import { CoachMethodLine } from "./method-line";
-import {
-  COACH_ICON_BUTTON,
-  ReadAloudButton,
-  useClipboardSupported,
-} from "./read-aloud";
-import type { CoachProvenanceMetric } from "@/lib/ai/coach/types";
+import { CoachFollowUpChips } from "./follow-up-chips";
+import { AssistantMessageActions, UserMessageActions } from "./message-actions";
+import type {
+  CoachFollowUp,
+  CoachProvenanceMetric,
+} from "@/lib/ai/coach/types";
 
 /**
  * Per-message bubble renderer for the Coach thread, split out of
- * `message-thread.tsx` (v1.28.26 file-size split — pure code motion, no
- * behaviour change). Owns the user + assistant `ChatBubble` (evidence
- * disclosure, accompanying charts, action row), the per-message action
- * buttons (copy / feedback / try-again / timestamp / remember), the
- * typing indicator, the chart-token grounding selector, and the
+ * `message-thread.tsx` (v1.28.26 file-size split). Owns the user + assistant
+ * `ChatBubble` (steps, accompanying charts, the action row from
+ * `message-actions.tsx`, and the follow-up chips under the latest answer),
+ * the typing indicator, the chart-token grounding selector, and the
  * error-code → i18n resolver. `message-thread.tsx` re-exports the
  * previously public names so external call sites are unchanged.
  */
@@ -263,122 +239,6 @@ function coachChartTitle(
   return resolved === key ? metric.replace(/_/g, " ").toLowerCase() : resolved;
 }
 
-/**
- * v1.22 — copy a message to the clipboard. Assistant prose is copied through
- * `stripChartTokens` (the same text the bubble shows) so inline chart tokens
- * are never pasted; user text is verbatim. A brief check-mark + toast confirm
- * the copy. Hidden when the Clipboard API is unavailable (insecure context).
- */
-function CopyMessageButton({
-  content,
-  strip,
-}: {
-  content: string;
-  strip: boolean;
-}) {
-  const { t } = useTranslations();
-  const supported = useClipboardSupported();
-  const [copied, setCopied] = useState(false);
-  const handle = useCallback(async () => {
-    const text = strip ? stripChartTokens(content) : content;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error(t("insights.coach.copyMessageError"));
-    }
-  }, [content, strip, t]);
-  // Absent on insecure-context (plain-HTTP) self-hosts where the Clipboard API
-  // is undefined — render nothing rather than error-toast on tap.
-  if (!supported) return null;
-  const label = t("insights.coach.copyMessage");
-  return (
-    <button
-      type="button"
-      data-slot="coach-copy-message"
-      onClick={handle}
-      aria-label={label}
-      title={label}
-      className={COACH_ICON_BUTTON}
-    >
-      {copied ? (
-        <Check className="text-success size-3.5" aria-hidden="true" />
-      ) : (
-        <Copy className="size-3.5" aria-hidden="true" />
-      )}
-    </button>
-  );
-}
-
-/**
- * v1.22 — "Try again": re-run the user turn that produced this assistant
- * reply so the user can regenerate an unsatisfying answer. The thread hands
- * down the preceding user message; the surface resubmits it as a fresh turn.
- */
-function TryAgainButton({ onRegenerate }: { onRegenerate: () => void }) {
-  const { t } = useTranslations();
-  const label = t("insights.coach.regenerate");
-  return (
-    <button
-      type="button"
-      data-slot="coach-try-again"
-      onClick={onRegenerate}
-      aria-label={label}
-      title={label}
-      className={COACH_ICON_BUTTON}
-    >
-      <RotateCcw className="size-3.5" aria-hidden="true" />
-    </button>
-  );
-}
-
-/**
- * v1.22 (W5) — hover/tap timestamp for a persisted message bubble. A small,
- * calm clock affordance; the locale-aware date + time surfaces in a tooltip
- * on hover or keyboard focus (desktop) and on tap (mobile, toggled state).
- * Pure CSS + one boolean — no portal, no Radix dependency, SSR-safe.
- */
-function BubbleTimestamp({
-  iso,
-  align = "start",
-}: {
-  iso: string;
-  align?: "start" | "end";
-}) {
-  const { t } = useTranslations();
-  const formatters = useFormatters();
-  const [open, setOpen] = useState(false);
-  const label = formatters.dateTime(iso);
-  return (
-    <span className="relative inline-flex shrink-0">
-      <button
-        type="button"
-        data-slot="coach-bubble-timestamp"
-        aria-label={t("insights.coach.messageTimeLabel", { time: label })}
-        onClick={() => setOpen((o) => !o)}
-        onBlur={() => setOpen(false)}
-        className="peer text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex size-11 items-center justify-center rounded outline-none focus-visible:ring-2 sm:size-8"
-      >
-        <Clock className="size-3" aria-hidden="true" />
-      </button>
-      <span
-        role="tooltip"
-        className={cn(
-          "bg-popover text-popover-foreground border-border pointer-events-none absolute bottom-full z-50 mb-1",
-          "rounded-md border px-2 py-1 text-xs whitespace-nowrap shadow-md",
-          "opacity-0 transition-opacity duration-100 peer-hover:opacity-100 peer-focus-visible:opacity-100",
-          "motion-reduce:transition-none",
-          open && "opacity-100",
-          align === "end" ? "right-0" : "left-0",
-        )}
-      >
-        {label}
-      </span>
-    </span>
-  );
-}
-
 interface ChatBubbleProps {
   role: "user" | "assistant";
   content: string;
@@ -447,6 +307,29 @@ interface ChatBubbleProps {
    * / refusal turns and when the surface supplies no regenerate handler.
    */
   onRegenerate?: () => void;
+  /**
+   * The follow-up chips, handed only to the latest assistant turn: the
+   * offering message's id and its chips. They render in the answer's own
+   * column, after the action row.
+   */
+  followUps?: FollowUpOffer | null;
+  /** True while another turn is in flight; the chips step aside. */
+  followUpsDisabled?: boolean;
+  onFollowUp?: (followUp: CoachFollowUp, messageId: string) => void;
+}
+
+/** The chips one assistant message offers. */
+export interface FollowUpOffer {
+  messageId: string;
+  followUps: CoachFollowUp[];
+}
+
+function sameFollowUpOffer(
+  a: FollowUpOffer | null | undefined,
+  b: FollowUpOffer | null | undefined,
+): boolean {
+  if (!a || !b) return !a === !b;
+  return a.messageId === b.messageId && a.followUps === b.followUps;
 }
 
 /**
@@ -464,6 +347,11 @@ interface ChatBubbleProps {
  * invoked on click, and captures the same preceding user text on a settled
  * thread), so it is compared by PRESENCE, not identity. Result: only the
  * streaming bubble (whose `content`/`streaming` actually change) re-renders.
+ *
+ * The follow-up offer is compared by its message id and chip array (the
+ * thread builds a fresh wrapper object per render, the array itself is the
+ * provenance's or the stream's and stays put), and `onFollowUp` by identity:
+ * without these the memoised bubble would keep showing stale chips.
  *
  * Exported so the contract is unit-testable without standing up the thread.
  */
@@ -489,6 +377,9 @@ export function areChatBubblePropsEqual(
     prev.results === next.results &&
     prev.conversationId === next.conversationId &&
     prev.usage === next.usage &&
+    sameFollowUpOffer(prev.followUps, next.followUps) &&
+    prev.followUpsDisabled === next.followUpsDisabled &&
+    prev.onFollowUp === next.onFollowUp &&
     // onRegenerate is a per-render closure — compare only whether it is present.
     (prev.onRegenerate === undefined) === (next.onRegenerate === undefined)
   );
@@ -513,19 +404,12 @@ function ChatBubbleImpl({
   model,
   createdAt,
   onRegenerate,
+  followUps,
+  followUpsDisabled,
+  onFollowUp,
 }: ChatBubbleProps) {
   const { t } = useTranslations();
   const { user } = useAuth();
-  // v1.4.27 B7 / L3 — pair the evidence `<details>` and its disclosed
-  // list explicitly so screen-readers announce the panel relationship.
-  const evidencePanelId = useId();
-  // v1.4.27 MB3 / CF-32 — track the disclosure state in React so the
-  // summary can carry an accurate `aria-expanded`. Native `<details>`
-  // reflects its open state via the `open` attribute, but that does
-  // not surface as `aria-expanded` on the summary by default; screen
-  // readers still need the explicit attribute to announce the panel
-  // as expanded vs collapsed.
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
   if (role === "user") {
     // v1.5.5 — pull the user's self-hosted avatar so the user
     // bubble matches the Coach avatar in size and visual weight.
@@ -545,8 +429,7 @@ function ChatBubbleImpl({
             // Budget the avatar column (size-8 + gap-2.5 ≈ 2.625rem) out
             // of the 80% cap so the bubble + avatar together never
             // overflow a comfortable width on a narrow phone.
-            // `group/user-bubble` scopes the remember control's
-            // hover/focus reveal (see `RememberUserMessage`).
+            // `group/user-bubble` scopes the action row's hover/focus reveal.
             "group/user-bubble flex max-w-[calc(80%-2.625rem)] flex-col items-end gap-1",
           )}
         >
@@ -562,33 +445,14 @@ function ChatBubbleImpl({
                 is verbatim: no chart-token strip, no Learn linkify. */}
             <ProseBlocks text={content} strip={false} linkify={false} />
           </div>
-          {/* v1.22 — per-message action row: Copy, then the timestamp
-              trailing. Muted until the bubble is hovered / focused on pointer
-              devices; always visible on touch (no hover to reveal it). */}
-          <div
-            data-slot="coach-bubble-actions"
-            className={cn(
-              "flex items-center justify-end gap-0.5",
-              "sm:[@media(hover:hover)]:opacity-0",
-              "sm:[@media(hover:hover)]:group-hover/user-bubble:opacity-100",
-              "sm:[@media(hover:hover)]:group-focus-within/user-bubble:opacity-100",
-              "transition-opacity duration-150 motion-reduce:transition-none",
-            )}
-          >
-            <CopyMessageButton content={content} strip={false} />
-            {createdAt && <BubbleTimestamp iso={createdAt} align="end" />}
-          </div>
-          {/* v1.16.8 — explicit remember control. Stating an allergy in
-              chat used to leave no durable trace unless a narrow
-              pattern pass happened to match the phrasing; this stores
-              the message into the editable self-context (Settings → AI)
-              on one tap, so it rides every future system prompt. Only
-              persisted messages get the control (an optimistic bubble
-              has no id yet), and only when the text fits the
-              self-context field cap. */}
-          {messageId && content.length <= ABOUT_ME_FIELD_MAX_CHARS && (
-            <RememberUserMessage content={content} />
-          )}
+          {/* One row under the question: copy, remember, time. Remember
+              stores the message in the self-context (Settings → AI); only a
+              persisted message that fits that field offers it. */}
+          <UserMessageActions
+            content={content}
+            messageId={messageId}
+            createdAt={createdAt}
+          />
         </div>
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -671,18 +535,7 @@ function ChatBubbleImpl({
         ? t("insights.coach.errorProvider")
         : null;
 
-  const keyValues = metricSource?.keyValues ?? [];
-  // v1.12.0 — the provenance disclosure surfaces whenever there is any
-  // grounding to show: the source chips (metrics/windows) and/or the
-  // raw key-values. `SourceChips` itself returns null when the envelope
-  // carries neither metric nor window, so we mirror that condition here
-  // to decide whether the `<details>` shell renders at all.
-  const hasChips =
-    !!metricSource &&
-    ((metricSource.metrics?.length ?? 0) > 0 ||
-      (metricSource.windows?.length ?? 0) > 0);
   const method = metricSource?.method ?? null;
-  const hasEvidence = hasChips || keyValues.length > 0 || method !== null;
 
   // v1.22 (W5) — Coach charts Phase 1. Render an allowlisted, provenance-
   // grounded `metric:<TYPE>` chart under a SETTLED assistant turn. Skipped
@@ -696,7 +549,6 @@ function ChatBubbleImpl({
       .filter((meta) => meta.displayed)
       .map((meta) => meta.source.domain),
   );
-  const hasResults = !inProgress && !errorCode && resultMetas.length > 0;
   const dataUsedCount =
     !inProgress && !errorCode
       ? countResultsInSection(resultMetas, "dataUsed")
@@ -705,7 +557,7 @@ function ChatBubbleImpl({
     !streaming && !inProgress && !errorCode && providerType !== "refusal"
       ? selectCoachChartTokens(content, metricSource?.metrics, shownDomains)
       : [];
-  const hasProvenance = hasEvidence || dataUsedCount > 0;
+  const settled = !inProgress && !errorCode && providerType !== "refusal";
 
   // v1.32.14 — quiet per-message notice: the grounding guard withheld ≥1 figure
   // from this reply (each rewritten to the `[…]` elision mark). Shown only on a
@@ -734,20 +586,36 @@ function ChatBubbleImpl({
           <Sparkles className="text-background size-3.5" />
         )}
       </div>
-      {/* A reply with tables takes the column's full width, so a table or
-          chart is as wide as the thread allows instead of as wide as the
-          prose above it. */}
+      {/* The answer column. Below `sm` it takes the full width beside the
+          avatar (at 80 % the action row could not stay on one line at
+          390 px); from `sm` it keeps the 80 % measure. It is always that
+          wide, whatever the answer's length, so the action row and the
+          chips never move sideways as a reply streams in; the prose bubble
+          inside shrink-wraps. A table or chart takes the column's width. */}
       <div
-        className={cn(
-          "flex max-w-[calc(80%-2.625rem)] flex-col gap-2",
-          hasResults && "w-full",
-        )}
+        data-slot="coach-answer-column"
+        className="flex w-full max-w-full min-w-0 flex-col items-start gap-2 sm:max-w-[calc(80%-2.625rem)]"
       >
-        {/* v1.39.4 — what the Coach read on this turn: live from the step
-            frames, restored from the provenance on reload. */}
+        {/* What the Coach read on this turn, live from the step frames and
+            restored from the provenance on reload; an older message lists
+            the areas it drew on. Opened, it also says how the answer was
+            worked out and holds the tables the answer read. */}
         <CoachTurnSteps
           steps={steps ?? metricSource?.steps ?? []}
           active={!!inProgress}
+          areas={metricSource?.metrics}
+          method={inProgress || errorCode ? null : method}
+          dataUsed={
+            dataUsedCount > 0 ? (
+              <CoachResults
+                conversationId={conversationId ?? null}
+                messageId={messageId ?? null}
+                metas={metricSource?.results ?? []}
+                live={results}
+                section="dataUsed"
+              />
+            ) : null
+          }
         />
         {/* v1.19.1 (C3) — the live turn shows the classic typing animation
             (three pulsing dots) while it is still thinking with no prose
@@ -760,8 +628,9 @@ function ChatBubbleImpl({
             it swaps to the streamed prose without a layout jump. */}
         {(content || safeError || inProgress) && (
           <div
+            data-slot="coach-answer-bubble"
             className={cn(
-              "border-border/60 bg-muted/40 text-foreground",
+              "border-border/60 bg-muted/40 text-foreground max-w-full",
               "rounded-xl rounded-tl-sm border px-3.5 py-2.5",
               "text-sm leading-relaxed break-words whitespace-pre-wrap",
             )}
@@ -850,114 +719,6 @@ function ChatBubbleImpl({
             {t("insights.coach.errorNoProviderAction")}
           </Link>
         )}
-        {/* v1.12.0 — collapse the whole provenance block ("what was
-            included") behind one disclosure, collapsed by default. The
-            source chips used to render fully expanded above the
-            evidence `<details>`, so the grounding context was often
-            taller than the answer itself. Folding the chips + the raw
-            key-values into a single closed disclosure keeps the reply
-            the focus and lets the user expand the grounding on demand —
-            and removes the always-on chip row that duplicated what the
-            disclosure already names. The disclosure surfaces whenever
-            there is any provenance to show (chips and/or key-values). */}
-        {hasProvenance && (
-          <details
-            data-slot="coach-evidence"
-            open={evidenceOpen}
-            onToggle={(e) =>
-              setEvidenceOpen((e.target as HTMLDetailsElement).open)
-            }
-            // v1.4.27 F14 — always closed by default. The `open`
-            // attribute was previously tied to a per-user pref that
-            // surfaced raw values unconditionally; that pref is now
-            // retired and the disclosure is a true progressive-
-            // disclosure surface — the user clicks to expand.
-            //
-            // v1.4.27 MB3 / CF-32 — the `open` attribute is now
-            // controlled from local state so the summary's
-            // `aria-expanded` stays in lock-step. The native disclosure
-            // semantics (Enter / Space toggle) are preserved.
-            className={cn(
-              "border-border/50 bg-muted/30 group rounded-md border",
-              "px-2.5 py-1.5 text-xs",
-            )}
-          >
-            <summary
-              data-slot="coach-evidence-summary"
-              aria-controls={evidencePanelId}
-              aria-expanded={evidenceOpen}
-              className={cn(
-                "text-muted-foreground hover:text-foreground flex cursor-pointer",
-                "items-center gap-1.5 leading-relaxed",
-                "marker:hidden [&::-webkit-details-marker]:hidden",
-                "focus-visible:ring-ring/50 rounded outline-none focus-visible:ring-2",
-              )}
-            >
-              <ChevronRight
-                aria-hidden="true"
-                className="size-3 transition-transform group-open:rotate-90"
-              />
-              <span>{t("insights.coach.evidenceLabel")}</span>
-            </summary>
-            <div
-              id={evidencePanelId}
-              data-slot="coach-evidence-panel"
-              className="mt-2 flex flex-col gap-2"
-            >
-              {/* v1.12.0 — the source chips now live inside the
-                  disclosure so they expand with the rest of the
-                  grounding instead of always painting above the
-                  answer. */}
-              {hasChips && metricSource && (
-                <SourceChips provenance={metricSource} />
-              )}
-              {keyValues.length > 0 && (
-                <ul
-                  data-slot="coach-evidence-list"
-                  className="text-foreground flex flex-col gap-1"
-                >
-                  {keyValues.map((kv, idx) => (
-                    <li
-                      key={`${kv.label}-${idx}`}
-                      data-slot="coach-evidence-row"
-                      className="leading-relaxed"
-                    >
-                      {/* v1.4.25 W5 — `kv.label` (e.g. "avg7 systolic")
-                          was rendered prefixed to every row, repeating
-                          framing the disclosure heading already gives.
-                          Drop the label and lead with the value; the
-                          window stays as a parenthetical tail so the row
-                          still answers "over what timeframe?". */}
-                      <strong className="font-semibold">
-                        {kv.value}
-                        {kv.unit ? ` ${kv.unit}` : ""}
-                      </strong>
-                      {kv.window && (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          ({kv.window})
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {/* v1.39.4 — how the answer was worked out, beside the key
-                  values it explains. */}
-              <CoachMethodLine method={method} />
-              {/* v1.39.4 — the tables the answer read but did not point at. */}
-              {dataUsedCount > 0 && (
-                <CoachResults
-                  conversationId={conversationId ?? null}
-                  messageId={messageId ?? null}
-                  metas={metricSource?.results ?? []}
-                  live={results}
-                  section="dataUsed"
-                />
-              )}
-            </div>
-          </details>
-        )}
         {/* v1.18.1 (Workstream C) — one-tap cadence-suggestion action
             card. Live from the streaming hook, or restored from the
             persisted message provenance on reload. Not shown on
@@ -978,42 +739,29 @@ function ChatBubbleImpl({
               suggestedAction ?? metricSource?.suggestedAction ?? null;
             return action ? <SuggestedActionCard action={action} /> : null;
           })()}
-        {/* v1.18.9 — quiet per-message token footer. The just-finished
-            streaming turn reads the `done.usage` envelope; a persisted /
-            reloaded turn reads the message's own `tokensUsed` + `model`.
-            Skipped on in-flight, errored, and refusal turns. */}
-        {!inProgress && !errorCode && providerType !== "refusal" && (
-          <MessageTokenFooter
+        {/* One row under the answer: copy, read aloud, try again and the
+            time on the left; the tokens and model it cost on the right.
+            Only on a settled reply (not while it streams, not on an error
+            or a refusal). */}
+        {settled && content && (
+          <AssistantMessageActions
+            content={content}
+            streaming={!!streaming}
+            createdAt={createdAt}
+            onRegenerate={onRegenerate}
             tokens={usage?.totalTokens ?? tokensUsed}
             model={usage?.model ?? model}
           />
         )}
-        {/* v1.22 — per-message hover action row. Icon-only, muted until the
-            bubble is hovered / focused on pointer devices; always visible on
-            touch (no hover to reveal it). Copy + Read-aloud + Good / Bad
-            feedback + Try-again, with the timestamp trailing. Only settled
-            persisted assistant turns get the row (skipped for refusals,
-            errors, in-flight stream bubbles). */}
-        {!inProgress && !errorCode && providerType !== "refusal" && content && (
-          <div
-            data-slot="coach-bubble-actions"
-            className={cn(
-              "flex flex-wrap items-center gap-0.5",
-              "sm:[@media(hover:hover)]:opacity-0",
-              "sm:[@media(hover:hover)]:group-hover/assistant-bubble:opacity-100",
-              "sm:[@media(hover:hover)]:group-focus-within/assistant-bubble:opacity-100",
-              "transition-opacity duration-150 motion-reduce:transition-none",
-            )}
-          >
-            <CopyMessageButton content={content} strip />
-            {!streaming && <ReadAloudButton content={content} />}
-            {messageId && <CoachMessageFeedback messageId={messageId} />}
-            {!streaming && onRegenerate && (
-              <TryAgainButton onRegenerate={onRegenerate} />
-            )}
-            {createdAt && <BubbleTimestamp iso={createdAt} />}
-          </div>
-        )}
+        {/* The follow-up chips of the latest answer, in its own column. */}
+        {followUps && onFollowUp ? (
+          <CoachFollowUpChips
+            followUps={followUps.followUps}
+            messageId={followUps.messageId}
+            disabled={!!followUpsDisabled}
+            onSelect={onFollowUp}
+          />
+        ) : null}
       </div>
     </div>
   );
@@ -1027,107 +775,6 @@ function ChatBubbleImpl({
  */
 export const ChatBubble = memo(ChatBubbleImpl, areChatBubblePropsEqual);
 ChatBubble.displayName = "ChatBubble";
-
-/**
- * v1.16.8 — per-message remember control under the user bubble.
- *
- * One tap stores the message text into the structured self-context via
- * `POST /api/coach/about-me/adopt` (no `question` — the server matches
- * the target field from the text itself: an allergy statement lands on
- * the allergies field, a stated condition on conditions, everything
- * else on the coach-focus slot). The stored text is visible and
- * editable under Settings → AI and rides every future Coach system
- * prompt. Settled states mirror `SelfContextAdoptOffer`: a short
- * confirmation replaces the button after an adoption or a server-side
- * dedupe; a failure surfaces a toast and the button stays tappable.
- */
-function RememberUserMessage({ content }: { content: string }) {
-  const { t } = useTranslations();
-  const queryClient = useQueryClient();
-  const [settled, setSettled] = useState<"adopted" | "duplicate" | null>(null);
-  // On settle the button unmounts while it holds focus, which would
-  // drop keyboard focus to <body>. The confirmation paragraph takes
-  // the focus instead (`tabIndex={-1}` + programmatic focus) so the
-  // reading position survives the swap.
-  const statusRef = useRef<HTMLParagraphElement | null>(null);
-  useEffect(() => {
-    if (settled) statusRef.current?.focus();
-  }, [settled]);
-
-  const remember = useMutation({
-    mutationFn: async () => {
-      return apiPost<{ adopted: boolean }>("/api/coach/about-me/adopt", {
-        answer: content,
-      });
-    },
-    onSuccess: (data) => {
-      if (data.adopted) {
-        // The adoption changed the stored self-context — refresh the
-        // Settings → AI about-me read so it shows the new entry.
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.coachAboutMe(),
-        });
-      }
-      setSettled(data.adopted ? "adopted" : "duplicate");
-    },
-    onError: () => {
-      toast.error(t("insights.coach.rememberMessage.failed"));
-    },
-  });
-
-  if (settled) {
-    return (
-      <p
-        role="status"
-        ref={statusRef}
-        tabIndex={-1}
-        data-slot="coach-remember-message-done"
-        className="text-muted-foreground flex items-center gap-1 text-xs outline-none"
-      >
-        <Check className="text-success size-3" aria-hidden="true" />
-        {t(
-          settled === "adopted"
-            ? "insights.coach.rememberMessage.done"
-            : "insights.coach.rememberMessage.duplicate",
-        )}
-      </p>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      data-slot="coach-remember-message"
-      onClick={() => remember.mutate()}
-      disabled={remember.isPending}
-      className={cn(
-        "text-muted-foreground hover:text-foreground focus-visible:ring-ring/50",
-        "inline-flex min-h-11 items-center gap-1 rounded px-1.5 py-1 text-xs sm:min-h-9",
-        "outline-none focus-visible:ring-2 disabled:opacity-50",
-        // Calmer thread on pointer devices: the control stays invisible
-        // until its bubble is hovered or holds focus. Touch viewports
-        // (no hover media) keep it always visible — there is nothing to
-        // hover. `opacity-0` (not `invisible`) keeps it focusable so
-        // keyboard users can reach it; focus then reveals it.
-        "sm:[@media(hover:hover)]:opacity-0",
-        "sm:[@media(hover:hover)]:group-hover/user-bubble:opacity-100",
-        "sm:[@media(hover:hover)]:group-focus-within/user-bubble:opacity-100",
-        "sm:[@media(hover:hover)]:focus-visible:opacity-100",
-        "transition-opacity duration-150 motion-reduce:transition-none",
-      )}
-    >
-      {remember.isPending ? (
-        <Loader2
-          className="size-3 animate-spin motion-reduce:animate-none"
-          aria-hidden="true"
-        />
-      ) : (
-        <BookmarkPlus className="size-3" aria-hidden="true" />
-      )}
-      {t("insights.coach.rememberMessage.action")}
-    </button>
-  );
-}
 
 /**
  * v1.16.1 — classic chat typing indicator: three dots pulsing in
@@ -1161,92 +808,5 @@ export function TypingDots({ label }: { label: string }) {
         ))}
       </span>
     </span>
-  );
-}
-
-interface CoachMessageFeedbackProps {
-  messageId: string;
-}
-
-function CoachMessageFeedback({ messageId }: CoachMessageFeedbackProps) {
-  const { t } = useTranslations();
-  const [submittedRating, setSubmittedRating] = useState<
-    "helpful" | "unhelpful" | null
-  >(null);
-
-  const submit = useMutation({
-    mutationFn: async (rating: "helpful" | "unhelpful") => {
-      try {
-        await apiPost(`/api/insights/chat/messages/${messageId}/feedback`, {
-          rating,
-        });
-      } catch (err) {
-        // Treat 409 (already_rated) as a successful no-op so the user
-        // never sees an error toast for double-clicking the same chip.
-        if (!(err instanceof ApiError && err.status === 409)) {
-          throw err;
-        }
-      }
-      return rating;
-    },
-    onSuccess: (rating) => setSubmittedRating(rating),
-    // v1.16.4 — a failed rating used to fail silently; the chips stayed
-    // tappable with no signal that nothing was recorded.
-    onError: () => {
-      toast.error(t("insights.coach.feedbackError"));
-    },
-  });
-
-  // v1.22 — icon-only feedback in the per-message action row. After a rating
-  // lands, the chosen thumb stays visible in its confirming colour (the other
-  // is dropped) with an `sr-only` thanks so the signal is legible without a
-  // text caption breaking the icon row.
-  if (submittedRating) {
-    return (
-      <span
-        data-slot="coach-message-feedback-thanks"
-        role="status"
-        className="inline-flex items-center"
-      >
-        <span className="sr-only">{t("insights.coach.feedbackThanks")}</span>
-        {submittedRating === "helpful" ? (
-          <ThumbsUp className="text-success size-3.5" aria-hidden="true" />
-        ) : (
-          <ThumbsDown className="text-warning size-3.5" aria-hidden="true" />
-        )}
-      </span>
-    );
-  }
-
-  const helpfulLabel = t("insights.coach.feedbackHelpful");
-  const unhelpfulLabel = t("insights.coach.feedbackUnhelpful");
-  return (
-    <div
-      data-slot="coach-message-feedback"
-      className="inline-flex items-center"
-    >
-      <button
-        type="button"
-        data-slot="coach-message-feedback-helpful"
-        onClick={() => submit.mutate("helpful")}
-        disabled={submit.isPending}
-        aria-label={helpfulLabel}
-        title={helpfulLabel}
-        className={cn(COACH_ICON_BUTTON, "hover:text-success")}
-      >
-        <ThumbsUp className="size-3.5" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        data-slot="coach-message-feedback-unhelpful"
-        onClick={() => submit.mutate("unhelpful")}
-        disabled={submit.isPending}
-        aria-label={unhelpfulLabel}
-        title={unhelpfulLabel}
-        className={cn(COACH_ICON_BUTTON, "hover:text-warning")}
-      >
-        <ThumbsDown className="size-3.5" aria-hidden="true" />
-      </button>
-    </div>
   );
 }

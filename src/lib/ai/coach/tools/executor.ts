@@ -52,6 +52,7 @@ import { admitCoachSources, coachExclusions } from "@/lib/ai/coach/scope-gate";
 import type { CoachPrefs } from "@/lib/validations/coach-prefs";
 import { readMessageResults } from "@/lib/ai/coach/persistence";
 import type {
+  CoachResultPeriod,
   CoachResultTable,
   CoachScope,
   CoachScopeSource,
@@ -63,6 +64,7 @@ import {
   METRIC_TABLE_EXCLUDED_SOURCES,
   compareWithCurrent,
   readMetricTable,
+  resolveTableRange,
   summariseTable,
 } from "@/lib/ai/coach/results/metric-table-tool";
 import {
@@ -119,6 +121,20 @@ import {
   type CoachDomainAvailability,
 } from "./availability";
 import { buildIllnessScores } from "@/lib/ai/coach/illness-snapshot";
+import { isCycleAvailableForUser } from "@/lib/cycle/gate";
+import {
+  UNBOUNDED_REACH,
+  clampWindow,
+  exceedsReach,
+  isBounded,
+  withinReach,
+  type CoachHistoryReach,
+} from "@/lib/ai/coach/history-reach";
+import {
+  OUTSIDE_REACH_REASON,
+  cycleRecorded,
+  illnessBeyondReach,
+} from "./availability";
 
 /** A read-only structured tool result. Serialised to a `role:"tool"` turn. */
 export interface CoachToolResult {
@@ -193,6 +209,19 @@ function pickSection(
 }
 
 /**
+ * A tool's window under the lookback limit: whatever the call asks for, it
+ * reads no further back than the limit. `undefined` stays undefined (the
+ * builder default, 30 days, is inside every limit but the 7-day one, and the
+ * builder clamps that itself).
+ */
+function limitWindow(
+  window: CoachScopeWindow | undefined,
+  reach: CoachHistoryReach,
+): CoachScopeWindow | undefined {
+  return window === undefined ? undefined : clampWindow(window, reach);
+}
+
+/**
  * Resolve the scope a tool reads its snapshot under.
  *
  * v1.21.0 (D5-1) — when the route handed us a `sharedScope` (the full-source
@@ -210,8 +239,9 @@ function scopeFor(
   window: CoachScopeWindow | undefined,
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
+  reach: CoachHistoryReach,
 ): CoachScope {
-  const effectiveWindow = window ?? fallbackWindow;
+  const effectiveWindow = limitWindow(window ?? fallbackWindow, reach);
   if (sharedScope && sharedScope.window === effectiveWindow) {
     // Same window as the inventory's full-source build → reuse its cache entry.
     return sharedScope;
@@ -251,6 +281,13 @@ export async function executeCoachTool(args: {
   sourceSnapshot?: boolean;
   /** v1.39.4 — the chat turn, when the call runs inside one. */
   turn?: CoachToolTurnContext;
+  /**
+   * How far back the call may read: the person's Coach lookback limit. Every
+   * read below is clamped to it. Absent is no limit, which is what an MCP
+   * client gets: it reads with its own window arguments, and the Coach
+   * setting governs the Coach.
+   */
+  reach?: CoachHistoryReach;
 }): Promise<CoachToolResult> {
   const {
     userId,
@@ -261,6 +298,7 @@ export async function executeCoachTool(args: {
     sourceSnapshot = false,
     turn,
   } = args;
+  const reach = args.reach ?? UNBOUNDED_REACH;
 
   if (!isCoachToolName(name) && name !== SHOW_RESULT_TOOL_NAME) {
     annotate({
@@ -284,7 +322,7 @@ export async function executeCoachTool(args: {
   try {
     const result =
       name === SHOW_RESULT_TOOL_NAME
-        ? await showResult(userId, parsedArgs, sharedScope, turn)
+        ? await showResult(userId, parsedArgs, sharedScope, turn, reach)
         : await dispatch(
             name as CoachToolName,
             userId,
@@ -292,6 +330,7 @@ export async function executeCoachTool(args: {
             fallbackWindow,
             sharedScope,
             turn,
+            reach,
             sourceSnapshot,
           );
     annotate({
@@ -320,6 +359,7 @@ async function dispatch(
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
   turn: CoachToolTurnContext | undefined,
+  reach: CoachHistoryReach,
   sourceSnapshot: boolean,
 ): Promise<CoachToolResult> {
   const result = await dispatchRead(
@@ -329,6 +369,7 @@ async function dispatch(
     fallbackWindow,
     sharedScope,
     turn,
+    reach,
     sourceSnapshot,
   );
   if (!turn || !result.present || result.table) return result;
@@ -339,6 +380,7 @@ async function dispatch(
     fallbackWindow,
     result,
     turn,
+    reach,
   );
 }
 
@@ -349,8 +391,11 @@ async function dispatchRead(
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
   turn: CoachToolTurnContext | undefined,
+  reach: CoachHistoryReach,
   sourceSnapshot: boolean,
 ): Promise<CoachToolResult> {
+  // Every branch takes the lookback limit; `coach-history-reach-guard.test.ts`
+  // fails when one does not.
   switch (name) {
     case "get_metric_series":
       return getMetricSeries(
@@ -358,31 +403,46 @@ async function dispatchRead(
         rawArgs,
         fallbackWindow,
         sharedScope,
+        reach,
         sourceSnapshot,
       );
     case "get_glucose_panel":
-      return getGlucosePanel(userId, rawArgs, fallbackWindow, sharedScope);
+      return getGlucosePanel(
+        userId,
+        rawArgs,
+        fallbackWindow,
+        sharedScope,
+        reach,
+      );
     case "get_sleep":
-      return getSleep(userId, rawArgs, fallbackWindow, sharedScope);
+      return getSleep(userId, rawArgs, fallbackWindow, sharedScope, reach);
     case "get_medication_compliance":
       return getMedicationCompliance(
         userId,
         rawArgs,
         fallbackWindow,
         sharedScope,
+        reach,
       );
     case "get_labs":
-      return getLabs(userId, rawArgs, fallbackWindow, sharedScope);
+      return getLabs(userId, rawArgs, fallbackWindow, sharedScope, reach);
     case "get_illness_recovery":
-      return getIllnessRecovery(userId, fallbackWindow, sharedScope);
+      return getIllnessRecovery(userId, fallbackWindow, sharedScope, reach);
     case "get_workouts":
-      return getWorkouts(userId, rawArgs, fallbackWindow, sharedScope);
+      return getWorkouts(userId, rawArgs, fallbackWindow, sharedScope, reach);
     case "get_cycle":
-      return getCycle(userId, rawArgs, sharedScope);
+      return getCycle(userId, rawArgs, sharedScope, reach);
     case "get_correlations":
-      return getCorrelations(userId, rawArgs);
+      return getCorrelations(userId, rawArgs, reach);
     case "get_metric_table":
-      return getMetricTable(userId, rawArgs, fallbackWindow, sharedScope, turn);
+      return getMetricTable(
+        userId,
+        rawArgs,
+        fallbackWindow,
+        sharedScope,
+        turn,
+        reach,
+      );
   }
 }
 
@@ -404,8 +464,9 @@ function emptyRead(
   domain: string,
   subject: CoachAvailabilitySubject | null,
   searchedWindow: CoachScopeWindow | undefined,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
-  return resolveEmptyRead({ userId, domain, subject, searchedWindow });
+  return resolveEmptyRead({ userId, domain, subject, searchedWindow, reach });
 }
 
 async function getMetricSeries(
@@ -413,6 +474,7 @@ async function getMetricSeries(
   rawArgs: unknown,
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
+  reach: CoachHistoryReach,
   sourceSnapshot: boolean,
 ): Promise<CoachToolResult> {
   const parsed = getMetricSeriesArgsSchema.safeParse(rawArgs);
@@ -441,12 +503,14 @@ async function getMetricSeries(
 
   // An MCP read needs one section and nothing else, so it is built from that
   // source's own rows: the same section, without the context blocks a Coach
-  // turn carries. See `source-snapshot.ts`.
+  // turn carries. See `source-snapshot.ts`. Only MCP asks for it, and MCP
+  // reads without the Coach's lookback limit, so it takes no reach.
   const snapshot = sourceSnapshot
     ? await buildCoachSourceSnapshot(userId, metric, window ?? fallbackWindow)
     : await buildCoachSnapshot(
         userId,
-        scopeFor([metric], window, fallbackWindow, sharedScope),
+        scopeFor([metric], window, fallbackWindow, sharedScope, reach),
+        { reach },
       );
   const section = pickSection(snapshot.sections, sectionKey);
   if (section === undefined) {
@@ -454,7 +518,8 @@ async function getMetricSeries(
       userId,
       metric,
       subjectForTool("get_metric_series", metric),
-      window ?? fallbackWindow,
+      limitWindow(window ?? fallbackWindow, reach),
+      reach,
     );
   }
   return {
@@ -469,12 +534,20 @@ async function getGlucosePanel(
   rawArgs: unknown,
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
   const parsed = getGlucosePanelArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_glucose_panel", parsed.error);
   const snapshot = await buildCoachSnapshot(
     userId,
-    scopeFor(["glucose"], parsed.data.window, fallbackWindow, sharedScope),
+    scopeFor(
+      ["glucose"],
+      parsed.data.window,
+      fallbackWindow,
+      sharedScope,
+      reach,
+    ),
+    { reach },
   );
   const section = pickSection(snapshot.sections, "glucose");
   if (section === undefined) {
@@ -482,7 +555,8 @@ async function getGlucosePanel(
       userId,
       "glucose",
       subjectForTool("get_glucose_panel"),
-      parsed.data.window ?? fallbackWindow,
+      limitWindow(parsed.data.window ?? fallbackWindow, reach),
+      reach,
     );
   }
   return {
@@ -497,12 +571,14 @@ async function getSleep(
   rawArgs: unknown,
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
   const parsed = getSleepArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_sleep", parsed.error);
   const snapshot = await buildCoachSnapshot(
     userId,
-    scopeFor(["sleep"], parsed.data.window, fallbackWindow, sharedScope),
+    scopeFor(["sleep"], parsed.data.window, fallbackWindow, sharedScope, reach),
+    { reach },
   );
   const nights = pickSection(snapshot.sections, "sleep");
   const rhythm = pickSection(snapshot.sections, "sleepRhythm");
@@ -511,7 +587,8 @@ async function getSleep(
       userId,
       "sleep",
       subjectForTool("get_sleep"),
-      parsed.data.window ?? fallbackWindow,
+      limitWindow(parsed.data.window ?? fallbackWindow, reach),
+      reach,
     );
   }
   return {
@@ -529,6 +606,7 @@ async function getMedicationCompliance(
   rawArgs: unknown,
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
   const parsed = getMedicationComplianceArgsSchema.safeParse(rawArgs);
   if (!parsed.success) {
@@ -536,7 +614,14 @@ async function getMedicationCompliance(
   }
   const snapshot = await buildCoachSnapshot(
     userId,
-    scopeFor(["compliance"], parsed.data.window, fallbackWindow, sharedScope),
+    scopeFor(
+      ["compliance"],
+      parsed.data.window,
+      fallbackWindow,
+      sharedScope,
+      reach,
+    ),
+    { reach },
   );
   const compliance = pickSection(snapshot.sections, "compliance");
   // GLP-1 context rides the `weeklyContext` block.
@@ -548,7 +633,8 @@ async function getMedicationCompliance(
       userId,
       "compliance",
       subjectForTool("get_medication_compliance"),
-      parsed.data.window ?? fallbackWindow,
+      limitWindow(parsed.data.window ?? fallbackWindow, reach),
+      reach,
     );
   }
   return {
@@ -565,6 +651,7 @@ async function getLabs(
   rawArgs: unknown,
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
   const parsed = getLabsArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_labs", parsed.error);
@@ -582,7 +669,8 @@ async function getLabs(
   // (labs ride unconditionally) when no shared scope or a window mismatch.
   const snapshot = await buildCoachSnapshot(
     userId,
-    scopeFor([], fallbackWindow, fallbackWindow, sharedScope),
+    scopeFor([], fallbackWindow, fallbackWindow, sharedScope, reach),
+    { reach },
   );
   const labs = pickSection(snapshot.sections, "labs") as
     { recent?: Array<{ name?: string; analyte?: string }> } | undefined;
@@ -590,7 +678,14 @@ async function getLabs(
     // The labs read is window-AGNOSTIC: a fixed trailing-12-month cutoff. So the
     // window it "searched" is a year regardless of the conversation's scope —
     // a panel from 2023 is outside it and must not read as "no labs on file".
-    return emptyRead(userId, "labs", subjectForTool("get_labs"), "lastYear");
+    // Under a shorter lookback limit the labs read stops at the limit.
+    return emptyRead(
+      userId,
+      "labs",
+      subjectForTool("get_labs"),
+      clampWindow("lastYear", reach),
+      reach,
+    );
   }
 
   const analyte = parsed.data.analyte?.trim().toLowerCase();
@@ -612,6 +707,7 @@ async function getIllnessRecovery(
   userId: string,
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
   // Validate the (empty) args shape for consistency; an empty object always
   // passes.
@@ -634,7 +730,9 @@ async function getIllnessRecovery(
       fallbackWindow,
       fallbackWindow,
       sharedScope,
+      reach,
     ),
+    { reach },
   );
   const illness = pickSection(snapshot.sections, "illness");
   const derived = pickSection(snapshot.sections, "derived");
@@ -645,7 +743,7 @@ async function getIllnessRecovery(
   // relevant episode. Read-only, coverage-gated (null when the engine
   // withholds), and the SAME engine the card + the red-flag notifier run, so
   // the Coach restates the numbers the user sees rather than the composite.
-  const illnessScores = await buildIllnessScores(userId);
+  const illnessScores = await buildIllnessScores(userId, undefined, reach);
   if (
     illness === undefined &&
     derived === undefined &&
@@ -655,12 +753,17 @@ async function getIllnessRecovery(
   ) {
     // No row-backed subject: illness episodes + the recovery composites are
     // computed / module-gated, not a window slice of one table, so there is
-    // nothing an availability probe could establish. Honest absence.
+    // nothing an availability probe could establish. Honest absence, unless
+    // a lookback limit is what hid the episodes.
+    if (isBounded(reach) && (await illnessBeyondReach(userId, reach))) {
+      return { present: false, reason: OUTSIDE_REACH_REASON };
+    }
     return emptyRead(
       userId,
       "illness_recovery",
       subjectForTool("get_illness_recovery"),
-      fallbackWindow,
+      limitWindow(fallbackWindow, reach),
+      reach,
     );
   }
   return {
@@ -680,6 +783,7 @@ async function getWorkouts(
   rawArgs: unknown,
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
   const parsed = getWorkoutsArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_workouts", parsed.error);
@@ -687,7 +791,14 @@ async function getWorkouts(
   // user has workout rows in the window. Scope the read to that single source.
   const snapshot = await buildCoachSnapshot(
     userId,
-    scopeFor(["workouts"], parsed.data.window, fallbackWindow, sharedScope),
+    scopeFor(
+      ["workouts"],
+      parsed.data.window,
+      fallbackWindow,
+      sharedScope,
+      reach,
+    ),
+    { reach },
   );
   const workouts = pickSection(snapshot.sections, "workouts");
   if (workouts === undefined) {
@@ -695,7 +806,8 @@ async function getWorkouts(
       userId,
       "workouts",
       subjectForTool("get_workouts"),
-      parsed.data.window ?? fallbackWindow,
+      limitWindow(parsed.data.window ?? fallbackWindow, reach),
+      reach,
     );
   }
   return { present: true, data: workouts };
@@ -705,9 +817,18 @@ async function getCycle(
   userId: string,
   rawArgs: unknown,
   sharedScope: CoachScope | undefined,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
   const parsed = getCycleArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_cycle", parsed.error);
+  // The cycle block predicts from every logged cycle, so the snapshot leaves
+  // it out under any lookback limit. Say why, rather than that it is absent.
+  if (isBounded(reach)) {
+    return (await isCycleAvailableForUser(userId)) &&
+      (await cycleRecorded(userId))
+      ? { present: false, reason: OUTSIDE_REACH_REASON }
+      : { present: false, reason: "no_data" };
+  }
   // The cycle block is gated INSIDE the builder by `isCycleAvailableForUser`
   // (the per-user toggle AND the operator switch), independent of `sources` —
   // so a minimal scope still surfaces it when the account tracks cycles, and a
@@ -719,6 +840,7 @@ async function getCycle(
   const snapshot = await buildCoachSnapshot(
     userId,
     sharedScope ?? { sources: [] },
+    { reach },
   );
   const cycle = pickSection(snapshot.sections, "cycle");
   if (cycle === undefined) {
@@ -730,6 +852,7 @@ async function getCycle(
       "cycle",
       subjectForTool("get_cycle"),
       sharedScope?.window,
+      reach,
     );
   }
   return { present: true, data: cycle };
@@ -738,6 +861,7 @@ async function getCycle(
 async function getCorrelations(
   userId: string,
   rawArgs: unknown,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
   const parsed = getCorrelationsArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_correlations", parsed.error);
@@ -754,7 +878,8 @@ async function getCorrelations(
   // of its own. The notes below are finished sentences; some MCP clients show
   // them to the person verbatim rather than letting the model re-word them.
   const locale = await resolveLocaleForUser(userId);
-  const result = await readCoachCorrelations(userId, locale);
+  // The scan reads 180 days, or the lookback limit when that is shorter.
+  const result = await readCoachCorrelations(userId, locale, { reach });
   if (!result.present) {
     return { present: false, reason: result.reason ?? "no_pattern" };
   }
@@ -794,11 +919,17 @@ export function scopeAdmits(
  * (`coachExclusions`, `admitCoachSources`), so a metric the person excluded
  * after a table was stored is neither listed for the model nor sent to it.
  * Tables of other domains (labs) answer to their module when read.
+ *
+ * The lookback limit applies the same way: a table whose range reaches past
+ * it (stored before the limit was set or narrowed) is not listed, because
+ * its line hands the model the window and the row count of history the
+ * Coach may no longer read. `show_result` refuses it on the same test.
  */
 export async function admittedPriorResults(args: {
   userId: string;
   prefs: Pick<CoachPrefs, "excludeMetrics">;
   scope: CoachScope | undefined;
+  reach: CoachHistoryReach;
   prior: readonly PriorResultTurn[];
 }): Promise<PriorResultTurn[]> {
   if (args.prior.length === 0) return [];
@@ -818,7 +949,15 @@ export async function admittedPriorResults(args: {
   return args.prior
     .map((turn) => ({
       ...turn,
-      results: turn.results.filter((meta) => admits(meta.source.domain)),
+      results: turn.results.filter(
+        (meta) =>
+          admits(meta.source.domain) &&
+          tableRangeWithinReach(
+            meta.source.window,
+            meta.source.period ?? "current",
+            args.reach,
+          ),
+      ),
     }))
     .filter((turn) => turn.results.length > 0);
 }
@@ -830,28 +969,69 @@ export function isCoachScopeSource(
   return Object.hasOwn(COACH_SOURCE_MEASUREMENT_TYPES, domain);
 }
 
+/**
+ * True when a table's whole range lies inside the lookback limit. An earlier
+ * period needs twice its window (previous) or a year more (a year ago), so a
+ * range either fits with room to spare or does not fit at all; the UTC day
+ * edges are close enough.
+ */
+export function tableRangeWithinReach(
+  window: CoachScopeWindow,
+  period: CoachResultPeriod,
+  reach: CoachHistoryReach,
+  now: Date = new Date(),
+): boolean {
+  if (!isBounded(reach)) return true;
+  if (exceedsReach(window, reach)) return false;
+  const range = resolveTableRange({ window, period, timeZone: "UTC", now });
+  return withinReach(range.from, reach, now);
+}
+
 async function getMetricTable(
   userId: string,
   rawArgs: unknown,
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
   turn: CoachToolTurnContext | undefined,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
   const parsed = getMetricTableArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_metric_table", parsed.error);
   const { metric, granularity } = parsed.data;
-  const window = parsed.data.window ?? fallbackWindow ?? DEFAULT_WINDOW;
+  // All time becomes the lookback limit; a narrower window stays.
+  const window = clampWindow(
+    parsed.data.window ?? fallbackWindow ?? DEFAULT_WINDOW,
+    reach,
+  );
   const period =
     window === "allTime" ? "current" : (parsed.data.period ?? "current");
 
   const excluded = METRIC_TABLE_EXCLUDED_SOURCES[metric];
   if (excluded) return { present: false, reason: excluded };
 
+  // An earlier period is read only when all of it lies inside the limit: the
+  // previous window or the same window a year ago, cut short, would be a
+  // different comparison under the same name.
+  if (
+    period !== "current" &&
+    !tableRangeWithinReach(window, period, reach, turn?.now)
+  ) {
+    return {
+      present: false,
+      reason: OUTSIDE_REACH_REASON,
+      searchedWindow: window,
+    };
+  }
+
   // Same gate as every other read: a module switched off, or a metric the
   // person excluded from the Coach, is not read here either.
   const gate = await buildCoachSnapshot(
     userId,
-    sharedScope ?? { sources: [metric], window: fallbackWindow },
+    sharedScope ?? {
+      sources: [metric],
+      window: limitWindow(fallbackWindow, reach),
+    },
+    { reach },
   );
   if (!scopeAdmits(gate.sections, metric)) {
     return {
@@ -880,6 +1060,7 @@ async function getMetricTable(
       metric,
       subjectForTool("get_metric_table", metric),
       window,
+      reach,
     );
   }
   // An earlier window is read to be compared: read the current one too and
@@ -971,6 +1152,7 @@ async function showResult(
   rawArgs: unknown,
   sharedScope: CoachScope | undefined,
   turn: CoachToolTurnContext | undefined,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
   const parsed = showResultArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs(SHOW_RESULT_TOOL_NAME, parsed.error);
@@ -985,6 +1167,22 @@ async function showResult(
     return { present: false, reason: "unknown_result" };
   }
 
+  // A stored table whose range reaches past the lookback limit set since is
+  // not shown again: the limit covers what the Coach shows as much as what
+  // it reads.
+  const { window: storedWindow, period: storedPeriod } = target.meta.source;
+  if (
+    storedWindow !== undefined &&
+    !tableRangeWithinReach(
+      storedWindow,
+      storedPeriod ?? "current",
+      reach,
+      turn.now,
+    )
+  ) {
+    return { present: false, reason: OUTSIDE_REACH_REASON };
+  }
+
   // The same gate a fresh read passes, before anything is decrypted: a
   // metric the person has since excluded from the Coach, or left out of
   // this conversation's scope, is not sent to the model again either.
@@ -992,7 +1190,11 @@ async function showResult(
   if (isCoachScopeSource(domain)) {
     const gate = await buildCoachSnapshot(
       userId,
-      sharedScope ?? { sources: [domain], window: target.meta.source.window },
+      sharedScope ?? {
+        sources: [domain],
+        window: limitWindow(target.meta.source.window, reach),
+      },
+      { reach },
     );
     if (!scopeAdmits(gate.sections, domain)) {
       return { present: false, reason: "unavailable_in_scope" };
@@ -1056,6 +1258,7 @@ async function withProjectedTable(
   fallbackWindow: CoachScopeWindow | undefined,
   result: CoachToolResult,
   turn: CoachToolTurnContext,
+  reach: CoachHistoryReach,
 ): Promise<CoachToolResult> {
   const argWindow =
     rawArgs !== null &&
@@ -1063,7 +1266,10 @@ async function withProjectedTable(
     typeof (rawArgs as { window?: unknown }).window === "string"
       ? ((rawArgs as { window: CoachScopeWindow }).window as CoachScopeWindow)
       : undefined;
-  const window = argWindow ?? fallbackWindow ?? DEFAULT_WINDOW;
+  const window = clampWindow(
+    argWindow ?? fallbackWindow ?? DEFAULT_WINDOW,
+    reach,
+  );
   try {
     let table: CoachResultTable | null = null;
     switch (name) {

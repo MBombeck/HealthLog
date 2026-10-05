@@ -1047,23 +1047,24 @@ test.describe("axe-core authenticated route and state matrix", () => {
         );
       });
 
-      await test.step(`${theme} /coach open evidence disclosure and source chips`, async () => {
+      await test.step(`${theme} /coach open the areas an older answer looked at`, async () => {
         await page.goto(`/coach?c=${A11Y_CONVERSATION_ID}`, {
           waitUntil: "domcontentloaded",
         });
-        const evidence = page.locator('[data-slot="coach-evidence"]').first();
-        await expect(evidence).toBeVisible({ timeout: 15_000 });
-        await evidence.locator("summary").click();
-        await expect(evidence).toHaveAttribute("open", "");
+        const steps = page.locator('[data-slot="coach-turn-steps"]').first();
+        await expect(steps).toBeVisible({ timeout: 15_000 });
+        const toggle = steps.locator('[data-slot="coach-turn-steps-toggle"]');
+        await toggle.click();
+        await expect(toggle).toHaveAttribute("aria-expanded", "true");
         await expect(
-          evidence.locator('[data-slot="coach-source-chips"]'),
+          steps.locator('[data-slot="coach-turn-areas"]'),
         ).toBeVisible();
         blocking.push(
           ...(await scanPaintedState(
             page,
             theme,
-            "/coach open evidence disclosure and source chips",
-            evidence,
+            "/coach open the areas an older answer looked at",
+            steps,
           )),
         );
       });

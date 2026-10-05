@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.40.1
+  version: 1.40.2
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -16410,7 +16410,8 @@ paths:
           required: false
           schema:
             type: string
-          description: Only documents linked to this visit.
+          description: Only documents linked to this visit. The procedure filter sends a `linkedProcedures` id from the usage
+            read; an id that is not one of the caller's visits matches nothing.
         - name: year
           in: query
           required: false
@@ -16744,8 +16745,11 @@ paths:
       summary: Storage usage + effective limits
       description: "The caller's vault usage and effective limits: `usedBytes` (every non-purged row — tombstones inside the
         30-day undo grace still count), `quotaBytes` (per-user override ?? instance default), `maxFileBytes`
-        (admin-tunable per-file cap), `acceptedExtensions` for picker `accept` lists, and `linkedEpisodes` (episodes
-        carrying at least one live document link — the condition-filter chips). Read this before offering an upload."
+        (admin-tunable per-file cap), `acceptedExtensions` for picker `accept` lists, `linkedEpisodes` (episodes
+        carrying at least one live document link — the condition-filter chips), and `linkedProcedures` (visits of kind
+        PROCEDURE carrying at least one live document link, newest first — the procedure-filter choices; pass one's
+        `encounterId` to the list's `encounterId` filter). `linkedProcedures` is empty when a sharing grant does not
+        cover the visits section. Read this before offering an upload."
       responses:
         "200":
           description: Usage + limits.
@@ -25929,7 +25933,10 @@ components:
             - last7days
             - last30days
             - last90days
+            - lastYear
             - allTime
+          description: "How far back the Coach may read, in every answer: snapshot, retrieval tools and summaries alike. `allTime`
+            (the default) is no limit. Formerly only the starting window; `lastYear` came with the limit."
         dataClusters:
           maxItems: 10
           type: array
@@ -32076,7 +32083,10 @@ components:
                 - last7days
                 - last30days
                 - last90days
+                - lastYear
                 - allTime
+              description: "How far back the Coach may read, in every answer: snapshot, retrieval tools and summaries alike. `allTime`
+                (the default) is no limit. Formerly only the starting window; `lastYear` came with the limit."
             dataClusters:
               maxItems: 10
               type: array
@@ -48822,7 +48832,10 @@ components:
             - last7days
             - last30days
             - last90days
+            - lastYear
             - allTime
+          description: "How far back the Coach may read, in every answer: snapshot, retrieval tools and summaries alike. `allTime`
+            (the default) is no limit. Formerly only the starting window; `lastYear` came with the limit."
         dataClusters:
           maxItems: 10
           type: array
@@ -68514,6 +68527,45 @@ components:
               - episodeId
               - name
             additionalProperties: false
+        linkedProcedures:
+          type: array
+          items:
+            type: object
+            properties:
+              encounterId:
+                type: string
+              occurredAt:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              reason:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              bodySite:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              laterality:
+                anyOf:
+                  - type: string
+                    enum:
+                      - LEFT
+                      - RIGHT
+                      - BOTH
+                  - type: "null"
+              practitionerName:
+                anyOf:
+                  - type: string
+                  - type: "null"
+            required:
+              - encounterId
+              - occurredAt
+              - reason
+              - bodySite
+              - laterality
+              - practitionerName
+            additionalProperties: false
         assistAvailable:
           type: boolean
           description: "Whether a document read can run for this record now: a provider can serve it and the `documentAi`
@@ -68539,6 +68591,7 @@ components:
         - maxFileBytes
         - acceptedExtensions
         - linkedEpisodes
+        - linkedProcedures
         - assistAvailable
         - contentIndex
       additionalProperties: false
@@ -72427,6 +72480,20 @@ components:
                     so this is what distinguishes a narrow score from a broad one. Optional so older cached digests
                     without the field stay valid.
                   $ref: "#/components/schemas/HealthScoreBasis"
+                steadyWeeks:
+                  description: Whole weeks the score has held where it is (same band, within two points, computed the same way), read off
+                    the stored daily scores. Null when it has not held for two weeks, when the stored record does not
+                    reach today, or when the score on screen differs from the newest stored day in value, band,
+                    algorithm version or composition. Shown in place of a delta, never beside one.
+                  anyOf:
+                    - type: integer
+                      exclusiveMinimum: 0
+                      maximum: 9007199254740991
+                    - type: "null"
+                steadyAtLeast:
+                  description: "True when the run reaches back past everything the read covered (120 days): `steadyWeeks` is then a lower
+                    bound, said as \"at least\", and the run's start is unknown. Absent on older cached digests."
+                  type: boolean
               required:
                 - value
                 - band
@@ -72469,11 +72536,60 @@ components:
           anyOf:
             - type: string
             - type: "null"
-          description: First sentence of the cached briefing paragraph. Null while the `briefing` capability is unavailable;
-            `line` then falls to its deterministic floor.
+          description: "The first sentence of the cached briefing paragraph that says something: a greeting or a sentence that
+            only repeats the score is skipped. Null while the `briefing` capability is unavailable or when no sentence
+            qualifies; `line` then falls to its deterministic floor."
+        lead:
+          anyOf:
+            - type: object
+              properties:
+                text:
+                  type: string
+                source:
+                  type: string
+                  enum:
+                    - reaction
+                    - briefing
+                    - signal
+                  description: "`reaction` and `briefing` are cached model text; `signal` is the deterministic sentence about the day's
+                    strongest signal."
+              required:
+                - text
+                - source
+              additionalProperties: false
+            - type: "null"
+          description: "The Today hero's lead line, resolved: the reaction line or a briefing sentence while their capabilities
+            are available, otherwise a deterministic sentence about the day's strongest signal (a vital outside its
+            personal range, an unusual night, vitals in range, last night). Null when there is nothing to say. When the
+            deterministic sentence is built from a fact, that fact is left out of `today`. Additive since v1.40."
+        today:
+          maxItems: 5
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyTodayFact"
+          description: "The Today overview: up to 5 statements about the day in priority order (Rest Mode, medications taken
+            today, an appointment today or tomorrow that is not already on the rail, last night's sleep, vitals against
+            their personal range, cycle day), never padded. A fact about a switched-off module is absent. A narrow
+            surface shows the first 4. Additive since v1.40."
+        restMode:
+          anyOf:
+            - type: object
+              properties:
+                day:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                  description: 1-based day of the episode on the reader's calendar.
+              required:
+                - day
+              additionalProperties: false
+            - type: "null"
+          description: "Rest Mode: present while an illness episode is active and the illness module is on, else null. Additive
+            since v1.40."
         line:
           type: string
-          description: "Push / lock-screen line: cached-AI lead with a deterministic floor."
+          description: "Push / lock-screen line: cached-AI lead with a deterministic floor. Carries no number (no reading, dose or
+            score), since it is shown on a locked phone; the in-app `lead` keeps its figures."
         worthALook:
           type: array
           items:
@@ -72535,6 +72651,9 @@ components:
         - score
         - topSignal
         - briefingLead
+        - lead
+        - today
+        - restMode
         - line
         - worthALook
         - justIn
@@ -72543,6 +72662,39 @@ components:
       additionalProperties: false
       description: The one data spine of the daily-value system — composed from already-cached data, never a fresh AI call.
         Consumed by the Today surface, the daily push, and a future iOS widget.
+    DailyTodayFact:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - rest_mode
+            - medications
+            - appointment
+            - sleep
+            - vitals
+            - cycle
+          description: Closed fact kind.
+        label:
+          type: string
+          description: Localised label (resolved server-side).
+        value:
+          type: string
+          description: Localised value (resolved server-side).
+        href:
+          type: string
+          description: The page the fact belongs to.
+        moduleKey:
+          description: The module that admitted the fact; absent for core data.
+          type: string
+      required:
+        - kind
+        - label
+        - value
+        - href
+      additionalProperties: false
+      description: One statement about the day on the Today overview. A fact never asks the reader to do anything; the rail is
+        the only place that does.
     DailyPriorityItem:
       type: object
       properties:
@@ -77933,7 +78085,10 @@ components:
             - last7days
             - last30days
             - last90days
+            - lastYear
             - allTime
+          description: "How far back the Coach may read, in every answer: snapshot, retrieval tools and summaries alike. `allTime`
+            (the default) is no limit. Formerly only the starting window; `lastYear` came with the limit."
         dataClusters:
           maxItems: 10
           type: array

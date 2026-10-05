@@ -68,6 +68,35 @@ import {
   PRIORITY_ITEM_KINDS,
   type PriorityItemKind,
 } from "@/lib/daily/priority-item";
+import type { MeasurementType } from "@/generated/prisma/client";
+import { computeCoincidentDeviation } from "@/lib/insights/derived/coincident-deviation";
+import { loadBaselineProfile } from "@/lib/insights/derived/baseline";
+import { moduleForMeasurementType } from "@/lib/modules/measurement-scope";
+import {
+  applyDisplayTransform,
+  getReadingTransform,
+  resolveUnitPreferences,
+  type UnitPreferences,
+} from "@/lib/measurements/display-transform";
+import { resolveRestMode } from "@/lib/illness/rest-mode";
+import { readTodayCycle, type TodayCycleRead } from "@/lib/cycle/today-verdict";
+import { addDays, dayDiff } from "@/lib/cycle/day-math";
+import { makeFormatters, resolveIntlLocale } from "@/lib/format-locale";
+import type {
+  DateFormatPreference,
+  TimeFormatPreference,
+} from "@/lib/format-locale";
+import {
+  STEADY_READ_DAYS,
+  steadyRun,
+  type StoredScoreDay,
+} from "@/lib/daily/score-steady";
+import type {
+  TodayCycle,
+  TodayRestMode,
+  TodaySleep,
+  TodayVital,
+} from "@/lib/daily/today-overview";
 
 /** Integration states that mean "your action is needed to keep data flowing". */
 const SYNC_ISSUE_STATES = ["error_reauth", "parked"] as const;
@@ -206,6 +235,148 @@ interface DailyDigestExtras {
    * The labels are grouped at the call site, where the locale is resolved.
    */
   sameTime: Omit<DailyDigestSameTime, "todayLabel" | "typicalLabel"> | null;
+  /**
+   * Each banded vital's standing against its personal range, from the
+   * coincident-deviation engine. Canonical numbers only: the labels depend on
+   * the reader's units and locale and are rendered per request.
+   */
+  vitals: ExtrasVital[];
+  /** The stored daily scores the "steady for" line is read from. */
+  scoreDays: StoredScoreDay[];
+  /**
+   * Today's place in the cycle, read only while the cycle module is on. A
+   * cycle write hard-evicts the cell (`invalidateUserHealthContext`), and a
+   * module switch does too (`invalidateUserHealthScore`), so a cached
+   * answer never outlives the rows or the switch it was read under.
+   */
+  cycle: TodayCycleRead | null;
+}
+
+interface ExtrasVital {
+  type: MeasurementType;
+  value: number;
+  low: number;
+  high: number;
+  direction: "above" | "below" | "in";
+  daysAgo: number;
+}
+
+/**
+ * The vitals read for the Today overview: every banded vital's latest day
+ * against its personal range. Fault-isolated, like every extras input; an
+ * engine that cannot answer (too few banded vitals) leaves the list empty,
+ * and the overview simply has no vitals line.
+ */
+async function gatherVitals(
+  userId: string,
+  timezone: string,
+  now: Date,
+): Promise<ExtrasVital[]> {
+  try {
+    const profile = await loadBaselineProfile(prisma, userId);
+    const result = await computeCoincidentDeviation(userId, profile, {
+      now,
+      tz: timezone,
+    });
+    if (result.status !== "ok") return [];
+    return result.value.vitals.map((v) => ({
+      type: v.type,
+      value: v.value,
+      low: v.low,
+      high: v.high,
+      direction: v.direction,
+      daysAgo: Number.isFinite(v.daysAgo) ? v.daysAgo : Number.MAX_SAFE_INTEGER,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** The stored daily scores for the "steady for" read. Fault-isolated. */
+async function gatherScoreDays(
+  userId: string,
+  todayLocalDate: string,
+): Promise<StoredScoreDay[]> {
+  try {
+    // Calendar arithmetic on the reader's own day key, the space the stored
+    // rows are keyed in.
+    const since = addDays(todayLocalDate, -STEADY_READ_DAYS);
+    const rows = await prisma.healthScoreRecord.findMany({
+      where: { userId, dayKey: { gte: since } },
+      orderBy: { dayKey: "desc" },
+      take: STEADY_READ_DAYS + 1,
+      select: {
+        dayKey: true,
+        composite: true,
+        band: true,
+        scoreVersion: true,
+        composition: true,
+      },
+    });
+    return rows.map((row) => ({
+      dayKey: row.dayKey,
+      composite: row.composite,
+      band: String(row.band),
+      scoreVersion: row.scoreVersion,
+      composition: row.composition,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Display decimals per vital. The transform's own `decimals` covers the
+ * converted units (lb, °F, mmol/L); the rest are whole numbers on every
+ * device and in every chart that shows them.
+ */
+function vitalDecimals(type: string, transformDecimals: number): number {
+  switch (type) {
+    case "BODY_TEMPERATURE":
+    case "SKIN_TEMPERATURE":
+    case "WEIGHT":
+      return 1;
+    case "BLOOD_GLUCOSE":
+      return transformDecimals;
+    default:
+      return 0;
+  }
+}
+
+/** Render one vital's value and range in the reader's units and locale. */
+function toTodayVital(
+  vital: ExtrasVital,
+  units: UnitPreferences,
+  locale: Locale,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): TodayVital {
+  const transform = getReadingTransform(vital.type, units);
+  const decimals = vitalDecimals(vital.type, transform.decimals);
+  const number = new Intl.NumberFormat(resolveIntlLocale(locale), {
+    maximumFractionDigits: decimals,
+    minimumFractionDigits: decimals,
+  });
+  const shown = (raw: number) =>
+    number.format(applyDisplayTransform(raw, transform));
+  const unit = transform.displayUnit;
+  return {
+    type: vital.type,
+    value: vital.value,
+    low: vital.low,
+    high: vital.high,
+    direction: vital.direction,
+    daysAgo: vital.daysAgo,
+    valueLabel: t("daily.today.valueWithUnit", {
+      value: shown(vital.value),
+      unit,
+    }),
+    rangeLabel: t("daily.today.rangeWithUnit", {
+      low: shown(vital.low),
+      high: shown(vital.high),
+      unit,
+    }),
+    moduleKey: moduleForMeasurementType(vital.type),
+  };
 }
 
 /**
@@ -227,6 +398,7 @@ async function loadDailyDigestExtrasCached(
   timezone: string,
   todayLocalDate: string,
   now: Date,
+  cycleOn: boolean,
 ): Promise<DailyDigestExtras> {
   return cachedSwr(
     caches.analytics as ServerCache<DailyDigestExtras>,
@@ -236,35 +408,45 @@ async function loadDailyDigestExtrasCached(
       // revision ran them sequentially). Each is already fault-isolated
       // internally (a milestone read-hiccup or a tension-read failure leaves
       // its own field quiet rather than breaking the other).
-      const [milestone, tensionWindow, sameTime] = await Promise.all([
-        gatherFreshMilestone(userId, timezone, now),
-        loadIntradayPulse(userId, timezone, todayLocalDate)
-          .then((r) => (r.tension ? { partOfDay: r.tension.partOfDay } : null))
-          .catch(() => null),
-        // The engine gates itself — it returns its `insufficient` arm while it
-        // is still learning the usual day, when the account has no intraday
-        // rows at all (every daily-total source), and before the day's first
-        // hour has finished. Only the `ok` arm reaches the rail. Passing no
-        // profile because the engine reads none; fault-isolated like its
-        // siblings, since the digest is a must-not-fail path.
-        computeSameTimeBaseline(userId, null, {
-          type: SAME_TIME_RAIL_TYPE,
-          now,
-        })
-          .then((d): DailyDigestExtras["sameTime"] =>
-            d.status === "ok"
-              ? {
-                  type: d.value.type,
-                  band: d.value.band,
-                  asOfHour: d.value.asOfHour,
-                  todayValue: Math.round(d.value.todayValue),
-                  typicalValue: Math.round(d.value.typicalValue),
-                }
-              : null,
-          )
-          .catch(() => null),
-      ]);
-      return { milestone, tensionWindow, sameTime };
+      const [milestone, tensionWindow, sameTime, vitals, scoreDays, cycle] =
+        await Promise.all([
+          gatherFreshMilestone(userId, timezone, now),
+          loadIntradayPulse(userId, timezone, todayLocalDate)
+            .then((r) =>
+              r.tension ? { partOfDay: r.tension.partOfDay } : null,
+            )
+            .catch(() => null),
+          // The engine gates itself — it returns its `insufficient` arm while it
+          // is still learning the usual day, when the account has no intraday
+          // rows at all (every daily-total source), and before the day's first
+          // hour has finished. Only the `ok` arm reaches the rail. Passing no
+          // profile because the engine reads none; fault-isolated like its
+          // siblings, since the digest is a must-not-fail path.
+          computeSameTimeBaseline(userId, null, {
+            type: SAME_TIME_RAIL_TYPE,
+            now,
+          })
+            .then((d): DailyDigestExtras["sameTime"] =>
+              d.status === "ok"
+                ? {
+                    type: d.value.type,
+                    band: d.value.band,
+                    asOfHour: d.value.asOfHour,
+                    todayValue: Math.round(d.value.todayValue),
+                    typicalValue: Math.round(d.value.typicalValue),
+                  }
+                : null,
+            )
+            .catch(() => null),
+          gatherVitals(userId, timezone, now),
+          gatherScoreDays(userId, todayLocalDate),
+          // The whole cycle history, 90 days of day logs and wrist
+          // temperature: too much to read on every 120 s poll.
+          cycleOn
+            ? readTodayCycle(userId, timezone, now).catch(() => null)
+            : Promise.resolve(null),
+        ]);
+      return { milestone, tensionWindow, sameTime, vitals, scoreDays, cycle };
     },
     annotate,
     DIGEST_EXTRAS_CACHE_TTL_MS,
@@ -573,13 +755,63 @@ export async function loadDailyDigest(
    * notification about something the start page no longer mentioned. A visit
    * that is still PLANNED stays on the rail until its day ends.
    */
+  // The start time on the person's own clock, rendered here in their profile
+  // timezone and hour-cycle preference. Done on the server so every reader of
+  // the digest prints the same time for the same visit, whatever zone their
+  // device is in.
+  const visitTime = makeFormatters(
+    locale,
+    user.timezone,
+    (user.timeFormat ?? "AUTO") as TimeFormatPreference,
+    (user.dateFormat ?? "AUTO") as DateFormatPreference,
+  ).time;
   const upcomingVisits: DailyDigestUpcomingVisit[] = visitRows.map((row) => ({
     id: row.id,
     kind: row.kind,
     occurredAt: row.occurredAt.toISOString(),
     practitionerName: row.practitioner?.name ?? null,
     dayOffset: calendarDaysUntil(row.occurredAt, now, user.timezone),
+    timeLabel: visitTime(row.occurredAt),
   }));
+
+  // Rest Mode is read per request; today's cycle day rides the extras cell
+  // below, which every cycle write hard-evicts. The read is skipped outright
+  // when its module is off, and fault-isolated, because the digest is a
+  // must-not-fail path.
+  const restModeContext =
+    modules.illness !== false ? await resolveRestMode(user.id, now) : null;
+  const restMode: TodayRestMode | null =
+    restModeContext?.active && restModeContext.since
+      ? {
+          day:
+            Math.max(
+              0,
+              dayDiff(
+                todayLocalDate,
+                userDayKey(new Date(restModeContext.since), user.timezone),
+              ),
+            ) + 1,
+        }
+      : null;
+
+  // Last night, when it is in: the snapshot's sleep summary carries per-night
+  // time asleep in minutes, `latest` being the newest night and `avg30` the
+  // person's own trailing mean. "In" means the freshest night ended on the
+  // reader's local today, which is the same test the freshness phase uses.
+  const sleepSummary = snapshot.tiles.summaries?.SLEEP_DURATION;
+  const sleepLastNight: TodaySleep | null =
+    sleepLastSeenDaysAgo === 0 &&
+    sleepSummary?.latest !== null &&
+    sleepSummary?.latest !== undefined &&
+    sleepSummary.latest > 0
+      ? {
+          minutes: sleepSummary.latest,
+          usualMinutes:
+            sleepSummary.avg30 !== null && sleepSummary.avg30 > 0
+              ? sleepSummary.avg30
+              : null,
+        }
+      : null;
 
   // S10 — the freshest ECG recording (device verdict + recordedAt only). The
   // builder decides "new" and gates on the `insights` module. An ECG row only
@@ -616,13 +848,23 @@ export async function loadDailyDigest(
   // a 120 s poll of every open tab doesn't re-run the ~8.5k-row streak +
   // per-sample tension reads on every request — see its docblock for the
   // cache/invalidation contract.
-  const { milestone, tensionWindow, sameTime } =
-    await loadDailyDigestExtrasCached(
-      user.id,
-      user.timezone,
-      todayLocalDate,
-      now,
-    );
+  const {
+    milestone,
+    tensionWindow,
+    sameTime,
+    vitals,
+    scoreDays,
+    cycle: cycleRead,
+  } = await loadDailyDigestExtrasCached(
+    user.id,
+    user.timezone,
+    todayLocalDate,
+    now,
+    modules.cycle !== false,
+  );
+  const cycle: TodayCycle | null = cycleRead
+    ? { dayOfCycle: cycleRead.dayOfCycle, phase: cycleRead.phase }
+    : null;
 
   // Dismiss ledger (P — Today rail dismiss). Only the OBSERVATIONAL kinds
   // (milestone / ecg_new_recording / tension_window) can ever be dismissed, so
@@ -648,6 +890,10 @@ export async function loadDailyDigest(
 
   const resolvedLocale: Locale = locale;
   const { t } = getServerTranslator(resolvedLocale);
+  const units = resolveUnitPreferences({
+    unitPreference: user.unitPreference,
+    glucoseUnit: user.glucoseUnit,
+  });
 
   // A Coach-suggested measurement cadence stores its label as a bundle key;
   // the checkups page and the dashboard card translate it, and so does this
@@ -711,6 +957,25 @@ export async function loadDailyDigest(
       arrivals: arrivalRows
         .map((row) => toDigestArrival(row, reactionLinesAi.available))
         .filter((a): a is DailyDigestArrival => a !== null),
+      locale: resolvedLocale,
+      restMode,
+      sleepLastNight,
+      vitals: (vitals ?? []).map((v) =>
+        toTodayVital(v, units, resolvedLocale, t),
+      ),
+      cycle,
+      scoreSteady: score
+        ? steadyRun(scoreDays ?? [], todayLocalDate, {
+            value: score.value,
+            band: score.band,
+            ...(score.scoreVersion !== undefined
+              ? { scoreVersion: score.scoreVersion }
+              : {}),
+            ...(score.composition !== undefined
+              ? { composition: score.composition }
+              : {}),
+          })
+        : null,
     },
     t,
   );

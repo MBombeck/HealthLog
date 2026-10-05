@@ -61,6 +61,12 @@ export interface ProviderPresence {
   localOcrEnabled: boolean;
   managedBy: AiProviderManagedBy | null;
   /**
+   * Every chain tag whose credential is present, whether or not the person
+   * enabled it in their chain: what a chain editor may offer as able to
+   * answer. Absent reads as none, so a hand-built presence offers nothing.
+   */
+  availableTypes?: readonly string[];
+  /**
    * The record's `aiResponseTimeoutSeconds`, read off the same row. Not a
    * presence fact, but the account payload publishes the effective timeout
    * beside the provider and this row is already in hand. Absent → unset.

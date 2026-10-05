@@ -289,7 +289,7 @@ test.describe("Coach result tables and charts", () => {
   });
 
   for (const theme of ["light", "dark"] as const) {
-    test(`theme=${theme}: chart first, table on toggle, data used in the evidence`, async ({
+    test(`theme=${theme}: chart first, table on toggle, data used in the steps list`, async ({
       page,
     }) => {
       await useTheme(page, theme);
@@ -342,12 +342,18 @@ test.describe("Coach result tables and charts", () => {
       await table.locator('[data-slot="coach-result-view-chart"]').click();
       await expect(figure).toBeVisible();
 
-      // The table the answer only used waits in the evidence disclosure.
+      // The table the answer only used waits in the open steps list.
       await expect(
         bubble.locator('[data-slot="coach-result-table"][data-ref="r2"]'),
       ).toBeHidden();
-      await bubble.locator('[data-slot="coach-evidence-summary"]').click();
-      const dataUsed = bubble.locator('[data-slot="coach-data-used"]');
+      const stepsToggle = bubble.locator(
+        '[data-slot="coach-turn-steps-toggle"]',
+      );
+      await expect(stepsToggle).toHaveAttribute("aria-expanded", "false");
+      await stepsToggle.click();
+      const dataUsed = bubble.locator(
+        '[data-slot="coach-turn-steps-panel"] [data-slot="coach-data-used"]',
+      );
       await expect(dataUsed).toContainText("Data used (1)");
       const workouts = dataUsed.locator(
         '[data-slot="coach-result-table"][data-ref="r2"]',

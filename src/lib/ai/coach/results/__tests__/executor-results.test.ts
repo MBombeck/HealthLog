@@ -50,6 +50,7 @@ import {
   type CoachToolTurnContext,
 } from "@/lib/ai/coach/tools/executor";
 import { createResultRefAllocator } from "../refs";
+import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
 import { findUnverifiedCoachNumbers } from "@/lib/ai/coach/coach-prose-grounding";
 
 const NOW = new Date("2026-09-27T10:00:00Z");
@@ -544,6 +545,7 @@ describe("admittedPriorResults", () => {
   it("drops a metric the person excluded and keeps what no exclusion names", async () => {
     const out = await admittedPriorResults({
       userId: "u1",
+      reach: UNBOUNDED_REACH,
       prefs: { excludeMetrics: ["steps"] },
       scope: undefined,
       prior,
@@ -556,6 +558,7 @@ describe("admittedPriorResults", () => {
   it("keeps to the conversation's scope", async () => {
     const out = await admittedPriorResults({
       userId: "u1",
+      reach: UNBOUNDED_REACH,
       prefs: { excludeMetrics: [] },
       scope: { sources: ["steps"] },
       prior,
@@ -572,6 +575,7 @@ describe("admittedPriorResults", () => {
     resolveModuleMap.mockResolvedValue({ mood: false });
     const out = await admittedPriorResults({
       userId: "u1",
+      reach: UNBOUNDED_REACH,
       prefs: { excludeMetrics: [] },
       scope: undefined,
       prior: [

@@ -22,6 +22,7 @@
  */
 import type { CoachSnapshotResult } from "./snapshot";
 import type { CoachScope, CoachScopeWindow } from "./types";
+import { reachCacheToken, type CoachHistoryReach } from "./history-reach";
 
 /** Default window when the caller doesn't pass a scope. */
 export const DEFAULT_WINDOW: CoachScopeWindow = "last30days";
@@ -36,6 +37,12 @@ const snapshotCache = new Map<
 export function snapshotCacheKey(
   userId: string,
   scope: CoachScope | undefined,
+  /**
+   * The lookback limit the build honoured. Part of the key so a build read
+   * without a limit (MCP) is never served to a limited Coach turn, nor the
+   * other way round. No limit adds nothing, so those keys are unchanged.
+   */
+  reach?: CoachHistoryReach,
 ): string {
   // v1.7.0 — when the request pins an explicit source list, key on it.
   // Otherwise the source set is derived from the user's saved
@@ -48,7 +55,7 @@ export function snapshotCacheKey(
     scope?.sources && scope.sources.length > 0
       ? Array.from(scope.sources).sort().join(",")
       : "clusters";
-  return `${userId}|${window}|${sourceList}`;
+  return `${userId}|${window}|${sourceList}${reachCacheToken(reach)}`;
 }
 
 export function readSnapshotCache(key: string): CoachSnapshotResult | null {

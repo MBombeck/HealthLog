@@ -2877,7 +2877,6 @@
       "sourcesFresh": "Aktuell",
       "sourcesStale": "Veraltet",
       "sourcesFooter": "Der Coach liest nur Daten, die du verbunden hast.",
-      "evidenceLabel": "Worauf bezieht sich das?",
       "metric": {
         "bp": "Blutdruck",
         "weight": "Gewicht",
@@ -2923,14 +2922,6 @@
         "skin_temp": "Hauttemperatur",
         "workouts": "Workouts"
       },
-      "window": {
-        "last7days": "letzte 7 Tage",
-        "last30days": "letzte 30 Tage",
-        "last90days": "letzte 90 Tage",
-        "lastYear": "letzte 12 Monate",
-        "allTime": "gesamter Zeitraum (12 Monate im Detail)"
-      },
-      "windowLabel": "Zeitraum",
       "settingsAriaLabel": "Coach-Einstellungen",
       "settingsTitle": "Coach-Einstellungen",
       "settingsDescription": "Stell ein, wie der Coach mit dir spricht.",
@@ -2943,8 +2934,9 @@
       "settingsVerbosityDefault": "Standard",
       "settingsVerbosityDetailed": "Ausführlich",
       "settingsVerbosityConciseHint": "Der knappe Tonfall hält Antworten ohnehin kurz — die Ausführlichkeit ist dabei fest auf „Kurz“ gesetzt.",
-      "settingsSourcesPointer": "Welche Datenquellen der Coach nutzen darf und das Standard-Analysefenster verwaltest du direkt im Coach-Chat (Leiste „Worauf ich zugreife“).",
-      "settingsSourcesPointerLink": "Coach öffnen",
+      "settingsSourcesSummary": "Der Coach sieht {count} von {total} Datenbereichen und blickt {window} zurück.",
+      "settingsSourcesSummaryAll": "Der Coach sieht {count} von {total} Datenbereichen und deinen ganzen Verlauf.",
+      "settingsSourcesPointerLink": "Coach-Einstellungen öffnen",
       "settingsExcludeLabel": "Metriken ausschließen",
       "settingsExcludeHint": "Der Coach sieht keine Daten der ausgewählten Metriken.",
       "settingsContextLabel": "Kontext mitschicken",
@@ -2956,10 +2948,6 @@
       "settingsSave": "Speichern",
       "settingsSaved": "Gespeichert",
       "settingsCancel": "Abbrechen",
-      "feedbackHelpful": "Hilfreich",
-      "feedbackUnhelpful": "Nicht ganz",
-      "feedbackThanks": "Danke für das Signal.",
-      "feedbackError": "Feedback konnte nicht gespeichert werden",
       "dailyLimitTitle": "Heute-Limit erreicht",
       "dailyLimitBody": "Tageslimit erreicht. Das Budget setzt sich um Mitternacht (UTC) zurück.",
       "providerRateLimitTitle": "Provider rate-limited",
@@ -3009,7 +2997,23 @@
       "settingsClustersLabel": "Daten, die der Coach sieht",
       "settingsClustersHint": "Wähle, welche Datencluster der Coach lesen darf. Mehr Daten bedeuten reichhaltigere Antworten und einen größeren Prompt.",
       "settingsClusterNoData": "Noch keine Daten",
-      "sourcesMemberCount": "{count} Werte",
+      "sourcesMemberCountOne": "1 Wert",
+      "sourcesMemberCountFew": "{count} Werte",
+      "sourcesMemberCountOther": "{count} Werte",
+      "lookback": {
+        "label": "Wie weit der Coach zurückblickt",
+        "option": {
+          "last7days": "{days} Tage",
+          "last30days": "{days} Tage",
+          "last90days": "{days} Tage",
+          "lastYear": "{months} Monate",
+          "allTime": "Alles"
+        },
+        "detailDays": "Der Coach liest nichts, was älter als {days} Tage ist, in keiner Antwort.",
+        "detailMonths": "Der Coach liest nichts, was älter als {months} Monate ist, in keiner Antwort.",
+        "detailAll": "Alles, was du erfasst hast: {dailyMonths} Monate tagesgenau, ältere Werte als Monatswerte bis {years} Jahre zurück, Laborwerte der letzten {labMonths} Monate.",
+        "note": "Dein Profil, aktuelle Medikamente, eine laufende Erkrankung und anstehende Termine bleiben sichtbar; Auswertungen, die mehr Verlauf brauchen, werden gekürzt oder weggelassen. Antworten, die der Coach früher in älteren Unterhaltungen gegeben hat, können noch ältere Werte nennen."
+      },
       "showConversations": "Unterhaltungen anzeigen",
       "hideConversations": "Unterhaltungen ausblenden",
       "heroGreeting": "Frage mich etwas zu deinen Daten",
@@ -3113,7 +3117,34 @@
       "errorNotPermitted": "Der Coach ist in einer Akte, die jemand mit dir teilt, nicht verfügbar.",
       "errorUnavailable": "Der Coach konnte seine Einstellungen gerade nicht prüfen. Bitte versuch es gleich noch einmal.",
       "errorOperatorOff": "KI ist auf diesem Server abgeschaltet, deshalb kann der Coach nicht antworten.",
-      "errorCoachOff": "Der Coach ist ausgeschaltet. Du kannst ihn unter Einstellungen, Module wieder einschalten."
+      "errorCoachOff": "Der Coach ist ausgeschaltet. Du kannst ihn unter Einstellungen, Module wieder einschalten.",
+      "frame": {
+        "showPanel": "Unterhaltungen einblenden",
+        "hidePanel": "Unterhaltungen ausblenden",
+        "panelDescription": "Deine Unterhaltungen mit dem Coach, neueste zuerst.",
+        "rowActions": "Aktionen für {title}",
+        "rename": "Umbenennen",
+        "delete": "Löschen",
+        "modelSection": "Modell",
+        "provider": "Antwortet mit",
+        "modelManaged": "Das Modell für diesen Anbieter legst du in den KI-Einstellungen fest.",
+        "noProvider": "Kein Anbieter verfügbar",
+        "saving": "Wird gespeichert…",
+        "saveFailed": "Die Änderung ließ sich nicht speichern.",
+        "allSettings": "Alle KI-Einstellungen",
+        "providerNotActive": "{provider} konnte nicht übernehmen: Es fehlt eine funktionierende Anmeldung oder ein Schlüssel. Richte das in den KI-Einstellungen ein.",
+        "operatorCodex": "ChatGPT (vom Betreiber bereitgestellt)",
+        "operatorManaged": "Diese Verbindung verwaltet der Betreiber deines Servers. Sobald einer deiner eigenen Anbieter eingerichtet ist, antwortet er zuerst."
+      },
+      "answer": {
+        "scrollToBottom": "Zur neuesten Nachricht",
+        "rememberDone": "Gemerkt",
+        "timeYesterday": "gestern {time}",
+        "timeEarlier": "{date}, {time}",
+        "areasDoneOne": "1 Bereich angesehen",
+        "areasDoneFew": "{count} Bereiche angesehen",
+        "areasDoneOther": "{count} Bereiche angesehen"
+      }
     },
     "relativeJustNow": "gerade eben",
     "relativeMinutesAgoOne": "vor {count} Minute",
@@ -5090,11 +5121,6 @@
           "brief": "Kurz",
           "default": "Standard",
           "detailed": "Ausführlich",
-          "defaultWindow": "Standardzeitraum",
-          "last7days": "Letzte 7 Tage",
-          "last30days": "Letzte 30 Tage",
-          "last90days": "Letzte 90 Tage",
-          "allTime": "Gesamter Zeitraum",
           "excludedMetrics": "Ausgeschlossene Messwerte",
           "dataClusters": "Datenbereiche",
           "customClusters": "Eigene Auswahl von Datenbereichen verwenden",
@@ -10431,11 +10457,13 @@
       "searchPlaceholder": "Titel oder Dateiname suchen…",
       "typeGroup": "Dokumenttyp",
       "conditionGroup": "Erkrankung",
+      "procedureGroup": "Eingriffe und Operationen",
       "yearGroup": "Jahr",
       "clear": "Filter zurücksetzen",
       "typeAll": "Alle Typen",
       "typeCount": "{count} Typen",
       "conditionAll": "Alle Erkrankungen",
+      "procedureAll": "Alle Eingriffe",
       "yearAll": "Alle Jahre"
     },
     "card": {
@@ -10896,8 +10924,8 @@
   },
   "daily": {
     "line": {
-      "score": "Dein Gesundheitsscore heute liegt bei {score}.",
-      "allClear": "Heute braucht nichts deine Aufmerksamkeit."
+      "allClear": "Heute braucht nichts deine Aufmerksamkeit.",
+      "scoreReady": "Dein Gesundheitsscore für heute ist da."
     },
     "push": {
       "title": "Dein Morgenüberblick",
@@ -10983,7 +11011,30 @@
       "sleepPending": "Der Schlaf von letzter Nacht fehlt noch — der heutige Wert ist vorläufig.",
       "worthALook": "Einen Blick wert",
       "allClear": "Heute braucht nichts deine Aufmerksamkeit.",
-      "ringLink": "{metric}-Details öffnen"
+      "ringLink": "{metric}-Details öffnen",
+      "heading": "Heute",
+      "steadyWeeksOne": "Seit {count} Woche stabil",
+      "steadyWeeksFew": "Seit {count} Wochen stabil",
+      "steadyWeeksOther": "Seit {count} Wochen stabil",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "{low} bis {high} {unit}",
+      "vital": {
+        "RESTING_HEART_RATE": "Ruhepuls",
+        "HEART_RATE_VARIABILITY": "Herzfrequenzvariabilität",
+        "RESPIRATORY_RATE": "Atemfrequenz",
+        "OXYGEN_SATURATION": "Sauerstoffsättigung",
+        "BODY_TEMPERATURE": "Körpertemperatur",
+        "SKIN_TEMPERATURE": "Hauttemperatur",
+        "BLOOD_PRESSURE_SYS": "Systolischer Blutdruck",
+        "BLOOD_PRESSURE_DIA": "Diastolischer Blutdruck",
+        "BLOOD_GLUCOSE": "Blutzucker",
+        "PULSE": "Puls",
+        "WEIGHT": "Gewicht",
+        "generic": "Ein Vitalwert"
+      },
+      "steadyAtLeastWeeksOne": "Seit mindestens {count} Woche stabil",
+      "steadyAtLeastWeeksFew": "Seit mindestens {count} Wochen stabil",
+      "steadyAtLeastWeeksOther": "Seit mindestens {count} Wochen stabil"
     },
     "milestone": {
       "metric": {
@@ -11018,6 +11069,68 @@
           "title": "Ein Monat im Bereich",
           "body": "Ein ganzer Monat mit {metric} in deinem gewohnten Bereich. Wunderbar gleichmäßig."
         }
+      }
+    },
+    "lead": {
+      "vitalOutside": {
+        "above": "{metric} liegt bei {value}, über deinem üblichen Bereich von {range}.",
+        "below": "{metric} liegt bei {value}, unter deinem üblichen Bereich von {range}."
+      },
+      "vitalsOutside": {
+        "aboveOne": "{metric} liegt bei {value}, über deinem üblichen Bereich von {range}, und {count} weiterer Vitalwert liegt ebenfalls außerhalb.",
+        "aboveFew": "{metric} liegt bei {value}, über deinem üblichen Bereich von {range}, und {count} weitere Vitalwerte liegen ebenfalls außerhalb.",
+        "aboveOther": "{metric} liegt bei {value}, über deinem üblichen Bereich von {range}, und {count} weitere Vitalwerte liegen ebenfalls außerhalb.",
+        "belowOne": "{metric} liegt bei {value}, unter deinem üblichen Bereich von {range}, und {count} weiterer Vitalwert liegt ebenfalls außerhalb.",
+        "belowFew": "{metric} liegt bei {value}, unter deinem üblichen Bereich von {range}, und {count} weitere Vitalwerte liegen ebenfalls außerhalb.",
+        "belowOther": "{metric} liegt bei {value}, unter deinem üblichen Bereich von {range}, und {count} weitere Vitalwerte liegen ebenfalls außerhalb."
+      },
+      "sleep": {
+        "more": "Letzte Nacht hast du {duration} geschlafen, {diff} mehr als sonst.",
+        "less": "Letzte Nacht hast du {duration} geschlafen, {diff} weniger als sonst.",
+        "usual": "Letzte Nacht hast du {duration} geschlafen, etwa so viel wie sonst.",
+        "plain": "Letzte Nacht hast du {duration} geschlafen."
+      },
+      "vitalsInRangeOne": "Dein letzter Vitalwert liegt in seinem üblichen Bereich.",
+      "vitalsInRangeFew": "Alle {count} letzten Vitalwerte liegen in ihrem üblichen Bereich.",
+      "vitalsInRangeOther": "Alle {count} letzten Vitalwerte liegen in ihrem üblichen Bereich.",
+      "vitalInRange": "{metric} liegt bei {value}, innerhalb deines üblichen Bereichs von {range}."
+    },
+    "todayFact": {
+      "restMode": {
+        "label": "Ruhemodus",
+        "value": "Tag {day}"
+      },
+      "medications": {
+        "label": "Medikamente",
+        "value": "{taken} von {scheduled} genommen"
+      },
+      "appointment": {
+        "label": "Termin",
+        "today": "Heute {time}, {what}",
+        "tomorrow": "Morgen {time}, {what}"
+      },
+      "sleep": {
+        "label": "Letzte Nacht",
+        "plain": "{duration}",
+        "usual": "{duration}, etwa wie sonst",
+        "more": "{duration}, {diff} mehr als sonst",
+        "less": "{duration}, {diff} weniger als sonst"
+      },
+      "vitals": {
+        "label": "Vitalwerte",
+        "allInOne": "{count} geprüft, im Bereich",
+        "allInFew": "{count} geprüft, alle im Bereich",
+        "allInOther": "{count} geprüft, alle im Bereich",
+        "oneOut": {
+          "above": "{metric} über deinem Bereich",
+          "below": "{metric} unter deinem Bereich"
+        },
+        "someOut": "{count} von {total} außerhalb deines Bereichs"
+      },
+      "cycle": {
+        "label": "Zyklus",
+        "value": "{phase}, Tag {day}",
+        "dayOnly": "Tag {day}"
       }
     }
   },

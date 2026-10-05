@@ -2877,7 +2877,6 @@
       "sourcesFresh": "최신",
       "sourcesStale": "오래됨",
       "sourcesFooter": "코치는 연결한 데이터만 읽어요.",
-      "evidenceLabel": "내가 보고 있는 것",
       "metric": {
         "bp": "혈압",
         "weight": "체중",
@@ -2923,14 +2922,6 @@
         "skin_temp": "피부 온도",
         "workouts": "운동"
       },
-      "window": {
-        "last7days": "최근 7일",
-        "last30days": "최근 30일",
-        "last90days": "최근 90일",
-        "lastYear": "최근 12개월",
-        "allTime": "전체 기간(상세 12개월)"
-      },
-      "windowLabel": "기간",
       "settingsAriaLabel": "코치 설정",
       "settingsTitle": "코치 설정",
       "settingsDescription": "코치가 대화하는 방식을 조절해요.",
@@ -2943,8 +2934,9 @@
       "settingsVerbosityDefault": "기본",
       "settingsVerbosityDetailed": "자세히",
       "settingsVerbosityConciseHint": "간결한 말투는 이미 답변을 짧게 유지해요 — 켜 두는 동안 답변 길이는 '짧게'로 고정돼요.",
-      "settingsSourcesPointer": "코치가 참고할 데이터 묶음과 기본 분석 기간은 코치 대화의 '내가 참고하는 것' 레일에서 바로 관리해요.",
-      "settingsSourcesPointerLink": "코치 열기",
+      "settingsSourcesSummary": "코치는 데이터 영역 {total}개 중 {count}개를 {window} 전까지 봐요.",
+      "settingsSourcesSummaryAll": "코치는 데이터 영역 {total}개 중 {count}개를 처음 기록부터 봐요.",
+      "settingsSourcesPointerLink": "코치 설정 열기",
       "settingsExcludeLabel": "제외할 지표",
       "settingsExcludeHint": "선택한 지표의 데이터는 코치가 보지 않아요.",
       "settingsContextLabel": "포함할 맥락",
@@ -2956,10 +2948,6 @@
       "settingsSave": "저장",
       "settingsSaved": "저장됨",
       "settingsCancel": "취소",
-      "feedbackHelpful": "도움됨",
-      "feedbackUnhelpful": "아쉬움",
-      "feedbackThanks": "알려줘서 고마워요.",
-      "feedbackError": "피드백을 저장하지 못했어요",
       "dailyLimitTitle": "하루 한도 도달",
       "dailyLimitBody": "하루 한도에 도달했어요. 사용량은 UTC 자정에 초기화돼요.",
       "providerRateLimitTitle": "제공자 요청 제한",
@@ -3009,7 +2997,23 @@
       "settingsClustersLabel": "코치가 보는 데이터",
       "settingsClustersHint": "코치가 읽을 수 있는 데이터 묶음을 고르세요. 데이터가 많을수록 답변이 풍부해지고 프롬프트도 커져요.",
       "settingsClusterNoData": "아직 데이터 없음",
-      "sourcesMemberCount": "지표 {count}개",
+      "sourcesMemberCountOne": "지표 1개",
+      "sourcesMemberCountFew": "지표 {count}개",
+      "sourcesMemberCountOther": "지표 {count}개",
+      "lookback": {
+        "label": "코치가 돌아볼 수 있는 기간",
+        "option": {
+          "last7days": "{days}일",
+          "last30days": "{days}일",
+          "last90days": "{days}일",
+          "lastYear": "{months}개월",
+          "allTime": "전체"
+        },
+        "detailDays": "코치는 어떤 답변에서도 {days}일보다 오래된 기록은 읽지 않아요.",
+        "detailMonths": "코치는 어떤 답변에서도 {months}개월보다 오래된 기록은 읽지 않아요.",
+        "detailAll": "기록한 모든 것: 최근 {dailyMonths}개월은 하루 단위로, 그 이전 측정값은 최대 {years}년 전까지 월별 값으로, 검사 결과는 최근 {labMonths}개월 치를 읽어요.",
+        "note": "프로필, 현재 복용 중인 약, 진행 중인 질병, 예정된 진료는 계속 보여요. 더 긴 기록이 필요한 요약은 줄이거나 빼요. 예전 대화에서 코치가 이미 한 답변에는 더 오래된 값이 남아 있을 수 있어요."
+      },
       "showConversations": "대화 보기",
       "hideConversations": "대화 숨기기",
       "heroGreeting": "내 데이터에 대해 무엇이든 물어보세요",
@@ -3113,7 +3117,34 @@
       "errorNotPermitted": "다른 사람이 공유한 기록 안에서는 코치를 사용할 수 없습니다.",
       "errorUnavailable": "코치가 지금 설정을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
       "errorOperatorOff": "이 서버에서 AI가 꺼져 있어 코치가 답변할 수 없습니다.",
-      "errorCoachOff": "코치가 꺼져 있습니다. 설정의 모듈에서 다시 켤 수 있습니다."
+      "errorCoachOff": "코치가 꺼져 있습니다. 설정의 모듈에서 다시 켤 수 있습니다.",
+      "frame": {
+        "showPanel": "대화 목록 보기",
+        "hidePanel": "대화 목록 숨기기",
+        "panelDescription": "코치와 나눈 대화, 최신순이에요.",
+        "rowActions": "{title} 작업",
+        "rename": "이름 바꾸기",
+        "delete": "삭제",
+        "modelSection": "모델",
+        "provider": "응답 제공자",
+        "modelManaged": "이 제공자의 모델은 AI 설정에서 정해요.",
+        "noProvider": "사용할 수 있는 제공자가 없어요",
+        "saving": "저장 중…",
+        "saveFailed": "변경 사항을 저장하지 못했어요.",
+        "allSettings": "모든 AI 설정",
+        "providerNotActive": "{provider}(으)로 전환하지 못했습니다. 작동하는 로그인이나 키가 없습니다. AI 설정에서 설정하세요.",
+        "operatorCodex": "ChatGPT (운영자 공유)",
+        "operatorManaged": "이 연결은 서버 운영자가 관리합니다. 내 공급자를 하나라도 설정하면 그 공급자가 먼저 답합니다."
+      },
+      "answer": {
+        "scrollToBottom": "최신 메시지로 이동",
+        "rememberDone": "기억함",
+        "timeYesterday": "어제 {time}",
+        "timeEarlier": "{date} {time}",
+        "areasDoneOne": "영역 1개 확인",
+        "areasDoneFew": "영역 {count}개 확인",
+        "areasDoneOther": "영역 {count}개 확인"
+      }
     },
     "relativeJustNow": "방금",
     "relativeMinutesAgoOne": "{count}분 전",
@@ -5090,11 +5121,6 @@
           "brief": "간략",
           "default": "기본",
           "detailed": "상세",
-          "defaultWindow": "기본 기간",
-          "last7days": "최근 7일",
-          "last30days": "최근 30일",
-          "last90days": "최근 90일",
-          "allTime": "전체 기간",
           "excludedMetrics": "제외할 지표",
           "dataClusters": "데이터 그룹",
           "customClusters": "그룹 직접 선택하기",
@@ -10431,11 +10457,13 @@
       "searchPlaceholder": "제목이나 파일명 검색…",
       "typeGroup": "문서 종류",
       "conditionGroup": "질환",
+      "procedureGroup": "시술 및 수술",
       "yearGroup": "연도",
       "clear": "필터 해제",
       "typeAll": "모든 종류",
       "typeCount": "{count}개 종류",
       "conditionAll": "모든 질환",
+      "procedureAll": "모든 시술",
       "yearAll": "모든 연도"
     },
     "card": {
@@ -10896,8 +10924,8 @@
   },
   "daily": {
     "line": {
-      "score": "오늘 건강 점수는 {score}점이에요.",
-      "allClear": "오늘은 신경 쓸 일이 없어요."
+      "allClear": "오늘은 신경 쓸 일이 없어요.",
+      "scoreReady": "오늘의 건강 점수가 준비됐어요."
     },
     "push": {
       "title": "아침 브리핑",
@@ -10983,7 +11011,30 @@
       "sleepPending": "어젯밤 수면이 아직 들어오지 않아 오늘 결과는 잠정치예요.",
       "worthALook": "살펴볼 만한 것",
       "allClear": "오늘은 신경 쓸 일이 없어요.",
-      "ringLink": "{metric} 자세히 보기"
+      "ringLink": "{metric} 자세히 보기",
+      "heading": "오늘",
+      "steadyWeeksOne": "{count}주째 안정적",
+      "steadyWeeksFew": "{count}주째 안정적",
+      "steadyWeeksOther": "{count}주째 안정적",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "{low}~{high} {unit}",
+      "vital": {
+        "RESTING_HEART_RATE": "안정 시 심박수",
+        "HEART_RATE_VARIABILITY": "심박 변이도",
+        "RESPIRATORY_RATE": "호흡수",
+        "OXYGEN_SATURATION": "산소포화도",
+        "BODY_TEMPERATURE": "체온",
+        "SKIN_TEMPERATURE": "피부 온도",
+        "BLOOD_PRESSURE_SYS": "수축기 혈압",
+        "BLOOD_PRESSURE_DIA": "이완기 혈압",
+        "BLOOD_GLUCOSE": "혈당",
+        "PULSE": "맥박",
+        "WEIGHT": "체중",
+        "generic": "생체 지표"
+      },
+      "steadyAtLeastWeeksOne": "최소 {count}주째 안정적",
+      "steadyAtLeastWeeksFew": "최소 {count}주째 안정적",
+      "steadyAtLeastWeeksOther": "최소 {count}주째 안정적"
     },
     "milestone": {
       "metric": {
@@ -11018,6 +11069,68 @@
           "title": "한 달째 범위 안",
           "body": "{metric} 수치가 꼬박 한 달 동안 평소 범위 안이었어요. 아주 꾸준해요."
         }
+      }
+    },
+    "lead": {
+      "vitalOutside": {
+        "above": "{metric}이(가) {value}로 평소 범위({range})보다 높아요.",
+        "below": "{metric}이(가) {value}로 평소 범위({range})보다 낮아요."
+      },
+      "vitalsOutside": {
+        "aboveOne": "{metric}이(가) {value}로 평소 범위({range})보다 높고, 다른 지표 {count}개도 범위를 벗어났어요.",
+        "aboveFew": "{metric}이(가) {value}로 평소 범위({range})보다 높고, 다른 지표 {count}개도 범위를 벗어났어요.",
+        "aboveOther": "{metric}이(가) {value}로 평소 범위({range})보다 높고, 다른 지표 {count}개도 범위를 벗어났어요.",
+        "belowOne": "{metric}이(가) {value}로 평소 범위({range})보다 낮고, 다른 지표 {count}개도 범위를 벗어났어요.",
+        "belowFew": "{metric}이(가) {value}로 평소 범위({range})보다 낮고, 다른 지표 {count}개도 범위를 벗어났어요.",
+        "belowOther": "{metric}이(가) {value}로 평소 범위({range})보다 낮고, 다른 지표 {count}개도 범위를 벗어났어요."
+      },
+      "sleep": {
+        "more": "어젯밤 {duration} 잤어요. 평소보다 {diff} 더 잤어요.",
+        "less": "어젯밤 {duration} 잤어요. 평소보다 {diff} 덜 잤어요.",
+        "usual": "어젯밤 {duration} 잤어요. 평소와 비슷해요.",
+        "plain": "어젯밤 {duration} 잤어요."
+      },
+      "vitalsInRangeOne": "최근 생체 지표가 평소 범위 안에 있어요.",
+      "vitalsInRangeFew": "최근 생체 지표 {count}개가 모두 평소 범위 안에 있어요.",
+      "vitalsInRangeOther": "최근 생체 지표 {count}개가 모두 평소 범위 안에 있어요.",
+      "vitalInRange": "{metric}이(가) {value}로 평소 범위({range}) 안에 있어요."
+    },
+    "todayFact": {
+      "restMode": {
+        "label": "휴식 모드",
+        "value": "{day}일째"
+      },
+      "medications": {
+        "label": "복약",
+        "value": "{scheduled}회 중 {taken}회 복용"
+      },
+      "appointment": {
+        "label": "예약",
+        "today": "오늘 {time}, {what}",
+        "tomorrow": "내일 {time}, {what}"
+      },
+      "sleep": {
+        "label": "어젯밤",
+        "plain": "{duration}",
+        "usual": "{duration}, 평소와 비슷",
+        "more": "{duration}, 평소보다 {diff} 더",
+        "less": "{duration}, 평소보다 {diff} 덜"
+      },
+      "vitals": {
+        "label": "생체 지표",
+        "allInOne": "{count}개 확인, 범위 안",
+        "allInFew": "{count}개 확인, 모두 범위 안",
+        "allInOther": "{count}개 확인, 모두 범위 안",
+        "oneOut": {
+          "above": "{metric} 범위보다 높음",
+          "below": "{metric} 범위보다 낮음"
+        },
+        "someOut": "{total}개 중 {count}개 범위 밖"
+      },
+      "cycle": {
+        "label": "주기",
+        "value": "{phase}, {day}일째",
+        "dayOnly": "{day}일째"
       }
     }
   },

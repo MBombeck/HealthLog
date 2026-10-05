@@ -20,6 +20,9 @@
  *   8. Bulk endpoint per-id semantics.
  *   9. Usage endpoint reflects overrides + tombstone-inclusive usage.
  *  10. The purge job hard-deletes only past-grace tombstones.
+ *  11. The procedure filter: the usage read lists the record's linked
+ *      procedures (and nothing else, and nobody else's), and the list's
+ *      `encounterId` filter narrows, combines and pages.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -28,6 +31,7 @@ process.env.ENCRYPTION_KEY ??=
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
+import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -772,5 +776,228 @@ describe("document vault — the sick note kind", () => {
       new Request("http://localhost/api/documents/inbound?kind=OTHER"),
     );
     expect((await others.json()).data.documents).toHaveLength(0);
+  });
+});
+
+describe("document vault — the procedure filter", () => {
+  it("lists linked procedures in usage and filters, combines and pages by encounterId", async () => {
+    const user = await seedVaultUser("vault-procedures");
+    const prisma = getPrismaClient();
+    const { post, get, del, getUsage } = await routes();
+
+    const clinic = await prisma.practitioner.create({
+      data: { userId: user.id, name: "Day clinic" },
+    });
+    const arthroscopy = await prisma.encounter.create({
+      data: {
+        userId: user.id,
+        kind: "PROCEDURE",
+        status: "DONE",
+        occurredAt: new Date("2025-10-02T08:00:00Z"),
+        reasonEncrypted: encryptToBytes("Knee arthroscopy"),
+        bodySiteEncrypted: encryptToBytes("Knee"),
+        laterality: "LEFT",
+      },
+    });
+    // No reason: the visits page heads it with the practice.
+    const unnamed = await prisma.encounter.create({
+      data: {
+        userId: user.id,
+        kind: "PROCEDURE",
+        status: "DONE",
+        occurredAt: new Date("2024-05-10T08:00:00Z"),
+        practitionerId: clinic.id,
+      },
+    });
+    // Not a procedure: linked, but never a procedure choice.
+    const routine = await prisma.encounter.create({
+      data: {
+        userId: user.id,
+        kind: "ROUTINE",
+        status: "DONE",
+        occurredAt: new Date("2025-03-01T08:00:00Z"),
+      },
+    });
+    // A deleted procedure and one whose only document is tombstoned drop out.
+    const deletedProcedure = await prisma.encounter.create({
+      data: {
+        userId: user.id,
+        kind: "PROCEDURE",
+        status: "DONE",
+        occurredAt: new Date("2023-01-10T08:00:00Z"),
+        deletedAt: new Date(),
+      },
+    });
+    const orphaned = await prisma.encounter.create({
+      data: {
+        userId: user.id,
+        kind: "PROCEDURE",
+        status: "DONE",
+        occurredAt: new Date("2022-01-10T08:00:00Z"),
+      },
+    });
+    // Linked to nothing: not a choice either.
+    await prisma.encounter.create({
+      data: {
+        userId: user.id,
+        kind: "PROCEDURE",
+        status: "DONE",
+        occurredAt: new Date("2021-01-10T08:00:00Z"),
+      },
+    });
+    const knee = await prisma.illnessEpisode.create({
+      data: {
+        userId: user.id,
+        label: "Knee",
+        type: "INJURY",
+        onsetAt: new Date("2025-09-01T00:00:00Z"),
+      },
+    });
+
+    const upload = async (
+      bytes: Buffer,
+      filename: string,
+      fields: Record<string, string | string[]>,
+    ) => {
+      const res = await post(uploadRequest(bytes, filename, fields));
+      expect(res.status).toBe(201);
+      return (await res.json()).data.id as string;
+    };
+    const imaging = await upload(PDF_SMALL, "mri.pdf", {
+      kind: "IMAGING",
+      documentDate: "2025-10-01",
+      encounterIds: [arthroscopy.id],
+      episodeIds: [knee.id],
+    });
+    const lab = await upload(PNG_1X1, "lab.png", {
+      kind: "LAB_RESULT",
+      documentDate: "2024-11-03",
+      encounterIds: [arthroscopy.id],
+    });
+    await upload(Buffer.from("%PDF-1.7\n%unnamed\n%%EOF\n"), "op.pdf", {
+      kind: "OTHER",
+      documentDate: "2024-05-10",
+      encounterIds: [unnamed.id],
+    });
+    await upload(Buffer.from("%PDF-1.7\n%routine\n%%EOF\n"), "r.pdf", {
+      documentDate: "2025-03-01",
+      encounterIds: [routine.id],
+    });
+    await upload(Buffer.from("%PDF-1.7\n%loose\n%%EOF\n"), "loose.pdf", {
+      documentDate: "2025-06-01",
+    });
+    // The deleted procedure's link is written below the API, which refuses a
+    // tombstoned visit; the orphan's only document is deleted after linking.
+    const forDeleted = await upload(
+      Buffer.from("%PDF-1.7\n%deleted\n%%EOF\n"),
+      "d.pdf",
+      {},
+    );
+    await prisma.encounterDocumentLink.create({
+      data: {
+        encounterId: deletedProcedure.id,
+        documentId: forDeleted,
+        userId: user.id,
+      },
+    });
+    const forOrphan = await upload(
+      Buffer.from("%PDF-1.7\n%orphan\n%%EOF\n"),
+      "o.pdf",
+      { encounterIds: [orphaned.id] },
+    );
+    await del(
+      new Request(`http://localhost/api/documents/inbound/${forOrphan}`, {
+        method: "DELETE",
+      }),
+      ctx(forOrphan),
+    );
+
+    // Usage: exactly the two live, linked procedures, newest first, with
+    // the reason and site decrypted and the practice for the unnamed one.
+    const usage = (
+      await (
+        await getUsage(
+          new Request("http://localhost/api/documents/inbound/usage"),
+        )
+      ).json()
+    ).data;
+    expect(usage.linkedProcedures).toEqual([
+      {
+        encounterId: arthroscopy.id,
+        occurredAt: "2025-10-02T08:00:00.000Z",
+        reason: "Knee arthroscopy",
+        bodySite: "Knee",
+        laterality: "LEFT",
+        practitionerName: null,
+      },
+      {
+        encounterId: unnamed.id,
+        occurredAt: "2024-05-10T08:00:00.000Z",
+        reason: null,
+        bodySite: null,
+        laterality: null,
+        practitionerName: "Day clinic",
+      },
+    ]);
+
+    const list = async (query: string) => {
+      const res = await get(
+        new Request(`http://localhost/api/documents/inbound?${query}`),
+      );
+      expect(res.status).toBe(200);
+      return (await res.json()).data as {
+        documents: { id: string }[];
+        nextCursor: string | null;
+      };
+    };
+    const ids = (page: { documents: { id: string }[] }) =>
+      page.documents.map((d) => d.id).sort();
+
+    // The filter alone, then AND-combined with kind, year and condition.
+    expect(ids(await list(`encounterId=${arthroscopy.id}`))).toEqual(
+      [imaging, lab].sort(),
+    );
+    expect(
+      ids(await list(`encounterId=${arthroscopy.id}&kind=IMAGING`)),
+    ).toEqual([imaging]);
+    expect(ids(await list(`encounterId=${arthroscopy.id}&year=2024`))).toEqual([
+      lab,
+    ]);
+    expect(
+      ids(await list(`encounterId=${arthroscopy.id}&episodeId=${knee.id}`)),
+    ).toEqual([imaging]);
+    expect(
+      ids(await list(`encounterId=${unnamed.id}&episodeId=${knee.id}`)),
+    ).toEqual([]);
+
+    // Keyset pagination stays inside the filter: newest filing date first.
+    const first = await list(`encounterId=${arthroscopy.id}&limit=1`);
+    expect(first.documents.map((d) => d.id)).toEqual([imaging]);
+    expect(first.nextCursor).toBe(imaging);
+    const second = await list(
+      `encounterId=${arthroscopy.id}&limit=1&cursor=${first.nextCursor}`,
+    );
+    expect(second.documents.map((d) => d.id)).toEqual([lab]);
+    expect(second.nextCursor).toBeNull();
+
+    // A tombstoned document never answers the filter.
+    expect(ids(await list(`encounterId=${orphaned.id}`))).toEqual([]);
+
+    // Another account: the owner's procedure id matches nothing of theirs,
+    // and their usage read lists no procedure of the owner's.
+    cookieJar.clear();
+    await seedVaultUser("vault-procedures-stranger");
+    await upload(Buffer.from("%PDF-1.7\n%stranger\n%%EOF\n"), "s.pdf", {});
+    const foreign = await list(`encounterId=${arthroscopy.id}`);
+    expect(foreign.documents).toEqual([]);
+    expect(foreign.nextCursor).toBeNull();
+    const strangerUsage = (
+      await (
+        await getUsage(
+          new Request("http://localhost/api/documents/inbound/usage"),
+        )
+      ).json()
+    ).data;
+    expect(strangerUsage.linkedProcedures).toEqual([]);
   });
 });

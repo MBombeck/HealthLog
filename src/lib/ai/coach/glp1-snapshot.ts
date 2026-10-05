@@ -18,6 +18,12 @@
  * Block omitted entirely when the user has no GLP-1 medications, so
  * 99% of users never pay the read cost.
  */
+import {
+  UNBOUNDED_REACH,
+  laterOfFloor,
+  reachFloor,
+  type CoachHistoryReach,
+} from "./history-reach";
 import { prisma } from "@/lib/db";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import { readNote } from "@/lib/crypto/note-cipher";
@@ -218,7 +224,15 @@ export async function buildGlp1SnapshotBlock(
   userId: string,
   now: Date = new Date(),
   tz: string = DEFAULT_TIMEZONE,
+  /**
+   * The Coach's lookback limit. The therapy plan (current dose, schedule,
+   * pens) is current state and stays; the last injection, the side-effect
+   * tags and the dose history (each change with its note) are entries and
+   * are read from inside the limit only.
+   */
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<Glp1SnapshotBlock | null> {
+  const floor = reachFloor(reach, now);
   // Test environments mock parts of prisma (only `measurement` +
   // `moodEntry`) and leave `medication` undefined. Treat the absence
   // as "no GLP-1 therapy" so the helper silently bows out — matching
@@ -242,7 +256,7 @@ export async function buildGlp1SnapshotBlock(
       inventoryItems: { orderBy: { createdAt: "asc" } },
       inventoryEvents: { orderBy: { occurredAt: "asc" } },
       intakeEvents: {
-        where: { takenAt: { not: null } },
+        where: { takenAt: floor ? { not: null, gte: floor } : { not: null } },
         orderBy: { takenAt: "desc" },
         take: 1,
         select: {
@@ -259,7 +273,11 @@ export async function buildGlp1SnapshotBlock(
   // the curated GLP-1 tag list. We pull once per user even if there are
   // multiple GLP-1 meds (rare) and attribute the same recent symptoms
   // to each — the Coach can disambiguate from context.
-  const moodCutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const moodCutoff = laterOfFloor(
+    new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000),
+    reach,
+    now,
+  );
   const moods: RawMoodEntry[] = await prisma.moodEntry.findMany({
     // v1.7.0 sync — exclude tombstoned rows.
     where: { userId, deletedAt: null, moodLoggedAt: { gte: moodCutoff } },
@@ -292,7 +310,12 @@ export async function buildGlp1SnapshotBlock(
     const genericSafe = sanitizeForPrompt(generic, 80);
     const latestChange = med.doseChanges[med.doseChanges.length - 1] ?? null;
 
-    const doseHistory: DoseHistoryEntry[] = med.doseChanges.map((dc) => {
+    // A dose change is an entry like any other: one made before the limit
+    // is left out with its note. The dose in force stays as `currentDose`.
+    const changesInReach = med.doseChanges.filter(
+      (dc) => floor === null || dc.effectiveFrom.getTime() >= floor.getTime(),
+    );
+    const doseHistory: DoseHistoryEntry[] = changesInReach.map((dc) => {
       const decryptedNote = readNote(dc.noteEncrypted, dc.note);
       return {
         value: dc.doseValue,

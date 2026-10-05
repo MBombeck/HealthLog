@@ -6,6 +6,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { TodayHero } from "../today-hero";
 import type { DailyDigest } from "@/lib/daily/digest";
 import type { PriorityItem } from "@/lib/daily/priority-item";
+import type { TodayFact } from "@/lib/daily/today-overview";
 import { SCORE_VERSION } from "@/lib/analytics/score/types";
 import { DIGEST_AI_AVAILABLE } from "@/__tests__/helpers/ai-capability-fixtures";
 
@@ -71,6 +72,9 @@ function digest(over: Partial<DailyDigest> = {}): DailyDigest {
       delta: "+6 mmHg vs your 30-day average",
     },
     briefingLead: "Your week is trending steady.",
+    lead: { text: "Your week is trending steady.", source: "briefing" },
+    today: [],
+    restMode: null,
     line: "Your week is trending steady.",
     worthALook: [doseItem, syncItem],
     justIn: null,
@@ -146,6 +150,7 @@ describe("<TodayHero>", () => {
           sleepPending: true,
           score: null,
           briefingLead: null,
+          lead: null,
           line: "Your health score today is 82.",
           worthALook: [doseItem],
         })}
@@ -160,13 +165,15 @@ describe("<TodayHero>", () => {
     expect(html).not.toContain('data-slot="today-hero-briefing-link"');
   });
 
-  it("keeps the useful loaded narrative without repeating the ring's numeric score", () => {
+  it("renders the server-resolved lead without repeating the ring's numeric score", () => {
+    // The server already dropped the score sentence from the briefing (see
+    // `today-overview.test.ts`); the hero prints what it was handed.
     const html = render(
       <TodayHero
         digest={digest({
-          briefingLead:
-            "Your health score is 82. Your week is trending steady.",
-          line: "Your health score is 82. Your week is trending steady.",
+          briefingLead: "Your week is trending steady.",
+          lead: { text: "Your week is trending steady.", source: "briefing" },
+          line: "Your week is trending steady.",
         })}
       />,
     );
@@ -178,12 +185,47 @@ describe("<TodayHero>", () => {
     expect(html).toContain('data-slot="today-hero-lead"');
   });
 
-  it("promotes the top signal when score de-duplication removes the only lead", () => {
+  it("falls back to the stored lines for a digest cached before the lead existed", () => {
+    // The service worker's offline cache can hand back a digest written by
+    // the previous version, which carries no `lead` field at all.
+    const cached = digest({ reactionLine: "The new reading fits your week." });
+    delete (cached as Partial<DailyDigest>).lead;
+    const html = render(<TodayHero digest={cached} />);
+    expect(visibleText(html)).toContain("The new reading fits your week.");
+
+    const briefingOnly = digest();
+    delete (briefingOnly as Partial<DailyDigest>).lead;
+    expect(visibleText(render(<TodayHero digest={briefingOnly} />))).toContain(
+      "Your week is trending steady.",
+    );
+  });
+
+  it("does not resurrect a line the server left out of the lead", () => {
+    // A current digest with `lead: null` decided there is nothing to say;
+    // its reaction line (e.g. one that only repeated the score) stays out.
     const html = render(
       <TodayHero
         digest={digest({
-          briefingLead: "Your health score is 82.",
-          line: "Your health score is 82.",
+          lead: null,
+          briefingLead: null,
+          topSignal: null,
+          reactionLine: "Score 82 today.",
+        })}
+      />,
+    );
+    expect(visibleText(html)).not.toContain("Score 82 today.");
+  });
+
+  it("does not repeat the top signal under a lead made from it", () => {
+    // A briefing whose only sentence repeated the score leads with the top
+    // signal's headline (resolved on the server); the muted signal line under
+    // it would say the same thing twice.
+    const html = render(
+      <TodayHero
+        digest={digest({
+          briefingLead: null,
+          lead: { text: "Pulse is settling lately", source: "briefing" },
+          line: "Pulse is settling lately",
           topSignal: {
             sourceMetric: "pulse",
             tone: "info",
@@ -208,6 +250,7 @@ describe("<TodayHero>", () => {
           sleepPending: true,
           score: null,
           briefingLead: null,
+          lead: null,
           reactionLine: null,
           line: "Your health score today is 82.",
           worthALook: [doseItem],
@@ -228,6 +271,7 @@ describe("<TodayHero>", () => {
           score: null,
           topSignal: null,
           briefingLead: null,
+          lead: null,
           line: "Nothing needs your attention today — everything's tracking normally.",
           worthALook: [],
         })}
@@ -246,6 +290,7 @@ describe("<TodayHero>", () => {
           score: null,
           topSignal: null,
           briefingLead: null,
+          lead: null,
           line: "Nothing needs your attention today — everything's tracking normally.",
           worthALook: [],
           reactionLine: null,
@@ -273,7 +318,7 @@ describe("<TodayHero>", () => {
     expect(html).toContain('data-slot="today-hero-score"');
   });
 
-  it("shows the first-class all-clear line when a score is present but nothing is notable", () => {
+  it("draws no empty rail and no all-clear sentence once a lead carries the day", () => {
     const html = render(
       <TodayHero
         digest={digest({
@@ -282,8 +327,27 @@ describe("<TodayHero>", () => {
       />,
     );
     expect(html).toContain('data-slot="today-hero"');
-    expect(html).toContain('data-slot="today-hero-all-clear"');
+    expect(html).toContain('data-slot="today-hero-lead"');
+    expect(html).not.toContain('data-slot="today-hero-all-clear"');
     expect(html).not.toContain('data-slot="today-hero-rail"');
+  });
+
+  it("keeps only the delta when the lead already says the headline", () => {
+    const html = render(
+      <TodayHero
+        digest={digest({
+          lead: {
+            text: "Blood pressure a touch high this morning.",
+            source: "briefing",
+          },
+        })}
+      />,
+    );
+    const text = visibleText(html);
+    expect(html).toContain('data-slot="today-hero-signal"');
+    expect(text).toContain("+6 mmHg vs your 30-day average");
+    // Said once, by the lead; the signal line carries only the delta.
+    expect(text.split("touch high this morning").length - 1).toBe(1);
   });
 
   it("uses the compact score-only composition when all-clear has no narrative", () => {
@@ -292,6 +356,7 @@ describe("<TodayHero>", () => {
         digest={digest({
           topSignal: null,
           briefingLead: null,
+          lead: null,
           reactionLine: null,
           line: "Your health score today is 82.",
           worthALook: [],
@@ -379,6 +444,7 @@ describe("<TodayHero>", () => {
           score: null,
           topSignal: null,
           briefingLead: null,
+          lead: null,
           worthALook: [],
         })}
         primaryContent="reminders"
@@ -444,5 +510,174 @@ describe("<TodayHero> score basis", () => {
   it("says nothing when there is no score to rest on anything", () => {
     const html = render(<TodayHero digest={digest({ score: null })} />);
     expect(html).not.toContain('data-slot="today-hero-score-basis"');
+  });
+});
+
+const FACTS: TodayFact[] = [
+  {
+    kind: "rest_mode",
+    label: "Rest mode",
+    value: "Day 3",
+    href: "/illness",
+    moduleKey: "illness",
+  },
+  {
+    kind: "medications",
+    label: "Medications",
+    value: "1 of 3 taken",
+    href: "/medications",
+    moduleKey: "medications",
+  },
+  {
+    kind: "appointment",
+    label: "Appointment",
+    value: "Tomorrow 09:30, Dr. Example",
+    href: "/checkups",
+  },
+  {
+    kind: "sleep",
+    label: "Last night",
+    value: "7h 20m, close to your usual",
+    href: "/insights/sleep",
+    moduleKey: "sleep",
+  },
+  {
+    kind: "cycle",
+    label: "Cycle",
+    value: "Follicular, day 12",
+    href: "/cycle",
+    moduleKey: "cycle",
+  },
+];
+
+describe("<TodayHero> Today overview", () => {
+  it("renders each fact as a link to its page, in the order it was given", () => {
+    const html = render(<TodayHero digest={digest({ today: FACTS })} />);
+    expect(html).toContain('data-slot="today-hero-today"');
+    const kinds = [
+      ...html.matchAll(/data-slot="today-hero-fact" data-kind="([a-z_]+)"/g),
+    ].map((m) => m[1]);
+    expect(kinds).toEqual([
+      "rest_mode",
+      "medications",
+      "appointment",
+      "sleep",
+      "cycle",
+    ]);
+    for (const fact of FACTS) {
+      expect(html).toContain(`href="${fact.href}"`);
+      expect(visibleText(html)).toContain(fact.value);
+    }
+  });
+
+  it("hides the fifth fact below md and never the first four", () => {
+    const html = render(<TodayHero digest={digest({ today: FACTS })} />);
+    const items = [
+      ...html.matchAll(/<li[^>]*data-slot="today-hero-fact"[^>]*>/g),
+    ].map((m) => m[0]);
+    expect(items).toHaveLength(5);
+    items.slice(0, 4).forEach((li) => expect(li).not.toContain("hidden"));
+    expect(items[4]).toContain("hidden md:block");
+  });
+
+  it("drops the all-clear sentence when facts carry the day", () => {
+    const html = render(
+      <TodayHero
+        digest={digest({ today: FACTS.slice(0, 2), worthALook: [] })}
+      />,
+    );
+    expect(html).not.toContain('data-slot="today-hero-all-clear"');
+    expect(html).toContain('data-layout="narrative"');
+  });
+
+  it("keeps the hero for an account whose only content is facts", () => {
+    const html = render(
+      <TodayHero
+        digest={digest({
+          score: null,
+          topSignal: null,
+          briefingLead: null,
+          lead: null,
+          worthALook: [],
+          today: FACTS.slice(1, 2),
+        })}
+      />,
+    );
+    expect(html).toContain('data-slot="today-hero"');
+    expect(html).toContain('data-slot="today-hero-today"');
+  });
+
+  it("renders a deterministic lead without the AI signal line", () => {
+    const html = render(
+      <TodayHero
+        digest={digest({
+          lead: {
+            text: "All 4 of your latest vitals sit inside their usual range.",
+            source: "signal",
+          },
+        })}
+      />,
+    );
+    expect(html).toContain('data-source="signal"');
+    expect(html).not.toContain('data-slot="today-hero-signal"');
+  });
+
+  it("shows the facts in reminders mode, without the ring", () => {
+    const html = render(
+      <TodayHero
+        digest={digest({ today: FACTS.slice(0, 2) })}
+        primaryContent="reminders"
+      />,
+    );
+    expect(html).toContain('data-slot="today-hero-today"');
+    expect(html).not.toContain('data-slot="today-hero-score"');
+  });
+});
+
+describe("<TodayHero> steady line", () => {
+  const steady = (over: Partial<NonNullable<DailyDigest["score"]>>) =>
+    digest({
+      score: {
+        value: 94,
+        band: "green",
+        delta: null,
+        deltaReason: "below_noise_floor",
+        scoreVersion: SCORE_VERSION,
+        composition: ["BLOOD_PRESSURE", "ACTIVITY", "SLEEP"],
+        steadyWeeks: 4,
+        ...over,
+      },
+    });
+
+  it("says how long the score has held when no delta is shown", () => {
+    const html = render(<TodayHero digest={steady({})} />);
+    expect(html).toContain('data-slot="today-hero-score-steady"');
+    expect(visibleText(html)).toContain("Steady for 4 weeks");
+    expect(html).not.toContain('data-slot="today-hero-score-delta"');
+  });
+
+  it("never pairs a steady line with a delta", () => {
+    const html = render(
+      <TodayHero digest={steady({ delta: 3, deltaReason: null })} />,
+    );
+    expect(html).toContain('data-slot="today-hero-score-delta"');
+    expect(html).not.toContain('data-slot="today-hero-score-steady"');
+  });
+
+  it("says nothing without a run", () => {
+    const html = render(<TodayHero digest={steady({ steadyWeeks: null })} />);
+    expect(html).not.toContain('data-slot="today-hero-score-steady"');
+  });
+
+  it("says at least when the run reaches past what was read", () => {
+    const html = render(
+      <TodayHero digest={steady({ steadyWeeks: 17, steadyAtLeast: true })} />,
+    );
+    expect(visibleText(html)).toContain("Steady for at least 17 weeks");
+  });
+
+  it("uses the German plural", () => {
+    const html = render(<TodayHero digest={steady({})} />, "de");
+    expect(visibleText(html)).toContain("Seit 4 Wochen stabil");
   });
 });

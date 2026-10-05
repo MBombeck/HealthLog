@@ -59,6 +59,11 @@ export interface UploadQueueItem {
 export interface EnqueueOptions {
   /** Pre-link every uploaded document to this episode (deep-link uploads). */
   episodeId?: string;
+  /**
+   * Pre-link every uploaded document to this visit — the active procedure
+   * filter, so a file dropped into a filtered view stays in it.
+   */
+  encounterId?: string;
 }
 
 interface UploadLimits {
@@ -139,6 +144,7 @@ export function uploadViaXhr(
     const fd = new FormData();
     fd.append("file", file);
     if (options.episodeId) fd.append("episodeIds", options.episodeId);
+    if (options.encounterId) fd.append("encounterIds", options.encounterId);
     xhr.send(fd);
   });
 }

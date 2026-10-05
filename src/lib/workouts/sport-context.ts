@@ -12,6 +12,11 @@
  * block reads the SAME figures the detail page shows. Two surfaces quoting
  * different averages for one sport is the drift this move removes.
  */
+import {
+  UNBOUNDED_REACH,
+  fitsReach,
+  type CoachHistoryReach,
+} from "@/lib/ai/coach/history-reach";
 import { prisma } from "@/lib/db";
 import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
 
@@ -32,7 +37,13 @@ export async function buildSportContext(
   sportType: string,
   sourcePriorityJson: unknown,
   excludeWorkoutId?: string,
+  /**
+   * The Coach's lookback limit. The comparison is a fixed 180 days; under a
+   * shorter limit it is left out rather than drawn from fewer sessions.
+   */
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<WorkoutSportContext | null> {
+  if (!fitsReach(SPORT_CONTEXT_LOOKBACK_DAYS, reach)) return null;
   const since = new Date(
     Date.now() - SPORT_CONTEXT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
   );

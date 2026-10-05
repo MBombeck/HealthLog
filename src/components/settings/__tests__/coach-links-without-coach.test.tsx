@@ -54,16 +54,16 @@ beforeEach(() => {
 });
 
 describe("Coach links follow the Coach's capability", () => {
-  it("the sources pointer links to the Coach while it is available", () => {
+  it("the sources pointer opens the Coach's settings on what it can see", () => {
     expect(render(<CoachPrefsSection isAuthenticated />)).toContain(
-      'href="/coach"',
+      'href="/coach?settings=data"',
     );
   });
 
   it("the sources pointer offers no dead link without the Coach", () => {
     coachState.available = false;
     const html = render(<CoachPrefsSection isAuthenticated />);
-    expect(html).not.toContain('href="/coach"');
+    expect(html).not.toContain('href="/coach?settings=data"');
     expect(html).not.toContain("coach-prefs-sources-pointer");
   });
 

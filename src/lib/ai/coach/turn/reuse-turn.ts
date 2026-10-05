@@ -34,6 +34,8 @@ import { buildMethod } from "@/lib/ai/coach/method";
 import { deriveFollowUps } from "@/lib/ai/coach/follow-ups/derive";
 import type { ResolvedFollowUp } from "@/lib/ai/coach/follow-ups/resolve";
 import { parseCoachPrefs } from "@/lib/validations/coach-prefs";
+import { readCoachReach } from "@/lib/ai/coach/history-reach-read";
+import { tableRangeWithinReach } from "@/lib/ai/coach/tools/executor";
 import { createSseStream } from "@/lib/sse/create-stream";
 
 import { persistUserTurn } from "./conversation";
@@ -60,6 +62,18 @@ async function copyStoredTable(args: {
   );
   const entry = entries?.find((candidate) => candidate.ref === ref);
   if (!entry || "withheld" in entry) return null;
+  // A table reaching past the lookback limit set since it was made is not
+  // shown again; the model turn that runs instead says why.
+  const reach = await readCoachReach(userId);
+  if (
+    !tableRangeWithinReach(
+      entry.source.window,
+      entry.source.period ?? "current",
+      reach,
+    )
+  ) {
+    return null;
+  }
   if (followUp.kind === "as_chart" && entry.chart === null) return null;
   // Only the view changes. "As a table" keeps the chart beside the table, so
   // the reply can offer the chart again.

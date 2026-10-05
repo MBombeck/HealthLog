@@ -56,8 +56,15 @@ import {
   buildFollowUp,
   isTableMetricDomain,
   numberFollowUps,
+  widerWindow,
 } from "./catalog";
 import type { FollowUpProposal } from "./parse-sentinel";
+import {
+  exceedsReach,
+  fitsReach,
+  reachFromPrefs,
+  type CoachHistoryReach,
+} from "@/lib/ai/coach/history-reach";
 
 /** A discovered pair `get_correlations` returned this turn, as scope sources. */
 export interface CorrelationPair {
@@ -85,6 +92,30 @@ const WINDOW_DAYS: Partial<Record<CoachScopeWindow, number>> = {
   ...SHORT_WINDOW_DAYS,
   lastYear: 365,
 };
+
+/**
+ * True when answering `chip` stays inside the lookback limit: the period
+ * before needs twice the window, a year ago a year more than it, a wider
+ * window must itself fit.
+ */
+function chipWithinReach(chip: Candidate, reach: CoachHistoryReach): boolean {
+  const window = chip.anchor?.window;
+  if (!window) return true;
+  if (exceedsReach(window, reach)) return false;
+  const days = WINDOW_DAYS[window];
+  switch (chip.kind) {
+    case "previous_period":
+      return days !== undefined && fitsReach(2 * days, reach);
+    case "year_ago":
+      return days !== undefined && fitsReach(days + 365, reach);
+    case "widen_window": {
+      const wider = widerWindow(window);
+      return wider !== null && !exceedsReach(wider, reach);
+    }
+    default:
+      return true;
+  }
+}
 
 /** Whether the pref lets chips be offered. Absent means on. */
 export function followUpChipsEnabled(prefs: CoachPrefs): boolean {
@@ -254,10 +285,14 @@ export function deriveFollowUps(args: {
     }
   }
 
-  // Deduplicate by kind and domain, first wins.
+  // Deduplicate by kind and domain, first wins. A chip that would read past
+  // the lookback limit is not offered: it could only be answered with
+  // "that lies beyond your limit".
+  const reach = reachFromPrefs(args.prefs);
   const key = (chip: Candidate) => `${chip.kind}:${chip.anchor?.domain ?? ""}`;
   const unique = new Map<string, Candidate>();
   for (const chip of candidates) {
+    if (!chipWithinReach(chip, reach)) continue;
     if (!unique.has(key(chip))) unique.set(key(chip), chip);
   }
 

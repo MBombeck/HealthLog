@@ -19,6 +19,17 @@
 import { prisma } from "@/lib/db";
 import { isIllnessEnabled } from "@/lib/illness/gate";
 import { computeEpisodeCorrelation } from "@/lib/illness/correlation-read";
+import {
+  BASELINE_WINDOW_DAYS,
+  PRE_ONSET_LOOKBACK_DAYS,
+} from "@/lib/illness/correlation";
+import {
+  UNBOUNDED_REACH,
+  laterOfFloor,
+  reachFloor,
+  withinReach,
+  type CoachHistoryReach,
+} from "./history-reach";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
@@ -131,8 +142,13 @@ const SYMPTOM_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 async function readRecentSymptoms(
   userId: string,
   now: Date,
+  reach: CoachHistoryReach,
 ): Promise<CoachSymptomSummary[]> {
-  const since = new Date(now.getTime() - SYMPTOM_WINDOW_MS);
+  const since = laterOfFloor(
+    new Date(now.getTime() - SYMPTOM_WINDOW_MS),
+    reach,
+    now,
+  );
   const grouped = await prisma.symptomEvent.groupBy({
     by: ["definitionId"],
     where: { userId, occurredAt: { gte: since, lte: now } },
@@ -181,8 +197,15 @@ async function readRecentSymptoms(
 export async function buildIllnessSnapshotBlock(
   userId: string,
   now: Date = new Date(),
+  /**
+   * The Coach's lookback limit. An episode that is still ongoing is current
+   * state and always shown (it carries Rest Mode); resolved episodes and
+   * symptoms are history and are read from inside the limit only.
+   */
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<CoachIllnessBlock | null> {
   if (!(await isIllnessEnabled(userId))) return null;
+  const floor = reachFloor(reach, now);
 
   const [activeRows, resolvedRows, symptoms] = await Promise.all([
     prisma.illnessEpisode.findMany({
@@ -203,7 +226,12 @@ export async function buildIllnessSnapshotBlock(
       },
     }),
     prisma.illnessEpisode.findMany({
-      where: { userId, deletedAt: null, resolvedAt: { not: null } },
+      where: {
+        userId,
+        deletedAt: null,
+        resolvedAt: { not: null },
+        ...(floor ? { onsetAt: { gte: floor } } : {}),
+      },
       orderBy: { resolvedAt: "desc" },
       take: RESOLVED_HISTORY_LIMIT,
       select: {
@@ -215,7 +243,7 @@ export async function buildIllnessSnapshotBlock(
         laterality: true,
       },
     }),
-    readRecentSymptoms(userId, now),
+    readRecentSymptoms(userId, now, reach),
   ]);
 
   if (
@@ -342,6 +370,12 @@ function compactFindings(
 export async function buildIllnessScores(
   userId: string,
   now: Date = new Date(),
+  /**
+   * The Coach's lookback limit. The scores compare the episode against a
+   * baseline read before its onset, so they are computed only when that
+   * baseline lies inside the limit too.
+   */
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<CoachIllnessScores | null> {
   if (!(await isIllnessEnabled(userId))) return null;
 
@@ -385,6 +419,11 @@ export async function buildIllnessScores(
   // about); fall back to the most-recently-resolved for "last time" questions.
   const episode = active ?? resolved;
   if (!episode) return null;
+  const baselineStart = new Date(
+    episode.onsetAt.getTime() -
+      (PRE_ONSET_LOOKBACK_DAYS + BASELINE_WINDOW_DAYS) * 86_400_000,
+  );
+  if (!withinReach(baselineStart, reach, now)) return null;
 
   const tz = user?.timezone ?? DEFAULT_TIMEZONE;
   const derived = await computeEpisodeCorrelation(

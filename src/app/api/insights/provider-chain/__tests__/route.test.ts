@@ -26,6 +26,12 @@ vi.mock("@/lib/api-handler", () => ({
 
 vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain: vi.fn(),
+  probeProviderChain: vi.fn(async () => ({
+    entries: [],
+    localOcrEnabled: false,
+    managedBy: null,
+    availableTypes: ["codex", "openai", "admin-openai"],
+  })),
 }));
 
 vi.mock("@/lib/ai/provider-runner", () => ({
@@ -46,7 +52,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { GET } from "../route";
-import { resolveProviderChain } from "@/lib/ai/provider";
+import { probeProviderChain, resolveProviderChain } from "@/lib/ai/provider";
 import { getLastWorkingProvider } from "@/lib/ai/provider-runner";
 import { prisma } from "@/lib/db";
 
@@ -175,5 +181,38 @@ describe("GET /api/insights/provider-chain", () => {
     expect(body.data?.configuredChain.every((e) => e.enabled === true)).toBe(
       true,
     );
+  });
+
+  it("marks an entry without a credential as unavailable, enabled or not", async () => {
+    // The Coach's provider select offers only available entries; an entry
+    // marked available without a key was saved to the front of the chain
+    // and never answered.
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProviderChain: [
+        { providerType: "codex", priority: 1, enabled: true },
+        { providerType: "anthropic", priority: 2, enabled: true },
+        { providerType: "openai", priority: 3, enabled: false },
+        { providerType: "local", priority: 4, enabled: true },
+      ],
+    } as never);
+    vi.mocked(probeProviderChain).mockResolvedValueOnce({
+      entries: [{ providerType: "codex", vision: false }],
+      localOcrEnabled: false,
+      managedBy: "user",
+      availableTypes: ["codex", "openai"],
+    });
+    vi.mocked(resolveProviderChain).mockResolvedValue([
+      { providerType: "codex", instance: { type: "codex" } as never },
+    ]);
+    vi.mocked(getLastWorkingProvider).mockReturnValue(null);
+
+    const res = await (GET as () => Promise<Response>)();
+    const body = (await res.json()) as Envelope;
+    expect(body.data?.configuredChain).toEqual([
+      { providerType: "codex", enabled: true, available: true },
+      { providerType: "anthropic", enabled: true, available: false },
+      { providerType: "openai", enabled: false, available: true },
+      { providerType: "local", enabled: true, available: false },
+    ]);
   });
 });

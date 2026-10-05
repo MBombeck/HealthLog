@@ -124,10 +124,53 @@ describe("<SourcesRail>", () => {
     expect(html).toMatch(/data-source="cardio"[^>]*data-active="false"/);
   });
 
-  it("shows the per-cluster member-count hint", () => {
+  it("shows the per-cluster member-count hint, singular for one", () => {
     const html = render(<SourcesRail />);
     // cardio expands to 9 sources, mood to 1 — both surface a count.
     expect(html).toContain("9 metrics");
-    expect(html).toContain("1 metrics");
+    expect(html).toContain("1 metric<");
+    expect(html).not.toContain("1 metrics");
+  });
+
+  it("never fades a switched-off row (contrast)", () => {
+    // `opacity-60` over muted text fell below WCAG AA in both themes. The
+    // off state is the dashed frame and the switch, the text keeps its
+    // tokens.
+    const html = render(<SourcesRail />);
+    const rows = html.match(/<li[^>]*data-slot="coach-sources-row"[^>]*>/g);
+    expect(rows?.length).toBe(10);
+    for (const row of rows ?? []) expect(row).not.toMatch(/opacity/);
+    expect(html).toMatch(
+      /data-source="glucose"[^>]*data-active="false"[^>]*class="[^"]*border-dashed/,
+    );
+  });
+
+  it("names the lookback a limit and states what the default reads", () => {
+    const html = render(<SourcesRail />);
+    expect(html).toContain("How far back the Coach can look");
+    // `allTime` is the default: the sentence carries the numbers the
+    // readers use (`history-reach.ts`).
+    expect(html).toContain(
+      "Everything you recorded: 12 months in daily detail, older readings as monthly values up to 10 years back, lab results from the last 12 months.",
+    );
+    expect(html).not.toContain("stay visible");
+  });
+
+  it("states the limit and what stays visible under a bounded lookback", () => {
+    prefsState.data = { ...DEFAULT_COACH_PREFS, defaultWindow: "last90days" };
+    const html = render(<SourcesRail />);
+    expect(html).toContain(
+      "The Coach reads nothing older than 90 days, in any answer.",
+    );
+    expect(html).toContain("stay visible");
+    expect(html).toContain('aria-describedby="coach-sources-window-detail"');
+  });
+
+  it("offers the twelve-month limit", () => {
+    prefsState.data = { ...DEFAULT_COACH_PREFS, defaultWindow: "lastYear" };
+    const html = render(<SourcesRail />);
+    expect(html).toContain(
+      "The Coach reads nothing older than 12 months, in any answer.",
+    );
   });
 });

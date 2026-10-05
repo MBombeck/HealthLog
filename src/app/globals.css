@@ -1054,3 +1054,20 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Toasts clear the Coach's New chat button ────────────────────────
+ * The Coach's conversations panel keeps its round New chat button in the
+ * bottom-right corner, which is where every toast lands. While the panel is
+ * open (docked or as a sheet), bottom toasts rise by the button's footprint
+ * (48 px plus its 16 px inset) so a delete's Undo never covers it. The
+ * selectors outrank sonner's own `bottom` rules, phone width included. */
+:root:has([data-slot="coach-conversations-panel"][data-state="open"])
+  [data-sonner-toaster][data-y-position="bottom"] {
+  bottom: calc(var(--offset-bottom) + 4rem);
+}
+@media (max-width: 600px) {
+  :root:has([data-slot="coach-conversations-panel"][data-state="open"])
+    [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(var(--mobile-offset-bottom) + 4rem);
+  }
+}

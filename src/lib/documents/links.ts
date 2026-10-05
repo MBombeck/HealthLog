@@ -7,10 +7,13 @@
  */
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { decryptField } from "@/lib/encounters/dto";
+import { MAX_PROCEDURES } from "@/lib/encounters/procedures";
 import { listTargetsBySource, replaceTargets } from "@/lib/links";
 import type {
   DocumentConditionLinkDto,
   DocumentEncounterLinkDto,
+  DocumentLinkedProcedureDto,
   DocumentVaccinationLinkDto,
 } from "@/lib/validations/inbound-documents";
 import { resolveCatalogEntry } from "@/lib/vaccinations/vaccine-catalog";
@@ -75,6 +78,50 @@ export async function loadDocumentEncounterLinks(
     );
   }
   return map;
+}
+
+/**
+ * The record's procedures and surgeries that hold at least one LIVE document
+ * link, newest first — the vault filter bar's procedure choices.
+ *
+ * Every live PROCEDURE visit counts whatever its status: a pre-op letter filed
+ * against a booked operation belongs to it as much as the discharge letter
+ * belongs to one that happened. Tombstoned visits and tombstoned documents
+ * drop out, the same honest default `loadDocumentEncounterLinks` uses. The
+ * reason and body site are ciphertext at rest and decrypt through the visit
+ * DTO's fail-soft path, so one row with a key gap reads as unnamed rather than
+ * failing the usage read. Only the label's columns are selected. Bounded like the procedure history itself.
+ */
+export async function loadLinkedProcedures(
+  userId: string,
+): Promise<DocumentLinkedProcedureDto[]> {
+  const rows = await prisma.encounter.findMany({
+    where: {
+      userId,
+      deletedAt: null,
+      kind: "PROCEDURE",
+      documentLinks: { some: { userId, document: { deletedAt: null } } },
+    },
+    orderBy: [{ occurredAt: "desc" }, { id: "asc" }],
+    take: MAX_PROCEDURES,
+    // Only what the label needs: no outcome, no practitioner contact fields.
+    select: {
+      id: true,
+      occurredAt: true,
+      reasonEncrypted: true,
+      bodySiteEncrypted: true,
+      laterality: true,
+      practitioner: { select: { name: true } },
+    },
+  });
+  return rows.map((row) => ({
+    encounterId: row.id,
+    occurredAt: row.occurredAt.toISOString(),
+    reason: decryptField(row.reasonEncrypted, "reason"),
+    bodySite: decryptField(row.bodySiteEncrypted, "bodySite"),
+    laterality: row.laterality,
+    practitionerName: row.practitioner?.name ?? null,
+  }));
 }
 
 /**

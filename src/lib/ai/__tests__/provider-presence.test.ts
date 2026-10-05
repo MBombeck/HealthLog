@@ -90,6 +90,7 @@ describe("probeProviderChain", () => {
       entries: [],
       localOcrEnabled: false,
       managedBy: null,
+      availableTypes: [],
     });
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
@@ -121,6 +122,22 @@ describe("probeProviderChain", () => {
       "local",
     ]);
     expect(presence.managedBy).toBe("user");
+  });
+
+  it("names every type whose credential is present, enabled in the chain or not", async () => {
+    load(
+      row({
+        aiProviderChain: [
+          { providerType: "codex", enabled: true, priority: 0 },
+          { providerType: "openai", enabled: false, priority: 1 },
+          { providerType: "anthropic", enabled: true, priority: 2 },
+        ],
+        aiOpenaiKeyEncrypted: "enc",
+      }),
+    );
+    const presence = await probeProviderChain("u1", OWNER);
+    // Codex is not signed in and no Anthropic key is saved: neither can answer.
+    expect(presence.availableTypes).toEqual(["openai"]);
   });
 
   it("marks which entries can read an image", async () => {
@@ -162,6 +179,7 @@ describe("probeProviderChain", () => {
       entries: [{ providerType: "admin-openai", vision: true }],
       localOcrEnabled: false,
       managedBy: "server",
+      availableTypes: ["admin-openai"],
     });
   });
 

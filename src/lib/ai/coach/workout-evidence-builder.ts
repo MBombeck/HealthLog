@@ -1,4 +1,9 @@
 import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
+import {
+  UNBOUNDED_REACH,
+  withinReach,
+  type CoachHistoryReach,
+} from "./history-reach";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -66,6 +71,7 @@ interface WorkoutEvidenceDependencies {
     sportType: string,
     sourcePriorityJson: unknown,
     excludeWorkoutId?: string,
+    reach?: CoachHistoryReach,
   ) => Promise<WorkoutSportContext | null>;
   buildEvidence: (input: WorkoutEvidenceInput) => Record<string, unknown>;
   onSkipped: () => void;
@@ -76,11 +82,18 @@ export function createWorkoutEvidenceBuilder(
 ): (
   userId: string,
   workoutId: string,
+  /**
+   * The Coach's lookback limit. A workout older than it is not read, and the
+   * sport comparison (its own 180 days) is left out under a shorter limit
+   * (`buildSportContext`).
+   */
+  reach?: CoachHistoryReach,
 ) => Promise<Record<string, unknown> | null> {
-  return async (userId, workoutId) => {
+  return async (userId, workoutId, reach = UNBOUNDED_REACH) => {
     try {
       const row = await dependencies.findWorkout(userId, workoutId);
       if (!row) return null;
+      if (!withinReach(row.startedAt, reach)) return null;
 
       const profile = await dependencies.findProfile(userId);
       const hrSeries = await dependencies.buildHrSeries({
@@ -103,6 +116,7 @@ export function createWorkoutEvidenceBuilder(
         row.sportType,
         profile?.sourcePriorityJson ?? null,
         workoutId,
+        reach,
       );
 
       return dependencies.buildEvidence({

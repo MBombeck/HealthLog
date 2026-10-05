@@ -2877,7 +2877,6 @@
       "sourcesFresh": "Fresh",
       "sourcesStale": "Stale",
       "sourcesFooter": "The Coach reads only the data you've connected.",
-      "evidenceLabel": "What I'm looking at",
       "metric": {
         "bp": "Blood pressure",
         "weight": "Weight",
@@ -2923,14 +2922,6 @@
         "skin_temp": "Skin temperature",
         "workouts": "Workouts"
       },
-      "window": {
-        "last7days": "last 7 days",
-        "last30days": "last 30 days",
-        "last90days": "last 90 days",
-        "lastYear": "last 12 months",
-        "allTime": "all time (12 months of detail)"
-      },
-      "windowLabel": "Window",
       "settingsAriaLabel": "Coach settings",
       "settingsTitle": "Coach settings",
       "settingsDescription": "Tune how the Coach talks with you.",
@@ -2943,8 +2934,9 @@
       "settingsVerbosityDefault": "Default",
       "settingsVerbosityDetailed": "Detailed",
       "settingsVerbosityConciseHint": "The concise tone already keeps replies short — verbosity is pinned to Brief while it is active.",
-      "settingsSourcesPointer": "Which data clusters the coach may draw on and the default analysis window are managed directly in the coach chat (\"What I draw on\" rail).",
-      "settingsSourcesPointerLink": "Open the coach",
+      "settingsSourcesSummary": "The Coach sees {count} of {total} data areas and looks back {window}.",
+      "settingsSourcesSummaryAll": "The Coach sees {count} of {total} data areas and your whole history.",
+      "settingsSourcesPointerLink": "Open Coach settings",
       "settingsExcludeLabel": "Exclude metrics",
       "settingsExcludeHint": "The Coach will not see data for selected metrics.",
       "settingsContextLabel": "Include context",
@@ -2956,10 +2948,6 @@
       "settingsSave": "Save",
       "settingsSaved": "Saved",
       "settingsCancel": "Cancel",
-      "feedbackHelpful": "Helpful",
-      "feedbackUnhelpful": "Not quite",
-      "feedbackThanks": "Thanks for the signal.",
-      "feedbackError": "Could not save feedback",
       "dailyLimitTitle": "Daily limit reached",
       "dailyLimitBody": "Daily limit reached. The budget refreshes at midnight UTC.",
       "providerRateLimitTitle": "Provider rate-limited",
@@ -3009,7 +2997,23 @@
       "settingsClustersLabel": "Data the Coach sees",
       "settingsClustersHint": "Pick which clusters of your data the Coach can read. More data means richer answers and a larger prompt.",
       "settingsClusterNoData": "No data yet",
-      "sourcesMemberCount": "{count} metrics",
+      "sourcesMemberCountOne": "1 metric",
+      "sourcesMemberCountFew": "{count} metrics",
+      "sourcesMemberCountOther": "{count} metrics",
+      "lookback": {
+        "label": "How far back the Coach can look",
+        "option": {
+          "last7days": "{days} days",
+          "last30days": "{days} days",
+          "last90days": "{days} days",
+          "lastYear": "{months} months",
+          "allTime": "All"
+        },
+        "detailDays": "The Coach reads nothing older than {days} days, in any answer.",
+        "detailMonths": "The Coach reads nothing older than {months} months, in any answer.",
+        "detailAll": "Everything you recorded: {dailyMonths} months in daily detail, older readings as monthly values up to {years} years back, lab results from the last {labMonths} months.",
+        "note": "Your profile, current medications, an ongoing illness and upcoming visits stay visible; summaries that need more history are shortened or left out. Answers the Coach gave earlier in older conversations may still quote older values."
+      },
       "showConversations": "Show conversations",
       "hideConversations": "Hide conversations",
       "heroGreeting": "Ask me anything about your data",
@@ -3113,7 +3117,34 @@
       "errorNotPermitted": "The Coach is not available inside a record someone shared with you.",
       "errorUnavailable": "The Coach could not check its settings just now. Please try again in a moment.",
       "errorOperatorOff": "AI is switched off on this server, so the Coach cannot answer.",
-      "errorCoachOff": "The Coach is switched off. You can turn it back on in Settings, Modules."
+      "errorCoachOff": "The Coach is switched off. You can turn it back on in Settings, Modules.",
+      "frame": {
+        "showPanel": "Show conversations",
+        "hidePanel": "Hide conversations",
+        "panelDescription": "Your conversations with the Coach, newest first.",
+        "rowActions": "Actions for {title}",
+        "rename": "Rename",
+        "delete": "Delete",
+        "modelSection": "Model",
+        "provider": "Answers with",
+        "modelManaged": "The model for this provider is set in AI settings.",
+        "noProvider": "No provider available",
+        "saving": "Saving…",
+        "saveFailed": "That change could not be saved.",
+        "allSettings": "All AI settings",
+        "providerNotActive": "{provider} could not take over: it has no working sign-in or key. Set it up in AI settings.",
+        "operatorCodex": "ChatGPT (shared by the operator)",
+        "operatorManaged": "Your server's operator manages this connection. Once one of your own providers is set up, it answers first."
+      },
+      "answer": {
+        "scrollToBottom": "Jump to the latest message",
+        "rememberDone": "Remembered",
+        "timeYesterday": "yesterday {time}",
+        "timeEarlier": "{date}, {time}",
+        "areasDoneOne": "Looked at 1 area",
+        "areasDoneFew": "Looked at {count} areas",
+        "areasDoneOther": "Looked at {count} areas"
+      }
     },
     "relativeJustNow": "just now",
     "relativeMinutesAgoOne": "{count} minute ago",
@@ -5090,11 +5121,6 @@
           "brief": "Brief",
           "default": "Default",
           "detailed": "Detailed",
-          "defaultWindow": "Default window",
-          "last7days": "Last 7 days",
-          "last30days": "Last 30 days",
-          "last90days": "Last 90 days",
-          "allTime": "All time",
           "excludedMetrics": "Excluded metrics",
           "dataClusters": "Data clusters",
           "customClusters": "Use a custom cluster selection",
@@ -10431,11 +10457,13 @@
       "searchPlaceholder": "Search title or filename…",
       "typeGroup": "Document type",
       "conditionGroup": "Condition",
+      "procedureGroup": "Procedures and surgeries",
       "yearGroup": "Year",
       "clear": "Clear filters",
       "typeAll": "All types",
       "typeCount": "{count} types",
       "conditionAll": "All conditions",
+      "procedureAll": "All procedures",
       "yearAll": "All years"
     },
     "card": {
@@ -10896,8 +10924,8 @@
   },
   "daily": {
     "line": {
-      "score": "Your health score today is {score}.",
-      "allClear": "Nothing needs your attention today."
+      "allClear": "Nothing needs your attention today.",
+      "scoreReady": "Your health score for today is ready."
     },
     "push": {
       "title": "Your morning briefing",
@@ -10983,7 +11011,30 @@
       "sleepPending": "Last night's sleep isn't in yet — today's read is provisional.",
       "worthALook": "Worth a look",
       "allClear": "Nothing needs your attention today.",
-      "ringLink": "Open {metric} details"
+      "ringLink": "Open {metric} details",
+      "heading": "Today",
+      "steadyWeeksOne": "Steady for {count} week",
+      "steadyWeeksFew": "Steady for {count} weeks",
+      "steadyWeeksOther": "Steady for {count} weeks",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "{low} to {high} {unit}",
+      "vital": {
+        "RESTING_HEART_RATE": "Resting heart rate",
+        "HEART_RATE_VARIABILITY": "Heart-rate variability",
+        "RESPIRATORY_RATE": "Respiratory rate",
+        "OXYGEN_SATURATION": "Oxygen saturation",
+        "BODY_TEMPERATURE": "Body temperature",
+        "SKIN_TEMPERATURE": "Skin temperature",
+        "BLOOD_PRESSURE_SYS": "Systolic blood pressure",
+        "BLOOD_PRESSURE_DIA": "Diastolic blood pressure",
+        "BLOOD_GLUCOSE": "Blood glucose",
+        "PULSE": "Pulse",
+        "WEIGHT": "Weight",
+        "generic": "A vital"
+      },
+      "steadyAtLeastWeeksOne": "Steady for at least {count} week",
+      "steadyAtLeastWeeksFew": "Steady for at least {count} weeks",
+      "steadyAtLeastWeeksOther": "Steady for at least {count} weeks"
     },
     "milestone": {
       "metric": {
@@ -11018,6 +11069,68 @@
           "title": "A month in range",
           "body": "A full month with your {metric} in your usual range. Beautifully steady."
         }
+      }
+    },
+    "lead": {
+      "vitalOutside": {
+        "above": "{metric} is at {value}, above your usual range of {range}.",
+        "below": "{metric} is at {value}, below your usual range of {range}."
+      },
+      "vitalsOutside": {
+        "aboveOne": "{metric} is at {value}, above your usual range of {range}, and {count} more vital is outside its range too.",
+        "aboveFew": "{metric} is at {value}, above your usual range of {range}, and {count} more vitals are outside their range too.",
+        "aboveOther": "{metric} is at {value}, above your usual range of {range}, and {count} more vitals are outside their range too.",
+        "belowOne": "{metric} is at {value}, below your usual range of {range}, and {count} more vital is outside its range too.",
+        "belowFew": "{metric} is at {value}, below your usual range of {range}, and {count} more vitals are outside their range too.",
+        "belowOther": "{metric} is at {value}, below your usual range of {range}, and {count} more vitals are outside their range too."
+      },
+      "sleep": {
+        "more": "Last night you slept {duration}, {diff} more than usual.",
+        "less": "Last night you slept {duration}, {diff} less than usual.",
+        "usual": "Last night you slept {duration}, close to your usual.",
+        "plain": "Last night you slept {duration}."
+      },
+      "vitalsInRangeOne": "Your latest vital sits inside its usual range.",
+      "vitalsInRangeFew": "All {count} of your latest vitals sit inside their usual range.",
+      "vitalsInRangeOther": "All {count} of your latest vitals sit inside their usual range.",
+      "vitalInRange": "{metric} is at {value}, inside your usual range of {range}."
+    },
+    "todayFact": {
+      "restMode": {
+        "label": "Rest mode",
+        "value": "Day {day}"
+      },
+      "medications": {
+        "label": "Medications",
+        "value": "{taken} of {scheduled} taken"
+      },
+      "appointment": {
+        "label": "Appointment",
+        "today": "Today {time}, {what}",
+        "tomorrow": "Tomorrow {time}, {what}"
+      },
+      "sleep": {
+        "label": "Last night",
+        "plain": "{duration}",
+        "usual": "{duration}, close to your usual",
+        "more": "{duration}, {diff} more than usual",
+        "less": "{duration}, {diff} less than usual"
+      },
+      "vitals": {
+        "label": "Vitals",
+        "allInOne": "{count} checked, in your range",
+        "allInFew": "{count} checked, all in your range",
+        "allInOther": "{count} checked, all in your range",
+        "oneOut": {
+          "above": "{metric} above your range",
+          "below": "{metric} below your range"
+        },
+        "someOut": "{count} of {total} outside your range"
+      },
+      "cycle": {
+        "label": "Cycle",
+        "value": "{phase}, day {day}",
+        "dayOnly": "Day {day}"
       }
     }
   },

@@ -22,6 +22,11 @@ import {
   type BaselineProfile,
 } from "@/lib/insights/derived";
 import { prisma } from "@/lib/db";
+import {
+  UNBOUNDED_REACH,
+  fitsReach,
+  type CoachHistoryReach,
+} from "./history-reach";
 
 /**
  * Trailing window the recovery dedup probes for a WHOOP-native row — matches
@@ -29,6 +34,28 @@ import { prisma } from "@/lib/db";
  * COMPUTED proxy?" is answered against the same set of days.
  */
 const RECOVERY_DEDUP_WINDOW_DAYS = 14;
+
+/**
+ * The window each engine reads (its own `DEFAULT_WINDOW_DAYS`). Under a
+ * lookback limit a metric whose window does not fit inside it is left out,
+ * never computed over a shortened window: a 7-day readiness would disagree
+ * with the 30-day ring the dashboard shows under the same name.
+ */
+const DERIVED_DEFAULT_WINDOW_DAYS: Readonly<
+  Partial<Record<DerivedMetricId, number>>
+> = {
+  READINESS: 30,
+  RECOVERY_SCORE: 14,
+  STRESS_SCORE: 14,
+  STRAIN_SCORE: 14,
+  SLEEP_SCORE: 30,
+  HRV_BALANCE: 30,
+  FITNESS_AGE: 180,
+  VASCULAR_AGE_DELTA: 365,
+};
+
+/** The coincident-deviation flag's own default window. */
+const COINCIDENT_DEFAULT_WINDOW_DAYS = 30;
 
 /** The high-signal derived metrics worth a Coach prompt slot. The vitals
  *  baseline is omitted — the per-vital aggregate block already carries those
@@ -226,8 +253,15 @@ export async function buildDerivedSnapshotBlock(
   profile: BaselineProfile,
   now: Date,
   tz?: string,
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<DerivedSnapshotBlock | null> {
   const block: Record<string, DerivedSnapshotEntry> = {};
+  // Every engine keeps its own window; one that does not fit is not run.
+  const fits = (metric: DerivedMetricId) =>
+    fitsReach(
+      DERIVED_DEFAULT_WINDOW_DAYS[metric] ?? COINCIDENT_DEFAULT_WINDOW_DAYS,
+      reach,
+    );
 
   // v1.21.0 (C3 / D3) — the coincident-deviation flag, fired-only. Computed
   // off the one shared profile alongside the scores; fail-soft to null so a
@@ -235,21 +269,29 @@ export async function buildDerivedSnapshotBlock(
   // FIRED (≥2 vitals out of band today) — a quiet day adds no entry, keeping
   // the snapshot noise-free. D2-8: pass the user's tz so the "today" grouping
   // matches the user's calendar day, not UTC's.
-  const coincidentPromise = computeCoincidentDeviation(userId, profile, {
-    now,
-    ...(tz ? { tz } : {}),
-  }).catch(() => null);
+  // Its 30-day baseline is left out, like any block, under a shorter limit.
+  const coincidentPromise = fitsReach(COINCIDENT_DEFAULT_WINDOW_DAYS, reach)
+    ? computeCoincidentDeviation(userId, profile, {
+        now,
+        ...(tz ? { tz } : {}),
+      }).catch(() => null)
+    : Promise.resolve(null);
 
   // The metrics are independent passthrough reads off the one shared profile —
   // no ordering dependency — so compute them concurrently. Per-metric fault
   // isolation: a transient failure on one must never sink the whole Coach turn,
   // so each compute resolves to null on throw rather than rejecting the batch.
   const computed = await Promise.all(
-    SNAPSHOT_METRICS.map(async (metric) => {
+    SNAPSHOT_METRICS.filter(fits).map(async (metric) => {
       try {
         return {
           metric,
-          derived: await computeDerivedMetric({ metric, userId, profile, now }),
+          derived: await computeDerivedMetric({
+            metric,
+            userId,
+            profile,
+            now,
+          }),
         };
       } catch {
         return { metric, derived: null };
@@ -302,6 +344,8 @@ export async function buildDerivedSnapshotBlock(
         source: "WHOOP",
         deletedAt: null,
         measuredAt: {
+          // Both lines exist only when their windows fit, so this 14-day
+          // probe lies inside the limit too.
           gte: new Date(
             now.getTime() - RECOVERY_DEDUP_WINDOW_DAYS * 24 * 60 * 60 * 1000,
           ),

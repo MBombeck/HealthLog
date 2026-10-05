@@ -131,6 +131,11 @@ export interface McpToolDefinition {
  * server-authoritative snapshot builder scoped to the requested domain, and
  * returns the grounded `{ present, reason?, data?, grounding? }` result. It
  * never throws and never widens scope.
+ *
+ * No `reach` is passed, here or at the other MCP call sites: the person's
+ * Coach lookback limit (`coachPrefs.defaultWindow`) governs what the Coach
+ * reads, while an MCP client reads with its own window arguments under its
+ * own token grant, as it did before the limit existed.
  */
 async function runCoachTool(
   ctx: McpAuthContext,

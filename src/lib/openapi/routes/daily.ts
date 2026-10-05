@@ -13,6 +13,12 @@ import type { ZodOpenApiObject } from "zod-openapi";
 
 import { ARRIVAL_KINDS } from "@/lib/arrivals/types";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import {
+  MAX_TODAY_FACTS,
+  MAX_TODAY_FACTS_NARROW,
+  TODAY_FACT_KINDS,
+  TODAY_LEAD_SOURCES,
+} from "@/lib/daily/today-overview";
 import { dismissPriorityItemSchema } from "@/lib/validations/daily";
 import { dataEnvelope, recordRefusal, stdResponses } from "./shared";
 import { healthScoreBasis } from "./insights/schemas";
@@ -57,7 +63,24 @@ const priorityItemSchema = z
       "One 'worth a look' rail item. The single model every daily-value consumer renders through PriorityCard.",
   });
 
-const dailyDigestResponse = z
+const todayFactSchema = z
+  .object({
+    kind: z.enum([...TODAY_FACT_KINDS]).describe("Closed fact kind."),
+    label: z.string().describe("Localised label (resolved server-side)."),
+    value: z.string().describe("Localised value (resolved server-side)."),
+    href: z.string().describe("The page the fact belongs to."),
+    moduleKey: z
+      .string()
+      .optional()
+      .describe("The module that admitted the fact; absent for core data."),
+  })
+  .meta({
+    id: "DailyTodayFact",
+    description:
+      "One statement about the day on the Today overview. A fact never asks the reader to do anything; the rail is the only place that does.",
+  });
+
+export const dailyDigestResponse = z
   .object({
     generatedAt: z.string().describe("ISO-8601 instant the digest was read."),
     phase: z
@@ -103,6 +126,21 @@ const dailyDigestResponse = z
           .describe(
             "What the value rests on. Since v1.38 a score is produced from one or two areas of health as well as three, so this is what distinguishes a narrow score from a broad one. Optional so older cached digests without the field stay valid.",
           ),
+        steadyWeeks: z
+          .number()
+          .int()
+          .positive()
+          .nullable()
+          .optional()
+          .describe(
+            "Whole weeks the score has held where it is (same band, within two points, computed the same way), read off the stored daily scores. Null when it has not held for two weeks, when the stored record does not reach today, or when the score on screen differs from the newest stored day in value, band, algorithm version or composition. Shown in place of a delta, never beside one.",
+          ),
+        steadyAtLeast: z
+          .boolean()
+          .optional()
+          .describe(
+            'True when the run reaches back past everything the read covered (120 days): `steadyWeeks` is then a lower bound, said as "at least", and the run\'s start is unknown. Absent on older cached digests.',
+          ),
       })
       .nullable()
       .describe(
@@ -124,12 +162,43 @@ const dailyDigestResponse = z
       .string()
       .nullable()
       .describe(
-        "First sentence of the cached briefing paragraph. Null while the `briefing` capability is unavailable; `line` then falls to its deterministic floor.",
+        "The first sentence of the cached briefing paragraph that says something: a greeting or a sentence that only repeats the score is skipped. Null while the `briefing` capability is unavailable or when no sentence qualifies; `line` then falls to its deterministic floor.",
+      ),
+    lead: z
+      .object({
+        text: z.string(),
+        source: z
+          .enum([...TODAY_LEAD_SOURCES])
+          .describe(
+            "`reaction` and `briefing` are cached model text; `signal` is the deterministic sentence about the day's strongest signal.",
+          ),
+      })
+      .nullable()
+      .describe(
+        "The Today hero's lead line, resolved: the reaction line or a briefing sentence while their capabilities are available, otherwise a deterministic sentence about the day's strongest signal (a vital outside its personal range, an unusual night, vitals in range, last night). Null when there is nothing to say. When the deterministic sentence is built from a fact, that fact is left out of `today`. Additive since v1.40.",
+      ),
+    today: z
+      .array(todayFactSchema)
+      .max(MAX_TODAY_FACTS)
+      .describe(
+        `The Today overview: up to ${MAX_TODAY_FACTS} statements about the day in priority order (Rest Mode, medications taken today, an appointment today or tomorrow that is not already on the rail, last night's sleep, vitals against their personal range, cycle day), never padded. A fact about a switched-off module is absent. A narrow surface shows the first ${MAX_TODAY_FACTS_NARROW}. Additive since v1.40.`,
+      ),
+    restMode: z
+      .object({
+        day: z
+          .number()
+          .int()
+          .positive()
+          .describe("1-based day of the episode on the reader's calendar."),
+      })
+      .nullable()
+      .describe(
+        "Rest Mode: present while an illness episode is active and the illness module is on, else null. Additive since v1.40.",
       ),
     line: z
       .string()
       .describe(
-        "Push / lock-screen line: cached-AI lead with a deterministic floor.",
+        "Push / lock-screen line: cached-AI lead with a deterministic floor. Carries no number (no reading, dose or score), since it is shown on a locked phone; the in-app `lead` keeps its figures.",
       ),
     worthALook: z
       .array(priorityItemSchema)

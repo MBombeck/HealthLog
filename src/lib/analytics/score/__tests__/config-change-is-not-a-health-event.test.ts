@@ -501,13 +501,12 @@ describe("a settings change is never narrated as a health event", () => {
     expect(digest.score).not.toBeNull();
     expect(digest.score!.delta).toBeNull();
     expect(digest.score!.deltaReason).toBe("config_changed");
-    // The push body is `digest.line` verbatim. It states today's number
-    // and nothing about its movement, which is the only honest sentence
-    // available across a recipe change.
-    expect(digest.line).toBe(
-      `Your health score today is ${snapshot.healthScore!.score}.`,
-    );
-    expect(digest.line).not.toMatch(/[-−]\s?\d/);
+    // The push body is `digest.line` verbatim. It says the score is ready
+    // and nothing about its value or movement: no number reaches a locked
+    // phone, and no subtraction crosses a recipe change.
+    expect(snapshot.healthScore).not.toBeNull();
+    expect(digest.line).toBe("Your health score for today is ready.");
+    expect(digest.line).not.toMatch(/\d/);
     // The rail is the other place a drop could reach a person. Nothing
     // in it may be narrating the score either.
     expect(digest.worthALook.map((item) => item.kind)).not.toContain(
