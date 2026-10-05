@@ -2227,10 +2227,20 @@ async function seed() {
       const lastAt = new Date(
         convo.startedAt.getTime() + (convo.turns.length - 1) * 60_000,
       );
+      // The title is sealed the way the app writes it since v1.39.3. A
+      // readable `title` is picked up by the boot backfill, whose update
+      // also moves `updated_at` to the moment it ran, and every thread then
+      // sorted under "Today".
       await client.query(
-        `INSERT INTO coach_conversations (id, user_id, title, created_at, updated_at)
+        `INSERT INTO coach_conversations (id, user_id, title_encrypted, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5)`,
-        [convoId, userId, convo.title, convo.startedAt, lastAt],
+        [
+          convoId,
+          userId,
+          Buffer.from(encryptToBytes(convo.title)),
+          convo.startedAt,
+          lastAt,
+        ],
       );
       for (let t = 0; t < convo.turns.length; t++) {
         const turn = convo.turns[t];
