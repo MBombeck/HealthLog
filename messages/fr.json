@@ -3023,7 +3023,6 @@
       "thinkingExpandAria": "Montrer ce que le Coach a pris en compte",
       "thinkingDetail": "Réponse établie à partir de ton aperçu santé.",
       "tokensUsed": "{count} jetons",
-      "tokensUsedWithModel": "{count} jetons · {model}",
       "askAboutThis": "Interroger le coach à ce sujet",
       "readStrip": {
         "label": "Plage habituelle",
@@ -3143,7 +3142,9 @@
         "timeEarlier": "{date}, {time}",
         "areasDoneOne": "1 domaine consulté",
         "areasDoneFew": "{count} domaines consultés",
-        "areasDoneOther": "{count} domaines consultés"
+        "areasDoneOther": "{count} domaines consultés",
+        "info": "Détails de la réponse",
+        "infoModel": "Modèle : {model}"
       }
     },
     "relativeJustNow": "à l’instant",

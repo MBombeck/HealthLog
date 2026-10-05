@@ -3023,7 +3023,6 @@
       "thinkingExpandAria": "Mostra cosa ha considerato il Coach",
       "thinkingDetail": "Risposta basata sul tuo riepilogo di salute.",
       "tokensUsed": "{count} token",
-      "tokensUsedWithModel": "{count} token · {model}",
       "askAboutThis": "Chiedi al coach",
       "readStrip": {
         "label": "Intervallo abituale",
@@ -3143,7 +3142,9 @@
         "timeEarlier": "{date}, {time}",
         "areasDoneOne": "1 area consultata",
         "areasDoneFew": "{count} aree consultate",
-        "areasDoneOther": "{count} aree consultate"
+        "areasDoneOther": "{count} aree consultate",
+        "info": "Dettagli della risposta",
+        "infoModel": "Modello: {model}"
       }
     },
     "relativeJustNow": "proprio ora",

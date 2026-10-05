@@ -12,11 +12,12 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  *
  * Contracts under test:
  *
- *   1. Under an answer there is exactly one action row: the icon group and
- *      the time on the left, the tokens and model on the right, both halves
- *      on one line (their centres within 2 px, the row no taller than one
- *      44 px target), the left group starting on the bubble's left edge and
- *      the meta ending inside the answer column.
+ *   1. Under an answer there is exactly one action row, left-aligned on the
+ *      bubble's left edge and no taller than one 44 px target: copy, read
+ *      aloud, try again, details, then the time. The model and the tokens
+ *      are not text on the row; the details icon shows them in a tooltip on
+ *      keyboard focus (desktop) and on a tap (phone), and a second tap or
+ *      Escape closes it.
  *   2. The follow-up chips sit in the answer's column: their left edge is
  *      the bubble's, their text is the answer's size, and a chip is at most
  *      36 px tall beside a pointer and at least 44 px on a phone.
@@ -246,28 +247,58 @@ test.describe("Coach answer layout", () => {
     const bubble = last.locator('[data-slot="coach-answer-bubble"]');
     const column = last.locator('[data-slot="coach-answer-column"]');
     const row = last.locator('[data-slot="coach-answer-actions"]');
-    const left = row.locator('[data-slot="coach-answer-actions-left"]');
-    const meta = row.locator('[data-slot="coach-answer-meta"]');
+    const info = row.locator('[data-slot="coach-answer-info"]');
+    const time = row.locator('[data-slot="coach-message-time"]');
     await expect(row).toHaveCount(1);
-    await expect(meta).toContainText("1,234 tokens");
     await expect(row).toHaveCSS("opacity", "1");
-    const [bubbleBox, columnBox, rowBox, leftBox, metaBox] = await Promise.all(
-      [bubble, column, row, left, meta].map(box),
-    );
-    expect(
-      Math.abs(
-        leftBox.y + leftBox.height / 2 - (metaBox.y + metaBox.height / 2),
-      ),
-      "left group and meta share one line",
-    ).toBeLessThanOrEqual(2);
+    await expect(row).not.toContainText("tokens");
+    await expect(row.locator('[data-slot="coach-answer-meta"]')).toHaveCount(0);
+    await expect(info).toHaveAttribute("aria-label", "Answer details");
+    const [bubbleBox, columnBox, rowBox, answerCopyBox, infoBox, timeBox] =
+      await Promise.all(
+        [
+          bubble,
+          column,
+          row,
+          row.locator('[data-slot="coach-copy-message"]'),
+          info,
+          time,
+        ].map(box),
+      );
     expect(rowBox.height, "the row is one line").toBeLessThanOrEqual(44);
-    expect(Math.abs(leftBox.x - bubbleBox.x)).toBeLessThanOrEqual(1);
-    expect(metaBox.x + metaBox.width).toBeLessThanOrEqual(
+    expect(Math.abs(answerCopyBox.x - bubbleBox.x)).toBeLessThanOrEqual(1);
+    expect(infoBox.x, "details follows the other icons").toBeGreaterThan(
+      answerCopyBox.x,
+    );
+    expect(timeBox.x, "the time comes last").toBeGreaterThan(infoBox.x);
+    expect(timeBox.x + timeBox.width).toBeLessThanOrEqual(
       columnBox.x + columnBox.width + 1,
     );
-    await expect(left.locator('[data-slot="coach-message-time"]')).toHaveCount(
-      1,
-    );
+    for (const [b, name] of [
+      [infoBox, "details"],
+      [timeBox, "time"],
+    ] as const) {
+      expect(
+        Math.abs(
+          b.y + b.height / 2 - (answerCopyBox.y + answerCopyBox.height / 2),
+        ),
+        `${name} shares the row's line`,
+      ).toBeLessThanOrEqual(2);
+    }
+
+    // The details tooltip: focus opens it on a desktop, a tap on a phone.
+    const tip = page.locator('[data-slot="coach-answer-info-content"]');
+    await expect(tip).toHaveCount(0);
+    if (desktop) await info.focus();
+    else await info.tap();
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText("Model: gpt-4o-mini-2024-07-18");
+    await expect(tip).toContainText("1,234 tokens");
+    await expect(info).toHaveAttribute("aria-describedby", /.+/);
+    await shoot(page, testInfo, `answer-info-${viewport.label}`);
+    if (desktop) await page.keyboard.press("Escape");
+    else await info.tap();
+    await expect(tip).toHaveCount(0);
 
     // 2. The chips in the answer's column, at the answer's size.
     const chips = last.locator('[data-slot="coach-follow-up-chips"]');

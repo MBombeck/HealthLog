@@ -3023,7 +3023,6 @@
       "thinkingExpandAria": "Pokaż, co Coach wziął pod uwagę",
       "thinkingDetail": "Odpowiedź na podstawie Twojego podsumowania zdrowia.",
       "tokensUsed": "{count} tokenów",
-      "tokensUsedWithModel": "{count} tokenów · {model}",
       "askAboutThis": "Zapytaj trenera o to",
       "readStrip": {
         "label": "Typowy zakres",
@@ -3143,7 +3142,9 @@
         "timeEarlier": "{date}, {time}",
         "areasDoneOne": "Sprawdzono 1 obszar",
         "areasDoneFew": "Sprawdzono {count} obszary",
-        "areasDoneOther": "Sprawdzono {count} obszarów"
+        "areasDoneOther": "Sprawdzono {count} obszarów",
+        "info": "Szczegóły odpowiedzi",
+        "infoModel": "Model: {model}"
       }
     },
     "relativeJustNow": "przed chwilą",

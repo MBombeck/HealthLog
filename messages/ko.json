@@ -3023,7 +3023,6 @@
       "thinkingExpandAria": "코치가 참고한 내용 보기",
       "thinkingDetail": "건강 스냅샷을 바탕으로 답했어요.",
       "tokensUsed": "{count} 토큰",
-      "tokensUsedWithModel": "{count} 토큰 · {model}",
       "askAboutThis": "코치에게 물어보기",
       "readStrip": {
         "label": "평소 범위",
@@ -3143,7 +3142,9 @@
         "timeEarlier": "{date} {time}",
         "areasDoneOne": "영역 1개 확인",
         "areasDoneFew": "영역 {count}개 확인",
-        "areasDoneOther": "영역 {count}개 확인"
+        "areasDoneOther": "영역 {count}개 확인",
+        "info": "답변 정보",
+        "infoModel": "모델: {model}"
       }
     },
     "relativeJustNow": "방금",

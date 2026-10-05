@@ -3023,7 +3023,6 @@
       "thinkingExpandAria": "Mostrar lo que el Coach tuvo en cuenta",
       "thinkingDetail": "Respondido a partir de tu resumen de salud.",
       "tokensUsed": "{count} tokens",
-      "tokensUsedWithModel": "{count} tokens · {model}",
       "askAboutThis": "Pregúntale al coach sobre esto",
       "readStrip": {
         "label": "Rango habitual",
@@ -3143,7 +3142,9 @@
         "timeEarlier": "{date}, {time}",
         "areasDoneOne": "1 área consultada",
         "areasDoneFew": "{count} áreas consultadas",
-        "areasDoneOther": "{count} áreas consultadas"
+        "areasDoneOther": "{count} áreas consultadas",
+        "info": "Detalles de la respuesta",
+        "infoModel": "Modelo: {model}"
       }
     },
     "relativeJustNow": "ahora mismo",

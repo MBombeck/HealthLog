@@ -2,9 +2,9 @@
  * The one action row under a Coach message, and the follow-up chips that
  * live in the answer's column.
  *
- *   - Assistant: copy, read aloud, try again, then the time, in one left
- *     group; the tokens and model in the right group of the same row. No
- *     feedback thumbs, no evidence disclosure.
+ *   - Assistant: copy, read aloud, try again, details, then the time, in one
+ *     left-aligned row; the model and tokens live behind the details icon,
+ *     not as text on the row. No feedback thumbs, no evidence disclosure.
  *   - User: copy, remember, time in one row; remember is an icon.
  *   - The time reads "14:32" today, "yesterday 14:32", or the date further
  *     back.
@@ -50,7 +50,7 @@ vi.mock("../read-aloud", async (importOriginal) => {
 });
 
 import { ChatBubble, areChatBubblePropsEqual } from "../chat-bubble";
-import { answerMetaText, messageTimeText } from "../message-actions";
+import { answerInfoLines, messageTimeText } from "../message-actions";
 
 function render(node: React.ReactNode, locale: "en" | "de" = "en") {
   return renderToStaticMarkup(
@@ -100,26 +100,27 @@ const ANSWER = {
 describe("assistant action row", () => {
   const html = render(<ChatBubble {...ANSWER} />);
   const row = slot(html, "coach-answer-actions");
-  const left = slot(row, "coach-answer-actions-left");
 
-  it("lists copy, read aloud, try again and the time on the left, in that order", () => {
+  it("lists copy, read aloud, try again, details and the time, in that order", () => {
     const order = [
       "coach-copy-message",
       "coach-read-aloud",
       "coach-try-again",
+      "coach-answer-info",
       "coach-message-time",
-    ].map((name) => left.indexOf(`data-slot="${name}"`));
+    ].map((name) => row.indexOf(`data-slot="${name}"`));
     expect(order.every((at) => at > -1)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
-  it("puts the tokens and the model on the right of the same row", () => {
-    const meta = slot(row, "coach-answer-meta");
-    expect(meta).toContain("1,234 tokens · gpt-4o-mini");
-    expect(meta).toContain('title="gpt-4o-mini"');
-    expect(meta).toContain("truncate");
-    expect(left).not.toContain("coach-answer-meta");
-    expect(row).toContain("justify-between");
+  it("keeps the model and tokens off the row, behind a named details button", () => {
+    expect(row).not.toContain("1,234");
+    expect(row).not.toContain("gpt-4o-mini");
+    expect(row).not.toContain("justify-between");
+    expect(row).not.toContain("coach-answer-meta");
+    const info = slot(row, "coach-answer-info");
+    expect(info).toMatch(/^<button type="button"/);
+    expect(info).toContain('aria-label="Answer details"');
   });
 
   it("has no thumbs, no evidence disclosure and no separate token line", () => {
@@ -129,19 +130,18 @@ describe("assistant action row", () => {
   });
 
   it("shows the time as text, the full date for screen readers", () => {
-    const time = slot(left, "coach-message-time");
+    const time = slot(row, "coach-message-time");
     expect(time).toMatch(/^<time[^>]*dateTime="/);
     expect(time).toContain("Message sent");
     expect(time).toMatch(/<span aria-hidden="true">[^<]*\d:\d{2}[^<]*<\/span>/);
   });
 
-  it("keeps an empty right group when the answer has no count", () => {
+  it("offers no details button when neither the model nor the count is known", () => {
     const bare = render(
       <ChatBubble {...ANSWER} tokensUsed={null} model={null} />,
     );
-    expect(slot(bare, "coach-answer-meta")).toMatch(
-      /<p data-slot="coach-answer-meta"[^>]*><\/p>/,
-    );
+    expect(bare).toContain("coach-answer-actions");
+    expect(bare).not.toContain("coach-answer-info");
   });
 
   it("is absent on a refusal and while the answer is in flight", () => {
@@ -276,17 +276,29 @@ describe("messageTimeText", () => {
   });
 });
 
-describe("answerMetaText", () => {
+describe("answerInfoLines", () => {
   const { t } = getServerTranslator("en");
 
-  it("formats the count for the locale and adds the model", () => {
-    expect(answerMetaText(1234, "gpt-4o", "en-US", t)).toBe(
-      "1,234 tokens · gpt-4o",
-    );
-    expect(answerMetaText(1234, null, "de-DE", t)).toBe("1.234 tokens");
+  it("names the model, then the count formatted for the locale", () => {
+    expect(answerInfoLines(1234, "gpt-4o", "en-US", t)).toEqual([
+      "Model: gpt-4o",
+      "1,234 tokens",
+    ]);
+    expect(answerInfoLines(1234, null, "de-DE", t)).toEqual(["1.234 tokens"]);
   });
 
-  it("is nothing without a count", () => {
-    expect(answerMetaText(null, "gpt-4o", "en-US", t)).toBeNull();
+  it("keeps the model without a count, and is empty without either", () => {
+    expect(answerInfoLines(null, "gpt-4o", "en-US", t)).toEqual([
+      "Model: gpt-4o",
+    ]);
+    expect(answerInfoLines(null, null, "en-US", t)).toEqual([]);
+  });
+
+  it("speaks the reader's language", () => {
+    const de = getServerTranslator("de").t;
+    expect(answerInfoLines(1234, "gpt-4o", "de-DE", de)).toEqual([
+      "Modell: gpt-4o",
+      "1.234 Tokens",
+    ]);
   });
 });
