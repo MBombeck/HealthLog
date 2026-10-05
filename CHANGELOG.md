@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.40.2] — 2026-10-05
+
+A calmer Coach with conversations in a side panel and settings in place; the
+top of the dashboard says what matters today; documents filter by procedure.
+
+### Added
+
+- **Coach panel.** Conversations in a collapsible right panel (a sheet on a
+  phone), grouped by day, with rename, delete with undo and a new-chat
+  button; a gear opens quick settings (provider, model and reasoning where
+  they are the user's, and the lookback). `/coach?settings=data` opens it.
+- **Coach lookback as a real limit.** 7, 30 or 90 days, 12 months
+  (`lastYear`, new) or all; it limits the snapshot and every Coach tool, a
+  read beyond it answers `outside_reach`. MCP keeps its own windows.
+- **Today overview.** The digest gains `lead`, `today[]`, `restMode` and
+  `score.steadyWeeks`/`steadyAtLeast`: a lead line with content (deterministic
+  without AI), up to five facts (medications, an appointment today or
+  tomorrow, last night, vitals, cycle, Rest Mode), the ring with how long the
+  score has been steady. The morning push line carries no vital values.
+- **Procedure filter in the document archive (#1154).** `linkedProcedures` on
+  the usage endpoint; the list already accepted `encounterId`.
+
+### Changed
+
+- **Coach answers.** One action row (copy, read aloud, retry, time; tokens and
+  model); web thumbs and the evidence block removed; remember is an icon;
+  follow-up chips in the answer column; a scroll-to-bottom button; the
+  composer's "+" menu removed.
+- **Settings → Coach** summarises what the Coach sees and links into the
+  overlay.
+- Coach preferences parse field by field, so one invalid value no longer
+  drops the others.
+
+### Fixed
+
+- The medications fact counts the whole day on a 25-hour DST day.
+- Providers without credentials are no longer offered in the Coach overlay;
+  an operator-managed provider shows as such.
+- Document filter controls match the search field's height on a phone.
+
 ## [1.40.1] — 2026-10-04
 
 Restore opens older encrypted values again; faster pages on a long-used
