@@ -183,15 +183,23 @@ async function migrateConversationTitle(id: string): Promise<boolean> {
   return prisma.$transaction(async (tx) => {
     const fresh = await tx.coachConversation.findUnique({
       where: { id },
-      select: { title: true },
+      select: { title: true, updatedAt: true },
     });
     if (!fresh || fresh.title === null) return false;
     // FAIL-CLOSED: a key error throws here and rolls the tx back.
-    await tx.coachConversation.update({
-      where: { id },
-      data: { titleEncrypted: encryptToBytes(fresh.title), title: null },
+    // `updatedAt` is carried, not stamped: the Coach panel orders and groups
+    // by it, and moving a title into ciphertext is not activity. Matching on
+    // it too means a turn that lands meanwhile wins; the row is retried on
+    // the next pass.
+    const { count } = await tx.coachConversation.updateMany({
+      where: { id, updatedAt: fresh.updatedAt },
+      data: {
+        titleEncrypted: encryptToBytes(fresh.title),
+        title: null,
+        updatedAt: fresh.updatedAt,
+      },
     });
-    return true;
+    return count === 1;
   });
 }
 
@@ -224,14 +232,16 @@ async function migratePractitionerContact(id: string): Promise<boolean> {
   return prisma.$transaction(async (tx) => {
     const fresh = await tx.practitioner.findUnique({
       where: { id },
-      select: { phone: true, location: true },
+      select: { phone: true, location: true, updatedAt: true },
     });
     if (!fresh || (fresh.phone === null && fresh.location === null)) {
       return false;
     }
-    await tx.practitioner.update({
-      where: { id },
+    // Storage-only rewrite: the row keeps its own `updatedAt`.
+    const { count } = await tx.practitioner.updateMany({
+      where: { id, updatedAt: fresh.updatedAt },
       data: {
+        updatedAt: fresh.updatedAt,
         ...(fresh.phone !== null
           ? { phoneEncrypted: encryptNote(fresh.phone), phone: null }
           : {}),
@@ -240,7 +250,7 @@ async function migratePractitionerContact(id: string): Promise<boolean> {
           : {}),
       },
     });
-    return true;
+    return count === 1;
   });
 }
 

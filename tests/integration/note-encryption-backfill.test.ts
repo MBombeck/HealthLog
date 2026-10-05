@@ -41,6 +41,7 @@ describe("note-encryption backfill (real Postgres)", () => {
         unit: "kg",
         measuredAt: new Date("2026-05-16T08:00:00.000Z"),
         notes: "felt dizzy after",
+        updatedAt: new Date("2026-05-16T08:05:00.000Z"),
       },
     });
     const noNote = await prisma.measurement.create({
@@ -62,6 +63,7 @@ describe("note-encryption backfill (real Postgres)", () => {
         score: 3,
         moodLoggedAt: new Date("2026-05-16T08:00:00.000Z"),
         note: "rough night",
+        updatedAt: new Date("2026-05-16T08:06:00.000Z"),
       },
     });
 
@@ -85,6 +87,11 @@ describe("note-encryption backfill (real Postgres)", () => {
     const x = await prisma.moodEntry.findUnique({ where: { id: mood.id } });
     expect(x?.note).toBeNull();
     expect(readNote(x?.noteEncrypted ?? null, null)).toBe("rough night");
+
+    // updatedAt is the sync cursor: moving a note into ciphertext changes
+    // nothing a client reads, so neither row takes a new stamp.
+    expect(m?.updatedAt).toEqual(new Date("2026-05-16T08:05:00.000Z"));
+    expect(x?.updatedAt).toEqual(new Date("2026-05-16T08:06:00.000Z"));
   });
 
   it("is idempotent: a second run migrates zero rows and preserves the data", async () => {

@@ -53,7 +53,8 @@ function makePrisma(conversation: unknown) {
     update,
     findFirst,
     client: {
-      coachConversation: { findFirst, update },
+      coachConversation: { findFirst },
+      $executeRaw: update,
     } as never,
   };
 }
@@ -161,7 +162,7 @@ describe("refreshConversationSummary", () => {
     }
   });
 
-  it("(e) success path encrypts and persists summaryEncrypted + turn count + updatedAt", async () => {
+  it("(e) success path persists the summary and turn count, and leaves updatedAt alone", async () => {
     const now = new Date("2026-06-04T08:00:00.000Z");
     const { client, update } = makePrisma(
       makeConversation(30, { summaryTurnCount: 0 }),
@@ -177,12 +178,19 @@ describe("refreshConversationSummary", () => {
     expect(result.status).toBe("generated");
     expect(encryptToBytes).toHaveBeenCalledWith(okCompletion.content);
     expect(update).toHaveBeenCalledTimes(1);
-    const updateArg = update.mock.calls[0]![0];
-    expect(updateArg.where).toEqual({ id: "conv-1" });
-    expect(updateArg.data.summaryEncrypted).toBeDefined();
-    expect(updateArg.data.summaryUpdatedAt).toBe(now);
+    const [strings, ...values] = update.mock.calls[0]! as [
+      TemplateStringsArray,
+      ...unknown[],
+    ];
+    const sql = strings.join("?");
+    expect(sql).toContain('UPDATE "coach_conversations"');
+    expect(sql).toContain('"summary_encrypted"');
+    // A memory rewrite is not activity: the panel orders by updated_at.
+    expect(sql).not.toMatch(/"updated_at"/);
+    expect(values[1]).toBe(now);
     // foldHighWater = 30 - 18 = 12.
-    expect(updateArg.data.summaryTurnCount).toBe(12);
+    expect(values[2]).toBe(12);
+    expect(values[3]).toBe("conv-1");
   });
 });
 

@@ -20,6 +20,7 @@ interface InventoryRow {
   userId: string;
   notes: string | null;
   notesEncrypted: Uint8Array | null;
+  updatedAt?: Date;
 }
 
 const store = vi.hoisted(() => ({
@@ -99,16 +100,31 @@ vi.mock("@/lib/db", () => {
           .map((r) => ({ id: r.id })),
       findUnique: async (args: { where: { id: string } }) => {
         const r = store.inventory.find((x) => x.id === args.where.id);
-        return r ? { notes: r.notes, notesEncrypted: r.notesEncrypted } : null;
+        return r
+          ? {
+              notes: r.notes,
+              notesEncrypted: r.notesEncrypted,
+              updatedAt: r.updatedAt,
+            }
+          : null;
       },
-      update: async (args: {
-        where: { id: string };
-        data: { notes: string | null; notesEncrypted: Uint8Array | null };
+      updateMany: async (args: {
+        where: { id: string; updatedAt?: Date };
+        data: {
+          notes: string | null;
+          notesEncrypted: Uint8Array | null;
+          updatedAt?: Date;
+        };
       }) => {
-        const r = store.inventory.find((x) => x.id === args.where.id)!;
+        const r = store.inventory.find((x) => x.id === args.where.id);
+        if (!r || r.updatedAt?.getTime() !== args.where.updatedAt?.getTime()) {
+          return { count: 0 };
+        }
         r.notes = args.data.notes;
         r.notesEncrypted = args.data.notesEncrypted;
-        return r;
+        // Prisma stamps now unless the write names the column.
+        r.updatedAt = args.data.updatedAt ?? new Date();
+        return { count: 1 };
       },
     },
   };
@@ -148,7 +164,13 @@ beforeEach(() => {
     },
   ];
   store.inventory = [
-    { id: "i1", userId: "u1", notes: "opened pen #2", notesEncrypted: null },
+    {
+      id: "i1",
+      userId: "u1",
+      notes: "opened pen #2",
+      notesEncrypted: null,
+      updatedAt: new Date("2026-01-12T10:00:00.000Z"),
+    },
     {
       id: "i2",
       userId: "u1",
@@ -181,6 +203,8 @@ describe("runMedNotesEncryptionBackfillForUser", () => {
     const i1 = store.inventory.find((r) => r.id === "i1")!;
     expect(i1.notes).toBeNull();
     expect(readNote(i1.notesEncrypted, null)).toBe("opened pen #2");
+    // A storage-only rewrite keeps the row's own updatedAt.
+    expect(i1.updatedAt).toEqual(new Date("2026-01-12T10:00:00.000Z"));
   });
 
   it("leaves note-less rows untouched and never writes a both-null content row", async () => {

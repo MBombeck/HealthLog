@@ -120,15 +120,20 @@ async function migrateInventoryItemRow(id: string): Promise<boolean> {
   return prisma.$transaction(async (tx) => {
     const fresh = await tx.medicationInventoryItem.findUnique({
       where: { id },
-      select: { notes: true, notesEncrypted: true },
+      select: { notes: true, notesEncrypted: true, updatedAt: true },
     });
     if (!fresh || fresh.notesEncrypted || fresh.notes === null) return false;
     const encrypted = encryptNote(fresh.notes);
-    await tx.medicationInventoryItem.update({
-      where: { id },
-      data: { notesEncrypted: encrypted, notes: null },
+    // Storage-only rewrite: the row keeps its own `updatedAt`.
+    const { count } = await tx.medicationInventoryItem.updateMany({
+      where: { id, updatedAt: fresh.updatedAt },
+      data: {
+        notesEncrypted: encrypted,
+        notes: null,
+        updatedAt: fresh.updatedAt,
+      },
     });
-    return true;
+    return count === 1;
   });
 }
 
