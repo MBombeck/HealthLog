@@ -14,6 +14,7 @@ import type { CoachSnapshotResult } from "@/lib/ai/coach/snapshot";
 import {
   KEEP_DAILY_ROWS,
   KEEP_MONTHLY_ROWS,
+  KEEP_SESSIONS,
   condenseSeriesBlock,
   isoWeekMonth,
   summarisePoints,
@@ -118,14 +119,14 @@ describe("series-condense", () => {
       unit: "kg",
       timeline: { recent: recent(14), weekly: weeks(150) },
     };
-    expect(condenseSeriesBlock(block, 1)).toBe(true);
+    expect(condenseSeriesBlock(block, 1, "fatMass")).toBe(true);
     expect(block.timeline.recent).toHaveLength(KEEP_DAILY_ROWS);
     expect(block.timeline.recent.at(-1)?.value).toBe(43);
-    expect(condenseSeriesBlock(block, 2)).toBe(true);
+    expect(condenseSeriesBlock(block, 2, "fatMass")).toBe(true);
     expect(block.timeline).not.toHaveProperty("weekly");
     const monthly = (block.timeline as { monthly?: unknown[] }).monthly;
     expect(monthly!.length).toBeGreaterThan(30);
-    expect(condenseSeriesBlock(block, 3)).toBe(true);
+    expect(condenseSeriesBlock(block, 3, "fatMass")).toBe(true);
     expect((block.timeline as { monthly?: unknown[] }).monthly).toHaveLength(
       KEEP_MONTHLY_ROWS,
     );
@@ -140,8 +141,8 @@ describe("series-condense", () => {
     });
     expect((block as { condensed?: string[] }).condensed).toEqual([
       `daily values: newest ${KEEP_DAILY_ROWS} days kept`,
-      "weekly means folded into monthly means",
-      `monthly means: newest ${KEEP_MONTHLY_ROWS} months kept`,
+      "weekly values folded into monthly values",
+      `monthly values: newest ${KEEP_MONTHLY_ROWS} months kept`,
     ]);
   });
 
@@ -153,7 +154,7 @@ describe("series-condense", () => {
         weeklyDia: [{ weekISO: "2026-W30", mean: 85, count: 4 }],
       },
     };
-    condenseSeriesBlock(block, 2);
+    condenseSeriesBlock(block, 2, "bloodPressure");
     expect(block).toMatchObject({
       summary: {
         sys: { first: 130, last: 121, change: -9 },
@@ -168,7 +169,7 @@ describe("series-condense", () => {
 
   it("leaves a block without a timeline alone", () => {
     const block = { aggregate: { mean: 1 } };
-    expect(condenseSeriesBlock(block, 1)).toBe(false);
+    expect(condenseSeriesBlock(block, 1, "fatMass")).toBe(false);
     expect(block).toEqual({ aggregate: { mean: 1 } });
   });
 });
@@ -284,6 +285,102 @@ describe("the tool-mode rules", () => {
       expect(text).toContain("summary");
     },
   );
+});
+
+describe("series-condense reads each block in its own fields", () => {
+  it("sleep: nights carry minutes, so the summary ends on the latest night", () => {
+    const block = {
+      timeline: {
+        recent: Array.from({ length: 14 }, (_, i) => ({
+          date: `2026-09-${String(i + 10).padStart(2, "0")}`,
+          weekday: "Mon",
+          minutes: 400 + i,
+          stages: { core: 200, deep: 80, rem: 90 },
+        })),
+        weekly: weeks(6, 2026, () => 320).map((w, i) => ({
+          ...w,
+          weekISO: `2026-W${30 + i}`,
+        })),
+      },
+    };
+    condenseSeriesBlock(block, 1, "sleep");
+    expect(block).toMatchObject({
+      summary: { to: "2026-09-23", last: 413 },
+    });
+    expect(block.timeline.recent).toHaveLength(KEEP_DAILY_ROWS);
+    expect(block.timeline.recent.at(-1)).toMatchObject({ minutes: 413 });
+    condenseSeriesBlock(block, 2, "sleep");
+    expect(
+      (block.timeline as unknown as { monthly: unknown[] }).monthly,
+    ).toEqual([
+      { month: "2026-07", mean: 320, count: 14 },
+      { month: "2026-08", mean: 320, count: 28 },
+    ]);
+  });
+
+  it("adherence: rates fold weighted by doses, not by readings", () => {
+    const block = {
+      rate: 88,
+      timeline: {
+        recent: [
+          { date: "2026-09-30", weekday: "Wed", rate: 1, taken: 2, total: 2 },
+          { date: "2026-10-01", weekday: "Thu", rate: 0.5, taken: 1, total: 2 },
+        ],
+        weekly: [
+          { weekISO: "2026-W36", rate: 1, taken: 2, total: 2 },
+          { weekISO: "2026-W37", rate: 0.5, taken: 7, total: 14 },
+        ],
+      },
+    };
+    condenseSeriesBlock(block, 2, "compliance");
+    expect(block).toMatchObject({
+      summary: { to: "2026-10-01", last: 0.5 },
+      timeline: { monthly: [{ month: "2026-09", rate: 0.56, total: 16 }] },
+    });
+    expect(block.timeline).not.toHaveProperty("weekly");
+  });
+
+  it("glucose: each measurement context condenses on its own", () => {
+    const ctx = (base: number) => ({
+      recent: recent(14, (i) => base + i),
+      weekly: weeks(30, 2026, () => base),
+    });
+    const block = {
+      unit: "mg/dL",
+      panel: { tir: 0.8 },
+      byContext: { FASTING: ctx(95), POST_MEAL: ctx(140) },
+    };
+    expect(condenseSeriesBlock(block, 1, "glucose")).toBe(true);
+    expect(condenseSeriesBlock(block, 2, "glucose")).toBe(true);
+    expect(block).toMatchObject({
+      summary: {
+        FASTING: { last: 108, to: "2026-09-14" },
+        POST_MEAL: { last: 153 },
+      },
+    });
+    for (const c of Object.values(block.byContext)) {
+      expect(c.recent).toHaveLength(KEEP_DAILY_ROWS);
+      expect(c).not.toHaveProperty("weekly");
+      expect((c as unknown as { monthly: unknown[] }).monthly.length).toBe(7);
+    }
+  });
+
+  it("workouts: keeps the newest sessions and the whole-window rollup", () => {
+    const block = {
+      recent: Array.from({ length: 15 }, (_, i) => ({
+        date: `2026-09-${String(30 - i).padStart(2, "0")}`,
+        sport: "RUNNING",
+        durationMin: 30 + i,
+      })),
+      perSport: [{ sport: "RUNNING", count: 40, totalDurationMin: 1500 }],
+      totalInWindow: 40,
+    };
+    expect(condenseSeriesBlock(block, 1, "workouts")).toBe(true);
+    expect(block.recent).toHaveLength(KEEP_SESSIONS);
+    expect(block.recent[0].date).toBe("2026-09-30");
+    expect(block.perSport[0].count).toBe(40);
+    expect(condenseSeriesBlock(block, 2, "workouts")).toBe(false);
+  });
 });
 
 describe("the prompt-budget pass on a single-source read", () => {

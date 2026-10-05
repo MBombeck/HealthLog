@@ -44,18 +44,6 @@ export interface SeriesSummary {
   points: number;
 }
 
-interface WeeklyBucket {
-  weekISO: string;
-  mean: number;
-  count: number;
-}
-
-export interface MonthlyBucket {
-  month: string;
-  mean: number;
-  count: number;
-}
-
 type Rec = Record<string, unknown>;
 
 function isRecord(value: unknown): value is Rec {
@@ -64,19 +52,6 @@ function isRecord(value: unknown): value is Rec {
 
 function round(value: number): number {
   return Math.round(value * 100) / 100;
-}
-
-function isWeekly(value: unknown): value is WeeklyBucket[] {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (b) =>
-        isRecord(b) &&
-        typeof b.weekISO === "string" &&
-        typeof b.mean === "number" &&
-        typeof b.count === "number",
-    )
-  );
 }
 
 /** ISO week `YYYY-Www` → the Monday that starts it, as `YYYY-MM-DD`. */
@@ -144,63 +119,159 @@ export function isoWeekMonth(weekISO: string): string | null {
   return dateOnlyKey(thursday).slice(0, 7);
 }
 
-/** Weekly means folded into count-weighted monthly means, in time order. */
+/** A monthly bucket: the month, the weighted value, the summed weight. */
+export type MonthlyBucket = { month: string } & Record<string, number | string>;
+
+/**
+ * Weekly buckets folded into monthly ones, in time order. Each month's value
+ * is the weekly values weighted by `weightField` (readings for a mean, doses
+ * for an adherence rate), and the month carries the summed weight.
+ */
 export function weeklyToMonthly(
-  weekly: ReadonlyArray<WeeklyBucket>,
+  weekly: ReadonlyArray<unknown>,
+  valueField = "mean",
+  weightField = "count",
 ): MonthlyBucket[] {
-  const months = new Map<string, { sum: number; count: number }>();
+  const months = new Map<string, { sum: number; weight: number }>();
   for (const bucket of weekly) {
+    if (!isRecord(bucket) || typeof bucket.weekISO !== "string") continue;
+    const value = bucket[valueField];
+    const weight = bucket[weightField];
+    if (typeof value !== "number" || typeof weight !== "number") continue;
     const month = isoWeekMonth(bucket.weekISO);
-    if (!month || bucket.count <= 0) continue;
-    const acc = months.get(month) ?? { sum: 0, count: 0 };
-    acc.sum += bucket.mean * bucket.count;
-    acc.count += bucket.count;
+    if (!month || weight <= 0) continue;
+    const acc = months.get(month) ?? { sum: 0, weight: 0 };
+    acc.sum += value * weight;
+    acc.weight += weight;
     months.set(month, acc);
   }
+  const places = valueField === "rate" ? 100 : 10;
   return Array.from(months.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, { sum, count }]) => ({
+    .map(([month, { sum, weight }]) => ({
       month,
-      mean: Math.round((sum / count) * 10) / 10,
-      count,
+      [valueField]: Math.round((sum / weight) * places) / places,
+      [weightField]: weight,
     }));
 }
 
 /**
- * The value series a timeline carries: `value` over `weekly` for a single
- * series, `sys`/`dia` over `weeklySys`/`weeklyDia` for blood pressure.
+ * One value series inside a block: where its rows live (`container`), which
+ * field of a daily row holds the value, and which weekly field holds the
+ * period value and its weight. The blocks name these differently: sleep
+ * nights carry `minutes`, adherence days and weeks a `rate` over `total`
+ * doses, blood pressure `sys`/`dia` beside separate weekly lists, glucose
+ * one series per measurement context.
  */
-const SERIES: ReadonlyArray<{
+interface Track {
+  /** The summary key; null for a block with a single series. */
   name: string | null;
+  container: Rec;
   field: string;
   weekly: string;
   monthly: string;
-}> = [
-  { name: null, field: "value", weekly: "weekly", monthly: "monthly" },
-  { name: "sys", field: "sys", weekly: "weeklySys", monthly: "monthlySys" },
-  { name: "dia", field: "dia", weekly: "weeklyDia", monthly: "monthlyDia" },
-];
+  weeklyValue: string;
+  weight: string;
+}
 
-function blockSummary(timeline: Rec): unknown {
-  const recent = Array.isArray(timeline.recent) ? timeline.recent : [];
-  const out: Rec = {};
-  for (const s of SERIES) {
-    const points: Array<{ at: string; value: number }> = [];
-    const weekly = timeline[s.weekly];
-    if (isWeekly(weekly)) {
-      for (const b of weekly) points.push({ at: b.weekISO, value: b.mean });
+/** Which shape a snapshot block has, by its key. */
+export type SeriesBlockKind =
+  "value" | "bloodPressure" | "sleep" | "compliance" | "glucose" | "workouts";
+
+export function seriesBlockKind(key: string): SeriesBlockKind {
+  switch (key) {
+    case "bloodPressure":
+    case "sleep":
+    case "compliance":
+    case "glucose":
+    case "workouts":
+      return key;
+    default:
+      return "value";
+  }
+}
+
+function tracksOf(kind: SeriesBlockKind, block: Rec): Track[] {
+  const single = (container: unknown, field: string, name: string | null) =>
+    isRecord(container)
+      ? [
+          {
+            name,
+            container,
+            field,
+            weekly: "weekly",
+            monthly: "monthly",
+            weeklyValue: field === "rate" ? "rate" : "mean",
+            weight: field === "rate" ? "total" : "count",
+          },
+        ]
+      : [];
+  switch (kind) {
+    case "value":
+      return single(block.timeline, "value", null);
+    case "sleep":
+      return single(block.timeline, "minutes", null);
+    case "compliance":
+      return single(block.timeline, "rate", null);
+    case "bloodPressure":
+      if (!isRecord(block.timeline)) return [];
+      return (["sys", "dia"] as const).map((name) => ({
+        name,
+        container: block.timeline as Rec,
+        field: name,
+        weekly: name === "sys" ? "weeklySys" : "weeklyDia",
+        monthly: name === "sys" ? "monthlySys" : "monthlyDia",
+        weeklyValue: "mean",
+        weight: "count",
+      }));
+    case "glucose": {
+      const byContext = block.byContext;
+      if (!isRecord(byContext)) return [];
+      return Object.keys(byContext).flatMap((ctx) =>
+        single(byContext[ctx], "value", ctx),
+      );
     }
+    case "workouts":
+      return [];
+  }
+}
+
+/** Whether `condenseSeriesBlock` knows how to condense this block. */
+export function isCondensable(key: string, block: unknown): boolean {
+  if (!isRecord(block)) return false;
+  const kind = seriesBlockKind(key);
+  if (kind === "workouts") return Array.isArray(block.recent);
+  return tracksOf(kind, block).length > 0;
+}
+
+function trackSummary(track: Track): SeriesSummary | null {
+  const points: Array<{ at: string; value: number }> = [];
+  const weekly = track.container[track.weekly];
+  if (Array.isArray(weekly)) {
+    for (const b of weekly) {
+      if (!isRecord(b) || typeof b.weekISO !== "string") continue;
+      const value = b[track.weeklyValue];
+      if (typeof value === "number") points.push({ at: b.weekISO, value });
+    }
+  }
+  const recent = track.container.recent;
+  if (Array.isArray(recent)) {
     for (const row of recent) {
-      if (isRecord(row) && typeof row.date === "string") {
-        const value = row[s.field];
-        if (typeof value === "number") points.push({ at: row.date, value });
-      }
+      if (!isRecord(row) || typeof row.date !== "string") continue;
+      const value = row[track.field];
+      if (typeof value === "number") points.push({ at: row.date, value });
     }
-    const summary = summarisePoints(points);
-    if (summary) {
-      if (s.name === null) return summary;
-      out[s.name] = summary;
-    }
+  }
+  return summarisePoints(points);
+}
+
+function blockSummary(tracks: ReadonlyArray<Track>): unknown {
+  const out: Rec = {};
+  for (const track of tracks) {
+    const summary = trackSummary(track);
+    if (!summary) continue;
+    if (track.name === null) return summary;
+    out[track.name] = summary;
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }
@@ -211,47 +282,80 @@ function note(block: Rec, text: string): void {
   block.condensed = list;
 }
 
+/** Workout sessions a condensed block keeps (the list is newest first). */
+export const KEEP_SESSIONS = 5;
+
 /**
- * Take one condensing step on a block that carries a `timeline`. Returns
- * whether anything changed; a block without a timeline is left alone and
- * reports false.
+ * Take one condensing step on the block stored under `key`. Returns whether
+ * anything changed; a block of a shape this module does not know is left
+ * alone and reports false.
  */
-export function condenseSeriesBlock(block: unknown, step: 1 | 2 | 3): boolean {
-  if (!isRecord(block) || !isRecord(block.timeline)) return false;
-  const timeline = block.timeline;
+export function condenseSeriesBlock(
+  block: unknown,
+  step: 1 | 2 | 3,
+  key: string,
+): boolean {
+  if (!isRecord(block)) return false;
+  const kind = seriesBlockKind(key);
+  if (kind === "workouts") {
+    // The sessions list is newest first; the per-sport rollup and the window
+    // total already cover every session, so they stay whole.
+    if (
+      step === 1 &&
+      Array.isArray(block.recent) &&
+      block.recent.length > KEEP_SESSIONS
+    ) {
+      block.recent = block.recent.slice(0, KEEP_SESSIONS);
+      note(
+        block,
+        `sessions: newest ${KEEP_SESSIONS} kept; perSport and totalInWindow cover the whole window`,
+      );
+      return true;
+    }
+    return false;
+  }
+  const tracks = tracksOf(kind, block);
+  if (tracks.length === 0) return false;
   if (block.summary === undefined) {
-    const summary = blockSummary(timeline);
+    const summary = blockSummary(tracks);
     if (summary !== undefined) block.summary = summary;
   }
+  const containers = new Set(tracks.map((t) => t.container));
   let changed = false;
   if (step === 1) {
-    if (
-      Array.isArray(timeline.recent) &&
-      timeline.recent.length > KEEP_DAILY_ROWS
-    ) {
-      timeline.recent = timeline.recent.slice(-KEEP_DAILY_ROWS);
-      note(block, `daily values: newest ${KEEP_DAILY_ROWS} days kept`);
-      changed = true;
-    }
-  } else if (step === 2) {
-    for (const s of SERIES) {
-      const weekly = timeline[s.weekly];
-      if (!isWeekly(weekly)) continue;
-      timeline[s.monthly] = weeklyToMonthly(weekly);
-      delete timeline[s.weekly];
-      note(block, "weekly means folded into monthly means");
-      changed = true;
-    }
-  } else {
-    for (const s of SERIES) {
-      const monthly = timeline[s.monthly];
-      if (Array.isArray(monthly) && monthly.length > KEEP_MONTHLY_ROWS) {
-        timeline[s.monthly] = monthly.slice(-KEEP_MONTHLY_ROWS);
-        note(block, `monthly means: newest ${KEEP_MONTHLY_ROWS} months kept`);
+    for (const container of containers) {
+      if (
+        Array.isArray(container.recent) &&
+        container.recent.length > KEEP_DAILY_ROWS
+      ) {
+        container.recent = container.recent.slice(-KEEP_DAILY_ROWS);
+        note(block, `daily values: newest ${KEEP_DAILY_ROWS} days kept`);
         changed = true;
       }
     }
-    const coarse = timeline.coarse;
+  } else if (step === 2) {
+    for (const track of tracks) {
+      const weekly = track.container[track.weekly];
+      if (!Array.isArray(weekly)) continue;
+      track.container[track.monthly] = weeklyToMonthly(
+        weekly,
+        track.weeklyValue,
+        track.weight,
+      );
+      delete track.container[track.weekly];
+      note(block, "weekly values folded into monthly values");
+      changed = true;
+    }
+  } else {
+    for (const track of tracks) {
+      const monthly = track.container[track.monthly];
+      if (Array.isArray(monthly) && monthly.length > KEEP_MONTHLY_ROWS) {
+        track.container[track.monthly] = monthly.slice(-KEEP_MONTHLY_ROWS);
+        note(block, `monthly values: newest ${KEEP_MONTHLY_ROWS} months kept`);
+        changed = true;
+      }
+    }
+    const coarse = isRecord(block.timeline) ? block.timeline.coarse : undefined;
     if (isRecord(coarse) && ("monthly" in coarse || "anomalies" in coarse)) {
       delete coarse.monthly;
       delete coarse.anomalies;

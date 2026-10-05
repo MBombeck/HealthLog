@@ -33,7 +33,7 @@ import {
   resolveSnapshotPrelude,
 } from "./snapshot-prelude";
 import { annotateSnapshotFreshness } from "./snapshot-freshness";
-import { condenseSeriesBlock } from "./series-condense";
+import { condenseSeriesBlock, isCondensable } from "./series-condense";
 import { buildGlp1SnapshotBlock } from "./glp1-snapshot";
 import { buildDerivedSnapshotBlock } from "./derived-snapshot";
 import { buildCorrelationsSnapshotBlock } from "./correlations-snapshot";
@@ -1314,10 +1314,10 @@ export function degradeToBudget(
     if (size() <= MAX_SNAPSHOT_CHARS) break;
     // A requested series is condensed step by step and keeps its numbers
     // (`series-condense.ts`); it is never swapped for the `omitted` marker.
-    if (requested.has(key) && asRecord(asRecord(snapshot[key])?.timeline)) {
+    if (requested.has(key) && isCondensable(key, snapshot[key])) {
       for (const step of [1, 2, 3] as const) {
         if (size() <= MAX_SNAPSHOT_CHARS) break;
-        if (condenseSeriesBlock(snapshot[key], step)) {
+        if (condenseSeriesBlock(snapshot[key], step, key)) {
           degraded.push({ key, cluster, pass: step });
         }
       }
