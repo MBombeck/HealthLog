@@ -173,7 +173,8 @@ function tableSummaryCount(data: Record<string, unknown>): number | undefined {
 /**
  * How many readings or rows a present result covered, when the result says
  * so in a field the server counted:
- * - a metric series: the aggregate's coverage count;
+ * - a metric series: the aggregate's coverage count, else the readings the
+ *   snapshot counted for it;
  * - a metric table: the readings its periods fold;
  * - workouts: the sessions in the window;
  * - labs: the biomarkers returned (one row each).
@@ -186,9 +187,17 @@ function presentCount(tool: CoachToolName, data: unknown): number | undefined {
       return tableSummaryCount(data);
     case "get_metric_series": {
       const section = data.section;
-      if (!isRecord(section) || !isRecord(section.aggregate)) return undefined;
-      const coverage = section.aggregate.coverage;
-      return isRecord(coverage) ? asCount(coverage.count) : undefined;
+      const coverage =
+        isRecord(section) && isRecord(section.aggregate)
+          ? section.aggregate.coverage
+          : undefined;
+      // The aggregate's count where the block has one; a series without an
+      // aggregate (body composition, the synced series) carries the readings
+      // the snapshot counted beside the section.
+      return (
+        (isRecord(coverage) ? asCount(coverage.count) : undefined) ??
+        asCount(data.readings)
+      );
     }
     case "get_workouts":
       return asCount(data.totalInWindow);

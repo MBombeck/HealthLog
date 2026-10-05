@@ -243,7 +243,10 @@ describe("<CoachTurnStepList>", () => {
     expect(html).toContain('data-status="done"');
     expect(html).toContain('data-status="empty"');
     expect(html).toContain('data-status="running"');
-    let text = html.replace(/<span class="sr-only">, <\/span>/g, "");
+    let text = html.replace(
+      /<span class="sr-only select-none">, <\/span>/g,
+      "",
+    );
     // Strip tags until nothing changes, so no fragment can survive one pass.
     for (let prev = ""; prev !== text;) {
       prev = text;
@@ -347,5 +350,29 @@ describe("legacyAreaLabels", () => {
     expect(
       render(<CoachTurnSteps steps={[]} active={false} areas={["bp"]} />, "de"),
     ).toContain("1 Bereich angesehen");
+  });
+});
+
+describe("a step row copied out of the list", () => {
+  it("reads 'domain · window' without the screen reader's comma", () => {
+    const html = render(
+      <CoachTurnStepList
+        steps={[{ ...BP, domain: "weight", count: undefined }]}
+        active={false}
+      />,
+      "de",
+    );
+    // What a selection copies: every text node except the unselectable ones.
+    // Reads this test's own static markup; not a sanitiser for input.
+    const copied = html
+      .split(/<span[^>]*class="[^"]*\bselect-none\b[^"]*"[^>]*>[^<]*<\/span>/)
+      .join("")
+      .split(/<[^>]*>/)
+      .join("")
+      .replace(/\s+/g, " ")
+      .trim();
+    expect(copied).toBe("Gewicht · letzte 90 Tage");
+    // The comma is still there for a screen reader.
+    expect(html).toMatch(/class="sr-only select-none">, <\/span>/);
   });
 });

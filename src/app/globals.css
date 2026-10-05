@@ -56,6 +56,7 @@
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
+  --color-input-focus: var(--input-focus);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
@@ -241,6 +242,9 @@
   --destructive: #ff5555;
   --border: #44475a;
   --input: #44475a;
+  /* Text-field focus border: a neutral, foreground-based tone, no colour
+   * ring. ~5.2:1 on --background, ~6:1 on --card. */
+  --input-focus: #9a9b9d;
   --ring: #bd93f9;
   --chart-1: #bd93f9;
   --chart-2: #50fa7b;
@@ -369,6 +373,8 @@
   --success-foreground: #ffffff;
   --border: oklch(0.885 0.008 300);
   --input: oklch(0.87 0.009 300);
+  /* Text-field focus border, neutral: ~4.2:1 on --background. */
+  --input-focus: oklch(0.56 0.012 295);
   --ring: oklch(0.6 0.13 292);
   --chart-1: #644ac9;
   --chart-2: #14720a;

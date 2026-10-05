@@ -26,11 +26,8 @@ import type { DoseHistoryRow } from "@/lib/medications/scheduling/dose-history";
 import { annotate } from "@/lib/logging/context";
 import { courseStatusOn } from "@/lib/medications/course-window";
 import { isoWeekKey, tzDayKey, tzWeekday } from "../snapshot-series";
-import type {
-  CoachProvenance,
-  CoachProvenanceMetric,
-  CoachScopeSource,
-} from "../types";
+import type { RegisterBlock } from "../series-condense";
+import type { CoachProvenance, CoachProvenanceMetric } from "../types";
 
 /**
  * The medication row shape the block consumes — exactly what the
@@ -53,7 +50,7 @@ interface ComplianceBlockContext {
   snapshot: Record<string, unknown>;
   metrics: Set<CoachProvenanceMetric>;
   counts: NonNullable<CoachProvenance["counts"]>;
-  registerBlock: (key: string, source: CoachScopeSource) => void;
+  registerBlock: RegisterBlock;
 }
 
 function courseSummary(
@@ -208,7 +205,23 @@ export function buildComplianceBlock(
     };
     metrics.add("compliance");
     counts.compliance = countable.length;
-    registerBlock("compliance", "compliance");
+    registerBlock("compliance", "compliance", () => {
+      // Every day's rate over the whole window, as the recent rows state it.
+      const byDay = new Map<string, { taken: number; total: number }>();
+      for (const r of countable) {
+        const key = tzDayKey(r.at, userTz);
+        const e = byDay.get(key) ?? { taken: 0, total: 0 };
+        e.total += 1;
+        if (isTaken(r)) e.taken += 1;
+        byDay.set(key, e);
+      }
+      return {
+        value: Array.from(byDay.entries()).map(([date, e]) => ({
+          date,
+          value: Math.round((e.taken / e.total) * 100) / 100,
+        })),
+      };
+    });
   } else {
     // v1.7.0 — toggled-on cluster with no rows. Annotate so the
     // dashboards can distinguish "user has no medication data" from

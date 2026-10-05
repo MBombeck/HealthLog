@@ -41,7 +41,10 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  * Screenshots are attached to the report (no pixel baselines).
  */
 
-const NOW = Date.now();
+// A fixed midday, pinned in the browser too (see beforeEach): the panel groups
+// conversations by the browser's local day, so a run just after midnight in
+// the runner's or the profile's zone would move "an hour ago" into yesterday.
+const NOW = Date.parse("2026-06-04T12:00:00Z");
 const HOUR = 60 * 60 * 1000;
 
 interface Conversation {
@@ -406,6 +409,7 @@ test.describe("Coach page frame", () => {
       testInfo.project.name !== "chromium-desktop",
       "each case sets its own viewport; the desktop project runs them all",
     );
+    await page.clock.setFixedTime(new Date(NOW));
     await serveAiBlock(page, aiBlockAvailable());
     await page.emulateMedia({ reducedMotion: "reduce" });
   });
@@ -472,7 +476,7 @@ test.describe("Coach page frame", () => {
       expect(Math.abs(closed.composer - open.composer)).toBeLessThanOrEqual(1);
       // Closed, nothing inside the panel is reachable.
       await expect(
-        panel(page).locator('[data-slot="coach-history-search"]'),
+        panel(page).locator('[data-slot="coach-history-select"]').first(),
       ).not.toBeInViewport();
       await expectNoSidewaysScroll(page);
       await shot(page, testInfo, `coach-frame-${width}-closed`);
@@ -484,7 +488,10 @@ test.describe("Coach page frame", () => {
       // Open again, then Escape from inside closes it, focus to the toggle.
       await toggle(page).click();
       await expect(panel(page)).toHaveAttribute("data-state", "open");
-      await panel(page).locator('[data-slot="coach-history-search"]').focus();
+      await panel(page)
+        .locator('[data-slot="coach-history-select"]')
+        .first()
+        .focus();
       await page.keyboard.press("Escape");
       await expect(panel(page)).toHaveAttribute("data-state", "closed");
       await expect(toggle(page)).toBeFocused();

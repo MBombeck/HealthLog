@@ -19,6 +19,7 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { buildBaselineBand } from "@/lib/insights/derived/baseline";
 import { DEFAULT_WINDOW } from "./snapshot-cache";
 import { COACH_DAILY_DETAIL_DAYS } from "./history-reach";
+import type { DailyPoint } from "./series-condense";
 import type { CoachScope, CoachScopeSource, CoachScopeWindow } from "./types";
 
 const WEEKDAY_KEYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
@@ -320,6 +321,23 @@ export async function buildCoarseTimelineTail(
       deltaSd: a.deltaSd,
     })),
   };
+}
+
+/**
+ * Every day's value over `rows`, the same day value the timeline's daily
+ * rows use, in the reader's unit when a transform is given. Feeds the
+ * summary of a condensed block (`series-condense.ts`).
+ */
+export function dailyPoints(
+  rows: Array<{ measuredAt: Date; value: number }>,
+  tz: string,
+  type?: string,
+  transform?: DisplayTransform,
+): DailyPoint[] {
+  return buildDailyValueRows(rows, new Date(0), tz, type).map((row) => ({
+    date: row.date,
+    value: transform ? applyDisplayTransform(row.value, transform) : row.value,
+  }));
 }
 
 /**

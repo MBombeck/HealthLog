@@ -33,6 +33,12 @@ import {
   resolveSnapshotPrelude,
 } from "./snapshot-prelude";
 import { annotateSnapshotFreshness } from "./snapshot-freshness";
+import {
+  condenseSeriesBlock,
+  isCondensable,
+  type DailySeries,
+  type RegisterBlock,
+} from "./series-condense";
 import { buildGlp1SnapshotBlock } from "./glp1-snapshot";
 import { buildDerivedSnapshotBlock } from "./derived-snapshot";
 import { buildCorrelationsSnapshotBlock } from "./correlations-snapshot";
@@ -136,6 +142,12 @@ export interface CoachSnapshotResult {
    * units, so a reply never mixes the two.
    */
   units: UnitPreferences;
+  /**
+   * The blocks the prompt-budget pass cut or condensed, absent when it cut
+   * nothing. A tool reading one block out of a shared build checks this: a
+   * block cut for somebody else's prompt is no answer to its own read.
+   */
+  degradedBlocks?: ReadonlyArray<string>;
 }
 
 /**
@@ -192,13 +204,26 @@ export async function buildCoachSnapshot(
      * one, as it always did.
      */
     reach?: CoachHistoryReach;
+    /**
+     * A Coach tool reading one source: condense that source's blocks to the
+     * prompt budget instead of shedding them (`series-condense.ts`). Every
+     * other caller, MCP among them, keeps the plain budget pass, so its
+     * output is what it always was.
+     */
+    condenseRequested?: boolean;
   },
 ): Promise<CoachSnapshotResult> {
   const reach = options?.reach ?? UNBOUNDED_REACH;
-  const key = snapshotCacheKey(userId, scope, reach);
+  const condenseRequested = options?.condenseRequested === true;
+  const key = `${snapshotCacheKey(userId, scope, reach)}${condenseRequested ? "|condense" : ""}`;
   const cached = readSnapshotCache(key);
   if (cached) return cached;
-  const result = await buildCoachSnapshotImpl(userId, scope, reach);
+  const result = await buildCoachSnapshotImpl(
+    userId,
+    scope,
+    reach,
+    condenseRequested,
+  );
   writeSnapshotCache(key, result);
   return result;
 }
@@ -230,6 +255,7 @@ async function buildCoachSnapshotImpl(
   userId: string,
   scope: CoachScope | undefined,
   reach: CoachHistoryReach,
+  condenseRequested: boolean,
 ): Promise<CoachSnapshotResult> {
   // Prefs, module gates and the admitted sources — see `snapshot-prelude.ts`.
   // The lookback limit caps the narration window there, whatever the caller
@@ -325,9 +351,16 @@ async function buildCoachSnapshotImpl(
   // Snapshot top-level keys that carry an `aggregate` companion — the
   // degrader can drop `timeline.recent` from these and still leave the
   // aggregate for the Coach to reason from.
-  const registerBlock = (key: string, source: CoachScopeSource) => {
+  // The source each block was built for, so a single-source read can tell
+  // which blocks it asked for (see `degradeToBudget`).
+  const blockSources = new Map<string, CoachScopeSource>();
+  // A series block's daily values, read only if the block is condensed.
+  const blockDaily = new Map<string, () => DailySeries>();
+  const registerBlock: RegisterBlock = (key, source, daily) => {
     const cluster = sourceCluster(source);
     if (cluster) blockClusters.set(key, cluster);
+    blockSources.set(key, source);
+    if (daily) blockDaily.set(key, daily);
   };
 
   // v1.7.0 — record which clusters resolved active for this build so
@@ -1046,7 +1079,29 @@ async function buildCoachSnapshotImpl(
   // `MAX_SNAPSHOT_CHARS`. The `scope` block is exempt — the model
   // needs it to know what is in-bounds. The helper emits its own
   // `coach.snapshot.truncated` annotation when it sheds anything.
-  degradeToBudget(compactSnapshot, blockClusters);
+  //
+  // A read scoped to one source (every retrieval tool, the MCP metric reads,
+  // a metric page) asked for that source's blocks: those are condensed, never
+  // emptied, and only after everything else has been shed.
+  const requestedSource =
+    condenseRequested &&
+    Array.isArray(scope?.sources) &&
+    scope.sources.length === 1
+      ? scope.sources[0]
+      : null;
+  const requestedBlocks = new Set(
+    requestedSource === null
+      ? []
+      : Array.from(blockSources.entries())
+          .filter(([, source]) => source === requestedSource)
+          .map(([key]) => key),
+  );
+  const degraded = degradeToBudget(
+    compactSnapshot,
+    blockClusters,
+    requestedBlocks,
+    (key) => blockDaily.get(key)?.(),
+  );
 
   // v1.18.6 (W7) — build the citation-aware reference-grounding block from the
   // representative scalars collected above. Deterministic + pure; the route
@@ -1088,6 +1143,9 @@ async function buildCoachSnapshotImpl(
     },
     referenceGrounding,
     units,
+    ...(degraded.length > 0
+      ? { degradedBlocks: Array.from(new Set(degraded.map((d) => d.key))) }
+      : {}),
   };
 }
 
@@ -1105,9 +1163,12 @@ async function buildCoachSnapshotImpl(
  * Returns the list of `{ key, cluster, pass }` it degraded — empty when
  * the snapshot already fit.
  */
-function degradeToBudget(
+export function degradeToBudget(
   snapshot: Record<string, unknown>,
   blockClusters: Map<string, CoachDataCluster>,
+  requested: ReadonlySet<string> = new Set(),
+  /** A requested block's daily values, for its condensed summary. */
+  dailyOf: (key: string) => DailySeries | undefined = () => undefined,
 ): Array<{ key: string; cluster: CoachDataCluster; pass: number }> {
   const degraded: Array<{
     key: string;
@@ -1128,6 +1189,10 @@ function degradeToBudget(
   const orderedKeys = Array.from(blockClusters.entries()).sort((a, b) => {
     const pa = priorityIndex.get(a[1]) ?? -1;
     const pb = priorityIndex.get(b[1]) ?? -1;
+    // A block the read asked for goes last, whatever its cluster.
+    const ra = requested.has(a[0]) ? 1 : 0;
+    const rb = requested.has(b[0]) ? 1 : 0;
+    if (ra !== rb) return ra - rb;
     // Higher priority index = lower signal = degrade first.
     return pb - pa;
   });
@@ -1258,10 +1323,23 @@ function degradeToBudget(
   // until it is genuinely the last lever left.
   for (const [key, cluster] of orderedKeys) {
     if (size() <= MAX_SNAPSHOT_CHARS) break;
+    // A requested series is condensed step by step and keeps its numbers
+    // (`series-condense.ts`); it is never swapped for the `omitted` marker.
+    if (requested.has(key) && isCondensable(key, snapshot[key])) {
+      const daily = dailyOf(key);
+      for (const step of [1, 2, 3] as const) {
+        if (size() <= MAX_SNAPSHOT_CHARS) break;
+        if (condenseSeriesBlock(snapshot[key], step, key, daily)) {
+          degraded.push({ key, cluster, pass: step });
+        }
+      }
+      continue;
+    }
     if (dropRecent(key)) degraded.push({ key, cluster, pass: 1 });
     if (size() <= MAX_SNAPSHOT_CHARS) break;
     if (dropWeekly(key)) degraded.push({ key, cluster, pass: 2 });
     if (size() <= MAX_SNAPSHOT_CHARS) break;
+    if (requested.has(key)) continue;
     if (dropBlock(key)) degraded.push({ key, cluster, pass: 3 });
   }
 

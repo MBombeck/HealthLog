@@ -57,6 +57,12 @@ describe("summariseHealthStatus", () => {
     expect(s.shifts[0]).toMatchObject({ metric: "WEIGHT", direction: "up" });
   });
 
+  it("does not present yesterday's reading as now", () => {
+    const s = summariseHealthStatus([vital(true, "above", 1)], []);
+    expect(s.present).toBe(false);
+    expect(s.deviations).toHaveLength(0);
+  });
+
   it("drops a vital flagged outside but with an 'in' direction", () => {
     const s = summariseHealthStatus([vital(true, "in")], []);
     expect(s.present).toBe(false);

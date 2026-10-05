@@ -314,7 +314,10 @@ export function CoachTurnStepList({
               {meta.map((part, i) => (
                 <span key={i}>
                   <span aria-hidden="true"> · </span>
-                  <span className="sr-only">, </span>
+                  {/* The comma is for a screen reader only. `select-none`
+                      keeps it out of a copied row, which otherwise read
+                      "Weight · ,all time". */}
+                  <span className="sr-only select-none">, </span>
                   {part}
                 </span>
               ))}

@@ -343,7 +343,7 @@ export function CoachInput({
         className={cn(
           "border-border/60 bg-muted/40 group rounded-2xl border",
           "shadow-sm transition-colors",
-          "focus-within:border-primary/50 focus-within:ring-primary/50 focus-within:bg-background focus-within:ring-2",
+          "focus-within:border-input-focus focus-within:bg-background",
           // One row at every width. Mobile used to stack the controls under the
           // textarea, which made an EMPTY composer two rows tall: a 44 px line
           // plus a 44 px touch-target row plus padding, around a tenth of a

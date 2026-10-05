@@ -8,7 +8,6 @@ import {
   Paperclip,
   Pencil,
   RotateCw,
-  Search,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,10 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useLoadMoreSentinel } from "@/hooks/use-load-more-sentinel";
 import type { CoachConversationDTO } from "@/lib/ai/coach/types";
 import { groupConversationsByRecency } from "@/lib/insights/coach-conversation-groups";
@@ -36,14 +33,14 @@ import {
 } from "./use-coach";
 
 /**
- * The Coach's conversation list: search, the full history grouped by recency
+ * The Coach's conversation list: the full history grouped by recency
  * (Today / Yesterday / This week / Earlier), and one row per conversation with
  * a "⋯" menu for Rename and Delete.
  *
  * It fills the Coach page's conversations panel and the drawer's history
  * tray. The history is cursor-paginated (`useInfiniteQuery`, loaded as the
- * list scrolls near its end) and searched server-side on the title, debounced
- * 200 ms.
+ * list scrolls near its end). Title search lives on the standalone
+ * `/coach/conversations` page, not here.
  *
  * Rename edits the title in place (`ConversationRename`, Enter saves, Escape
  * cancels without closing the panel around it) and returns focus to the row's
@@ -88,8 +85,6 @@ export function HistoryRail({
   onUndoDeleteActive,
 }: HistoryRailProps) {
   const { t } = useTranslations();
-  const [filter, setFilter] = useState<string>("");
-  const debouncedFilter = useDebouncedValue(filter, 200);
   const {
     conversations,
     isLoading,
@@ -98,19 +93,17 @@ export function HistoryRail({
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useCoachConversationHistory({ search: debouncedFilter });
+  } = useCoachConversationHistory();
   const ownDeletion = useDeleteCoachConversationWithUndo();
   const { pendingDeleteIds, requestDelete, undoDelete } =
     deletion ?? ownDeletion;
 
-  // `pendingDeleteIds` hides rows inside the undo window; the server-side
-  // search already resolved everything else.
+  // `pendingDeleteIds` hides rows inside the undo window.
   const visible = useMemo(
     () => conversations.filter((c) => !pendingDeleteIds.has(c.id)),
     [conversations, pendingDeleteIds],
   );
   const groups = useMemo(() => groupConversationsByRecency(visible), [visible]);
-  const isSearching = debouncedFilter.trim().length > 0;
 
   // A `useState`-backed callback ref so the sentinel hook re-runs once the
   // scroll container exists (null on the very first render).
@@ -153,21 +146,6 @@ export function HistoryRail({
           {t("insights.coach.historyTitle")}
         </h3>
       )}
-      <div className="relative w-full">
-        <Search
-          aria-hidden="true"
-          className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-        />
-        <Input
-          type="search"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder={t("insights.coach.historySearchPlaceholder")}
-          aria-label={t("insights.coach.historySearchPlaceholder")}
-          data-slot="coach-history-search"
-          className="h-10 w-full pl-9"
-        />
-      </div>
       <div
         ref={setListNode}
         data-slot="coach-history-list"
@@ -202,9 +180,7 @@ export function HistoryRail({
             data-slot="coach-history-empty"
             className="text-muted-foreground px-2 py-3 text-sm leading-relaxed"
           >
-            {isSearching
-              ? t("insights.coach.historySearchEmpty")
-              : t("insights.coach.historyEmpty")}
+            {t("insights.coach.historyEmpty")}
           </p>
         ) : (
           groups.map((group) => (

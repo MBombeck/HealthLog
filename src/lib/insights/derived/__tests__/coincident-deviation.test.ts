@@ -145,6 +145,23 @@ describe("computeCoincidentDeviation", () => {
     }
   });
 
+  it("does not call yesterday's outliers today's, read the next evening", async () => {
+    // The outliers were taken 2026-06-02 07:00 UTC; read on the 3rd at
+    // 21:00 in Berlin there is no reading today, so nothing contributes.
+    findMany.mockImplementation(firingRows);
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: new Date("2026-06-03T19:00:00Z"),
+      tz: "Europe/Berlin",
+    });
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.value.contributing).toEqual([]);
+      expect(result.value.fired).toBe(false);
+      // The vitals keep their standing and their age for the anatomy view.
+      expect(result.value.vitals.every((v) => v.daysAgo === 1)).toBe(true);
+    }
+  });
+
   it("does not fire when vitals stay inside their bands", async () => {
     const flat = (base: number): Array<{ value: number; measuredAt: Date }> =>
       Array.from({ length: 10 }, (_, i) => ({

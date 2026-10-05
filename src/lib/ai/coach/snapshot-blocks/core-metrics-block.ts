@@ -10,9 +10,11 @@ import {
   bucketWeekly,
   buildDailyBpRows,
   buildDailyValueRows,
+  dailyPoints,
   timelineInUnit,
   type CoarseTimelineTail,
 } from "../snapshot-series";
+import type { RegisterBlock } from "../series-condense";
 import type {
   CoachProvenance,
   CoachProvenanceMetric,
@@ -42,7 +44,7 @@ interface CoreMetricsBlockContext {
   windows: Set<CoachProvenance["windows"][number]>;
   metrics: Set<CoachProvenanceMetric>;
   counts: NonNullable<CoachProvenance["counts"]>;
-  registerBlock: (key: string, source: CoachScopeSource) => void;
+  registerBlock: RegisterBlock;
   groundingValues: Map<ReferenceMetric, number>;
   /** The reader's units; the weight block is stated in them. */
   units: UnitPreferences;
@@ -91,7 +93,13 @@ export function buildCoreMetricsBlocks(
     ctx.windows.add("last30days");
     ctx.windows.add("last90days");
     ctx.counts.bp = ctx.features.bloodPressure.coverage?.count ?? undefined;
-    ctx.registerBlock("bloodPressure", "bp");
+    ctx.registerBlock("bloodPressure", "bp", () => {
+      const days = buildDailyBpRows(sysRows, diaRows, new Date(0), ctx.userTz);
+      return {
+        sys: days.map((d) => ({ date: d.date, value: d.sys })),
+        dia: days.map((d) => ({ date: d.date, value: d.dia })),
+      };
+    });
 
     const sys30 =
       ctx.features.bloodPressure.avgSys30 ??
@@ -124,7 +132,14 @@ export function buildCoreMetricsBlocks(
     ctx.windows.add("last7days");
     ctx.windows.add("last30days");
     ctx.counts.weight = ctx.features.weight.coverage?.count ?? undefined;
-    ctx.registerBlock("weight", "weight");
+    ctx.registerBlock("weight", "weight", () => ({
+      value: dailyPoints(
+        rows,
+        ctx.userTz,
+        undefined,
+        getReadingTransform("WEIGHT", ctx.units),
+      ),
+    }));
 
     if (ctx.features.weight.bmi != null) {
       ctx.groundingValues.set("BMI", ctx.features.weight.bmi);
@@ -157,7 +172,9 @@ export function buildCoreMetricsBlocks(
     ctx.windows.add("last30days");
     ctx.windows.add("last90days");
     ctx.counts.pulse = ctx.features.pulse.coverage?.count ?? undefined;
-    ctx.registerBlock("pulse", "pulse");
+    ctx.registerBlock("pulse", "pulse", () => ({
+      value: dailyPoints(rows, ctx.userTz, "PULSE"),
+    }));
   }
 
   if (ctx.sources.has("mood") && ctx.features.mood && ctx.moodRows) {
@@ -179,6 +196,8 @@ export function buildCoreMetricsBlocks(
     ctx.windows.add("last7days");
     ctx.windows.add("last30days");
     ctx.counts.mood = ctx.features.mood.coverage?.count ?? undefined;
-    ctx.registerBlock("mood", "mood");
+    ctx.registerBlock("mood", "mood", () => ({
+      value: dailyPoints(normalised, ctx.userTz),
+    }));
   }
 }

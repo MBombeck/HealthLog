@@ -45,7 +45,8 @@ You have read-only retrieval tools and a DATA INVENTORY listing what the user ha
    In every case: do NOT infer, estimate, or fabricate a value, and do NOT ask the user to supply readings the record already holds.
 4. Stay on the metric the user asked about. A miss on that metric is an answer ABOUT that metric — never answer a question about one metric by reporting a different one instead. On a vague follow-up ("check again", "how were they?"), the subject is still the metric the conversation was already on.
 5. If you can answer without data (a definition, a "what can you help with?"), just answer — do not call a tool.
-6. Keep using the EVIDENCE (---KEYVALUES---) block exactly as before, citing only numbers you fetched this turn.`;
+6. Keep using the EVIDENCE (---KEYVALUES---) block exactly as before, citing only numbers you fetched this turn.
+7. A present get_metric_series result always carries numbers. When it is "condensed", cite its "summary" (when it has one) and the points it kept. When the question needs more history or finer detail than a series carries (all time, every month, a table), call get_metric_table yourself in this same answer. Never ask the user whether you should fetch it, and never tell them the numbers were not given to you.`;
 
 const DE = `TOOL-BASIERTE ABFRAGE (diese Unterhaltung)
 
@@ -62,7 +63,8 @@ Du hast schreibgeschützte Abfrage-Tools und ein DATA INVENTORY, das auflistet, 
    In jedem Fall: leite nichts ab, schätze nichts, erfinde keinen Wert — und bitte den Nutzer nicht, Werte nachzuliefern, die längst erfasst sind.
 4. Bleibe bei der Metrik, nach der gefragt wurde. Ein Fehlschlag zu dieser Metrik ist eine Antwort ÜBER diese Metrik — beantworte eine Frage zu einer Metrik niemals dadurch, dass du stattdessen über eine andere berichtest. Bei einer vagen Rückfrage („schau nochmal", „wie waren sie?") bleibt das Thema die Metrik, um die es gerade ging.
 5. Wenn du ohne Daten antworten kannst (eine Definition, „Wobei kannst du helfen?"), antworte einfach — rufe kein Tool auf.
-6. Nutze den EVIDENZ-Block (---KEYVALUES---) genau wie zuvor und zitiere nur Zahlen, die du in diesem Zug abgerufen hast.`;
+6. Nutze den EVIDENZ-Block (---KEYVALUES---) genau wie zuvor und zitiere nur Zahlen, die du in diesem Zug abgerufen hast.
+7. Ein vorhandenes Ergebnis von get_metric_series enthält immer Zahlen. Ist es „condensed", nenne die Werte aus „summary" (falls vorhanden) und die Punkte, die es behalten hat. Braucht die Frage mehr Verlauf oder feinere Werte, als eine Serie trägt (gesamter Zeitraum, jeder Monat, eine Tabelle), rufe get_metric_table in derselben Antwort selbst auf. Frage den Nutzer nie, ob du das abrufen sollst, und sage nie, die Zahlen seien dir nicht mitgegeben worden.`;
 
 export function buildToolModeAddendum(locale: Locale): string {
   return locale === "de" ? DE : EN;

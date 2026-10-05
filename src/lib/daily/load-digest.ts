@@ -82,6 +82,7 @@ import { resolveRestMode } from "@/lib/illness/rest-mode";
 import { readTodayCycle, type TodayCycleRead } from "@/lib/cycle/today-verdict";
 import { addDays, dayDiff } from "@/lib/cycle/day-math";
 import { makeFormatters, resolveIntlLocale } from "@/lib/format-locale";
+import { vitalDisplayDecimals } from "@/lib/measurements/vital-precision";
 import type {
   DateFormatPreference,
   TimeFormatPreference,
@@ -328,24 +329,6 @@ async function gatherScoreDays(
   }
 }
 
-/**
- * Display decimals per vital. The transform's own `decimals` covers the
- * converted units (lb, °F, mmol/L); the rest are whole numbers on every
- * device and in every chart that shows them.
- */
-function vitalDecimals(type: string, transformDecimals: number): number {
-  switch (type) {
-    case "BODY_TEMPERATURE":
-    case "SKIN_TEMPERATURE":
-    case "WEIGHT":
-      return 1;
-    case "BLOOD_GLUCOSE":
-      return transformDecimals;
-    default:
-      return 0;
-  }
-}
-
 /** Render one vital's value and range in the reader's units and locale. */
 function toTodayVital(
   vital: ExtrasVital,
@@ -354,7 +337,7 @@ function toTodayVital(
   t: (key: string, params?: Record<string, string | number>) => string,
 ): TodayVital {
   const transform = getReadingTransform(vital.type, units);
-  const decimals = vitalDecimals(vital.type, transform.decimals);
+  const decimals = vitalDisplayDecimals(vital.type, transform.decimals);
   const number = new Intl.NumberFormat(resolveIntlLocale(locale), {
     maximumFractionDigits: decimals,
     minimumFractionDigits: decimals,
@@ -588,7 +571,10 @@ export async function loadDailyDigest(
     coachAi,
     reactionLinesAi,
   ] = await Promise.all([
-    readDashboardSnapshotCached(user, undefined, { locale: options.locale }),
+    readDashboardSnapshotCached(user, undefined, {
+      locale: options.locale,
+      now,
+    }),
     resolveModuleMap(user.id),
     prisma.integrationStatus.findMany({
       where: { userId: user.id, state: { in: [...SYNC_ISSUE_STATES] } },
@@ -950,6 +936,8 @@ export async function loadDailyDigest(
         snapshot.layout.enabledHeroItemKinds ??
         PRIORITY_ITEM_KINDS,
       score,
+      // Already resolved for today by the snapshot read (`briefing-today.ts`
+      // via `applyBriefingForToday`), as every surface serves it.
       briefing: snapshot.briefing,
       medsToday: snapshot.medsToday,
       sleepLastSeenDaysAgo,

@@ -1007,6 +1007,62 @@ describe("forceWarmUser — on-demand single-user warm (v1.8.7.1)", () => {
     }
   });
 
+  it("a today warm runs past the freshness window, under the daily cap, and warms no card", async () => {
+    // The weigh-in at 07:05 after the blood-pressure warm at 07:00: the
+    // briefing is minutes old, and still has to read the new reading.
+    const now = new Date("2026-06-10T12:00:00.000Z");
+    const { prisma, findUnique } = makePrisma([]);
+    findUnique.mockResolvedValue({
+      insightsCachedAt: new Date(now.getTime() - 5 * 60 * 1000),
+      insightsWarmFailedAt: null,
+    });
+    const generate = vi
+      .fn()
+      .mockResolvedValue({ status: "generated", providerType: "openai" });
+    const statusGenerators = Array.from({ length: 7 }, () =>
+      vi.fn().mockResolvedValue({ hasProvider: true, cached: true }),
+    );
+    const warmGenericMetrics = vi.fn().mockResolvedValue(0);
+
+    const result = await forceWarmUser(prisma as never, "u1", "de", {
+      generate,
+      statusGenerators,
+      warmGenericMetrics,
+      now,
+      today: true,
+    });
+
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(result.comprehensive).toBe("generated");
+    expect(checkRateLimit).toHaveBeenCalledWith(
+      "insight-pregenerate-daily:u1",
+      FORCE_WARM_DAILY_LIMIT,
+      expect.any(Number),
+    );
+    for (const g of statusGenerators) expect(g).not.toHaveBeenCalled();
+    expect(warmGenericMetrics).not.toHaveBeenCalled();
+  });
+
+  it("a today warm stays inside the daily forced-warm cap", async () => {
+    const now = new Date("2026-06-10T12:00:00.000Z");
+    const { prisma, findUnique } = makePrisma([]);
+    findUnique.mockResolvedValue({
+      insightsCachedAt: new Date(now.getTime() - 5 * 60 * 1000),
+      insightsWarmFailedAt: null,
+    });
+    checkRateLimit.mockResolvedValue({ allowed: false });
+    const generate = vi.fn();
+    const result = await forceWarmUser(prisma as never, "u1", "de", {
+      generate,
+      statusGenerators: [],
+      warmGenericMetrics: vi.fn().mockResolvedValue(0),
+      now,
+      today: true,
+    });
+    expect(generate).not.toHaveBeenCalled();
+    expect(result.comprehensive).toBe("capped");
+  });
+
   it("backs off after a recent failed attempt instead of re-driving the provider chain", async () => {
     const now = new Date("2026-06-10T12:00:00.000Z");
     const { prisma, findUnique } = makePrisma([]);

@@ -93,7 +93,11 @@ async function seed(recordId: string): Promise<void> {
   await prisma.user.update({
     where: { id: recordId },
     data: {
-      insightsCachedText: JSON.stringify(BRIEFING),
+      // Generated now: only text written today is served as today's read.
+      insightsCachedText: JSON.stringify({
+        ...BRIEFING,
+        briefingGeneratedAt: new Date().toISOString(),
+      }),
       insightsCachedAt: new Date(),
       insightsCachedLocale: "en",
     },

@@ -46,7 +46,10 @@ import { annotate } from "@/lib/logging/context";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { resolveModuleMap } from "@/lib/modules/gate";
-import { buildCoachSnapshot } from "@/lib/ai/coach/snapshot";
+import {
+  buildCoachSnapshot,
+  type CoachSnapshotResult,
+} from "@/lib/ai/coach/snapshot";
 import { buildCoachSourceSnapshot } from "@/lib/ai/coach/source-snapshot";
 import { admitCoachSources, coachExclusions } from "@/lib/ai/coach/scope-gate";
 import type { CoachPrefs } from "@/lib/validations/coach-prefs";
@@ -250,6 +253,49 @@ function scopeFor(
     sources,
     window: effectiveWindow,
   };
+}
+
+/**
+ * The snapshot a tool slices its block(s) out of.
+ *
+ * Reads under `scopeFor` first, which lands on the turn's shared full-source
+ * build when the windows match. That build is cut to the prompt budget for a
+ * prompt this read never sends: on an account with many synced series the
+ * budget pass collapses whole blocks to an `{ omitted }` marker, and slicing
+ * the marker out answered `present: true` with no figure in it. So when a
+ * block this read needs was cut there, it is read again from its own sources
+ * at the same window, where it is the block that was asked for.
+ */
+async function readToolSnapshot(
+  userId: string,
+  sources: CoachScope["sources"],
+  sectionKeys: ReadonlyArray<string>,
+  window: CoachScopeWindow | undefined,
+  fallbackWindow: CoachScopeWindow | undefined,
+  sharedScope: CoachScope | undefined,
+  reach: CoachHistoryReach,
+) {
+  const scope = scopeFor(sources, window, fallbackWindow, sharedScope, reach);
+  if (scope !== sharedScope) {
+    return buildCoachSnapshot(userId, scope, {
+      reach,
+      condenseRequested: true,
+    });
+  }
+  const snapshot = await buildCoachSnapshot(userId, scope, { reach });
+  const cut = sectionKeys.filter((key) =>
+    snapshot.degradedBlocks?.includes(key),
+  );
+  if (cut.length === 0) return snapshot;
+  annotate({
+    action: { name: "coach.tool.shared_block_cut" },
+    meta: { blocks: cut, window: scope.window ?? DEFAULT_WINDOW },
+  });
+  return buildCoachSnapshot(
+    userId,
+    { sources, window: scope.window },
+    { reach, condenseRequested: true },
+  );
 }
 
 /**
@@ -507,10 +553,14 @@ async function getMetricSeries(
   // reads without the Coach's lookback limit, so it takes no reach.
   const snapshot = sourceSnapshot
     ? await buildCoachSourceSnapshot(userId, metric, window ?? fallbackWindow)
-    : await buildCoachSnapshot(
+    : await readToolSnapshot(
         userId,
-        scopeFor([metric], window, fallbackWindow, sharedScope, reach),
-        { reach },
+        [metric],
+        [sectionKey],
+        window,
+        fallbackWindow,
+        sharedScope,
+        reach,
       );
   const section = pickSection(snapshot.sections, sectionKey);
   if (section === undefined) {
@@ -522,11 +572,78 @@ async function getMetricSeries(
       reach,
     );
   }
+  if (sourceSnapshot) {
+    // MCP: the section exactly as it always was, without the figure check
+    // below: an MCP client reads `present` by its own contract (absence is
+    // "not recorded"), and its output stays byte for byte what it was.
+    return {
+      present: true,
+      data: { metric, section },
+      grounding: snapshot.referenceGrounding ?? undefined,
+    };
+  }
+  // A block without a single figure (a bare unit, an `omitted` marker) is
+  // not an answer: "present" with nothing in it is what the model then
+  // repeats to the person. Say the read failed instead.
+  if (!carriesFigures(section)) {
+    annotate({
+      action: { name: "coach.tool.section_without_values" },
+      meta: { tool: "get_metric_series", metric },
+    });
+    return { present: false, reason: "retrieval_failed" };
+  }
+  // Outside MCP the read is a Coach snapshot, which counts what it read.
+  const counts = (snapshot as Partial<CoachSnapshotResult>).provenance
+    ?.counts as Record<string, number | undefined> | undefined;
+  const readings = counts?.[metric];
+  const effectiveWindow = limitWindow(window ?? fallbackWindow, reach);
+  const condensed = isRecord(section) && Array.isArray(section.condensed);
+  const long = effectiveWindow === "allTime" || effectiveWindow === "lastYear";
   return {
     present: true,
-    data: { metric, section },
+    data: {
+      metric,
+      section,
+      ...(typeof readings === "number" ? { readings } : {}),
+      ...(long || condensed ? { coverage: SERIES_COVERAGE_NOTE } : {}),
+    },
     grounding: snapshot.referenceGrounding ?? undefined,
   };
+}
+
+/**
+ * What a long or condensed series read carries, and where the rest is. Rides
+ * the result so the model switches to the table tool on its own instead of
+ * asking the person whether it should.
+ */
+const SERIES_COVERAGE_NOTE =
+  "Daily values for the newest 14 days, weekly means before that, back at most 12 months; " +
+  "timeline.coarse (when present) adds monthly and yearly means for older history. " +
+  "A 'condensed' list names what was cut to fit. A 'summary', when present, is taken from the series' daily values over the whole read ('from' to 'to', 'days'): " +
+  "the first and last day, the lowest and highest day, the mean of the days, and 'change' = 'latestWeekMean' minus 'firstWeekMean' (the latest 7 calendar days against the first 7). " +
+  "For the full history or a finer table, call get_metric_table yourself in this answer (window allTime, granularity month or week); do not ask the person first.";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Fields that describe a block rather than measure anything: the freshness
+ * stamp (`asOf.daysAgo` is a number, but no reading), and the scope echo. A
+ * block trimmed to `{ unit, asOf }` holds no figure.
+ */
+const METADATA_FIELDS: ReadonlySet<string> = new Set(["asOf", "scope"]);
+
+/** Whether a payload holds at least one finite measured number anywhere. */
+function carriesFigures(value: unknown): boolean {
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.some(carriesFigures);
+  if (isRecord(value)) {
+    return Object.entries(value).some(
+      ([key, child]) => !METADATA_FIELDS.has(key) && carriesFigures(child),
+    );
+  }
+  return false;
 }
 
 async function getGlucosePanel(
@@ -538,16 +655,14 @@ async function getGlucosePanel(
 ): Promise<CoachToolResult> {
   const parsed = getGlucosePanelArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_glucose_panel", parsed.error);
-  const snapshot = await buildCoachSnapshot(
+  const snapshot = await readToolSnapshot(
     userId,
-    scopeFor(
-      ["glucose"],
-      parsed.data.window,
-      fallbackWindow,
-      sharedScope,
-      reach,
-    ),
-    { reach },
+    ["glucose"],
+    ["glucose"],
+    parsed.data.window,
+    fallbackWindow,
+    sharedScope,
+    reach,
   );
   const section = pickSection(snapshot.sections, "glucose");
   if (section === undefined) {
@@ -575,10 +690,14 @@ async function getSleep(
 ): Promise<CoachToolResult> {
   const parsed = getSleepArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_sleep", parsed.error);
-  const snapshot = await buildCoachSnapshot(
+  const snapshot = await readToolSnapshot(
     userId,
-    scopeFor(["sleep"], parsed.data.window, fallbackWindow, sharedScope, reach),
-    { reach },
+    ["sleep"],
+    ["sleep", "sleepRhythm"],
+    parsed.data.window,
+    fallbackWindow,
+    sharedScope,
+    reach,
   );
   const nights = pickSection(snapshot.sections, "sleep");
   const rhythm = pickSection(snapshot.sections, "sleepRhythm");
@@ -612,16 +731,14 @@ async function getMedicationCompliance(
   if (!parsed.success) {
     return badArgs("get_medication_compliance", parsed.error);
   }
-  const snapshot = await buildCoachSnapshot(
+  const snapshot = await readToolSnapshot(
     userId,
-    scopeFor(
-      ["compliance"],
-      parsed.data.window,
-      fallbackWindow,
-      sharedScope,
-      reach,
-    ),
-    { reach },
+    ["compliance"],
+    ["compliance", "weeklyContext"],
+    parsed.data.window,
+    fallbackWindow,
+    sharedScope,
+    reach,
   );
   const compliance = pickSection(snapshot.sections, "compliance");
   // GLP-1 context rides the `weeklyContext` block.
@@ -789,16 +906,14 @@ async function getWorkouts(
   if (!parsed.success) return badArgs("get_workouts", parsed.error);
   // The workouts block builds when the `workouts` cluster is active AND the
   // user has workout rows in the window. Scope the read to that single source.
-  const snapshot = await buildCoachSnapshot(
+  const snapshot = await readToolSnapshot(
     userId,
-    scopeFor(
-      ["workouts"],
-      parsed.data.window,
-      fallbackWindow,
-      sharedScope,
-      reach,
-    ),
-    { reach },
+    ["workouts"],
+    ["workouts"],
+    parsed.data.window,
+    fallbackWindow,
+    sharedScope,
+    reach,
   );
   const workouts = pickSection(snapshot.sections, "workouts");
   if (workouts === undefined) {

@@ -18,6 +18,7 @@
  * NO synchronous request lifecycle: the cron path runs entirely on
  * pg-boss, never inside an HTTP handler.
  */
+import { withBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
 import pLimit from "p-limit";
 import { prisma } from "@/lib/db";
 import {
@@ -298,7 +299,12 @@ async function rerollBriefingParagraph(args: {
     ...(cachedBriefing as Record<string, unknown>),
     paragraph: freshParagraph,
   };
-  const merged = { ...cached, dailyBriefing: mergedBriefing };
+  // A re-rolled paragraph is new text, so it carries a new generation
+  // moment; the plain stamp refresh that a miss falls back to does not.
+  const merged = withBriefingGeneratedAt(
+    { ...cached, dailyBriefing: mergedBriefing },
+    new Date(),
+  );
   return { text: JSON.stringify(merged), providerType };
 }
 
@@ -1443,7 +1449,9 @@ export async function generateComprehensiveInsight(
     workingProviderType,
     {
       insightsCachedAt: new Date(),
-      insightsCachedText: JSON.stringify(insights),
+      insightsCachedText: JSON.stringify(
+        withBriefingGeneratedAt(insights, new Date()),
+      ),
       insightsCachedLocale: locale,
       insightsSnapshotHash: snapshotHash,
     },

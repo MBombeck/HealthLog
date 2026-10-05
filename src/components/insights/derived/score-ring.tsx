@@ -54,11 +54,27 @@ const SPRING_SAFE_MAX = 94;
 
 const SIZE: Record<
   NonNullable<ScoreRingProps["size"]>,
-  { px: number; numberClass: string; labelClass: string }
+  {
+    /** Fixed edge length; null when `boxClass` sizes the ring per breakpoint. */
+    px: number | null;
+    boxClass?: string;
+    numberClass: string;
+    labelClass: string;
+  }
 > = {
   sm: { px: 120, numberClass: "text-3xl", labelClass: "text-2xs" },
   md: { px: 168, numberClass: "text-5xl", labelClass: "text-xs" },
   lg: { px: 232, numberClass: "text-7xl", labelClass: "text-sm" },
+  // The dashboard hero: a compact 80 px dial beside the lead on a phone, the
+  // `md` dial from the md breakpoint up. Below md the label is left out (the
+  // number alone is legible at this size; the ring's aria-label and the
+  // surrounding link still name it), so the centre never crowds.
+  responsive: {
+    px: null,
+    boxClass: "size-20 md:size-42",
+    numberClass: "text-2xl md:text-5xl",
+    labelClass: "hidden text-xs md:block",
+  },
 };
 
 export interface ScoreRingProps {
@@ -68,8 +84,11 @@ export interface ScoreRingProps {
   band?: ScoreBand;
   /** Short label rendered under the number (e.g. "Readiness", "/100"). */
   label?: string;
-  /** Render size. `sm` in a grid tile, `md`/`lg` on the anatomy view. */
-  size?: "sm" | "md" | "lg";
+  /**
+   * Render size. `sm` in a grid tile, `md`/`lg` on the anatomy view,
+   * `responsive` on the dashboard hero (compact on a phone, `md` above).
+   */
+  size?: "sm" | "md" | "lg" | "responsive";
   /** Disable the sweep + count-up (e.g. when already revealed this session). */
   animate?: boolean;
   /**
@@ -190,12 +209,14 @@ export function ScoreRing({
       data-provisional={hasScore ? undefined : "true"}
       role="img"
       aria-label={ariaLabel}
-      className={cn("relative shrink-0", className)}
+      className={cn("relative shrink-0", dims.boxClass, className)}
       style={
-        {
-          width: dims.px,
-          height: dims.px,
-        } as React.CSSProperties
+        dims.px === null
+          ? undefined
+          : ({
+              width: dims.px,
+              height: dims.px,
+            } as React.CSSProperties)
       }
     >
       {/* The -90° rotation starts the arc at 12 o'clock so it sweeps clockwise
