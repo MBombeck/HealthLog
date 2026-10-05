@@ -527,3 +527,68 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
 export function encryptedColumnKey(c: EncryptedColumn): string {
   return `${c.model}.${c.field}`;
 }
+
+/**
+ * The registry models that carry a Prisma `@updatedAt` column. Re-sealing a
+ * value under a new key is not an edit, so the rotation carries each row's
+ * own `updatedAt` through the write instead of letting Prisma stamp the run
+ * time: the Coach panel orders conversations by it and it is the sync cursor
+ * for measurements and mood entries. `encrypted-columns.test.ts` derives the
+ * set from `schema.prisma` and fails when it drifts.
+ */
+export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
+  "Allergy",
+  "Biomarker",
+  "CoachConversation",
+  "CoachFact",
+  "CoachPlan",
+  "CoachReminder",
+  "CycleDayLog",
+  "DocumentContentIndex",
+  "DocumentSourceConnection",
+  "DocumentThumbnail",
+  "EcgRecording",
+  "Encounter",
+  "ExtractedFact",
+  "FamilyHistoryEntry",
+  "FitbitConnection",
+  "GoogleHealthConnection",
+  "IllnessDayLog",
+  "IllnessEpisode",
+  "InboundDocument",
+  "InsightNarrative",
+  "InsightStatusCache",
+  "IntegrationStatus",
+  "LabResult",
+  "Measurement",
+  "MedicationCategoryLabel",
+  "MedicationCourse",
+  "MedicationInventoryItem",
+  "MentalHealthAssessment",
+  "MoodContext",
+  "MoodEntry",
+  "NotificationChannel",
+  "Practitioner",
+  "SymptomDefinition",
+  "SymptomEvent",
+  "User",
+  "UserHealthProfile",
+  "VaccinationRecord",
+  "WhoopConnection",
+  "WithingsConnection",
+]);
+
+/**
+ * The `where` filter and `data` fields that keep a row's `updatedAt` through
+ * a storage-only write: match on the value read (a row edited meanwhile is
+ * left for the next run, as Prisma's P2025) and write it back unchanged.
+ * Empty for a model without the column.
+ */
+export function preserveUpdatedAt(
+  model: string,
+  updatedAt: unknown,
+): { updatedAt?: Date } {
+  return UPDATED_AT_MODELS.has(model) && updatedAt instanceof Date
+    ? { updatedAt }
+    : {};
+}

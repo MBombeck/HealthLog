@@ -39,6 +39,8 @@ import {
 import {
   ENCRYPTED_COLUMNS,
   encryptedColumnKey,
+  preserveUpdatedAt,
+  UPDATED_AT_MODELS,
   type EncryptedColumn,
 } from "@/lib/crypto/encrypted-columns";
 import { tokeniseAndHash } from "@/lib/documents/content-index";
@@ -106,6 +108,15 @@ async function rotateRegistryColumn(
   };
 }
 
+/** True for a Prisma "record to update not found" (P2025). */
+function isRowGone(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { code?: unknown }).code === "P2025"
+  );
+}
+
 function shouldRotate(value: string | null): boolean {
   if (!value) return false;
   const id = extractKeyId(value);
@@ -122,8 +133,8 @@ interface PagedDelegate<V> {
     where?: { id: { gt: string } };
   }) => Promise<Array<Record<string, unknown>>>;
   update: (args: {
-    where: { id: string };
-    data: Record<string, V>;
+    where: { id: string; updatedAt?: Date };
+    data: Record<string, V | Date>;
   }) => Promise<unknown>;
 }
 
@@ -139,11 +150,16 @@ const PAGE_SIZE = 5_000;
 async function* pagedRows(
   delegate: PagedDelegate<unknown>,
   field: string,
+  table: string,
 ): AsyncGenerator<Record<string, unknown>> {
   let cursor: string | null = null;
   for (;;) {
     const rows = await delegate.findMany({
-      select: { id: true, [field]: true },
+      select: {
+        id: true,
+        [field]: true,
+        ...(UPDATED_AT_MODELS.has(table) ? { updatedAt: true } : {}),
+      },
       orderBy: { id: "asc" },
       take: PAGE_SIZE,
       // `id > last`, not Prisma's `cursor` + `skip`: the cursor form looks
@@ -178,6 +194,7 @@ async function rotateStringColumn(
   for await (const row of pagedRows(
     delegate as PagedDelegate<unknown>,
     field,
+    table,
   )) {
     const v = row[field] as string | null;
     // `scanned` counts rows that hold ciphertext, as the in-app rotation does.
@@ -187,9 +204,16 @@ async function rotateStringColumn(
     const id = row.id as string;
     try {
       const re = encrypt(decrypt(v));
-      await delegate.update({ where: { id }, data: { [field]: re } });
+      // Re-sealing is not an edit: the row keeps its own updatedAt.
+      const keepUpdatedAt = preserveUpdatedAt(table, row.updatedAt);
+      await delegate.update({
+        where: { id, ...keepUpdatedAt },
+        data: { [field]: re, ...keepUpdatedAt },
+      });
       result.rotated++;
     } catch (err) {
+      // Edited or deleted since the read: the next run picks it up.
+      if (isRowGone(err)) continue;
       result.errors++;
       console.error(`[${table}.${field}] row ${id}: ${(err as Error).message}`);
     }
@@ -218,6 +242,7 @@ async function rotateBytesColumn(
   for await (const row of pagedRows(
     delegate as PagedDelegate<unknown>,
     field,
+    table,
   )) {
     const buf = row[field] as Uint8Array | null;
     if (!buf || buf.byteLength === 0) continue;
@@ -230,9 +255,14 @@ async function rotateBytesColumn(
       const encoded = Buffer.from(rotated, "utf8");
       const next = new Uint8Array(new ArrayBuffer(encoded.byteLength));
       next.set(encoded);
-      await delegate.update({ where: { id }, data: { [field]: next } });
+      const keepUpdatedAt = preserveUpdatedAt(table, row.updatedAt);
+      await delegate.update({
+        where: { id, ...keepUpdatedAt },
+        data: { [field]: next, ...keepUpdatedAt },
+      });
       result.rotated++;
     } catch (err) {
+      if (isRowGone(err)) continue;
       result.errors++;
       console.error(`[${table}.${field}] row ${id}: ${(err as Error).message}`);
     }
@@ -898,7 +928,12 @@ async function main() {
     };
     for (;;) {
       const rows = await prisma.documentContentIndex.findMany({
-        select: { id: true, textEncrypted: true, verbatimTextEncrypted: true },
+        select: {
+          id: true,
+          textEncrypted: true,
+          verbatimTextEncrypted: true,
+          updatedAt: true,
+        },
         orderBy: { id: "asc" },
         take: 100,
         ...(cursor ? { where: { id: { gt: cursor } } } : {}),
@@ -924,8 +959,10 @@ async function main() {
             ? reEncryptBytes(Buffer.from(verbatimBuf!).toString("utf8"))
             : undefined;
           await prisma.documentContentIndex.update({
-            where: { id: row.id },
+            // Re-sealing is not an edit: the row keeps its own updatedAt.
+            where: { id: row.id, updatedAt: row.updatedAt },
             data: {
+              updatedAt: row.updatedAt,
               textEncrypted: nextBytes,
               searchTokens,
               ...(verbatimNext ? { verbatimTextEncrypted: verbatimNext } : {}),

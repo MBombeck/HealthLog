@@ -86,6 +86,7 @@ describe("key rotation over the v1.39.4 columns", () => {
         name: "Praxis Nord",
         phoneEncrypted: encryptNote("+49 30 1234567"),
         locationEncrypted: encryptNote("Hauptstr. 1"),
+        updatedAt: new Date("2026-05-04T10:00:00.000Z"),
       },
     });
     const startedAt = new Date("2026-09-01T06:00:00.000Z");
@@ -136,6 +137,10 @@ describe("key rotation over the v1.39.4 columns", () => {
     }
     expect(readNote(practitioner.phoneEncrypted, null)).toBe("+49 30 1234567");
     expect(readNote(practitioner.locationEncrypted, null)).toBe("Hauptstr. 1");
+    // Re-sealing under a new key is not an edit: the row keeps its stamp.
+    expect(practitioner.updatedAt).toEqual(
+      new Date("2026-05-04T10:00:00.000Z"),
+    );
 
     const route = await prisma.workoutRoute.findUniqueOrThrow({
       where: { id: "rt-1" },

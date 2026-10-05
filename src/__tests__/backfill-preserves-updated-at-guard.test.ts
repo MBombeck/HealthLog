@@ -189,3 +189,39 @@ describe("coach conversations move only on activity", () => {
     ).toEqual([]);
   });
 });
+
+/**
+ * Key rotation re-seals values in place across every encrypted model, through
+ * generic delegates the model-named matcher above cannot see. Every write it
+ * makes names `updatedAt`, carrying the row's own value where the model has
+ * one; re-sealing under a new key is not an edit.
+ */
+describe("key rotation keeps updatedAt", () => {
+  const ROTATION_FILES = [
+    "src/lib/crypto/encryption-corpus.ts",
+    "scripts/rotate-encryption-key.ts",
+  ];
+  const ANY_WRITE_RE = /\.\s*(update|updateMany|upsert)\s*\(/g;
+
+  const calls = ROTATION_FILES.flatMap((file) => {
+    const source = readFileSync(join(ROOT, file), "utf8");
+    return [...source.matchAll(ANY_WRITE_RE)].map((m) => ({
+      file,
+      args: callArgs(source, (m.index ?? 0) + m[0].length - 1),
+    }));
+  });
+
+  it("finds the rotation writes at all", () => {
+    expect(calls.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("names updatedAt in every rotation write", () => {
+    const offenders = calls
+      .filter((c) => !/updatedAt/i.test(c.args))
+      .map((c) => `${c.file}: ${c.args.slice(0, 80).replace(/\s+/g, " ")}`);
+    expect(
+      offenders,
+      "a rotation write must carry the row's own updatedAt",
+    ).toEqual([]);
+  });
+});
