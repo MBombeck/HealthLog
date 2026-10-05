@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.40.6] — 2026-10-05
+
+The Coach reads long series again; "today" only from today's readings; the
+dashboard card fits a phone; text fields lose the purple focus ring.
+
+### Fixed
+
+- **Coach series without numbers.** Since 1.21.0 every Coach tool read one
+  shared per-turn snapshot capped at 24,000 characters; on accounts with many
+  series whole blocks became a placeholder and the tool still answered
+  `present: true`. A trimmed block is now re-read for the tool's own source,
+  a single-source read is condensed (summary, newest days, weekly and monthly
+  means) instead of emptied, a block without numbers answers
+  `retrieval_failed`, and the Coach calls the table tool itself for long
+  histories. The step list shows the reading count; no stray comma on copy.
+- **"Today" from yesterday's readings.** Signals of the day, the vitals fact,
+  the lead line, the health status and the morning push only speak about
+  today from readings taken today in the profile timezone; a stored briefing
+  from an earlier day is no longer served.
+- **Deltas** use each metric's display precision ("+34 bpm").
+
+### Changed
+
+- **Dashboard card on a phone.** A compact score ring at the top right beside
+  the lead; Today facts as label over value, full width. Desktop unchanged.
+- **Text-field focus.** No purple ring on inputs, textareas, selects and date
+  fields; focus shows as a neutral border (`--input-focus`). Invalid fields
+  keep their red border.
+- **Coach panel** no longer has a search field (the full conversation list
+  keeps its search).
+
 ## [1.40.5] — 2026-10-05
 
 The Coach's conversation panel runs the full height of the window.
