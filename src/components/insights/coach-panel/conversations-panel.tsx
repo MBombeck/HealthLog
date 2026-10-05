@@ -209,6 +209,12 @@ export function ConversationsPanel({
   const header = (inSheet: boolean) => (
     <div
       data-slot="coach-conversations-panel-header"
+      // Docked, the row reserves the safe-area inset the top bar reserves,
+      // so a standalone PWA on a tablet does not tuck it under the status
+      // bar; the band keeps its height (border-box), like the top bar.
+      style={
+        inSheet ? undefined : { paddingTop: "env(safe-area-inset-top, 0px)" }
+      }
       // Docked, the row is the top bar's band (height and bottom border
       // from `SHELL_HEADER_BAND`), so the two borders draw one line.
       className={cn(
@@ -297,7 +303,7 @@ export function ConversationsPanel({
             }}
             data-slot="coach-panel-new-chat"
             aria-label={t("insights.coach.newChat")}
-            className="absolute right-4 bottom-4 size-12 rounded-full shadow-lg md:right-6 md:bottom-6"
+            className="absolute right-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] size-12 rounded-full shadow-lg md:right-6 md:bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
           >
             <Plus className="size-6" aria-hidden="true" />
           </Button>
