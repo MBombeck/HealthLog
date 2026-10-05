@@ -3011,7 +3011,7 @@
         "detailDays": "Der Coach liest nichts, was älter als {days} Tage ist, in keiner Antwort.",
         "detailMonths": "Der Coach liest nichts, was älter als {months} Monate ist, in keiner Antwort.",
         "detailAll": "Alles, was du erfasst hast: {dailyMonths} Monate tagesgenau, ältere Werte als Monatswerte bis {years} Jahre zurück, Laborwerte der letzten {labMonths} Monate.",
-        "note": "Dein Profil, aktuelle Medikamente, eine laufende Erkrankung und anstehende Termine bleiben sichtbar; Auswertungen, die mehr Verlauf brauchen, werden gekürzt oder weggelassen."
+        "note": "Dein Profil, aktuelle Medikamente, eine laufende Erkrankung und anstehende Termine bleiben sichtbar; Auswertungen, die mehr Verlauf brauchen, werden gekürzt oder weggelassen. Antworten, die der Coach früher in älteren Unterhaltungen gegeben hat, können noch ältere Werte nennen."
       },
       "showConversations": "Unterhaltungen anzeigen",
       "hideConversations": "Unterhaltungen ausblenden",

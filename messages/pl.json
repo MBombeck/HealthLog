@@ -3011,7 +3011,7 @@
         "detailDays": "Coach nie czyta niczego starszego niż {days} dni, w żadnej odpowiedzi.",
         "detailMonths": "Coach nie czyta niczego starszego niż {months} miesięcy, w żadnej odpowiedzi.",
         "detailAll": "Wszystko, co zostało zapisane: {dailyMonths} miesięcy z dokładnością do dnia, starsze pomiary jako wartości miesięczne do {years} lat wstecz, wyniki badań z ostatnich {labMonths} miesięcy.",
-        "note": "Twój profil, obecne leki, trwająca choroba i nadchodzące wizyty pozostają widoczne; podsumowania wymagające dłuższej historii są skracane lub pomijane."
+        "note": "Twój profil, obecne leki, trwająca choroba i nadchodzące wizyty pozostają widoczne; podsumowania wymagające dłuższej historii są skracane lub pomijane. Odpowiedzi, których Coach udzielił wcześniej w starszych rozmowach, mogą nadal przytaczać starsze wartości."
       },
       "showConversations": "Pokaż rozmowy",
       "hideConversations": "Ukryj rozmowy",

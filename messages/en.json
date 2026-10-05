@@ -3011,7 +3011,7 @@
         "detailDays": "The Coach reads nothing older than {days} days, in any answer.",
         "detailMonths": "The Coach reads nothing older than {months} months, in any answer.",
         "detailAll": "Everything you recorded: {dailyMonths} months in daily detail, older readings as monthly values up to {years} years back, lab results from the last {labMonths} months.",
-        "note": "Your profile, current medications, an ongoing illness and upcoming visits stay visible; summaries that need more history are shortened or left out."
+        "note": "Your profile, current medications, an ongoing illness and upcoming visits stay visible; summaries that need more history are shortened or left out. Answers the Coach gave earlier in older conversations may still quote older values."
       },
       "showConversations": "Show conversations",
       "hideConversations": "Hide conversations",

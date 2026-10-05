@@ -3011,7 +3011,7 @@
         "detailDays": "Il Coach non legge nulla di più vecchio di {days} giorni, in nessuna risposta.",
         "detailMonths": "Il Coach non legge nulla di più vecchio di {months} mesi, in nessuna risposta.",
         "detailAll": "Tutto ciò che hai registrato: {dailyMonths} mesi giorno per giorno, le misurazioni più vecchie come valori mensili fino a {years} anni fa, gli esami degli ultimi {labMonths} mesi.",
-        "note": "Il tuo profilo, i farmaci attuali, una malattia in corso e le prossime visite restano visibili; i riepiloghi che richiedono più storico vengono accorciati o omessi."
+        "note": "Il tuo profilo, i farmaci attuali, una malattia in corso e le prossime visite restano visibili; i riepiloghi che richiedono più storico vengono accorciati o omessi. Le risposte date in precedenza dal Coach nelle conversazioni più vecchie possono ancora citare valori più vecchi."
       },
       "showConversations": "Mostra conversazioni",
       "hideConversations": "Nascondi conversazioni",
