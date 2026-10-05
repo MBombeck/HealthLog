@@ -34,6 +34,12 @@ import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import {
+  COACH_HISTORY_WINDOWS,
+  HISTORY_REACH_DAYS,
+  lookbackText,
+} from "@/lib/ai/coach/history-reach";
+import type { CoachDefaultWindow } from "@/lib/validations/coach-prefs";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Switch } from "@/components/ui/switch";
 import { SettingsCardActions } from "./_card-actions";
@@ -776,6 +782,12 @@ function CoachSettingsForm({
   const preferences = asRecord(settings.preferences);
   const excluded = new Set(asStringArray(preferences.excludeMetrics));
   const dataClusters = new Set(asStringArray(preferences.dataClusters));
+  const savedWindow = asString(preferences.defaultWindow, "allTime");
+  const [lookback, setLookback] = useState<CoachDefaultWindow>(
+    (COACH_HISTORY_WINDOWS as readonly string[]).includes(savedWindow)
+      ? (savedWindow as CoachDefaultWindow)
+      : "allTime",
+  );
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -847,28 +859,44 @@ function CoachSettingsForm({
             </option>
           </NativeSelect>
         </label>
-        <label className="grid gap-1 text-sm" htmlFor="managed-coach-window">
-          {t("settings.sharedRecord.managedSettings.coach.defaultWindow")}
+        {/* The same lookback options and wording as the Coach's own picker:
+            the choice is a limit on every Coach read. */}
+        <div className="grid gap-1 text-sm">
+          <label htmlFor="managed-coach-window">
+            {t("insights.coach.lookback.label")}
+          </label>
           <NativeSelect
-            defaultValue={asString(preferences.defaultWindow, "allTime")}
+            value={lookback}
+            onChange={(event) =>
+              setLookback(event.currentTarget.value as CoachDefaultWindow)
+            }
             disabled={disabled}
             id="managed-coach-window"
             name="defaultWindow"
+            aria-describedby="managed-coach-window-detail"
           >
-            <option value="last7days">
-              {t("settings.sharedRecord.managedSettings.coach.last7days")}
-            </option>
-            <option value="last30days">
-              {t("settings.sharedRecord.managedSettings.coach.last30days")}
-            </option>
-            <option value="last90days">
-              {t("settings.sharedRecord.managedSettings.coach.last90days")}
-            </option>
-            <option value="allTime">
-              {t("settings.sharedRecord.managedSettings.coach.allTime")}
-            </option>
+            {COACH_HISTORY_WINDOWS.map((window) => (
+              <option key={window} value={window}>
+                {t(
+                  `insights.coach.lookback.option.${window}`,
+                  lookbackText(window).optionParams,
+                )}
+              </option>
+            ))}
           </NativeSelect>
-        </label>
+          <p
+            id="managed-coach-window-detail"
+            className="text-muted-foreground text-xs"
+          >
+            {t(
+              `insights.coach.lookback.${lookbackText(lookback).detailKey}`,
+              lookbackText(lookback).detailParams,
+            )}
+            {HISTORY_REACH_DAYS[lookback] !== null
+              ? ` ${t("insights.coach.lookback.note")}`
+              : null}
+          </p>
+        </div>
       </div>
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">

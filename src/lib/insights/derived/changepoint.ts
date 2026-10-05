@@ -177,7 +177,7 @@ const CHANGEPOINT_METRICS: readonly MeasurementType[] = [
 ];
 
 /** Window the reader looks back over (days). */
-const CHANGEPOINT_WINDOW_DAYS = 90;
+export const CHANGEPOINT_WINDOW_DAYS = 90;
 /** At most this many changepoints in one snapshot (strongest first). */
 const MAX_CHANGEPOINTS = 2;
 

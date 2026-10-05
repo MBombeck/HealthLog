@@ -134,6 +134,8 @@ export function buildGlucoseBlock(ctx: Readonly<GlucoseBlockContext>): void {
     // rather than asserted as a clinical AGP. The headline mean is converted
     // ONCE to the user's display unit; the unit-agnostic fractions / indices
     // travel as-is.
+    // `null` rows: the panel's fixed window reaches past the Coach's lookback
+    // limit, so the panel is left out rather than computed over fewer days.
     const clinicalRaw = computeGlucoseClinicalMetrics(
       (glucoseClinicalRows ?? []).map((r) => ({
         measuredAt: r.measuredAt,
@@ -194,7 +196,11 @@ export function buildGlucoseBlock(ctx: Readonly<GlucoseBlockContext>): void {
         };
     // The display unit travels with the block so the prompt renders
     // "<value> <unit>" and the EVIDENCE BLOCK tags glucose lines correctly.
-    snapshot.glucose = { unit: glucoseUnit, byContext: contexts, clinical };
+    snapshot.glucose = {
+      unit: glucoseUnit,
+      byContext: contexts,
+      ...(glucoseClinicalRows !== null ? { clinical } : {}),
+    };
     metrics.add("glucose");
     counts.glucose = glucoseRows.length;
     registerBlock("glucose", "glucose");

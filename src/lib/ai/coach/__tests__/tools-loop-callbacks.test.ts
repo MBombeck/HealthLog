@@ -19,6 +19,7 @@ vi.mock("@/lib/ai/provider-runner", () => ({
 
 import { HARD_CAP, runCoachToolLoop } from "@/lib/ai/coach/tools/loop";
 import { COACH_TOOL_DEFS } from "@/lib/ai/coach/tools/definitions";
+import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
 
 type Call = { id: string; name: string; arguments: string };
 
@@ -44,6 +45,7 @@ const baseArgs = {
   system: "sys",
   messages: [{ role: "user" as const, content: "q" }],
   tools: COACH_TOOL_DEFS,
+  reach: UNBOUNDED_REACH,
 };
 
 beforeEach(() => {

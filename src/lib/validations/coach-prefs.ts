@@ -8,11 +8,9 @@
  * `excludeMetrics` BEFORE landing in the system prompt so the model
  * never sees data the user opted out of.
  *
- * v1.4.25 W5 — extended with `defaultWindow`. The picker lives in the
- * settings sheet; the drawer header carries a per-conversation override
- * pill so a single chat can narrow the window without flipping the
- * global default. The chat route folds the saved preference into the
- * snapshot scope when the client didn't supply a window override.
+ * v1.4.25 W5 — extended with `defaultWindow`, since then made the
+ * Coach's lookback limit: a per-conversation window can narrow it, never
+ * widen it (`src/lib/ai/coach/history-reach.ts`).
  */
 import { z } from "zod/v4";
 
@@ -67,20 +65,20 @@ export const coachExcludeMetricEnum = z.enum([
 export type CoachExcludeMetric = z.infer<typeof coachExcludeMetricEnum>;
 
 /**
- * v1.4.25 W5 — default analysis window the Coach uses when the client
- * doesn't supply a per-conversation override. Mirrors
- * `CoachScopeWindow` (`src/lib/ai/coach/types.ts`) so the chat route
- * can fold the preference into `scope.window` without a translation
- * layer. The default stays `allTime` to preserve the v1.4.24 behaviour
- * — every legacy row reads as "no opinion" until the user explicitly
- * picks a tighter default.
+ * How far back the Coach may look. This is a LIMIT, enforced
+ * by every Coach read (`src/lib/ai/coach/history-reach.ts`): the snapshot,
+ * every retrieval tool, the availability probe and the fixed-window blocks.
+ * Before, it only seeded the snapshot window and each tool's default, and a
+ * tool could read further back on its own. Values mirror `CoachScopeWindow`
+ * (`src/lib/ai/coach/types.ts`) so the chat route folds it into the scope
+ * without a translation layer. `lastYear` came with the limit. The default
+ * stays `allTime`, which is no limit, so a legacy row keeps its behaviour.
  */
-export const coachDefaultWindowEnum = z.enum([
-  "last7days",
-  "last30days",
-  "last90days",
-  "allTime",
-]);
+export const coachDefaultWindowEnum = z
+  .enum(["last7days", "last30days", "last90days", "lastYear", "allTime"])
+  .describe(
+    "How far back the Coach may read, in every answer: snapshot, retrieval tools and summaries alike. `allTime` (the default) is no limit. Formerly only the starting window; `lastYear` came with the limit.",
+  );
 export type CoachDefaultWindow = z.infer<typeof coachDefaultWindowEnum>;
 
 /**

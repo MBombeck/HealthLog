@@ -29,6 +29,7 @@
  * Those summary figures, not the table, are what the reply's numbers are
  * checked against.
  */
+import { COACH_ALL_TIME_TABLE_DAYS } from "@/lib/ai/coach/history-reach";
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
 import type { Locale } from "@/lib/i18n/config";
@@ -95,8 +96,8 @@ export const TABLE_SUMMARY_MAX_CHARS = 6_000;
 /** At most this many row values ride the summary. */
 export const TABLE_SUMMARY_MAX_VALUES = 60;
 
-/** The chart's "All" range: about ten years. */
-const ALL_TIME_DAYS = 3_650;
+/** The chart's "All" range: about ten years (the settings text states it). */
+const ALL_TIME_DAYS = COACH_ALL_TIME_TABLE_DAYS;
 
 const WINDOW_DAYS: Readonly<Record<CoachScopeWindow, number>> = {
   last7days: 7,

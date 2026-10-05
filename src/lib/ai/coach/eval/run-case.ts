@@ -25,6 +25,7 @@
  * This mirrors the route exactly (`coach-prose-grounding-no-tools.test.ts`).
  */
 import type { Locale } from "@/lib/i18n/config";
+import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
 import type {
   AiMessage,
   AiToolCall,
@@ -113,6 +114,8 @@ export async function runRealCase(args: {
     // folded into the system prompt by the judge so a no-tools provider still
     // has the context. The loop tolerates an empty toolCalls (no-tools path).
     tools: [],
+    // An eval case is a fixed transcript, not a person with a setting.
+    reach: UNBOUNDED_REACH,
     temperature,
     maxTokens,
   });

@@ -23,7 +23,7 @@ import {
 } from "@/lib/insights/derived/recovery-resolve";
 
 /** How far back the divergence read looks for a comparable two-source night. */
-const SIGNAL_TRUST_WINDOW_DAYS = 10;
+export const SIGNAL_TRUST_WINDOW_DAYS = 10;
 
 /** The snapshot block shape — small, descriptive, never a number the model recites. */
 export interface SignalTrustBlock {

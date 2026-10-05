@@ -43,5 +43,8 @@ export { computeCoincidentDeviation } from "./coincident-deviation";
 
 export type { WellnessScoreValue } from "./wellness-scores";
 
-export { computeTrajectory } from "./trajectory";
+export {
+  computeTrajectory,
+  TRAJECTORY_DEFAULT_WINDOW_DAYS,
+} from "./trajectory";
 export type { TrajectoryValue } from "./trajectory";

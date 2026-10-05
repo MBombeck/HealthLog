@@ -19,6 +19,11 @@ import { admitCoachSources, coachExclusions } from "@/lib/ai/coach/scope-gate";
 import type { CoachDataCluster } from "@/lib/validations/coach-prefs";
 import { clusterSourcesFromPrefs, sourceCluster } from "./clusters";
 import { resolveScope, windowToDays } from "./snapshot-series";
+import {
+  UNBOUNDED_REACH,
+  clampWindow,
+  type CoachHistoryReach,
+} from "./history-reach";
 import type { CoachScope, CoachScopeSource, CoachScopeWindow } from "./types";
 
 /**
@@ -102,6 +107,12 @@ const CORE_CLUSTERS: ReadonlySet<CoachDataCluster> = new Set<CoachDataCluster>([
 export async function resolveSnapshotPrelude(
   userId: string,
   scope: CoachScope | undefined,
+  /**
+   * The Coach's lookback limit, applied to the window here so every build
+   * that starts from the prelude reads under it. The single-source MCP build
+   * passes none and keeps its own window.
+   */
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ) {
   const moduleMapPromise = resolveModuleMap(userId);
   // v1.20.0 (H-1) — the F1 coach tools each rebuild a single-source snapshot
@@ -149,10 +160,11 @@ export async function resolveSnapshotPrelude(
     ? (prefsRow?.locale as Locale)
     : defaultLocale;
   const clusterDefault = clusterSourcesFromPrefs(prefs.dataClusters);
-  const { sources: scopedSources, window } = resolveScope(
+  const { sources: scopedSources, window: requestedWindow } = resolveScope(
     scope,
     clusterDefault,
   );
+  const window = clampWindow(requestedWindow, reach);
   const userTz = prefsRow?.timezone ?? DEFAULT_TIMEZONE;
   const units = resolveUnitPreferences({
     unitPreference: prefsRow?.unitPreference,

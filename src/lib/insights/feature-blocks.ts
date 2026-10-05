@@ -59,9 +59,16 @@ interface AllTimeExtremes {
 export async function readAllTimeExtremes(
   userId: string,
   types: readonly MeasurementType[],
+  /**
+   * The Coach's lookback floor. Given, "all time" means all the history the
+   * Coach may read, and nothing older enters the figures.
+   */
+  floor: Date | null = null,
 ): Promise<Map<MeasurementType, AllTimeExtremes>> {
   const out = new Map<MeasurementType, AllTimeExtremes>();
   if (types.length === 0) return out;
+  const since =
+    floor === null ? Prisma.empty : Prisma.sql`AND m."measured_at" >= ${floor}`;
   const priorityJson = await loadUserSourcePriority(userId);
   const rank = Prisma.raw(
     buildSourceRankCase(priorityJson, 'p."type"', 'p."source"'),
@@ -91,6 +98,7 @@ export async function readAllTimeExtremes(
       WHERE m."user_id" = ${userId}
         AND m."deleted_at" IS NULL
         AND m."type" IN (${typeList})
+        ${since}
         AND ${Prisma.raw(isHourlyMeanTypeSql('m."type"'))}
     ),
     weighted AS (
@@ -116,6 +124,7 @@ export async function readAllTimeExtremes(
       WHERE m."user_id" = ${userId}
         AND m."deleted_at" IS NULL
         AND m."type" IN (${typeList})
+        ${since}
       GROUP BY m."type", m."source", 3
     ),
     canon AS (

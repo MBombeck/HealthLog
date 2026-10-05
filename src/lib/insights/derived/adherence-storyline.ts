@@ -49,6 +49,12 @@ const ADHERENCE_WINDOW_DAYS = 14;
 /** Window for the target-vital before/after read (split in half). */
 const VITAL_WINDOW_DAYS = 28;
 
+/** The furthest back the storyline reads: the longer of its two windows. */
+export const ADHERENCE_STORYLINE_HORIZON_DAYS = Math.max(
+  ADHERENCE_WINDOW_DAYS,
+  VITAL_WINDOW_DAYS,
+);
+
 /** Adherence must clear this many days of scheduled doses to be trusted. */
 const MIN_ADHERENCE_DAYS = 7;
 /** Each side of the vital before/after read needs this many days. */

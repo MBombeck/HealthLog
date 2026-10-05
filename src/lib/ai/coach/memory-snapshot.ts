@@ -40,6 +40,14 @@ import {
 import type { BaselineProfile } from "@/lib/insights/derived";
 import type { Locale } from "@/lib/i18n/config";
 import { buildCoachFactsBlock } from "./facts";
+import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import {
+  UNBOUNDED_REACH,
+  fitsReach,
+  isBounded,
+  withinReach,
+  type CoachHistoryReach,
+} from "./history-reach";
 import {
   buildCoachPlansBlock,
   buildCoachRemindersBlock,
@@ -49,6 +57,31 @@ import {
 
 /** The period the rolling profile recalls — month is the high-signal beat. */
 const MEMORY_PERIOD: NarrativePeriod = "month";
+
+/**
+ * How far back the narrative and the band memory reach: the prior month
+ * against the current one. A shorter lookback limit leaves both out; facts,
+ * plans and reminders are what the person told the Coach, not readings, and
+ * stay.
+ */
+const MEMORY_HISTORY_HORIZON_DAYS = 2 * 30; // two `PERIOD_DAYS.month`
+
+/** True when the history a narrative dated `dateKey` describes lies inside the limit. */
+function narrativeWithinReach(
+  dateKey: string,
+  reach: CoachHistoryReach,
+  now: Date,
+): boolean {
+  if (!isBounded(reach)) return true;
+  // The narrative row's own day key, compared as its date, not a local day.
+  const end = dayKeyAsUtcMidnight(dateKey).getTime();
+  if (!Number.isFinite(end)) return false;
+  return withinReach(
+    new Date(end - MEMORY_HISTORY_HORIZON_DAYS * 86_400_000),
+    reach,
+    now,
+  );
+}
 
 /** Cap the recalled narrative so a verbose row cannot bloat the snapshot. */
 const NARRATIVE_HEADLINE_CHARS = 600;
@@ -145,12 +178,22 @@ export async function buildCoachMemoryBlock(
    * pipeline never writes for that user.
    */
   locale: Locale,
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<CoachMemoryBlock | null> {
+  const historyAllowed = fitsReach(MEMORY_HISTORY_HORIZON_DAYS, reach);
   let priorNarrative: PriorNarrativeRecall | undefined;
-  // Sub-source 1: the latest period-narrative headline + driver recall.
+  // Sub-source 1: the latest period-narrative headline + driver recall. The
+  // row is whatever was last written, of any age; under a limit it counts
+  // only when the history it describes lies inside the limit.
   try {
-    const row = await readPeriodNarrative(userId, MEMORY_PERIOD, locale);
-    if (row && row.text.trim().length > 0) {
+    const row = historyAllowed
+      ? await readPeriodNarrative(userId, MEMORY_PERIOD, locale)
+      : null;
+    if (
+      row &&
+      row.text.trim().length > 0 &&
+      narrativeWithinReach(row.dateKey, reach, now)
+    ) {
       const recall = recallNarrative(row);
       recall.drivers = recall.drivers.slice(0, MAX_RECALLED_DRIVERS);
       priorNarrative = recall;
@@ -165,12 +208,14 @@ export async function buildCoachMemoryBlock(
   // parallel aggregation, no recompute beyond the one assembly call.
   const trendMemory: Record<string, TrendMemoryEntry> = {};
   try {
-    const ctx = await buildPeriodNarrativeContext(userId, {
-      period: MEMORY_PERIOD,
-      now,
-      locale,
-    });
-    if (ctx.status === "ready") {
+    const ctx = historyAllowed
+      ? await buildPeriodNarrativeContext(userId, {
+          period: MEMORY_PERIOD,
+          now,
+          locale,
+        })
+      : null;
+    if (ctx?.status === "ready") {
       for (const transition of ctx.bandTransitions) {
         trendMemory[transition.type] = trendFromTransition(transition);
       }

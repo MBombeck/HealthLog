@@ -217,7 +217,11 @@ export async function runTurnModel(args: {
       // model pulls only what it needs via the retrieval tools. The inventory
       // build reuses the snapshot we already computed (60s LRU), so the tools
       // that fire this turn share its reads.
-      const inventory = await buildCoachDataInventory(userId, effectiveScope);
+      const inventory = await buildCoachDataInventory(
+        userId,
+        effectiveScope,
+        ctx.reach,
+      );
       // Earlier tables whose metric the person has since excluded are
       // neither named for the model nor reachable through show_result. The
       // scope is the one every tool of the turn reads under.
@@ -266,6 +270,8 @@ export async function runTurnModel(args: {
         // probe scope is the exact scope the inventory was built against, so the
         // per-tool reads land its 60s LRU entry.
         sharedScope: inventory.probeScope,
+        // The lookback limit: every tool call is clamped to it.
+        reach: ctx.reach,
         // v1.20.1 — thread the abort signal so a mid-generation disconnect tears
         // down the per-round provider calls instead of paying the full cost.
         signal,

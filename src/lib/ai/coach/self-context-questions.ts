@@ -50,6 +50,7 @@ import {
   type SelfContext,
 } from "@/lib/ai/coach/about-me";
 import { buildCoachSnapshot } from "@/lib/ai/coach/snapshot";
+import { readCoachReach } from "@/lib/ai/coach/history-reach-read";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import type { Locale } from "@/lib/i18n/config";
 import {
@@ -255,7 +256,10 @@ export async function deriveClarifyingQuestions(
     // ask about what the user actually tracks. Best-effort: a snapshot
     // failure must not cost the AI path, the prompt just stays
     // fields-only.
-    const snapshotJson = await buildCoachSnapshot(userId)
+    // The person's Coach lookback limit applies here too: the questions are
+    // asked from what the Coach may see.
+    const snapshotJson = await readCoachReach(userId)
+      .then((reach) => buildCoachSnapshot(userId, undefined, { reach }))
       .then((s) => s.snapshotJson || null)
       .catch(() => null);
     const { systemPrompt, userPrompt } = buildPrompts(

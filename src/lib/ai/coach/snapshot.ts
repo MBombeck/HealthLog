@@ -89,6 +89,16 @@ import {
   buildProfileContextBlocks,
 } from "./snapshot-blocks/context-blocks";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import {
+  UNBOUNDED_REACH,
+  fitsReach,
+  isBounded,
+  reachFloor,
+  type CoachHistoryReach,
+} from "./history-reach";
+import { ADHERENCE_STORYLINE_HORIZON_DAYS } from "@/lib/insights/derived/adherence-storyline";
+import { CHANGEPOINT_WINDOW_DAYS } from "@/lib/insights/derived/changepoint";
+import { SIGNAL_TRUST_WINDOW_DAYS } from "@/lib/insights/derived/signal-trust";
 
 // Test-only escape hatch — the suites import it from this module.
 export { __resetCoachSnapshotCacheForTests } from "./snapshot-cache";
@@ -141,6 +151,13 @@ export interface CoachSnapshotResult {
 const SLEEP_RHYTHM_WINDOW_DAYS = 42;
 
 /**
+ * Where the coarse MONTH tail begins: the in-window weekly fold covers the
+ * first 90 days, the rollup tail what lies beyond. Under a lookback limit of
+ * 90 days or less the tail has nothing it may add.
+ */
+const COARSE_TAIL_START_DAYS = 90;
+
+/**
  * Build the Coach prompt snapshot for `userId`. Always uses
  * `includeRaw=false` because the Coach replies are conversational and
  * the user is asking the model — they should never depend on raw
@@ -168,11 +185,20 @@ const SLEEP_RHYTHM_WINDOW_DAYS = 42;
 export async function buildCoachSnapshot(
   userId: string,
   scope?: CoachScope,
+  options?: {
+    /**
+     * How far back the build may read (`history-reach.ts`). Every Coach
+     * caller passes the person's limit; MCP passes none and reads without
+     * one, as it always did.
+     */
+    reach?: CoachHistoryReach;
+  },
 ): Promise<CoachSnapshotResult> {
-  const key = snapshotCacheKey(userId, scope);
+  const reach = options?.reach ?? UNBOUNDED_REACH;
+  const key = snapshotCacheKey(userId, scope, reach);
   const cached = readSnapshotCache(key);
   if (cached) return cached;
-  const result = await buildCoachSnapshotImpl(userId, scope);
+  const result = await buildCoachSnapshotImpl(userId, scope, reach);
   writeSnapshotCache(key, result);
   return result;
 }
@@ -202,9 +228,12 @@ function blockFailed(block: string): (err: unknown) => null {
 
 async function buildCoachSnapshotImpl(
   userId: string,
-  scope?: CoachScope,
+  scope: CoachScope | undefined,
+  reach: CoachHistoryReach,
 ): Promise<CoachSnapshotResult> {
   // Prefs, module gates and the admitted sources — see `snapshot-prelude.ts`.
+  // The lookback limit caps the narration window there, whatever the caller
+  // asked for; every fixed-window block below answers to the same limit.
   const {
     prefsRow,
     coachLocale,
@@ -214,7 +243,8 @@ async function buildCoachSnapshotImpl(
     recoveryDisabled,
     excluded,
     sources,
-  } = await resolveSnapshotPrelude(userId, scope);
+  } = await resolveSnapshotPrelude(userId, scope, reach);
+  const bounded = isBounded(reach);
   const glucoseUnit = units.glucoseUnit;
   // v1.4.36 W3 T2 — `medications` and `anthropometrics` are
   // exclude-only toggles (not in `CoachScopeSource`); they gate the
@@ -247,9 +277,16 @@ async function buildCoachSnapshotImpl(
   // do not share this read; memoise it per-request keyed on the only varying
   // input (windowDays) so the fan-out runs it once instead of up to 6× against
   // the shared pool.
+  // Under a lookback limit the aggregate's "all time" figures, the mood
+  // history and its sub-blocks are read from inside the limit only.
+  const featuresFloor = reachFloor(reach);
   const featuresPromise = memoizePerRequest(
-    `coach-features:${userId}:${windowDays}`,
-    () => extractFeatures(userId, false, { sinceDays: windowDays }),
+    `coach-features:${userId}:${windowDays}:${reach.days ?? "all"}`,
+    () =>
+      extractFeatures(userId, false, {
+        sinceDays: windowDays,
+        ...(featuresFloor ? { historyFloor: featuresFloor } : {}),
+      }),
   );
 
   // Trim down to the metrics the Coach narrates. extractFeatures
@@ -321,31 +358,39 @@ async function buildCoachSnapshotImpl(
   const coarseTailPromises: Partial<
     Record<"bp" | "weight" | "pulse", Promise<CoarseTimelineTail | undefined>>
   > = {};
-  if (wantsBp) {
+  // The coarse tail starts where the in-window weekly fold ends (90 days), so
+  // a limit of 90 days or less leaves nothing for it to add.
+  const coarseTailAllowed =
+    reach.days === null || reach.days > COARSE_TAIL_START_DAYS;
+  const coarseFloor = reachFloor(reach, now);
+  if (wantsBp && coarseTailAllowed) {
     coarseTailPromises.bp = buildCoarseTimelineTail(
       userId,
       "BLOOD_PRESSURE_SYS" as MeasurementType,
       now,
       userTz,
       prefsRow?.sourcePriorityJson ?? null,
+      coarseFloor,
     );
   }
-  if (wantsWeight) {
+  if (wantsWeight && coarseTailAllowed) {
     coarseTailPromises.weight = buildCoarseTimelineTail(
       userId,
       "WEIGHT" as MeasurementType,
       now,
       userTz,
       prefsRow?.sourcePriorityJson ?? null,
+      coarseFloor,
     );
   }
-  if (wantsPulse) {
+  if (wantsPulse && coarseTailAllowed) {
     coarseTailPromises.pulse = buildCoarseTimelineTail(
       userId,
       "PULSE" as MeasurementType,
       now,
       userTz,
       prefsRow?.sourcePriorityJson ?? null,
+      coarseFloor,
     );
   }
   const [bpCoarseTail, weightCoarseTail, pulseCoarseTail] = await Promise.all([
@@ -480,10 +525,13 @@ async function buildCoachSnapshotImpl(
     now.getTime() - SLEEP_RHYTHM_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   );
   // source + deviceType feed the canonical writer-dedup so a multi-source
-  // night is counted ONCE, matching every other sleep surface.
-  const sleepRhythmRowsPromise = sources.has("sleep")
-    ? readSleepStageRows(userId, sleepRhythmCutoff)
-    : null;
+  // night is counted ONCE, matching every other sleep surface. A limit
+  // shorter than the rhythm's fixed 42 days leaves the block out: a debt or
+  // chronotype band over fewer nights is not the one the page shows.
+  const sleepRhythmRowsPromise =
+    sources.has("sleep") && fitsReach(SLEEP_RHYTHM_WINDOW_DAYS, reach)
+      ? readSleepStageRows(userId, sleepRhythmCutoff)
+      : null;
   const workoutRowsPromise = sources.has("workouts")
     ? prisma.workout.findMany({
         where: { userId, startedAt: { gte: additiveCutoff("workouts") } },
@@ -514,23 +562,26 @@ async function buildCoachSnapshotImpl(
   const glucoseClinicalCutoff = new Date(
     now.getTime() - GLUCOSE_CLINICAL_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   );
-  const glucoseClinicalRowsPromise = sources.has("glucose")
-    ? prisma.measurement.findMany({
-        where: {
-          userId,
-          type: "BLOOD_GLUCOSE" as never,
-          measuredAt: { gte: glucoseClinicalCutoff },
-          deletedAt: null,
-        },
-        orderBy: { measuredAt: "asc" },
-        select: { value: true, measuredAt: true },
-      })
-    : null;
+  // Same rule for the fixed 30-day clinical panel: under a shorter limit the
+  // panel is left out (null rows), never computed over fewer days.
+  const glucoseClinicalRowsPromise =
+    sources.has("glucose") && fitsReach(GLUCOSE_CLINICAL_WINDOW_DAYS, reach)
+      ? prisma.measurement.findMany({
+          where: {
+            userId,
+            type: "BLOOD_GLUCOSE" as never,
+            measuredAt: { gte: glucoseClinicalCutoff },
+            deletedAt: null,
+          },
+          orderBy: { measuredAt: "asc" },
+          select: { value: true, measuredAt: true },
+        })
+      : null;
   const glp1BlockPromise = excludesMedications
     ? null
-    : buildGlp1SnapshotBlock(userId, now, userTz);
+    : buildGlp1SnapshotBlock(userId, now, userTz, reach);
   const derivedBlockPromise = derivedActive
-    ? buildDerivedSnapshotBlock(userId, derivedProfile, now, userTz)
+    ? buildDerivedSnapshotBlock(userId, derivedProfile, now, userTz, reach)
     : null;
   // v1.17.0 — WHOOP-native day strain (0–21), distinct from the COMPUTED
   // STRAIN_SCORE (0–100) the derived block carries. Gated on the same
@@ -550,7 +601,7 @@ async function buildCoachSnapshotImpl(
       })
     : null;
   const trajectoryBlockPromise = derivedActive
-    ? buildTrajectorySnapshotBlock(userId, derivedProfile, now)
+    ? buildTrajectorySnapshotBlock(userId, derivedProfile, now, reach)
     : null;
   // RECON1 (D5-5) — discovered cross-metric driver pairs for the no-tools
   // snapshot floor. Reuses the SAME gated/ranked output the get_correlations
@@ -560,13 +611,14 @@ async function buildCoachSnapshotImpl(
   // instead of getting only the coincident flag. Gated on `derivedActive` (it
   // is the recovery / cross-metric layer) and fail-soft to null.
   const correlationsBlockPromise = derivedActive
-    ? buildCorrelationsSnapshotBlock(userId, coachLocale)
+    ? buildCorrelationsSnapshotBlock(userId, coachLocale, reach)
     : null;
   const memoryBlockPromise = buildCoachMemoryBlock(
     userId,
     derivedProfile,
     now,
     coachLocale,
+    reach,
   );
   // v1.15 — cycle/phase block, gated on the resolved cycle module so a
   // non-cycle account issues no query (the helper short-circuits to null
@@ -578,16 +630,20 @@ async function buildCoachSnapshotImpl(
   // server-wide kill-switch), so an operator-off instance never injects the
   // cycle block into the coach prompt.
   const cycleEnabled = await isCycleAvailableForUser(userId);
-  const cycleBlockPromise = cycleEnabled
-    ? buildCycleSnapshotBlock(userId, prefsRow?.gender, now, userTz)
-    : null;
+  // The cycle block predicts from every logged cycle, of any age, so that its
+  // "day N, period in M days" matches the calendar. Any lookback limit leaves
+  // it out rather than predicting from a part of the history.
+  const cycleBlockPromise =
+    cycleEnabled && !bounded
+      ? buildCycleSnapshotBlock(userId, prefsRow?.gender, now, userTz)
+      : null;
 
   // v1.18.1 P4 — illness/condition context. Always attempted (the helper is
   // module-gated internally and short-circuits to null for a non-illness
   // account). It is CONTEXT, not a scope-gated metric: appended like
   // anthropometrics/scope below without a `registerBlock` so the budget
   // degrader never sheds it — the Coach needs to know about Rest Mode.
-  const illnessBlockPromise = buildIllnessSnapshotBlock(userId, now);
+  const illnessBlockPromise = buildIllnessSnapshotBlock(userId, now, reach);
 
   // v1.18.11 (#65) — lab-result context. Like illness it is CONTEXT, not a
   // scope-gated metric: attached without a `registerBlock` so the budget
@@ -595,7 +651,7 @@ async function buildCoachSnapshotImpl(
   // helper reads owner-scoped rows directly, mirroring `/api/labs`). The block
   // carries the most-recent resolved reading per biomarker (last 12 months,
   // capped) so the Coach can answer "what was my LDL" without re-deriving.
-  const labsBlockPromise = buildLabsSnapshotBlock(userId, now);
+  const labsBlockPromise = buildLabsSnapshotBlock(userId, now, reach);
 
   // v1.38 — doctor-visit context. Like illness/labs it is attempted always (a
   // visit is core, never module-gated) and short-circuits to null when there is
@@ -603,7 +659,7 @@ async function buildCoachSnapshotImpl(
   // UNLIKE illness/labs it IS registered for degradation below (against the
   // lowest-priority cluster), because a visit history is low-frequency context
   // the Coach can lose under budget pressure without losing a safety flag.
-  const visitsBlockPromise = buildVisitsSnapshotBlock(userId, now);
+  const visitsBlockPromise = buildVisitsSnapshotBlock(userId, now, reach);
 
   const [
     moodRows,
@@ -900,22 +956,31 @@ async function buildCoachSnapshotImpl(
   // bounded to its domain and avoids spurious recovery/vital reads.
   const isExplicitlyScoped =
     Array.isArray(scope?.sources) && scope.sources.length > 0;
+  // Each of these reads its own fixed window; one that reaches past the
+  // lookback limit is left out. The experiment read-back compares against a
+  // baseline from before the plan began, of no fixed length, so any limit
+  // leaves it out.
   const [adherenceStoryline, changepoints, signalTrust, experimentOutcomes] =
     isExplicitlyScoped
       ? [null, null, null, null]
       : await Promise.all([
-          excludesMedications
+          excludesMedications ||
+          !fitsReach(ADHERENCE_STORYLINE_HORIZON_DAYS, reach)
             ? Promise.resolve(null)
             : buildAdherenceStoryline(userId, userTz, now).catch(
                 blockFailed("adherenceStoryline"),
               ),
-          buildChangepointSignals(userId, now).catch(
-            blockFailed("changepoints"),
-          ),
-          buildSignalTrust(userId, userTz, now).catch(
-            blockFailed("signalTrust"),
-          ),
-          experimentVerdictEnabled()
+          fitsReach(CHANGEPOINT_WINDOW_DAYS, reach)
+            ? buildChangepointSignals(userId, now).catch(
+                blockFailed("changepoints"),
+              )
+            : Promise.resolve(null),
+          fitsReach(SIGNAL_TRUST_WINDOW_DAYS, reach)
+            ? buildSignalTrust(userId, userTz, now).catch(
+                blockFailed("signalTrust"),
+              )
+            : Promise.resolve(null),
+          experimentVerdictEnabled() && !bounded
             ? buildExperimentOutcomeBlock(userId, { now }).catch(
                 blockFailed("experimentOutcomes"),
               )
@@ -941,6 +1006,8 @@ async function buildCoachSnapshotImpl(
     window,
     sources: Array.from(sources),
     timelineRecentDays: DAILY_TIMELINE_DAYS,
+    // Named only under a limit, so an unlimited snapshot stays as it was.
+    ...(bounded ? { lookbackLimit: reach.window } : {}),
   };
 
   // v1.4.36 W3 T4 — compactSections drops any zero-row block before
