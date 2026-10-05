@@ -28,8 +28,8 @@ import { OfflineBanner } from "./offline-banner";
 import { SharedRecordBanner } from "./shared-record-banner";
 import { SharedRecordUnavailable } from "./shared-record-unavailable";
 import {
-  isModulePageOff,
   ModulePageGate,
+  switchedOffModule,
 } from "@/components/layout/module-page-gate";
 import { cn } from "@/lib/utils";
 import { isOnboardingPathname } from "@/lib/onboarding/wizard-steps";
@@ -158,7 +158,7 @@ export function AuthShell({
   const fullBleed =
     pathname === COACH_FULL_BLEED_PATH &&
     !outsideSharedRecord &&
-    !isModulePageOff(pathname, user?.modules);
+    switchedOffModule(pathname, user?.modules) === undefined;
   // The whole setup flow, not only its front door: every screen lives under
   // `/onboarding/<step>` (v1.39 C2), and an exact match here put the
   // questions inside the full app chrome, sidebar and all.
