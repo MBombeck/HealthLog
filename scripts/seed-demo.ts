@@ -32,12 +32,18 @@
  * - Two lab panels of biomarkers across two dates (quantitative with
  *   reference ranges + qualitative "negativ" rows)
  * - Two illness episodes — a resolved acute cold with a day-by-day symptom
- *   curve, and an active chronic condition carrying a recent flare
+ *   curve, and a recurring condition with a resolved spring flare; nothing
+ *   is left open, so the account is not in Rest Mode
  * - Cycle tracking opted in: ~5 observed cycles with biphasic basal body
  *   temperature, period flow, fertile-window mucus/OPK, per-day symptoms,
  *   and a cached forward prediction
- * - An AI-configured Coach with one short sample conversation
- * - App settings (registration disabled, English locale)
+ * - Two practitioners, a knee arthroscopy with its operative report and
+ *   discharge letter linked (small generated PDFs), its follow-up visit, and
+ *   a check-up booked for tomorrow morning
+ * - An AI-configured Coach with five sample conversations spread from
+ *   today back over a few weeks
+ * - App settings (registration disabled, English locale, the key-backup
+ *   step confirmed for the key the demo runs with)
  *
  * Every date is relative to "now" so the demo stays fresh on every re-seed.
  * What ages is the SEEDED DATA, not the script: the pillar windows keep
@@ -54,15 +60,21 @@
  * score can show.
  *
  * Usage: npx tsx scripts/seed-demo.ts
- * Requires DATABASE_URL env var. The Coach sample conversation additionally
+ * Requires DATABASE_URL env var. The Coach sample conversations additionally
  * needs ENCRYPTION_KEYS / ENCRYPTION_KEY (the same key the app runs with).
  */
 
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
 
 import pg from "pg";
 import { encryptToBytes } from "../src/lib/ai/coach/bytes-codec";
-import { encrypt } from "../src/lib/crypto";
+import {
+  encrypt,
+  encryptBytes,
+  getActiveKeyId,
+  getKeyFingerprint,
+} from "../src/lib/crypto";
 import {
   DEFAULT_DASHBOARD_LAYOUT,
   serializeDashboardLayout,
@@ -79,6 +91,15 @@ if (!DATABASE_URL) {
   console.error("DATABASE_URL is required");
   process.exit(1);
 }
+
+// Every timestamp column here is `timestamp without time zone` holding UTC,
+// which is how Prisma reads it. node-postgres serialises a Date in the host's
+// local zone by default and Postgres drops the offset on the cast, so a seed
+// run from a machine on Berlin time stored every instant two hours in the
+// future (today's Coach thread stamped after "now", the CGM stream running
+// into the evening). Sending Dates as UTC makes the result independent of
+// the seed host's clock zone.
+pg.defaults.parseInputDatesAsUTC = true;
 
 const pool = new pg.Pool({ connectionString: DATABASE_URL });
 
@@ -198,6 +219,55 @@ function randomWalk(
   return values;
 }
 
+// A one-page PDF carrying a few lines of Helvetica text, built by hand so the
+// seed needs no PDF library. The byte offsets in the cross-reference table are
+// computed, so viewers and the thumbnail renderer open it as a normal file.
+function simplePdf(lines: string[]): Buffer {
+  const esc = (t: string) => t.replace(/[\\()]/g, (c) => `\\${c}`);
+  const text = lines
+    .map((line, i) =>
+      i === 0
+        ? `BT /F1 16 Tf 56 780 Td (${esc(line)}) Tj ET`
+        : `BT /F1 11 Tf 56 ${760 - i * 18} Td (${esc(line)}) Tj ET`,
+    )
+    .join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+    `<< /Length ${Buffer.byteLength(text, "latin1")} >>\nstream\n${text}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+  ];
+  let body = "%PDF-1.4\n";
+  const offsets: number[] = [];
+  objects.forEach((obj, i) => {
+    offsets.push(Buffer.byteLength(body, "latin1"));
+    body += `${i + 1} 0 obj\n${obj}\nendobj\n`;
+  });
+  const xrefAt = Buffer.byteLength(body, "latin1");
+  body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (const off of offsets)
+    body += `${String(off).padStart(10, "0")} 00000 n \n`;
+  body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefAt}\n%%EOF\n`;
+  return Buffer.from(body, "latin1");
+}
+
+// Pin a series' last point (today) to the median of the four weeks before it.
+// A free walk can end on a tail value, and the vitals check holds today's
+// reading against exactly that personal band: a demo whose oxygen saturation
+// happened to land low read "below your range" on the start page. The median
+// sits inside the band by construction, so today reads as an ordinary day.
+function settleLatest(values: number[], lookback = 28): void {
+  if (values.length < 2) return;
+  const prior = values
+    .slice(Math.max(0, values.length - 1 - lookback), values.length - 1)
+    .sort((a, b) => a - b);
+  const mid = Math.floor(prior.length / 2);
+  const median =
+    prior.length % 2 === 1 ? prior[mid] : (prior[mid - 1] + prior[mid]) / 2;
+  values[values.length - 1] = Math.round(median * 10) / 10;
+}
+
 // ── Main ─────────────────────────────────────────
 
 async function seed() {
@@ -294,7 +364,6 @@ async function seed() {
     ]);
     const demoDashboardLayout = serializeDashboardLayout({
       ...DEFAULT_DASHBOARD_LAYOUT,
-      heroVisible: true,
       widgets: DEFAULT_DASHBOARD_LAYOUT.widgets.map((w) =>
         SHOWCASE_TILE_IDS.has(w.id) ? { ...w, tileVisible: true } : w,
       ),
@@ -352,6 +421,9 @@ async function seed() {
     );
     // Steps: 6500 → a solid ~9000
     const steps = randomWalk(6500, 9000, span, 1500);
+    for (const series of [weights, sysBP, diaBP, pulse, restingHr]) {
+      settleLatest(series);
+    }
 
     for (let i = 0; i < span; i++) {
       const date = daysAgo(days - i);
@@ -606,6 +678,8 @@ async function seed() {
     for (let i = 0; i < span; i++) {
       for (const r of glucoseReadings) {
         const at = daysAgoAt(days - i, r.hour, Math.floor(Math.random() * 30));
+        // Today's later readings are still ahead of the seed's clock.
+        if (at.getTime() > Date.now()) continue;
         const value = Math.round(r.base + (Math.random() - 0.5) * r.jitter);
         await client.query(
           `INSERT INTO measurements (id, user_id, type, value, unit, source, glucose_context, device_type, measured_at, created_at, updated_at)
@@ -646,6 +720,9 @@ async function seed() {
           Math.min(140, Math.max(72, base + (Math.random() - 0.5) * 6)),
         );
         const at = daysAgoAt(d, Math.floor(hour), minute % 60);
+        // Today's stream stops at the seed's own clock: a sensor cannot have
+        // read the evening yet.
+        if (at.getTime() > Date.now()) break;
         const externalId = `cgm-${formatDate(at)}-${minute}`;
         // The measurements_glucose_context_requires_type CHECK requires a
         // non-NULL glucose_context on every BLOOD_GLUCOSE row. A free-running
@@ -704,6 +781,9 @@ async function seed() {
     );
     // Flights climbed: ~8–14/day.
     const flights = randomWalk(9, 13, span, 4, VALUE_RANGES.FLIGHTS_CLIMBED);
+    for (const series of [hrvSdnn, hrvRmssd, spo2, respRate]) {
+      settleLatest(series);
+    }
 
     for (let i = 0; i < span; i++) {
       const date = daysAgo(days - i);
@@ -1135,6 +1215,11 @@ async function seed() {
       const tags = tagOptions[5 - rawScore];
       const loggedAt = new Date(date);
       loggedAt.setHours(21, Math.floor(Math.random() * 59), 0);
+      // Today's evening entry has not happened yet when the seed runs
+      // earlier in the day; it is logged a few minutes ago instead.
+      if (loggedAt.getTime() > Date.now()) {
+        loggedAt.setTime(Date.now() - 5 * 60_000);
+      }
 
       await client.query(
         `INSERT INTO mood_entries (id, user_id, date, mood, score, tags, source, mood_logged_at, synced_at, created_at, updated_at)
@@ -1289,14 +1374,17 @@ async function seed() {
     // ── Illness / condition journal ───────────
     // Two episodes so the journal + per-condition timeline both render with
     // signal: (1) a short, fully-resolved cold ~7 weeks ago with a day-by-day
-    // symptom curve, and (2) an active chronic condition (seasonal allergic
-    // rhinitis) carrying a recent FLARE that hangs off it. Each episode gets
+    // symptom curve, and (2) a recurring condition (seasonal allergic
+    // rhinitis) with a spring FLARE that hangs off it. Each episode gets
     // IllnessDayLog rows (functional impact + optional fever + an encrypted
     // note) and per-day symptom links from the seeded catalogue, so the
     // retrospective curve + symptom chips have content. Day-log + episode
     // notes are AES-256-GCM Bytes (the `*Encrypted` convention), written with
     // the same codec the app uses — never plaintext.
     console.log("Creating illness / condition journal...");
+    // The pollen flare starts about 24 weeks back, in the spring of the
+    // year the seed runs in, and every day of it is placed from this anchor.
+    const FLARE_ONSET_DAYS_AGO = 170;
 
     // Resolve a catalogue symptom id by its stable machine key.
     const illnessSymptomId = async (key: string): Promise<string> => {
@@ -1430,27 +1518,35 @@ async function seed() {
       });
     }
 
-    // (2) Active chronic condition + a recent flare hanging off it.
+    // (2) A recurring condition with a flare hanging off it, both closed.
+    // Any episode left open puts the account in Rest Mode (an ongoing chronic
+    // condition deliberately included), and an open one dated 400 days back
+    // greeted every demo visitor with "Rest mode, day 401" and a score marked
+    // as not penalised. The season and its flare therefore sit in the spring
+    // and are resolved; the illness pages still show the whole history.
     const allergyId = cuid();
     await client.query(
       `INSERT INTO illness_episodes (id, user_id, label, type, lifecycle, onset_at, resolved_at, note_encrypted, created_at, updated_at)
-       VALUES ($1, $2, 'Seasonal allergic rhinitis', 'ALLERGY', 'CHRONIC_ONGOING', $3, NULL, $4, NOW(), NOW())`,
+       VALUES ($1, $2, 'Seasonal allergic rhinitis', 'ALLERGY', 'RECURRING', $3, $4, $5, NOW(), NOW())`,
       [
         allergyId,
         userId,
         daysAgo(400),
+        daysAgo(FLARE_ONSET_DAYS_AGO - 14),
         encBytes("Tree pollen each spring. Antihistamine helps."),
       ],
     );
-    // The flare: a still-open bout this past week referencing the parent.
+    // The flare: a bout at the height of the pollen season, referencing the
+    // parent, resolved a week after it started.
     const flareId = cuid();
     await client.query(
       `INSERT INTO illness_episodes (id, user_id, label, type, lifecycle, onset_at, resolved_at, parent_condition_id, note_encrypted, created_at, updated_at)
-       VALUES ($1, $2, 'Pollen flare', 'ALLERGY', 'FLARE', $3, NULL, $4, $5, NOW(), NOW())`,
+       VALUES ($1, $2, 'Pollen flare', 'ALLERGY', 'FLARE', $3, $4, $5, $6, NOW(), NOW())`,
       [
         flareId,
         userId,
-        daysAgo(5),
+        daysAgo(FLARE_ONSET_DAYS_AGO),
+        daysAgo(FLARE_ONSET_DAYS_AGO - 7),
         allergyId,
         encBytes("High pollen count this week — symptoms back."),
       ],
@@ -1462,7 +1558,7 @@ async function seed() {
       symptoms: Array<{ key: string; severity: number }>;
     }> = [
       {
-        offset: 5,
+        offset: FLARE_ONSET_DAYS_AGO,
         impact: 1,
         note: "Itchy eyes and sneezing started today.",
         symptoms: [
@@ -1471,7 +1567,7 @@ async function seed() {
         ],
       },
       {
-        offset: 4,
+        offset: FLARE_ONSET_DAYS_AGO - 1,
         impact: 1,
         note: "Pollen high again — runny nose all morning.",
         symptoms: [
@@ -1480,7 +1576,7 @@ async function seed() {
         ],
       },
       {
-        offset: 2,
+        offset: FLARE_ONSET_DAYS_AGO - 3,
         impact: 1,
         note: "Antihistamine taking the edge off.",
         symptoms: [
@@ -1489,7 +1585,7 @@ async function seed() {
         ],
       },
       {
-        offset: 0,
+        offset: FLARE_ONSET_DAYS_AGO - 6,
         impact: 1,
         note: "Still sniffly but manageable.",
         symptoms: [{ key: "runny_nose", severity: 1 }],
@@ -1705,6 +1801,142 @@ async function seed() {
       ],
     );
 
+    // ── Visits, a procedure and its documents ──
+    // Two practitioners, a past knee arthroscopy with its two letters linked,
+    // the follow-up visit that came after it, and a check-up booked for
+    // tomorrow morning. The booked visit is what the start page's Today
+    // overview and worth-a-look rail read; the procedure with linked files is
+    // what gives the documents page its procedure filter. Documents are real
+    // (tiny) PDFs, encrypted with the binary codec the upload path writes.
+    console.log("Creating visits, a procedure and its documents...");
+    const familyPracticeId = cuid();
+    const orthopaedicsId = cuid();
+    for (const [id, name, specialty] of [
+      [familyPracticeId, "Family practice", "General practice"],
+      [orthopaedicsId, "Orthopaedic clinic", "Orthopaedics"],
+    ]) {
+      await client.query(
+        `INSERT INTO practitioners (id, user_id, name, specialty, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+        [id, userId, name, specialty],
+      );
+    }
+    const insertEncounter = async (params: {
+      occurredAt: Date;
+      status: "DONE" | "PLANNED";
+      kind: "ROUTINE" | "PROCEDURE";
+      practitionerId: string;
+      reason: string;
+      outcome?: string;
+      bodySite?: string;
+      laterality?: "LEFT" | "RIGHT";
+    }): Promise<string> => {
+      const id = cuid();
+      await client.query(
+        `INSERT INTO encounters (id, user_id, occurred_at, status, kind, practitioner_id, reason_encrypted, outcome_encrypted, body_site_encrypted, laterality, created_at, updated_at)
+         VALUES ($1, $2, $3, $4::encounter_status, $5::encounter_kind, $6, $7, $8, $9, $10::laterality, NOW(), NOW())`,
+        [
+          id,
+          userId,
+          params.occurredAt,
+          params.status,
+          params.kind,
+          params.practitionerId,
+          encBytes(params.reason),
+          params.outcome ? encBytes(params.outcome) : null,
+          params.bodySite ? encBytes(params.bodySite) : null,
+          params.laterality ?? null,
+        ],
+      );
+      return id;
+    };
+    const procedureAt = daysAgoAt(150, 8, 30);
+    const procedureId = await insertEncounter({
+      occurredAt: procedureAt,
+      status: "DONE",
+      kind: "PROCEDURE",
+      practitionerId: orthopaedicsId,
+      reason: "Arthroscopy for a torn meniscus after a running injury.",
+      outcome:
+        "Partial meniscectomy, day surgery. Physiotherapy for six weeks, " +
+        "back to easy running after that.",
+      bodySite: "knee",
+      laterality: "LEFT",
+    });
+    await insertEncounter({
+      occurredAt: daysAgoAt(136, 10, 15),
+      status: "DONE",
+      kind: "ROUTINE",
+      practitionerId: orthopaedicsId,
+      reason: "Follow-up two weeks after the arthroscopy.",
+      outcome: "Healing well, full range of motion. Physiotherapy continues.",
+    });
+    await insertEncounter({
+      occurredAt: daysAgoAt(-1, 9, 30),
+      status: "PLANNED",
+      kind: "ROUTINE",
+      practitionerId: familyPracticeId,
+      reason: "Annual check-up with a blood panel.",
+    });
+    const procedureDocs: Array<{
+      kind: "DOCTOR_REPORT" | "DISCHARGE_LETTER";
+      title: string;
+      filename: string;
+      date: Date;
+      lines: string[];
+    }> = [
+      {
+        kind: "DOCTOR_REPORT",
+        title: "Operative report, knee arthroscopy",
+        filename: "operative-report-knee-arthroscopy.pdf",
+        date: procedureAt,
+        lines: [
+          "Operative report",
+          "Procedure: arthroscopic partial meniscectomy, left knee",
+          "Anaesthesia: general, day surgery",
+          "Findings: radial tear of the medial meniscus, cartilage intact",
+          "Course: uneventful",
+        ],
+      },
+      {
+        kind: "DISCHARGE_LETTER",
+        title: "Discharge letter, day surgery",
+        filename: "discharge-letter-day-surgery.pdf",
+        date: procedureAt,
+        lines: [
+          "Discharge letter",
+          "Discharged the same afternoon in good condition",
+          "Weight-bearing as tolerated, crutches for three days",
+          "Physiotherapy: twice a week for six weeks",
+          "Follow-up in the clinic after two weeks",
+        ],
+      },
+    ];
+    for (const doc of procedureDocs) {
+      const pdf = simplePdf(doc.lines);
+      const docId = cuid();
+      await client.query(
+        `INSERT INTO inbound_documents (id, user_id, kind, title, filename, mime_type, byte_size, content_encrypted, content_sha256, content_codec, status, document_date, created_at, updated_at)
+         VALUES ($1, $2, $3::inbound_document_kind, $4, $5, 'application/pdf', $6, $7, $8, 'binary2', 'STORED', $9, $9, $9)`,
+        [
+          docId,
+          userId,
+          doc.kind,
+          doc.title,
+          doc.filename,
+          pdf.byteLength,
+          Buffer.from(encryptBytes(pdf)),
+          createHash("sha256").update(pdf).digest("hex"),
+          doc.date,
+        ],
+      );
+      await client.query(
+        `INSERT INTO encounter_document_links (id, encounter_id, document_id, user_id, created_at)
+         VALUES ($1, $2, $3, $4, NOW())`,
+        [cuid(), procedureId, docId, userId],
+      );
+    }
+
     // ── Achievements ─────────────────────────
     console.log("Creating achievements...");
 
@@ -1752,93 +1984,270 @@ async function seed() {
       );
     }
 
-    // ── Coach sample conversation ─────────────
-    // A short, encrypted two-turn exchange so the Coach surface shows real
-    // content. Messages use the same AES-256-GCM Bytes codec the app writes
-    // with (encryptToBytes → encrypt() under ENCRYPTION_KEYS), so they decrypt
-    // exactly like a live conversation — no faked / plaintext rows.
-    console.log("Creating Coach sample conversation...");
-    const convoId = cuid();
-    const convoStart = daysAgo(3);
-    await client.query(
-      `INSERT INTO coach_conversations (id, user_id, title, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $4)`,
-      [convoId, userId, "Blood pressure trend", convoStart],
-    );
+    // ── Coach sample conversations ────────────
+    // Five short, encrypted exchanges spread from today back over a few
+    // weeks, so the history rail groups them by day the way a used account
+    // reads, and the thread that opens first (today's) carries a full answer
+    // with the steps the Coach took. Messages use the same AES-256-GCM Bytes
+    // codec the app writes with (encryptToBytes → encrypt() under
+    // ENCRYPTION_KEYS), so they decrypt exactly like a live conversation — no
+    // faked / plaintext rows.
+    console.log("Creating Coach sample conversations...");
 
     // The provenance uses the contract tokens (`bp`, `resting_hr`, `sleep`):
     // the client names an area only through a known token, so a token it
     // cannot name never reaches the page. The steps give the answer its
-    // "Looked at 3 sources" header the way a live turn would; they carry no
+    // "Looked at N sources" header the way a live turn would; they carry no
     // counts, since a count is the server's tally and the seed does not
     // run a tool.
+    const WINDOW_LABEL = {
+      last7days: "last 7 days",
+      last30days: "last 30 days",
+      last90days: "last 90 days",
+    } as const;
     const seedStep = (
       id: string,
       tool: string,
       domain: string,
       domainLabel: string,
+      window: keyof typeof WINDOW_LABEL = "last30days",
     ) => ({
       id,
       tool,
       labelKey: "coach.step.readWindow",
-      label: `Checking: ${domainLabel}, last 30 days`,
+      label: `Checking: ${domainLabel}, ${WINDOW_LABEL[window]}`,
       domain,
-      window: "last30days",
+      window,
       status: "done",
     });
-    const coachTurns: Array<{
-      role: string;
-      content: string;
-      metricSourceJson?: string;
-      tokensUsed?: number;
-      model?: string;
+    type SeedStep = ReturnType<typeof seedStep>;
+    const answer = (
+      content: string,
+      window: SeedStep["window"],
+      steps: SeedStep[],
+      tokensUsed: number,
+    ) => ({
+      role: "assistant",
+      content,
+      metricSourceJson: JSON.stringify({
+        windows: [window],
+        metrics: [...new Set(steps.map((step) => step.domain))],
+        steps,
+      }),
+      tokensUsed,
+      model: aiModel,
+    });
+    const coachConversations: Array<{
+      title: string;
+      startedAt: Date;
+      turns: Array<{
+        role: string;
+        content: string;
+        metricSourceJson?: string;
+        tokensUsed?: number;
+        model?: string;
+      }>;
     }> = [
       {
-        role: "user",
-        content: "How has my blood pressure been trending lately?",
+        title: "Recovery this week",
+        // Today, shortly before the seed ran, so it is the newest thread.
+        startedAt: new Date(Date.now() - 50 * 60_000),
+        turns: [
+          {
+            role: "user",
+            content:
+              "How well have I been recovering this week, and is there anything I should change?",
+          },
+          answer(
+            "This has been a well-recovered week. You slept close to seven " +
+              "and a half hours on most nights, with a steady share of deep " +
+              "sleep, and your resting heart rate stayed in the high fifties, " +
+              "which is where it has sat for the past month.\n\n" +
+              "Heart-rate variability tells the same story: it held inside " +
+              "your usual range on every day this week, and the two harder " +
+              "runs did not push it down the next morning. Your step count " +
+              "averaged around nine thousand a day, so the load is there " +
+              "without tipping into strain.\n\n" +
+              "Nothing here asks for a change. If you want one thing to keep " +
+              "an eye on, it is the later bedtimes on the weekend: the two " +
+              "shortest nights of the week both fell on a Saturday or Sunday.",
+            "last7days",
+            [
+              seedStep("s1", "get_sleep", "sleep", "Sleep", "last7days"),
+              seedStep(
+                "s2",
+                "get_metric_series",
+                "resting_hr",
+                "Resting HR",
+                "last7days",
+              ),
+              seedStep("s3", "get_metric_series", "hrv", "HRV", "last7days"),
+              seedStep(
+                "s4",
+                "get_metric_series",
+                "steps",
+                "Steps",
+                "last7days",
+              ),
+              seedStep(
+                "s5",
+                "get_workouts",
+                "workouts",
+                "Workouts",
+                "last7days",
+              ),
+            ],
+            2630,
+          ),
+        ],
       },
       {
-        role: "assistant",
-        content:
-          "Your blood pressure has been settling nicely. Over the last few " +
-          "weeks the morning readings have drifted into the optimal band, and " +
-          "your resting heart rate is sitting in a comfortable range too. " +
-          "Keeping up the steady sleep and daily movement looks like it is " +
-          "paying off — worth staying consistent with the morning measurements " +
-          "so the trend stays easy to read.",
-        metricSourceJson: JSON.stringify({
-          windows: ["last30days"],
-          metrics: ["bp", "resting_hr", "sleep"],
-          steps: [
-            seedStep("s1", "get_metric_series", "bp", "Blood pressure"),
-            seedStep("s2", "get_metric_series", "resting_hr", "Resting HR"),
-            seedStep("s3", "get_sleep", "sleep", "Sleep"),
-          ],
-        }),
-        tokensUsed: 1840,
-        model: aiModel,
+        title: "Resting heart rate",
+        startedAt: daysAgoAt(1, 19, 40),
+        turns: [
+          { role: "user", content: "Is my resting heart rate improving?" },
+          answer(
+            "Yes, gradually. Three months ago it sat in the low sixties; over " +
+              "the last few weeks it has settled in the high fifties and " +
+              "stayed there. That kind of slow, steady drift usually follows " +
+              "regular aerobic training, which matches the running in your log.",
+            "last90days",
+            [
+              seedStep(
+                "s1",
+                "get_metric_series",
+                "resting_hr",
+                "Resting HR",
+                "last90days",
+              ),
+              seedStep(
+                "s2",
+                "get_workouts",
+                "workouts",
+                "Workouts",
+                "last90days",
+              ),
+            ],
+            1520,
+          ),
+        ],
+      },
+      {
+        title: "Blood pressure trend",
+        startedAt: daysAgo(3),
+        turns: [
+          {
+            role: "user",
+            content: "How has my blood pressure been trending lately?",
+          },
+          answer(
+            "Your blood pressure has been settling nicely. Over the last few " +
+              "weeks the morning readings have drifted into the optimal band, and " +
+              "your resting heart rate is sitting in a comfortable range too. " +
+              "Keeping up the steady sleep and daily movement looks like it is " +
+              "paying off — worth staying consistent with the morning measurements " +
+              "so the trend stays easy to read.",
+            "last30days",
+            [
+              seedStep("s1", "get_metric_series", "bp", "Blood pressure"),
+              seedStep("s2", "get_metric_series", "resting_hr", "Resting HR"),
+              seedStep("s3", "get_sleep", "sleep", "Sleep"),
+            ],
+            1840,
+          ),
+        ],
+      },
+      {
+        title: "Back to running after the knee",
+        startedAt: daysAgoAt(9, 7, 55),
+        turns: [
+          {
+            role: "user",
+            content:
+              "Am I back to my old activity level since the knee surgery?",
+          },
+          answer(
+            "Yes. Across the last three months you have run, cycled and done " +
+              "strength sessions three to four times a week, and your daily " +
+              "steps have climbed from around six and a half thousand to about " +
+              "nine thousand. Your resting heart rate came down while the load " +
+              "went up, which suggests the build-up after the arthroscopy was " +
+              "well paced.",
+            "last90days",
+            [
+              seedStep(
+                "s1",
+                "get_metric_series",
+                "steps",
+                "Steps",
+                "last90days",
+              ),
+              seedStep(
+                "s2",
+                "get_workouts",
+                "workouts",
+                "Workouts",
+                "last90days",
+              ),
+            ],
+            1710,
+          ),
+        ],
+      },
+      {
+        title: "Sleep and mood",
+        startedAt: daysAgoAt(24, 21, 10),
+        turns: [
+          {
+            role: "user",
+            content: "Do my sleep and my mood move together?",
+          },
+          answer(
+            "Somewhat. On the mornings after nights shorter than about six " +
+              "and a half hours, your mood entries were a little lower on " +
+              "average. It is a loose pattern across a month of data, worth " +
+              "watching rather than a cause and effect.",
+            "last30days",
+            [
+              seedStep("s1", "get_sleep", "sleep", "Sleep"),
+              seedStep("s2", "get_metric_series", "mood", "Mood"),
+            ],
+            1390,
+          ),
+        ],
       },
     ];
-    for (let t = 0; t < coachTurns.length; t++) {
-      const turn = coachTurns[t];
-      const ts = new Date(convoStart.getTime() + t * 60_000);
-      const encrypted = Buffer.from(encryptToBytes(turn.content));
-      await client.query(
-        `INSERT INTO coach_messages (id, conversation_id, role, encrypted_content, metric_source_json, provider_type, prompt_version, tokens_used, model, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [
-          cuid(),
-          convoId,
-          turn.role,
-          encrypted,
-          turn.metricSourceJson ?? null,
-          turn.role === "assistant" ? aiProvider : null,
-          turn.role === "assistant" ? "demo" : null,
-          turn.tokensUsed ?? null,
-          turn.model ?? null,
-          ts,
-        ],
+    for (const convo of coachConversations) {
+      const convoId = cuid();
+      const lastAt = new Date(
+        convo.startedAt.getTime() + (convo.turns.length - 1) * 60_000,
       );
+      await client.query(
+        `INSERT INTO coach_conversations (id, user_id, title, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [convoId, userId, convo.title, convo.startedAt, lastAt],
+      );
+      for (let t = 0; t < convo.turns.length; t++) {
+        const turn = convo.turns[t];
+        const ts = new Date(convo.startedAt.getTime() + t * 60_000);
+        const encrypted = Buffer.from(encryptToBytes(turn.content));
+        await client.query(
+          `INSERT INTO coach_messages (id, conversation_id, role, encrypted_content, metric_source_json, provider_type, prompt_version, tokens_used, model, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [
+            cuid(),
+            convoId,
+            turn.role,
+            encrypted,
+            turn.metricSourceJson ?? null,
+            turn.role === "assistant" ? aiProvider : null,
+            turn.role === "assistant" ? "demo" : null,
+            turn.tokensUsed ?? null,
+            turn.model ?? null,
+            ts,
+          ],
+        );
+      }
     }
 
     // ── Baked AI insight texts ────────────────
@@ -2240,10 +2649,24 @@ async function seed() {
 
     // ── App Settings ─────────────────────────
     console.log("Creating app settings...");
+    // The key-backup step is confirmed for the key the demo runs with, the
+    // same fields `POST /api/admin/encryption/key-backup/confirm` writes (key
+    // id + its public fingerprint, never the key). The demo account is an
+    // admin, so an unconfirmed step put a "Back up your encryption key"
+    // banner above the dashboard for every visitor, about a key no visitor
+    // can reach.
+    const activeKeyId = getActiveKeyId();
     await client.query(
-      `INSERT INTO app_settings (id, registration_enabled, default_locale)
-       VALUES ('singleton', false, 'en')
-       ON CONFLICT (id) DO UPDATE SET registration_enabled = false, default_locale = 'en'`,
+      `INSERT INTO app_settings (id, registration_enabled, default_locale,
+         encryption_key_backup_confirmed_at, encryption_key_backup_confirmed_key_id,
+         encryption_key_backup_confirmed_fingerprint, encryption_key_backup_confirmed_by_user_id)
+       VALUES ('singleton', false, 'en', NOW(), $1, $2, $3)
+       ON CONFLICT (id) DO UPDATE SET registration_enabled = false, default_locale = 'en',
+         encryption_key_backup_confirmed_at = EXCLUDED.encryption_key_backup_confirmed_at,
+         encryption_key_backup_confirmed_key_id = EXCLUDED.encryption_key_backup_confirmed_key_id,
+         encryption_key_backup_confirmed_fingerprint = EXCLUDED.encryption_key_backup_confirmed_fingerprint,
+         encryption_key_backup_confirmed_by_user_id = EXCLUDED.encryption_key_backup_confirmed_by_user_id`,
+      [activeKeyId, getKeyFingerprint(activeKeyId), userId],
     );
 
     // ── Audit Log (some login entries) ──────
@@ -2292,12 +2715,15 @@ async function seed() {
       `  Lab panels: ${labResults.length} rows across 2 panels (incl. ${recentQual.length} qualitative)`,
     );
     console.log(
-      `  Illness: resolved cold (day-logs) + active chronic condition with a flare`,
+      `  Illness: resolved cold (day-logs) + recurring condition with a resolved flare`,
     );
     console.log(
       `  Cycle: ${cycleLengths.length} cycles with BBT, flow, mucus/OPK, symptoms + a forecast`,
     );
-    console.log(`  Coach: 1 conversation (${coachTurns.length} messages)`);
+    console.log(
+      `  Visits: knee arthroscopy (2 linked PDFs) + follow-up, check-up booked for tomorrow`,
+    );
+    console.log(`  Coach: ${coachConversations.length} conversations`);
     console.log(
       `  Baked AI texts: comprehensive + daily briefing, ${statusCards.length} status cards, ${periodNarratives.length} period narratives (en)`,
     );
