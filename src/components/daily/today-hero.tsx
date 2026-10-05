@@ -268,14 +268,19 @@ export function TodayHero({
               i >= TODAY_FACTS_NARROW && "hidden md:block",
             )}
           >
+            {/* Label above value at every width, both on the reading edge.
+                A label-left / value-right row pushed a long value ("5 h 45
+                min, 42 min less than usual") into a ragged right-aligned
+                block on a phone; stacked, every value reads as one left-
+                aligned sentence. The row keeps the 44 px tap floor below md. */}
             <Link
               href={fact.href}
-              className="focus-visible:ring-ring/50 hover:bg-muted/50 -mx-1.5 flex min-h-11 items-center justify-between gap-3 rounded-md px-1.5 py-1 focus-visible:ring-2 focus-visible:outline-none md:min-h-0 md:flex-col md:items-start md:justify-start md:gap-0.5"
+              className="focus-visible:ring-ring/50 hover:bg-muted/50 -mx-1.5 flex min-h-11 flex-col justify-center gap-0.5 rounded-md px-1.5 py-1 focus-visible:ring-2 focus-visible:outline-none md:min-h-0 md:justify-start"
             >
-              <span className="text-muted-foreground shrink-0 text-sm md:text-xs">
+              <span className="text-muted-foreground text-xs">
                 {fact.label}
               </span>
-              <span className="text-foreground min-w-0 text-right text-sm font-medium md:text-left">
+              <span className="text-foreground min-w-0 text-sm font-medium">
                 {fact.value}
               </span>
             </Link>
@@ -284,6 +289,109 @@ export function TodayHero({
       </ul>
     </div>
   ) : null;
+
+  /* The lead — the read leads large in the foreground token, calm and
+     legible — and, one muted step down, the top signal's present-tense
+     headline + delta, supporting it without competing. */
+  const leadBlock =
+    lead || signalLine ? (
+      <div className="space-y-2">
+        {lead ? (
+          <div
+            data-slot="today-hero-lead"
+            data-source={digest.lead?.source}
+            className="text-foreground text-lg leading-snug font-semibold tracking-tight sm:text-xl"
+          >
+            <ProseBlocks text={lead} strip linkify={false} />
+          </div>
+        ) : null}
+        {signalLine ? (
+          <p
+            data-slot="today-hero-signal"
+            className="text-muted-foreground text-sm"
+          >
+            {signalLine.headline}
+            {signalLine.headline && signalLine.delta ? " · " : null}
+            {signalLine.delta}
+          </p>
+        ) : null}
+      </div>
+    ) : null;
+
+  /* Health score ring — `flat` (no sweep/bloom), server-computed band. A
+     null score paints the ring's honest provisional face at the same
+     footprint, so the column never collapses. The meta lines under it are
+     capped to the dial's width on a phone so the column stays compact. */
+  const scoreColumn = (size: "sm" | "responsive") => {
+    const phoneMeta = size === "responsive" && "max-w-20 md:max-w-none";
+    return (
+      <div
+        className={cn(
+          "flex shrink-0 flex-col gap-1 md:items-end",
+          // The phone dial sits flush with the card's trailing edge, mirroring
+          // the lead's leading one. Its meta lines align under it and are no
+          // wider than the dial, so the lead keeps the width beside it.
+          size === "responsive"
+            ? "items-end text-right"
+            : "items-center text-center",
+        )}
+      >
+        <div data-slot="today-hero-score">
+          {/* The ring opens the Insights overview — the destination the
+            health-score card owns — so every hero ring is a door, not a
+            poster. */}
+          <Link
+            href="/insights"
+            aria-label={t("daily.today.ringLink", {
+              metric: t("daily.today.scoreLabel"),
+            })}
+            className="focus-visible:ring-ring/50 block rounded-full focus-visible:ring-2 focus-visible:outline-none"
+          >
+            <ScoreRing
+              score={digest.score?.value ?? null}
+              band={digest.score ? (digest.score.band as ScoreBand) : undefined}
+              size={size}
+              flat
+              label={t("daily.today.scoreLabel")}
+            />
+          </Link>
+        </div>
+        {deltaShown && digest.score?.delta != null ? (
+          <span
+            data-slot="today-hero-score-delta"
+            className={cn(
+              "text-muted-foreground text-xs tabular-nums",
+              phoneMeta,
+            )}
+          >
+            {formatDelta(digest.score.delta, t)}
+          </span>
+        ) : null}
+        {steadyLine ? (
+          <span
+            data-slot="today-hero-score-steady"
+            className={cn(
+              "text-muted-foreground text-xs text-balance",
+              phoneMeta,
+            )}
+          >
+            {steadyLine}
+          </span>
+        ) : null}
+        {basisLine ? (
+          <span
+            data-slot="today-hero-score-basis"
+            className={cn(
+              "text-muted-foreground text-xs text-balance md:max-w-[11rem] md:text-right",
+              size === "responsive" ? "max-w-20" : "max-w-[11rem]",
+            )}
+          >
+            {basisLine}
+          </span>
+        ) : null}
+      </div>
+    );
+  };
 
   const heroShellClassName = cn(
     // The tile strip's surface plus the ONE sanctioned Today atmosphere:
@@ -336,121 +444,75 @@ export function TodayHero({
           gaps let the worth-a-look rail sit close under the lead so the card
           reads filled, not padded out. */}
       <div className="flex flex-col gap-3 md:gap-4">
-        {/* The day's read — the numeric face on the trailing edge, the
-            narrative lead leading. On md+ the lead sits flush-top with the
-            score ring (items-start) rather than floating centred beside it. */}
-        <div
-          className={cn(
-            "flex gap-4",
-            compactAllClear
-              ? "flex-row items-center justify-between"
-              : "flex-col md:flex-row md:items-start md:justify-between md:gap-6",
-          )}
-        >
-          {/* The overview is its own section under the lead, so it keeps a
-              section's distance from it; the compact all-clear stays tight. */}
-          <div
-            className={cn(
-              "min-w-0 flex-1",
-              compactAllClear ? "space-y-3" : "space-y-4 md:space-y-6",
-            )}
-          >
-            {/* Hero numeric face: the read leads large in the foreground
-                token, calm and legible — the day's read, not a slogan. */}
-            {lead || signalLine ? (
-              <div className="space-y-2">
-                {lead ? (
-                  <div
-                    data-slot="today-hero-lead"
-                    data-source={digest.lead?.source}
-                    className="text-foreground text-lg leading-snug font-semibold tracking-tight sm:text-xl"
-                  >
-                    <ProseBlocks text={lead} strip linkify={false} />
-                  </div>
-                ) : null}
-                {/* Top signal — present-tense headline + optional delta, one
-                    muted step down so it supports the lead without
-                    competing. */}
-                {signalLine ? (
-                  <p
-                    data-slot="today-hero-signal"
-                    className="text-muted-foreground text-sm"
-                  >
-                    {signalLine.headline}
-                    {signalLine.headline && signalLine.delta ? " · " : null}
-                    {signalLine.delta}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-            {todayBlock}
-            {compactAllClear ? (
+        {compactAllClear ? (
+          /* Score-only digest: the all-clear copy leads and a smaller
+             version of the same ring stays the one numeric face. */
+          <div className="flex flex-row items-center justify-between gap-4">
+            <div className="min-w-0 flex-1 space-y-3">
               <p
                 data-slot="today-hero-all-clear"
                 className="text-muted-foreground text-sm"
               >
                 {t("daily.today.allClear")}
               </p>
-            ) : null}
-
-            {/* In the compact fallback the quiet freshness tier belongs next
-                to the smaller ring. That uses the otherwise-empty leading
-                space and avoids adding a second row below the dial. */}
-            {compactAllClear ? sleepPendingNote : null}
-          </div>
-
-          {/* Health score ring — `flat` (no sweep/bloom), server-computed
-              band. A null score paints the ring's honest provisional face
-              at the same footprint, so the column never collapses. */}
-          <div className="flex shrink-0 flex-col items-center gap-1 md:items-end">
-            <div data-slot="today-hero-score">
-              {/* The ring opens the Insights overview — the destination the
-                  health-score card owns — matching the cluster rings' tap
-                  behaviour, so every hero ring is a door, not a poster. */}
-              <Link
-                href="/insights"
-                aria-label={t("daily.today.ringLink", {
-                  metric: t("daily.today.scoreLabel"),
-                })}
-                className="focus-visible:ring-ring/50 block rounded-full focus-visible:ring-2 focus-visible:outline-none"
-              >
-                <ScoreRing
-                  score={digest.score?.value ?? null}
-                  band={
-                    digest.score ? (digest.score.band as ScoreBand) : undefined
-                  }
-                  size={compactAllClear ? "sm" : "md"}
-                  flat
-                  label={t("daily.today.scoreLabel")}
-                />
-              </Link>
+              {/* The quiet freshness tier belongs next to the smaller ring:
+                  it uses the otherwise-empty leading space and adds no
+                  second row below the dial. */}
+              {sleepPendingNote}
             </div>
-            {deltaShown && digest.score?.delta != null ? (
-              <span
-                data-slot="today-hero-score-delta"
-                className="text-muted-foreground text-xs tabular-nums"
-              >
-                {formatDelta(digest.score.delta, t)}
-              </span>
-            ) : null}
-            {steadyLine ? (
-              <span
-                data-slot="today-hero-score-steady"
-                className="text-muted-foreground text-xs"
-              >
-                {steadyLine}
-              </span>
-            ) : null}
-            {basisLine ? (
-              <span
-                data-slot="today-hero-score-basis"
-                className="text-muted-foreground max-w-[11rem] text-center text-xs text-balance md:text-right"
-              >
-                {basisLine}
-              </span>
-            ) : null}
+            {scoreColumn("sm")}
           </div>
-        </div>
+        ) : (
+          /* The day's read: the narrative lead on the reading edge, the
+             numeric face on the trailing one, the Today overview under the
+             lead.
+
+             One grid, two arrangements. Below md the ring is a compact dial
+             at the top right beside the lead, and the overview runs the full
+             card width underneath both; a phone has no room for a 168 px
+             dial under the facts, where it used to sit centred and fall
+             behind the bottom navigation. From md up the ring spans both
+             rows of the trailing column and the overview stays in the
+             leading column, flush-top with the ring, exactly as before.
+
+             Without a lead the overview takes the leading cell itself, so
+             the ring never floats beside an empty row. */
+          <div
+            data-slot="today-hero-read"
+            className={cn(
+              "grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-4 md:gap-x-6 md:gap-y-6",
+              // A ring taller than the lead pushes its extra height into the
+              // second row only, so the overview stays right under the lead.
+              leadBlock && todayBlock && "md:grid-rows-[auto_1fr]",
+            )}
+          >
+            {leadBlock ? (
+              <div className="col-start-1 row-start-1 min-w-0 self-start">
+                {leadBlock}
+              </div>
+            ) : null}
+            {todayBlock ? (
+              <div
+                className={cn(
+                  "min-w-0",
+                  leadBlock
+                    ? "col-span-2 row-start-2 md:col-span-1 md:col-start-1"
+                    : "col-start-1 row-start-1",
+                )}
+              >
+                {todayBlock}
+              </div>
+            ) : null}
+            <div
+              className={cn(
+                "col-start-2 row-start-1 self-start",
+                leadBlock && todayBlock && "md:row-span-2",
+              )}
+            >
+              {scoreColumn("responsive")}
+            </div>
+          </div>
+        )}
 
         {/* Meta row — the hero's quiet tier (UI-STANDARDS §text: `text-xs
             text-muted-foreground` is the meta floor; never an accent, never an
