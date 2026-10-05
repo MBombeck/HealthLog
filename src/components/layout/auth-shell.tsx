@@ -32,13 +32,11 @@ import {
   switchedOffModule,
 } from "@/components/layout/module-page-gate";
 import { cn } from "@/lib/utils";
+import { isFullBleedPage } from "./full-bleed";
 import { isOnboardingPathname } from "@/lib/onboarding/wizard-steps";
 import { RecordScopeHydrationGate } from "./record-scope-hydration-gate";
 import { SidebarNav } from "./sidebar-nav";
 import { TopBar } from "./top-bar";
-
-/** The route that renders edge to edge inside the shell. */
-const COACH_FULL_BLEED_PATH = "/coach";
 
 // v1.4.27 MB6 — `/about` joins the public-path list so the GeoLite2
 // CC BY-SA 4.0 attribution stays reachable for unauthenticated
@@ -148,17 +146,11 @@ export function AuthShell({
     inSharedRecord &&
     !isDestinationInSharedRecord(pathname, sections) &&
     !isRecordSettingsPath;
-  // The Coach page is the one full-bleed route: its conversations panel sits
-  // flush against the right edge of the viewport and the page owns every
-  // scroll area inside it. The content box drops the centred container and
-  // `<main>` drops its reserved scrollbar gutter, which would otherwise paint
-  // a dead strip to the right of the panel on classic-scrollbar platforms.
-  // A refusal (shared record, module off) renders a card, so it keeps the
-  // ordinary padded frame.
-  const fullBleed =
-    pathname === COACH_FULL_BLEED_PATH &&
-    !outsideSharedRecord &&
-    switchedOffModule(pathname, user?.modules) === undefined;
+  const fullBleed = isFullBleedPage({
+    pathname,
+    outsideSharedRecord,
+    moduleOff: switchedOffModule(pathname, user?.modules) !== undefined,
+  });
   // The whole setup flow, not only its front door: every screen lives under
   // `/onboarding/<step>` (v1.39 C2), and an exact match here put the
   // questions inside the full app chrome, sidebar and all.
