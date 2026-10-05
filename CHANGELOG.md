@@ -22,6 +22,13 @@ dashboard card fits a phone; text fields lose the purple focus ring.
   the lead line, the health status and the morning push only speak about
   today from readings taken today in the profile timezone; a stored briefing
   from an earlier day is no longer served.
+- **MCP schemas for strict clients (#1170).** `tools/list` advertises every
+  input and output schema as JSON Schema 2020-12 without a `$schema` key, so
+  clients that only accept 2020-12 load the tools; tool results are unchanged.
+- **Briefing for the local day.** The first read of a local day and the first
+  reading of a signal metric that day warm the briefing once (within the
+  existing daily limit), so users outside Europe and readings taken in the
+  morning get a current briefing; every surface resolves it the same way.
 - **Deltas** use each metric's display precision ("+34 bpm").
 
 ### Changed
