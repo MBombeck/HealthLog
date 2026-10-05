@@ -222,13 +222,15 @@ export async function runTurnModel(args: {
         effectiveScope,
         ctx.reach,
       );
-      // Earlier tables whose metric the person has since excluded are
-      // neither named for the model nor reachable through show_result. The
+      // Earlier tables whose metric the person has since excluded, or whose
+      // range lies beyond the lookback limit, are neither named for the
+      // model nor reachable through show_result. The
       // scope is the one every tool of the turn reads under.
       const priorResults = await admittedPriorResults({
         userId,
         prefs: ctx.coachPrefs,
         scope: inventory.probeScope,
+        reach: ctx.reach,
         prior: args.priorResults ?? [],
       });
       const requestWith = (tableRules: boolean) =>
