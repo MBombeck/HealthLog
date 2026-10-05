@@ -225,9 +225,10 @@ export async function buildGlp1SnapshotBlock(
   now: Date = new Date(),
   tz: string = DEFAULT_TIMEZONE,
   /**
-   * The Coach's lookback limit. The therapy plan (dose, titration, pens) is
-   * current state and stays; the last injection and the side-effect tags are
-   * entries and are read from inside the limit only.
+   * The Coach's lookback limit. The therapy plan (current dose, schedule,
+   * pens) is current state and stays; the last injection, the side-effect
+   * tags and the dose history (each change with its note) are entries and
+   * are read from inside the limit only.
    */
   reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<Glp1SnapshotBlock | null> {
@@ -309,7 +310,12 @@ export async function buildGlp1SnapshotBlock(
     const genericSafe = sanitizeForPrompt(generic, 80);
     const latestChange = med.doseChanges[med.doseChanges.length - 1] ?? null;
 
-    const doseHistory: DoseHistoryEntry[] = med.doseChanges.map((dc) => {
+    // A dose change is an entry like any other: one made before the limit
+    // is left out with its note. The dose in force stays as `currentDose`.
+    const changesInReach = med.doseChanges.filter(
+      (dc) => floor === null || dc.effectiveFrom.getTime() >= floor.getTime(),
+    );
+    const doseHistory: DoseHistoryEntry[] = changesInReach.map((dc) => {
       const decryptedNote = readNote(dc.noteEncrypted, dc.note);
       return {
         value: dc.doseValue,
