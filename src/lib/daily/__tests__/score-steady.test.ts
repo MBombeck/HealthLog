@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 
-import { steadyWeeks, type StoredScoreDay } from "@/lib/daily/score-steady";
+import {
+  STEADY_READ_DAYS,
+  steadyRun,
+  type StoredScoreDay,
+} from "@/lib/daily/score-steady";
 import { addDays } from "@/lib/cycle/day-math";
 
 const TODAY = "2026-10-04";
@@ -21,7 +25,16 @@ function run(
   }));
 }
 
-describe("steadyWeeks", () => {
+/** The run's weeks against a ring showing `value` in the green band. */
+function steadyWeeks(
+  rows: StoredScoreDay[],
+  today: string,
+  value: number,
+): number | null {
+  return steadyRun(rows, today, { value, band: "GREEN" })?.weeks ?? null;
+}
+
+describe("steadyRun", () => {
   it("counts whole weeks of a held score", () => {
     expect(steadyWeeks(run(29), TODAY, 94)).toBe(4);
   });
@@ -75,5 +88,43 @@ describe("steadyWeeks", () => {
   it("reads rows in any order", () => {
     expect(steadyWeeks(run(29).reverse(), TODAY, 94)).toBe(4);
     expect(steadyWeeks([], TODAY, 94)).toBeNull();
+  });
+
+  it("says nothing when the ring's band is not the record's", () => {
+    // Same number, but the worst pillar pulled the live band down overnight:
+    // the score did not hold where it is.
+    expect(steadyRun(run(29), TODAY, { value: 94, band: "yellow" })).toBeNull();
+    // Case is the enum's, not a difference.
+    expect(steadyRun(run(29), TODAY, { value: 94, band: "green" })?.weeks).toBe(
+      4,
+    );
+  });
+
+  it("says nothing when the ring is computed another way than the record", () => {
+    expect(
+      steadyRun(run(29), TODAY, { value: 94, band: "GREEN", scoreVersion: 5 }),
+    ).toBeNull();
+    expect(
+      steadyRun(run(29), TODAY, {
+        value: 94,
+        band: "GREEN",
+        composition: ["BLOOD_PRESSURE"],
+      }),
+    ).toBeNull();
+  });
+
+  it("says at least, not since, when the run reaches past what was read", () => {
+    const all = run(STEADY_READ_DAYS + 1);
+    const out = steadyRun(all, TODAY, { value: 94, band: "GREEN" });
+    expect(out).toEqual({
+      weeks: Math.floor(STEADY_READ_DAYS / 7),
+      atLeast: true,
+    });
+    // A run that ended inside the read has a start and says so.
+    const ended = all.map((r, i) => (i >= 40 ? { ...r, composite: 80 } : r));
+    expect(steadyRun(ended, TODAY, { value: 94, band: "GREEN" })).toEqual({
+      weeks: 5,
+      atLeast: false,
+    });
   });
 });

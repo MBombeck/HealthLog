@@ -221,11 +221,32 @@ export function isGreetingOnly(sentence: string): boolean {
   return words.length < MIN_CONTENT_WORDS;
 }
 
+/**
+ * Words that name the health score in every shipped language, and the
+ * "out of 100" forms. A sentence repeats the ring only when it talks about
+ * the score; a figure that merely shares its digits ("7 h 52 min" next to a
+ * score of 52) is content.
+ */
+const SCORE_CONTEXT =
+  /(?<![\p{L}])(scores?|gesundheitsscore|punteggio|puntuaci[oó]n|puntaje|wynik(u)?)(?![\p{L}])|점수|\/\s*100(?!\d)|(out of|von|sur|su|de|na|z)\s+100(?!\d)/iu;
+
+/** A unit right after a number makes it a measurement, not the score. */
+const UNIT_AFTER =
+  /^\s*(h|hrs?|hours?|min(s|utes?|uten?|utos?|uti|ut)?|sec|s|ms|bpm|%|kg|lbs?|mmhg|mg|mmol|cm|km|m|steps?|schritte|std|stunden?|horas?|heures?|ore|godz(in)?|시간|분|°)(?![\p{L}])/iu;
+
 /** Whether a sentence repeats the number the ring already shows. */
 function repeatsScore(sentence: string, score: number | null): boolean {
   if (score === null) return false;
+  if (!SCORE_CONTEXT.test(sentence)) return false;
   const shown = String(Math.round(score));
-  return new RegExp(`(^|[^0-9])${shown}([^0-9]|$)`).test(sentence);
+  // The number on its own: not part of a longer figure, a decimal or a time,
+  // and not followed by a unit.
+  const standalone = new RegExp(`(?<![\\d.,:])${shown}(?![\\d]|[.,:]\\d)`, "g");
+  for (const match of sentence.matchAll(standalone)) {
+    const after = sentence.slice((match.index ?? 0) + shown.length);
+    if (!UNIT_AFTER.test(after)) return true;
+  }
+  return false;
 }
 
 function clampLead(sentence: string): string {

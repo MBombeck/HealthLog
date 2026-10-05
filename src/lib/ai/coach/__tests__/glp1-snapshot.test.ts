@@ -332,3 +332,66 @@ describe("buildGlp1SnapshotBlock injection days in the user's zone", () => {
     });
   });
 });
+
+describe("buildGlp1SnapshotBlock under the lookback limit", () => {
+  it("leaves dose changes before the limit out and keeps the current dose", async () => {
+    const now = new Date("2026-10-04T12:00:00.000Z");
+    prismaMock.medication.findMany.mockResolvedValue([
+      fakeMedication({
+        doseChanges: [
+          {
+            doseValue: 2.5,
+            doseUnit: "mg",
+            effectiveFrom: new Date("2026-06-01T00:00:00.000Z"),
+            note: "Nausea in the first week",
+          },
+          {
+            doseValue: 5,
+            doseUnit: "mg",
+            effectiveFrom: new Date("2026-08-01T00:00:00.000Z"),
+            note: "Stepped up after review",
+          },
+        ],
+      }),
+    ]);
+    const out = await buildGlp1SnapshotBlock("user-1", now, "UTC", {
+      window: "last30days",
+      days: 30,
+    });
+    const med = out?.medications[0];
+    // The current dose is therapy state, not history.
+    expect(med?.currentDose).toMatchObject({ value: 5, since: "2026-08-01" });
+    // Both changes lie before the 30-day floor: neither they nor their
+    // notes reach the prompt.
+    expect(med?.doseHistory).toEqual([]);
+    expect(JSON.stringify(out)).not.toContain("Nausea");
+    expect(JSON.stringify(out)).not.toContain("Stepped up");
+  });
+
+  it("keeps the dose changes inside the limit", async () => {
+    const now = new Date("2026-10-04T12:00:00.000Z");
+    prismaMock.medication.findMany.mockResolvedValue([
+      fakeMedication({
+        doseChanges: [
+          {
+            doseValue: 5,
+            doseUnit: "mg",
+            effectiveFrom: new Date("2026-08-01T00:00:00.000Z"),
+            note: null,
+          },
+          {
+            doseValue: 7.5,
+            doseUnit: "mg",
+            effectiveFrom: new Date("2026-09-20T00:00:00.000Z"),
+            note: null,
+          },
+        ],
+      }),
+    ]);
+    const out = await buildGlp1SnapshotBlock("user-1", now, "UTC", {
+      window: "last30days",
+      days: 30,
+    });
+    expect(out?.medications[0].doseHistory.map((d) => d.value)).toEqual([7.5]);
+  });
+});

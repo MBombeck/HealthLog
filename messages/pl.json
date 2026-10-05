@@ -2922,13 +2922,6 @@
         "skin_temp": "Temperatura skóry",
         "workouts": "Treningi"
       },
-      "window": {
-        "last7days": "Ostatnie 7 dni",
-        "last30days": "Ostatnie 30 dni",
-        "last90days": "Ostatnie 90 dni",
-        "lastYear": "ostatnie 12 miesięcy",
-        "allTime": "cały okres (12 miesięcy szczegółowo)"
-      },
       "settingsAriaLabel": "Ustawienia coacha",
       "settingsTitle": "Ustawienia coacha",
       "settingsDescription": "Ustaw, jak coach do ciebie mówi.",
@@ -3019,7 +3012,7 @@
         "detailDays": "Coach nie czyta niczego starszego niż {days} dni, w żadnej odpowiedzi.",
         "detailMonths": "Coach nie czyta niczego starszego niż {months} miesięcy, w żadnej odpowiedzi.",
         "detailAll": "Wszystko, co zostało zapisane: {dailyMonths} miesięcy z dokładnością do dnia, starsze pomiary jako wartości miesięczne do {years} lat wstecz, wyniki badań z ostatnich {labMonths} miesięcy.",
-        "note": "Twój profil, obecne leki, trwająca choroba i nadchodzące wizyty pozostają widoczne; podsumowania wymagające dłuższej historii są skracane lub pomijane."
+        "note": "Twój profil, obecne leki, trwająca choroba i nadchodzące wizyty pozostają widoczne; podsumowania wymagające dłuższej historii są skracane lub pomijane. Odpowiedzi, których Coach udzielił wcześniej w starszych rozmowach, mogą nadal przytaczać starsze wartości."
       },
       "showConversations": "Pokaż rozmowy",
       "hideConversations": "Ukryj rozmowy",
@@ -3138,7 +3131,10 @@
         "noProvider": "Brak dostępnego dostawcy",
         "saving": "Zapisywanie…",
         "saveFailed": "Nie udało się zapisać zmiany.",
-        "allSettings": "Wszystkie ustawienia AI"
+        "allSettings": "Wszystkie ustawienia AI",
+        "providerNotActive": "{provider} nie mógł przejąć odpowiedzi: brak działającego logowania lub klucza. Skonfiguruj go w ustawieniach AI.",
+        "operatorCodex": "ChatGPT (udostępniony przez operatora)",
+        "operatorManaged": "Tym połączeniem zarządza operator Twojego serwera. Gdy skonfigurujesz własnego dostawcę, to on odpowie jako pierwszy."
       },
       "answer": {
         "scrollToBottom": "Przejdź do najnowszej wiadomości",
@@ -10928,8 +10924,8 @@
   },
   "daily": {
     "line": {
-      "score": "Twój dzisiejszy wynik zdrowia to {score}.",
-      "allClear": "Dziś nic nie wymaga Twojej uwagi."
+      "allClear": "Dziś nic nie wymaga Twojej uwagi.",
+      "scoreReady": "Twój dzisiejszy wynik zdrowia jest gotowy."
     },
     "push": {
       "title": "Twoje poranne podsumowanie",
@@ -11035,7 +11031,10 @@
         "PULSE": "Tętno",
         "WEIGHT": "Waga",
         "generic": "Parametr życiowy"
-      }
+      },
+      "steadyAtLeastWeeksOne": "Stabilnie od co najmniej {count} tygodnia",
+      "steadyAtLeastWeeksFew": "Stabilnie od co najmniej {count} tygodni",
+      "steadyAtLeastWeeksOther": "Stabilnie od co najmniej {count} tygodni"
     },
     "milestone": {
       "metric": {

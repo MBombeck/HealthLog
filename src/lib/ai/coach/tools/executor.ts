@@ -919,11 +919,17 @@ export function scopeAdmits(
  * (`coachExclusions`, `admitCoachSources`), so a metric the person excluded
  * after a table was stored is neither listed for the model nor sent to it.
  * Tables of other domains (labs) answer to their module when read.
+ *
+ * The lookback limit applies the same way: a table whose range reaches past
+ * it (stored before the limit was set or narrowed) is not listed, because
+ * its line hands the model the window and the row count of history the
+ * Coach may no longer read. `show_result` refuses it on the same test.
  */
 export async function admittedPriorResults(args: {
   userId: string;
   prefs: Pick<CoachPrefs, "excludeMetrics">;
   scope: CoachScope | undefined;
+  reach: CoachHistoryReach;
   prior: readonly PriorResultTurn[];
 }): Promise<PriorResultTurn[]> {
   if (args.prior.length === 0) return [];
@@ -943,7 +949,15 @@ export async function admittedPriorResults(args: {
   return args.prior
     .map((turn) => ({
       ...turn,
-      results: turn.results.filter((meta) => admits(meta.source.domain)),
+      results: turn.results.filter(
+        (meta) =>
+          admits(meta.source.domain) &&
+          tableRangeWithinReach(
+            meta.source.window,
+            meta.source.period ?? "current",
+            args.reach,
+          ),
+      ),
     }))
     .filter((turn) => turn.results.length > 0);
 }

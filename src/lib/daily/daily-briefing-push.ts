@@ -16,10 +16,11 @@
  * `ok` ledger row; the frequency-cap check suppresses the second — one push per
  * user per local day, no "you haven't opened the app" second push, ever.
  *
- * Privacy + calm posture (load-bearing): the body is `digest.line`, which is
- * non-clinical by construction (a briefing lead sentence, the top signal's
- * headline, a 0–100 score statement, or the honest all-clear — never a raw BP /
- * glucose figure). It is dispatched NON-URGENT, so it never escalates to a
+ * Privacy + calm posture (load-bearing): the body is `digest.line`, which
+ * carries no number by construction (a briefing lead sentence or the top
+ * signal's headline without a figure in it, "your score is ready", or the
+ * honest all-clear — never a reading, a dose or the score itself, since the
+ * push lands on a locked phone). It is dispatched NON-URGENT, so it never escalates to a
  * Focus-bypassing / time-sensitive delivery — a concerning reading always stays
  * on `MEASUREMENT_ANOMALY`, never here. It fires ONLY inside a local morning
  * window, which is the quiet-hours guarantee for this nudge.

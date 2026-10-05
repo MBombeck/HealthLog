@@ -57,8 +57,10 @@ describe("<ScrollToBottomButton>", () => {
     expect(src).toContain(
       "<ScrollToBottomButton visible={!pinned} onClick={scrollToLatest} />",
     );
+    // Focus leaves the button BEFORE the state that hides it changes: a
+    // focused control under aria-hidden is announced as nothing.
     expect(src).toMatch(
-      /scrollToLatest = useCallback\([\s\S]*?wasPinnedRef\.current = true;[\s\S]*?focusCoachComposer\(\);/,
+      /scrollToLatest = useCallback\(\(\) => \{[^}]*?focusCoachComposer\(\);[^}]*?setPinned\(true\);/,
     );
   });
 });

@@ -185,6 +185,37 @@ describe("<TodayHero>", () => {
     expect(html).toContain('data-slot="today-hero-lead"');
   });
 
+  it("falls back to the stored lines for a digest cached before the lead existed", () => {
+    // The service worker's offline cache can hand back a digest written by
+    // the previous version, which carries no `lead` field at all.
+    const cached = digest({ reactionLine: "The new reading fits your week." });
+    delete (cached as Partial<DailyDigest>).lead;
+    const html = render(<TodayHero digest={cached} />);
+    expect(visibleText(html)).toContain("The new reading fits your week.");
+
+    const briefingOnly = digest();
+    delete (briefingOnly as Partial<DailyDigest>).lead;
+    expect(visibleText(render(<TodayHero digest={briefingOnly} />))).toContain(
+      "Your week is trending steady.",
+    );
+  });
+
+  it("does not resurrect a line the server left out of the lead", () => {
+    // A current digest with `lead: null` decided there is nothing to say;
+    // its reaction line (e.g. one that only repeated the score) stays out.
+    const html = render(
+      <TodayHero
+        digest={digest({
+          lead: null,
+          briefingLead: null,
+          topSignal: null,
+          reactionLine: "Score 82 today.",
+        })}
+      />,
+    );
+    expect(visibleText(html)).not.toContain("Score 82 today.");
+  });
+
   it("does not repeat the top signal under a lead made from it", () => {
     // A briefing whose only sentence repeated the score leads with the top
     // signal's headline (resolved on the server); the muted signal line under
@@ -636,6 +667,13 @@ describe("<TodayHero> steady line", () => {
   it("says nothing without a run", () => {
     const html = render(<TodayHero digest={steady({ steadyWeeks: null })} />);
     expect(html).not.toContain('data-slot="today-hero-score-steady"');
+  });
+
+  it("says at least when the run reaches past what was read", () => {
+    const html = render(
+      <TodayHero digest={steady({ steadyWeeks: 17, steadyAtLeast: true })} />,
+    );
+    expect(visibleText(html)).toContain("Steady for at least 17 weeks");
   });
 
   it("uses the German plural", () => {

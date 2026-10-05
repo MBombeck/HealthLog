@@ -154,13 +154,30 @@ describe("parseCoachPrefs", () => {
     expect(out.dataClusters).toEqual([]);
   });
 
-  it("falls back to defaults when dataClusters carries an unknown cluster", () => {
-    // Shape drift — an unknown cluster string fails the enum, the whole
-    // parse fails, and parseCoachPrefs returns the legacy defaults
-    // (dataClusters undefined → legacy cluster expansion).
+  it("keeps the known clusters when dataClusters carries an unknown one", () => {
+    // Shape drift: a cluster a newer version added. Falling back to the
+    // legacy default set would widen what the Coach reads past what the
+    // person chose; dropping only the unknown entry narrows it.
     const out = parseCoachPrefs({ dataClusters: ["cardio", "astrology"] });
-    expect(out).toEqual(DEFAULT_COACH_PREFS);
-    expect(out.dataClusters).toBeUndefined();
+    expect(out.dataClusters).toEqual(["cardio"]);
+  });
+
+  it("lets an invalid field fall back alone and keeps the exclusions", () => {
+    // A window value this version does not know (written by a newer one,
+    // read after a rollback) must not take the metric exclusions with it.
+    const out = parseCoachPrefs({
+      tone: "neutral",
+      defaultWindow: "lastDecade",
+      excludeMetrics: ["mood", "weight"],
+    });
+    expect(out.defaultWindow).toBe("allTime");
+    expect(out.excludeMetrics).toEqual(["mood", "weight"]);
+    expect(out.tone).toBe("neutral");
+  });
+
+  it("keeps the known exclusions when the list carries an unknown metric", () => {
+    const out = parseCoachPrefs({ excludeMetrics: ["mood", "aura"] });
+    expect(out.excludeMetrics).toEqual(["mood"]);
   });
 
   it("DEFAULT_COACH_CLUSTERS preserves the legacy five domains' clusters", () => {

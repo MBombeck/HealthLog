@@ -104,10 +104,11 @@ export async function buildMedsTodayBlock(
 ): Promise<MedsTodayBlock> {
   const { start: todayStart, end: todayEnd } = getUserTodayBounds(now, userTz);
   // The projector + tally read use an exclusive upper bound (`lt`),
-  // matching the summary route's window convention.
-  const todayEndExclusive = new Date(
-    todayStart.getTime() + 24 * 60 * 60 * 1000,
-  );
+  // matching the summary route's window convention. `todayEnd` is the
+  // inclusive last millisecond of the real local day, so +1 ms is the next
+  // day's start: 23 or 25 hours on a DST day, where a fixed 24 h missed the
+  // last hour of the 25-hour day.
+  const todayEndExclusive = new Date(todayEnd.getTime() + 1);
 
   // Projection FIRST so the tally read below sees the freshly minted
   // pending rows. Idempotent — `skipDuplicates` + the

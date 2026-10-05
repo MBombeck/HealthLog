@@ -41,8 +41,13 @@ export async function readTodayCycle(
       ? from
       : addDays(today, -BBT_WINDOW);
 
-  const [profile, cycles, dayLogRows, nightlyTemps] = await Promise.all([
-    prisma.cycleProfile.findUnique({ where: { userId } }),
+  // A record that never set up cycle tracking has no profile: one point read
+  // and done, rather than three history reads that cannot be used.
+  const profile = await prisma.cycleProfile.findUnique({ where: { userId } });
+  if (!profile) return null;
+  // The whole history, as the calendar route reads it: the forecast rests on
+  // every observed cycle, and this read must agree with the cycle page.
+  const [cycles, dayLogRows, nightlyTemps] = await Promise.all([
     prisma.menstrualCycle.findMany({
       where: { userId, deletedAt: null },
       orderBy: { startDate: "asc" },
@@ -74,7 +79,7 @@ export async function readTodayCycle(
       select: { measuredAt: true, value: true },
     }),
   ]);
-  if (!profile || cycles.length === 0) return null;
+  if (cycles.length === 0) return null;
 
   // The intent fields and the presence flags never reach a phase or a day
   // count; the grid carries them for the calendar's own overlay only.

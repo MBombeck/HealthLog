@@ -2922,13 +2922,6 @@
         "skin_temp": "Hauttemperatur",
         "workouts": "Workouts"
       },
-      "window": {
-        "last7days": "letzte 7 Tage",
-        "last30days": "letzte 30 Tage",
-        "last90days": "letzte 90 Tage",
-        "lastYear": "letzte 12 Monate",
-        "allTime": "gesamter Zeitraum (12 Monate im Detail)"
-      },
       "settingsAriaLabel": "Coach-Einstellungen",
       "settingsTitle": "Coach-Einstellungen",
       "settingsDescription": "Stell ein, wie der Coach mit dir spricht.",
@@ -3019,7 +3012,7 @@
         "detailDays": "Der Coach liest nichts, was älter als {days} Tage ist, in keiner Antwort.",
         "detailMonths": "Der Coach liest nichts, was älter als {months} Monate ist, in keiner Antwort.",
         "detailAll": "Alles, was du erfasst hast: {dailyMonths} Monate tagesgenau, ältere Werte als Monatswerte bis {years} Jahre zurück, Laborwerte der letzten {labMonths} Monate.",
-        "note": "Dein Profil, aktuelle Medikamente, eine laufende Erkrankung und anstehende Termine bleiben sichtbar; Auswertungen, die mehr Verlauf brauchen, werden gekürzt oder weggelassen."
+        "note": "Dein Profil, aktuelle Medikamente, eine laufende Erkrankung und anstehende Termine bleiben sichtbar; Auswertungen, die mehr Verlauf brauchen, werden gekürzt oder weggelassen. Antworten, die der Coach früher in älteren Unterhaltungen gegeben hat, können noch ältere Werte nennen."
       },
       "showConversations": "Unterhaltungen anzeigen",
       "hideConversations": "Unterhaltungen ausblenden",
@@ -3138,7 +3131,10 @@
         "noProvider": "Kein Anbieter verfügbar",
         "saving": "Wird gespeichert…",
         "saveFailed": "Die Änderung ließ sich nicht speichern.",
-        "allSettings": "Alle KI-Einstellungen"
+        "allSettings": "Alle KI-Einstellungen",
+        "providerNotActive": "{provider} konnte nicht übernehmen: Es fehlt eine funktionierende Anmeldung oder ein Schlüssel. Richte das in den KI-Einstellungen ein.",
+        "operatorCodex": "ChatGPT (vom Betreiber bereitgestellt)",
+        "operatorManaged": "Diese Verbindung verwaltet der Betreiber deines Servers. Sobald einer deiner eigenen Anbieter eingerichtet ist, antwortet er zuerst."
       },
       "answer": {
         "scrollToBottom": "Zur neuesten Nachricht",
@@ -10928,8 +10924,8 @@
   },
   "daily": {
     "line": {
-      "score": "Dein Gesundheitsscore heute liegt bei {score}.",
-      "allClear": "Heute braucht nichts deine Aufmerksamkeit."
+      "allClear": "Heute braucht nichts deine Aufmerksamkeit.",
+      "scoreReady": "Dein Gesundheitsscore für heute ist da."
     },
     "push": {
       "title": "Dein Morgenüberblick",
@@ -11035,7 +11031,10 @@
         "PULSE": "Puls",
         "WEIGHT": "Gewicht",
         "generic": "Ein Vitalwert"
-      }
+      },
+      "steadyAtLeastWeeksOne": "Seit mindestens {count} Woche stabil",
+      "steadyAtLeastWeeksFew": "Seit mindestens {count} Wochen stabil",
+      "steadyAtLeastWeeksOther": "Seit mindestens {count} Wochen stabil"
     },
     "milestone": {
       "metric": {

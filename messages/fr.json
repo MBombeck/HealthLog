@@ -2922,13 +2922,6 @@
         "skin_temp": "Température cutanée",
         "workouts": "Entraînements"
       },
-      "window": {
-        "last7days": "7 derniers jours",
-        "last30days": "30 derniers jours",
-        "last90days": "90 derniers jours",
-        "lastYear": "12 derniers mois",
-        "allTime": "toute la période (12 mois en détail)"
-      },
       "settingsAriaLabel": "Paramètres du coach",
       "settingsTitle": "Paramètres du coach",
       "settingsDescription": "Configure comment le coach te parle.",
@@ -3019,7 +3012,7 @@
         "detailDays": "Le Coach ne lit rien de plus ancien que {days} jours, dans aucune réponse.",
         "detailMonths": "Le Coach ne lit rien de plus ancien que {months} mois, dans aucune réponse.",
         "detailAll": "Tout ce que vous avez enregistré : {dailyMonths} mois au jour près, les mesures plus anciennes en valeurs mensuelles jusqu’à {years} ans en arrière, les analyses des {labMonths} derniers mois.",
-        "note": "Votre profil, vos médicaments actuels, une maladie en cours et vos prochains rendez-vous restent visibles ; les synthèses qui demandent plus d’historique sont raccourcies ou omises."
+        "note": "Votre profil, vos médicaments actuels, une maladie en cours et vos prochains rendez-vous restent visibles ; les synthèses qui demandent plus d’historique sont raccourcies ou omises. Les réponses données plus tôt par le Coach dans d’anciennes conversations peuvent encore citer des valeurs plus anciennes."
       },
       "showConversations": "Afficher les conversations",
       "hideConversations": "Masquer les conversations",
@@ -3138,7 +3131,10 @@
         "noProvider": "Aucun fournisseur disponible",
         "saving": "Enregistrement…",
         "saveFailed": "Impossible d’enregistrer cette modification.",
-        "allSettings": "Tous les paramètres IA"
+        "allSettings": "Tous les paramètres IA",
+        "providerNotActive": "{provider} n'a pas pu prendre le relais : aucune connexion ni clé valide. Configurez-le dans les réglages IA.",
+        "operatorCodex": "ChatGPT (partagé par l'opérateur)",
+        "operatorManaged": "L'opérateur de votre serveur gère cette connexion. Dès qu'un de vos propres fournisseurs est configuré, c'est lui qui répond en premier."
       },
       "answer": {
         "scrollToBottom": "Aller au dernier message",
@@ -10928,8 +10924,8 @@
   },
   "daily": {
     "line": {
-      "score": "Ton score de santé aujourd'hui est de {score}.",
-      "allClear": "Rien ne requiert ton attention aujourd'hui."
+      "allClear": "Rien ne requiert ton attention aujourd'hui.",
+      "scoreReady": "Ton score de santé du jour est prêt."
     },
     "push": {
       "title": "Votre résumé du matin",
@@ -11035,7 +11031,10 @@
         "PULSE": "Pouls",
         "WEIGHT": "Poids",
         "generic": "Un signe vital"
-      }
+      },
+      "steadyAtLeastWeeksOne": "Stable depuis au moins {count} semaine",
+      "steadyAtLeastWeeksFew": "Stable depuis au moins {count} semaines",
+      "steadyAtLeastWeeksOther": "Stable depuis au moins {count} semaines"
     },
     "milestone": {
       "metric": {

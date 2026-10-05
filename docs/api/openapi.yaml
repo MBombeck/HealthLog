@@ -72483,12 +72483,17 @@ components:
                 steadyWeeks:
                   description: Whole weeks the score has held where it is (same band, within two points, computed the same way), read off
                     the stored daily scores. Null when it has not held for two weeks, when the stored record does not
-                    reach today, or when the score moved. Shown in place of a delta, never beside one.
+                    reach today, or when the score on screen differs from the newest stored day in value, band,
+                    algorithm version or composition. Shown in place of a delta, never beside one.
                   anyOf:
                     - type: integer
                       exclusiveMinimum: 0
                       maximum: 9007199254740991
                     - type: "null"
+                steadyAtLeast:
+                  description: "True when the run reaches back past everything the read covered (120 days): `steadyWeeks` is then a lower
+                    bound, said as \"at least\", and the run's start is unknown. Absent on older cached digests."
+                  type: boolean
               required:
                 - value
                 - band
@@ -72583,7 +72588,8 @@ components:
             since v1.40."
         line:
           type: string
-          description: "Push / lock-screen line: cached-AI lead with a deterministic floor."
+          description: "Push / lock-screen line: cached-AI lead with a deterministic floor. Carries no number (no reading, dose or
+            score), since it is shown on a locked phone; the in-app `lead` keeps its figures."
         worthALook:
           type: array
           items:

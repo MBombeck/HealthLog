@@ -2922,13 +2922,6 @@
         "skin_temp": "피부 온도",
         "workouts": "운동"
       },
-      "window": {
-        "last7days": "최근 7일",
-        "last30days": "최근 30일",
-        "last90days": "최근 90일",
-        "lastYear": "최근 12개월",
-        "allTime": "전체 기간(상세 12개월)"
-      },
       "settingsAriaLabel": "코치 설정",
       "settingsTitle": "코치 설정",
       "settingsDescription": "코치가 대화하는 방식을 조절해요.",
@@ -3019,7 +3012,7 @@
         "detailDays": "코치는 어떤 답변에서도 {days}일보다 오래된 기록은 읽지 않아요.",
         "detailMonths": "코치는 어떤 답변에서도 {months}개월보다 오래된 기록은 읽지 않아요.",
         "detailAll": "기록한 모든 것: 최근 {dailyMonths}개월은 하루 단위로, 그 이전 측정값은 최대 {years}년 전까지 월별 값으로, 검사 결과는 최근 {labMonths}개월 치를 읽어요.",
-        "note": "프로필, 현재 복용 중인 약, 진행 중인 질병, 예정된 진료는 계속 보여요. 더 긴 기록이 필요한 요약은 줄이거나 빼요."
+        "note": "프로필, 현재 복용 중인 약, 진행 중인 질병, 예정된 진료는 계속 보여요. 더 긴 기록이 필요한 요약은 줄이거나 빼요. 예전 대화에서 코치가 이미 한 답변에는 더 오래된 값이 남아 있을 수 있어요."
       },
       "showConversations": "대화 보기",
       "hideConversations": "대화 숨기기",
@@ -3138,7 +3131,10 @@
         "noProvider": "사용할 수 있는 제공자가 없어요",
         "saving": "저장 중…",
         "saveFailed": "변경 사항을 저장하지 못했어요.",
-        "allSettings": "모든 AI 설정"
+        "allSettings": "모든 AI 설정",
+        "providerNotActive": "{provider}(으)로 전환하지 못했습니다. 작동하는 로그인이나 키가 없습니다. AI 설정에서 설정하세요.",
+        "operatorCodex": "ChatGPT (운영자 공유)",
+        "operatorManaged": "이 연결은 서버 운영자가 관리합니다. 내 공급자를 하나라도 설정하면 그 공급자가 먼저 답합니다."
       },
       "answer": {
         "scrollToBottom": "최신 메시지로 이동",
@@ -10928,8 +10924,8 @@
   },
   "daily": {
     "line": {
-      "score": "오늘 건강 점수는 {score}점이에요.",
-      "allClear": "오늘은 신경 쓸 일이 없어요."
+      "allClear": "오늘은 신경 쓸 일이 없어요.",
+      "scoreReady": "오늘의 건강 점수가 준비됐어요."
     },
     "push": {
       "title": "아침 브리핑",
@@ -11035,7 +11031,10 @@
         "PULSE": "맥박",
         "WEIGHT": "체중",
         "generic": "생체 지표"
-      }
+      },
+      "steadyAtLeastWeeksOne": "최소 {count}주째 안정적",
+      "steadyAtLeastWeeksFew": "최소 {count}주째 안정적",
+      "steadyAtLeastWeeksOther": "최소 {count}주째 안정적"
     },
     "milestone": {
       "metric": {

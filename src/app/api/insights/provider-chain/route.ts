@@ -7,7 +7,7 @@ import {
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
-import { resolveProviderChain } from "@/lib/ai/provider";
+import { probeProviderChain, resolveProviderChain } from "@/lib/ai/provider";
 import {
   forgetLastWorkingProvider,
   getLastWorkingProvider,
@@ -26,11 +26,11 @@ import { providerChainPutSchema } from "@/lib/validations/ai-provider";
  *     in-process cache, when one is set. Surfaces "Active: codex
  *     (cached: openai)" so a user can see the runner has rerouted to
  *     a fallback without digging through logs.
- *   - `configuredChain`: ordered list of `{providerType, available}`
- *     entries. `available` is always true here since the chain
- *     resolver only returns instantiable entries; the field is wired
- *     for the v1.4.17 UX where unconfigured slots should still render
- *     in the list with a "needs setup" pill.
+ *   - `configuredChain`: ordered list of `{providerType, enabled,
+ *     available}` entries. `available` is the presence probe's own
+ *     answer for that entry's credential (`probeProviderChain`), enabled
+ *     or not: an entry without a key, address or sign-in is listed but
+ *     cannot answer, so a picker must not offer it.
  *
  * v1.4.16 phase B2 added the matching `PUT` for the new dropdown-driven
  * settings UX — the user reorders/toggles entries in the section and
@@ -58,7 +58,11 @@ export const GET = apiHandler(async () => {
   });
   const persisted = parseProviderChain(userRow?.aiProviderChain ?? null);
 
-  const resolved = await resolveProviderChain(user.id);
+  const [resolved, presence] = await Promise.all([
+    resolveProviderChain(user.id),
+    probeProviderChain(user.id),
+  ]);
+  const availableTypes = new Set(presence.availableTypes ?? []);
   const cached = getLastWorkingProvider(user.id);
 
   annotate({
@@ -77,7 +81,7 @@ export const GET = apiHandler(async () => {
     configuredChain: persisted.map((entry) => ({
       providerType: entry.providerType,
       enabled: entry.enabled,
-      available: true,
+      available: availableTypes.has(entry.providerType),
     })),
   });
 });

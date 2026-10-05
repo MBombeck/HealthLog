@@ -79,7 +79,7 @@ import {
   type UnitPreferences,
 } from "@/lib/measurements/display-transform";
 import { resolveRestMode } from "@/lib/illness/rest-mode";
-import { readTodayCycle } from "@/lib/cycle/today-verdict";
+import { readTodayCycle, type TodayCycleRead } from "@/lib/cycle/today-verdict";
 import { addDays, dayDiff } from "@/lib/cycle/day-math";
 import { makeFormatters, resolveIntlLocale } from "@/lib/format-locale";
 import type {
@@ -88,7 +88,7 @@ import type {
 } from "@/lib/format-locale";
 import {
   STEADY_READ_DAYS,
-  steadyWeeks,
+  steadyRun,
   type StoredScoreDay,
 } from "@/lib/daily/score-steady";
 import type {
@@ -243,6 +243,13 @@ interface DailyDigestExtras {
   vitals: ExtrasVital[];
   /** The stored daily scores the "steady for" line is read from. */
   scoreDays: StoredScoreDay[];
+  /**
+   * Today's place in the cycle, read only while the cycle module is on. A
+   * cycle write hard-evicts the cell (`invalidateUserHealthContext`), and a
+   * module switch does too (`invalidateUserHealthScore`), so a cached
+   * answer never outlives the rows or the switch it was read under.
+   */
+  cycle: TodayCycleRead | null;
 }
 
 interface ExtrasVital {
@@ -391,6 +398,7 @@ async function loadDailyDigestExtrasCached(
   timezone: string,
   todayLocalDate: string,
   now: Date,
+  cycleOn: boolean,
 ): Promise<DailyDigestExtras> {
   return cachedSwr(
     caches.analytics as ServerCache<DailyDigestExtras>,
@@ -400,7 +408,7 @@ async function loadDailyDigestExtrasCached(
       // revision ran them sequentially). Each is already fault-isolated
       // internally (a milestone read-hiccup or a tension-read failure leaves
       // its own field quiet rather than breaking the other).
-      const [milestone, tensionWindow, sameTime, vitals, scoreDays] =
+      const [milestone, tensionWindow, sameTime, vitals, scoreDays, cycle] =
         await Promise.all([
           gatherFreshMilestone(userId, timezone, now),
           loadIntradayPulse(userId, timezone, todayLocalDate)
@@ -432,8 +440,13 @@ async function loadDailyDigestExtrasCached(
             .catch(() => null),
           gatherVitals(userId, timezone, now),
           gatherScoreDays(userId, todayLocalDate),
+          // The whole cycle history, 90 days of day logs and wrist
+          // temperature: too much to read on every 120 s poll.
+          cycleOn
+            ? readTodayCycle(userId, timezone, now).catch(() => null)
+            : Promise.resolve(null),
         ]);
-      return { milestone, tensionWindow, sameTime, vitals, scoreDays };
+      return { milestone, tensionWindow, sameTime, vitals, scoreDays, cycle };
     },
     annotate,
     DIGEST_EXTRAS_CACHE_TTL_MS,
@@ -761,19 +774,12 @@ export async function loadDailyDigest(
     timeLabel: visitTime(row.occurredAt),
   }));
 
-  // Rest Mode and today's cycle day. Both are read per request rather than
-  // through the extras cell: an episode or a period logged a minute ago is not
-  // a measurement write, so nothing would evict a cached answer. Each read is
-  // skipped outright when its module is off, and fault-isolated, because the
-  // digest is a must-not-fail path.
-  const [restModeContext, cycleRead] = await Promise.all([
-    modules.illness !== false
-      ? resolveRestMode(user.id, now)
-      : Promise.resolve(null),
-    modules.cycle !== false
-      ? readTodayCycle(user.id, user.timezone, now).catch(() => null)
-      : Promise.resolve(null),
-  ]);
+  // Rest Mode is read per request; today's cycle day rides the extras cell
+  // below, which every cycle write hard-evicts. The read is skipped outright
+  // when its module is off, and fault-isolated, because the digest is a
+  // must-not-fail path.
+  const restModeContext =
+    modules.illness !== false ? await resolveRestMode(user.id, now) : null;
   const restMode: TodayRestMode | null =
     restModeContext?.active && restModeContext.since
       ? {
@@ -787,9 +793,6 @@ export async function loadDailyDigest(
             ) + 1,
         }
       : null;
-  const cycle: TodayCycle | null = cycleRead
-    ? { dayOfCycle: cycleRead.dayOfCycle, phase: cycleRead.phase }
-    : null;
 
   // Last night, when it is in: the snapshot's sleep summary carries per-night
   // time asleep in minutes, `latest` being the newest night and `avg30` the
@@ -845,13 +848,23 @@ export async function loadDailyDigest(
   // a 120 s poll of every open tab doesn't re-run the ~8.5k-row streak +
   // per-sample tension reads on every request — see its docblock for the
   // cache/invalidation contract.
-  const { milestone, tensionWindow, sameTime, vitals, scoreDays } =
-    await loadDailyDigestExtrasCached(
-      user.id,
-      user.timezone,
-      todayLocalDate,
-      now,
-    );
+  const {
+    milestone,
+    tensionWindow,
+    sameTime,
+    vitals,
+    scoreDays,
+    cycle: cycleRead,
+  } = await loadDailyDigestExtrasCached(
+    user.id,
+    user.timezone,
+    todayLocalDate,
+    now,
+    modules.cycle !== false,
+  );
+  const cycle: TodayCycle | null = cycleRead
+    ? { dayOfCycle: cycleRead.dayOfCycle, phase: cycleRead.phase }
+    : null;
 
   // Dismiss ledger (P — Today rail dismiss). Only the OBSERVATIONAL kinds
   // (milestone / ecg_new_recording / tension_window) can ever be dismissed, so
@@ -951,8 +964,17 @@ export async function loadDailyDigest(
         toTodayVital(v, units, resolvedLocale, t),
       ),
       cycle,
-      scoreSteadyWeeks: score
-        ? steadyWeeks(scoreDays ?? [], todayLocalDate, score.value)
+      scoreSteady: score
+        ? steadyRun(scoreDays ?? [], todayLocalDate, {
+            value: score.value,
+            band: score.band,
+            ...(score.scoreVersion !== undefined
+              ? { scoreVersion: score.scoreVersion }
+              : {}),
+            ...(score.composition !== undefined
+              ? { composition: score.composition }
+              : {}),
+          })
         : null,
     },
     t,

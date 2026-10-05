@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { buildDailyBriefingPush } from "@/lib/daily/daily-briefing-push";
 import type { DailyBriefing } from "@/lib/ai/schema";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import {
@@ -115,6 +116,7 @@ describe("buildDailyDigest — composition", () => {
       band: "good",
       delta: 3,
       steadyWeeks: null,
+      steadyAtLeast: false,
     });
     expect(d.topSignal?.headline).toBe("Blood pressure is holding steady");
     expect(d.briefingLead).toBe(
@@ -135,11 +137,54 @@ describe("buildDailyDigest — composition", () => {
     expect(d.line).toBe("Blood pressure is holding steady");
   });
 
-  it("falls back to a deterministic score floor when no briefing exists", () => {
+  it("falls back to a score floor without the number when no briefing exists", () => {
     const d = buildDailyDigest(input({ briefing: null }), t);
     expect(d.topSignal).toBeNull();
     expect(d.briefingLead).toBeNull();
-    expect(d.line).toBe("Your health score today is 82.");
+    expect(d.line).toBe("Your health score for today is ready.");
+  });
+
+  it("keeps concrete values off the lock screen and in the app", () => {
+    // The briefing's first sentence names a reading. In the app it leads the
+    // hero with its number; the push line, shown on a locked phone, skips
+    // it for the next sentence source that carries none.
+    const d = buildDailyDigest(
+      input({
+        briefing: {
+          ...briefing,
+          paragraph:
+            "Your blood pressure averaged 128/82 this week. Sleep dipped slightly last night.",
+          signalsOfDay: [
+            {
+              ...briefing.signalsOfDay![0],
+              headline: "Resting pulse at 52 bpm",
+            },
+          ],
+        },
+      }),
+      t,
+    );
+    expect(d.lead?.text).toBe("Your blood pressure averaged 128/82 this week.");
+    expect(d.line).not.toMatch(/\d/);
+    expect(d.line).toBe("Your health score for today is ready.");
+    // The push is built from that line, final or provisional.
+    expect(buildDailyBriefingPush(d, t).body).not.toMatch(/\d/);
+    expect(
+      buildDailyBriefingPush({ ...d, sleepPending: true }, t).body,
+    ).not.toMatch(/\d/);
+  });
+
+  it("uses a numberless headline for the push when the lead has a number", () => {
+    const d = buildDailyDigest(
+      input({
+        briefing: {
+          ...briefing,
+          paragraph: "Your resting heart rate is 52 this morning.",
+        },
+      }),
+      t,
+    );
+    expect(d.line).toBe("Blood pressure is holding steady");
   });
 
   it("degrades to the honest all-clear line with neither briefing nor score", () => {
@@ -1328,7 +1373,7 @@ describe("buildDailyDigest — AI text follows its capability", () => {
       expect(d.briefingLead).toBeNull();
       expect(d.topSignal).toBeNull();
       // The push line falls to the deterministic floor, never to model text.
-      expect(d.line).toBe("Your health score today is 82.");
+      expect(d.line).toBe("Your health score for today is ready.");
       expect(d.ai.briefing.reason).toBe(reason);
     },
   );
@@ -1512,8 +1557,9 @@ describe("buildDailyDigest — Today overview", () => {
       text: "Resting heart rate is at 61 bpm, above your usual range of 50 to 58 bpm.",
       source: "signal",
     });
-    // The push line takes the same sentence, not "Your health score today is 82."
-    expect(d.line).toBe(d.lead?.text);
+    // The lead names the reading in the app. The push line is shown on a
+    // locked phone and carries no value, so it does not take that sentence.
+    expect(d.line).toBe("Your health score for today is ready.");
   });
 
   it("publishes Rest Mode and its fact only while the illness module is on", () => {
@@ -1564,7 +1610,16 @@ describe("buildDailyDigest — Today overview", () => {
   });
 
   it("carries the steady run on the score", () => {
-    const d = buildDailyDigest(input({ scoreSteadyWeeks: 5 }), t);
+    const d = buildDailyDigest(
+      input({ scoreSteady: { weeks: 5, atLeast: false } }),
+      t,
+    );
     expect(d.score?.steadyWeeks).toBe(5);
+    expect(d.score?.steadyAtLeast).toBe(false);
+    const open = buildDailyDigest(
+      input({ scoreSteady: { weeks: 17, atLeast: true } }),
+      t,
+    );
+    expect(open.score?.steadyAtLeast).toBe(true);
   });
 });

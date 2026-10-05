@@ -178,7 +178,11 @@ vi.mock("@/lib/ai/coach/persistence", () => ({
 }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 
-import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
+import {
+  admittedPriorResults,
+  executeCoachTool,
+} from "@/lib/ai/coach/tools/executor";
+import { renderPriorResultRefs } from "@/lib/ai/coach/chat-request-builder";
 import {
   COACH_TOOL_DEFS,
   COACH_TOOL_NAMES,
@@ -324,6 +328,44 @@ describe("every Coach tool honours the lookback limit", () => {
   }
 });
 
+describe("earlier tables answer to the lookback limit", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
+  });
+
+  it("names no earlier table whose range lies beyond the limit", async () => {
+    // The context line carries the table's window and row count; an
+    // all-time table stored before the limit was set must not be listed.
+    const admitted = await admittedPriorResults({
+      userId: "u1",
+      prefs: { excludeMetrics: [] },
+      scope: undefined,
+      reach: REACH,
+      prior: PRIOR,
+    });
+    const refs = admitted.flatMap((turn) => turn.results.map((r) => r.ref));
+    expect(refs).toEqual(["r2"]);
+    const context = renderPriorResultRefs(admitted);
+    expect(context).toContain("last7days");
+    expect(context).not.toContain("allTime");
+  });
+
+  it("drops an earlier year-ago table that does not fit", async () => {
+    const yearAgo = {
+      ...storedTable("r3", "last7days"),
+      source: { ...storedTable("r3", "last7days").source, period: "yearAgo" },
+    } as PriorResultTurn["results"][number];
+    const admitted = await admittedPriorResults({
+      userId: "u1",
+      prefs: { excludeMetrics: [] },
+      scope: undefined,
+      reach: REACH,
+      prior: [{ messageId: "m-y", turnIndex: 3, results: [yearAgo] }],
+    });
+    expect(admitted).toEqual([]);
+  });
+});
+
 // ── The source ─────────────────────────────────────────────────────────
 
 const ROOT = join(__dirname, "../../../../..");
@@ -420,6 +462,14 @@ describe("the source hands the limit on", () => {
     );
     expect(calls.length).toBeGreaterThan(0);
     for (const args of calls) expect(args).not.toMatch(/\breach\b/);
+  });
+
+  it("passes the limit when it lists earlier tables for the model", () => {
+    const calls = walk(COACH_DIR).flatMap((file) =>
+      callArguments(readFileSync(file, "utf8"), "admittedPriorResults"),
+    );
+    expect(calls.length).toBeGreaterThan(0);
+    for (const args of calls) expect(args).toMatch(/\breach\b/);
   });
 
   it("passes the limit from the chat loop and nowhere from MCP", () => {

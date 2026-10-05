@@ -304,3 +304,42 @@ describe("deriveTension (pure)", () => {
     expect(fired!.clinicalOverride).toBe(true);
   });
 });
+
+describe("buildDerivedSnapshotBlock under the lookback limit", () => {
+  it("leaves out a metric whose own window does not fit, never shortening it", async () => {
+    // Readiness reads 30 days. Under a 14-day limit it is left out rather
+    // than computed over 14 days, where it would disagree with the ring.
+    compute.mockImplementation(async (args?: { metric?: string }) =>
+      args?.metric === "READINESS" || args?.metric === "STRESS_SCORE"
+        ? ok({ score: 60, band: "yellow" })
+        : insufficient,
+    );
+    const block = await buildDerivedSnapshotBlock("u1", PROFILE, NOW, "UTC", {
+      window: "last30days",
+      days: 14,
+    });
+    const computed = compute.mock.calls.map(
+      ([args]) => (args as { metric: string }).metric,
+    );
+    expect(computed).not.toContain("READINESS");
+    expect(computed).not.toContain("SLEEP_SCORE");
+    expect(computed).not.toContain("VASCULAR_AGE_DELTA");
+    expect(computed).toContain("STRESS_SCORE");
+    for (const [args] of compute.mock.calls) {
+      const windowDays = (args as { windowDays?: number }).windowDays;
+      expect(windowDays === undefined || windowDays >= 14).toBe(true);
+    }
+    expect(block?.READINESS).toBeUndefined();
+    expect(block?.STRESS_SCORE).toBeDefined();
+  });
+
+  it("computes nothing under a 7-day limit, where no metric fits", async () => {
+    compute.mockResolvedValue(ok({ score: 60, band: "yellow" }));
+    const block = await buildDerivedSnapshotBlock("u1", PROFILE, NOW, "UTC", {
+      window: "last7days",
+      days: 7,
+    });
+    expect(compute).not.toHaveBeenCalled();
+    expect(block).toBeNull();
+  });
+});

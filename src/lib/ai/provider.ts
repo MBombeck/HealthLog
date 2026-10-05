@@ -16,7 +16,11 @@ import {
 } from "./codex-oauth";
 import { isPublicUrl } from "@/lib/validations/notifications";
 import { isLocalAiHostAllowed } from "./local-host-allowlist";
-import { parseProviderChain, type ProviderChainType } from "./provider-chain";
+import {
+  parseProviderChain,
+  PROVIDER_CHAIN_TYPES,
+  type ProviderChainType,
+} from "./provider-chain";
 import type { ProviderChainResolved } from "./provider-runner";
 import {
   providerCredentialPolicy,
@@ -917,6 +921,7 @@ const NO_PRESENCE: ProviderPresence = Object.freeze({
   entries: [],
   localOcrEnabled: false,
   managedBy: null,
+  availableTypes: [],
 });
 
 /**
@@ -995,6 +1000,7 @@ export function probeProviderChain(
           // A guardian's in-browser OCR is not the record's opt-in to use.
           localOcrEnabled: false,
           managedBy: adminKey ? "server" : null,
+          availableTypes: adminKey ? ["admin-openai"] : [],
           responseTimeoutSeconds: row.aiResponseTimeoutSeconds,
         };
       }
@@ -1003,36 +1009,43 @@ export function probeProviderChain(
         row.codexConnectionStatus === "connected" &&
         !!row.codexAccessTokenEncrypted &&
         !!row.codexRefreshTokenEncrypted;
+      const credentialPresent = (providerType: ProviderChainType): boolean => {
+        switch (providerType) {
+          case "codex":
+            return codexConnected;
+          case "openai":
+            return !!row.aiOpenaiKeyEncrypted;
+          case "anthropic":
+            return !!row.aiAnthropicKeyEncrypted;
+          case "local":
+            return !!row.aiBaseUrl;
+          case "openai-compatible":
+            return !!(
+              row.aiCompatBaseUrl &&
+              (row.aiCompatModel || row.aiModel)
+            );
+          case "admin-openai":
+            return adminKey;
+          default:
+            // `admin-codex` is never resolved from a stored chain entry.
+            return false;
+        }
+      };
+      const centralCodex =
+        row.useCentralCodex && appSettingsCentralCodexConnected(settings);
       const entries: ProviderEntryPresence[] = [];
       for (const entry of parseProviderChain(row.aiProviderChain ?? null)) {
         if (!entry.enabled) continue;
-        const present = (() => {
-          switch (entry.providerType) {
-            case "codex":
-              return codexConnected;
-            case "openai":
-              return !!row.aiOpenaiKeyEncrypted;
-            case "anthropic":
-              return !!row.aiAnthropicKeyEncrypted;
-            case "local":
-              return !!row.aiBaseUrl;
-            case "openai-compatible":
-              return !!(
-                row.aiCompatBaseUrl &&
-                (row.aiCompatModel || row.aiModel)
-              );
-            case "admin-openai":
-              return adminKey;
-            default:
-              // `admin-codex` is never resolved from a stored chain entry.
-              return false;
-          }
-        })();
-        if (present) entries.push(vision(entry.providerType));
+        if (credentialPresent(entry.providerType)) {
+          entries.push(vision(entry.providerType));
+        }
       }
-      if (row.useCentralCodex && appSettingsCentralCodexConnected(settings)) {
+      if (centralCodex) {
         entries.push(vision("admin-codex"));
       }
+      const availableTypes: string[] = PROVIDER_CHAIN_TYPES.filter((type) =>
+        type === "admin-codex" ? centralCodex : credentialPresent(type),
+      );
       if (entries.length === 0 && userRowHasProviderCredential(row, adminKey)) {
         // The legacy single-provider fallback, tagged as the operator's slot
         // the way every consumer of it tags it (the consent gate included).
@@ -1051,6 +1064,7 @@ export function probeProviderChain(
         entries,
         localOcrEnabled: row.labsLocalOcrEnabled,
         managedBy: entries.length > 0 ? managedBy : null,
+        availableTypes,
         responseTimeoutSeconds: row.aiResponseTimeoutSeconds,
       };
     },

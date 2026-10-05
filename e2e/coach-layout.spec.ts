@@ -238,6 +238,39 @@ async function shot(page: Page, testInfo: TestInfo, name: string) {
   if (dir) await page.screenshot({ path: `${dir}/${name}.png` });
 }
 
+/**
+ * Record every mount of the conversations sheet from the first byte on.
+ * Reads the added nodes rather than the live DOM, so a sheet that mounts and
+ * unmounts again before the observer's callback runs is still counted.
+ */
+async function watchSheetMounts(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __coachSheetSeen?: boolean };
+    w.__coachSheetSeen = false;
+    const sheet = '[role="dialog"][data-slot="coach-conversations-panel"]';
+    new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (
+            node instanceof Element &&
+            (node.matches(sheet) || node.querySelector(sheet))
+          ) {
+            w.__coachSheetSeen = true;
+          }
+        }
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
+}
+
+async function sheetMounted(page: Page): Promise<boolean> {
+  return page.evaluate(
+    () =>
+      (window as unknown as { __coachSheetSeen?: boolean }).__coachSheetSeen ===
+      true,
+  );
+}
+
 async function openCoach(page: Page, path = "/coach?c=frame-bp") {
   await page.goto(path, { waitUntil: "domcontentloaded" });
   await expect(
@@ -460,11 +493,18 @@ test.describe("Coach page frame", () => {
     await page.addInitScript(() => {
       window.localStorage.setItem("healthlog.coach.panelOpen", "false");
     });
+    // The hydration render does not know the viewport yet; the phone sheet
+    // must not mount on a desktop even for a moment.
+    await watchSheetMounts(page);
     await page.goto("/coach?settings=data", { waitUntil: "domcontentloaded" });
 
     const popover = page.locator('[data-slot="coach-settings-popover"]');
     await expect(popover).toBeVisible({ timeout: 15_000 });
     await expect(panel(page)).toHaveAttribute("data-state", "open");
+    expect(
+      await sheetMounted(page),
+      "the phone sheet flashed on a desktop deep link",
+    ).toBe(false);
     await expect(
       popover.locator('[data-slot="coach-settings-data"]'),
     ).toBeFocused();
@@ -522,6 +562,28 @@ test.describe("Coach page frame", () => {
       await shot(page, testInfo, `coach-frame-1440-${theme}-settings`);
     });
   }
+
+  test("390: /coach?settings=data opens the sheet and the settings on what the Coach sees", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockCoach(page);
+    await watchSheetMounts(page);
+    await page.goto("/coach?settings=data", { waitUntil: "domcontentloaded" });
+
+    // The settings bottom sheet opens over the conversations sheet and
+    // hides it from the accessibility tree, so the sheet is found by slot.
+    await expect(page.locator('[data-slot="coach-settings-data"]')).toBeVisible(
+      { timeout: 15_000 },
+    );
+    await expect(
+      page.locator('[role="dialog"][data-slot="coach-conversations-panel"]'),
+    ).toBeVisible();
+    // The positive control for the desktop case: the same watcher sees the
+    // sheet mount where it belongs.
+    expect(await sheetMounted(page)).toBe(true);
+    await expect(page).toHaveURL(/\/coach$/);
+  });
 
   test("390: the panel is a sheet, the gear a bottom sheet, and nothing scrolls sideways", async ({
     page,

@@ -81,6 +81,7 @@ import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { loadIntradayPulse } from "@/lib/analytics/intraday-pulse-io";
 import { readDayMeanSeries } from "@/lib/insights/derived/baseline";
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
+import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 import { prisma } from "@/lib/db";
@@ -615,6 +616,18 @@ describe("loadDailyDigest — Today overview inputs", () => {
     expect(resolveRestMode).not.toHaveBeenCalled();
     expect(readTodayCycle).not.toHaveBeenCalled();
     expect(digest.restMode).toBeNull();
+  });
+
+  it("reads the cycle once per extras cell, and again after a cycle write", async () => {
+    // The digest polls every 120 s. The cycle read (the whole cycle history,
+    // 90 days of day logs and wrist temperature) rides the cached cell, which
+    // a cycle write hard-evicts.
+    await loadDailyDigest(USER, NOW);
+    await loadDailyDigest(USER, NOW);
+    expect(readTodayCycle).toHaveBeenCalledTimes(1);
+    invalidateUserHealthContext(USER.id);
+    await loadDailyDigest(USER, NOW);
+    expect(readTodayCycle).toHaveBeenCalledTimes(2);
   });
 
   it("reads the cycle in the profile timezone and keeps a failed read quiet", async () => {

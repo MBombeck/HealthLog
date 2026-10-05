@@ -2922,13 +2922,6 @@
         "skin_temp": "Skin temperature",
         "workouts": "Workouts"
       },
-      "window": {
-        "last7days": "last 7 days",
-        "last30days": "last 30 days",
-        "last90days": "last 90 days",
-        "lastYear": "last 12 months",
-        "allTime": "all time (12 months of detail)"
-      },
       "settingsAriaLabel": "Coach settings",
       "settingsTitle": "Coach settings",
       "settingsDescription": "Tune how the Coach talks with you.",
@@ -3019,7 +3012,7 @@
         "detailDays": "The Coach reads nothing older than {days} days, in any answer.",
         "detailMonths": "The Coach reads nothing older than {months} months, in any answer.",
         "detailAll": "Everything you recorded: {dailyMonths} months in daily detail, older readings as monthly values up to {years} years back, lab results from the last {labMonths} months.",
-        "note": "Your profile, current medications, an ongoing illness and upcoming visits stay visible; summaries that need more history are shortened or left out."
+        "note": "Your profile, current medications, an ongoing illness and upcoming visits stay visible; summaries that need more history are shortened or left out. Answers the Coach gave earlier in older conversations may still quote older values."
       },
       "showConversations": "Show conversations",
       "hideConversations": "Hide conversations",
@@ -3138,7 +3131,10 @@
         "noProvider": "No provider available",
         "saving": "Saving…",
         "saveFailed": "That change could not be saved.",
-        "allSettings": "All AI settings"
+        "allSettings": "All AI settings",
+        "providerNotActive": "{provider} could not take over: it has no working sign-in or key. Set it up in AI settings.",
+        "operatorCodex": "ChatGPT (shared by the operator)",
+        "operatorManaged": "Your server's operator manages this connection. Once one of your own providers is set up, it answers first."
       },
       "answer": {
         "scrollToBottom": "Jump to the latest message",
@@ -10928,8 +10924,8 @@
   },
   "daily": {
     "line": {
-      "score": "Your health score today is {score}.",
-      "allClear": "Nothing needs your attention today."
+      "allClear": "Nothing needs your attention today.",
+      "scoreReady": "Your health score for today is ready."
     },
     "push": {
       "title": "Your morning briefing",
@@ -11035,7 +11031,10 @@
         "PULSE": "Pulse",
         "WEIGHT": "Weight",
         "generic": "A vital"
-      }
+      },
+      "steadyAtLeastWeeksOne": "Steady for at least {count} week",
+      "steadyAtLeastWeeksFew": "Steady for at least {count} weeks",
+      "steadyAtLeastWeeksOther": "Steady for at least {count} weeks"
     },
     "milestone": {
       "metric": {

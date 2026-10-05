@@ -28,6 +28,7 @@ import { prisma } from "@/lib/db";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
 import { isCycleEnabled } from "@/lib/cycle/gate";
+import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { toCycleProfileDTO } from "@/lib/cycle/dto";
 import { cyclePrefsSchema } from "@/lib/validations/cycle";
 
@@ -118,6 +119,9 @@ export const PATCH = apiHandler(async (req: Request) => {
   });
 
   const resolved = isCycleEnabled(user.gender, updated);
+  // The typical lengths, the prediction switch and tracking itself all feed
+  // the dashboard's cycle line, which is cached in the digest extras cell.
+  invalidateUserHealthContext(user.id);
 
   await auditLog("user.cycle-prefs.update", {
     userId: user.id,

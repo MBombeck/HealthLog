@@ -181,6 +181,34 @@ describe("buildMedsTodayBlock — projection contract", () => {
   });
 });
 
+describe("buildMedsTodayBlock — the 25-hour day", () => {
+  it("covers the last local hour on the day the clocks go back", async () => {
+    // 2026-10-25 in Berlin runs 25 hours: CEST midnight is 22:00Z the
+    // evening before, the next CET midnight 23:00Z. A dose at 23:30 local
+    // (22:30Z) lies inside the day and must be counted.
+    const dstNow = new Date("2026-10-25T20:00:00.000Z");
+    await buildMedsTodayBlock(fakePrisma, "user-1", BERLIN, dstNow);
+
+    const arg = projectTodayIntakesAndRecompute.mock.calls[0][0] as {
+      todayStart: Date;
+      todayEnd: Date;
+    };
+    expect(arg.todayStart.toISOString()).toBe("2026-10-24T22:00:00.000Z");
+    expect(arg.todayEnd.toISOString()).toBe("2026-10-25T23:00:00.000Z");
+
+    const where = capturedTodayWhere as {
+      scheduledFor: { gte: Date; lt: Date };
+    };
+    expect(where.scheduledFor.lt.toISOString()).toBe(
+      "2026-10-25T23:00:00.000Z",
+    );
+    expect(
+      where.scheduledFor.lt.getTime() >
+        new Date("2026-10-25T22:30:00.000Z").getTime(),
+    ).toBe(true);
+  });
+});
+
 describe("buildMedsTodayBlock — tally", () => {
   it("counts scheduled / taken / skipped with the summary-tile semantics", async () => {
     todayRows = [

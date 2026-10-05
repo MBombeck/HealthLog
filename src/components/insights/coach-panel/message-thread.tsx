@@ -394,10 +394,12 @@ export function MessageThread({
   const scrollToLatest = useCallback(() => {
     const el = scrollerRef.current;
     if (!el) return;
+    // Focus first: pinning hides this button (aria-hidden), and focus must
+    // not sit on a control that has left the accessibility tree.
+    focusCoachComposer();
     wasPinnedRef.current = true;
     setPinned(true);
     el.scrollTo({ top: el.scrollHeight, behavior: scrollBehaviorForUser() });
-    focusCoachComposer();
   }, []);
 
   // Auto-scroll on new messages OR streaming-content growth, but only

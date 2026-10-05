@@ -43,11 +43,11 @@ const PROVIDER: UserAIProvider = {
   compatReasoningEffort: null,
 };
 
-function render(node: React.ReactNode) {
+function render(node: React.ReactNode, chain: ProviderChainData = CHAIN) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  client.setQueryData(queryKeys.insightsProviderChain(), CHAIN);
+  client.setQueryData(queryKeys.insightsProviderChain(), chain);
   client.setQueryData(queryKeys.userAiProvider(), PROVIDER);
   client.setQueryData(queryKeys.coachPrefs(), DEFAULT_COACH_PREFS);
   return renderToStaticMarkup(
@@ -81,6 +81,23 @@ describe("<CoachSettingsBody>", () => {
     expect(select).not.toContain('value="codex"');
   });
 
+  it("shows the operator's central Codex as the active provider when it answers", () => {
+    // `admin-codex` is never a chain entry, so no option matched it and the
+    // select showed its first option as the one answering.
+    const html = render(<CoachSettingsBody />, {
+      ...CHAIN,
+      activeProvider: "admin-codex" as ProviderChainData["activeProvider"],
+    });
+    const select = html.match(
+      /<select[^>]*data-slot="coach-quick-provider"[\s\S]*?<\/select>/,
+    )?.[0];
+    expect(select).toMatch(
+      /<option value="admin-codex" disabled="" selected="">ChatGPT \(shared by the operator\)<\/option>/,
+    );
+    expect(select).not.toMatch(/value="local"[^>]*selected/);
+    expect(html).toContain('data-slot="coach-quick-provider-operator"');
+  });
+
   it("shows the model and reasoning controls the active provider owns", () => {
     const html = render(<CoachSettingsBody />);
     expect(html).toContain('data-slot="coach-quick-model"');
@@ -88,6 +105,17 @@ describe("<CoachSettingsBody>", () => {
     // Keys, base URLs and the chain order are not here.
     expect(html).not.toContain("http://localhost:11434/v1");
     expect(html).not.toMatch(/type="password"/);
+  });
+
+  it("locks the reasoning select while a change is saving", async () => {
+    // Two writes in flight at once could land out of order and lose one;
+    // the provider and model selects already lock, the reasoning one too.
+    const source = (await import("node:fs")).readFileSync(
+      new URL("../coach-model-picker.tsx", import.meta.url),
+      "utf8",
+    );
+    const field = source.match(/<ReasoningEffortField[\s\S]*?\/>/)?.[0];
+    expect(field).toMatch(/disabled=\{busy\}/);
   });
 
   it("names the data section so a deep link can land on it", () => {

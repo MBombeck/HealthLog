@@ -2922,13 +2922,6 @@
         "skin_temp": "Temperatura de la piel",
         "workouts": "Entrenamientos"
       },
-      "window": {
-        "last7days": "Últimos 7 días",
-        "last30days": "Últimos 30 días",
-        "last90days": "Últimos 90 días",
-        "lastYear": "últimos 12 meses",
-        "allTime": "todo el tiempo (12 meses en detalle)"
-      },
       "settingsAriaLabel": "Ajustes del coach",
       "settingsTitle": "Ajustes del coach",
       "settingsDescription": "Configura cómo te habla el coach.",
@@ -3019,7 +3012,7 @@
         "detailDays": "El Coach no lee nada con más de {days} días de antigüedad, en ninguna respuesta.",
         "detailMonths": "El Coach no lee nada con más de {months} meses de antigüedad, en ninguna respuesta.",
         "detailAll": "Todo lo que has registrado: {dailyMonths} meses al detalle diario, las mediciones más antiguas como valores mensuales hasta {years} años atrás, los análisis de los últimos {labMonths} meses.",
-        "note": "Tu perfil, tu medicación actual, una enfermedad en curso y las próximas citas siguen visibles; los resúmenes que necesitan más historial se acortan o se omiten."
+        "note": "Tu perfil, tu medicación actual, una enfermedad en curso y las próximas citas siguen visibles; los resúmenes que necesitan más historial se acortan o se omiten. Las respuestas que el Coach dio antes en conversaciones anteriores pueden seguir citando valores más antiguos."
       },
       "showConversations": "Mostrar conversaciones",
       "hideConversations": "Ocultar conversaciones",
@@ -3138,7 +3131,10 @@
         "noProvider": "Ningún proveedor disponible",
         "saving": "Guardando…",
         "saveFailed": "No se pudo guardar el cambio.",
-        "allSettings": "Todos los ajustes de IA"
+        "allSettings": "Todos los ajustes de IA",
+        "providerNotActive": "{provider} no pudo encargarse: no tiene un inicio de sesión ni una clave que funcionen. Configúralo en los ajustes de IA.",
+        "operatorCodex": "ChatGPT (compartido por el operador)",
+        "operatorManaged": "El operador de tu servidor gestiona esta conexión. Cuando configures uno de tus propios proveedores, responderá primero."
       },
       "answer": {
         "scrollToBottom": "Ir al último mensaje",
@@ -10928,8 +10924,8 @@
   },
   "daily": {
     "line": {
-      "score": "Tu puntuación de salud hoy es {score}.",
-      "allClear": "Hoy nada necesita tu atención."
+      "allClear": "Hoy nada necesita tu atención.",
+      "scoreReady": "Tu puntuación de salud de hoy está lista."
     },
     "push": {
       "title": "Tu resumen matinal",
@@ -11035,7 +11031,10 @@
         "PULSE": "Pulso",
         "WEIGHT": "Peso",
         "generic": "Un signo vital"
-      }
+      },
+      "steadyAtLeastWeeksOne": "Estable desde hace al menos {count} semana",
+      "steadyAtLeastWeeksFew": "Estable desde hace al menos {count} semanas",
+      "steadyAtLeastWeeksOther": "Estable desde hace al menos {count} semanas"
     },
     "milestone": {
       "metric": {
