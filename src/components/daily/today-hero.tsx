@@ -179,9 +179,13 @@ export function TodayHero({
   const steadyWeeks = digest.score?.steadyWeeks ?? null;
   const steadyLine =
     !deltaShown && steadyWeeks !== null
-      ? t(pluralKey("daily.today.steadyWeeks", steadyWeeks, locale), {
-          count: steadyWeeks,
-        })
+      ? t(
+          // A run that reaches past what was read has no known start.
+          digest.score?.steadyAtLeast
+            ? pluralKey("daily.today.steadyAtLeastWeeks", steadyWeeks, locale)
+            : pluralKey("daily.today.steadyWeeks", steadyWeeks, locale),
+          { count: steadyWeeks },
+        )
       : null;
 
   // v1.38 — what the ring's number rests on, when that is less than the

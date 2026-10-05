@@ -11030,7 +11030,10 @@
         "PULSE": "Polso",
         "WEIGHT": "Peso",
         "generic": "Un parametro vitale"
-      }
+      },
+      "steadyAtLeastWeeksOne": "Stabile da almeno {count} settimana",
+      "steadyAtLeastWeeksFew": "Stabile da almeno {count} settimane",
+      "steadyAtLeastWeeksOther": "Stabile da almeno {count} settimane"
     },
     "milestone": {
       "metric": {

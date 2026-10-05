@@ -11030,7 +11030,10 @@
         "PULSE": "맥박",
         "WEIGHT": "체중",
         "generic": "생체 지표"
-      }
+      },
+      "steadyAtLeastWeeksOne": "최소 {count}주째 안정적",
+      "steadyAtLeastWeeksFew": "최소 {count}주째 안정적",
+      "steadyAtLeastWeeksOther": "최소 {count}주째 안정적"
     },
     "milestone": {
       "metric": {

@@ -11030,7 +11030,10 @@
         "PULSE": "Tętno",
         "WEIGHT": "Waga",
         "generic": "Parametr życiowy"
-      }
+      },
+      "steadyAtLeastWeeksOne": "Stabilnie od co najmniej {count} tygodnia",
+      "steadyAtLeastWeeksFew": "Stabilnie od co najmniej {count} tygodni",
+      "steadyAtLeastWeeksOther": "Stabilnie od co najmniej {count} tygodni"
     },
     "milestone": {
       "metric": {

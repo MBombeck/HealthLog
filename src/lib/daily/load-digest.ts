@@ -88,7 +88,7 @@ import type {
 } from "@/lib/format-locale";
 import {
   STEADY_READ_DAYS,
-  steadyWeeks,
+  steadyRun,
   type StoredScoreDay,
 } from "@/lib/daily/score-steady";
 import type {
@@ -951,8 +951,17 @@ export async function loadDailyDigest(
         toTodayVital(v, units, resolvedLocale, t),
       ),
       cycle,
-      scoreSteadyWeeks: score
-        ? steadyWeeks(scoreDays ?? [], todayLocalDate, score.value)
+      scoreSteady: score
+        ? steadyRun(scoreDays ?? [], todayLocalDate, {
+            value: score.value,
+            band: score.band,
+            ...(score.scoreVersion !== undefined
+              ? { scoreVersion: score.scoreVersion }
+              : {}),
+            ...(score.composition !== undefined
+              ? { composition: score.composition }
+              : {}),
+          })
         : null,
     },
     t,

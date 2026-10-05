@@ -115,6 +115,7 @@ describe("buildDailyDigest — composition", () => {
       band: "good",
       delta: 3,
       steadyWeeks: null,
+      steadyAtLeast: false,
     });
     expect(d.topSignal?.headline).toBe("Blood pressure is holding steady");
     expect(d.briefingLead).toBe(
@@ -1564,7 +1565,16 @@ describe("buildDailyDigest — Today overview", () => {
   });
 
   it("carries the steady run on the score", () => {
-    const d = buildDailyDigest(input({ scoreSteadyWeeks: 5 }), t);
+    const d = buildDailyDigest(
+      input({ scoreSteady: { weeks: 5, atLeast: false } }),
+      t,
+    );
     expect(d.score?.steadyWeeks).toBe(5);
+    expect(d.score?.steadyAtLeast).toBe(false);
+    const open = buildDailyDigest(
+      input({ scoreSteady: { weeks: 17, atLeast: true } }),
+      t,
+    );
+    expect(open.score?.steadyAtLeast).toBe(true);
   });
 });

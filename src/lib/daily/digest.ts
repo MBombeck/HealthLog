@@ -56,6 +56,7 @@ import {
 } from "@/lib/daily/coach-checkin-intents";
 import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
 import type { Locale } from "@/lib/i18n/config";
+import type { SteadyRun } from "@/lib/daily/score-steady";
 import {
   buildTodayOverview,
   type TodayCycle,
@@ -138,6 +139,11 @@ export interface DailyDigestScore {
    * stay valid.
    */
   steadyWeeks?: number | null;
+  /**
+   * True when the run reaches back past everything the read covered, so
+   * `steadyWeeks` is a lower bound ("at least"), not the run's start.
+   */
+  steadyAtLeast?: boolean;
 }
 
 /** A broken integration, deterministically derived from `IntegrationStatus`. */
@@ -404,8 +410,8 @@ export interface DailyDigestInput {
   vitals?: readonly TodayVital[];
   /** Today's place in the cycle (cycle module). */
   cycle?: TodayCycle | null;
-  /** Whole weeks the score has held; see `DailyDigestScore.steadyWeeks`. */
-  scoreSteadyWeeks?: number | null;
+  /** How long the score has held; see `DailyDigestScore.steadyWeeks`. */
+  scoreSteady?: SteadyRun | null;
 }
 
 export interface DailyDigest {
@@ -1250,7 +1256,11 @@ export function buildDailyDigest(
   );
 
   const score: DailyDigestScore | null = input.score
-    ? { ...input.score, steadyWeeks: input.scoreSteadyWeeks ?? null }
+    ? {
+        ...input.score,
+        steadyWeeks: input.scoreSteady?.weeks ?? null,
+        steadyAtLeast: input.scoreSteady?.atLeast ?? false,
+      }
     : null;
 
   return {

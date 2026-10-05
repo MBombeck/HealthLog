@@ -11030,7 +11030,10 @@
         "PULSE": "Puls",
         "WEIGHT": "Gewicht",
         "generic": "Ein Vitalwert"
-      }
+      },
+      "steadyAtLeastWeeksOne": "Seit mindestens {count} Woche stabil",
+      "steadyAtLeastWeeksFew": "Seit mindestens {count} Wochen stabil",
+      "steadyAtLeastWeeksOther": "Seit mindestens {count} Wochen stabil"
     },
     "milestone": {
       "metric": {

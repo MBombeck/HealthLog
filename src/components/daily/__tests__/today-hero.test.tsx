@@ -669,6 +669,13 @@ describe("<TodayHero> steady line", () => {
     expect(html).not.toContain('data-slot="today-hero-score-steady"');
   });
 
+  it("says at least when the run reaches past what was read", () => {
+    const html = render(
+      <TodayHero digest={steady({ steadyWeeks: 17, steadyAtLeast: true })} />,
+    );
+    expect(visibleText(html)).toContain("Steady for at least 17 weeks");
+  });
+
   it("uses the German plural", () => {
     const html = render(<TodayHero digest={steady({})} />, "de");
     expect(visibleText(html)).toContain("Seit 4 Wochen stabil");
