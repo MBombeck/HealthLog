@@ -793,3 +793,74 @@ describe("signal line under the lead — nothing said twice", () => {
     expect(buildTodayOverview(input(), t).signalLine).toBeNull();
   });
 });
+
+describe("signal line — a metric is named by whole words, not by fragments", () => {
+  const DELTA = "↓ 50 min vs your usual";
+
+  function lineFor(
+    lead: string,
+    sourceMetric: NonNullable<
+      DailyBriefing["signalsOfDay"]
+    >[number]["sourceMetric"],
+  ) {
+    return buildTodayOverview(
+      input({
+        briefing: {
+          paragraph: lead,
+          signalsOfDay: [
+            {
+              sourceMetric,
+              tone: "info",
+              headline: "A headline the lead does not quote.",
+              nudge: "n",
+              delta: DELTA,
+            },
+          ],
+          keyFindings: [],
+        },
+      }),
+      t,
+    ).signalLine;
+  }
+
+  // Each lead talks about something else; a fragment inside another word
+  // used to count as naming the metric, and the headline was dropped.
+  it.each([
+    ["Your weight has risen slightly this week.", "sleep"], // "sen"
+    ["You have chosen a steady routine.", "sleep"], // "sen"
+    ["Your readings worsen a little after lunch.", "sleep"], // "sen"
+    ["A snug fit for the cuff gave a clean reading.", "sleep"], // "snu"
+    ["Poranne ciśnienie spadło po spacerze.", "sleep"], // "spa" (pl)
+    ["잠시 후 다시 측정해 보세요.", "sleep"], // 잠시 = "a moment"
+    ["Passing showers kept the walk short.", "steps"], // "passi"
+    ["Ho passato una giornata tranquilla.", "steps"], // "passi" (it) inside passato
+    ["A sudden impulse to rest was a good call.", "pulse"], // "puls"
+    ["Der Impuls zur Pause war richtig.", "pulse"], // "puls" (de)
+    ["L'impulsione del giorno era calma.", "pulse"], // "puls" (it)
+    ["Wypadł impuls do odpoczynku.", "pulse"], // "puls" (pl)
+  ] as const)("keeps the headline under %j (%s)", (lead, metric) => {
+    const line = lineFor(lead, metric);
+    expect(line?.headline).toBe("A headline the lead does not quote.");
+  });
+
+  it.each([
+    ["Last night you slept seven hours.", "sleep"],
+    ["Dein Schlaf war ruhig.", "sleep"],
+    ["Tu sueño fue tranquilo.", "sleep"],
+    ["Tu as bien dormi.", "sleep"],
+    ["Il sonno è stato regolare.", "sleep"],
+    ["Twój sen był spokojny.", "sleep"],
+    ["Mało snu tej nocy.", "sleep"],
+    ["Spałeś siedem godzin.", "sleep"],
+    ["어젯밤 잠을 잘 잤어요.", "sleep"],
+    ["수면 시간이 길었어요.", "sleep"],
+    ["Hai fatto molti passi oggi.", "steps"],
+    ["Your pulse settled overnight.", "pulse"],
+    ["Dein Puls war ruhig.", "pulse"],
+    ["Twój puls był spokojny.", "pulse"],
+    ["Il polso era regolare.", "pulse"],
+    ["Ton pouls était calme.", "pulse"],
+  ] as const)("still recognises %j as naming %s", (lead, metric) => {
+    expect(lineFor(lead, metric)).toEqual({ headline: null, delta: DELTA });
+  });
+});

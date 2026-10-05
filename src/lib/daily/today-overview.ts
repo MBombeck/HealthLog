@@ -346,30 +346,109 @@ function restates(text: string, phrase: string): boolean {
 }
 
 /**
+ * A term that must start a word: `stem` lets an inflection follow it
+ * ("Blutdrucks", "tętna"), `word` must end where the word ends. Unicode-aware
+ * on both sides, since `\b` only knows ASCII letters and would split "spał".
+ * Without the boundaries a fragment inside another word named the metric:
+ * "risen" read as the Polish "sen" (sleep), "impulse" as "puls".
+ */
+const START = "(?<![\\p{L}\\p{N}])";
+const END = "(?![\\p{L}\\p{N}])";
+const stem = (...terms: string[]) => terms.map((x) => `${START}${x}`);
+const word = (...terms: string[]) => terms.map((x) => `${START}${x}${END}`);
+/** Hangul has no word boundary to lean on: the term carries its particle. */
+const hangul = (...terms: string[]) => terms;
+const terms = (...parts: string[][]) =>
+  new RegExp(parts.flat().join("|"), "iu");
+
+const WEIGHT_TERMS = terms(
+  stem("weigh", "gewicht"),
+  word("peso", "pesos", "poids", "wag[aięe]", "wadze"),
+  hangul("체중", "몸무게"),
+);
+
+/**
  * How each briefing metric is named in prose, in every shipped language. The
  * lead is model text in the reader's language, so "does the lead already talk
- * about this metric" is a question about words. Stems, not whole words, so
- * inflected forms ("Blutdrucks", "tętna") still match. A metric missing here
- * simply falls back to the headline comparison.
+ * about this metric" is a question about words, matched at word starts. A
+ * metric missing here simply falls back to the headline comparison.
  */
 const METRIC_TERMS: Partial<
   Record<DailyBriefingSignal["sourceMetric"], RegExp>
 > = {
-  bp: /blood\s*pressure|blutdruck|presi[oó]n\s+arterial|tensi[oó]n\s+arterial|pression\s+art[ée]rielle|tension\s+art[ée]rielle|pressione\s+(arteriosa|sanguigna)|ci[sś]nieni|혈압/iu,
-  weight: /weight|gewicht|peso|poids|wag[ai]|체중|몸무게/iu,
-  glp1_plateau: /weight|gewicht|peso|poids|wag[ai]|체중|몸무게/iu,
-  pulse: /pulse|puls|pouls|polso|t[eę]tn|맥박/iu,
-  resting_hr:
-    /resting\s+(heart\s*rate|pulse)|ruhepuls|ruhe-?herzfrequenz|en\s+reposo|au\s+repos|a\s+riposo|spoczynkow|안정\s*시?\s*심박/iu,
-  hrv: /\bhrv\b|heart[-\s]*rate\s+variability|herzfrequenzvariabilit|variabilidad|variabilit[ée]|zmienno[sś][cć]|심박\s*변이/iu,
-  sleep:
-    /sleep|slept|schlaf|geschlafen|sue[nñ]o|dormi|sommeil|sonno|sen\b|snu|spa[lł]|수면|잠/iu,
-  steps: /steps|schritte|pasos|passi|krok|걸음/iu,
-  mood: /mood|stimmung|[aá]nimo|humeur|umore|nastr[oó]j|기분/iu,
-  compliance:
-    /medication|dose|medikament|einnahme|medicaci[oó]n|m[ée]dicament|farmac|lek[iów]|복약|약물/iu,
-  body_temp: /temperature|temperatur|temperatura|temp[ée]rature|체온/iu,
-  vo2_max: /vo2|vo₂/iu,
+  bp: terms(
+    stem(
+      "blood\\s*pressure",
+      "blutdruck",
+      "presi[oó]n\\s+arterial",
+      "tensi[oó]n\\s+arterial",
+      "pression\\s+art[ée]rielle",
+      "tension\\s+art[ée]rielle",
+      "pressione\\s+(arteriosa|sanguigna)",
+      "ci[sś]nieni",
+    ),
+    hangul("혈압"),
+  ),
+  weight: WEIGHT_TERMS,
+  glp1_plateau: WEIGHT_TERMS,
+  pulse: terms(
+    word("pulses?", "puls(es)?", "pouls", "polso", "pulso"),
+    stem("t[eę]tn"),
+    hangul("맥박"),
+  ),
+  resting_hr: terms(
+    stem(
+      "resting\\s+(heart\\s*rate|pulse)",
+      "ruhepuls",
+      "ruhe-?herzfrequenz",
+      "en\\s+reposo",
+      "au\\s+repos",
+      "a\\s+riposo",
+      "spoczynkow",
+    ),
+    hangul("안정\\s*시?\\s*심박"),
+  ),
+  hrv: terms(
+    word("hrv"),
+    stem(
+      "heart[-\\s]*rate\\s+variability",
+      "herzfrequenzvariabilit",
+      "variabilidad\\s+de\\s+la\\s+frecuencia",
+      "variabilit[ée]\\s+de\\s+la\\s+fr[ée]quence",
+      "variabilit[àa]\\s+della\\s+frequenza",
+      "zmienno[sś][cć]\\s+rytmu",
+    ),
+    hangul("심박\\s*변이"),
+  ),
+  sleep: terms(
+    stem("sleep", "schlaf", "geschlafen", "dormi"),
+    word(
+      "slept",
+      "sue[nñ]o",
+      "sommeil",
+      "sonno",
+      "sen",
+      "snu",
+      "spa[lł](a|e[sś]|a[sś]|y)?",
+    ),
+    hangul("수면", "잠을", "잠이", "잠은", "잠도"),
+  ),
+  steps: terms(
+    word("steps", "schritte", "schritten", "pasos", "passi", "krok(i|ów|ach)"),
+    hangul("걸음"),
+  ),
+  mood: terms(
+    stem("stimmung"),
+    word("mood", "[aá]nimo", "humeur", "umore", "nastr(ój|oj|oju)"),
+    hangul("기분"),
+  ),
+  compliance: terms(
+    stem("medication", "medikament", "einnahme", "m[ée]dicament", "farmac"),
+    word("doses?", "dosis", "medicaci[oó]n", "lek(i|ów|u|ami)?"),
+    hangul("복약", "약물"),
+  ),
+  body_temp: terms(stem("temperatur", "temp[ée]rature"), hangul("체온")),
+  vo2_max: terms(stem("vo2", "vo₂")),
 };
 
 /** Whether the lead already talks about the metric a signal is drawn from. */
