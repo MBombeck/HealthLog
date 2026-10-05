@@ -55,8 +55,13 @@ import type { ProcedureFilterChoice } from "./vault-utils";
  */
 const TRIGGER_ACTIVE =
   "border-primary/40 bg-primary/10 text-foreground min-w-0 shrink";
-/** Shared trigger chrome: compact, fixed, never shrinks below its label. */
-const TRIGGER_CLASSES = "shrink-0 gap-1.5 font-normal";
+/**
+ * Shared trigger chrome: compact, fixed, never shrinks below its label. The
+ * height matches the search field beside it (44 px on a phone, the tap-target
+ * floor, 40 px from `sm`), so the row reads as one line of controls.
+ */
+const TRIGGER_CLASSES =
+  "h-11 min-w-11 shrink-0 gap-1.5 font-normal sm:h-10 sm:min-w-0";
 
 /**
  * The facet label is the whole point of the trigger — but four text labels
@@ -173,7 +178,10 @@ export function DocumentFilterBar({
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={t("documents.filter.searchPlaceholder")}
             aria-label={t("documents.filter.searchLabel")}
-            className="min-w-0 pr-3 pl-9 sm:pr-8"
+            // On a phone the field can shrink to its icon; the browser's own
+            // clear button would then sit on top of the icon, so it goes and
+            // the row's clear control does the job.
+            className="min-w-0 pr-3 pl-9 sm:pr-8 max-sm:[&::-webkit-search-cancel-button]:appearance-none"
             aria-keyshortcuts="/"
           />
           <kbd
@@ -384,7 +392,7 @@ export function DocumentFilterBar({
             size="sm"
             onClick={onClearAll}
             aria-label={t("documents.filter.clear")}
-            className="text-muted-foreground shrink-0"
+            className="text-muted-foreground h-11 min-w-11 shrink-0 sm:h-10 sm:min-w-0"
           >
             <X className="size-3.5" aria-hidden />
             <span className="hidden sm:inline">
