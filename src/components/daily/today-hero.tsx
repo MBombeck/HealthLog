@@ -281,7 +281,7 @@ export function TodayHero({
           >
             <Link
               href={fact.href}
-              className="focus-visible:ring-ring/50 hover:bg-muted/50 -mx-1.5 flex items-baseline justify-between gap-3 rounded-md px-1.5 py-1 focus-visible:ring-2 focus-visible:outline-none md:flex-col md:items-start md:justify-start md:gap-0.5"
+              className="focus-visible:ring-ring/50 hover:bg-muted/50 -mx-1.5 flex min-h-11 items-center justify-between gap-3 rounded-md px-1.5 py-1 focus-visible:ring-2 focus-visible:outline-none md:min-h-0 md:flex-col md:items-start md:justify-start md:gap-0.5"
             >
               <span className="text-muted-foreground shrink-0 text-sm md:text-xs">
                 {fact.label}
@@ -358,7 +358,14 @@ export function TodayHero({
               : "flex-col md:flex-row md:items-start md:justify-between md:gap-6",
           )}
         >
-          <div className="min-w-0 flex-1 space-y-3">
+          {/* The overview is its own section under the lead, so it keeps a
+              section's distance from it; the compact all-clear stays tight. */}
+          <div
+            className={cn(
+              "min-w-0 flex-1",
+              compactAllClear ? "space-y-3" : "space-y-4 md:space-y-6",
+            )}
+          >
             {/* Hero numeric face: the read leads large in the foreground
                 token, calm and legible — the day's read, not a slogan. */}
             {lead || signalLine ? (
