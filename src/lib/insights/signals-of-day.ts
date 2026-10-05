@@ -10,6 +10,12 @@
  */
 import { trendSlope } from "@/lib/analytics/trends";
 import { avgInWindow, stdDev, toDataPoints } from "@/lib/insights/features";
+import { dayKeyAgeInDays } from "@/lib/insights/measurement-freshness";
+import {
+  roundToDisplay,
+  vitalDisplayDecimals,
+} from "@/lib/measurements/vital-precision";
+import { userDayKey } from "@/lib/tz/format";
 
 /**
  * v1.18.7 — one present-focused signal feeding the daily briefing. Every
@@ -26,7 +32,10 @@ export interface SignalOfDay {
   unit?: string;
   /** Freshest reading (the "now" value the briefing leads with). */
   latest: number;
-  /** Days since the freshest reading. */
+  /**
+   * Calendar days between the freshest reading and today in the reader's
+   * zone. Always 0: a metric with no reading today yields no signal.
+   */
   latestDaysAgo: number;
   /** Trailing-7d mean. */
   avg7: number | null;
@@ -88,26 +97,51 @@ function r2(v: number): number {
   return Math.round(v * 100) / 100;
 }
 
+/** How one signal is read: its zone, and the precision its figures carry. */
+interface SignalRead {
+  /** The reader's zone; "today" is the calendar day in it. */
+  tz: string;
+  /** For pulse, the zone its day means are read in (`day-mean.ts`). */
+  day?: { type: string; tz: string };
+  /**
+   * Display precision of a unit-insensitive metric (bpm, mmHg), applied
+   * here. Weight and glucose stay canonical and are rounded where they are
+   * converted into the reader's unit (`signalInReaderUnits`).
+   */
+  decimals?: number;
+}
+
 /**
  * Build one signal from a single metric's measurement records. Returns null
- * when there is no fresh reading or fewer than three points in 30 days — a
- * sparse metric cannot carry an honest "today vs your normal" read.
+ * when the metric has no reading today, or fewer than three points in 30
+ * days — a sparse metric cannot carry an honest "today vs your normal" read.
+ *
+ * "Today" is the calendar day in the reader's zone. Every signal is a
+ * present-tense statement about the day ("pulse is up today"), so a reading
+ * from yesterday morning read at nine in the evening is not one: it would
+ * narrate a day on which nothing was measured. A metric that was not
+ * measured today simply has no signal; the briefing's trend sections still
+ * carry its history, dated.
  */
 function buildSignal(
   metric: SignalOfDay["metric"],
   label: string,
   records: Array<{ value: number; measuredAt: Date }>,
   now: number,
-  unit?: string,
-  day?: { type: string; tz: string },
+  unit: string | undefined,
+  read: SignalRead,
 ): SignalOfDay | null {
   if (records.length === 0) return null;
   const newest = records[records.length - 1];
-  const latestDaysAgo = Math.round(
-    (now - newest.measuredAt.getTime()) / (24 * 60 * 60 * 1000),
+  const latestDaysAgo = dayKeyAgeInDays(
+    userDayKey(newest.measuredAt, read.tz),
+    userDayKey(new Date(now), read.tz),
   );
-  // A reading older than two weeks is not a "signal of the day".
-  if (latestDaysAgo > 14) return null;
+  if (latestDaysAgo !== 0) return null;
+  const { day } = read;
+  const shown = (v: number) =>
+    read.decimals === undefined ? r2(v) : roundToDisplay(v, read.decimals);
+  const shownOrNull = (v: number | null) => (v === null ? null : shown(v));
 
   const win30 = records.filter(
     (rec) => rec.measuredAt.getTime() >= now - 30 * 24 * 60 * 60 * 1000,
@@ -119,8 +153,8 @@ function buildSignal(
   const avg7 = avgInWindow(records, now, 7, 0, day);
   const avg30 = avgInWindow(records, now, 30, 0, day);
   const spread30 = stdDev(win30.map((rec) => rec.value));
-  const deltaVs7 = avg7 !== null ? r2(newest.value - avg7) : null;
-  const deltaVs30 = avg30 !== null ? r2(newest.value - avg30) : null;
+  const deltaVs7 = avg7 !== null ? shown(newest.value - avg7) : null;
+  const deltaVs30 = avg30 !== null ? shown(newest.value - avg30) : null;
   const outsideNormalSwing =
     avg30 !== null && spread30 !== null && spread30 > 0
       ? Math.abs(newest.value - avg30) > spread30
@@ -152,7 +186,7 @@ function buildSignal(
           bestAbs = abs;
           recentAnomaly = {
             kind: (sd > 0 ? "peak" : "trough") as "peak" | "trough",
-            value: r2(rec.value),
+            value: shown(rec.value),
             anomalyDaysAgo: Math.round(
               (now - rec.measuredAt.getTime()) / (24 * 60 * 60 * 1000),
             ),
@@ -166,13 +200,13 @@ function buildSignal(
     metric,
     label,
     ...(unit ? { unit } : {}),
-    latest: r2(newest.value),
+    latest: shown(newest.value),
     latestDaysAgo,
-    avg7,
-    avg30,
+    avg7: shownOrNull(avg7),
+    avg30: shownOrNull(avg30),
     deltaVs7,
     deltaVs30,
-    spread30,
+    spread30: shownOrNull(spread30),
     outsideNormalSwing,
     emergingTrend,
     recentAnomaly,
@@ -190,13 +224,17 @@ function buildSignal(
 export function computeSignalsOfDay(
   byType: (type: string) => Array<{ value: number; measuredAt: Date }>,
   now: number,
-  /** The zone pulse days are read in (`day-mean.ts`). */
-  pulseTz: string = "UTC",
+  /** The reader's zone: today's calendar day, and pulse's day means. */
+  tz: string = "UTC",
 ): SignalOfDay[] {
   const candidates: SignalOfDay[] = [];
   const push = (s: SignalOfDay | null) => {
     if (s) candidates.push(s);
   };
+  const whole = (type: string) => ({
+    tz,
+    decimals: vitalDisplayDecimals(type, 0),
+  });
 
   // Systolic carries the BP signal (the headline number clinicians read first).
   push(
@@ -206,10 +244,22 @@ export function computeSignalsOfDay(
       byType("BLOOD_PRESSURE_SYS"),
       now,
       "mmHg",
+      whole("BLOOD_PRESSURE_SYS"),
     ),
   );
   // Absent data simply produces no signal.
-  push(buildSignal("glucose", "blood glucose", byType("BLOOD_GLUCOSE"), now));
+  push(
+    buildSignal(
+      "glucose",
+      "blood glucose",
+      byType("BLOOD_GLUCOSE"),
+      now,
+      undefined,
+      {
+        tz,
+      },
+    ),
+  );
   push(
     buildSignal(
       "resting_hr",
@@ -217,18 +267,21 @@ export function computeSignalsOfDay(
       byType("RESTING_HEART_RATE"),
       now,
       "bpm",
+      whole("RESTING_HEART_RATE"),
     ),
   );
   push(
     buildSignal("pulse", "pulse", byType("PULSE"), now, "bpm", {
-      type: "PULSE",
-      tz: pulseTz,
+      ...whole("PULSE"),
+      day: { type: "PULSE", tz },
     }),
   );
   // Weight and glucose are canonical here and carry no unit: the reader's
   // unit is attached where the signal is converted for the prompt
   // (`featuresInReaderUnits`), so no canonical symbol can leak into one.
-  push(buildSignal("weight", "weight", byType("WEIGHT"), now));
+  push(
+    buildSignal("weight", "weight", byType("WEIGHT"), now, undefined, { tz }),
+  );
   // Sleep is stored one row per stage per night, so a raw "latest" point
   // would mis-sum; the sleep aggregates carry that signal already. Steps
   // ingest as many intraday `stats:`-prefixed samples, so the newest raw row

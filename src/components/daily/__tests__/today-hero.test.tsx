@@ -388,7 +388,7 @@ describe("<TodayHero>", () => {
     expect(text.match(/\b82\b/g)).toHaveLength(1);
   });
 
-  it("keeps the full narrative composition and md score ring when a lead exists", () => {
+  it("keeps the full narrative composition and the responsive score ring when a lead exists", () => {
     const html = render(
       <TodayHero
         digest={digest({
@@ -401,7 +401,8 @@ describe("<TodayHero>", () => {
 
     expect(html).toContain('data-layout="narrative"');
     expect(html).toContain('data-slot="today-hero-lead"');
-    expect(html).toContain('style="width:168px;height:168px"');
+    // A compact dial on a phone, the md dial (168 px) from md up.
+    expect(html).toContain("size-20 md:size-42");
     expect(html).not.toContain('data-layout="compact-all-clear"');
   });
 
@@ -584,6 +585,49 @@ describe("<TodayHero> Today overview", () => {
     for (const fact of FACTS) {
       expect(html).toContain(`href="${fact.href}"`);
       expect(visibleText(html)).toContain(fact.value);
+    }
+  });
+
+  it("puts the ring beside the lead and the overview under both on a phone", () => {
+    const html = render(
+      <TodayHero digest={digest({ today: FACTS, worthALook: [] })} />,
+    );
+    // The read grid: lead cell, overview cell, ring cell, in that order.
+    const read = html.slice(html.indexOf('data-slot="today-hero-read"'));
+    // The cell is the grid child wrapping the slot: the nearest preceding
+    // div that carries a grid placement.
+    const cellClass = (slot: string) => {
+      const before = read.slice(0, read.indexOf(`data-slot="${slot}"`));
+      const cells = [
+        ...before.matchAll(/<div class="([^"]*(?:col-|row-)[^"]*)"/g),
+      ];
+      return cells.at(-1)?.[1] ?? "";
+    };
+    expect(cellClass("today-hero-lead")).toContain("row-start-1");
+    // Full width under lead and ring below md, the leading column from md.
+    expect(cellClass("today-hero-today")).toContain("col-span-2");
+    expect(cellClass("today-hero-today")).toContain("md:col-span-1");
+    expect(cellClass("today-hero-score")).toContain("col-start-2");
+    expect(cellClass("today-hero-score")).toContain("md:row-span-2");
+  });
+
+  it("stacks each fact's label above its value, both on the reading edge", () => {
+    const html = render(<TodayHero digest={digest({ today: FACTS })} />);
+    const links = [
+      ...html.matchAll(
+        /data-slot="today-hero-fact"[^>]*><a[^>]*class="([^"]*)"[^>]*>(.*?)<\/a>/g,
+      ),
+    ];
+    expect(links).toHaveLength(FACTS.length);
+    for (const [, linkClass, inner] of links) {
+      expect(linkClass).toContain("flex-col");
+      expect(linkClass).not.toContain("justify-between");
+      expect(linkClass).toContain("min-h-11");
+      expect(inner).not.toContain("text-right");
+      // Label muted, value foreground.
+      expect(inner).toMatch(
+        /text-muted-foreground[^"]*"[^>]*>[^<]+<\/span><span class="text-foreground/,
+      );
     }
   });
 

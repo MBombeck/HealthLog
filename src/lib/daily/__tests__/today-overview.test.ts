@@ -343,7 +343,51 @@ describe("deterministic lead — strongest signal", () => {
     expect(o.today).toEqual([]);
   });
 
-  it("ignores a vital that is not from today or yesterday", () => {
+  it("says nothing about today from yesterday's reading", () => {
+    // A pulse from yesterday morning, read at nine in the evening: neither
+    // the lead nor the vitals line may call it today's.
+    const o = buildTodayOverview(
+      input({
+        vitals: [
+          vital({
+            type: "PULSE",
+            daysAgo: 1,
+            direction: "above",
+            value: 98,
+            high: 72,
+            valueLabel: "98 bpm",
+            rangeLabel: "58 to 72 bpm",
+          }),
+        ],
+      }),
+      t,
+    );
+    expect(o.lead).toBeNull();
+    expect(o.today.some((f) => f.kind === "vitals")).toBe(false);
+  });
+
+  it("speaks about a vital measured today", () => {
+    const o = buildTodayOverview(
+      input({
+        vitals: [
+          vital({
+            type: "PULSE",
+            daysAgo: 0,
+            direction: "above",
+            value: 98,
+            high: 72,
+            valueLabel: "98 bpm",
+            rangeLabel: "58 to 72 bpm",
+          }),
+        ],
+      }),
+      t,
+    );
+    expect(o.lead?.source).toBe("signal");
+    expect(o.lead?.text).toContain("98 bpm");
+  });
+
+  it("ignores a vital from days ago", () => {
     const o = buildTodayOverview(
       input({
         vitals: [vital({ daysAgo: 4, direction: "above", value: 70 })],
