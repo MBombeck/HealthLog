@@ -37,6 +37,9 @@ import {
 import { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import type { Locale } from "@/lib/i18n/config";
+import { briefingForToday } from "@/lib/daily/briefing-today";
+import { readBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
+import { userDayKey } from "@/lib/tz/format";
 
 /**
  * Per-key TTL for the snapshot cache entry. Strictly greater than the
@@ -49,6 +52,46 @@ import type { Locale } from "@/lib/i18n/config";
  * the TTL).
  */
 export const SNAPSHOT_CACHE_TTL_MS = DASHBOARD_REFETCH_INTERVAL_MS + 60_000;
+
+/**
+ * Resolve the snapshot's briefing for today, on every read.
+ *
+ * The same rule the digest applies, here so the dashboard, the RSC prefetch,
+ * the iOS snapshot read and the digest all serve one answer: text generated
+ * on an earlier calendar day (or at an unknown time) is not served, a
+ * reading-backed signal whose metric has no reading today is dropped, and
+ * every delta reads at its metric's precision. Applied after the cache like
+ * the capability, so a body cached at 23:58 does not serve yesterday's text
+ * at 00:01. A withheld briefing reads "preparing" while a warm is due, never
+ * "ready" with nothing in it.
+ */
+export function applyBriefingForToday(
+  body: DashboardSnapshot,
+  ctx: {
+    generatedAt: string | null;
+    timezone: string;
+    language: Locale;
+    now: Date;
+  },
+): DashboardSnapshot {
+  if (!body.briefing) return body;
+  const lastSeen = body.tiles?.lastSeenByType ?? {};
+  const briefing = briefingForToday(body.briefing, {
+    generatedAt: ctx.generatedAt,
+    lastSeenAt: (type) => lastSeen[type]?.lastSeenAt ?? null,
+    timezone: ctx.timezone,
+    todayLocalDate: userDayKey(ctx.now, ctx.timezone),
+    language: ctx.language,
+  });
+  if (briefing) return { ...body, briefing };
+  return {
+    ...body,
+    briefing: null,
+    briefingStale: false,
+    briefingState:
+      body.briefingState === "ready" ? "preparing" : body.briefingState,
+  };
+}
 
 export interface SnapshotReadResult {
   body: DashboardSnapshot;
@@ -63,6 +106,8 @@ export interface SnapshotReadOptions {
    * resolution here so the digest and the push copy agree on a language.
    */
   locale?: Locale;
+  /** The read's clock; the digest passes its own so both agree on today. */
+  now?: Date;
 }
 
 /**
@@ -130,7 +175,15 @@ export async function readDashboardSnapshotCached(
   // capability is available, decided on every read rather than baked into
   // the cached body. The record's own state decides, whoever is reading, so a
   // delegate sees the owner's briefing exactly when the owner would.
-  const body = applyBriefingCapability(cached, briefingAi);
+  const body = applyBriefingForToday(
+    applyBriefingCapability(cached, briefingAi),
+    {
+      generatedAt: readBriefingGeneratedAt(user.insightsCachedText),
+      timezone: user.timezone,
+      language: locale,
+      now: options.now ?? new Date(),
+    },
+  );
 
   return { body, locale };
 }

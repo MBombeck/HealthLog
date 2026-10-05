@@ -11,6 +11,12 @@
  * write breaks that convergence — the settling seam tests pin the client
  * half, this comment is the server half of the contract.
  */
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { readBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
+import {
+  generatedOnLocalToday,
+  insightsPayloadForToday,
+} from "@/lib/daily/briefing-today-read";
 import { withBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
@@ -168,6 +174,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       insightsCachedText: true,
       insightsCachedLocale: true,
       locale: true,
+      timezone: true,
     },
   });
 
@@ -194,9 +201,19 @@ export const GET = apiHandler(async (request: NextRequest) => {
     dbUser.insightsCachedLocale !== readerLocale;
 
   const cachedAt = dbUser?.insightsCachedAt ?? null;
+  const timezone = dbUser?.timezone ?? DEFAULT_TIMEZONE;
+  // Fresh means written today on the reader's calendar, by the moment the
+  // text was generated: `insightsCachedAt` also moves when an unchanged
+  // warm only re-stamps yesterday's text.
+  const generatedToday = generatedOnLocalToday(
+    readBriefingGeneratedAt(dbUser?.insightsCachedText ?? null),
+    timezone,
+    new Date(),
+  );
   const isFresh =
     !languageMismatch &&
     cachedAt !== null &&
+    generatedToday &&
     Date.now() - cachedAt.getTime() < BRIEFING_FRESH_MS;
 
   // v1.18.9 (#4) — resolve provider availability once, up front. The
@@ -254,7 +271,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
         meta: { cached: true, legacyPayload, revalidating, hasProvider },
       });
       return apiSuccess({
-        insights: cached,
+        // The briefing as every surface serves it: today's text only, its
+        // signals measured today, its deltas at display precision.
+        insights: await insightsPayloadForToday(cached, {
+          userId,
+          timezone,
+          language: readerLocale,
+        }),
         cached: true,
         cachedAt,
         legacyPayload,
@@ -329,6 +352,7 @@ export const POST = apiHandler((request: NextRequest) =>
         insightsCachedAt: true,
         insightsCachedText: true,
         insightsCachedLocale: true,
+        timezone: true,
         // v1.4.36 W3 T3 — per-user opt-out list mirroring the Coach
         // settings. Filtered off `features` before serialisation so the
         // LLM never sees the excluded blocks.
@@ -376,6 +400,7 @@ export const POST = apiHandler((request: NextRequest) =>
       request,
       userLocale: dbUser?.locale ?? user.locale ?? null,
     });
+    const postTimezone = dbUser?.timezone ?? DEFAULT_TIMEZONE;
 
     const { data: body, error: jsonError } = await safeJson<{
       force?: unknown;
@@ -420,9 +445,16 @@ export const POST = apiHandler((request: NextRequest) =>
         // We don't auto-regenerate — that would burn rate-limit tokens
         // on a cache-hit silently. User-initiated only.
         const legacyPayload = isLegacyInsightPayload(cached);
-        const carriesBriefing = cachedPayloadCarriesBriefing(
-          dbUser.insightsCachedText,
-        );
+        // A briefing generated on an earlier day is not today's read: like
+        // a briefingless cache, it does not short-circuit a provider-backed
+        // account, and degrades to the cached payload on a 429 below.
+        const carriesBriefing =
+          cachedPayloadCarriesBriefing(dbUser.insightsCachedText) &&
+          generatedOnLocalToday(
+            readBriefingGeneratedAt(dbUser.insightsCachedText),
+            postTimezone,
+            new Date(),
+          );
         if (carriesBriefing || !(await hasUsableStatusProvider(userId))) {
           annotate({
             action: { name: "insights.generate" },
@@ -433,7 +465,11 @@ export const POST = apiHandler((request: NextRequest) =>
             },
           });
           return apiSuccess({
-            insights: cached,
+            insights: await insightsPayloadForToday(cached, {
+              userId,
+              timezone: postTimezone,
+              language: locale,
+            }),
             cached: true,
             cachedAt: dbUser.insightsCachedAt,
             legacyPayload,
@@ -480,7 +516,10 @@ export const POST = apiHandler((request: NextRequest) =>
           meta: { cached: true, rate_limited_fallback: true },
         });
         return apiSuccess({
-          insights: briefinglessCacheFallback.cached,
+          insights: await insightsPayloadForToday(
+            briefinglessCacheFallback.cached,
+            { userId, timezone: postTimezone, language: locale },
+          ),
           cached: true,
           cachedAt: briefinglessCacheFallback.cachedAt,
           legacyPayload: briefinglessCacheFallback.legacyPayload,
@@ -1039,6 +1078,7 @@ export const POST = apiHandler((request: NextRequest) =>
         errorCode: "insights.generate.profileScopeChanged",
       });
     }
+    const stored = withBriefingGeneratedAt(insights, new Date());
     const committed = await prisma.user.updateMany({
       where: {
         id: userId,
@@ -1052,9 +1092,7 @@ export const POST = apiHandler((request: NextRequest) =>
       },
       data: {
         insightsCachedAt: new Date(),
-        insightsCachedText: JSON.stringify(
-          withBriefingGeneratedAt(insights, new Date()),
-        ),
+        insightsCachedText: JSON.stringify(stored),
         insightsCachedLocale: locale,
         insightsSnapshotHash: hashInsightSnapshot({
           features: compactFeatures,
@@ -1134,7 +1172,11 @@ export const POST = apiHandler((request: NextRequest) =>
     });
 
     return apiSuccess({
-      insights,
+      insights: await insightsPayloadForToday(stored, {
+        userId,
+        timezone: postTimezone,
+        language: locale,
+      }),
       cached: false,
       legacyPayload: false,
       // v1.28.28 (#470) — additive: non-null when the grounding gate stripped

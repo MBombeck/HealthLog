@@ -83,8 +83,6 @@ import { readTodayCycle, type TodayCycleRead } from "@/lib/cycle/today-verdict";
 import { addDays, dayDiff } from "@/lib/cycle/day-math";
 import { makeFormatters, resolveIntlLocale } from "@/lib/format-locale";
 import { vitalDisplayDecimals } from "@/lib/measurements/vital-precision";
-import { briefingForToday } from "@/lib/daily/briefing-today";
-import { readBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
 import type {
   DateFormatPreference,
   TimeFormatPreference,
@@ -573,7 +571,10 @@ export async function loadDailyDigest(
     coachAi,
     reactionLinesAi,
   ] = await Promise.all([
-    readDashboardSnapshotCached(user, undefined, { locale: options.locale }),
+    readDashboardSnapshotCached(user, undefined, {
+      locale: options.locale,
+      now,
+    }),
     resolveModuleMap(user.id),
     prisma.integrationStatus.findMany({
       where: { userId: user.id, state: { in: [...SYNC_ISSUE_STATES] } },
@@ -935,17 +936,9 @@ export async function loadDailyDigest(
         snapshot.layout.enabledHeroItemKinds ??
         PRIORITY_ITEM_KINDS,
       score,
-      // Only what is still true about today: a briefing written on an
-      // earlier day is not served as today's read, and a signal whose
-      // metric has no reading today is dropped (`briefing-today.ts`).
-      briefing: briefingForToday(snapshot.briefing, {
-        generatedAt: readBriefingGeneratedAt(user.insightsCachedText),
-        lastSeenAt: (type) =>
-          snapshot.tiles.lastSeenByType[type]?.lastSeenAt ?? null,
-        timezone: user.timezone,
-        todayLocalDate,
-        language: resolvedLocale,
-      }),
+      // Already resolved for today by the snapshot read (`briefing-today.ts`
+      // via `applyBriefingForToday`), as every surface serves it.
+      briefing: snapshot.briefing,
       medsToday: snapshot.medsToday,
       sleepLastSeenDaysAgo,
       morningRefreshedToday,

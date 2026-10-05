@@ -44,7 +44,16 @@ vi.mock("@/lib/ai/capabilities/gate", () => ({
 const { readDashboardSnapshotCached } = await import("../snapshot-read");
 const { __resetAllCachesForTests } = await import("@/lib/cache/server-cache");
 
-const USER = { id: "user-briefing-gate", locale: "en" } as unknown as User;
+// Generated a moment ago, so the today rule keeps it and these tests see
+// only the capability decision.
+const USER = {
+  id: "user-briefing-gate",
+  locale: "en",
+  timezone: "UTC",
+  insightsCachedText: JSON.stringify({
+    briefingGeneratedAt: new Date().toISOString(),
+  }),
+} as unknown as User;
 
 beforeEach(() => {
   __resetAllCachesForTests();
