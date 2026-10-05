@@ -157,6 +157,7 @@ async function read(
 ): Promise<unknown> {
   return executeCoachTool({
     userId: ctx.userId,
+    sourceSnapshot: true,
     name,
     rawArguments: JSON.stringify(args),
   });

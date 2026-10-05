@@ -245,34 +245,32 @@ function weightedRowsSql(
   if (!/^[a-z_][a-z0-9_]*$/.test(source)) {
     throw new Error(`source must be a CTE name: ${source}`);
   }
-  const hourOf = (alias: string) =>
-    `date_trunc('hour', ${frameTs(frame, `${alias}."measured_at"`)})`;
-  const dayOf = (alias: string) =>
-    `date_trunc('day', ${frameTs(frame, `${alias}."measured_at"`)})`;
-  const src = bySource ? `, t."source"` : "";
-  const part = bySource ? `, x."source"` : "";
-  const join = bySource ? ` AND hw."source" = s."source"` : "";
+  // One scan of the CTE and window functions only. The earlier shape joined
+  // the CTE to an hour grouping of itself; with stale or missing statistics
+  // (a fresh import below the autoanalyze threshold) the planner ran that
+  // join as a nested loop and a year of pulse ran into the statement timeout.
+  //
+  // `dm_hour_n` counts the readings in a row's hour and `dm_hour_first` marks
+  // one row per hour, so the sum of `dm_hour_first` over a day is the day's
+  // hour count. Both columns ride along on the row; every caller aggregates.
+  const partition = (alias: string, unit: "hour" | "day") => {
+    const keys = bySource
+      ? `${alias}."type", ${alias}."source"`
+      : `${alias}."type"`;
+    const ts = frameTs(frame, `${alias}."measured_at"`);
+    return `PARTITION BY ${keys}, date_trunc('${unit}', ${ts})`;
+  };
   return `(
       SELECT s.*,
         (CASE WHEN ${isHourlyMeanTypeSql('s."type"')}
-              THEN 1.0 / (hw.n * hw.hours)
+              THEN 1.0 / (s.dm_hour_n * SUM(s.dm_hour_first) OVER (${partition("s", "day")}))
               ELSE 1.0 END)::double precision AS day_weight
-      FROM ${source} s
-      LEFT JOIN (
-        SELECT x."type"${part}, x.local_hour, x.n,
-               COUNT(*) OVER (PARTITION BY x."type"${part}, x.local_day) AS hours
-        FROM (
-          SELECT t."type"${src},
-                 ${hourOf("t")} AS local_hour,
-                 ${dayOf("t")} AS local_day,
-                 COUNT(*) AS n
-          FROM ${source} t
-          WHERE ${isHourlyMeanTypeSql('t."type"')}
-          GROUP BY ${bySource ? "1, 2, 3, 4" : "1, 2, 3"}
-        ) x
-      ) hw
-        ON hw."type" = s."type"${join}
-       AND hw.local_hour = ${hourOf("s")}
+      FROM (
+        SELECT t.*,
+               COUNT(*) OVER (${partition("t", "hour")}) AS dm_hour_n,
+               (ROW_NUMBER() OVER (${partition("t", "hour")}) = 1)::int AS dm_hour_first
+        FROM ${source} t
+      ) s
     )`;
 }
 

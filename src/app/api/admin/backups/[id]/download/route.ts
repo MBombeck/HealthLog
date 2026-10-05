@@ -38,7 +38,6 @@ import {
   type StreamedBackup,
 } from "@/lib/export/streamed-backup";
 import { annotate } from "@/lib/logging/context";
-import { parseBackupPayload } from "@/lib/validations/backup";
 
 export const dynamic = "force-dynamic";
 
@@ -108,6 +107,8 @@ export const GET = apiHandler(
     let streamed: StreamedBackup;
     try {
       streamed = await readStreamedBackup(source);
+      // Loaded on first use, not at import (see `backup-summary.ts`).
+      const { parseBackupPayload } = await import("@/lib/validations/backup");
       parseBackupPayload(streamed.raw);
     } catch (err) {
       const readFailure = isStoredBackupReadError(err);

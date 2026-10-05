@@ -200,6 +200,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "restore_drill_medications",
   "restore_drill_mood_entries",
   "restore_drill_plaintext_bytes",
+  "restore_drill_unchecked",
   "restore_drill_stale",
   "restore_fail_cause",
   "restore_failed",

@@ -27,7 +27,7 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { readNote } from "@/lib/crypto/note-cipher";
 import { openSealedForExport } from "@/lib/export/sealed-text";
 import { iterateMeasurementPages } from "@/lib/export/paged-measurements";
-import { BACKUP_SCHEMA_VERSION } from "@/lib/validations/backup";
+import { BACKUP_SCHEMA_VERSION } from "@/lib/validations/backup-summary";
 import {
   buildCycleBackupSection,
   type CycleBackupSection,

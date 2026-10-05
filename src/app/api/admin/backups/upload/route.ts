@@ -61,15 +61,13 @@ import { storeBackupBlob } from "@/lib/export/store-backup-blob";
 import { StreamedBackupInvalidError } from "@/lib/export/streamed-backup";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
+import type { BackupPayload } from "@/lib/validations/backup";
 import {
   BACKUP_SCHEMA_VERSION,
-  backupMeasurementSchema,
-  backupPayloadSchema,
   isCompatibleSchemaVersion,
   summarizeBackup,
-  type BackupPayload,
   type BackupSummary,
-} from "@/lib/validations/backup";
+} from "@/lib/validations/backup-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -252,6 +250,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
             yield chunk;
           }
         }
+        // Loaded on first use, not at import (see `backup-summary.ts`).
+        const { backupMeasurementSchema, backupPayloadSchema } =
+          await import("@/lib/validations/backup");
         let firstWithoutId: number | null = null;
         let scanned;
         try {

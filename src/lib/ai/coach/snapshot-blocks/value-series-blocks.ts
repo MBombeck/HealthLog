@@ -223,6 +223,11 @@ const VALUE_BLOCKS: readonly ValueBlock[] = [
   },
 ];
 
+/** The sources a value-series block is built for. */
+export const VALUE_SERIES_SOURCES: ReadonlySet<CoachScopeSource> = new Set(
+  VALUE_BLOCKS.map((block) => block.source),
+);
+
 const TYPE_TO_REFERENCE_METRIC: Readonly<Record<string, ReferenceMetric>> = {
   RESTING_HEART_RATE: "RESTING_HEART_RATE",
   OXYGEN_SATURATION: "OXYGEN_SATURATION",

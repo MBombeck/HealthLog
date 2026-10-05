@@ -18,12 +18,8 @@
  * of bubbling out of `prisma.createMany` with a useless message.
  */
 import { describe, expect, it } from "vitest";
-import {
-  backupPayloadSchema,
-  isCompatibleSchemaVersion,
-  parseBackupPayload,
-  summarizeBackup,
-} from "../backup";
+import { backupPayloadSchema, parseBackupPayload } from "../backup";
+import { isCompatibleSchemaVersion, summarizeBackup } from "../backup-summary";
 
 const baseEntry = {
   date: "2026-05-08",

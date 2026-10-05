@@ -4,9 +4,13 @@
  * from the app, and any Withings, import or manual row the server-to-Health
  * mirror writes. Builds from before the marker existed wrote the id alone.
  *
- * Such a sample is already in the database under its own source. When the same
- * sample comes back through an Apple Health export it is a second copy of that
- * reading, so the export import leaves it out.
+ * Such a sample is usually already in the database under its own source. When
+ * it comes back through an Apple Health export it is a second copy of that
+ * reading, so the export import leaves it out, but only once its
+ * `HKExternalUUID` names a row of the importing account (a cycle sample: once
+ * that account holds a day-log on its day). The marker alone says HealthLog
+ * wrote the sample, not that this instance still holds it: after a move to a
+ * new instance without a backup, the export is how those values come back.
  *
  * This is not the predicate the app's own sync uses. The app decides "our own
  * echo" from `HKExternalUUID` plus the sample's authoring source being the app

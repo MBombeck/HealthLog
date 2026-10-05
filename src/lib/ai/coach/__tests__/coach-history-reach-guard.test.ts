@@ -329,6 +329,7 @@ describe("every Coach tool honours the lookback limit", () => {
 const ROOT = join(__dirname, "../../../../..");
 const COACH_DIR = join(ROOT, "src/lib/ai/coach");
 const MCP_DIR = join(ROOT, "src/lib/mcp");
+const SOURCE_SNAPSHOT_FILE = "source-snapshot.ts";
 
 function walk(dir: string): string[] {
   const out: string[] = [];
@@ -387,17 +388,38 @@ describe("the source hands the limit on", () => {
   });
 
   it("passes the limit to every Coach snapshot build", () => {
-    const calls = walk(COACH_DIR).flatMap((file) =>
-      callArguments(readFileSync(file, "utf8"), "buildCoachSnapshot").map(
-        (args) => ({ file: file.slice(ROOT.length + 1), args }),
-      ),
-    );
+    // `source-snapshot.ts` is the single-metric build only MCP asks for
+    // (`sourceSnapshot: true`); MCP reads without the Coach's limit, so that
+    // file is checked the other way round below.
+    const calls = walk(COACH_DIR)
+      .filter((file) => !file.endsWith(SOURCE_SNAPSHOT_FILE))
+      .flatMap((file) => {
+        const source = readFileSync(file, "utf8");
+        return ["buildCoachSnapshot", "resolveSnapshotPrelude"].flatMap((fn) =>
+          callArguments(source, fn).map((args) => ({
+            file: `${file.slice(ROOT.length + 1)} ${fn}`,
+            args,
+          })),
+        );
+      });
+    expect(
+      calls.filter((c) => c.file.endsWith("resolveSnapshotPrelude")).length,
+    ).toBeGreaterThan(0);
     expect(calls.length).toBeGreaterThan(0);
     for (const call of calls) {
       expect(call.args, `${call.file} builds without a limit`).toMatch(
         /\breach\b/,
       );
     }
+  });
+
+  it("keeps the MCP single-metric build unlimited", () => {
+    const source = readFileSync(join(COACH_DIR, SOURCE_SNAPSHOT_FILE), "utf8");
+    const calls = ["buildCoachSnapshot", "resolveSnapshotPrelude"].flatMap(
+      (fn) => callArguments(source, fn),
+    );
+    expect(calls.length).toBeGreaterThan(0);
+    for (const args of calls) expect(args).not.toMatch(/\breach\b/);
   });
 
   it("passes the limit from the chat loop and nowhere from MCP", () => {

@@ -118,6 +118,11 @@ describe("weekly copy preview under a memory budget", () => {
   });
 
   it("holds nothing of the record once the producer is done", async () => {
+    // The backup schema the preview checks each section against is a module
+    // loaded once per process (about 12 MB, `backup-summary.ts`), not memory
+    // that grows with the record: load it before the baseline, as a running
+    // server has long since done.
+    await import("@/lib/validations/backup");
     const baseline = liveHeapBytes();
     let peakHeld = 0;
     let heldAtEnd = 0;
@@ -127,7 +132,7 @@ describe("weekly copy preview under a memory budget", () => {
       rawPeak = Math.max(rawPeak, process.memoryUsage().heapUsed);
     }, 5);
     // Wired exactly as the weekly job wires it (`backup-handlers.ts`).
-    const preview = createBackupPreviewCollector();
+    const preview = await createBackupPreviewCollector();
     let counts: FullBackupCounts | undefined;
     try {
       await storeBackupBlob(

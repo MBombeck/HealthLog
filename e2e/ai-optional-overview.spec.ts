@@ -21,8 +21,18 @@ import type { Page, Request, Response } from "@playwright/test";
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
 import { aiBlockUnavailable, serveAiBlock } from "./setup/ai-capabilities";
 import { expect, test } from "./setup/test";
+import { revealDeferredSectionsSettled } from "./utils/deferred-sections";
 
 test.use({ storageState: STORAGE_STATE_PATH });
+
+/**
+ * Mount every overview section, then let their reads land. Sections past the
+ * first three render as an empty sentinel until they near the viewport, so a
+ * count of zero taken before this would pass whatever those sections paint.
+ */
+async function mountWholeOverview(page: Page): Promise<void> {
+  await revealDeferredSectionsSettled(page);
+}
 
 /** Routes that call a model or serve model-written text. */
 const AI_ROUTE = new RegExp(
@@ -89,6 +99,7 @@ test.describe("J1: AI switched off by the operator", () => {
     );
     // Let every section's reads land before judging what painted.
     await page.waitForLoadState("networkidle");
+    await mountWholeOverview(page);
 
     // A read refused for want of AI paints one of these on the overview:
     // the section boundary, the error card, or the dense error row.
@@ -137,6 +148,7 @@ test.describe("J3: no AI provider", () => {
       timeout: 20_000,
     });
     await page.waitForLoadState("networkidle");
+    await mountWholeOverview(page);
     await expect(page.locator('[data-slot="coach-fab"]')).toHaveCount(0);
     await expect(page.locator('[data-slot="daily-briefing"]')).toHaveCount(0);
     // The per-card Coach hand-offs paint only while the Coach is available.
@@ -163,6 +175,7 @@ test.describe("J3: no AI provider", () => {
       { timeout: 20_000 },
     );
     await page.waitForLoadState("networkidle");
+    await mountWholeOverview(page);
     await expect(page.locator('[data-slot="ai-setup-hint"]')).toHaveCount(0);
 
     expect(network.aiRequests).toEqual([]);

@@ -126,8 +126,8 @@ async function preview(id: string) {
 
 /** The counts a full read of the stored copy gives: the old preview. */
 async function fullReadSummary(id: string) {
-  const { parseBackupPayload, summarizeBackup } =
-    await import("@/lib/validations/backup");
+  const { parseBackupPayload } = await import("@/lib/validations/backup");
+  const { summarizeBackup } = await import("@/lib/validations/backup-summary");
   const opensBefore = opened.count;
   const payload = parseBackupPayload(
     JSON.parse(await readStoredBackup(getPrismaClient(), id)),

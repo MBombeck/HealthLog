@@ -16,6 +16,16 @@
  * takes that account last, after everybody else has their copy, and the admin
  * backups page names it. Every write and read here is best effort: the marker
  * is bookkeeping about a backup, and must never be the reason one fails.
+ *
+ * Last only once. A pass that regularly stops on its time budget never reaches
+ * the end of its list, so an account kept last for as long as its attempt
+ * stays open would never be attempted again, and would never get a copy. An
+ * interrupted account is therefore held back only until a later run has
+ * started on another account (`accountsToTakeLast`): from then on it takes its
+ * ordinary place again. If it kills the process again, its new attempt is the
+ * newest one and it goes last once more. So a crash loop costs the other
+ * accounts at most every second run, and the account itself is attempted at
+ * least every second run.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 
@@ -83,7 +93,51 @@ export async function readInterruptedBackupAttempts(
 }
 
 /**
- * `accounts` in their order, with every interrupted one moved behind the
+ * The interrupted accounts a pass should take last: those whose interrupted
+ * attempt is still the newest attempt of the pass, i.e. no later run has
+ * started on another account since. Rows are one per account. Pure, so the
+ * rule can be tested apart from the database.
+ */
+export function heldBackAccounts(
+  rows: ReadonlyArray<{
+    userId: string;
+    startedAt: Date;
+    finishedAt: Date | null;
+  }>,
+): Map<string, Date> {
+  const out = new Map<string, Date>();
+  for (const row of rows) {
+    const open = row.finishedAt === null || row.finishedAt < row.startedAt;
+    if (!open) continue;
+    const passedOver = rows.some(
+      (other) => other.userId !== row.userId && other.startedAt > row.startedAt,
+    );
+    if (!passedOver) out.set(row.userId, row.startedAt);
+  }
+  return out;
+}
+
+/**
+ * What a pass orders by: the interrupted accounts it takes last
+ * (`heldBackAccounts`). Empty when the table cannot be read.
+ */
+export async function readAccountsToTakeLast(
+  prisma: Db,
+  pass: BackupPass,
+): Promise<Map<string, Date>> {
+  try {
+    const rows = await prisma.backupPassAttempt.findMany({
+      where: { pass },
+      select: { userId: true, startedAt: true, finishedAt: true },
+    });
+    return heldBackAccounts(rows);
+  } catch {
+    return new Map();
+  }
+}
+
+/**
+ * `accounts` in their order, with every held-back one moved behind the
  * rest; among those, the one interrupted longest ago first.
  */
 export function orderInterruptedLast<T extends { id: string }>(

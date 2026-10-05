@@ -48,7 +48,7 @@ import {
   newChunkStreamId,
 } from "@/lib/export/backup-chunks";
 import { BackupFormsConflictError } from "@/lib/export/stored-backup";
-import type { BackupSummary } from "@/lib/validations/backup";
+import type { BackupSummary } from "@/lib/validations/backup-summary";
 
 /**
  * How long the storing transaction may stay open. The job around it expires

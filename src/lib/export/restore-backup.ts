@@ -71,13 +71,12 @@ import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
 import { encryptNoteToBytes } from "@/lib/labs/store";
 import { annotate } from "@/lib/logging/context";
+import type { BackupMeasurement } from "@/lib/validations/backup";
 import {
-  parseBackupPayload,
   isCompatibleSchemaVersion,
   summarizeBackup,
-  type BackupMeasurement,
   type BackupSummary,
-} from "@/lib/validations/backup";
+} from "@/lib/validations/backup-summary";
 import { recomputeUserMoodRollups } from "@/lib/rollups/mood-rollups";
 import {
   recomputeUserMedicationCompliance,
@@ -431,6 +430,9 @@ export async function restoreBackup(
     progress.measurementsTotal = streamed.measurementCount;
     report("validating", true);
     raw = streamed.raw;
+    // Loaded here, not at import: the schema is ~12 MB of heap and a server
+    // that never validates a backup should not hold it (`backup-summary.ts`).
+    const { parseBackupPayload } = await import("@/lib/validations/backup");
     payload = parseBackupPayload(raw);
   } catch (err) {
     const readFailure = isStoredBackupReadError(err);

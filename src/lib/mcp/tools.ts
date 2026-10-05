@@ -144,6 +144,9 @@ async function runCoachTool(
 ): Promise<unknown> {
   const result = await executeCoachTool({
     userId: ctx.userId,
+    // The single-metric read keeps one section, so it is built from that
+    // source's rows (see `source-snapshot.ts`).
+    ...(name === "get_metric_series" ? { sourceSnapshot: true } : {}),
     name,
     rawArguments: JSON.stringify(args ?? {}),
   });
@@ -659,6 +662,7 @@ function searchAndFetchTools(): McpToolDefinition[] {
           }
           const result = await executeCoachTool({
             userId: ctx.userId,
+            sourceSnapshot: true,
             name: "get_metric_series",
             rawArguments: JSON.stringify({ metric: rid }),
           });
@@ -1571,6 +1575,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         page.map(async (metric) => {
           const r = (await executeCoachTool({
             userId: ctx.userId,
+            sourceSnapshot: true,
             name: "get_metric_series",
             rawArguments: JSON.stringify({
               metric,

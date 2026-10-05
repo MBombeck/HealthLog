@@ -35,7 +35,10 @@ import {
 } from "@/lib/export/backup-key-ids";
 import type { FullBackupCounts } from "@/lib/export/full-backup-payload";
 import type { StoredBackupRef } from "@/lib/export/stored-backup";
-import type { BackupSummary } from "@/lib/validations/backup";
+import {
+  BACKUP_SCHEMA_VERSION,
+  type BackupSummary,
+} from "@/lib/validations/backup-summary";
 
 export interface BackupPreview {
   version: 1;
@@ -207,7 +210,9 @@ export interface BackupPreviewCollector {
   observe(member: string, value: unknown): void;
   /**
    * The counts and key uses, once the writer has finished; null when the
-   * copy did not name its schema version, owner and date.
+   * copy did not name its schema version, owner and date, or when a section
+   * did not pass the backup schema. A null preview sends the preview route
+   * to read the copy itself, which then says why it cannot be restored.
    */
   finish(counts: FullBackupCounts): {
     summary: BackupSummary;
@@ -215,19 +220,64 @@ export interface BackupPreviewCollector {
   } | null;
 }
 
+type SchemaModule = typeof import("@/lib/validations/backup");
+
+/**
+ * A check of one member of the payload against `backupPayloadSchema`, as the
+ * writer shows it: a whole section, or one row of a bulk table. An array
+ * section is checked an element at a time, so the check holds one element's
+ * copy at most, never a section's. Each value is checked in its JSON form,
+ * exactly as it lands in the copy. A member the schema does not name passes,
+ * as it does under the schema's passthrough.
+ */
+function sectionChecker(
+  mod: SchemaModule,
+): (member: string, value: unknown) => boolean {
+  const shape = mod.backupPayloadSchema.shape as Record<string, z.ZodType>;
+  const asWritten = (value: unknown): unknown =>
+    value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+  const unwrap = (schema: z.ZodType): z.ZodType =>
+    schema instanceof z.ZodDefault
+      ? unwrap(schema.unwrap() as z.ZodType)
+      : schema;
+  return (member, value) => {
+    const declared = shape[member];
+    if (!declared) return true;
+    const section = unwrap(declared);
+    if (section instanceof z.ZodArray) {
+      const element = section.element as z.ZodType;
+      const rows = Array.isArray(value) ? value : [value];
+      return rows.every((row) => element.safeParse(asWritten(row)).success);
+    }
+    return declared.safeParse(asWritten(value)).success;
+  };
+}
+
 /**
  * Work out a weekly copy's preview from what its writer already has in hand:
- * each section as it is written, for the key uses, and the writer's own
- * counts. Nothing is parsed and nothing is kept but the key samples, so the
- * preview costs the pass no memory that grows with the record.
+ * each section as it is written, for the key uses and the schema check, and
+ * the writer's own counts. Nothing is parsed back and nothing is kept but the
+ * key samples, so the preview costs the pass no memory that grows with the
+ * record. The check loads the backup schema (`backup-summary.ts` says why it
+ * is loaded on first use), a fixed cost of the module, not of the record.
  */
-export function createBackupPreviewCollector(): BackupPreviewCollector {
+export async function createBackupPreviewCollector(): Promise<BackupPreviewCollector> {
+  const check = sectionChecker(await import("@/lib/validations/backup"));
   const keys = new BackupKeyIdCollector();
   const header: Partial<
     Record<"schemaVersion" | "userId" | "exportedAt", string>
   > = {};
+  let valid = true;
+  let measurementWithoutId = false;
   return {
     observe(member, value) {
+      if (valid && !check(member, value)) valid = false;
+      if (member === "measurements") {
+        const rows: unknown[] = Array.isArray(value) ? value : [value];
+        if (rows.some((row) => !(row as { id?: unknown } | null)?.id)) {
+          measurementWithoutId = true;
+        }
+      }
       if (
         (member === "schemaVersion" ||
           member === "userId" ||
@@ -242,6 +292,12 @@ export function createBackupPreviewCollector(): BackupPreviewCollector {
     finish(counts) {
       const { schemaVersion, userId, exportedAt } = header;
       if (!schemaVersion || !userId || !exportedAt) return null;
+      if (!valid) return null;
+      // The schema's one whole-document rule: a canonical copy names every
+      // measurement by a stable id.
+      if (schemaVersion === BACKUP_SCHEMA_VERSION && measurementWithoutId) {
+        return null;
+      }
       const summary = { schemaVersion, userId, exportedAt } as BackupSummary;
       for (const field of SUMMARY_COUNTS) summary[field] = counts[field];
       return { summary, keys };

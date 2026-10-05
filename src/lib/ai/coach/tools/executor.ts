@@ -47,6 +47,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { buildCoachSnapshot } from "@/lib/ai/coach/snapshot";
+import { buildCoachSourceSnapshot } from "@/lib/ai/coach/source-snapshot";
 import { admitCoachSources, coachExclusions } from "@/lib/ai/coach/scope-gate";
 import type { CoachPrefs } from "@/lib/validations/coach-prefs";
 import { readMessageResults } from "@/lib/ai/coach/persistence";
@@ -271,6 +272,13 @@ export async function executeCoachTool(args: {
    * already-built cache entry instead of rebuilding a single-source snapshot.
    */
   sharedScope?: CoachScope;
+  /**
+   * Build a single-metric read from that source's own rows
+   * (`source-snapshot.ts`) rather than from a Coach snapshot. Set by the MCP
+   * surface, whose reads have no turn snapshot to land on and keep only the
+   * one section; the section is the same either way.
+   */
+  sourceSnapshot?: boolean;
   /** v1.39.4 — the chat turn, when the call runs inside one. */
   turn?: CoachToolTurnContext;
   /**
@@ -281,8 +289,15 @@ export async function executeCoachTool(args: {
    */
   reach?: CoachHistoryReach;
 }): Promise<CoachToolResult> {
-  const { userId, name, rawArguments, fallbackWindow, sharedScope, turn } =
-    args;
+  const {
+    userId,
+    name,
+    rawArguments,
+    fallbackWindow,
+    sharedScope,
+    sourceSnapshot = false,
+    turn,
+  } = args;
   const reach = args.reach ?? UNBOUNDED_REACH;
 
   if (!isCoachToolName(name) && name !== SHOW_RESULT_TOOL_NAME) {
@@ -316,6 +331,7 @@ export async function executeCoachTool(args: {
             sharedScope,
             turn,
             reach,
+            sourceSnapshot,
           );
     annotate({
       action: { name: "coach.tool.executed" },
@@ -344,6 +360,7 @@ async function dispatch(
   sharedScope: CoachScope | undefined,
   turn: CoachToolTurnContext | undefined,
   reach: CoachHistoryReach,
+  sourceSnapshot: boolean,
 ): Promise<CoachToolResult> {
   const result = await dispatchRead(
     name,
@@ -353,6 +370,7 @@ async function dispatch(
     sharedScope,
     turn,
     reach,
+    sourceSnapshot,
   );
   if (!turn || !result.present || result.table) return result;
   return withProjectedTable(
@@ -374,6 +392,7 @@ async function dispatchRead(
   sharedScope: CoachScope | undefined,
   turn: CoachToolTurnContext | undefined,
   reach: CoachHistoryReach,
+  sourceSnapshot: boolean,
 ): Promise<CoachToolResult> {
   // Every branch takes the lookback limit; `coach-history-reach-guard.test.ts`
   // fails when one does not.
@@ -385,6 +404,7 @@ async function dispatchRead(
         fallbackWindow,
         sharedScope,
         reach,
+        sourceSnapshot,
       );
     case "get_glucose_panel":
       return getGlucosePanel(
@@ -455,6 +475,7 @@ async function getMetricSeries(
   fallbackWindow: CoachScopeWindow | undefined,
   sharedScope: CoachScope | undefined,
   reach: CoachHistoryReach,
+  sourceSnapshot: boolean,
 ): Promise<CoachToolResult> {
   const parsed = getMetricSeriesArgsSchema.safeParse(rawArgs);
   if (!parsed.success) return badArgs("get_metric_series", parsed.error);
@@ -480,11 +501,17 @@ async function getMetricSeries(
     return { present: false, reason: "unsupported_metric" };
   }
 
-  const snapshot = await buildCoachSnapshot(
-    userId,
-    scopeFor([metric], window, fallbackWindow, sharedScope, reach),
-    { reach },
-  );
+  // An MCP read needs one section and nothing else, so it is built from that
+  // source's own rows: the same section, without the context blocks a Coach
+  // turn carries. See `source-snapshot.ts`. Only MCP asks for it, and MCP
+  // reads without the Coach's lookback limit, so it takes no reach.
+  const snapshot = sourceSnapshot
+    ? await buildCoachSourceSnapshot(userId, metric, window ?? fallbackWindow)
+    : await buildCoachSnapshot(
+        userId,
+        scopeFor([metric], window, fallbackWindow, sharedScope, reach),
+        { reach },
+      );
   const section = pickSection(snapshot.sections, sectionKey);
   if (section === undefined) {
     return emptyRead(

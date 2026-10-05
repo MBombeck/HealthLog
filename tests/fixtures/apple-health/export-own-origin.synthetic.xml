@@ -9,9 +9,10 @@
   verbatim; that has to be checked against a real export (see #1109).
 
   Records, in order:
-    1. weight 80.1  carries the HealthLog origin marker        -> left out
+    1. weight 80.1  origin marker and a HealthLog row id       -> left out
+                    when the importing account holds that row
     2. weight 80.2  user-entered, no marker                    -> imported
-    3. weight 80.3  marker among other metadata entries        -> left out
+    3. weight 80.3  marker among other metadata entries, no id -> imported
     4. weight 80.4  no metadata at all                         -> imported
     5. weight 80.5  origin key with another value              -> imported
 -->
