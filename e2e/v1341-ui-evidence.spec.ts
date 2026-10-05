@@ -31,6 +31,9 @@ const NARRATIVE_DIGEST: DailyDigest = {
   },
   topSignal: LONG_HEADLINE_BRIEFING.signalsOfDay?.[0] ?? null,
   briefingLead: LONG_HEADLINE_BRIEFING.paragraph,
+  lead: { text: LONG_HEADLINE_BRIEFING.paragraph, source: "briefing" },
+  today: [],
+  restMode: null,
   line: LONG_HEADLINE_BRIEFING.paragraph,
   worthALook: [],
   justIn: null,
@@ -104,6 +107,7 @@ test.describe("v1.34.1 deterministic UI evidence", () => {
       ...NARRATIVE_DIGEST,
       topSignal: null,
       briefingLead: null,
+      lead: null,
       line: "Dein Gesundheitsscore liegt heute bei 84.",
       reactionLine: null,
     };

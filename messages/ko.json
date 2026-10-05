@@ -11002,7 +11002,27 @@
       "sleepPending": "어젯밤 수면이 아직 들어오지 않아 오늘 결과는 잠정치예요.",
       "worthALook": "살펴볼 만한 것",
       "allClear": "오늘은 신경 쓸 일이 없어요.",
-      "ringLink": "{metric} 자세히 보기"
+      "ringLink": "{metric} 자세히 보기",
+      "heading": "오늘",
+      "steadyWeeksOne": "{count}주째 안정적",
+      "steadyWeeksFew": "{count}주째 안정적",
+      "steadyWeeksOther": "{count}주째 안정적",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "{low}~{high} {unit}",
+      "vital": {
+        "RESTING_HEART_RATE": "안정 시 심박수",
+        "HEART_RATE_VARIABILITY": "심박 변이도",
+        "RESPIRATORY_RATE": "호흡수",
+        "OXYGEN_SATURATION": "산소포화도",
+        "BODY_TEMPERATURE": "체온",
+        "SKIN_TEMPERATURE": "피부 온도",
+        "BLOOD_PRESSURE_SYS": "수축기 혈압",
+        "BLOOD_PRESSURE_DIA": "이완기 혈압",
+        "BLOOD_GLUCOSE": "혈당",
+        "PULSE": "맥박",
+        "WEIGHT": "체중",
+        "generic": "생체 지표"
+      }
     },
     "milestone": {
       "metric": {
@@ -11037,6 +11057,68 @@
           "title": "한 달째 범위 안",
           "body": "{metric} 수치가 꼬박 한 달 동안 평소 범위 안이었어요. 아주 꾸준해요."
         }
+      }
+    },
+    "lead": {
+      "vitalOutside": {
+        "above": "{metric}이(가) {value}로 평소 범위({range})보다 높아요.",
+        "below": "{metric}이(가) {value}로 평소 범위({range})보다 낮아요."
+      },
+      "vitalsOutside": {
+        "aboveOne": "{metric}이(가) {value}로 평소 범위({range})보다 높고, 다른 지표 {count}개도 범위를 벗어났어요.",
+        "aboveFew": "{metric}이(가) {value}로 평소 범위({range})보다 높고, 다른 지표 {count}개도 범위를 벗어났어요.",
+        "aboveOther": "{metric}이(가) {value}로 평소 범위({range})보다 높고, 다른 지표 {count}개도 범위를 벗어났어요.",
+        "belowOne": "{metric}이(가) {value}로 평소 범위({range})보다 낮고, 다른 지표 {count}개도 범위를 벗어났어요.",
+        "belowFew": "{metric}이(가) {value}로 평소 범위({range})보다 낮고, 다른 지표 {count}개도 범위를 벗어났어요.",
+        "belowOther": "{metric}이(가) {value}로 평소 범위({range})보다 낮고, 다른 지표 {count}개도 범위를 벗어났어요."
+      },
+      "sleep": {
+        "more": "어젯밤 {duration} 잤어요. 평소보다 {diff} 더 잤어요.",
+        "less": "어젯밤 {duration} 잤어요. 평소보다 {diff} 덜 잤어요.",
+        "usual": "어젯밤 {duration} 잤어요. 평소와 비슷해요.",
+        "plain": "어젯밤 {duration} 잤어요."
+      },
+      "vitalsInRangeOne": "최근 생체 지표가 평소 범위 안에 있어요.",
+      "vitalsInRangeFew": "최근 생체 지표 {count}개가 모두 평소 범위 안에 있어요.",
+      "vitalsInRangeOther": "최근 생체 지표 {count}개가 모두 평소 범위 안에 있어요.",
+      "vitalInRange": "{metric}이(가) {value}로 평소 범위({range}) 안에 있어요."
+    },
+    "todayFact": {
+      "restMode": {
+        "label": "휴식 모드",
+        "value": "{day}일째"
+      },
+      "medications": {
+        "label": "복약",
+        "value": "{scheduled}회 중 {taken}회 복용"
+      },
+      "appointment": {
+        "label": "예약",
+        "today": "오늘 {time}, {what}",
+        "tomorrow": "내일 {time}, {what}"
+      },
+      "sleep": {
+        "label": "어젯밤",
+        "plain": "{duration}",
+        "usual": "{duration}, 평소와 비슷",
+        "more": "{duration}, 평소보다 {diff} 더",
+        "less": "{duration}, 평소보다 {diff} 덜"
+      },
+      "vitals": {
+        "label": "생체 지표",
+        "allInOne": "{count}개 확인, 범위 안",
+        "allInFew": "{count}개 확인, 모두 범위 안",
+        "allInOther": "{count}개 확인, 모두 범위 안",
+        "oneOut": {
+          "above": "{metric} 범위보다 높음",
+          "below": "{metric} 범위보다 낮음"
+        },
+        "someOut": "{total}개 중 {count}개 범위 밖"
+      },
+      "cycle": {
+        "label": "주기",
+        "value": "{phase}, {day}일째",
+        "dayOnly": "{day}일째"
       }
     }
   },

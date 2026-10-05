@@ -11002,7 +11002,27 @@
       "sleepPending": "El sueño de anoche aún no ha llegado; la lectura de hoy es provisional.",
       "worthALook": "Merece un vistazo",
       "allClear": "Hoy nada necesita tu atención.",
-      "ringLink": "Abrir detalles de {metric}"
+      "ringLink": "Abrir detalles de {metric}",
+      "heading": "Hoy",
+      "steadyWeeksOne": "Estable desde hace {count} semana",
+      "steadyWeeksFew": "Estable desde hace {count} semanas",
+      "steadyWeeksOther": "Estable desde hace {count} semanas",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "{low} a {high} {unit}",
+      "vital": {
+        "RESTING_HEART_RATE": "Frecuencia cardíaca en reposo",
+        "HEART_RATE_VARIABILITY": "Variabilidad de la frecuencia cardíaca",
+        "RESPIRATORY_RATE": "Frecuencia respiratoria",
+        "OXYGEN_SATURATION": "Saturación de oxígeno",
+        "BODY_TEMPERATURE": "Temperatura corporal",
+        "SKIN_TEMPERATURE": "Temperatura de la piel",
+        "BLOOD_PRESSURE_SYS": "Presión arterial sistólica",
+        "BLOOD_PRESSURE_DIA": "Presión arterial diastólica",
+        "BLOOD_GLUCOSE": "Glucosa en sangre",
+        "PULSE": "Pulso",
+        "WEIGHT": "Peso",
+        "generic": "Un signo vital"
+      }
     },
     "milestone": {
       "metric": {
@@ -11037,6 +11057,68 @@
           "title": "Un mes en rango",
           "body": "Un mes entero con tu {metric} dentro de tu rango habitual. Maravillosamente estable."
         }
+      }
+    },
+    "lead": {
+      "vitalOutside": {
+        "above": "{metric} está en {value}, por encima de tu rango habitual de {range}.",
+        "below": "{metric} está en {value}, por debajo de tu rango habitual de {range}."
+      },
+      "vitalsOutside": {
+        "aboveOne": "{metric} está en {value}, por encima de tu rango habitual de {range}, y {count} signo vital más también está fuera de su rango.",
+        "aboveFew": "{metric} está en {value}, por encima de tu rango habitual de {range}, y {count} signos vitales más también están fuera de su rango.",
+        "aboveOther": "{metric} está en {value}, por encima de tu rango habitual de {range}, y {count} signos vitales más también están fuera de su rango.",
+        "belowOne": "{metric} está en {value}, por debajo de tu rango habitual de {range}, y {count} signo vital más también está fuera de su rango.",
+        "belowFew": "{metric} está en {value}, por debajo de tu rango habitual de {range}, y {count} signos vitales más también están fuera de su rango.",
+        "belowOther": "{metric} está en {value}, por debajo de tu rango habitual de {range}, y {count} signos vitales más también están fuera de su rango."
+      },
+      "sleep": {
+        "more": "Anoche dormiste {duration}, {diff} más de lo habitual.",
+        "less": "Anoche dormiste {duration}, {diff} menos de lo habitual.",
+        "usual": "Anoche dormiste {duration}, cerca de lo habitual.",
+        "plain": "Anoche dormiste {duration}."
+      },
+      "vitalsInRangeOne": "Tu último signo vital está dentro de su rango habitual.",
+      "vitalsInRangeFew": "Tus {count} últimos signos vitales están dentro de su rango habitual.",
+      "vitalsInRangeOther": "Tus {count} últimos signos vitales están dentro de su rango habitual.",
+      "vitalInRange": "{metric} está en {value}, dentro de tu rango habitual de {range}."
+    },
+    "todayFact": {
+      "restMode": {
+        "label": "Modo descanso",
+        "value": "Día {day}"
+      },
+      "medications": {
+        "label": "Medicamentos",
+        "value": "{taken} de {scheduled} tomados"
+      },
+      "appointment": {
+        "label": "Cita",
+        "today": "Hoy {time}, {what}",
+        "tomorrow": "Mañana {time}, {what}"
+      },
+      "sleep": {
+        "label": "Anoche",
+        "plain": "{duration}",
+        "usual": "{duration}, cerca de lo habitual",
+        "more": "{duration}, {diff} más de lo habitual",
+        "less": "{duration}, {diff} menos de lo habitual"
+      },
+      "vitals": {
+        "label": "Signos vitales",
+        "allInOne": "{count} revisado, en tu rango",
+        "allInFew": "{count} revisados, todos en tu rango",
+        "allInOther": "{count} revisados, todos en tu rango",
+        "oneOut": {
+          "above": "{metric} por encima de tu rango",
+          "below": "{metric} por debajo de tu rango"
+        },
+        "someOut": "{count} de {total} fuera de tu rango"
+      },
+      "cycle": {
+        "label": "Ciclo",
+        "value": "{phase}, día {day}",
+        "dayOnly": "Día {day}"
       }
     }
   },

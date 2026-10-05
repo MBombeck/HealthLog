@@ -11002,7 +11002,27 @@
       "sleepPending": "Sen z ostatniej nocy jeszcze nie dotarł — dzisiejszy odczyt jest wstępny.",
       "worthALook": "Warto sprawdzić",
       "allClear": "Dziś nic nie wymaga Twojej uwagi.",
-      "ringLink": "Otwórz szczegóły: {metric}"
+      "ringLink": "Otwórz szczegóły: {metric}",
+      "heading": "Dziś",
+      "steadyWeeksOne": "Stabilnie od {count} tygodnia",
+      "steadyWeeksFew": "Stabilnie od {count} tygodni",
+      "steadyWeeksOther": "Stabilnie od {count} tygodni",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "{low} do {high} {unit}",
+      "vital": {
+        "RESTING_HEART_RATE": "Tętno spoczynkowe",
+        "HEART_RATE_VARIABILITY": "Zmienność rytmu serca",
+        "RESPIRATORY_RATE": "Częstość oddechów",
+        "OXYGEN_SATURATION": "Saturacja",
+        "BODY_TEMPERATURE": "Temperatura ciała",
+        "SKIN_TEMPERATURE": "Temperatura skóry",
+        "BLOOD_PRESSURE_SYS": "Ciśnienie skurczowe",
+        "BLOOD_PRESSURE_DIA": "Ciśnienie rozkurczowe",
+        "BLOOD_GLUCOSE": "Glukoza we krwi",
+        "PULSE": "Tętno",
+        "WEIGHT": "Waga",
+        "generic": "Parametr życiowy"
+      }
     },
     "milestone": {
       "metric": {
@@ -11037,6 +11057,68 @@
           "title": "Miesiąc w zakresie",
           "body": "Cały miesiąc z {metric} w zwykłym zakresie. Wspaniale stabilnie."
         }
+      }
+    },
+    "lead": {
+      "vitalOutside": {
+        "above": "{metric}: {value}, powyżej Twojego zwykłego zakresu {range}.",
+        "below": "{metric}: {value}, poniżej Twojego zwykłego zakresu {range}."
+      },
+      "vitalsOutside": {
+        "aboveOne": "{metric}: {value}, powyżej Twojego zwykłego zakresu {range}. Poza zakresem jest też {count} inny parametr.",
+        "aboveFew": "{metric}: {value}, powyżej Twojego zwykłego zakresu {range}. Poza zakresem są też {count} inne parametry.",
+        "aboveOther": "{metric}: {value}, powyżej Twojego zwykłego zakresu {range}. Poza zakresem jest też {count} innych parametrów.",
+        "belowOne": "{metric}: {value}, poniżej Twojego zwykłego zakresu {range}. Poza zakresem jest też {count} inny parametr.",
+        "belowFew": "{metric}: {value}, poniżej Twojego zwykłego zakresu {range}. Poza zakresem są też {count} inne parametry.",
+        "belowOther": "{metric}: {value}, poniżej Twojego zwykłego zakresu {range}. Poza zakresem jest też {count} innych parametrów."
+      },
+      "sleep": {
+        "more": "Ostatnia noc: {duration} snu, o {diff} dłużej niż zwykle.",
+        "less": "Ostatnia noc: {duration} snu, o {diff} krócej niż zwykle.",
+        "usual": "Ostatnia noc: {duration} snu, mniej więcej tyle co zwykle.",
+        "plain": "Ostatnia noc: {duration} snu."
+      },
+      "vitalsInRangeOne": "Twój ostatni parametr życiowy mieści się w zwykłym zakresie.",
+      "vitalsInRangeFew": "Wszystkie {count} ostatnie parametry życiowe mieszczą się w zwykłym zakresie.",
+      "vitalsInRangeOther": "Wszystkie {count} ostatnich parametrów życiowych mieści się w zwykłym zakresie.",
+      "vitalInRange": "{metric}: {value}, w Twoim zwykłym zakresie {range}."
+    },
+    "todayFact": {
+      "restMode": {
+        "label": "Tryb odpoczynku",
+        "value": "Dzień {day}"
+      },
+      "medications": {
+        "label": "Leki",
+        "value": "Przyjęto {taken} z {scheduled}"
+      },
+      "appointment": {
+        "label": "Wizyta",
+        "today": "Dziś {time}, {what}",
+        "tomorrow": "Jutro {time}, {what}"
+      },
+      "sleep": {
+        "label": "Ostatnia noc",
+        "plain": "{duration}",
+        "usual": "{duration}, jak zwykle",
+        "more": "{duration}, o {diff} dłużej niż zwykle",
+        "less": "{duration}, o {diff} krócej niż zwykle"
+      },
+      "vitals": {
+        "label": "Parametry życiowe",
+        "allInOne": "Sprawdzono {count}, w zakresie",
+        "allInFew": "Sprawdzono {count}, wszystkie w zakresie",
+        "allInOther": "Sprawdzono {count}, wszystkie w zakresie",
+        "oneOut": {
+          "above": "{metric} powyżej zakresu",
+          "below": "{metric} poniżej zakresu"
+        },
+        "someOut": "{count} z {total} poza zakresem"
+      },
+      "cycle": {
+        "label": "Cykl",
+        "value": "{phase}, dzień {day}",
+        "dayOnly": "Dzień {day}"
       }
     }
   },

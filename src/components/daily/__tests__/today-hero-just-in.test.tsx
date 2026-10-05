@@ -42,6 +42,9 @@ function digest(over: Partial<DailyDigest> = {}): DailyDigest {
     score: { value: 82, band: "green", delta: 3 },
     topSignal: null,
     briefingLead: "Your week is trending steady.",
+    lead: { text: "Your week is trending steady.", source: "briefing" },
+    today: [],
+    restMode: null,
     line: "Your week is trending steady.",
     worthALook: [],
     justIn: null,
@@ -105,6 +108,7 @@ describe("TodayHero — an arrival is not a chip", () => {
         digest={digest({
           score: null,
           briefingLead: null,
+          lead: null,
           worthALook: [],
           reactionLine: null,
           justIn: { kind: "sleep_night", at: ARRIVED_AT },
@@ -152,6 +156,7 @@ describe("TodayHero — what earns the hero without a score", () => {
     return digest({
       score: null,
       briefingLead: null,
+      lead: null,
       reactionLine: null,
       phase: "provisional",
       sleepPending: true,
@@ -203,6 +208,8 @@ describe("TodayHero — the reaction line replaces the lead", () => {
         digest={digest({
           reactionLine: REACTION,
           briefingLead: "Your week is trending steady.",
+          // The server resolved the reaction line as the lead.
+          lead: { text: REACTION, source: "reaction" },
         })}
       />,
     );
@@ -218,6 +225,8 @@ describe("TodayHero — the reaction line replaces the lead", () => {
         digest={digest({
           reactionLine: REACTION,
           briefingLead: "Your week is trending steady.",
+          // The server resolved the reaction line as the lead.
+          lead: { text: REACTION, source: "reaction" },
         })}
       />,
     );
@@ -246,6 +255,7 @@ describe("TodayHero — the reaction line replaces the lead", () => {
         digest={digest({
           score: null,
           briefingLead: null,
+          lead: { text: REACTION, source: "reaction" },
           worthALook: [],
           reactionLine: REACTION,
           justIn: { kind: "weight", at: ARRIVED_AT },

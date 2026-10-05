@@ -11002,7 +11002,27 @@
       "sleepPending": "Le sommeil de la nuit dernière n'est pas encore arrivé — la lecture du jour est provisoire.",
       "worthALook": "À regarder",
       "allClear": "Rien ne requiert ton attention aujourd'hui.",
-      "ringLink": "Ouvrir les détails de {metric}"
+      "ringLink": "Ouvrir les détails de {metric}",
+      "heading": "Aujourd'hui",
+      "steadyWeeksOne": "Stable depuis {count} semaine",
+      "steadyWeeksFew": "Stable depuis {count} semaines",
+      "steadyWeeksOther": "Stable depuis {count} semaines",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "{low} à {high} {unit}",
+      "vital": {
+        "RESTING_HEART_RATE": "Fréquence cardiaque au repos",
+        "HEART_RATE_VARIABILITY": "Variabilité de la fréquence cardiaque",
+        "RESPIRATORY_RATE": "Fréquence respiratoire",
+        "OXYGEN_SATURATION": "Saturation en oxygène",
+        "BODY_TEMPERATURE": "Température corporelle",
+        "SKIN_TEMPERATURE": "Température cutanée",
+        "BLOOD_PRESSURE_SYS": "Tension systolique",
+        "BLOOD_PRESSURE_DIA": "Tension diastolique",
+        "BLOOD_GLUCOSE": "Glycémie",
+        "PULSE": "Pouls",
+        "WEIGHT": "Poids",
+        "generic": "Un signe vital"
+      }
     },
     "milestone": {
       "metric": {
@@ -11037,6 +11057,68 @@
           "title": "Un mois dans la plage",
           "body": "Un mois entier avec votre {metric} dans votre plage habituelle. Merveilleusement stable."
         }
+      }
+    },
+    "lead": {
+      "vitalOutside": {
+        "above": "{metric} est à {value}, au-dessus de ta plage habituelle de {range}.",
+        "below": "{metric} est à {value}, en dessous de ta plage habituelle de {range}."
+      },
+      "vitalsOutside": {
+        "aboveOne": "{metric} est à {value}, au-dessus de ta plage habituelle de {range}, et {count} autre signe vital sort aussi de sa plage.",
+        "aboveFew": "{metric} est à {value}, au-dessus de ta plage habituelle de {range}, et {count} autres signes vitaux sortent aussi de leur plage.",
+        "aboveOther": "{metric} est à {value}, au-dessus de ta plage habituelle de {range}, et {count} autres signes vitaux sortent aussi de leur plage.",
+        "belowOne": "{metric} est à {value}, en dessous de ta plage habituelle de {range}, et {count} autre signe vital sort aussi de sa plage.",
+        "belowFew": "{metric} est à {value}, en dessous de ta plage habituelle de {range}, et {count} autres signes vitaux sortent aussi de leur plage.",
+        "belowOther": "{metric} est à {value}, en dessous de ta plage habituelle de {range}, et {count} autres signes vitaux sortent aussi de leur plage."
+      },
+      "sleep": {
+        "more": "La nuit dernière, tu as dormi {duration}, {diff} de plus que d'habitude.",
+        "less": "La nuit dernière, tu as dormi {duration}, {diff} de moins que d'habitude.",
+        "usual": "La nuit dernière, tu as dormi {duration}, proche de ton habitude.",
+        "plain": "La nuit dernière, tu as dormi {duration}."
+      },
+      "vitalsInRangeOne": "Ton dernier signe vital est dans sa plage habituelle.",
+      "vitalsInRangeFew": "Tes {count} derniers signes vitaux sont tous dans leur plage habituelle.",
+      "vitalsInRangeOther": "Tes {count} derniers signes vitaux sont tous dans leur plage habituelle.",
+      "vitalInRange": "{metric} est à {value}, dans ta plage habituelle de {range}."
+    },
+    "todayFact": {
+      "restMode": {
+        "label": "Mode repos",
+        "value": "Jour {day}"
+      },
+      "medications": {
+        "label": "Médicaments",
+        "value": "{taken} sur {scheduled} pris"
+      },
+      "appointment": {
+        "label": "Rendez-vous",
+        "today": "Aujourd'hui {time}, {what}",
+        "tomorrow": "Demain {time}, {what}"
+      },
+      "sleep": {
+        "label": "La nuit dernière",
+        "plain": "{duration}",
+        "usual": "{duration}, proche de ton habitude",
+        "more": "{duration}, {diff} de plus que d'habitude",
+        "less": "{duration}, {diff} de moins que d'habitude"
+      },
+      "vitals": {
+        "label": "Signes vitaux",
+        "allInOne": "{count} vérifié, dans ta plage",
+        "allInFew": "{count} vérifiés, tous dans ta plage",
+        "allInOther": "{count} vérifiés, tous dans ta plage",
+        "oneOut": {
+          "above": "{metric} au-dessus de ta plage",
+          "below": "{metric} en dessous de ta plage"
+        },
+        "someOut": "{count} sur {total} hors de ta plage"
+      },
+      "cycle": {
+        "label": "Cycle",
+        "value": "{phase}, jour {day}",
+        "dayOnly": "Jour {day}"
       }
     }
   },

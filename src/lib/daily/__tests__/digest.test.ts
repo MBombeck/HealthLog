@@ -110,7 +110,12 @@ describe("buildDailyDigest — composition", () => {
   it("lifts score, top signal, and briefing lead from cached inputs (no recompute)", () => {
     const d = buildDailyDigest(input(), t);
     expect(d.generatedAt).toBe(NOW.toISOString());
-    expect(d.score).toEqual({ value: 82, band: "good", delta: 3 });
+    expect(d.score).toEqual({
+      value: 82,
+      band: "good",
+      delta: 3,
+      steadyWeeks: null,
+    });
     expect(d.topSignal?.headline).toBe("Blood pressure is holding steady");
     expect(d.briefingLead).toBe(
       "Your blood pressure is holding steady this week.",
@@ -1455,5 +1460,111 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
         .filter((i) => i.kind === "upcoming_visit")
         .map((i) => i.body),
     ).toEqual(["Dr. Weiss — today", "Dentist — tomorrow"]);
+  });
+});
+
+describe("buildDailyDigest — Today overview", () => {
+  const RHR_HIGH = {
+    type: "RESTING_HEART_RATE",
+    value: 61,
+    low: 50,
+    high: 58,
+    direction: "above" as const,
+    daysAgo: 0,
+    valueLabel: "61 bpm",
+    rangeLabel: "50 to 58 bpm",
+    moduleKey: null,
+  };
+
+  it("skips a greeting and publishes the sentence with content as the lead", () => {
+    const d = buildDailyDigest(
+      input({
+        briefing: {
+          ...briefing,
+          paragraph:
+            "Good morning. Your latest blood pressure is sitting in the optimal band.",
+        },
+      }),
+      t,
+    );
+    expect(d.briefingLead).toBe(
+      "Your latest blood pressure is sitting in the optimal band.",
+    );
+    expect(d.lead).toEqual({
+      text: "Your latest blood pressure is sitting in the optimal band.",
+      source: "briefing",
+    });
+    expect(d.line).toBe(d.briefingLead);
+  });
+
+  it("without AI, leads with the strongest signal instead of the score", () => {
+    const d = buildDailyDigest(
+      input({
+        ai: {
+          ...DIGEST_AI_AVAILABLE,
+          briefing: aiUnavailable("user_disabled"),
+        },
+        vitals: [RHR_HIGH],
+      }),
+      t,
+    );
+    expect(d.lead).toEqual({
+      text: "Resting heart rate is at 61 bpm, above your usual range of 50 to 58 bpm.",
+      source: "signal",
+    });
+    // The push line takes the same sentence, not "Your health score today is 82."
+    expect(d.line).toBe(d.lead?.text);
+  });
+
+  it("publishes Rest Mode and its fact only while the illness module is on", () => {
+    const on = buildDailyDigest(input({ restMode: { day: 2 } }), t);
+    expect(on.restMode).toEqual({ day: 2 });
+    expect(on.today[0]).toMatchObject({ kind: "rest_mode", value: "Day 2" });
+
+    const off = buildDailyDigest(
+      input({ restMode: { day: 2 }, modules: { illness: false } }),
+      t,
+    );
+    expect(off.restMode).toBeNull();
+    expect(off.today.some((f) => f.kind === "rest_mode")).toBe(false);
+  });
+
+  it("keeps an appointment on the rail and out of Today, never both", () => {
+    const visits = [
+      {
+        id: "v1",
+        kind: "ROUTINE",
+        occurredAt: "2026-07-16T13:00:00.000Z",
+        practitionerName: "Dr. Example",
+        dayOffset: 0,
+        timeLabel: "15:00",
+      },
+    ];
+    const withRail = buildDailyDigest(input({ upcomingVisits: visits }), t);
+    expect(withRail.worthALook.some((i) => i.kind === "upcoming_visit")).toBe(
+      true,
+    );
+    expect(withRail.today.some((f) => f.kind === "appointment")).toBe(false);
+
+    const railOff = buildDailyDigest(
+      input({
+        upcomingVisits: visits,
+        enabledHeroItemKinds: PRIORITY_ITEM_KINDS.filter(
+          (k) => k !== "upcoming_visit",
+        ),
+      }),
+      t,
+    );
+    expect(railOff.today).toEqual([
+      expect.objectContaining({
+        kind: "appointment",
+        value: "Today 15:00, Dr. Example",
+      }),
+    ]);
+  });
+
+  it("carries the steady run on the score", () => {
+    const d = buildDailyDigest(input({ scoreSteadyWeeks: 5 }), t);
+    expect(d.score?.steadyWeeks).toBe(5);
   });
 });

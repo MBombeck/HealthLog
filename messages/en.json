@@ -11002,7 +11002,27 @@
       "sleepPending": "Last night's sleep isn't in yet — today's read is provisional.",
       "worthALook": "Worth a look",
       "allClear": "Nothing needs your attention today.",
-      "ringLink": "Open {metric} details"
+      "ringLink": "Open {metric} details",
+      "heading": "Today",
+      "steadyWeeksOne": "Steady for {count} week",
+      "steadyWeeksFew": "Steady for {count} weeks",
+      "steadyWeeksOther": "Steady for {count} weeks",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "{low} to {high} {unit}",
+      "vital": {
+        "RESTING_HEART_RATE": "Resting heart rate",
+        "HEART_RATE_VARIABILITY": "Heart-rate variability",
+        "RESPIRATORY_RATE": "Respiratory rate",
+        "OXYGEN_SATURATION": "Oxygen saturation",
+        "BODY_TEMPERATURE": "Body temperature",
+        "SKIN_TEMPERATURE": "Skin temperature",
+        "BLOOD_PRESSURE_SYS": "Systolic blood pressure",
+        "BLOOD_PRESSURE_DIA": "Diastolic blood pressure",
+        "BLOOD_GLUCOSE": "Blood glucose",
+        "PULSE": "Pulse",
+        "WEIGHT": "Weight",
+        "generic": "A vital"
+      }
     },
     "milestone": {
       "metric": {
@@ -11037,6 +11057,68 @@
           "title": "A month in range",
           "body": "A full month with your {metric} in your usual range. Beautifully steady."
         }
+      }
+    },
+    "lead": {
+      "vitalOutside": {
+        "above": "{metric} is at {value}, above your usual range of {range}.",
+        "below": "{metric} is at {value}, below your usual range of {range}."
+      },
+      "vitalsOutside": {
+        "aboveOne": "{metric} is at {value}, above your usual range of {range}, and {count} more vital is outside its range too.",
+        "aboveFew": "{metric} is at {value}, above your usual range of {range}, and {count} more vitals are outside their range too.",
+        "aboveOther": "{metric} is at {value}, above your usual range of {range}, and {count} more vitals are outside their range too.",
+        "belowOne": "{metric} is at {value}, below your usual range of {range}, and {count} more vital is outside its range too.",
+        "belowFew": "{metric} is at {value}, below your usual range of {range}, and {count} more vitals are outside their range too.",
+        "belowOther": "{metric} is at {value}, below your usual range of {range}, and {count} more vitals are outside their range too."
+      },
+      "sleep": {
+        "more": "Last night you slept {duration}, {diff} more than usual.",
+        "less": "Last night you slept {duration}, {diff} less than usual.",
+        "usual": "Last night you slept {duration}, close to your usual.",
+        "plain": "Last night you slept {duration}."
+      },
+      "vitalsInRangeOne": "Your latest vital sits inside its usual range.",
+      "vitalsInRangeFew": "All {count} of your latest vitals sit inside their usual range.",
+      "vitalsInRangeOther": "All {count} of your latest vitals sit inside their usual range.",
+      "vitalInRange": "{metric} is at {value}, inside your usual range of {range}."
+    },
+    "todayFact": {
+      "restMode": {
+        "label": "Rest mode",
+        "value": "Day {day}"
+      },
+      "medications": {
+        "label": "Medications",
+        "value": "{taken} of {scheduled} taken"
+      },
+      "appointment": {
+        "label": "Appointment",
+        "today": "Today {time}, {what}",
+        "tomorrow": "Tomorrow {time}, {what}"
+      },
+      "sleep": {
+        "label": "Last night",
+        "plain": "{duration}",
+        "usual": "{duration}, close to your usual",
+        "more": "{duration}, {diff} more than usual",
+        "less": "{duration}, {diff} less than usual"
+      },
+      "vitals": {
+        "label": "Vitals",
+        "allInOne": "{count} checked, in your range",
+        "allInFew": "{count} checked, all in your range",
+        "allInOther": "{count} checked, all in your range",
+        "oneOut": {
+          "above": "{metric} above your range",
+          "below": "{metric} below your range"
+        },
+        "someOut": "{count} of {total} outside your range"
+      },
+      "cycle": {
+        "label": "Cycle",
+        "value": "{phase}, day {day}",
+        "dayOnly": "Day {day}"
       }
     }
   },

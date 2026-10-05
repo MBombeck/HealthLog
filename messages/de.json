@@ -11002,7 +11002,27 @@
       "sleepPending": "Der Schlaf von letzter Nacht fehlt noch — der heutige Wert ist vorläufig.",
       "worthALook": "Einen Blick wert",
       "allClear": "Heute braucht nichts deine Aufmerksamkeit.",
-      "ringLink": "{metric}-Details öffnen"
+      "ringLink": "{metric}-Details öffnen",
+      "heading": "Heute",
+      "steadyWeeksOne": "Seit {count} Woche stabil",
+      "steadyWeeksFew": "Seit {count} Wochen stabil",
+      "steadyWeeksOther": "Seit {count} Wochen stabil",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "{low} bis {high} {unit}",
+      "vital": {
+        "RESTING_HEART_RATE": "Ruhepuls",
+        "HEART_RATE_VARIABILITY": "Herzfrequenzvariabilität",
+        "RESPIRATORY_RATE": "Atemfrequenz",
+        "OXYGEN_SATURATION": "Sauerstoffsättigung",
+        "BODY_TEMPERATURE": "Körpertemperatur",
+        "SKIN_TEMPERATURE": "Hauttemperatur",
+        "BLOOD_PRESSURE_SYS": "Systolischer Blutdruck",
+        "BLOOD_PRESSURE_DIA": "Diastolischer Blutdruck",
+        "BLOOD_GLUCOSE": "Blutzucker",
+        "PULSE": "Puls",
+        "WEIGHT": "Gewicht",
+        "generic": "Ein Vitalwert"
+      }
     },
     "milestone": {
       "metric": {
@@ -11037,6 +11057,68 @@
           "title": "Ein Monat im Bereich",
           "body": "Ein ganzer Monat mit {metric} in deinem gewohnten Bereich. Wunderbar gleichmäßig."
         }
+      }
+    },
+    "lead": {
+      "vitalOutside": {
+        "above": "{metric} liegt bei {value}, über deinem üblichen Bereich von {range}.",
+        "below": "{metric} liegt bei {value}, unter deinem üblichen Bereich von {range}."
+      },
+      "vitalsOutside": {
+        "aboveOne": "{metric} liegt bei {value}, über deinem üblichen Bereich von {range}, und {count} weiterer Vitalwert liegt ebenfalls außerhalb.",
+        "aboveFew": "{metric} liegt bei {value}, über deinem üblichen Bereich von {range}, und {count} weitere Vitalwerte liegen ebenfalls außerhalb.",
+        "aboveOther": "{metric} liegt bei {value}, über deinem üblichen Bereich von {range}, und {count} weitere Vitalwerte liegen ebenfalls außerhalb.",
+        "belowOne": "{metric} liegt bei {value}, unter deinem üblichen Bereich von {range}, und {count} weiterer Vitalwert liegt ebenfalls außerhalb.",
+        "belowFew": "{metric} liegt bei {value}, unter deinem üblichen Bereich von {range}, und {count} weitere Vitalwerte liegen ebenfalls außerhalb.",
+        "belowOther": "{metric} liegt bei {value}, unter deinem üblichen Bereich von {range}, und {count} weitere Vitalwerte liegen ebenfalls außerhalb."
+      },
+      "sleep": {
+        "more": "Letzte Nacht hast du {duration} geschlafen, {diff} mehr als sonst.",
+        "less": "Letzte Nacht hast du {duration} geschlafen, {diff} weniger als sonst.",
+        "usual": "Letzte Nacht hast du {duration} geschlafen, etwa so viel wie sonst.",
+        "plain": "Letzte Nacht hast du {duration} geschlafen."
+      },
+      "vitalsInRangeOne": "Dein letzter Vitalwert liegt in seinem üblichen Bereich.",
+      "vitalsInRangeFew": "Alle {count} letzten Vitalwerte liegen in ihrem üblichen Bereich.",
+      "vitalsInRangeOther": "Alle {count} letzten Vitalwerte liegen in ihrem üblichen Bereich.",
+      "vitalInRange": "{metric} liegt bei {value}, innerhalb deines üblichen Bereichs von {range}."
+    },
+    "todayFact": {
+      "restMode": {
+        "label": "Ruhemodus",
+        "value": "Tag {day}"
+      },
+      "medications": {
+        "label": "Medikamente",
+        "value": "{taken} von {scheduled} genommen"
+      },
+      "appointment": {
+        "label": "Termin",
+        "today": "Heute {time}, {what}",
+        "tomorrow": "Morgen {time}, {what}"
+      },
+      "sleep": {
+        "label": "Letzte Nacht",
+        "plain": "{duration}",
+        "usual": "{duration}, etwa wie sonst",
+        "more": "{duration}, {diff} mehr als sonst",
+        "less": "{duration}, {diff} weniger als sonst"
+      },
+      "vitals": {
+        "label": "Vitalwerte",
+        "allInOne": "{count} geprüft, im Bereich",
+        "allInFew": "{count} geprüft, alle im Bereich",
+        "allInOther": "{count} geprüft, alle im Bereich",
+        "oneOut": {
+          "above": "{metric} über deinem Bereich",
+          "below": "{metric} unter deinem Bereich"
+        },
+        "someOut": "{count} von {total} außerhalb deines Bereichs"
+      },
+      "cycle": {
+        "label": "Zyklus",
+        "value": "{phase}, Tag {day}",
+        "dayOnly": "Tag {day}"
       }
     }
   },
