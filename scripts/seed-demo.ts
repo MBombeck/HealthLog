@@ -411,12 +411,15 @@ async function seed() {
     );
     // Body fat: 24% → trending to a healthy ~19%
     const bodyFat = randomWalk(24.0, 19.0, span, 0.4, VALUE_RANGES.BODY_FAT);
-    // Sleep duration in MINUTES (the SLEEP_DURATION unit): ~7h → ~7h45m
+    // Sleep duration in MINUTES (the SLEEP_DURATION unit): ~7h → ~7h40m.
+    // Kept close to the ~7.5 h per-stage nights below, which the start page
+    // holds against this trailing average: a looser walk drifted to almost
+    // nine hours and last night read as "1h 4m less than usual".
     const sleepMin = randomWalk(
       420,
-      465,
+      460,
       span,
-      25,
+      12,
       VALUE_RANGES.SLEEP_DURATION,
     );
     // Steps: 6500 → a solid ~9000
@@ -675,11 +678,14 @@ async function seed() {
       { context: "POSTPRANDIAL", hour: 19, base: 118, jitter: 12 },
       { context: "BEDTIME", hour: 22, base: 99, jitter: 6 },
     ];
-    for (let i = 0; i < span; i++) {
+    // Glucose stops at yesterday. The vitals check compares a day's mean
+    // against the band of full days, so a part day seeded up to the current
+    // hour (fasting and breakfast only) read "below your range", and seeding
+    // the whole day put the afternoon in the future. Yesterday's full day is
+    // what the start page then reads.
+    for (let i = 0; i < span - 1; i++) {
       for (const r of glucoseReadings) {
         const at = daysAgoAt(days - i, r.hour, Math.floor(Math.random() * 30));
-        // Today's later readings are still ahead of the seed's clock.
-        if (at.getTime() > Date.now()) continue;
         const value = Math.round(r.base + (Math.random() - 0.5) * r.jitter);
         await client.query(
           `INSERT INTO measurements (id, user_id, type, value, unit, source, glucose_context, device_type, measured_at, created_at, updated_at)
@@ -706,7 +712,9 @@ async function seed() {
     console.log("Creating continuous glucose (CGM) stream...");
     const cgmDays = 14;
     const cgmStepMin = 15;
-    for (let d = cgmDays - 1; d >= 0; d--) {
+    // The stream ends with yesterday, for the reason given above the spot
+    // readings.
+    for (let d = cgmDays; d >= 1; d--) {
       for (let minute = 0; minute < 24 * 60; minute += cgmStepMin) {
         const hour = minute / 60;
         // Baseline overnight ~90; dawn phenomenon lifts it slightly toward
@@ -720,9 +728,6 @@ async function seed() {
           Math.min(140, Math.max(72, base + (Math.random() - 0.5) * 6)),
         );
         const at = daysAgoAt(d, Math.floor(hour), minute % 60);
-        // Today's stream stops at the seed's own clock: a sensor cannot have
-        // read the evening yet.
-        if (at.getTime() > Date.now()) break;
         const externalId = `cgm-${formatDate(at)}-${minute}`;
         // The measurements_glucose_context_requires_type CHECK requires a
         // non-NULL glucose_context on every BLOOD_GLUCOSE row. A free-running
