@@ -66,7 +66,11 @@ async function seedUserWithCachedBriefing(cachedLocale: string | null) {
       // snapshot read resolves the reader's locale from.
       locale: "de",
       insightsCachedAt: new Date(),
-      insightsCachedText: JSON.stringify({ dailyBriefing: BRIEFING }),
+      // Generated now: only text written today is served as today's read.
+      insightsCachedText: JSON.stringify({
+        dailyBriefing: BRIEFING,
+        briefingGeneratedAt: new Date().toISOString(),
+      }),
       insightsCachedLocale: cachedLocale,
       // The briefing is shown only while its AI capability is available, so
       // the account has its own provider (presence only) and a receipt.
