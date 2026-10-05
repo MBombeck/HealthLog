@@ -52,6 +52,7 @@ interface RowSnapshot {
   id: string;
   tags: string | null;
   note: string | null;
+  updatedAt: Date;
 }
 
 async function main(): Promise<void> {
@@ -74,7 +75,7 @@ async function main(): Promise<void> {
       tags: { not: null },
       note: null,
     },
-    select: { id: true, tags: true, note: true },
+    select: { id: true, tags: true, note: true, updatedAt: true },
   });
 
   console.log(`[backfill-note] scanned ${candidates.length} candidate rows`);
@@ -87,9 +88,11 @@ async function main(): Promise<void> {
 
     updated += 1;
     if (!dryRun) {
+      // The entry did not change for its reader; it keeps its `updatedAt`
+      // (the sync cursor) rather than taking the script's run time.
       await prisma.moodEntry.update({
         where: { id: row.id },
-        data: { note, tags: newTags },
+        data: { note, tags: newTags, updatedAt: row.updatedAt },
       });
     }
   }

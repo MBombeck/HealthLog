@@ -51,6 +51,7 @@ const BASE: DailyDigest = {
     steadyWeeks: 4,
   },
   topSignal: null,
+  signalLine: null,
   briefingLead: null,
   lead: null,
   today: [],
@@ -114,6 +115,12 @@ const STATES: Record<string, DailyDigest> = {
     lead: {
       text: "Your latest blood pressure is sitting in the optimal band.",
       source: "briefing",
+    },
+    // The lead already talks about blood pressure, so the server keeps only
+    // the delta under it.
+    signalLine: {
+      headline: null,
+      delta: "↓ ~10 mmHg systolic vs the start of the window",
     },
     today: FACTS,
     worthALook: [

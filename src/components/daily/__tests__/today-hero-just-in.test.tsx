@@ -41,6 +41,7 @@ function digest(over: Partial<DailyDigest> = {}): DailyDigest {
     sleepPending: false,
     score: { value: 82, band: "green", delta: 3 },
     topSignal: null,
+    signalLine: null,
     briefingLead: "Your week is trending steady.",
     lead: { text: "Your week is trending steady.", source: "briefing" },
     today: [],

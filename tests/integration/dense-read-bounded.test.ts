@@ -39,6 +39,7 @@ vi.mock("@/lib/db-compat", () => ({
 const prisma = getPrismaClient();
 const DENSE_USER = "dense-pulse-owner";
 const PARITY_USER = "dense-parity-owner";
+const CLOCK_USER = "dense-clock-owner";
 const DAYS = 91;
 const ROWS = DAYS * 24 * 60;
 const NOW = new Date("2026-09-20T18:00:00.000Z");
@@ -231,5 +232,54 @@ describe("pulse status over a dense stream (#1023)", () => {
     }
     // Sanity: the impossible value was dropped and the edge row split off.
     expect(sql.reduce((n, r) => n + r.n, 0)).toBe(5);
+  });
+
+  it("the local-clock cut agrees with the in-memory fold on real Postgres", async () => {
+    // A half-hour zone, so a cut on the UTC clock would land 30 minutes off.
+    const tz = "Asia/Kolkata";
+    await prisma.user.create({
+      data: { id: CLOCK_USER, username: CLOCK_USER, timezone: tz },
+    });
+    const days = [
+      new Date("2026-09-08T12:00:00Z"),
+      new Date("2026-09-09T12:00:00Z"),
+      new Date("2026-09-10T12:00:00Z"),
+    ];
+    const rows = days.flatMap((d, i) => [
+      { at: localHmAsUtc(d, tz, 7, 0), value: 85 + i },
+      { at: localHmAsUtc(d, tz, 9, 59), value: 120 + i },
+      { at: localHmAsUtc(d, tz, 10, 1), value: 160 + i }, // after the cut
+      { at: localHmAsUtc(d, tz, 19, 0), value: 150 + i }, // after the cut
+    ]);
+    await prisma.measurement.createMany({
+      data: rows.map((r, i) => ({
+        id: `clock-${i}`,
+        userId: CLOCK_USER,
+        type: "BLOOD_GLUCOSE" as const,
+        value: r.value,
+        unit: "mg/dL",
+        source: "MANUAL" as const,
+        measuredAt: r.at,
+      })),
+    });
+    const opts = {
+      since: new Date(NOW.getTime() - 400 * 86_400_000),
+      until: NOW,
+      timeZone: tz,
+      upToLocalTime: "10:00:00",
+    };
+    const sql = await readDayAggregates({
+      userId: CLOCK_USER,
+      type: "BLOOD_GLUCOSE",
+      ...opts,
+    });
+    const memory = foldDayAggregates(
+      rows.map((r) => ({ measuredAt: r.at, value: r.value })),
+      opts,
+    );
+    expect(sql).toEqual(memory);
+    // Two readings per day survive the cut, the two after it do not.
+    expect(sql.map((r) => r.n)).toEqual([2, 2, 2]);
+    expect(sql.map((r) => r.max)).toEqual([120, 121, 122]);
   });
 });

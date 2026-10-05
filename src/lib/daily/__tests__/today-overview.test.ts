@@ -617,3 +617,268 @@ describe("locales", () => {
     );
   });
 });
+
+describe("lead length — whole sentences, never a word cut in half", () => {
+  // The shape a live briefing produced: one sentence well past the lead's
+  // budget, which used to be sliced mid-word ("…sleep landed r…").
+  const LONG =
+    "Today's picture is a calm one: your most recent blood pressure sits comfortably in the optimal band, resting heart rate is low, and last night's sleep landed right on your usual.";
+
+  /** Every word of the lead is a whole word of the source text. */
+  function wordsAreWhole(lead: string, source: string) {
+    const sourceWords = new Set(source.split(/\s+/));
+    const words = lead.replace(/…$/, "").trim().split(/\s+/);
+    for (const word of words) {
+      expect(
+        sourceWords.has(word) ||
+          [...sourceWords].some((w) => w.replace(/[,;:]$/, "") === word),
+      ).toBe(true);
+    }
+  }
+
+  it("leads with the first sentence when it fits", () => {
+    const o = buildTodayOverview(
+      input({
+        briefing: briefing(
+          "Your blood pressure sat in the optimal band all week. Sleep was steady too.",
+        ),
+      }),
+      t,
+    );
+    expect(o.lead?.text).toBe(
+      "Your blood pressure sat in the optimal band all week.",
+    );
+  });
+
+  it("does not cut an over-long first sentence; the headline leads instead", () => {
+    const o = buildTodayOverview(
+      input({
+        briefing: briefing(
+          LONG,
+          "Your latest blood pressure is sitting in the optimal band.",
+        ),
+      }),
+      t,
+    );
+    expect(o.lead).toEqual({
+      text: "Your latest blood pressure is sitting in the optimal band.",
+      source: "briefing",
+    });
+  });
+
+  it("falls to the deterministic sentence before it would cut model text", () => {
+    const o = buildTodayOverview(
+      input({ briefing: briefing(LONG), vitals: [vital()] }),
+      t,
+    );
+    expect(o.lead?.source).toBe("signal");
+    expect(o.lead?.text).not.toContain("…");
+  });
+
+  it("shortens at a word boundary only when nothing else is left", () => {
+    const o = buildTodayOverview(input({ briefing: briefing(LONG) }), t);
+    const text = o.lead?.text ?? "";
+    expect(text.length).toBeLessThanOrEqual(160);
+    expect(text.endsWith("…")).toBe(true);
+    wordsAreWhole(text, LONG);
+    expect(text).not.toMatch(/[,;:]…$/);
+  });
+
+  it("keeps whole reaction sentences that fit and drops the one that does not", () => {
+    const o = buildTodayOverview(
+      input({
+        reactionLine: `A solid night, deeper than your recent stretch. ${LONG}`,
+      }),
+      t,
+    );
+    expect(o.lead).toEqual({
+      text: "A solid night, deeper than your recent stretch.",
+      source: "reaction",
+    });
+  });
+
+  it("keeps briefingLead word-safe for the push line", () => {
+    const lead = firstSubstantiveSentence(LONG, null) ?? "";
+    expect(lead.length).toBeLessThanOrEqual(160);
+    wordsAreWhole(lead, LONG);
+  });
+});
+
+describe("signal line under the lead — nothing said twice", () => {
+  const BP_HEADLINE =
+    "Your latest blood pressure is sitting in the optimal band.";
+  const BP_DELTA = "↓ ~10 mmHg systolic vs the start of the window";
+
+  function withSignal(
+    paragraph: string,
+    signal: Partial<NonNullable<DailyBriefing["signalsOfDay"]>[number]> = {},
+  ): DailyBriefing {
+    return {
+      paragraph,
+      signalsOfDay: [
+        {
+          sourceMetric: "bp",
+          tone: "good",
+          headline: BP_HEADLINE,
+          nudge: "Keep the routine.",
+          delta: BP_DELTA,
+          ...signal,
+        },
+      ],
+      keyFindings: [],
+    };
+  }
+
+  it("keeps only the delta when the lead already talks about the metric", () => {
+    const o = buildTodayOverview(
+      input({
+        briefing: withSignal(
+          "Your most recent blood pressure sits comfortably in the optimal band, and resting heart rate is low.",
+        ),
+      }),
+      t,
+    );
+    expect(o.lead?.source).toBe("briefing");
+    expect(o.signalLine).toEqual({ headline: null, delta: BP_DELTA });
+  });
+
+  it("drops the line when the lead covers the metric and there is no delta", () => {
+    const o = buildTodayOverview(
+      input({
+        briefing: withSignal("Blood pressure held steady all week.", {
+          delta: null,
+        }),
+      }),
+      t,
+    );
+    expect(o.signalLine).toBeNull();
+  });
+
+  it("recognises the metric in the reader's language", () => {
+    const de = getServerTranslator("de").t;
+    const o = buildTodayOverview(
+      input({
+        locale: "de",
+        briefing: withSignal(
+          "Dein Blutdruck lag die ganze Woche im optimalen Bereich.",
+          { headline: "Dein Blutdruck liegt im optimalen Bereich." },
+        ),
+      }),
+      de,
+    );
+    expect(o.signalLine).toEqual({ headline: null, delta: BP_DELTA });
+  });
+
+  it("keeps headline and delta when the lead is about something else", () => {
+    const o = buildTodayOverview(
+      input({ briefing: withSignal("Last night's sleep ran long and deep.") }),
+      t,
+    );
+    expect(o.signalLine).toEqual({ headline: BP_HEADLINE, delta: BP_DELTA });
+  });
+
+  it("carries no line when the headline itself is the lead", () => {
+    const o = buildTodayOverview(
+      input({ briefing: withSignal("Your health score is 94.") }),
+      t,
+    );
+    expect(o.lead?.text).toBe(BP_HEADLINE);
+    expect(o.signalLine).toEqual({ headline: null, delta: BP_DELTA });
+  });
+
+  it("carries no line under a deterministic lead or without a briefing", () => {
+    expect(
+      buildTodayOverview(input({ vitals: [vital()] }), t).signalLine,
+    ).toBeNull();
+    expect(buildTodayOverview(input(), t).signalLine).toBeNull();
+  });
+});
+
+describe("signal line — a metric is named by whole words, not by fragments", () => {
+  const DELTA = "↓ 50 min vs your usual";
+
+  function lineFor(
+    lead: string,
+    sourceMetric: NonNullable<
+      DailyBriefing["signalsOfDay"]
+    >[number]["sourceMetric"],
+  ) {
+    return buildTodayOverview(
+      input({
+        briefing: {
+          paragraph: lead,
+          signalsOfDay: [
+            {
+              sourceMetric,
+              tone: "info",
+              headline: "A headline the lead does not quote.",
+              nudge: "n",
+              delta: DELTA,
+            },
+          ],
+          keyFindings: [],
+        },
+      }),
+      t,
+    ).signalLine;
+  }
+
+  // Each lead talks about something else; a fragment inside another word
+  // used to count as naming the metric, and the headline was dropped.
+  it.each([
+    ["Your weight has risen slightly this week.", "sleep"], // "sen"
+    ["You have chosen a steady routine.", "sleep"], // "sen"
+    ["Your readings worsen a little after lunch.", "sleep"], // "sen"
+    ["A snug fit for the cuff gave a clean reading.", "sleep"], // "snu"
+    ["Poranne ciśnienie spadło po spacerze.", "sleep"], // "spa" (pl)
+    ["잠시 후 다시 측정해 보세요.", "sleep"], // 잠시 = "a moment"
+    ["Passing showers kept the walk short.", "steps"], // "passi"
+    ["Ho passato una giornata tranquilla.", "steps"], // "passi" (it) inside passato
+    ["A sudden impulse to rest was a good call.", "pulse"], // "puls"
+    ["Der Impuls zur Pause war richtig.", "pulse"], // "puls" (de)
+    ["L'impulsione del giorno era calma.", "pulse"], // "puls" (it)
+    ["Wypadł impuls do odpoczynku.", "pulse"], // "puls" (pl)
+  ] as const)("keeps the headline under %j (%s)", (lead, metric) => {
+    const line = lineFor(lead, metric);
+    expect(line?.headline).toBe("A headline the lead does not quote.");
+  });
+
+  it.each([
+    ["Last night you slept seven hours.", "sleep"],
+    ["Dein Schlaf war ruhig.", "sleep"],
+    ["Tu sueño fue tranquilo.", "sleep"],
+    ["Tu as bien dormi.", "sleep"],
+    ["Il sonno è stato regolare.", "sleep"],
+    ["Twój sen był spokojny.", "sleep"],
+    ["Mało snu tej nocy.", "sleep"],
+    ["Spałeś siedem godzin.", "sleep"],
+    ["어젯밤 잠을 잘 잤어요.", "sleep"],
+    ["수면 시간이 길었어요.", "sleep"],
+    ["Hai fatto molti passi oggi.", "steps"],
+    ["Your pulse settled overnight.", "pulse"],
+    ["Dein Puls war ruhig.", "pulse"],
+    ["Twój puls był spokojny.", "pulse"],
+    ["Il polso era regolare.", "pulse"],
+    ["Ton pouls était calme.", "pulse"],
+  ] as const)("still recognises %j as naming %s", (lead, metric) => {
+    expect(lineFor(lead, metric)).toEqual({ headline: null, delta: DELTA });
+  });
+});
+
+describe("lead length — the ellipsis counts toward the budget", () => {
+  it("stays within 160 characters for text without a single space", () => {
+    // A digit keeps it from reading as a greeting (too few words).
+    const unbroken = `${"a".repeat(400)}1.`;
+    const lead = firstSubstantiveSentence(unbroken, null) ?? "";
+    expect(lead.endsWith("…")).toBe(true);
+    expect(lead.length).toBeLessThanOrEqual(160);
+  });
+
+  it("stays within 160 characters when the last space sits at the budget", () => {
+    const text = `${"b".repeat(159)} ${"c".repeat(39)}1.`;
+    const lead = firstSubstantiveSentence(text, null) ?? "";
+    expect(lead.length).toBeLessThanOrEqual(160);
+    // The space at the edge still ends a whole word.
+    expect(lead).toBe(`${"b".repeat(159)}…`);
+  });
+});

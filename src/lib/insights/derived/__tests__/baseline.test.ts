@@ -70,6 +70,50 @@ describe("pure statistics", () => {
     expect(band!.k).toBe(3);
   });
 
+  // A run of identical days has no dispersion at all: the bare MAD band
+  // collapsed to one value and every surface read "your usual range is
+  // 61–61 bpm", while a reading of 62 counted as outside it.
+  it("never collapses to a single value when the days are identical", () => {
+    const band = buildBaselineBand(Array(20).fill(61), "RESTING_HEART_RATE");
+    expect(band).not.toBeNull();
+    expect(band!.center).toBe(61);
+    expect(band!.low).toBeLessThan(61);
+    expect(band!.high).toBeGreaterThan(61);
+    // Distinct at the precision any surface prints a heart rate.
+    expect(Math.round(band!.low)).not.toBe(Math.round(band!.high));
+    // An ordinary next-day reading sits inside the band, not above it.
+    expect(62).toBeLessThanOrEqual(band!.high);
+    // The dispersion itself is reported as it is.
+    expect(band!.spread).toBe(0);
+  });
+
+  it.each([
+    ["RESTING_HEART_RATE", 61],
+    ["PULSE", 72],
+    ["HEART_RATE_VARIABILITY", 45],
+    ["RESPIRATORY_RATE", 14],
+    ["OXYGEN_SATURATION", 97],
+    ["BODY_TEMPERATURE", 36.6],
+    ["SKIN_TEMPERATURE", 34.1],
+    ["BLOOD_PRESSURE_SYS", 118],
+    ["BLOOD_PRESSURE_DIA", 76],
+    ["BLOOD_GLUCOSE", 95],
+    ["WEIGHT", 80],
+    ["VO2_MAX", 42],
+    ["ACTIVITY_STEPS", 8000],
+  ] as const)(
+    "gives %s a band that reads as a range at one decimal",
+    (type, value) => {
+      const band = buildBaselineBand(Array(10).fill(value), type);
+      expect(band!.low.toFixed(1)).not.toBe(band!.high.toFixed(1));
+    },
+  );
+
+  it("leaves a band wider than the floor exactly as the spread makes it", () => {
+    const band = buildBaselineBand([50, 52, 54, 56, 58], "PULSE", 3);
+    expect(band!.high - band!.center).toBeCloseTo(band!.spread, 10);
+  });
+
   it("parity: a composed-DAY-bucket series and the raw-DAY series yield the same band", () => {
     // Same per-day means whether they arrive as raw rows or DAY rollups.
     const perDayMeans = [60, 61, 62, 59, 63, 58, 64];

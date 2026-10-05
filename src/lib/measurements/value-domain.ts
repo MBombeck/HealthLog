@@ -153,3 +153,35 @@ export function metricFractionDigits(type: string | null | undefined): number {
   if (type && INTEGER_VALUED_MEASUREMENT_TYPES.has(type)) return 0;
   return DEFAULT_METRIC_FRACTION_DIGITS;
 }
+
+/**
+ * The smallest half-width a personal band may have, in the metric's canonical
+ * unit: roughly the day-to-day wobble of the measurement itself.
+ *
+ * A median ± k·MAD band has no width at all when most days carry the same
+ * value (a device that reports a whole-number resting rate does this often),
+ * and then reads "your usual range is 61–61 bpm" while a reading of 62 counts
+ * as outside it. Below this width a band says nothing a single reading could
+ * not, so the band is widened to it. Metrics not listed take one step of
+ * their own display precision, which is the least that keeps the two edges
+ * apart on screen.
+ */
+const MIN_BAND_HALF_WIDTH: Readonly<Record<string, number>> = {
+  RESTING_HEART_RATE: 2, // bpm
+  PULSE: 3, // bpm
+  HEART_RATE_VARIABILITY: 3, // ms
+  RESPIRATORY_RATE: 0.5, // breaths/min
+  OXYGEN_SATURATION: 1, // %
+  BODY_TEMPERATURE: 0.2, // °C
+  SKIN_TEMPERATURE: 0.2, // °C
+  WRIST_TEMPERATURE: 0.2, // °C
+  BLOOD_PRESSURE_SYS: 4, // mmHg
+  BLOOD_PRESSURE_DIA: 3, // mmHg
+  BLOOD_GLUCOSE: 5, // mg/dL
+  WEIGHT: 0.3, // kg
+};
+
+export function minimumBandHalfWidth(type: string | null | undefined): number {
+  if (!type) return 0;
+  return MIN_BAND_HALF_WIDTH[type] ?? 10 ** -metricFractionDigits(type);
+}

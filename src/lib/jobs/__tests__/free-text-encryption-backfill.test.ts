@@ -12,6 +12,7 @@ interface ConversationRow {
   userId: string;
   title: string | null;
   titleEncrypted: Uint8Array | null;
+  updatedAt?: Date;
 }
 interface EntryRow {
   id: string;
@@ -26,6 +27,7 @@ interface PractitionerRow {
   location: string | null;
   phoneEncrypted: Uint8Array | null;
   locationEncrypted: Uint8Array | null;
+  updatedAt?: Date;
 }
 interface RouteRow {
   id: string;
@@ -67,21 +69,48 @@ vi.mock("@/lib/db", () => {
       },
       findUnique: async (args: { where: { id: string } }) =>
         rows().find((x) => x.id === args.where.id) ?? null,
-      update: async (args: { where: { id: string }; data: Partial<R> }) => {
-        const r = rows().find((x) => x.id === args.where.id)!;
-        // Prisma's DbNull sentinel stores SQL NULL.
-        const data = Object.fromEntries(
-          Object.entries(args.data).map(([k, v]) => [
-            k,
-            v !== null && typeof v === "object" && !(v instanceof Uint8Array)
-              ? null
-              : v,
-          ]),
-        );
-        Object.assign(r, data);
-        return r;
+      update: async (args: { where: { id: string }; data: Partial<R> }) =>
+        write(rows, args.where.id, args.data),
+      // The storage-only rewrites match on the row's own `updatedAt` and
+      // carry it forward; a row whose stamp moved meanwhile is not written.
+      updateMany: async (args: {
+        where: { id: string; updatedAt?: Date };
+        data: Partial<R>;
+      }) => {
+        const r = rows().find((x) => x.id === args.where.id) as
+          (R & { updatedAt?: Date }) | undefined;
+        if (!r) return { count: 0 };
+        if (
+          args.where.updatedAt !== undefined &&
+          r.updatedAt?.getTime() !== args.where.updatedAt?.getTime()
+        ) {
+          return { count: 0 };
+        }
+        write(rows, args.where.id, args.data);
+        return { count: 1 };
       },
     };
+  }
+  function write<R extends { id: string }>(
+    rows: () => R[],
+    id: string,
+    patch: Partial<R>,
+  ): R {
+    const r = rows().find((x) => x.id === id)!;
+    // Prisma's DbNull sentinel stores SQL NULL; a Date is a real value.
+    const data = Object.fromEntries(
+      Object.entries(patch).map(([k, v]) => [
+        k,
+        v !== null &&
+        typeof v === "object" &&
+        !(v instanceof Uint8Array) &&
+        !(v instanceof Date)
+          ? null
+          : v,
+      ]),
+    );
+    Object.assign(r, data);
+    return r;
   }
   const delegates = {
     coachConversation: delegate(() => store.conversations, ["title"]),
@@ -126,6 +155,7 @@ beforeEach(() => {
       userId: "u1",
       title: "Why is my pressure up after the new tablets?",
       titleEncrypted: null,
+      updatedAt: new Date("2026-03-02T09:15:00.000Z"),
     },
     // Already migrated: left alone.
     {
@@ -218,6 +248,9 @@ describe("runFreeTextEncryptionBackfillForUser", () => {
     expect(readNote(c1.titleEncrypted, null)).toBe(
       "Why is my pressure up after the new tablets?",
     );
+    // Sealing a title is not activity: the Coach panel orders and groups by
+    // updatedAt, so the conversation keeps the stamp it had.
+    expect(c1.updatedAt).toEqual(new Date("2026-03-02T09:15:00.000Z"));
 
     const e1 = store.entries.find((r) => r.id === "e1")!;
     expect(e1.note).toBeNull();

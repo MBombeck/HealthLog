@@ -33,6 +33,7 @@ import {
   computeCoincidentDeviation,
   classifyDeviation,
   COINCIDENT_FIRE_THRESHOLD,
+  sameHoursStanding,
 } from "../coincident-deviation";
 
 const PROFILE = { ageYears: 40, sex: "MALE" as const };
@@ -232,5 +233,159 @@ describe("computeCoincidentDeviation", () => {
     expect(result.status === "ok" && result.value.fired).toBe(false);
     expect(result.status === "ok" && result.value.illnessExplained).toBe(false);
     expect(restModeMock.resolveRestMode).not.toHaveBeenCalled();
+  });
+});
+
+describe("glucose — a day in progress is compared with the same hours", () => {
+  /** Fourteen whole days: fasting 85 at 07:00, then 160 and 150 after meals. */
+  function glucoseDays(times: string[], values: number[]) {
+    return Array.from({ length: 14 }, (_, i) =>
+      times.map((time, j) => ({
+        value: values[j],
+        measuredAt: new Date(
+          `2026-05-${String(18 + i).padStart(2, "0")}T${time}:00Z`,
+        ),
+      })),
+    ).flat();
+  }
+  const rhrFlat = Array.from({ length: 10 }, (_, i) => ({
+    value: 58,
+    measuredAt: new Date(
+      `2026-05-${String(20 + i).padStart(2, "0")}T06:00:00Z`,
+    ),
+  }));
+
+  it("does not call a fasting morning 'below your range' against whole days", async () => {
+    // 08:00 today: only the fasting reading is in. Against whole-day means
+    // (~132) it read as below the range; against the same hours (85) it is
+    // an ordinary morning.
+    findMany.mockImplementation(async (args: { where: { type: string } }) => {
+      if (args.where.type === "BLOOD_GLUCOSE") {
+        return [
+          ...glucoseDays(["07:00", "13:00", "19:00"], [85, 160, 150]),
+          { value: 86, measuredAt: new Date("2026-06-02T07:00:00Z") },
+        ];
+      }
+      if (args.where.type === "RESTING_HEART_RATE") return rhrFlat;
+      return [];
+    });
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: NOW,
+      tz: "UTC",
+    });
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    const glucose = result.value.vitals.find((v) => v.type === "BLOOD_GLUCOSE");
+    expect(glucose).toBeDefined();
+    expect(glucose!.daysAgo).toBe(0);
+    expect(glucose!.value).toBe(86);
+    expect(glucose!.direction).toBe("in");
+    expect(glucose!.center).toBe(85);
+  });
+
+  it("cuts earlier days at today's latest reading, not at the clock", async () => {
+    // 14:00, and today holds only the 07:00 fasting value. Cut at 14:00 the
+    // earlier days include their 13:00 post-meal readings (mean ~122) and the
+    // morning read as low; cut at 07:00 they are fasting too.
+    findMany.mockImplementation(async (args: { where: { type: string } }) => {
+      if (args.where.type === "BLOOD_GLUCOSE") {
+        return [
+          ...glucoseDays(["07:00", "13:00", "19:00"], [85, 160, 150]),
+          { value: 84, measuredAt: new Date("2026-06-02T07:00:00Z") },
+        ];
+      }
+      if (args.where.type === "RESTING_HEART_RATE") return rhrFlat;
+      return [];
+    });
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: new Date("2026-06-02T14:00:00Z"),
+      tz: "UTC",
+    });
+    if (result.status !== "ok") throw new Error("expected ok");
+    const glucose = result.value.vitals.find((v) => v.type === "BLOOD_GLUCOSE");
+    expect(glucose!.direction).toBe("in");
+    expect(glucose!.center).toBe(85);
+    expect(glucose!.basis).toBe("sameHours");
+  });
+
+  it("still flags a morning that is low against earlier mornings", async () => {
+    findMany.mockImplementation(async (args: { where: { type: string } }) => {
+      if (args.where.type === "BLOOD_GLUCOSE") {
+        return [
+          ...glucoseDays(["07:00", "13:00", "19:00"], [85, 160, 150]),
+          { value: 62, measuredAt: new Date("2026-06-02T07:00:00Z") },
+        ];
+      }
+      if (args.where.type === "RESTING_HEART_RATE") return rhrFlat;
+      return [];
+    });
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: NOW,
+      tz: "UTC",
+    });
+    if (result.status !== "ok") throw new Error("expected ok");
+    const glucose = result.value.vitals.find((v) => v.type === "BLOOD_GLUCOSE");
+    expect(glucose!.direction).toBe("below");
+  });
+
+  it("says nothing about today when earlier days have no readings at this hour", async () => {
+    findMany.mockImplementation(async (args: { where: { type: string } }) => {
+      if (args.where.type === "BLOOD_GLUCOSE") {
+        return [
+          ...glucoseDays(["19:00"], [150]),
+          { value: 86, measuredAt: new Date("2026-06-02T07:00:00Z") },
+        ];
+      }
+      if (args.where.type === "RESTING_HEART_RATE") return rhrFlat;
+      if (args.where.type === "HEART_RATE_VARIABILITY") {
+        return rhrFlat.map((r) => ({ ...r, value: 60 }));
+      }
+      return [];
+    });
+    const result = await computeCoincidentDeviation("u1", PROFILE, {
+      now: NOW,
+      tz: "UTC",
+    });
+    if (result.status !== "ok") throw new Error("expected ok");
+    expect(
+      result.value.vitals.find((v) => v.type === "BLOOD_GLUCOSE"),
+    ).toBeUndefined();
+  });
+});
+
+describe("sameHoursStanding", () => {
+  it("reads an hourly-mean day by its day mean, not by sum / n", () => {
+    // Twelve dense readings in one hour and one in another: the mean of the
+    // hours' means is 100, the raw mean is 140. A type on the hourly-mean
+    // reader carries `dayMean`, and that is the day's value.
+    const day = (d: string, dayMean: number) => ({
+      day: d,
+      n: 13,
+      sum: 140 * 13,
+      dayMean,
+    });
+    const days = [
+      ...Array.from({ length: 8 }, (_, i) =>
+        day(`2026-05-${String(20 + i).padStart(2, "0")}`, 100),
+      ),
+      day("2026-06-02", 101),
+    ];
+    const standing = sameHoursStanding(days, "2026-06-02", "BLOOD_GLUCOSE");
+    expect(standing?.value).toBe(101);
+    expect(standing?.center).toBe(100);
+  });
+
+  it("falls back to sum / n where the reader has no day mean", () => {
+    const days = [
+      ...Array.from({ length: 8 }, (_, i) => ({
+        day: `2026-05-${String(20 + i).padStart(2, "0")}`,
+        n: 2,
+        sum: 180,
+      })),
+      { day: "2026-06-02", n: 1, sum: 88 },
+    ];
+    const standing = sameHoursStanding(days, "2026-06-02", "BLOOD_GLUCOSE");
+    expect(standing?.value).toBe(88);
+    expect(standing?.center).toBe(90);
   });
 });

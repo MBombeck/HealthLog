@@ -68,18 +68,24 @@ async function migrateMeasurementRow(id: string): Promise<boolean> {
   return prisma.$transaction(async (tx) => {
     const fresh = await tx.measurement.findUnique({
       where: { id },
-      select: { notes: true, notesEncrypted: true },
+      select: { notes: true, notesEncrypted: true, updatedAt: true },
     });
     // Already migrated (ciphertext present) or nothing to migrate.
     if (!fresh || fresh.notesEncrypted || fresh.notes === null) return false;
     // FAIL-CLOSED: a key error throws here and rolls the tx back, leaving the
     // plaintext row untouched.
     const encrypted = encryptNote(fresh.notes);
-    await tx.measurement.update({
-      where: { id },
-      data: { notesEncrypted: encrypted, notes: null },
+    // `updatedAt` is the sync cursor; a storage-only rewrite carries it so no
+    // client re-pulls a reading that did not change.
+    const { count } = await tx.measurement.updateMany({
+      where: { id, updatedAt: fresh.updatedAt },
+      data: {
+        notesEncrypted: encrypted,
+        notes: null,
+        updatedAt: fresh.updatedAt,
+      },
     });
-    return true;
+    return count === 1;
   });
 }
 
@@ -91,15 +97,19 @@ async function migrateMoodRow(id: string): Promise<boolean> {
   return prisma.$transaction(async (tx) => {
     const fresh = await tx.moodEntry.findUnique({
       where: { id },
-      select: { note: true, noteEncrypted: true },
+      select: { note: true, noteEncrypted: true, updatedAt: true },
     });
     if (!fresh || fresh.noteEncrypted || fresh.note === null) return false;
     const encrypted = encryptNote(fresh.note);
-    await tx.moodEntry.update({
-      where: { id },
-      data: { noteEncrypted: encrypted, note: null },
+    const { count } = await tx.moodEntry.updateMany({
+      where: { id, updatedAt: fresh.updatedAt },
+      data: {
+        noteEncrypted: encrypted,
+        note: null,
+        updatedAt: fresh.updatedAt,
+      },
     });
-    return true;
+    return count === 1;
   });
 }
 

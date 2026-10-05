@@ -63,6 +63,13 @@ export interface ReadDayAggregatesOptions {
   since: Date;
   /** Inclusive upper bound on `measuredAt`; omit for no upper bound. */
   until?: Date;
+  /**
+   * Keep only readings taken at or before this local clock time
+   * (`HH:MM:SS`, in `timeZone`) on their own day. Comparing a day still in
+   * progress against earlier days needs the same hours on both sides: by
+   * ten in the morning, today's mean has seen breakfast and nothing after.
+   */
+  upToLocalTime?: string;
   /** IANA zone the day boundary is cut in. */
   timeZone: string;
   /** Rows outside `[min, max]` are dropped before the fold. */
@@ -73,13 +80,21 @@ export interface ReadDayAggregatesOptions {
   db?: Pick<PrismaClient, "$queryRaw">;
 }
 
+/** `HH:MM` or `HH:MM:SS`, 24-hour. */
+const LOCAL_CLOCK = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
+
 export async function readDayAggregates(
   opts: ReadDayAggregatesOptions,
 ): Promise<DayAggregateRow[]> {
   const timeZone = isValidTimezone(opts.timeZone) ? opts.timeZone : "UTC";
-  const until = opts.until
+  const untilInstant = opts.until
     ? Prisma.sql`AND m."measured_at" <= ${opts.until}`
     : Prisma.empty;
+  const clock =
+    opts.upToLocalTime && LOCAL_CLOCK.test(opts.upToLocalTime)
+      ? Prisma.sql`AND ((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone})::time <= ${opts.upToLocalTime}::time`
+      : Prisma.empty;
+  const until = Prisma.sql`${untilInstant} ${clock}`;
   const range = opts.valueRange
     ? Prisma.sql`AND m."value" >= ${opts.valueRange.min} AND m."value" <= ${opts.valueRange.max}`
     : Prisma.empty;

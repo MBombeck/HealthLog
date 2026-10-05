@@ -7,12 +7,14 @@ interface MeasRow {
   userId: string;
   notes: string | null;
   notesEncrypted: Uint8Array | null;
+  updatedAt?: Date;
 }
 interface MoodRow {
   id: string;
   userId: string;
   note: string | null;
   noteEncrypted: Uint8Array | null;
+  updatedAt?: Date;
 }
 
 const store = vi.hoisted(() => ({
@@ -44,16 +46,31 @@ vi.mock("@/lib/db", () => {
           .map((r) => ({ id: r.id })),
       findUnique: async (args: { where: { id: string } }) => {
         const r = store.measurements.find((x) => x.id === args.where.id);
-        return r ? { notes: r.notes, notesEncrypted: r.notesEncrypted } : null;
+        return r
+          ? {
+              notes: r.notes,
+              notesEncrypted: r.notesEncrypted,
+              updatedAt: r.updatedAt,
+            }
+          : null;
       },
-      update: async (args: {
-        where: { id: string };
-        data: { notes: string | null; notesEncrypted: Uint8Array | null };
+      updateMany: async (args: {
+        where: { id: string; updatedAt?: Date };
+        data: {
+          notes: string | null;
+          notesEncrypted: Uint8Array | null;
+          updatedAt?: Date;
+        };
       }) => {
-        const r = store.measurements.find((x) => x.id === args.where.id)!;
+        const r = store.measurements.find((x) => x.id === args.where.id);
+        if (!r || r.updatedAt?.getTime() !== args.where.updatedAt?.getTime()) {
+          return { count: 0 };
+        }
         r.notes = args.data.notes;
         r.notesEncrypted = args.data.notesEncrypted;
-        return r;
+        // Prisma stamps now unless the write names the column.
+        r.updatedAt = args.data.updatedAt ?? new Date();
+        return { count: 1 };
       },
     },
     moodEntry: {
@@ -69,16 +86,30 @@ vi.mock("@/lib/db", () => {
           .map((r) => ({ id: r.id })),
       findUnique: async (args: { where: { id: string } }) => {
         const r = store.mood.find((x) => x.id === args.where.id);
-        return r ? { note: r.note, noteEncrypted: r.noteEncrypted } : null;
+        return r
+          ? {
+              note: r.note,
+              noteEncrypted: r.noteEncrypted,
+              updatedAt: r.updatedAt,
+            }
+          : null;
       },
-      update: async (args: {
-        where: { id: string };
-        data: { note: string | null; noteEncrypted: Uint8Array | null };
+      updateMany: async (args: {
+        where: { id: string; updatedAt?: Date };
+        data: {
+          note: string | null;
+          noteEncrypted: Uint8Array | null;
+          updatedAt?: Date;
+        };
       }) => {
-        const r = store.mood.find((x) => x.id === args.where.id)!;
+        const r = store.mood.find((x) => x.id === args.where.id);
+        if (!r || r.updatedAt?.getTime() !== args.where.updatedAt?.getTime()) {
+          return { count: 0 };
+        }
         r.note = args.data.note;
         r.noteEncrypted = args.data.noteEncrypted;
-        return r;
+        r.updatedAt = args.data.updatedAt ?? new Date();
+        return { count: 1 };
       },
     },
   };
@@ -99,7 +130,13 @@ beforeEach(() => {
   vi.stubEnv("ENCRYPTION_ACTIVE_KEY_ID", "");
   vi.stubEnv("ENCRYPTION_KEY", KEY);
   store.measurements = [
-    { id: "m1", userId: "u1", notes: "felt dizzy", notesEncrypted: null },
+    {
+      id: "m1",
+      userId: "u1",
+      notes: "felt dizzy",
+      notesEncrypted: null,
+      updatedAt: new Date("2026-02-01T07:00:00.000Z"),
+    },
     { id: "m2", userId: "u1", notes: null, notesEncrypted: null }, // no note
     {
       id: "m3",
@@ -109,7 +146,13 @@ beforeEach(() => {
     },
   ];
   store.mood = [
-    { id: "x1", userId: "u1", note: "rough night", noteEncrypted: null },
+    {
+      id: "x1",
+      userId: "u1",
+      note: "rough night",
+      noteEncrypted: null,
+      updatedAt: new Date("2026-02-03T22:00:00.000Z"),
+    },
     { id: "x2", userId: "u2", note: "other user", noteEncrypted: null },
   ];
   fail.encryptThrows = false;
@@ -135,6 +178,10 @@ describe("runNoteEncryptionBackfillForUser", () => {
     const x1 = store.mood.find((r) => r.id === "x1")!;
     expect(x1.note).toBeNull();
     expect(readNote(x1.noteEncrypted, null)).toBe("rough night");
+
+    // updatedAt is the sync cursor: a storage-only rewrite keeps it.
+    expect(m1.updatedAt).toEqual(new Date("2026-02-01T07:00:00.000Z"));
+    expect(x1.updatedAt).toEqual(new Date("2026-02-03T22:00:00.000Z"));
   });
 
   it("leaves note-less rows untouched and never writes a both-null content row", async () => {

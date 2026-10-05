@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.40.3] — 2026-10-05
+
+Small fixes to the Today overview and the numbers behind it.
+
+### Added
+
+- **`signalLine` on the daily digest.** The muted line under the lead is now
+  decided on the server: when the lead already talks about the top signal's
+  metric, only the delta remains, and the line is null when nothing is left.
+  Every client shows the same line.
+- **`basis` on health-status deviations.** `day` for the usual whole-day
+  range, `sameHours` for the usual range at this time of day.
+
+### Fixed
+
+- The Today lead is shown as whole sentences. A long sentence is no longer
+  cut mid-word; the headline or the deterministic sentence takes its place,
+  and only as a last resort is text shortened, at a word boundary.
+- Chart trend lines, legends and tooltips name every metric in the reader's
+  language instead of showing its internal name (resting heart rate among
+  them).
+- A personal usual range never collapses to a single value ("61–61 bpm"):
+  it keeps at least the measurement's own day-to-day spread, so the next
+  ordinary reading is not counted as outside it.
+- Glucose today is compared with the same hours of earlier days, up to the
+  time of today's latest reading. A fasting morning no longer reads as below
+  the range of whole days, and the range named is the usual one for this
+  time of day.
+- Encrypting stored text in place or rotating the encryption key no longer
+  makes old Coach conversations look recently active, and the Coach memory
+  summary no longer moves a conversation either. Measurements, mood entries
+  and every other encrypted record keep their sync position through the
+  same kind of rewrite.
+- Conversations an earlier release made look recently active move back to
+  their last message (migration 0375).
+
 ## [1.40.2] — 2026-10-05
 
 A calmer Coach with conversations in a side panel and settings in place; the

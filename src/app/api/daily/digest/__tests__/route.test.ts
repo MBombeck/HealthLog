@@ -70,6 +70,7 @@ const DIGEST: DailyDigest = {
     composition: ["BLOOD_PRESSURE", "ACTIVITY", "SLEEP"],
   },
   topSignal: null,
+  signalLine: null,
   briefingLead: "Blood pressure is holding steady.",
   lead: { text: "Blood pressure is holding steady.", source: "briefing" },
   today: [],

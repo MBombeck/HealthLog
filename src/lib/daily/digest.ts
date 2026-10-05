@@ -62,6 +62,7 @@ import {
   type TodayCycle,
   type TodayFact,
   type TodayLead,
+  type TodaySignalLine,
   type TodayRestMode,
   type TodaySleep,
   type TodayVital,
@@ -441,6 +442,12 @@ export interface DailyDigest {
    * day's strongest signal. Null when there is nothing to say.
    */
   lead: TodayLead | null;
+  /**
+   * The muted line under an AI lead: the top signal minus what the lead
+   * already says (the headline goes when the lead covers its metric, and the
+   * line is null when nothing is left). Null under a deterministic lead.
+   */
+  signalLine: TodaySignalLine | null;
   /**
    * The Today overview: up to five statements about the day (Rest Mode,
    * medications, an appointment today or tomorrow, last night, vitals,
@@ -1284,6 +1291,7 @@ export function buildDailyDigest(
     topSignal,
     briefingLead: overview.briefingLead,
     lead: overview.lead,
+    signalLine: overview.signalLine,
     today: overview.today,
     restMode: moduleEnabled(input.modules, "illness")
       ? (input.restMode ?? null)

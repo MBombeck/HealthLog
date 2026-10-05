@@ -18,7 +18,7 @@
  *     fact leaves the list; an appointment already on the rail is not repeated
  *     under Today.
  */
-import type { DailyBriefing } from "@/lib/ai/schema";
+import type { DailyBriefing, DailyBriefingSignal } from "@/lib/ai/schema";
 import type { CyclePhase } from "@/lib/cycle/types";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { Locale } from "@/lib/i18n/config";
@@ -154,8 +154,20 @@ export interface TodayOverviewInput {
   cycle: TodayCycle | null;
 }
 
+/**
+ * The muted line under the lead: the briefing's top signal, minus whatever
+ * the lead already says. `headline` is null when the lead covers the signal's
+ * metric; the line is absent altogether when nothing is left.
+ */
+export interface TodaySignalLine {
+  headline: string | null;
+  delta: string | null;
+}
+
 export interface TodayOverview {
   lead: TodayLead | null;
+  /** The supporting line under an AI lead, already de-duplicated. */
+  signalLine: TodaySignalLine | null;
   today: TodayFact[];
   /** The first substantive briefing sentence, for `briefingLead`. */
   briefingLead: string | null;
@@ -249,45 +261,229 @@ function repeatsScore(sentence: string, score: number | null): boolean {
   return false;
 }
 
-function clampLead(sentence: string): string {
-  return sentence.length > MAX_LEAD_LENGTH
-    ? `${sentence.slice(0, MAX_LEAD_LENGTH - 1).trimEnd()}…`
-    : sentence;
+/** Whether a sentence (or a run of them) fits the lead's length budget. */
+function fitsLead(text: string): boolean {
+  return text.length <= MAX_LEAD_LENGTH;
+}
+
+/**
+ * Shorten text that does not fit, at a word boundary, as the last resort.
+ *
+ * Slicing at a character count cut words in half ("…sleep landed r…"). The
+ * cut now falls on the last space inside the budget, and trailing clause
+ * punctuation goes with it, so what is left ends on a whole word.
+ */
+function shortenAtWord(text: string): string {
+  if (fitsLead(text)) return text;
+  // One character of the budget goes to the ellipsis itself, so the kept
+  // head is at most MAX - 1 long: a space at that index still ends a whole
+  // word, and text with no space at all is cut hard one short of the budget.
+  const space = text.slice(0, MAX_LEAD_LENGTH).lastIndexOf(" ");
+  const head = (
+    space > 0 ? text.slice(0, space) : text.slice(0, MAX_LEAD_LENGTH - 1)
+  )
+    .trimEnd()
+    .replace(/[\s,;:–—-]+$/u, "");
+  return `${head}…`;
+}
+
+/** The sentences of a paragraph that say something, in order. */
+function substantiveSentences(
+  paragraph: string | null | undefined,
+  score: number | null,
+): string[] {
+  if (!paragraph) return [];
+  return sentences(paragraph).filter(
+    (s) => !isGreetingOnly(s) && !repeatsScore(s, score),
+  );
 }
 
 /**
  * The first sentence of a paragraph that says something: not a greeting, and
  * not a restatement of the score inside the ring. Null when no sentence
  * qualifies, so the caller falls through to the next source rather than
- * showing filler.
+ * showing filler. A sentence past the length budget is shortened at a word
+ * boundary; it feeds `briefingLead` and the push line, which have no other
+ * source to fall to.
  */
 export function firstSubstantiveSentence(
   paragraph: string | null | undefined,
   score: number | null,
 ): string | null {
-  if (!paragraph) return null;
-  for (const sentence of sentences(paragraph)) {
-    if (isGreetingOnly(sentence)) continue;
-    if (repeatsScore(sentence, score)) continue;
-    return clampLead(sentence);
-  }
-  return null;
+  const first = substantiveSentences(paragraph, score)[0];
+  return first ? shortenAtWord(first) : null;
 }
 
 /**
  * The model's reaction line, minus any greeting or score sentence. Unlike the
  * briefing it may keep more than one sentence: it is written to be read whole.
+ * It keeps whole sentences from the start while they fit the budget, and is
+ * null when even the first one does not, so the lead falls to a source that
+ * can be shown complete.
  */
 function cleanReactionLine(
   line: string | null,
   score: number | null,
 ): string | null {
   if (!line) return null;
-  const kept = sentences(line).filter(
-    (s) => !isGreetingOnly(s) && !repeatsScore(s, score),
-  );
-  const text = kept.join(" ").replace(/\s+/g, " ").trim();
-  return text.length > 0 ? clampLead(text) : null;
+  let text = "";
+  for (const sentence of substantiveSentences(line, score)) {
+    const next = text ? `${text} ${sentence}` : sentence;
+    if (!fitsLead(next.replace(/\s+/g, " "))) break;
+    text = next.replace(/\s+/g, " ");
+  }
+  return text.length > 0 ? text : null;
+}
+
+/** Lowercase letters and digits only, for a wording-insensitive compare. */
+function normalise(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+/** Whether `text` already says what `phrase` says, wording aside. */
+function restates(text: string, phrase: string): boolean {
+  const p = normalise(phrase);
+  return p.length > 0 && normalise(text).includes(p);
+}
+
+/**
+ * A term that must start a word: `stem` lets an inflection follow it
+ * ("Blutdrucks", "tętna"), `word` must end where the word ends. Unicode-aware
+ * on both sides, since `\b` only knows ASCII letters and would split "spał".
+ * Without the boundaries a fragment inside another word named the metric:
+ * "risen" read as the Polish "sen" (sleep), "impulse" as "puls".
+ */
+const START = "(?<![\\p{L}\\p{N}])";
+const END = "(?![\\p{L}\\p{N}])";
+const stem = (...terms: string[]) => terms.map((x) => `${START}${x}`);
+const word = (...terms: string[]) => terms.map((x) => `${START}${x}${END}`);
+/** Hangul has no word boundary to lean on: the term carries its particle. */
+const hangul = (...terms: string[]) => terms;
+const terms = (...parts: string[][]) =>
+  new RegExp(parts.flat().join("|"), "iu");
+
+const WEIGHT_TERMS = terms(
+  stem("weigh", "gewicht"),
+  word("peso", "pesos", "poids", "wag[aięe]", "wadze"),
+  hangul("체중", "몸무게"),
+);
+
+/**
+ * How each briefing metric is named in prose, in every shipped language. The
+ * lead is model text in the reader's language, so "does the lead already talk
+ * about this metric" is a question about words, matched at word starts. A
+ * metric missing here simply falls back to the headline comparison.
+ */
+const METRIC_TERMS: Partial<
+  Record<DailyBriefingSignal["sourceMetric"], RegExp>
+> = {
+  bp: terms(
+    stem(
+      "blood\\s*pressure",
+      "blutdruck",
+      "presi[oó]n\\s+arterial",
+      "tensi[oó]n\\s+arterial",
+      "pression\\s+art[ée]rielle",
+      "tension\\s+art[ée]rielle",
+      "pressione\\s+(arteriosa|sanguigna)",
+      "ci[sś]nieni",
+    ),
+    hangul("혈압"),
+  ),
+  weight: WEIGHT_TERMS,
+  glp1_plateau: WEIGHT_TERMS,
+  pulse: terms(
+    word("pulses?", "puls(es)?", "pouls", "polso", "pulso"),
+    stem("t[eę]tn"),
+    hangul("맥박"),
+  ),
+  resting_hr: terms(
+    stem(
+      "resting\\s+(heart\\s*rate|pulse)",
+      "ruhepuls",
+      "ruhe-?herzfrequenz",
+      "en\\s+reposo",
+      "au\\s+repos",
+      "a\\s+riposo",
+      "spoczynkow",
+    ),
+    hangul("안정\\s*시?\\s*심박"),
+  ),
+  hrv: terms(
+    word("hrv"),
+    stem(
+      "heart[-\\s]*rate\\s+variability",
+      "herzfrequenzvariabilit",
+      "variabilidad\\s+de\\s+la\\s+frecuencia",
+      "variabilit[ée]\\s+de\\s+la\\s+fr[ée]quence",
+      "variabilit[àa]\\s+della\\s+frequenza",
+      "zmienno[sś][cć]\\s+rytmu",
+    ),
+    hangul("심박\\s*변이"),
+  ),
+  sleep: terms(
+    stem("sleep", "schlaf", "geschlafen", "dormi"),
+    word(
+      "slept",
+      "sue[nñ]o",
+      "sommeil",
+      "sonno",
+      "sen",
+      "snu",
+      "spa[lł](a|e[sś]|a[sś]|y)?",
+    ),
+    hangul("수면", "잠을", "잠이", "잠은", "잠도"),
+  ),
+  steps: terms(
+    word("steps", "schritte", "schritten", "pasos", "passi", "krok(i|ów|ach)"),
+    hangul("걸음"),
+  ),
+  mood: terms(
+    stem("stimmung"),
+    word("mood", "[aá]nimo", "humeur", "umore", "nastr(ój|oj|oju)"),
+    hangul("기분"),
+  ),
+  compliance: terms(
+    stem("medication", "medikament", "einnahme", "m[ée]dicament", "farmac"),
+    word("doses?", "dosis", "medicaci[oó]n", "lek(i|ów|u|ami)?"),
+    hangul("복약", "약물"),
+  ),
+  body_temp: terms(stem("temperatur", "temp[ée]rature"), hangul("체온")),
+  vo2_max: terms(stem("vo2", "vo₂")),
+};
+
+/** Whether the lead already talks about the metric a signal is drawn from. */
+function leadCoversMetric(
+  lead: string,
+  metric: DailyBriefingSignal["sourceMetric"],
+): boolean {
+  return METRIC_TERMS[metric]?.test(lead) ?? false;
+}
+
+/**
+ * The line under the lead, decided here so every client shows the same one.
+ *
+ * Only an AI lead carries it (a deterministic lead is already the strongest
+ * signal). When the lead already talks about the top signal's metric, or
+ * says its headline outright, the headline goes and the delta stands alone;
+ * with no delta left there is no line.
+ */
+function buildSignalLine(
+  lead: TodayLead | null,
+  signal: DailyBriefingSignal | null,
+): TodaySignalLine | null {
+  if (!lead || lead.source === "signal" || !signal) return null;
+  const headline = signal.headline?.trim() || null;
+  const delta = signal.delta?.trim() || null;
+  const covered =
+    (headline !== null && restates(lead.text, headline)) ||
+    leadCoversMetric(lead.text, signal.sourceMetric);
+  const keptDelta = delta && !restates(lead.text, delta) ? delta : null;
+  if (!covered && headline) return { headline, delta: keptDelta };
+  return keptDelta ? { headline: null, delta: keptDelta } : null;
 }
 
 /** Vitals that may speak about today: module on, reading current. */
@@ -562,6 +758,11 @@ function cycleFact(input: TodayOverviewInput, t: Translate): TodayFact | null {
  * their capabilities are available; the deterministic sentence is what makes
  * the card whole without them.
  *
+ * A lead is shown whole or not at all: model text that does not fit
+ * {@link MAX_LEAD_LENGTH} gives way to the next source, and only when no
+ * source fits is the first model sentence shortened, at a word boundary. The
+ * budget is also what keeps the hero's height steady from day to day.
+ *
  * Facts follow a fixed priority (Rest Mode, medications, an appointment today
  * or tomorrow, last night, vitals, cycle) and are capped at
  * {@link MAX_TODAY_FACTS}. The list is never padded: a quiet account gets as
@@ -573,26 +774,37 @@ export function buildTodayOverview(
 ): TodayOverview {
   const sleep = moduleOn(input.modules, "sleep") ? input.sleep : null;
 
-  const briefingLead = firstSubstantiveSentence(
-    input.briefing?.paragraph,
-    input.scoreValue,
-  );
+  const briefingSentence =
+    substantiveSentences(input.briefing?.paragraph, input.scoreValue)[0] ??
+    null;
+  const briefingLead = briefingSentence
+    ? shortenAtWord(briefingSentence)
+    : null;
   const reaction = cleanReactionLine(input.reactionLine, input.scoreValue);
-  const headline = input.briefing?.signalsOfDay?.[0]?.headline?.trim() || null;
+  const rawHeadline =
+    input.briefing?.signalsOfDay?.[0]?.headline?.trim() || null;
+  const headline =
+    rawHeadline && !repeatsScore(rawHeadline, input.scoreValue)
+      ? rawHeadline
+      : null;
 
   let lead: TodayLead | null = null;
   let consumed: TodayFactKind | null = null;
   if (reaction) {
     lead = { text: reaction, source: "reaction" };
-  } else if (briefingLead) {
-    lead = { text: briefingLead, source: "briefing" };
-  } else if (headline && !repeatsScore(headline, input.scoreValue)) {
-    lead = { text: clampLead(headline), source: "briefing" };
+  } else if (briefingSentence && fitsLead(briefingSentence)) {
+    lead = { text: briefingSentence, source: "briefing" };
+  } else if (headline && fitsLead(headline)) {
+    lead = { text: headline, source: "briefing" };
   } else {
     const signal = signalLead(input, sleep, t);
     if (signal) {
       lead = { text: signal.text, source: "signal" };
       consumed = signal.consumes;
+    } else if (briefingLead) {
+      lead = { text: briefingLead, source: "briefing" };
+    } else if (headline) {
+      lead = { text: shortenAtWord(headline), source: "briefing" };
     }
   }
 
@@ -609,6 +821,10 @@ export function buildTodayOverview(
 
   return {
     lead,
+    signalLine: buildSignalLine(
+      lead,
+      input.briefing?.signalsOfDay?.[0] ?? null,
+    ),
     today: facts.slice(0, MAX_TODAY_FACTS),
     briefingLead,
   };

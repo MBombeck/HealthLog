@@ -4492,6 +4492,7 @@
       "shiftUp": "{vital} hat sich gegenüber deiner jüngsten Norm nach oben verschoben.",
       "shiftDown": "{vital} hat sich gegenüber deiner jüngsten Norm nach unten verschoben.",
       "rangeContext": "Aktuell {value}, sonst {low}–{high}.",
+      "rangeContextTimeOfDay": "Aktuell {value}, zu dieser Tageszeit sonst {low}–{high}.",
       "shiftContext": "Etwa {before} davor, {after} seitdem."
     },
     "breathingScreening": {
@@ -11018,6 +11019,7 @@
       "steadyWeeksOther": "Seit {count} Wochen stabil",
       "valueWithUnit": "{value} {unit}",
       "rangeWithUnit": "{low} bis {high} {unit}",
+      "rangeAtThisTime": "{range} für diese Tageszeit",
       "vital": {
         "RESTING_HEART_RATE": "Ruhepuls",
         "HEART_RATE_VARIABILITY": "Herzfrequenzvariabilität",

@@ -61,4 +61,15 @@ describe("summariseHealthStatus", () => {
     const s = summariseHealthStatus([vital(true, "in")], []);
     expect(s.present).toBe(false);
   });
+
+  it("says when a deviation is measured against the same hours", () => {
+    const s = summariseHealthStatus(
+      [
+        { ...vital(true, "below"), type: "BLOOD_GLUCOSE", basis: "sameHours" },
+        vital(true, "above"),
+      ],
+      [],
+    );
+    expect(s.deviations.map((d) => d.basis)).toEqual(["sameHours", "day"]);
+  });
 });

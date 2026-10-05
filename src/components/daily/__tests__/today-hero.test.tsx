@@ -71,6 +71,12 @@ function digest(over: Partial<DailyDigest> = {}): DailyDigest {
       nudge: "Take it again after a calm five minutes.",
       delta: "+6 mmHg vs your 30-day average",
     },
+    // Resolved on the server: the lead says nothing about blood pressure, so
+    // the whole signal rides under it.
+    signalLine: {
+      headline: "Blood pressure a touch high this morning",
+      delta: "+6 mmHg vs your 30-day average",
+    },
     briefingLead: "Your week is trending steady.",
     lead: { text: "Your week is trending steady.", source: "briefing" },
     today: [],
@@ -209,6 +215,7 @@ describe("<TodayHero>", () => {
           lead: null,
           briefingLead: null,
           topSignal: null,
+          signalLine: null,
           reactionLine: "Score 82 today.",
         })}
       />,
@@ -233,6 +240,7 @@ describe("<TodayHero>", () => {
             nudge: "",
             delta: null,
           },
+          signalLine: null,
         })}
       />,
     );
@@ -270,6 +278,7 @@ describe("<TodayHero>", () => {
         digest={digest({
           score: null,
           topSignal: null,
+          signalLine: null,
           briefingLead: null,
           lead: null,
           line: "Nothing needs your attention today — everything's tracking normally.",
@@ -289,6 +298,7 @@ describe("<TodayHero>", () => {
         digest={digest({
           score: null,
           topSignal: null,
+          signalLine: null,
           briefingLead: null,
           lead: null,
           line: "Nothing needs your attention today — everything's tracking normally.",
@@ -340,6 +350,10 @@ describe("<TodayHero>", () => {
             text: "Blood pressure a touch high this morning.",
             source: "briefing",
           },
+          signalLine: {
+            headline: null,
+            delta: "+6 mmHg vs your 30-day average",
+          },
         })}
       />,
     );
@@ -355,6 +369,7 @@ describe("<TodayHero>", () => {
       <TodayHero
         digest={digest({
           topSignal: null,
+          signalLine: null,
           briefingLead: null,
           lead: null,
           reactionLine: null,
@@ -378,6 +393,7 @@ describe("<TodayHero>", () => {
       <TodayHero
         digest={digest({
           topSignal: null,
+          signalLine: null,
           worthALook: [],
         })}
       />,
@@ -443,6 +459,7 @@ describe("<TodayHero>", () => {
         digest={digest({
           score: null,
           topSignal: null,
+          signalLine: null,
           briefingLead: null,
           lead: null,
           worthALook: [],
@@ -596,6 +613,7 @@ describe("<TodayHero> Today overview", () => {
         digest={digest({
           score: null,
           topSignal: null,
+          signalLine: null,
           briefingLead: null,
           lead: null,
           worthALook: [],
@@ -615,6 +633,7 @@ describe("<TodayHero> Today overview", () => {
             text: "All 4 of your latest vitals sit inside their usual range.",
             source: "signal",
           },
+          signalLine: null,
         })}
       />,
     );

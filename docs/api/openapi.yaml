@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.40.2
+  version: 1.40.3
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -60433,6 +60433,14 @@ components:
                 enum:
                   - above
                   - below
+              basis:
+                type: string
+                enum:
+                  - day
+                  - sameHours
+                description: "What `low`/`high` describe: the usual whole day (`day`), or the usual range for this time of day
+                  (`sameHours`), used for a day still in progress whose mean moves with the hour (glucose). Additive
+                  since v1.40.3."
             required:
               - type
               - value
@@ -60440,6 +60448,7 @@ components:
               - low
               - high
               - direction
+              - basis
             additionalProperties: false
         shifts:
           type: array
@@ -72562,6 +72571,28 @@ components:
             are available, otherwise a deterministic sentence about the day's strongest signal (a vital outside its
             personal range, an unusual night, vitals in range, last night). Null when there is nothing to say. When the
             deterministic sentence is built from a fact, that fact is left out of `today`. Additive since v1.40."
+        signalLine:
+          anyOf:
+            - type: object
+              properties:
+                headline:
+                  anyOf:
+                    - type: string
+                    - type: "null"
+                  description: The top signal's headline, or null when the lead already talks about its metric.
+                delta:
+                  anyOf:
+                    - type: string
+                    - type: "null"
+                  description: The top signal's delta, when it has one.
+              required:
+                - headline
+                - delta
+              additionalProperties: false
+            - type: "null"
+          description: "The muted line under an AI lead, decided on the server so every client shows the same one: the top signal
+            minus what the lead already says. Null under a deterministic lead, without a top signal, or when the lead
+            already says everything the signal would. Additive since v1.40.3."
         today:
           maxItems: 5
           type: array
@@ -72652,6 +72683,7 @@ components:
         - topSignal
         - briefingLead
         - lead
+        - signalLine
         - today
         - restMode
         - line

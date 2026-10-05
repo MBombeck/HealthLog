@@ -259,6 +259,8 @@ interface ExtrasVital {
   high: number;
   direction: "above" | "below" | "in";
   daysAgo: number;
+  /** Held against the same hours of earlier days, see `VitalDeviation`. */
+  basis?: "sameHours";
 }
 
 /**
@@ -286,6 +288,7 @@ async function gatherVitals(
       high: v.high,
       direction: v.direction,
       daysAgo: Number.isFinite(v.daysAgo) ? v.daysAgo : Number.MAX_SAFE_INTEGER,
+      ...(v.basis ? { basis: v.basis } : {}),
     }));
   } catch {
     return [];
@@ -370,11 +373,18 @@ function toTodayVital(
       value: shown(vital.value),
       unit,
     }),
-    rangeLabel: t("daily.today.rangeWithUnit", {
-      low: shown(vital.low),
-      high: shown(vital.high),
-      unit,
-    }),
+    rangeLabel: (() => {
+      const range = t("daily.today.rangeWithUnit", {
+        low: shown(vital.low),
+        high: shown(vital.high),
+        unit,
+      });
+      // A range read off the same hours of earlier days is the usual range
+      // for this time of day, not the whole-day band shown elsewhere.
+      return vital.basis === "sameHours"
+        ? t("daily.today.rangeAtThisTime", { range })
+        : range;
+    })(),
     moduleKey: moduleForMeasurementType(vital.type),
   };
 }

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   ENCRYPTED_COLUMNS,
   encryptedColumnKey,
+  UPDATED_AT_MODELS,
   type EncryptedColumn,
 } from "../encrypted-columns";
 
@@ -222,5 +223,19 @@ describe("encrypted-column registry", () => {
       unreferenced,
       "registry columns NOT fully referenced (field + model delegate) by scripts/rotate-encryption-key.ts",
     ).toEqual([]);
+  });
+});
+
+describe("UPDATED_AT_MODELS", () => {
+  it("lists exactly the registry models that carry @updatedAt in the schema", () => {
+    const schema = readFileSync(SCHEMA_PATH, "utf8");
+    const stamped = new Set<string>();
+    for (const m of schema.matchAll(/^model\s+(\w+)\s*\{([\s\S]*?)^\}/gm)) {
+      if (/@updatedAt\b/.test(m[2])) stamped.add(m[1]);
+    }
+    const registry = [...new Set(ENCRYPTED_COLUMNS.map((c) => c.model))];
+    const expected = registry.filter((m) => stamped.has(m)).sort();
+    expect(expected.length).toBeGreaterThan(20);
+    expect([...UPDATED_AT_MODELS].sort()).toEqual(expected);
   });
 });

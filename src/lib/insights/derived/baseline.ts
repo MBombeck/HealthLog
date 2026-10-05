@@ -34,6 +34,7 @@ import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
 import { toProfileSex } from "@/lib/profile/sex";
 import {
   clampDerivedLowerBound,
+  minimumBandHalfWidth,
   isPlausibleMetricValue,
   plausibleMetricRange,
 } from "@/lib/measurements/value-domain";
@@ -70,12 +71,13 @@ export interface VitalsBaselineValue {
   /** Robust center (median of the per-day means). */
   center: number;
   /**
-   * Band lower edge (center − k·MAD·scale), floored at 0 for a metric whose
+   * Band lower edge (center − k·MAD·scale, at least the metric's
+   * `minimumBandHalfWidth` below center), floored at 0 for a metric whose
    * plausibility domain forbids negative values. `spread` below stays the
    * unclamped dispersion, so a deviation-in-σ calculation is unaffected.
    */
   low: number;
-  /** Band upper edge (center + k·MAD·scale). */
+  /** Band upper edge (center + k·MAD·scale, with the same minimum width). */
   high: number;
   /** The MAD-derived σ-equivalent spread (k applied; same units as the metric). */
   spread: number;
@@ -204,10 +206,15 @@ export function buildBaselineBand(
   const mad = medianAbsoluteDeviation(dayMeans);
   // Scale MAD to a σ-equivalent so the band reads like a robust ±kσ.
   const spread = k * mad * MAD_SIGMA_SCALE;
+  // The edges never sit closer than the measurement's own day-to-day wobble:
+  // a run of identical days has no dispersion, and a zero-width band read
+  // "61–61 bpm" and put the next ordinary reading outside it. `spread` stays
+  // the measured dispersion for anything that reasons in σ.
+  const halfWidth = Math.max(spread, minimumBandHalfWidth(type));
   return {
     center,
-    low: clampDerivedLowerBound(type, center - spread),
-    high: center + spread,
+    low: clampDerivedLowerBound(type, center - halfWidth),
+    high: center + halfWidth,
     spread,
     sampleDays: dayMeans.length,
     k,

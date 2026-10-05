@@ -109,11 +109,16 @@ export function HealthStatusCard({
                 )}
               </p>
               <p className="text-muted-foreground text-xs leading-snug">
-                {t("insights.healthStatus.rangeContext", {
-                  value: metricValue(d.type, d.value),
-                  low: metricValue(d.type, d.low),
-                  high: metricValue(d.type, d.high),
-                })}
+                {t(
+                  d.basis === "sameHours"
+                    ? "insights.healthStatus.rangeContextTimeOfDay"
+                    : "insights.healthStatus.rangeContext",
+                  {
+                    value: metricValue(d.type, d.value),
+                    low: metricValue(d.type, d.low),
+                    high: metricValue(d.type, d.high),
+                  },
+                )}
               </p>
             </div>
           </div>

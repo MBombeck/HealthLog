@@ -48,6 +48,8 @@ import {
 import {
   ENCRYPTED_COLUMNS,
   type EncryptedColumn,
+  preserveUpdatedAt,
+  UPDATED_AT_MODELS,
 } from "@/lib/crypto/encrypted-columns";
 
 /** Sentinel bucket for legacy (unversioned) ciphertext under `byKeyId`. */
@@ -79,7 +81,7 @@ interface ColumnDelegate {
     where?: Record<string, unknown>;
   }) => Promise<Array<Record<string, unknown>>>;
   update: (args: {
-    where: Record<string, string>;
+    where: Record<string, unknown>;
     data: Record<string, unknown>;
   }) => Promise<unknown>;
   /** Only ever called for a `disposable` column's unreadable rows. */
@@ -183,6 +185,8 @@ async function walkColumn(
     id: string;
     value: unknown;
     codec: string | null;
+    /** The row's `updatedAt`, for a model that has one; else undefined. */
+    updatedAt: unknown;
   }) => Promise<void> | void,
 ): Promise<void> {
   const codecField = col.codecField;
@@ -197,6 +201,7 @@ async function walkColumn(
         [pk]: true,
         [col.field]: true,
         ...(codecField ? { [codecField]: true } : {}),
+        ...(UPDATED_AT_MODELS.has(col.model) ? { updatedAt: true } : {}),
       },
       orderBy: { [pk]: "asc" },
       take: batchSize,
@@ -214,6 +219,7 @@ async function walkColumn(
         id: row[pk] as string,
         value,
         codec: codecField ? String(row[codecField] ?? "") : (col.codec ?? null),
+        updatedAt: row.updatedAt,
       });
     }
     cursor = rows[rows.length - 1]![pk] as string;
@@ -467,7 +473,7 @@ export async function rotateColumn(
   // interrupted run resumes cleanly on the next invocation. `scanned` counts
   // the rows that hold ciphertext, whatever the column.
   try {
-    await walkColumn(delegate, col, async ({ id, value, codec }) => {
+    await walkColumn(delegate, col, async ({ id, value, codec, updatedAt }) => {
       if (shouldStop()) throw new RotationStopped();
       result.scanned += 1;
       if (walkedKeyId(value, codec, col.kind) === getActiveKeyId()) return;
@@ -481,14 +487,19 @@ export async function rotateColumn(
                 encrypt(decrypt(toCiphertext(value, col.kind)!)),
                 col.kind,
               );
+        // Re-sealing is not an edit: the row keeps its own `updatedAt`, and
+        // the write matches on it, so a row edited since the read is left for
+        // the next run rather than stamped with the run time.
+        const keepUpdatedAt = preserveUpdatedAt(col.model, updatedAt);
         await delegate.update({
-          where: { [pkField(col)]: id },
-          data: { [col.field]: next },
+          where: { [pkField(col)]: id, ...keepUpdatedAt },
+          data: { [col.field]: next, ...keepUpdatedAt },
         });
         result.rotated += 1;
       } catch (err) {
         // Deleted between the read and the write (a backup replacing its
-        // pieces, an account going): nothing is left to rotate.
+        // pieces, an account going), or edited since the read: nothing to
+        // rotate now; an edited row is picked up by the next run.
         if (isRowGone(err)) return;
         await onUnreadable(id);
       }

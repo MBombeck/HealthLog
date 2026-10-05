@@ -677,6 +677,52 @@ describe("loadDailyDigest — Today overview inputs", () => {
     expect(digest.briefingLead).toBeNull();
   });
 
+  it("says a glucose range is the usual one for this time of day", async () => {
+    // Today's glucose is held against the same hours of earlier days, so the
+    // range it names is not the whole-day band shown elsewhere.
+    const { getServerTranslator: real } = await vi.importActual<
+      typeof import("@/lib/i18n/server-translator")
+    >("@/lib/i18n/server-translator");
+    const { getServerTranslator } =
+      await import("@/lib/i18n/server-translator");
+    vi.mocked(getServerTranslator).mockReturnValueOnce(real("en"));
+    vi.mocked(readDashboardSnapshotCached).mockResolvedValueOnce({
+      ...SNAPSHOT,
+      body: {
+        ...SNAPSHOT.body,
+        briefingAi: aiUnavailable("user_disabled"),
+      },
+    } as never);
+    vi.mocked(aiCapabilityToServe).mockResolvedValue(
+      aiUnavailable("user_disabled"),
+    );
+    vi.mocked(computeCoincidentDeviation).mockResolvedValueOnce({
+      status: "ok",
+      value: {
+        fired: false,
+        contributing: [],
+        day: "2026-07-17",
+        illnessExplained: false,
+        vitals: [
+          {
+            type: "BLOOD_GLUCOSE",
+            value: 70,
+            center: 86,
+            low: 80,
+            high: 92,
+            outside: true,
+            direction: "below",
+            daysAgo: 0,
+            basis: "sameHours",
+          },
+        ],
+      },
+    } as never);
+    const digest = await loadDailyDigest(USER, NOW);
+    expect(digest.lead?.source).toBe("signal");
+    expect(digest.lead?.text).toMatch(/80 to 92 mg\/dL for this time of day/);
+  });
+
   it("publishes how long the score has held", async () => {
     vi.mocked(readDashboardSnapshotCached).mockResolvedValueOnce({
       ...SNAPSHOT,

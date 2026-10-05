@@ -56,7 +56,7 @@ type RunCompletion = typeof runStatusCompletion;
 export interface RefreshConversationSummaryOptions {
   now?: Date;
   runCompletion?: RunCompletion;
-  prisma?: Pick<PrismaClient, "coachConversation">;
+  prisma?: Pick<PrismaClient, "coachConversation" | "$executeRaw">;
   locale?: "de" | "en";
 }
 
@@ -227,14 +227,16 @@ export async function refreshConversationSummary(
 
   // 6. Encrypt + persist. Field-by-field data object (no spread).
   const summaryEncrypted = encryptToBytes(text);
-  await prisma.coachConversation.update({
-    where: { id: conversationId },
-    data: {
-      summaryEncrypted,
-      summaryUpdatedAt: now,
-      summaryTurnCount: foldHighWater,
-    },
-  });
+  // Raw SQL on purpose: a Prisma `update` stamps `updatedAt`, and the Coach
+  // panel orders and groups conversations by it. A memory rewrite is
+  // bookkeeping, not activity, so it must not move the thread to "Today".
+  // Every value is a bound parameter.
+  await prisma.$executeRaw`
+    UPDATE "coach_conversations"
+    SET "summary_encrypted" = ${summaryEncrypted},
+        "summary_updated_at" = ${now},
+        "summary_turn_count" = ${foldHighWater}
+    WHERE "id" = ${conversationId}`;
 
   // 7. Counts + ids only — never the summary text.
   annotate({

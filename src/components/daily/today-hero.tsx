@@ -74,20 +74,6 @@ function formatDelta(
   return t("daily.today.deltaVsBaseline", { delta: signed });
 }
 
-/** Lowercase letters and digits only, for a wording-insensitive compare. */
-function normalise(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .trim();
-}
-
-/** Whether `lead` already says what `headline` says. */
-function restates(lead: string, headline: string): boolean {
-  const h = normalise(headline);
-  return h.length > 0 && normalise(lead).includes(h);
-}
-
 export function TodayHero({
   digest,
   renderFilteredAllClear = false,
@@ -148,18 +134,12 @@ export function TodayHero({
     digest.lead === undefined
       ? (digest.reactionLine ?? digest.briefingLead ?? null)
       : (digest.lead?.text ?? null);
-  const topSignal = digest.topSignal;
-  // The briefing's top signal rides under an AI lead as its supporting line,
-  // and only with what the lead does not already say: a headline the lead
-  // restates is dropped and its delta, when there is one, stands alone.
-  const signalLine =
-    topSignal && lead && digest.lead?.source !== "signal"
-      ? restates(lead, topSignal.headline)
-        ? topSignal.delta
-          ? { headline: null, delta: topSignal.delta }
-          : null
-        : { headline: topSignal.headline, delta: topSignal.delta }
-      : null;
+  // The line under the lead is decided on the server (`digest.signalLine`):
+  // the briefing's top signal minus whatever the lead already says, so the
+  // headline goes when the lead talks about its metric and the delta stands
+  // alone. A digest the service worker cached before the field existed simply
+  // shows no line.
+  const signalLine = lead ? (digest.signalLine ?? null) : null;
   // A score-only digest with nothing else to say has no narrative content for
   // the leading column. Keeping the full md ring in that two-column shell left
   // a blank column beside a 168 px dial and pushed the all-clear read below
