@@ -493,11 +493,6 @@ test.describe("Coach page frame", () => {
       const scan = async (selector: string, label: string) => {
         const result = await new AxeBuilder({ page })
           .include(selector)
-          // The data-area switches belong to the sources rail, which this
-          // frame embeds unchanged; a switched-off row dims its label below
-          // AA (`opacity-60` over muted text). That is the rail's own defect,
-          // left for the rail's rework with the lookback limit.
-          .exclude('[data-slot="coach-sources-list"]')
           .withTags([
             "wcag2a",
             "wcag2aa",
