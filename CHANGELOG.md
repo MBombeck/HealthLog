@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.40.4] — 2026-10-05
+
+The Coach's conversation panel docks to the right edge; model and tokens
+move behind an info icon; no view chip for a result that already toggles.
+
+### Changed
+
+- **Coach panel.** Flush against the right edge, full height below the top
+  bar, its own scroll area; the shell renders `/coach` without its container
+  gutter. The toggle uses mirrored panel icons and moves with the panel.
+- **Answer row.** Copy, read aloud, retry, an info icon and the time in one
+  left-aligned group; the info icon shows model and token count on hover,
+  focus or tap.
+- **Follow-ups.** No "show as chart/table" chip when the answer's result
+  already offers that toggle; also for stored answers.
+
 ## [1.40.3] — 2026-10-05
 
 Small fixes to the Today overview and the numbers behind it.
