@@ -66,7 +66,7 @@ function Textarea({
         // iOS zoom defence + WCAG 2.5.5 tap-target floor; see the
         // primitive's docblock for the full reasoning.
         "border-input bg-background text-foreground placeholder:text-muted-foreground dark:bg-input/30 min-h-11 w-full rounded-md border px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-9 sm:text-sm",
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+        "focus-visible:border-input-focus aria-invalid:focus-visible:ring-[3px]",
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         className,
       )}

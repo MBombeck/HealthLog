@@ -55,7 +55,7 @@ import { cn } from "@/lib/utils";
 // chevron uses.
 
 const NATIVE_SELECT_CLASS =
-  "border-input bg-background text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-11 sm:h-10 w-full appearance-none rounded-md border ps-3 pe-9 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none bg-[image:var(--native-select-chevron)] bg-[length:1rem] bg-[position:right_0.75rem_center] bg-no-repeat";
+  "border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-input-focus flex h-11 sm:h-10 w-full appearance-none rounded-md border ps-3 pe-9 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:outline-none bg-[image:var(--native-select-chevron)] bg-[length:1rem] bg-[position:right_0.75rem_center] bg-no-repeat";
 
 export type NativeSelectProps = React.SelectHTMLAttributes<HTMLSelectElement>;
 

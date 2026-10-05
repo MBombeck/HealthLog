@@ -989,7 +989,7 @@ export function DocumentDetailSheet({
                       setTitleDraft(doc.title ?? "");
                       setEditingTitle(true);
                     }}
-                    className="border-input hover:bg-muted/50 focus-visible:ring-ring/50 flex min-h-10 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+                    className="border-input hover:bg-muted/50 focus-visible:border-input-focus flex min-h-10 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm focus-visible:outline-none"
                   >
                     <span
                       className={cn(

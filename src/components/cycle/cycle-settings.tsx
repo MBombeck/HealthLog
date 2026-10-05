@@ -371,7 +371,7 @@ function PriorField({
         max={max}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="border-input bg-background focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
+        className="border-input bg-background focus-visible:border-input-focus w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none"
       />
     </div>
   );
