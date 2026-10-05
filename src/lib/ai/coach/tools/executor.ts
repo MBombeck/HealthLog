@@ -619,11 +619,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Whether a payload holds at least one finite number anywhere. */
+/**
+ * Fields that describe a block rather than measure anything: the freshness
+ * stamp (`asOf.daysAgo` is a number, but no reading), and the scope echo. A
+ * block trimmed to `{ unit, asOf }` holds no figure.
+ */
+const METADATA_FIELDS: ReadonlySet<string> = new Set(["asOf", "scope"]);
+
+/** Whether a payload holds at least one finite measured number anywhere. */
 function carriesFigures(value: unknown): boolean {
   if (typeof value === "number") return Number.isFinite(value);
   if (Array.isArray(value)) return value.some(carriesFigures);
-  if (isRecord(value)) return Object.values(value).some(carriesFigures);
+  if (isRecord(value)) {
+    return Object.entries(value).some(
+      ([key, child]) => !METADATA_FIELDS.has(key) && carriesFigures(child),
+    );
+  }
   return false;
 }
 

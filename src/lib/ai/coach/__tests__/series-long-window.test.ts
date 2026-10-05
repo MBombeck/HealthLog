@@ -244,6 +244,12 @@ describe("get_metric_series inside a chat turn", () => {
     for (const empty of [
       { unit: "kg" },
       { omitted: "trimmed for prompt budget" },
+      // The shape the budget pass really leaves: the unit and the freshness
+      // stamp, whose `daysAgo` is a number but not a reading.
+      {
+        unit: "kg",
+        asOf: { daysAgo: 3, isToday: false, currentForTodayClaims: false },
+      },
     ]) {
       buildCoachSnapshot.mockReset();
       buildCoachSnapshot.mockResolvedValue(snapshot({ fatMass: empty }));
