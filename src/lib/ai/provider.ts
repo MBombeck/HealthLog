@@ -183,7 +183,7 @@ function buildUserProvider(row: UserAIRow): AIProvider | null {
  * An unparseable value answers false and keeps the OpenAI path, which is the
  * behaviour that value had before this function existed.
  */
-function isAnthropicBaseUrl(baseUrl: string): boolean {
+export function isAnthropicBaseUrl(baseUrl: string): boolean {
   let host: string;
   try {
     host = new URL(baseUrl).hostname.toLowerCase();
