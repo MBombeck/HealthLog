@@ -4,6 +4,7 @@ import type {
   CompletionParams,
   CompletionResult,
 } from "./types";
+import { reasoningTitleOf } from "./reasoning/support";
 
 /**
  * Deterministic mock AI provider for tests.
@@ -52,6 +53,14 @@ export interface MockAIProviderOptions {
   finishReason?: CompletionResult["finishReason"];
   /** v1.20.0 — cachedInputTokens echoed on the result. Defaults to null. */
   cachedInputTokens?: number | null;
+  /**
+   * v1.41 — what a call that asked for reasoning reports. Unset: a fixed
+   * summary per call (`**Reading the request**` + the call number), 8 tokens,
+   * and one `providerState` item naming the call. `false`: the mock never
+   * reasons, like a provider without a reasoning stream. Calls without
+   * `params.reasoning` (or with `off`) never get either, as on a real client.
+   */
+  reasoning?: { summary: string[]; tokens: number | null } | false;
 }
 
 /** Type guard: a per-call array of tool-call sets. */
@@ -82,6 +91,7 @@ export class MockAIProvider implements AIProvider {
   private readonly cachedInputTokens: number | null;
   private readonly model: string;
   private readonly rejectWith: Error | undefined;
+  private readonly reasoning: MockAIProviderOptions["reasoning"];
   private callIdx = 0;
 
   constructor(opts: MockAIProviderOptions = {}) {
@@ -90,6 +100,7 @@ export class MockAIProvider implements AIProvider {
     this.rejectWith = opts.rejectWith;
     this.finishReason = opts.finishReason;
     this.cachedInputTokens = opts.cachedInputTokens ?? null;
+    this.reasoning = opts.reasoning;
     if (isToolCallMatrix(opts.toolCalls)) {
       this.toolCalls = opts.toolCalls;
     } else if (Array.isArray(opts.toolCalls)) {
@@ -127,6 +138,7 @@ export class MockAIProvider implements AIProvider {
       ? this.toolCalls[Math.min(this.callIdx, this.toolCalls.length - 1)]
       : undefined;
     this.callIdx++;
+    const reasoned = this.reason(params, this.callIdx);
     return {
       content: this.responses[idx],
       tokensUsed: this.tokens[tokIdx] ?? null,
@@ -135,6 +147,41 @@ export class MockAIProvider implements AIProvider {
       providerType: this.type,
       ...(toolCalls ? { toolCalls } : {}),
       finishReason: this.finishReason,
+      ...reasoned,
+    };
+  }
+
+  /**
+   * v1.41 — deterministic reasoning for a call that asked for it: the same
+   * events a real client reports (title, text, done) and a `providerState`
+   * the next round can be checked for.
+   */
+  private reason(
+    params: CompletionParams,
+    call: number,
+  ): Pick<CompletionResult, "reasoning" | "providerState"> {
+    if (!params.reasoning) return {};
+    if (params.reasoning.effort === "off" || this.reasoning === false) {
+      params.onReasoning?.({ kind: "done", text: "" });
+      return { reasoning: { summary: [], tokens: null } };
+    }
+    const reasoning = this.reasoning ?? {
+      summary: [`**Reading the request**\nMock reasoning for call ${call}.`],
+      tokens: 8,
+    };
+    for (const text of reasoning.summary) {
+      const title = reasoningTitleOf(text);
+      if (title) params.onReasoning?.({ kind: "title", text: title });
+      params.onReasoning?.({ kind: "text", text });
+    }
+    params.onReasoning?.({ kind: "done", text: "" });
+    return {
+      reasoning: { summary: [...reasoning.summary], tokens: reasoning.tokens },
+      providerState: {
+        providerType: this.type,
+        model: this.model,
+        items: [{ type: "mock-reasoning", call }],
+      },
     };
   }
 

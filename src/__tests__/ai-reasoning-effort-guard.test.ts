@@ -3,11 +3,15 @@
  * the setting the resolver bound to the provider instance.
  *
  * Default must send nothing, so the key may not appear on any wire except as
- * the bound value, and only the two clients whose endpoint a person chose may
- * carry it. Pinned here:
+ * the bound value or the call's own resolved level, and only the two clients
+ * whose endpoint a person chose may carry it. Pinned here:
  *
  *   1. the key appears in exactly the Local client and the OpenAI client,
- *      once each, and only as `reasoning_effort: this.reasoningEffort`;
+ *      twice each: once as `reasoning_effort: this.reasoningEffort`, sent
+ *      only when the call carries no level of its own (`!params.reasoning`),
+ *      and once as the call's level (v1.41 `CompletionParams.reasoning`,
+ *      resolved upstream against the person's choice and the operator's
+ *      cap), never as a literal;
  *   2. nothing but the binder assigns `.reasoningEffort`;
  *   3. every exported resolver in `provider.ts` calls `bindReasoningEffort`.
  *
@@ -20,6 +24,7 @@
  * the behaviour on the wire.
  *
  * Mutation check: hard-code `reasoning_effort: "none"` into either client,
+ * drop the `!params.reasoning` condition in front of the bound value,
  * set `client.reasoningEffort = ...` in a route, or drop `bindReasoningEffort`
  * from `resolveProviderForTest`: each one goes red here.
  */
@@ -60,13 +65,17 @@ describe("reasoning_effort on the wire", () => {
   });
 
   it.each(["lib/ai/local-client.ts", "lib/ai/openai-client.ts"])(
-    "%s sends it once, as the bound value",
+    "%s sends the bound value only without a call level, and never a literal",
     (rel) => {
       const source = code(rel);
-      expect(source.match(new RegExp(KEY))?.length).toBe(1);
+      expect(source.match(new RegExp(KEY))?.length).toBe(2);
       expect(source).toMatch(
         /\breasoning_effort\s*:\s*this\s*\.\s*reasoningEffort\b/,
       );
+      expect(source).toMatch(
+        /!\s*params\s*\.\s*reasoning\s*&&\s*(?:this\s*\.\s*isGateway\s*&&\s*)?this\s*\.\s*reasoningEffort\b/,
+      );
+      expect(source).not.toMatch(/\breasoning_effort["']?\s*:\s*["'`]/);
     },
   );
 });

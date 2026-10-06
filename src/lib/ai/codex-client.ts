@@ -5,11 +5,19 @@ import type {
   AIProvider,
   AiContentPart,
   AiMessage,
+  AiProviderState,
   AiToolCall,
   AiToolDef,
   CompletionParams,
   CompletionResult,
 } from "./types";
+import {
+  annotateReasoningDowngrade,
+  learnedReasoningDialect,
+  rememberReasoningDialect,
+} from "./reasoning/dialect-cache";
+import type { ReasoningLevel } from "./reasoning/levels";
+import { levelOfWireEffort, reasoningTitleOf } from "./reasoning/support";
 import {
   getCachedCodexSlug,
   invalidateCachedCodexSlug,
@@ -140,7 +148,10 @@ type CodexInputItem =
       type: "function_call_output";
       call_id: string;
       output: string;
-    };
+    }
+  // v1.41 — a reasoning item from an earlier round of the same turn, handed
+  // back exactly as the stream delivered it (encrypted content included).
+  | Record<string, unknown>;
 
 /**
  * Map an `AiContentPart[]` body into Responses input content blocks. Text parts
@@ -175,7 +186,10 @@ function mapCodexParts(
  * top-level items the Responses API expects; everything else is a `message`.
  * A text-only single user turn is byte-identical to the pre-refactor wire.
  */
-function buildCodexInput(messages: AiMessage[]): CodexInputItem[] {
+function buildCodexInput(
+  messages: AiMessage[],
+  slug: string,
+): CodexInputItem[] {
   const items: CodexInputItem[] = [];
   for (const m of messages) {
     if (m.role === "tool") {
@@ -198,6 +212,18 @@ function buildCodexInput(messages: AiMessage[]): CodexInputItem[] {
       typeof m.content === "string"
         ? [{ type: textType, text: m.content }]
         : mapCodexParts(m.content, m.role);
+    // v1.41 — the reasoning items this round produced go back before its
+    // message and function calls, unchanged: with `store: false` the server
+    // keeps nothing, and a tool round that loses its reasoning items reasons
+    // from scratch (https://developers.openai.com/cookbook/examples/responses_api/reasoning_items).
+    // Only state this client produced for this slug is re-inserted; anything
+    // else (another provider's state, a slug the chain walked away from) is
+    // dropped, because an encrypted item is only readable where it was made.
+    if (m.role === "assistant") {
+      for (const item of codexStateItems(m.providerState, slug)) {
+        items.push(item);
+      }
+    }
     items.push({ type: "message", role: m.role, content });
     if (m.role === "assistant" && m.toolCalls) {
       for (const tc of m.toolCalls) {
@@ -211,6 +237,149 @@ function buildCodexInput(messages: AiMessage[]): CodexInputItem[] {
     }
   }
   return items;
+}
+
+/** The reasoning items of `state` when this client made it for `slug`. */
+function codexStateItems(
+  state: AiProviderState | undefined,
+  slug: string,
+): Record<string, unknown>[] {
+  if (!state || state.providerType !== "codex" || state.model !== slug) {
+    return [];
+  }
+  return state.items.filter(
+    (item): item is Record<string, unknown> =>
+      item !== null &&
+      typeof item === "object" &&
+      (item as { type?: unknown }).type === "reasoning",
+  );
+}
+
+// ── v1.41 reasoning wire ────────────────────────────────────────────────────
+
+/**
+ * The Responses-API efforts in ascending order. The Codex backend names the
+ * values a slug accepts in its 400 body ("Supported values are: 'none',
+ * 'low', …"), which is how a slug's ladder is learned.
+ */
+const CODEX_EFFORT_ORDER = [
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+] as const;
+
+/** What one request sends: `null` is today's `reasoning: null`. */
+type CodexReasoningWire = { effort: string; summary: boolean } | null;
+
+/** What a slug was learned to refuse (see `reasoning/dialect-cache.ts`). */
+interface CodexReasoningDialect {
+  /** The slug refused `reasoning` altogether. */
+  disabled?: true;
+  /** The slug refused `reasoning.summary`. */
+  noSummary?: true;
+  /** The efforts the slug named as supported when it refused one. */
+  efforts?: string[];
+}
+
+function dialectKey(slug: string) {
+  return { provider: "codex", endpoint: CODEX_ENDPOINT, model: slug };
+}
+
+function readCodexDialect(slug: string): CodexReasoningDialect {
+  const raw = learnedReasoningDialect(dialectKey(slug));
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as CodexReasoningDialect;
+  } catch {
+    return {};
+  }
+}
+
+function wantedEffort(level: ReasoningLevel): string {
+  // "Off" is a real off on the current slugs: a 2026-10-06 probe answered
+  // `effort: "none"` on gpt-5.5 with a non-reasoning reply. A slug that
+  // refuses it learns its lowest supported value instead.
+  return level === "off" ? "none" : level;
+}
+
+/** The supported effort closest to `wanted` from below, else the lowest. */
+function nearestEffort(wanted: string, supported: string[]): string | null {
+  const rank = (e: string) =>
+    (CODEX_EFFORT_ORDER as readonly string[]).indexOf(e);
+  const known = supported
+    .filter((e) => rank(e) >= 0)
+    .sort((a, b) => rank(a) - rank(b));
+  if (known.length === 0) return null;
+  const below = known.filter((e) => rank(e) <= rank(wanted));
+  return below.length > 0 ? below[below.length - 1] : known[0];
+}
+
+function planCodexReasoning(
+  reasoning: CompletionParams["reasoning"],
+  slug: string,
+): CodexReasoningWire {
+  if (!reasoning) return null;
+  const dialect = readCodexDialect(slug);
+  if (dialect.disabled) return null;
+  let effort: string | null = wantedEffort(reasoning.effort);
+  if (dialect.efforts && !dialect.efforts.includes(effort)) {
+    effort = nearestEffort(effort, dialect.efforts);
+  }
+  if (!effort) return null;
+  return {
+    effort,
+    summary: reasoning.summaries && effort !== "none" && !dialect.noSummary,
+  };
+}
+
+/**
+ * Read a 400 that refuses a reasoning parameter and learn what the slug
+ * accepts instead. Returns the lesser wire to retry with, or `undefined`
+ * when the body is not about reasoning (the caller's error path takes it).
+ */
+function learnFromReasoningRejection(
+  slug: string,
+  wire: Exclude<CodexReasoningWire, null>,
+  status: number,
+  body: string,
+): CodexReasoningWire | undefined {
+  // Only a body that names the reasoning parameter counts; a 400 about the
+  // prompt or a tool must not teach the slug anything.
+  if (status !== 400 || !/reasoning/i.test(body)) {
+    return undefined;
+  }
+  const dialect = readCodexDialect(slug);
+  let next: CodexReasoningWire;
+  if (wire.summary && /reasoning\.summary|summary/i.test(body)) {
+    dialect.noSummary = true;
+    next = { effort: wire.effort, summary: false };
+  } else {
+    const listed = /supported values are:([^"\n]*)/i.exec(body);
+    const efforts = listed
+      ? Array.from(listed[1].matchAll(/'([a-z]+)'/g), (m) => m[1])
+      : [];
+    const nearest =
+      efforts.length > 0 && !efforts.includes(wire.effort)
+        ? nearestEffort(wire.effort, efforts)
+        : null;
+    if (nearest) {
+      dialect.efforts = efforts;
+      next = { effort: nearest, summary: wire.summary && nearest !== "none" };
+    } else {
+      dialect.disabled = true;
+      next = null;
+    }
+  }
+  rememberReasoningDialect(dialectKey(slug), JSON.stringify(dialect));
+  annotateReasoningDowngrade(
+    "codex",
+    wire.effort,
+    next ? next.effort : "default",
+  );
+  return next;
 }
 
 /**
@@ -311,7 +480,8 @@ export class CodexClient implements AIProvider {
     for (const slug of order) {
       attempted.push(slug);
 
-      const firstAttempt = await this.doRequest(params, slug);
+      let wire = planCodexReasoning(params.reasoning, slug);
+      const firstAttempt = await this.doRequest(params, slug, wire);
 
       if (firstAttempt.status === 401) {
         // Token-refresh path — don't walk the chain, this is auth-state
@@ -319,7 +489,7 @@ export class CodexClient implements AIProvider {
         const fresh = await this.onTokenRefresh();
         this.accessToken = fresh.accessToken;
         this.accountId = fresh.accountId;
-        const retryAfterRefresh = await this.doRequest(params, slug);
+        const retryAfterRefresh = await this.doRequest(params, slug, wire);
         if (retryAfterRefresh.ok) {
           this.lastDiagnostics = {
             attempted,
@@ -327,7 +497,7 @@ export class CodexClient implements AIProvider {
             workingSlug: slug,
           };
           setCachedCodexSlug(slug);
-          return this.parseResponse(retryAfterRefresh, slug);
+          return this.parseResponse(retryAfterRefresh, slug, params, wire);
         }
         // Even after refresh — surface the auth failure verbatim, do
         // NOT walk the chain (auth issues don't get fixed by changing
@@ -339,30 +509,51 @@ export class CodexClient implements AIProvider {
         );
       }
 
-      if (firstAttempt.ok) {
+      let attempt = firstAttempt;
+      let rawBody = "";
+      // v1.41 — a slug that refuses a reasoning parameter is asked again with
+      // the lesser request it names (no summary, a lower effort, no reasoning
+      // at all), and the slug remembers it. The answer is never lost to a
+      // reasoning refusal. Bounded: each step strictly reduces the request.
+      for (let step = 0; !attempt.ok && step < 3; step += 1) {
+        rawBody = await attempt.text().catch(() => "");
+        if (!wire) break;
+        const next = learnFromReasoningRejection(
+          slug,
+          wire,
+          attempt.status,
+          redactBody(rawBody),
+        );
+        if (next === undefined) break;
+        wire = next;
+        rawBody = "";
+        attempt = await this.doRequest(params, slug, wire);
+      }
+
+      if (attempt.ok) {
         this.lastDiagnostics = {
           attempted,
           cacheState,
           workingSlug: slug,
         };
         setCachedCodexSlug(slug);
-        return this.parseResponse(firstAttempt, slug);
+        return this.parseResponse(attempt, slug, params, wire);
       }
 
       // Capture the body for the slug-rejection check.
-      const rawBody = await firstAttempt.text().catch(() => "");
+      if (!rawBody) rawBody = await attempt.text().catch(() => "");
       const bodyExcerpt = redactBody(rawBody);
 
-      if (isSlugRejection(firstAttempt.status, bodyExcerpt)) {
+      if (isSlugRejection(attempt.status, bodyExcerpt)) {
         // Slug rejected — drop the cache (in case it pointed here),
         // record the failure for diagnostics, and walk to the next
         // chain slot.
         invalidateCachedCodexSlug();
         const slugErr = new Error(
-          `Codex slug "${slug}" rejected (${firstAttempt.status})`,
+          `Codex slug "${slug}" rejected (${attempt.status})`,
         );
         Object.assign(slugErr, {
-          httpStatus: firstAttempt.status,
+          httpStatus: attempt.status,
           upstream: "codex",
           model: slug,
           bodyExcerpt,
@@ -382,11 +573,11 @@ export class CodexClient implements AIProvider {
       // un-diagnosable. The body is already redacted of bearer/sk- secrets.
       const err = new Error(
         bodyExcerpt
-          ? `Codex request failed (${firstAttempt.status}): ${bodyExcerpt}`
-          : `Codex request failed (${firstAttempt.status})`,
+          ? `Codex request failed (${attempt.status}): ${bodyExcerpt}`
+          : `Codex request failed (${attempt.status})`,
       );
       Object.assign(err, {
-        httpStatus: firstAttempt.status,
+        httpStatus: attempt.status,
         upstream: "codex",
         model: slug,
         bodyExcerpt,
@@ -447,6 +638,7 @@ export class CodexClient implements AIProvider {
   private async doRequest(
     params: CompletionParams,
     slug: string,
+    wire: CodexReasoningWire,
   ): Promise<Response> {
     const sessionId = randomUUID();
     const threadId = randomUUID();
@@ -466,7 +658,7 @@ export class CodexClient implements AIProvider {
     // v1.20.0 — `input` is now built from the full message array (multi-turn +
     // tool-result turns), with `tools` mapped to the Responses `function` shape
     // (the wire already declared `tools`/`tool_choice` — now they carry defs).
-    const input = buildCodexInput(params.messages);
+    const input = buildCodexInput(params.messages, slug);
     const tools =
       params.tools && params.tools.length > 0
         ? buildCodexTools(params.tools)
@@ -496,15 +688,28 @@ export class CodexClient implements AIProvider {
           tools,
           tool_choice: toolChoice,
           parallel_tool_calls: false,
-          // Reasoning is required-but-nullable on the wire. We don't ask
-          // for reasoning summaries — emit `null` so the JSON has the
-          // field present and the server stops complaining about a
-          // missing key (it returned 400 in earlier iterations).
-          reasoning: null,
+          // Reasoning is required-but-nullable on the wire. Without a
+          // requested level (every caller before v1.41, and every caller
+          // that does not opt in) it stays `null`, the field present so the
+          // server stops complaining about a missing key (it returned 400 in
+          // earlier iterations). With one, the official client's shape:
+          // `{ effort, summary }`, `summary` only when summaries are wanted.
+          // https://developers.openai.com/api/docs/guides/reasoning
+          reasoning: wire
+            ? {
+                effort: wire.effort,
+                ...(wire.summary ? { summary: "auto" } : {}),
+              }
+            : null,
           store: false,
           stream: true,
-          // Required field; empty array when not asking for reasoning.
-          include: [],
+          // Required field; empty array when not asking for reasoning. With
+          // reasoning on, the encrypted items come back so the next tool
+          // round can hand them over statelessly (`store` must stay false).
+          include:
+            wire && wire.effort !== "none"
+              ? ["reasoning.encrypted_content"]
+              : [],
         }),
         // SSE streaming completion — match the 60 s budget the other AI
         // clients use so a long generation is not clipped by the 15 s
@@ -540,6 +745,8 @@ export class CodexClient implements AIProvider {
   private async parseResponse(
     res: Response,
     requestedSlug: string,
+    params: CompletionParams,
+    wire: CodexReasoningWire,
   ): Promise<CompletionResult> {
     if (!res.body) {
       // v1.20.1 — sentinel httpStatus + kind so the chain classifier can tell
@@ -562,6 +769,31 @@ export class CodexClient implements AIProvider {
     let cachedInputTokens: number | null = null;
     let serverModel: string | null = null;
     const toolCalls: AiToolCall[] = [];
+
+    // v1.41 — reasoning. Events only reach `onReasoning` when the caller asked
+    // for reasoning (the contract in `types.ts`); summaries are model text and
+    // the receiver screens them.
+    const emit = params.reasoning ? params.onReasoning : undefined;
+    const reasoningItems: Record<string, unknown>[] = [];
+    const summaries: string[] = [];
+    let reasoningTokens: number | null = null;
+    const summaryBuffers = new Map<string, string>();
+    const titled = new Set<string>();
+    const texted = new Set<string>();
+    const emitTitle = (key: string, text: string) => {
+      if (!emit || titled.has(key)) return;
+      const title = reasoningTitleOf(text);
+      if (title) {
+        titled.add(key);
+        emit({ kind: "title", text: title });
+      }
+    };
+    const emitText = (key: string, text: string) => {
+      if (!emit || texted.has(key) || !text.trim()) return;
+      emitTitle(key, text);
+      texted.add(key);
+      emit({ kind: "text", text });
+    };
 
     // The server reports the actual routed model in the OpenAI-Model
     // response header — useful when safety-routing kicks in.
@@ -589,10 +821,14 @@ export class CodexClient implements AIProvider {
           let parsed: {
             type?: string;
             delta?: string;
+            text?: string;
+            item_id?: string;
+            summary_index?: number;
             item?: {
               type?: string;
               role?: string;
               content?: Array<{ type?: string; text?: string }>;
+              summary?: Array<{ type?: string; text?: string }>;
               id?: string;
               call_id?: string;
               name?: string;
@@ -602,6 +838,7 @@ export class CodexClient implements AIProvider {
               usage?: {
                 total_tokens?: number;
                 input_tokens_details?: { cached_tokens?: number };
+                output_tokens_details?: { reasoning_tokens?: number };
               };
               error?: { code?: string; message?: string };
               incomplete_details?: { reason?: string };
@@ -619,6 +856,22 @@ export class CodexClient implements AIProvider {
               if (parsed.delta) deltaText += parsed.delta;
               break;
             }
+            // v1.41 — live reasoning summaries. A summary's first bold line
+            // is its title; it goes out as soon as it has closed, the full
+            // text when the part is done.
+            case "response.reasoning_summary_text.delta": {
+              const key = `${parsed.item_id ?? ""}:${parsed.summary_index ?? 0}`;
+              const buffered =
+                (summaryBuffers.get(key) ?? "") + (parsed.delta ?? "");
+              summaryBuffers.set(key, buffered);
+              emitTitle(key, buffered);
+              break;
+            }
+            case "response.reasoning_summary_text.done": {
+              const key = `${parsed.item_id ?? ""}:${parsed.summary_index ?? 0}`;
+              emitText(key, parsed.text ?? summaryBuffers.get(key) ?? "");
+              break;
+            }
             case "response.output_item.done": {
               const item = parsed.item;
               if (item?.type === "message" && item.role === "assistant") {
@@ -627,6 +880,16 @@ export class CodexClient implements AIProvider {
                   .map((c) => c.text!)
                   .join("");
                 if (text) assembledText += text;
+              } else if (item?.type === "reasoning" && params.reasoning) {
+                // The whole item, untouched: the next round hands it back.
+                reasoningItems.push(item as Record<string, unknown>);
+                (item.summary ?? []).forEach((part, index) => {
+                  if (typeof part.text !== "string" || !part.text) return;
+                  summaries.push(part.text);
+                  // A part whose `.done` never arrived still reaches the
+                  // receiver, once.
+                  emitText(`${item.id ?? ""}:${index}`, part.text);
+                });
               } else if (item?.type === "function_call") {
                 // v1.20.0 — the model asked to call a tool. Surface it for
                 // F1's loop; the id is the call_id the function_call_output
@@ -644,6 +907,11 @@ export class CodexClient implements AIProvider {
               cachedInputTokens =
                 parsed.response?.usage?.input_tokens_details?.cached_tokens ??
                 null;
+              // Reasoning tokens are billed as output and already inside
+              // `total_tokens`; reported separately for the trail and budget.
+              reasoningTokens =
+                parsed.response?.usage?.output_tokens_details
+                  ?.reasoning_tokens ?? null;
               break;
             }
             case "response.failed": {
@@ -713,6 +981,19 @@ export class CodexClient implements AIProvider {
       throw err;
     }
 
+    if (emit) emit({ kind: "done", text: "" });
+
+    const sentLevel = wire ? levelOfWireEffort(wire.effort) : null;
+    const reasoning: CompletionResult["reasoning"] = params.reasoning
+      ? {
+          summary: summaries,
+          tokens: reasoningTokens,
+          ...(sentLevel !== params.reasoning.effort
+            ? { downgradedTo: sentLevel ?? "off" }
+            : {}),
+        }
+      : undefined;
+
     return {
       content,
       tokensUsed,
@@ -721,6 +1002,18 @@ export class CodexClient implements AIProvider {
       providerType: "codex",
       ...(toolCalls.length > 0 ? { toolCalls } : {}),
       finishReason: toolCalls.length > 0 ? "tool_calls" : "stop",
+      ...(reasoning ? { reasoning } : {}),
+      // Keyed on the slug that was asked, not the routed model header: the
+      // next round re-inserts the items only when it asks the same slug.
+      ...(reasoningItems.length > 0
+        ? {
+            providerState: {
+              providerType: "codex" as const,
+              model: requestedSlug,
+              items: reasoningItems,
+            },
+          }
+        : {}),
     };
   }
 }
