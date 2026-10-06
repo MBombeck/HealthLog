@@ -13,9 +13,9 @@ asks when a question is ambiguous, and remembers what it is told.
   is carried between tool rounds and never stored, and a model that rejects a
   reasoning parameter is retried without it (the downgrade is learned per
   provider, endpoint and model for an hour, only from a 400 that names the
-  parameter). Thinking depth per person under Coach settings (Off, Light,
-  Balanced, Deep; Balanced by default); an operator switch and maximum under
-  Admin, Assistant; turns on the operator's budget are capped at Balanced.
+  parameter). Thinking depth per person under Coach settings (Off, Low,
+  Medium, High; Medium by default); an operator switch and maximum under
+  Admin, Assistant; turns on the operator's budget are capped at Medium.
   `/api/auth/me` publishes the resolved `coachReasoning`.
 - **Budgeted tool loop.** A turn runs against a token, time and round budget
   (own provider 120k tokens, 150 s, 12 rounds; operator 40k, 90 s, 6 rounds)
