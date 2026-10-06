@@ -513,11 +513,11 @@ function assumedFirst(
     if (!token) return false;
     const v = choice.value;
     return (
-      v.metric === toSource(token) ||
-      v.window === WINDOW_BY_TOKEN.get(token) ||
-      v.comparison === token ||
-      v.goal === assumption ||
-      v.anchor === assumption
+      (v.metric !== undefined && v.metric === toSource(token)) ||
+      (v.window !== undefined && v.window === WINDOW_BY_TOKEN.get(token)) ||
+      (v.comparison !== undefined && v.comparison === token) ||
+      (v.goal !== undefined && v.goal === assumption) ||
+      (v.anchor !== undefined && v.anchor === assumption)
     );
   };
   const index = Math.max(0, choices.findIndex(matches));
@@ -564,11 +564,7 @@ export function buildClarificationFromTool(args: {
   switch (kind) {
     case "metric":
       if (!args.inventory) return drop("no_inventory");
-      choices = metricChoices(
-        tokens,
-        presentSources(args.inventory),
-        locale,
-      );
+      choices = metricChoices(tokens, presentSources(args.inventory), locale);
       if (choices.length < 2) return drop("too_few_metrics");
       break;
     case "window":

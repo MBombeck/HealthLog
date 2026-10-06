@@ -518,7 +518,11 @@ export async function runTurnModel(args: {
           if (result.table && !args.emitter.aborted()) {
             const [table] = buildTurnResults([settledCall], locale);
             if (table) {
-              args.emitter.emit({ type: "result", result: table, interim: true });
+              args.emitter.emit({
+                type: "result",
+                result: table,
+                interim: true,
+              });
               interimSent = true;
             }
           }
@@ -619,7 +623,9 @@ export async function runTurnModel(args: {
     const summaries: string[] = [];
     // v1.41 — the memory block rides the user turn here too, ahead of the
     // snapshot, fenced like the rest of the person's own context.
-    const user = memory ? `${memory.text}\n\n${ctx.userPrompt}` : ctx.userPrompt;
+    const user = memory
+      ? `${memory.text}\n\n${ctx.userPrompt}`
+      : ctx.userPrompt;
     const fallback = await runStreamingRawCompletionWithFallback({
       surface: "coach",
       userId,

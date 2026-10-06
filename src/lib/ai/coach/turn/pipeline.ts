@@ -31,7 +31,7 @@ import {
 } from "@/lib/ai/coach/tools/turn-budget";
 
 import { runTurnModel } from "./model";
-import { resolveTurnReasoning } from "./reasoning";
+import { reasoningForTurn } from "./reasoning";
 import { persistAssistantReply } from "./persist";
 import { assembleTurnDialog, buildTurnProvenance } from "./provenance";
 import { guardReply } from "./reply-guards";
@@ -177,10 +177,7 @@ async function runTurn(
 
   // v1.41 — who pays fixes the turn's budget and caps its reasoning.
   const payer = resolveCostOwner(chain);
-  const reasoning = await resolveTurnReasoning({
-    prefs: ctx.coachPrefs,
-    payer,
-  });
+  const reasoning = reasoningForTurn(input.reasoningLevel, payer);
   // Round one and the room for the final answer, reserved before anything
   // runs; every further round is reserved right before it.
   const firstRoundInput = estimateFirstRoundInput(ctx);

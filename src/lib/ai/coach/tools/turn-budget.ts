@@ -75,7 +75,9 @@ function tokens(value: number | null | undefined): number {
  * The output allowance of one round: the answer budget plus the thinking
  * budget of the level, where the level thinks at all.
  */
-export function roundOutputAllowance(effort: ReasoningLevel | undefined): number {
+export function roundOutputAllowance(
+  effort: ReasoningLevel | undefined,
+): number {
   return (
     ROUND_ANSWER_TOKENS +
     (effort && effort !== "off" ? REASONING_THINKING_BUDGET[effort] : 0)

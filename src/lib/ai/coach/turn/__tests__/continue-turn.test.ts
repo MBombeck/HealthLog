@@ -69,6 +69,7 @@ function input(over: Partial<TurnInput> = {}): TurnInput {
     workoutId: undefined,
     followUp: undefined,
     clarification: undefined,
+    reasoningLevel: "medium",
     recheckCapability: async () => null,
     ...over,
   };

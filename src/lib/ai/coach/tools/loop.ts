@@ -318,7 +318,9 @@ export async function runCoachToolLoop(args: {
       surface: "coach",
       ledger,
       params: {
-        system: stopReason ? `${system}\n\n${FINAL_ROUND_LINE[stopReason]}` : system,
+        system: stopReason
+          ? `${system}\n\n${FINAL_ROUND_LINE[stopReason]}`
+          : system,
         messages,
         temperature,
         maxTokens,
@@ -409,7 +411,11 @@ export async function runCoachToolLoop(args: {
           });
           return {
             call,
-            content: { present: false, reason: "duplicate", duplicateOf: earlier },
+            content: {
+              present: false,
+              reason: "duplicate",
+              duplicateOf: earlier,
+            },
           };
         }
 
@@ -517,7 +523,14 @@ export async function runCoachToolLoop(args: {
     // A question ends the turn: it is the reply, with no prose round.
     if (asked) {
       return finish({
-        result: { ...result, content: asked.question, toolCalls: undefined },
+        result: {
+          ...result,
+          content: asked.question,
+          toolCalls: undefined,
+          // The provider state belongs to the next round, which a question
+          // ends; it never leaves the loop.
+          providerState: undefined,
+        },
         clarification: asked,
       });
     }
@@ -568,7 +581,9 @@ function compareArgs(raw: string): Record<string, unknown> | undefined {
     const parsed = compareSeriesArgsSchema.safeParse(
       raw.trim() === "" ? {} : JSON.parse(raw),
     );
-    return parsed.success ? (parsed.data as Record<string, unknown>) : undefined;
+    return parsed.success
+      ? (parsed.data as Record<string, unknown>)
+      : undefined;
   } catch {
     return undefined;
   }

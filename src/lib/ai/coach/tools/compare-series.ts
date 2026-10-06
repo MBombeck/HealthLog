@@ -54,8 +54,6 @@ export const compareSeriesArgsSchema = z
   })
   .strict();
 
-export type CompareSeriesArgs = z.infer<typeof compareSeriesArgsSchema>;
-
 export const COMPARE_SERIES_TOOL_DEF: AiToolDef = {
   name: COMPARE_SERIES_TOOL_NAME,
   description:
@@ -90,7 +88,8 @@ export const COMPARE_SERIES_TOOL_DEF: AiToolDef = {
       basis: {
         type: "string",
         enum: ["previous", "yearAgo"],
-        description: "mode=periods only: what the current window is compared with.",
+        description:
+          "mode=periods only: what the current window is compared with.",
       },
     },
   },
@@ -133,7 +132,10 @@ export async function runCompareSeries(args: {
   const parsed = compareSeriesArgsSchema.safeParse(raw);
   if (!parsed.success) return { present: false, reason: "invalid_arguments" };
   const call = parsed.data;
-  if (call.mode === "metrics" && (!call.metricB || call.metricB === call.metric)) {
+  if (
+    call.mode === "metrics" &&
+    (!call.metricB || call.metricB === call.metric)
+  ) {
     return { present: false, reason: "invalid_arguments" };
   }
   if (call.mode === "periods" && call.window === "allTime") {
@@ -164,7 +166,10 @@ export async function runCompareSeries(args: {
   const basis = call.basis ?? "previous";
   const [first, second] =
     call.mode === "periods"
-      ? await Promise.all([read(call.metric, "current"), read(call.metric, basis)])
+      ? await Promise.all([
+          read(call.metric, "current"),
+          read(call.metric, basis),
+        ])
       : await Promise.all([
           read(call.metric, "current"),
           read(call.metricB as string, "current"),
@@ -201,7 +206,11 @@ export async function runCompareSeries(args: {
   if (!ref) return { present: true, data };
   annotate({
     action: { name: "coach.compare.built" },
-    meta: { mode: call.mode, rows: joined.rows.length, axes: joined.chart?.kind === "compare" ? joined.chart.axes : 1 },
+    meta: {
+      mode: call.mode,
+      rows: joined.rows.length,
+      axes: joined.chart?.kind === "compare" ? joined.chart.axes : 1,
+    },
   });
   return {
     present: true,

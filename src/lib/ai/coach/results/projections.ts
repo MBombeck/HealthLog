@@ -382,7 +382,9 @@ export function projectCompare(args: {
       ? coachPeriodLabelKey("current")
       : coachDomainLabelKey(domainA);
   const labelB =
-    mode === "periods" ? coachPeriodLabelKey(basis) : coachDomainLabelKey(domainB);
+    mode === "periods"
+      ? coachPeriodLabelKey(basis)
+      : coachDomainLabelKey(domainB);
   const columns: CoachResultColumn[] = [
     { ...a.columns[xA] },
     {

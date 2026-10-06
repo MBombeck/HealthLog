@@ -262,7 +262,8 @@ export async function runDecisionTurn(args: {
   const decision = memory ?? plan;
   if (!decision || !input.conversationId) return null;
 
-  let latest: Awaited<ReturnType<typeof readLatestMessages>>[number] | undefined;
+  let latest:
+    Awaited<ReturnType<typeof readLatestMessages>>[number] | undefined;
   try {
     const rows = await (conversation.latestMessages?.() ??
       readLatestMessages(userId, conversationId));

@@ -336,7 +336,7 @@ describe("coach chat — tool-mode routing (F1)", () => {
       "user",
       "coach",
     );
-    const reserved = reserveBudget.mock.calls[0][1] as number;
+    const reserved = (reserveBudget.mock.calls[0] as unknown[])[1] as number;
     expect(reserved).toBeGreaterThanOrEqual(600 + 4_096 + 1_200);
   });
 

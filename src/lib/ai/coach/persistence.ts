@@ -28,10 +28,7 @@ import {
   coachStopSchema,
   coachTrailSchema,
 } from "./stream-events";
-import {
-  ACTIVITY_MAX_ENTRIES,
-  TRAIL_MAX_BYTES,
-} from "./activity/contract";
+import { ACTIVITY_MAX_ENTRIES, TRAIL_MAX_BYTES } from "./activity/contract";
 import { COACH_CONVERSATION_TITLE_MAX } from "./types";
 import { isRedundantViewChip } from "./follow-ups/view-chip";
 import {

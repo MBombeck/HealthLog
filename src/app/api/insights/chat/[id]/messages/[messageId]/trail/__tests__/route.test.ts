@@ -31,7 +31,13 @@ import { GET } from "../route";
 
 const USER_ID = "user-1";
 const TRAIL = {
-  entries: [{ id: "a1", title: "Weighing the two weeks", text: "Looked at sleep first." }],
+  entries: [
+    {
+      id: "a1",
+      title: "Weighing the two weeks",
+      text: "Looked at sleep first.",
+    },
+  ],
 };
 
 function call(id = "c1", messageId = "m1") {

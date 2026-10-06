@@ -458,7 +458,11 @@ export const modules = {
       coachConversation: {
         findFirst: async () => ({ id: CONVERSATION_ID }),
       },
-      coachMessage: { findMany: async () => latestRows() },
+      coachMessage: {
+        findMany: async () => latestRows(),
+        // v1.41 — the clarification brake's count of today's questions.
+        count: async () => 0,
+      },
       measurement: {
         groupBy: async (args: { where: { type: { in: string[] } } }) =>
           measurementBounds(args),

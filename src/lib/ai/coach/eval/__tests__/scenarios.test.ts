@@ -61,7 +61,6 @@ import type {
   CoachMethod,
   CoachResultTable,
   CoachStep,
-  CoachStreamEvent,
 } from "@/lib/ai/coach/types";
 import { COACH_FOLLOW_UP_KEYS } from "@/lib/ai/coach/dialog-keys";
 import { POST } from "@/app/api/insights/chat/route";
@@ -119,6 +118,10 @@ const PROSE = {
     "So far the readings look stable, but I have not checked everything yet.",
   ),
   table: t("Hier ist die Tabelle. result:r1", "Here is the table. result:r1"),
+  compare: t(
+    "Diesen Monat lag er etwas höher als im Vormonat. result:r1",
+    "This month it sat a little higher than last month. result:r1",
+  ),
 };
 
 const call = (name: string, args: Record<string, unknown> = {}) => ({
@@ -209,6 +212,54 @@ function script(name: string, lang: Lang): Round[] {
           calls: [call("get_metric_table", { metric, window })],
         })),
         { text: PROSE.forced[lang] },
+      ];
+    case "why-multi-round":
+      return [
+        { calls: [call("get_sleep", { window: "last30days" })] },
+        {
+          calls: [
+            call("get_metric_table", {
+              metric: "resting_hr",
+              window: "last30days",
+            }),
+          ],
+        },
+        { calls: [call("get_sleep", { window: "last90days" })] },
+        {
+          calls: [
+            call("get_metric_table", { metric: "bp", window: "last30days" }),
+          ],
+        },
+        { text: PROSE.forced[lang] },
+      ];
+    case "compare-month":
+      return [
+        {
+          calls: [
+            call("compare_series", {
+              mode: "periods",
+              metric: "bp",
+              window: "last30days",
+            }),
+          ],
+        },
+        { text: PROSE.compare[lang] },
+      ];
+    case "pulse-ask-tool":
+      return [
+        {
+          calls: [
+            call("ask_clarification", {
+              kind: "metric",
+              question:
+                lang === "de"
+                  ? "Meinst du den Ruhepuls oder den Puls beim Gehen? Sonst schaue ich auf den Ruhepuls."
+                  : "Do you mean resting or walking heart rate? Otherwise I'll look at resting.",
+              choices: ["resting_hr", "walking_hr", "spo2"],
+              assumption: "resting_hr",
+            }),
+          ],
+        },
       ];
     case "fenced-title":
       return [
@@ -333,6 +384,20 @@ async function run(
       ),
       ...results.map((r) => r.source.domain),
     ],
+    toolRounds: providerCalls.filter(
+      (c) => c.toolChoice !== "none" && c.toolCalls.length > 0,
+    ).length,
+    repeatedCalls: (() => {
+      const seen = new Set<string>();
+      let repeats = 0;
+      for (const c of providerCalls.flatMap((p) => p.toolCalls)) {
+        const signature = `${c.name}:${JSON.stringify(c.args)}`;
+        if (seen.has(signature)) repeats += 1;
+        seen.add(signature);
+      }
+      return repeats;
+    })(),
+    chartKinds: results.flatMap((r) => (r.chart ? [r.chart.kind] : [])),
   };
   return { observation, frames };
 }
@@ -373,7 +438,7 @@ const FRAME_ORDER = [
   "done",
 ];
 
-function frameRank(frame: CoachStreamEvent): number {
+function frameRank(frame: { type: string; interim?: unknown }): number {
   if (
     frame.type === "step" ||
     frame.type === "activity" ||
@@ -397,7 +462,7 @@ afterEach(() => {
 describe("COACH_SCENARIOS", () => {
   it("covers every scenario in German and in English", () => {
     const names = new Set(COACH_SCENARIOS.map(nameOf));
-    expect(names.size).toBe(10);
+    expect(names.size).toBe(13);
     for (const name of names) {
       expect(COACH_SCENARIOS.filter((s) => nameOf(s) === name)).toHaveLength(2);
     }

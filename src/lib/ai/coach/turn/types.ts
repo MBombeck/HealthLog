@@ -12,6 +12,7 @@
  * either into their import graph.
  */
 import type { Locale } from "@/lib/i18n/config";
+import type { ReasoningLevel } from "@/lib/ai/reasoning/levels";
 import type { CoachTurn } from "@/lib/ai/coach/chat-request-builder";
 import type { PriorResultTurn } from "@/lib/ai/coach/results/refs";
 import type { LatestMessagesLoader } from "@/lib/ai/coach/latest-messages";
@@ -44,6 +45,12 @@ export interface TurnInput {
   followUp: { messageId: string; id: string } | undefined;
   /** v1.39.4 — the clarifying question this message answers, if any. */
   clarification: { messageId: string; choiceId?: string } | undefined;
+  /**
+   * v1.41 — the person's effective reasoning level: their choice after the
+   * operator's switch and highest level, resolved by the route. The turn
+   * caps it again when the operator pays.
+   */
+  reasoningLevel: ReasoningLevel;
   /** v1.41 — the fact proposal this message answers with a tap, if any. */
   memoryDecision?: { messageId: string; proposalId: string; accept: boolean };
   /** v1.41 — the plan proposal this message answers with a tap, if any. */

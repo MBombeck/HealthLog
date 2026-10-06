@@ -97,7 +97,11 @@ export const proposePlanArgsSchema = z
     target: z.string().min(1).max(120).optional(),
     ifCue: z.string().min(1).max(160),
     thenAction: z.string().min(1).max(160),
-    reviewInDays: z.number().int().min(PLAN_REVIEW_DAYS.min).max(PLAN_REVIEW_DAYS.max),
+    reviewInDays: z
+      .number()
+      .int()
+      .min(PLAN_REVIEW_DAYS.min)
+      .max(PLAN_REVIEW_DAYS.max),
   })
   .strict();
 
