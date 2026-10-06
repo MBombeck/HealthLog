@@ -2,7 +2,10 @@
  * Prompt rules for proposing follow-up chips from the catalog.
  *
  * The server derives the chips from what the turn read; a proposal only
- * says which of them the model thinks matter most. The model names a kind
+ * says which of them the model thinks matter most.
+ *
+ * v1.41 — the chips are the answer's only "what next?" surface, so the
+ * prose does not end on a question of its own. The model names a kind
  * and a domain, never a label: the server renders every word the person
  * sees, and drops a proposal for a domain the turn did not read.
  *
@@ -19,7 +22,8 @@ as_chart: bp
 ---END---
 - One line each, at most three: a kind, a colon, a metric or domain you read with a tool on THIS turn and that returned data.
 - Kinds: as_chart, as_table, previous_period, year_ago, widen_window, related_metric.
-- Never write a label or a question: the server words them. Leave the block out when nothing fits, and never mention it in your prose.`;
+- Never write a label or a question: the server words them. Leave the block out when nothing fits, and never mention it in your prose.
+- These suggestions are the answer's only "what next?": do not end your prose with a question that offers more, and do not list options to explore.`;
 
 export function followUpsAddendum(_locale: Locale): string {
   return FOLLOW_UPS_ADDENDUM;

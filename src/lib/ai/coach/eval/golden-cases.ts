@@ -20,6 +20,10 @@
  *                       both surface the driver / honour the same floor.
  *   - ownBaseline     — the answer is framed against the USER's own range,
  *                       never a population norm.
+ *   - voice           — v1.41: the answer opens on the answer, stays inside
+ *                       the length band, carries no filler, at most one next
+ *                       step and no habitual closing question
+ *                       (`grade-voice.ts`).
  *
  * The criteria here are graded by the deterministic graders in this directory
  * against a SCRIPTED prose string (the case's `idealResponse` on the
@@ -34,7 +38,8 @@ export type CoachEvalTaxonomy =
   | "crossMetric"
   | "dataHonesty"
   | "providerParity"
-  | "ownBaseline";
+  | "ownBaseline"
+  | "voice";
 
 /**
  * A single behaviour-anchored criterion. Binary + weighted: the grader returns
@@ -88,6 +93,7 @@ export interface CoachEvalCase {
   criteria: CoachEvalCriterion[];
 }
 
+import { voiceCriteria } from "./grade-voice";
 import {
   findUnverifiedCoachNumbers,
   hasOwnBaselineFraming,
@@ -1637,6 +1643,117 @@ export const GOLDEN_CASES: readonly CoachEvalCase[] = [
       },
     ],
   },
+
+  /* ── voice (v1.41) ─────────────────────────────────────────────────────── */
+  {
+    // The reference answer of the voice section, German, default length:
+    // the answer first, one carrying number with its window, the driver, the
+    // assumption in one line, one next step, no closing question.
+    id: "voice-de-bp-reference",
+    taxonomy: "voice",
+    snapshotSections: {
+      bloodPressure: {
+        avgSys30: 131,
+        avgDia30: 84,
+        avgSysPrior: 126,
+        avgDiaPrior: 81,
+      },
+    },
+    userMessage: "Wie sieht mein Blutdruck aus?",
+    idealResponse:
+      "Dein Blutdruck liegt seit drei Wochen etwas höher als üblich, im Mittel 131/84 mmHg gegenüber 126/81 davor. Der Anstieg fällt mit kürzeren Nächten zusammen; an Tagen unter sechs Stunden Schlaf lag er im Schnitt 4 mmHg höher.\nAngenommen: letzte 30 Tage.\nEin Versuch für diese Woche: an drei Abenden das Licht 30 Minuten früher aus.",
+    criteria: [
+      ...voiceCriteria(),
+      {
+        kind: "mustInclude",
+        weight: 2,
+        matcher: /^angenommen:/im,
+        label: "states the assumed window in one line",
+      },
+      {
+        kind: "mustInclude",
+        weight: 2,
+        matcher: /131\/84/,
+        label: "carries one number with its unit and window",
+      },
+    ],
+  },
+  {
+    id: "voice-en-bp-reference",
+    taxonomy: "voice",
+    snapshotSections: {
+      bloodPressure: {
+        avgSys30: 131,
+        avgDia30: 84,
+        avgSysPrior: 126,
+        avgDiaPrior: 81,
+      },
+    },
+    userMessage: "How is my blood pressure looking?",
+    idealResponse:
+      "Your blood pressure has run a little above your usual for three weeks, 131/84 mmHg on average against 126/81 before. The rise lines up with shorter nights; on days under six hours of sleep it averaged 4 mmHg higher.\nAssumed: last 30 days.\nOne thing to try this week: lights out 30 minutes earlier on three evenings.",
+    criteria: [
+      ...voiceCriteria(),
+      {
+        kind: "mustInclude",
+        weight: 2,
+        matcher: /^assumed:/im,
+        label: "states the assumed window in one line",
+      },
+    ],
+  },
+  {
+    // Brief length: one paragraph, at most 70 words, still the answer first.
+    id: "voice-en-brief",
+    taxonomy: "voice",
+    snapshotSections: { weight: { avg7: 78.4, avg30: 79.1 } },
+    userMessage: "Quick one: is my weight moving?",
+    idealResponse:
+      "Slowly down: 78.4 kg on average this week, against 79.1 kg over the last 30 days. That is the pace you have held since spring.",
+    criteria: voiceCriteria({ length: "brief" }),
+  },
+  {
+    // A "what should I do" turn gets ONE concrete step, not a menu and not
+    // a confidence question back.
+    id: "voice-de-one-step",
+    taxonomy: "voice",
+    snapshotSections: { sleep: { avg7Minutes: 372, avg30Minutes: 401 } },
+    userMessage: "Was soll ich gegen meinen kurzen Schlaf tun?",
+    idealResponse:
+      "Diese Woche hast du im Mittel 6 h 12 min geschlafen, rund eine halbe Stunde weniger als im Monat davor. Der kleinste Hebel ist der Abend: Leg das Handy um 22 Uhr außer Reichweite und schau in einer Woche, ob die Nächte länger werden.",
+    criteria: [
+      ...voiceCriteria(),
+      {
+        kind: "mustAvoid",
+        weight: 2,
+        matcher: /0\s*(?:–|-|bis)\s*10/i,
+        label: "no confidence ruler on a plain action question",
+      },
+    ],
+  },
+  {
+    // Memory used visibly, once, and only because it changes the answer.
+    id: "voice-en-memory-once",
+    taxonomy: "voice",
+    snapshotSections: { weight: { avg7: 78.4 } },
+    userMessage: "Am I on track?",
+    idealResponse:
+      "Yes, roughly: 78.4 kg this week, and as you told me, the goal is 75 kg by December, which the current pace reaches in late November.",
+    criteria: [
+      ...voiceCriteria(),
+      {
+        kind: "mustAvoid",
+        weight: 2,
+        matcher: (prose) =>
+          (
+            prose.match(
+              /as you (?:told|said to) me|wie du mir gesagt hast/gi,
+            ) ?? []
+          ).length > 1,
+        label: "recalls what the person said at most once",
+      },
+    ],
+  },
 ];
 
 /** Count of cases per taxonomy bucket — handy for the report + a coverage test. */
@@ -1647,6 +1764,7 @@ export function taxonomyCoverage(): Record<CoachEvalTaxonomy, number> {
     dataHonesty: 0,
     providerParity: 0,
     ownBaseline: 0,
+    voice: 0,
   };
   for (const c of GOLDEN_CASES) out[c.taxonomy] += 1;
   return out;
