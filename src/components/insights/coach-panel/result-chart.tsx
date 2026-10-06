@@ -380,7 +380,7 @@ function SeriesLegend({
             aria-pressed={shown}
             onClick={() => onToggle(key)}
             className={cn(
-              "focus-visible:ring-ring/50 inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors outline-none focus-visible:ring-2 motion-reduce:transition-none sm:min-h-8",
+              "focus-visible:ring-input-focus inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors outline-none focus-visible:ring-2 motion-reduce:transition-none sm:min-h-8",
               shown
                 ? "border-border text-foreground"
                 : "border-border/60 text-muted-foreground",

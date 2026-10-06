@@ -119,7 +119,7 @@ export function SelfContextAdoptOffer({
             onClick={() => adopt.mutate()}
             className={cn(
               "text-primary inline-flex min-h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-medium",
-              "hover:bg-primary/15 focus-visible:ring-primary/40 focus-visible:ring-2 focus-visible:outline-none",
+              "hover:bg-primary/15 focus-visible:ring-input-focus focus-visible:ring-2 focus-visible:outline-none",
               "disabled:opacity-60",
             )}
           >
@@ -141,7 +141,7 @@ export function SelfContextAdoptOffer({
             }}
             className={cn(
               "text-muted-foreground hover:text-foreground flex min-h-8 items-center rounded-full px-1.5",
-              "hover:bg-primary/15 focus-visible:ring-primary/40 focus-visible:ring-2 focus-visible:outline-none",
+              "hover:bg-primary/15 focus-visible:ring-input-focus focus-visible:ring-2 focus-visible:outline-none",
             )}
           >
             <X className="size-3" aria-hidden="true" />

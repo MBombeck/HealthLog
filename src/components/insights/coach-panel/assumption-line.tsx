@@ -14,11 +14,13 @@
 import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { COACH_ASSUMPTION_KEYS } from "@/lib/ai/coach/dialog-keys";
 import type { CoachAssumption, CoachFollowUp } from "@/lib/ai/coach/types";
 
 import { SuggestedReplies } from "./suggested-replies";
+import { COACH_FOCUS_RING } from "./focus-ring";
 
 /** The alternatives the server offers for one assumption. */
 export function alternativesFor(
@@ -96,7 +98,10 @@ export function CoachAssumptionLine({
                   onClick={() => setOpenKind(open ? null : assumption.kind)}
                   // Inline in the meta line; the hit area reaches past the text (a
                   // 44 px target on phones) without making the line any taller.
-                  className="text-foreground relative h-auto px-1 py-0 text-xs font-normal underline underline-offset-4 after:absolute after:-inset-x-1 after:-inset-y-3.5 after:content-[''] sm:after:-inset-y-1.5"
+                  className={cn(
+                    "text-foreground relative h-auto px-1 py-0 text-xs font-normal underline underline-offset-4 after:absolute after:-inset-x-1 after:-inset-y-3.5 after:content-[''] sm:after:-inset-y-1.5",
+                    COACH_FOCUS_RING,
+                  )}
                 >
                   {t(COACH_ASSUMPTION_KEYS.change)}
                 </Button>

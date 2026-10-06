@@ -192,15 +192,20 @@ describe("user action row", () => {
 describe("follow-up chips in the answer column", () => {
   const offer = { messageId: "m2", followUps: CHIPS };
 
-  it("render inside the column, after the action row", () => {
+  it("render inside the column, right after the answer, above the action row", () => {
     const html = render(
       <ChatBubble {...ANSWER} followUps={offer} onFollowUp={() => {}} />,
     );
     const column = slot(html, "coach-answer-column");
+    const answer = column.indexOf('data-slot="coach-answer-bubble"');
     const actions = column.indexOf('data-slot="coach-answer-actions"');
     const chips = column.indexOf('data-slot="coach-follow-up-chips"');
-    expect(actions).toBeGreaterThan(-1);
-    expect(chips).toBeGreaterThan(actions);
+    expect(answer).toBeGreaterThan(-1);
+    expect(chips).toBeGreaterThan(answer);
+    // The row is the last thing in the column: beside a pointer it is
+    // invisible until hover, and above the chips it left an empty band
+    // between the answer and its replies.
+    expect(actions).toBeGreaterThan(chips);
     // The answer's own text size, not the button's default.
     expect(slot(column, "coach-follow-up-chips")).toMatch(
       /class="[^"]*\btext-sm\b[^"]*font-normal/,

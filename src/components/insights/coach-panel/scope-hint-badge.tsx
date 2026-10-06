@@ -104,7 +104,7 @@ export function ScopeHintBadge({
             "group border-border/70 bg-background hover:bg-muted/50 text-foreground",
             "inline-flex max-w-full min-w-0 items-center gap-2 rounded-xl border px-3.5 py-2.5 text-left",
             "transition-colors",
-            "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
+            "focus-visible:ring-input-focus focus-visible:ring-2 focus-visible:outline-none",
           )}
         >
           <span className="min-w-0 truncate text-sm leading-snug">
@@ -127,7 +127,7 @@ export function ScopeHintBadge({
             className={cn(
               "text-muted-foreground hover:bg-muted/60 hover:text-foreground shrink-0",
               "flex size-9 items-center justify-center rounded-xl transition-colors",
-              "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
+              "focus-visible:ring-input-focus focus-visible:ring-2 focus-visible:outline-none",
             )}
           >
             <X className="size-4" aria-hidden="true" />

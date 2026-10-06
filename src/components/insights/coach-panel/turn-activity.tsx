@@ -7,9 +7,9 @@
  * While the turn runs the line says what the Coach is doing right now, from
  * the `activity` frames: "Thinking…", "Fetching blood pressure, last 90
  * days…", "Summarising 214 readings…", "Writing the answer…", with the
- * seconds so far on the right. A reasoning title replaces the thinking label
- * when one arrives. Once the turn ends the same line settles into one calm
- * summary: "Thought it through, 3 lookups, 12 s".
+ * seconds so far right after the text. A reasoning title replaces the
+ * thinking label when one arrives. Once the turn ends the same line settles
+ * into one calm summary: "Thought it through, 3 lookups, 12 s".
  *
  * Nothing opens by itself. The trail starts closed in every state of a turn
  * (running, asking, stopped, failed, settled, reloaded) and only a tap on the
@@ -510,7 +510,7 @@ function ActivityEntry({
             aria-expanded={open}
             aria-controls={open ? detailId : undefined}
             onClick={() => setOpen(!open)}
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex w-fit max-w-full items-start gap-1 rounded text-left outline-none focus-visible:ring-2"
+            className="text-muted-foreground hover:text-foreground focus-visible:ring-input-focus flex w-fit max-w-full items-start gap-1 rounded text-left outline-none focus-visible:ring-2"
           >
             <span className="min-w-0">
               <span className="text-foreground">{title}</span>
@@ -776,7 +776,7 @@ export function CoachTurnActivity({
           // around it, so the line still sits close to the answer; beside a
           // pointer the line is as tall as the avatar it sits next to.
           "text-muted-foreground hover:text-foreground -my-1.5 flex min-h-11 w-full max-w-full min-w-0 items-center gap-1.5 sm:my-0 sm:min-h-8",
-          "focus-visible:ring-ring/50 rounded text-left leading-relaxed outline-none focus-visible:ring-2",
+          "focus-visible:ring-input-focus rounded text-left leading-relaxed outline-none focus-visible:ring-2",
         )}
       >
         {active ? (
@@ -807,11 +807,14 @@ export function CoachTurnActivity({
             {line}
           </span>
         )}
+        {/* The seconds follow the text they time, in the same muted tone,
+            so the line reads as one phrase rather than a label and a
+            counter at the far edge of the column. */}
         {seconds !== null ? (
           <span
             aria-hidden="true"
             data-slot="coach-turn-steps-seconds"
-            className="ml-auto shrink-0 pl-2 tabular-nums"
+            className="shrink-0 tabular-nums"
           >
             {t(ELAPSED_KEY, { seconds })}
           </span>

@@ -270,8 +270,17 @@ describe("the running line", () => {
       );
       expect(html).toContain('data-state="running"');
       expect(html).toContain('aria-label="Show what the Coach looked at"');
-      // The seconds so far sit on the right of the line.
-      expect(html).toMatch(/data-slot="coach-turn-steps-seconds"[^>]*>1[23]s</);
+      // The seconds so far follow the text directly, in the line's own
+      // muted tone, with the summary's spacing ("12 s"), never pushed to
+      // the far edge of the column.
+      expect(html).toMatch(
+        /data-slot="coach-turn-steps-active"[^>]*>[^<]*<\/span><span[^>]*data-slot="coach-turn-steps-seconds"[^>]*>1[23]\u00a0s</,
+      );
+      const seconds = html.match(
+        /<span[^>]*data-slot="coach-turn-steps-seconds"[^>]*>/,
+      )?.[0];
+      expect(seconds).toContain("tabular-nums");
+      expect(seconds).not.toMatch(/\bml-auto\b|text-foreground/);
     }
   });
 

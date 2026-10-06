@@ -75,6 +75,29 @@ describe("<SuggestedReplies>", () => {
     }
   });
 
+  it("marks keyboard focus with the neutral ring, never the purple one", () => {
+    const tree = SuggestedReplies({
+      replies: replies(() => {}),
+      messageId: "m1",
+      disabled: false,
+    });
+    const html = tree ? renderToStaticMarkup(tree) : "";
+    // The class the browser gets, after the primitive's variant classes and
+    // ours are merged.
+    const classes = [...html.matchAll(/<button[^>]*class="([^"]*)"/g)].map(
+      (m) => m[1],
+    );
+    expect(classes).toHaveLength(4);
+    for (const cls of classes) {
+      expect(cls).toContain("focus-visible:ring-input-focus");
+      expect(cls).toContain("focus-visible:border-border");
+      expect(cls).toContain("focus-visible:ring-2");
+      expect(cls).not.toMatch(
+        /(?:^|\s)focus-visible:(?:ring-ring|border-ring|ring-\[3px\])/,
+      );
+    }
+  });
+
   it("sends the tapped reply and hands focus to the composer", () => {
     focusComposer.mockClear();
     const onSelect = vi.fn();

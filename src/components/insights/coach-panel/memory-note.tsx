@@ -19,11 +19,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { COACH_MEMORY_KEYS } from "@/lib/ai/coach/memory/shared";
 import type { CoachMemoryNoteMeta } from "@/lib/ai/coach/types";
 
 import { useCoachFacts, useForgetCoachFact } from "./use-coach-facts";
+import { COACH_FOCUS_RING } from "./focus-ring";
 
 export interface CoachMemoryNoteLineProps {
   fact: string;
@@ -54,7 +56,10 @@ export function CoachMemoryNoteLine({
         onClick={onUndo}
         // Inline in the meta line; the hit area reaches past the text (a
         // 44 px target on phones) without making the line any taller.
-        className="text-foreground relative h-auto px-1 py-0 text-xs font-normal underline underline-offset-4 after:absolute after:-inset-x-1 after:-inset-y-3.5 after:content-[''] sm:after:-inset-y-1.5"
+        className={cn(
+          "text-foreground relative h-auto px-1 py-0 text-xs font-normal underline underline-offset-4 after:absolute after:-inset-x-1 after:-inset-y-3.5 after:content-[''] sm:after:-inset-y-1.5",
+          COACH_FOCUS_RING,
+        )}
       >
         {t(COACH_MEMORY_KEYS.undo)}
       </Button>

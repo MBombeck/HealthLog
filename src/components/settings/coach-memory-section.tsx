@@ -222,14 +222,17 @@ function FactRow({
             >
               <Pencil className="size-4" aria-hidden />
             </Button>
+            {/* Two icons of one size: a labelled Forget beside the icon-only
+                edit squeezed the entry to three lines at 390 px. The
+                accessible name and the confirmation carry the words. */}
             <ConfirmButton
               slot="settings-coach-memory-forget"
               variant="ghost"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
+              size="icon"
+              className="size-11 sm:size-9"
               ariaLabel={t("settings.ai.coachMemory.forgetAria")}
               icon={<Trash2 className="size-4" aria-hidden />}
-              label={t("settings.ai.coachMemory.forget")}
+              label=""
               title={t("settings.ai.coachMemory.forgetTitle")}
               body={t("settings.ai.coachMemory.forgetBody")}
               confirmLabel={t("settings.ai.coachMemory.forgetConfirm")}
