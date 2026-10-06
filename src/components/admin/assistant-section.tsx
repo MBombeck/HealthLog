@@ -14,9 +14,23 @@ import {
 } from "@/lib/query-keys";
 import { SettingsToggle } from "./_shared";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import {
+  DEFAULT_REASONING_MAX_EFFORT,
+  REASONING_ADMIN_KEYS,
+  REASONING_LEVEL_LABEL_KEYS,
+  REASONING_MAX_EFFORTS,
+  type ReasoningMaxEffort,
+} from "@/lib/ai/reasoning/levels";
 
 /**
- * Operator-side panel for the five assistant switches. The master stops
+ * Operator-side panel for the five assistant switches, and (v1.41) the two
+ * reasoning controls: whether models may think before they answer at all,
+ * and the highest depth a person may choose. Background jobs follow the
+ * same switch; there is no separate one.
+ *
+ * The five switches: The master stops
  * every AI feature; four sub-switches each stop one cost or egress profile:
  * the Coach, the daily briefing, status notes (per-reading notes, workout
  * notes, reaction lines) and reading documents (the vault, lab scans,
@@ -48,7 +62,15 @@ interface AssistantFlagsResponse {
     insightStatus: boolean;
     documentAi: boolean;
   };
+  /** v1.41 — the operator's reasoning controls; absent before v1.41. */
+  reasoning?: { enabled: boolean; maxEffort: ReasoningMaxEffort };
 }
+
+/** What the route accepts: any of the switches, and the reasoning pair. */
+type AssistantFlagsPatch = Partial<AssistantFlagsResponse["raw"]> & {
+  aiReasoningEnabled?: boolean;
+  aiReasoningMaxEffort?: ReasoningMaxEffort;
+};
 
 function useAssistantFlags() {
   return useQuery({
@@ -66,7 +88,7 @@ function useUpdateAssistantFlags() {
   const { t } = useTranslations();
   return useMutation({
     mutationFn: async (
-      patch: Partial<AssistantFlagsResponse["raw"]>,
+      patch: AssistantFlagsPatch,
     ): Promise<AssistantFlagsResponse> => {
       return apiPut<AssistantFlagsResponse>(
         "/api/admin/settings/assistant-flags",
@@ -102,6 +124,7 @@ export function AssistantSection() {
   const raw = data?.raw;
   const masterOn = raw?.assistantEnabled ?? true;
   const disabledSubs = !masterOn || mutation.isPending;
+  const reasoningOn = data?.reasoning?.enabled ?? true;
 
   return (
     <SettingsCard>
@@ -158,6 +181,49 @@ export function AssistantSection() {
             }
             disabled={disabledSubs}
           />
+        </div>
+
+        {/* v1.41 — reasoning: allowed at all, and how deep at most. */}
+        <div
+          data-slot="admin-assistant-reasoning"
+          className="border-border space-y-4 border-t pt-4"
+        >
+          <SettingsToggle
+            label={t(REASONING_ADMIN_KEYS.enabled)}
+            description={t("admin.assistant.reasoning.description")}
+            checked={reasoningOn}
+            onCheckedChange={(checked) =>
+              mutation.mutate({ aiReasoningEnabled: checked })
+            }
+            disabled={disabledSubs}
+          />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <Label
+              htmlFor="admin-reasoning-max"
+              noColon
+              className="text-sm font-medium"
+            >
+              {t(REASONING_ADMIN_KEYS.max)}
+            </Label>
+            <NativeSelect
+              id="admin-reasoning-max"
+              data-slot="admin-reasoning-max"
+              className="sm:w-48"
+              value={data?.reasoning?.maxEffort ?? DEFAULT_REASONING_MAX_EFFORT}
+              disabled={disabledSubs || !reasoningOn}
+              onChange={(e) =>
+                mutation.mutate({
+                  aiReasoningMaxEffort: e.target.value as ReasoningMaxEffort,
+                })
+              }
+            >
+              {REASONING_MAX_EFFORTS.map((effort) => (
+                <option key={effort} value={effort}>
+                  {t(REASONING_LEVEL_LABEL_KEYS[effort])}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
         </div>
       </div>
     </SettingsCard>

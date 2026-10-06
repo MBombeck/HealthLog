@@ -16,6 +16,12 @@
  * every read/write routes its key through `queryKeys.coachFacts()` so
  * a forget invalidates the list.
  *
+ * v1.41 — the Coach's one memory. Each entry says where it came from
+ * ("from you" for what the person asked it to keep, "from the Coach" for what
+ * it kept or worked out itself), and can be edited in place
+ * (`PATCH /api/insights/coach/facts/{id}`) as well as forgotten. The Coach's
+ * quick settings link here (`#coach-memory`).
+ *
  * v1.39 — never gated on the Coach. What the Coach stored is the person's
  * own record: it stays readable and deletable while the Coach is off for any
  * reason (the operator's switch, Hide Coach, no provider, no consent). The
@@ -24,9 +30,9 @@
  * shows this card; while that page is not reachable, Settings → AI shows it
  * through `<StoredCoachMemory>` below, whenever rows exist.
  */
-import { useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Brain, Loader2, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Brain, Loader2, Pencil, Trash2 } from "lucide-react";
 
 import {
   AlertDialog,
@@ -50,42 +56,192 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
-import { apiDelete, apiGet } from "@/lib/api/api-fetch";
+import { apiDelete } from "@/lib/api/api-fetch";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  COACH_MEMORY_LIST_KEYS,
+  REMEMBER_FACT_MAX_CHARS,
+} from "@/lib/ai/coach/memory/shared";
+import {
+  useCoachFacts,
+  useEditCoachFact,
+  useForgetCoachFact,
+  type CoachFactDTO,
+} from "@/components/insights/coach-panel/use-coach-facts";
 import { CoachConversationsMemoryCard } from "@/components/settings/coach-conversations-memory-card";
 import { CoachRemindersSection } from "@/components/settings/coach-reminders-section";
 import { CoachPlansMemoryCard } from "@/components/settings/coach-plans-memory-card";
 
-/** Closed enum mirrored from the server `CoachFact.category` column. */
+/**
+ * The categories in the order the list shows them: goals first, then how the
+ * person likes things, then health, then the rest.
+ */
 const FACT_CATEGORIES = [
+  "goal",
   "preference",
   "condition",
-  "goal",
+  "medication",
   "constraint",
   "context",
 ] as const;
 type FactCategory = (typeof FACT_CATEGORIES)[number];
 
-interface CoachFact {
-  id: string;
-  category: FactCategory;
-  text: string;
-  confidence: number;
-  createdAt: string;
-}
-
 const CATEGORY_LABEL_KEY: Record<FactCategory, string> = {
+  goal: "settings.ai.coachMemory.categoryGoal",
   preference: "settings.ai.coachMemory.categoryPreference",
   condition: "settings.ai.coachMemory.categoryCondition",
-  goal: "settings.ai.coachMemory.categoryGoal",
+  medication: COACH_MEMORY_LIST_KEYS.categoryMedication,
   constraint: "settings.ai.coachMemory.categoryConstraint",
   context: "settings.ai.coachMemory.categoryContext",
 };
 
-async function fetchFacts(): Promise<CoachFact[]> {
-  const data = await apiGet<{ facts?: CoachFact[] } | undefined>(
-    "/api/insights/coach/facts",
+/** "from you" for what the person asked to keep; everything else the Coach. */
+export function factSourceKey(
+  fact: Pick<CoachFactDTO, "source">,
+): string | null {
+  if (!fact.source) return null;
+  return fact.source === "user"
+    ? COACH_MEMORY_LIST_KEYS.sourceUser
+    : COACH_MEMORY_LIST_KEYS.sourceCoach;
+}
+
+/** One entry, read or being edited. */
+function FactRow({
+  fact,
+  isAuthenticated,
+  forgetting,
+  onForget,
+}: {
+  fact: CoachFactDTO;
+  isAuthenticated: boolean;
+  forgetting: boolean;
+  onForget: () => void;
+}) {
+  const { t } = useTranslations();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(fact.text);
+  const edit = useEditCoachFact({
+    // The edited words in place are the confirmation.
+    onSuccess: () => setEditing(false),
+    onError: () => toast.error(t("admin.settingsSaveError")),
+  });
+  const sourceKey = factSourceKey(fact);
+  const trimmed = draft.trim();
+  const inputId = `coach-memory-edit-${fact.id}`;
+  return (
+    <li
+      data-testid="settings-coach-memory-fact"
+      data-source={fact.source}
+      className="border-border bg-background flex flex-col gap-2 rounded-lg border p-3"
+    >
+      {editing ? (
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (trimmed && trimmed !== fact.text) {
+              edit.mutate({ id: fact.id, fact: trimmed });
+            } else {
+              setEditing(false);
+            }
+          }}
+        >
+          <label htmlFor={inputId} className="sr-only">
+            {t(COACH_MEMORY_LIST_KEYS.edit)}
+          </label>
+          <Textarea
+            id={inputId}
+            data-slot="settings-coach-memory-edit-input"
+            value={draft}
+            maxLength={REMEMBER_FACT_MAX_CHARS}
+            rows={2}
+            onChange={(e) => setDraft(e.target.value)}
+            className="text-sm"
+          />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-h-11 sm:min-h-9"
+              onClick={() => {
+                setDraft(fact.text);
+                setEditing(false);
+              }}
+            >
+              {t("settings.ai.coachMemory.cancel")}
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              className="min-h-11 sm:min-h-9"
+              data-slot="settings-coach-memory-edit-save"
+              disabled={!trimmed || edit.isPending}
+            >
+              {edit.isPending ? (
+                <Loader2
+                  className="size-3.5 animate-spin motion-reduce:animate-none"
+                  aria-hidden
+                />
+              ) : null}
+              {t("settings.ai.saveCta")}
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm break-words">{fact.text}</p>
+            <p className="text-muted-foreground mt-1 text-xs">
+              {t("settings.ai.coachMemory.learnedPrefix", {
+                when: formatDateOrRelative(fact.createdAt, t),
+              })}
+              {sourceKey ? (
+                <span data-slot="settings-coach-memory-source">
+                  <span aria-hidden="true"> · </span>
+                  <span className="sr-only">, </span>
+                  {t(sourceKey)}
+                </span>
+              ) : null}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              data-slot="settings-coach-memory-edit"
+              aria-label={t(COACH_MEMORY_LIST_KEYS.edit)}
+              title={t(COACH_MEMORY_LIST_KEYS.edit)}
+              disabled={!isAuthenticated}
+              className="size-11 sm:size-9"
+              onClick={() => {
+                setDraft(fact.text);
+                setEditing(true);
+              }}
+            >
+              <Pencil className="size-4" aria-hidden />
+            </Button>
+            <ConfirmButton
+              slot="settings-coach-memory-forget"
+              variant="ghost"
+              size="sm"
+              className="min-h-11 sm:min-h-9"
+              ariaLabel={t("settings.ai.coachMemory.forgetAria")}
+              icon={<Trash2 className="size-4" aria-hidden />}
+              label={t("settings.ai.coachMemory.forget")}
+              title={t("settings.ai.coachMemory.forgetTitle")}
+              body={t("settings.ai.coachMemory.forgetBody")}
+              confirmLabel={t("settings.ai.coachMemory.forgetConfirm")}
+              disabled={!isAuthenticated}
+              pending={forgetting}
+              onConfirm={onForget}
+            />
+          </div>
+        </div>
+      )}
+    </li>
   );
-  return data?.facts ?? [];
 }
 
 export function CoachMemorySection({
@@ -99,25 +255,11 @@ export function CoachMemorySection({
   const { t } = useTranslations();
   const queryClient = useQueryClient();
 
-  const query = useQuery({
-    queryKey: queryKeys.coachFacts(),
-    queryFn: fetchFacts,
-    enabled: isAuthenticated,
-  });
+  const query = useCoachFacts({ enabled: isAuthenticated });
 
-  const forgetOne = useMutation({
-    mutationKey: queryKeys.coachFacts(),
-    mutationFn: async (id: string) => {
-      await apiDelete(`/api/insights/coach/facts/${encodeURIComponent(id)}`);
-      return id;
-    },
-    onSuccess: () => {
-      toast.success(t("settings.ai.coachMemory.forgotToast"));
-      queryClient.invalidateQueries({ queryKey: queryKeys.coachFacts() });
-    },
-    onError: () => {
-      toast.error(t("settings.ai.coachMemory.forgotError"));
-    },
+  const forgetOne = useForgetCoachFact({
+    onSuccess: () => toast.success(t("settings.ai.coachMemory.forgotToast")),
+    onError: () => toast.error(t("settings.ai.coachMemory.forgotError")),
   });
 
   const forgetAll = useMutation({
@@ -144,9 +286,16 @@ export function CoachMemorySection({
   // Group by category in the canonical category order so the panel
   // reads the same way every render regardless of insertion order.
   const grouped = useMemo(() => {
+    // A category the list does not know (an older extraction's) reads as
+    // context rather than vanishing.
+    const known = new Set<string>(FACT_CATEGORIES);
     return FACT_CATEGORIES.map((category) => ({
       category,
-      items: facts.filter((f) => f.category === category),
+      items: facts.filter((f) =>
+        known.has(f.category)
+          ? f.category === category
+          : category === "context",
+      ),
     })).filter((g) => g.items.length > 0);
   }, [facts]);
 
@@ -156,6 +305,8 @@ export function CoachMemorySection({
   return (
     <SettingsCard
       as="section"
+      id="coach-memory"
+      className="scroll-mt-28"
       aria-labelledby="settings-ai-coach-memory-title"
       data-testid="settings-coach-memory-card"
     >
@@ -193,42 +344,16 @@ export function CoachMemorySection({
               </h3>
               <ul className="space-y-2">
                 {group.items.map((fact) => (
-                  <li
+                  <FactRow
                     key={fact.id}
-                    data-testid="settings-coach-memory-fact"
-                    className="border-border bg-background flex items-start justify-between gap-3 rounded-lg border p-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm break-words">{fact.text}</p>
-                      <p className="text-muted-foreground mt-1 text-xs">
-                        {t("settings.ai.coachMemory.learnedPrefix", {
-                          when: formatDateOrRelative(fact.createdAt, t),
-                        })}
-                      </p>
-                    </div>
-                    <ConfirmButton
-                      slot="settings-coach-memory-forget"
-                      variant="ghost"
-                      size="sm"
-                      className="min-h-11 sm:min-h-9"
-                      ariaLabel={t("settings.ai.coachMemory.forgetAria")}
-                      icon={<Trash2 className="size-4" aria-hidden />}
-                      label={t("settings.ai.coachMemory.forget")}
-                      title={t("settings.ai.coachMemory.forgetTitle")}
-                      body={t("settings.ai.coachMemory.forgetBody")}
-                      confirmLabel={t("settings.ai.coachMemory.forgetConfirm")}
-                      disabled={!isAuthenticated}
-                      // v1.11.2 — per-id pending: only the row being
-                      // deleted disables/spins. `forgetOne.variables` holds
-                      // the id passed to the in-flight `mutate()`, so a
-                      // single shared mutation no longer greys out every
-                      // other row's forget button during one delete.
-                      pending={
-                        forgetOne.isPending && forgetOne.variables === fact.id
-                      }
-                      onConfirm={() => forgetOne.mutate(fact.id)}
-                    />
-                  </li>
+                    fact={fact}
+                    isAuthenticated={isAuthenticated}
+                    // Per-id pending: only the row being deleted spins.
+                    forgetting={
+                      forgetOne.isPending && forgetOne.variables === fact.id
+                    }
+                    onForget={() => forgetOne.mutate(fact.id)}
+                  />
                 ))}
               </ul>
             </div>

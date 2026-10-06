@@ -15,6 +15,8 @@ vi.mock("@/hooks/use-ai-capability", () => ({
     reason: coachState.available ? null : "no_provider",
     onDeviceAllowed: false,
   }),
+  // v1.41 — the thinking depth reads the resolved block; none here.
+  useCoachReasoning: () => null,
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),

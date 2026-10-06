@@ -25,10 +25,17 @@ import { CoachMemorySection } from "../coach-memory-section";
 
 interface SeedFact {
   id: string;
-  category: "preference" | "condition" | "goal" | "constraint" | "context";
+  category:
+    | "preference"
+    | "condition"
+    | "goal"
+    | "constraint"
+    | "context"
+    | "medication";
   text: string;
   confidence: number;
   createdAt: string;
+  source?: "user" | "coach" | "extracted" | "pattern";
 }
 
 const NOW = "2026-06-04T12:00:00.000Z";
@@ -151,5 +158,46 @@ describe("Settings — CoachMemorySection", () => {
     // per-row control — deleting a conversation removes its summary).
     expect(withFacts).toContain("rolling summary");
     expect(empty).toContain("rolling summary");
+  });
+
+  it("says where each fact came from, and offers to edit it", () => {
+    const html = render([
+      { ...buildFacts()[0], source: "user" },
+      { ...buildFacts()[1], source: "coach" },
+      { ...buildFacts()[2], source: "extracted" },
+      {
+        id: "fact-med-1",
+        category: "medication",
+        text: "Takes ramipril in the morning",
+        confidence: 1,
+        createdAt: NOW,
+        source: "user",
+      },
+    ]);
+    expect(
+      html.match(/data-slot="settings-coach-memory-source"/g),
+    ).toHaveLength(4);
+    expect(html).toContain("from you");
+    expect(html).toContain("from the Coach");
+    expect(html.match(/data-slot="settings-coach-memory-edit"/g)).toHaveLength(
+      4,
+    );
+    expect(html).toMatch(
+      /data-slot="settings-coach-memory-edit"[^>]*aria-label="Edit"/,
+    );
+    // Medications get their own group.
+    expect(html).toContain(
+      'data-testid="settings-coach-memory-group-medication"',
+    );
+    expect(html).toContain("Medications");
+    // The quick settings land here.
+    expect(html).toMatch(/<section[^>]*id="coach-memory"/);
+  });
+
+  it("lists goals first", () => {
+    const html = render(buildFacts());
+    expect(html.indexOf("group-goal")).toBeLessThan(
+      html.indexOf("group-preference"),
+    );
   });
 });
