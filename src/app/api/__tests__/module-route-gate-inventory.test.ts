@@ -332,7 +332,9 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // being available (the GDPR reason), and a timestamp on one's own row is
   // data too.
   "src/app/api/insights/coach/seen/route.ts",
-  "src/app/api/insights/coach/facts/route.ts",
+  // `insights/coach/facts/route.ts` is not listed, by the rule below: it
+  // lists and erases without the Coach gate but keeps it on POST (the
+  // remember button saves to the Coach's memory, which is Coach use).
   "src/app/api/insights/coach/facts/[id]/route.ts",
   // The stored plans list. Its sibling `[id]` route keeps the Coach gate on
   // PATCH (confirming a proposal is Coach use) and erases without it.

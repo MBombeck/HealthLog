@@ -8,15 +8,20 @@
  * DESCRIPTIVE (the user's own framing), never diagnostic: the extractor is
  * forbidden from inferring a medical condition or recording a measurement.
  *
- * Two halves:
- *  - `extractAndStoreFacts` — the background compute: load active facts +
- *    recent turns, run one bounded `runStatusCompletion`, defensively parse
- *    the JSON array, drop anything the Zod gate rejects, de-dup against the
- *    active set, enforce a per-user cap, and persist survivors field-by-field
- *    (no mass-assignment spread).
- *  - `buildCoachFactsBlock` — the injection read: top-N active facts ranked
- *    by confidence then recency, decrypted fault-isolated (an undecryptable
- *    row is skipped, never thrown), for the snapshot memory block.
+ * v1.41 — this is the background NET, not the main path. In a turn the Coach
+ * saves what it hears through `remember_fact` (`memory/remember.ts`); this
+ * extraction runs once a conversation has gone quiet and catches what the
+ * turn did not. Nothing it finds becomes active on its own: a preference, goal
+ * or context fact is stored as `extracted`, a health fact (`condition`,
+ * `constraint`, `medication`, or any text the lexicon reads as one) is stored
+ * as `proposed` and offered to the person once, at the next turn.
+ *
+ * `extractAndStoreFacts` loads active facts + recent turns, runs one bounded
+ * `runStatusCompletion`, parses `{"facts":[…]}` (or a bare array), drops
+ * anything the Zod gate rejects, de-dups against the active set, enforces a
+ * per-user cap, and persists survivors field-by-field (no mass-assignment
+ * spread). The memory block every turn starts with is built in
+ * `memory/context-block.ts`.
  *
  * The fact TEXT is encrypted via `bytes-codec.ts` (the same AES-256-GCM codec
  * as `CoachMessage`). category/confidence/sourceConversationId stay plain so
@@ -31,24 +36,33 @@ import { prisma } from "@/lib/db";
 import { runStatusCompletion } from "@/lib/insights/status-provider";
 import { annotate } from "@/lib/logging/context";
 
+import {
+  COACH_MEMORY_CATEGORIES,
+  type CoachMemoryCategory,
+} from "@/lib/ai/coach/types";
+import { extractJsonObject } from "@/lib/ai/json-extract";
+
 import { decryptFromBytes, encryptToBytes } from "./bytes-codec";
+import { healthTermKind } from "./memory/lexicon";
+import {
+  HEALTH_MEMORY_CATEGORIES,
+  PROPOSED_FACT_SOURCE,
+  type CoachFactSource,
+} from "./memory/shared";
 
-/** Closed category enum — app-side (no DB enum), matching the schema column. */
-export const COACH_FACT_CATEGORIES = [
-  "preference",
-  "condition",
-  "goal",
-  "constraint",
-  "context",
-] as const;
+/**
+ * Closed category enum — app-side (no DB enum), matching the schema column.
+ * v1.41 — the Coach memory's own list, `medication` included.
+ */
+export const COACH_FACT_CATEGORIES = COACH_MEMORY_CATEGORIES;
 
-export type CoachFactCategory = (typeof COACH_FACT_CATEGORIES)[number];
+export type CoachFactCategory = CoachMemoryCategory;
 
 /** Hard cap on active facts per user; at cap, only strictly-higher-confidence facts displace. */
 export const MAX_FACTS_PER_USER = 50;
 /** Per-fact text length cap (mirrors the Zod gate + the prompt instruction). */
 export const FACT_MAX_CHARS = 160;
-/** How many active facts the injection block carries into the snapshot. */
+/** How many active facts the memory block carries into a turn. */
 export const FACTS_INJECT_TOP_N = 8;
 
 /** Cap on recent turns fed into the extraction prompt (bounds prompt size). */
@@ -63,19 +77,15 @@ interface ExtractOpts {
   locale?: string;
 }
 
-interface BuildBlockOpts {
-  prisma?: PrismaLike;
-}
-
 // ---------------------------------------------------------------------------
 // Extraction prompt (EN + DE mirror)
 // ---------------------------------------------------------------------------
 
-const EXTRACTION_PROMPT_EN = `You extract DURABLE personal facts about the user from a coaching conversation, for the assistant's long-term memory. Return a JSON array (no prose, no fences). Each item: { "category": one of preference|condition|goal|constraint|context, "fact": "<one short descriptive sentence>", "confidence": 0-100 }.
-ONLY extract facts that are STABLE and will still be true next month: standing preferences, conditions the user STATES about themselves, durable goals, standing constraints, durable life context. Record descriptively in the user's own framing — NEVER diagnose, infer a medical condition the user did not state, or record a number/measurement (those live in the data). EXCLUDE: transient feelings ("tired today"), one-off events, anything time-bound, sensitive detail beyond what is needed to coach, and anything the user asked you to forget. If nothing durable was said, return []. Prefer FEW high-confidence facts over many speculative ones.`;
+const EXTRACTION_PROMPT_EN = `You extract DURABLE personal facts about the user from a coaching conversation, for the assistant's long-term memory. Return one JSON object (no prose, no fences): { "facts": [ … ] }. Each item: { "category": one of preference|goal|context|condition|constraint|medication, "fact": "<one short descriptive sentence>", "confidence": 0-100 }.
+ONLY extract facts that are STABLE and will still be true next month: standing preferences, conditions the user STATES about themselves, durable goals, standing constraints, durable life context. Record descriptively in the user's own framing — NEVER diagnose, infer a medical condition the user did not state, or record a number/measurement (those live in the data). EXCLUDE: transient feelings ("tired today"), one-off events, anything time-bound, sensitive detail beyond what is needed to coach, and anything the user asked you to forget. A medication the user says they take is "medication"; a diagnosis or health condition they state is "condition"; a standing limitation (an injury, a diet they must keep) is "constraint". If nothing durable was said, return { "facts": [] }. Prefer FEW high-confidence facts over many speculative ones.`;
 
-const EXTRACTION_PROMPT_DE = `Du extrahierst DAUERHAFTE persönliche Fakten über die Nutzerin oder den Nutzer aus einem Coaching-Gespräch für das Langzeitgedächtnis des Assistenten. Gib ein JSON-Array zurück (kein Fließtext, keine Code-Zäune). Jedes Element: { "category": eines von preference|condition|goal|constraint|context, "fact": "<ein kurzer beschreibender Satz>", "confidence": 0-100 }.
-Extrahiere NUR Fakten, die STABIL sind und auch nächsten Monat noch zutreffen: dauerhafte Vorlieben, Bedingungen, die die Person SELBST über sich AUSSAGT, dauerhafte Ziele, dauerhafte Einschränkungen, dauerhafter Lebenskontext. Halte sie beschreibend in der eigenen Formulierung der Person fest — DIAGNOSTIZIERE NIEMALS, leite keine medizinische Bedingung ab, die die Person nicht selbst genannt hat, und erfasse keine Zahl oder Messung (die liegen in den Daten). SCHLIESSE AUS: vorübergehende Gefühle ("heute müde"), einmalige Ereignisse, alles Zeitgebundene, sensible Details über das fürs Coaching Nötige hinaus und alles, worum die Person gebeten hat, es zu vergessen. Wenn nichts Dauerhaftes gesagt wurde, gib [] zurück. Bevorzuge WENIGE Fakten mit hoher Sicherheit gegenüber vielen spekulativen.`;
+const EXTRACTION_PROMPT_DE = `Du extrahierst DAUERHAFTE persönliche Fakten über die Nutzerin oder den Nutzer aus einem Coaching-Gespräch für das Langzeitgedächtnis des Assistenten. Gib ein JSON-Objekt zurück (kein Fließtext, keine Code-Zäune): { "facts": [ … ] }. Jedes Element: { "category": eines von preference|goal|context|condition|constraint|medication, "fact": "<ein kurzer beschreibender Satz>", "confidence": 0-100 }.
+Extrahiere NUR Fakten, die STABIL sind und auch nächsten Monat noch zutreffen: dauerhafte Vorlieben, Bedingungen, die die Person SELBST über sich AUSSAGT, dauerhafte Ziele, dauerhafte Einschränkungen, dauerhafter Lebenskontext. Halte sie beschreibend in der eigenen Formulierung der Person fest — DIAGNOSTIZIERE NIEMALS, leite keine medizinische Bedingung ab, die die Person nicht selbst genannt hat, und erfasse keine Zahl oder Messung (die liegen in den Daten). SCHLIESSE AUS: vorübergehende Gefühle ("heute müde"), einmalige Ereignisse, alles Zeitgebundene, sensible Details über das fürs Coaching Nötige hinaus und alles, worum die Person gebeten hat, es zu vergessen. Ein Medikament, das die Person nach eigener Aussage nimmt, ist "medication"; eine genannte Diagnose oder Erkrankung ist "condition"; eine dauerhafte Einschränkung (eine Verletzung, eine einzuhaltende Ernährung) ist "constraint". Wenn nichts Dauerhaftes gesagt wurde, gib { "facts": [] } zurück. Bevorzuge WENIGE Fakten mit hoher Sicherheit gegenüber vielen spekulativen.`;
 
 function extractionSystemPrompt(locale: string | undefined): string {
   return locale?.toLowerCase().startsWith("de")
@@ -84,7 +94,7 @@ function extractionSystemPrompt(locale: string | undefined): string {
 }
 
 // ---------------------------------------------------------------------------
-// Zod gate for the model's JSON array
+// Zod gate for the model's JSON
 // ---------------------------------------------------------------------------
 
 const rawFactSchema = z.object({
@@ -94,6 +104,38 @@ const rawFactSchema = z.object({
 });
 
 const rawFactArraySchema = z.array(z.unknown());
+
+/**
+ * The model's list, wherever it put it. v1.41 — the prompt asks for
+ * `{"facts":[…]}` because `runStatusCompletion` runs in JSON-object mode: an
+ * OpenAI chain then cannot return a bare array at all, and an Anthropic chain
+ * is told to reply with "a single JSON object". Asking for an array under that
+ * mode made every non-Codex extraction fail to parse. A bare array (an older
+ * prompt, a model that ignores the wrapper) still parses.
+ */
+export function readJsonList(content: string, key: string): unknown[] | null {
+  const trimmed = content.trim();
+  const candidates = [trimmed, extractJsonObject(trimmed)];
+  const fenced = trimmed.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/i);
+  if (fenced) candidates.push(fenced[1].trim());
+  for (const candidate of candidates) {
+    let json: unknown;
+    try {
+      json = JSON.parse(candidate);
+    } catch {
+      continue;
+    }
+    const direct = rawFactArraySchema.safeParse(json);
+    if (direct.success) return direct.data;
+    if (json !== null && typeof json === "object") {
+      const nested = rawFactArraySchema.safeParse(
+        (json as Record<string, unknown>)[key],
+      );
+      if (nested.success) return nested.data;
+    }
+  }
+  return null;
+}
 
 interface ParsedFact {
   category: CoachFactCategory;
@@ -106,22 +148,15 @@ interface ParsedFact {
  * top-level JSON is unparseable (the caller then annotates `parse_failed`);
  * individual malformed items are dropped silently, not fatal.
  */
-function parseFacts(
+export function parseFacts(
   content: string,
 ): { facts: ParsedFact[]; dropped: number } | null {
-  let json: unknown;
-  try {
-    json = JSON.parse(content.trim());
-  } catch {
-    return null;
-  }
-
-  const arr = rawFactArraySchema.safeParse(json);
-  if (!arr.success) return null;
+  const list = readJsonList(content, "facts");
+  if (list === null) return null;
 
   const facts: ParsedFact[] = [];
   let dropped = 0;
-  for (const item of arr.data) {
+  for (const item of list) {
     const parsed = rawFactSchema.safeParse(item);
     if (parsed.success) {
       facts.push({
@@ -145,7 +180,7 @@ function parseFacts(
 
 const TOKEN_SPLIT = /[^a-z0-9äöüß]+/i;
 
-function tokenSet(text: string): Set<string> {
+export function tokenSet(text: string): Set<string> {
   return new Set(
     text
       .toLowerCase()
@@ -165,7 +200,10 @@ function tokenOverlap(a: Set<string>, b: Set<string>): number {
 
 const DEDUP_OVERLAP_THRESHOLD = 0.6;
 
-function isNearDuplicate(candidate: string, existing: string[]): boolean {
+export function isNearDuplicate(
+  candidate: string,
+  existing: readonly string[],
+): boolean {
   const cTokens = tokenSet(candidate);
   const cNorm = candidate.trim().toLowerCase();
   for (const ex of existing) {
@@ -180,7 +218,7 @@ function isNearDuplicate(candidate: string, existing: string[]): boolean {
 // Conversation-turn loading
 // ---------------------------------------------------------------------------
 
-function decryptOrNull(buf: Uint8Array): string | null {
+export function decryptOrNull(buf: Uint8Array): string | null {
   try {
     return decryptFromBytes(buf);
   } catch {
@@ -193,26 +231,38 @@ interface ActiveFactRow {
   factEncrypted: Uint8Array;
   category: string;
   confidence: number;
+  source?: string;
 }
 
-/** Load active facts and decrypt them fault-isolated (undecryptable rows skipped). */
-async function loadActiveFacts(
-  db: PrismaLike,
+/** One live fact, decrypted. `proposed` rows included: they count for de-dup. */
+export interface ActiveFact {
+  id: string;
+  text: string;
+  category: string;
+  confidence: number;
+  source: string;
+}
+
+/**
+ * Load the live (not deleted) facts, proposals included, and decrypt them
+ * fault-isolated (undecryptable rows skipped).
+ */
+export async function loadActiveFacts(
+  db: Pick<typeof prisma, "coachFact">,
   userId: string,
-): Promise<
-  Array<{ id: string; text: string; category: string; confidence: number }>
-> {
+): Promise<ActiveFact[]> {
   const rows = (await db.coachFact.findMany({
     where: { userId, deletedAt: null },
-    select: { id: true, factEncrypted: true, category: true, confidence: true },
+    select: {
+      id: true,
+      factEncrypted: true,
+      category: true,
+      confidence: true,
+      source: true,
+    },
   })) as ActiveFactRow[];
 
-  const out: Array<{
-    id: string;
-    text: string;
-    category: string;
-    confidence: number;
-  }> = [];
+  const out: ActiveFact[] = [];
   for (const r of rows) {
     const text = decryptOrNull(r.factEncrypted);
     if (text === null) continue;
@@ -221,9 +271,30 @@ async function loadActiveFacts(
       text,
       category: r.category,
       confidence: r.confidence,
+      source: r.source ?? "extracted",
     });
   }
   return out;
+}
+
+/**
+ * Whether a fact is a health fact: filed under one, or worded like one. A
+ * health fact is never saved without the person's tap.
+ */
+export function isHealthFact(category: string, text: string): boolean {
+  return (
+    HEALTH_MEMORY_CATEGORIES.has(category as CoachMemoryCategory) ||
+    healthTermKind(text) !== null
+  );
+}
+
+/** The source a background fact is written under: health facts wait. */
+function backgroundSource(
+  category: string,
+  text: string,
+  fallback: CoachFactSource,
+): CoachFactSource {
+  return isHealthFact(category, text) ? PROPOSED_FACT_SOURCE : fallback;
 }
 
 interface ConversationTurnRow {
@@ -377,8 +448,12 @@ export async function extractAndStoreFacts(
     return { status: "skipped", count: 0 };
   }
 
+  let proposed = 0;
   for (const f of toStore) {
-    // Field-by-field, no spread (mass-assignment rule, CLAUDE.md).
+    // Field-by-field, no spread (mass-assignment rule, CLAUDE.md). A health
+    // fact waits for the person's tap; everything else is kept as extracted.
+    const source = backgroundSource(f.category, f.fact, "extracted");
+    if (source === PROPOSED_FACT_SOURCE) proposed += 1;
     await db.coachFact.create({
       data: {
         userId,
@@ -386,13 +461,14 @@ export async function extractAndStoreFacts(
         category: f.category,
         confidence: f.confidence,
         sourceConversationId: conversationId,
+        source,
       },
     });
   }
 
   annotate({
     action: { name: "coach.facts.extracted" },
-    meta: { count: toStore.length, conversationId },
+    meta: { count: toStore.length, proposed, conversationId },
   });
 
   return { status: "stored", count: toStore.length };
@@ -610,6 +686,10 @@ export function extractDeterministicFacts(
  * Run the deterministic pass on one user message and persist the survivors
  * (deduped against the active set). No provider call — safe to fire on every
  * turn from the chat route. Returns the number of facts stored.
+ *
+ * v1.41 — every match is a health fact (an allergy, an intolerance, a stated
+ * diagnosis), so it is stored as `proposed`: never lost, never used before the
+ * person confirms it, offered once at the next turn.
  */
 export async function storeDeterministicFacts(args: {
   conversationId: string;
@@ -638,6 +718,7 @@ export async function storeDeterministicFacts(args: {
         category: cand.category,
         confidence: cand.confidence,
         sourceConversationId: args.conversationId,
+        source: PROPOSED_FACT_SOURCE,
       },
     });
     stored += 1;
@@ -650,50 +731,4 @@ export async function storeDeterministicFacts(args: {
     });
   }
   return stored;
-}
-
-// ---------------------------------------------------------------------------
-// Injection block
-// ---------------------------------------------------------------------------
-
-interface RankFactRow {
-  factEncrypted: Uint8Array;
-  category: string;
-  confidence: number;
-  updatedAt: Date;
-}
-
-/**
- * Build the top-N active facts for the snapshot memory block, ranked by
- * `confidence DESC, updatedAt DESC`. Decrypt is fault-isolated — an
- * undecryptable row is skipped, never thrown into the caller. Returns `null`
- * when the user has no usable active facts.
- */
-export async function buildCoachFactsBlock(
-  userId: string,
-  opts?: BuildBlockOpts,
-): Promise<{ facts: Array<{ category: string; text: string }> } | null> {
-  const db = opts?.prisma ?? prisma;
-
-  const rows = (await db.coachFact.findMany({
-    where: { userId, deletedAt: null },
-    orderBy: [{ confidence: "desc" }, { updatedAt: "desc" }],
-    select: {
-      factEncrypted: true,
-      category: true,
-      confidence: true,
-      updatedAt: true,
-    },
-  })) as RankFactRow[];
-
-  const facts: Array<{ category: string; text: string }> = [];
-  for (const r of rows) {
-    if (facts.length >= FACTS_INJECT_TOP_N) break;
-    const text = decryptOrNull(r.factEncrypted);
-    if (text === null) continue;
-    facts.push({ category: r.category, text });
-  }
-
-  if (facts.length === 0) return null;
-  return { facts };
 }

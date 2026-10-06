@@ -11,7 +11,8 @@
 import type { Locale } from "@/lib/i18n/config";
 
 const METHOD_ADDENDUM = `RECHECKING A FIGURE
-If the person questions a figure ("is that right?", "that seems high"): name the source and the window you used, fetch it again with the same tool and arguments (or call show_result for a table this conversation already holds), and compare. If the figures differ, correct your answer and say what changed; if they match, say so plainly. Never defend a figure you have not just re-read, and never adjust one to fit what the person expected.`;
+If the person questions a figure ("is that right?", "that seems high"): name the source and the window you used, fetch it again with the same tool and arguments (or call show_result for a table this conversation already holds), and compare. If the figures differ, correct your answer and say what changed; if they match, say so plainly. Never defend a figure you have not just re-read, and never adjust one to fit what the person expected.
+When the first answer rested on an assumption (a window, a metric, a comparison) and the person now names a different one, answer for theirs and drop the assumption line.`;
 
 export function methodAddendum(_locale: Locale): string {
   return METHOD_ADDENDUM;

@@ -9768,11 +9768,12 @@ paths:
       tags:
         - Insights
       summary: List the caller's durable Coach facts
-      description: "v1.11.1 — returns the active facts the Coach has extracted about the caller (highest-confidence then
-        newest first), each decrypted on the fly. The GDPR 'what do you know about me' surface. Never AI-gated: the
-        facts stay readable and erasable while the Coach is unavailable for any reason. Auth via cookie or Bearer; the
-        owner is always narrowed from the session, never the body. Undecryptable rows are omitted rather than failing
-        the read."
+      description: "v1.11.1 — returns the active facts the Coach keeps about the caller (highest-confidence then newest
+        first), each decrypted on the fly. The GDPR 'what do you know about me' surface. v1.41 — each fact carries its
+        source, the message it came from and when it was last used in a turn; a health fact still waiting for the
+        caller's confirmation is not listed. Never AI-gated: the facts stay readable and erasable while the Coach is
+        unavailable for any reason. Auth via cookie or Bearer; the owner is always narrowed from the session, never the
+        body. Undecryptable rows are omitted rather than failing the read."
       responses:
         "200":
           description: The caller's active facts.
@@ -9781,6 +9782,51 @@ paths:
               schema:
                 $ref: "#/components/schemas/CoachFactsList"
         "401": *a1
+        "422": *a4
+        "429": *a5
+    post:
+      tags:
+        - Insights
+      summary: Remember one of the caller's own Coach messages
+      description: "v1.41 — the remember button. Saves the named user message as a fact with `source: \"user\"`: the text is
+        the message the server stored, filed as `medication` or `condition` when it names one, `context` otherwise. The
+        tap is the caller's confirmation, so a health message is saved too. A message the caller does not own, or an
+        assistant message, is a 404. Saving the same fact again returns the existing one with `created: false`. Gated on
+        the Coach module, never on AI. Auth via cookie or Bearer."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoachFactCreateRequest"
+      responses:
+        "200":
+          description: The caller's memory already held this fact.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachFactAlreadyKnown"
+        "201":
+          description: The fact was saved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachFactCreated"
+        "401": *a1
+        "403":
+          description: 'Module disabled for this account: the user (or operator) has the module turned off. `meta.errorCode` =
+            `module.disabled` and `meta.module` carries the disabled module key (e.g. "sleep"). Returned even for a
+            valid Bearer token. Clients hide the whole module surface end-to-end rather than retry.'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Message not found or not one of the caller's own.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
     delete:
@@ -9800,6 +9846,42 @@ paths:
         "422": *a4
         "429": *a5
   /api/insights/coach/facts/{id}:
+    patch:
+      tags:
+        - Insights
+      summary: Edit one Coach fact's wording
+      description: v1.41 — rewrites the text of a fact the caller owns (re-encrypted at rest); category and source stay. A
+        proposal still waiting for the caller's confirmation, an unknown, cross-user or deleted id are all a 404. Never
+        AI-gated. Auth via cookie or Bearer.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Fact id.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoachFactPatchRequest"
+      responses:
+        "200":
+          description: The fact after the edit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachFactUpdated"
+        "401": *a1
+        "404":
+          description: Fact not found or not owned by the caller.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
     delete:
       tags:
         - Insights
@@ -26907,6 +26989,30 @@ components:
         - version
       description: PUT body for the Insights layout — the layout fields plus the optional optimistic-concurrency base token
         (`baseUpdatedAt`). Omit the token for the legacy unconditional write.
+    CoachFactCreateRequest:
+      type: object
+      properties:
+        messageId:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+        - messageId
+      additionalProperties: false
+      description: "v1.41 — the remember button: the id of one of the caller's own Coach messages. Never the text: the server
+        reads the message it stored. Strict: unknown keys 422."
+    CoachFactPatchRequest:
+      type: object
+      properties:
+        fact:
+          type: string
+          minLength: 3
+          maxLength: 160
+      required:
+        - fact
+      additionalProperties: false
+      description: "v1.41 — the fact's new wording (3..160 characters). Only the text; category and source stay. Strict:
+        unknown keys 422."
     UpdateEmergencyProfileRequest:
       type: object
       properties:
@@ -54495,11 +54601,12 @@ components:
                     type: string
                     enum:
                       - preference
-                      - condition
                       - goal
-                      - constraint
                       - context
-                    description: "App-side closed category: preference | condition | goal | constraint | context."
+                      - condition
+                      - constraint
+                      - medication
+                    description: "App-side closed category: preference | goal | context | condition | constraint | medication (v1.41)."
                   text:
                     type: string
                     description: Decrypted fact text.
@@ -54508,20 +54615,180 @@ components:
                     minimum: -9007199254740991
                     maximum: 9007199254740991
                     description: 0..100 server-assigned extraction confidence.
+                  source:
+                    type: string
+                    enum:
+                      - user
+                      - coach
+                      - extracted
+                      - pattern
+                      - proposed
+                    description: "v1.41 — where the fact came from: `user` (the remember button, or a proposal the caller confirmed),
+                      `coach` (saved during a turn), `extracted` (the background extraction; every fact older than
+                      v1.41), `pattern` (the deterministic matcher). `proposed` is never listed."
+                  sourceConversationId:
+                    anyOf:
+                      - type: string
+                      - type: "null"
+                    description: The conversation the fact came out of, when known.
+                  sourceMessageId:
+                    anyOf:
+                      - type: string
+                      - type: "null"
+                    description: v1.41 — the message the fact came out of, when known.
+                  lastUsedAt:
+                    anyOf:
+                      - type: string
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                      - type: "null"
+                    description: v1.41 — when the fact last went into a Coach turn.
                   createdAt:
                     type: string
                     format: date-time
                     pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    description: v1.41 — when the fact was last written or edited.
                 required:
                   - id
                   - category
                   - text
                   - confidence
+                  - source
+                  - sourceConversationId
+                  - sourceMessageId
+                  - lastUsedAt
                   - createdAt
+                  - updatedAt
                 additionalProperties: false
               description: The caller's active facts, highest-confidence then newest first. Undecryptable rows are omitted.
           required:
             - facts
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CoachFactAlreadyKnown:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            fact:
+              type: object
+              properties:
+                id:
+                  type: string
+                category:
+                  type: string
+                  enum:
+                    - preference
+                    - goal
+                    - context
+                    - condition
+                    - constraint
+                    - medication
+                  description: "App-side closed category: preference | goal | context | condition | constraint | medication (v1.41)."
+                text:
+                  type: string
+                  description: The fact as stored.
+                source:
+                  type: string
+                  enum:
+                    - user
+                    - coach
+                    - extracted
+                    - pattern
+                    - proposed
+                  description: "v1.41 — where the fact came from: `user` (the remember button, or a proposal the caller confirmed),
+                    `coach` (saved during a turn), `extracted` (the background extraction; every fact older than v1.41),
+                    `pattern` (the deterministic matcher). `proposed` is never listed."
+              required:
+                - id
+                - category
+                - text
+                - source
+              additionalProperties: false
+            created:
+              type: boolean
+              description: False when the caller's memory already held the same fact (or a proposal for it, now confirmed); the
+                existing fact is returned.
+          required:
+            - fact
+            - created
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CoachFactCreated:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            fact:
+              type: object
+              properties:
+                id:
+                  type: string
+                category:
+                  type: string
+                  enum:
+                    - preference
+                    - goal
+                    - context
+                    - condition
+                    - constraint
+                    - medication
+                  description: "App-side closed category: preference | goal | context | condition | constraint | medication (v1.41)."
+                text:
+                  type: string
+                  description: The fact as stored.
+                source:
+                  type: string
+                  enum:
+                    - user
+                    - coach
+                    - extracted
+                    - pattern
+                    - proposed
+                  description: "v1.41 — where the fact came from: `user` (the remember button, or a proposal the caller confirmed),
+                    `coach` (saved during a turn), `extracted` (the background extraction; every fact older than v1.41),
+                    `pattern` (the deterministic matcher). `proposed` is never listed."
+              required:
+                - id
+                - category
+                - text
+                - source
+              additionalProperties: false
+            created:
+              type: boolean
+              description: False when the caller's memory already held the same fact (or a proposal for it, now confirmed); the
+                existing fact is returned.
+          required:
+            - fact
+            - created
           additionalProperties: false
         error:
           type: "null"
@@ -54548,6 +54815,67 @@ components:
               description: Number of active facts soft-deleted by the bulk clear.
           required:
             - cleared
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CoachFactUpdated:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            fact:
+              type: object
+              properties:
+                id:
+                  type: string
+                category:
+                  type: string
+                  enum:
+                    - preference
+                    - goal
+                    - context
+                    - condition
+                    - constraint
+                    - medication
+                  description: "App-side closed category: preference | goal | context | condition | constraint | medication (v1.41)."
+                text:
+                  type: string
+                  description: The fact as stored.
+                source:
+                  type: string
+                  enum:
+                    - user
+                    - coach
+                    - extracted
+                    - pattern
+                    - proposed
+                  description: "v1.41 — where the fact came from: `user` (the remember button, or a proposal the caller confirmed),
+                    `coach` (saved during a turn), `extracted` (the background extraction; every fact older than v1.41),
+                    `pattern` (the deterministic matcher). `proposed` is never listed."
+                updatedAt:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              required:
+                - id
+                - category
+                - text
+                - source
+                - updatedAt
+              additionalProperties: false
+          required:
+            - fact
           additionalProperties: false
         error:
           type: "null"
