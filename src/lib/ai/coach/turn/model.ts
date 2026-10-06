@@ -307,6 +307,7 @@ export async function runTurnModel(args: {
       figures: () => figures,
       userMessage: args.message,
       scheduleDoses: ctx.scheduleDoses,
+      medicationNames: ctx.medicationNames,
     },
   });
   // A round's digest runs until the next entry opens: the next round's

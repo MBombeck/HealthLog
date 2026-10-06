@@ -201,7 +201,12 @@ export async function guardReply(args: {
   // the system-prompt GLP-1/grounding contracts. On a trip the turn is
   // replaced with a calm, grounded fallback and any reminder suggestion /
   // key-value provenance is dropped — the user never sees the unsafe text.
-  const outbound = screenCoachReply(replyText, locale, ctx.scheduleDoses);
+  const outbound = screenCoachReply(
+    replyText,
+    locale,
+    ctx.scheduleDoses,
+    ctx.medicationNames,
+  );
   if (outbound.block && outbound.reason) {
     replyText = coachOutboundFallback(outbound.reason, locale);
     annotate({
