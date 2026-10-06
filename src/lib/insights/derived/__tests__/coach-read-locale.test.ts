@@ -146,7 +146,9 @@ describe("buildCoachReadStrip — the pattern line speaks the reader's language"
   });
 
   it("writes the driver note in German for a German reader", async () => {
-    const strip = await buildCoachReadStrip("u1", "SLEEP_DURATION", "de");
+    const strip = await buildCoachReadStrip("u1", "SLEEP_DURATION", "de", {
+      tz: "UTC",
+    });
 
     expect(strip.driver).not.toBeNull();
     const note = strip.driver!.note;
@@ -161,7 +163,9 @@ describe("buildCoachReadStrip — the pattern line speaks the reader's language"
   });
 
   it("writes the same driver note in English for an English reader", async () => {
-    const strip = await buildCoachReadStrip("u1", "SLEEP_DURATION", "en");
+    const strip = await buildCoachReadStrip("u1", "SLEEP_DURATION", "en", {
+      tz: "UTC",
+    });
 
     expect(strip.driver).not.toBeNull();
     expect(strip.driver!.note).toBe(
@@ -175,8 +179,12 @@ describe("buildCoachReadStrip — the pattern line speaks the reader's language"
     // Only the sentence is localised. `outcome` is how the strip finds the
     // driver that belongs to THIS metric, so it has to stay the same string in
     // every language or a German page would find no driver at all.
-    const de = await buildCoachReadStrip("u1", "SLEEP_DURATION", "de");
-    const en = await buildCoachReadStrip("u1", "SLEEP_DURATION", "en");
+    const de = await buildCoachReadStrip("u1", "SLEEP_DURATION", "de", {
+      tz: "UTC",
+    });
+    const en = await buildCoachReadStrip("u1", "SLEEP_DURATION", "en", {
+      tz: "UTC",
+    });
 
     expect(de.driver!.outcome).toBe("sleep duration");
     expect(en.driver!.outcome).toBe("sleep duration");

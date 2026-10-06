@@ -21,6 +21,8 @@
  */
 import { z } from "zod/v4";
 import { RESULTS_MAX_BYTES } from "@/lib/ai/coach/results/refs";
+import { TRAIL_MAX_BYTES } from "@/lib/ai/coach/activity/contract";
+import { REASONING_MAX_EFFORTS } from "@/lib/ai/reasoning/levels";
 import {
   AllergyCategory,
   AllergySeverity,
@@ -1056,6 +1058,9 @@ const appSettingsBackupSchema = z
     // was retired still carries that key; `passthrough` keeps it harmless and
     // the restore writes nothing for it.
     assistantDocumentAiEnabled: z.boolean().optional(),
+    // v1.41 — optional for the same reason.
+    aiReasoningEnabled: z.boolean().optional(),
+    aiReasoningMaxEffort: z.enum(REASONING_MAX_EFFORTS).optional(),
     moduleAvailabilityJson: z.unknown().nullable(),
     documentMaxFileBytes: z.number().int(),
     documentQuotaBytes: z.string().regex(/^\d+$/),
@@ -1478,6 +1483,21 @@ const coachResultsSealedSchema = base64BytesSchema.refine(
   { message: "Coach result tables exceed the stored size" },
 );
 
+/** The trail's model text, bounded at restore like the tables above. */
+const COACH_TRAIL_SEALED_MAX_CHARS = 2 * TRAIL_MAX_BYTES;
+
+const coachTrailJsonSchema = z
+  .string()
+  .refine(
+    (value) => new TextEncoder().encode(value).byteLength <= TRAIL_MAX_BYTES,
+    { message: `Coach trail exceeds ${TRAIL_MAX_BYTES} bytes` },
+  );
+
+const coachTrailSealedSchema = base64BytesSchema.refine(
+  (value) => value.length <= COACH_TRAIL_SEALED_MAX_CHARS,
+  { message: "Coach trail exceeds the stored size" },
+);
+
 /**
  * One Coach turn.
  *
@@ -1502,6 +1522,9 @@ const coachMessageBackupSchema = z
     // readable JSON on a portable one, absent on every file written before.
     resultsEncrypted: coachResultsSealedSchema.nullable().optional(),
     resultsJson: coachResultsJsonSchema.nullable().optional(),
+    // v1.41 — the trail's model text, the same two ends as the tables.
+    trailEncrypted: coachTrailSealedSchema.nullable().optional(),
+    trailJson: coachTrailJsonSchema.nullable().optional(),
     createdAt: isoDateTime,
   })
   .passthrough();
@@ -1549,6 +1572,11 @@ const coachFactBackupSchema = z
     category: z.string().min(1),
     confidence: z.number().int().min(0).max(100).optional(),
     sourceConversationId: z.string().nullable().optional(),
+    // v1.41 — absent on every file written before; restored at the column
+    // defaults then.
+    source: z.string().min(1).max(32).optional(),
+    lastUsedAt: isoDateTime.nullable().optional(),
+    sourceMessageId: z.string().nullable().optional(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
     deletedAt: isoDateTime.nullable().optional(),

@@ -229,10 +229,10 @@ function useReadAloud(): {
  * v1.22 — shared styling for the icon-only per-message action buttons. One
  * tap convention across Copy / Read-aloud / feedback / Try-again: a 44px
  * mobile tap floor (WCAG 2.5.5) collapsing to a compact 32px desktop target,
- * muted until hover/focus, with the standard focus ring.
+ * muted until hover/focus, with the Coach's neutral focus ring.
  */
 export const COACH_ICON_BUTTON = cn(
-  "text-muted-foreground hover:text-foreground focus-visible:ring-ring/50",
+  "text-muted-foreground hover:text-foreground focus-visible:ring-input-focus",
   "inline-flex size-11 min-w-11 shrink-0 items-center justify-center rounded",
   "outline-none focus-visible:ring-2 disabled:opacity-50 sm:size-8 sm:min-w-8",
 );

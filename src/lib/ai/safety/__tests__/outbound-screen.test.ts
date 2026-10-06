@@ -445,3 +445,199 @@ describe("screenModelOutput — empty input", () => {
     );
   });
 });
+
+// ── the dose-change class ────────────────────────────────────────────────
+
+/**
+ * "Increase your metformin to 2000 mg daily" passed the screen: the English
+ * change pattern allowed only "it" or "your dose" between the verb and "to",
+ * so naming the drug walked past it. These cases pin the class — a change
+ * verb with any short object and a target, an imperative to take a stated
+ * amount, and an imperative to halve / skip / stop a medication — in every
+ * locale the banks cover.
+ */
+const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
+  en: [
+    "Increase your metformin to 2000 mg daily.",
+    "Raise your insulin by 4 units tonight.",
+    "Up your metformin to 1500 mg.",
+    "Bump the semaglutide to 1 mg next week.",
+    "Titrate your evening insulin up to 20 units.",
+    "Reduce your metformin from 2000 mg to 1000 mg.",
+    "Lower your lisinopril to 5 mg.",
+    "Halve your metformin to 500 mg.",
+    "Double your vitamin D to 4000 IU.",
+    "Take 2000 mg daily.",
+    "Take 3 tablets of metformin with dinner.",
+    "Here's the plan: take 2 pills in the morning.",
+    "Your glucose ran high.\nTake 1000 mg more tonight.",
+    "It might be worth increasing your metformin to 2000 mg.",
+    "Skip your evening dose tonight.",
+    "Consider skipping tonight's insulin dose.",
+    "Stop taking metformin.",
+    "You should stop taking your lisinopril.",
+  ],
+  de: [
+    "Erhöhe dein Metformin auf 2000 mg täglich.",
+    "Reduzieren Sie Ihr Insulin um 4 Einheiten.",
+    "Nimm 2 Tabletten am Abend.",
+    "Halbiere deine Insulindosis.",
+    "Lass die Abenddosis heute aus.",
+    "Setz dein Metformin ab.",
+    "Du solltest das Metformin absetzen.",
+  ],
+  fr: [
+    "Augmentez votre metformine à 2000 mg.",
+    "Réduisez votre insuline de 4 unités.",
+    "Prenez 2 comprimés le soir.",
+    "Sautez la dose du soir.",
+    "Arrêtez de prendre la metformine.",
+  ],
+  es: [
+    "Aumente su metformina a 2000 mg.",
+    "Reduzca la insulina en 4 unidades.",
+    "Tome 2 pastillas por la noche.",
+    "Omita la dosis de la noche.",
+    "Deje de tomar la metformina.",
+  ],
+  it: [
+    "Aumenti la metformina a 2000 mg.",
+    "Riduca l'insulina di 4 unità.",
+    "Prenda 2 compresse la sera.",
+    "Salti la dose serale.",
+    "Smetta di prendere la metformina.",
+  ],
+  pl: [
+    "Zwiększ metforminę do 2000 mg.",
+    "Zmniejsz insulinę o 4 jednostki.",
+    "Proszę przyjąć 2 tabletki wieczorem.",
+    "Pomiń wieczorną dawkę.",
+    "Przestań brać metforminę.",
+  ],
+  ko: [
+    "메트포르민을 2000mg으로 증량하세요.",
+    "하루 2정 드세요.",
+    "저녁 인슐린 용량을 건너뛰세요.",
+    "메트포르민 복용을 중단하세요.",
+  ],
+};
+
+/**
+ * What must keep passing: a restatement of the logged schedule, a clinician
+ * referral that names no target, a negated imperative (a warning), a past
+ * change described from the log, and the ordinary non-dose advice that shares
+ * a verb or a unit with the class — steps, walks, sodium, water, and lab
+ * targets written as a concentration.
+ */
+const DOSE_CLASS_CLEAN: Record<Locale, readonly string[]> = {
+  en: [
+    "You take 1000 mg twice daily.",
+    "Your log shows 2000 mg.",
+    "Your log shows you take 1000 mg twice daily, and you haven't missed a dose.",
+    "Ask your doctor whether to increase your dose.",
+    "Talk to your doctor before you stop taking your metformin.",
+    "Don't skip your evening dose.",
+    "Never stop taking metformin without talking to your prescriber.",
+    "Your dose was increased to 2000 mg in May.",
+    "Since your metformin was raised to 2000 mg, your fasting glucose dropped.",
+    "Double your steps for two weeks.",
+    "Skip the evening walk if it rains.",
+    "Stop using your phone an hour before bed.",
+    "Lower your sodium to 1500 mg a day.",
+    "Increase your water intake to 2000 ml.",
+    "Try to keep your glucose under 140 mg/dL after meals.",
+    "Aim to bring your LDL down to 100 mg/dL with your doctor.",
+  ],
+  de: [
+    "Du nimmst 1000 mg zweimal täglich.",
+    "Dein Protokoll zeigt 2000 mg.",
+    "Setz dein Metformin nicht ab.",
+    "Lass keine Dosis aus.",
+    "Frag deine Ärztin, ob du die Dosis erhöhen sollst.",
+  ],
+  fr: [
+    "Vous prenez 1000 mg deux fois par jour.",
+    "Ne sautez pas votre dose du soir.",
+    "N'arrêtez pas de prendre la metformine.",
+  ],
+  es: [
+    "Usted toma 1000 mg dos veces al día.",
+    "No deje de tomar la metformina.",
+  ],
+  it: [
+    "Lei prende 1000 mg due volte al giorno.",
+    "Non smetta di prendere la metformina.",
+  ],
+  pl: [
+    "Przyjmuje Pan 1000 mg dwa razy dziennie.",
+    "Nie przestawaj brać leków.",
+  ],
+  ko: [
+    "하루 두 번 1000mg을 복용하고 계세요.",
+    "저녁 용량을 건너뛰지 마세요.",
+    "용량을 늘릴지 의사와 상담하세요.",
+    "담배를 끊으세요.",
+    "혈당을 140mg/dL 아래로 유지해 보세요.",
+  ],
+};
+
+describe("screenModelOutput — the dose-change class, every locale", () => {
+  for (const locale of locales) {
+    it.each(DOSE_CLASS_VIOLATIONS[locale])(
+      `blocks in ${locale}: %s`,
+      (text) => {
+        const d = screenModelOutput(text, locale, CONVERSATIONAL_CONTRACTS);
+        expect(d.block).toBe(true);
+        expect(d.reason).toBe("dose_prescription");
+      },
+    );
+
+    it.each(DOSE_CLASS_CLEAN[locale])(`passes in ${locale}: %s`, (text) => {
+      const d = screenModelOutput(text, locale, CONVERSATIONAL_CONTRACTS);
+      expect(d.block).toBe(false);
+      expect(d.reason).toBeNull();
+    });
+  }
+
+  it("blocks the English drug-named change for a reader of every locale", () => {
+    for (const locale of locales) {
+      expect(
+        screenModelOutput(
+          "Increase your metformin to 2000 mg daily.",
+          locale,
+          CONVERSATIONAL_CONTRACTS,
+        ).block,
+      ).toBe(true);
+    }
+  });
+
+  it("blocks the class under the insights contracts too", () => {
+    const d = screenModelOutput(
+      "Increase your metformin to 2000 mg daily.",
+      "en",
+      INSIGHTS_CONTRACTS,
+    );
+    expect(d.reason).toBe("dose_prescription");
+  });
+
+  it("keeps the schedule-gated continuation exemption for a take imperative", () => {
+    // On schedule: the maintenance anchor exempts it.
+    expect(
+      screenModelOutput(
+        "Take your 1000 mg as usual.",
+        "en",
+        CONVERSATIONAL_CONTRACTS,
+        { scheduleDoses: [1000] },
+      ).block,
+    ).toBe(false);
+    // Off schedule: the same phrasing names a dose the user is not on.
+    expect(
+      screenModelOutput(
+        "Take your 2000 mg as usual.",
+        "en",
+        CONVERSATIONAL_CONTRACTS,
+        { scheduleDoses: [1000] },
+      ).block,
+    ).toBe(true);
+  });
+});

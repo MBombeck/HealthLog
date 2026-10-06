@@ -5,11 +5,15 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { ACTIVITY_MAX_ENTRIES } from "../activity/contract";
 import {
+  coachActivityMetaSchema,
   coachClarificationSchema,
   coachFollowUpSchema,
+  coachMemoryNoteMetaSchema,
   coachResultMetaSchema,
   coachStepSchema,
+  coachTrailSchema,
 } from "../stream-events";
 
 const STEP = {
@@ -102,6 +106,89 @@ describe("stored dialog ids", () => {
             label: "l",
             value: { window: "last7days" },
           },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("v1.41 ids", () => {
+  const ACTIVITY = {
+    id: "a1",
+    phase: "fetch",
+    status: "done",
+    round: 1,
+    labelKey: "insights.coach.activity.fetching",
+    label: "Fetching blood pressure, last 30 days…",
+    stepRef: "s7",
+  };
+
+  it("takes eight tables a message and no ninth", () => {
+    expect(
+      coachResultMetaSchema.safeParse({ ...META, ref: "r8" }).success,
+    ).toBe(true);
+    expect(
+      coachResultMetaSchema.safeParse({ ...META, ref: "r9" }).success,
+    ).toBe(false);
+    expect(
+      coachFollowUpSchema.safeParse({
+        ...CHIP,
+        anchor: { ref: "r8", domain: "bp" },
+      }).success,
+    ).toBe(true);
+  });
+
+  it("numbers trail entries a1 up to the cap", () => {
+    expect(coachActivityMetaSchema.safeParse(ACTIVITY).success).toBe(true);
+    expect(
+      coachActivityMetaSchema.safeParse({
+        ...ACTIVITY,
+        id: `a${ACTIVITY_MAX_ENTRIES}`,
+      }).success,
+    ).toBe(true);
+    expect(
+      coachActivityMetaSchema.safeParse({
+        ...ACTIVITY,
+        id: `a${ACTIVITY_MAX_ENTRIES + 1}`,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("refuses anything that could carry text into a prompt", () => {
+    expect(
+      coachActivityMetaSchema.safeParse({ ...ACTIVITY, id: PLANT }).success,
+    ).toBe(false);
+    expect(
+      coachActivityMetaSchema.safeParse({ ...ACTIVITY, stepRef: PLANT })
+        .success,
+    ).toBe(false);
+    expect(
+      coachTrailSchema.safeParse({ entries: [{ id: PLANT, title: "t" }] })
+        .success,
+    ).toBe(false);
+    expect(
+      coachMemoryNoteMetaSchema.safeParse({
+        proposal: false,
+        factId: PLANT,
+        category: "goal",
+      }).success,
+    ).toBe(false);
+    expect(
+      coachClarificationSchema.safeParse({
+        kind: "goal",
+        freeText: true,
+        assumption: PLANT,
+        choices: [
+          { id: "c1", labelKey: "k", label: "l", value: { goal: "plan1" } },
+        ],
+      }).success,
+    ).toBe(false);
+    expect(
+      coachClarificationSchema.safeParse({
+        kind: "goal",
+        freeText: true,
+        choices: [
+          { id: "c1", labelKey: "k", label: "l", value: { goal: PLANT } },
         ],
       }).success,
     ).toBe(false);

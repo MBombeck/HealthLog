@@ -14,16 +14,16 @@
  * is no silent self-edit of the user's plan set — the extractor surfaces a
  * candidate; the user confirms it.
  *
- * Two halves, mirroring `facts.ts`:
- *  - `extractAndStorePlanProposals` — the background compute: load active +
- *    proposed plans and the recent turns, run one bounded
- *    `runStatusCompletion`, defensively parse the JSON array, drop anything
- *    the Zod gate rejects, de-dup against the existing set, enforce a per-user
- *    cap, and persist survivors field-by-field (no mass-assignment spread) as
- *    `proposed`.
- *  - `buildCoachPlansBlock` — the injection read: the active plans (newest
- *    first), decrypted fault-isolated (an undecryptable row is skipped, never
- *    thrown), for the snapshot memory block.
+ * `extractAndStorePlanProposals` is the background compute: load active +
+ * proposed plans and the recent turns, run one bounded `runStatusCompletion`,
+ * parse `{"plans":[…]}` (or a bare array), drop anything the Zod gate rejects,
+ * de-dup against the existing set, enforce the caps, and persist survivors
+ * field-by-field (no mass-assignment spread) as `proposed`.
+ *
+ * v1.41 — in a turn the Coach proposes a plan itself (`propose_plan`,
+ * `memory/propose-plan.ts`) and the person takes it on with one tap; this
+ * extraction is the net once a conversation has gone quiet. Active plans
+ * reach every turn through the memory block (`memory/context-block.ts`).
  *
  * The cue / action / target TEXT is encrypted via `bytes-codec.ts` (the same
  * AES-256-GCM codec as `CoachFact`). `metric`, `status` and the dates stay
@@ -39,6 +39,8 @@ import { runStatusCompletion } from "@/lib/insights/status-provider";
 import { annotate } from "@/lib/logging/context";
 
 import { decryptFromBytes, encryptToBytes } from "./bytes-codec";
+import { readJsonList } from "./facts";
+import { MAX_OPEN_PLAN_PROPOSALS } from "./memory/shared";
 import { REMINDERS_INJECT_TOP_N } from "./reminders";
 
 /**
@@ -59,7 +61,7 @@ export const COACH_PLAN_STATUSES = [
 export const MAX_PLANS_PER_USER = 25;
 /** Per-field text length cap (mirrors the Zod gate + the prompt instruction). */
 export const PLAN_FIELD_MAX_CHARS = 160;
-/** How many active plans the injection block carries into the snapshot. */
+/** How many active plans the memory block carries into a turn. */
 export const PLANS_INJECT_TOP_N = 6;
 
 /** Cap on recent turns fed into the extraction prompt (bounds prompt size). */
@@ -75,19 +77,15 @@ interface ExtractOpts {
   locale?: string;
 }
 
-interface BuildBlockOpts {
-  prisma?: PrismaLike;
-}
-
 // ---------------------------------------------------------------------------
 // Extraction prompt (EN + DE mirror)
 // ---------------------------------------------------------------------------
 
-const EXTRACTION_PROMPT_EN = `You extract concrete implementation PLANS the user has AGREED to in a coaching conversation, for the assistant's long-term memory. A plan is an "if-then" intention tied to ONE metric. Return a JSON array (no prose, no fences). Each item: { "metric": "<short metric key, e.g. WEIGHT, SLEEP, BLOOD_PRESSURE, STEPS>", "ifCue": "<the trigger, one short clause>", "thenAction": "<the action, one short clause>", "target": "<optional plain target, or omit>" }.
-ONLY extract a plan the user has clearly COMMITTED to in their own words ("I'll weigh myself every morning", "if I skip the gym I'll walk after dinner"). Record it descriptively in the user's framing — NEVER prescribe a plan the user did not agree to, never invent a clinical target, never record a raw measurement as a plan. EXCLUDE: vague wishes ("I should sleep more"), one-off intentions, and anything the user asked you to drop. If no concrete plan was agreed, return []. Prefer FEW clear plans over many speculative ones.`;
+const EXTRACTION_PROMPT_EN = `You extract concrete implementation PLANS the user has AGREED to in a coaching conversation, for the assistant's long-term memory. A plan is an "if-then" intention tied to ONE metric. Return one JSON object (no prose, no fences): { "plans": [ … ] }. Each item: { "metric": "<short metric key, e.g. WEIGHT, SLEEP, BLOOD_PRESSURE, STEPS>", "ifCue": "<the trigger, one short clause>", "thenAction": "<the action, one short clause>", "target": "<optional plain target, or omit>" }.
+ONLY extract a plan the user has clearly COMMITTED to in their own words ("I'll weigh myself every morning", "if I skip the gym I'll walk after dinner"). Record it descriptively in the user's framing — NEVER prescribe a plan the user did not agree to, never invent a clinical target, never record a raw measurement as a plan. EXCLUDE: vague wishes ("I should sleep more"), one-off intentions, and anything the user asked you to drop. If no concrete plan was agreed, return { "plans": [] }. Prefer FEW clear plans over many speculative ones.`;
 
-const EXTRACTION_PROMPT_DE = `Du extrahierst konkrete UMSETZUNGS-PLÄNE, denen die Nutzerin oder der Nutzer in einem Coaching-Gespräch ZUGESTIMMT hat, für das Langzeitgedächtnis des Assistenten. Ein Plan ist eine "Wenn-dann"-Absicht, die an EINE Metrik gebunden ist. Gib ein JSON-Array zurück (kein Fließtext, keine Code-Zäune). Jedes Element: { "metric": "<kurzer Metrik-Schlüssel, z. B. WEIGHT, SLEEP, BLOOD_PRESSURE, STEPS>", "ifCue": "<der Auslöser, ein kurzer Satzteil>", "thenAction": "<die Handlung, ein kurzer Satzteil>", "target": "<optionales einfaches Ziel, oder weglassen>" }.
-Extrahiere NUR einen Plan, zu dem sich die Person klar in eigenen Worten VERPFLICHTET hat ("ich wiege mich jeden Morgen", "wenn ich das Training auslasse, gehe ich nach dem Essen spazieren"). Halte ihn beschreibend in der Formulierung der Person fest — VERORDNE NIEMALS einen Plan, dem die Person nicht zugestimmt hat, erfinde kein klinisches Ziel und erfasse keine reine Messung als Plan. SCHLIESSE AUS: vage Wünsche ("ich sollte mehr schlafen"), einmalige Absichten und alles, worum die Person gebeten hat, es fallen zu lassen. Wenn kein konkreter Plan vereinbart wurde, gib [] zurück. Bevorzuge WENIGE klare Pläne gegenüber vielen spekulativen.`;
+const EXTRACTION_PROMPT_DE = `Du extrahierst konkrete UMSETZUNGS-PLÄNE, denen die Nutzerin oder der Nutzer in einem Coaching-Gespräch ZUGESTIMMT hat, für das Langzeitgedächtnis des Assistenten. Ein Plan ist eine "Wenn-dann"-Absicht, die an EINE Metrik gebunden ist. Gib ein JSON-Objekt zurück (kein Fließtext, keine Code-Zäune): { "plans": [ … ] }. Jedes Element: { "metric": "<kurzer Metrik-Schlüssel, z. B. WEIGHT, SLEEP, BLOOD_PRESSURE, STEPS>", "ifCue": "<der Auslöser, ein kurzer Satzteil>", "thenAction": "<die Handlung, ein kurzer Satzteil>", "target": "<optionales einfaches Ziel, oder weglassen>" }.
+Extrahiere NUR einen Plan, zu dem sich die Person klar in eigenen Worten VERPFLICHTET hat ("ich wiege mich jeden Morgen", "wenn ich das Training auslasse, gehe ich nach dem Essen spazieren"). Halte ihn beschreibend in der Formulierung der Person fest — VERORDNE NIEMALS einen Plan, dem die Person nicht zugestimmt hat, erfinde kein klinisches Ziel und erfasse keine reine Messung als Plan. SCHLIESSE AUS: vage Wünsche ("ich sollte mehr schlafen"), einmalige Absichten und alles, worum die Person gebeten hat, es fallen zu lassen. Wenn kein konkreter Plan vereinbart wurde, gib { "plans": [] } zurück. Bevorzuge WENIGE klare Pläne gegenüber vielen spekulativen.`;
 
 function extractionSystemPrompt(locale: string | undefined): string {
   return locale?.toLowerCase().startsWith("de")
@@ -96,7 +94,7 @@ function extractionSystemPrompt(locale: string | undefined): string {
 }
 
 // ---------------------------------------------------------------------------
-// Zod gate for the model's JSON array
+// Zod gate for the model's JSON
 // ---------------------------------------------------------------------------
 
 const rawPlanSchema = z.object({
@@ -105,8 +103,6 @@ const rawPlanSchema = z.object({
   thenAction: z.string().trim().min(1).max(PLAN_FIELD_MAX_CHARS),
   target: z.string().trim().min(1).max(PLAN_FIELD_MAX_CHARS).optional(),
 });
-
-const rawPlanArraySchema = z.array(z.unknown());
 
 interface ParsedPlan {
   metric: string;
@@ -120,22 +116,16 @@ interface ParsedPlan {
  * top-level JSON is unparseable (the caller then annotates `parse_failed`);
  * individual malformed items are dropped silently, not fatal.
  */
-function parsePlans(
+export function parsePlans(
   content: string,
 ): { plans: ParsedPlan[]; dropped: number } | null {
-  let json: unknown;
-  try {
-    json = JSON.parse(content.trim());
-  } catch {
-    return null;
-  }
-
-  const arr = rawPlanArraySchema.safeParse(json);
-  if (!arr.success) return null;
+  // `{"plans":[…]}` under the JSON-object mode, or a bare array (`facts.ts`).
+  const list = readJsonList(content, "plans");
+  if (list === null) return null;
 
   const plans: ParsedPlan[] = [];
   let dropped = 0;
-  for (const item of arr.data) {
+  for (const item of list) {
     const parsed = rawPlanSchema.safeParse(item);
     if (parsed.success) {
       const plan: ParsedPlan = {
@@ -375,9 +365,14 @@ export async function extractAndStorePlanProposals(
   }
 
   // Cap enforcement: never let proposals push the non-terminal set past the
-  // per-user cap. A user with a full plan set gets no new proposals until they
-  // act on (confirm / abandon) the ones they have.
-  const remainingCapacity = MAX_PLANS_PER_USER - existing.length;
+  // per-user cap, and never hold more than `MAX_OPEN_PLAN_PROPOSALS` open
+  // proposals at once. A person with a full set gets no new proposals until
+  // they act on (confirm / decline) the ones they have, or those lapse.
+  const openProposals = existing.filter((p) => p.status === "proposed").length;
+  const remainingCapacity = Math.min(
+    MAX_PLANS_PER_USER - existing.length,
+    MAX_OPEN_PLAN_PROPOSALS - openProposals,
+  );
   if (remainingCapacity <= 0) {
     return { status: "skipped", count: 0 };
   }
@@ -405,73 +400,6 @@ export async function extractAndStorePlanProposals(
   });
 
   return { status: "stored", count: toStore.length };
-}
-
-// ---------------------------------------------------------------------------
-// Injection block
-// ---------------------------------------------------------------------------
-
-interface InjectPlanRow {
-  metric: string;
-  ifCueEncrypted: Uint8Array;
-  thenActionEncrypted: Uint8Array;
-  targetEncrypted: Uint8Array | null;
-  status: string;
-  updatedAt: Date;
-}
-
-/** One active plan as the snapshot memory block carries it. */
-export interface CoachPlanInjectEntry {
-  metric: string;
-  ifCue: string;
-  thenAction: string;
-  target?: string;
-}
-
-/**
- * Build the top-N ACTIVE plans for the snapshot memory block, newest first.
- * Only `active` plans are injected — a `proposed` plan is still awaiting the
- * user's confirmation and must not be recalled as a committed plan. Decrypt is
- * fault-isolated — an undecryptable row is skipped, never thrown into the
- * caller. Returns `null` when the user has no usable active plans.
- */
-export async function buildCoachPlansBlock(
-  userId: string,
-  opts?: BuildBlockOpts,
-): Promise<{ plans: CoachPlanInjectEntry[] } | null> {
-  const db = opts?.prisma ?? prisma;
-
-  const rows = (await db.coachPlan.findMany({
-    where: { userId, deletedAt: null, status: "active" },
-    orderBy: [{ updatedAt: "desc" }],
-    select: {
-      metric: true,
-      ifCueEncrypted: true,
-      thenActionEncrypted: true,
-      targetEncrypted: true,
-      status: true,
-      updatedAt: true,
-    },
-  })) as InjectPlanRow[];
-
-  const plans: CoachPlanInjectEntry[] = [];
-  for (const r of rows) {
-    if (plans.length >= PLANS_INJECT_TOP_N) break;
-    const ifCue = decryptOrNull(r.ifCueEncrypted);
-    const thenAction = decryptOrNull(r.thenActionEncrypted);
-    if (ifCue === null || thenAction === null) continue;
-    const entry: CoachPlanInjectEntry = {
-      metric: r.metric,
-      ifCue,
-      thenAction,
-    };
-    const target = decryptOrNull(r.targetEncrypted);
-    if (target !== null) entry.target = target;
-    plans.push(entry);
-  }
-
-  if (plans.length === 0) return null;
-  return { plans };
 }
 
 // ---------------------------------------------------------------------------
@@ -576,8 +504,8 @@ interface InjectReminderRow {
  * fault-isolated — an undecryptable row is skipped, never thrown. Returns `null`
  * when the user has nothing to recall.
  *
- * This is the read half of the episodic memory type, mirroring
- * `buildCoachPlansBlock`; the write half lives in `reminders.ts`.
+ * This is the read half of the episodic memory type; the write half lives in
+ * `reminders.ts`. The memory block (`memory/context-block.ts`) carries it.
  */
 export async function buildCoachRemindersBlock(
   userId: string,

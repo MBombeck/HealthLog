@@ -1,6 +1,17 @@
 /**
- * The day's token budget for one Coach turn: reserve before the provider
- * call, settle against the actual count after it, refund on failure.
+ * The day's token budget for one Coach turn, booked round by round.
+ *
+ * v1.41 — a turn reserves its first round and the room for its final answer
+ * when it starts, then each further round right before that round runs, and
+ * settles every round against what it really cost as soon as it returns.
+ * A further round the day's ceiling refuses is not an error: the loop answers
+ * from the reserve with what it has read (`budget`). What a turn reserved and
+ * never used (the final reserve of a turn that answered on its own, a round
+ * that failed) is given back when the turn ends.
+ *
+ * The atomic primitives are the ledger's own (`reserveBudget` /
+ * `reconcileSpend` in `coach/budget.ts`); the loop sees only the two
+ * callbacks of `RoundSpend`, so it stays free of the database.
  */
 import { annotate } from "@/lib/logging/context";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
@@ -12,49 +23,61 @@ import {
   resolveCostOwner,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
-import { MAX_ROUNDS } from "@/lib/ai/coach/tools";
+import type { RoundSpend } from "@/lib/ai/coach/tools/loop";
 
 import type { TurnChain } from "./chain";
 import { streamProviderError } from "./sse";
 
 export interface TurnReservation {
+  /** Everything reserved at the turn's start: round one plus the final reserve. */
   reserved: number;
   owner: Awaited<ReturnType<typeof reserveBudget>>["owner"];
   dateKey: string;
+}
+
+/** The turn's ledger: the loop's two callbacks plus the close-out. */
+export interface TurnLedger extends RoundSpend {
+  readonly reservation: TurnReservation;
+  /**
+   * Give back everything still reserved and not settled. Called once the
+   * turn is over, whatever way it ended; a second call does nothing.
+   */
+  close(): Promise<void>;
 }
 
 export async function reserveTurnBudget(args: {
   userId: string;
   chain: TurnChain;
   toolMode: boolean;
+  /**
+   * v1.41 — the first round, estimated from the prompt. Absent on the
+   * no-tools path, which reserves one reply.
+   */
+  firstRound?: number;
+  /** v1.41 — the room held back for the final answer (tool path). */
+  finalReserve?: number;
 }): Promise<
-  { ok: true; reservation: TurnReservation } | { ok: false; response: Response }
+  { ok: true; ledger: TurnLedger } | { ok: false; response: Response }
 > {
   const { userId, chain, toolMode } = args;
-  // v1.18.7 (SENIOR-DEV HIGH) — atomically RESERVE the day's budget before
-  // the provider call. The reservation increments the day's total by the
-  // per-call ceiling (`maxTokens`) in one upsert and returns the new total;
-  // concurrent requests serialise on the row so they cannot all pass the cap.
-  // Over-cap → 429 refusal frame, reservation already refunded. The actual
-  // token count is reconciled against this reservation after the call,
-  // including on empty / sentinel replies (their tokens were still burned).
-  //
-  // v1.20.0 (F1) — the tool loop makes up to MAX_ROUNDS provider round-trips,
-  // so reserve the per-call ceiling × the round count up front and reconcile
-  // the SUMMED actual tokens afterwards. The atomic reserve/reconcile
-  // primitives are unchanged; only the reserved amount scales.
-  // v1.21.0 (F1) — the daily ceiling is the OPERATOR's cost cap only when the
-  // chain egresses via the operator's own key (`admin-openai` primary). A
-  // ChatGPT-OAuth/Codex or BYOK chain runs on the user's OWN plan/key and costs
-  // the operator nothing, so it gets the generous user-plan ceiling — gating it
-  // on the operator-cost cap would lock the user out of a plan they pay for.
+  // v1.18.7 — atomically RESERVE before the provider call: one upsert
+  // increments the day's total and returns it, so concurrent requests cannot
+  // all pass the cap. Over-cap → 429 refusal frame, reservation already
+  // refunded.
+  // v1.21.0 — the ceiling is the operator's cost cap only when the chain
+  // egresses through the operator's own key or account; a chain on the
+  // person's own plan or key gets the generous user-plan ceiling.
   const dailyCap = resolveDailyCap(chain);
   const reqDateKey = buildDateKey();
+  const firstRound = toolMode
+    ? Math.max(1, Math.floor(args.firstRound ?? AI_BUDGETS.coach.maxTokens))
+    : AI_BUDGETS.coach.maxTokens;
+  const finalReserve = toolMode
+    ? Math.max(0, Math.floor(args.finalReserve ?? 0))
+    : 0;
   const reservation = await reserveBudget(
     userId,
-    toolMode
-      ? AI_BUDGETS.coach.maxTokens * MAX_ROUNDS
-      : AI_BUDGETS.coach.maxTokens,
+    firstRound + finalReserve,
     reqDateKey,
     dailyCap,
     resolveCostOwner(chain),
@@ -62,11 +85,6 @@ export async function reserveTurnBudget(args: {
   );
   if (!reservation.allowed) {
     // v1.38.19 — say WHICH ceiling refused and WHOSE.
-    // `totalAfter` alone is the day's mixed total; on an operator refusal that
-    // is not the counter that tripped, and reading `totalAfter: 1200000`
-    // against a 200 000 ceiling is what turned the 06:42Z incident into a
-    // production log dig. Integers and two small enums — no key, host or model
-    // name is added.
     annotate({
       action: { name: "coach.budget.exceeded" },
       meta: {
@@ -85,62 +103,103 @@ export async function reserveTurnBudget(args: {
   }
   return {
     ok: true,
-    reservation: {
-      reserved: reservation.reserved,
-      owner: reservation.owner,
-      dateKey: reqDateKey,
-    },
+    ledger: createTurnLedger({
+      userId,
+      cap: dailyCap,
+      reservation: {
+        reserved: reservation.reserved,
+        owner: reservation.owner,
+        dateKey: reqDateKey,
+      },
+      firstRound: Math.min(firstRound, reservation.reserved),
+      finalReserve: Math.max(0, reservation.reserved - firstRound),
+    }),
   };
 }
 
 /**
- * The provider chain failed outright — no tokens were billed, so refund the
- * full reservation before surfacing the error frame.
+ * The ledger of one turn over a reservation already made. Exported for the
+ * tests; the pipeline gets it from `reserveTurnBudget`.
  */
-export async function refundReservation(
-  userId: string,
-  reservation: TurnReservation,
-): Promise<void> {
-  await reconcileSpend(
-    userId,
-    reservation.reserved,
-    0,
-    reservation.dateKey,
-    0,
-    {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    },
-  ).catch(() => {});
-}
+export function createTurnLedger(args: {
+  userId: string;
+  cap: number;
+  reservation: TurnReservation;
+  firstRound: number;
+  finalReserve: number;
+}): TurnLedger {
+  const { userId, reservation } = args;
+  // Reservations not settled yet, oldest first; the final reserve apart.
+  const open: number[] = [args.firstRound];
+  let finalHeld = args.finalReserve;
+  let closed = false;
 
-/**
- * v1.18.7 (SENIOR-DEV MEDIUM) — the provider call returned, so its tokens
- * were billed regardless of reply quality. Reconcile the reservation against
- * the actual count NOW, before any empty/sentinel short-circuit, so an empty
- * or sentinel-only reply still records its burned cost (the old post-hoc
- * `recordSpend` ran only on the happy path, undercounting these).
- * v1.20.0 (F1) — reconcile against the SUMMED tokens across every tool round
- * (the loop accumulates them); the no-tools path sums to the single call.
- */
-export async function settleReservation(
-  userId: string,
-  reservation: TurnReservation,
-  spent: {
-    totalTokens: number;
-    cachedTokens: number;
-    servedBy: ProviderChainType;
-  },
-): Promise<void> {
-  await reconcileSpend(
-    userId,
-    reservation.reserved,
-    spent.totalTokens,
-    reservation.dateKey,
-    spent.cachedTokens,
-    { servedBy: spent.servedBy, reservedOwner: reservation.owner },
-  ).catch(() => {
-    // Ledger reconcile is best-effort; a failure leaves the conservative
-    // reservation in place (never an undercount) and never breaks the turn.
-  });
+  const settle = (
+    reserved: number,
+    actual: number,
+    cached: number,
+    servedBy: ProviderChainType | null,
+  ) =>
+    reconcileSpend(userId, reserved, actual, reservation.dateKey, cached, {
+      servedBy,
+      reservedOwner: reservation.owner,
+    }).catch(() => {
+      // Ledger reconcile is best-effort; a failure leaves the conservative
+      // reservation in place (never an undercount) and never breaks the turn.
+    });
+
+  return {
+    reservation,
+    async reserveRound(estimate) {
+      if (closed) return false;
+      try {
+        const next = await reserveBudget(
+          userId,
+          estimate,
+          reservation.dateKey,
+          args.cap,
+          reservation.owner,
+          "coach",
+          undefined,
+          { countMessage: false },
+        );
+        if (!next.allowed) {
+          annotate({
+            action: { name: "coach.budget.round_refused" },
+            meta: {
+              owner: next.owner,
+              limit: next.limit,
+              cap: args.cap,
+              round: open.length + 1,
+            },
+          });
+          return false;
+        }
+        open.push(next.reserved);
+        return true;
+      } catch {
+        // An unreadable ledger answers from the reserve, never runs unbooked.
+        return false;
+      }
+    },
+    async settleRound({ tokens, cachedTokens, servedBy, final }) {
+      if (closed) return;
+      let portion: number;
+      if (final) {
+        portion = finalHeld;
+        finalHeld = 0;
+      } else {
+        portion = open.shift() ?? 0;
+      }
+      await settle(portion, tokens, cachedTokens, servedBy);
+    },
+    async close() {
+      if (closed) return;
+      closed = true;
+      const unused = open.reduce((sum, n) => sum + n, 0) + finalHeld;
+      open.length = 0;
+      finalHeld = 0;
+      if (unused > 0) await settle(unused, 0, 0, null);
+    },
+  };
 }

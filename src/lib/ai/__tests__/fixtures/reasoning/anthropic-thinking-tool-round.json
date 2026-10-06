@@ -1,0 +1,29 @@
+{
+  "id": "msg_fixture_01",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-4-5",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "**Choosing the city**\nThe capital of France is Paris, so the weather lookup needs Paris.",
+      "signature": "sig-fixture-a1"
+    },
+    {
+      "type": "text",
+      "text": "Let me look that up."
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_fixture_01",
+      "name": "get_weather",
+      "input": { "city": "Paris" }
+    }
+  ],
+  "stop_reason": "tool_use",
+  "usage": {
+    "input_tokens": 612,
+    "output_tokens": 118,
+    "cache_read_input_tokens": 0
+  }
+}

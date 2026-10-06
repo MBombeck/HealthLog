@@ -177,7 +177,7 @@ function fuzzResult(r: () => number): CoachToolResult | undefined {
   const roll = r();
   if (roll < 0.15) return undefined;
   if (roll < 0.55) {
-    const ref = ["r1", "r6", "r7", "m1.r1", PLANTED[0]][Math.floor(r() * 5)];
+    const ref = ["r1", "r8", "r9", "m1.r1", PLANTED[0]][Math.floor(r() * 5)];
     return {
       present: true,
       data: fuzzValue(r),
@@ -254,7 +254,7 @@ function fuzzResult(r: () => number): CoachToolResult | undefined {
 
 function assertClean(step: CoachStep, locale: Locale) {
   for (const key of Object.keys(step)) expect(STEP_KEYS.has(key)).toBe(true);
-  expect(step.id).toMatch(/^s([1-9]|1[0-2])$/);
+  expect(step.id).toMatch(/^s([1-9]|[1-3]\d|4[0-8])$/);
   expect(
     [...COACH_TOOL_NAMES, "snapshot", "show_result"].includes(step.tool),
   ).toBe(true);
@@ -275,7 +275,7 @@ function assertClean(step: CoachStep, locale: Locale) {
   }
   if (step.reason !== undefined) expect(REASONS.has(step.reason)).toBe(true);
   if (step.resultRef !== undefined) {
-    expect(step.resultRef).toMatch(/^r[1-6]$/);
+    expect(step.resultRef).toMatch(/^r[1-8]$/);
   }
   const wire = JSON.stringify(step);
   for (const planted of PLANTED) expect(wire).not.toContain(planted);
@@ -462,7 +462,7 @@ describe("toStep — mapping", () => {
         parsedArgs: parsed,
         locale: "en",
       })?.id,
-    ).toBe("s12");
+    ).toBe("s48");
     expect(
       toStep({
         call: { id: "u", name: "get_everything", arguments: "{}" },
@@ -572,7 +572,7 @@ describe("toStep — tables", () => {
     });
   });
 
-  it("past the sixth table the read still counts, with no table to name", () => {
+  it("past the eighth table the read still counts, with no table to name", () => {
     const {
       table: _table,
       resultRef: _ref,

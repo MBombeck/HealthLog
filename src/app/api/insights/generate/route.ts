@@ -795,6 +795,9 @@ export const POST = apiHandler((request: NextRequest) =>
         // v1.25 — honours the per-user response-timeout setting.
         timeoutMs: effectiveTimeoutMs,
         stage: "generate",
+        // v1.41 — a briefing asked for by hand reasons exactly like the
+        // scheduled one; the retries below repair a reply and do not.
+        reasoningJob: "daily_briefing",
       });
       result = fallback.result;
       workingProviderType = fallback.workingProvider.providerType;

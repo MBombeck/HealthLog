@@ -36,6 +36,8 @@ vi.mock("@/lib/db", () => ({
       },
     },
     auditLog: { deleteMany: vi.fn() },
+    // v1.41 — the operator's reasoning controls; an untouched instance.
+    appSettings: { findUnique: vi.fn(async () => null) },
   },
 }));
 // The `briefing` capability is available in these fixtures; the refusal
@@ -141,6 +143,14 @@ describe("comprehensive JSON-retry", () => {
     expect(retryParams.messages[0].content).toContain(
       "did not satisfy the required",
     );
+    // v1.41 — the generation reasons as the daily-briefing job; the JSON
+    // repair does not.
+    const firstParams = runRawCompletionWithFallback.mock.calls[0][0].params;
+    expect(firstParams.reasoning).toEqual({
+      effort: "medium",
+      summaries: false,
+    });
+    expect(retryParams.reasoning).toBeUndefined();
   });
 
   it("fails with invalid-json when both attempts miss", async () => {

@@ -21,7 +21,6 @@ const m = vi.hoisted(() => ({
   assembleTurnContext: vi.fn(),
   resolveTurnChain: vi.fn(),
   reserveTurnBudget: vi.fn(),
-  settleReservation: vi.fn(),
   runTurnModel: vi.fn(),
   guardReply: vi.fn(),
   surfaceCards: vi.fn(),
@@ -53,7 +52,6 @@ vi.mock("../context", () => ({ assembleTurnContext: m.assembleTurnContext }));
 vi.mock("../chain", () => ({ resolveTurnChain: m.resolveTurnChain }));
 vi.mock("../budget", () => ({
   reserveTurnBudget: m.reserveTurnBudget,
-  settleReservation: m.settleReservation,
 }));
 vi.mock("../model", () => ({ runTurnModel: m.runTurnModel }));
 // The record reaches back years, so the history chips have something to
@@ -76,6 +74,7 @@ import type {
 import { DEFAULT_COACH_PREFS } from "@/lib/validations/coach-prefs";
 
 import { runCoachTurn } from "../pipeline";
+import { STUB_PROMPT_CONTEXT, modelExtras, stubLedger } from "./turn-test-kit";
 import type { TurnInput } from "../types";
 
 const STORED: CoachResultTable = {
@@ -158,6 +157,7 @@ function input(over: Partial<TurnInput> = {}): TurnInput {
     workoutId: undefined,
     followUp: { messageId: "m-last", id: "f1" },
     clarification: undefined,
+    reasoningLevel: "medium",
     recheckCapability: async () => null,
     ...over,
   };
@@ -180,13 +180,15 @@ function annotated(name: string) {
 /** The model path, enough of it to reach the frames. */
 function modelPath(prefs = DEFAULT_COACH_PREFS) {
   m.assembleTurnContext.mockResolvedValue({
+    ...STUB_PROMPT_CONTEXT,
     coachPrefs: prefs,
     snapshot: { provenance: { windows: [], metrics: [] } },
   });
   m.resolveTurnChain.mockResolvedValue({ ok: true, chain: [], toolMode: true });
-  m.reserveTurnBudget.mockResolvedValue({ ok: true, reservation: {} });
+  m.reserveTurnBudget.mockResolvedValue({ ok: true, ledger: stubLedger() });
   const table = { ...STORED, chart: null, chartKind: null, displayed: true };
   m.runTurnModel.mockResolvedValue({
+    ...modelExtras(),
     ok: true,
     result: { content: "x", model: "gpt" },
     workingProviderType: "openai",
@@ -236,6 +238,7 @@ function modelPath(prefs = DEFAULT_COACH_PREFS) {
 
 beforeEach(() => {
   for (const fn of Object.values(m)) fn.mockReset();
+  m.persistUserTurn.mockResolvedValue({ messageId: "m-user" });
   m.readFollowUpHistory.mockResolvedValue({
     today: "2026-09-27",
     firstDate: { bp: "2024-01-01" },

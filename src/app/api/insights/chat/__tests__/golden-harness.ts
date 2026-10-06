@@ -175,6 +175,8 @@ export function resetGolden(): void {
     },
   );
   m.getEvent.mockReturnValue({
+    // A request event, so the per-request cache memoises as in production.
+    getKind: () => "request",
     setError: (err: Error) =>
       record("event.setError", { message: err.message }),
   });
@@ -373,7 +375,26 @@ export async function runCoachToolLoop(args: Record<string, unknown>) {
     timeoutMs: args.timeoutMs,
     signal: args.signal instanceof AbortSignal,
   });
-  return m.runCoachToolLoop(args);
+  const out = await m.runCoachToolLoop(args);
+  // The real loop settles each round on the turn's ledger as it returns;
+  // the scripted loop settles its whole cost as one round.
+  const spend = args.spend as
+    | {
+        settleRound(usage: {
+          tokens: number;
+          cachedTokens: number;
+          servedBy: string;
+          final: boolean;
+        }): Promise<void>;
+      }
+    | undefined;
+  await spend?.settleRound({
+    tokens: out.totalTokens,
+    cachedTokens: out.cachedTokens,
+    servedBy: out.workingProviderType,
+    final: false,
+  });
+  return out;
 }
 
 export async function runStreamingRawCompletionWithFallback(

@@ -4950,6 +4950,17 @@ model AppSettings {
   assistantInsightStatusEnabled Boolean @default(true) @map("assistant_insight_status_enabled")
   assistantDocumentAiEnabled    Boolean @default(true) @map("assistant_document_ai_enabled")
 
+  // v1.41 — the operator's reasoning controls. `aiReasoningEnabled` switches
+  // provider-side reasoning off for every surface (the Coach and the three
+  // background jobs that use it); `aiReasoningMaxEffort` caps the level a
+  // person may pick (`low` | `medium` | `high`, an app-side closed enum in
+  // `src/lib/ai/reasoning/levels.ts`). Resolved once per turn or job by
+  // `src/lib/ai/reasoning/resolve.ts` and published per record on
+  // `GET /api/auth/me` as `coachReasoning`. Defaults keep reasoning on with no
+  // cap, so an upgrade needs no admin action.
+  aiReasoningEnabled            Boolean @default(true) @map("ai_reasoning_enabled")
+  aiReasoningMaxEffort          String  @default("high") @map("ai_reasoning_max_effort")
+
   // v1.18.0 — operator-level server-wide module availability. A DISABLED
   // allowlist mirroring the per-user `User.modulePreferencesJson`: absent /
   // empty / `true` ⇒ available, an explicit `false` ⇒ disabled for EVERY
@@ -6435,6 +6446,13 @@ model CoachMessage {
   // only the tables' metadata. Read through `readMessageResults` by the
   // owner-narrowed results endpoint; NULL on every turn without a table.
   resultsEncrypted Bytes?   @map("results_encrypted")
+  // v1.41 — the model-written text of the turn's live trail (JSON
+  // `CoachTrail`, at most 16 KB): reasoning titles and texts per round, the
+  // facts recalled into the turn, the text of a fact proposal. AES-256-GCM
+  // like `encryptedContent`. The trail's plaintext metadata (phase, status,
+  // round, catalog label, duration, count, stop reason) rides
+  // `metricSourceJson.activity`. Owner-only; NULL on every turn without one.
+  trailEncrypted   Bytes?   @map("trail_encrypted")
   createdAt        DateTime @default(now()) @map("created_at")
 
   conversation CoachConversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -6477,6 +6495,18 @@ model CoachFact {
   updatedAt            DateTime  @updatedAt @map("updated_at")
   // Soft-delete: hides the fact from injection but keeps the row for audit.
   deletedAt            DateTime? @map("deleted_at")
+  // v1.41 — who put the fact here, an app-side closed enum
+  // (`COACH_FACT_SOURCES` in `src/lib/ai/coach/memory/contract.ts`): `user`
+  // (the remember button, or a proposal the person confirmed), `coach` (saved
+  // during a turn), `extracted` (the background extraction, and every row
+  // written before the column existed), `pattern` (the deterministic matcher).
+  source               String    @default("extracted")
+  // v1.41 — when the fact last went into a Coach turn; NULL until it has.
+  lastUsedAt           DateTime? @map("last_used_at")
+  // v1.41 — the message the fact came out of, for "undo" and "from this
+  // conversation". A bare id like `sourceConversationId`, not a relation, so
+  // deleting a conversation does not take the fact with it.
+  sourceMessageId      String?   @map("source_message_id")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

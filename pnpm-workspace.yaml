@@ -38,6 +38,10 @@ overrides:
   # follow-up fixed in 3.1.8, raised the floor from 3.1.6.
   "fast-uri@<3.1.8": "^3.1.8"
   "flatted@<3.4.2": "^3.4.2"
+  # GHSA-jqcg-44mw-7w3h: IP spoofing through IPv4-mapped addresses. It
+  # arrives under express in the MCP SDK; the app resolves client IPs itself,
+  # but the copy sits on a production path.
+  "proxy-addr@<2.0.8": "^2.0.8"
   # GHSA-3f6p-5ww8-9rcr: auth-plugin downgrade leaking plaintext credentials.
   # Reached only through prisma's MySQL driver, which this app never opens;
   # pinned so the audit reads clean, and mirrored for /opt/prisma-cli in the

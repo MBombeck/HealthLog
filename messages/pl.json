@@ -2836,9 +2836,8 @@
       },
       "rememberMessage": {
         "action": "Zapamiętaj",
-        "done": "Zapisano w informacjach o sobie",
-        "duplicate": "Już znajduje się w informacjach o sobie",
-        "failed": "Nie udało się zapisać. Spróbuj ponownie."
+        "failed": "Nie udało się zapisać. Spróbuj ponownie.",
+        "alreadyKept": "Coach już to pamięta."
       },
       "guided": {
         "offerTitle": "Coach ma {count} pytania do Ciebie",
@@ -3019,7 +3018,7 @@
       "hideConversations": "Ukryj rozmowy",
       "heroGreeting": "Zapytaj mnie o cokolwiek na temat twoich danych",
       "heroSubline": "Zapytaj o swoje trendy, leki lub pomiary.",
-      "thinkingElapsed": "{seconds}s",
+      "thinkingElapsed": "{seconds} s",
       "thinkingDuration": "Myślał przez {seconds}s",
       "thinkingExpandAria": "Pokaż, co Coach wziął pod uwagę",
       "thinkingDetail": "Odpowiedź na podstawie Twojego podsumowania zdrowia.",
@@ -3030,6 +3029,18 @@
         "baselineWithin": "Twój zwykły zakres to {low}–{high} {unit}; dzisiejsza wartość {value} mieści się w nim.",
         "baselineAbove": "Twój zwykły zakres to {low}–{high} {unit}; dzisiejsza wartość {value} jest powyżej niego.",
         "baselineBelow": "Twój zwykły zakres to {low}–{high} {unit}; dzisiejsza wartość {value} jest poniżej niego.",
+        "sameHoursWithin": "Do tej pory dnia zwykle masz {low}–{high} {unit}; dziś jak dotąd {value}, czyli w zakresie.",
+        "sameHoursAbove": "Do tej pory dnia zwykle masz {low}–{high} {unit}; dziś jak dotąd {value}, czyli powyżej.",
+        "sameHoursBelow": "Do tej pory dnia zwykle masz {low}–{high} {unit}; dziś jak dotąd {value}, czyli poniżej.",
+        "steadyWithin": "Twoje pomiary zwykle wynoszą {low} {unit}; dzisiejsza wartość {value} jest taka sama.",
+        "steadyAbove": "Twoje pomiary zwykle wynoszą {low} {unit}; dzisiejsza wartość {value} jest wyższa.",
+        "steadyBelow": "Twoje pomiary zwykle wynoszą {low} {unit}; dzisiejsza wartość {value} jest niższa.",
+        "latestWithin": "Twój zwykły zakres to {low}–{high} {unit}; ostatni pomiar, z {date}, wyniósł {value} i mieścił się w nim.",
+        "latestAbove": "Twój zwykły zakres to {low}–{high} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był powyżej niego.",
+        "latestBelow": "Twój zwykły zakres to {low}–{high} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był poniżej niego.",
+        "steadyLatestWithin": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był taki sam.",
+        "steadyLatestAbove": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był wyższy.",
+        "steadyLatestBelow": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był niższy.",
         "insufficient": "Wciąż poznaję twój zwykły zakres — rejestruj jeszcze przez kilka dni.",
         "driver": "{note}"
       },
@@ -3146,7 +3157,80 @@
         "areasDoneOther": "Sprawdzono {count} obszarów",
         "info": "Szczegóły odpowiedzi",
         "infoModel": "Model: {model}"
-      }
+      },
+      "activity": {
+        "thinking": "Myśli…",
+        "fetching": "Pobiera {domain}, {window}…",
+        "digestOne": "Podsumowuje {count} pomiar…",
+        "digestFew": "Podsumowuje {count} pomiary…",
+        "digestOther": "Podsumowuje {count} pomiarów…",
+        "digestDoneOne": "{count} pomiar z: {areas}",
+        "digestDoneFew": "{count} pomiary z: {areas}",
+        "digestDoneOther": "{count} pomiarów z: {areas}",
+        "areasOne": "{count} obszar",
+        "areasFew": "{count} obszary",
+        "areasOther": "{count} obszarów",
+        "memoryOne": "Pamięta {count} rzecz, którą mu powiedziałeś",
+        "memoryFew": "Pamięta {count} rzeczy, które mu powiedziałeś",
+        "memoryOther": "Pamięta {count} rzeczy, które mu powiedziałeś",
+        "remember": "Zapamiętuje coś…",
+        "plan": "Przygotowuje plan…",
+        "asking": "Dopytuje…",
+        "answer": "Pisze odpowiedź…",
+        "summaryOne": "Przemyślane, {lookups} zapytanie, {seconds} s",
+        "summaryFew": "Przemyślane, {lookups} zapytania, {seconds} s",
+        "summaryOther": "Przemyślane, {lookups} zapytań, {seconds} s",
+        "summaryNoLookups": "Przemyślane, {seconds} s",
+        "stop": {
+          "budget": "Budżet wyczerpany, odpowiada na podstawie tego, co ma",
+          "time": "Limit czasu osiągnięty, odpowiada na podstawie tego, co ma",
+          "cap": "Wiele kroków, teraz podsumowuje",
+          "noProgress": "Brak nowych danych, podsumowuje"
+        }
+      },
+      "memory": {
+        "saved": "Zapamiętane: {fact}",
+        "undo": "Cofnij",
+        "accept": "Tak, zapamiętaj",
+        "decline": "Nie",
+        "confirmed": "Jasne, zapamiętam.",
+        "declined": "Dobrze, nie zapiszę tego."
+      },
+      "plan": {
+        "accept": "Przyjmij ten plan",
+        "decline": "Nie teraz",
+        "confirmed": "Zanotowane. Wrócimy do tego razem za {days} dni.",
+        "declined": "Dobrze, nie teraz."
+      },
+      "assumption": {
+        "line": "Założenie: {value}",
+        "change": "Zmień"
+      },
+      "suggestedReplies": {
+        "groupLabel": "Proponowane odpowiedzi"
+      },
+      "interim": {
+        "labelOne": "{title}, {window}, {count} pomiar",
+        "labelFew": "{title}, {window}, {count} pomiary",
+        "labelOther": "{title}, {window}, {count} pomiarów"
+      },
+      "chart": {
+        "compare": {
+          "periods": "{a} wobec {b}"
+        }
+      },
+      "reasoning": {
+        "label": "Głębokość namysłu",
+        "hint": "Głębszy namysł oznacza dokładniejsze odpowiedzi i trochę dłuższe czekanie.",
+        "off": "Wyłączone",
+        "minimal": "Minimalna",
+        "low": "Niska",
+        "medium": "Średnia",
+        "high": "Wysoka",
+        "capped": "(ograniczone przez administratora)",
+        "disabled": "Administrator wyłączył głębszy namysł."
+      },
+      "memoryLink": "Pamięć ({count})"
     },
     "relativeJustNow": "przed chwilą",
     "relativeMinutesAgoOne": "{count} minutę temu",
@@ -5992,7 +6076,6 @@
         "categoryGoal": "Cele",
         "categoryConstraint": "Ograniczenia",
         "categoryContext": "Kontekst",
-        "forget": "Zapomnij",
         "forgetAria": "Zapomnij tę informację",
         "forgetTitle": "Zapomnieć tę informację?",
         "forgetBody": "Coach przestanie z niej korzystać od następnej wiadomości. Zapomnianej informacji nie da się odzyskać.",
@@ -6008,7 +6091,8 @@
         "forgotError": "Nie udało się zapomnieć tej informacji. Spróbuj ponownie.",
         "clearedToast": "Zapomniano {count} zapisanych informacji.",
         "clearError": "Nie udało się usunąć zapisanych informacji. Spróbuj ponownie.",
-        "detail": "Wykorzystuje je, aby jego odpowiedzi pozostawały trafne. Usuń wszystko, o czym wolisz, by zapomniał."
+        "detail": "Wykorzystuje je, aby jego odpowiedzi pozostawały trafne. Usuń wszystko, o czym wolisz, by zapomniał.",
+        "categoryMedication": "Leki"
       },
       "coachReminders": {
         "title": "Twoje przypomnienia",
@@ -6124,7 +6208,8 @@
           "low": "Niskie",
           "medium": "Średnie",
           "high": "Wysokie"
-        }
+        },
+        "coachNote": "W Coachu obowiązuje głębokość myślenia z ustawień Coacha."
       }
     },
     "dashboard": {
@@ -6663,6 +6748,13 @@
         "savedOn": "Coach włączony.",
         "savedOff": "Coach ukryty.",
         "saveError": "Nie udało się zapisać zmiany. Spróbuj ponownie."
+      },
+      "memory": {
+        "edit": "Edytuj",
+        "source": {
+          "user": "od ciebie",
+          "coach": "od Coacha"
+        }
       }
     },
     "integrationRedirectGuide": {
@@ -7158,6 +7250,11 @@
       "documentAi": {
         "title": "Czytanie dokumentów",
         "description": "Czytanie zapisanych dokumentów przez AI, skanowanie wyników badań laboratoryjnych i odczytywanie leków z tekstu. Największa część danych opuszczających serwer."
+      },
+      "reasoning": {
+        "enabled": "Zezwalaj na głębszy namysł",
+        "max": "Największa głębokość namysłu",
+        "description": "Modele myślą przed odpowiedzią: Coach, codzienne podsumowanie i podsumowania okresów. Dokładniej, ale więcej tokenów."
       }
     },
     "modules": {
@@ -9933,7 +10030,8 @@
       "relatedMetric": "Sprawdź też: {metric}",
       "continue": "Szukaj dalej",
       "settingLabel": "Proponuj kolejne pytania",
-      "settingHint": "Pokazuje do trzech propozycji pod ostatnią odpowiedzią Coacha."
+      "settingHint": "Pokazuje do trzech propozycji pod ostatnią odpowiedzią Coacha.",
+      "changeAssumption": "Zamiast tego: {value}"
     },
     "clarify": {
       "cardLabel": "Coach ma pytanie",
@@ -9946,6 +10044,12 @@
         "last90days": "Ostatnie 90 dni",
         "lastYear": "Ostatnie 12 miesięcy",
         "allTime": "Cały okres"
+      },
+      "comparison": {
+        "baseline90d": "Porównaj z moimi zwykłymi 90 dniami"
+      },
+      "anchor": {
+        "illness": "Od choroby z {date}"
       }
     },
     "reuse": {

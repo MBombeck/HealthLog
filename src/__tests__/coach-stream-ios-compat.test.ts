@@ -10,7 +10,8 @@
  * shape would make the whole frame fail to decode, and a new frame that
  * reused one with the same shape would leak a value into whatever the client
  * does with that key. So a new frame names its payload with a key of its own
- * (`step`, `result`, `followUps`, `clarification`).
+ * (`step`, `result`, `followUps`, `clarification`, and since v1.41
+ * `activity`, `memoryNote` with `note`, `planProposal` with `proposal`).
  *
  * Reads the frame list from the Zod mirror (`stream-events.ts`), which a
  * type test holds equal to `CoachStreamEvent`, so a frame added to the
@@ -81,6 +82,9 @@ describe("Coach stream frames stay decodable by the shipped native client", () =
         "result",
         "followUps",
         "clarification",
+        "activity",
+        "memoryNote",
+        "planProposal",
       ]),
     );
     expect(

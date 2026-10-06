@@ -31,6 +31,7 @@ import {
 } from "@/lib/ai/coach/chat-request-builder";
 import { buildWorkoutEvidenceSection } from "@/lib/ai/coach/workout-evidence-builder";
 import { getScheduledDoseValues } from "@/lib/medications/scheduled-doses";
+import { getMedicationNames } from "@/lib/medications/medication-names";
 import { buildRememberAddendum } from "@/lib/ai/coach/reminders";
 import { buildSuggestActionAddendum } from "@/lib/ai/coach/suggest-action";
 import {
@@ -62,6 +63,8 @@ export interface TurnContext {
   snapshot: CoachSnapshotResult;
   aboutMe: string | null;
   scheduleDoses: Awaited<ReturnType<typeof getScheduledDoseValues>>;
+  /** The schedule's medication names, which the outbound dose screen reads. */
+  medicationNames: string[];
   turnContext: CoachTurnContext;
   workoutEvidence: Record<string, unknown> | null;
   systemPrompt: string;
@@ -129,6 +132,7 @@ export async function assembleTurnContext(args: {
   // continuation exemption. Fail-open: a read failure yields an empty set, which
   // keeps the Guard I phrase-anchored dose behaviour.
   const scheduleDoses = await getScheduledDoseValues(userId).catch(() => []);
+  const medicationNames = await getMedicationNames(userId).catch(() => []);
   // v1.22 (B2/F6) — the canonical system-prompt module is owned elsewhere, so
   // the two memory/action clauses are appended at assembly time here: one
   // teaches the model to emit `---REMEMBER---` (durable "remind me" capture),
@@ -177,18 +181,19 @@ export async function assembleTurnContext(args: {
     // Fact capture must never break the chat turn; the >TURN_CAP LLM
     // extraction remains as the catch-all on long conversations.
   });
-  if (turnContext.historyElided) {
-    void enqueueCoachMemoryRefresh({
-      conversationId,
-      userId,
-      // Coach memory prose is composed in de/en only — it is MODEL-FACING
-      // context (a rolling conversation summary + extracted durable facts),
-      // not user-facing prose, so English is the correct target for every
-      // locale without a reviewed body. The former `=== "en" ? "en" : "de"`
-      // binary composed and keyed a French account's memory in German.
-      locale: instructionLocale(locale),
-    });
-  }
+  // v1.41 — every turn enqueues the refresh; the job waits for the
+  // conversation to go quiet and runs once per conversation (its debounce
+  // and singleton key), so a short chat is remembered too.
+  void enqueueCoachMemoryRefresh({
+    conversationId,
+    userId,
+    // Coach memory prose is composed in de/en only — it is MODEL-FACING
+    // context (a rolling conversation summary + extracted durable facts),
+    // not user-facing prose, so English is the correct target for every
+    // locale without a reviewed body. The former `=== "en" ? "en" : "de"`
+    // binary composed and keyed a French account's memory in German.
+    locale: instructionLocale(locale),
+  });
 
   // A workout launch is an optional narrowing of Coach, not permission to
   // bypass the workouts module. Disabled modules contribute no read and no
@@ -230,6 +235,7 @@ export async function assembleTurnContext(args: {
     snapshot,
     aboutMe,
     scheduleDoses,
+    medicationNames,
     turnContext,
     workoutEvidence,
     systemPrompt,

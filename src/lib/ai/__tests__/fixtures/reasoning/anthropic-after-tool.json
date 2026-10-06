@@ -1,0 +1,17 @@
+{
+  "id": "msg_fixture_02",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-4-5",
+  "content": [
+    { "type": "redacted_thinking", "data": "redacted-fixture-b1" },
+    { "type": "text", "text": "Paris is at 18 °C" },
+    { "type": "text", "text": " and cloudy." }
+  ],
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 760,
+    "output_tokens": 41,
+    "cache_read_input_tokens": 512
+  }
+}

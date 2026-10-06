@@ -136,7 +136,9 @@ async function seedState(state: State) {
     data: { userId: user.id, kind: "weight", localDate, occurredAt },
   });
 
-  // Long enough that the rolling summary has turns to fold.
+  // Long enough that the rolling summary has turns to fold, and over an hour
+  // old so the memory refresh finds the conversation quiet and does its work
+  // instead of deferring.
   const conversation = await prisma.coachConversation.create({
     data: { userId: user.id, title: "long conversation" },
   });
@@ -145,7 +147,7 @@ async function seedState(state: State) {
       conversationId: conversation.id,
       role: i % 2 === 0 ? "user" : "assistant",
       encryptedContent: encryptToBytes(`turn ${i}: about sleep and walks`),
-      createdAt: new Date(now - (40 - i) * 60_000),
+      createdAt: new Date(now - (100 - i) * 60_000),
     })),
   });
 

@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
-import { ReasoningEffortField } from "@/components/settings/ai/reasoning-effort-field";
 import {
   ANTHROPIC_MODEL_PRESETS,
   LOCAL_MODEL_PRESETS,
@@ -16,7 +15,6 @@ import {
   uiToLegacyProviderEnum,
   type ProviderChainData,
   type ProviderType,
-  type ReasoningEffort,
   type UserAIProvider,
 } from "@/components/settings/ai/shared";
 import { apiGet, apiPatch, apiPut } from "@/lib/api/api-fetch";
@@ -29,7 +27,9 @@ import {
 
 /**
  * The quick model choice in the Coach's settings overlay: which provider
- * answers, which model it uses, and how hard a reasoning model thinks.
+ * answers and which model it uses. How hard the Coach thinks is the Coach's
+ * own setting since v1.41 (`coach-reasoning-field.tsx`); the provider's
+ * reasoning select stays in Settings → AI for everything else.
  *
  * It is a shortcut onto the same settings Settings → AI writes, never a second
  * copy of them. Keys, base URLs, the Codex sign-in and the order of the
@@ -38,7 +38,7 @@ import {
  *  - Provider: `PUT /api/insights/provider-chain` with the chosen entry moved
  *    to the front and every other entry in its current order. The entries'
  *    reasoning settings are not sent, so the server keeps what it stored.
- *  - Model and reasoning: `PATCH /api/user/ai-provider`, only where a person
+ *  - Model: `PATCH /api/user/ai-provider`, only where a person
  *    owns the setting (their own key's provider, or their gateway). The
  *    operator's shared provider and Codex show their state read-only.
  * Every write invalidates the AI input keys, so the capability on
@@ -127,29 +127,6 @@ export function modelControlFor(
   return { kind: "managed" };
 }
 
-/** The reasoning setting the active provider carries, if any. */
-export function reasoningFieldFor(
-  active: ProviderType | null,
-  userProvider: UserAIProvider | null | undefined,
-): {
-  field: "localReasoningEffort" | "compatReasoningEffort";
-  value: ReasoningEffort | null;
-} | null {
-  if (active === "local") {
-    return {
-      field: "localReasoningEffort",
-      value: userProvider?.localReasoningEffort ?? null,
-    };
-  }
-  if (active === "openai-compatible") {
-    return {
-      field: "compatReasoningEffort",
-      value: userProvider?.compatReasoningEffort ?? null,
-    };
-  }
-  return null;
-}
-
 export function CoachModelPicker() {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -212,7 +189,6 @@ export function CoachModelPicker() {
   const active = chain?.activeProvider ?? null;
   const options = chain ? selectableProviders(chain.configuredChain) : [];
   const model = modelControlFor(active, userProvider);
-  const reasoning = reasoningFieldFor(active, userProvider);
   const busy = switchProvider.isPending || patchProvider.isPending;
   // The server may answer with `admin-codex`, which the UI's type omits.
   const unlisted = activeOutsideOptions(active as string | null, options);
@@ -338,16 +314,6 @@ export function CoachModelPicker() {
           {t("insights.coach.frame.modelManaged")}
         </p>
       )}
-
-      {reasoning ? (
-        <ReasoningEffortField
-          id="coach-quick-reasoning"
-          noColon
-          value={reasoning.value}
-          disabled={busy}
-          onChange={(next) => patchProvider.mutate({ [reasoning.field]: next })}
-        />
-      ) : null}
 
       {busy ? (
         <p role="status" className="text-muted-foreground text-xs">

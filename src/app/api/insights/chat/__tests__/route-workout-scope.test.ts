@@ -132,6 +132,7 @@ vi.mock("@/lib/workouts/sport-context", () => ({
 
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(async () => ({ allowed: true })),
+  refundRateLimit: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/i18n/server-locale", () => ({
   resolveServerLocale: vi.fn(async () => "en"),

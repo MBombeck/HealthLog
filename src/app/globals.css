@@ -245,7 +245,7 @@
   /* Text-field focus border: a neutral, foreground-based tone, no colour
    * ring. ~5.2:1 on --background, ~6:1 on --card. */
   --input-focus: #9a9b9d;
-  --ring: #bd93f9;
+  --ring: #c4c9d4; /* neutral: no purple focus frames anywhere */
   --chart-1: #bd93f9;
   --chart-2: #50fa7b;
   --chart-3: #ff79c6;
@@ -375,7 +375,7 @@
   --input: oklch(0.87 0.009 300);
   /* Text-field focus border, neutral: ~4.2:1 on --background. */
   --input-focus: oklch(0.56 0.012 295);
-  --ring: oklch(0.6 0.13 292);
+  --ring: oklch(0.48 0.012 290); /* neutral: no purple focus frames anywhere */
   --chart-1: #644ac9;
   --chart-2: #14720a;
   --chart-3: #a3134d;

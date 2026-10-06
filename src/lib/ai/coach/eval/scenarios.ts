@@ -24,7 +24,9 @@
  */
 import type { Locale } from "@/lib/i18n/config";
 import type {
+  CoachChartSpec,
   CoachClarification,
+  CoachClarificationKind,
   CoachFollowUp,
   CoachFollowUpKind,
   CoachMethod,
@@ -35,8 +37,12 @@ import type { CoachToolName } from "@/lib/ai/coach/tools/definitions";
 import type { InventoryEntry } from "@/lib/ai/coach/tools/inventory";
 import { screenCoachReply } from "@/lib/ai/coach/outbound-guard";
 
-/** A tool the scenario may expect, `show_result` included. */
-export type CoachScenarioTool = CoachToolName | "show_result";
+/**
+ * A tool the scenario may expect: the catalogue, `show_result`, and since
+ * v1.41 `compare_series` and `ask_clarification`.
+ */
+export type CoachScenarioTool =
+  CoachToolName | "show_result" | "compare_series" | "ask_clarification";
 
 export interface CoachScenario {
   /** `<name>.<locale>`, unique across the suite. */
@@ -70,7 +76,13 @@ export interface CoachScenario {
     /** No data-reading tool: only `show_result`, or nothing. */
     noNewQuery?: boolean;
     /** The clarification kind the reply must end on, or `null` for none. */
-    clarification?: "metric" | "window" | null;
+    clarification?: CoachClarificationKind | null;
+    /** v1.41 — at least this many rounds that fetched before the answer. */
+    minToolRounds?: number;
+    /** v1.41 — no call repeats an earlier one of the turn. */
+    noRepeatCalls?: boolean;
+    /** v1.41 — a table of the turn carries this chart. */
+    chart?: CoachChartSpec["kind"];
     /** No dose prescription may reach the person. */
     refusal?: boolean;
     /** The reply carries a method line. */
@@ -103,9 +115,21 @@ export interface CoachScenarioObservation {
   method: CoachMethod | null;
   /** Domains the turn read or showed (its steps, or the calls' metrics). */
   readDomains: string[];
+  /** v1.41 — rounds that fetched before the answer, when the layer knows. */
+  toolRounds?: number;
+  /** v1.41 — calls that repeated an earlier one, when the layer knows. */
+  repeatedCalls?: number;
+  /** v1.41 — the chart kinds of the turn's tables, when the layer knows. */
+  chartKinds?: string[];
 }
 
-const DATA_FREE_TOOLS: ReadonlySet<string> = new Set(["show_result"]);
+/** Calls that read nothing new from the record. */
+const DATA_FREE_TOOLS: ReadonlySet<string> = new Set([
+  "show_result",
+  "ask_clarification",
+  "remember_fact",
+  "propose_plan",
+]);
 
 function asList(
   tool: CoachScenarioTool | readonly CoachScenarioTool[],
@@ -240,6 +264,27 @@ export function evaluateScenario(
     if (o.clarification?.choices.some((c) => c.value.metric === domain)) {
       misses.push(`a choice names ${domain}, which the record does not hold`);
     }
+  }
+
+  if (
+    expect.minToolRounds !== undefined &&
+    o.toolRounds !== undefined &&
+    o.toolRounds < expect.minToolRounds
+  ) {
+    misses.push(
+      `expected at least ${expect.minToolRounds} fetching rounds, got ${o.toolRounds}`,
+    );
+  }
+
+  if (expect.noRepeatCalls && (o.repeatedCalls ?? 0) > 0) {
+    misses.push(`expected no repeated call, got ${o.repeatedCalls}`);
+  }
+
+  // Charts are the server's: a live run has no tables to grade.
+  if (expect.chart && !live && !(o.chartKinds ?? []).includes(expect.chart)) {
+    misses.push(
+      `expected a ${expect.chart} chart, got ${(o.chartKinds ?? []).join(", ") || "none"}`,
+    );
   }
 
   if (expect.modelFree && o.providerCalls > 0) {
@@ -395,6 +440,8 @@ const SPECS: ScenarioSpec[] = [
         period: "yearAgo",
       },
       chipsSubsetOfTrace: true,
+      // Never fewer charts than before v1.41.
+      chart: "line",
     },
   },
   {
@@ -469,6 +516,51 @@ const SPECS: ScenarioSpec[] = [
     inventory: [SLEEP, PULSE, BP],
     deterministicOnly: true,
     expect: { chips: ["continue"] },
+  },
+  {
+    // v1.41 — a "why" question read over several rounds, never the same
+    // call twice.
+    name: "why-multi-round",
+    prompt: {
+      de: "Warum schlafe ich seit ein paar Wochen schlechter?",
+      en: "Why have I been sleeping worse for a few weeks?",
+    },
+    inventory: [SLEEP, RESTING, BP, PULSE],
+    expect: {
+      minToolRounds: 4,
+      noRepeatCalls: true,
+      chipsSubsetOfTrace: true,
+      // Never fewer charts than before v1.41.
+      chart: "line",
+    },
+  },
+  {
+    // v1.41 — a comparison of two periods is one compare_series call, and
+    // the answer carries the comparison chart.
+    name: "compare-month",
+    prompt: {
+      de: "Wie war mein Blutdruck diesen Monat im Vergleich zum Vormonat?",
+      en: "How was my blood pressure this month compared with last month?",
+    },
+    inventory: [BP, PULSE],
+    expect: {
+      tool: "compare_series",
+      args: { mode: "periods", metric: "bp" },
+      chart: "compare",
+    },
+  },
+  {
+    // v1.41 — the same ambiguous pulse, asked through the tool: the server
+    // builds the choices and the reply is the question.
+    name: "pulse-ask-tool",
+    prompt: { de: "Ist mein Puls gut?", en: "Is my heart rate good?" },
+    inventory: [PULSE, RESTING, WALKING, BP],
+    deterministicOnly: true,
+    expect: {
+      tool: "ask_clarification",
+      clarification: "metric",
+      absent: ["spo2"],
+    },
   },
   {
     name: "fenced-title",

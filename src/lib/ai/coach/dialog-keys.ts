@@ -231,6 +231,7 @@ export const COACH_FOLLOW_UP_KEYS: Readonly<Record<CoachFollowUpKind, string>> =
     as_table: "coach.followUp.asTable",
     related_metric: "coach.followUp.relatedMetric",
     continue: "coach.followUp.continue",
+    change_assumption: "coach.followUp.changeAssumption",
   };
 
 export const COACH_FOLLOW_UP_UI_KEYS = {
@@ -246,12 +247,37 @@ export const COACH_CLARIFY_UI_KEYS = {
   choicesLabel: "coach.clarify.choicesLabel",
   freeTextHint: "coach.clarify.freeTextHint",
   contextHint: "coach.clarify.contextHint",
+  comparisonBaseline90d: "coach.clarify.comparison.baseline90d",
+  anchorIllness: "coach.clarify.anchor.illness",
 } as const;
 
 /** A window choice on a clarification card ("Last 30 days"). */
 export function clarifyWindowLabelKey(window: CoachScopeWindow): string {
   return `coach.clarify.window.${window}`;
 }
+
+// ── Replies, assumptions, interim tables (v1.41) ──────────────────────────
+
+/** The group of reply pills under the latest answer. */
+export const COACH_SUGGESTED_REPLIES_KEYS = {
+  groupLabel: "insights.coach.suggestedReplies.groupLabel",
+} as const;
+
+/** "Assumed: last 30 days. Change". */
+export const COACH_ASSUMPTION_KEYS = {
+  line: "insights.coach.assumption.line",
+  change: "insights.coach.assumption.change",
+} as const;
+
+/** The one-line preview of a table read while the turn still runs. */
+export function interimLabelKey(count: number, locale: Locale): string {
+  return pluralKey("insights.coach.interim.label", count, locale);
+}
+
+/** The legend of a chart comparing two periods ("{a} vs {b}"). */
+export const COACH_CHART_COMPARE_KEYS = {
+  periods: "insights.coach.chart.compare.periods",
+} as const;
 
 // ── Reuse ─────────────────────────────────────────────────────────────────
 

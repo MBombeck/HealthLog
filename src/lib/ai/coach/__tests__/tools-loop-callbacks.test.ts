@@ -17,7 +17,8 @@ vi.mock("@/lib/ai/provider-runner", () => ({
     runRawCompletionWithFallback(args),
 }));
 
-import { HARD_CAP, runCoachToolLoop } from "@/lib/ai/coach/tools/loop";
+import { runCoachToolLoop } from "@/lib/ai/coach/tools/loop";
+import { createTurnBudget } from "@/lib/ai/coach/tools/turn-budget";
 import { COACH_TOOL_DEFS } from "@/lib/ai/coach/tools/definitions";
 import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
 
@@ -138,17 +139,35 @@ describe("runCoachToolLoop — progress callbacks", () => {
   });
 
   it("reports a forced answer at the round cap", async () => {
-    executeCoachTool.mockResolvedValue({ present: false });
+    executeCoachTool.mockResolvedValue({ present: true, data: { v: 1 } });
+    const metrics = ["bp", "weight", "pulse", "hrv", "steps"];
+    let round_ = 0;
     runRawCompletionWithFallback.mockImplementation(
-      (args: { params: { toolChoice?: string } }) =>
-        Promise.resolve(
+      (args: { params: { toolChoice?: string } }) => {
+        round_ += 1;
+        return Promise.resolve(
           args.params.toolChoice === "none"
             ? round("forced")
-            : round("", [{ id: "x", name: "get_sleep", arguments: "{}" }]),
-        ),
+            : round("", [
+                {
+                  id: `x${round_}`,
+                  name: "get_metric_series",
+                  arguments: JSON.stringify({ metric: metrics[round_] }),
+                },
+              ]),
+        );
+      },
     );
-    const out = await runCoachToolLoop(baseArgs);
-    expect(out.rounds).toBe(HARD_CAP);
+    const out = await runCoachToolLoop({
+      ...baseArgs,
+      budget: createTurnBudget({
+        payer: "user",
+        initialInputTokens: 10,
+        limits: { tokens: 1e9, wallMs: 1e9, maxRounds: 4 },
+      }),
+    });
+    expect(out.rounds).toBe(4);
+    expect(out.stop).toEqual({ reason: "cap", rounds: 4 });
     expect(out.forcedFinal).toBe(true);
   });
 });

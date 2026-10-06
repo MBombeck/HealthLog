@@ -115,6 +115,32 @@ function useReusedLine(result: CoachResultMeta): string | null {
     : t(COACH_RESULT_UI_KEYS.reusedFromUndated);
 }
 
+/** `displayed` per ref, from a message's result metadata. */
+function displayedByRef(
+  metas: ReadonlyArray<Pick<CoachResultMeta, "ref" | "displayed">>,
+): Map<string, boolean> {
+  return new Map(metas.map((meta) => [meta.ref, meta.displayed]));
+}
+
+/**
+ * The live tables with `displayed` taken from the provenance where it names
+ * them: an interim table is sent before the answer decides.
+ */
+export function liveWithProvenance<
+  T extends Pick<CoachResultMeta, "ref" | "displayed">,
+>(
+  live: readonly T[],
+  metas: ReadonlyArray<Pick<CoachResultMeta, "ref" | "displayed">>,
+): T[] {
+  const displayed = displayedByRef(metas);
+  return live.map((table) => {
+    const flag = displayed.get(table.ref);
+    return flag === undefined || flag === table.displayed
+      ? table
+      : { ...table, displayed: flag };
+  });
+}
+
 /** How many tables sit in a section, from the metadata alone. */
 export function countResultsInSection(
   metas: ReadonlyArray<Pick<CoachResultMeta, "displayed">>,
@@ -147,8 +173,11 @@ function sectionItems(args: {
   const inSection = (displayed: boolean) =>
     args.section === "displayed" ? displayed : !displayed;
   if (args.live && args.live.length > 0) {
+    // v1.41 — a table that arrived while the turn still ran learns whether
+    // the answer points at it from the provenance, which comes later.
+    const displayed = displayedByRef(args.metas);
     return args.live
-      .filter((table) => inSection(table.displayed))
+      .filter((table) => inSection(displayed.get(table.ref) ?? table.displayed))
       .map((table) => ({ ref: table.ref, table }));
   }
   if (!args.fetched) return [];
@@ -174,7 +203,7 @@ export function CoachResults({
   const { t } = useTranslations();
   const hasLive = (live?.length ?? 0) > 0;
   const expected = hasLive
-    ? countResultsInSection(live ?? [], section)
+    ? countResultsInSection(liveWithProvenance(live ?? [], metas), section)
     : countResultsInSection(metas, section);
   const { ref, results, isError, refetch } = useCoachMessageResults({
     conversationId,
@@ -236,7 +265,7 @@ export function CoachResults({
 
 type ResultView = "chart" | "table";
 
-function CoachResultView({
+export function CoachResultView({
   result,
   chartFirst,
 }: {

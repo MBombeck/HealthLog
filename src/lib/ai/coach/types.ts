@@ -183,6 +183,32 @@ export const coachChatRequestSchema = z.object({
       choiceId: z.string().min(1).max(8).optional(),
     })
     .optional(),
+  /**
+   * v1.41 — the person answered a fact proposal ("Yes, remember it" / "No").
+   * `messageId` is the assistant message that offered it, `proposalId` the
+   * proposal on that message. The client never sends the fact: the server
+   * reads it from what it stored on that message, so a tap can only accept
+   * what the Coach actually proposed.
+   */
+  memoryDecision: z
+    .object({
+      messageId: z.string().min(1).max(64),
+      proposalId: z.string().min(1).max(64),
+      accept: z.boolean(),
+    })
+    .optional(),
+  /**
+   * v1.41 — the person answered a plan proposal ("Take on this plan" /
+   * "Not now"). `planId` is the proposed plan the assistant message carried;
+   * the server holds it to that message and to the person's own plans.
+   */
+  planDecision: z
+    .object({
+      messageId: z.string().min(1).max(64),
+      planId: z.string().min(1).max(64),
+      accept: z.boolean(),
+    })
+    .optional(),
 });
 
 /**
@@ -247,6 +273,18 @@ export interface CoachUsage {
  *   step* → token* → provenance → result* → suggestion? →
  *   suggestedAction? → clarification? → followUps? → done
  *
+ * v1.41 — three more additive frames: `activity` (the live trail: one
+ * entry per phase of the turn, upserted by id), `memoryNote` (a fact the
+ * Coach saved or proposes to save) and `planProposal` (a plan it proposes).
+ * `result` may carry `interim: true` while the turn still runs, and `done`
+ * carries `stop` when the answer was forced and `withheldResults` when the
+ * interim tables must be taken down again. The `reasoning` frame stays
+ * accepted and is never sent. Frame order:
+ *
+ *   (activity | step)* → token* → provenance → result* → suggestion? →
+ *   suggestedAction? → memoryNote? → planProposal? → clarification? →
+ *   followUps? → done
+ *
  * No new frame carries a top-level key the older native client decodes
  * (`token`, `conversationId`, `messageId`, `code`, `message`, `suggestion`,
  * `metricSource`, `usage`), so an older client drops them whole.
@@ -268,6 +306,13 @@ export type CoachStreamEvent =
       conversationId: string;
       messageId: string;
       usage?: CoachUsage;
+      /** v1.41 — why the answer was forced, when it was. */
+      stop?: CoachStop;
+      /**
+       * v1.41 — the turn was blocked after interim tables went out; the
+       * client removes them.
+       */
+      withheldResults?: true;
     }
   | {
       type: "error";
@@ -281,9 +326,155 @@ export type CoachStreamEvent =
       reason?: AiUnavailableReason;
     }
   | { type: "step"; step: CoachStep }
-  | { type: "result"; result: CoachResultTable }
+  | {
+      type: "result";
+      result: CoachResultTable;
+      /**
+       * v1.41 — sent while the turn still runs, right after the call that
+       * read it. The answer decides later whether it is shown or sits under
+       * "Data used".
+       */
+      interim?: true;
+    }
   | { type: "followUps"; followUps: CoachFollowUp[] }
-  | { type: "clarification"; clarification: CoachClarification };
+  | { type: "clarification"; clarification: CoachClarification }
+  | { type: "activity"; activity: CoachActivity }
+  | { type: "memoryNote"; note: CoachMemoryNote }
+  | { type: "planProposal"; proposal: CoachPlanProposal };
+
+// ── Activity (v1.41) ────────────────────────────────────────────────────
+// The live trail of a turn: what the Coach is doing right now, one entry per
+// phase. The metadata is plaintext and persisted on `metricSource.activity`;
+// the model-written `title` and `text` reach only the owner and are stored
+// encrypted in `coach_messages.trail_encrypted`.
+
+export type CoachActivityPhase =
+  | "thinking"
+  | "memory"
+  | "fetch"
+  | "digest"
+  | "checkpoint"
+  | "remember"
+  | "plan"
+  | "asking"
+  | "stop"
+  | "answer";
+
+/** Why the loop forced its final answer. */
+export type CoachStopReason = "budget" | "time" | "cap" | "no_progress";
+
+export interface CoachStop {
+  reason: CoachStopReason;
+  /** The rounds the turn ran, the final one included. */
+  rounds: number;
+}
+
+/** Plaintext; rides `metricSource.activity`. */
+export interface CoachActivityMeta {
+  /** `a1`..`a99`, unique within a turn; frames upsert by id. */
+  id: string;
+  phase: CoachActivityPhase;
+  status: CoachStepStatus;
+  /** The tool round the entry belongs to, from 1. */
+  round: number;
+  /** Closed catalog key (`insights.coach.activity.*`). */
+  labelKey: string;
+  /**
+   * The label rendered on the server in the request locale. Always catalog
+   * text with server-chosen values, never model text.
+   */
+  label: string;
+  /** The `step` a `fetch` entry stands for (`s1`..). */
+  stepRef?: string;
+  /** Readings, lookups or remembered entries the server counted. */
+  count?: number;
+  durationMs?: number;
+  /** Set on the `stop` entry. */
+  stop?: CoachStopReason;
+}
+
+/** One trail entry on the wire: the metadata plus the owner-only model text. */
+export interface CoachActivity extends CoachActivityMeta {
+  /** A screened reasoning title or checkpoint sentence, at most 80 chars. */
+  title?: string;
+  /** A screened reasoning summary for the round, at most 400 chars. */
+  text?: string;
+}
+
+// ── Memory and plans (v1.41) ────────────────────────────────────────────
+
+/**
+ * The categories a Coach fact is filed under. The extraction's list in
+ * `facts.ts` plus `medication`, which only the in-turn `remember_fact` tool
+ * and the remember button write. `condition`, `constraint` and `medication`
+ * are health facts: never saved without the person's tap.
+ */
+export const COACH_MEMORY_CATEGORIES = [
+  "preference",
+  "goal",
+  "context",
+  "condition",
+  "constraint",
+  "medication",
+] as const;
+
+export type CoachMemoryCategory = (typeof COACH_MEMORY_CATEGORIES)[number];
+
+/** Plaintext; rides `metricSource.memoryNote`. No fact text. */
+export interface CoachMemoryNoteMeta {
+  /**
+   * `true`: a proposal waiting for the person ("Yes, remember it" / "No"),
+   * answered with `memoryDecision`. `false`: already saved, undone by
+   * deleting `factId`.
+   */
+  proposal: boolean;
+  /** The proposal on this message (`proposal: true`). */
+  proposalId?: string;
+  /** The saved fact (`proposal: false`). */
+  factId?: string;
+  category: CoachMemoryCategory;
+}
+
+/** On the wire, owner only: the metadata plus the fact itself. */
+export interface CoachMemoryNote extends CoachMemoryNoteMeta {
+  /** The fact as it will be stored, at most 160 chars. */
+  fact: string;
+}
+
+/** Plaintext; rides `metricSource.planProposal`. No plan text. */
+export interface CoachPlanProposalMeta {
+  /** The `CoachPlan` row, written as `proposed`. */
+  planId: string;
+  /** The metric the plan moves, e.g. `WEIGHT`. */
+  metric: string;
+  /** 7..56. */
+  reviewInDays: number;
+}
+
+/** On the wire, owner only: the metadata plus the plan's own words. */
+export interface CoachPlanProposal extends CoachPlanProposalMeta {
+  ifCue: string;
+  thenAction: string;
+  target?: string;
+}
+
+/**
+ * v1.41 — the decrypted `coach_messages.trail_encrypted` of one message, as
+ * `GET …/messages/{messageId}/trail` serves it to the owner. Model text and
+ * fact text only; the structure lives in `metricSource`.
+ */
+export interface CoachTrail {
+  /** Title and text per activity entry, by `CoachActivityMeta.id`. */
+  entries: Array<{ id: string; title?: string; text?: string }>;
+  /** The facts recalled into the turn (the `memory` entry). */
+  recalled?: string[];
+  /** The fact proposal's text, which a `memoryDecision` reads back. */
+  proposal?: {
+    proposalId: string;
+    category: CoachMemoryCategory;
+    fact: string;
+  };
+}
 
 // ── Steps (v1.39.4) ─────────────────────────────────────────────────────
 // What the Coach is reading while a turn runs. Labels come from a closed
@@ -307,7 +498,7 @@ export type CoachStepReason =
   | "invalid_arguments";
 
 export interface CoachStep {
-  /** `s1`..`s12`, unique within a turn; frames upsert by id. */
+  /** `s1`..`s48`, unique within a turn; frames upsert by id. */
   id: string;
   tool: CoachToolName | "show_result" | "snapshot";
   /** Closed catalog key, e.g. `coach.step.read`. */
@@ -352,6 +543,19 @@ export type CoachResultCell = string | number | null;
 export type CoachChartSpec =
   | { kind: "line"; x: string; series: string[] }
   | {
+      /**
+       * v1.41 — two series on one chart: two periods overlaid (`periods`,
+       * one axis) or two metrics side by side (`metrics`, one or two axes).
+       * `a` and `b` name the value columns, `x` the shared column.
+       */
+      kind: "compare";
+      mode: "periods" | "metrics";
+      x: string;
+      a: string;
+      b: string;
+      axes: 1 | 2;
+    }
+  | {
       kind: "bar";
       x: string;
       series: string[];
@@ -374,7 +578,7 @@ export interface CoachResultSource {
 
 /** Plaintext; rides `metricSource.results`. */
 export interface CoachResultMeta {
-  /** `r1`..`r6`, per message. */
+  /** `r1`..`r8`, per message. */
   ref: string;
   source: CoachResultSource;
   shape: CoachResultShape;
@@ -445,7 +649,8 @@ export type CoachFollowUpKind =
   | "as_chart"
   | "as_table"
   | "related_metric"
-  | "continue";
+  | "continue"
+  | "change_assumption";
 
 export interface CoachFollowUp {
   /** `f1`..`f3`. */
@@ -463,25 +668,77 @@ export interface CoachFollowUp {
   /** True when the chip is answered from a stored table, without a model. */
   reuse: boolean;
   origin: "server" | "model";
+  /**
+   * v1.41 — on a `change_assumption` chip: the assumption it replaces and
+   * the alternative it picks.
+   */
+  assumption?: { kind: CoachAssumptionKind; value: CoachChoiceValue };
 }
 
 // ── Clarification (v1.39.4) ─────────────────────────────────────────────
 // A question with choices. The question text is the assistant message
 // itself, encrypted like any reply; only the choices ride here.
 
+/** v1.41 — what a comparison is drawn against. */
+export type CoachComparisonBasis =
+  "previous_period" | "year_ago" | "baseline_90d";
+
+/**
+ * What a choice stands for. One field per kind; `goal` and `anchor` are ids
+ * of the person's own plans, facts or record events, never text.
+ */
+export interface CoachChoiceValue {
+  metric?: CoachScopeSource;
+  window?: CoachScopeWindow;
+  /** v1.41 */
+  comparison?: CoachComparisonBasis;
+  /** v1.41 — an active plan or a goal fact. */
+  goal?: string;
+  /** v1.41 — a medication start, an illness episode, a cycle phase. */
+  anchor?: string;
+}
+
 export interface CoachClarificationChoice {
   id: string;
   labelKey: string;
   label: string;
-  value: { metric?: CoachScopeSource; window?: CoachScopeWindow };
+  value: CoachChoiceValue;
 }
 
+export type CoachClarificationKind =
+  "metric" | "window" | "comparison" | "goal" | "anchor" | "context";
+
 export interface CoachClarification {
-  kind: "metric" | "window" | "context";
+  /** `comparison`, `goal` and `anchor` since v1.41. */
+  kind: CoachClarificationKind;
   /** At most 4; metric choices are always ones the record holds. */
   choices: CoachClarificationChoice[];
   /** Whether a typed answer is welcome beside the choices. */
   freeText: boolean;
+  /**
+   * v1.41 — the choice that applies when the person does not answer (`c1`..);
+   * the question names it, and it is the first choice.
+   */
+  assumption?: string;
+}
+
+// ── Assumptions (v1.41) ─────────────────────────────────────────────────
+// What an answer assumed instead of asking. Catalog values only, at most two
+// per answer; each offers its alternatives as `change_assumption` chips.
+
+export type CoachAssumptionKind = "metric" | "window" | "comparison";
+
+export interface CoachAssumptionOption {
+  labelKey: string;
+  label: string;
+  value: CoachChoiceValue;
+}
+
+export interface CoachAssumption {
+  kind: CoachAssumptionKind;
+  value: CoachAssumptionOption;
+  /** At most 3. */
+  alternatives: CoachAssumptionOption[];
 }
 
 /**
@@ -672,6 +929,16 @@ export interface CoachProvenance {
    * further "keep looking" chip, so an answer is continued at most once.
    */
   continuationOf?: string;
+  /** v1.41 — the turn's trail, metadata only; the text is behind `…/trail`. */
+  activity?: CoachActivityMeta[];
+  /** v1.41 — why the answer was forced, when it was. */
+  stop?: CoachStop;
+  /** v1.41 — what the answer assumed instead of asking, at most two. */
+  assumptions?: CoachAssumption[];
+  /** v1.41 — the fact this reply saved or proposes, without its text. */
+  memoryNote?: CoachMemoryNoteMeta;
+  /** v1.41 — the plan this reply proposes, without its text. */
+  planProposal?: CoachPlanProposalMeta;
 }
 
 /**

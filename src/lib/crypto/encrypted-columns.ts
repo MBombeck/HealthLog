@@ -232,6 +232,8 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   { model: "CoachMessage", field: "encryptedContent", kind: "bytes" },
   // v1.39.4 — the tables of values a turn read, JSON under the same codec.
   { model: "CoachMessage", field: "resultsEncrypted", kind: "bytes" },
+  // v1.41 — the model text of the turn's trail, JSON under the same codec.
+  { model: "CoachMessage", field: "trailEncrypted", kind: "bytes" },
   { model: "CoachConversation", field: "summaryEncrypted", kind: "bytes" },
   // v1.39.3 — the title: the opening words of the first message, or a rename.
   { model: "CoachConversation", field: "titleEncrypted", kind: "bytes" },

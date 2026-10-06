@@ -17,12 +17,13 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  *      puts the table on the clipboard.
  *   3. A follow-up chip under the latest reply sends its label with
  *      `followUp: { messageId, id }`.
- *   4. A reply that ends in a clarifying question shows the choices card
- *      and no chips (as the server sends it); a choice sends its label with
- *      `clarification: { messageId, choiceId }`, and the card leaves once a
+ *   4. A reply that ends in a clarifying question offers its choices as
+ *      reply pills under it and no chips (as the server sends it); there is
+ *      no card. A choice sends its label with
+ *      `clarification: { messageId, choiceId }`, and the pills leave once a
  *      plain answer is the latest reply.
- *   5. axe finds nothing on the answer, the chips and the clarification
- *      card, in the light and the dark theme.
+ *   5. axe finds nothing on the answer, the chips and the reply pills, in
+ *      the light and the dark theme.
  *
  * The chat POST is a stubbed event stream in the documented frame order,
  * and the conversation detail it refetches after `done` returns the same
@@ -441,7 +442,7 @@ async function expectNoAxeViolations(page: Page, label: string) {
   const result = await new AxeBuilder({ page })
     .include('[data-slot="coach-bubble-assistant"]')
     .include('[data-slot="coach-follow-up-chips"]')
-    .include('[data-slot="coach-clarification-card"]')
+    .include('[data-slot="coach-suggested-replies"]')
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
   expect(
@@ -581,26 +582,31 @@ test.describe("Coach dialog", () => {
       });
       expect(posts[1].clarification).toBeUndefined();
 
-      // 4. The reply asks; the card offers the choices, and the chips of
-      //    the earlier reply are gone.
-      const card = page.locator('[data-slot="coach-clarification-card"]');
-      await expect(card).toBeVisible();
-      await expect(card).toHaveAttribute(
+      // 4. The reply asks; pills under it offer the choices, and the chips
+      //    of the earlier reply are gone. No card.
+      await expect(
+        page.locator('[data-slot="coach-clarification-card"]'),
+      ).toHaveCount(0);
+      const pills = secondBubble.locator(
+        '[data-slot="coach-suggested-replies"]',
+      );
+      await expect(pills).toBeVisible();
+      await expect(pills).toHaveAttribute(
         "data-message-id",
         TURNS[1].assistantId,
       );
-      await expect(card.locator("[data-choice-id]")).toHaveCount(2);
+      await expect(pills.locator("[data-choice-id]")).toHaveCount(2);
       await expect(chips).toHaveCount(0);
       // The earlier result still renders under its own answer.
       await expect(figure).toBeVisible();
 
-      // 5. axe over the answers, the result in both views and the card.
+      // 5. axe over the answers, the result in both views and the pills.
       await expectNoAxeViolations(page, `${theme} chart view with a question`);
       await figure.locator('[data-slot="coach-result-view-table"]').click();
       await expect(table).toBeVisible();
       await expectNoAxeViolations(page, `${theme} table view with a question`);
 
-      await card.locator('[data-choice-id="c2"]').click();
+      await pills.locator('[data-choice-id="c2"]').click();
 
       const thirdBubble = page
         .locator('[data-slot="coach-bubble-assistant"]')
@@ -616,7 +622,7 @@ test.describe("Coach dialog", () => {
       expect(posts[2].followUp).toBeUndefined();
 
       // A plain answer closes the question and offers no chips.
-      await expect(card).toHaveCount(0);
+      await expect(pills).toHaveCount(0);
       await expect(chips).toHaveCount(0);
       await expect(
         thirdBubble.locator('[data-slot="coach-turn-steps"]'),

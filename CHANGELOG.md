@@ -1,5 +1,75 @@
 # Changelog
 
+## [1.41.0] — 2026-10-07
+
+The Coach reasons before it answers, shows what it is doing while it works,
+asks when a question is ambiguous, and remembers what it is told.
+
+### Added
+
+- **Reasoning.** Codex, OpenAI, Anthropic, OpenRouter, gateways and local
+  servers receive the requested reasoning in their documented dialect;
+  reasoning summaries stream to the Coach, signed or encrypted reasoning state
+  is carried between tool rounds and never stored, and a model that rejects a
+  reasoning parameter is retried without it (the downgrade is learned per
+  provider, endpoint and model for an hour, only from a 400 that names the
+  parameter). Thinking depth per person under Coach settings (Off, Low,
+  Medium, High; Medium by default); an operator switch and maximum under
+  Admin, Assistant; turns on the operator's budget are capped at Medium.
+  `/api/auth/me` publishes the resolved `coachReasoning`.
+- **Budgeted tool loop.** A turn runs against a token, time and round budget
+  (own provider 120k tokens, 150 s, 12 rounds; operator 40k, 90 s, 6 rounds)
+  with a no-progress brake and a reserved final round that keeps the tool
+  definitions with `tool_choice: none`. Every round is reserved against the
+  daily budget beforehand and settled afterwards. At most two concurrent turns
+  per person.
+- **Live trail.** One quiet status line per answer (`activity` frames), never
+  expanded by itself; the screened reasoning text is stored encrypted
+  (`coach_messages.trail_encrypted`) and served lazily by
+  `GET /api/insights/chat/{id}/messages/{messageId}/trail`.
+- **Comparisons.** `compare_series` (two periods or two metrics) and a
+  `compare` chart; tables arrive as interim results before the answer.
+- **Clarifications** as suggested replies in the thread, at most one in six
+  turns and three a day; a declined or limited question becomes a stated
+  assumption with a reply that changes it.
+- **Memory and plans.** Every turn carries an egress-checked memory block;
+  `remember_fact` saves preferences, goals and context with a visible note and
+  undo, health facts only after the person agrees; `propose_plan` suggests a
+  plan from a stated goal. Both are written only when the answer that shows
+  them is stored. Background extraction runs once a conversation is quiet for
+  30 minutes; plan progress reaches the daily briefing. The memory list in
+  settings shows each fact's source and accepts edits.
+- **Background reasoning** for the daily briefing (scheduled and on request)
+  and the weekly and monthly narratives; status cards never reason.
+
+### Fixed
+
+- **Dose-change screen.** The outbound screen blocks the dose-change class
+  across all seven languages, including the person's own medication names,
+  drug classes, spelled-out amounts and "extra / one more"; plan texts go
+  through the same screen.
+- **Glucose by time of day.** The usual-range line, the MCP baseline and the
+  signals of the day compare glucose with the same hours of earlier days
+  instead of setting a morning reading against whole-day means.
+- **Usual-range line** names the date of a latest reading that is not from
+  today, and a steady value as one figure.
+- **Memory refresh** asks the Coach capability before deferring, so a
+  switched-off Coach does not re-queue it.
+- **Dependencies.** The MCP SDK moves to 1.32 (GHSA-6qxp-vccf-f47h) and
+  `proxy-addr` to 2.0.8 (GHSA-jqcg-44mw-7w3h).
+
+### Changed
+
+- **Answer voice.** The first sentence answers; 40 to 120 words; at most one
+  next step.
+- **Keyboard focus** is drawn in a neutral tone everywhere.
+
+### Migrations
+
+- `0376_ai_reasoning_controls`, `0377_coach_message_trail`,
+  `0378_coach_fact_source`: additive columns with constant defaults or
+  nullable; no table rewrite.
+
 ## [1.40.6] — 2026-10-05
 
 The Coach reads long series again; "today" only from today's readings; the

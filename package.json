@@ -1,6 +1,6 @@
 {
   "name": "healthlog",
-  "version": "1.40.6",
+  "version": "1.41.0",
   "description": "Self-hosted personal-health-tracking PWA with Withings integration, AI insights, and doctor-report PDF export.",
   "license": "PolyForm-Noncommercial-1.0.0",
   "homepage": "https://healthlog.dev",
@@ -59,7 +59,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.9.1",
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@napi-rs/canvas": "1.0.9",
     "@node-rs/argon2": "^2.1.0",
     "@parse/node-apn": "^8.1.0",

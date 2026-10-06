@@ -2,7 +2,24 @@ import { safeFetch } from "@/lib/safe-fetch";
 import { callTimeoutMs } from "./effective-timeout";
 import { annotate } from "@/lib/logging/context";
 import type { AIProvider, CompletionParams, CompletionResult } from "./types";
-import { selectOpenAIChatCompletionsCapabilities } from "./openai-capabilities";
+import {
+  selectOpenAIChatCompletionsCapabilities,
+  type OpenAIChatCompletionsCapabilities,
+} from "./openai-capabilities";
+import {
+  annotateReasoningDowngrade,
+  isReasoningParameterRejection,
+  learnedReasoningDialect,
+  rememberReasoningDialect,
+} from "./reasoning/dialect-cache";
+import { REASONING_THINKING_BUDGET } from "./reasoning/levels";
+import {
+  isOpenRouterEndpoint,
+  levelOfWireEffort,
+  openAIOffEffort,
+  openAIReasoningFamily,
+  reasoningTitleOf,
+} from "./reasoning/support";
 import {
   hasLearnedJsonModeDialect,
   isResponseFormatRejection,
@@ -59,6 +76,26 @@ interface OpenAIClientConfig {
 
 type OpenAIProviderType = "admin-key" | "codex" | "openai-compatible";
 
+/**
+ * v1.41 — the reasoning one request sends.
+ *  - `reasoning_effort`: the Chat Completions field (OpenAI, LiteLLM, vLLM,
+ *    most gateways). https://platform.openai.com/docs/api-reference/chat/create
+ *  - `openrouter`: OpenRouter's `reasoning: { effort }` object, which also
+ *    returns `reasoning_details` to hand back on tool rounds.
+ *    https://openrouter.ai/docs/use-cases/reasoning-tokens
+ */
+type OpenAIReasoningWire =
+  | { kind: "none" }
+  | { kind: "reasoning_effort"; effort: string }
+  | { kind: "openrouter"; effort: string };
+
+/**
+ * Assistant-message fields a gateway returns and needs back unmodified on the
+ * next tool round: OpenRouter's `reasoning_details` and the `thinking_blocks`
+ * LiteLLM carries for Claude upstreams (https://docs.litellm.ai/docs/reasoning_content).
+ */
+const ROUND_TRIP_FIELDS = ["reasoning_details", "thinking_blocks"] as const;
+
 export class OpenAIClient implements AIProvider {
   readonly type: OpenAIProviderType;
   /** See `AIProvider.responseTimeoutSeconds`; stamped by the resolver. */
@@ -94,7 +131,10 @@ export class OpenAIClient implements AIProvider {
     // conversation turns mapped 1:1. Vision parts (Lab-OCR) become the
     // multimodal `image_url` content array `gpt-4o`-class models accept. The
     // image is framed as untrusted DATA by the system prompt.
-    const messages = buildOpenAIMessages(params.system, params.messages);
+    const messages = this.withRoundTripState(
+      buildOpenAIMessages(params.system, params.messages),
+      params,
+    );
 
     // v1.20.0 — tool plumbing. The defs map onto the OpenAI `function` tool
     // wire; F1 supplies real defs and consumes the parsed `toolCalls`. No F4
@@ -105,10 +145,10 @@ export class OpenAIClient implements AIProvider {
     // Only force OpenAI's strict JSON mode when the caller actually consumes a
     // JSON object AND no tools are in play — mirrors the Anthropic client's
     // `usePrefill` gate. JSON mode coerces `message.content` into a valid JSON
-    // object, which contradicts the Coach prose contract; the F1 tool loop's
-    // forced-final round (toolChoice:"none", no tools, no responseFormat) must
-    // therefore stay out of JSON mode, and every tool round is non-JSON by
-    // construction. Insight/extraction callers opt in with `responseFormat:"json"`.
+    // object, which contradicts the Coach prose contract; the tool loop's
+    // forced-final round (tools with toolChoice:"none", no responseFormat)
+    // must therefore stay out of JSON mode, and every tool round is non-JSON
+    // by construction. Insight/extraction callers opt in with `responseFormat:"json"`.
     const useJsonFormat = params.responseFormat === "json" && !hasTools;
     // v1.33.1 (#470) — a gateway may reject the standard `response_format`
     // field. Learn that per endpoint (shared cache with the Local client) and
@@ -122,7 +162,19 @@ export class OpenAIClient implements AIProvider {
       this.config.baseUrl,
       this.config.model,
     );
-    const tokenBudget = params.maxTokens ?? 1000;
+    const reasoningWire = this.planReasoning(params, hasTools, capabilities);
+    // Reasoning tokens count against the completion budget on every one of
+    // these wires, so the thinking budget rides on top of the answer budget
+    // (a ceiling, not a charge). Without it a 600-token Coach round spends
+    // its whole allowance thinking and returns no answer.
+    const wireLevel =
+      reasoningWire.kind === "none" || reasoningWire.effort === "none"
+        ? null
+        : levelOfWireEffort(reasoningWire.effort);
+    const thinkingTokens = wireLevel
+      ? REASONING_THINKING_BUDGET[wireLevel === "off" ? "low" : wireLevel]
+      : 0;
+    const tokenBudget = (params.maxTokens ?? 1000) + thinkingTokens;
     const capabilityParams = capabilities.supportsSamplingControls
       ? {
           [capabilities.tokenBudgetField]: tokenBudget,
@@ -157,10 +209,16 @@ export class OpenAIClient implements AIProvider {
           ...(tools ? { tools } : {}),
           ...(params.toolChoice ? { tool_choice: params.toolChoice } : {}),
           // #1126 — the gateway entry's reasoning setting; Default sends
-          // nothing. `api.openai.com` and Codex never get it.
-          ...(this.isGateway && this.reasoningEffort
+          // nothing. `api.openai.com` and Codex never get it. v1.41 — a call
+          // that carries its own resolved level (`params.reasoning`) wins.
+          ...(!params.reasoning && this.isGateway && this.reasoningEffort
             ? { reasoning_effort: this.reasoningEffort }
             : {}),
+          ...(reasoningWire.kind === "reasoning_effort"
+            ? { reasoning_effort: reasoningWire.effort }
+            : reasoningWire.kind === "openrouter"
+              ? { reasoning: { effort: reasoningWire.effort } }
+              : {}),
         }),
       },
       // 60 s ceiling so a tar-pit upstream cannot pin a worker
@@ -205,6 +263,23 @@ export class OpenAIClient implements AIProvider {
       // that looks like an API key from the excerpt before logging.
       const rawBody = await res.text().catch(() => "");
       const bodyExcerpt = sanitiseBodyExcerpt(rawBody);
+      // v1.41 — an endpoint or model that refuses the reasoning field is
+      // asked once more without it and remembers, so the answer never fails
+      // on a reasoning parameter. Checked before the JSON dialect: a body
+      // naming the reasoning field must not switch JSON mode off.
+      if (
+        reasoningWire.kind !== "none" &&
+        isReasoningParameterRejection(
+          res.status,
+          bodyExcerpt,
+          /reasoning|thinking/i,
+          this.config.model,
+        )
+      ) {
+        rememberReasoningDialect(this.reasoningDialectKey(), "none");
+        annotateReasoningDowngrade(this.type, reasoningWire.effort, "none");
+        return this.generateCompletion(params);
+      }
       // v1.33.1 (#470) — dialect self-heal, gateway only. A 4xx whose body
       // names `response_format` (or an unknown parameter) means this endpoint
       // rejects the standard JSON flag: learn the no-flag dialect for the base
@@ -320,6 +395,31 @@ export class OpenAIClient implements AIProvider {
       throw err;
     }
 
+    // v1.41 — what the call reasoned. Gateways return the text as
+    // `reasoning` (OpenRouter, vLLM, Ollama) or `reasoning_content`
+    // (LiteLLM, llama.cpp); `api.openai.com` returns none on this wire.
+    const message = (choice?.message ?? {}) as Record<string, unknown>;
+    const reasoningText = [message.reasoning, message.reasoning_content].find(
+      (v): v is string => typeof v === "string" && v.trim().length > 0,
+    );
+    const summary = reasoningText ? [reasoningText.trim()] : [];
+    const emit = params.reasoning ? params.onReasoning : undefined;
+    if (emit) {
+      for (const text of summary) {
+        const title = reasoningTitleOf(text);
+        if (title) emit({ kind: "title", text: title });
+        emit({ kind: "text", text });
+      }
+      emit({ kind: "done", text: "" });
+    }
+    const roundTrip = ROUND_TRIP_FIELDS.filter(
+      (field) => message[field] !== undefined && message[field] !== null,
+    ).map((field) => ({ [field]: message[field] }));
+    const usage = json.usage as
+      { completion_tokens_details?: { reasoning_tokens?: number } } | undefined;
+    const learnedNone =
+      learnedReasoningDialect(this.reasoningDialectKey()) === "none";
+
     return {
       content: content ?? "",
       tokensUsed: json.usage?.total_tokens ?? null,
@@ -328,6 +428,118 @@ export class OpenAIClient implements AIProvider {
       providerType: this.type,
       ...(toolCalls ? { toolCalls } : {}),
       finishReason: mapFinishReason(choice?.finish_reason),
+      ...(params.reasoning
+        ? {
+            reasoning: {
+              summary,
+              // Billed as completion tokens, already inside `total_tokens`.
+              tokens:
+                usage?.completion_tokens_details?.reasoning_tokens ?? null,
+              ...(learnedNone && params.reasoning.effort !== "off"
+                ? { downgradedTo: "off" as const }
+                : {}),
+            },
+          }
+        : {}),
+      ...(roundTrip.length > 0
+        ? {
+            providerState: {
+              providerType: this.type,
+              model: this.config.model,
+              items: roundTrip,
+            },
+          }
+        : {}),
     };
+  }
+
+  // ── v1.41 reasoning ───────────────────────────────────────────────────────
+
+  private reasoningDialectKey() {
+    return {
+      provider: "openai",
+      endpoint: this.config.baseUrl,
+      model: this.config.model,
+    };
+  }
+
+  /**
+   * The reasoning this request sends. Absent `params.reasoning` → none here
+   * (the #1126 gateway setting is applied separately, unchanged).
+   *
+   * `api.openai.com` (operator key, personal key): `reasoning_effort` only for
+   * a reasoning model, and only on a round without tools. Chat Completions
+   * has no reasoning items to hand back between tool rounds, and newer
+   * models restrict reasoning alongside function calls. The background jobs
+   * carry no tools, which is where it counts; the Coach's final round
+   * carries its tools with `tool_choice: "none"` (the history holds the
+   * calls), so here it runs without `reasoning_effort` like its tool rounds.
+   *
+   * Gateway: the endpoint's own dialect, tools or not; its reasoning state
+   * travels in `providerState`, and a refusal is learned per endpoint.
+   */
+  private planReasoning(
+    params: CompletionParams,
+    hasTools: boolean,
+    capabilities: OpenAIChatCompletionsCapabilities,
+  ): OpenAIReasoningWire {
+    const reasoning = params.reasoning;
+    if (!reasoning) return { kind: "none" };
+    if (learnedReasoningDialect(this.reasoningDialectKey()) === "none") {
+      return { kind: "none" };
+    }
+    const level = reasoning.effort;
+    if (this.isGateway) {
+      const effort = level === "off" ? "none" : level;
+      return isOpenRouterEndpoint(this.config.baseUrl)
+        ? { kind: "openrouter", effort }
+        : { kind: "reasoning_effort", effort };
+    }
+    const family = openAIReasoningFamily(this.config.model);
+    if (
+      !family ||
+      hasTools ||
+      capabilities.tokenBudgetField !== "max_completion_tokens"
+    ) {
+      return { kind: "none" };
+    }
+    return {
+      kind: "reasoning_effort",
+      effort: level === "off" ? openAIOffEffort(family) : level,
+    };
+  }
+
+  /**
+   * Put the reasoning state of earlier tool rounds back on their assistant
+   * messages. `buildOpenAIMessages` maps turn `i` to wire message `i + 1`
+   * (the system turn leads). Only state this client made for this model is
+   * used; anything else is dropped.
+   */
+  private withRoundTripState<T extends object>(
+    wire: T[],
+    params: CompletionParams,
+  ): T[] {
+    params.messages.forEach((m, i) => {
+      const state = m.providerState;
+      if (
+        m.role !== "assistant" ||
+        !state ||
+        state.providerType !== this.type ||
+        state.model !== this.config.model
+      ) {
+        return;
+      }
+      const target = wire[i + 1] as Record<string, unknown> | undefined;
+      if (!target) return;
+      for (const item of state.items) {
+        if (!item || typeof item !== "object") continue;
+        for (const field of ROUND_TRIP_FIELDS) {
+          if (field in item) {
+            target[field] = (item as Record<string, unknown>)[field];
+          }
+        }
+      }
+    });
+    return wire;
   }
 }

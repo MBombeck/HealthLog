@@ -208,7 +208,9 @@ function categorySpec(table: ChartInput): CoachChartSpec | null {
  *    non-negative whole numbers.
  * 4. A distribution keeps the histogram it was built with
  *    (`buildDistributionTable`); its bins cannot be read back from the rows.
- * 5. Anything else (a list of lab results): none.
+ * 5. A comparison (v1.41, `compare_series`) keeps the `compare` chart it was
+ *    built with, while its columns still hold what the chart names.
+ * 6. Anything else (a list of lab results): none.
  */
 export function deriveChartSpec(table: ChartInput): CoachChartSpec | null {
   if (
@@ -217,6 +219,7 @@ export function deriveChartSpec(table: ChartInput): CoachChartSpec | null {
   ) {
     return null;
   }
+  if (table.chart?.kind === "compare") return compareSpec(table, table.chart);
   switch (table.shape) {
     case "timeSeries":
       return timeSeriesSpec(table);
@@ -227,6 +230,32 @@ export function deriveChartSpec(table: ChartInput): CoachChartSpec | null {
     default:
       return null;
   }
+}
+
+/**
+ * A comparison's chart, kept when the columns it names are there: the shared
+ * period column and two numeric ones. Two axes only for two metrics.
+ */
+function compareSpec(
+  table: ChartInput,
+  spec: Extract<CoachChartSpec, { kind: "compare" }>,
+): CoachChartSpec | null {
+  const x = table.columns.find((column) => column.key === spec.x);
+  const a = table.columns.find((column) => column.key === spec.a);
+  const b = table.columns.find((column) => column.key === spec.b);
+  if (x?.kind !== "period" || a?.kind !== "number" || b?.kind !== "number") {
+    return null;
+  }
+  const ia = columnIndex(table, spec.a);
+  const ib = columnIndex(table, spec.b);
+  const paired = table.rows.filter(
+    (row) => isNumericCell(row[ia]) && isNumericCell(row[ib]),
+  ).length;
+  if (paired < CHART_MIN_ROWS) return null;
+  return {
+    ...spec,
+    axes: spec.mode === "metrics" && spec.axes === 2 ? 2 : 1,
+  };
 }
 
 // ── Histogram ─────────────────────────────────────────────────────────────

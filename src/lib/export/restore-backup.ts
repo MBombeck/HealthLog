@@ -35,6 +35,7 @@ import {
 } from "@/lib/medications/course-window";
 import { Buffer } from "node:buffer";
 
+import { DEFAULT_REASONING_MAX_EFFORT } from "@/lib/ai/reasoning/levels";
 import { prisma, toJson } from "@/lib/db";
 import { normaliseSourceInstance } from "@/lib/validations/inbound-documents";
 import { auditLog } from "@/lib/auth/audit";
@@ -865,6 +866,11 @@ export async function restoreBackup(
               settings.assistantInsightStatusEnabled,
             assistantDocumentAiEnabled:
               settings.assistantDocumentAiEnabled ?? true,
+            // v1.41 — absent on a file written before the controls existed,
+            // which restores them at their defaults: allowed, no cap.
+            aiReasoningEnabled: settings.aiReasoningEnabled ?? true,
+            aiReasoningMaxEffort:
+              settings.aiReasoningMaxEffort ?? DEFAULT_REASONING_MAX_EFFORT,
             moduleAvailabilityJson: coachFold.moduleAvailabilityJson as never,
             documentMaxFileBytes: settings.documentMaxFileBytes,
             documentQuotaBytes: BigInt(settings.documentQuotaBytes),
@@ -2475,6 +2481,11 @@ export async function restoreBackup(
           ownerId,
           payload,
           new Set(payload.coachConversations.map((c) => c.id)),
+          new Set(
+            payload.coachConversations.flatMap((c) =>
+              c.messages.map((m) => m.id),
+            ),
+          ),
           skips,
         );
 

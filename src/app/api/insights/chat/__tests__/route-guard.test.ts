@@ -53,7 +53,10 @@ vi.mock("@/lib/db", () => ({
 const { checkRateLimit } = vi.hoisted(() => ({
   checkRateLimit: vi.fn(async () => ({ allowed: true })),
 }));
-vi.mock("@/lib/rate-limit", () => ({ checkRateLimit }));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit,
+  refundRateLimit: vi.fn(async () => {}),
+}));
 vi.mock("@/lib/i18n/server-locale", () => ({
   resolveServerLocale: vi.fn(async () => "en"),
 }));

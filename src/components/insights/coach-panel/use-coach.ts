@@ -11,15 +11,19 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import type {
+  CoachActivity,
   CoachClarification,
   CoachConversationAttachmentDTO,
   CoachConversationDetailDTO,
   CoachConversationsPage,
   CoachFollowUp,
+  CoachMemoryNote,
+  CoachPlanProposal,
   CoachProvenance,
   CoachResultTable,
   CoachScope,
   CoachStep,
+  CoachStop,
   CoachStreamEvent,
   CoachSuggestion,
   CoachUsage,
@@ -558,6 +562,31 @@ export interface CoachStreamingMessage {
   followUps: CoachFollowUp[];
   /** v1.39.4 — the choices from the additive `clarification` frame. */
   clarification: CoachClarification | null;
+  /**
+   * v1.41 — the live trail from the additive `activity` frames, upserted by
+   * id in first-seen order. Persisted messages carry the metadata on
+   * `metricSource.activity` and the model text behind `…/trail`.
+   */
+  activity: CoachActivity[];
+  /**
+   * v1.41 — the refs of the tables that arrived as `interim` while the turn
+   * still ran. They show as one-line previews until the answer settles, and
+   * are taken down again when `done` says `withheldResults`.
+   */
+  interimRefs: string[];
+  /** v1.41 — the fact this turn saved or proposes (`memoryNote` frame). */
+  memoryNote: CoachMemoryNote | null;
+  /** v1.41 — the plan this turn proposes (`planProposal` frame). */
+  planProposal: CoachPlanProposal | null;
+  /** v1.41 — why the answer was forced, when it was (`done.stop`). */
+  stop: CoachStop | null;
+  /**
+   * v1.41 — when the turn started on this device (epoch ms), for the live
+   * seconds on the status line. Null when no turn has run.
+   */
+  startedAt: number | null;
+  /** v1.41 — when the stream closed (epoch ms); null while it runs. */
+  endedAt: number | null;
   /** True until the `done` frame closes the stream. */
   inProgress: boolean;
   /** Final messageId once `done` lands; null otherwise. */
@@ -640,6 +669,13 @@ const EMPTY_STREAMING: CoachStreamingMessage = {
   results: [],
   followUps: [],
   clarification: null,
+  activity: [],
+  interimRefs: [],
+  memoryNote: null,
+  planProposal: null,
+  stop: null,
+  startedAt: null,
+  endedAt: null,
   inProgress: false,
   messageId: null,
   errorCode: null,
@@ -653,6 +689,47 @@ export function upsertStep(steps: CoachStep[], step: CoachStep): CoachStep[] {
   const next = [...steps];
   next[at] = step;
   return next;
+}
+
+/** v1.41 — insert a trail entry, or replace the one with the same id. */
+export function upsertActivity(
+  activity: CoachActivity[],
+  entry: CoachActivity,
+): CoachActivity[] {
+  const at = activity.findIndex((a) => a.id === entry.id);
+  if (at === -1) return [...activity, entry];
+  const next = [...activity];
+  // A later frame may leave out what an earlier one carried (the title on a
+  // `done` frame that only adds the duration); keep it.
+  next[at] = { ...next[at], ...entry };
+  return next;
+}
+
+/**
+ * v1.41 — insert a table, or replace the one with the same ref. An interim
+ * table and the final frame for it share a ref.
+ */
+export function upsertResult(
+  results: CoachResultTable[],
+  result: CoachResultTable,
+): CoachResultTable[] {
+  const at = results.findIndex((r) => r.ref === result.ref);
+  if (at === -1) return [...results, result];
+  const next = [...results];
+  next[at] = result;
+  return next;
+}
+
+/**
+ * v1.41 — the stream's state after `done`: a turn blocked after its interim
+ * tables went out takes them down again.
+ */
+export function withoutWithheldResults(
+  results: CoachResultTable[],
+  interimRefs: readonly string[],
+): CoachResultTable[] {
+  const withheld = new Set(interimRefs);
+  return results.filter((r) => !withheld.has(r.ref));
 }
 
 export interface SendCoachMessageParams {
@@ -709,6 +786,13 @@ export interface SendCoachMessageParams {
    * tapped (absent when the person typed their own answer). Tool route only.
    */
   clarification?: { messageId: string; choiceId?: string };
+  /**
+   * v1.41 — the person answered a fact proposal with a reply pill. The
+   * server reads the fact from what it stored on that message.
+   */
+  memoryDecision?: { messageId: string; proposalId: string; accept: boolean };
+  /** v1.41 — the person answered a plan proposal with a reply pill. */
+  planDecision?: { messageId: string; planId: string; accept: boolean };
 }
 
 /**
@@ -758,6 +842,8 @@ export function resolveCoachSendTarget(params: SendCoachMessageParams): {
       workoutId: params.workoutId,
       followUp: params.followUp,
       clarification: params.clarification,
+      memoryDecision: params.memoryDecision,
+      planDecision: params.planDecision,
     }),
   };
 }
@@ -902,9 +988,11 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
           content: params.message,
           conversationId: params.conversationId ?? null,
         });
+        const startedAt = Date.now();
         setStreaming({
           ...EMPTY_STREAMING,
           inProgress: true,
+          startedAt,
         });
 
         // v1.4.47 W8 — pre-check navigator.onLine so an airplane-mode
@@ -1005,9 +1093,15 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
         let collectedSuggestion: CoachSuggestion | null = null;
         let collectedSuggestedAction: CoachSuggestedAction | null = null;
         let collectedSteps: CoachStep[] = [];
-        const collectedResults: CoachResultTable[] = [];
+        let collectedResults: CoachResultTable[] = [];
         let collectedFollowUps: CoachFollowUp[] = [];
         let collectedClarification: CoachClarification | null = null;
+        let collectedActivity: CoachActivity[] = [];
+        const interimRefs: string[] = [];
+        let collectedMemoryNote: CoachMemoryNote | null = null;
+        let collectedPlanProposal: CoachPlanProposal | null = null;
+        let collectedStop: CoachStop | null = null;
+        let withheldResults = false;
         let lastError: string | null = null;
         let messageId: string | null = null;
         let collectedUsage: CoachUsage | null = null;
@@ -1061,13 +1155,39 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
                 }
                 case "result": {
                   const result = evt.result;
-                  collectedResults.push(result);
+                  collectedResults = upsertResult(collectedResults, result);
+                  if (evt.interim && !interimRefs.includes(result.ref)) {
+                    interimRefs.push(result.ref);
+                  }
+                  const refs = [...interimRefs];
                   setStreaming((prev) => ({
                     ...prev,
-                    results: [...prev.results, result],
+                    results: upsertResult(prev.results, result),
+                    interimRefs: refs,
                   }));
                   break;
                 }
+                case "activity": {
+                  // v1.41 — the live trail, upserted by entry id.
+                  const entry = evt.activity;
+                  collectedActivity = upsertActivity(collectedActivity, entry);
+                  setStreaming((prev) => ({
+                    ...prev,
+                    activity: upsertActivity(prev.activity, entry),
+                  }));
+                  break;
+                }
+                case "memoryNote":
+                  collectedMemoryNote = evt.note;
+                  setStreaming((prev) => ({ ...prev, memoryNote: evt.note }));
+                  break;
+                case "planProposal":
+                  collectedPlanProposal = evt.proposal;
+                  setStreaming((prev) => ({
+                    ...prev,
+                    planProposal: evt.proposal,
+                  }));
+                  break;
                 case "followUps":
                   collectedFollowUps = evt.followUps;
                   setStreaming((prev) => ({
@@ -1093,6 +1213,10 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
                   messageId = evt.messageId;
                   // v1.18.9 — additive per-turn usage envelope.
                   collectedUsage = evt.usage ?? null;
+                  // v1.41 — why the answer was forced, and whether the
+                  // interim tables must come down again.
+                  collectedStop = evt.stop ?? null;
+                  withheldResults = evt.withheldResults === true;
                   break;
                 case "error":
                   lastError = evt.code;
@@ -1107,6 +1231,8 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
               resolvedConversationId = evt.conversationId;
               messageId = evt.messageId;
               collectedUsage = evt.usage ?? null;
+              collectedStop = evt.stop ?? null;
+              withheldResults = evt.withheldResults === true;
             } else if (evt.type === "error") {
               lastError = evt.code;
             }
@@ -1117,6 +1243,12 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
           }
         }
 
+        if (withheldResults) {
+          collectedResults = withoutWithheldResults(
+            collectedResults,
+            interimRefs,
+          );
+        }
         setStreaming({
           content: collectedContent,
           metricSource: collectedProvenance,
@@ -1126,6 +1258,13 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
           results: collectedResults,
           followUps: collectedFollowUps,
           clarification: collectedClarification,
+          activity: collectedActivity,
+          interimRefs: withheldResults ? [] : interimRefs,
+          memoryNote: collectedMemoryNote,
+          planProposal: collectedPlanProposal,
+          stop: collectedStop,
+          startedAt,
+          endedAt: Date.now(),
           inProgress: false,
           messageId,
           errorCode: lastError,

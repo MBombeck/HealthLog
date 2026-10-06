@@ -20,11 +20,8 @@ vi.mock("@/lib/ai/provider-runner", () => ({
     runRawCompletionWithFallback(args),
 }));
 
-import {
-  runCoachToolLoop,
-  HARD_CAP,
-  MAX_ROUNDS,
-} from "@/lib/ai/coach/tools/loop";
+import { runCoachToolLoop } from "@/lib/ai/coach/tools/loop";
+import { createTurnBudget } from "@/lib/ai/coach/tools/turn-budget";
 import { COACH_TOOL_DEFS } from "@/lib/ai/coach/tools/definitions";
 import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
 
@@ -135,11 +132,13 @@ describe("runCoachToolLoop", () => {
     expect(out.result.content).toBe("Combined view.");
   });
 
-  it("forces a final answer at the hard cap (no infinite loop)", async () => {
-    executeCoachTool.mockResolvedValue({ present: false });
-    // The model keeps asking for tools every round. The loop must still
-    // terminate: the last allowed round offers no tools (toolChoice none) so
-    // the model is forced to produce prose.
+  it("forces a final answer at the round cap (no infinite loop)", async () => {
+    executeCoachTool.mockResolvedValue({ present: true, data: { v: 1 } });
+    // The model asks for a new read every round. The loop must still
+    // terminate: the round the cap allows last forbids tool calls
+    // (toolChoice none), so the model is forced to produce prose.
+    const metrics = ["bp", "weight", "pulse", "hrv", "steps", "sleep"];
+    let n = 0;
     runRawCompletionWithFallback.mockImplementation(
       (args: { params: { toolChoice?: string } }) => {
         if (args.params.toolChoice === "none") {
@@ -147,15 +146,16 @@ describe("runCoachToolLoop", () => {
             completion({ content: "Final forced answer." }),
           );
         }
+        n += 1;
         return Promise.resolve(
           completion({
             content: "",
             finishReason: "tool_calls",
             toolCalls: [
               {
-                id: "x",
+                id: `x${n}`,
                 name: "get_metric_series",
-                arguments: '{"metric":"bp"}',
+                arguments: JSON.stringify({ metric: metrics[n] }),
               },
             ],
           }),
@@ -163,15 +163,27 @@ describe("runCoachToolLoop", () => {
       },
     );
 
-    const out = await runCoachToolLoop(baseArgs);
-    expect(out.rounds).toBe(HARD_CAP);
+    const out = await runCoachToolLoop({
+      ...baseArgs,
+      budget: createTurnBudget({
+        payer: "operator",
+        initialInputTokens: 10,
+        limits: { tokens: 1e9, wallMs: 1e9, maxRounds: 6 },
+      }),
+    });
+    expect(out.rounds).toBe(6);
     expect(out.result.content).toBe("Final forced answer.");
-    // The final round must have been called with toolChoice "none".
+    expect(out.stop).toEqual({ reason: "cap", rounds: 6 });
+    // The final round forbids calls with toolChoice "none" but still
+    // carries the tool definitions: the history holds tool_use/tool_result
+    // blocks, and Anthropic refuses those without `tools` (400).
     const lastCall =
       runRawCompletionWithFallback.mock.calls[
         runRawCompletionWithFallback.mock.calls.length - 1
       ][0];
     expect(lastCall.params.toolChoice).toBe("none");
+    expect(lastCall.params.tools).toEqual(COACH_TOOL_DEFS);
+    expect(lastCall.params.tools.length).toBeGreaterThan(0);
   });
 
   it("appends assistant(toolCalls) + tool turns to the message array", async () => {
@@ -203,47 +215,6 @@ describe("runCoachToolLoop", () => {
     expect(msgs[1].toolCalls).toHaveLength(1);
     expect(msgs[2].role).toBe("tool");
     expect(msgs[2].toolCallId).toBe("c1");
-  });
-});
-
-// v1.21.0 (D5) — the round cap is 3 (sequential cross-metric "why" chains are
-// no longer starved on a 2-round ceiling), and the absolute ceiling tracks one
-// above so the final allowed round still forces prose.
-describe("round bounds (D5)", () => {
-  it("MAX_ROUNDS is 3 and HARD_CAP tracks one above", () => {
-    expect(MAX_ROUNDS).toBe(3);
-    expect(HARD_CAP).toBe(MAX_ROUNDS + 1);
-  });
-
-  it("allows up to three tool-fetch rounds before forcing prose", async () => {
-    executeCoachTool.mockResolvedValue({ present: false });
-    let toolRounds = 0;
-    runRawCompletionWithFallback.mockImplementation(
-      (args: { params: { toolChoice?: string } }) => {
-        if (args.params.toolChoice === "none") {
-          return Promise.resolve(completion({ content: "Forced final." }));
-        }
-        toolRounds += 1;
-        return Promise.resolve(
-          completion({
-            content: "",
-            finishReason: "tool_calls",
-            toolCalls: [
-              {
-                id: "c",
-                name: "get_metric_series",
-                arguments: '{"metric":"bp"}',
-              },
-            ],
-          }),
-        );
-      },
-    );
-    const out = await runCoachToolLoop(baseArgs);
-    // Three rounds offered tools, the fourth forced prose.
-    expect(toolRounds).toBe(MAX_ROUNDS);
-    expect(out.rounds).toBe(HARD_CAP);
-    expect(out.result.content).toBe("Forced final.");
   });
 });
 

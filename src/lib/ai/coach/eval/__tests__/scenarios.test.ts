@@ -118,12 +118,30 @@ const PROSE = {
     "So far the readings look stable, but I have not checked everything yet.",
   ),
   table: t("Hier ist die Tabelle. result:r1", "Here is the table. result:r1"),
+  compare: t(
+    "Diesen Monat lag er etwas höher als im Vormonat. result:r1",
+    "This month it sat a little higher than last month. result:r1",
+  ),
 };
 
 const call = (name: string, args: Record<string, unknown> = {}) => ({
   name,
   args,
 });
+
+/** Ten distinct reads: with `get_sleep` first, eleven fetching rounds. */
+const FORCED_READS: ReadonlyArray<[string, string]> = [
+  ["pulse", "last7days"],
+  ["pulse", "last30days"],
+  ["pulse", "last90days"],
+  ["pulse", "lastYear"],
+  ["bp", "last7days"],
+  ["bp", "last30days"],
+  ["bp", "last90days"],
+  ["bp", "lastYear"],
+  ["sleep", "last90days"],
+  ["sleep", "lastYear"],
+];
 
 function script(name: string, lang: Lang): Round[] {
   switch (name) {
@@ -185,19 +203,63 @@ function script(name: string, lang: Lang): Round[] {
     case "as-chart-chip":
       return [];
     case "forced-final":
+      // v1.41 — a new read every round, never a repeat, until the round cap
+      // of the person's own plan (twelve, the forced answer included) makes
+      // the twelfth round the answer.
       return [
         { calls: [call("get_sleep")] },
+        ...FORCED_READS.map(([metric, window]) => ({
+          calls: [call("get_metric_table", { metric, window })],
+        })),
+        { text: PROSE.forced[lang] },
+      ];
+    case "why-multi-round":
+      return [
+        { calls: [call("get_sleep", { window: "last30days" })] },
         {
           calls: [
-            call("get_metric_table", { metric: "pulse", window: "last30days" }),
+            call("get_metric_table", {
+              metric: "resting_hr",
+              window: "last30days",
+            }),
           ],
         },
+        { calls: [call("get_sleep", { window: "last90days" })] },
         {
           calls: [
             call("get_metric_table", { metric: "bp", window: "last30days" }),
           ],
         },
         { text: PROSE.forced[lang] },
+      ];
+    case "compare-month":
+      return [
+        {
+          calls: [
+            call("compare_series", {
+              mode: "periods",
+              metric: "bp",
+              window: "last30days",
+            }),
+          ],
+        },
+        { text: PROSE.compare[lang] },
+      ];
+    case "pulse-ask-tool":
+      return [
+        {
+          calls: [
+            call("ask_clarification", {
+              kind: "metric",
+              question:
+                lang === "de"
+                  ? "Meinst du den Ruhepuls oder den Puls beim Gehen? Sonst schaue ich auf den Ruhepuls."
+                  : "Do you mean resting or walking heart rate? Otherwise I'll look at resting.",
+              choices: ["resting_hr", "walking_hr", "spo2"],
+              assumption: "resting_hr",
+            }),
+          ],
+        },
       ];
     case "fenced-title":
       return [
@@ -322,6 +384,20 @@ async function run(
       ),
       ...results.map((r) => r.source.domain),
     ],
+    toolRounds: providerCalls.filter(
+      (c) => c.toolChoice !== "none" && c.toolCalls.length > 0,
+    ).length,
+    repeatedCalls: (() => {
+      const seen = new Set<string>();
+      let repeats = 0;
+      for (const c of providerCalls.flatMap((p) => p.toolCalls)) {
+        const signature = `${c.name}:${JSON.stringify(c.args)}`;
+        if (seen.has(signature)) repeats += 1;
+        seen.add(signature);
+      }
+      return repeats;
+    })(),
+    chartKinds: results.flatMap((r) => (r.chart ? [r.chart.kind] : [])),
   };
   return { observation, frames };
 }
@@ -343,17 +419,35 @@ function resultsOf(frames: Run["frames"]): CoachResultTable[] {
 }
 
 /** The order the wire promises: steps, tokens, provenance, then the rest. */
+/**
+ * The promised frame order. The live frames share one rank: `step` and
+ * `activity` interleave while the turn runs, and a table read mid-turn goes
+ * out at once as an interim `result`.
+ */
 const FRAME_ORDER = [
-  "step",
+  "live",
   "token",
   "provenance",
   "result",
   "suggestion",
   "suggestedAction",
+  "memoryNote",
+  "planProposal",
   "clarification",
   "followUps",
   "done",
 ];
+
+function frameRank(frame: { type: string; interim?: unknown }): number {
+  if (
+    frame.type === "step" ||
+    frame.type === "activity" ||
+    (frame.type === "result" && frame.interim === true)
+  ) {
+    return 0;
+  }
+  return FRAME_ORDER.indexOf(frame.type);
+}
 
 beforeEach(() => {
   vi.setSystemTime(h.NOW);
@@ -368,7 +462,7 @@ afterEach(() => {
 describe("COACH_SCENARIOS", () => {
   it("covers every scenario in German and in English", () => {
     const names = new Set(COACH_SCENARIOS.map(nameOf));
-    expect(names.size).toBe(10);
+    expect(names.size).toBe(13);
     for (const name of names) {
       expect(COACH_SCENARIOS.filter((s) => nameOf(s) === name)).toHaveLength(2);
     }
@@ -386,7 +480,7 @@ describe.each(COACH_SCENARIOS.map((s) => [s.id, s] as const))(
       expect(evaluateScenario(scenario, observation)).toEqual([]);
 
       // The frames arrive in the promised order.
-      const order = frames.map((f) => FRAME_ORDER.indexOf(f.type));
+      const order = frames.map(frameRank);
       expect(order.every((i) => i >= 0)).toBe(true);
       expect([...order].sort((a, b) => a - b)).toEqual(order);
 
@@ -672,9 +766,7 @@ describe.each(["de", "en"] as const)("in %s", (lang) => {
     const scenario = byName("forced-final", lang);
     const { observation, frames } = await run(scenario);
     expect(providerCalls.map((c) => c.toolChoice)).toEqual([
-      "auto",
-      "auto",
-      "auto",
+      ...Array.from({ length: 11 }, () => "auto"),
       "none",
     ]);
     const provenance = framesOf<{ metricSource: { forcedFinal?: boolean } }>(

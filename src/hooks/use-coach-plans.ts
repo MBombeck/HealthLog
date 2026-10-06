@@ -14,12 +14,7 @@
  * prose editor by design: the PATCH contract never accepts the encrypted
  * free-text fields.
  */
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type UseQueryOptions,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/lib/query-keys";
 import { apiDelete, apiGet, apiPatch } from "@/lib/api/api-fetch";
@@ -67,22 +62,12 @@ async function fetchPlans(filter?: PlanFilter): Promise<CoachPlanDTO[]> {
 export function useCoachPlans(opts?: {
   filter?: PlanFilter;
   enabled?: boolean;
-  /**
-   * Optional poll interval (ms), or TanStack's interval callback so a caller
-   * can bound its poll (the chat thread caps attempts — see
-   * `nextProposalPollInterval` in `plan-proposal-card.tsx`). Proposals land
-   * asynchronously (the memory-refresh worker runs after the turn); the
-   * management page reads once. TanStack pauses the interval in background
-   * tabs by default, so the poll never runs unwatched.
-   */
-  refetchInterval?: UseQueryOptions<CoachPlanDTO[]>["refetchInterval"];
 }) {
   const filter = opts?.filter;
   return useQuery({
     queryKey: queryKeys.coachPlans(filterKey(filter)),
     queryFn: () => fetchPlans(filter),
     enabled: opts?.enabled ?? true,
-    refetchInterval: opts?.refetchInterval,
   });
 }
 

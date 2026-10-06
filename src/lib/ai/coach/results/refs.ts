@@ -2,7 +2,7 @@
  * Result references: the names a table goes by, inside one turn and across
  * the turns of one conversation.
  *
- *   - `r<n>` — a table of the current message, `r1`..`r6`, handed out as the
+ *   - `r<n>` — a table of the current message, `r1`..`r8`, handed out as the
  *     tool that produces it settles, so the model reads its own table's name
  *     in the tool result it cites from.
  *   - `m<k>.r<n>` — table `r<n>` of an earlier assistant message of the same
@@ -19,19 +19,23 @@
  */
 import type { CoachResultMeta, CoachResultTable } from "@/lib/ai/coach/types";
 
-/** At most this many tables per message (`r1`..`r6`). */
-export const MAX_RESULTS_PER_TURN = 6;
+/**
+ * At most this many tables per message (`r1`..`r8`). v1.41 — eight, up from
+ * six: a budgeted turn reads over more rounds. A ninth table call still
+ * gives the model its summary; there is just no table to name.
+ */
+export const MAX_RESULTS_PER_TURN = 8;
 
 const TURN_REF = /^r([1-9]\d?)$/;
 const PRIOR_REF = /^m([1-9]\d{0,3})\.(r[1-9]\d?)$/;
 
-/** True for a table name of the current message (`r1`..`r6`). */
+/** True for a table name of the current message (`r1`..`r8`). */
 export function isTurnResultRef(ref: string): boolean {
   const match = TURN_REF.exec(ref);
   return match !== null && Number(match[1]) <= MAX_RESULTS_PER_TURN;
 }
 
-/** Hands out `r1`..`r6` in order, then null: a turn keeps at most six. */
+/** Hands out `r1`..`r8` in order, then null: a turn keeps at most eight. */
 export interface ResultRefAllocator {
   next(): string | null;
 }

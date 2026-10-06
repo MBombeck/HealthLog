@@ -29,6 +29,7 @@ describe("Coach golden set — deterministic floor", () => {
       "dataHonesty",
       "providerParity",
       "ownBaseline",
+      "voice",
     ];
     for (const bucket of buckets) {
       expect(coverage[bucket], `taxonomy ${bucket}`).toBeGreaterThan(0);

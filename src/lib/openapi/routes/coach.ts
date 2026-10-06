@@ -29,6 +29,11 @@ import {
 } from "@/lib/insights-layout";
 import { COACH_CONVERSATION_TITLE_MAX } from "@/lib/ai/coach/types";
 import { COACH_FACT_CATEGORIES } from "@/lib/ai/coach/facts";
+import { COACH_FACT_SOURCES } from "@/lib/ai/coach/memory/shared";
+import {
+  coachFactCreateSchema,
+  coachFactPatchSchema,
+} from "@/lib/validations/coach-fact";
 import { COACH_PLAN_STATUSES } from "@/lib/ai/coach/plans";
 import {
   COACH_PLAN_SCOPES,
@@ -39,6 +44,7 @@ import {
   coachProvenanceSchema,
   coachResultEntrySchema,
   coachStreamEventSchema,
+  coachTrailSchema,
 } from "@/lib/ai/coach/stream-events";
 import {
   coachAttachmentCreateSchema,
@@ -273,24 +279,81 @@ const insightsLayoutResult = insightsLayoutSchema
       "Resolved Insights layout plus the optimistic-concurrency `updatedAt` token.",
   });
 
-// ── Coach facts (v1.11.1) ────────────────────────────────────────────
-// Read + delete surface for the durable facts the Coach extracts. Facts
-// are server-extracted, not user-authored, so there is no create/update
-// shape — only list, bulk-clear, and single-delete responses.
+// ── Coach facts (v1.11.1, v1.41) ─────────────────────────────────────
+// The Coach's memory list: list, the remember button (create from one of the
+// caller's own messages), edit the wording, bulk-clear and single-delete.
+
+const coachFactCategory = z
+  .enum(COACH_FACT_CATEGORIES)
+  .describe(
+    "App-side closed category: preference | goal | context | condition | constraint | medication (v1.41).",
+  );
+
+const coachFactSource = z
+  .enum(COACH_FACT_SOURCES)
+  .describe(
+    "v1.41 — where the fact came from: `user` (the remember button, or a proposal the caller confirmed), `coach` (saved during a turn), `extracted` (the background extraction; every fact older than v1.41), `pattern` (the deterministic matcher). `proposed` is never listed.",
+  );
 
 const coachFactItem = z.object({
   id: z.string(),
-  category: z
-    .enum(COACH_FACT_CATEGORIES)
-    .describe(
-      "App-side closed category: preference | condition | goal | constraint | context.",
-    ),
+  category: coachFactCategory,
   text: z.string().describe("Decrypted fact text."),
   confidence: z
     .number()
     .int()
     .describe("0..100 server-assigned extraction confidence."),
+  source: coachFactSource,
+  sourceConversationId: z
+    .string()
+    .nullable()
+    .describe("The conversation the fact came out of, when known."),
+  sourceMessageId: z
+    .string()
+    .nullable()
+    .describe("v1.41 — the message the fact came out of, when known."),
+  lastUsedAt: z.iso
+    .datetime({ offset: true })
+    .nullable()
+    .describe("v1.41 — when the fact last went into a Coach turn."),
   createdAt: z.iso.datetime({ offset: true }),
+  updatedAt: z.iso
+    .datetime({ offset: true })
+    .describe("v1.41 — when the fact was last written or edited."),
+});
+
+const coachFactCreateRequest = coachFactCreateSchema.meta({
+  id: "CoachFactCreateRequest",
+  description:
+    "v1.41 — the remember button: the id of one of the caller's own Coach messages. Never the text: the server reads the message it stored. Strict: unknown keys 422.",
+});
+
+const coachFactPatchRequest = coachFactPatchSchema.meta({
+  id: "CoachFactPatchRequest",
+  description:
+    "v1.41 — the fact's new wording (3..160 characters). Only the text: the server reads the new wording to file it (a fact that names a medication moves to `medication`, other health wording moves a non-health fact to `condition`) and a health fact the caller wrote counts as confirmed. Strict: unknown keys 422.",
+});
+
+const coachFactWrittenItem = z.object({
+  id: z.string(),
+  category: coachFactCategory,
+  text: z.string().describe("The fact as stored."),
+  source: coachFactSource,
+});
+
+const coachFactCreatedResponse = z.object({
+  fact: coachFactWrittenItem,
+  created: z
+    .boolean()
+    .describe(
+      "False when the caller's memory already held the same fact (or a proposal for it, now confirmed); the existing fact is returned.",
+    ),
+});
+
+const coachFactUpdatedResponse = z.object({
+  fact: coachFactWrittenItem.extend({
+    updatedAt: z.iso.datetime({ offset: true }),
+  }),
 });
 
 const coachFactsListResponse = z.object({
@@ -808,6 +871,55 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
+  "/api/insights/chat/{id}/messages/{messageId}/trail": {
+    get: {
+      tags: ["Insights"],
+      summary: "Read the trail text of one Coach message",
+      description:
+        "v1.41 — the text of one assistant message's trail: the screened reasoning titles and summaries by trail entry (model-written), the fact texts the turn recalled, and a pending fact proposal (the person's own data). The trail's structure (phases, statuses, counts) is plaintext on the message's `metricSource.activity`; this route serves only the text, decrypted for the account that owns the conversation. Fetch lazily when the person opens the trail. A mixed read: while the Coach's text may not be shown for the record, `entries` is empty and the `ai` state rides beside it, but `recalled` and `proposal` are still served, since they are the person's data. While the medications module is off, recalled facts and a proposal that concern a medication are left out. `trail` is null when the message has no trail or nothing in it may be served. A foreign or unknown conversation or message id maps to 404 (never 403). Auth via cookie or a full-access Bearer token.",
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+          description: "Conversation id.",
+        },
+        {
+          name: "messageId",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+          description: "Assistant message id within the conversation.",
+        },
+      ],
+      responses: {
+        "200": {
+          description:
+            "The trail text, or null when there is none or nothing in it may be served.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  trail: coachTrailSchema.nullable(),
+                  ai: aiCapabilityState.describe(
+                    "The `coach` capability. While unavailable `trail.entries` is empty.",
+                  ),
+                }),
+                "CoachMessageTrailResponse",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "Conversation or message not found, or not owned by the caller.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/insights/chat/{id}": {
     get: {
       tags: ["Insights"],
@@ -1116,7 +1228,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "List the caller's durable Coach facts",
       description:
-        "v1.11.1 — returns the active facts the Coach has extracted about the caller (highest-confidence then newest first), each decrypted on the fly. The GDPR 'what do you know about me' surface. Never AI-gated: the facts stay readable and erasable while the Coach is unavailable for any reason. Auth via cookie or Bearer; the owner is always narrowed from the session, never the body. Undecryptable rows are omitted rather than failing the read.",
+        "v1.11.1 — returns the active facts the Coach keeps about the caller (highest-confidence then newest first), each decrypted on the fly. The GDPR 'what do you know about me' surface. v1.41 — each fact carries its source, the message it came from and when it was last used in a turn; a health fact still waiting for the caller's confirmation is not listed. Never AI-gated: the facts stay readable and erasable while the Coach is unavailable for any reason. Auth via cookie or Bearer; the owner is always narrowed from the session, never the body. Undecryptable rows are omitted rather than failing the read.",
       responses: {
         "200": {
           description: "The caller's active facts.",
@@ -1125,6 +1237,51 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(coachFactsListResponse, "CoachFactsList"),
             },
           },
+        },
+        ...stdResponses,
+      },
+    },
+    post: {
+      tags: ["Insights"],
+      summary: "Remember one of the caller's own Coach messages",
+      description:
+        'v1.41 — the remember button. Saves the named user message as a fact with `source: "user"`: the text is the message the server stored, filed as `medication` or `condition` when it names one, `context` otherwise. The tap is the caller\'s confirmation, so a health message is saved too. A message the caller does not own, or an assistant message, is a 404. Saving the same fact again returns the existing one with `created: false`. Gated on the Coach module, never on AI. Auth via cookie or Bearer.',
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: coachFactCreateRequest },
+        },
+      },
+      responses: {
+        "201": {
+          description: "The fact was saved.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                coachFactCreatedResponse,
+                "CoachFactCreated",
+              ),
+            },
+          },
+        },
+        "200": {
+          description: "The caller's memory already held this fact.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                coachFactCreatedResponse,
+                "CoachFactAlreadyKnown",
+              ),
+            },
+          },
+        },
+        "403": {
+          description: MODULE_DISABLED_DESCRIPTION,
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "404": {
+          description: "Message not found or not one of the caller's own.",
+          content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
       },
@@ -1151,6 +1308,45 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     },
   },
   "/api/insights/coach/facts/{id}": {
+    patch: {
+      tags: ["Insights"],
+      summary: "Edit one Coach fact's wording",
+      description:
+        'v1.41 — rewrites the text of a fact the caller owns (re-encrypted at rest) and files it by its new wording: text that names a medication moves to `medication`, so the medications module keeps filtering it; other health wording moves a non-health category to `condition`; otherwise the category stays. A health fact the caller edited counts as confirmed (`source: "user"`). A proposal still waiting for the caller\'s confirmation, an unknown, cross-user or deleted id are all a 404. Never AI-gated. Auth via cookie or Bearer.',
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+          description: "Fact id.",
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: coachFactPatchRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The fact after the edit.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                coachFactUpdatedResponse,
+                "CoachFactUpdated",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "Fact not found or not owned by the caller.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
     delete: {
       tags: ["Insights"],
       summary: "Forget one Coach fact",

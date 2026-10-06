@@ -118,11 +118,17 @@ const BACKFILL_STAMPS: Record<string, string> = {
 
 /**
  * `coachConversation` writes outside backfills that stamp `updatedAt`
- * because the person did something in the conversation, keyed by file.
+ * because the person did something in the conversation, keyed by file, with
+ * how many such writes the file holds. The count matters: keyed by file
+ * alone, a new background write added beside the listed ones would pass
+ * unseen.
  */
-const COACH_ACTIVITY: Record<string, string> = {
-  "src/lib/ai/coach/persistence.ts":
-    "a turn sets updatedAt to now explicitly; a rename and a document attach are the person acting on the thread",
+const COACH_ACTIVITY: Record<string, { writes: number; reason: string }> = {
+  "src/lib/ai/coach/persistence.ts": {
+    writes: 2,
+    reason:
+      "a rename and a document attach are the person acting on the thread (a turn names updatedAt explicitly)",
+  },
 };
 
 describe("backfills keep updatedAt", () => {
@@ -180,13 +186,21 @@ describe("coach conversations move only on activity", () => {
   });
 
   it("names updatedAt in every write that is not the person's own action", () => {
-    const offenders = writes
-      .filter((w) => !w.namesUpdatedAt && !(w.file in COACH_ACTIVITY))
-      .map((w) => w.file);
+    const stamping = new Map<string, number>();
+    for (const w of writes.filter((w) => !w.namesUpdatedAt)) {
+      stamping.set(w.file, (stamping.get(w.file) ?? 0) + 1);
+    }
+    const offenders = [...stamping]
+      .filter(([file, n]) => n !== COACH_ACTIVITY[file]?.writes)
+      .map(([file, n]) => `${file}: ${n} stamping write(s)`);
     expect(
-      [...new Set(offenders)],
-      "a coachConversation write that is not activity must keep updatedAt (carry it, or write through raw SQL)",
+      offenders,
+      "a coachConversation write that is not activity must keep updatedAt (carry it, or write through raw SQL); a new activity write is listed with its count",
     ).toEqual([]);
+    // Every listed file is still there with its writes.
+    expect(Object.keys(COACH_ACTIVITY).filter((f) => !stamping.has(f))).toEqual(
+      [],
+    );
   });
 });
 

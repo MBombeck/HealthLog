@@ -44,6 +44,11 @@ import {
 } from "@/lib/ai/coach/budget";
 import { singleUserTurn } from "@/lib/ai/types";
 import { annotate } from "@/lib/logging/context";
+import {
+  REASONING_THINKING_BUDGET,
+  type BackgroundReasoningJob,
+} from "@/lib/ai/reasoning/levels";
+import { resolveJobReasoning } from "@/lib/ai/reasoning/controls";
 
 /**
  * Which call on the briefing path this was. Threaded onto the refusal
@@ -90,6 +95,14 @@ export interface RunBriefingCompletionArgs {
   seed?: number;
   /** UTC day-key override; defaults to today. Tests pin it. */
   dateKey?: string;
+  /**
+   * v1.41 — `daily_briefing` on the calls that may reason (the generation and
+   * its phrasing re-roll). Absent on the JSON-shape and grounding retries,
+   * which repair a reply rather than think it through again, and on every
+   * caller outside the background generator. `maxTokens` stays the answer
+   * budget; the client adds the thinking budget itself.
+   */
+  reasoningJob?: BackgroundReasoningJob;
 }
 
 /**
@@ -111,11 +124,23 @@ export async function runBriefingCompletion(
 ): Promise<RunRawWithFallbackResult> {
   const dateKey = args.dateKey ?? buildDateKey();
 
+  // v1.41 — one resolution per call: the operator's switch and cap, the payer
+  // from the chain's primary. `undefined` is today's wire.
+  const reasoning = args.reasoningJob
+    ? await resolveJobReasoning(args.reasoningJob, args.chain)
+    : undefined;
+  const thinkingTokens =
+    reasoning && reasoning.effort !== "off"
+      ? REASONING_THINKING_BUDGET[reasoning.effort]
+      : 0;
+
   // Reserve an ESTIMATE up front — the output ceiling plus a ~4-chars-per-token
   // approximation of the prompt about to be sent — and reconcile against the
   // provider's reported count afterwards. Same shape as the status tier.
+  // Thinking is billed as output, so its budget is reserved too.
   const estimatedTokens =
     args.maxTokens +
+    thinkingTokens +
     Math.ceil((args.systemPrompt.length + args.userPrompt.length) / 4);
 
   // v1.38.19 — a background surface: half the day's ceiling when the
@@ -153,17 +178,21 @@ export async function runBriefingCompletion(
       // the job share, exactly as the reservation above was.
       surface: "job",
       providers: args.chain,
-      params: singleUserTurn({
-        system: args.systemPrompt,
-        user: args.userPrompt,
-        temperature: args.temperature,
-        maxTokens: args.maxTokens,
-        seed: args.seed,
-        timeoutMs: args.timeoutMs,
-        // Every briefing call parses its reply with `JSON.parse`, so opt the
-        // chains with a native JSON mode into it.
-        responseFormat: "json",
-      }),
+      params: {
+        ...singleUserTurn({
+          system: args.systemPrompt,
+          user: args.userPrompt,
+          temperature: args.temperature,
+          maxTokens: args.maxTokens,
+          seed: args.seed,
+          timeoutMs: args.timeoutMs,
+          // Every briefing call parses its reply with `JSON.parse`, so opt the
+          // chains with a native JSON mode into it.
+          responseFormat: "json",
+        }),
+        // v1.41 — only a call that names its job carries this.
+        ...(reasoning ? { reasoning } : {}),
+      },
     });
   } catch (err) {
     // No usable reply: refund the whole reservation rather than bill an

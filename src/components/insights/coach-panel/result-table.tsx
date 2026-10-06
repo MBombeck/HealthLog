@@ -179,7 +179,7 @@ export function CoachResultTable({
         tabIndex={0}
         aria-labelledby={titleId}
         className={cn(
-          "focus-visible:ring-ring/50 overflow-x-auto rounded-b-lg outline-none focus-visible:ring-2",
+          "focus-visible:ring-input-focus overflow-x-auto rounded-b-lg outline-none focus-visible:ring-2",
           expanded && "max-h-96 overflow-y-auto overscroll-contain",
         )}
       >

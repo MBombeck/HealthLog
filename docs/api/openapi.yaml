@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.40.6
+  version: 1.41.0
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -9429,6 +9429,49 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/insights/chat/{id}/messages/{messageId}/trail:
+    get:
+      tags:
+        - Insights
+      summary: Read the trail text of one Coach message
+      description: "v1.41 — the text of one assistant message's trail: the screened reasoning titles and summaries by trail
+        entry (model-written), the fact texts the turn recalled, and a pending fact proposal (the person's own data).
+        The trail's structure (phases, statuses, counts) is plaintext on the message's `metricSource.activity`; this
+        route serves only the text, decrypted for the account that owns the conversation. Fetch lazily when the person
+        opens the trail. A mixed read: while the Coach's text may not be shown for the record, `entries` is empty and
+        the `ai` state rides beside it, but `recalled` and `proposal` are still served, since they are the person's
+        data. While the medications module is off, recalled facts and a proposal that concern a medication are left out.
+        `trail` is null when the message has no trail or nothing in it may be served. A foreign or unknown conversation
+        or message id maps to 404 (never 403). Auth via cookie or a full-access Bearer token."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Conversation id.
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Assistant message id within the conversation.
+      responses:
+        "200":
+          description: The trail text, or null when there is none or nothing in it may be served.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachMessageTrailResponse"
+        "401": *a1
+        "404":
+          description: Conversation or message not found, or not owned by the caller.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/insights/chat/{id}:
     get:
       tags:
@@ -9768,11 +9811,12 @@ paths:
       tags:
         - Insights
       summary: List the caller's durable Coach facts
-      description: "v1.11.1 — returns the active facts the Coach has extracted about the caller (highest-confidence then
-        newest first), each decrypted on the fly. The GDPR 'what do you know about me' surface. Never AI-gated: the
-        facts stay readable and erasable while the Coach is unavailable for any reason. Auth via cookie or Bearer; the
-        owner is always narrowed from the session, never the body. Undecryptable rows are omitted rather than failing
-        the read."
+      description: "v1.11.1 — returns the active facts the Coach keeps about the caller (highest-confidence then newest
+        first), each decrypted on the fly. The GDPR 'what do you know about me' surface. v1.41 — each fact carries its
+        source, the message it came from and when it was last used in a turn; a health fact still waiting for the
+        caller's confirmation is not listed. Never AI-gated: the facts stay readable and erasable while the Coach is
+        unavailable for any reason. Auth via cookie or Bearer; the owner is always narrowed from the session, never the
+        body. Undecryptable rows are omitted rather than failing the read."
       responses:
         "200":
           description: The caller's active facts.
@@ -9781,6 +9825,51 @@ paths:
               schema:
                 $ref: "#/components/schemas/CoachFactsList"
         "401": *a1
+        "422": *a4
+        "429": *a5
+    post:
+      tags:
+        - Insights
+      summary: Remember one of the caller's own Coach messages
+      description: "v1.41 — the remember button. Saves the named user message as a fact with `source: \"user\"`: the text is
+        the message the server stored, filed as `medication` or `condition` when it names one, `context` otherwise. The
+        tap is the caller's confirmation, so a health message is saved too. A message the caller does not own, or an
+        assistant message, is a 404. Saving the same fact again returns the existing one with `created: false`. Gated on
+        the Coach module, never on AI. Auth via cookie or Bearer."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoachFactCreateRequest"
+      responses:
+        "200":
+          description: The caller's memory already held this fact.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachFactAlreadyKnown"
+        "201":
+          description: The fact was saved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachFactCreated"
+        "401": *a1
+        "403":
+          description: 'Module disabled for this account: the user (or operator) has the module turned off. `meta.errorCode` =
+            `module.disabled` and `meta.module` carries the disabled module key (e.g. "sleep"). Returned even for a
+            valid Bearer token. Clients hide the whole module surface end-to-end rather than retry.'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Message not found or not one of the caller's own.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
     delete:
@@ -9800,6 +9889,44 @@ paths:
         "422": *a4
         "429": *a5
   /api/insights/coach/facts/{id}:
+    patch:
+      tags:
+        - Insights
+      summary: Edit one Coach fact's wording
+      description: "v1.41 — rewrites the text of a fact the caller owns (re-encrypted at rest) and files it by its new
+        wording: text that names a medication moves to `medication`, so the medications module keeps filtering it; other
+        health wording moves a non-health category to `condition`; otherwise the category stays. A health fact the
+        caller edited counts as confirmed (`source: \"user\"`). A proposal still waiting for the caller's confirmation,
+        an unknown, cross-user or deleted id are all a 404. Never AI-gated. Auth via cookie or Bearer."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Fact id.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoachFactPatchRequest"
+      responses:
+        "200":
+          description: The fact after the edit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachFactUpdated"
+        "401": *a1
+        "404":
+          description: Fact not found or not owned by the caller.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
     delete:
       tags:
         - Insights
@@ -25979,6 +26106,16 @@ components:
           description: v1.39.4 — offer up to three follow-up chips under the Coach's latest answer. Absent means on; only `false`
             switches them off.
           type: boolean
+        reasoning:
+          description: "v1.41 — how hard the Coach thinks before it answers: `off`, `low`, `medium` or `high`. Absent means
+            `medium`. The operator may switch reasoning off or cap the level; the resolved value is published on `GET
+            /api/auth/me` as `coachReasoning`."
+          type: string
+          enum:
+            - off
+            - low
+            - medium
+            - high
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
@@ -26666,6 +26803,40 @@ components:
               maxLength: 8
           required:
             - messageId
+        memoryDecision:
+          type: object
+          properties:
+            messageId:
+              type: string
+              minLength: 1
+              maxLength: 64
+            proposalId:
+              type: string
+              minLength: 1
+              maxLength: 64
+            accept:
+              type: boolean
+          required:
+            - messageId
+            - proposalId
+            - accept
+        planDecision:
+          type: object
+          properties:
+            messageId:
+              type: string
+              minLength: 1
+              maxLength: 64
+            planId:
+              type: string
+              minLength: 1
+              maxLength: 64
+            accept:
+              type: boolean
+          required:
+            - messageId
+            - planId
+            - accept
       required:
         - message
       description: "Inbound Coach turn. `message` is the user's turn (1–4 000 chars). `conversationId` is omitted to start a
@@ -26863,6 +27034,31 @@ components:
         - version
       description: PUT body for the Insights layout — the layout fields plus the optional optimistic-concurrency base token
         (`baseUpdatedAt`). Omit the token for the legacy unconditional write.
+    CoachFactCreateRequest:
+      type: object
+      properties:
+        messageId:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+        - messageId
+      additionalProperties: false
+      description: "v1.41 — the remember button: the id of one of the caller's own Coach messages. Never the text: the server
+        reads the message it stored. Strict: unknown keys 422."
+    CoachFactPatchRequest:
+      type: object
+      properties:
+        fact:
+          type: string
+          minLength: 3
+          maxLength: 160
+      required:
+        - fact
+      additionalProperties: false
+      description: "v1.41 — the fact's new wording (3..160 characters). Only the text: the server reads the new wording to
+        file it (a fact that names a medication moves to `medication`, other health wording moves a non-health fact to
+        `condition`) and a health fact the caller wrote counts as confirmed. Strict: unknown keys 422."
     UpdateEmergencyProfileRequest:
       type: object
       properties:
@@ -34972,6 +35168,14 @@ components:
                   type: boolean
                 assistantDocumentAiEnabled:
                   type: boolean
+                aiReasoningEnabled:
+                  type: boolean
+                aiReasoningMaxEffort:
+                  type: string
+                  enum:
+                    - low
+                    - medium
+                    - high
                 moduleAvailabilityJson:
                   anyOf:
                     - {}
@@ -38866,6 +39070,15 @@ components:
                       anyOf:
                         - type: string
                         - type: "null"
+                    trailEncrypted:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                        - type: "null"
+                    trailJson:
+                      anyOf:
+                        - type: string
+                        - type: "null"
                     createdAt:
                       type: string
                       minLength: 1
@@ -39029,6 +39242,19 @@ components:
                 minimum: 0
                 maximum: 100
               sourceConversationId:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              source:
+                type: string
+                minLength: 1
+                maxLength: 32
+              lastUsedAt:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              sourceMessageId:
                 anyOf:
                   - type: string
                   - type: "null"
@@ -48884,6 +49110,16 @@ components:
           description: v1.39.4 — offer up to three follow-up chips under the Coach's latest answer. Absent means on; only `false`
             switches them off.
           type: boolean
+        reasoning:
+          description: "v1.41 — how hard the Coach thinks before it answers: `off`, `low`, `medium` or `high`. Absent means
+            `medium`. The operator may switch reasoning off or cap the level; the resolved value is published on `GET
+            /api/auth/me` as `coachReasoning`."
+          type: string
+          enum:
+            - off
+            - low
+            - medium
+            - high
         updatedAt:
           description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
             `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or
@@ -52165,6 +52401,12 @@ components:
               type: string
             usage:
               $ref: "#/components/schemas/CoachUsage"
+            stop:
+              $ref: "#/components/schemas/CoachStop"
+            withheldResults:
+              description: v1.41 — the turn was blocked after interim tables went out; remove them.
+              type: boolean
+              const: true
           required:
             - type
             - conversationId
@@ -52212,6 +52454,10 @@ components:
               const: result
             result:
               $ref: "#/components/schemas/CoachResultTable"
+            interim:
+              description: v1.41 — sent while the turn still runs.
+              type: boolean
+              const: true
           required:
             - type
             - result
@@ -52240,9 +52486,43 @@ components:
             - type
             - clarification
           additionalProperties: false
+        - type: object
+          properties:
+            type:
+              type: string
+              const: activity
+            activity:
+              $ref: "#/components/schemas/CoachActivity"
+          required:
+            - type
+            - activity
+          additionalProperties: false
+        - type: object
+          properties:
+            type:
+              type: string
+              const: memoryNote
+            note:
+              $ref: "#/components/schemas/CoachMemoryNote"
+          required:
+            - type
+            - note
+          additionalProperties: false
+        - type: object
+          properties:
+            type:
+              type: string
+              const: planProposal
+            proposal:
+              $ref: "#/components/schemas/CoachPlanProposal"
+          required:
+            - type
+            - proposal
+          additionalProperties: false
       description: "One Server-Sent Events frame of a Coach turn, sent as `data: <json>\\n\\n` and dispatched on `type`.
-        Order: `step*` → `token*` → `provenance` → `result*` → `suggestion?` → `suggestedAction?` → `clarification?` →
-        `followUps?` → `done`, or a single `error`. Clients ignore a `type` they do not know."
+        Order: `(activity | step)*` → `token*` → `provenance` → `result*` → `suggestion?` → `suggestedAction?` →
+        `memoryNote?` → `planProposal?` → `clarification?` → `followUps?` → `done`, or a single `error`. `result` frames
+        with `interim: true` may also arrive among the `activity` frames. Clients ignore a `type` they do not know."
       type: object
     CoachProvenance:
       type: object
@@ -52451,6 +52731,25 @@ components:
             that earlier assistant message. A continuation offers no further `continue` chip. Absent otherwise."
           type: string
           maxLength: 64
+        activity:
+          description: v1.41 — the turn's trail, metadata only.
+          type: array
+          items:
+            $ref: "#/components/schemas/CoachActivityMeta"
+        stop:
+          description: v1.41 — why the answer was forced, when it was.
+          $ref: "#/components/schemas/CoachStop"
+        assumptions:
+          description: v1.41 — what the answer assumed instead of asking, at most two.
+          type: array
+          items:
+            $ref: "#/components/schemas/CoachAssumption"
+        memoryNote:
+          description: v1.41 — the fact this reply saved or proposes, without its text.
+          $ref: "#/components/schemas/CoachMemoryNoteMeta"
+        planProposal:
+          description: v1.41 — the plan this reply proposes, without its text.
+          $ref: "#/components/schemas/CoachPlanProposalMeta"
       required:
         - windows
         - metrics
@@ -52530,7 +52829,7 @@ components:
         id:
           type: string
           pattern: ^s[1-9]\d{0,2}$
-          description: "`s1`..`s12`, unique within a turn."
+          description: "`s1`..`s48`, unique within a turn."
         tool:
           type: string
           enum:
@@ -52598,7 +52897,7 @@ components:
         resultRef:
           description: The table this step produced (`r1`..), when it produced one.
           type: string
-          pattern: ^r[1-6]$
+          pattern: ^r[1-8]$
       required:
         - id
         - tool
@@ -52724,8 +53023,8 @@ components:
       properties:
         ref:
           type: string
-          pattern: ^r[1-6]$
-          description: "`r1`..`r6`, unique within a message."
+          pattern: ^r[1-8]$
+          description: "`r1`..`r8`, unique within a message."
         source:
           type: object
           properties:
@@ -52791,6 +53090,7 @@ components:
             - type: string
               enum:
                 - line
+                - compare
                 - bar
                 - histogram
             - type: "null"
@@ -52807,7 +53107,7 @@ components:
               pattern: ^[A-Za-z0-9_-]{1,64}$
             ref:
               type: string
-              pattern: ^r[1-6]$
+              pattern: ^r[1-8]$
           required:
             - messageId
             - ref
@@ -52846,6 +53146,7 @@ components:
             - as_table
             - related_metric
             - continue
+            - change_assumption
         labelKey:
           type: string
         label:
@@ -52856,7 +53157,7 @@ components:
           properties:
             ref:
               type: string
-              pattern: ^(?:r[1-6])?$
+              pattern: ^(?:r[1-8])?$
             domain:
               $ref: "#/components/schemas/CoachStepDomain"
             window:
@@ -52891,6 +53192,91 @@ components:
           enum:
             - server
             - model
+        assumption:
+          description: "v1.41 — on a `change_assumption` chip: the assumption it replaces and the alternative it picks."
+          type: object
+          properties:
+            kind:
+              type: string
+              enum:
+                - metric
+                - window
+                - comparison
+            value:
+              type: object
+              properties:
+                metric:
+                  type: string
+                  enum:
+                    - bp
+                    - weight
+                    - pulse
+                    - mood
+                    - compliance
+                    - hrv
+                    - sleep
+                    - resting_hr
+                    - steps
+                    - active_energy
+                    - flights
+                    - distance
+                    - vo2_max
+                    - body_temp
+                    - walking_hr
+                    - respiratory_rate
+                    - spo2
+                    - pulse_wave_velocity
+                    - vascular_age
+                    - body_fat
+                    - fat_mass
+                    - fat_free_mass
+                    - muscle_mass
+                    - lean_body_mass
+                    - bone_mass
+                    - total_body_water
+                    - bmi
+                    - visceral_fat
+                    - glucose
+                    - walking_steadiness
+                    - walking_asymmetry
+                    - walking_double_support
+                    - walking_step_length
+                    - walking_speed
+                    - audio_env
+                    - audio_headphone
+                    - audio_event
+                    - daylight
+                    - skin_temp
+                    - workouts
+                window:
+                  type: string
+                  enum:
+                    - last7days
+                    - last30days
+                    - last90days
+                    - lastYear
+                    - allTime
+                comparison:
+                  description: v1.41 — what a comparison is drawn against.
+                  type: string
+                  enum:
+                    - previous_period
+                    - year_ago
+                    - baseline_90d
+                goal:
+                  description: v1.41 — an active plan or a goal fact, by id.
+                  type: string
+                  pattern: ^[A-Za-z0-9_-]{1,64}$
+                anchor:
+                  description: v1.41 — a medication start, an illness episode or a cycle phase, by id.
+                  type: string
+                  pattern: ^[A-Za-z0-9_-]{1,64}$
+              additionalProperties: false
+              description: "What a choice stands for: catalog tokens and ids, never text."
+          required:
+            - kind
+            - value
+          additionalProperties: false
       required:
         - id
         - kind
@@ -52909,7 +53295,11 @@ components:
           enum:
             - metric
             - window
+            - comparison
+            - goal
+            - anchor
             - context
+          description: "`comparison`, `goal` and `anchor` since v1.41."
         choices:
           type: array
           items:
@@ -52976,7 +53366,23 @@ components:
                       - last90days
                       - lastYear
                       - allTime
+                  comparison:
+                    description: v1.41 — what a comparison is drawn against.
+                    type: string
+                    enum:
+                      - previous_period
+                      - year_ago
+                      - baseline_90d
+                  goal:
+                    description: v1.41 — an active plan or a goal fact, by id.
+                    type: string
+                    pattern: ^[A-Za-z0-9_-]{1,64}$
+                  anchor:
+                    description: v1.41 — a medication start, an illness episode or a cycle phase, by id.
+                    type: string
+                    pattern: ^[A-Za-z0-9_-]{1,64}$
                 additionalProperties: false
+                description: "What a choice stands for: catalog tokens and ids, never text."
             required:
               - id
               - labelKey
@@ -52987,6 +53393,11 @@ components:
         freeText:
           type: boolean
           description: Whether a typed answer is welcome.
+        assumption:
+          description: v1.41 — the choice that applies when the person does not answer. The question names it, and it is the first
+            choice.
+          type: string
+          pattern: ^c[1-4]$
       required:
         - kind
         - choices
@@ -52994,6 +53405,328 @@ components:
       additionalProperties: false
       description: "The choices for a clarifying question. The question itself is the assistant message's text. Answer with
         `clarification: { messageId, choiceId? }`."
+    CoachActivityMeta:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^a[1-9]\d?$
+          description: "`a1`..`a99`, unique within a turn."
+        phase:
+          type: string
+          enum:
+            - thinking
+            - memory
+            - fetch
+            - digest
+            - checkpoint
+            - remember
+            - plan
+            - asking
+            - stop
+            - answer
+        status:
+          type: string
+          enum:
+            - running
+            - done
+            - empty
+            - failed
+        round:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: The tool round, from 1.
+        labelKey:
+          type: string
+          description: Closed catalog key (`insights.coach.activity.*`).
+        label:
+          type: string
+          description: Rendered on the server in the request locale from the catalog; never model text.
+        stepRef:
+          description: The `step` a `fetch` entry stands for.
+          type: string
+          pattern: ^s[1-9]\d{0,2}$
+        count:
+          description: Readings, lookups or entries the server counted.
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        durationMs:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        stop:
+          description: Set on the `stop` entry.
+          type: string
+          enum:
+            - budget
+            - time
+            - cap
+            - no_progress
+      required:
+        - id
+        - phase
+        - status
+        - round
+        - labelKey
+        - label
+      additionalProperties: false
+      description: "v1.41 — one entry of a turn's trail as persisted on `metricSource.activity`: phase, status, round, catalog
+        label, counts. The model-written title and text are behind `GET
+        /api/insights/chat/{id}/messages/{messageId}/trail`."
+    CoachStop:
+      type: object
+      properties:
+        reason:
+          type: string
+          enum:
+            - budget
+            - time
+            - cap
+            - no_progress
+        rounds:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: The rounds the turn ran, the final one included.
+      required:
+        - reason
+        - rounds
+      additionalProperties: false
+      description: "v1.41 — why the Coach answered before it was done reading: the token budget, the time budget, the round
+        cap, or no new data."
+    CoachAssumption:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - metric
+            - window
+            - comparison
+        value:
+          type: object
+          properties:
+            labelKey:
+              type: string
+            label:
+              type: string
+            value:
+              type: object
+              properties:
+                metric:
+                  type: string
+                  enum:
+                    - bp
+                    - weight
+                    - pulse
+                    - mood
+                    - compliance
+                    - hrv
+                    - sleep
+                    - resting_hr
+                    - steps
+                    - active_energy
+                    - flights
+                    - distance
+                    - vo2_max
+                    - body_temp
+                    - walking_hr
+                    - respiratory_rate
+                    - spo2
+                    - pulse_wave_velocity
+                    - vascular_age
+                    - body_fat
+                    - fat_mass
+                    - fat_free_mass
+                    - muscle_mass
+                    - lean_body_mass
+                    - bone_mass
+                    - total_body_water
+                    - bmi
+                    - visceral_fat
+                    - glucose
+                    - walking_steadiness
+                    - walking_asymmetry
+                    - walking_double_support
+                    - walking_step_length
+                    - walking_speed
+                    - audio_env
+                    - audio_headphone
+                    - audio_event
+                    - daylight
+                    - skin_temp
+                    - workouts
+                window:
+                  type: string
+                  enum:
+                    - last7days
+                    - last30days
+                    - last90days
+                    - lastYear
+                    - allTime
+                comparison:
+                  description: v1.41 — what a comparison is drawn against.
+                  type: string
+                  enum:
+                    - previous_period
+                    - year_ago
+                    - baseline_90d
+                goal:
+                  description: v1.41 — an active plan or a goal fact, by id.
+                  type: string
+                  pattern: ^[A-Za-z0-9_-]{1,64}$
+                anchor:
+                  description: v1.41 — a medication start, an illness episode or a cycle phase, by id.
+                  type: string
+                  pattern: ^[A-Za-z0-9_-]{1,64}$
+              additionalProperties: false
+              description: "What a choice stands for: catalog tokens and ids, never text."
+          required:
+            - labelKey
+            - label
+            - value
+          additionalProperties: false
+        alternatives:
+          type: array
+          items:
+            type: object
+            properties:
+              labelKey:
+                type: string
+              label:
+                type: string
+              value:
+                type: object
+                properties:
+                  metric:
+                    type: string
+                    enum:
+                      - bp
+                      - weight
+                      - pulse
+                      - mood
+                      - compliance
+                      - hrv
+                      - sleep
+                      - resting_hr
+                      - steps
+                      - active_energy
+                      - flights
+                      - distance
+                      - vo2_max
+                      - body_temp
+                      - walking_hr
+                      - respiratory_rate
+                      - spo2
+                      - pulse_wave_velocity
+                      - vascular_age
+                      - body_fat
+                      - fat_mass
+                      - fat_free_mass
+                      - muscle_mass
+                      - lean_body_mass
+                      - bone_mass
+                      - total_body_water
+                      - bmi
+                      - visceral_fat
+                      - glucose
+                      - walking_steadiness
+                      - walking_asymmetry
+                      - walking_double_support
+                      - walking_step_length
+                      - walking_speed
+                      - audio_env
+                      - audio_headphone
+                      - audio_event
+                      - daylight
+                      - skin_temp
+                      - workouts
+                  window:
+                    type: string
+                    enum:
+                      - last7days
+                      - last30days
+                      - last90days
+                      - lastYear
+                      - allTime
+                  comparison:
+                    description: v1.41 — what a comparison is drawn against.
+                    type: string
+                    enum:
+                      - previous_period
+                      - year_ago
+                      - baseline_90d
+                  goal:
+                    description: v1.41 — an active plan or a goal fact, by id.
+                    type: string
+                    pattern: ^[A-Za-z0-9_-]{1,64}$
+                  anchor:
+                    description: v1.41 — a medication start, an illness episode or a cycle phase, by id.
+                    type: string
+                    pattern: ^[A-Za-z0-9_-]{1,64}$
+                additionalProperties: false
+                description: "What a choice stands for: catalog tokens and ids, never text."
+            required:
+              - labelKey
+              - label
+              - value
+            additionalProperties: false
+          description: At most 3.
+      required:
+        - kind
+        - value
+        - alternatives
+      additionalProperties: false
+      description: v1.41 — what an answer assumed instead of asking, from a catalog. Each alternative is offered as a
+        `change_assumption` follow-up.
+    CoachMemoryNoteMeta:
+      type: object
+      properties:
+        proposal:
+          type: boolean
+          description: "`true`: waiting for the person, answered with `memoryDecision`. `false`: already saved; undo deletes
+            `factId`."
+        proposalId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+        factId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+        category:
+          type: string
+          enum:
+            - preference
+            - goal
+            - context
+            - condition
+            - constraint
+            - medication
+      required:
+        - proposal
+        - category
+      additionalProperties: false
+      description: v1.41 — the fact a reply saved or proposes, as persisted on `metricSource.memoryNote`. No fact text.
+    CoachPlanProposalMeta:
+      type: object
+      properties:
+        planId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+        metric:
+          type: string
+          maxLength: 64
+        reviewInDays:
+          type: integer
+          minimum: 7
+          maximum: 56
+      required:
+        - planId
+        - metric
+        - reviewInDays
+      additionalProperties: false
+      description: v1.41 — the plan a reply proposes, as persisted on `metricSource.planProposal`. No plan text.
     CoachUsage:
       type: object
       properties:
@@ -53028,8 +53761,8 @@ components:
       properties:
         ref:
           type: string
-          pattern: ^r[1-6]$
-          description: "`r1`..`r6`, unique within a message."
+          pattern: ^r[1-8]$
+          description: "`r1`..`r8`, unique within a message."
         source:
           type: object
           properties:
@@ -53095,6 +53828,7 @@ components:
             - type: string
               enum:
                 - line
+                - compare
                 - bar
                 - histogram
             - type: "null"
@@ -53111,7 +53845,7 @@ components:
               pattern: ^[A-Za-z0-9_-]{1,64}$
             ref:
               type: string
-              pattern: ^r[1-6]$
+              pattern: ^r[1-8]$
           required:
             - messageId
             - ref
@@ -53188,6 +53922,38 @@ components:
                   properties:
                     kind:
                       type: string
+                      const: compare
+                    mode:
+                      type: string
+                      enum:
+                        - periods
+                        - metrics
+                    x:
+                      type: string
+                    a:
+                      type: string
+                    b:
+                      type: string
+                    axes:
+                      anyOf:
+                        - type: number
+                          const: 1
+                        - type: number
+                          const: 2
+                  required:
+                    - kind
+                    - mode
+                    - x
+                    - a
+                    - b
+                    - axes
+                  additionalProperties: false
+                  description: "v1.41 — two series on one chart: two periods overlaid (`periods`, one axis) or two metrics (`metrics`, one
+                    or two axes). `a` and `b` name the value columns, `x` the shared column."
+                - type: object
+                  properties:
+                    kind:
+                      type: string
                       const: bar
                     x:
                       type: string
@@ -53257,6 +54023,143 @@ components:
       additionalProperties: false
       description: "A table of the values a turn read. Health data: encrypted at rest and sent only to the account that owns
         the conversation."
+    CoachActivity:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^a[1-9]\d?$
+          description: "`a1`..`a99`, unique within a turn."
+        phase:
+          type: string
+          enum:
+            - thinking
+            - memory
+            - fetch
+            - digest
+            - checkpoint
+            - remember
+            - plan
+            - asking
+            - stop
+            - answer
+        status:
+          type: string
+          enum:
+            - running
+            - done
+            - empty
+            - failed
+        round:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: The tool round, from 1.
+        labelKey:
+          type: string
+          description: Closed catalog key (`insights.coach.activity.*`).
+        label:
+          type: string
+          description: Rendered on the server in the request locale from the catalog; never model text.
+        stepRef:
+          description: The `step` a `fetch` entry stands for.
+          type: string
+          pattern: ^s[1-9]\d{0,2}$
+        count:
+          description: Readings, lookups or entries the server counted.
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        durationMs:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        stop:
+          description: Set on the `stop` entry.
+          type: string
+          enum:
+            - budget
+            - time
+            - cap
+            - no_progress
+        title:
+          description: A screened reasoning title or checkpoint sentence.
+          type: string
+          maxLength: 80
+        text:
+          description: A screened reasoning summary for the round.
+          type: string
+          maxLength: 400
+      required:
+        - id
+        - phase
+        - status
+        - round
+        - labelKey
+        - label
+      additionalProperties: false
+      description: v1.41 — one entry of the live trail, sent as `activity` frames that upsert by `id`. `title` and `text` are
+        model text, screened, and sent only to the account that owns the conversation.
+    CoachMemoryNote:
+      type: object
+      properties:
+        proposal:
+          type: boolean
+          description: "`true`: waiting for the person, answered with `memoryDecision`. `false`: already saved; undo deletes
+            `factId`."
+        proposalId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+        factId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+        category:
+          type: string
+          enum:
+            - preference
+            - goal
+            - context
+            - condition
+            - constraint
+            - medication
+        fact:
+          type: string
+          maxLength: 160
+      required:
+        - proposal
+        - category
+        - fact
+      additionalProperties: false
+      description: v1.41 — a fact the Coach saved during the turn, or proposes to save (health facts are never saved without a
+        tap). Owner only.
+    CoachPlanProposal:
+      type: object
+      properties:
+        planId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+        metric:
+          type: string
+          maxLength: 64
+        reviewInDays:
+          type: integer
+          minimum: 7
+          maximum: 56
+        ifCue:
+          type: string
+        thenAction:
+          type: string
+        target:
+          type: string
+      required:
+        - planId
+        - metric
+        - reviewInDays
+        - ifCue
+        - thenAction
+      additionalProperties: false
+      description: "v1.41 — a plan the Coach proposes, written as `proposed`. Answer with `planDecision: { messageId, planId,
+        accept }`. Owner only."
     CoachMessageResultsResponse:
       type: object
       properties:
@@ -53289,7 +54192,7 @@ components:
           properties:
             ref:
               type: string
-              pattern: ^r[1-6]$
+              pattern: ^r[1-8]$
             withheld:
               type: string
               enum:
@@ -53302,6 +54205,88 @@ components:
             - withheld
           additionalProperties: false
       description: "One stored table, or the reason it is not served. Absence is explicit: a withheld table names why."
+    CoachMessageTrailResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            trail:
+              anyOf:
+                - $ref: "#/components/schemas/CoachTrail"
+                - type: "null"
+            ai:
+              description: The `coach` capability. While unavailable `trail.entries` is empty.
+              $ref: "#/components/schemas/AiCapabilityState"
+          required:
+            - trail
+            - ai
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CoachTrail:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^a[1-9]\d?$
+              title:
+                type: string
+                maxLength: 80
+              text:
+                type: string
+                maxLength: 400
+            required:
+              - id
+            additionalProperties: false
+        recalled:
+          type: array
+          items:
+            type: string
+            maxLength: 160
+        proposal:
+          type: object
+          properties:
+            proposalId:
+              type: string
+              pattern: ^[A-Za-z0-9_-]{1,64}$
+            category:
+              type: string
+              enum:
+                - preference
+                - goal
+                - context
+                - condition
+                - constraint
+                - medication
+            fact:
+              type: string
+              maxLength: 160
+          required:
+            - proposalId
+            - category
+            - fact
+          additionalProperties: false
+      required:
+        - entries
+      additionalProperties: false
+      description: v1.41 — the model-written text of a turn's trail and the fact texts it touched. Encrypted at rest and
+        served only to the account that owns the conversation.
     CoachConversationDetailResponse:
       type: object
       properties:
@@ -53744,11 +54729,12 @@ components:
                     type: string
                     enum:
                       - preference
-                      - condition
                       - goal
-                      - constraint
                       - context
-                    description: "App-side closed category: preference | condition | goal | constraint | context."
+                      - condition
+                      - constraint
+                      - medication
+                    description: "App-side closed category: preference | goal | context | condition | constraint | medication (v1.41)."
                   text:
                     type: string
                     description: Decrypted fact text.
@@ -53757,20 +54743,180 @@ components:
                     minimum: -9007199254740991
                     maximum: 9007199254740991
                     description: 0..100 server-assigned extraction confidence.
+                  source:
+                    type: string
+                    enum:
+                      - user
+                      - coach
+                      - extracted
+                      - pattern
+                      - proposed
+                    description: "v1.41 — where the fact came from: `user` (the remember button, or a proposal the caller confirmed),
+                      `coach` (saved during a turn), `extracted` (the background extraction; every fact older than
+                      v1.41), `pattern` (the deterministic matcher). `proposed` is never listed."
+                  sourceConversationId:
+                    anyOf:
+                      - type: string
+                      - type: "null"
+                    description: The conversation the fact came out of, when known.
+                  sourceMessageId:
+                    anyOf:
+                      - type: string
+                      - type: "null"
+                    description: v1.41 — the message the fact came out of, when known.
+                  lastUsedAt:
+                    anyOf:
+                      - type: string
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                      - type: "null"
+                    description: v1.41 — when the fact last went into a Coach turn.
                   createdAt:
                     type: string
                     format: date-time
                     pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    description: v1.41 — when the fact was last written or edited.
                 required:
                   - id
                   - category
                   - text
                   - confidence
+                  - source
+                  - sourceConversationId
+                  - sourceMessageId
+                  - lastUsedAt
                   - createdAt
+                  - updatedAt
                 additionalProperties: false
               description: The caller's active facts, highest-confidence then newest first. Undecryptable rows are omitted.
           required:
             - facts
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CoachFactAlreadyKnown:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            fact:
+              type: object
+              properties:
+                id:
+                  type: string
+                category:
+                  type: string
+                  enum:
+                    - preference
+                    - goal
+                    - context
+                    - condition
+                    - constraint
+                    - medication
+                  description: "App-side closed category: preference | goal | context | condition | constraint | medication (v1.41)."
+                text:
+                  type: string
+                  description: The fact as stored.
+                source:
+                  type: string
+                  enum:
+                    - user
+                    - coach
+                    - extracted
+                    - pattern
+                    - proposed
+                  description: "v1.41 — where the fact came from: `user` (the remember button, or a proposal the caller confirmed),
+                    `coach` (saved during a turn), `extracted` (the background extraction; every fact older than v1.41),
+                    `pattern` (the deterministic matcher). `proposed` is never listed."
+              required:
+                - id
+                - category
+                - text
+                - source
+              additionalProperties: false
+            created:
+              type: boolean
+              description: False when the caller's memory already held the same fact (or a proposal for it, now confirmed); the
+                existing fact is returned.
+          required:
+            - fact
+            - created
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CoachFactCreated:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            fact:
+              type: object
+              properties:
+                id:
+                  type: string
+                category:
+                  type: string
+                  enum:
+                    - preference
+                    - goal
+                    - context
+                    - condition
+                    - constraint
+                    - medication
+                  description: "App-side closed category: preference | goal | context | condition | constraint | medication (v1.41)."
+                text:
+                  type: string
+                  description: The fact as stored.
+                source:
+                  type: string
+                  enum:
+                    - user
+                    - coach
+                    - extracted
+                    - pattern
+                    - proposed
+                  description: "v1.41 — where the fact came from: `user` (the remember button, or a proposal the caller confirmed),
+                    `coach` (saved during a turn), `extracted` (the background extraction; every fact older than v1.41),
+                    `pattern` (the deterministic matcher). `proposed` is never listed."
+              required:
+                - id
+                - category
+                - text
+                - source
+              additionalProperties: false
+            created:
+              type: boolean
+              description: False when the caller's memory already held the same fact (or a proposal for it, now confirmed); the
+                existing fact is returned.
+          required:
+            - fact
+            - created
           additionalProperties: false
         error:
           type: "null"
@@ -53797,6 +54943,67 @@ components:
               description: Number of active facts soft-deleted by the bulk clear.
           required:
             - cleared
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CoachFactUpdated:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            fact:
+              type: object
+              properties:
+                id:
+                  type: string
+                category:
+                  type: string
+                  enum:
+                    - preference
+                    - goal
+                    - context
+                    - condition
+                    - constraint
+                    - medication
+                  description: "App-side closed category: preference | goal | context | condition | constraint | medication (v1.41)."
+                text:
+                  type: string
+                  description: The fact as stored.
+                source:
+                  type: string
+                  enum:
+                    - user
+                    - coach
+                    - extracted
+                    - pattern
+                    - proposed
+                  description: "v1.41 — where the fact came from: `user` (the remember button, or a proposal the caller confirmed),
+                    `coach` (saved during a turn), `extracted` (the background extraction; every fact older than v1.41),
+                    `pattern` (the deterministic matcher). `proposed` is never listed."
+                updatedAt:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              required:
+                - id
+                - category
+                - text
+                - source
+                - updatedAt
+              additionalProperties: false
+          required:
+            - fact
           additionalProperties: false
         error:
           type: "null"
@@ -58213,7 +59420,16 @@ components:
                   description: Robust upper edge.
                 latest:
                   type: number
-                  description: Today's latest reading, same units.
+                  description: The latest reading, same units. Today's only when `latestIsToday` is true; otherwise it is from
+                    `latestDate`.
+                latestDate:
+                  type: string
+                  pattern: ^\d{4}-\d{2}-\d{2}$
+                  description: Calendar day of the latest reading in the account's time zone, `YYYY-MM-DD`.
+                latestIsToday:
+                  type: boolean
+                  description: True when `latestDate` is today in the account's time zone. When false, a client names the reading's date
+                    instead of calling it today's.
                 placement:
                   type: string
                   enum:
@@ -58225,10 +59441,19 @@ components:
                   minimum: -9007199254740991
                   maximum: 9007199254740991
                   description: Distinct days behind the band, for transparency.
+                basis:
+                  description: Present when today is still in progress for a metric whose day mean moves with the hour (blood glucose).
+                    `latest` is then today's mean so far and `low` / `high` the usual range for the same hours of the
+                    earlier days, not the whole-day band; a client naming the range says it is the one for this time of
+                    day. Absent for the whole-day comparison.
+                  type: string
+                  const: sameHours
               required:
                 - low
                 - high
                 - latest
+                - latestDate
+                - latestIsToday
                 - placement
                 - sampleDays
               additionalProperties: false
@@ -73649,6 +74874,8 @@ components:
           $ref: "#/components/schemas/ModuleAccessMap"
         ai:
           $ref: "#/components/schemas/AiAccountBlock"
+        coachReasoning:
+          $ref: "#/components/schemas/CoachReasoningState"
         recordSession:
           anyOf:
             - $ref: "#/components/schemas/RecordSessionState"
@@ -73675,6 +74902,7 @@ components:
         - accountAccess
         - moduleAccess
         - ai
+        - coachReasoning
         - recordSession
         - notificationPrefs
         - onboarding
@@ -73689,7 +74917,9 @@ components:
         carries none — the two are the same account and nothing is masked. `moduleAccess` says WHY each module is or is
         not there — the record's own switch, the edge of the grant, or the operator's instance-wide one — beside the
         `modules` booleans it never contradicts. `ai` (v1.39) is the resolved AI capability map for the same record,
-        with the same masking; it replaces reading `GET /api/feature-flags`."
+        with the same masking; it replaces reading `GET /api/feature-flags`. `coachReasoning` (v1.41) is the Coach's
+        resolved thinking depth: the caller's own preference against the operator's reasoning controls and the record's
+        provider."
     AccountAccess:
       type: object
       properties:
@@ -74182,6 +75412,67 @@ components:
         - responseTimeoutMs
       additionalProperties: false
       description: The account-level companion to the capability map.
+    CoachReasoningState:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - off
+            - low
+            - medium
+            - high
+          description: "The level a Coach turn runs at right now, every cap applied: the person's choice, lowered to the
+            operator's highest level, to `medium` when the operator pays for the provider, and `off` when the operator
+            switched reasoning off or the provider cannot reason."
+        preference:
+          type: string
+          enum:
+            - off
+            - low
+            - medium
+            - high
+          description: What the person picked (`reasoning` on `PUT /api/auth/me/coach-prefs`), `medium` when they never chose.
+            Bind the settings field to this, not to `level`.
+        maxLevel:
+          type: string
+          enum:
+            - off
+            - low
+            - medium
+            - high
+          description: The highest level the settings may offer. Options above it are shown disabled as limited by the operator.
+            `off` when the operator switched reasoning off.
+        available:
+          type: boolean
+          description: False when the operator switched reasoning off or the configured provider cannot reason; the settings field
+            is then locked.
+        offIsReal:
+          type: boolean
+          description: False when the provider cannot switch reasoning off (it thinks at its lowest level instead); label the
+            lowest option "Minimal" rather than "Off".
+        source:
+          type: string
+          enum:
+            - user
+            - job
+            - admin_off
+            - admin_cap
+            - cost_cap
+            - unsupported
+          description: "Which layer decided `level`: the person's own choice (`user`), the operator's switch (`admin_off`) or cap
+            (`admin_cap`), the operator-funded ceiling (`cost_cap`), or a provider that cannot reason (`unsupported`).
+            `job` never appears here."
+      required:
+        - level
+        - preference
+        - maxLevel
+        - available
+        - offIsReal
+        - source
+      additionalProperties: false
+      description: The Coach's thinking depth for the signed-in person, resolved on the server from their preference, the
+        operator's reasoning switch and cap, who pays for the provider, and what the provider can do.
     RecordSessionState:
       type: object
       properties:
@@ -78175,6 +79466,16 @@ components:
           description: v1.39.4 — offer up to three follow-up chips under the Coach's latest answer. Absent means on; only `false`
             switches them off.
           type: boolean
+        reasoning:
+          description: "v1.41 — how hard the Coach thinks before it answers: `off`, `low`, `medium` or `high`. Absent means
+            `medium`. The operator may switch reasoning off or cap the level; the resolved value is published on `GET
+            /api/auth/me` as `coachReasoning`."
+          type: string
+          enum:
+            - off
+            - low
+            - medium
+            - high
       required:
         - tone
         - verbosity

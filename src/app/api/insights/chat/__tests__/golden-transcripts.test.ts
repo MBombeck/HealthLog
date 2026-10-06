@@ -63,9 +63,14 @@ vi.mock("@/lib/db", () => ({
     user: { findUnique: h.m.userFindUnique, update: h.m.userUpdate },
     coachConversation: { findFirst: h.m.conversationFindFirst },
     coachMessage: { findMany: h.m.coachMessageFindMany },
+    // v1.41 — the operator's reasoning controls; an untouched instance.
+    appSettings: { findUnique: vi.fn(async () => null) },
   },
 }));
-vi.mock("@/lib/rate-limit", () => ({ checkRateLimit: h.m.checkRateLimit }));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: h.m.checkRateLimit,
+  refundRateLimit: vi.fn(async () => {}),
+}));
 vi.mock("@/lib/i18n/server-locale", () => ({
   resolveServerLocale: h.m.resolveServerLocale,
 }));

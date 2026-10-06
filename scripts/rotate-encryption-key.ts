@@ -462,8 +462,8 @@ async function main() {
   }
 
   // ───── Coach (Bytes columns) ─────
-  // "encryptedContent" "resultsEncrypted" "summaryEncrypted" "titleEncrypted"
-  // "factEncrypted"
+  // "encryptedContent" "resultsEncrypted" "trailEncrypted" "summaryEncrypted"
+  // "titleEncrypted" "factEncrypted"
   results.push(
     await rotateBytesColumn(
       "CoachMessage",
@@ -477,6 +477,15 @@ async function main() {
     await rotateBytesColumn(
       "CoachMessage",
       "resultsEncrypted",
+      prisma.coachMessage,
+    ),
+  );
+  // v1.41 — the model text of the turn's trail. NULL on every turn without
+  // one, which `rotateBytesColumn` skips.
+  results.push(
+    await rotateBytesColumn(
+      "CoachMessage",
+      "trailEncrypted",
       prisma.coachMessage,
     ),
   );

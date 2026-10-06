@@ -2654,12 +2654,33 @@ export const coachReadStripResponse = z
       .object({
         low: z.number().describe("Robust lower edge of the personal range."),
         high: z.number().describe("Robust upper edge."),
-        latest: z.number().describe("Today's latest reading, same units."),
+        latest: z
+          .number()
+          .describe(
+            "The latest reading, same units. Today's only when `latestIsToday` is true; otherwise it is from `latestDate`.",
+          ),
+        latestDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .describe(
+            "Calendar day of the latest reading in the account's time zone, `YYYY-MM-DD`.",
+          ),
+        latestIsToday: z
+          .boolean()
+          .describe(
+            "True when `latestDate` is today in the account's time zone. When false, a client names the reading's date instead of calling it today's.",
+          ),
         placement: z.enum(["within", "above", "below"]),
         sampleDays: z
           .number()
           .int()
           .describe("Distinct days behind the band, for transparency."),
+        basis: z
+          .literal("sameHours")
+          .optional()
+          .describe(
+            "Present when today is still in progress for a metric whose day mean moves with the hour (blood glucose). `latest` is then today's mean so far and `low` / `high` the usual range for the same hours of the earlier days, not the whole-day band; a client naming the range says it is the one for this time of day. Absent for the whole-day comparison.",
+          ),
       })
       .nullable()
       .describe(

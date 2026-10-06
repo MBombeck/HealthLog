@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Invalid value: 'verbose'. Supported values are: 'concise', 'detailed', and 'auto'.",
+    "type": "invalid_request_error",
+    "param": "reasoning.summary",
+    "code": "invalid_value"
+  }
+}

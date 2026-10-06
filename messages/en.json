@@ -2836,9 +2836,8 @@
       },
       "rememberMessage": {
         "action": "Remember",
-        "done": "Saved to your self-context",
-        "duplicate": "Already part of your self-context",
-        "failed": "Could not save. Please try again."
+        "failed": "Could not save. Please try again.",
+        "alreadyKept": "The Coach already remembers this."
       },
       "guided": {
         "offerTitle": "The Coach has {count} follow-up questions for you",
@@ -3019,7 +3018,7 @@
       "hideConversations": "Hide conversations",
       "heroGreeting": "Ask me anything about your data",
       "heroSubline": "Ask about your trends, medications, or readings.",
-      "thinkingElapsed": "{seconds}s",
+      "thinkingElapsed": "{seconds} s",
       "thinkingDuration": "Thought for {seconds}s",
       "thinkingExpandAria": "Show what the Coach considered",
       "thinkingDetail": "Answered from your health snapshot.",
@@ -3030,6 +3029,18 @@
         "baselineWithin": "Your usual range is {low}–{high} {unit}; today's {value} sits within it.",
         "baselineAbove": "Your usual range is {low}–{high} {unit}; today's {value} sits above it.",
         "baselineBelow": "Your usual range is {low}–{high} {unit}; today's {value} sits below it.",
+        "sameHoursWithin": "By this time of day you usually sit at {low}–{high} {unit}; today so far, {value} is within that.",
+        "sameHoursAbove": "By this time of day you usually sit at {low}–{high} {unit}; today so far, {value} is above that.",
+        "sameHoursBelow": "By this time of day you usually sit at {low}–{high} {unit}; today so far, {value} is below that.",
+        "steadyWithin": "Your readings usually sit at {low} {unit}; today's {value} matches.",
+        "steadyAbove": "Your readings usually sit at {low} {unit}; today's {value} is above that.",
+        "steadyBelow": "Your readings usually sit at {low} {unit}; today's {value} is below that.",
+        "latestWithin": "Your usual range is {low}–{high} {unit}; your latest reading, {date}, was {value}, within it.",
+        "latestAbove": "Your usual range is {low}–{high} {unit}; your latest reading, {date}, was {value}, above it.",
+        "latestBelow": "Your usual range is {low}–{high} {unit}; your latest reading, {date}, was {value}, below it.",
+        "steadyLatestWithin": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value} and matches.",
+        "steadyLatestAbove": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value}, above that.",
+        "steadyLatestBelow": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value}, below that.",
         "insufficient": "Still learning your usual range — keep logging for a few more days.",
         "driver": "{note}"
       },
@@ -3146,7 +3157,80 @@
         "areasDoneOther": "Looked at {count} areas",
         "info": "Answer details",
         "infoModel": "Model: {model}"
-      }
+      },
+      "activity": {
+        "thinking": "Thinking…",
+        "fetching": "Fetching {domain}, {window}…",
+        "digestOne": "Summarising {count} reading…",
+        "digestFew": "Summarising {count} readings…",
+        "digestOther": "Summarising {count} readings…",
+        "digestDoneOne": "{count} reading from {areas}",
+        "digestDoneFew": "{count} readings from {areas}",
+        "digestDoneOther": "{count} readings from {areas}",
+        "areasOne": "{count} area",
+        "areasFew": "{count} areas",
+        "areasOther": "{count} areas",
+        "memoryOne": "Recalls {count} thing you told it",
+        "memoryFew": "Recalls {count} things you told it",
+        "memoryOther": "Recalls {count} things you told it",
+        "remember": "Remembering something…",
+        "plan": "Drafting a plan…",
+        "asking": "Asking you…",
+        "answer": "Writing the answer…",
+        "summaryOne": "Thought it through, {lookups} lookup, {seconds} s",
+        "summaryFew": "Thought it through, {lookups} lookups, {seconds} s",
+        "summaryOther": "Thought it through, {lookups} lookups, {seconds} s",
+        "summaryNoLookups": "Thought it through, {seconds} s",
+        "stop": {
+          "budget": "Budget reached, answering with what it has",
+          "time": "Time limit reached, answering with what it has",
+          "cap": "Many steps, wrapping up",
+          "noProgress": "No new data, wrapping up"
+        }
+      },
+      "memory": {
+        "saved": "Remembered: {fact}",
+        "undo": "Undo",
+        "accept": "Yes, remember it",
+        "decline": "No",
+        "confirmed": "Got it, I'll remember.",
+        "declined": "Okay, I won't."
+      },
+      "plan": {
+        "accept": "Take on this plan",
+        "decline": "Not now",
+        "confirmed": "Noted. I'll check in with you in {days} days.",
+        "declined": "Okay, not now."
+      },
+      "assumption": {
+        "line": "Assumed: {value}",
+        "change": "Change"
+      },
+      "suggestedReplies": {
+        "groupLabel": "Suggested replies"
+      },
+      "interim": {
+        "labelOne": "{title}, {window}, {count} reading",
+        "labelFew": "{title}, {window}, {count} readings",
+        "labelOther": "{title}, {window}, {count} readings"
+      },
+      "chart": {
+        "compare": {
+          "periods": "{a} vs {b}"
+        }
+      },
+      "reasoning": {
+        "label": "Thinking depth",
+        "hint": "Deeper thinking means more precise answers and a little more waiting.",
+        "off": "Off",
+        "minimal": "Minimal",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "capped": "(limited by the admin)",
+        "disabled": "The admin has turned deeper thinking off."
+      },
+      "memoryLink": "Memory ({count})"
     },
     "relativeJustNow": "just now",
     "relativeMinutesAgoOne": "{count} minute ago",
@@ -5992,7 +6076,6 @@
         "categoryGoal": "Goals",
         "categoryConstraint": "Constraints",
         "categoryContext": "Context",
-        "forget": "Forget",
         "forgetAria": "Forget this fact",
         "forgetTitle": "Forget this fact?",
         "forgetBody": "The Coach stops using it from the next message on. There is no way to bring a forgotten fact back.",
@@ -6008,7 +6091,8 @@
         "forgotError": "Could not forget that fact. Please try again.",
         "clearedToast": "Forgot {count} stored facts.",
         "clearError": "Could not clear the stored facts. Please try again.",
-        "detail": "It uses these to keep its replies relevant. Remove anything you would rather it forgot."
+        "detail": "It uses these to keep its replies relevant. Remove anything you would rather it forgot.",
+        "categoryMedication": "Medications"
       },
       "coachReminders": {
         "title": "Your reminders",
@@ -6124,7 +6208,8 @@
           "low": "Low",
           "medium": "Medium",
           "high": "High"
-        }
+        },
+        "coachNote": "In the Coach, the thinking depth from the Coach settings applies."
       }
     },
     "dashboard": {
@@ -6663,6 +6748,13 @@
         "savedOn": "Coach activated.",
         "savedOff": "Coach hidden.",
         "saveError": "Could not save the change. Please try again."
+      },
+      "memory": {
+        "edit": "Edit",
+        "source": {
+          "user": "from you",
+          "coach": "from the Coach"
+        }
       }
     },
     "integrationRedirectGuide": {
@@ -7158,6 +7250,11 @@
       "documentAi": {
         "title": "Reading documents",
         "description": "AI reading of stored documents, lab report scans and medication extraction from text. The largest share of data leaving the server."
+      },
+      "reasoning": {
+        "enabled": "Allow deeper thinking",
+        "max": "Highest thinking depth",
+        "description": "Models think before they answer: the Coach, the daily briefing and the period summaries. More precise, uses more tokens."
       }
     },
     "modules": {
@@ -9933,7 +10030,8 @@
       "relatedMetric": "See also: {metric}",
       "continue": "Keep looking",
       "settingLabel": "Suggest follow-up questions",
-      "settingHint": "Show up to three follow-up suggestions under the Coach's latest answer."
+      "settingHint": "Show up to three follow-up suggestions under the Coach's latest answer.",
+      "changeAssumption": "Instead: {value}"
     },
     "clarify": {
       "cardLabel": "The Coach has a question",
@@ -9946,6 +10044,12 @@
         "last90days": "Last 90 days",
         "lastYear": "Last 12 months",
         "allTime": "All time"
+      },
+      "comparison": {
+        "baseline90d": "Compare with my usual 90 days"
+      },
+      "anchor": {
+        "illness": "Since the illness of {date}"
       }
     },
     "reuse": {

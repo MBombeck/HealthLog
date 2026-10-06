@@ -36,6 +36,7 @@ import {
 import { parseFollowUpsSentinel } from "@/lib/ai/coach/follow-ups/parse-sentinel";
 import { stripResultRefs } from "@/lib/ai/coach/results/refs";
 import type { CoachClarification } from "@/lib/ai/coach/types";
+import type { InventoryEntry } from "@/lib/ai/coach/tools/inventory";
 
 import type { TurnContext } from "./context";
 import type { ModelOutcome } from "./model";
@@ -59,6 +60,22 @@ export interface GuardedReply {
    * when it does not, and on a blocked turn (the question was replaced).
    */
   clarification: CoachClarification | null;
+}
+
+/**
+ * The metrics a no-tools turn's snapshot covered, as inventory rows the
+ * clarification filter reads. Present by construction: the snapshot carried
+ * them.
+ */
+function snapshotInventory(ctx: TurnContext): InventoryEntry[] {
+  return ctx.snapshot.provenance.metrics
+    .filter((metric) => metric !== "general")
+    .map((metric) => ({
+      tool: "get_metric_series",
+      domain: metric,
+      present: true,
+      metric,
+    }));
 }
 
 export async function guardReply(args: {
@@ -155,17 +172,23 @@ export async function guardReply(args: {
   replyText = followUpsParse.prose.trim() || replyText;
   const clarifyParse = parseClarifySentinel({
     prose: replyText,
-    inventory: model.inventory,
+    // v1.41 — the no-tools path has no inventory; the metrics its snapshot
+    // covered stand in for one, so a metric question can still be asked.
+    inventory: model.inventory ?? snapshotInventory(ctx),
     locale,
   });
   // A block with no question before it leaves nothing to show; the raw
   // marker must never reach the person, so that reply is unusable.
   replyText = clarifyParse.prose.trim();
   if (!replyText) return { ok: false, code: "coach.provider.empty" };
+  // v1.41 — a question asked through `ask_clarification` is the reply
+  // itself, validated and braked when it was asked; the sentinel stays the
+  // no-tools path's way to ask.
   const clarification = await dropRepeatClarification({
     userId,
     conversationId: workingConversationId,
-    clarification: clarifyParse.clarification,
+    clarification:
+      model.toolClarification?.clarification ?? clarifyParse.clarification,
     latest: conversation.latestMessages,
   });
   const resultRefs = stripResultRefs(replyText);
@@ -178,7 +201,12 @@ export async function guardReply(args: {
   // the system-prompt GLP-1/grounding contracts. On a trip the turn is
   // replaced with a calm, grounded fallback and any reminder suggestion /
   // key-value provenance is dropped — the user never sees the unsafe text.
-  const outbound = screenCoachReply(replyText, locale, ctx.scheduleDoses);
+  const outbound = screenCoachReply(
+    replyText,
+    locale,
+    ctx.scheduleDoses,
+    ctx.medicationNames,
+  );
   if (outbound.block && outbound.reason) {
     replyText = coachOutboundFallback(outbound.reason, locale);
     annotate({

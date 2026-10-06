@@ -170,7 +170,7 @@ describe("extractDeterministicFacts", () => {
 });
 
 describe("storeDeterministicFacts", () => {
-  it("persists a fresh allergy fact with the always-remember confidence", async () => {
+  it("persists a fresh allergy as a proposal with the always-remember confidence", async () => {
     const fake = makeFakePrisma();
     const stored = await storeDeterministicFacts({
       conversationId: "conv-1",
@@ -186,6 +186,9 @@ describe("storeDeterministicFacts", () => {
       category: "condition",
       confidence: DETERMINISTIC_FACT_CONFIDENCE,
       sourceConversationId: "conv-1",
+      // v1.41 — a health fact waits for the person's "Yes, remember it":
+      // kept, offered once, never used before it is confirmed.
+      source: "proposed",
     });
     expect(annotateMock).toHaveBeenCalledWith(
       expect.objectContaining({

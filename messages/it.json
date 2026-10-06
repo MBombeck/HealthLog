@@ -2836,9 +2836,8 @@
       },
       "rememberMessage": {
         "action": "Memorizza",
-        "done": "Salvato nelle tue informazioni personali",
-        "duplicate": "Già presente nelle tue informazioni personali",
-        "failed": "Salvataggio non riuscito. Riprova."
+        "failed": "Salvataggio non riuscito. Riprova.",
+        "alreadyKept": "Il Coach lo ricorda già."
       },
       "guided": {
         "offerTitle": "Il Coach ha {count} domande per te",
@@ -3019,7 +3018,7 @@
       "hideConversations": "Nascondi conversazioni",
       "heroGreeting": "Chiedimi qualcosa sui tuoi dati",
       "heroSubline": "Chiedi dei tuoi andamenti, farmaci o misurazioni.",
-      "thinkingElapsed": "{seconds}s",
+      "thinkingElapsed": "{seconds} s",
       "thinkingDuration": "Ha riflettuto per {seconds}s",
       "thinkingExpandAria": "Mostra cosa ha considerato il Coach",
       "thinkingDetail": "Risposta basata sul tuo riepilogo di salute.",
@@ -3030,6 +3029,18 @@
         "baselineWithin": "Il tuo intervallo abituale è {low}–{high} {unit}; oggi {value} rientra al suo interno.",
         "baselineAbove": "Il tuo intervallo abituale è {low}–{high} {unit}; oggi {value} si colloca al di sopra.",
         "baselineBelow": "Il tuo intervallo abituale è {low}–{high} {unit}; oggi {value} si colloca al di sotto.",
+        "sameHoursWithin": "A quest'ora del giorno di solito sei a {low}–{high} {unit}; oggi finora {value} rientra nell'intervallo.",
+        "sameHoursAbove": "A quest'ora del giorno di solito sei a {low}–{high} {unit}; oggi finora {value} si colloca al di sopra.",
+        "sameHoursBelow": "A quest'ora del giorno di solito sei a {low}–{high} {unit}; oggi finora {value} si colloca al di sotto.",
+        "steadyWithin": "I tuoi valori sono di solito {low} {unit}; oggi {value} corrisponde.",
+        "steadyAbove": "I tuoi valori sono di solito {low} {unit}; oggi {value} è al di sopra.",
+        "steadyBelow": "I tuoi valori sono di solito {low} {unit}; oggi {value} è al di sotto.",
+        "latestWithin": "Il tuo intervallo abituale è {low}–{high} {unit}; la tua ultima misurazione, del {date}, era {value}, al suo interno.",
+        "latestAbove": "Il tuo intervallo abituale è {low}–{high} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sopra.",
+        "latestBelow": "Il tuo intervallo abituale è {low}–{high} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sotto.",
+        "steadyLatestWithin": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, in linea.",
+        "steadyLatestAbove": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sopra.",
+        "steadyLatestBelow": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sotto.",
         "insufficient": "Sto ancora imparando il tuo intervallo abituale — continua a registrare per qualche giorno in più.",
         "driver": "{note}"
       },
@@ -3146,7 +3157,80 @@
         "areasDoneOther": "{count} aree consultate",
         "info": "Dettagli della risposta",
         "infoModel": "Modello: {model}"
-      }
+      },
+      "activity": {
+        "thinking": "Sta pensando…",
+        "fetching": "Recupera {domain}, {window}…",
+        "digestOne": "Riassume {count} valore…",
+        "digestFew": "Riassume {count} valori…",
+        "digestOther": "Riassume {count} valori…",
+        "digestDoneOne": "{count} valore da {areas}",
+        "digestDoneFew": "{count} valori da {areas}",
+        "digestDoneOther": "{count} valori da {areas}",
+        "areasOne": "{count} area",
+        "areasFew": "{count} aree",
+        "areasOther": "{count} aree",
+        "memoryOne": "Ricorda {count} cosa che gli hai detto",
+        "memoryFew": "Ricorda {count} cose che gli hai detto",
+        "memoryOther": "Ricorda {count} cose che gli hai detto",
+        "remember": "Memorizza qualcosa…",
+        "plan": "Prepara un piano…",
+        "asking": "Ti fa una domanda…",
+        "answer": "Scrive la risposta…",
+        "summaryOne": "Ci ha pensato, {lookups} ricerca, {seconds} s",
+        "summaryFew": "Ci ha pensato, {lookups} ricerche, {seconds} s",
+        "summaryOther": "Ci ha pensato, {lookups} ricerche, {seconds} s",
+        "summaryNoLookups": "Ci ha pensato, {seconds} s",
+        "stop": {
+          "budget": "Budget raggiunto, risponde con ciò che ha",
+          "time": "Tempo scaduto, risponde con ciò che ha",
+          "cap": "Molti passaggi, ora riassume",
+          "noProgress": "Nessun dato nuovo, riassume"
+        }
+      },
+      "memory": {
+        "saved": "Memorizzato: {fact}",
+        "undo": "Annulla",
+        "accept": "Sì, ricordalo",
+        "decline": "No",
+        "confirmed": "Ricevuto, me lo ricorderò.",
+        "declined": "D'accordo, non lo faccio."
+      },
+      "plan": {
+        "accept": "Adotta questo piano",
+        "decline": "Non ora",
+        "confirmed": "Annotato. Ne riparliamo insieme tra {days} giorni.",
+        "declined": "D'accordo, non ora."
+      },
+      "assumption": {
+        "line": "Ipotesi: {value}",
+        "change": "Cambia"
+      },
+      "suggestedReplies": {
+        "groupLabel": "Risposte suggerite"
+      },
+      "interim": {
+        "labelOne": "{title}, {window}, {count} valore",
+        "labelFew": "{title}, {window}, {count} valori",
+        "labelOther": "{title}, {window}, {count} valori"
+      },
+      "chart": {
+        "compare": {
+          "periods": "{a} rispetto a {b}"
+        }
+      },
+      "reasoning": {
+        "label": "Profondità di ragionamento",
+        "hint": "Pensare più a fondo significa risposte più precise e un po' più di attesa.",
+        "off": "Disattivato",
+        "minimal": "Minima",
+        "low": "Bassa",
+        "medium": "Media",
+        "high": "Alta",
+        "capped": "(limitato dall'amministratore)",
+        "disabled": "L'amministratore ha disattivato il ragionamento approfondito."
+      },
+      "memoryLink": "Memoria ({count})"
     },
     "relativeJustNow": "proprio ora",
     "relativeMinutesAgoOne": "{count} minuto fa",
@@ -5992,7 +6076,6 @@
         "categoryGoal": "Obiettivi",
         "categoryConstraint": "Vincoli",
         "categoryContext": "Contesto",
-        "forget": "Dimentica",
         "forgetAria": "Dimentica questa informazione",
         "forgetTitle": "Dimenticare questa informazione?",
         "forgetBody": "Il Coach smette di usarla dal messaggio successivo. Un’informazione dimenticata non può essere recuperata.",
@@ -6008,7 +6091,8 @@
         "forgotError": "Impossibile dimenticare questa informazione. Riprova.",
         "clearedToast": "Dimenticate {count} informazioni memorizzate.",
         "clearError": "Impossibile cancellare le informazioni memorizzate. Riprova.",
-        "detail": "Le usa per mantenere pertinenti le sue risposte. Rimuovi tutto ciò che preferisci dimentichi."
+        "detail": "Le usa per mantenere pertinenti le sue risposte. Rimuovi tutto ciò che preferisci dimentichi.",
+        "categoryMedication": "Farmaci"
       },
       "coachReminders": {
         "title": "I tuoi promemoria",
@@ -6124,7 +6208,8 @@
           "low": "Basso",
           "medium": "Medio",
           "high": "Alto"
-        }
+        },
+        "coachNote": "Nel Coach vale la profondità di ragionamento delle impostazioni del Coach."
       }
     },
     "dashboard": {
@@ -6663,6 +6748,13 @@
         "savedOn": "Coach attivato.",
         "savedOff": "Coach nascosto.",
         "saveError": "Impossibile salvare la modifica. Riprova."
+      },
+      "memory": {
+        "edit": "Modifica",
+        "source": {
+          "user": "da te",
+          "coach": "dal Coach"
+        }
       }
     },
     "integrationRedirectGuide": {
@@ -7158,6 +7250,11 @@
       "documentAi": {
         "title": "Lettura dei documenti",
         "description": "Lettura con IA dei documenti salvati, scansione dei referti di laboratorio ed estrazione dei farmaci dal testo. La quota maggiore dei dati che lasciano il server."
+      },
+      "reasoning": {
+        "enabled": "Consenti ragionamento approfondito",
+        "max": "Profondità massima di ragionamento",
+        "description": "I modelli riflettono prima di rispondere: il Coach, il briefing giornaliero e i riepiloghi di periodo. Più precisi, usano più token."
       }
     },
     "modules": {
@@ -9933,7 +10030,8 @@
       "relatedMetric": "Vedi anche: {metric}",
       "continue": "Continua a cercare",
       "settingLabel": "Suggerisci domande di approfondimento",
-      "settingHint": "Mostra fino a tre suggerimenti sotto l'ultima risposta del Coach."
+      "settingHint": "Mostra fino a tre suggerimenti sotto l'ultima risposta del Coach.",
+      "changeAssumption": "Invece: {value}"
     },
     "clarify": {
       "cardLabel": "Il Coach ha una domanda",
@@ -9946,6 +10044,12 @@
         "last90days": "Ultimi 90 giorni",
         "lastYear": "Ultimi 12 mesi",
         "allTime": "Intero periodo"
+      },
+      "comparison": {
+        "baseline90d": "Confronta con i miei soliti 90 giorni"
+      },
+      "anchor": {
+        "illness": "Dalla malattia del {date}"
       }
     },
     "reuse": {

@@ -24,6 +24,14 @@ import {
   type JsonModeDialect,
 } from "./json-dialect";
 import type { ReasoningEffort } from "./reasoning-effort";
+import {
+  annotateReasoningDowngrade,
+  isReasoningParameterRejection,
+  learnedReasoningDialect,
+  rememberReasoningDialect,
+} from "./reasoning/dialect-cache";
+import { REASONING_THINKING_BUDGET } from "./reasoning/levels";
+import { reasoningTitleOf, splitThinkTags } from "./reasoning/support";
 
 interface LocalClientConfig {
   apiKey?: string | null;
@@ -86,6 +94,68 @@ function withStrictJsonPrefix(messages: AiMessage[]): AiMessage[] {
     };
   }
   return out;
+}
+
+/**
+ * v1.41 — collects what a call reasoned and reports it to `onReasoning`.
+ * Local servers return the reasoning as `reasoning_content` (llama.cpp,
+ * LiteLLM) or `reasoning` (vLLM, Ollama, LM Studio), on the message and on
+ * each streamed delta, or inline as a leading `<think>…</think>` block.
+ * https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md,
+ * https://docs.vllm.ai/en/latest/features/reasoning_outputs.html,
+ * https://docs.ollama.com/api/openai-compatibility
+ */
+class ReasoningCollector {
+  private text = "";
+  private titled = false;
+  private finished = false;
+  constructor(private readonly params: CompletionParams) {}
+
+  private get emit() {
+    return this.params.reasoning ? this.params.onReasoning : undefined;
+  }
+
+  /** A streamed piece of reasoning; the title goes out once it has closed. */
+  add(delta: string): void {
+    this.text += delta;
+    if (!this.titled && this.emit) {
+      const title = reasoningTitleOf(this.text);
+      if (title) {
+        this.titled = true;
+        this.emit({ kind: "title", text: title });
+      }
+    }
+  }
+
+  /** The reasoning is complete (the answer started, or the call ended). */
+  finish(): void {
+    if (this.finished) return;
+    this.finished = true;
+    const text = this.text.trim();
+    if (!text || !this.emit) return;
+    if (!this.titled) {
+      const title = reasoningTitleOf(text);
+      if (title) this.emit({ kind: "title", text: title });
+    }
+    this.emit({ kind: "text", text });
+  }
+
+  result(tokens: number | null): CompletionResult["reasoning"] {
+    this.finish();
+    if (!this.params.reasoning) return undefined;
+    this.emit?.({ kind: "done", text: "" });
+    const text = this.text.trim();
+    return { summary: text ? [text] : [], tokens };
+  }
+}
+
+/** The reasoning text a non-streamed message carries, if any. */
+function messageReasoning(message: unknown): string | null {
+  const m = (message ?? {}) as Record<string, unknown>;
+  const text = [m.reasoning_content, m.reasoning].find(
+    (v): v is string => typeof v === "string" && v.trim().length > 0,
+  );
+  return text ?? null;
 }
 
 /**
@@ -158,11 +228,18 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       withStrictJsonPrefix(params.messages),
     );
 
+    const callEffort = this.callReasoningEffort(params);
+    // Reasoning tokens count against `max_tokens` on these servers; the
+    // thinking budget rides on top of the answer budget (a ceiling only).
+    const thinkingTokens =
+      params.reasoning && callEffort && params.reasoning.effort !== "off"
+        ? REASONING_THINKING_BUDGET[params.reasoning.effort]
+        : 0;
     const body = JSON.stringify({
       model: this.config.model,
       messages,
       temperature: params.temperature ?? 0.3,
-      max_tokens: params.maxTokens ?? 1000,
+      max_tokens: (params.maxTokens ?? 1000) + thinkingTokens,
       // Deterministic seed for reproducible reference output. Ollama +
       // most OpenAI-compatible local servers honour it; servers that
       // ignore it simply disregard the field. Omitted when unset.
@@ -170,9 +247,11 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       // #1126 — the entry's reasoning setting. Default sends nothing, so the
       // body of a setup that never touched it stays byte-identical; "Off" is
       // `none`, which stops a thinking model spending the answer budget.
-      ...(this.reasoningEffort
+      // v1.41 — a call that carries its own resolved level wins over it.
+      ...(!params.reasoning && this.reasoningEffort
         ? { reasoning_effort: this.reasoningEffort }
         : {}),
+      ...(callEffort ? { reasoning_effort: callEffort } : {}),
       // v1.28.28 (#470) — the JSON surfaces opt in via `responseFormat:
       // "json"`. Default dialect sends the STANDARD OpenAI field (the
       // top-level Ollama-native `format: "json"` this client used to send
@@ -192,6 +271,27 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     });
 
     return { url, headers, body, jsonDialect };
+  }
+
+  private reasoningDialectKey() {
+    return {
+      provider: "local",
+      endpoint: this.config.baseUrl,
+      model: this.config.model,
+    };
+  }
+
+  /**
+   * The `reasoning_effort` a call with its own resolved level sends (`off`
+   * is `none`), unless this endpoint refused the field before. `null` for a
+   * call without one: the entry's #1126 setting applies, exactly as before.
+   */
+  private callReasoningEffort(params: CompletionParams): string | null {
+    if (!params.reasoning) return null;
+    if (learnedReasoningDialect(this.reasoningDialectKey()) === "none") {
+      return null;
+    }
+    return params.reasoning.effort === "off" ? "none" : params.reasoning.effort;
   }
 
   async generateCompletion(
@@ -243,6 +343,23 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       // strip anything that looks like a key before logging.
       const rawBody = await res.text().catch(() => "");
       const bodyExcerpt = sanitiseBodyExcerpt(rawBody);
+      // v1.41 — a server that refuses the reasoning field is asked once more
+      // without it and remembers. Before the JSON dialect, so a complaint
+      // about reasoning never switches JSON mode off.
+      const sentEffort = this.callReasoningEffort(params);
+      if (
+        sentEffort &&
+        isReasoningParameterRejection(
+          res.status,
+          bodyExcerpt,
+          /reasoning|think/i,
+          this.config.model,
+        )
+      ) {
+        rememberReasoningDialect(this.reasoningDialectKey(), "none");
+        annotateReasoningDowngrade("local", sentEffort, "none");
+        return this.generateCompletion(params);
+      }
       // v1.28.28 (#470) — dialect self-heal. A 4xx whose body names
       // `response_format` (or an unknown parameter) means this endpoint
       // rejects the standard JSON flag: learn the no-flag dialect for the
@@ -292,7 +409,10 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         message?: { content?: string };
         finish_reason?: string;
       }>;
-      usage?: { total_tokens?: number };
+      usage?: {
+        total_tokens?: number;
+        completion_tokens_details?: { reasoning_tokens?: number };
+      };
     };
 
     // Same embedded-failure shape the OpenAI-compatible gateway tag handles:
@@ -307,7 +427,22 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       model: this.config.model,
     });
 
-    const content = json.choices?.[0]?.message?.content;
+    const collector = new ReasoningCollector(params);
+    let content = json.choices?.[0]?.message?.content;
+    if (params.reasoning) {
+      const fielded = messageReasoning(json.choices?.[0]?.message);
+      if (fielded) collector.add(fielded);
+      // Only a caller that asked for reasoning gets the inline block split
+      // off; every other caller keeps the text exactly as it came.
+      if (content) {
+        const split = splitThinkTags(content);
+        if (split.reasoning) collector.add(split.reasoning);
+        content = split.content;
+      }
+    }
+    const reasoning = collector.result(
+      json.usage?.completion_tokens_details?.reasoning_tokens ?? null,
+    );
     if (!content) {
       // v1.20.1 — sentinel httpStatus + kind so the chain classifier can tell
       // an empty 200-OK reply apart from a transport failure. Cascade unchanged
@@ -329,6 +464,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       // v1.28.28 (#470) — surface why the model stopped so the JSON callers
       // can tell a token-ceiling truncation ("length") from bad output.
       finishReason: mapFinishReason(json.choices?.[0]?.finish_reason),
+      ...(reasoning ? { reasoning } : {}),
     };
   }
 
@@ -416,7 +552,18 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         label: "local AI endpoint",
         model: this.config.model,
       });
-      const buffered = json?.choices?.[0]?.message?.content;
+      const collector = new ReasoningCollector(params);
+      let buffered = json?.choices?.[0]?.message?.content;
+      if (params.reasoning) {
+        const fielded = messageReasoning(json?.choices?.[0]?.message);
+        if (fielded) collector.add(fielded);
+        if (buffered) {
+          const split = splitThinkTags(buffered);
+          if (split.reasoning) collector.add(split.reasoning);
+          buffered = split.content;
+        }
+      }
+      const reasoning = collector.result(null);
       if (!buffered) {
         const err = new Error("Local AI returned empty content");
         Object.assign(err, {
@@ -433,6 +580,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         model: this.config.model,
         providerType: "local",
         finishReason: mapFinishReason(json?.choices?.[0]?.finish_reason),
+        ...(reasoning ? { reasoning } : {}),
       };
     }
 
@@ -441,7 +589,54 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     let sseBuffer = "";
     let content = "";
     let tokensUsed: number | null = null;
+    let reasoningTokens: number | null = null;
     let finishReason: string | undefined;
+
+    // v1.41 — reasoning on the stream: the `reasoning_content` / `reasoning`
+    // delta fields, or a leading `<think>` block inside `content`. Inline
+    // reasoning never reaches `onDelta`; it would otherwise show up as the
+    // answer. Only for a caller that asked for reasoning.
+    const collector = new ReasoningCollector(params);
+    let thinkState: "detect" | "inside" | "passthrough" = params.reasoning
+      ? "detect"
+      : "passthrough";
+    let pending = "";
+    const passContent = (text: string) => {
+      if (!text) return;
+      collector.finish();
+      content += text;
+      onDelta(text);
+    };
+    const onContent = (delta: string) => {
+      if (thinkState === "passthrough") {
+        passContent(delta);
+        return;
+      }
+      pending += delta;
+      if (thinkState === "detect") {
+        const lead = pending.replace(/^\s+/, "");
+        if (lead.length < "<think>".length && "<think>".startsWith(lead)) {
+          return;
+        }
+        if (!lead.startsWith("<think>")) {
+          thinkState = "passthrough";
+          const out = pending;
+          pending = "";
+          passContent(out);
+          return;
+        }
+        thinkState = "inside";
+        pending = lead.slice("<think>".length);
+      }
+      const close = pending.indexOf("</think>");
+      if (close === -1) return;
+      collector.add(pending.slice(0, close));
+      collector.finish();
+      const rest = pending.slice(close + "</think>".length).replace(/^\s+/, "");
+      pending = "";
+      thinkState = "passthrough";
+      passContent(rest);
+    };
 
     // An SSE frame can carry the same embedded failure the buffered body
     // carries. Remember the first one; it only matters if the stream ends
@@ -474,11 +669,18 @@ export class LocalOpenAICompatibleClient implements AIProvider {
           let chunk: {
             error?: unknown;
             choices?: Array<{
-              delta?: { content?: string };
+              delta?: {
+                content?: string;
+                reasoning_content?: string;
+                reasoning?: string;
+              };
               finish_reason?: string | null;
               error?: unknown;
             }>;
-            usage?: { total_tokens?: number };
+            usage?: {
+              total_tokens?: number;
+              completion_tokens_details?: { reasoning_tokens?: number };
+            };
           };
           try {
             chunk = JSON.parse(payload);
@@ -489,14 +691,19 @@ export class LocalOpenAICompatibleClient implements AIProvider {
           if (streamedError === null && readEmbeddedError(chunk) !== null) {
             streamedError = chunk;
           }
-          const delta = chunk.choices?.[0]?.delta?.content;
-          if (delta) {
-            content += delta;
-            onDelta(delta);
+          const choiceDelta = chunk.choices?.[0]?.delta;
+          const reasoningDelta =
+            choiceDelta?.reasoning_content ?? choiceDelta?.reasoning;
+          if (params.reasoning && typeof reasoningDelta === "string") {
+            collector.add(reasoningDelta);
           }
+          const delta = choiceDelta?.content;
+          if (delta) onContent(delta);
           if (typeof chunk.usage?.total_tokens === "number") {
             tokensUsed = chunk.usage.total_tokens;
           }
+          const rt = chunk.usage?.completion_tokens_details?.reasoning_tokens;
+          if (typeof rt === "number") reasoningTokens = rt;
           const chunkFinish = chunk.choices?.[0]?.finish_reason;
           if (typeof chunkFinish === "string") finishReason = chunkFinish;
         }
@@ -521,6 +728,19 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       reader.cancel().catch(() => {});
     }
 
+    // A reply short enough to still sit in the `<think>` detector is prose;
+    // an unclosed block is reasoning that ran out of budget.
+    // (The closures above move `thinkState`; read it afresh.)
+    const endState = thinkState as "detect" | "inside" | "passthrough";
+    if (endState === "detect") {
+      thinkState = "passthrough";
+      passContent(pending);
+    } else if (endState === "inside") {
+      collector.add(pending);
+    }
+    pending = "";
+    const reasoning = collector.result(reasoningTokens);
+
     if (!content) {
       // A stream that ended with a failure frame and no token reports the
       // failure, not "empty content".
@@ -544,6 +764,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       model: this.config.model,
       providerType: "local",
       finishReason: mapFinishReason(finishReason),
+      ...(reasoning ? { reasoning } : {}),
     };
   }
 }

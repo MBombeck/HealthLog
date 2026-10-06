@@ -25,6 +25,8 @@ import { z } from "zod/v4";
 
 import { accountAccessBlockSchema } from "@/lib/sharing/account-access-schema";
 import { SHARE_DOMAINS } from "@/lib/sharing/scope";
+import { REASONING_LEVELS } from "@/lib/ai/reasoning/levels";
+import { REASONING_SOURCES } from "@/lib/ai/reasoning/resolve";
 import {
   inviteGrantSchema,
   switchAccountSchema,
@@ -437,6 +439,51 @@ export const accountAccessBlock = accountAccessBlockSchema.meta({
 });
 
 /**
+ * v1.41 — the Coach's thinking depth, resolved. Enumerated because a client
+ * DECIDES on it: the settings field offers the levels up to `maxLevel`, locks
+ * itself when `available` is false, and names the lowest option "Off" or
+ * "Minimal" from `offIsReal`. None of it is recomputed on a client.
+ */
+const coachReasoningBlock = z
+  .object({
+    level: z
+      .enum(REASONING_LEVELS)
+      .describe(
+        "The level a Coach turn runs at right now, every cap applied: the person's choice, lowered to the operator's highest level, to `medium` when the operator pays for the provider, and `off` when the operator switched reasoning off or the provider cannot reason.",
+      ),
+    preference: z
+      .enum(REASONING_LEVELS)
+      .describe(
+        "What the person picked (`reasoning` on `PUT /api/auth/me/coach-prefs`), `medium` when they never chose. Bind the settings field to this, not to `level`.",
+      ),
+    maxLevel: z
+      .enum(REASONING_LEVELS)
+      .describe(
+        "The highest level the settings may offer. Options above it are shown disabled as limited by the operator. `off` when the operator switched reasoning off.",
+      ),
+    available: z
+      .boolean()
+      .describe(
+        "False when the operator switched reasoning off or the configured provider cannot reason; the settings field is then locked.",
+      ),
+    offIsReal: z
+      .boolean()
+      .describe(
+        'False when the provider cannot switch reasoning off (it thinks at its lowest level instead); label the lowest option "Minimal" rather than "Off".',
+      ),
+    source: z
+      .enum(REASONING_SOURCES)
+      .describe(
+        "Which layer decided `level`: the person's own choice (`user`), the operator's switch (`admin_off`) or cap (`admin_cap`), the operator-funded ceiling (`cost_cap`), or a provider that cannot reason (`unsupported`). `job` never appears here.",
+      ),
+  })
+  .meta({
+    id: "CoachReasoningState",
+    description:
+      "The Coach's thinking depth for the signed-in person, resolved on the server from their preference, the operator's reasoning switch and cap, who pays for the provider, and what the provider can do.",
+  });
+
+/**
  * The account payload, documented for the one field this release adds.
  *
  * Loose on purpose. `GET /api/auth/me` has never been in this spec, and its
@@ -455,6 +502,8 @@ const accountPayload = z
     // renders an AI surface only when its capability is available, and never
     // derives the answer from the switches, the modules or the provider.
     ai: aiAccountBlock,
+    // v1.41 — enumerated for the reason `ai` is: the settings decide on it.
+    coachReasoning: coachReasoningBlock,
     recordSession: recordSessionState.nullable(),
     // Enumerated because a client DECIDES on it rather than displays it: the
     // medication surface hides the server-side reminder switch when
@@ -480,7 +529,7 @@ const accountPayload = z
   .meta({
     id: "AccountPayload",
     description:
-      "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do. Additional properties are the preference fields this spec does not yet enumerate. Under an active switch the identity and preference fields still describe the CALLER, because display preferences belong to the person at the keyboard rather than to the record they are reading. Two fields are the exception (v1.38.14): `modules` and `cycleTrackingEnabled` describe the ACTIVE RECORD, since every surface they gate shows the record's data — and they are masked to the sections the active grant opens, so a scoped grant reads `false` for a module outside it rather than the record's true state. With no switch — which is every native request, since the Bearer transport carries none — the two are the same account and nothing is masked. `moduleAccess` says WHY each module is or is not there — the record's own switch, the edge of the grant, or the operator's instance-wide one — beside the `modules` booleans it never contradicts. `ai` (v1.39) is the resolved AI capability map for the same record, with the same masking; it replaces reading `GET /api/feature-flags`.",
+      "The signed-in account: its identity, its preferences, and (since v1.36.0) what account sharing lets it do. Additional properties are the preference fields this spec does not yet enumerate. Under an active switch the identity and preference fields still describe the CALLER, because display preferences belong to the person at the keyboard rather than to the record they are reading. Two fields are the exception (v1.38.14): `modules` and `cycleTrackingEnabled` describe the ACTIVE RECORD, since every surface they gate shows the record's data — and they are masked to the sections the active grant opens, so a scoped grant reads `false` for a module outside it rather than the record's true state. With no switch — which is every native request, since the Bearer transport carries none — the two are the same account and nothing is masked. `moduleAccess` says WHY each module is or is not there — the record's own switch, the edge of the grant, or the operator's instance-wide one — beside the `modules` booleans it never contradicts. `ai` (v1.39) is the resolved AI capability map for the same record, with the same masking; it replaces reading `GET /api/feature-flags`. `coachReasoning` (v1.41) is the Coach's resolved thinking depth: the caller's own preference against the operator's reasoning controls and the record's provider.",
   });
 
 /**

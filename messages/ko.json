@@ -2836,9 +2836,8 @@
       },
       "rememberMessage": {
         "action": "기억하기",
-        "done": "셀프 컨텍스트에 저장했어요",
-        "duplicate": "이미 셀프 컨텍스트에 있어요",
-        "failed": "저장하지 못했어요. 다시 시도해 주세요."
+        "failed": "저장하지 못했어요. 다시 시도해 주세요.",
+        "alreadyKept": "코치가 이미 기억하고 있어요."
       },
       "guided": {
         "offerTitle": "코치가 물어볼 후속 질문이 {count}개 있어요",
@@ -3030,6 +3029,18 @@
         "baselineWithin": "평소 범위: {low}–{high} {unit}. 오늘 값 {value} — 범위 안이에요.",
         "baselineAbove": "평소 범위: {low}–{high} {unit}. 오늘 값 {value} — 범위 위예요.",
         "baselineBelow": "평소 범위: {low}–{high} {unit}. 오늘 값 {value} — 범위 아래예요.",
+        "sameHoursWithin": "이 시간대까지 평소 범위: {low}–{high} {unit}. 오늘 지금까지 {value} — 범위 안이에요.",
+        "sameHoursAbove": "이 시간대까지 평소 범위: {low}–{high} {unit}. 오늘 지금까지 {value} — 범위 위예요.",
+        "sameHoursBelow": "이 시간대까지 평소 범위: {low}–{high} {unit}. 오늘 지금까지 {value} — 범위 아래예요.",
+        "steadyWithin": "평소 값: {low} {unit}. 오늘 값 {value} — 평소와 같아요.",
+        "steadyAbove": "평소 값: {low} {unit}. 오늘 값 {value} — 평소보다 높아요.",
+        "steadyBelow": "평소 값: {low} {unit}. 오늘 값 {value} — 평소보다 낮아요.",
+        "latestWithin": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value} — 범위 안이었어요.",
+        "latestAbove": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value} — 범위보다 높았어요.",
+        "latestBelow": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value} — 범위 아래였어요.",
+        "steadyLatestWithin": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value} — 평소와 같았어요.",
+        "steadyLatestAbove": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value} — 평소보다 높았어요.",
+        "steadyLatestBelow": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value} — 평소보다 낮았어요.",
         "insufficient": "아직 평소 범위를 배우는 중이에요 — 며칠 더 기록해 주세요.",
         "driver": "{note}"
       },
@@ -3146,7 +3157,80 @@
         "areasDoneOther": "영역 {count}개 확인",
         "info": "답변 정보",
         "infoModel": "모델: {model}"
-      }
+      },
+      "activity": {
+        "thinking": "생각하는 중…",
+        "fetching": "{domain} 가져오는 중, {window}…",
+        "digestOne": "값 {count}개 요약 중…",
+        "digestFew": "값 {count}개 요약 중…",
+        "digestOther": "값 {count}개 요약 중…",
+        "digestDoneOne": "{areas}에서 값 {count}개",
+        "digestDoneFew": "{areas}에서 값 {count}개",
+        "digestDoneOther": "{areas}에서 값 {count}개",
+        "areasOne": "{count}개 영역",
+        "areasFew": "{count}개 영역",
+        "areasOther": "{count}개 영역",
+        "memoryOne": "알려 준 내용 {count}개를 떠올리는 중",
+        "memoryFew": "알려 준 내용 {count}개를 떠올리는 중",
+        "memoryOther": "알려 준 내용 {count}개를 떠올리는 중",
+        "remember": "기억해 두는 중…",
+        "plan": "계획을 제안하는 중…",
+        "asking": "질문하는 중…",
+        "answer": "답변을 쓰는 중…",
+        "summaryOne": "생각 완료, 조회 {lookups}회, {seconds}초",
+        "summaryFew": "생각 완료, 조회 {lookups}회, {seconds}초",
+        "summaryOther": "생각 완료, 조회 {lookups}회, {seconds}초",
+        "summaryNoLookups": "생각 완료, {seconds}초",
+        "stop": {
+          "budget": "예산 도달, 지금까지의 내용으로 답변",
+          "time": "시간 제한 도달, 지금까지의 내용으로 답변",
+          "cap": "단계가 많아 이제 정리하는 중",
+          "noProgress": "새 데이터가 없어 정리하는 중"
+        }
+      },
+      "memory": {
+        "saved": "기억함: {fact}",
+        "undo": "실행 취소",
+        "accept": "네, 기억해 줘",
+        "decline": "아니요",
+        "confirmed": "알겠어요, 기억해 둘게요.",
+        "declined": "알겠어요, 저장하지 않을게요."
+      },
+      "plan": {
+        "accept": "이 계획 시작하기",
+        "decline": "나중에",
+        "confirmed": "기록했어요. {days}일 뒤에 함께 살펴볼게요.",
+        "declined": "알겠어요, 지금은 하지 않을게요."
+      },
+      "assumption": {
+        "line": "가정: {value}",
+        "change": "변경"
+      },
+      "suggestedReplies": {
+        "groupLabel": "추천 답변"
+      },
+      "interim": {
+        "labelOne": "{title}, {window}, 값 {count}개",
+        "labelFew": "{title}, {window}, 값 {count}개",
+        "labelOther": "{title}, {window}, 값 {count}개"
+      },
+      "chart": {
+        "compare": {
+          "periods": "{a} 대 {b}"
+        }
+      },
+      "reasoning": {
+        "label": "생각 깊이",
+        "hint": "더 깊이 생각할수록 답변이 정확해지고 조금 더 기다리게 돼요.",
+        "off": "끄기",
+        "minimal": "최소",
+        "low": "낮음",
+        "medium": "중간",
+        "high": "높음",
+        "capped": "(관리자가 제한함)",
+        "disabled": "관리자가 깊은 생각을 꺼 두었어요."
+      },
+      "memoryLink": "기억 ({count})"
     },
     "relativeJustNow": "방금",
     "relativeMinutesAgoOne": "{count}분 전",
@@ -5992,7 +6076,6 @@
         "categoryGoal": "목표",
         "categoryConstraint": "제약",
         "categoryContext": "맥락",
-        "forget": "잊기",
         "forgetAria": "이 정보 잊기",
         "forgetTitle": "이 정보를 잊을까요?",
         "forgetBody": "다음 메시지부터 코치가 이 정보를 쓰지 않아요. 한번 잊은 정보는 되돌릴 수 없어요.",
@@ -6008,7 +6091,8 @@
         "forgotError": "그 정보를 잊지 못했어요. 다시 시도해 주세요.",
         "clearedToast": "저장된 정보 {count}개를 잊었어요.",
         "clearError": "저장된 정보를 지우지 못했어요. 다시 시도해 주세요.",
-        "detail": "코치는 이 정보로 답변을 상황에 맞게 유지해요. 잊었으면 하는 건 지우세요."
+        "detail": "코치는 이 정보로 답변을 상황에 맞게 유지해요. 잊었으면 하는 건 지우세요.",
+        "categoryMedication": "약"
       },
       "coachReminders": {
         "title": "내 알림",
@@ -6124,7 +6208,8 @@
           "low": "낮음",
           "medium": "보통",
           "high": "높음"
-        }
+        },
+        "coachNote": "코치에서는 코치 설정의 사고 깊이가 적용됩니다."
       }
     },
     "dashboard": {
@@ -6663,6 +6748,13 @@
         "savedOn": "코치를 켰어요.",
         "savedOff": "코치를 숨겼어요.",
         "saveError": "변경 사항을 저장하지 못했어요. 다시 시도해 주세요."
+      },
+      "memory": {
+        "edit": "편집",
+        "source": {
+          "user": "내가 알려 줌",
+          "coach": "코치가 기억함"
+        }
       }
     },
     "integrationRedirectGuide": {
@@ -7137,6 +7229,11 @@
       "documentAi": {
         "title": "문서 읽기",
         "description": "저장된 문서의 AI 읽기, 검사 결과지 스캔, 텍스트에서 약물 추출. 서버 밖으로 나가는 데이터의 대부분을 차지합니다."
+      },
+      "reasoning": {
+        "enabled": "깊은 생각 허용",
+        "max": "최대 생각 깊이",
+        "description": "모델이 답하기 전에 생각합니다: 코치, 일일 브리핑, 기간 요약. 더 정확하지만 토큰을 더 씁니다."
       }
     },
     "modules": {
@@ -9933,7 +10030,8 @@
       "relatedMetric": "함께 보기: {metric}",
       "continue": "계속 찾아보기",
       "settingLabel": "후속 질문 추천",
-      "settingHint": "코치의 가장 최근 답변 아래에 후속 질문을 최대 세 개까지 보여줘요."
+      "settingHint": "코치의 가장 최근 답변 아래에 후속 질문을 최대 세 개까지 보여줘요.",
+      "changeAssumption": "대신: {value}"
     },
     "clarify": {
       "cardLabel": "코치가 질문이 있어요",
@@ -9946,6 +10044,12 @@
         "last90days": "최근 90일",
         "lastYear": "최근 12개월",
         "allTime": "전체 기간"
+      },
+      "comparison": {
+        "baseline90d": "평소 90일과 비교하기"
+      },
+      "anchor": {
+        "illness": "{date} 질환 이후부터"
       }
     },
     "reuse": {

@@ -4,6 +4,16 @@ vi.mock("@/lib/ai/capabilities/gate", () => ({
   aiCapabilityForJob: vi.fn(),
 }));
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+const newestMessage = vi.fn();
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    coachMessage: { findFirst: (...a: unknown[]) => newestMessage(...a) },
+  },
+}));
+vi.mock("../coach-memory-shared", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../coach-memory-shared")>()),
+  enqueueCoachMemoryRefresh: vi.fn(async () => undefined),
+}));
 vi.mock("../conversation-summary", () => ({
   refreshConversationSummary: vi.fn(async () => ({ status: "refreshed" })),
 }));
@@ -20,14 +30,23 @@ vi.mock("../plans", () => ({
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
 import { annotate } from "@/lib/logging/context";
 import { runCoachMemoryRefresh } from "../coach-memory-refresh-worker";
+import {
+  COACH_MEMORY_QUIET_MS,
+  enqueueCoachMemoryRefresh,
+} from "../coach-memory-shared";
 import { refreshConversationSummary } from "../conversation-summary";
 import { extractAndStoreFacts } from "../facts";
 import { extractAndStorePlanProposals } from "../plans";
 
 const payload = { conversationId: "c1", userId: "u1", locale: "en" as const };
+const NOW = new Date("2026-10-06T12:00:00Z");
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Quiet for an hour by default.
+  newestMessage.mockResolvedValue({
+    createdAt: new Date(NOW.getTime() - 60 * 60_000),
+  });
 });
 
 describe("runCoachMemoryRefresh", () => {
@@ -37,7 +56,7 @@ describe("runCoachMemoryRefresh", () => {
       reason: null,
       onDeviceAllowed: true,
     });
-    await runCoachMemoryRefresh(payload);
+    await runCoachMemoryRefresh(payload, NOW);
     expect(aiCapabilityForJob).toHaveBeenCalledWith("u1", "coach");
     expect(refreshConversationSummary).toHaveBeenCalled();
     expect(extractAndStoreFacts).toHaveBeenCalled();
@@ -52,7 +71,7 @@ describe("runCoachMemoryRefresh", () => {
         reason,
         onDeviceAllowed: false,
       });
-      await runCoachMemoryRefresh(payload);
+      await runCoachMemoryRefresh(payload, NOW);
       expect(refreshConversationSummary).not.toHaveBeenCalled();
       expect(extractAndStoreFacts).not.toHaveBeenCalled();
       expect(extractAndStorePlanProposals).not.toHaveBeenCalled();
@@ -62,4 +81,61 @@ describe("runCoachMemoryRefresh", () => {
       });
     },
   );
+
+  it("puts itself back while the conversation is still going", async () => {
+    vi.mocked(aiCapabilityForJob).mockResolvedValue({
+      available: true,
+      reason: null,
+      onDeviceAllowed: true,
+    });
+    newestMessage.mockResolvedValue({
+      createdAt: new Date(NOW.getTime() - 10 * 60_000),
+    });
+    await runCoachMemoryRefresh(payload, NOW);
+    expect(enqueueCoachMemoryRefresh).toHaveBeenCalledWith(
+      { conversationId: "c1", userId: "u1", locale: "en" },
+      COACH_MEMORY_QUIET_MS - 10 * 60_000,
+    );
+    expect(extractAndStoreFacts).not.toHaveBeenCalled();
+    // The capability is asked first, so a switched-off Coach never re-queues.
+    expect(aiCapabilityForJob).toHaveBeenCalledTimes(1);
+  });
+
+  it("ends without re-queueing when the Coach is off, however fresh the conversation", async () => {
+    vi.mocked(aiCapabilityForJob).mockResolvedValue({
+      available: false,
+      reason: "user_disabled",
+      onDeviceAllowed: false,
+    } as never);
+    newestMessage.mockResolvedValue({
+      createdAt: new Date(NOW.getTime() - 60_000),
+    });
+    await runCoachMemoryRefresh(payload, NOW);
+    expect(enqueueCoachMemoryRefresh).not.toHaveBeenCalled();
+    expect(extractAndStoreFacts).not.toHaveBeenCalled();
+  });
+
+  it("runs on a short conversation once it is quiet (no twenty-turn gate)", async () => {
+    vi.mocked(aiCapabilityForJob).mockResolvedValue({
+      available: true,
+      reason: null,
+      onDeviceAllowed: true,
+    });
+    await runCoachMemoryRefresh(payload, NOW);
+    expect(extractAndStoreFacts).toHaveBeenCalledWith("c1", "u1", {
+      locale: "en",
+    });
+  });
+
+  it("does nothing for a conversation that is gone", async () => {
+    vi.mocked(aiCapabilityForJob).mockResolvedValue({
+      available: true,
+      reason: null,
+      onDeviceAllowed: true,
+    });
+    newestMessage.mockResolvedValue(null);
+    await runCoachMemoryRefresh(payload, NOW);
+    expect(extractAndStoreFacts).not.toHaveBeenCalled();
+    expect(enqueueCoachMemoryRefresh).not.toHaveBeenCalled();
+  });
 });

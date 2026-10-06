@@ -72,9 +72,10 @@ describe("AnthropicClient", () => {
       },
     ]);
     expect(body.messages).toEqual([expect.objectContaining({ role: "user" })]);
-    // User message carries the original text plus the JSON-coercion instruction.
-    expect(body.messages[0].content).toContain("Analyze this data.");
-    expect(body.messages[0].content.toLowerCase()).toContain("json");
+    // v1.41 — no `responseFormat: "json"`, no JSON instruction: the user
+    // message goes out as written. (It used to be appended to every request
+    // without tools, prose included.)
+    expect(body.messages[0].content).toBe("Analyze this data.");
   });
 
   it("sends no assistant turn for JSON surfaces and instructs the last user turn", async () => {

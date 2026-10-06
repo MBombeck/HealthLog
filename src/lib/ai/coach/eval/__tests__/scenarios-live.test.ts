@@ -117,21 +117,48 @@ describe("runScenarioLive", () => {
     expect(evaluateScenario(s, observation, { layer: "live" })).toEqual([]);
   });
 
-  it("forces an answer after three rounds of tool calls", async () => {
+  it("forces an answer at the round cap of the person's own plan", async () => {
     const call = toolRound("get_metric_table", { metric: "pulse" });
-    const provider = scripted([call, call, call, { content: "So far." }]);
+    const provider = scripted([
+      ...Array.from({ length: 11 }, () => call),
+      { content: "So far." },
+    ]);
     const observation = await runScenarioLive({
       scenario: scenario("forced-final.en"),
       provider,
     });
-    expect(observation.providerCalls).toBe(4);
+    expect(observation.providerCalls).toBe(12);
     expect(provider.sent.map((p) => p.toolChoice)).toEqual([
-      "auto",
-      "auto",
-      "auto",
+      ...Array.from({ length: 11 }, () => "auto"),
       "none",
     ]);
     expect(observation.prose).toBe("So far.");
+    expect(observation.toolRounds).toBe(11);
+    // The same call every round: graded as repeats.
+    expect(observation.repeatedCalls).toBe(10);
+  });
+
+  it("ends the run on a clarifying question asked through the tool", async () => {
+    const provider = scripted([
+      toolRound("ask_clarification", {
+        kind: "metric",
+        question: "Resting or walking heart rate? Otherwise resting.",
+        choices: ["resting_hr", "walking_hr"],
+        assumption: "resting_hr",
+      }),
+    ]);
+    const observation = await runScenarioLive({
+      scenario: scenario("pulse-ambiguous.en"),
+      provider,
+    });
+    expect(observation.providerCalls).toBe(1);
+    expect(observation.clarification?.kind).toBe("metric");
+    expect(observation.prose).toMatch(/\?/);
+    // The offered tools include the comparison and the dialog tools.
+    const names = (provider.sent[0].tools ?? []).map((t) => t.name);
+    expect(names).toEqual(
+      expect.arrayContaining(["compare_series", "ask_clarification"]),
+    );
   });
 
   it("never shows the model an earlier table's title", async () => {

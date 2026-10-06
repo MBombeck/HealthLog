@@ -10,12 +10,20 @@
  */
 import { trendSlope } from "@/lib/analytics/trends";
 import { avgInWindow, stdDev, toDataPoints } from "@/lib/insights/features";
+import {
+  SAME_HOURS_MIN_DAYS,
+  SAME_HOURS_TYPES,
+} from "@/lib/insights/derived/coincident-deviation";
 import { dayKeyAgeInDays } from "@/lib/insights/measurement-freshness";
+import type { MeasurementType } from "@/generated/prisma/client";
+import { dayValue } from "@/lib/measurements/day-mean";
+import { isPlausibleMetricValue } from "@/lib/measurements/value-domain";
 import {
   roundToDisplay,
   vitalDisplayDecimals,
 } from "@/lib/measurements/vital-precision";
 import { userDayKey } from "@/lib/tz/format";
+import { wallClockInTz } from "@/lib/tz/wall-clock";
 
 /**
  * v1.18.7 — one present-focused signal feeding the daily briefing. Every
@@ -30,7 +38,10 @@ export interface SignalOfDay {
   label: string;
   /** Unit string when the metric carries one. */
   unit?: string;
-  /** Freshest reading (the "now" value the briefing leads with). */
+  /**
+   * Freshest reading (the "now" value the briefing leads with). Under
+   * `basis: "sameHours"` it is today's mean so far.
+   */
   latest: number;
   /**
    * Calendar days between the freshest reading and today in the reader's
@@ -57,6 +68,15 @@ export interface SignalOfDay {
     value: number;
     anomalyDaysAgo: number;
   } | null;
+  /**
+   * `"sameHours"` for a type whose day mean moves with the hour (glucose,
+   * `SAME_HOURS_TYPES`): today so far is compared with the same hours of the
+   * earlier days, each cut at the local time of today's latest reading.
+   * `latest` is then today's mean so far, `avg7` / `avg30` / `spread30` are
+   * over those earlier days' same-hours means, and the anomaly is a day's
+   * same-hours mean. Absent for the reading-against-window comparison.
+   */
+  basis?: "sameHours";
 }
 
 /** Compute historical comparison: current 7d avg vs previous 30d avg (days 7-37). */
@@ -101,6 +121,8 @@ function r2(v: number): number {
 interface SignalRead {
   /** The reader's zone; "today" is the calendar day in it. */
   tz: string;
+  /** The measurement type; picks the like-for-like path (`SAME_HOURS_TYPES`). */
+  type: string;
   /** For pulse, the zone its day means are read in (`day-mean.ts`). */
   day?: { type: string; tz: string };
   /**
@@ -138,6 +160,9 @@ function buildSignal(
     userDayKey(new Date(now), read.tz),
   );
   if (latestDaysAgo !== 0) return null;
+  if (SAME_HOURS_TYPES.has(read.type as MeasurementType)) {
+    return buildSameHoursSignal(metric, label, records, now, unit, read);
+  }
   const { day } = read;
   const shown = (v: number) =>
     read.decimals === undefined ? r2(v) : roundToDisplay(v, read.decimals);
@@ -213,6 +238,134 @@ function buildSignal(
   };
 }
 
+/** Seconds since local midnight of an instant in `tz`. */
+function localSecondOfDay(at: Date, tz: string): number {
+  const c = wallClockInTz(at, tz);
+  return c.hour * 3600 + c.minute * 60 + c.second;
+}
+
+function mean(values: readonly number[]): number | null {
+  return values.length === 0
+    ? null
+    : values.reduce((s, v) => s + v, 0) / values.length;
+}
+
+/**
+ * The signal for a type whose day mean depends on how much of the day has
+ * passed (`SAME_HOURS_TYPES`). A fasting glucose reading at seven held against
+ * the mean of whole days (breakfast, lunch, dinner) reads as low every morning,
+ * which is no statement about the day at all. So today so far is compared with
+ * the same hours of the earlier days: every day is cut at the local clock time
+ * of today's latest reading and reduced to its mean, then today's mean is held
+ * against those day means. With fewer than `SAME_HOURS_MIN_DAYS` earlier days
+ * in those hours there is nothing like-for-like to compare with, and no signal.
+ * The same basis as the coincident-deviation flag and the metric page strip.
+ */
+function buildSameHoursSignal(
+  metric: SignalOfDay["metric"],
+  label: string,
+  records: Array<{ value: number; measuredAt: Date }>,
+  now: number,
+  unit: string | undefined,
+  read: SignalRead,
+): SignalOfDay | null {
+  const { type } = read;
+  const { tz } = read;
+  const usable = records.filter((r) => isPlausibleMetricValue(type, r.value));
+  if (usable.length === 0) return null;
+  const newest = usable.reduce((a, b) =>
+    b.measuredAt.getTime() > a.measuredAt.getTime() ? b : a,
+  );
+  const todayKey = userDayKey(new Date(now), tz);
+  if (userDayKey(newest.measuredAt, tz) !== todayKey) return null;
+  const cut = localSecondOfDay(newest.measuredAt, tz);
+  const since = now - 30 * 24 * 60 * 60 * 1000;
+
+  const byDay = new Map<string, Array<{ value: number; measuredAt: Date }>>();
+  for (const r of usable) {
+    const t = r.measuredAt.getTime();
+    if (t < since || t > now) continue;
+    if (localSecondOfDay(r.measuredAt, tz) > cut) continue;
+    const key = userDayKey(r.measuredAt, tz);
+    const list = byDay.get(key);
+    if (list) list.push(r);
+    else byDay.set(key, [r]);
+  }
+  const days: Array<{ key: string; age: number; value: number; at: Date }> = [];
+  for (const [key, rows] of byDay) {
+    const value = dayValue(type, rows, tz);
+    const age = dayKeyAgeInDays(key, todayKey);
+    if (value === null || age === null || age < 0) continue;
+    const at = rows.reduce((a, b) => (b.measuredAt > a.measuredAt ? b : a));
+    days.push({ key, age, value, at: at.measuredAt });
+  }
+  days.sort((a, b) => a.at.getTime() - b.at.getTime());
+  const today = days.find((d) => d.age === 0);
+  const earlier = days.filter((d) => d.age > 0);
+  if (!today || earlier.length < SAME_HOURS_MIN_DAYS) return null;
+
+  const shown = (v: number) =>
+    read.decimals === undefined ? r2(v) : roundToDisplay(v, read.decimals);
+  const shownOrNull = (v: number | null) => (v === null ? null : shown(v));
+
+  const avg30 = mean(earlier.map((d) => d.value));
+  const avg7 = mean(earlier.filter((d) => d.age <= 7).map((d) => d.value));
+  const spread30 = stdDev(earlier.map((d) => d.value));
+  const latest = today.value;
+  const outsideNormalSwing =
+    avg30 !== null && spread30 !== null && spread30 > 0
+      ? Math.abs(latest - avg30) > spread30
+      : false;
+
+  const slope = trendSlope(
+    days.map((d) => ({ date: d.at, value: d.value })),
+    30,
+    now,
+  );
+  const emergingTrend: SignalOfDay["emergingTrend"] = slope
+    ? slope.direction === "up"
+      ? "rising"
+      : slope.direction === "down"
+        ? "falling"
+        : "flat"
+    : null;
+
+  let recentAnomaly: SignalOfDay["recentAnomaly"] = null;
+  let bestAbs = 0;
+  if (avg30 !== null && spread30 !== null && spread30 > 0) {
+    for (const d of days) {
+      if (d.age > 14) continue;
+      const sd = (d.value - avg30) / spread30;
+      const abs = Math.abs(d.value - avg30);
+      if (Math.abs(sd) >= 2 && (recentAnomaly === null || abs > bestAbs)) {
+        bestAbs = abs;
+        recentAnomaly = {
+          kind: sd > 0 ? "peak" : "trough",
+          value: shown(d.value),
+          anomalyDaysAgo: d.age,
+        };
+      }
+    }
+  }
+
+  return {
+    metric,
+    label,
+    ...(unit ? { unit } : {}),
+    latest: shown(latest),
+    latestDaysAgo: 0,
+    avg7: shownOrNull(avg7),
+    avg30: shownOrNull(avg30),
+    deltaVs7: avg7 !== null ? shown(latest - avg7) : null,
+    deltaVs30: avg30 !== null ? shown(latest - avg30) : null,
+    spread30: shownOrNull(spread30),
+    outsideNormalSwing,
+    emergingTrend,
+    recentAnomaly,
+    basis: "sameHours",
+  };
+}
+
 /**
  * v1.18.7 — assemble the present-focused "Signals of the day" block from the
  * in-memory measurement set (no extra DB round-trip). Computes today-vs-7d/30d
@@ -231,8 +384,11 @@ export function computeSignalsOfDay(
   const push = (s: SignalOfDay | null) => {
     if (s) candidates.push(s);
   };
+  // Every read names its type, so a type joining `SAME_HOURS_TYPES` takes the
+  // like-for-like path here without a second list to keep in step.
   const whole = (type: string) => ({
     tz,
+    type,
     decimals: vitalDisplayDecimals(type, 0),
   });
 
@@ -255,9 +411,9 @@ export function computeSignalsOfDay(
       byType("BLOOD_GLUCOSE"),
       now,
       undefined,
-      {
-        tz,
-      },
+      // Compared with the same hours of the earlier days, never with whole
+      // days (see `buildSameHoursSignal`).
+      { tz, type: "BLOOD_GLUCOSE" },
     ),
   );
   push(
@@ -280,7 +436,10 @@ export function computeSignalsOfDay(
   // unit is attached where the signal is converted for the prompt
   // (`featuresInReaderUnits`), so no canonical symbol can leak into one.
   push(
-    buildSignal("weight", "weight", byType("WEIGHT"), now, undefined, { tz }),
+    buildSignal("weight", "weight", byType("WEIGHT"), now, undefined, {
+      tz,
+      type: "WEIGHT",
+    }),
   );
   // Sleep is stored one row per stage per night, so a raw "latest" point
   // would mis-sum; the sleep aggregates carry that signal already. Steps

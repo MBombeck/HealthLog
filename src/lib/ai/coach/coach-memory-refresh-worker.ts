@@ -1,11 +1,17 @@
 /**
  * v1.11.1 — worker pipeline for the combined Coach memory-refresh queue.
  *
- * Runs both background generators for one conversation, sequentially so they
+ * Runs the background generators for one conversation, sequentially so they
  * share the wake-up: the rolling conversation summary first, then durable fact
- * extraction. Each step is fault-isolated — a failure or no-provider in one
- * never sinks the other or the job. Kept out of the route bundle (the route
- * imports only `enqueueCoachMemoryRefresh` from `coach-memory-shared`).
+ * extraction, then plan proposals. Each step is fault-isolated — a failure or
+ * no-provider in one never sinks the others or the job. Kept out of the route
+ * bundle (the route imports only `enqueueCoachMemoryRefresh` from
+ * `coach-memory-shared`).
+ *
+ * v1.41 — the job runs once the conversation has been quiet for
+ * `COACH_MEMORY_QUIET_MS`. Woken while the conversation is still going (a
+ * turn landed after the job was queued), it puts itself back for the rest of
+ * the quiet time and does no model work.
  *
  * Both steps reserve and reconcile against the caller's daily token ledger
  * inside `runStatusCompletion`, so this off-request work is metered on the same
@@ -16,15 +22,38 @@
  * these two, spent unmetered.
  */
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
+import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 
-import type { CoachMemoryRefreshPayload } from "./coach-memory-shared";
+import {
+  COACH_MEMORY_QUIET_MS,
+  enqueueCoachMemoryRefresh,
+  type CoachMemoryRefreshPayload,
+} from "./coach-memory-shared";
 import { extractAndStoreFacts } from "./facts";
 import { extractAndStorePlanProposals } from "./plans";
 import { refreshConversationSummary } from "./conversation-summary";
 
+/**
+ * How long ago the conversation's newest message was written, or null when the
+ * conversation is gone (deleted, or not this person's).
+ */
+async function quietForMs(
+  conversationId: string,
+  userId: string,
+  now: Date,
+): Promise<number | null> {
+  const newest = await prisma.coachMessage.findFirst({
+    where: { conversationId, conversation: { userId } },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+  return newest ? now.getTime() - newest.createdAt.getTime() : null;
+}
+
 export async function runCoachMemoryRefresh(
   payload: CoachMemoryRefreshPayload,
+  now: Date = new Date(),
 ): Promise<void> {
   const { conversationId, userId } = payload;
   // A payload without a locale (an older queued job) composes ENGLISH memory,
@@ -32,7 +61,9 @@ export async function runCoachMemoryRefresh(
   // fallback body for every locale that has no reviewed one.
   const locale = payload.locale ?? "en";
 
-  // The `coach` capability before any transcript is read. The chat route that
+  // The `coach` capability first, before the quiet-time check and any transcript
+  // read: a job for a Coach that is switched off ends here rather than
+  // re-queueing itself until the conversation goes quiet. The chat route that
   // enqueued this admitted the Coach, but the operator, the person's Coach
   // switch or a consent can change while the job waits. Stored memory stays
   // as it is; only new model work stops. The chokepoint re-checks per step.
@@ -41,6 +72,26 @@ export async function runCoachMemoryRefresh(
     annotate({
       action: { name: "coach.memory.refresh.skipped" },
       meta: { reason: capability.reason },
+    });
+    return;
+  }
+
+  const quiet = await quietForMs(conversationId, userId, now);
+  if (quiet === null) {
+    annotate({
+      action: { name: "coach.memory.refresh.skipped" },
+      meta: { reason: "no_conversation" },
+    });
+    return;
+  }
+  if (quiet < COACH_MEMORY_QUIET_MS) {
+    await enqueueCoachMemoryRefresh(
+      { conversationId, userId, locale },
+      COACH_MEMORY_QUIET_MS - quiet,
+    );
+    annotate({
+      action: { name: "coach.memory.refresh.deferred" },
+      meta: { quietSeconds: Math.round(quiet / 1000) },
     });
     return;
   }

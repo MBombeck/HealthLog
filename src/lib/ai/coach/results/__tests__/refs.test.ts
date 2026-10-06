@@ -35,10 +35,21 @@ function meta(ref: string): CoachResultMeta {
 }
 
 describe("createResultRefAllocator", () => {
-  it("hands out r1..r6 and then nothing", () => {
+  it("hands out r1..r8 and then nothing", () => {
     const refs = createResultRefAllocator();
-    const issued = Array.from({ length: 8 }, () => refs.next());
-    expect(issued).toEqual(["r1", "r2", "r3", "r4", "r5", "r6", null, null]);
+    const issued = Array.from({ length: 10 }, () => refs.next());
+    expect(issued).toEqual([
+      "r1",
+      "r2",
+      "r3",
+      "r4",
+      "r5",
+      "r6",
+      "r7",
+      "r8",
+      null,
+      null,
+    ]);
   });
 });
 
@@ -79,7 +90,7 @@ describe("prior result names", () => {
   it("formats and parses m<k>.r<n>", () => {
     expect(formatPriorResultRef(3, "r2")).toBe("m3.r2");
     expect(parsePriorResultRef("m3.r2")).toEqual({ turnIndex: 3, ref: "r2" });
-    expect(parsePriorResultRef("m3.r7")).toBeNull();
+    expect(parsePriorResultRef("m3.r9")).toBeNull();
     expect(parsePriorResultRef("m0.r1")).toBeNull();
     expect(parsePriorResultRef("x3.r1")).toBeNull();
     expect(parsePriorResultRef("m3.r1; drop")).toBeNull();
@@ -111,7 +122,7 @@ describe("stripResultRefs", () => {
     expect(out.prose).not.toMatch(/\d/);
   });
 
-  it("is case-insensitive and ignores refs past r6", () => {
+  it("is case-insensitive and ignores refs past r8", () => {
     const out = stripResultRefs("See RESULT:R3 and result:r9.");
     expect(out.referenced).toEqual(["r3"]);
     expect(out.prose).toBe("See and.");

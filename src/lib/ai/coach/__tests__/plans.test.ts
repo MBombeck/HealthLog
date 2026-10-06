@@ -1,5 +1,5 @@
 /**
- * v1.21.3 (B1) — extractAndStorePlanProposals + buildCoachPlansBlock tests.
+ * v1.21.3 (B1) — extractAndStorePlanProposals tests.
  *
  * Covers:
  *  - extraction parses the model JSON, drops malformed items via the Zod gate,
@@ -7,8 +7,9 @@
  *    survivors field-by-field as `status: "proposed"` (never active).
  *  - a no-provider / timeout result skips; an unparseable JSON annotates
  *    parse_failed and returns none; an empty array returns none.
- *  - the injection block returns ONLY active plans, newest first, capped, and
- *    skips an undecryptable row rather than throwing.
+ *  - v1.41: the `{"plans":[…]}` object the JSON-object mode returns parses,
+ *    and no more than three proposals are ever open at once.
+ * The active plans reach a turn through `memory/context-block.ts`.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -27,11 +28,7 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
 }));
 
-import {
-  extractAndStorePlanProposals,
-  buildCoachPlansBlock,
-  MAX_PLANS_PER_USER,
-} from "../plans";
+import { extractAndStorePlanProposals, MAX_PLANS_PER_USER } from "../plans";
 import { annotate } from "@/lib/logging/context";
 
 function bytes(tag: string): Uint8Array {
@@ -264,67 +261,92 @@ describe("extractAndStorePlanProposals", () => {
     });
     expect(out).toEqual({ status: "none", count: 0 });
   });
-});
 
-describe("buildCoachPlansBlock", () => {
-  it("returns only active plans, newest first, decrypted", async () => {
+  it("parses the {plans:[…]} object the JSON-object mode returns", async () => {
     const db = makePrisma({
-      active: [
+      turns: [{ role: "user", encryptedContent: bytes("plan") }],
+    });
+    const runCompletion = vi.fn().mockResolvedValue(
+      okResult(
+        JSON.stringify({
+          plans: [
+            {
+              metric: "STEPS",
+              ifCue: "after lunch",
+              thenAction: "walk 10 min",
+            },
+          ],
+        }),
+      ),
+    );
+    const out = await extractAndStorePlanProposals("c", "u", {
+      prisma: db,
+      runCompletion,
+    });
+    expect(out).toEqual({ status: "stored", count: 1 });
+    expect(annotate).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: { name: "coach.plans.parse_failed" } }),
+    );
+  });
+
+  it("parses a fenced object too", async () => {
+    const db = makePrisma({
+      turns: [{ role: "user", encryptedContent: bytes("plan") }],
+    });
+    const runCompletion = vi
+      .fn()
+      .mockResolvedValue(
+        okResult(
+          '```json\n{"plans":[{"metric":"SLEEP","ifCue":"at 22:30","thenAction":"lights out"}]}\n```',
+        ),
+      );
+    const out = await extractAndStorePlanProposals("c", "u", {
+      prisma: db,
+      runCompletion,
+    });
+    expect(out).toEqual({ status: "stored", count: 1 });
+  });
+
+  it("never holds more than three open proposals", async () => {
+    const db = makePrisma({
+      turns: [{ role: "user", encryptedContent: bytes("plan") }],
+      existing: [
         {
-          metric: "WEIGHT",
-          ifCueEncrypted: bytes("every morning"),
-          thenActionEncrypted: bytes("weigh in"),
-          targetEncrypted: bytes("70 kg"),
-          status: "active",
-          updatedAt: new Date("2026-06-02T00:00:00Z"),
+          id: "p1",
+          ifCueEncrypted: bytes("a"),
+          thenActionEncrypted: bytes("b"),
+          status: "proposed",
+        },
+        {
+          id: "p2",
+          ifCueEncrypted: bytes("c"),
+          thenActionEncrypted: bytes("d"),
+          status: "proposed",
         },
       ],
     });
-    const block = await buildCoachPlansBlock("u", { prisma: db });
-    expect(block).not.toBeNull();
-    expect(block?.plans).toEqual([
-      {
-        metric: "WEIGHT",
-        ifCue: "every morning",
-        thenAction: "weigh in",
-        target: "70 kg",
-      },
-    ]);
-    // Only the active-status query is used.
-    const where = (db as never as { _findMany: ReturnType<typeof vi.fn> })
-      ._findMany.mock.calls[0][0].where as { status: string };
-    expect(where.status).toBe("active");
-  });
-
-  it("skips an undecryptable row rather than throwing", async () => {
-    const db = makePrisma({
-      active: [
-        {
-          metric: "SLEEP",
-          ifCueEncrypted: bytes("__undecryptable__"),
-          thenActionEncrypted: bytes("lights out"),
-          targetEncrypted: null,
-          status: "active",
-          updatedAt: new Date(),
-        },
-        {
-          metric: "STEPS",
-          ifCueEncrypted: bytes("after lunch"),
-          thenActionEncrypted: bytes("walk"),
-          targetEncrypted: null,
-          status: "active",
-          updatedAt: new Date(),
-        },
-      ],
+    const runCompletion = vi.fn().mockResolvedValue(
+      okResult(
+        JSON.stringify({
+          plans: [
+            {
+              metric: "STEPS",
+              ifCue: "after lunch",
+              thenAction: "walk 10 min",
+            },
+            {
+              metric: "SLEEP",
+              ifCue: "on weeknights",
+              thenAction: "screens off at 22",
+            },
+          ],
+        }),
+      ),
+    );
+    const out = await extractAndStorePlanProposals("c", "u", {
+      prisma: db,
+      runCompletion,
     });
-    const block = await buildCoachPlansBlock("u", { prisma: db });
-    expect(block?.plans).toHaveLength(1);
-    expect(block?.plans[0]?.metric).toBe("STEPS");
-  });
-
-  it("returns null when the user has no active plans", async () => {
-    const db = makePrisma({ active: [] });
-    const block = await buildCoachPlansBlock("u", { prisma: db });
-    expect(block).toBeNull();
+    expect(out).toEqual({ status: "stored", count: 1 });
   });
 });
