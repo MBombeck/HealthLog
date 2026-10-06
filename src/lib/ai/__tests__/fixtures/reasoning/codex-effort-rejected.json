@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Unsupported value: 'minimal' is not supported with the 'gpt-5.5' model. Supported values are: 'none', 'low', 'medium', 'high', and 'xhigh'.",
+    "type": "invalid_request_error",
+    "param": "reasoning.effort",
+    "code": "unsupported_value"
+  }
+}

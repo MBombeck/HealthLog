@@ -1,0 +1,81 @@
+event: response.created
+data: {"type":"response.created","sequence_number":0,"response":{"id":"resp_01241f364fbd794f016ac5253e2ce08191afe0c9a23644957f","object":"response","created_at":1791305022,"completed_at":null,"status":"in_progress","background":false,"frequency_penalty":0,"presence_penalty":0,"moderation":null,"model":"gpt-5.5","access_programs":null,"previous_response_id":null,"output":[],"error":null,"incomplete_details":null,"tool_choice":"auto","parallel_tool_calls":false,"prompt_cache_retention":"24h","text":{"format":{"type":"text"},"verbosity":"medium"},"top_p":0.98,"top_logprobs":0,"temperature":1,"reasoning":{"effort":"medium","summary":"detailed","context":"current_turn","mode":"standard"},"user":null,"usage":null,"store":false,"metadata":{},"max_output_tokens":null,"max_tool_calls":null,"service_tier":"auto","truncation":"disabled"}}
+
+event: response.in_progress
+data: {"type":"response.in_progress","sequence_number":1,"response":{"id":"resp_01241f364fbd794f016ac5253e2ce08191afe0c9a23644957f","object":"response","created_at":1791305022,"completed_at":null,"status":"in_progress","background":false,"frequency_penalty":0,"presence_penalty":0,"moderation":null,"model":"gpt-5.5","access_programs":null,"previous_response_id":null,"output":[],"error":null,"incomplete_details":null,"tool_choice":"auto","parallel_tool_calls":false,"prompt_cache_retention":"24h","text":{"format":{"type":"text"},"verbosity":"medium"},"top_p":0.98,"top_logprobs":0,"temperature":1,"reasoning":{"effort":"medium","summary":"detailed","context":"current_turn","mode":"standard"},"user":null,"usage":null,"store":false,"metadata":{},"max_output_tokens":null,"max_tool_calls":null,"service_tier":"auto","truncation":"disabled"}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":2,"output_index":0,"item":{"type":"reasoning","id":"rs_01241f364fbd794f016ac5253e96a081919fae3ca9ea0bea08","summary":[],"content":[],"encrypted_content":"enc-fixture-1"}}
+
+event: response.reasoning_summary_part.added
+data: {"type":"response.reasoning_summary_part.added","sequence_number":3,"item_id":"rs_01241f364fbd794f016ac5253e96a081919fae3ca9ea0bea08","output_index":0,"summary_index":0,"part":{"type":"summary_text","text":""}}
+
+event: response.reasoning_summary_text.delta
+data: {"type":"response.reasoning_summary_text.delta","sequence_number":4,"item_id":"rs_01241f364fbd794f016ac5253e96a081919fae3ca9ea0bea08","output_index":0,"summary_index":0,"delta":"**Calculating elapsed time minus offset**"}
+
+event: response.reasoning_summary_text.done
+data: {"type":"response.reasoning_summary_text.done","sequence_number":5,"item_id":"rs_01241f364fbd794f016ac5253e96a081919fae3ca9ea0bea08","output_index":0,"summary_index":0,"text":"**Calculating elapsed time minus offset**"}
+
+event: response.reasoning_summary_part.done
+data: {"type":"response.reasoning_summary_part.done","sequence_number":6,"item_id":"rs_01241f364fbd794f016ac5253e96a081919fae3ca9ea0bea08","output_index":0,"summary_index":0,"part":{"type":"summary_text","text":"**Calculating elapsed time minus offset**"}}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":7,"output_index":0,"item":{"type":"reasoning","id":"rs_01241f364fbd794f016ac5253e96a081919fae3ca9ea0bea08","summary":[{"type":"summary_text","text":"**Calculating elapsed time minus offset**"}],"content":[],"encrypted_content":"enc-fixture-2"}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":8,"output_index":1,"item":{"type":"message","id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","role":"assistant","status":"in_progress","content":[],"phase":"final_answer"}}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","sequence_number":9,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"part":{"type":"output_text","text":"","annotations":[],"logprobs":[]}}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":10,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":"The","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":11,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":" train","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":12,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":" was","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":13,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":" moving","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":14,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":" for","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":15,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":" ","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":16,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":"3","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":17,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":" hours","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":18,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":" and","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":19,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":" ","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":20,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":"10","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":21,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":" minutes","logprobs":[]}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":22,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"delta":".","logprobs":[]}
+
+event: response.output_text.done
+data: {"type":"response.output_text.done","sequence_number":23,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"text":"The train was moving for 3 hours and 10 minutes.","logprobs":[]}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","sequence_number":24,"item_id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","output_index":1,"content_index":0,"part":{"type":"output_text","text":"The train was moving for 3 hours and 10 minutes.","annotations":[],"logprobs":[]}}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":25,"output_index":1,"item":{"type":"message","id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","role":"assistant","status":"completed","content":[{"type":"output_text","text":"The train was moving for 3 hours and 10 minutes.","annotations":[],"logprobs":[]}],"phase":"final_answer"}}
+
+event: response.completed
+data: {"type":"response.completed","sequence_number":26,"response":{"id":"resp_01241f364fbd794f016ac5253e2ce08191afe0c9a23644957f","object":"response","created_at":1791305022,"completed_at":1791305023,"status":"completed","background":false,"frequency_penalty":0,"presence_penalty":0,"moderation":null,"model":"gpt-5.5","access_programs":null,"previous_response_id":null,"output":[{"type":"reasoning","id":"rs_01241f364fbd794f016ac5253e96a081919fae3ca9ea0bea08","summary":[{"type":"summary_text","text":"**Calculating elapsed time minus offset**"}],"content":[],"encrypted_content":"enc-fixture-3"},{"type":"message","id":"msg_01241f364fbd794f016ac5253f35e4819197bcd3f7451f26aa","role":"assistant","status":"completed","content":[{"type":"output_text","text":"The train was moving for 3 hours and 10 minutes.","annotations":[],"logprobs":[]}],"phase":"final_answer"}],"error":null,"incomplete_details":null,"tool_choice":"auto","parallel_tool_calls":false,"prompt_cache_retention":"24h","text":{"format":{"type":"text"},"verbosity":"medium"},"top_p":0.98,"top_logprobs":0,"temperature":1,"reasoning":{"effort":"medium","summary":"detailed","context":"current_turn","mode":"standard"},"user":null,"usage":{"input_tokens":49,"input_tokens_details":{"cached_tokens":0,"cache_write_tokens":0},"output_tokens":52,"output_tokens_details":{"reasoning_tokens":33},"total_tokens":101},"store":false,"metadata":{},"max_output_tokens":null,"max_tool_calls":null,"service_tier":"default","truncation":"disabled"}}
+
