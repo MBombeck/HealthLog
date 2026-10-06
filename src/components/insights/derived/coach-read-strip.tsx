@@ -106,8 +106,16 @@ export function CoachReadStrip({
       return t("insights.coach.readStrip.insufficient");
     }
     const { low, high, latest, placement } = data.baseline;
-    const key =
-      placement === "above"
+    // A band whose ends format to the same figure ("61–61 bpm") is a steady
+    // value, not a range; say it as one.
+    const steady = fmt(low) === fmt(high);
+    const key = steady
+      ? placement === "above"
+        ? "insights.coach.readStrip.steadyAbove"
+        : placement === "below"
+          ? "insights.coach.readStrip.steadyBelow"
+          : "insights.coach.readStrip.steadyWithin"
+      : placement === "above"
         ? "insights.coach.readStrip.baselineAbove"
         : placement === "below"
           ? "insights.coach.readStrip.baselineBelow"

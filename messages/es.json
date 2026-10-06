@@ -3030,6 +3030,9 @@
         "baselineWithin": "Tu rango habitual es {low}–{high} {unit}; hoy {value} se sitúa dentro de él.",
         "baselineAbove": "Tu rango habitual es {low}–{high} {unit}; hoy {value} se sitúa por encima.",
         "baselineBelow": "Tu rango habitual es {low}–{high} {unit}; hoy {value} se sitúa por debajo.",
+        "steadyWithin": "Tus valores suelen estar en {low} {unit}; hoy {value} coincide.",
+        "steadyAbove": "Tus valores suelen estar en {low} {unit}; hoy {value} está por encima.",
+        "steadyBelow": "Tus valores suelen estar en {low} {unit}; hoy {value} está por debajo.",
         "insufficient": "Todavía estoy aprendiendo tu rango habitual — sigue registrando unos días más.",
         "driver": "{note}"
       },

@@ -3030,6 +3030,9 @@
         "baselineWithin": "Ta plage habituelle est de {low}–{high} {unit} ; aujourd'hui, {value} s'y situe.",
         "baselineAbove": "Ta plage habituelle est de {low}–{high} {unit} ; aujourd'hui, {value} se situe au-dessus.",
         "baselineBelow": "Ta plage habituelle est de {low}–{high} {unit} ; aujourd'hui, {value} se situe en dessous.",
+        "steadyWithin": "Tes valeurs sont habituellement à {low} {unit} ; aujourd'hui, {value} correspond.",
+        "steadyAbove": "Tes valeurs sont habituellement à {low} {unit} ; aujourd'hui, {value} se situe au-dessus.",
+        "steadyBelow": "Tes valeurs sont habituellement à {low} {unit} ; aujourd'hui, {value} se situe en dessous.",
         "insufficient": "J'apprends encore ta plage habituelle — continue à enregistrer quelques jours de plus.",
         "driver": "{note}"
       },

@@ -3030,6 +3030,9 @@
         "baselineWithin": "Il tuo intervallo abituale è {low}–{high} {unit}; oggi {value} rientra al suo interno.",
         "baselineAbove": "Il tuo intervallo abituale è {low}–{high} {unit}; oggi {value} si colloca al di sopra.",
         "baselineBelow": "Il tuo intervallo abituale è {low}–{high} {unit}; oggi {value} si colloca al di sotto.",
+        "steadyWithin": "I tuoi valori sono di solito {low} {unit}; oggi {value} corrisponde.",
+        "steadyAbove": "I tuoi valori sono di solito {low} {unit}; oggi {value} è al di sopra.",
+        "steadyBelow": "I tuoi valori sono di solito {low} {unit}; oggi {value} è al di sotto.",
         "insufficient": "Sto ancora imparando il tuo intervallo abituale — continua a registrare per qualche giorno in più.",
         "driver": "{note}"
       },
