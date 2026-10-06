@@ -282,6 +282,8 @@ export async function runTurnModel(args: {
   priorResults?: PriorResultTurn[];
   /** v1.41 — the person's message, the only source of a remembered fact. */
   message: string;
+  /** v1.41 — that message's stored id. */
+  userMessageId?: string;
   /** v1.41 — the reasoning the turn asks for, already resolved. */
   reasoning?: TurnReasoning;
   /** v1.41 — who pays: fixes the turn's budget. */
@@ -333,8 +335,13 @@ export async function runTurnModel(args: {
       userId,
       conversationId,
       locale,
+      // The block re-runs the wire egress check for exactly these.
+      providerTypes: chain.map((entry) => entry.providerType),
     }).catch(() => null);
     if (memory) {
+      recorder.setRecalled(memory.recalled);
+    }
+    if (memory && memory.factIds.length + memory.planIds.length > 0) {
       const count = memory.factIds.length + memory.planIds.length;
       const id = activity.start({
         phase: "memory",
@@ -365,12 +372,8 @@ export async function runTurnModel(args: {
         reach: ctx.reach,
         prior: args.priorResults ?? [],
       });
-      const requestWith = (tableRules: boolean) => {
-        // `memoryBlock` is the memory package's parameter; held in a
-        // variable so the request builds whether or not it is declared yet.
-        const request: Parameters<typeof buildCoachToolRequest>[0] & {
-          memoryBlock?: string;
-        } = {
+      const requestWith = (tableRules: boolean) =>
+        buildCoachToolRequest({
           systemPrompt: ctx.systemPrompt,
           toolModeAddendum: appendBlocks(buildToolModeAddendum(locale), [
             buildDialogAddenda(locale, { tableRules }),
@@ -384,9 +387,7 @@ export async function runTurnModel(args: {
           transcript: turnContext.transcript,
           languageName: LANGUAGE_NAMES[locale],
           ...(memory ? { memoryBlock: memory.text } : {}),
-        };
-        return buildCoachToolRequest(request);
-      };
+        });
       // The recheck and follow-up rules are about tables: they ride the
       // prompt once the conversation holds one, or from the round after this
       // turn produced its first.
@@ -445,11 +446,15 @@ export async function runTurnModel(args: {
         ...(args.reasoning ? { reasoning: args.reasoning } : {}),
         activity,
         locale,
+        ...(memory?.pendingProposal
+          ? { initialMemoryNote: memory.pendingProposal }
+          : {}),
         dialog: {
           userId,
           conversationId,
           locale,
           userMessage: args.message,
+          ...(args.userMessageId ? { userMessageId: args.userMessageId } : {}),
           inventory: inventory.entries,
           conversationWindowSet: args.conversationWindowSet,
         },
@@ -698,7 +703,7 @@ export async function runTurnModel(args: {
       activity: recorder,
       toolClarification: null,
       declinedClarifications: [],
-      memoryNote: null,
+      memoryNote: memory?.pendingProposal ?? null,
       planProposal: null,
       interimSent: false,
     };

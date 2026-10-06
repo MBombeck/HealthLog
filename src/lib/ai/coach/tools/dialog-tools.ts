@@ -31,6 +31,8 @@ import {
 import {
   PLAN_REVIEW_DAYS,
   REMEMBER_FACT_MAX_CHARS,
+} from "@/lib/ai/coach/memory/shared";
+import {
   proposePlanFromTool,
   rememberFactFromTool,
 } from "@/lib/ai/coach/memory/contract";
@@ -200,6 +202,8 @@ export interface DialogToolContext {
   locale: Locale;
   /** The person's current message: the only text a fact may come from. */
   userMessage: string;
+  /** The stored id of that message, which a remembered fact points back to. */
+  userMessageId?: string;
   /** What the record holds; null on the no-tools path. */
   inventory: InventoryEntry[] | null;
   /**
@@ -319,6 +323,7 @@ export async function runDialogTool(args: {
           userId: ctx.userId,
           conversationId: ctx.conversationId,
           userMessage: ctx.userMessage,
+          ...(ctx.userMessageId ? { userMessageId: ctx.userMessageId } : {}),
           call: parsed.data,
         });
         if (outcome.kind === "declined") {

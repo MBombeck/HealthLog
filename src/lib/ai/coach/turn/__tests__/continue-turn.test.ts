@@ -131,6 +131,7 @@ function persistedProvenance(): CoachProvenance {
 
 beforeEach(() => {
   for (const fn of Object.values(m)) fn.mockReset();
+  m.persistUserTurn.mockResolvedValue({ messageId: "m-user" });
   m.resolveTurnConversation.mockResolvedValue({
     conversation: {
       conversationId: "c1",

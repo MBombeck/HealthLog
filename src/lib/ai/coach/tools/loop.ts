@@ -228,6 +228,12 @@ export async function runCoachToolLoop(args: {
   locale?: Locale;
   /** v1.41 — what the dialog tools need. Absent: they are declined. */
   dialog?: DialogToolContext;
+  /**
+   * v1.41 — a note the answer already carries before any round (a health
+   * fact the background found, offered once). It is the answer's one note:
+   * `remember_fact` is declined beside it.
+   */
+  initialMemoryNote?: CoachMemoryNote;
   /** v1.41 — the figures read so far, for screening a checkpoint. */
   checkpointScreen?: { userMessage: string };
 }): Promise<CoachToolLoopResult> {
@@ -276,7 +282,7 @@ export async function runCoachToolLoop(args: {
   const toolTrace: CoachToolTrace[] = [];
   const toolResults: CoachToolResult[] = [];
   const declinedClarifications: CoachClarification[] = [];
-  let memoryNote: CoachMemoryNote | undefined;
+  let memoryNote: CoachMemoryNote | undefined = args.initialMemoryNote;
   let planProposal: CoachPlanProposal | undefined;
   let callCount = 0;
   let stopReason: CoachStopReason | null = null;

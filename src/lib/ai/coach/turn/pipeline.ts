@@ -149,7 +149,10 @@ async function runTurn(
     ...(clarifiedLine ? [clarifiedLine] : []),
   ];
 
-  await persistUserTurn(workingConversationId, message);
+  const { messageId: userMessageId } = await persistUserTurn(
+    workingConversationId,
+    message,
+  );
 
   const ctx = await assembleTurnContext({
     userId,
@@ -219,6 +222,7 @@ async function runTurn(
       turnHints,
       priorResults: conversation.priorResults,
       message,
+      userMessageId,
       reasoning,
       payer,
       conversationWindowSet: input.scope?.window !== undefined,

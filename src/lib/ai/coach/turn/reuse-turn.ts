@@ -49,6 +49,8 @@ import { createSseStream } from "@/lib/sse/create-stream";
 import {
   COACH_MEMORY_KEYS,
   COACH_PLAN_KEYS,
+} from "@/lib/ai/coach/memory/shared";
+import {
   decideFactProposal,
   decidePlanProposal,
 } from "@/lib/ai/coach/memory/contract";

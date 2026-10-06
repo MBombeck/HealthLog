@@ -238,6 +238,7 @@ function modelPath(prefs = DEFAULT_COACH_PREFS) {
 
 beforeEach(() => {
   for (const fn of Object.values(m)) fn.mockReset();
+  m.persistUserTurn.mockResolvedValue({ messageId: "m-user" });
   m.readFollowUpHistory.mockResolvedValue({
     today: "2026-09-27",
     firstDate: { bp: "2024-01-01" },

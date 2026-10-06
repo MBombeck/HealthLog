@@ -20,6 +20,9 @@ exports[`coach chat golden transcripts > 01a tool mode, two rounds, present data
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -50,7 +53,7 @@ exports[`coach chat golden transcripts > 01a tool mode, two rounds, present data
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -266,6 +269,9 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -296,7 +302,7 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -524,6 +530,9 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -554,7 +563,7 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -888,6 +897,9 @@ exports[`coach chat golden transcripts > 03 no-tools path with the full snapshot
     },
     {
       "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "call": "assertConsentForChain",
@@ -1340,6 +1352,9 @@ exports[`coach chat golden transcripts > 06 budget exceeded 1`] = `
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -1391,6 +1406,9 @@ exports[`coach chat golden transcripts > 07a all providers failed (plain) 1`] = 
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -1421,7 +1439,7 @@ exports[`coach chat golden transcripts > 07a all providers failed (plain) 1`] = 
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -1480,6 +1498,9 @@ exports[`coach chat golden transcripts > 07b all providers failed (every hop rat
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -1510,7 +1531,7 @@ exports[`coach chat golden transcripts > 07b all providers failed (every hop rat
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -1569,6 +1590,9 @@ exports[`coach chat golden transcripts > 07c all providers failed (primary crede
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -1599,7 +1623,7 @@ exports[`coach chat golden transcripts > 07c all providers failed (primary crede
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -1658,6 +1682,9 @@ exports[`coach chat golden transcripts > 08 an unwrapped tagged provider error 1
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -1688,7 +1715,7 @@ exports[`coach chat golden transcripts > 08 an unwrapped tagged provider error 1
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -1748,6 +1775,9 @@ exports[`coach chat golden transcripts > 09 an aborted request leaves a cancelle
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -1778,7 +1808,7 @@ exports[`coach chat golden transcripts > 09 an aborted request leaves a cancelle
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -1844,6 +1874,9 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -1874,7 +1907,7 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -2220,6 +2253,9 @@ exports[`coach chat golden transcripts > 11a KEYVALUES valid 1`] = `
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -2250,7 +2286,7 @@ exports[`coach chat golden transcripts > 11a KEYVALUES valid 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -2470,6 +2506,9 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -2500,7 +2539,7 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -2718,6 +2757,9 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -2748,7 +2790,7 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -2950,6 +2992,9 @@ exports[`coach chat golden transcripts > 11d sentinel-only reply is an empty rep
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -2980,7 +3025,7 @@ exports[`coach chat golden transcripts > 11d sentinel-only reply is an empty rep
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -3050,6 +3095,9 @@ exports[`coach chat golden transcripts > 11e empty provider reply 1`] = `
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -3080,7 +3128,7 @@ exports[`coach chat golden transcripts > 11e empty provider reply 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -3141,6 +3189,9 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -3171,7 +3222,7 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -3411,6 +3462,9 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -3441,7 +3495,7 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -3645,6 +3699,9 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -3675,7 +3732,7 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -3919,6 +3976,9 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -3949,7 +4009,7 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -4173,6 +4233,9 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -4203,7 +4266,7 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -4422,6 +4485,9 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -4452,7 +4518,7 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -4669,6 +4735,9 @@ exports[`coach chat golden transcripts > 16a coach.provider.none via an empty ch
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "annotate",
       "metaKeys": [],
       "name": "insights.coach.noProvider",
@@ -4706,6 +4775,9 @@ exports[`coach chat golden transcripts > 16b an empty chain served by the legacy
     },
     {
       "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
     {
       "call": "assertConsentForChain",
@@ -5065,6 +5137,9 @@ exports[`coach chat golden transcripts > 16d coach.provider.none from the capabi
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -5110,6 +5185,9 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "isModuleEnabled",
       "module": "workouts",
     },
@@ -5153,7 +5231,7 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -5369,6 +5447,9 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "annotate",
       "metaKeys": [
         "firstTurn",
@@ -5408,7 +5489,7 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -5612,6 +5693,9 @@ exports[`coach chat golden transcripts > 18 a persistence throw after the provid
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -5642,7 +5726,7 @@ exports[`coach chat golden transcripts > 18 a persistence throw after the provid
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -5757,7 +5841,7 @@ exports[`coach chat golden transcripts > 19 an existing conversation with prior 
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -5985,6 +6069,9 @@ exports[`coach chat golden transcripts > 20 a guided-question turn with a scope 
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -6015,7 +6102,7 @@ exports[`coach chat golden transcripts > 20 a guided-question turn with a scope 
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 30000,
       "tools": 6,
@@ -6199,6 +6286,9 @@ exports[`coach chat golden transcripts > 21 the German locale with a stored self
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -6229,7 +6319,7 @@ exports[`coach chat golden transcripts > 21 the German locale with a stored self
         "window": "last30days",
       },
       "signal": true,
-      "system": "ea823e5e510a:4068",
+      "system": "7c188ee61f98:5016",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -6449,6 +6539,9 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
       "call": "storeDeterministicFacts",
     },
     {
+      "call": "enqueueCoachMemoryRefresh",
+    },
+    {
       "call": "assertConsentForChain",
       "chain": [
         "anthropic",
@@ -6479,7 +6572,7 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
         "window": "last30days",
       },
       "signal": true,
-      "system": "d46e2a89426f:3975",
+      "system": "37f58b1a7608:4923",
       "temperature": 0.4,
       "timeoutMs": 180000,
       "tools": 6,
@@ -7063,6 +7156,9 @@ exports[`coach chat golden transcripts — refusals before the stream > R6 conse
     },
     {
       "call": "storeDeterministicFacts",
+    },
+    {
+      "call": "enqueueCoachMemoryRefresh",
     },
   ],
   "contentType": null,
