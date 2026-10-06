@@ -1,0 +1,56 @@
+{
+  "id": "gen-fixture",
+  "object": "chat.completion",
+  "model": "anthropic/claude-haiku-4.5",
+  "service_tier": "default",
+  "choices": [
+    {
+      "index": 0,
+      "logprobs": null,
+      "finish_reason": "tool_calls",
+      "native_finish_reason": "tool_use",
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "refusal": null,
+        "reasoning": "The user is asking me to:\n1. Think about which city is the capital of France\n2. Call get_weather for that city\n\nThe capital of France is Paris. So I should call get_weather with \"Paris\" as the city parameter.",
+        "tool_calls": [
+          {
+            "type": "function",
+            "index": 0,
+            "id": "toolu_bdrk_014bbCR7ZtuZso1nhAXhWT8u",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\"}"
+            }
+          }
+        ],
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "The user is asking me to:\n1. Think about which city is the capital of France\n2. Call get_weather for that city\n\nThe capital of France is Paris. So I should call get_weather with \"Paris\" as the city parameter.",
+            "format": "anthropic-claude-v1",
+            "index": 0,
+            "signature": "sig-fixture-1"
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 609,
+    "completion_tokens": 114,
+    "total_tokens": 723,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 58,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  }
+}
