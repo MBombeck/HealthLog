@@ -249,6 +249,9 @@ async function rerollBriefingParagraph(args: {
       // v1.25 — honours the per-user response-timeout setting (see caller).
       timeoutMs: args.effectiveTimeoutMs,
       stage: "reroll",
+      // v1.41 — the re-roll is a fresh pass at the paragraph, so it may think
+      // like the generation it replaces; the operator's switch still wins.
+      reasoningJob: "daily_briefing",
     });
     result = fallback.result;
     providerType = fallback.workingProvider.providerType;
@@ -1132,6 +1135,11 @@ export async function generateComprehensiveInsight(
       // v1.25 — honours the per-user response-timeout setting.
       timeoutMs: effectiveTimeoutMs,
       stage: "generate",
+      // v1.41 — the briefing is one of the few background jobs that may
+      // reason (medium on the person's own provider, low on the operator's,
+      // never above the operator's cap, nothing when switched off). The JSON
+      // and grounding retries below repair a reply and do not reason.
+      reasoningJob: "daily_briefing",
     });
     result = fallback.result;
     workingProviderType = fallback.workingProvider.providerType;

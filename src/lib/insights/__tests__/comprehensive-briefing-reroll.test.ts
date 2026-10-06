@@ -38,6 +38,8 @@ vi.mock("@/lib/db", () => ({
       },
     },
     auditLog: { deleteMany: vi.fn() },
+    // v1.41 — the operator's reasoning controls; an untouched instance.
+    appSettings: { findUnique: vi.fn(async () => null) },
   },
 }));
 // The `briefing` capability is available in these fixtures; the refusal
@@ -163,6 +165,8 @@ describe("daily-briefing re-roll on unchanged data", () => {
     const params = runRawCompletionWithFallback.mock.calls[0][0].params;
     expect(params.temperature).toBe(0.6);
     expect(params.seed).toBeUndefined();
+    // v1.41 — the re-roll thinks like the generation it replaces.
+    expect(params.reasoning?.effort).toBe("medium");
 
     // The cache write swaps only the paragraph; findings + summary preserved.
     const write = userUpdate.mock.calls.find(

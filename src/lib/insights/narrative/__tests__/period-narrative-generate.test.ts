@@ -221,6 +221,66 @@ describe("generatePeriodNarrative — descriptive generation", () => {
   });
 });
 
+describe("generatePeriodNarrative — background reasoning (v1.41)", () => {
+  it.each([
+    ["week", "period_narrative_week"],
+    ["month", "period_narrative_month"],
+  ] as const)(
+    "names the %s narrative's own job on the first pass",
+    async (period, job) => {
+      const prisma = makePrisma();
+      const runCompletion = vi.fn(async (_args: { reasoningJob?: string }) => ({
+        kind: "ok" as const,
+        content: "Your weight eased down slightly.",
+        providerType: "openai",
+        model: "m",
+        tokensUsed: 1,
+      }));
+      await generatePeriodNarrative("u1", {
+        period,
+        locale: "en",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        prisma: prisma as any,
+        buildContext: async () =>
+          readyContext({ period }) as PeriodNarrativeResult,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        runCompletion: runCompletion as any,
+      });
+      expect(runCompletion.mock.calls[0][0].reasoningJob).toBe(job);
+    },
+  );
+
+  it("does not reason on the grounding retry", async () => {
+    const prisma = makePrisma();
+    const runCompletion = vi
+      .fn()
+      .mockResolvedValueOnce({
+        kind: "ok",
+        content: "Your weight fell by 9.9 kg because you slept more.",
+        providerType: "openai",
+        model: "m",
+        tokensUsed: 1,
+      })
+      .mockResolvedValueOnce({
+        kind: "ok",
+        content: "Your weight eased down slightly.",
+        providerType: "openai",
+        model: "m",
+        tokensUsed: 1,
+      });
+    await generatePeriodNarrative("u1", {
+      period: "week",
+      locale: "en",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma: prisma as any,
+      buildContext: async () => readyContext() as PeriodNarrativeResult,
+      runCompletion,
+    });
+    expect(runCompletion).toHaveBeenCalledTimes(2);
+    expect(runCompletion.mock.calls[1][0].reasoningJob).toBeUndefined();
+  });
+});
+
 describe("generatePeriodNarrative — honesty floor", () => {
   it("writes no narrative when the context is insufficient", async () => {
     const prisma = makePrisma();
