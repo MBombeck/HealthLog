@@ -3030,6 +3030,9 @@
         "baselineWithin": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; heute liegt {value} darin.",
         "baselineAbove": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; heute liegt {value} darüber.",
         "baselineBelow": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; heute liegt {value} darunter.",
+        "steadyWithin": "Deine Werte liegen meist bei {low} {unit}; heute passt {value} dazu.",
+        "steadyAbove": "Deine Werte liegen meist bei {low} {unit}; heute liegt {value} darüber.",
+        "steadyBelow": "Deine Werte liegen meist bei {low} {unit}; heute liegt {value} darunter.",
         "insufficient": "Lerne noch deinen üblichen Bereich — protokolliere noch ein paar Tage weiter.",
         "driver": "{note}"
       },
@@ -3182,12 +3185,14 @@
         "undo": "Rückgängig",
         "accept": "Ja, merken",
         "decline": "Nein",
-        "confirmed": "Gemerkt."
+        "confirmed": "Gemerkt.",
+        "declined": "Alles klar, dann nicht."
       },
       "plan": {
         "accept": "Plan übernehmen",
         "decline": "Nicht jetzt",
-        "confirmed": "Ist notiert. Ich schaue in {days} Tagen mit dir drauf."
+        "confirmed": "Ist notiert. Ich schaue in {days} Tagen mit dir drauf.",
+        "declined": "Alles klar, dann nicht jetzt."
       },
       "assumption": {
         "line": "Angenommen: {value}",
@@ -10030,6 +10035,12 @@
         "last90days": "Letzte 90 Tage",
         "lastYear": "Letzte 12 Monate",
         "allTime": "Gesamter Zeitraum"
+      },
+      "comparison": {
+        "baseline90d": "Mit meinen üblichen 90 Tagen vergleichen"
+      },
+      "anchor": {
+        "illness": "Seit der Erkrankung vom {date}"
       }
     },
     "reuse": {

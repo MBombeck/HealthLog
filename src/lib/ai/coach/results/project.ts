@@ -57,9 +57,11 @@ export function projectResults(args: {
       truncated: table.truncated || rows.length < table.rows.length,
       displayed: false,
       // A table shown again keeps the view `show_result` chose for it (a
-      // chart, a histogram, or none); `withChart` leaves it as it is. Every
-      // other table gets its chart from `deriveChartSpec`.
-      ...(table.reusedFrom
+      // chart, a histogram, or none); `withChart` leaves it as it is. A
+      // comparison keeps the `compare` chart it was built with, which
+      // `deriveChartSpec` checks against its columns. Every other table gets
+      // its chart from `deriveChartSpec`.
+      ...(table.reusedFrom || table.chart?.kind === "compare"
         ? { chart: table.chart, chartKind: table.chartKind }
         : { chart: null, chartKind: null }),
     });

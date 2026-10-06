@@ -8,23 +8,30 @@ import { annotate } from "@/lib/logging/context";
 import type { Locale } from "@/lib/i18n/config";
 import { PROMPT_VERSION } from "@/lib/ai/prompts/insight-generator";
 import type {
+  CoachActivityMeta,
+  CoachAssumption,
   CoachClarification,
   CoachFollowUp,
+  CoachMemoryNote,
   CoachMethod,
+  CoachPlanProposal,
   CoachProvenance,
   CoachResultMeta,
   CoachResultTable,
   CoachStep,
+  CoachStop,
   CoachSuggestion,
 } from "@/lib/ai/coach/types";
 import type { CoachSuggestedAction } from "@/lib/ai/coach/suggest-action";
 import type { CoachToolTrace } from "@/lib/ai/coach/tools";
 import { buildMethod } from "@/lib/ai/coach/method";
 import {
+  assumptionFollowUps,
   deriveFollowUps,
   followUpChipsEnabled,
   type FollowUpHistory,
 } from "@/lib/ai/coach/follow-ups/derive";
+import { assumptionFromClarification } from "@/lib/ai/coach/clarify";
 import { numberFollowUps } from "@/lib/ai/coach/follow-ups/catalog";
 import { buildContinueFollowUp } from "@/lib/ai/coach/follow-ups/continue";
 import type { CoachPrefs } from "@/lib/validations/coach-prefs";
@@ -42,7 +49,16 @@ export interface TurnDialog {
   followUps: CoachFollowUp[];
   /** Null on a blocked turn. */
   clarification: CoachClarification | null;
+  /** v1.41 — what the answer assumed instead of asking; empty on a blocked turn. */
+  assumptions: CoachAssumption[];
+  /** v1.41 — the fact the turn saved or proposes; null on a blocked turn. */
+  memoryNote: CoachMemoryNote | null;
+  /** v1.41 — the plan the turn proposes; null on a blocked turn. */
+  planProposal: CoachPlanProposal | null;
 }
+
+/** At most this many assumptions per answer. */
+export const MAX_ASSUMPTIONS = 2;
 
 /** A table's metadata: everything but the values, for the plaintext blob. */
 export function toResultMeta(table: CoachResultTable): CoachResultMeta {
@@ -95,6 +111,14 @@ export function assembleTurnDialog(args: {
   // compete with the answer the question waits for.
   const offerChips =
     !blocked && followUpChipsEnabled(prefs) && reply.clarification === null;
+  // v1.41 — a question the brake declined became an assumption; the answer
+  // names it, and its alternatives are one tap away.
+  const assumptions = blocked
+    ? []
+    : model.declinedClarifications
+        .map(assumptionFromClarification)
+        .filter((a): a is CoachAssumption => a !== null)
+        .slice(0, MAX_ASSUMPTIONS);
   const continueChip = offerChips
     ? buildContinueFollowUp({
         forcedFinal: model.forcedFinal,
@@ -105,6 +129,7 @@ export function assembleTurnDialog(args: {
   const followUps = offerChips
     ? numberFollowUps([
         ...(continueChip ? [continueChip] : []),
+        ...assumptionFollowUps({ assumptions, prefs, locale }),
         ...deriveFollowUps({
           results: metas,
           steps: model.steps,
@@ -123,6 +148,32 @@ export function assembleTurnDialog(args: {
     method,
     followUps,
     clarification: reply.clarification,
+    assumptions,
+    // The note and the proposal belong to the reply they came with; a
+    // blocked reply was replaced, so they do not ride along.
+    memoryNote: blocked ? null : model.memoryNote,
+    planProposal: blocked ? null : model.planProposal,
+  };
+}
+
+/** The persisted half of a fact note: no fact text. */
+function memoryNoteMeta(note: CoachMemoryNote): CoachProvenance["memoryNote"] {
+  return {
+    proposal: note.proposal,
+    ...(note.proposalId ? { proposalId: note.proposalId } : {}),
+    ...(note.factId ? { factId: note.factId } : {}),
+    category: note.category,
+  };
+}
+
+/** The persisted half of a plan proposal: no plan text. */
+function planProposalMeta(
+  proposal: CoachPlanProposal,
+): CoachProvenance["planProposal"] {
+  return {
+    planId: proposal.planId,
+    metric: proposal.metric,
+    reviewInDays: proposal.reviewInDays,
   };
 }
 
@@ -138,6 +189,10 @@ export function buildTurnProvenance(args: {
   forcedFinal: boolean;
   /** v1.39.4 — the forced reply this turn continues, if it does. */
   continuationOf?: string;
+  /** v1.41 — the trail's plaintext metadata. */
+  activity?: CoachActivityMeta[];
+  /** v1.41 — why the answer was forced, when it was. */
+  stop?: CoachStop;
 }): CoachProvenance {
   const { snapshotProvenance, reply, toolTrace, steps, dialog } = args;
   const surfacedSuggestion = args.suggestion;
@@ -190,6 +245,21 @@ export function buildTurnProvenance(args: {
     ...(dialog.clarification ? { clarification: dialog.clarification } : {}),
     ...(args.forcedFinal ? { forcedFinal: true as const } : {}),
     ...(args.continuationOf ? { continuationOf: args.continuationOf } : {}),
+    // v1.41 — the trail, the stop, the assumptions, the note and the plan.
+    // Metadata only: model and fact text live in `trail_encrypted`.
+    ...(args.activity && args.activity.length > 0
+      ? { activity: args.activity }
+      : {}),
+    ...(args.stop ? { stop: args.stop } : {}),
+    ...(dialog.assumptions.length > 0
+      ? { assumptions: dialog.assumptions }
+      : {}),
+    ...(dialog.memoryNote
+      ? { memoryNote: memoryNoteMeta(dialog.memoryNote) }
+      : {}),
+    ...(dialog.planProposal
+      ? { planProposal: planProposalMeta(dialog.planProposal) }
+      : {}),
   };
   if (sentinel.malformed) {
     // Graceful degrade: log so ops can spot a provider whose

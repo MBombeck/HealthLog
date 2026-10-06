@@ -4,7 +4,11 @@
 import { annotate } from "@/lib/logging/context";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import { PROMPT_VERSION } from "@/lib/ai/prompts/insight-generator";
-import type { CoachProvenance, CoachResultTable } from "@/lib/ai/coach/types";
+import type {
+  CoachProvenance,
+  CoachResultTable,
+  CoachTrail,
+} from "@/lib/ai/coach/types";
 import { appendMessage } from "@/lib/ai/coach/persistence";
 
 import type { TurnContext } from "./context";
@@ -19,6 +23,8 @@ export async function persistAssistantReply(args: {
   toolMode: boolean;
   /** v1.39.4 — the tables to seal beside the message. */
   results: CoachResultTable[];
+  /** v1.41 — the trail's model text, sealed beside the message. */
+  trail?: CoachTrail | null;
 }): Promise<{ messageId: string }> {
   const { conversationId, replyText, provenance, model, ctx, toolMode } = args;
   const workingProviderType: ProviderChainType = model.workingProviderType;
@@ -42,6 +48,8 @@ export async function persistAssistantReply(args: {
     model: model.result.model ?? null,
     // v1.39.4 — the tables, encrypted into their own column.
     ...(args.results.length > 0 ? { results: args.results } : {}),
+    // v1.41 — the trail's text, encrypted into its own column.
+    ...(args.trail ? { trail: args.trail } : {}),
   });
 
   // v1.18.7 — the day's spend was already reconciled against the
@@ -73,6 +81,10 @@ export async function persistAssistantReply(args: {
       // this turn (a proxy for cluster breadth) so the dashboards can
       // correlate reply shape with cluster activation.
       clusterCount: ctx.snapshot.provenance.metrics.length,
+      // v1.41 — the trail and why the answer was forced, as counts and enums.
+      activityEntries: provenance.activity?.length ?? 0,
+      stop: provenance.stop?.reason ?? null,
+      trailStored: Boolean(args.trail),
     },
   });
 

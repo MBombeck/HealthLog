@@ -162,7 +162,7 @@ export interface CoachToolResult {
    */
   available?: CoachDomainAvailability;
   /**
-   * v1.39.4 — the name of the table this call produced (`r1`..`r6`), so the
+   * v1.39.4 — the name of the table this call produced (`r1`..`r8`), so the
    * model can mark the prose that relies on it with `result:rN`. Only in a
    * chat turn; absent when no table was made.
    */
@@ -1202,7 +1202,7 @@ async function getMetricTable(
   });
   const ref = turn?.refs.next() ?? null;
   if (!ref) {
-    // Outside a chat turn, or past the sixth table: the model still gets
+    // Outside a chat turn, or past the eighth table: the model still gets
     // the figures, there is just no table to name.
     return { present: true, data: summarise(table) };
   }

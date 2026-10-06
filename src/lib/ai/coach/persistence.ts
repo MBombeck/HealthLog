@@ -15,16 +15,27 @@ import type { z } from "zod/v4";
 import { prisma } from "@/lib/db";
 import { decryptFromBytes, encryptToBytes } from "./bytes-codec";
 import {
+  coachActivityMetaSchema,
+  coachAssumptionSchema,
   coachClarificationSchema,
   coachFollowUpSchema,
+  coachMemoryNoteMetaSchema,
   coachMethodSchema,
+  coachPlanProposalMetaSchema,
   coachResultMetaSchema,
   coachResultTableSchema,
   coachStepSchema,
+  coachStopSchema,
+  coachTrailSchema,
 } from "./stream-events";
+import { ACTIVITY_MAX_ENTRIES, TRAIL_MAX_BYTES } from "./activity/contract";
 import { COACH_CONVERSATION_TITLE_MAX } from "./types";
 import { isRedundantViewChip } from "./follow-ups/view-chip";
-import { RESULTS_MAX_BYTES, fitResultsToStorage } from "./results/refs";
+import {
+  MAX_RESULTS_PER_TURN,
+  RESULTS_MAX_BYTES,
+  fitResultsToStorage,
+} from "./results/refs";
 import {
   isCheckupIntervalId,
   isSuggestedActionType,
@@ -47,6 +58,7 @@ import type {
   CoachStep,
   CoachStepDomain,
   CoachSuggestion,
+  CoachTrail,
 } from "./types";
 
 /**
@@ -76,8 +88,8 @@ export function summariseTitle(input: string): string {
   return `${cut.trimEnd()}…`;
 }
 
-/** v1.39.4 — at most this many tables per message (`r1`..`r6`). */
-const MAX_RESULTS_PER_MESSAGE = 6;
+/** At most this many tables per message (`r1`..`r8`, v1.41). */
+const MAX_RESULTS_PER_MESSAGE = MAX_RESULTS_PER_TURN;
 
 function provenanceToJson(provenance: CoachProvenance | null): string | null {
   if (!provenance) return null;
@@ -205,9 +217,16 @@ function restoreEach<T>(
   return cleaned.length > 0 ? cleaned : undefined;
 }
 
-/** The live steps a turn persisted (at most 12 per turn). */
+/** One field of the provenance against its wire schema, or undefined. */
+function restoreOne<T>(raw: unknown, schema: z.ZodType<T>): T | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  const parsed = schema.safeParse(raw);
+  return parsed.success ? parsed.data : undefined;
+}
+
+/** The live steps a turn persisted (at most 48 per turn since v1.41). */
 function restoreSteps(raw: unknown): CoachStep[] | undefined {
-  return restoreEach(raw, coachStepSchema, 12);
+  return restoreEach(raw, coachStepSchema, 48);
 }
 
 /** The method line; dropped whole when it does not parse. */
@@ -216,7 +235,7 @@ function restoreMethod(raw: unknown): CoachMethod | undefined {
   return parsed.success ? parsed.data : undefined;
 }
 
-/** The tables' metadata (at most 6 per message). No values live here. */
+/** The tables' metadata (at most 8 per message). No values live here. */
 function restoreResultMetas(raw: unknown): CoachResultMeta[] | undefined {
   return restoreEach(raw, coachResultMetaSchema, MAX_RESULTS_PER_MESSAGE);
 }
@@ -331,6 +350,24 @@ function provenanceFromJson(raw: string | null): CoachProvenance | null {
     );
     const clarification = restoreClarification(parsed.clarification);
     const forcedFinal = parsed.forcedFinal === true;
+    // v1.41 — the trail's metadata, the stop, the assumptions, the fact
+    // note and the plan proposal, each held to its wire schema.
+    const activity = restoreEach(
+      parsed.activity,
+      coachActivityMetaSchema,
+      ACTIVITY_MAX_ENTRIES,
+    );
+    const stop = restoreOne(parsed.stop, coachStopSchema);
+    const assumptions = restoreEach(
+      parsed.assumptions,
+      coachAssumptionSchema,
+      2,
+    );
+    const memoryNote = restoreOne(parsed.memoryNote, coachMemoryNoteMetaSchema);
+    const planProposal = restoreOne(
+      parsed.planProposal,
+      coachPlanProposalMetaSchema,
+    );
     const continuationOf =
       typeof parsed.continuationOf === "string" &&
       parsed.continuationOf.length > 0 &&
@@ -354,6 +391,11 @@ function provenanceFromJson(raw: string | null): CoachProvenance | null {
       ...(clarification ? { clarification } : {}),
       ...(forcedFinal ? { forcedFinal: true as const } : {}),
       ...(continuationOf ? { continuationOf } : {}),
+      ...(activity ? { activity } : {}),
+      ...(stop ? { stop } : {}),
+      ...(assumptions ? { assumptions } : {}),
+      ...(memoryNote ? { memoryNote } : {}),
+      ...(planProposal ? { planProposal } : {}),
     };
   } catch {
     return null;
@@ -396,9 +438,42 @@ export interface AppendMessageParams {
    * or empty on every turn without a table.
    */
   results?: CoachResultTable[];
+  /**
+   * v1.41 — the model text of the turn's trail and the facts it touched.
+   * Encrypted into `trailEncrypted`; the structure rides
+   * `metricSource.activity`. Omitted on every turn without one.
+   */
+  trail?: CoachTrail | null;
 }
 
 export { RESULTS_MAX_BYTES };
+
+/**
+ * Serialise a turn's trail for the ciphertext column, or null when there is
+ * none. Over `TRAIL_MAX_BYTES` (the recorder already holds it under): the
+ * texts go first, then the titles, and a trail that still does not fit is
+ * not stored at all rather than cut mid-entry.
+ */
+function trailToBytes(
+  trail: CoachTrail | null | undefined,
+): Uint8Array<ArrayBuffer> | null {
+  if (!trail) return null;
+  const parsed = coachTrailSchema.safeParse(trail);
+  if (!parsed.success) return null;
+  const copy: CoachTrail = {
+    ...parsed.data,
+    entries: parsed.data.entries.map((entry) => ({ ...entry })),
+  };
+  const size = () => new TextEncoder().encode(JSON.stringify(copy)).byteLength;
+  for (const field of ["text", "title"] as const) {
+    for (const entry of copy.entries) {
+      if (size() <= TRAIL_MAX_BYTES) break;
+      delete entry[field];
+    }
+  }
+  if (size() > TRAIL_MAX_BYTES) return null;
+  return encryptToBytes(JSON.stringify(copy));
+}
 
 /**
  * Serialise a turn's tables for the ciphertext column, or null when there are
@@ -534,6 +609,7 @@ export async function appendMessage(
         tokensUsed: params.tokensUsed ?? null,
         model: params.model ?? null,
         resultsEncrypted: resultsToBytes(params.results),
+        trailEncrypted: trailToBytes(params.trail),
       },
     });
     await tx.coachConversation.update({
@@ -676,7 +752,8 @@ export async function fetchConversationWithMessages(
         take: CONVERSATION_MESSAGE_DETAIL_CAP,
         // v1.39.4 — the tables are read lazily, one message at a time, through
         // `readMessageResults`; the detail read never loads their ciphertext.
-        omit: { resultsEncrypted: true },
+        // v1.41 — and the trail, read the same way (`readMessageTrail`).
+        omit: { resultsEncrypted: true, trailEncrypted: true },
       },
       // v1.29.x (S7) — the LIVE attachment set (join → document label columns
       // only; the encrypted body is untouched), ordered by attach time. Always
@@ -792,6 +869,42 @@ export async function readMessageResults(
     const table = tables?.get(meta.ref);
     return table ?? { ref: meta.ref, withheld: "unavailable" };
   });
+}
+
+/**
+ * v1.41 — the stored trail text of one assistant message, for its owner.
+ *
+ * Narrowed like `readMessageResults`: the message must sit in a
+ * conversation `userId` owns; a foreign or missing id is `null` (the route
+ * answers 404). A message with no trail, or one whose ciphertext does not
+ * decrypt or parse, reads as `{ trail: null }`: fail closed, never a
+ * partial trail.
+ */
+export async function readMessageTrail(
+  userId: string,
+  conversationId: string,
+  messageId: string,
+): Promise<{ trail: CoachTrail | null } | null> {
+  const row = await prisma.coachMessage.findFirst({
+    where: {
+      id: messageId,
+      conversationId,
+      conversation: { userId },
+    },
+    select: { trailEncrypted: true },
+  });
+  if (!row) return null;
+  if (!row.trailEncrypted || row.trailEncrypted.byteLength === 0) {
+    return { trail: null };
+  }
+  try {
+    const parsed = coachTrailSchema.safeParse(
+      JSON.parse(decryptFromBytes(row.trailEncrypted)),
+    );
+    return { trail: parsed.success ? parsed.data : null };
+  } catch {
+    return { trail: null };
+  }
 }
 
 /** Decrypt and parse a message's tables by ref; null when unreadable. */

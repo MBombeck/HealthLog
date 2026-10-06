@@ -15,13 +15,17 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { shiftDateKey, userDayKey, weekdayOfDateKey } from "@/lib/tz/format";
 import type {
   CoachResultCell,
+  CoachResultColumn,
+  CoachResultPeriod,
   CoachResultTable,
   CoachScopeWindow,
 } from "@/lib/ai/coach/types";
 import {
+  COACH_CHART_COMPARE_KEYS,
   COACH_RESULT_COLUMN_KEYS,
   COACH_RESULT_TITLE_KEYS,
   coachDomainLabelKey,
+  coachPeriodLabelKey,
 } from "@/lib/ai/coach/dialog-keys";
 
 export interface ProjectionContext {
@@ -276,5 +280,169 @@ export function projectCompliance(
     rows,
     truncated: false,
     chart: null,
+  };
+}
+
+// ── Comparisons (v1.41) ─────────────────────────────────────────────────
+
+/** The value columns of a comparison table. */
+export const COMPARE_COLUMN_A = "a";
+export const COMPARE_COLUMN_B = "b";
+
+/** A comparison keeps at most this many rows, like every table. */
+const RESULT_COMPARE_MAX_ROWS = 400;
+
+/** The first value column of a metric table: what a comparison draws. */
+function valueColumn(
+  table: CoachResultTable,
+): { column: CoachResultColumn; index: number } | null {
+  let index = table.columns.findIndex((column) => column.kind === "number");
+  if (index < 0) {
+    index = table.columns.findIndex(
+      (column) => column.kind === "count" && column.key !== "readings",
+    );
+  }
+  return index < 0 ? null : { column: table.columns[index], index };
+}
+
+function periodIndex(table: CoachResultTable): number {
+  return table.columns.findIndex((column) => column.kind === "period");
+}
+
+function numericOrNull(cell: CoachResultCell | undefined): number | null {
+  return typeof cell === "number" && Number.isFinite(cell) ? cell : null;
+}
+
+/**
+ * Two series of one comparison as one table, `period | a | b`, with the
+ * `compare` chart:
+ *
+ * - `periods`: the same metric over the current window (`a`) and an earlier
+ *   one (`b`, the period before or a year earlier), overlaid position by
+ *   position. The rows carry the current window's period keys; the earlier
+ *   value of each row is the one at the same place in its own window. One
+ *   axis: it is one metric in one unit.
+ * - `metrics`: two metrics over the same window, joined on their period
+ *   keys. Two axes when their units differ, one when they match.
+ *
+ * Pure: both tables are ones this turn read, and every value is copied from
+ * them unchanged. Null when either has no value column or the comparison
+ * holds fewer than two rows with a value on both sides.
+ */
+export function projectCompare(args: {
+  mode: "periods" | "metrics";
+  a: CoachResultTable;
+  b: CoachResultTable;
+  /** The earlier window of a `periods` comparison. */
+  basis?: Exclude<CoachResultPeriod, "current">;
+  ref: string;
+  locale: Locale;
+}): CoachResultTable | null {
+  const { mode, a, b, locale } = args;
+  const { t } = getServerTranslator(locale);
+  const valueA = valueColumn(a);
+  const valueB = valueColumn(b);
+  const xA = periodIndex(a);
+  const xB = periodIndex(b);
+  if (!valueA || !valueB || xA < 0 || xB < 0) return null;
+
+  let rows: CoachResultCell[][];
+  if (mode === "periods") {
+    rows = a.rows.map((row, i) => [
+      row[xA] ?? null,
+      numericOrNull(row[valueA.index]),
+      numericOrNull(b.rows[i]?.[valueB.index]),
+    ]);
+  } else {
+    const byKey = new Map<string, [number | null, number | null]>();
+    for (const row of a.rows) {
+      const key = row[xA];
+      if (typeof key !== "string") continue;
+      byKey.set(key, [numericOrNull(row[valueA.index]), null]);
+    }
+    for (const row of b.rows) {
+      const key = row[xB];
+      if (typeof key !== "string") continue;
+      const entry = byKey.get(key) ?? [null, null];
+      entry[1] = numericOrNull(row[valueB.index]);
+      byKey.set(key, entry);
+    }
+    rows = [...byKey.entries()]
+      .sort(([k1], [k2]) => (k1 < k2 ? -1 : k1 > k2 ? 1 : 0))
+      .map(([key, [va, vb]]) => [key, va, vb]);
+  }
+  const paired = rows.filter((row) => row[1] !== null && row[2] !== null);
+  if (paired.length < 2) return null;
+
+  const domainA = a.source.domain;
+  const domainB = b.source.domain;
+  const basis = args.basis ?? "previous";
+  const labelA =
+    mode === "periods"
+      ? coachPeriodLabelKey("current")
+      : coachDomainLabelKey(domainA);
+  const labelB =
+    mode === "periods"
+      ? coachPeriodLabelKey(basis)
+      : coachDomainLabelKey(domainB);
+  const columns: CoachResultColumn[] = [
+    { ...a.columns[xA] },
+    {
+      key: COMPARE_COLUMN_A,
+      kind: "number",
+      labelKey: labelA,
+      label: t(labelA),
+      ...(valueA.column.unit ? { unit: valueA.column.unit } : {}),
+      ...(valueA.column.decimals !== undefined
+        ? { decimals: valueA.column.decimals }
+        : {}),
+    },
+    {
+      key: COMPARE_COLUMN_B,
+      kind: "number",
+      labelKey: labelB,
+      label: t(labelB),
+      ...(valueB.column.unit ? { unit: valueB.column.unit } : {}),
+      ...(valueB.column.decimals !== undefined
+        ? { decimals: valueB.column.decimals }
+        : {}),
+    },
+  ];
+  const sameUnit = (valueA.column.unit ?? "") === (valueB.column.unit ?? "");
+  const titleKey = COACH_CHART_COMPARE_KEYS.periods;
+  const title =
+    mode === "periods"
+      ? t(titleKey, { a: a.title, b: t(coachPeriodLabelKey(basis)) })
+      : t(titleKey, {
+          a: t(coachDomainLabelKey(domainA)),
+          b: t(coachDomainLabelKey(domainB)),
+        });
+  const trimmed = rows.slice(-RESULT_COMPARE_MAX_ROWS);
+  return {
+    ref: args.ref,
+    source: {
+      tool: "get_metric_table",
+      domain: domainA,
+      window: a.source.window,
+      period: "current",
+      ...(a.source.granularity ? { granularity: a.source.granularity } : {}),
+    },
+    shape: "timeSeries",
+    titleKey,
+    title,
+    rowCount: rows.length,
+    chartKind: "compare",
+    displayed: false,
+    columns,
+    rows: trimmed,
+    truncated: trimmed.length < rows.length,
+    chart: {
+      kind: "compare",
+      mode,
+      x: columns[0].key,
+      a: COMPARE_COLUMN_A,
+      b: COMPARE_COLUMN_B,
+      axes: mode === "periods" || sameUnit ? 1 : 2,
+    },
   };
 }

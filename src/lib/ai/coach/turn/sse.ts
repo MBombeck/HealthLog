@@ -88,9 +88,11 @@ function flushTick(): Promise<void> {
 /**
  * Emit a finished turn. A failed outcome is one `error` frame. A guarded
  * reply goes out as `token* → provenance → result* → suggestion? →
- * suggestedAction? → clarification? → followUps? → done`; the token frames
- * carry the FULLY-GUARDED text, and every guard ran before the first one
- * leaves. The live `step` frames went out earlier, while the model ran.
+ * suggestedAction? → memoryNote? → planProposal? → clarification? →
+ * followUps? → done`; the token frames carry the FULLY-GUARDED text, and
+ * every guard ran before the first one leaves. The live `step` and
+ * `activity` frames went out earlier, while the model ran; the last of them
+ * opens the `answer` entry, which `done` closes.
  */
 export async function emitReply(
   emitter: TurnEmitter,
@@ -132,6 +134,13 @@ export async function emitReply(
       suggestedAction: outcome.action,
     });
   }
+  // v1.41 — additive `memoryNote` and `planProposal` frames, owner only.
+  if (outcome.memoryNote) {
+    emitter.emit({ type: "memoryNote", note: outcome.memoryNote });
+  }
+  if (outcome.planProposal) {
+    emitter.emit({ type: "planProposal", proposal: outcome.planProposal });
+  }
   // v1.39.4 — additive `clarification` and `followUps` frames.
   if (outcome.clarification) {
     emitter.emit({
@@ -151,6 +160,10 @@ export async function emitReply(
       totalTokens: outcome.totalTokens || null,
       model: outcome.model,
     },
+    // v1.41 — why the answer was forced, and whether the interim tables
+    // must come down again.
+    ...(outcome.stop ? { stop: outcome.stop } : {}),
+    ...(outcome.withheldResults ? { withheldResults: true as const } : {}),
   });
 }
 

@@ -38,7 +38,10 @@ vi.mock("@/lib/api-response", () => ({
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn() }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
-vi.mock("@/lib/rate-limit", () => ({ checkRateLimit: vi.fn() }));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn(),
+  refundRateLimit: vi.fn(async () => {}),
+}));
 vi.mock("@/lib/i18n/server-locale", () => ({
   resolveServerLocale: vi.fn(async () => "en"),
 }));

@@ -177,18 +177,19 @@ export async function assembleTurnContext(args: {
     // Fact capture must never break the chat turn; the >TURN_CAP LLM
     // extraction remains as the catch-all on long conversations.
   });
-  if (turnContext.historyElided) {
-    void enqueueCoachMemoryRefresh({
-      conversationId,
-      userId,
-      // Coach memory prose is composed in de/en only — it is MODEL-FACING
-      // context (a rolling conversation summary + extracted durable facts),
-      // not user-facing prose, so English is the correct target for every
-      // locale without a reviewed body. The former `=== "en" ? "en" : "de"`
-      // binary composed and keyed a French account's memory in German.
-      locale: instructionLocale(locale),
-    });
-  }
+  // v1.41 — every turn enqueues the refresh; the job waits for the
+  // conversation to go quiet and runs once per conversation (its debounce
+  // and singleton key), so a short chat is remembered too.
+  void enqueueCoachMemoryRefresh({
+    conversationId,
+    userId,
+    // Coach memory prose is composed in de/en only — it is MODEL-FACING
+    // context (a rolling conversation summary + extracted durable facts),
+    // not user-facing prose, so English is the correct target for every
+    // locale without a reviewed body. The former `=== "en" ? "en" : "de"`
+    // binary composed and keyed a French account's memory in German.
+    locale: instructionLocale(locale),
+  });
 
   // A workout launch is an optional narrowing of Coach, not permission to
   // bypass the workouts module. Disabled modules contribute no read and no

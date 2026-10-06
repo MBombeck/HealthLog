@@ -3030,6 +3030,9 @@
         "baselineWithin": "Twój zwykły zakres to {low}–{high} {unit}; dzisiejsza wartość {value} mieści się w nim.",
         "baselineAbove": "Twój zwykły zakres to {low}–{high} {unit}; dzisiejsza wartość {value} jest powyżej niego.",
         "baselineBelow": "Twój zwykły zakres to {low}–{high} {unit}; dzisiejsza wartość {value} jest poniżej niego.",
+        "steadyWithin": "Twoje pomiary zwykle wynoszą {low} {unit}; dzisiejsza wartość {value} jest taka sama.",
+        "steadyAbove": "Twoje pomiary zwykle wynoszą {low} {unit}; dzisiejsza wartość {value} jest wyższa.",
+        "steadyBelow": "Twoje pomiary zwykle wynoszą {low} {unit}; dzisiejsza wartość {value} jest niższa.",
         "insufficient": "Wciąż poznaję twój zwykły zakres — rejestruj jeszcze przez kilka dni.",
         "driver": "{note}"
       },
@@ -3182,12 +3185,14 @@
         "undo": "Cofnij",
         "accept": "Tak, zapamiętaj",
         "decline": "Nie",
-        "confirmed": "Jasne, zapamiętam."
+        "confirmed": "Jasne, zapamiętam.",
+        "declined": "Dobrze, nie zapiszę tego."
       },
       "plan": {
         "accept": "Przyjmij ten plan",
         "decline": "Nie teraz",
-        "confirmed": "Zanotowane. Wrócimy do tego razem za {days} dni."
+        "confirmed": "Zanotowane. Wrócimy do tego razem za {days} dni.",
+        "declined": "Dobrze, nie teraz."
       },
       "assumption": {
         "line": "Założenie: {value}",
@@ -10030,6 +10035,12 @@
         "last90days": "Ostatnie 90 dni",
         "lastYear": "Ostatnie 12 miesięcy",
         "allTime": "Cały okres"
+      },
+      "comparison": {
+        "baseline90d": "Porównaj z moimi zwykłymi 90 dniami"
+      },
+      "anchor": {
+        "illness": "Od choroby z {date}"
       }
     },
     "reuse": {

@@ -3030,6 +3030,9 @@
         "baselineWithin": "Ta plage habituelle est de {low}–{high} {unit} ; aujourd'hui, {value} s'y situe.",
         "baselineAbove": "Ta plage habituelle est de {low}–{high} {unit} ; aujourd'hui, {value} se situe au-dessus.",
         "baselineBelow": "Ta plage habituelle est de {low}–{high} {unit} ; aujourd'hui, {value} se situe en dessous.",
+        "steadyWithin": "Tes valeurs sont habituellement à {low} {unit} ; aujourd'hui, {value} correspond.",
+        "steadyAbove": "Tes valeurs sont habituellement à {low} {unit} ; aujourd'hui, {value} se situe au-dessus.",
+        "steadyBelow": "Tes valeurs sont habituellement à {low} {unit} ; aujourd'hui, {value} se situe en dessous.",
         "insufficient": "J'apprends encore ta plage habituelle — continue à enregistrer quelques jours de plus.",
         "driver": "{note}"
       },
@@ -3182,12 +3185,14 @@
         "undo": "Annuler",
         "accept": "Oui, retiens-le",
         "decline": "Non",
-        "confirmed": "C'est noté, je m'en souviendrai."
+        "confirmed": "C'est noté, je m'en souviendrai.",
+        "declined": "D'accord, je ne le ferai pas."
       },
       "plan": {
         "accept": "Adopter ce plan",
         "decline": "Pas maintenant",
-        "confirmed": "C'est noté. On fait le point ensemble dans {days} jours."
+        "confirmed": "C'est noté. On fait le point ensemble dans {days} jours.",
+        "declined": "D'accord, pas maintenant."
       },
       "assumption": {
         "line": "Hypothèse : {value}",
@@ -10030,6 +10035,12 @@
         "last90days": "90 derniers jours",
         "lastYear": "12 derniers mois",
         "allTime": "Toute la période"
+      },
+      "comparison": {
+        "baseline90d": "Comparer avec mes 90 jours habituels"
+      },
+      "anchor": {
+        "illness": "Depuis la maladie du {date}"
       }
     },
     "reuse": {

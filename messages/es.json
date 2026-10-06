@@ -3030,6 +3030,9 @@
         "baselineWithin": "Tu rango habitual es {low}–{high} {unit}; hoy {value} se sitúa dentro de él.",
         "baselineAbove": "Tu rango habitual es {low}–{high} {unit}; hoy {value} se sitúa por encima.",
         "baselineBelow": "Tu rango habitual es {low}–{high} {unit}; hoy {value} se sitúa por debajo.",
+        "steadyWithin": "Tus valores suelen estar en {low} {unit}; hoy {value} coincide.",
+        "steadyAbove": "Tus valores suelen estar en {low} {unit}; hoy {value} está por encima.",
+        "steadyBelow": "Tus valores suelen estar en {low} {unit}; hoy {value} está por debajo.",
         "insufficient": "Todavía estoy aprendiendo tu rango habitual — sigue registrando unos días más.",
         "driver": "{note}"
       },
@@ -3182,12 +3185,14 @@
         "undo": "Deshacer",
         "accept": "Sí, recuérdalo",
         "decline": "No",
-        "confirmed": "Entendido, lo recordaré."
+        "confirmed": "Entendido, lo recordaré.",
+        "declined": "De acuerdo, no lo haré."
       },
       "plan": {
         "accept": "Adoptar este plan",
         "decline": "Ahora no",
-        "confirmed": "Anotado. Lo revisaremos juntos dentro de {days} días."
+        "confirmed": "Anotado. Lo revisaremos juntos dentro de {days} días.",
+        "declined": "De acuerdo, ahora no."
       },
       "assumption": {
         "line": "Supuesto: {value}",
@@ -10030,6 +10035,12 @@
         "last90days": "Últimos 90 días",
         "lastYear": "Últimos 12 meses",
         "allTime": "Todo el periodo"
+      },
+      "comparison": {
+        "baseline90d": "Comparar con mis 90 días habituales"
+      },
+      "anchor": {
+        "illness": "Desde la enfermedad del {date}"
       }
     },
     "reuse": {

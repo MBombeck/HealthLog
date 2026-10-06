@@ -458,7 +458,11 @@ export const modules = {
       coachConversation: {
         findFirst: async () => ({ id: CONVERSATION_ID }),
       },
-      coachMessage: { findMany: async () => latestRows() },
+      coachMessage: {
+        findMany: async () => latestRows(),
+        // v1.41 — the clarification brake's count of today's questions.
+        count: async () => 0,
+      },
       measurement: {
         groupBy: async (args: { where: { type: { in: string[] } } }) =>
           measurementBounds(args),
@@ -473,7 +477,10 @@ export const modules = {
       labResult: { aggregate: async () => EMPTY_AGGREGATE },
     },
   }),
-  rateLimit: () => ({ checkRateLimit: m.checkRateLimit }),
+  rateLimit: () => ({
+    checkRateLimit: m.checkRateLimit,
+    refundRateLimit: async () => {},
+  }),
   serverLocale: () => ({
     resolveServerLocale: async (args: { override?: string }) =>
       args.override ?? "en",

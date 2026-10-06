@@ -44,6 +44,7 @@ import {
   coachProvenanceSchema,
   coachResultEntrySchema,
   coachStreamEventSchema,
+  coachTrailSchema,
 } from "@/lib/ai/coach/stream-events";
 import {
   coachAttachmentCreateSchema,
@@ -857,6 +858,54 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 z.object({ results: z.array(coachResultEntrySchema) }),
                 "CoachMessageResultsResponse",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "Conversation or message not found, or not owned by the caller.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/insights/chat/{id}/messages/{messageId}/trail": {
+    get: {
+      tags: ["Insights"],
+      summary: "Read the trail text of one Coach message",
+      description:
+        "v1.41 — the model-written text of one assistant message's trail: the screened reasoning titles and summaries by trail entry, the fact texts the turn recalled, and a pending fact proposal. The trail's structure (phases, statuses, counts) is plaintext on the message's `metricSource.activity`; this route serves only the text, decrypted for the account that owns the conversation. Fetch lazily when the person opens the trail. A mixed read: while the Coach's text may not be shown for the record, the answer is 200 with `trail: null` and the `ai` state beside it. A foreign or unknown conversation or message id maps to 404 (never 403). Auth via cookie or a full-access Bearer token.",
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+          description: "Conversation id.",
+        },
+        {
+          name: "messageId",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+          description: "Assistant message id within the conversation.",
+        },
+      ],
+      responses: {
+        "200": {
+          description: "The trail text, or null while it may not be served.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  trail: coachTrailSchema.nullable(),
+                  ai: aiCapabilityState.describe(
+                    "The `coach` capability. While unavailable `trail` is null.",
+                  ),
+                }),
+                "CoachMessageTrailResponse",
               ),
             },
           },

@@ -3030,6 +3030,9 @@
         "baselineWithin": "Il tuo intervallo abituale è {low}–{high} {unit}; oggi {value} rientra al suo interno.",
         "baselineAbove": "Il tuo intervallo abituale è {low}–{high} {unit}; oggi {value} si colloca al di sopra.",
         "baselineBelow": "Il tuo intervallo abituale è {low}–{high} {unit}; oggi {value} si colloca al di sotto.",
+        "steadyWithin": "I tuoi valori sono di solito {low} {unit}; oggi {value} corrisponde.",
+        "steadyAbove": "I tuoi valori sono di solito {low} {unit}; oggi {value} è al di sopra.",
+        "steadyBelow": "I tuoi valori sono di solito {low} {unit}; oggi {value} è al di sotto.",
         "insufficient": "Sto ancora imparando il tuo intervallo abituale — continua a registrare per qualche giorno in più.",
         "driver": "{note}"
       },
@@ -3182,12 +3185,14 @@
         "undo": "Annulla",
         "accept": "Sì, ricordalo",
         "decline": "No",
-        "confirmed": "Ricevuto, me lo ricorderò."
+        "confirmed": "Ricevuto, me lo ricorderò.",
+        "declined": "D'accordo, non lo faccio."
       },
       "plan": {
         "accept": "Adotta questo piano",
         "decline": "Non ora",
-        "confirmed": "Annotato. Ne riparliamo insieme tra {days} giorni."
+        "confirmed": "Annotato. Ne riparliamo insieme tra {days} giorni.",
+        "declined": "D'accordo, non ora."
       },
       "assumption": {
         "line": "Ipotesi: {value}",
@@ -10030,6 +10035,12 @@
         "last90days": "Ultimi 90 giorni",
         "lastYear": "Ultimi 12 mesi",
         "allTime": "Intero periodo"
+      },
+      "comparison": {
+        "baseline90d": "Confronta con i miei soliti 90 giorni"
+      },
+      "anchor": {
+        "illness": "Dalla malattia del {date}"
       }
     },
     "reuse": {

@@ -3030,6 +3030,9 @@
         "baselineWithin": "평소 범위: {low}–{high} {unit}. 오늘 값 {value} — 범위 안이에요.",
         "baselineAbove": "평소 범위: {low}–{high} {unit}. 오늘 값 {value} — 범위 위예요.",
         "baselineBelow": "평소 범위: {low}–{high} {unit}. 오늘 값 {value} — 범위 아래예요.",
+        "steadyWithin": "평소 값: {low} {unit}. 오늘 값 {value} — 평소와 같아요.",
+        "steadyAbove": "평소 값: {low} {unit}. 오늘 값 {value} — 평소보다 높아요.",
+        "steadyBelow": "평소 값: {low} {unit}. 오늘 값 {value} — 평소보다 낮아요.",
         "insufficient": "아직 평소 범위를 배우는 중이에요 — 며칠 더 기록해 주세요.",
         "driver": "{note}"
       },
@@ -3182,12 +3185,14 @@
         "undo": "실행 취소",
         "accept": "네, 기억해 줘",
         "decline": "아니요",
-        "confirmed": "알겠어요, 기억해 둘게요."
+        "confirmed": "알겠어요, 기억해 둘게요.",
+        "declined": "알겠어요, 저장하지 않을게요."
       },
       "plan": {
         "accept": "이 계획 시작하기",
         "decline": "나중에",
-        "confirmed": "기록했어요. {days}일 뒤에 함께 살펴볼게요."
+        "confirmed": "기록했어요. {days}일 뒤에 함께 살펴볼게요.",
+        "declined": "알겠어요, 지금은 하지 않을게요."
       },
       "assumption": {
         "line": "가정: {value}",
@@ -10030,6 +10035,12 @@
         "last90days": "최근 90일",
         "lastYear": "최근 12개월",
         "allTime": "전체 기간"
+      },
+      "comparison": {
+        "baseline90d": "평소 90일과 비교하기"
+      },
+      "anchor": {
+        "illness": "{date} 질환 이후부터"
       }
     },
     "reuse": {
