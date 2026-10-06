@@ -175,6 +175,8 @@ export function resetGolden(): void {
     },
   );
   m.getEvent.mockReturnValue({
+    // A request event, so the per-request cache memoises as in production.
+    getKind: () => "request",
     setError: (err: Error) =>
       record("event.setError", { message: err.message }),
   });

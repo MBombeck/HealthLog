@@ -149,3 +149,28 @@ describe("every call that carries reasoning took it from the resolver", () => {
     ).toEqual([]);
   });
 });
+
+/**
+ * The Coach turn receives its level on `TurnInput.reasoningLevel` and carries
+ * it through the loop under its own names, which the setter shapes above do
+ * not see. The one place that level is decided is the chat route, so the
+ * route is pinned: it resolves the level, and it does not fall back to a
+ * constant that would skip the operator's switch.
+ */
+describe("the Coach turn's level comes from the resolver", () => {
+  const route = stripComments(
+    readFileSync(join(SRC, "app/api/insights/chat/route.ts"), "utf8"),
+  );
+
+  it("resolves the level in the chat route", () => {
+    expect(route).toMatch(
+      /reasoningLevel[^=]*=\s*await\s+resolveCoachTurnReasoningLevel\s*\(/,
+    );
+    expect(route).toMatch(RESOLVER_IMPORT);
+  });
+
+  it("never hands the turn a constant level", () => {
+    expect(route).not.toMatch(/\bDEFAULT_REASONING_LEVEL\b/);
+    expect(route).not.toMatch(/reasoningLevel\s*:\s*["']/);
+  });
+});

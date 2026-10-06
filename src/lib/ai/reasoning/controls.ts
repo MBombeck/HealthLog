@@ -18,7 +18,12 @@ import {
   type CoachPrefs,
 } from "@/lib/validations/coach-prefs";
 
-import type { BackgroundReasoningJob } from "./levels";
+import {
+  DEFAULT_REASONING_LEVEL,
+  isReasoningLevel,
+  type BackgroundReasoningJob,
+  type ReasoningLevel,
+} from "./levels";
 import {
   coachReasoningCeiling,
   completionReasoning,
@@ -45,7 +50,17 @@ const UNREADABLE: ReasoningAdminControls = Object.freeze({
  * inside a background run, so switching reasoning off at 02:05 stops the
  * nightly pass that began at 02:00 for every account after the switch.
  */
-export function loadReasoningControls(): Promise<ReasoningAdminControls> {
+export async function loadReasoningControls(): Promise<ReasoningAdminControls> {
+  // The request cache itself can fail (an event without a kind); the
+  // controls then fail closed like an unreadable row, never the caller.
+  try {
+    return await loadMemoisedControls();
+  } catch {
+    return UNREADABLE;
+  }
+}
+
+function loadMemoisedControls(): Promise<ReasoningAdminControls> {
   return memoizePerRequest(
     "ai-reasoning-controls",
     async () => {
@@ -173,4 +188,27 @@ export async function resolveJobReasoning(
     },
   });
   return completionReasoning(resolved, job);
+}
+
+/**
+ * The effective Coach level for a turn: the person's stored choice
+ * (`coachPrefsJson.reasoning`, absent read as the default) after the
+ * operator's switch and cap. Who pays is applied inside the turn, once its
+ * chain is known; the provider's ability is left to its client. Never
+ * throws: an unreadable preference reads as the default, unreadable
+ * controls as "off".
+ */
+export async function resolveCoachTurnReasoningLevel(
+  coachPrefsJson: unknown,
+): Promise<ReasoningLevel> {
+  const stored =
+    coachPrefsJson && typeof coachPrefsJson === "object"
+      ? (coachPrefsJson as { reasoning?: unknown }).reasoning
+      : undefined;
+  return resolveReasoning({
+    surface: "coach",
+    userPref: isReasoningLevel(stored) ? stored : DEFAULT_REASONING_LEVEL,
+    admin: await loadReasoningControls(),
+    costOwner: "user",
+  }).effort;
 }
