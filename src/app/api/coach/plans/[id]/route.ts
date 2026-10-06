@@ -36,6 +36,7 @@ import { prisma } from "@/lib/db";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
+import { clampReviewDays } from "@/lib/ai/coach/memory/propose-plan";
 import { COACH_CHECKIN_REVIEW_DAYS } from "@/lib/daily/coach-checkin-intents";
 import { coachPlanPatchSchema } from "@/lib/validations/coach-plan";
 
@@ -102,15 +103,25 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx: RouteCtx) => {
   // +COACH_CHECKIN_REVIEW_DAYS so the Today check-in card fires in a week. Read
   // the current row first so an explicitly-pinned review date is never
   // clobbered; the read stays owner-scoped, so it leaks no cross-account state.
+  // v1.41 — a plan the Coach proposed in a turn carries its review window as
+  // the distance from the proposal to its `reviewDate`; taking it on here
+  // counts that window from now, exactly like the tap under the answer
+  // (`decidePlanProposal`).
   if (parsed.data.status === "active" && parsed.data.reviewDate === undefined) {
     const current = await prisma.coachPlan.findFirst({
       where: { id, userId: user.id, deletedAt: null },
-      select: { reviewDate: true },
+      select: { reviewDate: true, status: true, createdAt: true },
     });
     if (current && current.reviewDate === null) {
       data.reviewDate = new Date(
         Date.now() + COACH_CHECKIN_REVIEW_DAYS * 86_400_000,
       );
+    } else if (current?.reviewDate && current.status === "proposed") {
+      const days = clampReviewDays(
+        (current.reviewDate.getTime() - current.createdAt.getTime()) /
+          86_400_000,
+      );
+      data.reviewDate = new Date(Date.now() + days * 86_400_000);
     }
   }
 

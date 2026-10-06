@@ -56,6 +56,8 @@ function bytes(tag: string): Uint8Array {
  * callback (the surfacing step).
  */
 function makePrisma(options: {
+  lapsedPlans?: number;
+  lapsedFacts?: number;
   overdue?: {
     id: string;
     userId: string;
@@ -83,6 +85,10 @@ function makePrisma(options: {
     coachPlan: {
       findMany: vi.fn(async () => options.plans ?? []),
       update: vi.fn(async () => ({})),
+      updateMany: vi.fn(async () => ({ count: options.lapsedPlans ?? 0 })),
+    },
+    coachFact: {
+      updateMany: vi.fn(async () => ({ count: options.lapsedFacts ?? 0 })),
     },
     coachConversation: { create: vi.fn(async () => ({ id: "c1" })) },
     coachMessage: { create: vi.fn(async () => ({ id: "m1" })) },
@@ -99,6 +105,30 @@ function makePrisma(options: {
 }
 
 describe("runCoachReminderSweep", () => {
+  it("lets plan and fact proposals lapse after fourteen days", async () => {
+    const prisma = makePrisma({ lapsedPlans: 2, lapsedFacts: 1 });
+    const summary = await runCoachReminderSweep(prisma as never, NOW);
+    expect(summary.planProposalsLapsed).toBe(2);
+    expect(summary.factProposalsLapsed).toBe(1);
+    const cutoff = new Date(NOW.getTime() - 14 * 86_400_000);
+    expect(prisma.coachPlan.updateMany).toHaveBeenCalledWith({
+      where: {
+        deletedAt: null,
+        status: "proposed",
+        createdAt: { lt: cutoff },
+      },
+      data: { status: "abandoned", reviewDate: null },
+    });
+    expect(prisma.coachFact.updateMany).toHaveBeenCalledWith({
+      where: {
+        deletedAt: null,
+        source: "proposed",
+        createdAt: { lt: cutoff },
+      },
+      data: { deletedAt: NOW },
+    });
+  });
+
   it("mints a plan-review reminder from the plan's own prose and clears the reviewDate", async () => {
     const prisma = makePrisma({
       plans: [

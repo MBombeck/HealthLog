@@ -16,6 +16,12 @@
  *    Source: the band transitions already computed by
  *    `buildPeriodNarrativeContext` (MAD baseline, prior-period band edges).
  *
+ * v1.41 — the block carries only these two. Facts, plans and reminders used
+ * to ride here too, which meant they never reached a tool-mode turn (no
+ * snapshot is sent there) and were the first thing shed under the char cap.
+ * They now travel in the memory block every turn starts with
+ * (`memory/context-block.ts`).
+ *
  * Unencrypted by the same rule as `metricSourceJson` / the derived block:
  * it is the user's own labels + numbers + a provenance-grounded narrative
  * recall, never free conversational content (that lives in the encrypted
@@ -39,7 +45,6 @@ import {
 } from "@/lib/insights/narrative/period-narrative";
 import type { BaselineProfile } from "@/lib/insights/derived";
 import type { Locale } from "@/lib/i18n/config";
-import { buildCoachFactsBlock } from "./facts";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import {
   UNBOUNDED_REACH,
@@ -48,21 +53,13 @@ import {
   withinReach,
   type CoachHistoryReach,
 } from "./history-reach";
-import {
-  buildCoachPlansBlock,
-  buildCoachRemindersBlock,
-  type CoachPlanInjectEntry,
-  type CoachReminderInjectEntry,
-} from "./plans";
 
 /** The period the rolling profile recalls — month is the high-signal beat. */
 const MEMORY_PERIOD: NarrativePeriod = "month";
 
 /**
  * How far back the narrative and the band memory reach: the prior month
- * against the current one. A shorter lookback limit leaves both out; facts,
- * plans and reminders are what the person told the Coach, not readings, and
- * stay.
+ * against the current one. A shorter lookback limit leaves both out.
  */
 const MEMORY_HISTORY_HORIZON_DAYS = 2 * 30; // two `PERIOD_DAYS.month`
 
@@ -113,24 +110,6 @@ export interface PriorNarrativeRecall {
 export interface CoachMemoryBlock {
   priorNarrative?: PriorNarrativeRecall;
   trendMemory: Record<string, TrendMemoryEntry>;
-  /**
-   * v1.11.1 — durable personal facts the Coach has learned (top-N, ranked by
-   * confidence then recency). Descriptive, never diagnostic. Absent when none.
-   */
-  facts?: Array<{ category: string; text: string }>;
-  /**
-   * v1.21.3 (B1) — the user's ACTIVE goal / if-then plans (top-N, newest
-   * first). Only confirmed (`active`) plans appear here — a `proposed` plan is
-   * still awaiting the user's confirmation. Absent when none.
-   */
-  plans?: CoachPlanInjectEntry[];
-  /**
-   * v1.22 (B2/B3) — the user's near/overdue or already-surfaced episodic
-   * reminders ("remind me about X"), top-N soonest first. Lets the Coach
-   * reference them unprompted next turn — the progress-reflection reflex.
-   * Absent when none.
-   */
-  reminders?: CoachReminderInjectEntry[];
 }
 
 /** Pull the headline + driver recall off the latest period narrative. */
@@ -224,58 +203,11 @@ export async function buildCoachMemoryBlock(
     // A context failure leaves trendMemory empty — never sinks the turn.
   }
 
-  // Sub-source 3 (v1.11.1): durable personal facts the Coach has extracted.
-  // Fault-isolated like the others — a read/decrypt failure drops the facts
-  // sub-block and never sinks the turn.
-  let facts: Array<{ category: string; text: string }> | undefined;
-  try {
-    const factsBlock = await buildCoachFactsBlock(userId);
-    if (factsBlock && factsBlock.facts.length > 0) {
-      facts = factsBlock.facts;
-    }
-  } catch {
-    facts = undefined;
-  }
-
-  // Sub-source 4 (v1.21.3 B1): the user's confirmed goal / if-then plans.
-  // Fault-isolated like the facts block; only `active` plans are injected.
-  let plans: CoachPlanInjectEntry[] | undefined;
-  try {
-    const plansBlock = await buildCoachPlansBlock(userId);
-    if (plansBlock && plansBlock.plans.length > 0) {
-      plans = plansBlock.plans;
-    }
-  } catch {
-    plans = undefined;
-  }
-
-  // Sub-source 5 (v1.22 B2/B3): the user's near/overdue or surfaced episodic
-  // reminders. Fault-isolated like the others; the read half lives in plans.ts
-  // alongside the plan-injection block.
-  let reminders: CoachReminderInjectEntry[] | undefined;
-  try {
-    const remindersBlock = await buildCoachRemindersBlock(userId, now);
-    if (remindersBlock && remindersBlock.reminders.length > 0) {
-      reminders = remindersBlock.reminders;
-    }
-  } catch {
-    reminders = undefined;
-  }
-
-  if (
-    !priorNarrative &&
-    Object.keys(trendMemory).length === 0 &&
-    !facts &&
-    !plans &&
-    !reminders
-  ) {
+  if (!priorNarrative && Object.keys(trendMemory).length === 0) {
     return null;
   }
 
   const block: CoachMemoryBlock = { trendMemory };
   if (priorNarrative) block.priorNarrative = priorNarrative;
-  if (facts) block.facts = facts;
-  if (plans) block.plans = plans;
-  if (reminders) block.reminders = reminders;
   return block;
 }

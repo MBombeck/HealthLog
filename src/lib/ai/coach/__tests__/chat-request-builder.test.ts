@@ -145,4 +145,61 @@ Reply now as the assistant, in English. The selected-workout block is already au
       ],
     });
   });
+
+  it("puts the memory block ahead of the inventory in tool mode", () => {
+    const request = buildCoachToolRequest({
+      systemPrompt: "SYSTEM",
+      toolModeAddendum: "TOOLS",
+      focusHint: "",
+      workoutEvidence: null,
+      memoryBlock: "WHAT YOU KNOW ABOUT THIS PERSON\n<fenced>",
+      dataInventory: "DATA INVENTORY",
+      guidedBlock: "",
+      transcript: "USER: Am I on track?",
+      languageName: "English",
+    });
+    const content = request.messages[0].content as string;
+    expect(content.startsWith("WHAT YOU KNOW ABOUT THIS PERSON")).toBe(true);
+    expect(content.indexOf("WHAT YOU KNOW")).toBeLessThan(
+      content.indexOf("DATA INVENTORY"),
+    );
+  });
+
+  it("leaves the tool request untouched without a memory block", () => {
+    const base = {
+      systemPrompt: "SYSTEM",
+      toolModeAddendum: "TOOLS",
+      focusHint: "",
+      workoutEvidence: null,
+      dataInventory: "DATA INVENTORY",
+      guidedBlock: "",
+      transcript: "USER: hi",
+      languageName: "English",
+    };
+    expect(buildCoachToolRequest({ ...base, memoryBlock: "" })).toEqual(
+      buildCoachToolRequest(base),
+    );
+  });
+
+  it("puts the memory block into the no-tools prompt too", () => {
+    const turnContext = buildCoachTurnContext({
+      priorTurns: [],
+      priorSummary: null,
+      message: "Am I on track?",
+      guidedQuestion: undefined,
+    });
+    const { userPrompt } = buildCoachProviderPrompts({
+      baseSystemPrompt: "BASE",
+      rememberAddendum: "",
+      suggestActionAddendum: "",
+      languageName: "English",
+      snapshotJson: "{}",
+      referenceGrounding: null,
+      workoutEvidence: null,
+      turnContext,
+      memoryBlock: "WHAT YOU KNOW ABOUT THIS PERSON",
+    });
+    expect(userPrompt.startsWith("WHAT YOU KNOW ABOUT THIS PERSON")).toBe(true);
+    expect(userPrompt).toContain("SNAPSHOT");
+  });
 });

@@ -24,7 +24,11 @@
  */
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
-import { readDayAggregates } from "@/lib/measurements/day-aggregates";
+import { isCumulativeDaySumType } from "@/lib/measurements/cumulative-day-sum";
+import {
+  readDayAggregates,
+  type DayAggregateRow,
+} from "@/lib/measurements/day-aggregates";
 
 export const COACH_PLAN_REVIEW_QUEUE = "coach-plan-review";
 // Daily at 05:25 Europe/Berlin — just after the 05:20 reminder sweep, so the
@@ -122,6 +126,23 @@ export function resolvePlanMetric(metric: string): ResolvedMetric | null {
     default:
       return null;
   }
+}
+
+/**
+ * One day's value of a plan's metric: the day's total for a cumulative type
+ * (steps), the day's mean otherwise (the hourly-weighted mean for pulse).
+ * The review read-back and the progress line in the Coach's memory block
+ * (`memory/plan-progress.ts`) read a plan's series through this one rule, so
+ * the two can never disagree about how the plan went. A step plan used to
+ * average the samples of each day, which read a day of 9,000 steps as a few
+ * hundred.
+ */
+export function planDayValue(
+  type: MeasurementType,
+  row: DayAggregateRow,
+): number {
+  if (isCumulativeDaySumType(type)) return row.sum;
+  return row.dayMean ?? row.sum / row.n;
 }
 
 export type ExperimentVerdict =
@@ -298,11 +319,11 @@ export async function runCoachPlanReviewTick(
         const before: number[] = [];
         const after: number[] = [];
         const all: number[] = [];
-        for (const { day, sum, n } of byDay) {
-          const dayMean = sum / n;
-          all.push(dayMean);
-          if (day < startKey) before.push(dayMean);
-          else after.push(dayMean);
+        for (const row of byDay) {
+          const dayValue = planDayValue(resolved.type, row);
+          all.push(dayValue);
+          if (row.day < startKey) before.push(dayValue);
+          else after.push(dayValue);
         }
         outcome = buildExperimentOutcome({
           label: resolved.label,
