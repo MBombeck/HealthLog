@@ -22,6 +22,7 @@
  */
 import { useQueryClient } from "@tanstack/react-query";
 
+import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useTranslations } from "@/lib/i18n/context";
@@ -118,6 +119,12 @@ export interface CoachReasoningSelectProps {
   state: CoachReasoningState;
   /** Locks the select while a write is in flight. */
   busy?: boolean;
+  /**
+   * `sheet` (default): the quick settings' stacked field, as wide as the
+   * sheet. `card`: Settings → Coach, where it sits in the grid beside Tone
+   * and Reply length and takes their small label and content-wide select.
+   */
+  variant?: "sheet" | "card";
   onChange: (next: ReasoningLevel) => void;
 }
 
@@ -127,21 +134,30 @@ export function CoachReasoningSelect({
   value,
   state,
   busy = false,
+  variant = "sheet",
   onChange,
 }: CoachReasoningSelectProps) {
   const { t } = useTranslations();
   const options = reasoningOptions(state, t);
   const locked = reasoningLocked(state);
+  const card = variant === "card";
   return (
-    <div data-slot="coach-reasoning-field">
-      <Label htmlFor={id} noColon>
+    <div
+      data-slot="coach-reasoning-field"
+      className={cn(card && "flex flex-col gap-2")}
+    >
+      <Label
+        htmlFor={id}
+        noColon={!card}
+        className={cn(card && "text-xs font-medium")}
+      >
         {t(REASONING_SETTING_KEYS.label)}
       </Label>
       <NativeSelect
         id={id}
         data-slot="coach-reasoning-select"
         data-locked={locked ? "true" : undefined}
-        className="mt-1"
+        className={card ? "w-fit" : "mt-1"}
         value={shownReasoningLevel(value, state)}
         disabled={locked || busy}
         aria-describedby={`${id}-hint`}
@@ -160,7 +176,10 @@ export function CoachReasoningSelect({
           </option>
         ))}
       </NativeSelect>
-      <p id={`${id}-hint`} className="text-muted-foreground mt-1 text-xs">
+      <p
+        id={`${id}-hint`}
+        className={cn("text-muted-foreground text-xs", !card && "mt-1")}
+      >
         {t(
           locked
             ? REASONING_SETTING_KEYS.disabled

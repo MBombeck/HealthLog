@@ -6,10 +6,15 @@
  * Coach facts surface. It is also the "Undo" under a note the Coach saved in
  * a turn (v1.41).
  *
- * v1.41 — PATCH rewrites the fact's text (re-encrypted; the category and the
- * source stay). Only a listed fact can be edited: a proposal still waiting
- * for the person's answer is not one, and answers 404 like an unknown id.
- * Editing is the person's own data, so no Coach or AI gate.
+ * v1.41 — PATCH rewrites the fact's text (re-encrypted) and reads the new
+ * wording again (`settleCategory`, the lexicon the Coach's own saves pass):
+ * text that now names a medication moves to `medication`, so the medications
+ * module still filters it; other health wording moves a non-health category
+ * to `condition`; otherwise the category stays. A health fact the person
+ * wrote themselves is confirmed by that edit (`source: "user"`). Only a
+ * listed fact can be edited: a proposal still waiting for the person's
+ * answer is not one, and answers 404 like an unknown id. Editing is the
+ * person's own data, so no Coach or AI gate.
  *
  * Ownership + existence privacy: the soft-delete uses `updateMany` scoped
  * `where: { id, userId, deletedAt: null }` rather than `update`. A
@@ -34,7 +39,13 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { isHealthFact } from "@/lib/ai/coach/facts";
+import { settleCategory } from "@/lib/ai/coach/memory/remember";
 import { PROPOSED_FACT_SOURCE } from "@/lib/ai/coach/memory/shared";
+import {
+  COACH_MEMORY_CATEGORIES,
+  type CoachMemoryCategory,
+} from "@/lib/ai/coach/types";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { coachFactPatchSchema } from "@/lib/validations/coach-fact";
 
@@ -70,16 +81,30 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx: RouteCtx) => {
   if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
 
   const text = parsed.data.fact.replace(/\s+/g, " ");
+  const live = {
+    id,
+    userId: user.id,
+    deletedAt: null,
+    source: { not: PROPOSED_FACT_SOURCE },
+  };
+  const current = await prisma.coachFact.findFirst({
+    where: live,
+    select: { category: true, source: true },
+  });
+  if (!current) return apiError("Fact not found", 404);
+  const known = (COACH_MEMORY_CATEGORIES as readonly string[]).includes(
+    current.category,
+  );
+  const category = known
+    ? settleCategory(current.category as CoachMemoryCategory, text)
+    : current.category;
+  // A health fact the person wrote is one they confirmed.
+  const source = isHealthFact(category, text) ? "user" : current.source;
   // `updateMany` scoped by id, owner and liveness: an unknown, cross-user,
   // deleted or still-proposed id is a 0-count no-op, never a P2025 throw.
   const { count } = await prisma.coachFact.updateMany({
-    where: {
-      id,
-      userId: user.id,
-      deletedAt: null,
-      source: { not: PROPOSED_FACT_SOURCE },
-    },
-    data: { factEncrypted: encryptToBytes(text) },
+    where: live,
+    data: { factEncrypted: encryptToBytes(text), category, source },
   });
   if (count === 0) {
     // Indistinguishable from "owned by someone else" — never reveal which.

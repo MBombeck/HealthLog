@@ -72,7 +72,7 @@ export function GuidedQuestionsCard({
               onClick={onStart}
               className={cn(
                 "bg-primary/15 text-primary inline-flex min-h-8 items-center rounded-full px-3 text-xs font-medium",
-                "hover:bg-primary/25 focus-visible:ring-primary/40 focus-visible:ring-2 focus-visible:outline-none",
+                "hover:bg-primary/25 focus-visible:ring-input-focus focus-visible:ring-2 focus-visible:outline-none",
                 "disabled:opacity-60",
               )}
             >
@@ -85,7 +85,7 @@ export function GuidedQuestionsCard({
               onClick={onLater}
               className={cn(
                 "text-muted-foreground hover:text-foreground inline-flex min-h-8 items-center rounded-full px-2.5 text-xs",
-                "hover:bg-primary/10 focus-visible:ring-primary/40 focus-visible:ring-2 focus-visible:outline-none",
+                "hover:bg-primary/10 focus-visible:ring-input-focus focus-visible:ring-2 focus-visible:outline-none",
                 "disabled:opacity-60",
               )}
             >
@@ -98,7 +98,7 @@ export function GuidedQuestionsCard({
               onClick={onDismissAll}
               className={cn(
                 "text-muted-foreground hover:text-foreground inline-flex min-h-8 items-center rounded-full px-2.5 text-xs",
-                "hover:bg-primary/10 focus-visible:ring-primary/40 focus-visible:ring-2 focus-visible:outline-none",
+                "hover:bg-primary/10 focus-visible:ring-input-focus focus-visible:ring-2 focus-visible:outline-none",
                 "disabled:opacity-60",
               )}
             >

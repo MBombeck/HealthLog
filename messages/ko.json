@@ -6076,7 +6076,6 @@
         "categoryGoal": "목표",
         "categoryConstraint": "제약",
         "categoryContext": "맥락",
-        "forget": "잊기",
         "forgetAria": "이 정보 잊기",
         "forgetTitle": "이 정보를 잊을까요?",
         "forgetBody": "다음 메시지부터 코치가 이 정보를 쓰지 않아요. 한번 잊은 정보는 되돌릴 수 없어요.",

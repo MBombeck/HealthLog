@@ -30,7 +30,8 @@
  * for the record.
  *
  * Building the block stamps `last_used_at` on the facts it carries, without
- * touching `updated_at` (an edit, not a use, moves a fact up the ranking).
+ * touching `updated_at` (an edit, not a use, moves a fact up the ranking). A
+ * pending proposal is stamped only when the answer offering it is stored.
  *
  * Server-only. Fact and plan text never reach `annotate()`.
  */
@@ -258,9 +259,11 @@ async function loadReminders(userId: string, now: Date): Promise<string[]> {
 
 /**
  * The oldest health fact the background found and nobody offered yet, or
- * none. Offering it stamps `last_used_at`, so it is offered once.
+ * none. It counts as offered (`last_used_at`) only once an answer carrying it
+ * is stored (`turn-writes.ts`): a turn that is blocked, fails or is abandoned
+ * offers it again next time.
  */
-async function takePendingProposal(
+async function findPendingProposal(
   userId: string,
   medicationsOn: boolean,
   now: Date,
@@ -283,7 +286,6 @@ async function takePendingProposal(
   for (const row of rows) {
     const fact = decryptOrNull(row.factEncrypted);
     if (fact === null || fact.trim() === "") continue;
-    await stampLastUsed(userId, [row.id], now);
     return {
       proposal: true,
       proposalId: row.id,
@@ -330,7 +332,7 @@ export async function buildMemoryContextBlock(
     loadPlans(args.userId, now).catch(() => []),
     loadReminders(args.userId, now).catch(() => []),
   ]);
-  const pendingProposal = await takePendingProposal(
+  const pendingProposal = await findPendingProposal(
     args.userId,
     medicationsOn,
     now,

@@ -13,15 +13,17 @@
  * which offer it answered, and the server resolves it from what it stored.
  *
  * Outline pills in the foreground at reduced contrast, never an accent
- * colour, never a card. Hidden while a turn runs, so a pill can never answer
+ * colour (not even the focus ring), never a card. Hidden while a turn runs, so a pill can never answer
  * a reply that is about to stop being the latest. The tapped pill goes away
  * with the rest, so focus moves to the composer.
  */
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { COACH_SUGGESTED_REPLIES_KEYS } from "@/lib/ai/coach/dialog-keys";
 
 import { focusCoachComposer } from "./composer-focus";
+import { COACH_FOCUS_RING } from "./focus-ring";
 
 /** At most this many pills render, whatever the offer carries. */
 export const MAX_SUGGESTED_REPLIES = 4;
@@ -80,8 +82,12 @@ export function SuggestedReplies({
           // The answer's own scale (text-sm, regular weight) at reduced
           // contrast; the 44 px tap floor below `sm`, 36 px beside a
           // pointer. A long label wraps inside the pill instead of pushing
-          // past the column at 390 px.
-          className="border-border text-foreground/80 hover:text-foreground hover:bg-muted h-auto min-h-11 max-w-full rounded-full px-3 py-1.5 text-left text-sm leading-snug font-normal whitespace-normal shadow-none sm:min-h-9"
+          // past the column at 390 px. Keyboard focus is the Coach's
+          // neutral ring, not the primitive's purple one.
+          className={cn(
+            "border-border text-foreground/80 hover:text-foreground hover:bg-muted h-auto min-h-11 max-w-full rounded-full px-3 py-1.5 text-left text-sm leading-snug font-normal whitespace-normal shadow-none sm:min-h-9",
+            COACH_FOCUS_RING,
+          )}
           data-reply-id={reply.id}
           data-reply-kind={reply.kind}
           {...reply.data}

@@ -7,8 +7,11 @@
  * that a health proposal is stored nowhere until the person taps and is then
  * read back from the encrypted trail, that a plan taken on carries its
  * progress into both the block and the briefing, and that `last_used_at`
- * moves without moving `updated_at`. Those are the claims here, through the
- * same functions the turn, the chat request and the briefing call.
+ * moves without moving `updated_at`. And that a turn's fact or plan exists
+ * only once the answer carrying it is stored (`appendMessage`): a blocked,
+ * failed or abandoned answer leaves nothing behind. Those are the claims
+ * here, through the same functions the turn, the chat request and the
+ * briefing call.
  */
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -23,6 +26,9 @@ import {
   rememberFactFromTool,
 } from "@/lib/ai/coach/memory/contract";
 import { resetTurnMarksForTests } from "@/lib/ai/coach/memory/remember";
+import { resetStagedTurnWritesForTests } from "@/lib/ai/coach/memory/turn-writes";
+import { appendMessage } from "@/lib/ai/coach/persistence";
+import type { CoachProvenance } from "@/lib/ai/coach/types";
 import { storeDeterministicFacts } from "@/lib/ai/coach/facts";
 import { runCoachReminderSweep } from "@/lib/jobs/coach-reminder-sweep";
 
@@ -79,9 +85,25 @@ async function assistantMessage(
   });
 }
 
+/** Stores the turn's answer the way the pipeline does. */
+function storeAnswer(
+  conversationId: string,
+  provenance: Partial<CoachProvenance>,
+  providerType = "anthropic",
+) {
+  return appendMessage({
+    conversationId,
+    role: "assistant",
+    content: "answer",
+    metricSource: { windows: [], metrics: [], ...provenance },
+    providerType,
+  });
+}
+
 beforeEach(async () => {
   await truncateAllTables(getPrismaClient());
   resetTurnMarksForTests();
+  resetStagedTurnWritesForTests();
 });
 
 describe("a fact the Coach keeps reaches the next turn", () => {
@@ -104,9 +126,21 @@ describe("a fact the Coach keeps reaches the next turn", () => {
       },
     });
     expect(saved.kind).toBe("saved");
+    if (saved.kind !== "saved") return;
+    // Nothing until the answer that notes it is stored.
+    expect(await prisma.coachFact.count()).toBe(0);
+    await storeAnswer(turn.conversationId, {
+      memoryNote: {
+        proposal: false,
+        factId: saved.note.factId,
+        category: saved.note.category,
+      },
+    });
     const row = await prisma.coachFact.findFirstOrThrow({
       where: { userId: user.id },
     });
+    // The id the note (and its Undo) carries is the row's.
+    expect(row.id).toBe(saved.note.factId);
     expect(row.source).toBe("coach");
     expect(row.sourceMessageId).toBe(turn.userMessageId);
     expect(decryptFromBytes(row.factEncrypted)).toBe(
@@ -221,6 +255,37 @@ describe("a health fact waits for the person's tap", () => {
     });
     // Not a known fact: never in the block itself.
     expect(first?.text).toBe("");
+    // A turn that never stores its answer has not offered it.
+    const retried = await buildMemoryContextBlock({
+      userId: user.id,
+      conversationId: turn.conversationId,
+      locale: "en",
+    });
+    expect(retried?.pendingProposal?.proposalId).toBe(pending.id);
+    // A blocked answer (stored without its note) has not offered it either.
+    await storeAnswer(turn.conversationId, {});
+    expect(
+      (
+        await buildMemoryContextBlock({
+          userId: user.id,
+          conversationId: turn.conversationId,
+          locale: "en",
+        })
+      )?.pendingProposal?.proposalId,
+    ).toBe(pending.id);
+    // An answer that carries it offers it, once.
+    await storeAnswer(turn.conversationId, {
+      memoryNote: {
+        proposal: true,
+        proposalId: pending.id,
+        category: "condition",
+      },
+    });
+    const offered = await prisma.coachFact.findUniqueOrThrow({
+      where: { id: pending.id },
+    });
+    expect(offered.lastUsedAt).not.toBeNull();
+    expect(offered.updatedAt.getTime()).toBe(pending.updatedAt.getTime());
     const second = await buildMemoryContextBlock({
       userId: user.id,
       conversationId: turn.conversationId,
@@ -253,6 +318,7 @@ describe("a plan the person takes on", () => {
     const outcome = await proposePlanFromTool({
       userId: user.id,
       conversationId: turn.conversationId,
+      locale: "en",
       call: {
         metric: "WEIGHT",
         target: "75 kg by December",
@@ -263,23 +329,21 @@ describe("a plan the person takes on", () => {
     });
     expect(outcome.kind).toBe("proposed");
     if (outcome.kind !== "proposed") return;
+    // Nothing until the answer that proposes it is stored.
+    expect(await prisma.coachPlan.count()).toBe(0);
+    const answer = await storeAnswer(turn.conversationId, {
+      planProposal: {
+        planId: outcome.proposal.planId,
+        metric: "WEIGHT",
+        reviewInDays: 21,
+      },
+    });
     const proposedRow = await prisma.coachPlan.findUniqueOrThrow({
       where: { id: outcome.proposal.planId },
     });
     expect(proposedRow.status).toBe("proposed");
+    expect(proposedRow.sourceConversationId).toBe(turn.conversationId);
     expect(decryptFromBytes(proposedRow.ifCueEncrypted)).toBe("after dinner");
-
-    const answer = await assistantMessage(turn.conversationId, {
-      metricSource: {
-        windows: [],
-        metrics: [],
-        planProposal: {
-          planId: outcome.proposal.planId,
-          metric: "WEIGHT",
-          reviewInDays: 21,
-        },
-      },
-    });
     const decided = await decidePlanProposal({
       userId: user.id,
       conversationId: turn.conversationId,
@@ -337,5 +401,136 @@ describe("a plan the person takes on", () => {
         accept: false,
       }),
     ).resolves.toEqual({ kind: "stale" });
+  });
+});
+
+describe("a turn that does not store its answer keeps nothing", () => {
+  const PLAN = {
+    metric: "WEIGHT",
+    ifCue: "after dinner",
+    thenAction: "a 20-minute walk",
+    reviewInDays: 14,
+  };
+
+  it("never keeps a plan whose text the outbound screen blocks", async () => {
+    const prisma = getPrismaClient();
+    const user = await seedUser("memory-plan-unsafe");
+    const turn = await seedTurn(user.id, "Help me with my blood pressure.");
+    const outcome = await proposePlanFromTool({
+      userId: user.id,
+      conversationId: turn.conversationId,
+      locale: "en",
+      call: { ...PLAN, thenAction: "increase your ramipril to 10 mg" },
+    });
+    expect(outcome).toEqual({ kind: "declined", reason: "unsafe" });
+    await storeAnswer(turn.conversationId, {});
+    expect(await prisma.coachPlan.count()).toBe(0);
+  });
+
+  it.each([
+    ["a blocked answer", () => ({ provenance: {}, providerType: "anthropic" })],
+    [
+      "an abandoned turn",
+      () => ({ provenance: undefined, providerType: "cancelled" }),
+    ],
+  ])("leaves no plan and no fact behind after %s", async (_label, shape) => {
+    const prisma = getPrismaClient();
+    const user = await seedUser(`memory-nothing-${_label.length}`);
+    const message = "I prefer to walk after dinner, help me lose weight.";
+    const turn = await seedTurn(user.id, message);
+    const plan = await proposePlanFromTool({
+      userId: user.id,
+      conversationId: turn.conversationId,
+      locale: "en",
+      call: PLAN,
+    });
+    const fact = await rememberFactFromTool({
+      userId: user.id,
+      conversationId: turn.conversationId,
+      userMessage: message,
+      call: {
+        category: "preference",
+        fact: "Prefers to walk after dinner",
+        why: "",
+      },
+    });
+    expect(plan.kind).toBe("proposed");
+    expect(fact.kind).toBe("saved");
+    const { provenance, providerType } = shape();
+    if (provenance === undefined) {
+      await appendMessage({
+        conversationId: turn.conversationId,
+        role: "assistant",
+        content: "",
+        providerType,
+      });
+    } else {
+      await storeAnswer(turn.conversationId, provenance, providerType);
+    }
+    // What GET /api/coach/plans and the memory list read: nothing.
+    expect(await prisma.coachPlan.count()).toBe(0);
+    expect(await prisma.coachFact.count()).toBe(0);
+    // A later answer in the conversation cannot claim them either.
+    if (plan.kind !== "proposed" || fact.kind !== "saved") return;
+    await storeAnswer(turn.conversationId, {
+      planProposal: {
+        planId: plan.proposal.planId,
+        metric: "WEIGHT",
+        reviewInDays: 14,
+      },
+      memoryNote: {
+        proposal: false,
+        factId: fact.note.factId,
+        category: "preference",
+      },
+    });
+    expect(await prisma.coachPlan.count()).toBe(0);
+    expect(await prisma.coachFact.count()).toBe(0);
+  });
+
+  it("leaves nothing behind when the provider fails and no answer is stored", async () => {
+    const prisma = getPrismaClient();
+    const user = await seedUser("memory-provider-failed");
+    const turn = await seedTurn(user.id, "help me lose weight");
+    const plan = await proposePlanFromTool({
+      userId: user.id,
+      conversationId: turn.conversationId,
+      locale: "en",
+      call: PLAN,
+    });
+    expect(plan.kind).toBe("proposed");
+    expect(await prisma.coachPlan.count()).toBe(0);
+  });
+});
+
+describe("two taps on Yes, remember it", () => {
+  it("save the fact once", async () => {
+    const prisma = getPrismaClient();
+    const user = await seedUser("memory-double-tap");
+    const turn = await seedTurn(user.id, "I have asthma");
+    const answer = await assistantMessage(turn.conversationId, {
+      trail: {
+        entries: [],
+        proposal: {
+          proposalId: "mp_double",
+          category: "condition",
+          fact: "Has asthma",
+        },
+      },
+    });
+    const tap = () =>
+      decideFactProposal({
+        userId: user.id,
+        conversationId: turn.conversationId,
+        messageId: answer.id,
+        proposalId: "mp_double",
+        accept: true,
+      });
+    const outcomes = await Promise.all(Array.from({ length: 12 }, tap));
+    // One row, and one tap answered: the others find it already decided.
+    expect(await prisma.coachFact.count({ where: { userId: user.id } })).toBe(
+      1,
+    );
+    expect(outcomes.filter((o) => o.kind === "saved")).toHaveLength(1);
   });
 });

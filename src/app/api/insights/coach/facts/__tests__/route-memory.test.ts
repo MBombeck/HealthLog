@@ -16,7 +16,8 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-vi.mock("@/lib/ai/coach/memory/remember", () => ({
+vi.mock("@/lib/ai/coach/memory/remember", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/ai/coach/memory/remember")>()),
   rememberMessageAsFact: vi.fn(),
 }));
 
@@ -237,10 +238,47 @@ describe("PATCH /api/insights/coach/facts/[id]", () => {
     expect(Buffer.from(arg.data.factEncrypted).toString()).toBe(
       "Wants 74 kg by December",
     );
-    expect(Object.keys(arg.data)).toEqual(["factEncrypted"]);
+    // Not health: the category and the source stay.
+    expect(arg.data).toMatchObject({ category: "goal", source: "coach" });
+    expect(Object.keys(arg.data).sort()).toEqual(
+      ["category", "factEncrypted", "source"].sort(),
+    );
   });
 
+  it.each([
+    // Health text under a non-health category: moved, and confirmed.
+    ["preference", "coach", "Takes metformin with breakfast", "medication"],
+    ["context", "extracted", "Has asthma since childhood", "condition"],
+    // A medication named under another health category still moves, so the
+    // medications module keeps filtering it.
+    ["condition", "user", "Asthma, uses a salbutamol inhaler", "medication"],
+    // A health category the new wording no longer reads as: kept.
+    ["constraint", "coach", "No running before 7", "constraint"],
+  ])(
+    "re-reads a %s fact (%s) edited to %j as %s",
+    async (category, source, fact, expected) => {
+      vi.mocked(prisma.coachFact.updateMany).mockResolvedValue({
+        count: 1,
+      } as never);
+      vi.mocked(prisma.coachFact.findFirst).mockResolvedValue({
+        id: "f1",
+        category,
+        source,
+        updatedAt: new Date("2026-10-06T10:00:00Z"),
+      } as never);
+      const res = await callPatch(req("PATCH", { fact }), ctx);
+      expect(res.status).toBe(200);
+      const arg = vi.mocked(prisma.coachFact.updateMany).mock.calls[0]?.[0] as {
+        data: { category: string; source: string };
+      };
+      expect(arg.data.category).toBe(expected);
+      // A health fact the person wrote themselves is one they confirmed.
+      expect(arg.data.source).toBe("user");
+    },
+  );
+
   it("is a 404 for an unknown, foreign or proposed id", async () => {
+    vi.mocked(prisma.coachFact.findFirst).mockResolvedValue(null);
     vi.mocked(prisma.coachFact.updateMany).mockResolvedValue({
       count: 0,
     } as never);

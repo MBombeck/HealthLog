@@ -207,6 +207,12 @@ export interface DialogToolContext {
   /** What the record holds; null on the no-tools path. */
   inventory: InventoryEntry[] | null;
   /**
+   * The person's scheduled doses and medication names, which the outbound
+   * screen reads a proposed plan's text against, as it reads the answer.
+   */
+  scheduleDoses?: readonly number[];
+  medicationNames?: readonly string[];
+  /**
    * A window was set for this conversation (the header pill, a deep link):
    * a question about the window is never asked.
    */
@@ -344,6 +350,11 @@ export async function runDialogTool(args: {
         const outcome = await proposePlanFromTool({
           userId: ctx.userId,
           conversationId: ctx.conversationId,
+          locale: ctx.locale,
+          ...(ctx.scheduleDoses ? { scheduleDoses: ctx.scheduleDoses } : {}),
+          ...(ctx.medicationNames
+            ? { medicationNames: ctx.medicationNames }
+            : {}),
           call: parsed.data,
         });
         if (outcome.kind === "declined") {

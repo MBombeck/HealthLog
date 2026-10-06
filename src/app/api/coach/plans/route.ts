@@ -5,7 +5,10 @@
  * Coach proposes. A plan is an "if-then" implementation intention tied to one
  * metric, with an optional target. The Coach extractor writes a plan as
  * `status: "proposed"`; only the user-facing PATCH (`/api/coach/plans/[id]`)
- * activates it. There is no silent self-edit of the user's plan set.
+ * activates it. There is no silent self-edit of the user's plan set. A plan
+ * the Coach proposes in a turn (`propose_plan`, v1.41) exists only once the
+ * answer carrying it is stored (`memory/turn-writes.ts`), so a turn that was
+ * blocked, failed or abandoned has nothing here to list.
  *
  * Ownership: every query is scoped `where: { userId, ... }`, so a caller can
  * only ever see their own plans. The free-text fields (if-cue, then-action,

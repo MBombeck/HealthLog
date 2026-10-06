@@ -15,6 +15,10 @@
  * here unchanged.
  *
  * Rules every implementation keeps, so a caller can rely on them:
+ * - a fact or plan a turn's tool keeps is written with the stored answer that
+ *   carries it (`turn-writes.ts`), never by a turn that is blocked, fails or
+ *   is abandoned;
+ * - model-written plan text passes the outbound screen before it is kept;
  * - health facts (`condition`, `constraint`, `medication`) are only ever
  *   proposed, never saved without the person's tap;
  * - a fact comes from the person's current message, never from a document or
@@ -23,6 +27,7 @@
  *   never for a read-only sharing viewer;
  * - fact and plan text never reaches a log or `annotate()`; counts and ids do.
  */
+import type { Locale } from "@/lib/i18n/config";
 import type {
   CoachMemoryCategory,
   CoachMemoryNote,
@@ -49,7 +54,8 @@ export interface MemoryContextBlock {
    * offered once: the turn sends it as the answer's `memoryNote` (with
    * `proposal: true`) and stores it as `CoachTrail.proposal`, exactly like a
    * proposal `remember_fact` made. It counts as the answer's one note. Marked
-   * offered when the block is built, so it is never offered twice.
+   * offered when the answer carrying it is stored, so it is offered once, and
+   * offered again after a turn that never stored one.
    */
   pendingProposal?: CoachMemoryNote;
 }
@@ -129,12 +135,25 @@ export type ProposePlanOutcome =
   | { kind: "proposed"; proposal: CoachPlanProposal }
   | {
       kind: "declined";
-      reason: "one_per_answer" | "too_many_open" | "invalid" | "unavailable";
+      reason:
+        | "one_per_answer"
+        | "too_many_open"
+        | "invalid"
+        | "unsafe"
+        | "unavailable";
     };
 
 export interface ProposePlanArgs {
   userId: string;
   conversationId: string;
+  /** The person's locale, which the outbound screen reads the plan text in. */
+  locale: Locale;
+  /**
+   * The turn's scheduled doses and medication names, which the screen reads
+   * the plan text against; loaded for the person when absent.
+   */
+  scheduleDoses?: readonly number[];
+  medicationNames?: readonly string[];
   call: ProposePlanCall;
 }
 
@@ -166,7 +185,9 @@ export { buildMemoryContextBlock } from "./context-block";
 export { rememberFactFromTool, decideFactProposal } from "./remember";
 
 /**
- * Runs a `propose_plan` call (writes the plan as `proposed`); answers a plan
+ * Runs a `propose_plan` call (the plan is written as `proposed` with the
+ * answer that carries it, and only after its text passed the outbound
+ * screen); answers a plan
  * proposal (`active` on accept, `abandoned` on decline, only a plan the
  * assistant message proposed, only the person's own).
  */
