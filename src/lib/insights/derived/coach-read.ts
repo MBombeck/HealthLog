@@ -37,6 +37,10 @@ import {
   readSameHoursStanding,
   SAME_HOURS_TYPES,
 } from "@/lib/insights/derived/coincident-deviation";
+import {
+  dayKeyAgeInDays,
+  isFromToday,
+} from "@/lib/insights/measurement-freshness";
 import { userDayKey } from "@/lib/tz/format";
 import { readCoachCorrelations } from "@/lib/ai/coach/tools/correlations-read";
 import {
@@ -59,13 +63,29 @@ export type { CoachReadStripData } from "@/lib/insights/derived/coach-read-shape
 async function readLatestValue(
   userId: string,
   type: MeasurementType,
-): Promise<number | null> {
-  const row = await prisma.measurement.findFirst({
+): Promise<{ value: number; measuredAt: Date } | null> {
+  return prisma.measurement.findFirst({
     where: { userId, type, deletedAt: null },
     orderBy: { measuredAt: "desc" },
-    select: { value: true },
+    select: { value: true, measuredAt: true },
   });
-  return row?.value ?? null;
+}
+
+/**
+ * The day a latest reading belongs to, and whether that is the reader's
+ * today. Both clients word the value from this: "today's" only when it is,
+ * the reading's date otherwise. A reading from last week used to be called
+ * today's on every metric page.
+ */
+function latestDay(
+  day: string,
+  now: Date,
+  tz: string,
+): { latestDate: string; latestIsToday: boolean } {
+  return {
+    latestDate: day,
+    latestIsToday: isFromToday(dayKeyAgeInDays(day, userDayKey(now, tz))),
+  };
 }
 
 /** Trailing window the band engine reads; the day-mean placement matches it. */
@@ -101,6 +121,7 @@ async function placeByDayMean(
     return {
       ...band,
       latest: latest.value,
+      ...latestDay(latest.day, now, tz),
       placement: placeAgainstBand(latest.value, band.low, band.high),
     };
   }
@@ -115,6 +136,7 @@ async function placeByDayMean(
     low: standing.low,
     high: standing.high,
     latest: standing.value,
+    ...latestDay(latest.day, now, tz),
     placement: placeAgainstBand(standing.value, standing.low, standing.high),
     sampleDays: standing.days,
     basis: "sameHours",
@@ -173,8 +195,9 @@ export async function buildCoachReadStrip(
     baseline = {
       low,
       high,
-      latest,
-      placement: placeAgainstBand(latest, low, high),
+      latest: latest.value,
+      ...latestDay(userDayKey(latest.measuredAt, opts.tz), now, opts.tz),
+      placement: placeAgainstBand(latest.value, low, high),
       sampleDays,
     };
   } else {

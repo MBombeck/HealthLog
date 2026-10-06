@@ -3035,6 +3035,12 @@
         "steadyWithin": "Twoje pomiary zwykle wynoszą {low} {unit}; dzisiejsza wartość {value} jest taka sama.",
         "steadyAbove": "Twoje pomiary zwykle wynoszą {low} {unit}; dzisiejsza wartość {value} jest wyższa.",
         "steadyBelow": "Twoje pomiary zwykle wynoszą {low} {unit}; dzisiejsza wartość {value} jest niższa.",
+        "latestWithin": "Twój zwykły zakres to {low}–{high} {unit}; ostatni pomiar, z {date}, wyniósł {value} i mieścił się w nim.",
+        "latestAbove": "Twój zwykły zakres to {low}–{high} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był powyżej niego.",
+        "latestBelow": "Twój zwykły zakres to {low}–{high} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był poniżej niego.",
+        "steadyLatestWithin": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był taki sam.",
+        "steadyLatestAbove": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był wyższy.",
+        "steadyLatestBelow": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był niższy.",
         "insufficient": "Wciąż poznaję twój zwykły zakres — rejestruj jeszcze przez kilka dni.",
         "driver": "{note}"
       },

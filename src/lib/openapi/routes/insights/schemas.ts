@@ -2654,7 +2654,22 @@ export const coachReadStripResponse = z
       .object({
         low: z.number().describe("Robust lower edge of the personal range."),
         high: z.number().describe("Robust upper edge."),
-        latest: z.number().describe("Today's latest reading, same units."),
+        latest: z
+          .number()
+          .describe(
+            "The latest reading, same units. Today's only when `latestIsToday` is true; otherwise it is from `latestDate`.",
+          ),
+        latestDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .describe(
+            "Calendar day of the latest reading in the account's time zone, `YYYY-MM-DD`.",
+          ),
+        latestIsToday: z
+          .boolean()
+          .describe(
+            "True when `latestDate` is today in the account's time zone. When false, a client names the reading's date instead of calling it today's.",
+          ),
         placement: z.enum(["within", "above", "below"]),
         sampleDays: z
           .number()

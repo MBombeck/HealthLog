@@ -500,6 +500,8 @@ describe("get_metric_baseline", () => {
         latest: 70,
         placement: "above",
         sampleDays: 30,
+        latestDate: "2026-09-30",
+        latestIsToday: false,
       },
       learning: false,
       driver: {
@@ -512,6 +514,9 @@ describe("get_metric_baseline", () => {
     expect(res.present).toBe(true);
     expect(res.baseline).toEqual({ low: 55, high: 65, sampleDays: 30 });
     expect(res.latest).toBe(70);
+    // An older reading carries its day, so the model never calls it today's.
+    expect(res.latestDate).toBe("2026-09-30");
+    expect(res.latestIsToday).toBe(false);
     expect(res.placement).toBe("above");
     expect(res.unit).toBe("bpm");
     expect(res.referenceBand).toEqual({ low: 50, high: 100 });
@@ -553,6 +558,8 @@ describe("get_metric_baseline", () => {
         latest: 38,
         placement: "within",
         sampleDays: 30,
+        latestDate: "2026-10-06",
+        latestIsToday: true,
       },
       learning: false,
       driver: null,
@@ -575,6 +582,8 @@ describe("get_metric_baseline", () => {
         latest: 60,
         placement: "within",
         sampleDays: 30,
+        latestDate: "2026-10-06",
+        latestIsToday: true,
       },
       learning: false,
       driver: null,

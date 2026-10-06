@@ -48,7 +48,15 @@ function band(
   placement: "within" | "above" | "below",
 ): CoachReadStripData {
   return {
-    baseline: { low, high, latest, placement, sampleDays: 30 },
+    baseline: {
+      low,
+      high,
+      latest,
+      placement,
+      sampleDays: 30,
+      latestDate: "2026-10-06",
+      latestIsToday: true,
+    },
     learning: false,
     driver: null,
   };
