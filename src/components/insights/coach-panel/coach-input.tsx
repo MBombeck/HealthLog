@@ -372,7 +372,7 @@ export function CoachInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder ?? t("insights.coach.composerPlaceholder")}
           // Read-only rather than disabled while a reply streams: a disabled
-          // field drops focus, and a follow-up chip or a clarification choice
+          // field drops focus, and a tapped reply pill
           // hands focus here right as the turn starts.
           readOnly={disabled}
           aria-disabled={disabled || undefined}

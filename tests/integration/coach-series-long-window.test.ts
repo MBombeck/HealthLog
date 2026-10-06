@@ -28,7 +28,7 @@ import {
 import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 import { toStep } from "@/lib/ai/coach/turn/steps";
-import { describeStep } from "@/components/insights/coach-panel/turn-steps";
+import { describeStep } from "@/components/insights/coach-panel/turn-activity";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { pluralKey } from "@/lib/i18n/plural";
 import type { MeasurementType } from "@/generated/prisma/client";

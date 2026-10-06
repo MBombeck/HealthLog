@@ -19,12 +19,22 @@ import { ProseBlocks } from "@/components/insights/prose-blocks";
 import { ReminderSuggestionCard } from "./reminder-suggestion-card";
 import { SuggestedActionCard } from "./suggested-action-card";
 import { StreamedProse } from "./streamed-prose";
-import { CoachTurnSteps } from "./turn-steps";
-import { CoachResults, countResultsInSection } from "./coach-results";
+import { CoachTurnActivity } from "./turn-activity";
+import { CoachInterimResults } from "./interim-results";
+import {
+  CoachResults,
+  countResultsInSection,
+  liveWithProvenance,
+} from "./coach-results";
 import { CoachFollowUpChips } from "./follow-up-chips";
+import { SuggestedReplies, type SuggestedReply } from "./suggested-replies";
+import { CoachMemoryNote } from "./memory-note";
+import { CoachAssumptionLine } from "./assumption-line";
 import { AssistantMessageActions, UserMessageActions } from "./message-actions";
 import type {
+  CoachActivity,
   CoachFollowUp,
+  CoachMemoryNote as CoachMemoryNoteFrame,
   CoachProvenanceMetric,
 } from "@/lib/ai/coach/types";
 
@@ -316,6 +326,30 @@ interface ChatBubbleProps {
   /** True while another turn is in flight; the chips step aside. */
   followUpsDisabled?: boolean;
   onFollowUp?: (followUp: CoachFollowUp, messageId: string) => void;
+  /**
+   * v1.41 — the reply pills the latest answer offers instead of its chips:
+   * a clarifying question's choices, or the two answers to a fact or plan
+   * proposal. Built by the thread; one array per offer.
+   */
+  replies?: ReplyOffer | null;
+  /**
+   * v1.41 — the live trail from the streaming hook. Persisted messages carry
+   * its metadata on `metricSource.activity`; the bubble falls back to that.
+   */
+  activity?: CoachActivity[];
+  /** v1.41 — the refs of the tables that arrived while the turn ran. */
+  interimRefs?: string[];
+  /** v1.41 — when the live turn started and ended on this device. */
+  startedAt?: number | null;
+  endedAt?: number | null;
+  /** v1.41 — the live `memoryNote` frame, with the fact's words. */
+  memoryNote?: CoachMemoryNoteFrame | null;
+}
+
+/** v1.41 — the reply pills one assistant message offers. */
+export interface ReplyOffer {
+  messageId: string;
+  replies: SuggestedReply[];
 }
 
 /** The chips one assistant message offers. */
@@ -380,6 +414,12 @@ export function areChatBubblePropsEqual(
     sameFollowUpOffer(prev.followUps, next.followUps) &&
     prev.followUpsDisabled === next.followUpsDisabled &&
     prev.onFollowUp === next.onFollowUp &&
+    prev.replies === next.replies &&
+    prev.activity === next.activity &&
+    prev.interimRefs === next.interimRefs &&
+    prev.startedAt === next.startedAt &&
+    prev.endedAt === next.endedAt &&
+    prev.memoryNote === next.memoryNote &&
     // onRegenerate is a per-render closure — compare only whether it is present.
     (prev.onRegenerate === undefined) === (next.onRegenerate === undefined)
   );
@@ -407,6 +447,12 @@ function ChatBubbleImpl({
   followUps,
   followUpsDisabled,
   onFollowUp,
+  replies,
+  activity,
+  interimRefs,
+  startedAt,
+  endedAt,
+  memoryNote,
 }: ChatBubbleProps) {
   const { t } = useTranslations();
   const { user } = useAuth();
@@ -543,7 +589,9 @@ function ChatBubbleImpl({
   // grounded token is present (provider-agnostic — reads the inline token).
   // v1.39.4 — the result tables this answer references and the ones it
   // only used; the metadata is enough to place and count them.
-  const resultMetas = results?.length ? results : (metricSource?.results ?? []);
+  const resultMetas = results?.length
+    ? liveWithProvenance(results, metricSource?.results ?? [])
+    : (metricSource?.results ?? []);
   const shownDomains = new Set(
     resultMetas
       .filter((meta) => meta.displayed)
@@ -558,6 +606,7 @@ function ChatBubbleImpl({
       ? selectCoachChartTokens(content, metricSource?.metrics, shownDomains)
       : [];
   const settled = !inProgress && !errorCode && providerType !== "refusal";
+  const memoryMeta = memoryNote ?? metricSource?.memoryNote ?? null;
 
   // v1.32.14 — quiet per-message notice: the grounding guard withheld ≥1 figure
   // from this reply (each rewritten to the `[…]` elision mark). Shown only on a
@@ -596,15 +645,22 @@ function ChatBubbleImpl({
         data-slot="coach-answer-column"
         className="flex w-full max-w-full min-w-0 flex-col items-start gap-2 sm:max-w-[calc(80%-2.625rem)]"
       >
-        {/* What the Coach read on this turn, live from the step frames and
-            restored from the provenance on reload; an older message lists
-            the areas it drew on. Opened, it also says how the answer was
-            worked out and holds the tables the answer read. */}
-        <CoachTurnSteps
+        {/* v1.41 — what the Coach is doing, one quiet line at the top of the
+            answer: live from the activity frames while the turn runs, one
+            calm summary once it is done. Nothing opens by itself; a tap on
+            the line opens the trail, which also says how the answer was
+            worked out and holds the tables the answer read. A message saved
+            before v1.41 falls back to its steps, or the areas it drew on. */}
+        <CoachTurnActivity
+          activity={activity ?? metricSource?.activity ?? []}
           steps={steps ?? metricSource?.steps ?? []}
           active={!!inProgress}
+          startedAt={startedAt}
+          endedAt={endedAt}
           areas={metricSource?.metrics}
           method={inProgress || errorCode ? null : method}
+          conversationId={conversationId}
+          messageId={messageId}
           dataUsed={
             dataUsedCount > 0 ? (
               <CoachResults
@@ -617,22 +673,22 @@ function ChatBubbleImpl({
             ) : null
           }
         />
-        {/* v1.19.1 (C3) — the live turn shows the classic typing animation
-            (three pulsing dots) while it is still thinking with no prose
-            yet, restoring the writing/typing indicator the maintainer
-            prefers over the "Denke nach / Nachgedacht" reasoning disclosure.
-            The dots render inside the prose bubble below; the disclosure is
-            retired. Persisted bubbles never stream, so history stays settled. */}
-        {/* The prose bubble. While the live turn is still thinking with no
-            prose the bubble carries the typing animation; once tokens land
-            it swaps to the streamed prose without a layout jump. */}
-        {(content || safeError || inProgress) && (
+        {/* v1.41 — the tables read so far, one line each, while the turn
+            still runs. They give way to the answer's own charts. */}
+        {inProgress && results && interimRefs && interimRefs.length > 0 ? (
+          <CoachInterimResults results={results} interimRefs={interimRefs} />
+        ) : null}
+        {/* The prose bubble, once there is prose or an error. While the turn
+            runs without prose the status line above says what is happening;
+            the bubble arrives with the first token. */}
+        {(content || safeError) && (
           <div
             data-slot="coach-answer-bubble"
             className={cn(
               "border-border/60 bg-muted/40 text-foreground max-w-full",
               "rounded-xl rounded-tl-sm border px-3.5 py-2.5",
               "text-sm leading-relaxed break-words whitespace-pre-wrap",
+              "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-300",
             )}
           >
             {/* v1.4.25 W5b — strip stray Metric/enum leak tokens from the
@@ -644,8 +700,6 @@ function ChatBubbleImpl({
                 keeps the bubble and the error stays a caption. */}
             {content ? (
               <StreamedProse content={content} streaming={!!streaming} />
-            ) : inProgress ? (
-              <TypingDots label={t("insights.coach.thinking")} />
             ) : safeError ? (
               <span className="text-warning">{safeError}</span>
             ) : (
@@ -705,6 +759,23 @@ function ChatBubbleImpl({
             section="displayed"
           />
         )}
+        {/* v1.41 — what the answer assumed instead of asking, and what the
+            Coach kept from this turn: one quiet line each. */}
+        {settled && (metricSource?.assumptions?.length ?? 0) > 0 ? (
+          <CoachAssumptionLine
+            assumptions={metricSource?.assumptions ?? []}
+            changes={followUps?.followUps ?? []}
+            messageId={followUps?.messageId ?? null}
+            disabled={!!followUpsDisabled}
+            onChange={onFollowUp}
+          />
+        ) : null}
+        {settled && memoryMeta ? (
+          <CoachMemoryNote
+            note={memoryMeta}
+            liveFact={memoryNote?.fact ?? null}
+          />
+        ) : null}
         {/* v1.18.6 — a "no provider configured anywhere" turn is a
             setup gap, not a transient failure: surface a direct link to
             Settings → AI so the Coach guides the user into BYOK / local
@@ -753,10 +824,20 @@ function ChatBubbleImpl({
             model={usage?.model ?? model}
           />
         )}
-        {/* The follow-up chips of the latest answer, in its own column. */}
-        {followUps && onFollowUp ? (
+        {/* The replies the latest answer offers, in its own column: a
+            question's choices or a proposal's two answers when it has them,
+            else its follow-up chips. One pattern for all of them. */}
+        {replies && replies.replies.length > 0 ? (
+          <SuggestedReplies
+            replies={replies.replies}
+            messageId={replies.messageId}
+            disabled={!!followUpsDisabled}
+          />
+        ) : followUps && onFollowUp ? (
           <CoachFollowUpChips
-            followUps={followUps.followUps}
+            followUps={followUps.followUps.filter(
+              (chip) => chip.kind !== "change_assumption",
+            )}
             messageId={followUps.messageId}
             disabled={!!followUpsDisabled}
             onSelect={onFollowUp}

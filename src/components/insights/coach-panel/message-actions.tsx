@@ -41,7 +41,10 @@ import type { Formatters } from "@/lib/format-locale";
 import { apiPost } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 import { stripChartTokens } from "@/lib/insights/chart-tokens";
-import { ABOUT_ME_FIELD_MAX_CHARS } from "@/lib/validations/about-me";
+import {
+  COACH_MEMORY_KEYS,
+  REMEMBER_FACT_MAX_CHARS,
+} from "@/lib/ai/coach/memory/shared";
 
 import {
   COACH_ICON_BUTTON,
@@ -271,37 +274,38 @@ function MessageTime({ iso }: { iso: string }) {
 }
 
 /**
- * Stores the user's message in the self-context (Settings → AI) on one tap,
- * so it rides every future system prompt. The server picks the field from
- * the text itself. The icon confirms in place and a toast says where it
- * went; the button never unmounts, so keyboard focus stays on it.
+ * Keeps the user's message in the Coach's memory on one tap
+ * (`POST /api/insights/coach/facts` with the message id; the server reads the
+ * text and files it). It then shows in Settings → Coach with "from you", and
+ * reaches every later turn. v1.41 — it used to write the self-context; the
+ * Coach's memory is now the one place for what the Coach knows. The icon
+ * confirms in place and a toast says so; the button never unmounts, so
+ * keyboard focus stays on it.
  */
-function RememberMessageButton({ content }: { content: string }) {
+function RememberMessageButton({ messageId }: { messageId: string }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
   const [settled, setSettled] = useState<"adopted" | "duplicate" | null>(null);
 
   const remember = useMutation({
     mutationFn: async () =>
-      apiPost<{ adopted: boolean }>("/api/coach/about-me/adopt", {
-        answer: content,
+      apiPost<{ created: boolean }>("/api/insights/coach/facts", {
+        messageId,
       }),
     onSuccess: (data) => {
-      if (data.adopted) {
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.coachAboutMe(),
-        });
-      }
-      setSettled(data.adopted ? "adopted" : "duplicate");
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.coachFacts(),
+      });
+      setSettled(data.created ? "adopted" : "duplicate");
       // A new entry is a write (success); an existing one is an honest
       // non-event (neutral), the same mapping `toastWrittenOutcome` uses.
       // Called directly: importing the outcome module here regroups the
       // shared chunks and costs ~16 KB gz across the client bundle.
-      (data.adopted ? toast.success : toast.info)(
+      (data.created ? toast.success : toast.info)(
         t(
-          data.adopted
-            ? "insights.coach.rememberMessage.done"
-            : "insights.coach.rememberMessage.duplicate",
+          data.created
+            ? COACH_MEMORY_KEYS.confirmed
+            : "insights.coach.rememberMessage.alreadyKept",
         ),
       );
     },
@@ -400,8 +404,8 @@ export function UserMessageActions({
   messageId,
   createdAt,
 }: UserMessageActionsProps) {
-  // Only a persisted message that fits the self-context field can be kept.
-  const canRemember = !!messageId && content.length <= ABOUT_ME_FIELD_MAX_CHARS;
+  // Only a persisted message short enough to be one fact can be kept.
+  const canRemember = !!messageId && content.length <= REMEMBER_FACT_MAX_CHARS;
   return (
     <div
       data-slot="coach-user-actions"
@@ -412,7 +416,9 @@ export function UserMessageActions({
       )}
     >
       <CopyMessageButton content={content} strip={false} />
-      {canRemember && <RememberMessageButton content={content} />}
+      {canRemember && messageId && (
+        <RememberMessageButton messageId={messageId} />
+      )}
       {createdAt && <MessageTime iso={createdAt} />}
     </div>
   );

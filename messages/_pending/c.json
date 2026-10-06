@@ -1,0 +1,163 @@
+{
+  "en": {
+    "admin": {
+      "assistant": {
+        "reasoning": {
+          "description": "Models think before they answer: the Coach, the daily briefing and the period summaries. More precise, uses more tokens."
+        }
+      }
+    },
+    "insights": {
+      "coach": {
+        "rememberMessage": {
+          "alreadyKept": "The Coach already remembers this."
+        }
+      }
+    },
+    "settings": {
+      "ai": {
+        "reasoning": {
+          "coachNote": "In the Coach, the thinking depth from the Coach settings applies."
+        }
+      }
+    }
+  },
+  "de": {
+    "admin": {
+      "assistant": {
+        "reasoning": {
+          "description": "Modelle denken vor der Antwort nach: im Coach, im Tagesbriefing und in den Zusammenfassungen. Genauer, braucht mehr Tokens."
+        }
+      }
+    },
+    "insights": {
+      "coach": {
+        "rememberMessage": {
+          "alreadyKept": "Das weiß der Coach schon."
+        }
+      }
+    },
+    "settings": {
+      "ai": {
+        "reasoning": {
+          "coachNote": "Im Coach gilt die Denktiefe aus den Coach-Einstellungen."
+        }
+      }
+    }
+  },
+  "es": {
+    "admin": {
+      "assistant": {
+        "reasoning": {
+          "description": "Los modelos piensan antes de responder: el Coach, el resumen diario y los resúmenes por periodo. Más precisos, usan más tokens."
+        }
+      }
+    },
+    "insights": {
+      "coach": {
+        "rememberMessage": {
+          "alreadyKept": "El Coach ya lo recuerda."
+        }
+      }
+    },
+    "settings": {
+      "ai": {
+        "reasoning": {
+          "coachNote": "En el Coach se aplica la profundidad de pensamiento de los ajustes del Coach."
+        }
+      }
+    }
+  },
+  "fr": {
+    "admin": {
+      "assistant": {
+        "reasoning": {
+          "description": "Les modèles réfléchissent avant de répondre : le Coach, le briefing quotidien et les synthèses de période. Plus précis, plus de jetons."
+        }
+      }
+    },
+    "insights": {
+      "coach": {
+        "rememberMessage": {
+          "alreadyKept": "Le Coach s’en souvient déjà."
+        }
+      }
+    },
+    "settings": {
+      "ai": {
+        "reasoning": {
+          "coachNote": "Dans le Coach, c’est la profondeur de réflexion des réglages du Coach qui s’applique."
+        }
+      }
+    }
+  },
+  "it": {
+    "admin": {
+      "assistant": {
+        "reasoning": {
+          "description": "I modelli riflettono prima di rispondere: il Coach, il briefing giornaliero e i riepiloghi di periodo. Più precisi, usano più token."
+        }
+      }
+    },
+    "insights": {
+      "coach": {
+        "rememberMessage": {
+          "alreadyKept": "Il Coach lo ricorda già."
+        }
+      }
+    },
+    "settings": {
+      "ai": {
+        "reasoning": {
+          "coachNote": "Nel Coach vale la profondità di ragionamento delle impostazioni del Coach."
+        }
+      }
+    }
+  },
+  "pl": {
+    "admin": {
+      "assistant": {
+        "reasoning": {
+          "description": "Modele myślą przed odpowiedzią: Coach, codzienne podsumowanie i podsumowania okresów. Dokładniej, ale więcej tokenów."
+        }
+      }
+    },
+    "insights": {
+      "coach": {
+        "rememberMessage": {
+          "alreadyKept": "Coach już to pamięta."
+        }
+      }
+    },
+    "settings": {
+      "ai": {
+        "reasoning": {
+          "coachNote": "W Coachu obowiązuje głębokość myślenia z ustawień Coacha."
+        }
+      }
+    }
+  },
+  "ko": {
+    "admin": {
+      "assistant": {
+        "reasoning": {
+          "description": "모델이 답하기 전에 생각합니다: 코치, 일일 브리핑, 기간 요약. 더 정확하지만 토큰을 더 씁니다."
+        }
+      }
+    },
+    "insights": {
+      "coach": {
+        "rememberMessage": {
+          "alreadyKept": "코치가 이미 기억하고 있어요."
+        }
+      }
+    },
+    "settings": {
+      "ai": {
+        "reasoning": {
+          "coachNote": "코치에서는 코치 설정의 사고 깊이가 적용됩니다."
+        }
+      }
+    }
+  }
+}

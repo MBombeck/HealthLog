@@ -190,9 +190,6 @@ const PINNED_AFFORDANCES: Record<
   "src/components/insights/coach-panel/history-rail.tsx": {
     "toast.success": 1,
   },
-  "src/components/insights/coach-panel/plan-proposal-card.tsx": {
-    "text-success": 1,
-  },
   "src/components/insights/coach-panel/reminder-suggestion-card.tsx": {
     "text-success": 1,
   },

@@ -14,14 +14,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { COACH_CLARIFY_UI_KEYS } from "@/lib/ai/coach/dialog-keys";
 import { randomId } from "@/lib/random-id";
 import { apiDelete, apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
-import type {
-  CoachClarificationChoice,
-  CoachFollowUp,
-  CoachScope,
-} from "@/lib/ai/coach/types";
+import type { CoachFollowUp, CoachScope } from "@/lib/ai/coach/types";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import type { CoachSeededQuestionDTO } from "@/app/api/insights/coach/seeded-question/route";
 import type { InboundDocumentDetailDto } from "@/lib/validations/inbound-documents";
@@ -51,9 +46,9 @@ import { HistoryRail } from "./history-rail";
 import {
   MessageThread,
   latestClarification,
+  type CoachReplyIntent,
   type InterleavedThreadItem,
 } from "./message-thread";
-import { CoachClarificationCard } from "./clarification-card";
 import { CoachSettingsOverlay } from "./coach-settings-overlay";
 import { CoachTopBarTrail } from "./coach-top-bar-trail";
 import { ConversationsPanel } from "./conversations-panel";
@@ -662,18 +657,50 @@ export function CoachConversation({
     });
   }
 
-  // v1.39.4 — a choice on the clarification card.
-  function handleClarificationChoice(choice: CoachClarificationChoice) {
-    if (send.isStreaming || !openClarification) return;
-    if (currentConversationId === null) return;
-    void send.send({
+  // v1.41 — a reply pill under the latest answer: a clarifying question's
+  // choice, or an answer to a fact or plan proposal. Its label goes out as
+  // the person's own message; the request says which offer it answers, and
+  // the server resolves the rest from what it stored on that message.
+  function handleReply(intent: CoachReplyIntent) {
+    if (send.isStreaming || fenced || currentConversationId === null) return;
+    const sent = send.send({
       conversationId: currentConversationId,
-      message: choice.label,
-      clarification: {
-        messageId: openClarification.messageId,
-        choiceId: choice.id,
-      },
+      message: intent.label,
+      ...(intent.kind === "clarification"
+        ? {
+            clarification: {
+              messageId: intent.messageId,
+              choiceId: intent.choice.id,
+            },
+          }
+        : intent.kind === "memory"
+          ? {
+              memoryDecision: {
+                messageId: intent.messageId,
+                proposalId: intent.proposalId,
+                accept: intent.accept,
+              },
+            }
+          : {
+              planDecision: {
+                messageId: intent.messageId,
+                planId: intent.planId,
+                accept: intent.accept,
+              },
+            }),
     });
+    // A decision changes what the Coach remembers or which plans run; the
+    // lists elsewhere read it fresh once the turn is through.
+    if (intent.kind !== "clarification") {
+      void sent.then(() =>
+        queryClient.invalidateQueries({
+          queryKey:
+            intent.kind === "memory"
+              ? queryKeys.coachFacts()
+              : queryKeys.coachPlansAll(),
+        }),
+      );
+    }
   }
 
   async function handleSubmit(value: string) {
@@ -907,25 +934,6 @@ export function CoachConversation({
         >
           {t("insights.coach.attach.indexingHint")}
         </p>
-      ) : null}
-      {/* v1.39.4 — mounted empty before any question, so the question is
-          announced when it arrives (a live region that mounts with its
-          content is not heard). Visually hidden, so it takes no room in the
-          stack; the card below carries the choices. */}
-      <div
-        data-slot="coach-clarification-live"
-        aria-live="polite"
-        className="sr-only"
-      >
-        {openClarification ? t(COACH_CLARIFY_UI_KEYS.cardLabel) : ""}
-      </div>
-      {openClarification ? (
-        <CoachClarificationCard
-          clarification={openClarification.clarification}
-          messageId={openClarification.messageId}
-          disabled={send.isStreaming}
-          onChoose={handleClarificationChoice}
-        />
       ) : null}
       <CoachInput
         value={inputValue}
@@ -1221,6 +1229,7 @@ export function CoachConversation({
                   interleaved={interleaved}
                   onRegenerate={handleRegenerate}
                   onFollowUp={handleFollowUp}
+                  onReply={handleReply}
                 />
               </div>
               <div
@@ -1329,6 +1338,7 @@ export function CoachConversation({
             interleaved={interleaved}
             onRegenerate={handleRegenerate}
             onFollowUp={handleFollowUp}
+            onReply={handleReply}
           />
         }
         composer={composerStack}
