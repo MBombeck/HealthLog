@@ -2660,6 +2660,12 @@ export const coachReadStripResponse = z
           .number()
           .int()
           .describe("Distinct days behind the band, for transparency."),
+        basis: z
+          .literal("sameHours")
+          .optional()
+          .describe(
+            "Present when today is still in progress for a metric whose day mean moves with the hour (blood glucose). `latest` is then today's mean so far and `low` / `high` the usual range for the same hours of the earlier days, not the whole-day band; a client naming the range says it is the one for this time of day. Absent for the whole-day comparison.",
+          ),
       })
       .nullable()
       .describe(

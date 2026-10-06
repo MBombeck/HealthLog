@@ -13,9 +13,17 @@ import { NextRequest } from "next/server";
  */
 
 const buildCoachReadStrip = vi.fn();
+const zoneSeen = vi.fn();
 vi.mock("@/lib/insights/derived/coach-read", () => ({
-  buildCoachReadStrip: (userId: string, metric: string, locale: string) =>
-    buildCoachReadStrip(userId, metric, locale),
+  buildCoachReadStrip: (
+    userId: string,
+    metric: string,
+    locale: string,
+    opts: { tz: string },
+  ) => {
+    zoneSeen(opts.tz);
+    return buildCoachReadStrip(userId, metric, locale);
+  },
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -58,7 +66,7 @@ import { GET } from "../route";
 import { getSession } from "@/lib/auth/session";
 import { checkAnalyticsReadRateLimit } from "@/lib/rate-limit";
 
-function sessionWithLocale(locale: string | null) {
+function sessionWithLocale(locale: string | null, timezone?: string) {
   return {
     session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
     user: {
@@ -66,6 +74,7 @@ function sessionWithLocale(locale: string | null) {
       username: "testuser",
       role: "USER" as const,
       locale,
+      ...(timezone ? { timezone } : {}),
     },
   };
 }
@@ -124,5 +133,21 @@ describe("GET /api/insights/coach-read — the reader's language", () => {
       "es",
       "de",
     ]);
+  });
+});
+
+describe("GET /api/insights/coach-read — the reader's day", () => {
+  it("passes the reader's own zone, which decides whether a day is still in progress", async () => {
+    vi.mocked(getSession).mockResolvedValue(
+      sessionWithLocale(null, "America/New_York") as unknown as Awaited<
+        ReturnType<typeof getSession>
+      >,
+    );
+    zoneSeen.mockReset();
+
+    const res = await GET(REQUEST());
+
+    expect(res.status).toBe(200);
+    expect(zoneSeen).toHaveBeenCalledWith("America/New_York");
   });
 });
