@@ -390,7 +390,7 @@ const UNIT_LITERAL_ALLOWLIST: Record<
       "the reply checker's list of unit tokens it recognises in model prose",
   },
   "lib/ai/coach/eval/golden-cases.ts": {
-    lines: 3,
+    lines: 5,
     reason: "evaluation fixtures: scripted replies and ideal answers",
   },
   "lib/ai/coach/eval/red-team.ts": {

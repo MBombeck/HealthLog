@@ -27,6 +27,7 @@ import {
   extractAndStoreFacts,
   FACT_MAX_CHARS,
   MAX_FACTS_PER_USER,
+  readJsonList,
 } from "../facts";
 
 // ---------------------------------------------------------------------------
@@ -144,6 +145,7 @@ describe("extractAndStoreFacts", () => {
           "category",
           "confidence",
           "factEncrypted",
+          "source",
           "sourceConversationId",
           "userId",
         ].sort(),
@@ -161,8 +163,13 @@ describe("extractAndStoreFacts", () => {
     expect(extracted).toBeTruthy();
     expect((extracted![0] as { meta: Record<string, unknown> }).meta).toEqual({
       count: 2,
+      proposed: 0,
       conversationId: "conv-1",
     });
+    expect(createCalls.map((d) => d.source)).toEqual([
+      "extracted",
+      "extracted",
+    ]);
   });
 
   it("(b) drops items the Zod gate rejects (bad category, over-length)", async () => {
@@ -334,5 +341,120 @@ describe("extractAndStoreFacts", () => {
     expect(res).toEqual({ status: "skipped", count: 0 });
     expect(runCompletion).not.toHaveBeenCalled();
     expect(createCalls).toHaveLength(0);
+  });
+
+  it("parses the {facts:[…]} object the JSON-object mode returns", async () => {
+    // Before v1.41 the prompt asked for a bare array while the status chain
+    // ran in JSON-object mode: OpenAI could only return an object and every
+    // such reply failed to parse.
+    const { prisma, createCalls } = makeFakePrisma({
+      turns: [{ role: "user", content: "I only run in the mornings." }],
+    });
+    const runCompletion = vi.fn(async () =>
+      ok(
+        JSON.stringify({
+          facts: [
+            {
+              category: "preference",
+              fact: "Runs only in the mornings",
+              confidence: 85,
+            },
+          ],
+        }),
+      ),
+    );
+    const res = await extractAndStoreFacts("conv-1", "user-1", {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma: prisma as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      runCompletion: runCompletion as any,
+    });
+    expect(res).toEqual({ status: "stored", count: 1 });
+    expect(createCalls).toHaveLength(1);
+    const failed = annotateMock.mock.calls.find(
+      (c) =>
+        (c[0] as { action?: { name?: string } }).action?.name ===
+        "coach.facts.parse_failed",
+    );
+    expect(failed).toBeUndefined();
+  });
+
+  it("asks for the object shape in both languages", async () => {
+    const { prisma } = makeFakePrisma({
+      turns: [{ role: "user", content: "hi" }],
+    });
+    for (const locale of ["en", "de"]) {
+      const runCompletion = vi.fn(async () => ok('{"facts":[]}'));
+      await extractAndStoreFacts("conv-1", "user-1", {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        prisma: prisma as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        runCompletion: runCompletion as any,
+        locale,
+      });
+      const args = (
+        runCompletion.mock.calls[0] as unknown as [{ systemPrompt: string }]
+      )[0];
+      expect(args.systemPrompt).toContain('"facts"');
+      expect(args.systemPrompt).toContain("medication");
+    }
+  });
+
+  it("stores a health fact as a proposal, never as a known fact", async () => {
+    const { prisma, createCalls } = makeFakePrisma({
+      turns: [{ role: "user", content: "I take Ozempic since May." }],
+    });
+    const runCompletion = vi.fn(async () =>
+      ok(
+        JSON.stringify({
+          facts: [
+            {
+              category: "medication",
+              fact: "Takes Ozempic since May",
+              confidence: 90,
+            },
+            // Filed as context, but worded as a medication.
+            {
+              category: "context",
+              fact: "Started metformin last year",
+              confidence: 80,
+            },
+            { category: "goal", fact: "Wants to run a 10k", confidence: 80 },
+          ],
+        }),
+      ),
+    );
+    await extractAndStoreFacts("conv-1", "user-1", {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma: prisma as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      runCompletion: runCompletion as any,
+    });
+    const bySource = Object.fromEntries(
+      createCalls.map((d) => [
+        new TextDecoder().decode(d.factEncrypted as Uint8Array),
+        d.source,
+      ]),
+    );
+    expect(bySource).toEqual({
+      "Takes Ozempic since May": "proposed",
+      "Started metformin last year": "proposed",
+      "Wants to run a 10k": "extracted",
+    });
+  });
+});
+
+describe("readJsonList", () => {
+  it("reads a bare array, a wrapped list and a fenced object", () => {
+    expect(readJsonList("[1,2]", "facts")).toEqual([1, 2]);
+    expect(readJsonList('{"facts":[1]}', "facts")).toEqual([1]);
+    expect(readJsonList('```json\n{"facts":[3]}\n```', "facts")).toEqual([3]);
+    expect(readJsonList('Here you go: {"facts":[4]}', "facts")).toEqual([4]);
+  });
+
+  it("returns null for anything else", () => {
+    expect(readJsonList("nope", "facts")).toBeNull();
+    expect(readJsonList('{"other":[1]}', "facts")).toBeNull();
+    expect(readJsonList('{"facts":"x"}', "facts")).toBeNull();
   });
 });

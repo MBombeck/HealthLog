@@ -87,7 +87,7 @@ describe("getCoachSystemPrompt — EN", () => {
     expect(exampleOpens).toBe(exampleCloses);
     // At least one example demonstrates the missing-data invitation
     // pivot (rule 3) and one demonstrates the off-topic redirect (rule 6).
-    expect(prompt).toMatch(/I don't see exercise in what you're tracking/);
+    expect(prompt).toMatch(/exercise isn't something\s+you're tracking/);
     expect(prompt).toMatch(/outside what I can help with/i);
   });
 
@@ -209,7 +209,7 @@ describe("getCoachSystemPrompt — DE", () => {
     const exampleCloses = (prompt.match(/<\/example>/g) ?? []).length;
     expect(exampleOpens).toBeGreaterThanOrEqual(3);
     expect(exampleOpens).toBe(exampleCloses);
-    expect(prompt).toMatch(/Bewegung sehe ich in deinem Tracking gerade nicht/);
+    expect(prompt).toMatch(/Bewegung nicht erfasst/);
     expect(prompt).toMatch(/außerhalb dessen, womit ich helfen kann/);
   });
 
@@ -270,8 +270,9 @@ describe("getCoachSystemPrompt — H4 prefs prefix", () => {
     // Concise tone overrides verbosity — even if the user picked
     // "detailed", the prefix asks for the brief cap.
     expect(out).toMatch(/TONE OVERRIDE: be concise/);
-    expect(out).toMatch(/VERBOSITY OVERRIDE: cap replies at ~90 words/);
-    expect(out).not.toMatch(/180-250 words is acceptable/);
+    // v1.41 — brief is 30-70 words in one paragraph.
+    expect(out).toMatch(/VERBOSITY OVERRIDE: 30-70 words, one paragraph/);
+    expect(out).not.toMatch(/up to 220 words/);
   });
 
   it("prepends a VERBOSITY OVERRIDE for verbosity=detailed at warm tone", () => {
@@ -279,7 +280,8 @@ describe("getCoachSystemPrompt — H4 prefs prefix", () => {
       ...DEFAULT_COACH_PREFS,
       verbosity: "detailed",
     });
-    expect(out).toMatch(/VERBOSITY OVERRIDE: 180-250 words is acceptable/);
+    // v1.41 — detailed is up to 220 words in up to three paragraphs.
+    expect(out).toMatch(/VERBOSITY OVERRIDE: up to 220 words/);
   });
 
   it("prepends a German prefix in the de locale", () => {
