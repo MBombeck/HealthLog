@@ -8,7 +8,6 @@ import type {
 import {
   chainWithFirst,
   modelControlFor,
-  reasoningFieldFor,
   selectableProviders,
   switchDidNotTake,
 } from "../coach-model-picker";
@@ -118,22 +117,5 @@ describe("modelControlFor", () => {
         userProvider({ compatModel: "qwen3:32b" }),
       ),
     ).toEqual({ kind: "gateway", value: "qwen3:32b" });
-  });
-});
-
-describe("reasoningFieldFor", () => {
-  it("writes the Local and gateway entries' own reasoning fields", () => {
-    expect(
-      reasoningFieldFor("local", userProvider({ localReasoningEffort: "low" })),
-    ).toEqual({ field: "localReasoningEffort", value: "low" });
-    expect(reasoningFieldFor("openai-compatible", userProvider())).toEqual({
-      field: "compatReasoningEffort",
-      value: null,
-    });
-  });
-
-  it("has nothing for providers without a reasoning setting", () => {
-    expect(reasoningFieldFor("openai", userProvider())).toBeNull();
-    expect(reasoningFieldFor("codex", userProvider())).toBeNull();
   });
 });

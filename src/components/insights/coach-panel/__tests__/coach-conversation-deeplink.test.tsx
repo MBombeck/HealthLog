@@ -113,16 +113,15 @@ describe("<CoachConversation> page deep-link (#67)", () => {
     expect(html).not.toContain('data-slot="coach-hero"');
   });
 
-  it("keeps the clarification live region mounted before any question arrives", () => {
-    // A region that mounts together with its content is not announced; the
-    // empty region has to be in the page first.
+  it("asks no question in a card above the composer", () => {
+    // v1.41 — a clarifying question is a normal Coach message with reply
+    // pills under it; there is no card and no separate live region.
     const html = render(
       <CoachConversation surface="page" initialConversationId="older" />,
       makeClient(),
     );
-    expect(html).toMatch(
-      /<div[^>]*data-slot="coach-clarification-live"[^>]*aria-live="polite"[^>]*class="sr-only"[^>]*><\/div>/,
-    );
+    expect(html).not.toContain("coach-clarification-card");
+    expect(html).not.toContain("coach-clarification-live");
   });
 
   it("auto-opens the most-recent thread when none is pinned", () => {

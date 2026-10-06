@@ -63,6 +63,20 @@ export const coachKeys = {
       "results",
     ] as const,
   /**
+   * v1.41 — the owner-only model text of one assistant message's trail
+   * (`GET /api/insights/chat/{id}/messages/{messageId}/trail`), read when
+   * the person opens the trail. Nested under the conversation key like the
+   * tables.
+   */
+  coachMessageTrail: (conversationId: string, messageId: string) =>
+    [
+      "coachConversation",
+      conversationId,
+      "messages",
+      messageId,
+      "trail",
+    ] as const,
+  /**
    * v1.21.2 (A3) — today's most notable derived signal, resolved into the
    * Coach hero's pre-seeded relevance opener
    * (`GET /api/insights/coach/seeded-question`).

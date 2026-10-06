@@ -14,8 +14,8 @@ import { cn } from "@/lib/utils";
 import { scrollBehaviorForUser } from "@/lib/motion";
 import { useTranslations } from "@/lib/i18n/context";
 
-import { PlanProposalCards } from "./plan-proposal-card";
-import { ChatBubble, type FollowUpOffer } from "./chat-bubble";
+import { ChatBubble, type FollowUpOffer, type ReplyOffer } from "./chat-bubble";
+import type { SuggestedReply } from "./suggested-replies";
 import { CoachMessageDatesProvider } from "./coach-results";
 import { ScrollToBottomButton } from "./scroll-to-bottom-button";
 import { focusCoachComposer } from "./composer-focus";
@@ -32,9 +32,14 @@ import type {
 } from "./use-coach";
 import type {
   CoachClarification,
+  CoachClarificationChoice,
   CoachFollowUp,
   CoachMessageDTO,
 } from "@/lib/ai/coach/types";
+import {
+  COACH_MEMORY_KEYS,
+  COACH_PLAN_KEYS,
+} from "@/lib/ai/coach/memory/shared";
 
 // v1.28.26 file-size split (pure code motion): the bubble renderer +
 // per-message actions live in `chat-bubble.tsx`, the read-aloud stack in
@@ -99,6 +104,159 @@ export interface MessageThreadProps {
    * v1.39.4 — a follow-up chip was tapped. Omitted → no chips are shown.
    */
   onFollowUp?: (followUp: CoachFollowUp, messageId: string) => void;
+  /**
+   * v1.41 — a reply pill was tapped: a clarifying question's choice, or an
+   * answer to a fact or plan proposal. Omitted → those pills are not shown.
+   */
+  onReply?: (intent: CoachReplyIntent) => void;
+}
+
+/** v1.41 — what a tapped reply pill answers, and how. */
+export type CoachReplyIntent =
+  | {
+      kind: "clarification";
+      messageId: string;
+      choice: CoachClarificationChoice;
+      label: string;
+    }
+  | {
+      kind: "memory";
+      messageId: string;
+      proposalId: string;
+      accept: boolean;
+      label: string;
+    }
+  | {
+      kind: "plan";
+      messageId: string;
+      planId: string;
+      accept: boolean;
+      label: string;
+    };
+
+/**
+ * v1.41 — the decision the latest answer waits for, if any: a clarifying
+ * question's choices, a fact proposal or a plan proposal. Like the chips, only
+ * the latest assistant turn offers one, and none while a turn is in flight.
+ */
+export interface LatestDecision {
+  messageId: string;
+  clarification: CoachClarification | null;
+  memoryProposalId: string | null;
+  planId: string | null;
+}
+
+export function latestDecision(
+  messages: CoachMessageDTO[],
+  streaming: CoachStreamingMessage | undefined,
+): LatestDecision | null {
+  if (streaming?.inProgress) return null;
+  let found: LatestDecision | null = null;
+  if (streaming?.messageId) {
+    const persisted = messages.find((m) => m.id === streaming.messageId);
+    const note = streaming.memoryNote ?? persisted?.metricSource?.memoryNote;
+    const plan =
+      streaming.planProposal ?? persisted?.metricSource?.planProposal;
+    found = {
+      messageId: streaming.messageId,
+      clarification:
+        streaming.clarification ??
+        persisted?.metricSource?.clarification ??
+        null,
+      memoryProposalId:
+        note?.proposal && note.proposalId ? note.proposalId : null,
+      planId: plan?.planId ?? null,
+    };
+    const last = messages[messages.length - 1];
+    // The streamed turn is the latest only until something follows it.
+    if (persisted && last && last.id !== streaming.messageId) found = null;
+  } else {
+    const last = messages[messages.length - 1];
+    if (last?.role === "assistant") {
+      const note = last.metricSource?.memoryNote;
+      found = {
+        messageId: last.id,
+        clarification: last.metricSource?.clarification ?? null,
+        memoryProposalId:
+          note?.proposal && note.proposalId ? note.proposalId : null,
+        planId: last.metricSource?.planProposal?.planId ?? null,
+      };
+    }
+  }
+  if (
+    !found ||
+    (!found.clarification && !found.memoryProposalId && !found.planId)
+  ) {
+    return null;
+  }
+  return found;
+}
+
+/**
+ * The pills of a decision, in the order they are offered: a question's
+ * choices with the assumed one first, then a fact proposal's two answers,
+ * then a plan proposal's. Labels in the reader's language.
+ */
+export function decisionReplies(
+  decision: LatestDecision,
+  t: (key: string) => string,
+  onReply: (intent: CoachReplyIntent) => void,
+): SuggestedReply[] {
+  const { messageId } = decision;
+  const out: SuggestedReply[] = [];
+  const choices = decision.clarification?.choices ?? [];
+  const assumed = decision.clarification?.assumption;
+  const ordered = assumed
+    ? [
+        ...choices.filter((c) => c.id === assumed),
+        ...choices.filter((c) => c.id !== assumed),
+      ]
+    : choices;
+  for (const choice of ordered.slice(0, 4)) {
+    const local = t(choice.labelKey);
+    const label = local === choice.labelKey ? choice.label : local;
+    out.push({
+      id: `clarify-${choice.id}`,
+      label,
+      kind: "clarification",
+      data: { "data-choice-id": choice.id },
+      onSelect: () =>
+        onReply({ kind: "clarification", messageId, choice, label }),
+    });
+  }
+  const proposalId = decision.memoryProposalId;
+  if (proposalId) {
+    for (const accept of [true, false]) {
+      const label = t(
+        accept ? COACH_MEMORY_KEYS.accept : COACH_MEMORY_KEYS.decline,
+      );
+      out.push({
+        id: `memory-${accept ? "accept" : "decline"}`,
+        label,
+        kind: "memory",
+        data: { "data-decision": accept ? "accept" : "decline" },
+        onSelect: () =>
+          onReply({ kind: "memory", messageId, proposalId, accept, label }),
+      });
+    }
+  }
+  const planId = decision.planId;
+  if (planId) {
+    for (const accept of [true, false]) {
+      const label = t(
+        accept ? COACH_PLAN_KEYS.accept : COACH_PLAN_KEYS.decline,
+      );
+      out.push({
+        id: `plan-${accept ? "accept" : "decline"}`,
+        label,
+        kind: "plan",
+        data: { "data-decision": accept ? "accept" : "decline" },
+        onSelect: () =>
+          onReply({ kind: "plan", messageId, planId, accept, label }),
+      });
+    }
+  }
+  return out;
 }
 
 /**
@@ -275,6 +433,7 @@ export function MessageThread({
   interleaved,
   onRegenerate,
   onFollowUp,
+  onReply,
 }: MessageThreadProps) {
   const { t } = useTranslations();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -354,14 +513,32 @@ export function MessageThread({
         : null,
     [chipsMessageId, chipsArray],
   );
-  const chipsFor = (messageId: string | null | undefined) =>
-    onFollowUp && chips && messageId === chips.messageId
+  // v1.41 — a decision the latest answer waits for replaces its chips with
+  // the decision's own pills. There is none while a turn streams, so the
+  // fresh array per render never re-renders a bubble per token.
+  const decision = onReply ? latestDecision(messages, streaming) : null;
+  const replyOffer: ReplyOffer | null =
+    decision && onReply
+      ? {
+          messageId: decision.messageId,
+          replies: decisionReplies(decision, t, onReply),
+        }
+      : null;
+  const chipsFor = (messageId: string | null | undefined) => ({
+    ...(onFollowUp && chips && messageId === chips.messageId
       ? {
           followUps: chips,
           followUpsDisabled: !!streaming?.inProgress,
           onFollowUp,
         }
-      : {};
+      : {}),
+    ...(replyOffer && messageId === replyOffer.messageId
+      ? {
+          replies: replyOffer,
+          followUpsDisabled: !!streaming?.inProgress,
+        }
+      : {}),
+  });
 
   const hasThread =
     messages.length > 0 ||
@@ -507,7 +684,13 @@ export function MessageThread({
               // assistant reply (the nearest preceding user turn) so the surface
               // can resubmit it. Null when there is none → no regenerate action.
               let precedingUserContent: string | null = null;
-              if (m.role === "assistant" && onRegenerate) {
+              // v1.41 — a reply to a memory or plan tap is answered without a
+              // model (`decision`); there is nothing to try again.
+              if (
+                m.role === "assistant" &&
+                onRegenerate &&
+                m.providerType !== "decision"
+              ) {
                 for (let j = idx - 1; j >= 0; j--) {
                   if (messages[j].role === "user") {
                     precedingUserContent = messages[j].content;
@@ -531,6 +714,19 @@ export function MessageThread({
                   {...(m.id === streaming?.messageId &&
                   streaming.results.length > 0
                     ? { results: streaming.results }
+                    : {})}
+                  // v1.41 — and its live trail (with the titles and texts
+                  // the persisted copy only has behind `…/trail`), its clock
+                  // and the words of the fact it kept.
+                  {...(m.id === streaming?.messageId
+                    ? {
+                        ...(streaming.activity.length > 0
+                          ? { activity: streaming.activity }
+                          : {}),
+                        startedAt: streaming.startedAt,
+                        endedAt: streaming.endedAt,
+                        memoryNote: streaming.memoryNote,
+                      }
                     : {})}
                   {...(m.role === "assistant" ? chipsFor(m.id) : {})}
                   onRegenerate={
@@ -585,6 +781,11 @@ export function MessageThread({
                     suggestedAction={streaming.suggestedAction}
                     steps={streaming.steps}
                     results={streaming.results}
+                    activity={streaming.activity}
+                    interimRefs={streaming.interimRefs}
+                    startedAt={streaming.startedAt}
+                    endedAt={streaming.endedAt}
+                    memoryNote={streaming.memoryNote}
                     providerType={streaming.inProgress ? "streaming" : null}
                     inProgress={streaming.inProgress}
                     errorCode={streaming.errorCode}
@@ -602,14 +803,6 @@ export function MessageThread({
           {placement.tail.map((i) => (
             <Fragment key={i.key}>{i.node}</Fragment>
           ))}
-          {/* Plan-proposal confirm cards for THIS conversation. The extractor
-          runs after the turn (memory-refresh worker), so the block appears at
-          the thread tail once the proposal lands rather than under a specific
-          bubble; the component itself slow-polls and renders nothing while
-          the conversation has no open proposal. */}
-          {conversation ? (
-            <PlanProposalCards conversationId={conversation.id} />
-          ) : null}
         </div>
         <ScrollToBottomButton visible={!pinned} onClick={scrollToLatest} />
       </div>

@@ -37,7 +37,7 @@ import type {
   CoachResultTable,
 } from "@/lib/ai/coach/types";
 import { makeBucketLabelFormatters } from "@/lib/charts/bucket-label";
-import { niceAxis } from "@/lib/charts/nice-axis";
+import { niceAxis, type NiceAxis } from "@/lib/charts/nice-axis";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
@@ -122,9 +122,9 @@ export function CoachResultChart({
   if (spec.kind === "histogram") {
     return <HistogramChart result={result} spec={spec} label={label} />;
   }
-  // v1.41 — the contract is in place; no table carries this kind yet, and the
-  // table view stays available until the chart lands.
-  if (spec.kind === "compare") return null;
+  if (spec.kind === "compare") {
+    return <CompareChart result={result} spec={spec} label={label} />;
+  }
   if (spec.kind === "bar" && spec.orientation === "horizontal") {
     return (
       <CategoryBarChart
@@ -354,14 +354,21 @@ function SeriesLegend({
   series,
   hidden,
   onToggle,
+  label,
+  dashed,
 }: {
   series: Array<{ key: string; label: string }>;
   hidden: ReadonlySet<string>;
   onToggle: (key: string) => void;
+  /** The legend's accessible name, when it says more than its buttons. */
+  label?: string;
+  /** Series drawn dashed; their swatch is a ring rather than a dot. */
+  dashed?: ReadonlySet<string>;
 }) {
   return (
     <div
       data-slot="coach-result-chart-legend"
+      {...(label ? { role: "group", "aria-label": label } : {})}
       className="flex flex-wrap items-center gap-1.5"
     >
       {series.map(({ key, label }, index) => {
@@ -385,14 +392,226 @@ function SeriesLegend({
                 "inline-block size-2 rounded-full",
                 !shown && "opacity-40",
               )}
-              style={{
-                backgroundColor: SERIES_COLORS[index % SERIES_COLORS.length],
-              }}
+              style={
+                dashed?.has(key)
+                  ? {
+                      border: `1.5px solid ${SERIES_COLORS[index % SERIES_COLORS.length]}`,
+                    }
+                  : {
+                      backgroundColor:
+                        SERIES_COLORS[index % SERIES_COLORS.length],
+                    }
+              }
             />
             {label}
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// ── Compare: two periods overlaid, or two metrics side by side ─────────────
+
+/**
+ * Two axes whose grid lines meet: the second axis is widened, a step at a
+ * time on its own nice step, until it has as many ticks as the first. Null
+ * when either side has no value.
+ */
+export function alignedAxes(
+  a: ReadonlyArray<number | null>,
+  b: ReadonlyArray<number | null>,
+): { left: NiceAxis; right: NiceAxis } | null {
+  const left = niceAxis(a);
+  if (!left) return null;
+  const count = left.ticks.length;
+  const right = niceAxis(b, { maxTicks: count });
+  if (!right) return null;
+  const ticks = [...right.ticks];
+  if (ticks.length >= 2) {
+    const step = ticks[1] - ticks[0];
+    const decimals = Math.max(0, (String(step).split(".")[1] ?? "").length);
+    while (ticks.length < count) {
+      ticks.push(Number((ticks[ticks.length - 1] + step).toFixed(decimals)));
+    }
+  }
+  return {
+    left,
+    right: { domain: [ticks[0], ticks[ticks.length - 1]], ticks },
+  };
+}
+
+/** The rows of a compare chart: the shared x, then each side's value. */
+export function comparePoints(
+  result: CoachResultTable,
+  spec: Extract<CoachChartSpec, { kind: "compare" }>,
+): Array<{ x: string; a: number | null; b: number | null }> {
+  const index = (key: string) =>
+    result.columns.findIndex((column) => column.key === key);
+  const xi = index(spec.x);
+  const ai = index(spec.a);
+  const bi = index(spec.b);
+  return result.rows.map((row) => ({
+    x: String(row[xi] ?? ""),
+    a: typeof row[ai] === "number" ? (row[ai] as number) : null,
+    b: typeof row[bi] === "number" ? (row[bi] as number) : null,
+  }));
+}
+
+function CompareChart({
+  result,
+  spec,
+  label,
+}: {
+  result: CoachResultTable;
+  spec: Extract<CoachChartSpec, { kind: "compare" }>;
+  label: string;
+}) {
+  const { t } = useTranslations();
+  const periodLabel = usePeriodLabel();
+  const valueFormat = useValueFormat();
+  const animate = !prefersReducedMotion();
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
+  const byKey = useMemo(
+    () => new Map(result.columns.map((column) => [column.key, column])),
+    [result.columns],
+  );
+  const points = useMemo(() => comparePoints(result, spec), [result, spec]);
+  const isPeriod = byKey.get(spec.x)?.kind === "period";
+  const tickLabel = (x: string) => (isPeriod ? periodLabel(x) : x);
+  const twoAxes = spec.mode === "metrics" && spec.axes === 2;
+  // The earlier period is the dashed line, so the two read apart without
+  // relying on colour alone.
+  const dashed = new Set(spec.mode === "periods" ? ["b"] : []);
+  const series = [
+    { key: "a", column: byKey.get(spec.a), color: SERIES_COLORS[0] },
+    { key: "b", column: byKey.get(spec.b), color: SERIES_COLORS[1] },
+  ];
+  const visible = series.filter((s) => !hidden.has(s.key));
+  const values = (key: "a" | "b") =>
+    hidden.has(key) ? [] : points.map((point) => point[key]);
+  const aligned = twoAxes ? alignedAxes(values("a"), values("b")) : null;
+  const shared = twoAxes ? null : niceAxis([...values("a"), ...values("b")]);
+  const left = aligned?.left ?? (twoAxes ? niceAxis(values("a")) : shared);
+  const right = aligned?.right ?? (twoAxes ? niceAxis(values("b")) : null);
+  const nameOf = (key: string) => {
+    const column = byKey.get(key === "a" ? spec.a : spec.b);
+    return column?.label ?? key;
+  };
+  const legendLabel =
+    spec.mode === "periods"
+      ? // The key is spelled out rather than read from `dialog-keys.ts`: this
+        // file rides the shared chart runtime, and that module would pull the
+        // Coach's schemas into every chart on every page.
+        t("insights.coach.chart.compare.periods", {
+          a: nameOf("a"),
+          b: nameOf("b"),
+        })
+      : undefined;
+
+  const tooltip = (props: {
+    active?: boolean;
+    payload?: ReadonlyArray<{
+      payload?: { x: string; a: number | null; b: number | null };
+    }>;
+  }) => {
+    const point = props.payload?.[0]?.payload;
+    if (!props.active || !point) {
+      return <RichChartTooltip active={false} rows={[]} />;
+    }
+    const rows = visible.flatMap((s) => {
+      const value = point[s.key as "a" | "b"];
+      if (typeof value !== "number") return [];
+      return [
+        {
+          name: s.column?.label ?? s.key,
+          value: valueFormat(value, s.column),
+          color: s.color,
+        },
+      ];
+    });
+    return <RichChartTooltip active label={tickLabel(point.x)} rows={rows} />;
+  };
+
+  const axisProps = (axis: NiceAxis | null) =>
+    axis
+      ? { domain: axis.domain, ticks: axis.ticks, interval: 0 as const }
+      : { domain: ["auto", "auto"] as [string, string] };
+
+  return (
+    <div className="flex flex-col gap-2" data-slot="coach-result-chart-compare">
+      <SeriesLegend
+        series={series.map((s) => ({ key: s.key, label: nameOf(s.key) }))}
+        hidden={hidden}
+        label={legendLabel}
+        dashed={dashed}
+        onToggle={(key) =>
+          setHidden((current) => {
+            const next = new Set(current);
+            if (next.has(key)) next.delete(key);
+            else if (series.length - next.size > 1) next.add(key);
+            return next;
+          })
+        }
+      />
+      <PlotBand height={RESULT_CHART_HEIGHT_PX} label={label}>
+        <LineChart
+          accessibilityLayer={false}
+          data={points}
+          margin={{ top: 8, right: twoAxes ? 0 : 8, bottom: 0, left: 0 }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="var(--border)"
+            vertical={false}
+            yAxisId="left"
+          />
+          <XAxis
+            dataKey="x"
+            tickFormatter={tickLabel}
+            tick={TICK}
+            axisLine={false}
+            tickLine={false}
+            minTickGap={24}
+          />
+          <YAxis
+            yAxisId="left"
+            tick={TICK}
+            axisLine={false}
+            tickLine={false}
+            width={40}
+            {...axisProps(left)}
+          />
+          {twoAxes ? (
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tick={TICK}
+              axisLine={false}
+              tickLine={false}
+              width={40}
+              {...axisProps(right)}
+            />
+          ) : null}
+          <Tooltip content={tooltip} cursor={{ stroke: "var(--border)" }} />
+          {visible.map((s) => (
+            <Line
+              key={s.key}
+              yAxisId={twoAxes && s.key === "b" ? "right" : "left"}
+              type="monotone"
+              dataKey={s.key}
+              name={nameOf(s.key)}
+              stroke={s.color}
+              strokeWidth={2}
+              strokeDasharray={dashed.has(s.key) ? "5 4" : undefined}
+              dot={{ r: 2.5, strokeWidth: 0, fill: s.color }}
+              activeDot={{ r: 4 }}
+              connectNulls={false}
+              isAnimationActive={animate}
+            />
+          ))}
+        </LineChart>
+      </PlotBand>
     </div>
   );
 }

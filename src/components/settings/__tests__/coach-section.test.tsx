@@ -36,6 +36,8 @@ vi.mock("@/hooks/use-ai-capability", () => ({
     reason: null,
     onDeviceAllowed: true,
   }),
+  // v1.41 — the thinking depth reads the resolved block; none here.
+  useCoachReasoning: () => null,
 }));
 
 const authState: {

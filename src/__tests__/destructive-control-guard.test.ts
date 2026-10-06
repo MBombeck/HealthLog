@@ -196,9 +196,26 @@ const REGISTRY: DestructiveEntry[] = [
   },
   {
     file: "components/settings/coach-memory-section.tsx",
-    destroys: "one remembered Coach fact, or every one of them",
+    destroys: "every remembered Coach fact at once",
     recovery: "tombstoned-no-restore",
-    confirm: ["ConfirmButton", "AlertDialog"],
+    confirm: ["AlertDialog"],
+  },
+  {
+    file: "components/insights/coach-panel/use-coach-facts.ts",
+    destroys: "one remembered Coach fact",
+    triggers: [
+      "components/settings/coach-memory-section.tsx",
+      "components/insights/coach-panel/memory-note.tsx",
+    ],
+    recovery: "tombstoned-no-restore",
+    confirm: ["ConfirmButton"],
+    unconfirmed: [
+      {
+        control: "Undo on the memory note under an answer — memory-note.tsx",
+        reason:
+          "Undo takes back what the Coach saved a moment ago on its own, from the person's own words in the same turn. Nothing the person wrote is lost: their message stays in the thread and the fact can be kept again with one tap. Asking to confirm an undo would make reversing the Coach dearer than letting it keep something unwanted. Forgetting from the memory list, where a fact may be old and relied on, is confirmed.",
+      },
+    ],
   },
   {
     file: "hooks/use-coach-reminders.ts",
@@ -210,16 +227,12 @@ const REGISTRY: DestructiveEntry[] = [
   {
     file: "hooks/use-coach-plans.ts",
     destroys: "a Coach plan and the record of how it went",
-    triggers: [
-      "app/coach/plans/page.tsx",
-      "components/insights/coach-panel/plan-proposal-card.tsx",
-    ],
+    triggers: ["app/coach/plans/page.tsx"],
     recovery: "tombstoned-no-restore",
     confirm: ["ConfirmButton"],
     unconfirmed: [
       {
-        control:
-          "decline a PROPOSED plan — app/coach/plans/page.tsx and plan-proposal-card.tsx",
+        control: "decline a PROPOSED plan — app/coach/plans/page.tsx",
         reason:
           "Declining is the negative half of an accept/decline pair the assistant just offered; the person has invested nothing in a proposal they never adopted, and the same suggestion re-derives on a later turn. Confirming a refusal would make saying no more expensive than saying yes. The delete of a plan the person actually RAN is confirmed, and that is the one carrying history.",
       },

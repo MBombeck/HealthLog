@@ -100,4 +100,39 @@ describe("resolveCoachSendTarget", () => {
       expect(target.url).toBe("/api/insights/chat");
     },
   );
+
+  it("carries a memory or plan decision on the tool route, never on the fenced one", () => {
+    const memory = JSON.parse(
+      resolveCoachSendTarget({
+        conversationId: "c1",
+        message: "Yes, remember it",
+        memoryDecision: { messageId: "a1", proposalId: "p1", accept: true },
+      }).body,
+    );
+    expect(memory.memoryDecision).toEqual({
+      messageId: "a1",
+      proposalId: "p1",
+      accept: true,
+    });
+    const plan = JSON.parse(
+      resolveCoachSendTarget({
+        conversationId: "c1",
+        message: "Not now",
+        planDecision: { messageId: "a1", planId: "plan1", accept: false },
+      }).body,
+    );
+    expect(plan.planDecision).toEqual({
+      messageId: "a1",
+      planId: "plan1",
+      accept: false,
+    });
+    const fenced = resolveCoachSendTarget({
+      conversationId: "c1",
+      message: "Yes",
+      fenced: true,
+      memoryDecision: { messageId: "a1", proposalId: "p1", accept: true },
+    });
+    expect(fenced.url).toBe("/api/insights/chat/fenced");
+    expect(JSON.parse(fenced.body).memoryDecision).toBeUndefined();
+  });
 });

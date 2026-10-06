@@ -39,13 +39,18 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { useCoachPrefs, useSaveCoachPrefs } from "@/hooks/use-coach-prefs";
-import { useAiCapability } from "@/hooks/use-ai-capability";
+import {
+  CoachReasoningSelect,
+  reasoningStateOrDefault,
+} from "@/components/insights/coach-panel/coach-reasoning-field";
+import { useAiCapability, useCoachReasoning } from "@/hooks/use-ai-capability";
 import { COACH_FOLLOW_UP_UI_KEYS } from "@/lib/ai/coach/dialog-keys";
 import { HISTORY_REACH_DAYS, lookbackText } from "@/lib/ai/coach/history-reach";
 import {
   DEFAULT_COACH_CLUSTERS,
   DEFAULT_COACH_PREFS,
   coachDataClusterEnum,
+  coachReasoningLevel,
   type CoachExcludeMetric,
   type CoachPrefs,
   type CoachTone,
@@ -106,6 +111,7 @@ export interface CoachPrefsSectionProps {
 export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
   const { t } = useTranslations();
   const coach = useAiCapability("coach");
+  const reasoningState = reasoningStateOrDefault(useCoachReasoning());
 
   const { data: persisted } = useCoachPrefs({ enabled: isAuthenticated });
 
@@ -251,6 +257,17 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
               )}
             </div>
           </div>
+
+          {/* v1.41 — how hard the Coach thinks; the same field sits in the
+              Coach's quick settings. */}
+          <CoachReasoningSelect
+            id="coach-prefs-reasoning"
+            value={coachReasoningLevel(draft)}
+            state={reasoningState}
+            onChange={(reasoning) =>
+              setDraft((prev) => ({ ...prev, reasoning }))
+            }
+          />
 
           {/* Data clusters + analysis window live on ONE owner: "What I
               can see" behind the Coach's settings gear, which
