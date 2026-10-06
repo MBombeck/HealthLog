@@ -124,3 +124,24 @@ describe("coachOutboundFallback", () => {
     );
   });
 });
+
+describe("screenCoachReply — a drug-named dose change", () => {
+  it("replaces 'Increase your metformin to 2000 mg daily'", () => {
+    const d = screenCoachReply(
+      "Increase your metformin to 2000 mg daily.",
+      "en",
+      [1000],
+    );
+    expect(d.block).toBe(true);
+    expect(d.reason).toBe("dose_prescription");
+  });
+
+  it("passes a restatement of the logged schedule", () => {
+    const d = screenCoachReply(
+      "Your log shows you take 1000 mg twice daily.",
+      "en",
+      [1000],
+    );
+    expect(d.block).toBe(false);
+  });
+});
