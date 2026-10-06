@@ -21,7 +21,7 @@ import {
 import {
   PLAN_REVIEW_DAYS,
   REMEMBER_FACT_MAX_CHARS,
-} from "@/lib/ai/coach/memory/contract";
+} from "@/lib/ai/coach/memory/shared";
 import {
   SUGGESTED_ACTION_TYPES,
   type CheckupIntervalId,

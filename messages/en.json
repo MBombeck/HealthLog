@@ -3185,12 +3185,14 @@
         "undo": "Undo",
         "accept": "Yes, remember it",
         "decline": "No",
-        "confirmed": "Got it, I'll remember."
+        "confirmed": "Got it, I'll remember.",
+        "declined": "Okay, I won't."
       },
       "plan": {
         "accept": "Take on this plan",
         "decline": "Not now",
-        "confirmed": "Noted. I'll check in with you in {days} days."
+        "confirmed": "Noted. I'll check in with you in {days} days.",
+        "declined": "Okay, not now."
       },
       "assumption": {
         "line": "Assumed: {value}",
@@ -10033,6 +10035,12 @@
         "last90days": "Last 90 days",
         "lastYear": "Last 12 months",
         "allTime": "All time"
+      },
+      "comparison": {
+        "baseline90d": "Compare with my usual 90 days"
+      },
+      "anchor": {
+        "illness": "Since the illness of {date}"
       }
     },
     "reuse": {

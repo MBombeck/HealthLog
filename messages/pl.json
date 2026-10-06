@@ -3185,12 +3185,14 @@
         "undo": "Cofnij",
         "accept": "Tak, zapamiętaj",
         "decline": "Nie",
-        "confirmed": "Jasne, zapamiętam."
+        "confirmed": "Jasne, zapamiętam.",
+        "declined": "Dobrze, nie zapiszę tego."
       },
       "plan": {
         "accept": "Przyjmij ten plan",
         "decline": "Nie teraz",
-        "confirmed": "Zanotowane. Wrócimy do tego razem za {days} dni."
+        "confirmed": "Zanotowane. Wrócimy do tego razem za {days} dni.",
+        "declined": "Dobrze, nie teraz."
       },
       "assumption": {
         "line": "Założenie: {value}",
@@ -10033,6 +10035,12 @@
         "last90days": "Ostatnie 90 dni",
         "lastYear": "Ostatnie 12 miesięcy",
         "allTime": "Cały okres"
+      },
+      "comparison": {
+        "baseline90d": "Porównaj z moimi zwykłymi 90 dniami"
+      },
+      "anchor": {
+        "illness": "Od choroby z {date}"
       }
     },
     "reuse": {

@@ -3185,12 +3185,14 @@
         "undo": "Rückgängig",
         "accept": "Ja, merken",
         "decline": "Nein",
-        "confirmed": "Gemerkt."
+        "confirmed": "Gemerkt.",
+        "declined": "Alles klar, dann nicht."
       },
       "plan": {
         "accept": "Plan übernehmen",
         "decline": "Nicht jetzt",
-        "confirmed": "Ist notiert. Ich schaue in {days} Tagen mit dir drauf."
+        "confirmed": "Ist notiert. Ich schaue in {days} Tagen mit dir drauf.",
+        "declined": "Alles klar, dann nicht jetzt."
       },
       "assumption": {
         "line": "Angenommen: {value}",
@@ -10033,6 +10035,12 @@
         "last90days": "Letzte 90 Tage",
         "lastYear": "Letzte 12 Monate",
         "allTime": "Gesamter Zeitraum"
+      },
+      "comparison": {
+        "baseline90d": "Mit meinen üblichen 90 Tagen vergleichen"
+      },
+      "anchor": {
+        "illness": "Seit der Erkrankung vom {date}"
       }
     },
     "reuse": {

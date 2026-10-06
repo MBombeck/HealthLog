@@ -102,6 +102,11 @@ export const AI_ROUTES: Readonly<Record<string, AiRouteEntry>> = {
     capabilities: ["coach"],
     why: "POST streams a Coach reply from a model. The history GET in the same file asks nothing.",
   },
+  "src/app/api/insights/chat/[id]/messages/[messageId]/trail/route.ts": {
+    kind: "mixed",
+    capabilities: ["coach"],
+    why: "The trail's reasoning text is model-written and served only while the Coach's text may be shown; otherwise 200 with trail null and the ai state.",
+  },
   "src/app/api/insights/generate/route.ts": {
     kind: "action",
     capabilities: ["briefing"],

@@ -3185,12 +3185,14 @@
         "undo": "실행 취소",
         "accept": "네, 기억해 줘",
         "decline": "아니요",
-        "confirmed": "알겠어요, 기억해 둘게요."
+        "confirmed": "알겠어요, 기억해 둘게요.",
+        "declined": "알겠어요, 저장하지 않을게요."
       },
       "plan": {
         "accept": "이 계획 시작하기",
         "decline": "나중에",
-        "confirmed": "기록했어요. {days}일 뒤에 함께 살펴볼게요."
+        "confirmed": "기록했어요. {days}일 뒤에 함께 살펴볼게요.",
+        "declined": "알겠어요, 지금은 하지 않을게요."
       },
       "assumption": {
         "line": "가정: {value}",
@@ -10033,6 +10035,12 @@
         "last90days": "최근 90일",
         "lastYear": "최근 12개월",
         "allTime": "전체 기간"
+      },
+      "comparison": {
+        "baseline90d": "평소 90일과 비교하기"
+      },
+      "anchor": {
+        "illness": "{date} 질환 이후부터"
       }
     },
     "reuse": {

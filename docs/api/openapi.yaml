@@ -9429,6 +9429,47 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/insights/chat/{id}/messages/{messageId}/trail:
+    get:
+      tags:
+        - Insights
+      summary: Read the trail text of one Coach message
+      description: "v1.41 — the model-written text of one assistant message's trail: the screened reasoning titles and
+        summaries by trail entry, the fact texts the turn recalled, and a pending fact proposal. The trail's structure
+        (phases, statuses, counts) is plaintext on the message's `metricSource.activity`; this route serves only the
+        text, decrypted for the account that owns the conversation. Fetch lazily when the person opens the trail. A
+        mixed read: while the Coach's text may not be shown for the record, the answer is 200 with `trail: null` and the
+        `ai` state beside it. A foreign or unknown conversation or message id maps to 404 (never 403). Auth via cookie
+        or a full-access Bearer token."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Conversation id.
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Assistant message id within the conversation.
+      responses:
+        "200":
+          description: The trail text, or null while it may not be served.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachMessageTrailResponse"
+        "401": *a1
+        "404":
+          description: Conversation or message not found, or not owned by the caller.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/insights/chat/{id}:
     get:
       tags:
@@ -54159,6 +54200,88 @@ components:
             - withheld
           additionalProperties: false
       description: "One stored table, or the reason it is not served. Absence is explicit: a withheld table names why."
+    CoachMessageTrailResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            trail:
+              anyOf:
+                - $ref: "#/components/schemas/CoachTrail"
+                - type: "null"
+            ai:
+              description: The `coach` capability. While unavailable `trail` is null.
+              $ref: "#/components/schemas/AiCapabilityState"
+          required:
+            - trail
+            - ai
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CoachTrail:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^a[1-9]\d?$
+              title:
+                type: string
+                maxLength: 80
+              text:
+                type: string
+                maxLength: 400
+            required:
+              - id
+            additionalProperties: false
+        recalled:
+          type: array
+          items:
+            type: string
+            maxLength: 160
+        proposal:
+          type: object
+          properties:
+            proposalId:
+              type: string
+              pattern: ^[A-Za-z0-9_-]{1,64}$
+            category:
+              type: string
+              enum:
+                - preference
+                - goal
+                - context
+                - condition
+                - constraint
+                - medication
+            fact:
+              type: string
+              maxLength: 160
+          required:
+            - proposalId
+            - category
+            - fact
+          additionalProperties: false
+      required:
+        - entries
+      additionalProperties: false
+      description: v1.41 — the model-written text of a turn's trail and the fact texts it touched. Encrypted at rest and
+        served only to the account that owns the conversation.
     CoachConversationDetailResponse:
       type: object
       properties:

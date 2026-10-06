@@ -3185,12 +3185,14 @@
         "undo": "Annuler",
         "accept": "Oui, retiens-le",
         "decline": "Non",
-        "confirmed": "C'est noté, je m'en souviendrai."
+        "confirmed": "C'est noté, je m'en souviendrai.",
+        "declined": "D'accord, je ne le ferai pas."
       },
       "plan": {
         "accept": "Adopter ce plan",
         "decline": "Pas maintenant",
-        "confirmed": "C'est noté. On fait le point ensemble dans {days} jours."
+        "confirmed": "C'est noté. On fait le point ensemble dans {days} jours.",
+        "declined": "D'accord, pas maintenant."
       },
       "assumption": {
         "line": "Hypothèse : {value}",
@@ -10033,6 +10035,12 @@
         "last90days": "90 derniers jours",
         "lastYear": "12 derniers mois",
         "allTime": "Toute la période"
+      },
+      "comparison": {
+        "baseline90d": "Comparer avec mes 90 jours habituels"
+      },
+      "anchor": {
+        "illness": "Depuis la maladie du {date}"
       }
     },
     "reuse": {
