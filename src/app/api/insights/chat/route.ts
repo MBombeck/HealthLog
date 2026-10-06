@@ -29,7 +29,7 @@ import {
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, refundRateLimit } from "@/lib/rate-limit";
 import { requireAiCapability } from "@/lib/ai/capabilities/gate";
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
@@ -37,6 +37,10 @@ import { coachChatRequestSchema } from "@/lib/ai/coach/types";
 import { listConversations } from "@/lib/ai/coach/persistence";
 import { detectRefusal } from "@/lib/ai/coach/refusal";
 import { runCoachTurn } from "@/lib/ai/coach/turn/pipeline";
+import {
+  DEFAULT_REASONING_LEVEL,
+  type ReasoningLevel,
+} from "@/lib/ai/reasoning/levels";
 import { streamProviderError, streamRefusal } from "@/lib/ai/coach/turn/sse";
 
 /**
@@ -62,6 +66,19 @@ async function coachCapabilityRefusal(): Promise<Response | null> {
     throw err;
   }
 }
+
+/**
+ * v1.41 — at most this many Coach turns of one person at once. A budgeted
+ * turn can run for minutes; three tabs firing at the same time would run
+ * three of them against one daily budget and one provider account.
+ */
+const COACH_CONCURRENT_TURNS = 2;
+/**
+ * How long a turn's slot is held at most: a turn's wall time (150 s) plus
+ * the streaming of its reply. A slot whose release never arrived (a crashed
+ * process) frees itself when the window ends.
+ */
+const COACH_TURN_SLOT_MS = 180_000;
 
 async function handleChatRequest(request: NextRequest): Promise<Response> {
   const auth = await requireAuth();
@@ -111,6 +128,8 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     workoutId,
     followUp,
     clarification,
+    memoryDecision,
+    planDecision,
   } = parsed.data;
 
   // Per-user request-rate ceiling layered in front of the daily budget
@@ -162,6 +181,35 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     });
   }
 
+  // v1.41 — the person's effective reasoning level: their choice after the
+  // operator's switch and highest level. Integration points this one call
+  // site at the shared resolver (`src/lib/ai/reasoning/resolve.ts`); until
+  // then every turn thinks at the default level.
+  const reasoningLevel: ReasoningLevel = DEFAULT_REASONING_LEVEL;
+
+  // v1.41 — the person's turn slot. The counter is the rate-limit row's own
+  // (an atomic upsert), given back when the turn is over; a refused slot is
+  // given back at once, since the refused attempt never ran.
+  const slotKey = `coach-turn-active:${userId}`;
+  const slot = await checkRateLimit(
+    slotKey,
+    COACH_CONCURRENT_TURNS,
+    COACH_TURN_SLOT_MS,
+  );
+  const releaseSlot = () => {
+    void refundRateLimit(slotKey).catch(() => {
+      // The window frees the slot on its own.
+    });
+  };
+  if (!slot.allowed) {
+    releaseSlot();
+    annotate({
+      action: { name: "insights.coach.concurrent-limited" },
+      meta: { limit: COACH_CONCURRENT_TURNS },
+    });
+    return apiError("Too many Coach requests, please wait a moment", 429);
+  }
+
   // Conversation, context, chain, egress re-check, budget, and the streamed
   // reply: `src/lib/ai/coach/turn/`.
   return runCoachTurn({
@@ -175,6 +223,10 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     workoutId,
     followUp,
     clarification,
+    memoryDecision,
+    planDecision,
+    reasoningLevel,
+    releaseSlot,
     recheckCapability: coachCapabilityRefusal,
   });
 }

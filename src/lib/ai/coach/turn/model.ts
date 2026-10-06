@@ -32,7 +32,39 @@ import {
 } from "@/lib/ai/coach/tools";
 import { admittedPriorResults } from "@/lib/ai/coach/tools/executor";
 import type { InventoryEntry } from "@/lib/ai/coach/tools/inventory";
-import type { CoachResultTable, CoachStep } from "@/lib/ai/coach/types";
+import {
+  COMPARE_SERIES_TOOL_DEF,
+  COMPARE_SERIES_TOOL_NAME,
+  compareSeriesArgsSchema,
+} from "@/lib/ai/coach/tools/compare-series";
+import { DIALOG_TOOL_DEFS } from "@/lib/ai/coach/tools/dialog-tools";
+import {
+  createTurnBudget,
+  estimateInputTokens,
+  type TurnPayer,
+} from "@/lib/ai/coach/tools/turn-budget";
+import type {
+  CoachClarification,
+  CoachMemoryNote,
+  CoachPlanProposal,
+  CoachResultTable,
+  CoachStep,
+  CoachStop,
+} from "@/lib/ai/coach/types";
+import type { AiToolCall } from "@/lib/ai/types";
+import type { ActivityRecorder } from "@/lib/ai/coach/activity/contract";
+import {
+  createActivityRecorder,
+  type TurnActivityRecorder,
+} from "@/lib/ai/coach/activity/recorder";
+import {
+  digestActivityLabel,
+  digestDoneActivityLabel,
+  fetchActivityLabel,
+  memoryActivityLabel,
+  simpleActivityLabel,
+} from "@/lib/ai/coach/activity/catalog";
+import { buildMemoryContextBlock } from "@/lib/ai/coach/memory/contract";
 import {
   projectResults,
   type SettledToolCall,
@@ -48,7 +80,8 @@ import {
 } from "@/lib/ai/coach/results/refs";
 
 import { buildDialogAddenda } from "./addenda";
-import { refundReservation, type TurnReservation } from "./budget";
+import type { TurnLedger } from "./budget";
+import type { TurnReasoning } from "./reasoning";
 import type { TurnChain } from "./chain";
 import type { TurnContext } from "./context";
 import { classifyBubblingProviderError } from "./errors";
@@ -120,6 +153,23 @@ export type ModelOutcome =
        * turn, for the related-metric chip. Empty on the no-tools path.
        */
       correlations: CorrelationPair[];
+      /** v1.41 — the turn's live trail. */
+      activity: TurnActivityRecorder;
+      /** v1.41 — why the answer was forced, when it was. */
+      stop?: CoachStop;
+      /** v1.41 — the question the turn ended on, asked through the tool. */
+      toolClarification: {
+        question: string;
+        clarification: CoachClarification;
+      } | null;
+      /** v1.41 — questions the brake turned into assumptions. */
+      declinedClarifications: CoachClarification[];
+      /** v1.41 — the fact the turn saved or proposes. */
+      memoryNote: CoachMemoryNote | null;
+      /** v1.41 — the plan the turn proposes. */
+      planProposal: CoachPlanProposal | null;
+      /** v1.41 — tables already went out as interim `result` frames. */
+      interimSent: boolean;
     }
   | { ok: false; code: string };
 
@@ -183,6 +233,30 @@ function appendBlocks(base: string, blocks: string[]): string {
   return extra.length > 0 ? [base, ...extra].join("\n\n") : base;
 }
 
+/** The tools a tool-mode turn offers: the catalogue, comparisons, the dialog. */
+export const COACH_TURN_TOOL_DEFS = [
+  ...COACH_TOOL_DEFS,
+  COMPARE_SERIES_TOOL_DEF,
+  ...DIALOG_TOOL_DEFS,
+];
+
+/** A call's validated arguments, `compare_series` included. */
+function validatedArgs(call: AiToolCall): Record<string, unknown> | undefined {
+  if (call.name !== COMPARE_SERIES_TOOL_NAME) {
+    return parseCoachToolArgs(call.name, call.arguments);
+  }
+  try {
+    const parsed = compareSeriesArgsSchema.safeParse(
+      call.arguments.trim() === "" ? {} : JSON.parse(call.arguments),
+    );
+    return parsed.success
+      ? (parsed.data as Record<string, unknown>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function runTurnModel(args: {
   userId: string;
   locale: Locale;
@@ -191,8 +265,9 @@ export async function runTurnModel(args: {
   ctx: TurnContext;
   chain: TurnChain;
   toolMode: boolean;
-  reservation: TurnReservation;
-  /** The turn's frame channel; the live `step` frames go out on it. */
+  /** v1.41 — the day's ledger, booked round by round. */
+  ledger: TurnLedger;
+  /** The turn's frame channel; the live `step` and `activity` frames go out on it. */
   emitter: TurnEmitter;
   /**
    * v1.39.4 — server-authored context lines for this turn (a resolved
@@ -205,18 +280,83 @@ export async function runTurnModel(args: {
    * for the context and for `show_result`. Empty on a new conversation.
    */
   priorResults?: PriorResultTurn[];
+  /** v1.41 — the person's message, the only source of a remembered fact. */
+  message: string;
+  /** v1.41 — that message's stored id. */
+  userMessageId?: string;
+  /** v1.41 — the reasoning the turn asks for, already resolved. */
+  reasoning?: TurnReasoning;
+  /** v1.41 — who pays: fixes the turn's budget. */
+  payer: TurnPayer;
+  /** v1.41 — a window was set for this conversation by the client. */
+  conversationWindowSet: boolean;
 }): Promise<ModelOutcome> {
   const { userId, locale, signal, conversationId, ctx, chain, toolMode } = args;
   const { effectiveScope, workoutEvidence, turnContext, snapshot } = ctx;
   const steps = stepRecorder(args.emitter);
+  // v1.41 — the figures read so far, which screen the trail's model text.
+  const figures: unknown[] = [];
+  const recorder = createActivityRecorder({
+    emit: (activity) => {
+      if (!args.emitter.aborted()) {
+        args.emitter.emit({ type: "activity", activity });
+      }
+    },
+    screen: {
+      locale,
+      figures: () => figures,
+      userMessage: args.message,
+      scheduleDoses: ctx.scheduleDoses,
+    },
+  });
+  // A round's digest runs until the next entry opens: the next round's
+  // thinking, or the stop before it.
+  let digest: { id: string; count: number; areas: number } | null = null;
+  const closeDigest = () => {
+    if (!digest) return;
+    const { id, count, areas } = digest;
+    digest = null;
+    recorder.finish(id, "done", {
+      ...digestDoneActivityLabel(locale, count, areas),
+      count,
+    });
+  };
+  const activity: ActivityRecorder = {
+    ...recorder,
+    start: (entry) => {
+      closeDigest();
+      return recorder.start(entry);
+    },
+  };
   try {
+    // v1.41 — what the Coach knows about the person, built only now: the
+    // capability was re-checked at the egress site before the model step.
+    const memory = await buildMemoryContextBlock({
+      userId,
+      conversationId,
+      locale,
+      // The block re-runs the wire egress check for exactly these.
+      providerTypes: chain.map((entry) => entry.providerType),
+    }).catch(() => null);
+    if (memory) {
+      recorder.setRecalled(memory.recalled);
+    }
+    if (memory && memory.factIds.length + memory.planIds.length > 0) {
+      const count = memory.factIds.length + memory.planIds.length;
+      const id = activity.start({
+        phase: "memory",
+        round: 1,
+        ...memoryActivityLabel(locale, count),
+        count,
+      });
+      activity.finish(id, "done");
+    }
+
     if (toolMode) {
       // v1.20.0 (F1) — base context: the full system prompt + a tool-mode
       // grounding addendum, with the tiny DATA INVENTORY manifest and the
       // transcript on the user turn. The figures are NOT in the prompt — the
-      // model pulls only what it needs via the retrieval tools. The inventory
-      // build reuses the snapshot we already computed (60s LRU), so the tools
-      // that fire this turn share its reads.
+      // model pulls only what it needs via the retrieval tools.
       const inventory = await buildCoachDataInventory(
         userId,
         effectiveScope,
@@ -224,8 +364,7 @@ export async function runTurnModel(args: {
       );
       // Earlier tables whose metric the person has since excluded, or whose
       // range lies beyond the lookback limit, are neither named for the
-      // model nor reachable through show_result. The
-      // scope is the one every tool of the turn reads under.
+      // model nor reachable through show_result.
       const priorResults = await admittedPriorResults({
         userId,
         prefs: ctx.coachPrefs,
@@ -247,6 +386,7 @@ export async function runTurnModel(args: {
           guidedBlock: turnContext.guidedBlock,
           transcript: turnContext.transcript,
           languageName: LANGUAGE_NAMES[locale],
+          ...(memory ? { memoryBlock: memory.text } : {}),
         });
       // The recheck and follow-up rules are about tables: they ride the
       // prompt once the conversation holds one, or from the round after this
@@ -257,82 +397,164 @@ export async function runTurnModel(args: {
       // v1.39.4 — every call this turn settled, by its turn-wide index, for
       // the result tables. Only this turn's own calls ever reach them.
       const settled: SettledToolCall[] = [];
+      // v1.41 — the trail entry of each call, and what each round read.
+      const fetches = new Map<number, { id: string; round: number }>();
+      const roundReads = new Map<
+        number,
+        Array<{ count: number; domain: string | undefined; done: boolean }>
+      >();
+      let interimSent = false;
+      const budget = createTurnBudget({
+        payer: args.payer,
+        effort: args.reasoning?.effort,
+        initialInputTokens: estimateInputTokens(
+          toolRequest.system.length +
+            toolRequest.messages
+              .map((m) => (typeof m.content === "string" ? m.content : ""))
+              .join("").length,
+        ),
+      });
       const loop = await runCoachToolLoop({
         userId,
         providers: chain,
         system: toolRequest.system,
         systemOnceTableShown: withTables.system,
         messages: toolRequest.messages,
-        tools: COACH_TOOL_DEFS,
+        tools: COACH_TURN_TOOL_DEFS,
         temperature: AI_BUDGETS.coach.temperature,
         maxTokens: AI_BUDGETS.coach.maxTokens,
         fallbackWindow: effectiveScope?.window,
         // v1.21.0 (D5-1) — share the inventory's full-source snapshot across
-        // every tool so the turn builds ONE snapshot, not one per tool. The
-        // probe scope is the exact scope the inventory was built against, so the
-        // per-tool reads land its 60s LRU entry.
+        // every tool so the turn builds ONE snapshot, not one per tool.
         sharedScope: inventory.probeScope,
         // The lookback limit: every tool call is clamped to it.
         reach: ctx.reach,
-        // v1.20.1 — thread the abort signal so a mid-generation disconnect tears
-        // down the per-round provider calls instead of paying the full cost.
+        // v1.20.1 — a mid-generation disconnect tears the round calls down.
         signal,
-        // v1.22 (#89) — per-user response timeout for each tool-round call.
+        // v1.22 (#89) — per-user response timeout for each round's call.
         timeoutMs: ctx.aiResponseTimeoutMs,
         // v1.39.4 — result tables: each call may produce one, named `r1`..
-        // in the order they settle; `show_result` resolves only against this
-        // conversation's own earlier tables.
+        // in the order they settle.
         turn: {
           conversationId,
           locale,
           priorResults,
           refs: createResultRefAllocator(),
         },
+        budget,
+        spend: args.ledger,
+        ...(args.reasoning ? { reasoning: args.reasoning } : {}),
+        activity,
+        locale,
+        ...(memory?.pendingProposal
+          ? { initialMemoryNote: memory.pendingProposal }
+          : {}),
+        dialog: {
+          userId,
+          conversationId,
+          locale,
+          userMessage: args.message,
+          ...(args.userMessageId ? { userMessageId: args.userMessageId } : {}),
+          inventory: inventory.entries,
+          conversationWindowSet: args.conversationWindowSet,
+        },
+        checkpointScreen: { userMessage: args.message },
         // v1.39.4 — live steps: a `running` step as each call starts, its
-        // final status as it settles.
-        onCallStart: (call, index) =>
-          steps.record(
-            toStep({
-              call,
-              index,
-              parsedArgs: parseCoachToolArgs(call.name, call.arguments),
-              locale,
-              fallbackWindow: effectiveScope?.window,
+        // final status as it settles. v1.41 — and a `fetch` trail entry.
+        onCallStart: (call, index, round) => {
+          const step = toStep({
+            call,
+            index,
+            parsedArgs: validatedArgs(call),
+            locale,
+            fallbackWindow: effectiveScope?.window,
+          });
+          steps.record(step);
+          const id = activity.start({
+            phase: "fetch",
+            round,
+            ...fetchActivityLabel(locale, {
+              domain: step?.domain ?? "snapshot",
+              window: step?.window,
+              ...(step && !step.window
+                ? { fallback: { labelKey: step.labelKey, label: step.label } }
+                : {}),
             }),
-          ),
-        onCallSettled: (call, result, index) => {
-          const parsedArgs = parseCoachToolArgs(call.name, call.arguments);
-          settled[index] = {
+            ...(step ? { stepRef: step.id } : {}),
+          });
+          fetches.set(index, { id, round });
+        },
+        onCallSettled: (call, result, index, round) => {
+          const parsedArgs = validatedArgs(call);
+          const settledCall: SettledToolCall = {
             name: call.name,
             ...(parsedArgs ? { args: parsedArgs } : {}),
             result,
           };
-          steps.record(
-            toStep({
-              call,
-              index,
-              parsedArgs,
-              result,
-              locale,
-              fallbackWindow: effectiveScope?.window,
-            }),
-          );
+          settled[index] = settledCall;
+          if (result.present || result.available !== undefined) {
+            figures.push(result.data ?? result.available);
+          }
+          const step = toStep({
+            call,
+            index,
+            parsedArgs,
+            result,
+            locale,
+            fallbackWindow: effectiveScope?.window,
+          });
+          steps.record(step);
+          const entry = fetches.get(index);
+          const status = step?.status ?? (result.present ? "done" : "empty");
+          if (entry) {
+            activity.finish(entry.id, status === "running" ? "done" : status, {
+              ...(step?.count !== undefined ? { count: step.count } : {}),
+            });
+          }
+          const reads = roundReads.get(round) ?? [];
+          reads.push({
+            count: step?.count ?? 0,
+            domain: step?.domain,
+            done: status === "done",
+          });
+          roundReads.set(round, reads);
+          // v1.41 — a table goes out the moment it is read, as an interim
+          // result the answer later shows or files under "Data used".
+          if (result.table && !args.emitter.aborted()) {
+            const [table] = buildTurnResults([settledCall], locale);
+            if (table) {
+              args.emitter.emit({
+                type: "result",
+                result: table,
+                interim: true,
+              });
+              interimSent = true;
+            }
+          }
+        },
+        onRoundSettled: (round) => {
+          const reads = roundReads.get(round) ?? [];
+          if (reads.length === 0) return;
+          const count = reads.reduce((sum, read) => sum + read.count, 0);
+          const areas = new Set(
+            reads.filter((read) => read.done).map((read) => read.domain),
+          ).size;
+          const id = activity.start({
+            phase: "digest",
+            round,
+            ...digestActivityLabel(locale, count),
+            count,
+          });
+          digest = { id, count, areas };
         },
       });
+      closeDigest();
       // v1.32.1 — the numeric verifier ACTIVATES only when this turn actually
       // delivered figures the model was told to ground against: a pinned
       // workout-evidence block or a present tool result. The DATA INVENTORY
-      // manifest (sample counts per domain) is NOT an activator — it rides
-      // every tool-mode prompt even on a turn where the model answered
-      // without calling a tool, and on that turn the base prompt deliberately
-      // carries no pre-computed figures (the model must fetch them), so the
-      // verifier must stay dormant and leave the prompt-level grounding rule
-      // as the backstop, exactly as on `main`. Activating it off the
-      // counts-only inventory would flag a snapshot figure the model cited
-      // without a fresh tool call as ungrounded (a real regression caught by
-      // the integration suite). When the turn IS active, the inventory counts
-      // still WIDEN the authoritative set so a plain count restatement
-      // ("you've logged 42 BP readings") stays grounded.
+      // manifest is NOT an activator; when the turn IS active, the inventory
+      // counts WIDEN the authoritative set so a plain count restatement stays
+      // grounded.
       const presentToolPayloads = [
         ...(workoutEvidence === null ? [] : [workoutEvidence]),
         // A miss carries no `data` but may carry `available` — the bounded
@@ -364,22 +586,51 @@ export async function runTurnModel(args: {
         correlations: correlationPartners(
           settled.filter((call) => call !== undefined),
         ),
+        activity: recorder,
+        ...(loop.stop ? { stop: loop.stop } : {}),
+        toolClarification: loop.clarification ?? null,
+        declinedClarifications: loop.declinedClarifications ?? [],
+        memoryNote: loop.memoryNote ?? null,
+        planProposal: loop.planProposal ?? null,
+        interimSent,
       };
     }
     // v1.22 (#89) — the no-tools path (local / Ollama / exo, and any chain
     // that includes a non-tool provider) runs through the STREAMING runner so
     // the local client emits real tokens as they arrive and the per-idle-gap
-    // timeout governs. `onDelta` counts streamed chunks for observability; the
-    // heartbeat keeps the proxy connection warm and the assembled reply is
-    // returned in full so every guard still runs on the complete text.
+    // timeout governs. The assembled reply is returned in full so every guard
+    // still runs on the complete text.
     let streamedDeltas = 0;
     // v1.39.4 — the no-tools path reads the whole snapshot: one step.
-    steps.record(
-      snapshotStep({
-        metricCount: snapshot.provenance.metrics.length,
-        locale,
-      }),
-    );
+    const snapshotRead = snapshotStep({
+      metricCount: snapshot.provenance.metrics.length,
+      locale,
+    });
+    steps.record(snapshotRead);
+    if (snapshotRead) {
+      const id = activity.start({
+        phase: "fetch",
+        round: 1,
+        labelKey: snapshotRead.labelKey,
+        label: snapshotRead.label,
+        stepRef: snapshotRead.id,
+        ...(snapshotRead.count !== undefined
+          ? { count: snapshotRead.count }
+          : {}),
+      });
+      activity.finish(id, snapshotRead.status === "done" ? "done" : "empty");
+    }
+    const thinking = activity.start({
+      phase: "thinking",
+      round: 1,
+      ...simpleActivityLabel(locale, "thinking"),
+    });
+    const summaries: string[] = [];
+    // v1.41 — the memory block rides the user turn here too, ahead of the
+    // snapshot, fenced like the rest of the person's own context.
+    const user = memory
+      ? `${memory.text}\n\n${ctx.userPrompt}`
+      : ctx.userPrompt;
     const fallback = await runStreamingRawCompletionWithFallback({
       surface: "coach",
       userId,
@@ -387,29 +638,46 @@ export async function runTurnModel(args: {
       onDelta: () => {
         streamedDeltas += 1;
       },
-      // v1.20.0 — the no-tools path still builds one assembled user turn (the
-      // transcript-flattening includes the current authoritative snapshot
-      // on every stateless no-tools request), so it ships as a single user
-      // message. The stable persona rides `system` and is cache-eligible.
-      params: singleUserTurn({
-        system: appendBlocks(ctx.systemPrompt, args.turnHints),
-        user: ctx.userPrompt,
-        temperature: AI_BUDGETS.coach.temperature,
-        maxTokens: AI_BUDGETS.coach.maxTokens,
-        // v1.20.1 — thread the request's abort signal so a mid-generation
-        // client disconnect tears the upstream provider call down instead of
-        // paying the full token cost into a closed connection.
-        signal,
-        // v1.22 (#89) — per-idle-gap timeout for the streaming local call /
-        // whole-call timeout for the buffered cloud fallback.
-        timeoutMs: ctx.aiResponseTimeoutMs,
-      }),
+      params: {
+        ...singleUserTurn({
+          system: appendBlocks(ctx.systemPrompt, args.turnHints),
+          user,
+          temperature: AI_BUDGETS.coach.temperature,
+          maxTokens: AI_BUDGETS.coach.maxTokens,
+          // v1.20.1 — tear the upstream call down on a client disconnect.
+          signal,
+          // v1.22 (#89) — per-idle-gap timeout for the streaming local call.
+          timeoutMs: ctx.aiResponseTimeoutMs,
+        }),
+        ...(args.reasoning
+          ? {
+              reasoning: args.reasoning,
+              onReasoning: (event) => {
+                if (event.kind === "title") {
+                  activity.update(thinking, { title: event.text });
+                } else if (event.kind === "text" && event.text.trim()) {
+                  summaries.push(event.text);
+                }
+              },
+            }
+          : {}),
+      },
     });
     annotate({
       action: { name: "coach.stream.deltas" },
       meta: { deltas: streamedDeltas },
     });
     const result = fallback.result;
+    await args.ledger.settleRound({
+      tokens: result.tokensUsed ?? 0,
+      cachedTokens: result.cachedInputTokens ?? 0,
+      servedBy: fallback.workingProvider.providerType,
+      final: false,
+    });
+    const summaryText = (
+      summaries.length > 0 ? summaries : (result.reasoning?.summary ?? [])
+    ).join("\n\n");
+    activity.finish(thinking, "done", summaryText ? { text: summaryText } : {});
     return {
       ok: true,
       result,
@@ -417,8 +685,7 @@ export async function runTurnModel(args: {
       toolTrace: [],
       toolResultPayloads: [],
       // v1.21.2 (A8) — the no-tools path grades only when it delivered the
-      // full SNAPSHOT. Stateless provider requests always do; retaining the
-      // conditional keeps the builder contract explicit and testable.
+      // full SNAPSHOT.
       noToolsSnapshotPayloads: turnContext.includeFullSnapshot
         ? [
             snapshot.sections,
@@ -433,11 +700,17 @@ export async function runTurnModel(args: {
       forcedFinal: false,
       inventory: null,
       correlations: [],
+      activity: recorder,
+      toolClarification: null,
+      declinedClarifications: [],
+      memoryNote: memory?.pendingProposal ?? null,
+      planProposal: null,
+      interimSent: false,
     };
   } catch (err) {
-    // The provider chain failed outright — no tokens were billed, so refund
-    // the full reservation before surfacing the error frame.
-    await refundReservation(userId, args.reservation);
+    // The provider chain failed: every round that returned is already
+    // settled; give back what is still reserved before the error frame.
+    await args.ledger.close();
     // #781 — the client walked away mid-generation. The request's abort
     // signal is threaded into every provider call, so the teardown surfaces
     // here as an abort-shaped failure with `request.signal` already flipped.

@@ -36,9 +36,13 @@ import {
   type CoachToolName,
 } from "@/lib/ai/coach/tools/definitions";
 import { isTurnResultRef } from "@/lib/ai/coach/results/refs";
+import { COMPARE_SERIES_TOOL_NAME } from "@/lib/ai/coach/tools/compare-series";
 
-/** At most this many steps per turn; later calls run but show no step. */
-export const MAX_TURN_STEPS = 12;
+/**
+ * At most this many steps per turn; later calls run but show no step.
+ * v1.41 — 48: a budgeted turn runs up to twelve rounds.
+ */
+export const MAX_TURN_STEPS = 48;
 
 const SCOPE_SOURCES: ReadonlySet<string> = new Set(
   coachScopeSourceSchema.options,
@@ -130,7 +134,7 @@ const MISS: Readonly<
   },
   use_get_workouts: { status: "failed", reason: "invalid_arguments" },
   // `show_result`: a name the conversation does not hold, a stored table
-  // that could not be read, a turn already holding six tables.
+  // that could not be read, a turn already holding eight tables.
   unknown_result: { status: "failed", reason: "invalid_arguments" },
   result_unavailable: { status: "failed", reason: "retrieval_failed" },
   result_limit: { status: "failed" },
@@ -251,6 +255,9 @@ export function toStep(args: {
   }
   if (call.name === SHOW_RESULT_TOOL_NAME) {
     return reuseStep({ index, result, locale });
+  }
+  if (call.name === COMPARE_SERIES_TOOL_NAME) {
+    return compareStep({ ...args, index });
   }
   if (!isCoachToolName(call.name)) return null;
   const tool = call.name;
@@ -415,6 +422,56 @@ function settle(
     status: miss.status,
     ...(count !== undefined ? { count } : {}),
     ...(miss.reason ? { reason: miss.reason } : {}),
+  };
+}
+
+/**
+ * v1.41 — a `compare_series` call: two series of the metric table, shown as
+ * the metric table's step for the first metric. Its count is the readings
+ * the first series folded; the second series rides the same table.
+ */
+function compareStep(args: {
+  index: number;
+  parsedArgs: Record<string, unknown> | undefined;
+  result?: CoachToolResult;
+  locale: Locale;
+  fallbackWindow?: CoachScopeWindow;
+}): CoachStep | null {
+  const { index, parsedArgs, result, locale } = args;
+  const domain = pick<CoachStepDomain>(SCOPE_SOURCES, parsedArgs?.metric);
+  if (!domain) return null;
+  const window =
+    pick<CoachScopeWindow>(WINDOWS, parsedArgs?.window) ??
+    pick<CoachScopeWindow>(WINDOWS, args.fallbackWindow);
+  const granularity = pick<CoachResultGranularity>(
+    GRANULARITIES,
+    parsedArgs?.granularity,
+  );
+  const base = {
+    id: `s${index + 1}`,
+    tool: "get_metric_table" as const,
+    ...render(locale, domain, window),
+    domain,
+    ...(window ? { window } : {}),
+    ...(granularity ? { granularity } : {}),
+  };
+  if (!result) return { ...base, status: "running" };
+  if (!result.present) {
+    const miss = missFor(result.reason);
+    return {
+      ...base,
+      status: miss.status,
+      ...(miss.reason ? { reason: miss.reason } : {}),
+    };
+  }
+  const sideA = isRecord(result.data) ? result.data.a : undefined;
+  const count = isRecord(sideA) ? tableSummaryCount(sideA) : undefined;
+  const resultRef = producedRef(result);
+  return {
+    ...base,
+    status: "done",
+    ...(count !== undefined ? { count } : {}),
+    ...(resultRef ? { resultRef } : {}),
   };
 }
 

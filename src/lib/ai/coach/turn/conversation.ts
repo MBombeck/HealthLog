@@ -163,10 +163,12 @@ export async function resolveTurnConversation(args: {
 export async function persistUserTurn(
   conversationId: string,
   message: string,
-): Promise<void> {
-  await appendMessage({
+): Promise<{ messageId: string }> {
+  const stored = await appendMessage({
     conversationId,
     role: "user",
     content: message,
   });
+  // v1.41 — the id a remembered fact points back to.
+  return { messageId: stored.id };
 }

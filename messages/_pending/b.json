@@ -1,0 +1,46 @@
+{
+  "en": {
+    "coach": {
+      "clarify": {
+        "comparison": {
+          "baseline90d": "Compare with my usual 90 days"
+        },
+        "anchor": {
+          "illness": "Since the illness of {date}"
+        }
+      }
+    },
+    "insights": {
+      "coach": {
+        "memory": {
+          "declined": "Okay, I won't."
+        },
+        "plan": {
+          "declined": "Okay, not now."
+        }
+      }
+    }
+  },
+  "de": {
+    "coach": {
+      "clarify": {
+        "comparison": {
+          "baseline90d": "Mit meinen üblichen 90 Tagen vergleichen"
+        },
+        "anchor": {
+          "illness": "Seit der Erkrankung vom {date}"
+        }
+      }
+    },
+    "insights": {
+      "coach": {
+        "memory": {
+          "declined": "Alles klar, dann nicht."
+        },
+        "plan": {
+          "declined": "Alles klar, dann nicht jetzt."
+        }
+      }
+    }
+  }
+}

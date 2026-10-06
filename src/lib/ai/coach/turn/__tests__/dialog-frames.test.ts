@@ -130,6 +130,9 @@ describe("assembleTurnDialog", () => {
     results: [TABLE],
     forcedFinal: false,
     inventory: null,
+    declinedClarifications: [],
+    memoryNote: null,
+    planProposal: null,
   } as unknown as Extract<ModelOutcome, { ok: true }>;
   const reply = (blocked: boolean): GuardedReply =>
     ({
@@ -217,6 +220,9 @@ describe("assembleTurnDialog", () => {
       method: null,
       followUps: [],
       clarification: null,
+      assumptions: [],
+      memoryNote: null,
+      planProposal: null,
     });
   });
 });

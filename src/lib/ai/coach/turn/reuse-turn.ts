@@ -1,5 +1,13 @@
 /**
- * A model-free turn: a reuse chip ("as a chart", "as a table") answered from
+ * Model-free turns.
+ *
+ * v1.41 — a tapped decision ("Yes, remember it" / "No", "Take on this plan"
+ * / "Not now") is answered by the memory contract and one catalog line
+ * (`runDecisionTurn`): no budget, no provider, an assistant message tagged
+ * `decision`. The tap names only the message and the proposal; what is
+ * saved or activated is read from what that message stored.
+ *
+ * A reuse chip ("as a chart", "as a table") is answered from
  * a table already stored on the conversation. No budget reservation and no
  * provider call; the capability and the rate limit still apply at the route.
  * Streams `step → token (caption) → provenance → result → followUps → done`
@@ -37,6 +45,20 @@ import { parseCoachPrefs } from "@/lib/validations/coach-prefs";
 import { readCoachReach } from "@/lib/ai/coach/history-reach-read";
 import { tableRangeWithinReach } from "@/lib/ai/coach/tools/executor";
 import { createSseStream } from "@/lib/sse/create-stream";
+
+import {
+  COACH_MEMORY_KEYS,
+  COACH_PLAN_KEYS,
+} from "@/lib/ai/coach/memory/shared";
+import {
+  decideFactProposal,
+  decidePlanProposal,
+} from "@/lib/ai/coach/memory/contract";
+import { readLatestMessages } from "@/lib/ai/coach/latest-messages";
+import {
+  coachMemoryNoteMetaSchema,
+  coachPlanProposalMetaSchema,
+} from "@/lib/ai/coach/stream-events";
 
 import { persistUserTurn } from "./conversation";
 import { toResultMeta } from "./provenance";
@@ -181,6 +203,150 @@ export async function runReuseTurn(args: {
         action: null,
         results: [table],
         followUps,
+        clarification: null,
+        messageId: message.id,
+        totalTokens: 0,
+        model: null,
+      },
+      conversationId,
+    );
+  });
+  return new Response(stream, { status: 200, headers: SSE_HEADERS });
+}
+
+/**
+ * The reply a declined proposal gets. Pending keys: integration copies them
+ * into the bundles with the rest of this release's strings.
+ */
+export const COACH_DECISION_DECLINED_KEYS = {
+  memory: "insights.coach.memory.declined",
+  plan: "insights.coach.plan.declined",
+} as const;
+
+/** The stored note and plan of a message, each held to its wire schema. */
+function storedProposals(metricSourceJson: string | null): {
+  proposalId: string | null;
+  planId: string | null;
+} {
+  const none = { proposalId: null, planId: null };
+  if (!metricSourceJson) return none;
+  try {
+    const raw = JSON.parse(metricSourceJson) as Record<string, unknown>;
+    const note = coachMemoryNoteMetaSchema.safeParse(raw.memoryNote);
+    const plan = coachPlanProposalMetaSchema.safeParse(raw.planProposal);
+    return {
+      proposalId:
+        note.success && note.data.proposal
+          ? (note.data.proposalId ?? null)
+          : null,
+      planId: plan.success ? plan.data.planId : null,
+    };
+  } catch {
+    return none;
+  }
+}
+
+/**
+ * Answer a tapped decision without a model, or null when it is not one this
+ * conversation can take: the message is not the latest reply, it carried no
+ * such proposal, or the contract reports it stale. The pipeline then runs
+ * the tap's label as an ordinary message.
+ */
+export async function runDecisionTurn(args: {
+  input: TurnInput;
+  conversation: TurnConversation;
+}): Promise<Response | null> {
+  const { input, conversation } = args;
+  const { userId, locale } = input;
+  const conversationId = conversation.conversationId;
+  const memory = input.memoryDecision;
+  const plan = memory ? undefined : input.planDecision;
+  const decision = memory ?? plan;
+  if (!decision || !input.conversationId) return null;
+
+  let latest:
+    Awaited<ReturnType<typeof readLatestMessages>>[number] | undefined;
+  try {
+    const rows = await (conversation.latestMessages?.() ??
+      readLatestMessages(userId, conversationId));
+    latest = rows.find((m) => m.providerType !== "cancelled");
+  } catch {
+    latest = undefined;
+  }
+  const stored =
+    latest?.role === "assistant" && latest.id === decision.messageId
+      ? storedProposals(latest.metricSourceJson)
+      : null;
+  const matches = memory
+    ? stored?.proposalId === memory.proposalId
+    : stored?.planId === plan?.planId;
+  if (!stored || !matches) {
+    annotate({
+      action: { name: "coach.decision.stale" },
+      meta: { kind: memory ? "memory" : "plan", reason: "not_latest" },
+    });
+    return null;
+  }
+
+  const { t } = getServerTranslator(locale);
+  let reply: string;
+  if (memory) {
+    const outcome = await decideFactProposal({
+      userId,
+      conversationId,
+      messageId: memory.messageId,
+      proposalId: memory.proposalId,
+      accept: memory.accept,
+    }).catch(() => ({ kind: "stale" as const }));
+    if (outcome.kind === "stale") return null;
+    reply =
+      outcome.kind === "saved"
+        ? t(COACH_MEMORY_KEYS.confirmed)
+        : t(COACH_DECISION_DECLINED_KEYS.memory);
+  } else if (plan) {
+    const outcome = await decidePlanProposal({
+      userId,
+      conversationId,
+      messageId: plan.messageId,
+      planId: plan.planId,
+      accept: plan.accept,
+    }).catch(() => ({ kind: "stale" as const }));
+    if (outcome.kind === "stale") return null;
+    reply =
+      outcome.kind === "activated"
+        ? t(COACH_PLAN_KEYS.confirmed, { days: outcome.reviewInDays })
+        : t(COACH_DECISION_DECLINED_KEYS.plan);
+  } else {
+    return null;
+  }
+
+  await persistUserTurn(conversationId, input.message);
+  const provenance: CoachProvenance = { windows: [], metrics: [] };
+  const message = await appendMessage({
+    conversationId,
+    role: "assistant",
+    content: reply,
+    metricSource: provenance,
+    providerType: "decision",
+    promptVersion: PROMPT_VERSION,
+  });
+  annotate({
+    action: { name: "coach.decision.answered" },
+    meta: { kind: memory ? "memory" : "plan", accept: decision.accept },
+  });
+
+  const stream = createSseStream(async (controller) => {
+    const emitter = createTurnEmitter(controller);
+    await emitReply(
+      emitter,
+      {
+        ok: true,
+        replyText: reply,
+        provenance,
+        suggestion: null,
+        action: null,
+        results: [],
+        followUps: [],
         clarification: null,
         messageId: message.id,
         totalTokens: 0,

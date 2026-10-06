@@ -301,9 +301,9 @@ describe("get_metric_table", () => {
     expect(result).toEqual({ present: false, reason: "invalid_arguments" });
   });
 
-  it("stops naming tables after the sixth", async () => {
+  it("stops naming tables after the eighth", async () => {
     const refs = createResultRefAllocator();
-    for (let i = 0; i < 6; i += 1) refs.next();
+    for (let i = 0; i < 8; i += 1) refs.next();
     const result = await executeCoachTool({
       userId: "u1",
       name: "get_metric_table",

@@ -129,9 +129,20 @@ export function followUpContextHint(
     case "continue":
       // Answered with its own context lines (`continue.ts`).
       return null;
-    case "change_assumption":
-      // v1.41 — the contract is in place; no chip of this kind is offered yet.
-      return null;
+    case "change_assumption": {
+      // v1.41 — the answer assumed a metric, a window or a comparison; the
+      // person picked another. Every value is a catalog token read from the
+      // stored chip.
+      const value = followUp.assumption?.value;
+      if (!value) return null;
+      const picked = [
+        value.metric ? `metric=${value.metric}` : null,
+        value.window ? `window=${value.window}` : null,
+        value.comparison ? `comparison=${value.comparison}` : null,
+      ].filter((part): part is string => part !== null);
+      if (picked.length === 0) return null;
+      return `${lead} Your last answer assumed a ${followUp.assumption?.kind}; the person chose ${picked.join(" ")} instead. Answer their previous question again with exactly this, and do not ask about it.${from}`;
+    }
   }
 }
 
