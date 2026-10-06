@@ -74851,6 +74851,8 @@ components:
           $ref: "#/components/schemas/ModuleAccessMap"
         ai:
           $ref: "#/components/schemas/AiAccountBlock"
+        coachReasoning:
+          $ref: "#/components/schemas/CoachReasoningState"
         recordSession:
           anyOf:
             - $ref: "#/components/schemas/RecordSessionState"
@@ -74877,6 +74879,7 @@ components:
         - accountAccess
         - moduleAccess
         - ai
+        - coachReasoning
         - recordSession
         - notificationPrefs
         - onboarding
@@ -74891,7 +74894,9 @@ components:
         carries none — the two are the same account and nothing is masked. `moduleAccess` says WHY each module is or is
         not there — the record's own switch, the edge of the grant, or the operator's instance-wide one — beside the
         `modules` booleans it never contradicts. `ai` (v1.39) is the resolved AI capability map for the same record,
-        with the same masking; it replaces reading `GET /api/feature-flags`."
+        with the same masking; it replaces reading `GET /api/feature-flags`. `coachReasoning` (v1.41) is the Coach's
+        resolved thinking depth: the caller's own preference against the operator's reasoning controls and the record's
+        provider."
     AccountAccess:
       type: object
       properties:
@@ -75384,6 +75389,67 @@ components:
         - responseTimeoutMs
       additionalProperties: false
       description: The account-level companion to the capability map.
+    CoachReasoningState:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - off
+            - low
+            - medium
+            - high
+          description: "The level a Coach turn runs at right now, every cap applied: the person's choice, lowered to the
+            operator's highest level, to `medium` when the operator pays for the provider, and `off` when the operator
+            switched reasoning off or the provider cannot reason."
+        preference:
+          type: string
+          enum:
+            - off
+            - low
+            - medium
+            - high
+          description: What the person picked (`reasoning` on `PUT /api/auth/me/coach-prefs`), `medium` when they never chose.
+            Bind the settings field to this, not to `level`.
+        maxLevel:
+          type: string
+          enum:
+            - off
+            - low
+            - medium
+            - high
+          description: The highest level the settings may offer. Options above it are shown disabled as limited by the operator.
+            `off` when the operator switched reasoning off.
+        available:
+          type: boolean
+          description: False when the operator switched reasoning off or the configured provider cannot reason; the settings field
+            is then locked.
+        offIsReal:
+          type: boolean
+          description: False when the provider cannot switch reasoning off (it thinks at its lowest level instead); label the
+            lowest option "Minimal" rather than "Off".
+        source:
+          type: string
+          enum:
+            - user
+            - job
+            - admin_off
+            - admin_cap
+            - cost_cap
+            - unsupported
+          description: "Which layer decided `level`: the person's own choice (`user`), the operator's switch (`admin_off`) or cap
+            (`admin_cap`), the operator-funded ceiling (`cost_cap`), or a provider that cannot reason (`unsupported`).
+            `job` never appears here."
+      required:
+        - level
+        - preference
+        - maxLevel
+        - available
+        - offIsReal
+        - source
+      additionalProperties: false
+      description: The Coach's thinking depth for the signed-in person, resolved on the server from their preference, the
+        operator's reasoning switch and cap, who pays for the provider, and what the provider can do.
     RecordSessionState:
       type: object
       properties:

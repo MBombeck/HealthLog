@@ -12,7 +12,11 @@ vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ user: authUser }),
 }));
 
-import { useAiCapability, useAiProviderState } from "../use-ai-capability";
+import {
+  useAiCapability,
+  useAiProviderState,
+  useCoachReasoning,
+} from "../use-ai-capability";
 import type { AiCapabilityKey } from "@/lib/ai/capabilities/types";
 
 function Probe({ capability }: { capability: AiCapabilityKey }) {
@@ -105,5 +109,49 @@ describe("useAiCapability", () => {
       },
     };
     expect(render("briefing", false).state).toEqual(UNKNOWN);
+  });
+});
+
+function ReasoningProbe() {
+  return <span>{JSON.stringify(useCoachReasoning())}</span>;
+}
+
+function renderReasoning(withClient = true): unknown {
+  const html = renderToStaticMarkup(
+    withClient ? (
+      <QueryClientProvider client={new QueryClient()}>
+        <ReasoningProbe />
+      </QueryClientProvider>
+    ) : (
+      <ReasoningProbe />
+    ),
+  );
+  return JSON.parse(
+    html.replace(/^<span>|<\/span>$/g, "").replace(/&quot;/g, '"'),
+  );
+}
+
+describe("useCoachReasoning", () => {
+  const STATE = {
+    level: "low",
+    preference: "high",
+    maxLevel: "low",
+    available: true,
+    offIsReal: true,
+    source: "admin_cap",
+  };
+
+  it("hands over the server's resolved block untouched", () => {
+    authUser = { coachReasoning: STATE };
+    expect(renderReasoning()).toEqual(STATE);
+  });
+
+  it("is null while the payload is not there or carries no block", () => {
+    authUser = null;
+    expect(renderReasoning()).toBeNull();
+    authUser = { coachReasoning: null };
+    expect(renderReasoning()).toBeNull();
+    authUser = { coachReasoning: STATE };
+    expect(renderReasoning(false)).toBeNull();
   });
 });

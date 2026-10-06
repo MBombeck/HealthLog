@@ -8,6 +8,7 @@ import type {
   AiProviderState,
 } from "@/lib/ai/capabilities/types";
 import { PROVIDER_DEFAULT_TIMEOUT_MS } from "@/lib/ai/effective-timeout";
+import type { CoachReasoningState } from "@/lib/ai/reasoning/resolve";
 
 /**
  * The web reader for the `ai` block on `GET /api/auth/me`.
@@ -64,6 +65,24 @@ export function useAiProviderState(): AiProviderState {
 function useAiProviderStateInner(): AiProviderState {
   const { user } = useAuth();
   return user?.ai?.provider ?? NO_PROVIDER_STATE;
+}
+
+/**
+ * v1.41 — the Coach's thinking depth, resolved on the server (`coachReasoning`
+ * on `GET /api/auth/me`), or `null` while it is not known: `/me` loading, no
+ * query client, or a server that does not publish it. Render the settings
+ * from it; never recompute the cap or the switch.
+ */
+export function useCoachReasoning(): CoachReasoningState | null {
+  const hasClient = useQueryClientMounted();
+  if (!hasClient) return null;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useCoachReasoningInner();
+}
+
+function useCoachReasoningInner(): CoachReasoningState | null {
+  const { user } = useAuth();
+  return user?.coachReasoning ?? null;
 }
 
 /**

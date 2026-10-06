@@ -172,3 +172,50 @@ describe("PUT /api/auth/me/coach-prefs — optimistic concurrency", () => {
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 });
+
+describe("PUT /api/auth/me/coach-prefs — thinking depth (v1.41)", () => {
+  it("stores the chosen level and names it on the wide event", async () => {
+    vi.mocked(prisma.user.update).mockResolvedValue({
+      updatedAt: new Date("2026-10-06T11:00:00.000Z"),
+    } as never);
+    const { annotate } = await import("@/lib/logging/context");
+
+    const res = await (PUT as (r: Request) => Promise<Response>)(
+      mkPut({ reasoning: "high" }),
+    );
+    expect(res.status).toBe(200);
+    const call = vi.mocked(prisma.user.update).mock.calls[0]?.[0] as {
+      data: { coachPrefsJson: { reasoning?: string } };
+    };
+    expect(call.data.coachPrefsJson.reasoning).toBe("high");
+    const env = (await res.json()) as { data: { reasoning?: string } };
+    expect(env.data.reasoning).toBe("high");
+    const meta = vi
+      .mocked(annotate)
+      .mock.calls.map((c) => c[0])
+      .find((a) => a.action?.name === "auth.me.coach-prefs.put")?.meta;
+    expect(meta).toMatchObject({ reasoning: "high" });
+  });
+
+  it("reads an absent level as the default on the wide event", async () => {
+    vi.mocked(prisma.user.update).mockResolvedValue({
+      updatedAt: new Date("2026-10-06T11:00:00.000Z"),
+    } as never);
+    const { annotate } = await import("@/lib/logging/context");
+
+    await (PUT as (r: Request) => Promise<Response>)(mkPut({ tone: "warm" }));
+    const meta = vi
+      .mocked(annotate)
+      .mock.calls.map((c) => c[0])
+      .find((a) => a.action?.name === "auth.me.coach-prefs.put")?.meta;
+    expect(meta).toMatchObject({ reasoning: "medium" });
+  });
+
+  it.each(["xhigh", "none", 2, null])("422s %s as a level", async (value) => {
+    const res = await (PUT as (r: Request) => Promise<Response>)(
+      mkPut({ reasoning: value }),
+    );
+    expect(res.status).toBe(422);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});

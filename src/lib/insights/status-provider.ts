@@ -26,6 +26,19 @@ import { singleUserTurn } from "@/lib/ai/types";
 import { STATUS_PROVIDER_TIMEOUT_MS, withTimeout } from "./with-timeout";
 import { prisma } from "@/lib/db";
 import { resolveEffectiveTimeoutMs } from "@/lib/ai/effective-timeout";
+import {
+  REASONING_THINKING_BUDGET,
+  type BackgroundReasoningJob,
+} from "@/lib/ai/reasoning/levels";
+import { resolveJobReasoning } from "@/lib/ai/reasoning/controls";
+
+/**
+ * v1.41 — the fallback ceiling for a status-path call that reasons. Thinking
+ * is spent before the first answer token, so the 60 s status budget would cut
+ * a medium-effort narrative off mid-thought. A positive per-record setting
+ * still wins, as everywhere.
+ */
+export const REASONING_JOB_TIMEOUT_MS = 90_000;
 
 /**
  * Shared provider plumbing for the seven `*-status.ts` generators.
@@ -92,6 +105,15 @@ interface RunStatusCompletionArgs {
    * consent kinds an operator-held chain entry needs.
    */
   capability: AiCapabilityKey;
+  /**
+   * v1.41 — the background job this call is, when it is one of the few that
+   * may reason (`BACKGROUND_REASONING_JOBS`: the period narratives and the
+   * Coach memory passes). Absent for every status card, batch note, derived
+   * score and workout line, which therefore send exactly what they sent
+   * before reasoning existed; `background-reasoning-inventory.test.ts`
+   * freezes which call sites set it. The operator's switch and cap apply.
+   */
+  reasoningJob?: BackgroundReasoningJob;
 }
 
 /**
@@ -190,11 +212,23 @@ export async function runStatusCompletion(
     where: { id: userId },
     select: { aiResponseTimeoutSeconds: true },
   });
+  // v1.41 — resolved once per call, after the capability and egress checks
+  // so a refused call never reads the controls. `undefined` (the operator
+  // switched reasoning off, or the job resolved off) is today's wire.
+  const reasoning = args.reasoningJob
+    ? await resolveJobReasoning(args.reasoningJob, chain)
+    : undefined;
+  const thinkingTokens =
+    reasoning && reasoning.effort !== "off"
+      ? REASONING_THINKING_BUDGET[reasoning.effort]
+      : 0;
+
   const effectiveTimeoutMs = resolveEffectiveTimeoutMs(
     settingsRow?.aiResponseTimeoutSeconds,
-    STATUS_PROVIDER_TIMEOUT_MS,
+    thinkingTokens > 0 ? REASONING_JOB_TIMEOUT_MS : STATUS_PROVIDER_TIMEOUT_MS,
   );
 
+  // The answer budget. Each client adds the thinking budget on top itself.
   const maxTokens = args.maxTokens ?? AI_BUDGETS.status.maxTokens;
 
   // The day's token ledger. Until now this chokepoint — the provider entry for
@@ -217,8 +251,12 @@ export async function runStatusCompletion(
   // or a local model is measured against the generous user-plan ceiling, so
   // their own hardware/plan is never rationed by the operator's bill.
   const dateKey = buildDateKey();
+  // Thinking is billed as output, so a reasoning call reserves its thinking
+  // budget too; the reconcile below settles on the reported count.
   const estimatedTokens =
-    maxTokens + Math.ceil((systemPrompt.length + userPrompt.length) / 4);
+    maxTokens +
+    thinkingTokens +
+    Math.ceil((systemPrompt.length + userPrompt.length) / 4);
   // v1.38.19 — a background surface: half the day's ceiling when the
   // operator funds the chain.
   const jobCap = resolveDailyCapFor("job", chain);
@@ -264,19 +302,23 @@ export async function runStatusCompletion(
         // A background generator: an operator-funded fallback hop is rationed
         // at the job share, exactly as the reservation above was.
         surface: "job",
-        params: singleUserTurn({
-          system: systemPrompt,
-          user: userPrompt,
-          temperature: args.temperature ?? AI_BUDGETS.status.temperature,
-          maxTokens,
-          // v1.18.7 — status/reference output is reproducible: pin the
-          // deterministic seed unless a caller overrides it.
-          seed: args.seed ?? REFERENCE_AI_SEED,
-          // Status cards are JSON by default; the narrative opts out via
-          // `"text"`.
-          responseFormat: args.responseFormat === "text" ? undefined : "json",
-          timeoutMs: effectiveTimeoutMs,
-        }),
+        params: {
+          ...singleUserTurn({
+            system: systemPrompt,
+            user: userPrompt,
+            temperature: args.temperature ?? AI_BUDGETS.status.temperature,
+            maxTokens,
+            // v1.18.7 — status/reference output is reproducible: pin the
+            // deterministic seed unless a caller overrides it.
+            seed: args.seed ?? REFERENCE_AI_SEED,
+            // Status cards are JSON by default; the narrative opts out via
+            // `"text"`.
+            responseFormat: args.responseFormat === "text" ? undefined : "json",
+            timeoutMs: effectiveTimeoutMs,
+          }),
+          // v1.41 — only a named job ever carries this; see `reasoningJob`.
+          ...(reasoning ? { reasoning } : {}),
+        },
       }),
     effectiveTimeoutMs,
     null,

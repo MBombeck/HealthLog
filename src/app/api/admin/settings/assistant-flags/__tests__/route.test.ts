@@ -46,6 +46,8 @@ const ALL_ON = {
   assistantBriefingEnabled: true,
   assistantInsightStatusEnabled: true,
   assistantDocumentAiEnabled: true,
+  aiReasoningEnabled: true,
+  aiReasoningMaxEffort: "high",
 };
 
 beforeEach(() => {
@@ -84,6 +86,34 @@ describe("GET /api/admin/settings/assistant-flags", () => {
     };
     expect(body.data.raw.assistantEnabled).toBe(true);
     expect(body.data.resolved.coach).toBe(true);
+  });
+
+  it("publishes the reasoning controls, defaulted on and uncapped", async () => {
+    vi.mocked(getSession).mockResolvedValue(ADMIN_OK as never);
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null);
+    const res = await (GET as unknown as (r: NextRequest) => Promise<Response>)(
+      new NextRequest("http://localhost/api/admin/settings/assistant-flags"),
+    );
+    const body = (await res.json()) as {
+      data: { reasoning: { enabled: boolean; maxEffort: string } };
+    };
+    expect(body.data.reasoning).toEqual({ enabled: true, maxEffort: "high" });
+  });
+
+  it("reads a stored cap and an off switch back", async () => {
+    vi.mocked(getSession).mockResolvedValue(ADMIN_OK as never);
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
+      ...ALL_ON,
+      aiReasoningEnabled: false,
+      aiReasoningMaxEffort: "low",
+    } as never);
+    const res = await (GET as unknown as (r: NextRequest) => Promise<Response>)(
+      new NextRequest("http://localhost/api/admin/settings/assistant-flags"),
+    );
+    const body = (await res.json()) as {
+      data: { reasoning: { enabled: boolean; maxEffort: string } };
+    };
+    expect(body.data.reasoning).toEqual({ enabled: false, maxEffort: "low" });
   });
 });
 
@@ -140,6 +170,46 @@ describe("PUT /api/admin/settings/assistant-flags", () => {
     expect(body.data.resolved.insightStatus).toBe(false);
     expect(body.data.resolved.documentAi).toBe(false);
   });
+
+  it("switches reasoning off and caps it, with an audit row", async () => {
+    vi.mocked(getSession).mockResolvedValue(ADMIN_OK as never);
+    vi.mocked(prisma.appSettings.upsert).mockResolvedValue({
+      ...ALL_ON,
+      aiReasoningEnabled: false,
+      aiReasoningMaxEffort: "medium",
+    } as never);
+
+    const res = await PUT(
+      putReq({ aiReasoningEnabled: false, aiReasoningMaxEffort: "medium" }),
+    );
+    expect(res.status).toBe(200);
+    const upsert = vi.mocked(prisma.appSettings.upsert).mock.calls[0][0];
+    expect(upsert.update).toEqual({
+      aiReasoningEnabled: false,
+      aiReasoningMaxEffort: "medium",
+    });
+    const { auditLog } = await import("@/lib/auth/audit");
+    expect(vi.mocked(auditLog).mock.calls[0][1]).toMatchObject({
+      details: { aiReasoningEnabled: false, aiReasoningMaxEffort: "medium" },
+    });
+    const body = (await res.json()) as {
+      data: { reasoning: { enabled: boolean; maxEffort: string } };
+    };
+    expect(body.data.reasoning).toEqual({
+      enabled: false,
+      maxEffort: "medium",
+    });
+  });
+
+  it.each(["off", "xhigh", "", 3])(
+    "refuses %s as the highest level",
+    async (value) => {
+      vi.mocked(getSession).mockResolvedValue(ADMIN_OK as never);
+      const res = await PUT(putReq({ aiReasoningMaxEffort: value }));
+      expect(res.status).toBe(422);
+      expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
+    },
+  );
 
   it("rejects an empty body", async () => {
     vi.mocked(getSession).mockResolvedValue(ADMIN_OK as never);

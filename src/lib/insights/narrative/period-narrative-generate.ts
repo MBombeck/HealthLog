@@ -369,6 +369,11 @@ export async function generatePeriodNarrative(
     // The narrative output is PLAIN TEXT (no markdown, no JSON), so suppress
     // the JSON-mode opt-in the status cards default into.
     responseFormat: "text",
+    // v1.41 — a period narrative is one of the few background jobs that may
+    // reason: medium for the month, low for the week, held to the operator's
+    // switch and cap. The grounding retry below repairs and does not reason.
+    reasoningJob:
+      period === "month" ? "period_narrative_month" : "period_narrative_week",
   });
 
   // A provider error / timeout is non-fatal — the last good row stays as-is

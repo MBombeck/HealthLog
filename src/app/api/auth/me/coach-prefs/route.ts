@@ -31,6 +31,7 @@ import {
 } from "@/lib/optimistic-lock";
 import {
   coachPrefsSchema,
+  coachReasoningLevel,
   parseCoachPrefs,
 } from "@/lib/validations/coach-prefs";
 
@@ -130,6 +131,10 @@ export const PUT = apiHandler(async (req: Request) => {
       // v1.7.0 — `null` when the caller left `dataClusters` absent
       // (legacy defaults stay in force); otherwise the selected count.
       clusterCount: parsed.data.dataClusters?.length ?? null,
+      // v1.41 — the stored thinking depth, absent read as the default. The
+      // operator's switch and cap apply on top of it at turn time; the
+      // resolved value is `coachReasoning` on GET /api/auth/me.
+      reasoning: coachReasoningLevel(parsed.data),
     },
   });
   return apiSuccess({ ...parsed.data, updatedAt: guarded.updatedAt });

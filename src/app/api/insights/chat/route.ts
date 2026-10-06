@@ -37,10 +37,8 @@ import { coachChatRequestSchema } from "@/lib/ai/coach/types";
 import { listConversations } from "@/lib/ai/coach/persistence";
 import { detectRefusal } from "@/lib/ai/coach/refusal";
 import { runCoachTurn } from "@/lib/ai/coach/turn/pipeline";
-import {
-  DEFAULT_REASONING_LEVEL,
-  type ReasoningLevel,
-} from "@/lib/ai/reasoning/levels";
+import type { ReasoningLevel } from "@/lib/ai/reasoning/levels";
+import { resolveCoachTurnReasoningLevel } from "@/lib/ai/reasoning/controls";
 import { streamProviderError, streamRefusal } from "@/lib/ai/coach/turn/sse";
 
 /**
@@ -182,10 +180,13 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
   }
 
   // v1.41 — the person's effective reasoning level: their choice after the
-  // operator's switch and highest level. Integration points this one call
-  // site at the shared resolver (`src/lib/ai/reasoning/resolve.ts`); until
-  // then every turn thinks at the default level.
-  const reasoningLevel: ReasoningLevel = DEFAULT_REASONING_LEVEL;
+  // operator's switch and highest level, from the shared resolver. Who pays
+  // is not known until the turn resolves its chain, so the turn applies the
+  // operator-paid ceiling itself (`turn/reasoning.ts`); the provider's own
+  // ability is left to its client.
+  const reasoningLevel: ReasoningLevel = await resolveCoachTurnReasoningLevel(
+    auth.user.coachPrefsJson,
+  );
 
   // v1.41 — the person's turn slot. The counter is the rate-limit row's own
   // (an atomic upsert), given back when the turn is over; a refused slot is
