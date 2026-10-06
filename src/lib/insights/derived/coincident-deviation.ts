@@ -80,7 +80,7 @@ export const COINCIDENT_MIN_BANDS = 2;
  * (each day cut at the local time of today's latest reading), never with
  * whole days.
  */
-const SAME_HOURS_TYPES: ReadonlySet<MeasurementType> = new Set([
+export const SAME_HOURS_TYPES: ReadonlySet<MeasurementType> = new Set([
   "BLOOD_GLUCOSE",
 ]);
 
@@ -97,7 +97,14 @@ export function sameHoursStanding(
   days: readonly { day: string; n: number; sum: number; dayMean?: number }[],
   todayKey: string,
   type: MeasurementType,
-): { value: number; low: number; high: number; center: number } | null {
+): {
+  value: number;
+  low: number;
+  high: number;
+  center: number;
+  /** Earlier days the band was built from. */
+  days: number;
+} | null {
   // A type on the hourly-mean reader carries `dayMean` (the mean of its
   // hours' means); every other type's day is the mean of its readings.
   const value = (d: { n: number; sum: number; dayMean?: number }) =>
@@ -113,6 +120,7 @@ export function sameHoursStanding(
     low: band.low,
     high: band.high,
     center: band.center,
+    days: earlier.length,
   };
 }
 
@@ -146,6 +154,31 @@ async function readSameHoursDays(
     valueRange: plausibleMetricRange(type),
     upToLocalTime: localClockOf(cutAt, tz),
   });
+}
+
+/**
+ * Today's same-hours standing for a type whose latest reading is from the
+ * reader's local today: today's readings so far against the earlier days cut
+ * at the local time of `lastAt` (today's latest reading). Null when there is
+ * no like-for-like basis yet (see {@link sameHoursStanding}).
+ */
+export async function readSameHoursStanding(
+  userId: string,
+  type: MeasurementType,
+  opts: { windowDays: number; now: Date; tz: string; lastAt: Date },
+) {
+  return sameHoursStanding(
+    await readSameHoursDays(
+      userId,
+      type,
+      opts.windowDays,
+      opts.now,
+      opts.tz,
+      opts.lastAt,
+    ),
+    userDayKey(opts.now, opts.tz),
+    type,
+  );
 }
 
 /** One vital's standing against its personal band today. */
@@ -254,7 +287,7 @@ export interface CoincidentDeviationOpts {
  * coincident flag could compare a vital from the wrong calendar day against
  * its band and narrate "≥2 vitals out of band TODAY" on the wrong day.
  */
-async function readLatestDayMean(
+export async function readLatestDayMean(
   userId: string,
   type: MeasurementType,
   windowDays: number,
@@ -348,18 +381,12 @@ export async function computeCoincidentDeviation(
       // days, not with their whole-day band (see `SAME_HOURS_TYPES`).
       const sameHours =
         latest && latest.day === todayKey && SAME_HOURS_TYPES.has(type)
-          ? sameHoursStanding(
-              await readSameHoursDays(
-                userId,
-                type,
-                windowDays,
-                now,
-                tz,
-                latest.lastAt,
-              ),
-              todayKey,
-              type,
-            )
+          ? await readSameHoursStanding(userId, type, {
+              windowDays,
+              now,
+              tz,
+              lastAt: latest.lastAt,
+            })
           : undefined;
       return { type, baseline, latest, sameHours };
     }),

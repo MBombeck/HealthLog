@@ -965,6 +965,12 @@ const getMetricBaselineOutput: z.ZodRawShape = {
     .optional(),
   latest: z.number().optional(),
   placement: z.enum(["within", "above", "below"]).optional(),
+  basis: z
+    .literal("sameHours")
+    .optional()
+    .describe(
+      "Present when today is still in progress for a metric whose day mean moves with the hour (blood glucose): `latest` is today's mean so far and `baseline` the usual range for the same hours of earlier days, not the whole-day range.",
+    ),
   referenceBand: bandShape,
   driver: z
     .object({ note: z.string(), behaviour: z.string(), outcome: z.string() })

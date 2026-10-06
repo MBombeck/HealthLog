@@ -25,6 +25,14 @@ export interface CoachReadBaseline {
   placement: CoachReadBaselinePlacement;
   /** Distinct days that fed the band (transparency). */
   sampleDays: number;
+  /**
+   * `"sameHours"` when today is still in progress for a type whose day mean
+   * moves with the hour (glucose): `latest` is today's mean so far and
+   * `low` / `high` are the usual range for the same hours of the earlier
+   * days, not the whole-day band. A surface naming the range says so.
+   * Absent for the whole-day comparison.
+   */
+  basis?: "sameHours";
 }
 
 /** The resolved lagged-association line (line 2). */

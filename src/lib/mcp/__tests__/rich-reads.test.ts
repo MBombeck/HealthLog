@@ -561,7 +561,9 @@ describe("get_metric_baseline", () => {
     const res = await getMetricBaseline(USER, { metric: "hrv" });
 
     expect(res.present).toBe(true);
-    expect(buildCoachReadStrip).toHaveBeenCalledWith(USER, "HRV_RMSSD", "de");
+    expect(buildCoachReadStrip).toHaveBeenCalledWith(USER, "HRV_RMSSD", "de", {
+      tz: expect.any(String),
+    });
   });
 
   it("stays on SDNN when the user has any HEART_RATE_VARIABILITY rows", async () => {
@@ -585,6 +587,7 @@ describe("get_metric_baseline", () => {
       USER,
       "HEART_RATE_VARIABILITY",
       "de",
+      { tz: expect.any(String) },
     );
   });
 });

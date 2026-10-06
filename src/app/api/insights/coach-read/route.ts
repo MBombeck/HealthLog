@@ -24,6 +24,7 @@ import { checkAnalyticsReadRateLimit } from "@/lib/rate-limit";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { buildCoachReadStrip } from "@/lib/insights/derived/coach-read";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
+import { resolveStoredTimezone } from "@/lib/tz/resolver";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +67,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // English, one line under the other.
   const locale = await resolveServerLocale({ userLocale: user.locale ?? null });
 
-  const strip = await buildCoachReadStrip(user.id, metric, locale);
+  // The reader's zone decides which day is "today": a glucose day still in
+  // progress is placed against the same hours of the earlier days.
+  const strip = await buildCoachReadStrip(user.id, metric, locale, {
+    tz: await resolveStoredTimezone(user.timezone),
+  });
 
   annotate({
     action: { name: "insights.coach-read" },

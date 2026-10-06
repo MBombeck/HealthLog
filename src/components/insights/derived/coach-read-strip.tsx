@@ -20,7 +20,8 @@ import type { CoachReadStripData } from "@/lib/insights/derived/coach-read-shape
  * A compact two-line read rendered ABOVE the chart on each metric sub-page:
  *
  *   1. own-baseline — "Your usual range is X–Y; today's Z sits within /
- *      above / below". Below the engine's 7-day history floor it reads
+ *      above / below". For a glucose day still in progress the range is the
+ *      one for this time of day and Z today's mean so far. Below the engine's 7-day history floor it reads
  *      "still learning your range" — never a fabricated band.
  *   2. one lagged association — the single strongest discovered driver whose
  *      outcome is this metric, stated in the engine's own never-causal voice.
@@ -105,21 +106,31 @@ export function CoachReadStrip({
     if (data.learning || !data.baseline) {
       return t("insights.coach.readStrip.insufficient");
     }
-    const { low, high, latest, placement } = data.baseline;
+    const { low, high, latest, placement, basis } = data.baseline;
     // A band whose ends format to the same figure ("61–61 bpm") is a steady
     // value, not a range; say it as one.
     const steady = fmt(low) === fmt(high);
-    const key = steady
-      ? placement === "above"
-        ? "insights.coach.readStrip.steadyAbove"
-        : placement === "below"
-          ? "insights.coach.readStrip.steadyBelow"
-          : "insights.coach.readStrip.steadyWithin"
-      : placement === "above"
-        ? "insights.coach.readStrip.baselineAbove"
-        : placement === "below"
-          ? "insights.coach.readStrip.baselineBelow"
-          : "insights.coach.readStrip.baselineWithin";
+    // A glucose day still in progress is held against the same hours of the
+    // earlier days, so the range is the one for this time of day and today's
+    // figure is its mean so far; the sentence says both.
+    const key =
+      basis === "sameHours"
+        ? placement === "above"
+          ? "insights.coach.readStrip.sameHoursAbove"
+          : placement === "below"
+            ? "insights.coach.readStrip.sameHoursBelow"
+            : "insights.coach.readStrip.sameHoursWithin"
+        : steady
+          ? placement === "above"
+            ? "insights.coach.readStrip.steadyAbove"
+            : placement === "below"
+              ? "insights.coach.readStrip.steadyBelow"
+              : "insights.coach.readStrip.steadyWithin"
+          : placement === "above"
+            ? "insights.coach.readStrip.baselineAbove"
+            : placement === "below"
+              ? "insights.coach.readStrip.baselineBelow"
+              : "insights.coach.readStrip.baselineWithin";
     return t(key, {
       low: fmt(low),
       high: fmt(high),
