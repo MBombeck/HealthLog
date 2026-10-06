@@ -55,6 +55,8 @@ asks when a question is ambiguous, and remembers what it is told.
   today, and a steady value as one figure.
 - **Memory refresh** asks the Coach capability before deferring, so a
   switched-off Coach does not re-queue it.
+- **Dependencies.** The MCP SDK moves to 1.32 (GHSA-6qxp-vccf-f47h) and
+  `proxy-addr` to 2.0.8 (GHSA-jqcg-44mw-7w3h).
 
 ### Changed
 
