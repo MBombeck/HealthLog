@@ -60,13 +60,6 @@ export interface ReasoningAdminControls {
   maxEffort: ReasoningMaxEffort;
 }
 
-/** The controls an instance that never touched them has. */
-export const DEFAULT_REASONING_ADMIN_CONTROLS: ReasoningAdminControls =
-  Object.freeze({
-    enabled: true,
-    maxEffort: DEFAULT_REASONING_MAX_EFFORT,
-  });
-
 /**
  * Why the level is what it is:
  *
