@@ -61,6 +61,7 @@ import type {
   CoachMethod,
   CoachResultTable,
   CoachStep,
+  CoachStreamEvent,
 } from "@/lib/ai/coach/types";
 import { COACH_FOLLOW_UP_KEYS } from "@/lib/ai/coach/dialog-keys";
 import { POST } from "@/app/api/insights/chat/route";
@@ -125,6 +126,20 @@ const call = (name: string, args: Record<string, unknown> = {}) => ({
   args,
 });
 
+/** Ten distinct reads: with `get_sleep` first, eleven fetching rounds. */
+const FORCED_READS: ReadonlyArray<[string, string]> = [
+  ["pulse", "last7days"],
+  ["pulse", "last30days"],
+  ["pulse", "last90days"],
+  ["pulse", "lastYear"],
+  ["bp", "last7days"],
+  ["bp", "last30days"],
+  ["bp", "last90days"],
+  ["bp", "lastYear"],
+  ["sleep", "last90days"],
+  ["sleep", "lastYear"],
+];
+
 function script(name: string, lang: Lang): Round[] {
   switch (name) {
     case "show-as-chart":
@@ -185,18 +200,14 @@ function script(name: string, lang: Lang): Round[] {
     case "as-chart-chip":
       return [];
     case "forced-final":
+      // v1.41 — a new read every round, never a repeat, until the round cap
+      // of the person's own plan (twelve, the forced answer included) makes
+      // the twelfth round the answer.
       return [
         { calls: [call("get_sleep")] },
-        {
-          calls: [
-            call("get_metric_table", { metric: "pulse", window: "last30days" }),
-          ],
-        },
-        {
-          calls: [
-            call("get_metric_table", { metric: "bp", window: "last30days" }),
-          ],
-        },
+        ...FORCED_READS.map(([metric, window]) => ({
+          calls: [call("get_metric_table", { metric, window })],
+        })),
         { text: PROSE.forced[lang] },
       ];
     case "fenced-title":
@@ -343,17 +354,35 @@ function resultsOf(frames: Run["frames"]): CoachResultTable[] {
 }
 
 /** The order the wire promises: steps, tokens, provenance, then the rest. */
+/**
+ * The promised frame order. The live frames share one rank: `step` and
+ * `activity` interleave while the turn runs, and a table read mid-turn goes
+ * out at once as an interim `result`.
+ */
 const FRAME_ORDER = [
-  "step",
+  "live",
   "token",
   "provenance",
   "result",
   "suggestion",
   "suggestedAction",
+  "memoryNote",
+  "planProposal",
   "clarification",
   "followUps",
   "done",
 ];
+
+function frameRank(frame: CoachStreamEvent): number {
+  if (
+    frame.type === "step" ||
+    frame.type === "activity" ||
+    (frame.type === "result" && frame.interim === true)
+  ) {
+    return 0;
+  }
+  return FRAME_ORDER.indexOf(frame.type);
+}
 
 beforeEach(() => {
   vi.setSystemTime(h.NOW);
@@ -386,7 +415,7 @@ describe.each(COACH_SCENARIOS.map((s) => [s.id, s] as const))(
       expect(evaluateScenario(scenario, observation)).toEqual([]);
 
       // The frames arrive in the promised order.
-      const order = frames.map((f) => FRAME_ORDER.indexOf(f.type));
+      const order = frames.map(frameRank);
       expect(order.every((i) => i >= 0)).toBe(true);
       expect([...order].sort((a, b) => a - b)).toEqual(order);
 
@@ -672,9 +701,7 @@ describe.each(["de", "en"] as const)("in %s", (lang) => {
     const scenario = byName("forced-final", lang);
     const { observation, frames } = await run(scenario);
     expect(providerCalls.map((c) => c.toolChoice)).toEqual([
-      "auto",
-      "auto",
-      "auto",
+      ...Array.from({ length: 11 }, () => "auto"),
       "none",
     ]);
     const provenance = framesOf<{ metricSource: { forcedFinal?: boolean } }>(

@@ -14,4 +14,5 @@ export {
   renderFocusHint,
 } from "./inventory";
 export { buildToolModeAddendum } from "./system-addendum";
-export { runCoachToolLoop, MAX_ROUNDS } from "./loop";
+export { runCoachToolLoop } from "./loop";
+export { TURN_LIMITS, createTurnBudget } from "./turn-budget";

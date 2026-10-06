@@ -295,11 +295,18 @@ export async function reserveBudget(
   owner: BudgetCostOwner,
   surface: BudgetSurface,
   db: BudgetExecutor = prisma,
+  /**
+   * v1.41 — `false` for a further reservation inside a request that already
+   * counted its message: a Coach turn reserves round by round, and each
+   * round is not a message of its own.
+   */
+  opts: { countMessage?: boolean } = {},
 ): Promise<ReserveBudgetResult> {
   const reserved =
     Number.isFinite(estimatedTokens) && estimatedTokens > 0
       ? Math.floor(estimatedTokens)
       : 0;
+  const messageBump = opts.countMessage === false ? 0 : 1;
   // v1.38.19 — a reservation is booked to `operator_tokens` only when
   // the chain's primary is operator-funded. The counter moves inside the SAME
   // statement as the total, so two concurrent requests can never observe one
@@ -314,11 +321,11 @@ export async function reserveBudget(
     { total_tokens: number; operator_tokens: number }[]
   >`
     INSERT INTO coach_usage (id, user_id, date_key, total_tokens, operator_tokens, message_count, created_at, updated_at)
-    VALUES (gen_random_uuid()::text, ${userId}, ${dateKey}, ${reserved}, ${operatorReserved}, 1, NOW(), NOW())
+    VALUES (gen_random_uuid()::text, ${userId}, ${dateKey}, ${reserved}, ${operatorReserved}, ${messageBump}, NOW(), NOW())
     ON CONFLICT (user_id, date_key) DO UPDATE SET
       total_tokens = coach_usage.total_tokens + ${reserved},
       operator_tokens = coach_usage.operator_tokens + ${operatorReserved},
-      message_count = coach_usage.message_count + 1,
+      message_count = coach_usage.message_count + ${messageBump},
       updated_at = NOW()
     RETURNING total_tokens, operator_tokens
   `;
@@ -349,7 +356,14 @@ export async function reserveBudget(
   if (limit !== null) {
     // Already over before this request — refund the reservation + the
     // message-count bump and refuse.
-    await refundReservation(userId, reserved, operatorReserved, dateKey, db);
+    await refundReservation(
+      userId,
+      reserved,
+      operatorReserved,
+      dateKey,
+      db,
+      messageBump,
+    );
     return {
       allowed: false,
       reserved,
@@ -451,12 +465,13 @@ async function refundReservation(
   operatorReserved: number,
   dateKey: string,
   db: BudgetExecutor = prisma,
+  messageBump = 1,
 ): Promise<void> {
   await db.$executeRaw`
     UPDATE coach_usage
     SET total_tokens = GREATEST(0, total_tokens - ${reserved}),
         operator_tokens = GREATEST(0, operator_tokens - ${operatorReserved}),
-        message_count = GREATEST(0, message_count - 1),
+        message_count = GREATEST(0, message_count - ${messageBump}),
         updated_at = NOW()
     WHERE user_id = ${userId} AND date_key = ${dateKey}
   `;

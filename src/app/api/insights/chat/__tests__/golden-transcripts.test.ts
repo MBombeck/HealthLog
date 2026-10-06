@@ -65,7 +65,10 @@ vi.mock("@/lib/db", () => ({
     coachMessage: { findMany: h.m.coachMessageFindMany },
   },
 }));
-vi.mock("@/lib/rate-limit", () => ({ checkRateLimit: h.m.checkRateLimit }));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: h.m.checkRateLimit,
+  refundRateLimit: vi.fn(async () => {}),
+}));
 vi.mock("@/lib/i18n/server-locale", () => ({
   resolveServerLocale: h.m.resolveServerLocale,
 }));

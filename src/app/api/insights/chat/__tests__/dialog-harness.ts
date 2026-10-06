@@ -473,7 +473,10 @@ export const modules = {
       labResult: { aggregate: async () => EMPTY_AGGREGATE },
     },
   }),
-  rateLimit: () => ({ checkRateLimit: m.checkRateLimit }),
+  rateLimit: () => ({
+    checkRateLimit: m.checkRateLimit,
+    refundRateLimit: async () => {},
+  }),
   serverLocale: () => ({
     resolveServerLocale: async (args: { override?: string }) =>
       args.override ?? "en",

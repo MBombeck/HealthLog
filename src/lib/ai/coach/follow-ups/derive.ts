@@ -34,7 +34,10 @@ import type { Locale } from "@/lib/i18n/config";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { userDayKey, shiftDateKey } from "@/lib/tz/format";
 import { annotate } from "@/lib/logging/context";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { COACH_FOLLOW_UP_KEYS } from "@/lib/ai/coach/dialog-keys";
 import type {
+  CoachAssumption,
   CoachFollowUp,
   CoachResultMeta,
   CoachScopeSource,
@@ -400,4 +403,34 @@ export async function readFollowUpHistory(args: {
     });
     return undefined;
   }
+}
+
+// ── Changing an assumption (v1.41) ──────────────────────────────────────
+
+/**
+ * The chips that change an assumption the answer made instead of asking:
+ * one per alternative, "Instead: last 90 days". They lead the chips, since
+ * they answer the same question differently, and the reply's chip cap still
+ * applies. The label is catalog text with the alternative's own catalog
+ * label; the value is read back from the stored chip when it is tapped.
+ */
+export function assumptionFollowUps(args: {
+  assumptions: readonly CoachAssumption[];
+  prefs: CoachPrefs;
+  locale: Locale;
+}): CoachFollowUp[] {
+  if (!followUpChipsEnabled(args.prefs)) return [];
+  const { t } = getServerTranslator(args.locale);
+  const labelKey = COACH_FOLLOW_UP_KEYS.change_assumption;
+  return args.assumptions.flatMap((assumption) =>
+    assumption.alternatives.map((alternative) => ({
+      id: "f0",
+      kind: "change_assumption" as const,
+      labelKey,
+      label: t(labelKey, { value: alternative.label }),
+      reuse: false,
+      origin: "server" as const,
+      assumption: { kind: assumption.kind, value: alternative.value },
+    })),
+  );
 }

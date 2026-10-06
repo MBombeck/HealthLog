@@ -29,19 +29,26 @@ import {
   type LatestMessage,
   type LatestMessagesLoader,
 } from "@/lib/ai/coach/latest-messages";
+import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import type { Locale } from "@/lib/i18n/config";
+import { resolveIntlLocale } from "@/lib/format-locale";
+import { isModuleEnabled } from "@/lib/modules/gate";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import {
   coachScopeSourceSchema,
   coachScopeWindowSchema,
+  type CoachAssumption,
   type CoachClarification,
   type CoachClarificationChoice,
+  type CoachClarificationKind,
+  type CoachComparisonBasis,
   type CoachScopeSource,
   type CoachScopeWindow,
 } from "@/lib/ai/coach/types";
 import { coachClarificationSchema } from "@/lib/ai/coach/stream-events";
 import {
+  COACH_FOLLOW_UP_KEYS,
   clarifyWindowLabelKey,
   coachDomainLabelKey,
 } from "@/lib/ai/coach/dialog-keys";
@@ -183,7 +190,14 @@ function extractBlock(prose: string): {
 }
 
 function isKind(value: string | null): value is ClarifyKind {
-  return value === "metric" || value === "window" || value === "context";
+  return (
+    value === "metric" ||
+    value === "window" ||
+    value === "comparison" ||
+    value === "goal" ||
+    value === "anchor" ||
+    value === "context"
+  );
 }
 
 function metricChoices(
@@ -349,6 +363,14 @@ function clarifiedLine(choice: CoachClarificationChoice): string {
   const parts: string[] = [];
   if (choice.value.metric) parts.push(`metric=${choice.value.metric}`);
   if (choice.value.window) parts.push(`window=${choice.value.window}`);
+  if (choice.value.comparison) {
+    parts.push(`comparison=${choice.value.comparison}`);
+  }
+  // A goal or an anchor is an id the model never saw; the server-rendered
+  // label says what it stands for.
+  if (choice.value.goal || choice.value.anchor) {
+    parts.push(`"${choice.label}"`);
+  }
   return `CLARIFIED: the person answered your clarifying question by choosing ${parts.join(" ")}. Answer the original question with exactly this; do not ask again.`;
 }
 
@@ -401,4 +423,326 @@ export async function resolveClarificationAnswer(args: {
     meta: { kind: stored.kind, via: choice ? "choice" : "text" },
   });
   return choice ? clarifiedLine(choice) : FREE_TEXT_LINE;
+}
+
+// ── The ask_clarification tool (v1.41) ──────────────────────────────────
+
+/** A clarifying question asked through the tool, at most this long. */
+export const CLARIFY_TOOL_QUESTION_MAX = 200;
+
+/** At most one question in this many turns of a conversation. */
+export const CLARIFY_TURN_SPACING = 6;
+/** At most this many questions a day, across every conversation. */
+export const CLARIFY_DAILY_LIMIT = 3;
+
+/** The catalog of comparison bases, each with its reply label. */
+const COMPARISON_LABEL_KEY: Readonly<Record<CoachComparisonBasis, string>> = {
+  previous_period: COACH_FOLLOW_UP_KEYS.previous_period,
+  year_ago: COACH_FOLLOW_UP_KEYS.year_ago,
+  // Pending until integration copies it into the bundles.
+  baseline_90d: "coach.clarify.comparison.baseline90d",
+};
+
+/** A pending key: "Since {date}", an illness episode as an anchor. */
+const ANCHOR_ILLNESS_KEY = "coach.clarify.anchor.illness";
+
+/** A choice the server built from the record: an id and a catalog label. */
+export interface ClarifyRecordChoice {
+  id: string;
+  labelKey: string;
+  label: string;
+}
+
+/** What the model passed to `ask_clarification`, after its schema. */
+export interface ClarifyToolCall {
+  kind: CoachClarificationKind;
+  question: string;
+  choices?: string[];
+  assumption?: string;
+}
+
+export type ClarifyToolOutcome =
+  | { ok: true; question: string; clarification: CoachClarification }
+  | { ok: false; reason: ClarifyDropReason | "no_record_choices" };
+
+function comparisonChoices(
+  tokens: readonly string[],
+  locale: Locale,
+): CoachClarificationChoice[] {
+  const { t } = getServerTranslator(locale);
+  const seen = new Set<CoachComparisonBasis>();
+  const choices: CoachClarificationChoice[] = [];
+  for (const token of tokens) {
+    const basis = normaliseToken(token) as CoachComparisonBasis;
+    if (!Object.hasOwn(COMPARISON_LABEL_KEY, basis) || seen.has(basis)) {
+      continue;
+    }
+    seen.add(basis);
+    const labelKey = COMPARISON_LABEL_KEY[basis];
+    choices.push({
+      id: `c${choices.length + 1}`,
+      labelKey,
+      label: t(labelKey),
+      value: { comparison: basis },
+    });
+    if (choices.length === CLARIFY_MAX_CHOICES) break;
+  }
+  return choices;
+}
+
+function recordChoices(
+  candidates: readonly ClarifyRecordChoice[],
+  field: "goal" | "anchor",
+): CoachClarificationChoice[] {
+  return candidates.slice(0, CLARIFY_MAX_CHOICES).map((candidate, index) => ({
+    id: `c${index + 1}`,
+    labelKey: candidate.labelKey,
+    label: candidate.label,
+    value: { [field]: candidate.id },
+  }));
+}
+
+/** The assumed choice first, ids renumbered `c1`... */
+function assumedFirst(
+  choices: CoachClarificationChoice[],
+  assumption: string | undefined,
+): CoachClarificationChoice[] {
+  if (choices.length === 0) return choices;
+  const token = assumption ? normaliseToken(assumption) : null;
+  const matches = (choice: CoachClarificationChoice): boolean => {
+    if (!token) return false;
+    const v = choice.value;
+    return (
+      v.metric === toSource(token) ||
+      v.window === WINDOW_BY_TOKEN.get(token) ||
+      v.comparison === token ||
+      v.goal === assumption ||
+      v.anchor === assumption
+    );
+  };
+  const index = Math.max(0, choices.findIndex(matches));
+  const ordered = [choices[index], ...choices.filter((_, i) => i !== index)];
+  return ordered.map((choice, i) => ({ ...choice, id: `c${i + 1}` }));
+}
+
+/**
+ * Validate an `ask_clarification` call into the question and its choices.
+ * The same rules as the sentinel: catalog labels only, metrics the record
+ * holds, a screened question that is a question. `goal` and `anchor`
+ * choices are never the model's: the server lists them from the record, and
+ * without two of them there is nothing to ask.
+ */
+export function buildClarificationFromTool(args: {
+  call: ClarifyToolCall;
+  inventory: InventoryEntry[] | null;
+  locale: Locale;
+  goals?: readonly ClarifyRecordChoice[];
+  anchors?: readonly ClarifyRecordChoice[];
+}): ClarifyToolOutcome {
+  const { call, locale } = args;
+  const kind = call.kind;
+  const drop = (reason: ClarifyDropReason | "no_record_choices") => {
+    annotate({
+      action: { name: "coach.clarification.dropped" },
+      meta: { reason, kind, via: "tool" },
+    });
+    return { ok: false as const, reason };
+  };
+  const question = call.question.replace(/\s+/g, " ").trim();
+  if (!question || !hasQuestionMark(question)) return drop("no_question");
+  if (question.length > CLARIFY_TOOL_QUESTION_MAX) {
+    return drop("question_too_long");
+  }
+  if (
+    screenCoachReply(question, locale).block ||
+    detectRefusal({ message: question, locale }).refuse
+  ) {
+    return drop("screened");
+  }
+  const tokens = call.choices ?? [];
+  let choices: CoachClarificationChoice[] = [];
+  switch (kind) {
+    case "metric":
+      if (!args.inventory) return drop("no_inventory");
+      choices = metricChoices(
+        tokens,
+        presentSources(args.inventory),
+        locale,
+      );
+      if (choices.length < 2) return drop("too_few_metrics");
+      break;
+    case "window":
+      choices = windowChoices(tokens, locale);
+      if (choices.length < 2) return drop("no_window_choices");
+      break;
+    case "comparison":
+      choices = comparisonChoices(tokens, locale);
+      if (choices.length < 2) return drop("malformed");
+      break;
+    case "goal":
+      choices = recordChoices(args.goals ?? [], "goal");
+      if (choices.length < 2) return drop("no_record_choices");
+      break;
+    case "anchor":
+      choices = recordChoices(args.anchors ?? [], "anchor");
+      if (choices.length < 2) return drop("no_record_choices");
+      break;
+    case "context":
+      break;
+  }
+  choices = assumedFirst(choices, call.assumption);
+  annotate({
+    action: { name: "coach.clarification.offered" },
+    meta: { kind, choices: choices.length, via: "tool" },
+  });
+  return {
+    ok: true,
+    question,
+    clarification: {
+      kind,
+      choices,
+      freeText: true,
+      ...(choices.length > 0 ? { assumption: "c1" } : {}),
+    },
+  };
+}
+
+/**
+ * The assumption a question stands for when it is not asked (declined by
+ * the brake): its assumed choice, with the others as alternatives. Only the
+ * kinds the answer can carry an assumption line for.
+ */
+export function assumptionFromClarification(
+  clarification: CoachClarification,
+): CoachAssumption | null {
+  if (
+    clarification.kind !== "metric" &&
+    clarification.kind !== "window" &&
+    clarification.kind !== "comparison"
+  ) {
+    return null;
+  }
+  const [assumed, ...rest] = clarification.choices;
+  if (!assumed) return null;
+  const option = (choice: CoachClarificationChoice) => ({
+    labelKey: choice.labelKey,
+    label: choice.label,
+    value: choice.value,
+  });
+  return {
+    kind: clarification.kind,
+    value: option(assumed),
+    alternatives: rest.slice(0, 3).map(option),
+  };
+}
+
+/** `BLOOD_PRESSURE` → `bp`, `WEIGHT` → `weight`; null when there is no match. */
+function planMetricSource(metric: string): CoachScopeSource | null {
+  const token = metric.trim().toLowerCase();
+  if (token === "blood_pressure") return "bp";
+  return SCOPE_SOURCES.has(token) ? (token as CoachScopeSource) : null;
+}
+
+/**
+ * The choices a `goal` or `anchor` question may offer, from the record:
+ * the person's active plans by the metric each moves, and the illness
+ * episodes that began most recently. Labels are catalog text and a date;
+ * no plan or episode text reaches them.
+ */
+export async function loadClarifyRecordChoices(args: {
+  userId: string;
+  kind: "goal" | "anchor";
+  locale: Locale;
+}): Promise<ClarifyRecordChoice[]> {
+  const { t } = getServerTranslator(args.locale);
+  try {
+    if (args.kind === "goal") {
+      const plans = await prisma.coachPlan.findMany({
+        where: { userId: args.userId, status: "active", deletedAt: null },
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+        select: { id: true, metric: true },
+      });
+      const seen = new Set<CoachScopeSource>();
+      const out: ClarifyRecordChoice[] = [];
+      for (const plan of plans) {
+        const source = planMetricSource(plan.metric);
+        if (!source || seen.has(source)) continue;
+        seen.add(source);
+        const labelKey = coachDomainLabelKey(source);
+        out.push({ id: plan.id, labelKey, label: t(labelKey) });
+      }
+      return out.slice(0, CLARIFY_MAX_CHOICES);
+    }
+    if (!(await isModuleEnabled(args.userId, "illness"))) return [];
+    const episodes = await prisma.illnessEpisode.findMany({
+      where: { userId: args.userId, deletedAt: null },
+      orderBy: { onsetAt: "desc" },
+      take: 3,
+      select: { id: true, onsetAt: true },
+    });
+    const format = new Intl.DateTimeFormat(resolveIntlLocale(args.locale), {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    return episodes.map((episode) => ({
+      id: episode.id,
+      labelKey: ANCHOR_ILLNESS_KEY,
+      label: t(ANCHOR_ILLNESS_KEY, { date: format.format(episode.onsetAt) }),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The brake on questions, checked before one is asked: never two in a row,
+ * at most one in `CLARIFY_TURN_SPACING` turns of a conversation, and at most
+ * `CLARIFY_DAILY_LIMIT` a day across all of them. Over it, the question
+ * becomes an assumption and the turn goes on. Unverifiable counts as over:
+ * not asking is the safe side.
+ */
+export async function clarificationAllowed(args: {
+  userId: string;
+  conversationId: string;
+  now?: Date;
+}): Promise<boolean> {
+  const now = args.now ?? new Date();
+  try {
+    const recent = await prisma.coachMessage.findMany({
+      where: {
+        conversationId: args.conversationId,
+        conversation: { userId: args.userId },
+        role: "assistant",
+      },
+      orderBy: { createdAt: "desc" },
+      take: CLARIFY_TURN_SPACING - 1,
+      select: { metricSourceJson: true, providerType: true },
+    });
+    if (
+      recent.some(
+        (m) =>
+          m.providerType !== "cancelled" &&
+          storedClarification(m.metricSourceJson) !== null,
+      )
+    ) {
+      return false;
+    }
+    const dayStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+    const today = await prisma.coachMessage.count({
+      where: {
+        conversation: { userId: args.userId },
+        role: "assistant",
+        createdAt: { gte: dayStart },
+        metricSourceJson: { contains: '"clarification":' },
+      },
+    });
+    return today < CLARIFY_DAILY_LIMIT;
+  } catch {
+    return false;
+  }
 }

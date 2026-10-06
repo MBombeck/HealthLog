@@ -70,7 +70,10 @@ vi.mock("@/lib/db", () => ({
 const { checkRateLimit } = vi.hoisted(() => ({
   checkRateLimit: vi.fn(async () => ({ allowed: true })),
 }));
-vi.mock("@/lib/rate-limit", () => ({ checkRateLimit }));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit,
+  refundRateLimit: vi.fn(async () => {}),
+}));
 vi.mock("@/lib/i18n/server-locale", () => ({
   resolveServerLocale: vi.fn(async () => "en"),
 }));
@@ -316,21 +319,25 @@ describe("coach chat — tool-mode routing (F1)", () => {
     expect(args.messages[0].content).toContain("2400");
   });
 
-  it("reserves the multi-round budget in tool mode", async () => {
+  it("reserves round one and the final answer up front in tool mode", async () => {
     resolveProviderChain.mockResolvedValue([
       { providerType: "anthropic", instance: {} },
     ]);
     await post(chatReq({ message: "How is my BP?" }));
-    // maxTokens (1500) × MAX_ROUNDS (3). The 4th arg is the provider-aware
-    // daily cap (F1) — mocked to the user-plan ceiling for this BYOK chain.
+    // v1.41 — the first round (its input estimate plus a round's answer and
+    // the default medium thinking budget) and the final answer's reserve, in
+    // one reservation. The 4th arg is the provider-aware daily cap —
+    // the user-plan ceiling for this BYOK chain.
     expect(reserveBudget).toHaveBeenCalledWith(
       "u1",
-      4500,
+      expect.any(Number),
       "2026-06-21",
       2_000_000,
       "user",
       "coach",
     );
+    const reserved = reserveBudget.mock.calls[0][1] as number;
+    expect(reserved).toBeGreaterThanOrEqual(600 + 4_096 + 1_200);
   });
 
   it("surfaces a graceful provider-error stream (NOT an HTTP 500) when the tool loop throws a tagged provider error", async () => {

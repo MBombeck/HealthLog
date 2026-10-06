@@ -14,7 +14,6 @@ const m = vi.hoisted(() => ({
   assembleTurnContext: vi.fn(),
   resolveTurnChain: vi.fn(),
   reserveTurnBudget: vi.fn(),
-  settleReservation: vi.fn(),
   runTurnModel: vi.fn(),
   guardReply: vi.fn(),
   surfaceCards: vi.fn(),
@@ -41,7 +40,6 @@ vi.mock("../context", () => ({ assembleTurnContext: m.assembleTurnContext }));
 vi.mock("../chain", () => ({ resolveTurnChain: m.resolveTurnChain }));
 vi.mock("../budget", () => ({
   reserveTurnBudget: m.reserveTurnBudget,
-  settleReservation: m.settleReservation,
 }));
 vi.mock("../model", () => ({ runTurnModel: m.runTurnModel }));
 vi.mock("../reply-guards", () => ({ guardReply: m.guardReply }));
@@ -54,6 +52,7 @@ import type { CoachProvenance, CoachStreamEvent } from "@/lib/ai/coach/types";
 import { DEFAULT_COACH_PREFS } from "@/lib/validations/coach-prefs";
 
 import { runCoachTurn } from "../pipeline";
+import { STUB_PROMPT_CONTEXT, modelExtras, stubLedger } from "./turn-test-kit";
 import type { TurnInput } from "../types";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
@@ -85,12 +84,14 @@ async function frames(res: Response): Promise<CoachStreamEvent[]> {
 
 function modelPath(forcedFinal: boolean) {
   m.assembleTurnContext.mockResolvedValue({
+    ...STUB_PROMPT_CONTEXT,
     coachPrefs: DEFAULT_COACH_PREFS,
     snapshot: { provenance: { windows: [], metrics: [] } },
   });
   m.resolveTurnChain.mockResolvedValue({ ok: true, chain: [], toolMode: true });
-  m.reserveTurnBudget.mockResolvedValue({ ok: true, reservation: {} });
+  m.reserveTurnBudget.mockResolvedValue({ ok: true, ledger: stubLedger() });
   m.runTurnModel.mockResolvedValue({
+    ...modelExtras(),
     ok: true,
     result: { content: "x", model: "gpt" },
     workingProviderType: "openai",

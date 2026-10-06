@@ -25,8 +25,17 @@ describe("clarifyAddendum", () => {
   });
 
   it("stays short: it rides every tool-mode round", () => {
-    // About 250 tokens at four characters a token.
-    expect(clarifyAddendum("en").length).toBeLessThan(1_000);
+    // About 450 tokens at four characters a token: the v1.41 triggers and
+    // the tool rules on top of the sentinel fallback.
+    expect(clarifyAddendum("en").length).toBeLessThan(1_800);
+  });
+
+  it("asks through the tool, and only on the listed triggers", () => {
+    const text = clarifyAddendum("en");
+    expect(text).toContain("ask_clarification");
+    expect(text).toMatch(/visibly depends/);
+    expect(text).toMatch(/round two/);
+    expect(text).toMatch(/Otherwise do not ask/);
   });
 
   it("teaches a block the parser accepts", () => {

@@ -26,7 +26,7 @@ exports[`coach chat golden transcripts > 01a tool mode, two rounds, present data
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -50,10 +50,10 @@ exports[`coach chat golden transcripts > 01a tool mode, two rounds, present data
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -64,12 +64,33 @@ exports[`coach chat golden transcripts > 01a tool mode, two rounds, present data
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11055,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "appendMessage",
       "content": "Your systolic averaged 128 mmHg and diastolic 82 mmHg this month.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -100,6 +121,7 @@ exports[`coach chat golden transcripts > 01a tool mode, two rounds, present data
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -107,15 +129,28 @@ exports[`coach chat golden transcripts > 01a tool mode, two rounds, present data
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "Your ",
       "type": "token",
@@ -162,6 +197,16 @@ exports[`coach chat golden transcripts > 01a tool mode, two rounds, present data
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -227,7 +272,7 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -251,10 +296,10 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -265,7 +310,18 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11055,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "annotate",
@@ -281,6 +337,16 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
       "call": "appendMessage",
       "content": "Your systolic averaged 128 mmHg, up from […] mmHg last month.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -312,6 +378,7 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -319,15 +386,28 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "Your ",
       "type": "token",
@@ -374,6 +454,16 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -440,7 +530,7 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12889,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -464,10 +554,10 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -478,7 +568,18 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11053,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "annotate",
@@ -508,6 +609,16 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
       "call": "appendMessage",
       "content": "I don't have any recorded readings for what you asked about, so there is nothing I can give you a figure from. Once you log some, ask me again and I'll work from your own numbers.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           42,
         ],
@@ -536,6 +647,7 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -543,15 +655,28 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "I ",
       "type": "token",
@@ -698,6 +823,16 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           42,
         ],
@@ -805,6 +940,36 @@ exports[`coach chat golden transcripts > 03 no-tools path with the full snapshot
       "call": "appendMessage",
       "content": "Your systolic averaged 128 mmHg over the window.",
       "metricSource": {
+        "activity": [
+          {
+            "count": 1,
+            "durationMs": 0,
+            "id": "a1",
+            "label": "Reading your record summary",
+            "labelKey": "coach.step.snapshot",
+            "phase": "fetch",
+            "round": 1,
+            "status": "done",
+            "stepRef": "s1",
+          },
+          {
+            "durationMs": 0,
+            "id": "a2",
+            "label": "Thinking…",
+            "labelKey": "insights.coach.activity.thinking",
+            "phase": "thinking",
+            "round": 1,
+            "status": "done",
+          },
+          {
+            "id": "a3",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -839,6 +1004,7 @@ exports[`coach chat golden transcripts > 03 no-tools path with the full snapshot
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -846,9 +1012,11 @@ exports[`coach chat golden transcripts > 03 no-tools path with the full snapshot
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
@@ -866,6 +1034,67 @@ exports[`coach chat golden transcripts > 03 no-tools path with the full snapshot
         "tool": "snapshot",
       },
       "type": "step",
+    },
+    {
+      "activity": {
+        "count": 1,
+        "id": "a1",
+        "label": "Reading your record summary",
+        "labelKey": "coach.step.snapshot",
+        "phase": "fetch",
+        "round": 1,
+        "status": "running",
+        "stepRef": "s1",
+      },
+      "type": "activity",
+    },
+    {
+      "activity": {
+        "count": 1,
+        "durationMs": 0,
+        "id": "a1",
+        "label": "Reading your record summary",
+        "labelKey": "coach.step.snapshot",
+        "phase": "fetch",
+        "round": 1,
+        "status": "done",
+        "stepRef": "s1",
+      },
+      "type": "activity",
+    },
+    {
+      "activity": {
+        "id": "a2",
+        "label": "Thinking…",
+        "labelKey": "insights.coach.activity.thinking",
+        "phase": "thinking",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
+    {
+      "activity": {
+        "durationMs": 0,
+        "id": "a2",
+        "label": "Thinking…",
+        "labelKey": "insights.coach.activity.thinking",
+        "phase": "thinking",
+        "round": 1,
+        "status": "done",
+      },
+      "type": "activity",
+    },
+    {
+      "activity": {
+        "id": "a3",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
     },
     {
       "token": "Your ",
@@ -901,6 +1130,36 @@ exports[`coach chat golden transcripts > 03 no-tools path with the full snapshot
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "count": 1,
+            "durationMs": 0,
+            "id": "a1",
+            "label": "Reading your record summary",
+            "labelKey": "coach.step.snapshot",
+            "phase": "fetch",
+            "round": 1,
+            "status": "done",
+            "stepRef": "s1",
+          },
+          {
+            "durationMs": 0,
+            "id": "a2",
+            "label": "Thinking…",
+            "labelKey": "insights.coach.activity.thinking",
+            "phase": "thinking",
+            "round": 1,
+            "status": "done",
+          },
+          {
+            "id": "a3",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -1138,7 +1397,7 @@ exports[`coach chat golden transcripts > 07a all providers failed (plain) 1`] = 
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1162,10 +1421,10 @@ exports[`coach chat golden transcripts > 07a all providers failed (plain) 1`] = 
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 0,
@@ -1176,7 +1435,7 @@ exports[`coach chat golden transcripts > 07a all providers failed (plain) 1`] = 
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 12891,
     },
     {
       "call": "annotate",
@@ -1227,7 +1486,7 @@ exports[`coach chat golden transcripts > 07b all providers failed (every hop rat
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1251,10 +1510,10 @@ exports[`coach chat golden transcripts > 07b all providers failed (every hop rat
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 0,
@@ -1265,7 +1524,7 @@ exports[`coach chat golden transcripts > 07b all providers failed (every hop rat
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 12891,
     },
     {
       "call": "annotate",
@@ -1316,7 +1575,7 @@ exports[`coach chat golden transcripts > 07c all providers failed (primary crede
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1340,10 +1599,10 @@ exports[`coach chat golden transcripts > 07c all providers failed (primary crede
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 0,
@@ -1354,7 +1613,7 @@ exports[`coach chat golden transcripts > 07c all providers failed (primary crede
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 12891,
     },
     {
       "call": "annotate",
@@ -1405,7 +1664,7 @@ exports[`coach chat golden transcripts > 08 an unwrapped tagged provider error 1
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1429,10 +1688,10 @@ exports[`coach chat golden transcripts > 08 an unwrapped tagged provider error 1
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 0,
@@ -1443,7 +1702,7 @@ exports[`coach chat golden transcripts > 08 an unwrapped tagged provider error 1
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 12891,
     },
     {
       "call": "annotate",
@@ -1495,7 +1754,7 @@ exports[`coach chat golden transcripts > 09 an aborted request leaves a cancelle
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1519,10 +1778,10 @@ exports[`coach chat golden transcripts > 09 an aborted request leaves a cancelle
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 0,
@@ -1533,7 +1792,7 @@ exports[`coach chat golden transcripts > 09 an aborted request leaves a cancelle
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 12891,
     },
     {
       "call": "appendMessage",
@@ -1591,7 +1850,7 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12892,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1615,10 +1874,10 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -1629,7 +1888,18 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11056,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "annotate",
@@ -1651,6 +1921,16 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
       "call": "appendMessage",
       "content": "I can't suggest a specific medication dose or a change to one — dose decisions belong with your prescribing clinician. I can help you read what your own data shows around your medication; ask me about that and I'll stay grounded in your numbers.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "metrics": [
           "bp",
         ],
@@ -1672,6 +1952,7 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -1679,15 +1960,28 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "I ",
       "type": "token",
@@ -1866,6 +2160,16 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "metrics": [
           "bp",
         ],
@@ -1922,7 +2226,7 @@ exports[`coach chat golden transcripts > 11a KEYVALUES valid 1`] = `
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1946,10 +2250,10 @@ exports[`coach chat golden transcripts > 11a KEYVALUES valid 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -1960,12 +2264,33 @@ exports[`coach chat golden transcripts > 11a KEYVALUES valid 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11055,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "appendMessage",
       "content": "Your systolic averaged 128 mmHg.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -2010,6 +2335,7 @@ exports[`coach chat golden transcripts > 11a KEYVALUES valid 1`] = `
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -2017,15 +2343,28 @@ exports[`coach chat golden transcripts > 11a KEYVALUES valid 1`] = `
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "Your ",
       "type": "token",
@@ -2048,6 +2387,16 @@ exports[`coach chat golden transcripts > 11a KEYVALUES valid 1`] = `
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -2127,7 +2476,7 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -2151,10 +2500,10 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -2165,7 +2514,18 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11055,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "annotate",
@@ -2181,6 +2541,16 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
       "call": "appendMessage",
       "content": "Your systolic averaged 128 mmHg.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -2219,6 +2589,7 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -2226,15 +2597,28 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "Your ",
       "type": "token",
@@ -2257,6 +2641,16 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -2330,7 +2724,7 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -2354,10 +2748,10 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -2368,7 +2762,18 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11055,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "annotate",
@@ -2384,6 +2789,16 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
       "call": "appendMessage",
       "content": "Your systolic averaged 128 mmHg.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -2414,6 +2829,7 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -2421,15 +2837,28 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "Your ",
       "type": "token",
@@ -2452,6 +2881,16 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -2517,7 +2956,7 @@ exports[`coach chat golden transcripts > 11d sentinel-only reply is an empty rep
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -2541,10 +2980,10 @@ exports[`coach chat golden transcripts > 11d sentinel-only reply is an empty rep
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -2555,7 +2994,18 @@ exports[`coach chat golden transcripts > 11d sentinel-only reply is an empty rep
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11055,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "annotate",
@@ -2606,7 +3056,7 @@ exports[`coach chat golden transcripts > 11e empty provider reply 1`] = `
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -2630,10 +3080,10 @@ exports[`coach chat golden transcripts > 11e empty provider reply 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -2644,7 +3094,18 @@ exports[`coach chat golden transcripts > 11e empty provider reply 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11055,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
@@ -2686,7 +3147,7 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12896,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -2710,10 +3171,10 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -2724,7 +3185,18 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11059,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1837,
     },
     {
       "call": "prisma.user.update",
@@ -2756,6 +3228,16 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
       "call": "appendMessage",
       "content": "A short home-measurement week would help.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -2791,6 +3273,7 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -2798,15 +3281,28 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "A ",
       "type": "token",
@@ -2833,6 +3329,16 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -2911,7 +3417,7 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12896,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -2935,10 +3441,10 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -2949,7 +3455,18 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11059,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1837,
     },
     {
       "call": "annotate",
@@ -2963,6 +3480,16 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
       "call": "appendMessage",
       "content": "A short home-measurement week would help.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -2993,6 +3520,7 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -3000,15 +3528,28 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "A ",
       "type": "token",
@@ -3035,6 +3576,16 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -3100,7 +3651,7 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12892,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -3124,10 +3675,10 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -3138,7 +3689,18 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11056,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "annotate",
@@ -3151,6 +3713,16 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
       "call": "appendMessage",
       "content": "An annual blood panel keeps this on track.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -3191,6 +3763,7 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -3198,15 +3771,28 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "An ",
       "type": "token",
@@ -3241,6 +3827,16 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -3329,7 +3925,7 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12896,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -3353,10 +3949,10 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -3367,7 +3963,18 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11059,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1837,
     },
     {
       "call": "captureReminderFromSentinel",
@@ -3385,6 +3992,16 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
       "call": "appendMessage",
       "content": "Noted, confirm it in settings and I'll bring it back.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -3415,6 +4032,7 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -3422,15 +4040,28 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "Noted, ",
       "type": "token",
@@ -3473,6 +4104,16 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -3538,7 +4179,7 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12896,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -3562,10 +4203,10 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -3576,7 +4217,18 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11059,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1837,
     },
     {
       "call": "annotate",
@@ -3589,6 +4241,16 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
       "call": "appendMessage",
       "content": "Noted, confirm it in settings and I'll bring it back.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -3619,6 +4281,7 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -3626,15 +4289,28 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "Noted, ",
       "type": "token",
@@ -3677,6 +4353,16 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -3742,7 +4428,7 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12895,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -3766,10 +4452,10 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -3780,7 +4466,18 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11058,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1837,
     },
     {
       "call": "annotate",
@@ -3795,6 +4492,16 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
       "call": "appendMessage",
       "content": "Resting heart rate is a good trend signal, /learn/resting-heart-rate.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -3825,6 +4532,7 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -3832,15 +4540,28 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "Resting ",
       "type": "token",
@@ -3879,6 +4600,16 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -4027,6 +4758,36 @@ exports[`coach chat golden transcripts > 16b an empty chain served by the legacy
       "call": "appendMessage",
       "content": "Your systolic averaged 128 mmHg over the window.",
       "metricSource": {
+        "activity": [
+          {
+            "count": 1,
+            "durationMs": 0,
+            "id": "a1",
+            "label": "Reading your record summary",
+            "labelKey": "coach.step.snapshot",
+            "phase": "fetch",
+            "round": 1,
+            "status": "done",
+            "stepRef": "s1",
+          },
+          {
+            "durationMs": 0,
+            "id": "a2",
+            "label": "Thinking…",
+            "labelKey": "insights.coach.activity.thinking",
+            "phase": "thinking",
+            "round": 1,
+            "status": "done",
+          },
+          {
+            "id": "a3",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -4061,6 +4822,7 @@ exports[`coach chat golden transcripts > 16b an empty chain served by the legacy
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -4068,9 +4830,11 @@ exports[`coach chat golden transcripts > 16b an empty chain served by the legacy
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
@@ -4088,6 +4852,67 @@ exports[`coach chat golden transcripts > 16b an empty chain served by the legacy
         "tool": "snapshot",
       },
       "type": "step",
+    },
+    {
+      "activity": {
+        "count": 1,
+        "id": "a1",
+        "label": "Reading your record summary",
+        "labelKey": "coach.step.snapshot",
+        "phase": "fetch",
+        "round": 1,
+        "status": "running",
+        "stepRef": "s1",
+      },
+      "type": "activity",
+    },
+    {
+      "activity": {
+        "count": 1,
+        "durationMs": 0,
+        "id": "a1",
+        "label": "Reading your record summary",
+        "labelKey": "coach.step.snapshot",
+        "phase": "fetch",
+        "round": 1,
+        "status": "done",
+        "stepRef": "s1",
+      },
+      "type": "activity",
+    },
+    {
+      "activity": {
+        "id": "a2",
+        "label": "Thinking…",
+        "labelKey": "insights.coach.activity.thinking",
+        "phase": "thinking",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
+    {
+      "activity": {
+        "durationMs": 0,
+        "id": "a2",
+        "label": "Thinking…",
+        "labelKey": "insights.coach.activity.thinking",
+        "phase": "thinking",
+        "round": 1,
+        "status": "done",
+      },
+      "type": "activity",
+    },
+    {
+      "activity": {
+        "id": "a3",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
     },
     {
       "token": "Your ",
@@ -4123,6 +4948,36 @@ exports[`coach chat golden transcripts > 16b an empty chain served by the legacy
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "count": 1,
+            "durationMs": 0,
+            "id": "a1",
+            "label": "Reading your record summary",
+            "labelKey": "coach.step.snapshot",
+            "phase": "fetch",
+            "round": 1,
+            "status": "done",
+            "stepRef": "s1",
+          },
+          {
+            "durationMs": 0,
+            "id": "a2",
+            "label": "Thinking…",
+            "labelKey": "insights.coach.activity.thinking",
+            "phase": "thinking",
+            "round": 1,
+            "status": "done",
+          },
+          {
+            "id": "a3",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -4274,7 +5129,7 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12890,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -4298,10 +5153,10 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -4312,12 +5167,33 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11054,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "appendMessage",
       "content": "That run held an average heart rate of 148 bpm.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           2400,
           148,
@@ -4350,6 +5226,7 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -4357,15 +5234,28 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "That ",
       "type": "token",
@@ -4408,6 +5298,16 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           2400,
           148,
@@ -4484,7 +5384,7 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12890,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -4508,10 +5408,10 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -4522,12 +5422,33 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11054,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "appendMessage",
       "content": "I can't look at that workout right now.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -4558,6 +5479,7 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -4565,15 +5487,28 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "I ",
       "type": "token",
@@ -4608,6 +5543,16 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -4673,7 +5618,7 @@ exports[`coach chat golden transcripts > 18 a persistence throw after the provid
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -4697,10 +5642,10 @@ exports[`coach chat golden transcripts > 18 a persistence throw after the provid
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -4711,7 +5656,18 @@ exports[`coach chat golden transcripts > 18 a persistence throw after the provid
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11055,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "event.setError",
@@ -4729,6 +5685,17 @@ exports[`coach chat golden transcripts > 18 a persistence throw after the provid
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "code": "coach.provider.unavailable",
       "message": "coach.provider.unavailable",
@@ -4766,7 +5733,7 @@ exports[`coach chat golden transcripts > 19 an existing conversation with prior 
       ],
     },
     {
-      "amount": 1800,
+      "amount": 13053,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -4790,10 +5757,10 @@ exports[`coach chat golden transcripts > 19 an existing conversation with prior 
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -4804,7 +5771,18 @@ exports[`coach chat golden transcripts > 19 an existing conversation with prior 
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11202,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1851,
     },
     {
       "call": "annotate",
@@ -4820,6 +5798,16 @@ exports[`coach chat golden transcripts > 19 an existing conversation with prior 
       "call": "appendMessage",
       "content": "Your weight was 91 kg and […] kg at the start.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -4851,6 +5839,7 @@ exports[`coach chat golden transcripts > 19 an existing conversation with prior 
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -4858,15 +5847,28 @@ exports[`coach chat golden transcripts > 19 an existing conversation with prior 
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "Your ",
       "type": "token",
@@ -4913,6 +5915,16 @@ exports[`coach chat golden transcripts > 19 an existing conversation with prior 
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -4979,7 +5991,7 @@ exports[`coach chat golden transcripts > 20 a guided-question turn with a scope 
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12892,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -5003,10 +6015,10 @@ exports[`coach chat golden transcripts > 20 a guided-question turn with a scope 
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 30000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -5017,12 +6029,33 @@ exports[`coach chat golden transcripts > 20 a guided-question turn with a scope 
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11056,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "appendMessage",
       "content": "Thanks, that helps.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -5053,6 +6086,7 @@ exports[`coach chat golden transcripts > 20 a guided-question turn with a scope 
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -5060,15 +6094,28 @@ exports[`coach chat golden transcripts > 20 a guided-question turn with a scope 
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "Thanks, ",
       "type": "token",
@@ -5083,6 +6130,16 @@ exports[`coach chat golden transcripts > 20 a guided-question turn with a scope 
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -5148,7 +6205,7 @@ exports[`coach chat golden transcripts > 21 the German locale with a stored self
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12917,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -5172,10 +6229,10 @@ exports[`coach chat golden transcripts > 21 the German locale with a stored self
         "window": "last30days",
       },
       "signal": true,
-      "system": "c61eecc94d49:3280",
+      "system": "ea823e5e510a:4068",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -5186,12 +6243,33 @@ exports[`coach chat golden transcripts > 21 the German locale with a stored self
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11078,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1839,
     },
     {
       "call": "appendMessage",
       "content": "Du läufst 30 km pro Woche, dein Blutdruck liegt bei 128 mmHg.",
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Schreibt die Antwort…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -5222,6 +6300,7 @@ exports[`coach chat golden transcripts > 21 the German locale with a stored self
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -5229,15 +6308,28 @@ exports[`coach chat golden transcripts > 21 the German locale with a stored self
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
   "frames": [
+    {
+      "activity": {
+        "id": "a1",
+        "label": "Schreibt die Antwort…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
+    },
     {
       "token": "Du ",
       "type": "token",
@@ -5288,6 +6380,16 @@ exports[`coach chat golden transcripts > 21 the German locale with a stored self
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "id": "a1",
+            "label": "Schreibt die Antwort…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -5353,7 +6455,7 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
       ],
     },
     {
-      "amount": 1800,
+      "amount": 12891,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -5377,10 +6479,10 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
         "window": "last30days",
       },
       "signal": true,
-      "system": "4a4d00f5a344:3187",
+      "system": "d46e2a89426f:3975",
       "temperature": 0.4,
       "timeoutMs": 180000,
-      "tools": 2,
+      "tools": 6,
     },
     {
       "actual": 80,
@@ -5391,12 +6493,64 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1800,
+      "reserved": 11055,
+    },
+    {
+      "actual": 0,
+      "attribution": {
+        "reservedOwner": "user",
+        "servedBy": null,
+      },
+      "cached": 0,
+      "call": "reconcileSpend",
+      "dateKey": "2026-09-26",
+      "reserved": 1836,
     },
     {
       "call": "appendMessage",
       "content": "Your systolic averaged 128 mmHg.",
       "metricSource": {
+        "activity": [
+          {
+            "count": 142,
+            "durationMs": 0,
+            "id": "a1",
+            "label": "Fetching Blood pressure, last 90 days…",
+            "labelKey": "insights.coach.activity.fetching",
+            "phase": "fetch",
+            "round": NaN,
+            "status": "done",
+            "stepRef": "s1",
+          },
+          {
+            "durationMs": 0,
+            "id": "a2",
+            "label": "Fetching Sleep, all time…",
+            "labelKey": "insights.coach.activity.fetching",
+            "phase": "fetch",
+            "round": NaN,
+            "status": "empty",
+            "stepRef": "s2",
+          },
+          {
+            "durationMs": 0,
+            "id": "a3",
+            "label": "Fetching Lab results, last 12 months…",
+            "labelKey": "insights.coach.activity.fetching",
+            "phase": "fetch",
+            "round": NaN,
+            "status": "failed",
+            "stepRef": "s3",
+          },
+          {
+            "id": "a4",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
@@ -5474,6 +6628,7 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
     {
       "call": "annotate",
       "metaKeys": [
+        "activityEntries",
         "clusterCount",
         "conversationId",
         "historyTurns",
@@ -5481,9 +6636,11 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
         "promptVersion",
         "provider",
         "snapshotSent",
+        "stop",
         "tokens",
         "toolMode",
         "toolsCalled",
+        "trailStored",
       ],
       "name": "insights.coach.replied",
     },
@@ -5503,6 +6660,18 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
       "type": "step",
     },
     {
+      "activity": {
+        "id": "a1",
+        "label": "Fetching Blood pressure, last 90 days…",
+        "labelKey": "insights.coach.activity.fetching",
+        "phase": "fetch",
+        "round": null,
+        "status": "running",
+        "stepRef": "s1",
+      },
+      "type": "activity",
+    },
+    {
       "step": {
         "domain": "sleep",
         "id": "s2",
@@ -5515,6 +6684,18 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
       "type": "step",
     },
     {
+      "activity": {
+        "id": "a2",
+        "label": "Fetching Sleep, all time…",
+        "labelKey": "insights.coach.activity.fetching",
+        "phase": "fetch",
+        "round": null,
+        "status": "running",
+        "stepRef": "s2",
+      },
+      "type": "activity",
+    },
+    {
       "step": {
         "domain": "labs",
         "id": "s3",
@@ -5525,6 +6706,18 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
         "window": "lastYear",
       },
       "type": "step",
+    },
+    {
+      "activity": {
+        "id": "a3",
+        "label": "Fetching Lab results, last 12 months…",
+        "labelKey": "insights.coach.activity.fetching",
+        "phase": "fetch",
+        "round": null,
+        "status": "running",
+        "stepRef": "s3",
+      },
+      "type": "activity",
     },
     {
       "step": {
@@ -5540,6 +6733,20 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
       "type": "step",
     },
     {
+      "activity": {
+        "count": 142,
+        "durationMs": 0,
+        "id": "a1",
+        "label": "Fetching Blood pressure, last 90 days…",
+        "labelKey": "insights.coach.activity.fetching",
+        "phase": "fetch",
+        "round": null,
+        "status": "done",
+        "stepRef": "s1",
+      },
+      "type": "activity",
+    },
+    {
       "step": {
         "domain": "sleep",
         "id": "s2",
@@ -5553,6 +6760,19 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
       "type": "step",
     },
     {
+      "activity": {
+        "durationMs": 0,
+        "id": "a2",
+        "label": "Fetching Sleep, all time…",
+        "labelKey": "insights.coach.activity.fetching",
+        "phase": "fetch",
+        "round": null,
+        "status": "empty",
+        "stepRef": "s2",
+      },
+      "type": "activity",
+    },
+    {
       "step": {
         "domain": "labs",
         "id": "s3",
@@ -5564,6 +6784,30 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
         "window": "lastYear",
       },
       "type": "step",
+    },
+    {
+      "activity": {
+        "durationMs": 0,
+        "id": "a3",
+        "label": "Fetching Lab results, last 12 months…",
+        "labelKey": "insights.coach.activity.fetching",
+        "phase": "fetch",
+        "round": null,
+        "status": "failed",
+        "stepRef": "s3",
+      },
+      "type": "activity",
+    },
+    {
+      "activity": {
+        "id": "a4",
+        "label": "Writing the answer…",
+        "labelKey": "insights.coach.activity.answer",
+        "phase": "answer",
+        "round": 1,
+        "status": "running",
+      },
+      "type": "activity",
     },
     {
       "token": "Your ",
@@ -5587,6 +6831,47 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
     },
     {
       "metricSource": {
+        "activity": [
+          {
+            "count": 142,
+            "durationMs": 0,
+            "id": "a1",
+            "label": "Fetching Blood pressure, last 90 days…",
+            "labelKey": "insights.coach.activity.fetching",
+            "phase": "fetch",
+            "round": null,
+            "status": "done",
+            "stepRef": "s1",
+          },
+          {
+            "durationMs": 0,
+            "id": "a2",
+            "label": "Fetching Sleep, all time…",
+            "labelKey": "insights.coach.activity.fetching",
+            "phase": "fetch",
+            "round": null,
+            "status": "empty",
+            "stepRef": "s2",
+          },
+          {
+            "durationMs": 0,
+            "id": "a3",
+            "label": "Fetching Lab results, last 12 months…",
+            "labelKey": "insights.coach.activity.fetching",
+            "phase": "fetch",
+            "round": null,
+            "status": "failed",
+            "stepRef": "s3",
+          },
+          {
+            "id": "a4",
+            "label": "Writing the answer…",
+            "labelKey": "insights.coach.activity.answer",
+            "phase": "answer",
+            "round": 1,
+            "status": "done",
+          },
+        ],
         "groundedFigures": [
           128,
           82,
