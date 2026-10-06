@@ -42,7 +42,7 @@ function CoachMemoryLink() {
     <Link
       href={COACH_MEMORY_HREF}
       data-slot="coach-settings-memory-link"
-      className="text-foreground hover:bg-muted focus-visible:ring-ring/50 -mx-2 flex min-h-11 items-center gap-2 rounded-md px-2 text-sm outline-none focus-visible:ring-2 sm:min-h-9"
+      className="text-foreground hover:bg-muted focus-visible:ring-input-focus -mx-2 flex min-h-11 items-center gap-2 rounded-md px-2 text-sm outline-none focus-visible:ring-2 sm:min-h-9"
     >
       <Brain
         className="text-muted-foreground size-4 shrink-0"

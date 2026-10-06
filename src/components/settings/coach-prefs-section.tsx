@@ -256,18 +256,19 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
                 </p>
               )}
             </div>
-          </div>
 
-          {/* v1.41 — how hard the Coach thinks; the same field sits in the
-              Coach's quick settings. */}
-          <CoachReasoningSelect
-            id="coach-prefs-reasoning"
-            value={coachReasoningLevel(draft)}
-            state={reasoningState}
-            onChange={(reasoning) =>
-              setDraft((prev) => ({ ...prev, reasoning }))
-            }
-          />
+            {/* v1.41 — how hard the Coach thinks, a third field of the same
+                shape; the same field sits in the Coach's quick settings. */}
+            <CoachReasoningSelect
+              id="coach-prefs-reasoning"
+              variant="card"
+              value={coachReasoningLevel(draft)}
+              state={reasoningState}
+              onChange={(reasoning) =>
+                setDraft((prev) => ({ ...prev, reasoning }))
+              }
+            />
+          </div>
 
           {/* Data clusters + analysis window live on ONE owner: "What I
               can see" behind the Coach's settings gear, which

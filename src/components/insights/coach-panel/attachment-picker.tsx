@@ -208,7 +208,7 @@ export function AttachmentPicker({
                     data-selected={isSelected ? "true" : undefined}
                     className={cn(
                       "border-border hover:bg-muted/50 flex w-full items-center gap-3 rounded-lg border p-3 text-left",
-                      "focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none",
+                      "focus-visible:ring-input-focus focus-visible:ring-[3px] focus-visible:outline-none",
                       isSelected && "border-primary/40 bg-primary/5",
                       disabled &&
                         "cursor-not-allowed opacity-60 hover:bg-transparent",

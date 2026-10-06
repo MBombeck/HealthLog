@@ -78,12 +78,12 @@ describe("<CoachReasoningSelect>", () => {
     expect(html).toContain(
       "Deeper thinking means more precise answers and a little more waiting.",
     );
-    expect(html).not.toMatch(/<select[^>]*disabled/);
+    expect(html).not.toMatch(/<select[^>]*\sdisabled=""/);
   });
 
   it("is locked with one sentence when the admin turned reasoning off", () => {
     const html = render(ADMIN_OFF, "high");
-    expect(html).toMatch(/<select[^>]*disabled/);
+    expect(html).toMatch(/<select[^>]*\sdisabled=""/);
     expect(html).toContain('data-locked="true"');
     expect(html).toContain("The admin has turned deeper thinking off.");
     expect(html).not.toContain("a little more waiting");
@@ -125,5 +125,42 @@ describe("<CoachReasoningSelect>", () => {
     locale.current = "en";
     expect(html).toContain(">Denktiefe<");
     expect(html).toContain("Hoch (vom Admin begrenzt)");
+  });
+});
+
+describe("the two homes of the field", () => {
+  const selectClass = (html: string) =>
+    html.match(/<select[^>]*class="([^"]*)"/)?.[1] ?? "";
+
+  it("stacks as wide as the quick settings sheet", () => {
+    const html = render(OPEN);
+    expect(html).toContain('data-no-colon="true"');
+    expect(selectClass(html)).toMatch(/\bw-full\b/);
+    expect(selectClass(html)).toMatch(/\bmt-1\b/);
+  });
+
+  it("takes the shape of Tone and Reply length in Settings → Coach", () => {
+    const html = renderToStaticMarkup(
+      <CoachReasoningSelect
+        id="r"
+        variant="card"
+        value="medium"
+        state={OPEN}
+        onChange={() => {}}
+      />,
+    );
+    // Their small label with its colon, a content-wide select, the card's
+    // own gap instead of margins.
+    expect(html).toMatch(/data-slot="coach-reasoning-field" class="[^"]*gap-2/);
+    expect(html).toContain('data-no-colon="false"');
+    expect(html).toMatch(/<label[^>]*class="[^"]*\btext-xs\b/);
+    expect(selectClass(html)).toMatch(/\bw-fit\b/);
+    expect(selectClass(html)).not.toMatch(/\bw-full\b|\bmt-1\b/);
+  });
+
+  it("looks locked when the operator switched reasoning off", () => {
+    const html = render(ADMIN_OFF);
+    expect(html).toMatch(/<select[^>]*\sdisabled=""/);
+    expect(selectClass(html)).toContain("disabled:opacity-50");
   });
 });

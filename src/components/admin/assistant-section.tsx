@@ -201,7 +201,9 @@ export function AssistantSection() {
             <Label
               htmlFor="admin-reasoning-max"
               noColon
-              className="text-sm font-medium"
+              // On the toggles' left edge: the primitive's `pl-1` would
+              // inset this one label beside the switch rows above it.
+              className="pl-0 text-sm font-medium"
             >
               {t(REASONING_ADMIN_KEYS.max)}
             </Label>

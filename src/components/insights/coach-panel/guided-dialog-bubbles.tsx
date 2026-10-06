@@ -37,7 +37,7 @@ import { TypingDots } from "./message-thread";
 /** Shared quiet text-button styling for the per-question actions. */
 const guidedActionClass = cn(
   "text-muted-foreground hover:text-foreground inline-flex min-h-8 items-center rounded-full px-2.5 text-xs",
-  "hover:bg-primary/10 focus-visible:ring-primary/40 focus-visible:ring-2 focus-visible:outline-none",
+  "hover:bg-primary/10 focus-visible:ring-input-focus focus-visible:ring-2 focus-visible:outline-none",
   "disabled:opacity-60",
 );
 
@@ -226,7 +226,7 @@ export function GuidedSummaryBubble({
           data-slot="coach-guided-summary-link"
           className={cn(
             "text-primary mt-2 inline-flex min-h-8 items-center gap-1 text-xs font-medium",
-            "focus-visible:ring-primary/40 rounded hover:underline focus-visible:ring-2 focus-visible:outline-none",
+            "focus-visible:ring-input-focus rounded hover:underline focus-visible:ring-2 focus-visible:outline-none",
           )}
         >
           {t("insights.coach.guided.summaryLink")}

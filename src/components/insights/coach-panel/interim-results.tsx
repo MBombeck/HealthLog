@@ -146,7 +146,7 @@ function InterimPreview({ result }: { result: CoachResultTable }) {
         aria-expanded={open}
         aria-controls={open ? detailId : undefined}
         onClick={() => setOpen(!open)}
-        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -my-1 flex min-h-11 w-full min-w-0 items-center gap-1.5 rounded text-left text-xs outline-none focus-visible:ring-2 sm:my-0 sm:min-h-6"
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-input-focus -my-1 flex min-h-11 w-full min-w-0 items-center gap-1.5 rounded text-left text-xs outline-none focus-visible:ring-2 sm:my-0 sm:min-h-6"
       >
         <ChevronRight
           aria-hidden="true"

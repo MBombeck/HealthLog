@@ -116,7 +116,7 @@ export function SuggestedActionCard({
           disabled={busy}
           className={cn(
             "bg-primary/90 text-background hover:bg-primary",
-            "focus-visible:ring-ring/50 inline-flex min-h-11 items-center gap-1.5 sm:min-h-9",
+            "focus-visible:ring-input-focus inline-flex min-h-11 items-center gap-1.5 sm:min-h-9",
             "rounded-md px-3 py-1.5 text-xs font-medium outline-none",
             "focus-visible:ring-2 disabled:opacity-50",
           )}
@@ -136,7 +136,7 @@ export function SuggestedActionCard({
           data-slot="coach-suggested-action-dismiss"
           onClick={() => setSettled("dismissed")}
           disabled={busy}
-          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex min-h-11 items-center rounded-md px-2.5 py-1.5 text-xs outline-none focus-visible:ring-2 disabled:opacity-50 sm:min-h-9"
+          className="text-muted-foreground hover:text-foreground focus-visible:ring-input-focus inline-flex min-h-11 items-center rounded-md px-2.5 py-1.5 text-xs outline-none focus-visible:ring-2 disabled:opacity-50 sm:min-h-9"
         >
           {t("coach.suggestedAction.dismiss")}
         </button>

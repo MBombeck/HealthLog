@@ -810,23 +810,13 @@ function ChatBubbleImpl({
               suggestedAction ?? metricSource?.suggestedAction ?? null;
             return action ? <SuggestedActionCard action={action} /> : null;
           })()}
-        {/* One row under the answer: copy, read aloud, try again and the
-            time on the left; the tokens and model it cost on the right.
-            Only on a settled reply (not while it streams, not on an error
-            or a refusal). */}
-        {settled && content && (
-          <AssistantMessageActions
-            content={content}
-            streaming={!!streaming}
-            createdAt={createdAt}
-            onRegenerate={onRegenerate}
-            tokens={usage?.totalTokens ?? tokensUsed}
-            model={usage?.model ?? model}
-          />
-        )}
         {/* The replies the latest answer offers, in its own column: a
             question's choices or a proposal's two answers when it has them,
-            else its follow-up chips. One pattern for all of them. */}
+            else its follow-up chips. One pattern for all of them. They sit
+            right under the answer, above the action row: beside a pointer
+            the row stays invisible until the message is hovered or holds
+            focus, and above the pills it left an empty band between the
+            answer and its replies. */}
         {replies && replies.replies.length > 0 ? (
           <SuggestedReplies
             replies={replies.replies}
@@ -843,6 +833,19 @@ function ChatBubbleImpl({
             onSelect={onFollowUp}
           />
         ) : null}
+        {/* One row under the answer, the last thing in its column: copy,
+            read aloud, try again, details and the time. Only on a settled
+            reply (not while it streams, not on an error or a refusal). */}
+        {settled && content && (
+          <AssistantMessageActions
+            content={content}
+            streaming={!!streaming}
+            createdAt={createdAt}
+            onRegenerate={onRegenerate}
+            tokens={usage?.totalTokens ?? tokensUsed}
+            model={usage?.model ?? model}
+          />
+        )}
       </div>
     </div>
   );

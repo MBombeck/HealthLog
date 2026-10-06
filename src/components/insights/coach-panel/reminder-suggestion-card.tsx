@@ -120,7 +120,7 @@ export function ReminderSuggestionCard({
           disabled={busy}
           className={cn(
             "bg-primary/90 text-background hover:bg-primary",
-            "focus-visible:ring-ring/50 inline-flex min-h-9 items-center gap-1.5",
+            "focus-visible:ring-input-focus inline-flex min-h-9 items-center gap-1.5",
             "rounded-md px-3 py-1.5 text-xs font-medium outline-none",
             "focus-visible:ring-2 disabled:opacity-50",
           )}
@@ -140,7 +140,7 @@ export function ReminderSuggestionCard({
           data-slot="coach-reminder-suggestion-dismiss"
           onClick={() => act.mutate("dismiss")}
           disabled={busy}
-          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex min-h-9 items-center rounded-md px-2.5 py-1.5 text-xs outline-none focus-visible:ring-2 disabled:opacity-50"
+          className="text-muted-foreground hover:text-foreground focus-visible:ring-input-focus inline-flex min-h-9 items-center rounded-md px-2.5 py-1.5 text-xs outline-none focus-visible:ring-2 disabled:opacity-50"
         >
           {t("coach.reminderSuggestion.dismiss")}
         </button>
@@ -149,7 +149,7 @@ export function ReminderSuggestionCard({
           data-slot="coach-reminder-suggestion-stop"
           onClick={() => act.mutate("stop")}
           disabled={busy}
-          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex min-h-9 items-center rounded-md px-2.5 py-1.5 text-xs outline-none focus-visible:ring-2 disabled:opacity-50"
+          className="text-muted-foreground hover:text-foreground focus-visible:ring-input-focus inline-flex min-h-9 items-center rounded-md px-2.5 py-1.5 text-xs outline-none focus-visible:ring-2 disabled:opacity-50"
         >
           {t("coach.reminderSuggestion.stop")}
         </button>

@@ -18,9 +18,11 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  *      are not text on the row; the details icon shows them in a tooltip on
  *      keyboard focus (desktop) and on a tap (phone); Enter and Space keep it
  *      open, and a second tap or Escape closes it.
- *   2. The follow-up chips sit in the answer's column: their left edge is
- *      the bubble's, their text is the answer's size, and a chip is at most
- *      36 px tall beside a pointer and at least 44 px on a phone.
+ *   2. The follow-up chips sit in the answer's column, right under the
+ *      answer and above the action row (the row is the last thing in the
+ *      column): their left edge is the bubble's, their text is the
+ *      answer's size, and a chip is at most 36 px tall beside a pointer and
+ *      at least 44 px on a phone.
  *   3. Under a question, copy and remember share one row; nothing stacks
  *      below it.
  *   4. Scrolled away from the end, a round button appears; it brings the
@@ -311,7 +313,14 @@ test.describe("Coach answer layout", () => {
     await expect(chips.locator("[data-follow-up-id]")).toHaveCount(2);
     const chipsBox = await box(chips);
     expect(Math.abs(chipsBox.x - bubbleBox.x)).toBeLessThanOrEqual(1);
-    expect(chipsBox.y).toBeGreaterThanOrEqual(rowBox.y + rowBox.height - 1);
+    // No empty band between the answer and its replies: the column's own
+    // gap, whatever the hover state of the row below.
+    const chipsGap = chipsBox.y - (bubbleBox.y + bubbleBox.height);
+    expect(chipsGap, "the chips follow the answer").toBeGreaterThanOrEqual(0);
+    expect(chipsGap, "the chips follow the answer").toBeLessThanOrEqual(12);
+    expect(rowBox.y, "the action row comes last").toBeGreaterThanOrEqual(
+      chipsBox.y + chipsBox.height - 1,
+    );
     const answerSize = await bubble.evaluate(
       (el) => getComputedStyle(el).fontSize,
     );
