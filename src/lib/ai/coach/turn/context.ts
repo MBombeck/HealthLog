@@ -31,6 +31,7 @@ import {
 } from "@/lib/ai/coach/chat-request-builder";
 import { buildWorkoutEvidenceSection } from "@/lib/ai/coach/workout-evidence-builder";
 import { getScheduledDoseValues } from "@/lib/medications/scheduled-doses";
+import { getMedicationNames } from "@/lib/medications/medication-names";
 import { buildRememberAddendum } from "@/lib/ai/coach/reminders";
 import { buildSuggestActionAddendum } from "@/lib/ai/coach/suggest-action";
 import {
@@ -62,6 +63,8 @@ export interface TurnContext {
   snapshot: CoachSnapshotResult;
   aboutMe: string | null;
   scheduleDoses: Awaited<ReturnType<typeof getScheduledDoseValues>>;
+  /** The schedule's medication names, which the outbound dose screen reads. */
+  medicationNames: string[];
   turnContext: CoachTurnContext;
   workoutEvidence: Record<string, unknown> | null;
   systemPrompt: string;
@@ -129,6 +132,7 @@ export async function assembleTurnContext(args: {
   // continuation exemption. Fail-open: a read failure yields an empty set, which
   // keeps the Guard I phrase-anchored dose behaviour.
   const scheduleDoses = await getScheduledDoseValues(userId).catch(() => []);
+  const medicationNames = await getMedicationNames(userId).catch(() => []);
   // v1.22 (B2/F6) — the canonical system-prompt module is owned elsewhere, so
   // the two memory/action clauses are appended at assembly time here: one
   // teaches the model to emit `---REMEMBER---` (durable "remind me" capture),
@@ -231,6 +235,7 @@ export async function assembleTurnContext(args: {
     snapshot,
     aboutMe,
     scheduleDoses,
+    medicationNames,
     turnContext,
     workoutEvidence,
     systemPrompt,

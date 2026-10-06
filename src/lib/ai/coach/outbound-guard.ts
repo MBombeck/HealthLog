@@ -58,14 +58,22 @@ export interface CoachOutboundDecision {
  * N mg" is trusted only when N is a dose the user is on. Omitted by the
  * non-Coach callers (nudge / reaction-line), which keep the phrase-anchored
  * Guard I behaviour.
+ *
+ * `medicationNames` optionally makes the person's own medication names count
+ * as medication nouns in the dose-change class, so "skip the Eliquis" or
+ * "take an extra ramipril" blocks like "skip your dose". Omitted, the class
+ * still knows the dosage-form words, the drug-class words and the common
+ * generic-name stems.
  */
 export function screenCoachReply(
   reply: string,
   locale: Locale,
   scheduleDoses?: readonly number[],
+  medicationNames?: readonly string[],
 ): CoachOutboundDecision {
   const decision = screenModelOutput(reply, locale, CONVERSATIONAL_CONTRACTS, {
     scheduleDoses,
+    medicationNames,
   });
   return {
     block: decision.block,

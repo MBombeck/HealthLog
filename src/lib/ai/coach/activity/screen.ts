@@ -36,6 +36,8 @@ export interface ActivityScreenContext {
   userMessage?: string;
   /** Scheduled doses, which the dose screen lets through. */
   scheduleDoses?: readonly number[];
+  /** The schedule's medication names, which count as medication nouns. */
+  medicationNames?: readonly string[];
 }
 
 /** Markdown emphasis, headings and list marks, which the trail never renders. */
@@ -58,7 +60,10 @@ function cut(text: string, max: number): string {
 
 function passes(text: string, ctx: ActivityScreenContext): boolean {
   try {
-    if (screenCoachReply(text, ctx.locale, ctx.scheduleDoses).block) {
+    if (
+      screenCoachReply(text, ctx.locale, ctx.scheduleDoses, ctx.medicationNames)
+        .block
+    ) {
       return false;
     }
     if (detectRefusal({ message: text, locale: ctx.locale }).refuse) {
