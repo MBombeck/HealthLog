@@ -38,6 +38,13 @@
  * none is surfaced, charged or auto-dismissed, and they resume once the Coach
  * is back (`coachRemindersHeld`, the same answer that keeps the badge dark).
  *
+ * v1.41 — the sweep also lets unanswered proposals lapse: a plan the Coach
+ * proposed and a health fact waiting for the person's "Yes, remember it" are
+ * dropped after `PROPOSAL_EXPIRY_DAYS`, so an ignored suggestion neither
+ * blocks new ones (a person holds at most three open plan proposals) nor
+ * waits forever. A lapsed plan is `abandoned`, the way the person's "Not now"
+ * leaves it; a lapsed fact proposal is soft-deleted like a declined one.
+ *
  * The sweep still never calls a provider and never pushes. The message body is
  * a deterministic localized template around the user's OWN note text — the
  * words they asked to be reminded of, never anything fabricated.
@@ -54,6 +61,11 @@ import type { PrismaClient } from "@/generated/prisma/client";
 
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { evaluateCoachContextReminders } from "@/lib/ai/coach/context-reminders";
+import { annotate } from "@/lib/logging/context";
+import {
+  PROPOSAL_EXPIRY_DAYS,
+  PROPOSED_FACT_SOURCE,
+} from "@/lib/ai/coach/memory/shared";
 import {
   coachRemindersHeld,
   surfaceCoachReminders,
@@ -95,6 +107,10 @@ export interface CoachReminderSweepSummary {
   contextSurfaced: number;
   /** Ignored reminders auto-dismissed at the nag cap. */
   nagDismissed: number;
+  /** Plan proposals left unanswered past the expiry, now abandoned. */
+  planProposalsLapsed: number;
+  /** Fact proposals left unanswered past the expiry, now dropped. */
+  factProposalsLapsed: number;
   errored: number;
 }
 
@@ -102,6 +118,7 @@ type SweepPrisma = Pick<
   PrismaClient,
   | "coachReminder"
   | "coachPlan"
+  | "coachFact"
   | "coachConversation"
   | "coachMessage"
   | "measurement"
@@ -123,8 +140,43 @@ export async function runCoachReminderSweep(
     planReviewsMinted: 0,
     contextSurfaced: 0,
     nagDismissed: 0,
+    planProposalsLapsed: 0,
+    factProposalsLapsed: 0,
     errored: 0,
   };
+
+  // ── 0. lapse unanswered proposals ─────────────────────────────
+  const lapseBefore = new Date(
+    now.getTime() - PROPOSAL_EXPIRY_DAYS * 86_400_000,
+  );
+  try {
+    const plansLapsed = await prisma.coachPlan.updateMany({
+      where: {
+        deletedAt: null,
+        status: "proposed",
+        createdAt: { lt: lapseBefore },
+      },
+      data: { status: "abandoned", reviewDate: null },
+    });
+    summary.planProposalsLapsed = plansLapsed.count;
+    const factsLapsed = await prisma.coachFact.updateMany({
+      where: {
+        deletedAt: null,
+        source: PROPOSED_FACT_SOURCE,
+        createdAt: { lt: lapseBefore },
+      },
+      data: { deletedAt: now },
+    });
+    summary.factProposalsLapsed = factsLapsed.count;
+    if (plansLapsed.count + factsLapsed.count > 0) {
+      annotate({
+        action: { name: "coach.proposals.lapsed" },
+        meta: { plans: plansLapsed.count, facts: factsLapsed.count },
+      });
+    }
+  } catch {
+    summary.errored += 1;
+  }
 
   // ── 1. mint plan-review reminders for passed reviewDates ──────
   //

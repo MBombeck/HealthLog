@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   resolvePlanMetric,
   buildExperimentOutcome,
+  planDayValue,
   type ExperimentOutcomeInput,
 } from "@/lib/jobs/coach-plan-review";
 
@@ -81,5 +82,35 @@ describe("buildExperimentOutcome", () => {
     });
     expect(out.verdict).toBe("changed");
     expect(out.prose).toMatch(/worth noting, not proven/i);
+  });
+});
+
+describe("planDayValue", () => {
+  const row = {
+    day: "2026-10-01",
+    segment: 0,
+    n: 9,
+    sum: 9000,
+    min: 0,
+    max: 0,
+  };
+
+  it("reads a step day as its total, not the mean of its samples", () => {
+    expect(planDayValue("ACTIVITY_STEPS", row)).toBe(9000);
+  });
+
+  it("reads a level metric as the day's mean", () => {
+    expect(planDayValue("WEIGHT", { ...row, sum: 157, n: 2 })).toBe(78.5);
+  });
+
+  it("prefers the hourly-weighted mean where the series has one", () => {
+    expect(
+      planDayValue("RESTING_HEART_RATE", {
+        ...row,
+        sum: 120,
+        n: 2,
+        dayMean: 61,
+      }),
+    ).toBe(61);
   });
 });

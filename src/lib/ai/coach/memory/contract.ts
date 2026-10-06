@@ -7,9 +7,12 @@
  * (`memoryDecision`, `planDecision` on the chat request), and the progress
  * lines the daily briefing quotes.
  *
- * Until the implementations land, every function is a stub that answers "not
- * available" and touches nothing: no block is built, no fact is written, no
- * plan changes state. A turn behaves exactly as it did before.
+ * The implementations live beside this file (`context-block.ts`,
+ * `remember.ts`, `propose-plan.ts`, `plan-progress.ts`); this module names
+ * the shapes and re-exports them, so a caller depends on the contract and
+ * never on a file behind it. Server-only: it reaches the database. The
+ * client-safe constants and message keys live in `shared.ts`, re-exported
+ * here unchanged.
  *
  * Rules every implementation keeps, so a caller can rely on them:
  * - health facts (`condition`, `constraint`, `medication`) are only ever
@@ -26,26 +29,7 @@ import type {
   CoachPlanProposal,
 } from "@/lib/ai/coach/types";
 
-/** Who put a fact into `coach_facts.source`. */
-export const COACH_FACT_SOURCES = [
-  "user",
-  "coach",
-  "extracted",
-  "pattern",
-] as const;
-
-/** The categories that are proposed and never saved without a tap. */
-export const HEALTH_MEMORY_CATEGORIES: ReadonlySet<CoachMemoryCategory> =
-  new Set(["condition", "constraint", "medication"]);
-
-/** A remembered fact, as `remember_fact` may write it. */
-export const REMEMBER_FACT_MAX_CHARS = 160;
-
-/** The memory block in a turn's context, never trimmed before the inventory. */
-export const MEMORY_BLOCK_MAX_CHARS = 1_500;
-
-/** A proposed plan's review window, in days. */
-export const PLAN_REVIEW_DAYS = { min: 7, max: 56 } as const;
+export * from "./shared";
 
 // ── The memory block ───────────────────────────────────────────────────────
 
@@ -55,25 +39,40 @@ export interface MemoryContextBlock {
   /** The facts in the block, for `last_used_at` and the `memory` entry. */
   factIds: string[];
   planIds: string[];
+  /**
+   * The fact texts the block carries, for the owner-only trail
+   * (`CoachTrail.recalled`). Never logged.
+   */
+  recalled: string[];
+  /**
+   * A health fact the background found and the person has not answered yet,
+   * offered once: the turn sends it as the answer's `memoryNote` (with
+   * `proposal: true`) and stores it as `CoachTrail.proposal`, exactly like a
+   * proposal `remember_fact` made. It counts as the answer's one note. Marked
+   * offered when the block is built, so it is never offered twice.
+   */
+  pendingProposal?: CoachMemoryNote;
 }
 
-/**
- * The facts and active plans a turn starts with, or null when there are none
- * or memory is unavailable. The caller has already passed the egress check.
- */
-export async function buildMemoryContextBlock(_args: {
+export interface BuildMemoryContextBlockArgs {
   userId: string;
   conversationId: string | undefined;
   locale: string;
-}): Promise<MemoryContextBlock | null> {
-  return null;
+  /**
+   * The providers the turn is about to send to (the chain, in order). When
+   * given, the block re-runs the wire egress check for exactly these and is
+   * not built on a refusal; without it, the `coach` capability for the record
+   * is re-checked instead.
+   */
+  providerTypes?: readonly string[];
+  now?: Date;
 }
 
 // ── remember_fact ──────────────────────────────────────────────────────────
 
 export interface RememberFactCall {
   category: CoachMemoryCategory;
-  /** At most {@link REMEMBER_FACT_MAX_CHARS}. */
+  /** At most `REMEMBER_FACT_MAX_CHARS`. */
   fact: string;
   why: string;
 }
@@ -91,33 +90,28 @@ export type RememberFactOutcome =
         | "unavailable";
     };
 
-/**
- * Runs a `remember_fact` call. `userMessage` is the person's current message,
- * the only text a fact may come from.
- */
-export async function rememberFactFromTool(_args: {
+export interface RememberFactArgs {
   userId: string;
   conversationId: string;
+  /** The person's current message, the only text a fact may come from. */
   userMessage: string;
+  /**
+   * The stored id of that message, for `coach_facts.source_message_id`.
+   * Looked up as the conversation's newest user message when absent.
+   */
+  userMessageId?: string;
   call: RememberFactCall;
-}): Promise<RememberFactOutcome> {
-  return { kind: "declined", reason: "unavailable" };
 }
 
-/**
- * Answers a fact proposal. The fact is read from the trail stored on
- * `messageId`, never from the request.
- */
-export async function decideFactProposal(_args: {
+export type DecideFactProposalOutcome =
+  { kind: "saved"; factId: string } | { kind: "declined" } | { kind: "stale" };
+
+export interface DecideFactProposalArgs {
   userId: string;
   conversationId: string;
   messageId: string;
   proposalId: string;
   accept: boolean;
-}): Promise<
-  { kind: "saved"; factId: string } | { kind: "declined" } | { kind: "stale" }
-> {
-  return { kind: "stale" };
 }
 
 // ── propose_plan ───────────────────────────────────────────────────────────
@@ -127,7 +121,7 @@ export interface ProposePlanCall {
   target?: string;
   ifCue: string;
   thenAction: string;
-  /** {@link PLAN_REVIEW_DAYS}. */
+  /** `PLAN_REVIEW_DAYS`. */
   reviewInDays: number;
 }
 
@@ -138,68 +132,48 @@ export type ProposePlanOutcome =
       reason: "one_per_answer" | "too_many_open" | "invalid" | "unavailable";
     };
 
-/** Runs a `propose_plan` call: writes the plan as `proposed`. */
-export async function proposePlanFromTool(_args: {
+export interface ProposePlanArgs {
   userId: string;
   conversationId: string;
   call: ProposePlanCall;
-}): Promise<ProposePlanOutcome> {
-  return { kind: "declined", reason: "unavailable" };
 }
 
-/**
- * Answers a plan proposal: `active` on accept, `abandoned` on decline. Only a
- * plan the assistant message proposed, and only the person's own.
- */
-export async function decidePlanProposal(_args: {
+export type DecidePlanProposalOutcome =
+  | { kind: "activated"; reviewInDays: number }
+  | { kind: "abandoned" }
+  | { kind: "stale" };
+
+export interface DecidePlanProposalArgs {
   userId: string;
   conversationId: string;
   messageId: string;
   planId: string;
   accept: boolean;
-}): Promise<
-  | { kind: "activated"; reviewInDays: number }
-  | { kind: "abandoned" }
-  | { kind: "stale" }
-> {
-  return { kind: "stale" };
 }
 
-// ── The briefing ───────────────────────────────────────────────────────────
+// ── The implementations ────────────────────────────────────────────────────
+
+/**
+ * The facts and active plans a turn starts with, or null when there are none
+ * or memory is unavailable. Built only after the egress check passes.
+ */
+export { buildMemoryContextBlock } from "./context-block";
+
+/**
+ * Runs a `remember_fact` call; answers a fact proposal (the fact is read from
+ * the trail stored on `messageId`, never from the request).
+ */
+export { rememberFactFromTool, decideFactProposal } from "./remember";
+
+/**
+ * Runs a `propose_plan` call (writes the plan as `proposed`); answers a plan
+ * proposal (`active` on accept, `abandoned` on decline, only a plan the
+ * assistant message proposed, only the person's own).
+ */
+export { proposePlanFromTool, decidePlanProposal } from "./propose-plan";
 
 /**
  * One server-computed progress sentence per active plan, at most two, for
  * the daily briefing prompt. The model may quote one; it may not invent one.
  */
-export async function buildPlanProgressLines(
-  _userId: string,
-): Promise<string[]> {
-  return [];
-}
-
-// ── Message keys ────────────────────────────────────────────────────────────
-
-/** The memory note under an answer, and its two replies. */
-export const COACH_MEMORY_KEYS = {
-  saved: "insights.coach.memory.saved",
-  undo: "insights.coach.memory.undo",
-  accept: "insights.coach.memory.accept",
-  decline: "insights.coach.memory.decline",
-  confirmed: "insights.coach.memory.confirmed",
-} as const;
-
-/** A plan proposal's two replies, and the line a decision turn answers with. */
-export const COACH_PLAN_KEYS = {
-  accept: "insights.coach.plan.accept",
-  decline: "insights.coach.plan.decline",
-  confirmed: "insights.coach.plan.confirmed",
-} as const;
-
-/** The memory list in settings, and the link to it from the Coach. */
-export const COACH_MEMORY_LIST_KEYS = {
-  link: "insights.coach.memoryLink",
-  edit: "settings.coach.memory.edit",
-  sourceUser: "settings.coach.memory.source.user",
-  sourceCoach: "settings.coach.memory.source.coach",
-  categoryMedication: "settings.ai.coachMemory.categoryMedication",
-} as const;
+export { buildPlanProgressLines } from "./plan-progress";

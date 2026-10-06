@@ -17,48 +17,28 @@ import {
   rememberFactFromTool,
 } from "../contract";
 
-const IDS = { userId: "u1", conversationId: "c1" };
+describe("memory contract", () => {
+  it("answers through the implementations, not the old stubs", async () => {
+    const [block, remember, plan, progress] = await Promise.all([
+      import("../context-block"),
+      import("../remember"),
+      import("../propose-plan"),
+      import("../plan-progress"),
+    ]);
+    expect(buildMemoryContextBlock).toBe(block.buildMemoryContextBlock);
+    expect(rememberFactFromTool).toBe(remember.rememberFactFromTool);
+    expect(decideFactProposal).toBe(remember.decideFactProposal);
+    expect(proposePlanFromTool).toBe(plan.proposePlanFromTool);
+    expect(decidePlanProposal).toBe(plan.decidePlanProposal);
+    expect(buildPlanProgressLines).toBe(progress.buildPlanProgressLines);
+  });
 
-describe("memory contract stubs", () => {
-  it("build no block, write nothing and decide nothing", async () => {
-    await expect(
-      buildMemoryContextBlock({ ...IDS, locale: "en" }),
-    ).resolves.toBeNull();
-    await expect(
-      rememberFactFromTool({
-        ...IDS,
-        userMessage: "I want to reach 75 kg by December",
-        call: { category: "goal", fact: "Wants 75 kg by December", why: "w" },
-      }),
-    ).resolves.toEqual({ kind: "declined", reason: "unavailable" });
-    await expect(
-      decideFactProposal({
-        ...IDS,
-        messageId: "m1",
-        proposalId: "p1",
-        accept: true,
-      }),
-    ).resolves.toEqual({ kind: "stale" });
-    await expect(
-      proposePlanFromTool({
-        ...IDS,
-        call: {
-          metric: "WEIGHT",
-          ifCue: "after dinner",
-          thenAction: "walk",
-          reviewInDays: 14,
-        },
-      }),
-    ).resolves.toEqual({ kind: "declined", reason: "unavailable" });
-    await expect(
-      decidePlanProposal({
-        ...IDS,
-        messageId: "m1",
-        planId: "p1",
-        accept: true,
-      }),
-    ).resolves.toEqual({ kind: "stale" });
-    await expect(buildPlanProgressLines("u1")).resolves.toEqual([]);
+  it("keeps the client-safe half free of server imports", () => {
+    const source = readFileSync(join(__dirname, "../shared.ts"), "utf8");
+    const imports = [...source.matchAll(/^import\s+(type\s+)?[^;]+;/gm)];
+    for (const statement of imports) {
+      expect(statement[1], statement[0]).toBe("type ");
+    }
   });
 });
 
@@ -72,6 +52,10 @@ describe("memory contract constants", () => {
       "constraint",
       "medication",
     ]);
+  });
+
+  it("a proposal has its own source and never reads as a known fact", () => {
+    expect(COACH_FACT_SOURCES).toContain("proposed");
   });
 
   it("the column default is one of the sources", () => {
