@@ -4,6 +4,7 @@ import {
   DEFAULT_COACH_CLUSTERS,
   DEFAULT_COACH_PREFS,
   coachPrefsSchema,
+  coachReasoningLevel,
   parseCoachPrefs,
 } from "../coach-prefs";
 
@@ -218,5 +219,41 @@ describe("parseCoachPrefs", () => {
     expect(out.reminderSuggestions?.lastSuggestedAt).toBe(
       "2026-06-16T12:00:00.000Z",
     );
+  });
+});
+
+describe("reasoning (v1.41)", () => {
+  it("is absent on a legacy blob and reads as medium", () => {
+    const prefs = parseCoachPrefs({ tone: "neutral" });
+    expect(prefs).not.toHaveProperty("reasoning");
+    expect(coachReasoningLevel(prefs)).toBe("medium");
+    expect(coachReasoningLevel(DEFAULT_COACH_PREFS)).toBe("medium");
+  });
+
+  it.each(["off", "low", "medium", "high"] as const)(
+    "round-trips %s",
+    (level) => {
+      const prefs = parseCoachPrefs({ reasoning: level });
+      expect(prefs.reasoning).toBe(level);
+      expect(coachReasoningLevel(prefs)).toBe(level);
+    },
+  );
+
+  it("rejects an unknown level on write", () => {
+    expect(coachPrefsSchema.safeParse({ reasoning: "max" }).success).toBe(
+      false,
+    );
+  });
+
+  it("drops an unknown stored level alone and keeps every other field", () => {
+    const prefs = parseCoachPrefs({
+      reasoning: "xhigh",
+      tone: "concise",
+      excludeMetrics: ["weight"],
+    });
+    expect(prefs.reasoning).toBeUndefined();
+    expect(coachReasoningLevel(prefs)).toBe("medium");
+    expect(prefs.tone).toBe("concise");
+    expect(prefs.excludeMetrics).toEqual(["weight"]);
   });
 });

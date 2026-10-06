@@ -90,6 +90,16 @@ export interface CoachMessageBackupEntry {
    * unreadable-row marker stands in for tables that did not decrypt.
    */
   resultsJson?: string | null;
+  /**
+   * v1.41 — the model text of the turn's trail, as ciphertext in base64.
+   * Present on a disaster-recovery payload only; null on a turn without one.
+   */
+  trailEncrypted?: string | null;
+  /**
+   * v1.41 — the same trail as readable JSON (a `CoachTrail`), on a portable
+   * payload only; null on a turn without one.
+   */
+  trailJson?: string | null;
   createdAt: string;
 }
 
@@ -167,6 +177,7 @@ const COACH_CONVERSATION_BACKUP_SELECT = {
       tokensUsed: true,
       model: true,
       resultsEncrypted: true,
+      trailEncrypted: true,
       createdAt: true,
     },
   },
@@ -268,6 +279,14 @@ export async function buildCoachBackupSection(
                 : null,
             }
           : { resultsJson: decryptTurnSoft(message.resultsEncrypted) }),
+        // v1.41 — and so does the trail.
+        ...(disasterRecovery
+          ? {
+              trailEncrypted: message.trailEncrypted
+                ? Buffer.from(message.trailEncrypted).toString("base64")
+                : null,
+            }
+          : { trailJson: decryptTurnSoft(message.trailEncrypted) }),
         createdAt: message.createdAt.toISOString(),
       })),
       attachments: row.attachments.map((attachment) => ({
@@ -340,6 +359,8 @@ export type RestoredCoachMessage = Pick<
       | "model"
       | "resultsEncrypted"
       | "resultsJson"
+      | "trailEncrypted"
+      | "trailJson"
     >
   >;
 
@@ -424,6 +445,7 @@ export async function restoreCoachData(
             tokensUsed: message.tokensUsed ?? null,
             model: message.model ?? null,
             resultsEncrypted: resolveResultsBytes(message),
+            trailEncrypted: resolveTrailBytes(message),
             createdAt: new Date(message.createdAt),
           })),
         },
@@ -495,6 +517,18 @@ function resolveResultsBytes(
       : decodeBase64(message.resultsEncrypted);
   }
   return message.resultsJson ? encryptToBytes(message.resultsJson) : null;
+}
+
+/** v1.41 — a turn's stored trail, from either end of the contract. */
+function resolveTrailBytes(
+  message: RestoredCoachMessage,
+): Uint8Array<ArrayBuffer> | null {
+  if (message.trailEncrypted !== undefined) {
+    return message.trailEncrypted === null
+      ? null
+      : decodeBase64(message.trailEncrypted);
+  }
+  return message.trailJson ? encryptToBytes(message.trailJson) : null;
 }
 
 function resolveTitleBytes(
@@ -571,6 +605,15 @@ export interface CoachFactBackupEntry {
   category: string;
   confidence: number;
   sourceConversationId: string | null;
+  /** v1.41 — `user`, `coach`, `extracted` or `pattern`. */
+  source: string;
+  /** v1.41 */
+  lastUsedAt: string | null;
+  /**
+   * v1.41 — the message the fact came out of. A bare id like
+   * `sourceConversationId`, resolved the same way on restore.
+   */
+  sourceMessageId: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -670,6 +713,9 @@ export async function buildCoachMemoryBackupSection(
       category: row.category,
       confidence: row.confidence,
       sourceConversationId: row.sourceConversationId,
+      source: row.source,
+      lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
+      sourceMessageId: row.sourceMessageId,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     })),
@@ -726,6 +772,9 @@ const COACH_FACT_BACKUP_SELECT = {
   category: true,
   confidence: true,
   sourceConversationId: true,
+  source: true,
+  lastUsedAt: true,
+  sourceMessageId: true,
   createdAt: true,
   updatedAt: true,
   deletedAt: true,
@@ -795,6 +844,9 @@ export type RestoredCoachFact = Pick<
       | "fact"
       | "confidence"
       | "sourceConversationId"
+      | "source"
+      | "lastUsedAt"
+      | "sourceMessageId"
       | "deletedAt"
     >
   >;
@@ -859,12 +911,17 @@ export interface CoachMemoryRestoreInput {
  *
  * Plans go in before reminders for the same reason one step down: a reminder's
  * `relatedPlanId` is resolved against the plans this function has just written.
+ *
+ * A fact's `sourceMessageId` (v1.41) is resolved against the messages the
+ * conversation restore wrote, and nulled and reported the same way when it
+ * names one the file did not carry.
  */
 export async function restoreCoachMemoryData(
   tx: Prisma.TransactionClient,
   ownerId: string,
   payload: CoachMemoryRestoreInput,
   conversationIds: ReadonlySet<string>,
+  messageIds: ReadonlySet<string>,
   skips: RestoreSkipLog,
 ): Promise<CoachMemoryRestoreCleared> {
   const [clearedFacts, clearedPlans, clearedReminders] = await Promise.all([
@@ -884,6 +941,12 @@ export async function restoreCoachMemoryData(
     danglingRefs.push(id);
     return null;
   };
+  const resolveMessage = (id: string | null | undefined) => {
+    if (!id) return null;
+    if (messageIds.has(id)) return id;
+    danglingRefs.push(id);
+    return null;
+  };
 
   if (payload.coachFacts.length > 0) {
     await tx.coachFact.createMany({
@@ -894,6 +957,12 @@ export async function restoreCoachMemoryData(
         category: fact.category,
         confidence: fact.confidence ?? 50,
         sourceConversationId: resolveConversation(fact.sourceConversationId),
+        // A file written before v1.41 states no source; every fact then came
+        // from the extraction or the matcher, which is what the column's
+        // default says too.
+        source: fact.source ?? "extracted",
+        lastUsedAt: fact.lastUsedAt ? new Date(fact.lastUsedAt) : null,
+        sourceMessageId: resolveMessage(fact.sourceMessageId),
         createdAt: new Date(fact.createdAt),
         updatedAt: new Date(fact.updatedAt),
         deletedAt: fact.deletedAt ? new Date(fact.deletedAt) : null,

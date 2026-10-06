@@ -14,6 +14,12 @@
  */
 import { z } from "zod/v4";
 
+import {
+  DEFAULT_REASONING_LEVEL,
+  REASONING_LEVELS,
+  type ReasoningLevel,
+} from "@/lib/ai/reasoning/levels";
+
 /**
  * Tone presets the Coach system-prompt prefix toggles between. v1.4.22
  * landed `warm` as the default; `neutral` strips the warmth language
@@ -196,6 +202,16 @@ export const coachPrefsSchema = z.object({
     .describe(
       "v1.39.4 — offer up to three follow-up chips under the Coach's latest answer. Absent means on; only `false` switches them off.",
     ),
+  // v1.41 — how hard the Coach thinks before it answers. No schema default,
+  // like the two keys above, so a legacy blob and `parse({})` stay
+  // byte-identical; an absent key reads as `medium` (`coachReasoningLevel`).
+  // The operator's switch and cap apply on top, server-side.
+  reasoning: z
+    .enum(REASONING_LEVELS)
+    .optional()
+    .describe(
+      "v1.41 — how hard the Coach thinks before it answers: `off`, `low`, `medium` or `high`. Absent means `medium`. The operator may switch reasoning off or cap the level; the resolved value is published on `GET /api/auth/me` as `coachReasoning`.",
+    ),
 });
 
 export type CoachPrefs = z.infer<typeof coachPrefsSchema>;
@@ -213,6 +229,11 @@ export const DEFAULT_COACH_PREFS: CoachPrefs = {
   showEvidenceByDefault: false,
   defaultWindow: "allTime",
 };
+
+/** The person's reasoning level; an absent key is the default, `medium`. */
+export function coachReasoningLevel(prefs: CoachPrefs): ReasoningLevel {
+  return prefs.reasoning ?? DEFAULT_REASONING_LEVEL;
+}
 
 /**
  * Parse a row's `coachPrefsJson` Json blob into a typed `CoachPrefs`,

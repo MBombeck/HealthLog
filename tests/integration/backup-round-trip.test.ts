@@ -143,6 +143,10 @@ const PHQ9_RESPONSES = JSON.stringify({
 const CONSENT_ARTEFACT = "JVBERi0xLjQKJWZpeHR1cmU=";
 const INVENTORY_NOTE = "second pack, kept in the kitchen drawer";
 const COACH_FACT = "does not tolerate ACE inhibitors";
+// v1.41 — the model text of a turn's trail, stored encrypted beside the turn.
+const COACH_TRAIL_JSON = JSON.stringify({
+  entries: [{ id: "a1", title: "Checking the trend", text: "Read 30 days." }],
+});
 const COACH_PLAN_CUE = "if the evening reading is over 140";
 const COACH_PLAN_ACTION = "then walk twenty minutes before dinner tomorrow";
 const COACH_REMINDER_NOTE = "ask how the evening walks are going";
@@ -1092,6 +1096,7 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
             role: "assistant",
             encryptedContent: encryptToBytes(COACH_ASSISTANT_TURN),
             resultsEncrypted: encryptToBytes(COACH_RESULTS_JSON),
+            trailEncrypted: encryptToBytes(COACH_TRAIL_JSON),
             providerType: "anthropic",
             model: "claude-opus-5",
             tokensUsed: 812,
@@ -1131,6 +1136,9 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
   const healthThread = await prisma.coachConversation.findFirstOrThrow({
     where: { userId: OWNER_ID, documentScoped: false },
   });
+  const healthAnswer = await prisma.coachMessage.findFirstOrThrow({
+    where: { conversationId: healthThread.id, role: "assistant" },
+  });
   await prisma.coachFact.create({
     data: {
       userId: OWNER_ID,
@@ -1138,6 +1146,9 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       category: "constraint",
       confidence: 80,
       sourceConversationId: healthThread.id,
+      source: "user",
+      lastUsedAt: AT("2026-07-20T10:00:00.000Z"),
+      sourceMessageId: healthAnswer.id,
     },
   });
   const plan = await prisma.coachPlan.create({
@@ -1768,6 +1779,9 @@ describe("every model the plan claims two-ended survives a real restore", () => 
           results: message.resultsEncrypted
             ? decryptFromBytes(message.resultsEncrypted)
             : null,
+          trail: message.trailEncrypted
+            ? decryptFromBytes(message.trailEncrypted)
+            : null,
         })),
         attachments: thread.attachments.map((a) => a.documentId),
       })),
@@ -1786,6 +1800,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
             model: null,
             tokensUsed: null,
             results: null,
+            trail: null,
           },
           {
             role: "assistant",
@@ -1793,6 +1808,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
             model: "claude-opus-5",
             tokensUsed: 812,
             results: COACH_RESULTS_JSON,
+            trail: COACH_TRAIL_JSON,
           },
         ],
         attachments: [],
@@ -1810,6 +1826,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
             model: null,
             tokensUsed: null,
             results: null,
+            trail: null,
           },
         ],
         attachments: [vaultDocument.id],
@@ -1830,17 +1847,26 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     const fact = await prisma.coachFact.findFirstOrThrow({
       where: { userId: OWNER_ID },
     });
+    const restoredAnswer = await prisma.coachMessage.findFirstOrThrow({
+      where: { conversationId: restoredThread.id, role: "assistant" },
+    });
     expect({
       fact: decryptFromBytes(fact.factEncrypted),
       category: fact.category,
       confidence: fact.confidence,
       source: fact.sourceConversationId,
+      origin: fact.source,
+      lastUsedAt: fact.lastUsedAt?.toISOString(),
+      sourceMessageId: fact.sourceMessageId,
       deletedAt: fact.deletedAt,
     }).toEqual({
       fact: COACH_FACT,
       category: "constraint",
       confidence: 80,
       source: restoredThread.id,
+      origin: "user",
+      lastUsedAt: "2026-07-20T10:00:00.000Z",
+      sourceMessageId: restoredAnswer.id,
       deletedAt: null,
     });
     expect({
@@ -3077,6 +3103,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
               role: "assistant",
               encryptedContent: encryptToBytes(COACH_ASSISTANT_TURN),
               resultsEncrypted: encryptToBytes(COACH_RESULTS_JSON),
+              trailEncrypted: encryptToBytes(COACH_TRAIL_JSON),
               createdAt: AT("2026-07-20T09:59:00.000Z"),
             },
           ],
@@ -3091,8 +3118,12 @@ describe("every model the plan claims two-ended survives a real restore", () => 
       coachConversations: Array<{ messages: Array<Record<string, unknown>> }>;
     };
     const [turn] = coachConversations[0].messages;
-    expect(turn).toMatchObject({ resultsJson: COACH_RESULTS_JSON });
+    expect(turn).toMatchObject({
+      resultsJson: COACH_RESULTS_JSON,
+      trailJson: COACH_TRAIL_JSON,
+    });
     expect(turn).not.toHaveProperty("resultsEncrypted");
+    expect(turn).not.toHaveProperty("trailEncrypted");
 
     await prisma.user.delete({ where: { id: OWNER_ID } });
     await createOwner(prisma);
@@ -3120,6 +3151,8 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     expect(decryptFromBytes(restored.resultsEncrypted!)).toBe(
       COACH_RESULTS_JSON,
     );
+    expect(restored.trailEncrypted).not.toBeNull();
+    expect(decryptFromBytes(restored.trailEncrypted!)).toBe(COACH_TRAIL_JSON);
   });
 
   it("drops and names a filing and a commitment a truncated file cannot resolve", async () => {

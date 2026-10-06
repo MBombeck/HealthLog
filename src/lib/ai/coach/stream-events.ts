@@ -15,11 +15,20 @@ import { z } from "zod/v4";
 
 import { AI_UNAVAILABLE_REASONS } from "@/lib/ai/capabilities/types";
 import {
+  ACTIVITY_TEXT_MAX_CHARS,
+  ACTIVITY_TITLE_MAX_CHARS,
+} from "@/lib/ai/coach/activity/contract";
+import {
+  PLAN_REVIEW_DAYS,
+  REMEMBER_FACT_MAX_CHARS,
+} from "@/lib/ai/coach/memory/contract";
+import {
   SUGGESTED_ACTION_TYPES,
   type CheckupIntervalId,
 } from "@/lib/ai/coach/suggest-action";
 import { COACH_TOOL_NAMES } from "@/lib/ai/coach/tools/definitions";
 import {
+  COACH_MEMORY_CATEGORIES,
   coachKeyValueSchema,
   coachScopeSourceSchema,
   coachScopeWindowSchema,
@@ -55,8 +64,8 @@ const coachResultPeriodSchema = z.enum(["current", "previous", "yearAgo"]);
 // them are written back into the model's context (`m<k>.r<n>` lines, the
 // "keep looking" fetched list). Each is held to its exact server-minted
 // shape, so a stored row edited by hand cannot carry text into a prompt.
-/** A table of a message: `r1`..`r6`. */
-const resultRefSchema = z.string().regex(/^r[1-6]$/);
+/** A table of a message: `r1`..`r8`. */
+const resultRefSchema = z.string().regex(/^r[1-8]$/);
 /** A server-minted row id (cuid). */
 const messageIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 
@@ -67,7 +76,7 @@ export const coachStepSchema = z
     id: z
       .string()
       .regex(/^s[1-9]\d{0,2}$/)
-      .describe("`s1`..`s12`, unique within a turn."),
+      .describe("`s1`..`s48`, unique within a turn."),
     tool: z.enum([...COACH_TOOL_NAMES, "show_result", "snapshot"]),
     labelKey: z
       .string()
@@ -126,6 +135,18 @@ const coachChartSpecSchema = z.discriminatedUnion("kind", [
     x: z.string(),
     series: z.array(z.string()),
   }),
+  z
+    .object({
+      kind: z.literal("compare"),
+      mode: z.enum(["periods", "metrics"]),
+      x: z.string(),
+      a: z.string(),
+      b: z.string(),
+      axes: z.union([z.literal(1), z.literal(2)]),
+    })
+    .describe(
+      "v1.41 — two series on one chart: two periods overlaid (`periods`, one axis) or two metrics (`metrics`, one or two axes). `a` and `b` name the value columns, `x` the shared column.",
+    ),
   z.object({
     kind: z.literal("bar"),
     x: z.string(),
@@ -151,13 +172,13 @@ const coachResultSourceSchema = z.object({
 });
 
 const coachResultMetaShape = {
-  ref: resultRefSchema.describe("`r1`..`r6`, unique within a message."),
+  ref: resultRefSchema.describe("`r1`..`r8`, unique within a message."),
   source: coachResultSourceSchema,
   shape: z.enum(["timeSeries", "categoryCounts", "distribution", "single"]),
   titleKey: z.string(),
   title: z.string(),
   rowCount: z.number().int().describe("The full row count, before any trim."),
-  chartKind: z.enum(["line", "bar", "histogram"]).nullable(),
+  chartKind: z.enum(["line", "compare", "bar", "histogram"]).nullable(),
   displayed: z
     .boolean()
     .describe(
@@ -245,6 +266,50 @@ export const coachMethodSchema = z
       "How an answer was reached: which sources, windows, counts and aggregation. Never a health value.",
   });
 
+// ── Choices and assumptions ───────────────────────────────────────────────
+
+/** An id the server minted for a plan, a fact or a record event. */
+const choiceIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
+
+const coachChoiceValueSchema = z
+  .object({
+    metric: coachScopeSourceSchema.optional(),
+    window: coachWindowEnum.optional(),
+    comparison: z
+      .enum(["previous_period", "year_ago", "baseline_90d"])
+      .optional()
+      .describe("v1.41 — what a comparison is drawn against."),
+    goal: choiceIdSchema
+      .optional()
+      .describe("v1.41 — an active plan or a goal fact, by id."),
+    anchor: choiceIdSchema
+      .optional()
+      .describe(
+        "v1.41 — a medication start, an illness episode or a cycle phase, by id.",
+      ),
+  })
+  .describe("What a choice stands for: catalog tokens and ids, never text.");
+
+const coachAssumptionKindSchema = z.enum(["metric", "window", "comparison"]);
+
+const coachAssumptionOptionSchema = z.object({
+  labelKey: z.string(),
+  label: z.string(),
+  value: coachChoiceValueSchema,
+});
+
+export const coachAssumptionSchema = z
+  .object({
+    kind: coachAssumptionKindSchema,
+    value: coachAssumptionOptionSchema,
+    alternatives: z.array(coachAssumptionOptionSchema).describe("At most 3."),
+  })
+  .meta({
+    id: "CoachAssumption",
+    description:
+      "v1.41 — what an answer assumed instead of asking, from a catalog. Each alternative is offered as a `change_assumption` follow-up.",
+  });
+
 // ── Follow-ups ────────────────────────────────────────────────────────────
 
 export const coachFollowUpSchema = z
@@ -261,6 +326,7 @@ export const coachFollowUpSchema = z
       "as_table",
       "related_metric",
       "continue",
+      "change_assumption",
     ]),
     labelKey: z.string(),
     label: z
@@ -269,7 +335,7 @@ export const coachFollowUpSchema = z
     anchor: z
       .object({
         // Empty for a related metric read without a table of its own.
-        ref: z.string().regex(/^(?:r[1-6])?$/),
+        ref: z.string().regex(/^(?:r[1-8])?$/),
         domain: coachStepDomainSchema,
         window: coachWindowEnum.optional(),
         granularity: coachResultGranularitySchema.optional(),
@@ -282,6 +348,15 @@ export const coachFollowUpSchema = z
         "True when the chip is answered from a stored table without a model call.",
       ),
     origin: z.enum(["server", "model"]),
+    assumption: z
+      .object({
+        kind: coachAssumptionKindSchema,
+        value: coachChoiceValueSchema,
+      })
+      .optional()
+      .describe(
+        "v1.41 — on a `change_assumption` chip: the assumption it replaces and the alternative it picks.",
+      ),
   })
   .meta({
     id: "CoachFollowUp",
@@ -293,26 +368,204 @@ export const coachFollowUpSchema = z
 
 export const coachClarificationSchema = z
   .object({
-    kind: z.enum(["metric", "window", "context"]),
+    kind: z
+      .enum(["metric", "window", "comparison", "goal", "anchor", "context"])
+      .describe("`comparison`, `goal` and `anchor` since v1.41."),
     choices: z
       .array(
         z.object({
           id: z.string().regex(/^c[1-4]$/),
           labelKey: z.string(),
           label: z.string(),
-          value: z.object({
-            metric: coachScopeSourceSchema.optional(),
-            window: coachWindowEnum.optional(),
-          }),
+          value: coachChoiceValueSchema,
         }),
       )
       .describe("At most 4. Metric choices are always ones the record holds."),
     freeText: z.boolean().describe("Whether a typed answer is welcome."),
+    assumption: z
+      .string()
+      .regex(/^c[1-4]$/)
+      .optional()
+      .describe(
+        "v1.41 — the choice that applies when the person does not answer. The question names it, and it is the first choice.",
+      ),
   })
   .meta({
     id: "CoachClarification",
     description:
       "The choices for a clarifying question. The question itself is the assistant message's text. Answer with `clarification: { messageId, choiceId? }`.",
+  });
+
+// ── Activity, memory and plans (v1.41) ────────────────────────────────────
+
+const coachStopReasonSchema = z.enum(["budget", "time", "cap", "no_progress"]);
+
+export const coachStopSchema = z
+  .object({
+    reason: coachStopReasonSchema,
+    rounds: z
+      .number()
+      .int()
+      .describe("The rounds the turn ran, the final one included."),
+  })
+  .meta({
+    id: "CoachStop",
+    description:
+      "v1.41 — why the Coach answered before it was done reading: the token budget, the time budget, the round cap, or no new data.",
+  });
+
+const coachActivityMetaShape = {
+  id: z
+    .string()
+    .regex(/^a[1-9]\d?$/)
+    .describe("`a1`..`a99`, unique within a turn."),
+  phase: z.enum([
+    "thinking",
+    "memory",
+    "fetch",
+    "digest",
+    "checkpoint",
+    "remember",
+    "plan",
+    "asking",
+    "stop",
+    "answer",
+  ]),
+  status: z.enum(["running", "done", "empty", "failed"]),
+  round: z.number().int().describe("The tool round, from 1."),
+  labelKey: z
+    .string()
+    .describe("Closed catalog key (`insights.coach.activity.*`)."),
+  label: z
+    .string()
+    .describe(
+      "Rendered on the server in the request locale from the catalog; never model text.",
+    ),
+  stepRef: z
+    .string()
+    .regex(/^s[1-9]\d{0,2}$/)
+    .optional()
+    .describe("The `step` a `fetch` entry stands for."),
+  count: z
+    .number()
+    .int()
+    .optional()
+    .describe("Readings, lookups or entries the server counted."),
+  durationMs: z.number().int().optional(),
+  stop: coachStopReasonSchema.optional().describe("Set on the `stop` entry."),
+};
+
+export const coachActivityMetaSchema = z.object(coachActivityMetaShape).meta({
+  id: "CoachActivityMeta",
+  description:
+    "v1.41 — one entry of a turn's trail as persisted on `metricSource.activity`: phase, status, round, catalog label, counts. The model-written title and text are behind `GET /api/insights/chat/{id}/messages/{messageId}/trail`.",
+});
+
+export const coachActivitySchema = z
+  .object({
+    ...coachActivityMetaShape,
+    title: z
+      .string()
+      .max(ACTIVITY_TITLE_MAX_CHARS)
+      .optional()
+      .describe("A screened reasoning title or checkpoint sentence."),
+    text: z
+      .string()
+      .max(ACTIVITY_TEXT_MAX_CHARS)
+      .optional()
+      .describe("A screened reasoning summary for the round."),
+  })
+  .meta({
+    id: "CoachActivity",
+    description:
+      "v1.41 — one entry of the live trail, sent as `activity` frames that upsert by `id`. `title` and `text` are model text, screened, and sent only to the account that owns the conversation.",
+  });
+
+const coachFactCategorySchema = z.enum(COACH_MEMORY_CATEGORIES);
+
+const coachMemoryNoteMetaShape = {
+  proposal: z
+    .boolean()
+    .describe(
+      "`true`: waiting for the person, answered with `memoryDecision`. `false`: already saved; undo deletes `factId`.",
+    ),
+  proposalId: choiceIdSchema.optional(),
+  factId: choiceIdSchema.optional(),
+  category: coachFactCategorySchema,
+};
+
+export const coachMemoryNoteMetaSchema = z
+  .object(coachMemoryNoteMetaShape)
+  .meta({
+    id: "CoachMemoryNoteMeta",
+    description:
+      "v1.41 — the fact a reply saved or proposes, as persisted on `metricSource.memoryNote`. No fact text.",
+  });
+
+export const coachMemoryNoteSchema = z
+  .object({
+    ...coachMemoryNoteMetaShape,
+    fact: z.string().max(REMEMBER_FACT_MAX_CHARS),
+  })
+  .meta({
+    id: "CoachMemoryNote",
+    description:
+      "v1.41 — a fact the Coach saved during the turn, or proposes to save (health facts are never saved without a tap). Owner only.",
+  });
+
+const coachPlanProposalMetaShape = {
+  planId: choiceIdSchema,
+  metric: z.string().max(64),
+  reviewInDays: z
+    .number()
+    .int()
+    .min(PLAN_REVIEW_DAYS.min)
+    .max(PLAN_REVIEW_DAYS.max),
+};
+
+export const coachPlanProposalMetaSchema = z
+  .object(coachPlanProposalMetaShape)
+  .meta({
+    id: "CoachPlanProposalMeta",
+    description:
+      "v1.41 — the plan a reply proposes, as persisted on `metricSource.planProposal`. No plan text.",
+  });
+
+export const coachPlanProposalSchema = z
+  .object({
+    ...coachPlanProposalMetaShape,
+    ifCue: z.string(),
+    thenAction: z.string(),
+    target: z.string().optional(),
+  })
+  .meta({
+    id: "CoachPlanProposal",
+    description:
+      "v1.41 — a plan the Coach proposes, written as `proposed`. Answer with `planDecision: { messageId, planId, accept }`. Owner only.",
+  });
+
+export const coachTrailSchema = z
+  .object({
+    entries: z.array(
+      z.object({
+        id: z.string().regex(/^a[1-9]\d?$/),
+        title: z.string().max(ACTIVITY_TITLE_MAX_CHARS).optional(),
+        text: z.string().max(ACTIVITY_TEXT_MAX_CHARS).optional(),
+      }),
+    ),
+    recalled: z.array(z.string().max(REMEMBER_FACT_MAX_CHARS)).optional(),
+    proposal: z
+      .object({
+        proposalId: choiceIdSchema,
+        category: coachFactCategorySchema,
+        fact: z.string().max(REMEMBER_FACT_MAX_CHARS),
+      })
+      .optional(),
+  })
+  .meta({
+    id: "CoachTrail",
+    description:
+      "v1.41 — the model-written text of a turn's trail and the fact texts it touched. Encrypted at rest and served only to the account that owns the conversation.",
   });
 
 // ── The cards and the usage envelope ──────────────────────────────────────
@@ -457,6 +710,27 @@ export const coachProvenanceSchema = z
       .describe(
         "v1.39.4 — this reply continues an answer that was forced at the round cap (the `continue` chip): the id of that earlier assistant message. A continuation offers no further `continue` chip. Absent otherwise.",
       ),
+    activity: z
+      .array(coachActivityMetaSchema)
+      .optional()
+      .describe("v1.41 — the turn's trail, metadata only."),
+    stop: coachStopSchema
+      .optional()
+      .describe("v1.41 — why the answer was forced, when it was."),
+    assumptions: z
+      .array(coachAssumptionSchema)
+      .optional()
+      .describe(
+        "v1.41 — what the answer assumed instead of asking, at most two.",
+      ),
+    memoryNote: coachMemoryNoteMetaSchema
+      .optional()
+      .describe(
+        "v1.41 — the fact this reply saved or proposes, without its text.",
+      ),
+    planProposal: coachPlanProposalMetaSchema
+      .optional()
+      .describe("v1.41 — the plan this reply proposes, without its text."),
   })
   .meta({
     id: "CoachProvenance",
@@ -487,6 +761,13 @@ export const coachStreamEventSchema = z
       conversationId: z.string(),
       messageId: z.string(),
       usage: coachUsageSchema.optional(),
+      stop: coachStopSchema.optional(),
+      withheldResults: z
+        .literal(true)
+        .optional()
+        .describe(
+          "v1.41 — the turn was blocked after interim tables went out; remove them.",
+        ),
     }),
     z.object({
       type: z.literal("error"),
@@ -495,7 +776,14 @@ export const coachStreamEventSchema = z
       reason: z.enum(AI_UNAVAILABLE_REASONS).optional(),
     }),
     z.object({ type: z.literal("step"), step: coachStepSchema }),
-    z.object({ type: z.literal("result"), result: coachResultTableSchema }),
+    z.object({
+      type: z.literal("result"),
+      result: coachResultTableSchema,
+      interim: z
+        .literal(true)
+        .optional()
+        .describe("v1.41 — sent while the turn still runs."),
+    }),
     z.object({
       type: z.literal("followUps"),
       followUps: z.array(coachFollowUpSchema),
@@ -504,9 +792,15 @@ export const coachStreamEventSchema = z
       type: z.literal("clarification"),
       clarification: coachClarificationSchema,
     }),
+    z.object({ type: z.literal("activity"), activity: coachActivitySchema }),
+    z.object({ type: z.literal("memoryNote"), note: coachMemoryNoteSchema }),
+    z.object({
+      type: z.literal("planProposal"),
+      proposal: coachPlanProposalSchema,
+    }),
   ])
   .meta({
     id: "CoachStreamEvent",
     description:
-      "One Server-Sent Events frame of a Coach turn, sent as `data: <json>\\n\\n` and dispatched on `type`. Order: `step*` → `token*` → `provenance` → `result*` → `suggestion?` → `suggestedAction?` → `clarification?` → `followUps?` → `done`, or a single `error`. Clients ignore a `type` they do not know.",
+      "One Server-Sent Events frame of a Coach turn, sent as `data: <json>\\n\\n` and dispatched on `type`. Order: `(activity | step)*` → `token*` → `provenance` → `result*` → `suggestion?` → `suggestedAction?` → `memoryNote?` → `planProposal?` → `clarification?` → `followUps?` → `done`, or a single `error`. `result` frames with `interim: true` may also arrive among the `activity` frames. Clients ignore a `type` they do not know.",
   });

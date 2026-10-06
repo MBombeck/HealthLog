@@ -165,6 +165,8 @@ describe("canonical disaster-recovery backup round-trip", () => {
         assistantBriefingEnabled: false,
         assistantInsightStatusEnabled: false,
         assistantDocumentAiEnabled: false,
+        aiReasoningEnabled: false,
+        aiReasoningMaxEffort: "medium",
         moduleAvailabilityJson: { insights: true, nutrients: false },
         documentMaxFileBytes: 12_345_678,
         documentQuotaBytes: BigInt("9876543210"),

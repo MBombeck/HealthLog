@@ -3146,7 +3146,78 @@
         "areasDoneOther": "Looked at {count} areas",
         "info": "Answer details",
         "infoModel": "Model: {model}"
-      }
+      },
+      "activity": {
+        "thinking": "Thinking…",
+        "fetching": "Fetching {domain}, {window}…",
+        "digestOne": "Summarising {count} reading…",
+        "digestFew": "Summarising {count} readings…",
+        "digestOther": "Summarising {count} readings…",
+        "digestDoneOne": "{count} reading from {areas}",
+        "digestDoneFew": "{count} readings from {areas}",
+        "digestDoneOther": "{count} readings from {areas}",
+        "areasOne": "{count} area",
+        "areasFew": "{count} areas",
+        "areasOther": "{count} areas",
+        "memoryOne": "Recalls {count} thing you told it",
+        "memoryFew": "Recalls {count} things you told it",
+        "memoryOther": "Recalls {count} things you told it",
+        "remember": "Remembering something…",
+        "plan": "Drafting a plan…",
+        "asking": "Asking you…",
+        "answer": "Writing the answer…",
+        "summaryOne": "Thought it through, {lookups} lookup, {seconds} s",
+        "summaryFew": "Thought it through, {lookups} lookups, {seconds} s",
+        "summaryOther": "Thought it through, {lookups} lookups, {seconds} s",
+        "summaryNoLookups": "Thought it through, {seconds} s",
+        "stop": {
+          "budget": "Budget reached, answering with what it has",
+          "time": "Time limit reached, answering with what it has",
+          "cap": "Many steps, wrapping up",
+          "noProgress": "No new data, wrapping up"
+        }
+      },
+      "memory": {
+        "saved": "Remembered: {fact}",
+        "undo": "Undo",
+        "accept": "Yes, remember it",
+        "decline": "No",
+        "confirmed": "Got it, I'll remember."
+      },
+      "plan": {
+        "accept": "Take on this plan",
+        "decline": "Not now",
+        "confirmed": "Noted. I'll check in with you in {days} days."
+      },
+      "assumption": {
+        "line": "Assumed: {value}",
+        "change": "Change"
+      },
+      "suggestedReplies": {
+        "groupLabel": "Suggested replies"
+      },
+      "interim": {
+        "labelOne": "{title}, {window}, {count} reading",
+        "labelFew": "{title}, {window}, {count} readings",
+        "labelOther": "{title}, {window}, {count} readings"
+      },
+      "chart": {
+        "compare": {
+          "periods": "{a} vs {b}"
+        }
+      },
+      "reasoning": {
+        "label": "Thinking depth",
+        "hint": "Deeper thinking means more precise answers and a little more waiting.",
+        "off": "Off",
+        "minimal": "Minimal",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "capped": "(limited by the admin)",
+        "disabled": "The admin has turned deeper thinking off."
+      },
+      "memoryLink": "Memory ({count})"
     },
     "relativeJustNow": "just now",
     "relativeMinutesAgoOne": "{count} minute ago",
@@ -6008,7 +6079,8 @@
         "forgotError": "Could not forget that fact. Please try again.",
         "clearedToast": "Forgot {count} stored facts.",
         "clearError": "Could not clear the stored facts. Please try again.",
-        "detail": "It uses these to keep its replies relevant. Remove anything you would rather it forgot."
+        "detail": "It uses these to keep its replies relevant. Remove anything you would rather it forgot.",
+        "categoryMedication": "Medications"
       },
       "coachReminders": {
         "title": "Your reminders",
@@ -6663,6 +6735,13 @@
         "savedOn": "Coach activated.",
         "savedOff": "Coach hidden.",
         "saveError": "Could not save the change. Please try again."
+      },
+      "memory": {
+        "edit": "Edit",
+        "source": {
+          "user": "from you",
+          "coach": "from the Coach"
+        }
       }
     },
     "integrationRedirectGuide": {
@@ -7158,6 +7237,10 @@
       "documentAi": {
         "title": "Reading documents",
         "description": "AI reading of stored documents, lab report scans and medication extraction from text. The largest share of data leaving the server."
+      },
+      "reasoning": {
+        "enabled": "Allow deeper thinking",
+        "max": "Highest thinking depth"
       }
     },
     "modules": {
@@ -9933,7 +10016,8 @@
       "relatedMetric": "See also: {metric}",
       "continue": "Keep looking",
       "settingLabel": "Suggest follow-up questions",
-      "settingHint": "Show up to three follow-up suggestions under the Coach's latest answer."
+      "settingHint": "Show up to three follow-up suggestions under the Coach's latest answer.",
+      "changeAssumption": "Instead: {value}"
     },
     "clarify": {
       "cardLabel": "The Coach has a question",

@@ -122,6 +122,9 @@ export function CoachResultChart({
   if (spec.kind === "histogram") {
     return <HistogramChart result={result} spec={spec} label={label} />;
   }
+  // v1.41 — the contract is in place; no table carries this kind yet, and the
+  // table view stays available until the chart lands.
+  if (spec.kind === "compare") return null;
   if (spec.kind === "bar" && spec.orientation === "horizontal") {
     return (
       <CategoryBarChart

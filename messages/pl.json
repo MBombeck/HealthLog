@@ -3146,7 +3146,78 @@
         "areasDoneOther": "Sprawdzono {count} obszarów",
         "info": "Szczegóły odpowiedzi",
         "infoModel": "Model: {model}"
-      }
+      },
+      "activity": {
+        "thinking": "Myśli…",
+        "fetching": "Pobiera {domain}, {window}…",
+        "digestOne": "Podsumowuje {count} pomiar…",
+        "digestFew": "Podsumowuje {count} pomiary…",
+        "digestOther": "Podsumowuje {count} pomiarów…",
+        "digestDoneOne": "{count} pomiar z: {areas}",
+        "digestDoneFew": "{count} pomiary z: {areas}",
+        "digestDoneOther": "{count} pomiarów z: {areas}",
+        "areasOne": "{count} obszar",
+        "areasFew": "{count} obszary",
+        "areasOther": "{count} obszarów",
+        "memoryOne": "Pamięta {count} rzecz, którą mu powiedziałeś",
+        "memoryFew": "Pamięta {count} rzeczy, które mu powiedziałeś",
+        "memoryOther": "Pamięta {count} rzeczy, które mu powiedziałeś",
+        "remember": "Zapamiętuje coś…",
+        "plan": "Przygotowuje plan…",
+        "asking": "Dopytuje…",
+        "answer": "Pisze odpowiedź…",
+        "summaryOne": "Przemyślane, {lookups} zapytanie, {seconds} s",
+        "summaryFew": "Przemyślane, {lookups} zapytania, {seconds} s",
+        "summaryOther": "Przemyślane, {lookups} zapytań, {seconds} s",
+        "summaryNoLookups": "Przemyślane, {seconds} s",
+        "stop": {
+          "budget": "Budżet wyczerpany, odpowiada na podstawie tego, co ma",
+          "time": "Limit czasu osiągnięty, odpowiada na podstawie tego, co ma",
+          "cap": "Wiele kroków, teraz podsumowuje",
+          "noProgress": "Brak nowych danych, podsumowuje"
+        }
+      },
+      "memory": {
+        "saved": "Zapamiętane: {fact}",
+        "undo": "Cofnij",
+        "accept": "Tak, zapamiętaj",
+        "decline": "Nie",
+        "confirmed": "Jasne, zapamiętam."
+      },
+      "plan": {
+        "accept": "Przyjmij ten plan",
+        "decline": "Nie teraz",
+        "confirmed": "Zanotowane. Wrócimy do tego razem za {days} dni."
+      },
+      "assumption": {
+        "line": "Założenie: {value}",
+        "change": "Zmień"
+      },
+      "suggestedReplies": {
+        "groupLabel": "Proponowane odpowiedzi"
+      },
+      "interim": {
+        "labelOne": "{title}, {window}, {count} pomiar",
+        "labelFew": "{title}, {window}, {count} pomiary",
+        "labelOther": "{title}, {window}, {count} pomiarów"
+      },
+      "chart": {
+        "compare": {
+          "periods": "{a} wobec {b}"
+        }
+      },
+      "reasoning": {
+        "label": "Głębokość namysłu",
+        "hint": "Głębszy namysł oznacza dokładniejsze odpowiedzi i trochę dłuższe czekanie.",
+        "off": "Wyłączone",
+        "minimal": "Minimalna",
+        "low": "Niska",
+        "medium": "Średnia",
+        "high": "Wysoka",
+        "capped": "(ograniczone przez administratora)",
+        "disabled": "Administrator wyłączył głębszy namysł."
+      },
+      "memoryLink": "Pamięć ({count})"
     },
     "relativeJustNow": "przed chwilą",
     "relativeMinutesAgoOne": "{count} minutę temu",
@@ -6008,7 +6079,8 @@
         "forgotError": "Nie udało się zapomnieć tej informacji. Spróbuj ponownie.",
         "clearedToast": "Zapomniano {count} zapisanych informacji.",
         "clearError": "Nie udało się usunąć zapisanych informacji. Spróbuj ponownie.",
-        "detail": "Wykorzystuje je, aby jego odpowiedzi pozostawały trafne. Usuń wszystko, o czym wolisz, by zapomniał."
+        "detail": "Wykorzystuje je, aby jego odpowiedzi pozostawały trafne. Usuń wszystko, o czym wolisz, by zapomniał.",
+        "categoryMedication": "Leki"
       },
       "coachReminders": {
         "title": "Twoje przypomnienia",
@@ -6663,6 +6735,13 @@
         "savedOn": "Coach włączony.",
         "savedOff": "Coach ukryty.",
         "saveError": "Nie udało się zapisać zmiany. Spróbuj ponownie."
+      },
+      "memory": {
+        "edit": "Edytuj",
+        "source": {
+          "user": "od ciebie",
+          "coach": "od Coacha"
+        }
       }
     },
     "integrationRedirectGuide": {
@@ -7158,6 +7237,10 @@
       "documentAi": {
         "title": "Czytanie dokumentów",
         "description": "Czytanie zapisanych dokumentów przez AI, skanowanie wyników badań laboratoryjnych i odczytywanie leków z tekstu. Największa część danych opuszczających serwer."
+      },
+      "reasoning": {
+        "enabled": "Zezwalaj na głębszy namysł",
+        "max": "Największa głębokość namysłu"
       }
     },
     "modules": {
@@ -9933,7 +10016,8 @@
       "relatedMetric": "Sprawdź też: {metric}",
       "continue": "Szukaj dalej",
       "settingLabel": "Proponuj kolejne pytania",
-      "settingHint": "Pokazuje do trzech propozycji pod ostatnią odpowiedzią Coacha."
+      "settingHint": "Pokazuje do trzech propozycji pod ostatnią odpowiedzią Coacha.",
+      "changeAssumption": "Zamiast tego: {value}"
     },
     "clarify": {
       "cardLabel": "Coach ma pytanie",

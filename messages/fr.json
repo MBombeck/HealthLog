@@ -3146,7 +3146,78 @@
         "areasDoneOther": "{count} domaines consultés",
         "info": "Détails de la réponse",
         "infoModel": "Modèle : {model}"
-      }
+      },
+      "activity": {
+        "thinking": "Réfléchit…",
+        "fetching": "Récupère {domain}, {window}…",
+        "digestOne": "Résume {count} mesure…",
+        "digestFew": "Résume {count} mesures…",
+        "digestOther": "Résume {count} mesures…",
+        "digestDoneOne": "{count} mesure sur {areas}",
+        "digestDoneFew": "{count} mesures sur {areas}",
+        "digestDoneOther": "{count} mesures sur {areas}",
+        "areasOne": "{count} domaine",
+        "areasFew": "{count} domaines",
+        "areasOther": "{count} domaines",
+        "memoryOne": "Se souvient de {count} chose que tu lui as dite",
+        "memoryFew": "Se souvient de {count} choses que tu lui as dites",
+        "memoryOther": "Se souvient de {count} choses que tu lui as dites",
+        "remember": "Retient quelque chose…",
+        "plan": "Propose un plan…",
+        "asking": "Te pose une question…",
+        "answer": "Rédige la réponse…",
+        "summaryOne": "Réflexion faite, {lookups} recherche, {seconds} s",
+        "summaryFew": "Réflexion faite, {lookups} recherches, {seconds} s",
+        "summaryOther": "Réflexion faite, {lookups} recherches, {seconds} s",
+        "summaryNoLookups": "Réflexion faite, {seconds} s",
+        "stop": {
+          "budget": "Budget atteint, répond avec ce qu'il a",
+          "time": "Temps écoulé, répond avec ce qu'il a",
+          "cap": "Beaucoup d'étapes, conclut maintenant",
+          "noProgress": "Plus de nouvelles données, conclut"
+        }
+      },
+      "memory": {
+        "saved": "Retenu : {fact}",
+        "undo": "Annuler",
+        "accept": "Oui, retiens-le",
+        "decline": "Non",
+        "confirmed": "C'est noté, je m'en souviendrai."
+      },
+      "plan": {
+        "accept": "Adopter ce plan",
+        "decline": "Pas maintenant",
+        "confirmed": "C'est noté. On fait le point ensemble dans {days} jours."
+      },
+      "assumption": {
+        "line": "Hypothèse : {value}",
+        "change": "Modifier"
+      },
+      "suggestedReplies": {
+        "groupLabel": "Réponses suggérées"
+      },
+      "interim": {
+        "labelOne": "{title}, {window}, {count} mesure",
+        "labelFew": "{title}, {window}, {count} mesures",
+        "labelOther": "{title}, {window}, {count} mesures"
+      },
+      "chart": {
+        "compare": {
+          "periods": "{a} contre {b}"
+        }
+      },
+      "reasoning": {
+        "label": "Profondeur de réflexion",
+        "hint": "Réfléchir plus en profondeur donne des réponses plus précises, avec un peu plus d'attente.",
+        "off": "Désactivé",
+        "minimal": "Minimale",
+        "low": "Faible",
+        "medium": "Moyenne",
+        "high": "Élevée",
+        "capped": "(limité par l'administrateur)",
+        "disabled": "L'administrateur a désactivé la réflexion approfondie."
+      },
+      "memoryLink": "Mémoire ({count})"
     },
     "relativeJustNow": "à l’instant",
     "relativeMinutesAgoOne": "il y a {count} minute",
@@ -6008,7 +6079,8 @@
         "forgotError": "Impossible d'oublier cette information. Veuillez réessayer.",
         "clearedToast": "{count} informations enregistrées oubliées.",
         "clearError": "Impossible d'effacer les informations enregistrées. Veuillez réessayer.",
-        "detail": "Il s'en sert pour garder ses réponses pertinentes. Supprimez tout ce qu'il vaut mieux qu'il oublie."
+        "detail": "Il s'en sert pour garder ses réponses pertinentes. Supprimez tout ce qu'il vaut mieux qu'il oublie.",
+        "categoryMedication": "Médicaments"
       },
       "coachReminders": {
         "title": "Tes rappels",
@@ -6663,6 +6735,13 @@
         "savedOn": "Coach activé.",
         "savedOff": "Coach masqué.",
         "saveError": "Impossible d enregistrer la modification. Veuillez réessayer."
+      },
+      "memory": {
+        "edit": "Modifier",
+        "source": {
+          "user": "de toi",
+          "coach": "du Coach"
+        }
       }
     },
     "integrationRedirectGuide": {
@@ -7158,6 +7237,10 @@
       "documentAi": {
         "title": "Lecture de documents",
         "description": "Lecture par IA des documents enregistrés, scan des comptes rendus de laboratoire et extraction de médicaments à partir de texte. La plus grande part des données qui quittent le serveur."
+      },
+      "reasoning": {
+        "enabled": "Autoriser la réflexion approfondie",
+        "max": "Profondeur de réflexion maximale"
       }
     },
     "modules": {
@@ -9933,7 +10016,8 @@
       "relatedMetric": "Voir aussi : {metric}",
       "continue": "Continuer à chercher",
       "settingLabel": "Suggérer des questions de suivi",
-      "settingHint": "Affiche jusqu'à trois suggestions sous la dernière réponse du Coach."
+      "settingHint": "Affiche jusqu'à trois suggestions sous la dernière réponse du Coach.",
+      "changeAssumption": "À la place : {value}"
     },
     "clarify": {
       "cardLabel": "Le Coach a une question",

@@ -3146,7 +3146,78 @@
         "areasDoneOther": "{count} áreas consultadas",
         "info": "Detalles de la respuesta",
         "infoModel": "Modelo: {model}"
-      }
+      },
+      "activity": {
+        "thinking": "Pensando…",
+        "fetching": "Consultando {domain}, {window}…",
+        "digestOne": "Resumiendo {count} valor…",
+        "digestFew": "Resumiendo {count} valores…",
+        "digestOther": "Resumiendo {count} valores…",
+        "digestDoneOne": "{count} valor de {areas}",
+        "digestDoneFew": "{count} valores de {areas}",
+        "digestDoneOther": "{count} valores de {areas}",
+        "areasOne": "{count} área",
+        "areasFew": "{count} áreas",
+        "areasOther": "{count} áreas",
+        "memoryOne": "Recuerda {count} cosa que le contaste",
+        "memoryFew": "Recuerda {count} cosas que le contaste",
+        "memoryOther": "Recuerda {count} cosas que le contaste",
+        "remember": "Recordando algo…",
+        "plan": "Preparando un plan…",
+        "asking": "Te pregunta…",
+        "answer": "Escribiendo la respuesta…",
+        "summaryOne": "Lo ha pensado, {lookups} consulta, {seconds} s",
+        "summaryFew": "Lo ha pensado, {lookups} consultas, {seconds} s",
+        "summaryOther": "Lo ha pensado, {lookups} consultas, {seconds} s",
+        "summaryNoLookups": "Lo ha pensado, {seconds} s",
+        "stop": {
+          "budget": "Presupuesto alcanzado, responde con lo que tiene",
+          "time": "Tiempo agotado, responde con lo que tiene",
+          "cap": "Muchos pasos, ahora lo resume",
+          "noProgress": "No hay datos nuevos, lo resume"
+        }
+      },
+      "memory": {
+        "saved": "Recordado: {fact}",
+        "undo": "Deshacer",
+        "accept": "Sí, recuérdalo",
+        "decline": "No",
+        "confirmed": "Entendido, lo recordaré."
+      },
+      "plan": {
+        "accept": "Adoptar este plan",
+        "decline": "Ahora no",
+        "confirmed": "Anotado. Lo revisaremos juntos dentro de {days} días."
+      },
+      "assumption": {
+        "line": "Supuesto: {value}",
+        "change": "Cambiar"
+      },
+      "suggestedReplies": {
+        "groupLabel": "Respuestas sugeridas"
+      },
+      "interim": {
+        "labelOne": "{title}, {window}, {count} valor",
+        "labelFew": "{title}, {window}, {count} valores",
+        "labelOther": "{title}, {window}, {count} valores"
+      },
+      "chart": {
+        "compare": {
+          "periods": "{a} frente a {b}"
+        }
+      },
+      "reasoning": {
+        "label": "Profundidad de razonamiento",
+        "hint": "Pensar más a fondo significa respuestas más precisas y un poco más de espera.",
+        "off": "Desactivado",
+        "minimal": "Mínimo",
+        "low": "Bajo",
+        "medium": "Medio",
+        "high": "Alto",
+        "capped": "(limitado por el administrador)",
+        "disabled": "El administrador ha desactivado el razonamiento profundo."
+      },
+      "memoryLink": "Memoria ({count})"
     },
     "relativeJustNow": "ahora mismo",
     "relativeMinutesAgoOne": "hace {count} minuto",
@@ -6008,7 +6079,8 @@
         "forgotError": "No se pudo olvidar ese dato. Inténtalo de nuevo.",
         "clearedToast": "Se olvidaron {count} datos guardados.",
         "clearError": "No se pudieron borrar los datos guardados. Inténtalo de nuevo.",
-        "detail": "Los usa para que sus respuestas sigan siendo relevantes. Elimina lo que prefieras que olvide."
+        "detail": "Los usa para que sus respuestas sigan siendo relevantes. Elimina lo que prefieras que olvide.",
+        "categoryMedication": "Medicamentos"
       },
       "coachReminders": {
         "title": "Tus recordatorios",
@@ -6663,6 +6735,13 @@
         "savedOn": "Coach activado.",
         "savedOff": "Coach oculto.",
         "saveError": "No se pudo guardar el cambio. Inténtalo de nuevo."
+      },
+      "memory": {
+        "edit": "Editar",
+        "source": {
+          "user": "de ti",
+          "coach": "del Coach"
+        }
       }
     },
     "integrationRedirectGuide": {
@@ -7158,6 +7237,10 @@
       "documentAi": {
         "title": "Lectura de documentos",
         "description": "Lectura con IA de documentos guardados, escaneo de informes de laboratorio y extracción de medicamentos a partir de texto. La mayor parte de los datos que salen del servidor."
+      },
+      "reasoning": {
+        "enabled": "Permitir razonamiento profundo",
+        "max": "Profundidad máxima de razonamiento"
       }
     },
     "modules": {
@@ -9933,7 +10016,8 @@
       "relatedMetric": "Ver también: {metric}",
       "continue": "Seguir buscando",
       "settingLabel": "Sugerir preguntas de seguimiento",
-      "settingHint": "Muestra hasta tres sugerencias bajo la última respuesta del Coach."
+      "settingHint": "Muestra hasta tres sugerencias bajo la última respuesta del Coach.",
+      "changeAssumption": "En su lugar: {value}"
     },
     "clarify": {
       "cardLabel": "El Coach tiene una pregunta",

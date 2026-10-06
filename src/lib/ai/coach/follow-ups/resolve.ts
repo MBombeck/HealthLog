@@ -129,6 +129,9 @@ export function followUpContextHint(
     case "continue":
       // Answered with its own context lines (`continue.ts`).
       return null;
+    case "change_assumption":
+      // v1.41 — the contract is in place; no chip of this kind is offered yet.
+      return null;
   }
 }
 

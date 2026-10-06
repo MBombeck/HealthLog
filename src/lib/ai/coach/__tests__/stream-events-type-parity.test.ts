@@ -15,26 +15,44 @@ import { describe, expectTypeOf, it } from "vitest";
 import type { z } from "zod/v4";
 
 import type {
+  CoachActivity,
+  CoachActivityMeta,
+  CoachAssumption,
   CoachClarification,
   CoachFollowUp,
+  CoachMemoryNote,
+  CoachMemoryNoteMeta,
+  CoachPlanProposal,
+  CoachPlanProposalMeta,
   CoachMethod,
   CoachProvenance,
   CoachResultEntry,
   CoachResultMeta,
   CoachResultTable,
   CoachStep,
+  CoachStop,
   CoachStreamEvent,
+  CoachTrail,
 } from "@/lib/ai/coach/types";
 import {
+  coachActivityMetaSchema,
+  coachActivitySchema,
+  coachAssumptionSchema,
   coachClarificationSchema,
   coachFollowUpSchema,
+  coachMemoryNoteMetaSchema,
+  coachMemoryNoteSchema,
+  coachPlanProposalMetaSchema,
+  coachPlanProposalSchema,
   coachMethodSchema,
   coachProvenanceSchema,
   coachResultEntrySchema,
   coachResultMetaSchema,
   coachResultTableSchema,
   coachStepSchema,
+  coachStopSchema,
   coachStreamEventSchema,
+  coachTrailSchema,
 } from "@/lib/ai/coach/stream-events";
 
 describe("Coach wire: Zod mirror equals the TypeScript contract", () => {
@@ -67,5 +85,33 @@ describe("Coach wire: Zod mirror equals the TypeScript contract", () => {
     expectTypeOf<
       z.infer<typeof coachProvenanceSchema>
     >().toEqualTypeOf<CoachProvenance>();
+  });
+
+  it("the v1.41 trail, memory and plan shapes", () => {
+    expectTypeOf<
+      z.infer<typeof coachActivitySchema>
+    >().toEqualTypeOf<CoachActivity>();
+    expectTypeOf<
+      z.infer<typeof coachActivityMetaSchema>
+    >().toEqualTypeOf<CoachActivityMeta>();
+    expectTypeOf<z.infer<typeof coachStopSchema>>().toEqualTypeOf<CoachStop>();
+    expectTypeOf<
+      z.infer<typeof coachAssumptionSchema>
+    >().toEqualTypeOf<CoachAssumption>();
+    expectTypeOf<
+      z.infer<typeof coachMemoryNoteSchema>
+    >().toEqualTypeOf<CoachMemoryNote>();
+    expectTypeOf<
+      z.infer<typeof coachMemoryNoteMetaSchema>
+    >().toEqualTypeOf<CoachMemoryNoteMeta>();
+    expectTypeOf<
+      z.infer<typeof coachPlanProposalSchema>
+    >().toEqualTypeOf<CoachPlanProposal>();
+    expectTypeOf<
+      z.infer<typeof coachPlanProposalMetaSchema>
+    >().toEqualTypeOf<CoachPlanProposalMeta>();
+    expectTypeOf<
+      z.infer<typeof coachTrailSchema>
+    >().toEqualTypeOf<CoachTrail>();
   });
 });

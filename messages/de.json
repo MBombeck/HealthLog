@@ -3146,7 +3146,78 @@
         "areasDoneOther": "{count} Bereiche angesehen",
         "info": "Details zur Antwort",
         "infoModel": "Modell: {model}"
-      }
+      },
+      "activity": {
+        "thinking": "Denkt nach…",
+        "fetching": "Holt {domain}, {window}…",
+        "digestOne": "Fasst {count} Wert zusammen…",
+        "digestFew": "Fasst {count} Werte zusammen…",
+        "digestOther": "Fasst {count} Werte zusammen…",
+        "digestDoneOne": "{count} Wert aus {areas}",
+        "digestDoneFew": "{count} Werte aus {areas}",
+        "digestDoneOther": "{count} Werte aus {areas}",
+        "areasOne": "{count} Bereich",
+        "areasFew": "{count} Bereichen",
+        "areasOther": "{count} Bereichen",
+        "memoryOne": "Erinnert sich an {count} Eintrag",
+        "memoryFew": "Erinnert sich an {count} Einträge",
+        "memoryOther": "Erinnert sich an {count} Einträge",
+        "remember": "Merkt sich etwas…",
+        "plan": "Schlägt einen Plan vor…",
+        "asking": "Fragt nach…",
+        "answer": "Schreibt die Antwort…",
+        "summaryOne": "Nachgedacht, {lookups} Abfrage, {seconds} s",
+        "summaryFew": "Nachgedacht, {lookups} Abfragen, {seconds} s",
+        "summaryOther": "Nachgedacht, {lookups} Abfragen, {seconds} s",
+        "summaryNoLookups": "Nachgedacht, {seconds} s",
+        "stop": {
+          "budget": "Budget erreicht, antwortet mit dem, was da ist",
+          "time": "Zeit erreicht, antwortet mit dem, was da ist",
+          "cap": "Viele Schritte, fasst jetzt zusammen",
+          "noProgress": "Keine neuen Daten mehr, fasst zusammen"
+        }
+      },
+      "memory": {
+        "saved": "Gemerkt: {fact}",
+        "undo": "Rückgängig",
+        "accept": "Ja, merken",
+        "decline": "Nein",
+        "confirmed": "Gemerkt."
+      },
+      "plan": {
+        "accept": "Plan übernehmen",
+        "decline": "Nicht jetzt",
+        "confirmed": "Ist notiert. Ich schaue in {days} Tagen mit dir drauf."
+      },
+      "assumption": {
+        "line": "Angenommen: {value}",
+        "change": "Ändern"
+      },
+      "suggestedReplies": {
+        "groupLabel": "Antwortvorschläge"
+      },
+      "interim": {
+        "labelOne": "{title}, {window}, {count} Wert",
+        "labelFew": "{title}, {window}, {count} Werte",
+        "labelOther": "{title}, {window}, {count} Werte"
+      },
+      "chart": {
+        "compare": {
+          "periods": "{a} gegen {b}"
+        }
+      },
+      "reasoning": {
+        "label": "Denktiefe",
+        "hint": "Gründlicher denken heißt genauere Antworten und etwas mehr Wartezeit.",
+        "off": "Aus",
+        "minimal": "Minimal",
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch",
+        "capped": "(vom Admin begrenzt)",
+        "disabled": "Der Admin hat gründliches Denken abgeschaltet."
+      },
+      "memoryLink": "Gedächtnis ({count})"
     },
     "relativeJustNow": "gerade eben",
     "relativeMinutesAgoOne": "vor {count} Minute",
@@ -6008,7 +6079,8 @@
         "forgotError": "Konnte diese Angabe nicht vergessen. Bitte erneut versuchen.",
         "clearedToast": "{count} gespeicherte Angaben vergessen.",
         "clearError": "Konnte die gespeicherten Angaben nicht löschen. Bitte erneut versuchen.",
-        "detail": "Er nutzt sie, damit seine Antworten relevant bleiben. Entferne alles, was er besser vergessen sollte."
+        "detail": "Er nutzt sie, damit seine Antworten relevant bleiben. Entferne alles, was er besser vergessen sollte.",
+        "categoryMedication": "Medikamente"
       },
       "coachReminders": {
         "title": "Deine Erinnerungen",
@@ -6663,6 +6735,13 @@
         "savedOn": "Coach ist aktiviert.",
         "savedOff": "Coach ist ausgeblendet.",
         "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen."
+      },
+      "memory": {
+        "edit": "Bearbeiten",
+        "source": {
+          "user": "von dir",
+          "coach": "vom Coach"
+        }
       }
     },
     "integrationRedirectGuide": {
@@ -7158,6 +7237,10 @@
       "documentAi": {
         "title": "Dokumente lesen",
         "description": "KI-Lesen gespeicherter Dokumente, Scans von Laborbefunden und das Erkennen von Medikamenten aus Text. Der größte Anteil der Daten, die den Server verlassen."
+      },
+      "reasoning": {
+        "enabled": "Gründliches Denken erlauben",
+        "max": "Höchste Denktiefe"
       }
     },
     "modules": {
@@ -9933,7 +10016,8 @@
       "relatedMetric": "Siehe auch: {metric}",
       "continue": "Weitersuchen",
       "settingLabel": "Anschlussfragen vorschlagen",
-      "settingHint": "Zeigt unter der letzten Antwort des Coaches bis zu drei Vorschläge für die nächste Frage."
+      "settingHint": "Zeigt unter der letzten Antwort des Coaches bis zu drei Vorschläge für die nächste Frage.",
+      "changeAssumption": "Stattdessen: {value}"
     },
     "clarify": {
       "cardLabel": "Der Coach hat eine Rückfrage",
