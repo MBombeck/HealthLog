@@ -28,6 +28,14 @@
  * so the admin UI can render the master vs sub-flag distinction
  * visually.
  *
+ * v1.41 — the same route carries the operator's two reasoning controls:
+ * `aiReasoningEnabled` (off wins over every person's Coach setting and every
+ * background job) and `aiReasoningMaxEffort` (`low` | `medium` | `high`, the
+ * highest level any call may take). Echoed as `reasoning: { enabled,
+ * maxEffort }`. They sit beside the assistant switches rather than in them:
+ * switching reasoning off stops no AI capability, it only stops the model
+ * thinking longer before it answers.
+ *
  * `requireAdmin()` gates the route — non-admins get 403.
  */
 import type { NextRequest } from "next/server";
@@ -45,6 +53,8 @@ import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { resolveAssistantFlags } from "@/lib/feature-flags";
 import { annotate } from "@/lib/logging/context";
+import { REASONING_MAX_EFFORTS } from "@/lib/ai/reasoning/levels";
+import { parseReasoningMaxEffort } from "@/lib/ai/reasoning/resolve";
 
 const assistantFlagsSchema = z
   .object({
@@ -53,6 +63,8 @@ const assistantFlagsSchema = z
     assistantBriefingEnabled: z.boolean().optional(),
     assistantInsightStatusEnabled: z.boolean().optional(),
     assistantDocumentAiEnabled: z.boolean().optional(),
+    aiReasoningEnabled: z.boolean().optional(),
+    aiReasoningMaxEffort: z.enum(REASONING_MAX_EFFORTS).optional(),
   })
   .strict();
 
@@ -62,7 +74,19 @@ type AssistantFlagsRow = {
   assistantBriefingEnabled: boolean;
   assistantInsightStatusEnabled: boolean;
   assistantDocumentAiEnabled: boolean;
+  aiReasoningEnabled: boolean;
+  aiReasoningMaxEffort: string;
 };
+
+const ROW_SELECT = {
+  assistantEnabled: true,
+  assistantCoachEnabled: true,
+  assistantBriefingEnabled: true,
+  assistantInsightStatusEnabled: true,
+  assistantDocumentAiEnabled: true,
+  aiReasoningEnabled: true,
+  aiReasoningMaxEffort: true,
+} as const;
 
 function buildResponseShape(row: AssistantFlagsRow) {
   const resolved = resolveAssistantFlags({
@@ -81,6 +105,10 @@ function buildResponseShape(row: AssistantFlagsRow) {
       assistantDocumentAiEnabled: row.assistantDocumentAiEnabled,
     },
     resolved,
+    reasoning: {
+      enabled: row.aiReasoningEnabled,
+      maxEffort: parseReasoningMaxEffort(row.aiReasoningMaxEffort),
+    },
   };
 }
 
@@ -92,13 +120,7 @@ export const GET = apiHandler(async () => {
 
   const settings = await prisma.appSettings.findUnique({
     where: { id: "singleton" },
-    select: {
-      assistantEnabled: true,
-      assistantCoachEnabled: true,
-      assistantBriefingEnabled: true,
-      assistantInsightStatusEnabled: true,
-      assistantDocumentAiEnabled: true,
-    },
+    select: ROW_SELECT,
   });
 
   const row: AssistantFlagsRow = {
@@ -108,6 +130,8 @@ export const GET = apiHandler(async () => {
     assistantInsightStatusEnabled:
       settings?.assistantInsightStatusEnabled ?? true,
     assistantDocumentAiEnabled: settings?.assistantDocumentAiEnabled ?? true,
+    aiReasoningEnabled: settings?.aiReasoningEnabled ?? true,
+    aiReasoningMaxEffort: settings?.aiReasoningMaxEffort ?? "high",
   };
 
   return apiSuccess(buildResponseShape(row));
@@ -128,14 +152,15 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsed.error, 422);
   }
 
+  // Field by field from the parsed body; the schema is strict, so every key
+  // here is one the route owns.
   const updates: Partial<AssistantFlagsRow> = {};
-  const auditDetails: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(parsed.data)) {
-    if (typeof value === "boolean") {
-      (updates as Record<string, boolean>)[key] = value;
-      auditDetails[key] = value;
+    if (value !== undefined) {
+      (updates as Record<string, boolean | string>)[key] = value;
     }
   }
+  const auditDetails: Record<string, unknown> = { ...updates };
 
   if (Object.keys(updates).length === 0) {
     return apiError("No valid fields", 422);
@@ -145,6 +170,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     where: { id: "singleton" },
     update: updates,
     create: { id: "singleton", ...updates },
+    select: ROW_SELECT,
   });
 
   await auditLog("admin.settings.assistant-flags.update", {
@@ -159,6 +185,8 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     assistantBriefingEnabled: settings.assistantBriefingEnabled,
     assistantInsightStatusEnabled: settings.assistantInsightStatusEnabled,
     assistantDocumentAiEnabled: settings.assistantDocumentAiEnabled,
+    aiReasoningEnabled: settings.aiReasoningEnabled,
+    aiReasoningMaxEffort: settings.aiReasoningMaxEffort,
   };
 
   return apiSuccess(buildResponseShape(row));
