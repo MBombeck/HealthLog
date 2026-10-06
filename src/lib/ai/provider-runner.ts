@@ -413,6 +413,10 @@ async function runRawChain(
     surface: BudgetSurface;
     ledger?: ProviderHealthLedger;
   },
+  // v1.41 — `params` reaches every candidate unchanged, `reasoning` and
+  // `onReasoning` included. A fallback hop may see `providerState` another
+  // provider made on an earlier round; each client re-inserts only its own
+  // and drops the rest, so nothing is filtered here.
   invoke: (candidate: ProviderChainResolved) => Promise<CompletionResult>,
   successMeta?: (
     candidate: ProviderChainResolved,
@@ -494,6 +498,16 @@ async function runRawChain(
           ai_chain_working_provider: candidate.providerType,
           ai_chain_fallback_count: hops.length,
           ...(successMeta ? successMeta(candidate) : {}),
+          // v1.41 — counts only. The summaries are model text and the
+          // provider state is opaque; neither ever reaches a wide event. The
+          // reasoning-token count is `spend`: a key naming tokens is blanked
+          // by the central redactor.
+          ...(result.reasoning
+            ? {
+                ai_reasoning_spend: result.reasoning.tokens,
+                ai_reasoning_summary_count: result.reasoning.summary.length,
+              }
+            : {}),
         },
       });
       return {
