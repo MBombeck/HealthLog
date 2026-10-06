@@ -3036,6 +3036,12 @@
         "steadyWithin": "Tus valores suelen estar en {low} {unit}; hoy {value} coincide.",
         "steadyAbove": "Tus valores suelen estar en {low} {unit}; hoy {value} está por encima.",
         "steadyBelow": "Tus valores suelen estar en {low} {unit}; hoy {value} está por debajo.",
+        "latestWithin": "Tu rango habitual es {low}–{high} {unit}; tu última medición, del {date}, fue {value}, dentro de él.",
+        "latestAbove": "Tu rango habitual es {low}–{high} {unit}; tu última medición, del {date}, fue {value}, por encima.",
+        "latestBelow": "Tu rango habitual es {low}–{high} {unit}; tu última medición, del {date}, fue {value}, por debajo.",
+        "steadyLatestWithin": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value} y coincide.",
+        "steadyLatestAbove": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por encima.",
+        "steadyLatestBelow": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por debajo.",
         "insufficient": "Todavía estoy aprendiendo tu rango habitual — sigue registrando unos días más.",
         "driver": "{note}"
       },

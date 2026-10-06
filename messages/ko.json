@@ -3036,6 +3036,12 @@
         "steadyWithin": "평소 값: {low} {unit}. 오늘 값 {value} — 평소와 같아요.",
         "steadyAbove": "평소 값: {low} {unit}. 오늘 값 {value} — 평소보다 높아요.",
         "steadyBelow": "평소 값: {low} {unit}. 오늘 값 {value} — 평소보다 낮아요.",
+        "latestWithin": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value} — 범위 안이었어요.",
+        "latestAbove": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value} — 범위보다 높았어요.",
+        "latestBelow": "평소 범위: {low}–{high} {unit}. 마지막 측정({date}) 값 {value} — 범위 아래였어요.",
+        "steadyLatestWithin": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value} — 평소와 같았어요.",
+        "steadyLatestAbove": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value} — 평소보다 높았어요.",
+        "steadyLatestBelow": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value} — 평소보다 낮았어요.",
         "insufficient": "아직 평소 범위를 배우는 중이에요 — 며칠 더 기록해 주세요.",
         "driver": "{note}"
       },

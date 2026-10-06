@@ -3036,6 +3036,12 @@
         "steadyWithin": "I tuoi valori sono di solito {low} {unit}; oggi {value} corrisponde.",
         "steadyAbove": "I tuoi valori sono di solito {low} {unit}; oggi {value} è al di sopra.",
         "steadyBelow": "I tuoi valori sono di solito {low} {unit}; oggi {value} è al di sotto.",
+        "latestWithin": "Il tuo intervallo abituale è {low}–{high} {unit}; la tua ultima misurazione, del {date}, era {value}, al suo interno.",
+        "latestAbove": "Il tuo intervallo abituale è {low}–{high} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sopra.",
+        "latestBelow": "Il tuo intervallo abituale è {low}–{high} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sotto.",
+        "steadyLatestWithin": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, in linea.",
+        "steadyLatestAbove": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sopra.",
+        "steadyLatestBelow": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sotto.",
         "insufficient": "Sto ancora imparando il tuo intervallo abituale — continua a registrare per qualche giorno in più.",
         "driver": "{note}"
       },

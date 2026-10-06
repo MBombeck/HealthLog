@@ -19,8 +19,18 @@ export interface CoachReadBaseline {
   low: number;
   /** Robust upper edge of the personal typical range. */
   high: number;
-  /** Today's latest reading (display value, same units as the band). */
+  /**
+   * The latest reading (display value, same units as the band). Today's only
+   * when `latestIsToday` says so; otherwise it is from `latestDate`.
+   */
   latest: number;
+  /** Calendar day of the latest reading in the reader's zone, `YYYY-MM-DD`. */
+  latestDate: string;
+  /**
+   * True when `latestDate` is the reader's today (`isFromToday`). A client
+   * calls the value "today's" only then, and otherwise names its date.
+   */
+  latestIsToday: boolean;
   /** Where the latest reading sits relative to the band. */
   placement: CoachReadBaselinePlacement;
   /** Distinct days that fed the band (transparency). */

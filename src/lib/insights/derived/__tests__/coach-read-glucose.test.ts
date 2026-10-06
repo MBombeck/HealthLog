@@ -169,3 +169,69 @@ describe("coach read — glucose on a day still in progress", () => {
     expect(strip.baseline!.basis).toBeUndefined();
   });
 });
+
+describe("coach read — the latest reading's day", () => {
+  function restingUpTo(newest: Date): Row[] {
+    const rows = Array.from({ length: 10 }, (_, i) => ({
+      value: 58,
+      measuredAt: new Date(
+        `2026-05-${String(18 + i).padStart(2, "0")}T05:00:00Z`,
+      ),
+    }));
+    return [...rows, { value: 59, measuredAt: newest }];
+  }
+
+  async function restingStrip(newest: Date) {
+    serve(restingUpTo(newest));
+    return buildCoachReadStrip("u1", "RESTING_HEART_RATE", "en", {
+      tz: TZ,
+      now: NOW,
+    });
+  }
+
+  it("says an older reading is not today's and dates it", async () => {
+    const strip = await restingStrip(new Date("2026-05-29T05:00:00Z"));
+    expect(strip.baseline!.latest).toBe(59);
+    expect(strip.baseline!.latestDate).toBe("2026-05-29");
+    expect(strip.baseline!.latestIsToday).toBe(false);
+  });
+
+  it("marks a reading from this morning as today's", async () => {
+    const strip = await restingStrip(new Date("2026-06-02T05:00:00Z"));
+    expect(strip.baseline!.latestDate).toBe("2026-06-02");
+    expect(strip.baseline!.latestIsToday).toBe(true);
+  });
+
+  it("reads the day in the reader's zone, not in UTC", async () => {
+    // 22:30 UTC on the 1st is 00:30 on the 2nd in Berlin: today.
+    const after = await restingStrip(new Date("2026-06-01T22:30:00Z"));
+    expect(after.baseline!.latestDate).toBe("2026-06-02");
+    expect(after.baseline!.latestIsToday).toBe(true);
+    // 21:50 UTC is 23:50 on the 1st in Berlin: yesterday.
+    const before = await restingStrip(new Date("2026-06-01T21:50:00Z"));
+    expect(before.baseline!.latestDate).toBe("2026-06-01");
+    expect(before.baseline!.latestIsToday).toBe(false);
+  });
+
+  it("dates a finished glucose day, and marks a day in progress as today", async () => {
+    serve(wholeDays());
+    const finished = await buildCoachReadStrip("u1", "BLOOD_GLUCOSE", "en", {
+      tz: TZ,
+      now: NOW,
+    });
+    expect(finished.baseline!.latestDate).toBe("2026-05-31");
+    expect(finished.baseline!.latestIsToday).toBe(false);
+
+    serve([
+      ...wholeDays(),
+      { value: 86, measuredAt: new Date("2026-06-02T05:10:00Z") },
+    ]);
+    const today = await buildCoachReadStrip("u1", "BLOOD_GLUCOSE", "en", {
+      tz: TZ,
+      now: NOW,
+    });
+    expect(today.baseline!.basis).toBe("sameHours");
+    expect(today.baseline!.latestDate).toBe("2026-06-02");
+    expect(today.baseline!.latestIsToday).toBe(true);
+  });
+});

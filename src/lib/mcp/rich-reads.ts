@@ -1039,8 +1039,12 @@ export interface MetricBaselineResult {
   unit?: string;
   /** The user's personal usual range (median ± k·MAD) + sample transparency. */
   baseline?: { low: number; high: number; sampleDays: number };
-  /** Today's latest reading. */
+  /** The latest reading; today's only when `latestIsToday`. */
   latest?: number;
+  /** Calendar day of `latest` in the user's zone, `YYYY-MM-DD`. */
+  latestDate?: string;
+  /** True when `latest` is from the user's today. */
+  latestIsToday?: boolean;
   /** Where the latest reading sits relative to the personal band. */
   placement?: "within" | "above" | "below";
   /**
@@ -1056,7 +1060,7 @@ export interface MetricBaselineResult {
 }
 
 /**
- * Return where today's value sits against the user's own usual range. Pure
+ * Return where the latest value (dated, with whether it is today's) sits against the user's own usual range. Pure
  * re-export of `buildCoachReadStrip` — the SAME median ± k·MAD baseline engine
  * (`computeVitalsBaseline`) + lagged-driver pick the metric page renders. Below
  * the engine's 7-day history floor the band is not asserted (`{ present: false,
@@ -1108,6 +1112,8 @@ export async function getMetricBaseline(
       sampleDays: strip.baseline.sampleDays,
     },
     latest: strip.baseline.latest,
+    latestDate: strip.baseline.latestDate,
+    latestIsToday: strip.baseline.latestIsToday,
     placement: strip.baseline.placement,
     ...(strip.baseline.basis ? { basis: strip.baseline.basis } : {}),
     referenceBand: metric.band,

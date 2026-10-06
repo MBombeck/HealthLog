@@ -3036,6 +3036,12 @@
         "steadyWithin": "Tes valeurs sont habituellement à {low} {unit} ; aujourd'hui, {value} correspond.",
         "steadyAbove": "Tes valeurs sont habituellement à {low} {unit} ; aujourd'hui, {value} se situe au-dessus.",
         "steadyBelow": "Tes valeurs sont habituellement à {low} {unit} ; aujourd'hui, {value} se situe en dessous.",
+        "latestWithin": "Ta plage habituelle est de {low}–{high} {unit} ; ta dernière mesure, du {date}, était de {value}, dans cette plage.",
+        "latestAbove": "Ta plage habituelle est de {low}–{high} {unit} ; ta dernière mesure, du {date}, était de {value}, au-dessus.",
+        "latestBelow": "Ta plage habituelle est de {low}–{high} {unit} ; ta dernière mesure, du {date}, était de {value}, en dessous.",
+        "steadyLatestWithin": "Tes valeurs sont habituellement à {low} {unit} ; ta dernière mesure, du {date}, était de {value}, comme d'habitude.",
+        "steadyLatestAbove": "Tes valeurs sont habituellement à {low} {unit} ; ta dernière mesure, du {date}, était de {value}, au-dessus.",
+        "steadyLatestBelow": "Tes valeurs sont habituellement à {low} {unit} ; ta dernière mesure, du {date}, était de {value}, en dessous.",
         "insufficient": "J'apprends encore ta plage habituelle — continue à enregistrer quelques jours de plus.",
         "driver": "{note}"
       },
