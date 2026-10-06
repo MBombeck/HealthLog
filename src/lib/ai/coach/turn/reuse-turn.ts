@@ -214,13 +214,10 @@ export async function runReuseTurn(args: {
   return new Response(stream, { status: 200, headers: SSE_HEADERS });
 }
 
-/**
- * The reply a declined proposal gets. Pending keys: integration copies them
- * into the bundles with the rest of this release's strings.
- */
+/** The reply a declined proposal gets. */
 export const COACH_DECISION_DECLINED_KEYS = {
-  memory: "insights.coach.memory.declined",
-  plan: "insights.coach.plan.declined",
+  memory: COACH_MEMORY_KEYS.declined,
+  plan: COACH_PLAN_KEYS.declined,
 } as const;
 
 /** The stored note and plan of a message, each held to its wire schema. */

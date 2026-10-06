@@ -120,8 +120,9 @@ describe("v1.41 contract keys", () => {
 
   it("produces the whole catalog", () => {
     // Every key laid down for the release but the `change_assumption` chip
-    // label, which the dialog catalog's own test covers.
-    expect(keys.size).toBe(57);
+    // label, which the dialog catalog's own test covers, plus the two
+    // declined-proposal replies.
+    expect(keys.size).toBe(59);
   });
 
   it.each(locales)("every catalog key resolves in %s", (locale) => {

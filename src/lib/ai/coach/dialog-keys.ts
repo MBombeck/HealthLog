@@ -247,6 +247,8 @@ export const COACH_CLARIFY_UI_KEYS = {
   choicesLabel: "coach.clarify.choicesLabel",
   freeTextHint: "coach.clarify.freeTextHint",
   contextHint: "coach.clarify.contextHint",
+  comparisonBaseline90d: "coach.clarify.comparison.baseline90d",
+  anchorIllness: "coach.clarify.anchor.illness",
 } as const;
 
 /** A window choice on a clarification card ("Last 30 days"). */

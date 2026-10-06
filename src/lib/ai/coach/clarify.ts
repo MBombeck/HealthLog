@@ -48,6 +48,7 @@ import {
 } from "@/lib/ai/coach/types";
 import { coachClarificationSchema } from "@/lib/ai/coach/stream-events";
 import {
+  COACH_CLARIFY_UI_KEYS,
   COACH_FOLLOW_UP_KEYS,
   clarifyWindowLabelKey,
   coachDomainLabelKey,
@@ -439,12 +440,11 @@ export const CLARIFY_DAILY_LIMIT = 3;
 const COMPARISON_LABEL_KEY: Readonly<Record<CoachComparisonBasis, string>> = {
   previous_period: COACH_FOLLOW_UP_KEYS.previous_period,
   year_ago: COACH_FOLLOW_UP_KEYS.year_ago,
-  // Pending until integration copies it into the bundles.
-  baseline_90d: "coach.clarify.comparison.baseline90d",
+  baseline_90d: COACH_CLARIFY_UI_KEYS.comparisonBaseline90d,
 };
 
-/** A pending key: "Since {date}", an illness episode as an anchor. */
-const ANCHOR_ILLNESS_KEY = "coach.clarify.anchor.illness";
+/** "Since {date}", an illness episode as an anchor. */
+const ANCHOR_ILLNESS_KEY = COACH_CLARIFY_UI_KEYS.anchorIllness;
 
 /** A choice the server built from the record: an id and a catalog label. */
 export interface ClarifyRecordChoice {

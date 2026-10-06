@@ -61,6 +61,7 @@ export const COACH_MEMORY_KEYS = {
   accept: "insights.coach.memory.accept",
   decline: "insights.coach.memory.decline",
   confirmed: "insights.coach.memory.confirmed",
+  declined: "insights.coach.memory.declined",
 } as const;
 
 /** A plan proposal's two replies, and the line a decision turn answers with. */
@@ -68,6 +69,7 @@ export const COACH_PLAN_KEYS = {
   accept: "insights.coach.plan.accept",
   decline: "insights.coach.plan.decline",
   confirmed: "insights.coach.plan.confirmed",
+  declined: "insights.coach.plan.declined",
 } as const;
 
 /** The memory list in settings, and the link to it from the Coach. */
