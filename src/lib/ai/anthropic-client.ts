@@ -13,6 +13,7 @@ import type {
 } from "./types";
 import {
   annotateReasoningDowngrade,
+  isReasoningParameterRejection,
   learnedReasoningDialect,
   rememberReasoningDialect,
 } from "./reasoning/dialect-cache";
@@ -649,8 +650,11 @@ export class AnthropicClient implements AIProvider {
   }
 
   /**
-   * Learn from a 400 that names a parameter we sent. Returns false when the
-   * body is about something else; the caller then raises it as before.
+   * Learn from a 400 that refuses a parameter we sent. Returns false when the
+   * body is about something else, including a replay error about the
+   * thinking blocks handed back ("must start with a thinking block"), which
+   * says nothing about the thinking form the model accepts; the caller then
+   * raises it as before.
    */
   private learnFromRejection(
     plan: ThinkingPlan,
@@ -658,14 +662,27 @@ export class AnthropicClient implements AIProvider {
     body: string,
     dialect: AnthropicDialect,
   ): boolean {
-    const lower = body.toLowerCase();
+    const model = this.config.model;
     let changed: string | null = null;
-    if (sentTemperature && /temperature|top_p|sampling/.test(lower)) {
+    if (
+      sentTemperature &&
+      isReasoningParameterRejection(
+        400,
+        body,
+        /temperature|top_p|sampling/i,
+        model,
+      )
+    ) {
       dialect.noSampling = true;
       changed = "sampling";
     } else if (
       plan.kind !== "none" &&
-      /thinking|budget_tokens|adaptive|output_config|effort/.test(lower)
+      isReasoningParameterRejection(
+        400,
+        body,
+        /thinking|budget_tokens|adaptive|output_config|effort/i,
+        model,
+      )
     ) {
       dialect.thinking = plan.kind === "adaptive" ? "manual" : "none";
       changed = plan.kind;

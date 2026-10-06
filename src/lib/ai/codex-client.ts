@@ -13,6 +13,7 @@ import type {
 } from "./types";
 import {
   annotateReasoningDowngrade,
+  isReasoningParameterRejection,
   learnedReasoningDialect,
   rememberReasoningDialect,
 } from "./reasoning/dialect-cache";
@@ -336,6 +337,14 @@ function planCodexReasoning(
 }
 
 /**
+ * True when the request asks for the encrypted reasoning items, the only
+ * reasoning state a `store: false` request can hand to the next round.
+ */
+function asksEncryptedReasoning(wire: CodexReasoningWire): boolean {
+  return wire !== null && wire.effort !== "none";
+}
+
+/**
  * Read a 400 that refuses a reasoning parameter and learn what the slug
  * accepts instead. Returns the lesser wire to retry with, or `undefined`
  * when the body is not about reasoning (the caller's error path takes it).
@@ -346,9 +355,10 @@ function learnFromReasoningRejection(
   status: number,
   body: string,
 ): CodexReasoningWire | undefined {
-  // Only a body that names the reasoning parameter counts; a 400 about the
-  // prompt or a tool must not teach the slug anything.
-  if (status !== 400 || !/reasoning/i.test(body)) {
+  // Only a 400 that refuses the reasoning parameter counts; a 400 about the
+  // prompt or a tool, and a replay error about a reasoning item handed back
+  // from an earlier round, must not teach the slug anything.
+  if (!isReasoningParameterRejection(status, body, /reasoning/i, slug)) {
     return undefined;
   }
   const dialect = readCodexDialect(slug);
@@ -706,10 +716,9 @@ export class CodexClient implements AIProvider {
           // Required field; empty array when not asking for reasoning. With
           // reasoning on, the encrypted items come back so the next tool
           // round can hand them over statelessly (`store` must stay false).
-          include:
-            wire && wire.effort !== "none"
-              ? ["reasoning.encrypted_content"]
-              : [],
+          include: asksEncryptedReasoning(wire)
+            ? ["reasoning.encrypted_content"]
+            : [],
         }),
         // SSE streaming completion — match the 60 s budget the other AI
         // clients use so a long generation is not clipped by the 15 s
@@ -775,6 +784,7 @@ export class CodexClient implements AIProvider {
     // the receiver screens them.
     const emit = params.reasoning ? params.onReasoning : undefined;
     const reasoningItems: Record<string, unknown>[] = [];
+    const keepsReasoningItems = asksEncryptedReasoning(wire);
     const summaries: string[] = [];
     let reasoningTokens: number | null = null;
     const summaryBuffers = new Map<string, string>();
@@ -882,7 +892,17 @@ export class CodexClient implements AIProvider {
                 if (text) assembledText += text;
               } else if (item?.type === "reasoning" && params.reasoning) {
                 // The whole item, untouched: the next round hands it back.
-                reasoningItems.push(item as Record<string, unknown>);
+                // Only an item that carries its encrypted content, and only
+                // when this request asked for it: under `store: false` the
+                // server keeps nothing, so a replayed item without it points
+                // at nothing and the next round fails with a 400.
+                if (
+                  keepsReasoningItems &&
+                  typeof (item as { encrypted_content?: unknown })
+                    .encrypted_content === "string"
+                ) {
+                  reasoningItems.push(item as Record<string, unknown>);
+                }
                 (item.summary ?? []).forEach((part, index) => {
                   if (typeof part.text !== "string" || !part.text) return;
                   summaries.push(part.text);

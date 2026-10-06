@@ -8,6 +8,7 @@ import {
 } from "./openai-capabilities";
 import {
   annotateReasoningDowngrade,
+  isReasoningParameterRejection,
   learnedReasoningDialect,
   rememberReasoningDialect,
 } from "./reasoning/dialect-cache";
@@ -144,10 +145,10 @@ export class OpenAIClient implements AIProvider {
     // Only force OpenAI's strict JSON mode when the caller actually consumes a
     // JSON object AND no tools are in play — mirrors the Anthropic client's
     // `usePrefill` gate. JSON mode coerces `message.content` into a valid JSON
-    // object, which contradicts the Coach prose contract; the F1 tool loop's
-    // forced-final round (toolChoice:"none", no tools, no responseFormat) must
-    // therefore stay out of JSON mode, and every tool round is non-JSON by
-    // construction. Insight/extraction callers opt in with `responseFormat:"json"`.
+    // object, which contradicts the Coach prose contract; the tool loop's
+    // forced-final round (tools with toolChoice:"none", no responseFormat)
+    // must therefore stay out of JSON mode, and every tool round is non-JSON
+    // by construction. Insight/extraction callers opt in with `responseFormat:"json"`.
     const useJsonFormat = params.responseFormat === "json" && !hasTools;
     // v1.33.1 (#470) — a gateway may reject the standard `response_format`
     // field. Learn that per endpoint (shared cache with the Local client) and
@@ -268,9 +269,12 @@ export class OpenAIClient implements AIProvider {
       // naming the reasoning field must not switch JSON mode off.
       if (
         reasoningWire.kind !== "none" &&
-        res.status >= 400 &&
-        res.status < 500 &&
-        /reasoning|thinking/i.test(bodyExcerpt)
+        isReasoningParameterRejection(
+          res.status,
+          bodyExcerpt,
+          /reasoning|thinking/i,
+          this.config.model,
+        )
       ) {
         rememberReasoningDialect(this.reasoningDialectKey(), "none");
         annotateReasoningDowngrade(this.type, reasoningWire.effort, "none");
@@ -466,8 +470,10 @@ export class OpenAIClient implements AIProvider {
    * `api.openai.com` (operator key, personal key): `reasoning_effort` only for
    * a reasoning model, and only on a round without tools. Chat Completions
    * has no reasoning items to hand back between tool rounds, and newer
-   * models restrict reasoning alongside function calls; the Coach's final
-   * round and the background jobs carry no tools, which is where it counts.
+   * models restrict reasoning alongside function calls. The background jobs
+   * carry no tools, which is where it counts; the Coach's final round
+   * carries its tools with `tool_choice: "none"` (the history holds the
+   * calls), so here it runs without `reasoning_effort` like its tool rounds.
    *
    * Gateway: the endpoint's own dialect, tools or not; its reasoning state
    * travels in `providerState`, and a refusal is learned per endpoint.

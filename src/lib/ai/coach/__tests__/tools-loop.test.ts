@@ -135,7 +135,7 @@ describe("runCoachToolLoop", () => {
   it("forces a final answer at the round cap (no infinite loop)", async () => {
     executeCoachTool.mockResolvedValue({ present: true, data: { v: 1 } });
     // The model asks for a new read every round. The loop must still
-    // terminate: the round the cap allows last offers no tools
+    // terminate: the round the cap allows last forbids tool calls
     // (toolChoice none), so the model is forced to produce prose.
     const metrics = ["bp", "weight", "pulse", "hrv", "steps", "sleep"];
     let n = 0;
@@ -174,13 +174,16 @@ describe("runCoachToolLoop", () => {
     expect(out.rounds).toBe(6);
     expect(out.result.content).toBe("Final forced answer.");
     expect(out.stop).toEqual({ reason: "cap", rounds: 6 });
-    // The final round must have been called with toolChoice "none".
+    // The final round forbids calls with toolChoice "none" but still
+    // carries the tool definitions: the history holds tool_use/tool_result
+    // blocks, and Anthropic refuses those without `tools` (400).
     const lastCall =
       runRawCompletionWithFallback.mock.calls[
         runRawCompletionWithFallback.mock.calls.length - 1
       ][0];
     expect(lastCall.params.toolChoice).toBe("none");
-    expect(lastCall.params.tools).toBeUndefined();
+    expect(lastCall.params.tools).toEqual(COACH_TOOL_DEFS);
+    expect(lastCall.params.tools.length).toBeGreaterThan(0);
   });
 
   it("appends assistant(toolCalls) + tool turns to the message array", async () => {

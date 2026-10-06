@@ -437,6 +437,87 @@ describe("Anthropic thinking refusals", () => {
   });
 });
 
+describe("Anthropic thinking refusals the client must not learn from", () => {
+  const replay = async () =>
+    new Response(
+      JSON.stringify({
+        type: "error",
+        error: {
+          type: "invalid_request_error",
+          message:
+            "messages.1.content.0.type: Expected `thinking` or `redacted_thinking`, but found `text`. When `thinking` is enabled, a final `assistant` message must start with a thinking block (preceeding the lastmost set of `tool_use` and `tool_result` blocks). We recommend you include thinking blocks from previous turns.",
+        },
+      }),
+      { status: 400 },
+    );
+
+  it("raises a replay error once and keeps the thinking form", async () => {
+    const mock = vi
+      .fn()
+      .mockImplementationOnce(replay)
+      .mockImplementation(ok("anthropic-after-tool.json"));
+    vi.stubGlobal("fetch", mock);
+    const c = client("my-claude-proxy");
+    const wanted = params({ reasoning: { effort: "low", summaries: true } });
+    await expect(c.generateCompletion(wanted)).rejects.toMatchObject({
+      httpStatus: 400,
+      upstream: "anthropic",
+    });
+    expect(mock).toHaveBeenCalledTimes(1);
+    await c.generateCompletion(wanted);
+    expect(sent(mock, 1).body.thinking.type).toBe("adaptive");
+  });
+
+  it("does not learn from a 429 that mentions thinking", async () => {
+    const mock = vi
+      .fn()
+      .mockImplementationOnce(
+        async () =>
+          new Response(
+            JSON.stringify({
+              type: "error",
+              error: {
+                type: "rate_limit_error",
+                message:
+                  "Extended thinking output tokens per minute exceeded; not allowed until reset.",
+              },
+            }),
+            { status: 429 },
+          ),
+      )
+      .mockImplementation(ok("anthropic-after-tool.json"));
+    vi.stubGlobal("fetch", mock);
+    const c = client("my-claude-proxy");
+    const wanted = params({ reasoning: { effort: "low", summaries: true } });
+    await expect(c.generateCompletion(wanted)).rejects.toMatchObject({
+      httpStatus: 429,
+    });
+    await c.generateCompletion(wanted);
+    expect(sent(mock, 1).body.thinking.type).toBe("adaptive");
+  });
+
+  it("tries the full thinking form again an hour after a refusal", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const mock = vi
+        .fn()
+        .mockImplementationOnce(fail(400, "anthropic-adaptive-rejected.json"))
+        .mockImplementation(ok("anthropic-after-tool.json"));
+      vi.stubGlobal("fetch", mock);
+      const c = client("my-claude-proxy");
+      const wanted = params({ reasoning: { effort: "low", summaries: true } });
+      await c.generateCompletion(wanted);
+      await c.generateCompletion(wanted);
+      expect(sent(mock, 2).body.thinking.type).toBe("enabled");
+      vi.advanceTimersByTime(60 * 60 * 1000);
+      await c.generateCompletion(wanted);
+      expect(sent(mock, 3).body.thinking.type).toBe("adaptive");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("Anthropic adaptive rounds that chose not to think", () => {
   it("keeps thinking on for the next round of its own turn", async () => {
     const noThought = {

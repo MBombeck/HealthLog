@@ -1,6 +1,6 @@
 /**
- * v1.41 — the budgeted loop: every stop reason forces a final round without
- * tools and with the reason line, the ledger is reserved and settled round
+ * v1.41 — the budgeted loop: every stop reason forces a final round with
+ * `toolChoice: "none"` (the tool definitions stay) and the reason line, the ledger is reserved and settled round
  * by round, a repeated call is never run, a question ends the turn, the
  * reasoning level and the provider state reach the provider, and the trail
  * opens its thinking entry before the provider is called.
@@ -90,6 +90,12 @@ function spend(admit: boolean[] = []): RoundSpend & {
   return { reserveRound, settleRound };
 }
 
+/** Every stop ends on a round that forbids calls but keeps the definitions. */
+function expectFinalRoundKeepsTools() {
+  expect(lastParams().toolChoice).toBe("none");
+  expect(lastParams().tools).toEqual(COACH_TOOL_DEFS);
+}
+
 function lastParams() {
   const calls = runRawCompletionWithFallback.mock.calls;
   return calls[calls.length - 1][0].params as {
@@ -123,7 +129,9 @@ describe("stop reasons", () => {
     expect(out.stop).toEqual({ reason: "budget", rounds: 2 });
     expect(out.forcedFinal).toBe(true);
     expect(lastParams().toolChoice).toBe("none");
-    expect(lastParams().tools).toBeUndefined();
+    // The tools stay on the final round: the history holds the calls, and
+    // Anthropic refuses tool_use/tool_result blocks without `tools` (400).
+    expect(lastParams().tools).toEqual(COACH_TOOL_DEFS);
     expect(lastParams().system).toMatch(
       /FINAL ROUND: this turn's token budget/,
     );
@@ -155,6 +163,7 @@ describe("stop reasons", () => {
     });
     expect(out.stop?.reason).toBe("time");
     expect(out.forcedFinal).toBe(true);
+    expectFinalRoundKeepsTools();
   });
 
   it("answers when the daily ledger refuses the next round", async () => {
@@ -170,6 +179,7 @@ describe("stop reasons", () => {
     });
     expect(out.stop).toEqual({ reason: "budget", rounds: 3 });
     expect(ledger.reserveRound).toHaveBeenCalledTimes(2);
+    expectFinalRoundKeepsTools();
     // Three rounds settled; only the last against the final reserve.
     expect(ledger.settleRound.mock.calls.map((c) => c[0].final)).toEqual([
       false,
@@ -192,6 +202,7 @@ describe("stop reasons", () => {
     const out = await runCoachToolLoop({ ...baseArgs, budget: roomy() });
     expect(out.stop).toEqual({ reason: "no_progress", rounds: 3 });
     expect(out.forcedFinal).toBe(false);
+    expectFinalRoundKeepsTools();
     expect(lastParams().system).toMatch(/brought nothing new/);
   });
 });
@@ -234,6 +245,7 @@ describe("repeated calls", () => {
     const out = await runCoachToolLoop({ ...baseArgs, budget: roomy() });
     expect(out.stop).toEqual({ reason: "no_progress", rounds: 3 });
     expect(executeCoachTool).toHaveBeenCalledTimes(1);
+    expectFinalRoundKeepsTools();
   });
 });
 

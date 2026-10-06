@@ -26,6 +26,7 @@ import {
 import type { ReasoningEffort } from "./reasoning-effort";
 import {
   annotateReasoningDowngrade,
+  isReasoningParameterRejection,
   learnedReasoningDialect,
   rememberReasoningDialect,
 } from "./reasoning/dialect-cache";
@@ -348,9 +349,12 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       const sentEffort = this.callReasoningEffort(params);
       if (
         sentEffort &&
-        res.status >= 400 &&
-        res.status < 500 &&
-        /reasoning|think/i.test(bodyExcerpt)
+        isReasoningParameterRejection(
+          res.status,
+          bodyExcerpt,
+          /reasoning|think/i,
+          this.config.model,
+        )
       ) {
         rememberReasoningDialect(this.reasoningDialectKey(), "none");
         annotateReasoningDowngrade("local", sentEffort, "none");

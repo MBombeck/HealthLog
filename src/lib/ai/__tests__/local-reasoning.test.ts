@@ -276,3 +276,72 @@ describe("Local reasoning stream", () => {
     expect(result.content).toBe("<t");
   });
 });
+
+describe("local reasoning refusals the client must not learn from", () => {
+  const err = (status: number, message: string) => async () =>
+    new Response(JSON.stringify({ error: { message } }), { status });
+
+  it.each([
+    [401, "Unauthorized: thinking models require a key; not allowed."],
+    [429, "Too many requests to the reasoning queue; not permitted."],
+    [500, "reasoning_effort: unsupported value (internal error)."],
+  ])("raises HTTP %i once and keeps the field", async (status, message) => {
+    const mock = vi
+      .fn()
+      .mockImplementationOnce(err(status, message))
+      .mockImplementation(buffered({ content: "ok" }));
+    vi.stubGlobal("fetch", mock);
+    const wanted = params({ reasoning: { effort: "low", summaries: true } });
+    await expect(client().generateCompletion(wanted)).rejects.toMatchObject({
+      httpStatus: status,
+    });
+    expect(mock).toHaveBeenCalledTimes(1);
+    await client().generateCompletion(wanted);
+    expect(body(mock, 1).reasoning_effort).toBe("low");
+  });
+
+  it("does not learn from a 400 whose only match is the model name", async () => {
+    const mock = vi
+      .fn()
+      .mockImplementationOnce(
+        err(400, "model 'qwen3-thinking' is not supported by this runner"),
+      )
+      .mockImplementation(buffered({ content: "ok" }));
+    vi.stubGlobal("fetch", mock);
+    const c = new LocalOpenAICompatibleClient({
+      model: "qwen3-thinking",
+      baseUrl: BASE,
+    });
+    const wanted = params({ reasoning: { effort: "low", summaries: true } });
+    await expect(c.generateCompletion(wanted)).rejects.toMatchObject({
+      httpStatus: 400,
+    });
+    await c.generateCompletion(wanted);
+    expect(body(mock, 1).reasoning_effort).toBe("low");
+  });
+
+  it("sends the field again an hour after a refusal", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const refusal = readFileSync(
+        join(FIXTURES, "gateway-reasoning-rejected.json"),
+        "utf8",
+      );
+      const mock = vi
+        .fn()
+        .mockImplementationOnce(
+          async () => new Response(refusal, { status: 400 }),
+        )
+        .mockImplementation(buffered({ content: "ok" }));
+      vi.stubGlobal("fetch", mock);
+      const wanted = params({ reasoning: { effort: "low", summaries: true } });
+      await client().generateCompletion(wanted);
+      expect(body(mock, 1)).not.toHaveProperty("reasoning_effort");
+      vi.advanceTimersByTime(60 * 60 * 1000);
+      await client().generateCompletion(wanted);
+      expect(body(mock, 2).reasoning_effort).toBe("low");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

@@ -401,4 +401,158 @@ describe("Codex reasoning refusals", () => {
     ).rejects.toMatchObject({ httpStatus: 400 });
     expect(mock).toHaveBeenCalledTimes(1);
   });
+
+  it("does not learn from a replay error about a reasoning item", async () => {
+    const replay = JSON.stringify({
+      error: {
+        message:
+          "Item 'rs_123' of type 'reasoning' was provided without its required following item.",
+        type: "invalid_request_error",
+        param: "input",
+      },
+    });
+    const mock = vi
+      .fn()
+      .mockResolvedValueOnce(errorResponse(400, replay))
+      .mockImplementation(async () =>
+        sseResponse(fixture("codex-summary.sse")),
+      );
+    vi.stubGlobal("fetch", mock);
+    await expect(
+      client().generateCompletion(
+        params({ reasoning: { effort: "low", summaries: true } }),
+      ),
+    ).rejects.toMatchObject({ httpStatus: 400 });
+    expect(mock).toHaveBeenCalledTimes(1);
+    // The slug still reasons on the next call.
+    await client().generateCompletion(
+      params({ reasoning: { effort: "low", summaries: true } }),
+    );
+    expect(sentBody(mock, 1).reasoning).toEqual({
+      effort: "low",
+      summary: "auto",
+    });
+  });
+
+  it("does not learn from a 401 or 429 that mentions reasoning", async () => {
+    for (const status of [401, 429]) {
+      resetReasoningDialectCache();
+      const mock = vi
+        .fn()
+        .mockResolvedValueOnce(
+          errorResponse(
+            status,
+            JSON.stringify({
+              error: { message: "Reasoning model quota: unsupported plan." },
+            }),
+          ),
+        )
+        .mockImplementation(async () =>
+          sseResponse(fixture("codex-summary.sse")),
+        );
+      vi.stubGlobal("fetch", mock);
+      await client()
+        .generateCompletion(
+          params({ reasoning: { effort: "low", summaries: false } }),
+        )
+        .catch(() => undefined);
+      await client().generateCompletion(
+        params({ reasoning: { effort: "low", summaries: false } }),
+      );
+      const last = sentBody(mock, mock.mock.calls.length - 1);
+      expect(last.reasoning).toEqual({ effort: "low" });
+    }
+  });
+
+  it("forgets a learned refusal after an hour", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const refusal = JSON.stringify({
+        error: {
+          message: "Reasoning is not supported for this model.",
+          type: "invalid_request_error",
+          param: "reasoning",
+        },
+      });
+      const mock = vi
+        .fn()
+        .mockResolvedValueOnce(errorResponse(400, refusal))
+        .mockImplementation(async () =>
+          sseResponse(fixture("codex-after-tool.sse")),
+        );
+      vi.stubGlobal("fetch", mock);
+      const wanted = params({ reasoning: { effort: "low", summaries: false } });
+      await client().generateCompletion(wanted);
+      await client().generateCompletion(wanted);
+      expect(sentBody(mock, 2).reasoning).toBeNull();
+      vi.advanceTimersByTime(60 * 60 * 1000);
+      await client().generateCompletion(wanted);
+      expect(sentBody(mock, 3).reasoning).toEqual({ effort: "low" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("Codex reasoning items kept for the next round", () => {
+  it("keeps none when the request sent no reasoning wire", async () => {
+    // The slug refused reasoning, so the retry runs with `reasoning: null`
+    // and `include: []`; the server may still emit reasoning items, but
+    // without encrypted content they cannot be replayed under store:false.
+    const refusal = JSON.stringify({
+      error: {
+        message: "Reasoning is not supported for this model.",
+        type: "invalid_request_error",
+        param: "reasoning",
+      },
+    });
+    const withoutContent = fixture("codex-summary.sse").replace(
+      /,"encrypted_content":"enc-fixture-\d+"/g,
+      "",
+    );
+    const mock = vi
+      .fn()
+      .mockResolvedValueOnce(errorResponse(400, refusal))
+      .mockImplementation(async () => sseResponse(withoutContent));
+    vi.stubGlobal("fetch", mock);
+    const result = await client().generateCompletion(
+      params({ reasoning: { effort: "low", summaries: true } }),
+    );
+    expect(sentBody(mock, 1).reasoning).toBeNull();
+    expect(sentBody(mock, 1).include).toEqual([]);
+    expect(result.providerState).toBeUndefined();
+  });
+
+  it("keeps none when the request asked for effort none", async () => {
+    const mock = vi
+      .fn()
+      .mockImplementation(async () =>
+        sseResponse(fixture("codex-summary.sse")),
+      );
+    vi.stubGlobal("fetch", mock);
+    const result = await client().generateCompletion(
+      params({ reasoning: { effort: "off", summaries: false } }),
+    );
+    expect(sentBody(mock).reasoning).toEqual({ effort: "none" });
+    expect(sentBody(mock).include).toEqual([]);
+    expect(result.providerState).toBeUndefined();
+  });
+
+  it("drops an item without encrypted content even when it was asked for", async () => {
+    const withoutContent = fixture("codex-summary.sse").replace(
+      /,"encrypted_content":"enc-fixture-\d+"/g,
+      "",
+    );
+    const mock = vi
+      .fn()
+      .mockImplementation(async () => sseResponse(withoutContent));
+    vi.stubGlobal("fetch", mock);
+    const result = await client().generateCompletion(
+      params({ reasoning: { effort: "medium", summaries: true } }),
+    );
+    expect(sentBody(mock).include).toEqual(["reasoning.encrypted_content"]);
+    expect(result.providerState).toBeUndefined();
+    // The summary still reaches the trail.
+    expect(result.reasoning?.summary.length).toBeGreaterThan(0);
+  });
 });

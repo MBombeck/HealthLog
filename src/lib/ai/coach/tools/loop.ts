@@ -7,9 +7,14 @@
  * token, time and round limits of whoever pays for it (`turn-budget.ts`), a
  * no-progress brake (`progress.ts`) and, round by round, the day's ledger
  * (`spend`, reserved before each round and settled after it). Whichever of
- * them stops the loop, the next round is the final one: sent without tools,
- * with one line telling the model why, and the room for it was held back
- * from the start, so a turn always ends with an answer.
+ * them stops the loop, the next round is the final one: sent with
+ * `toolChoice: "none"`, with one line telling the model why, and the room
+ * for it was held back from the start, so a turn always ends with an answer.
+ * The final round still carries the tool definitions: the history holds the
+ * earlier calls and their results, and Anthropic refuses a request with
+ * `tool_use` / `tool_result` blocks that defines no tools (400). `none` with
+ * the tools present is valid on every wire, thinking included, and keeps the
+ * cached tools prefix warm.
  *
  * Each round is a NON-streaming completion over the fallback chain; the
  * clients read the provider's stream internally where it has one and report
@@ -344,9 +349,8 @@ export async function runCoachToolLoop(args: {
               },
             }
           : {}),
-        ...(isFinal
-          ? { toolChoice: "none" as const }
-          : { tools, toolChoice: "auto" as const }),
+        tools,
+        toolChoice: isFinal ? ("none" as const) : ("auto" as const),
       },
     });
     const result = fallback.result;

@@ -285,3 +285,73 @@ describe("Gateway reasoning", () => {
     expect(body(mock, 2)).not.toHaveProperty("reasoning_effort");
   });
 });
+
+describe("OpenAI reasoning refusals the client must not learn from", () => {
+  const err = (status: number, message: string) => async () =>
+    new Response(
+      JSON.stringify({ error: { message, type: "invalid_request_error" } }),
+      { status },
+    );
+
+  it.each([
+    [401, "Incorrect API key for the reasoning tier; not allowed."],
+    [429, "Rate limit reached for reasoning_effort requests; not permitted."],
+    [404, "The model `deepseek-reasoner` does not exist or is not supported."],
+  ])("raises HTTP %i once and keeps reasoning", async (status, message) => {
+    const mock = vi
+      .fn()
+      .mockImplementationOnce(err(status, message))
+      .mockImplementation(plain("ok"));
+    vi.stubGlobal("fetch", mock);
+    const c = gateway("https://litellm.example.com/v1", "deepseek-reasoner");
+    const wanted = params({ reasoning: { effort: "medium", summaries: true } });
+    await expect(c.generateCompletion(wanted)).rejects.toMatchObject({
+      httpStatus: status,
+    });
+    expect(mock).toHaveBeenCalledTimes(1);
+    await c.generateCompletion(wanted);
+    expect(body(mock, 1).reasoning_effort).toBe("medium");
+  });
+
+  it("does not learn from a 400 whose only reasoning word is the model name", async () => {
+    const mock = vi
+      .fn()
+      .mockImplementationOnce(
+        err(400, "deepseek-reasoner is not supported by this deployment."),
+      )
+      .mockImplementation(plain("ok"));
+    vi.stubGlobal("fetch", mock);
+    const c = gateway("https://litellm.example.com/v1", "deepseek-reasoner");
+    const wanted = params({ reasoning: { effort: "low", summaries: false } });
+    await expect(c.generateCompletion(wanted)).rejects.toMatchObject({
+      httpStatus: 400,
+    });
+    await c.generateCompletion(wanted);
+    expect(body(mock, 1).reasoning_effort).toBe("low");
+  });
+
+  it("sends reasoning again an hour after a refusal", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const mock = vi
+        .fn()
+        .mockImplementationOnce(
+          async () =>
+            new Response(fixture("gateway-reasoning-rejected.json"), {
+              status: 400,
+            }),
+        )
+        .mockImplementation(plain("ok"));
+      vi.stubGlobal("fetch", mock);
+      const c = gateway("https://litellm.example.com/v1", "llama3");
+      const wanted = params({ reasoning: { effort: "low", summaries: false } });
+      await c.generateCompletion(wanted);
+      expect(body(mock, 1)).not.toHaveProperty("reasoning_effort");
+      vi.advanceTimersByTime(60 * 60 * 1000);
+      await c.generateCompletion(wanted);
+      expect(body(mock, 2).reasoning_effort).toBe("low");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
