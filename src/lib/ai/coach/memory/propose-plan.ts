@@ -3,10 +3,16 @@
  *
  * When the person names a goal or agrees to a suggestion, the Coach calls
  * `propose_plan`: one if-then plan tied to one metric, with an optional
- * target and a review window of 7 to 56 days. The plan is written as
- * `proposed` (its text encrypted like every plan) and stays inert until the
- * person taps "Take on this plan": a plan is a commitment, so only the person
- * activates it. The answer arrives as `planDecision` on the chat request and
+ * target and a review window of 7 to 56 days. Its three fields are model
+ * text, so each passes the outbound screen the answer passes (dose and risk,
+ * in the person's locale, with their scheduled doses and medication names)
+ * and the injection
+ * screen before anything is kept; a field that trips either declines the
+ * call as `unsafe`. The plan is then written as `proposed` (its text
+ * encrypted like every plan) with the answer that carries it
+ * (`turn-writes.ts`): an answer that is blocked, fails or is abandoned leaves
+ * no plan behind. It stays inert until the person taps "Take on this plan": a
+ * plan is a commitment, so only the person activates it. The answer arrives as `planDecision` on the chat request and
  * flips the plan to `active` (with its review date counted from the tap) or
  * `abandoned`.
  *
@@ -20,8 +26,14 @@
  */
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
+import type { Locale } from "@/lib/i18n/config";
+import { getMedicationNames } from "@/lib/medications/medication-names";
+import { getScheduledDoseValues } from "@/lib/medications/scheduled-doses";
 
-import { encryptToBytes, decryptFromBytes } from "../bytes-codec";
+import { screenCoachReply } from "../outbound-guard";
+import { detectRefusal } from "../refusal";
+
+import { decryptFromBytes } from "../bytes-codec";
 import { isNearDuplicate } from "../facts";
 import { PLAN_FIELD_MAX_CHARS } from "../plans";
 import type { CoachPlanProposal } from "../types";
@@ -36,6 +48,7 @@ import {
   PLAN_REVIEW_DAYS,
   PROPOSAL_EXPIRY_DAYS,
 } from "./shared";
+import { stageTurnWrite } from "./turn-writes";
 
 const MS_PER_DAY = 86_400_000;
 
@@ -63,7 +76,46 @@ function decryptOrNull(buf: Uint8Array | null): string | null {
   }
 }
 
-/** Runs a `propose_plan` call: writes the plan as `proposed`. */
+/**
+ * Whether model-written plan text may be kept: no dose or risk the answer's
+ * outbound screen would block, and no instruction smuggled into it. The
+ * injection screen is the one half of `detectRefusal` that applies: its
+ * off-topic half reads requests, and "when it rains" or "after music
+ * practice" is an ordinary cue, not an off-topic question.
+ */
+export function planTextPasses(
+  texts: readonly string[],
+  locale: Locale,
+  screen: {
+    scheduleDoses: readonly number[];
+    medicationNames: readonly string[];
+  },
+): boolean {
+  try {
+    for (const text of [...texts, texts.join(" ")]) {
+      if (
+        screenCoachReply(
+          text,
+          locale,
+          screen.scheduleDoses,
+          screen.medicationNames,
+        ).block
+      ) {
+        return false;
+      }
+      if (
+        detectRefusal({ message: text, locale }).reason === "prompt_injection"
+      ) {
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Runs a `propose_plan` call: stages the plan as `proposed`. */
 export async function proposePlanFromTool(
   args: ProposePlanArgs,
 ): Promise<ProposePlanOutcome> {
@@ -102,6 +154,21 @@ async function runPropose(args: ProposePlanArgs): Promise<ProposePlanOutcome> {
   ) {
     return { kind: "declined", reason: "invalid" };
   }
+  const [scheduleDoses, medicationNames] = await Promise.all([
+    args.scheduleDoses ??
+      getScheduledDoseValues(userId).catch((): number[] => []),
+    args.medicationNames ??
+      getMedicationNames(userId).catch((): string[] => []),
+  ]);
+  if (
+    !planTextPasses(
+      [ifCue, thenAction, ...(target ? [target] : [])],
+      args.locale,
+      { scheduleDoses, medicationNames },
+    )
+  ) {
+    return { kind: "declined", reason: "unsafe" };
+  }
   const reviewInDays = clampReviewDays(call.reviewInDays);
   const now = new Date();
 
@@ -129,7 +196,8 @@ async function runPropose(args: ProposePlanArgs): Promise<ProposePlanOutcome> {
   });
 
   // One proposal per answer: a plan this conversation proposed since the
-  // person's message the turn answers.
+  // person's message the turn answers. (Within the turn, the loop allows one
+  // `propose_plan` per answer before this runs.)
   if (
     open.some(
       (plan) =>
@@ -161,23 +229,19 @@ async function runPropose(args: ProposePlanArgs): Promise<ProposePlanOutcome> {
     return { kind: "declined", reason: "too_many_open" };
   }
 
-  // Field-by-field (no mass assignment). `reviewDate` holds the proposed
-  // window until the person decides; the sweep only reviews active plans.
-  const row = await prisma.coachPlan.create({
-    data: {
-      userId,
-      metric,
-      ifCueEncrypted: encryptToBytes(ifCue),
-      thenActionEncrypted: encryptToBytes(thenAction),
-      targetEncrypted: target ? encryptToBytes(target) : null,
-      status: "proposed",
-      reviewDate: new Date(now.getTime() + reviewInDays * MS_PER_DAY),
-      sourceConversationId: conversationId,
-    },
-    select: { id: true },
+  // Written with the answer that carries the proposal, never before.
+  const planId = stageTurnWrite({
+    kind: "plan",
+    userId,
+    conversationId,
+    metric,
+    ifCue,
+    thenAction,
+    target,
+    reviewInDays,
   });
   const proposal: CoachPlanProposal = {
-    planId: row.id,
+    planId,
     metric,
     reviewInDays,
     ifCue,

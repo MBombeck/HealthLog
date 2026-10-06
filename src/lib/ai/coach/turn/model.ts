@@ -458,6 +458,8 @@ export async function runTurnModel(args: {
           ...(args.userMessageId ? { userMessageId: args.userMessageId } : {}),
           inventory: inventory.entries,
           conversationWindowSet: args.conversationWindowSet,
+          scheduleDoses: ctx.scheduleDoses,
+          medicationNames: ctx.medicationNames,
         },
         checkpointScreen: { userMessage: args.message },
         // v1.39.4 — live steps: a `running` step as each call starts, its

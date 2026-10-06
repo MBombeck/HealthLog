@@ -53,6 +53,7 @@ import {
   PROPOSED_FACT_SOURCE,
   REMEMBER_FACT_MAX_CHARS,
 } from "./shared";
+import { TURN_PROPOSAL_PREFIX, stageTurnWrite } from "./turn-writes";
 
 /** A fact the Coach saved in a turn. */
 const COACH_FACT_CONFIDENCE = 80;
@@ -60,8 +61,6 @@ const COACH_FACT_CONFIDENCE = 80;
 const USER_FACT_CONFIDENCE = 90;
 /** Share of the fact's words that must come from the person's message. */
 export const ORIGIN_OVERLAP_MIN = 0.5;
-/** The prefix of a proposal id minted in a turn (a pending row uses its id). */
-const TURN_PROPOSAL_PREFIX = "mp_";
 /** How long a turn's "one note" mark is kept. */
 const TURN_MARK_TTL_MS = 10 * 60_000;
 
@@ -171,13 +170,21 @@ export function factComesFromMessage(fact: string, message: string): boolean {
   return hits / factWords.size >= ORIGIN_OVERLAP_MIN;
 }
 
-/** The category a fact is filed under once its wording has been read. */
+/**
+ * The category a fact is filed under once its wording has been read. A fact
+ * that names a medication is filed under `medication` whatever it was filed
+ * under before, so it stays out while the medications module is off; any
+ * other health wording moves a non-health category to `condition`; a health
+ * category whose wording no longer reads as health keeps its category (the
+ * stricter side).
+ */
 export function settleCategory(
   category: CoachMemoryCategory,
   text: string,
 ): CoachMemoryCategory {
-  if (HEALTH_MEMORY_CATEGORIES.has(category)) return category;
   const kind = healthTermKind(text);
+  if (kind === "medication") return "medication";
+  if (HEALTH_MEMORY_CATEGORIES.has(category)) return category;
   return kind ?? category;
 }
 
@@ -302,21 +309,22 @@ async function runRemember(
     };
   }
 
-  const row = await prisma.coachFact.create({
-    data: {
-      userId,
-      factEncrypted: encryptToBytes(fact),
-      category,
-      confidence: COACH_FACT_CONFIDENCE,
-      sourceConversationId: conversationId,
-      sourceMessageId: userMessageId,
-      source: "coach",
-    },
-    select: { id: true },
+  // Written with the answer that carries the note, never before: an answer
+  // that is blocked, fails or is abandoned leaves nothing behind
+  // (`turn-writes.ts`).
+  const factId = stageTurnWrite({
+    kind: "fact",
+    userId,
+    conversationId,
+    fact,
+    category,
+    confidence: COACH_FACT_CONFIDENCE,
+    sourceMessageId: userMessageId,
+    source: "coach",
   });
   return {
     kind: "saved",
-    note: { proposal: false, factId: row.id, category, fact },
+    note: { proposal: false, factId, category, fact },
   };
 }
 
@@ -404,34 +412,43 @@ async function runDecide(
 
   if (!accept) return { kind: "declined" };
 
-  // Answered before: the fact this message proposed is already saved.
-  const already = await prisma.coachFact.findFirst({
-    where: { userId, sourceMessageId: messageId, source: "user" },
-    select: { id: true },
-  });
-  if (already) return { kind: "stale" };
-
   const fact = normaliseFactText(proposal.fact);
-  const active = await loadActiveFacts(prisma, userId);
-  const twin = active.find(
-    (row) =>
-      row.source !== PROPOSED_FACT_SOURCE && isNearDuplicate(fact, [row.text]),
-  );
-  if (twin) return { kind: "saved", factId: twin.id };
+  // One answer per message, decided atomically: two taps that arrive
+  // together queue on the message's lock, and the second finds the first's
+  // fact and is stale instead of writing a twin.
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`
+      SELECT 1 AS locked
+      FROM pg_advisory_xact_lock(hashtextextended(${`coach-fact-decision:${messageId}`}, 0))`;
+    // Answered before: the fact this message proposed is already saved.
+    const already = await tx.coachFact.findFirst({
+      where: { userId, sourceMessageId: messageId, source: "user" },
+      select: { id: true },
+    });
+    if (already) return { kind: "stale" as const };
 
-  const row = await prisma.coachFact.create({
-    data: {
-      userId,
-      factEncrypted: encryptToBytes(fact),
-      category: proposal.category,
-      confidence: USER_FACT_CONFIDENCE,
-      sourceConversationId: conversationId,
-      sourceMessageId: messageId,
-      source: "user",
-    },
-    select: { id: true },
+    const active = await loadActiveFacts(tx, userId);
+    const twin = active.find(
+      (row) =>
+        row.source !== PROPOSED_FACT_SOURCE &&
+        isNearDuplicate(fact, [row.text]),
+    );
+    if (twin) return { kind: "saved" as const, factId: twin.id };
+
+    const row = await tx.coachFact.create({
+      data: {
+        userId,
+        factEncrypted: encryptToBytes(fact),
+        category: settleCategory(proposal.category, fact),
+        confidence: USER_FACT_CONFIDENCE,
+        sourceConversationId: conversationId,
+        sourceMessageId: messageId,
+        source: "user",
+      },
+      select: { id: true },
+    });
+    return { kind: "saved" as const, factId: row.id };
   });
-  return { kind: "saved", factId: row.id };
 }
 
 // ── The remember button ─────────────────────────────────────────────────────

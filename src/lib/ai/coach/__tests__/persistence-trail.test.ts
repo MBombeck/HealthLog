@@ -9,6 +9,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const txCreate = {
   coachConversation: { update: vi.fn() },
   coachMessage: { create: vi.fn() },
+  // The answer marks a background proposal it offers (`turn-writes.ts`).
+  $executeRaw: vi.fn(async () => 1),
 };
 const findFirst = vi.fn();
 vi.mock("@/lib/db", () => ({

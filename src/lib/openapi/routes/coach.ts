@@ -331,7 +331,7 @@ const coachFactCreateRequest = coachFactCreateSchema.meta({
 const coachFactPatchRequest = coachFactPatchSchema.meta({
   id: "CoachFactPatchRequest",
   description:
-    "v1.41 — the fact's new wording (3..160 characters). Only the text; category and source stay. Strict: unknown keys 422.",
+    "v1.41 — the fact's new wording (3..160 characters). Only the text: the server reads the new wording to file it (a fact that names a medication moves to `medication`, other health wording moves a non-health fact to `condition`) and a health fact the caller wrote counts as confirmed. Strict: unknown keys 422.",
 });
 
 const coachFactWrittenItem = z.object({
@@ -876,7 +876,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Read the trail text of one Coach message",
       description:
-        "v1.41 — the model-written text of one assistant message's trail: the screened reasoning titles and summaries by trail entry, the fact texts the turn recalled, and a pending fact proposal. The trail's structure (phases, statuses, counts) is plaintext on the message's `metricSource.activity`; this route serves only the text, decrypted for the account that owns the conversation. Fetch lazily when the person opens the trail. A mixed read: while the Coach's text may not be shown for the record, the answer is 200 with `trail: null` and the `ai` state beside it. A foreign or unknown conversation or message id maps to 404 (never 403). Auth via cookie or a full-access Bearer token.",
+        "v1.41 — the text of one assistant message's trail: the screened reasoning titles and summaries by trail entry (model-written), the fact texts the turn recalled, and a pending fact proposal (the person's own data). The trail's structure (phases, statuses, counts) is plaintext on the message's `metricSource.activity`; this route serves only the text, decrypted for the account that owns the conversation. Fetch lazily when the person opens the trail. A mixed read: while the Coach's text may not be shown for the record, `entries` is empty and the `ai` state rides beside it, but `recalled` and `proposal` are still served, since they are the person's data. While the medications module is off, recalled facts and a proposal that concern a medication are left out. `trail` is null when the message has no trail or nothing in it may be served. A foreign or unknown conversation or message id maps to 404 (never 403). Auth via cookie or a full-access Bearer token.",
       parameters: [
         {
           name: "id",
@@ -895,14 +895,15 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       ],
       responses: {
         "200": {
-          description: "The trail text, or null while it may not be served.",
+          description:
+            "The trail text, or null when there is none or nothing in it may be served.",
           content: {
             "application/json": {
               schema: dataEnvelope(
                 z.object({
                   trail: coachTrailSchema.nullable(),
                   ai: aiCapabilityState.describe(
-                    "The `coach` capability. While unavailable `trail` is null.",
+                    "The `coach` capability. While unavailable `trail.entries` is empty.",
                   ),
                 }),
                 "CoachMessageTrailResponse",
@@ -1311,7 +1312,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Edit one Coach fact's wording",
       description:
-        "v1.41 — rewrites the text of a fact the caller owns (re-encrypted at rest); category and source stay. A proposal still waiting for the caller's confirmation, an unknown, cross-user or deleted id are all a 404. Never AI-gated. Auth via cookie or Bearer.",
+        'v1.41 — rewrites the text of a fact the caller owns (re-encrypted at rest) and files it by its new wording: text that names a medication moves to `medication`, so the medications module keeps filtering it; other health wording moves a non-health category to `condition`; otherwise the category stays. A health fact the caller edited counts as confirmed (`source: "user"`). A proposal still waiting for the caller\'s confirmation, an unknown, cross-user or deleted id are all a 404. Never AI-gated. Auth via cookie or Bearer.',
       parameters: [
         {
           name: "id",

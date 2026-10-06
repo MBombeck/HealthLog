@@ -1,18 +1,26 @@
 /**
- * v1.41 — the trail route: owner-narrowed, 404 for anything else, and the
- * model-written text only while the Coach's text may be shown.
+ * v1.41 — the trail route: owner-narrowed, 404 for anything else, the
+ * model-written text only while the Coach's text may be shown, and the
+ * person's own facts (recalled, proposed) always, minus medication facts
+ * while the medications module is off.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import type * as ApiHandlerModule from "@/lib/api-handler";
 
-const { requireAuth, readMessageTrail, aiCapabilityToServe } = vi.hoisted(
-  () => ({
-    requireAuth: vi.fn(),
-    readMessageTrail: vi.fn(),
-    aiCapabilityToServe: vi.fn(),
-  }),
-);
+const {
+  requireAuth,
+  readMessageTrail,
+  aiCapabilityToServe,
+  isModuleEnabled,
+  findMany,
+} = vi.hoisted(() => ({
+  requireAuth: vi.fn(),
+  readMessageTrail: vi.fn(),
+  aiCapabilityToServe: vi.fn(),
+  isModuleEnabled: vi.fn(),
+  findMany: vi.fn(),
+}));
 
 vi.mock("@/lib/api-handler", async (importOriginal) => {
   const actual = await importOriginal<typeof ApiHandlerModule>();
@@ -26,6 +34,11 @@ vi.mock("@/lib/api-handler", async (importOriginal) => {
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 vi.mock("@/lib/ai/coach/persistence", () => ({ readMessageTrail }));
 vi.mock("@/lib/ai/capabilities/gate", () => ({ aiCapabilityToServe }));
+vi.mock("@/lib/modules/gate", () => ({ isModuleEnabled }));
+vi.mock("@/lib/db", () => ({ prisma: { coachFact: { findMany } } }));
+vi.mock("@/lib/ai/coach/bytes-codec", () => ({
+  decryptFromBytes: (b: Uint8Array) => new TextDecoder().decode(b),
+}));
 
 import { GET } from "../route";
 
@@ -57,7 +70,25 @@ beforeEach(() => {
     reason: null,
     onDeviceAllowed: true,
   });
+  isModuleEnabled.mockResolvedValue(true);
+  findMany.mockResolvedValue([]);
 });
+
+const UNAVAILABLE = {
+  available: false,
+  reason: "disabled_by_user",
+  onDeviceAllowed: false,
+};
+
+const WITH_FACTS = {
+  ...TRAIL,
+  recalled: ["Prefers walks after dinner", "Takes Mounjaro since May"],
+  proposal: {
+    proposalId: "mp_1",
+    category: "condition",
+    fact: "Has asthma",
+  },
+};
 
 describe("GET /api/insights/chat/[id]/messages/[messageId]/trail", () => {
   it("reads under the caller's own id and the path ids only", async () => {
@@ -92,6 +123,48 @@ describe("GET /api/insights/chat/[id]/messages/[messageId]/trail", () => {
     expect(body.data.trail).toBeNull();
     expect(body.data.ai.available).toBe(false);
     expect(aiCapabilityToServe).toHaveBeenCalledWith(USER_ID, "coach");
+  });
+
+  it("serves the person's own facts while the model text is withheld", async () => {
+    readMessageTrail.mockResolvedValue({ trail: WITH_FACTS });
+    aiCapabilityToServe.mockResolvedValue(UNAVAILABLE);
+    const body = await (await call()).json();
+    expect(body.data.trail).toEqual({
+      entries: [],
+      recalled: WITH_FACTS.recalled,
+      proposal: WITH_FACTS.proposal,
+    });
+    expect(body.data.ai.available).toBe(false);
+  });
+
+  it("withholds medication facts while the medications module is off", async () => {
+    readMessageTrail.mockResolvedValue({
+      trail: {
+        ...WITH_FACTS,
+        recalled: [...WITH_FACTS.recalled, "Morning pill with coffee"],
+        proposal: {
+          proposalId: "mp_1",
+          category: "medication",
+          fact: "Takes ramipril",
+        },
+      },
+    });
+    isModuleEnabled.mockResolvedValue(false);
+    // A stored fact filed under medication whose words the lexicon misses.
+    findMany.mockResolvedValue([
+      { factEncrypted: new TextEncoder().encode("Morning pill with coffee") },
+    ]);
+    const body = await (await call()).json();
+    expect(isModuleEnabled).toHaveBeenCalledWith(USER_ID, "medications");
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: USER_ID, category: "medication" },
+      }),
+    );
+    expect(body.data.trail).toEqual({
+      entries: TRAIL.entries,
+      recalled: ["Prefers walks after dinner"],
+    });
   });
 
   it("answers a message without a trail with null", async () => {
