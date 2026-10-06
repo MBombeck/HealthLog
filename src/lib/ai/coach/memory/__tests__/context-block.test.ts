@@ -180,7 +180,7 @@ describe("buildMemoryContextBlock", () => {
     );
   });
 
-  it("offers one waiting proposal, once, without putting it in the block", async () => {
+  it("offers one waiting proposal without putting it in the block or marking it offered", async () => {
     state.pending = [
       {
         id: "row1",
@@ -196,7 +196,10 @@ describe("buildMemoryContextBlock", () => {
       fact: "Allergy: peanut (self-reported)",
     });
     expect(block?.text).toBe("");
-    expect(state.stamps).toBe(1);
+    // Building the block offers nothing yet: the proposal counts as offered
+    // only once an answer carrying it is stored (`turn-writes.ts`), so a turn
+    // that fails offers it again.
+    expect(state.stamps).toBe(0);
     expect(state.factWhere[1]).toMatchObject({ lastUsedAt: null });
   });
 

@@ -34,6 +34,12 @@ const db = vi.hoisted(() => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    // The decision runs in one transaction under the message's lock.
+    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => {
+      const { prisma } = await import("@/lib/db");
+      return fn(prisma);
+    }),
+    $queryRaw: vi.fn(async () => [{ locked: 1 }]),
     coachFact: {
       findMany: vi.fn(async () => db.facts),
       findFirst: vi.fn(async () => null),
@@ -65,6 +71,34 @@ import {
   rememberMessageAsFact,
   resetTurnMarksForTests,
 } from "../remember";
+import {
+  commitTurnWrites,
+  resetStagedTurnWritesForTests,
+} from "../turn-writes";
+import type { Prisma } from "@/generated/prisma/client";
+import type { CoachProvenance } from "../../types";
+
+/** Stores an answer with `provenance`, the way `appendMessage` does. */
+async function storeAnswer(
+  provenance: Partial<CoachProvenance>,
+  conversationId = "c1",
+) {
+  const { prisma } = await import("@/lib/db");
+  const executed: unknown[] = [];
+  const tx = {
+    coachFact: prisma.coachFact,
+    coachPlan: { create: vi.fn() },
+    $executeRaw: vi.fn(async (...args: unknown[]) => {
+      executed.push(args);
+      return 1;
+    }),
+  } as unknown as Prisma.TransactionClient;
+  await commitTurnWrites(tx, {
+    conversationId,
+    provenance: { windows: [], metrics: [], ...provenance },
+  });
+  return { executed };
+}
 
 const enc = (s: string) => new TextEncoder().encode(s);
 const BASE = { userId: "u1", conversationId: "c1" };
@@ -77,6 +111,7 @@ beforeEach(() => {
   db.latestUser = { id: "um1" };
   db.updateCount = 1;
   resetTurnMarksForTests();
+  resetStagedTurnWritesForTests();
 });
 
 describe("factComesFromMessage", () => {
@@ -112,7 +147,7 @@ describe("factComesFromMessage", () => {
 });
 
 describe("rememberFactFromTool", () => {
-  it("saves a goal at once and notes it", async () => {
+  it("saves a goal with the answer that notes it", async () => {
     const out = await rememberFactFromTool({
       ...BASE,
       userMessage: "I want to get down to 75 kg by December.",
@@ -126,17 +161,82 @@ describe("rememberFactFromTool", () => {
       kind: "saved",
       note: {
         proposal: false,
-        factId: "f1",
+        factId: expect.stringMatching(/^c[0-9a-f]{24}$/),
         category: "goal",
         fact: "Wants to reach 75 kg by December",
       },
     });
+    // Nothing is written in the tool round.
+    expect(db.created).toHaveLength(0);
+    if (out.kind !== "saved") throw new Error("unreachable");
+    await storeAnswer({
+      memoryNote: {
+        proposal: false,
+        factId: out.note.factId,
+        category: "goal",
+      },
+    });
     expect(db.created[0]).toMatchObject({
+      id: out.note.factId,
       userId: "u1",
       category: "goal",
       source: "coach",
       sourceConversationId: "c1",
       sourceMessageId: "um1",
+    });
+  });
+
+  it("writes nothing when the stored answer does not carry the note", async () => {
+    const out = await rememberFactFromTool({
+      ...BASE,
+      userMessage: "I prefer to walk after dinner.",
+      call: {
+        category: "preference",
+        fact: "Prefers to walk after dinner",
+        why: "preference",
+      },
+    });
+    expect(out.kind).toBe("saved");
+    // A blocked answer is stored without its memoryNote; a failed or
+    // abandoned turn stores only the empty marker.
+    await storeAnswer({});
+    expect(db.created).toHaveLength(0);
+    // The staged fact went with that turn: nothing can claim it later.
+    if (out.kind !== "saved") throw new Error("unreachable");
+    await storeAnswer({
+      memoryNote: {
+        proposal: false,
+        factId: out.note.factId,
+        category: "preference",
+      },
+    });
+    expect(db.created).toHaveLength(0);
+  });
+
+  it("stamps an offered background proposal only when the answer is stored", async () => {
+    const offered = await storeAnswer({
+      memoryNote: { proposal: true, proposalId: "row1", category: "condition" },
+    });
+    expect(offered.executed).toHaveLength(1);
+    const turnProposal = await storeAnswer({
+      memoryNote: { proposal: true, proposalId: "mp_1", category: "condition" },
+    });
+    expect(turnProposal.executed).toHaveLength(0);
+  });
+
+  it("files a medication fact under medication whatever the model filed it under", async () => {
+    const out = await rememberFactFromTool({
+      ...BASE,
+      userMessage: "I have taken metformin with breakfast for years.",
+      call: {
+        category: "condition",
+        fact: "Takes metformin with breakfast",
+        why: "health",
+      },
+    });
+    expect(out).toMatchObject({
+      kind: "proposed",
+      note: { category: "medication" },
     });
   });
 
@@ -279,6 +379,15 @@ describe("decideFactProposal", () => {
       accept: true,
     });
     expect(out).toEqual({ kind: "saved", factId: "f1" });
+    // Under the message's lock, in one transaction.
+    const { prisma } = await import("@/lib/db");
+    expect(prisma.$transaction).toHaveBeenCalled();
+    expect(
+      String(
+        (prisma.$queryRaw as unknown as { mock: { calls: unknown[][] } }).mock
+          .calls[0]?.[0],
+      ),
+    ).toContain("pg_advisory_xact_lock");
     expect(db.created[0]).toMatchObject({
       category: "medication",
       source: "user",

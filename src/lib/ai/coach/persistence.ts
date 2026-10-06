@@ -29,6 +29,7 @@ import {
   coachTrailSchema,
 } from "./stream-events";
 import { ACTIVITY_MAX_ENTRIES, TRAIL_MAX_BYTES } from "./activity/contract";
+import { commitTurnWrites } from "./memory/turn-writes";
 import { COACH_CONVERSATION_TITLE_MAX } from "./types";
 import { isRedundantViewChip } from "./follow-ups/view-chip";
 import {
@@ -616,6 +617,14 @@ export async function appendMessage(
       where: { id: params.conversationId },
       data: { updatedAt: new Date() },
     });
+    // v1.41 — the fact and the plan the turn's tools kept are written with
+    // the answer that carries them, never before (`memory/turn-writes.ts`).
+    if (params.role === "assistant") {
+      await commitTurnWrites(tx, {
+        conversationId: params.conversationId,
+        provenance: params.metricSource,
+      });
+    }
     return message;
   });
 
