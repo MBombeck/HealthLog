@@ -97,7 +97,22 @@ describe("runCoachMemoryRefresh", () => {
       COACH_MEMORY_QUIET_MS - 10 * 60_000,
     );
     expect(extractAndStoreFacts).not.toHaveBeenCalled();
-    expect(aiCapabilityForJob).not.toHaveBeenCalled();
+    // The capability is asked first, so a switched-off Coach never re-queues.
+    expect(aiCapabilityForJob).toHaveBeenCalledTimes(1);
+  });
+
+  it("ends without re-queueing when the Coach is off, however fresh the conversation", async () => {
+    vi.mocked(aiCapabilityForJob).mockResolvedValue({
+      available: false,
+      reason: "user_disabled",
+      onDeviceAllowed: false,
+    } as never);
+    newestMessage.mockResolvedValue({
+      createdAt: new Date(NOW.getTime() - 60_000),
+    });
+    await runCoachMemoryRefresh(payload, NOW);
+    expect(enqueueCoachMemoryRefresh).not.toHaveBeenCalled();
+    expect(extractAndStoreFacts).not.toHaveBeenCalled();
   });
 
   it("runs on a short conversation once it is quiet (no twenty-turn gate)", async () => {
@@ -113,9 +128,14 @@ describe("runCoachMemoryRefresh", () => {
   });
 
   it("does nothing for a conversation that is gone", async () => {
+    vi.mocked(aiCapabilityForJob).mockResolvedValue({
+      available: true,
+      reason: null,
+      onDeviceAllowed: true,
+    });
     newestMessage.mockResolvedValue(null);
     await runCoachMemoryRefresh(payload, NOW);
-    expect(aiCapabilityForJob).not.toHaveBeenCalled();
+    expect(extractAndStoreFacts).not.toHaveBeenCalled();
     expect(enqueueCoachMemoryRefresh).not.toHaveBeenCalled();
   });
 });

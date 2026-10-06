@@ -190,7 +190,7 @@ export function AssistantSection() {
         >
           <SettingsToggle
             label={t(REASONING_ADMIN_KEYS.enabled)}
-            description={t("admin.assistant.reasoning.description")}
+            description={t(REASONING_ADMIN_KEYS.description)}
             checked={reasoningOn}
             onCheckedChange={(checked) =>
               mutation.mutate({ aiReasoningEnabled: checked })

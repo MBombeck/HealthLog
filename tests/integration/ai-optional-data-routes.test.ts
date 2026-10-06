@@ -101,6 +101,10 @@ async function seed(recordId: string): Promise<void> {
       category: "preference",
       confidence: 80,
       createdAt: new Date(NOW - DAY),
+      // Pinned like `createdAt`: each state re-seeds the record, and the
+      // facts read publishes `updatedAt`, so a wall-clock stamp would differ
+      // between states for reasons that have nothing to do with AI.
+      updatedAt: new Date(NOW - DAY),
     },
   });
 }

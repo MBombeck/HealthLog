@@ -61,6 +61,21 @@ export async function runCoachMemoryRefresh(
   // fallback body for every locale that has no reviewed one.
   const locale = payload.locale ?? "en";
 
+  // The `coach` capability first, before the quiet-time check and any transcript
+  // read: a job for a Coach that is switched off ends here rather than
+  // re-queueing itself until the conversation goes quiet. The chat route that
+  // enqueued this admitted the Coach, but the operator, the person's Coach
+  // switch or a consent can change while the job waits. Stored memory stays
+  // as it is; only new model work stops. The chokepoint re-checks per step.
+  const capability = await aiCapabilityForJob(userId, "coach");
+  if (!capability.available) {
+    annotate({
+      action: { name: "coach.memory.refresh.skipped" },
+      meta: { reason: capability.reason },
+    });
+    return;
+  }
+
   const quiet = await quietForMs(conversationId, userId, now);
   if (quiet === null) {
     annotate({
@@ -77,19 +92,6 @@ export async function runCoachMemoryRefresh(
     annotate({
       action: { name: "coach.memory.refresh.deferred" },
       meta: { quietSeconds: Math.round(quiet / 1000) },
-    });
-    return;
-  }
-
-  // The `coach` capability before any transcript is read. The chat route that
-  // enqueued this admitted the Coach, but the operator, the person's Coach
-  // switch or a consent can change while the job waits. Stored memory stays
-  // as it is; only new model work stops. The chokepoint re-checks per step.
-  const capability = await aiCapabilityForJob(userId, "coach");
-  if (!capability.available) {
-    annotate({
-      action: { name: "coach.memory.refresh.skipped" },
-      meta: { reason: capability.reason },
     });
     return;
   }

@@ -128,4 +128,5 @@ export const REASONING_SETTING_KEYS = {
 export const REASONING_ADMIN_KEYS = {
   enabled: "admin.assistant.reasoning.enabled",
   max: "admin.assistant.reasoning.max",
+  description: "admin.assistant.reasoning.description",
 } as const;
