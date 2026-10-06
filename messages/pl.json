@@ -2836,9 +2836,8 @@
       },
       "rememberMessage": {
         "action": "Zapamiętaj",
-        "done": "Zapisano w informacjach o sobie",
-        "duplicate": "Już znajduje się w informacjach o sobie",
-        "failed": "Nie udało się zapisać. Spróbuj ponownie."
+        "failed": "Nie udało się zapisać. Spróbuj ponownie.",
+        "alreadyKept": "Coach już to pamięta."
       },
       "guided": {
         "offerTitle": "Coach ma {count} pytania do Ciebie",
@@ -6204,7 +6203,8 @@
           "low": "Niskie",
           "medium": "Średnie",
           "high": "Wysokie"
-        }
+        },
+        "coachNote": "W Coachu obowiązuje głębokość myślenia z ustawień Coacha."
       }
     },
     "dashboard": {
@@ -7248,7 +7248,8 @@
       },
       "reasoning": {
         "enabled": "Zezwalaj na głębszy namysł",
-        "max": "Największa głębokość namysłu"
+        "max": "Największa głębokość namysłu",
+        "description": "Modele myślą przed odpowiedzią: Coach, codzienne podsumowanie i podsumowania okresów. Dokładniej, ale więcej tokenów."
       }
     },
     "modules": {

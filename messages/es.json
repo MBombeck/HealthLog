@@ -2836,9 +2836,8 @@
       },
       "rememberMessage": {
         "action": "Recordar",
-        "done": "Guardado en tu información personal",
-        "duplicate": "Ya está en tu información personal",
-        "failed": "No se pudo guardar. Inténtalo de nuevo."
+        "failed": "No se pudo guardar. Inténtalo de nuevo.",
+        "alreadyKept": "El Coach ya lo recuerda."
       },
       "guided": {
         "offerTitle": "El Coach tiene {count} preguntas para ti",
@@ -6204,7 +6203,8 @@
           "low": "Bajo",
           "medium": "Medio",
           "high": "Alto"
-        }
+        },
+        "coachNote": "En el Coach se aplica la profundidad de pensamiento de los ajustes del Coach."
       }
     },
     "dashboard": {
@@ -7248,7 +7248,8 @@
       },
       "reasoning": {
         "enabled": "Permitir razonamiento profundo",
-        "max": "Profundidad máxima de razonamiento"
+        "max": "Profundidad máxima de razonamiento",
+        "description": "Los modelos piensan antes de responder: el Coach, el resumen diario y los resúmenes por periodo. Más precisos, usan más tokens."
       }
     },
     "modules": {

@@ -2836,9 +2836,8 @@
       },
       "rememberMessage": {
         "action": "Mémoriser",
-        "done": "Enregistré dans vos informations personnelles",
-        "duplicate": "Déjà présent dans vos informations personnelles",
-        "failed": "Échec de l’enregistrement. Veuillez réessayer."
+        "failed": "Échec de l’enregistrement. Veuillez réessayer.",
+        "alreadyKept": "Le Coach s'en souvient déjà."
       },
       "guided": {
         "offerTitle": "Le Coach a {count} questions pour vous",
@@ -6204,7 +6203,8 @@
           "low": "Faible",
           "medium": "Moyen",
           "high": "Élevé"
-        }
+        },
+        "coachNote": "Dans le Coach, c'est la profondeur de réflexion des réglages du Coach qui s'applique."
       }
     },
     "dashboard": {
@@ -7248,7 +7248,8 @@
       },
       "reasoning": {
         "enabled": "Autoriser la réflexion approfondie",
-        "max": "Profondeur de réflexion maximale"
+        "max": "Profondeur de réflexion maximale",
+        "description": "Les modèles réfléchissent avant de répondre : le Coach, le briefing quotidien et les synthèses de période. Plus précis, plus de jetons."
       }
     },
     "modules": {

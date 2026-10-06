@@ -2836,9 +2836,8 @@
       },
       "rememberMessage": {
         "action": "Remember",
-        "done": "Saved to your self-context",
-        "duplicate": "Already part of your self-context",
-        "failed": "Could not save. Please try again."
+        "failed": "Could not save. Please try again.",
+        "alreadyKept": "The Coach already remembers this."
       },
       "guided": {
         "offerTitle": "The Coach has {count} follow-up questions for you",
@@ -6204,7 +6203,8 @@
           "low": "Low",
           "medium": "Medium",
           "high": "High"
-        }
+        },
+        "coachNote": "In the Coach, the thinking depth from the Coach settings applies."
       }
     },
     "dashboard": {
@@ -7248,7 +7248,8 @@
       },
       "reasoning": {
         "enabled": "Allow deeper thinking",
-        "max": "Highest thinking depth"
+        "max": "Highest thinking depth",
+        "description": "Models think before they answer: the Coach, the daily briefing and the period summaries. More precise, uses more tokens."
       }
     },
     "modules": {
