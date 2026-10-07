@@ -11,6 +11,7 @@ import type {
 import {
   buildOpenAIMessages,
   mapFinishReason,
+  parseCachedTokens,
   raiseEmbeddedError,
   readEmbeddedError,
   sanitiseBodyExcerpt,
@@ -411,6 +412,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       }>;
       usage?: {
         total_tokens?: number;
+        prompt_tokens_details?: { cached_tokens?: number };
         completion_tokens_details?: { reasoning_tokens?: number };
       };
     };
@@ -459,6 +461,11 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     return {
       content,
       tokensUsed: json.usage?.total_tokens ?? null,
+      // v1.41.2 — llama.cpp, vLLM and the hosted gateways this client also
+      // serves report a prompt-cache hit the Chat Completions way; without it
+      // the Coach turn budget counted a cached prefix in full. Ollama sends
+      // none, which leaves it null.
+      cachedInputTokens: parseCachedTokens(json),
       model: this.config.model,
       providerType: "local",
       // v1.28.28 (#470) — surface why the model stopped so the JSON callers
@@ -543,7 +550,10 @@ export class LocalOpenAICompatibleClient implements AIProvider {
           message?: { content?: string };
           finish_reason?: string;
         }>;
-        usage?: { total_tokens?: number };
+        usage?: {
+          total_tokens?: number;
+          prompt_tokens_details?: { cached_tokens?: number };
+        };
       } | null;
       // The server ignored `stream` and answered buffered — the embedded
       // failure can ride this body exactly as it rides the non-streaming one.
@@ -577,6 +587,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       return {
         content: buffered,
         tokensUsed: json?.usage?.total_tokens ?? null,
+        cachedInputTokens: json ? parseCachedTokens(json) : null,
         model: this.config.model,
         providerType: "local",
         finishReason: mapFinishReason(json?.choices?.[0]?.finish_reason),
@@ -589,6 +600,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     let sseBuffer = "";
     let content = "";
     let tokensUsed: number | null = null;
+    let cachedInputTokens: number | null = null;
     let reasoningTokens: number | null = null;
     let finishReason: string | undefined;
 
@@ -679,6 +691,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
             }>;
             usage?: {
               total_tokens?: number;
+              prompt_tokens_details?: { cached_tokens?: number };
               completion_tokens_details?: { reasoning_tokens?: number };
             };
           };
@@ -702,6 +715,8 @@ export class LocalOpenAICompatibleClient implements AIProvider {
           if (typeof chunk.usage?.total_tokens === "number") {
             tokensUsed = chunk.usage.total_tokens;
           }
+          const cached = chunk.usage?.prompt_tokens_details?.cached_tokens;
+          if (typeof cached === "number") cachedInputTokens = cached;
           const rt = chunk.usage?.completion_tokens_details?.reasoning_tokens;
           if (typeof rt === "number") reasoningTokens = rt;
           const chunkFinish = chunk.choices?.[0]?.finish_reason;
@@ -761,6 +776,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     return {
       content,
       tokensUsed,
+      cachedInputTokens,
       model: this.config.model,
       providerType: "local",
       finishReason: mapFinishReason(finishReason),

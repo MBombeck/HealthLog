@@ -76,7 +76,7 @@ export const coachStepSchema = z
     id: z
       .string()
       .regex(/^s[1-9]\d{0,2}$/)
-      .describe("`s1`..`s48`, unique within a turn."),
+      .describe("`s1`..`s64`, unique within a turn."),
     tool: z.enum([...COACH_TOOL_NAMES, "show_result", "snapshot"]),
     labelKey: z
       .string()

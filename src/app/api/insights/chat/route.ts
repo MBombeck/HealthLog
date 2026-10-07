@@ -40,6 +40,7 @@ import { runCoachTurn } from "@/lib/ai/coach/turn/pipeline";
 import type { ReasoningLevel } from "@/lib/ai/reasoning/levels";
 import { resolveCoachTurnReasoningLevel } from "@/lib/ai/reasoning/controls";
 import { streamProviderError, streamRefusal } from "@/lib/ai/coach/turn/sse";
+import { TURN_LIMITS } from "@/lib/ai/coach/tools/turn-budget";
 
 /**
  * The `coach` capability gate for a turn. Every unavailable reason throws the
@@ -72,11 +73,12 @@ async function coachCapabilityRefusal(): Promise<Response | null> {
  */
 const COACH_CONCURRENT_TURNS = 2;
 /**
- * How long a turn's slot is held at most: a turn's wall time (150 s) plus
- * the streaming of its reply. A slot whose release never arrived (a crashed
- * process) frees itself when the window ends.
+ * How long a turn's slot is held at most: the longest turn's wall time
+ * (`TURN_LIMITS.user.wallMs`, 200 s) plus 30 s for the streaming of its
+ * reply. A slot whose release never arrived (a crashed process) frees itself
+ * when the window ends.
  */
-const COACH_TURN_SLOT_MS = 180_000;
+const COACH_TURN_SLOT_MS = TURN_LIMITS.user.wallMs + 30_000;
 
 async function handleChatRequest(request: NextRequest): Promise<Response> {
   const auth = await requireAuth();

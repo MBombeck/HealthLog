@@ -26,6 +26,7 @@
  */
 import type { Locale } from "@/lib/i18n/config";
 import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
+import { TURN_LIMITS } from "@/lib/ai/coach/tools/turn-budget";
 import type {
   AiMessage,
   AiToolCall,
@@ -145,7 +146,7 @@ export interface ScenarioProvider {
  * How many rounds a live scenario may take: the round cap of the person's
  * own plan (v1.41), the forced answer included.
  */
-const SCENARIO_MAX_ROUNDS = 12;
+const SCENARIO_MAX_ROUNDS = TURN_LIMITS.user.maxRounds;
 
 function parseArgs(raw: string): Record<string, unknown> {
   try {
@@ -236,7 +237,7 @@ function priorResultTurns(scenario: CoachScenario) {
  * the chat turn's own context (system prompt, tool-mode and dialog
  * addenda, DATA INVENTORY, EARLIER TABLES, transcript), put to a real
  * model over the real tool catalogue, comparisons and the dialog tools
- * for up to twelve rounds (v1.41), a question ending the run. Every call is
+ * for as many rounds as a turn on the person's own plan (v1.41), a question ending the run. Every call is
  * captured with its arguments and answered with a stand-in result; the
  * reply goes through the clarification and chip parsers the turn uses.
  *

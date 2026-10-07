@@ -46,17 +46,26 @@ export interface TurnLimits {
  * Fixed per payer, not configurable: the person's own plan, key or local
  * model gets room for a long "why" chain; a turn the operator pays for gets
  * a third of the tokens and half the rounds.
+ *
+ * v1.41.2 — about a third more on both sides (was 120k / 150 s / 12 rounds
+ * and 40k / 90 s / 6 rounds). A real turn on a person's own plan stopped for
+ * tokens after five rounds while it was still reading, and the operator
+ * side moves with it so the split stays the same.
  */
 export const TURN_LIMITS: Readonly<Record<TurnPayer, TurnLimits>> = {
-  user: { tokens: 120_000, wallMs: 150_000, maxRounds: 12 },
-  operator: { tokens: 40_000, wallMs: 90_000, maxRounds: 6 },
+  user: { tokens: 165_000, wallMs: 200_000, maxRounds: 16 },
+  operator: { tokens: 55_000, wallMs: 120_000, maxRounds: 8 },
 };
 
 /** The answer budget of one round, before any thinking budget. */
 export const ROUND_ANSWER_TOKENS = 600;
 
-/** What the final answer is given on top of its input. */
-export const FINAL_ANSWER_TOKENS = 1_200;
+/**
+ * What the final answer is given on top of its input. v1.41.2 — raised with
+ * the limits (was 1,200) so it keeps the same share of each payer's tokens:
+ * 1 % of the person's own budget, 3 % of the operator's.
+ */
+export const FINAL_ANSWER_TOKENS = 1_650;
 
 /** Cached input counts at this share of its size. */
 export const CACHED_INPUT_WEIGHT = 0.1;

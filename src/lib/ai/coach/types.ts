@@ -498,7 +498,7 @@ export type CoachStepReason =
   | "invalid_arguments";
 
 export interface CoachStep {
-  /** `s1`..`s48`, unique within a turn; frames upsert by id. */
+  /** `s1`..`s64`, unique within a turn; frames upsert by id. */
   id: string;
   tool: CoachToolName | "show_result" | "snapshot";
   /** Closed catalog key, e.g. `coach.step.read`. */

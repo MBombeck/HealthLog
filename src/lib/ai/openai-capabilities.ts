@@ -34,7 +34,7 @@ function isModernCanonicalModel(model: string): boolean {
   );
 }
 
-function isCanonicalOpenAIEndpoint(baseUrl: string): boolean {
+export function isCanonicalOpenAIEndpoint(baseUrl: string): boolean {
   try {
     const url = new URL(baseUrl);
     return (

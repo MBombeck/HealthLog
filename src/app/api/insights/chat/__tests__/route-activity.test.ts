@@ -279,7 +279,9 @@ describe("concurrent turns", () => {
     expect(m.checkRateLimit).toHaveBeenCalledWith(
       "coach-turn-active:u1",
       2,
-      180_000,
+      // The longest turn's wall time (200 s since v1.41.2) plus 30 s for
+      // its reply to stream.
+      230_000,
     );
   });
 });

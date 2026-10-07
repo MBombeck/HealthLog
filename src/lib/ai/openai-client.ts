@@ -3,6 +3,7 @@ import { callTimeoutMs } from "./effective-timeout";
 import { annotate } from "@/lib/logging/context";
 import type { AIProvider, CompletionParams, CompletionResult } from "./types";
 import {
+  isCanonicalOpenAIEndpoint,
   selectOpenAIChatCompletionsCapabilities,
   type OpenAIChatCompletionsCapabilities,
 } from "./openai-capabilities";
@@ -208,6 +209,13 @@ export class OpenAIClient implements AIProvider {
             : {}),
           ...(tools ? { tools } : {}),
           ...(params.toolChoice ? { tool_choice: params.toolChoice } : {}),
+          // v1.41.2 — the prompt-cache routing key `api.openai.com` documents
+          // (https://platform.openai.com/docs/guides/prompt-caching). Only
+          // there: a gateway or proxy behind another base URL may refuse a
+          // field it does not know.
+          ...(params.cacheKey && isCanonicalOpenAIEndpoint(this.config.baseUrl)
+            ? { prompt_cache_key: params.cacheKey }
+            : {}),
           // #1126 — the gateway entry's reasoning setting; Default sends
           // nothing. `api.openai.com` and Codex never get it. v1.41 — a call
           // that carries its own resolved level (`params.reasoning`) wins.

@@ -63,6 +63,7 @@ import type {
   CoachStep,
 } from "@/lib/ai/coach/types";
 import { COACH_FOLLOW_UP_KEYS } from "@/lib/ai/coach/dialog-keys";
+import { TURN_LIMITS } from "@/lib/ai/coach/tools/turn-budget";
 import { POST } from "@/app/api/insights/chat/route";
 
 import {
@@ -130,7 +131,7 @@ const call = (name: string, args: Record<string, unknown> = {}) => ({
 });
 
 /** Ten distinct reads: with `get_sleep` first, eleven fetching rounds. */
-const FORCED_READS: ReadonlyArray<[string, string]> = [
+const FORCED_READS: ReadonlyArray<[string, string, string?]> = [
   ["pulse", "last7days"],
   ["pulse", "last30days"],
   ["pulse", "last90days"],
@@ -141,6 +142,11 @@ const FORCED_READS: ReadonlyArray<[string, string]> = [
   ["bp", "lastYear"],
   ["sleep", "last90days"],
   ["sleep", "lastYear"],
+  // v1.41.2 — four more for the sixteen-round cap.
+  ["sleep", "last7days"],
+  ["pulse", "last30days", "previous"],
+  ["sleep", "last30days"],
+  ["bp", "last30days", "previous"],
 ];
 
 function script(name: string, lang: Lang): Round[] {
@@ -204,12 +210,18 @@ function script(name: string, lang: Lang): Round[] {
       return [];
     case "forced-final":
       // v1.41 — a new read every round, never a repeat, until the round cap
-      // of the person's own plan (twelve, the forced answer included) makes
-      // the twelfth round the answer.
+      // of the person's own plan (sixteen since v1.41.2, the forced answer
+      // included) makes the last round the answer.
       return [
         { calls: [call("get_sleep")] },
-        ...FORCED_READS.map(([metric, window]) => ({
-          calls: [call("get_metric_table", { metric, window })],
+        ...FORCED_READS.map(([metric, window, period]) => ({
+          calls: [
+            call("get_metric_table", {
+              metric,
+              window,
+              ...(period ? { period } : {}),
+            }),
+          ],
         })),
         { text: PROSE.forced[lang] },
       ];
@@ -766,9 +778,14 @@ describe.each(["de", "en"] as const)("in %s", (lang) => {
     const scenario = byName("forced-final", lang);
     const { observation, frames } = await run(scenario);
     expect(providerCalls.map((c) => c.toolChoice)).toEqual([
-      ...Array.from({ length: 11 }, () => "auto"),
+      ...Array.from({ length: TURN_LIMITS.user.maxRounds - 1 }, () => "auto"),
       "none",
     ]);
+    // v1.41.2 — every round of the turn carries the same prompt-cache key,
+    // so a provider that routes by key finds the prefix the last round left.
+    const keys = new Set(providerCalls.map((c) => c.cacheKey));
+    expect(keys.size).toBe(1);
+    expect([...keys][0]).toMatch(/^[0-9a-f]{32}$/);
     const provenance = framesOf<{ metricSource: { forcedFinal?: boolean } }>(
       frames,
       "provenance",
