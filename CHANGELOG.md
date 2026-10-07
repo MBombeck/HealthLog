@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.41.1] — 2026-10-07
+
+A calmer thinking row in the Coach.
+
+### Changed
+
+- **One thinking row.** While the Coach works, a single row shows a brain
+  icon and the current step in body text with a soft moving highlight and
+  animated dots ("Reading blood pressure…"); no running seconds. The interim
+  table line under it is gone; tables appear with the answer. Afterwards the
+  row reads "Thought process · N steps", stays closed unless opened, and
+  closes again when a turn finishes. Opened, the steps stand on a thin line,
+  each with its own icon and the reasoning summary under its title.
+
+### Fixed
+
+- **Coach in the demo.** A refused chat on a demo instance says that the
+  Coach doesn't answer in the demo instead of reporting an unreachable
+  provider; demo refusals carry `meta.errorCode: "demo.readOnly"`.
+
 ## [1.41.0] — 2026-10-07
 
 The Coach reasons before it answers, shows what it is doing while it works,

@@ -20,28 +20,29 @@ import {
 } from "./setup/coach-live-stream";
 
 /**
- * The live trail of a Coach turn: one quiet status line at the top of the
- * answer.
+ * The thinking row of a Coach turn: one quiet row at the top of the answer.
  *
  * Contracts under test, at 1440 and 390 px, light and dark:
  *
- *   1. While the turn runs the line says what is happening right now and
+ *   1. While the turn runs the row says what is happening right now and
  *      moves with the frames: Thinking… → Fetching blood pressure… →
- *      Summarising 214 readings… → Writing the answer….
- *   2. A table the turn has read shows as a one-line preview before the
- *      first token.
- *   3. Nothing opens by itself: the trail stays closed (`aria-expanded`
- *      false) in every state, after the answer and after a reload.
- *   4. After the answer the line is one summary ("Thought it through, 1
- *      lookup, 7 s"); the preview gives way to the answer's chart.
- *   5. A tap opens the trail; the reasoning text of a round sits behind its
- *      own closed disclosure.
+ *      Summarising 214 readings… → Writing the answer…, with the words
+ *      shimmering and no clock.
+ *   2. A table the turn has read shows nothing of its own while the turn
+ *      runs: no second row, no preview, no sparkline.
+ *   3. Nothing opens by itself: the row stays closed (`aria-expanded`
+ *      false) in every state, after the answer and after a reload; a row
+ *      opened during the run closes when the answer is done.
+ *   4. After the answer the row reads "Thought process · 4 steps" and the
+ *      table the answer points at renders as its chart.
+ *   5. A tap opens the steps; a reasoning round shows its summary under
+ *      its title.
  *   6. No horizontal scroll, a 44 px tap target on phones, axe clean.
  *
  * The chat stream is fed frame by frame from the spec
  * (`installLiveCoachStream`), so every live state is observed rather than
  * flashing by. Set COACH_SCREENSHOTS_DIR to also write screenshots of each
- * state.
+ * state; those runs keep motion on so the shimmer shows mid-sweep.
  */
 
 const CONVERSATION_ID = "coach-activity-e2e";
@@ -250,6 +251,10 @@ const SHOTS = process.env.COACH_SCREENSHOTS_DIR;
 async function shot(page: Page, name: string) {
   if (!SHOTS) return;
   mkdirSync(SHOTS, { recursive: true });
+  // The pointer off the row and the open/rotate transitions done, so the
+  // picture shows the resting state; the shimmer keeps running.
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(400);
   await page.screenshot({ path: join(SHOTS, `${name}.png`) });
 }
 
@@ -280,6 +285,7 @@ test.describe("Coach live trail", () => {
         await serveConversation(page, stub);
         await installLiveCoachStream(page);
         await applyTheme(page, theme);
+        if (SHOTS) await page.emulateMedia({ reducedMotion: "no-preference" });
 
         await page.goto("/coach", { waitUntil: "domcontentloaded" });
         await page.locator('[data-slot="coach-input-textarea"]').fill(QUESTION);
@@ -291,11 +297,16 @@ test.describe("Coach live trail", () => {
         const line = turn.locator('[data-slot="coach-turn-steps"]');
         const toggle = line.locator('[data-slot="coach-turn-steps-toggle"]');
         const current = line.locator('[data-slot="coach-turn-steps-active"]');
+        const chevron = line.locator('[data-slot="coach-turn-steps-chevron"]');
+        const column = turn.locator('[data-slot="coach-answer-column"]');
 
-        // 1. Before any frame: Thinking…, closed.
+        // 1. Before any frame: Thinking…, shimmering, nothing to open yet.
         await expect(line).toHaveAttribute("data-state", "running");
-        await expect(current).toHaveText("Thinking…");
-        await expect(toggle).toHaveAttribute("aria-expanded", "false");
+        await expect(current).toHaveAttribute("data-text", "Thinking…");
+        await expect(current.locator(".text-shimmer")).toHaveText("Thinking");
+        await expect(current.locator(".waiting-dot")).toHaveCount(3);
+        await expect(chevron).toHaveCount(0);
+        await expect(toggle).toHaveCount(0);
 
         await feed(page, [entry("a1", "thinking", "running", "Thinking…")]);
         await feed(page, [
@@ -303,7 +314,9 @@ test.describe("Coach live trail", () => {
             title: THINK_TITLE,
           }),
         ]);
-        await expect(current).toHaveText(THINK_TITLE);
+        await expect(current).toHaveAttribute("data-text", `${THINK_TITLE}…`);
+        await expect(chevron).toBeVisible();
+        await expect(toggle).toHaveAttribute("aria-expanded", "false");
 
         await feed(page, [
           entry("a1", "thinking", "done", "Thinking…", {
@@ -322,11 +335,12 @@ test.describe("Coach live trail", () => {
             },
           ),
         ]);
-        await expect(current).toHaveText(
+        await expect(current).toHaveAttribute(
+          "data-text",
           "Fetching blood pressure, last 30 days…",
         );
 
-        // 2. The table it read previews before the first token.
+        // 2. The table it read shows nothing of its own while the turn runs.
         await feed(page, [
           { type: "result", result: BP_TABLE, interim: true },
           { type: "step", step: { ...STEP, status: "done", count: 214 } },
@@ -345,18 +359,34 @@ test.describe("Coach live trail", () => {
             count: 214,
           }),
         ]);
-        await expect(current).toHaveText("Summarising 214 readings…");
-        const preview = turn.locator(
-          '[data-slot="coach-interim-result"][data-ref="r1"]',
+        await expect(current).toHaveAttribute(
+          "data-text",
+          "Summarising 214 readings…",
         );
-        await expect(preview).toBeVisible();
-        await expect(preview).toContainText("Blood pressure by day");
+        // One row and nothing else in the answer's column: no table title,
+        // no sparkline, no clock.
+        await expect(column.locator(":scope > *")).toHaveCount(1);
+        await expect(turn).not.toContainText("Blood pressure by day");
+        await expect(turn.locator("svg polyline")).toHaveCount(0);
+        await expect(line).not.toContainText(/\d\s?s\b/);
         await expect(
           turn.locator('[data-slot="coach-answer-bubble"]'),
         ).toHaveCount(0);
         await expect(toggle).toHaveAttribute("aria-expanded", "false");
         await noHorizontalScroll(page);
         await shot(page, `${label}-1-running`);
+
+        // A tap opens the steps while the turn runs...
+        await toggle.click();
+        await expect(toggle).toHaveAttribute("aria-expanded", "true");
+        await expect(line.locator('[data-slot="coach-turn-step"]')).toHaveCount(
+          3,
+        );
+        await expect(
+          line.locator('[data-slot="coach-turn-step"]').nth(2),
+        ).toHaveAttribute("data-status", "running");
+        await noHorizontalScroll(page);
+        await shot(page, `${label}-2-running-open`);
 
         await feed(page, [
           entry("a3", "digest", "done", "214 readings from 1 area", {
@@ -366,11 +396,15 @@ test.describe("Coach live trail", () => {
           entry("a4", "answer", "running", "Writing the answer…"),
           ...tokens(ANSWER),
         ]);
-        await expect(current).toHaveText("Writing the answer…");
+        await expect(current).toHaveAttribute(
+          "data-text",
+          "Writing the answer…",
+        );
         await expect(
           turn.locator('[data-slot="coach-answer-bubble"]'),
         ).toContainText(ANSWER);
-        await expect(toggle).toHaveAttribute("aria-expanded", "false");
+        // ...and stays as the person left it until the turn ends.
+        await expect(toggle).toHaveAttribute("aria-expanded", "true");
 
         // The persisted copy lands with the refetch after `done`.
         stub.messages.push(
@@ -392,7 +426,8 @@ test.describe("Coach live trail", () => {
         ]);
         await end(page);
 
-        // 4. One calm summary, still closed; the preview became the chart.
+        // 4. The thought process and its steps, closed again; the table the
+        //    answer points at is its chart.
         const bubble = page
           .locator('[data-slot="coach-bubble-assistant"]')
           .filter({ hasText: ANSWER });
@@ -400,13 +435,14 @@ test.describe("Coach live trail", () => {
         await expect(settled).toHaveAttribute("data-state", "done");
         await expect(
           settled.locator('[data-slot="coach-turn-steps-done"]'),
-        ).toHaveText("Thought it through, 1 lookup, 7 s");
+        ).toHaveText("Thought process · 4 steps");
+        await expect(settled.locator(".text-shimmer")).toHaveCount(0);
         const settledToggle = settled.locator(
           '[data-slot="coach-turn-steps-toggle"]',
         );
         await expect(settledToggle).toHaveAttribute("aria-expanded", "false");
         await expect(
-          bubble.locator('[data-slot="coach-interim-result"]'),
+          settled.locator('[data-slot="coach-turn-steps-panel"]'),
         ).toHaveCount(0);
         await expect(
           bubble.locator('[data-slot="coach-result-chart"][data-ref="r1"]'),
@@ -416,7 +452,7 @@ test.describe("Coach live trail", () => {
         ).toBeVisible();
         expect((await posts(page))[0]).toMatchObject({ message: QUESTION });
         await noHorizontalScroll(page);
-        await shot(page, `${label}-2-settled`);
+        await shot(page, `${label}-3-settled`);
 
         // 6. A 44 px tap target on phones.
         if (viewport.width < 640) {
@@ -424,8 +460,8 @@ test.describe("Coach live trail", () => {
           expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
         }
 
-        // 5. A tap opens the trail; the round's reasoning stays behind its own
-        //    closed disclosure.
+        // 5. A tap opens the steps; the reasoning round shows its summary
+        //    under its title.
         await settledToggle.click();
         await expect(settledToggle).toHaveAttribute("aria-expanded", "true");
         const panel = settled.locator('[data-slot="coach-turn-steps-panel"]');
@@ -437,15 +473,15 @@ test.describe("Coach live trail", () => {
         await expect(
           panel.locator('[data-slot="coach-method-line"]'),
         ).toContainText(METRIC_SOURCE.method.text);
-        const detail = rows
-          .nth(0)
-          .locator('[data-slot="coach-turn-step-detail-toggle"]');
-        await expect(detail).toHaveAttribute("aria-expanded", "false");
-        await expect(panel).not.toContainText(THINK_TEXT);
-        await detail.click();
-        await expect(panel).toContainText(THINK_TEXT);
+        await expect(rows.nth(0)).toContainText(THINK_TITLE);
+        await expect(
+          rows.nth(0).locator('[data-slot="coach-turn-step-detail"]'),
+        ).toHaveText(THINK_TEXT);
+        await expect(
+          panel.locator('[data-slot="coach-turn-step-connector"]'),
+        ).toHaveCount(3);
         await noHorizontalScroll(page);
-        await shot(page, `${label}-3-open`);
+        await shot(page, `${label}-4-settled-open`);
 
         const axe = await new AxeBuilder({ page })
           .include('[data-slot="coach-bubble-assistant"]')
@@ -470,7 +506,7 @@ test.describe("Coach live trail", () => {
         await expect(reloaded).toHaveAttribute("data-state", "done");
         await expect(
           reloaded.locator('[data-slot="coach-turn-steps-done"]'),
-        ).toHaveText("Thought it through, 1 lookup, 7 s");
+        ).toHaveText("Thought process · 4 steps");
         const reloadedToggle = reloaded.locator(
           '[data-slot="coach-turn-steps-toggle"]',
         );
@@ -479,9 +515,9 @@ test.describe("Coach live trail", () => {
           reloaded.locator('[data-slot="coach-turn-steps-panel"]'),
         ).toHaveCount(0);
         await reloadedToggle.click();
-        await expect(
-          reloaded.locator('[data-slot="coach-turn-step"]').nth(0),
-        ).toContainText(THINK_TITLE);
+        const first = reloaded.locator('[data-slot="coach-turn-step"]').nth(0);
+        await expect(first).toContainText(THINK_TITLE);
+        await expect(first).toContainText(THINK_TEXT);
       });
     }
   }

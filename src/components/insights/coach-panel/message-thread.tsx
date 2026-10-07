@@ -716,15 +716,13 @@ export function MessageThread({
                     ? { results: streaming.results }
                     : {})}
                   // v1.41 — and its live trail (with the titles and texts
-                  // the persisted copy only has behind `…/trail`), its clock
-                  // and the words of the fact it kept.
+                  // the persisted copy only has behind `…/trail`) and the
+                  // words of the fact it kept.
                   {...(m.id === streaming?.messageId
                     ? {
                         ...(streaming.activity.length > 0
                           ? { activity: streaming.activity }
                           : {}),
-                        startedAt: streaming.startedAt,
-                        endedAt: streaming.endedAt,
                         memoryNote: streaming.memoryNote,
                       }
                     : {})}
@@ -782,9 +780,6 @@ export function MessageThread({
                     steps={streaming.steps}
                     results={streaming.results}
                     activity={streaming.activity}
-                    interimRefs={streaming.interimRefs}
-                    startedAt={streaming.startedAt}
-                    endedAt={streaming.endedAt}
                     memoryNote={streaming.memoryNote}
                     providerType={streaming.inProgress ? "streaming" : null}
                     inProgress={streaming.inProgress}

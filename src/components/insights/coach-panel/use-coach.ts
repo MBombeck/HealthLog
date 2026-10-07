@@ -568,25 +568,12 @@ export interface CoachStreamingMessage {
    * `metricSource.activity` and the model text behind `…/trail`.
    */
   activity: CoachActivity[];
-  /**
-   * v1.41 — the refs of the tables that arrived as `interim` while the turn
-   * still ran. They show as one-line previews until the answer settles, and
-   * are taken down again when `done` says `withheldResults`.
-   */
-  interimRefs: string[];
   /** v1.41 — the fact this turn saved or proposes (`memoryNote` frame). */
   memoryNote: CoachMemoryNote | null;
   /** v1.41 — the plan this turn proposes (`planProposal` frame). */
   planProposal: CoachPlanProposal | null;
   /** v1.41 — why the answer was forced, when it was (`done.stop`). */
   stop: CoachStop | null;
-  /**
-   * v1.41 — when the turn started on this device (epoch ms), for the live
-   * seconds on the status line. Null when no turn has run.
-   */
-  startedAt: number | null;
-  /** v1.41 — when the stream closed (epoch ms); null while it runs. */
-  endedAt: number | null;
   /** True until the `done` frame closes the stream. */
   inProgress: boolean;
   /** Final messageId once `done` lands; null otherwise. */
@@ -670,12 +657,9 @@ const EMPTY_STREAMING: CoachStreamingMessage = {
   followUps: [],
   clarification: null,
   activity: [],
-  interimRefs: [],
   memoryNote: null,
   planProposal: null,
   stop: null,
-  startedAt: null,
-  endedAt: null,
   inProgress: false,
   messageId: null,
   errorCode: null,
@@ -988,12 +972,7 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
           content: params.message,
           conversationId: params.conversationId ?? null,
         });
-        const startedAt = Date.now();
-        setStreaming({
-          ...EMPTY_STREAMING,
-          inProgress: true,
-          startedAt,
-        });
+        setStreaming({ ...EMPTY_STREAMING, inProgress: true });
 
         // v1.4.47 W8 — pre-check navigator.onLine so an airplane-mode
         // user gets the offline-specific copy immediately rather than
@@ -1159,11 +1138,12 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
                   if (evt.interim && !interimRefs.includes(result.ref)) {
                     interimRefs.push(result.ref);
                   }
-                  const refs = [...interimRefs];
+                  // An interim table is kept quietly: nothing renders it
+                  // until the answer's own results do, and `done` may still
+                  // take it down again (`withheldResults`).
                   setStreaming((prev) => ({
                     ...prev,
                     results: upsertResult(prev.results, result),
-                    interimRefs: refs,
                   }));
                   break;
                 }
@@ -1259,12 +1239,9 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
           followUps: collectedFollowUps,
           clarification: collectedClarification,
           activity: collectedActivity,
-          interimRefs: withheldResults ? [] : interimRefs,
           memoryNote: collectedMemoryNote,
           planProposal: collectedPlanProposal,
           stop: collectedStop,
-          startedAt,
-          endedAt: Date.now(),
           inProgress: false,
           messageId,
           errorCode: lastError,

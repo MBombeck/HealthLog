@@ -4,7 +4,7 @@ import {
   ACTIVITY_TEXT_MAX_CHARS,
   ACTIVITY_TITLE_MAX_CHARS,
   TRAIL_MAX_BYTES,
-  activitySummaryKey,
+  activityThoughtProcessKey,
   createNoopActivityRecorder,
 } from "../contract";
 
@@ -38,15 +38,15 @@ describe("activity contract", () => {
     );
   });
 
-  it("says nothing about lookups on a turn that made none", () => {
-    expect(activitySummaryKey(0, "en")).toBe(
-      "insights.coach.activity.summaryNoLookups",
+  it("counts the steps of the settled line by plural tier", () => {
+    expect(activityThoughtProcessKey(1, "en")).toBe(
+      "insights.coach.activity.thoughtProcessOne",
     );
-    expect(activitySummaryKey(1, "en")).toBe(
-      "insights.coach.activity.summaryOne",
+    expect(activityThoughtProcessKey(0, "en")).toBe(
+      "insights.coach.activity.thoughtProcessOther",
     );
-    expect(activitySummaryKey(3, "pl")).toBe(
-      "insights.coach.activity.summaryFew",
+    expect(activityThoughtProcessKey(3, "pl")).toBe(
+      "insights.coach.activity.thoughtProcessFew",
     );
   });
 });

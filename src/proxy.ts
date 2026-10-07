@@ -6,6 +6,7 @@ import {
   RETIRED_ROUTE_STATUS,
 } from "@/lib/http/retired-routes";
 import { setBaselineSecurityHeaders } from "@/lib/http/proxy-bypass-routes";
+import { DEMO_REFUSAL_BODY } from "@/lib/demo-refusal";
 
 /**
  * Paths that do NOT require a session cookie (public pages + external webhooks).
@@ -361,14 +362,7 @@ export function proxy(request: NextRequest) {
       )
     ) {
       return applyBaselineSecurityHeaders(
-        NextResponse.json(
-          {
-            data: null,
-            error: "Demo mode: modifications are disabled",
-            meta: { demo: true },
-          },
-          { status: 403 },
-        ),
+        NextResponse.json(DEMO_REFUSAL_BODY, { status: 403 }),
       );
     }
   }

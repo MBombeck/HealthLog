@@ -2797,6 +2797,7 @@
       "refusalInjection": "Tu mensaje contiene instrucciones que pretenden sobrescribir mis indicaciones. Soy el coach de HealthLog y solo resumo tus propios datos de salud — reformula tu pregunta dentro de ese marco.",
       "errorBudget": "Has alcanzado el límite diario del coach. El cupo se reinicia a medianoche (UTC).",
       "errorProvider": "El coach no ha podido contactar con un proveedor de análisis ahora mismo. Inténtalo en un momento.",
+      "errorDemo": "En la demo, el Coach no responde.",
       "errorNoProvider": "El coach lee tus datos de salud registrados y responde preguntas sobre ellos (no es consejo médico). HealthLog necesita un proveedor de IA para ello: conecta tu propia clave o un modelo local.",
       "errorNoProviderAction": "Conectar un proveedor de IA",
       "errorNetwork": "Sin conexión a Internet — inténtalo de nuevo cuando vuelvas a estar en línea.",
@@ -3018,7 +3019,6 @@
       "hideConversations": "Ocultar conversaciones",
       "heroGreeting": "Pregúntame lo que quieras sobre tus datos",
       "heroSubline": "Pregunta por tus tendencias, medicamentos o mediciones.",
-      "thinkingElapsed": "{seconds} s",
       "thinkingDuration": "Pensó durante {seconds}s",
       "thinkingExpandAria": "Mostrar lo que el Coach tuvo en cuenta",
       "thinkingDetail": "Respondido a partir de tu resumen de salud.",
@@ -3152,9 +3152,6 @@
         "rememberDone": "Guardado",
         "timeYesterday": "ayer {time}",
         "timeEarlier": "{date}, {time}",
-        "areasDoneOne": "1 área consultada",
-        "areasDoneFew": "{count} áreas consultadas",
-        "areasDoneOther": "{count} áreas consultadas",
         "info": "Detalles de la respuesta",
         "infoModel": "Modelo: {model}"
       },
@@ -3177,16 +3174,16 @@
         "plan": "Preparando un plan…",
         "asking": "Te pregunta…",
         "answer": "Escribiendo la respuesta…",
-        "summaryOne": "Lo ha pensado, {lookups} consulta, {seconds} s",
-        "summaryFew": "Lo ha pensado, {lookups} consultas, {seconds} s",
-        "summaryOther": "Lo ha pensado, {lookups} consultas, {seconds} s",
-        "summaryNoLookups": "Lo ha pensado, {seconds} s",
         "stop": {
           "budget": "Presupuesto alcanzado, responde con lo que tiene",
           "time": "Tiempo agotado, responde con lo que tiene",
           "cap": "Muchos pasos, ahora lo resume",
           "noProgress": "No hay datos nuevos, lo resume"
-        }
+        },
+        "thoughtProcessOne": "Razonamiento · {count} paso",
+        "thoughtProcessFew": "Razonamiento · {count} pasos",
+        "thoughtProcessOther": "Razonamiento · {count} pasos",
+        "awaitingAnswer": "Se necesita tu respuesta"
       },
       "memory": {
         "saved": "Recordado: {fact}",
@@ -3208,11 +3205,6 @@
       },
       "suggestedReplies": {
         "groupLabel": "Respuestas sugeridas"
-      },
-      "interim": {
-        "labelOne": "{title}, {window}, {count} valor",
-        "labelFew": "{title}, {window}, {count} valores",
-        "labelOther": "{title}, {window}, {count} valores"
       },
       "chart": {
         "compare": {
@@ -9878,9 +9870,6 @@
       "showResult": "Abriendo una tabla anterior",
       "reuse": "Usando la tabla de antes",
       "headerActive": "{label}…",
-      "headerDoneOne": "Consultó 1 fuente",
-      "headerDoneFew": "Consultó {count} fuentes",
-      "headerDoneOther": "Consultó {count} fuentes",
       "listLabel": "Lo que consultó el Coach",
       "toggleShow": "Mostrar lo que consultó el Coach",
       "toggleHide": "Ocultar lo que consultó el Coach",

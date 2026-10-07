@@ -124,7 +124,7 @@ function displayedByRef(
 
 /**
  * The live tables with `displayed` taken from the provenance where it names
- * them: an interim table is sent before the answer decides.
+ * them: a table read while the turn ran is sent before the answer decides.
  */
 export function liveWithProvenance<
   T extends Pick<CoachResultMeta, "ref" | "displayed">,
@@ -265,7 +265,7 @@ export function CoachResults({
 
 type ResultView = "chart" | "table";
 
-export function CoachResultView({
+function CoachResultView({
   result,
   chartFirst,
 }: {

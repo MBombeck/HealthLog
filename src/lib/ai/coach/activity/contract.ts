@@ -100,6 +100,8 @@ export const COACH_ACTIVITY_KEYS = {
   plan: "insights.coach.activity.plan",
   asking: "insights.coach.activity.asking",
   answer: "insights.coach.activity.answer",
+  /** The settled line of a turn that waits for the person's choice. */
+  awaitingAnswer: "insights.coach.activity.awaitingAnswer",
 } as const;
 
 /** The `stop` entry's label, by reason. */
@@ -132,12 +134,10 @@ export function activityMemoryKey(count: number, locale: Locale): string {
   return pluralKey("insights.coach.activity.memory", count, locale);
 }
 
-/**
- * The one-line summary once the turn is done: "Thought it through, N lookups,
- * S s", or the seconds alone on a turn that looked nothing up.
- */
-export function activitySummaryKey(lookups: number, locale: Locale): string {
-  return lookups === 0
-    ? "insights.coach.activity.summaryNoLookups"
-    : pluralKey("insights.coach.activity.summary", lookups, locale);
+/** The settled line once the turn is done: "Thought process · N steps". */
+export function activityThoughtProcessKey(
+  count: number,
+  locale: Locale,
+): string {
+  return pluralKey("insights.coach.activity.thoughtProcess", count, locale);
 }

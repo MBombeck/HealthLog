@@ -101,12 +101,9 @@ function streaming(
     followUps: [],
     clarification: null,
     activity: [],
-    interimRefs: [],
     memoryNote: null,
     planProposal: null,
     stop: null,
-    startedAt: null,
-    endedAt: null,
     inProgress: false,
     messageId: null,
     errorCode: null,
@@ -255,10 +252,10 @@ describe("<MessageThread>", () => {
     );
   });
 
-  it("folds an older message's provenance into the areas header, never a raw key", () => {
+  it("folds an older message's provenance into the thought-process row, never a raw key", () => {
     const html = render(<MessageThread conversation={baseConversation} />);
     expect(html).toContain('data-slot="coach-turn-steps-done"');
-    expect(html).toContain("Looked at 1 area");
+    expect(html).toContain("Thought process · 1 step");
     expect(html).not.toContain('data-slot="coach-source-chips"');
     expect(html).not.toContain("insights.coach.metric.");
     expect(html).not.toContain("n=26");
@@ -481,16 +478,16 @@ describe("<MessageThread>", () => {
     expect(html).not.toContain('data-slot="coach-evidence"');
     expect(html).not.toContain("What I&#x27;m looking at");
     expect(html).not.toContain("138 mmHg");
-    // The areas the answer drew on stay reachable from the header.
-    expect(html).toContain("Looked at 1 area");
+    // The areas the answer drew on stay reachable from the row.
+    expect(html).toContain("Thought process · 1 step");
   });
 
-  it("names the areas header in German under 'de'", () => {
+  it("names the thought-process row in German under 'de'", () => {
     const html = render(
       <MessageThread conversation={baseConversation} />,
       "de",
     );
-    expect(html).toContain("1 Bereich angesehen");
+    expect(html).toContain("Denkprozess · 1 Schritt");
     expect(html).not.toContain("Worauf bezieht sich das?");
   });
 
@@ -797,6 +794,12 @@ describe("errorCodeToI18nKey", () => {
 
   // v1.4.43 QoL (M6) — `coach.network` no longer collapses to the
   // generic provider copy; the user needs the actionable offline hint.
+  it("maps the demo's refusal to its own honest line, not the outage copy", () => {
+    expect(errorCodeToI18nKey("demo.readOnly")).toBe(
+      "insights.coach.errorDemo",
+    );
+  });
+
   it("maps coach.network to the dedicated offline key", () => {
     expect(errorCodeToI18nKey("coach.network")).toBe(
       "insights.coach.errorNetwork",

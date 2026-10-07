@@ -47,7 +47,6 @@ import {
   methodAveragesKey,
   methodReadingsKey,
   methodTotalsKey,
-  stepHeaderDoneKey,
   stepMetricsKey,
   stepReadingsKey,
   stepRowsKey,
@@ -112,7 +111,6 @@ function catalogKeys(): Set<string> {
   }
   for (const locale of locales) {
     for (const count of COUNTS) {
-      keys.add(stepHeaderDoneKey(count, locale));
       keys.add(stepReadingsKey(count, locale));
       keys.add(stepRowsKey(count, locale));
       keys.add(stepMetricsKey(count, locale));
