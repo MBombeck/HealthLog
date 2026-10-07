@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { useAuth } from "@/hooks/use-auth";
+import { DEMO_READ_ONLY_CODE } from "@/lib/demo-refusal";
 import {
   parseChartTokens,
   tokenToMetric,
@@ -20,7 +21,6 @@ import { ReminderSuggestionCard } from "./reminder-suggestion-card";
 import { SuggestedActionCard } from "./suggested-action-card";
 import { StreamedProse } from "./streamed-prose";
 import { CoachTurnActivity } from "./turn-activity";
-import { CoachInterimResults } from "./interim-results";
 import {
   CoachResults,
   countResultsInSection,
@@ -100,6 +100,10 @@ export function errorCodeToI18nKey(code: string): string {
       return "insights.coach.errorNoProvider";
     case "module.disabled":
       return "insights.coach.errorCoachOff";
+    // A demo deploy refuses every write, the chat POST included. That is
+    // the demo's nature, not an outage, and the line says so.
+    case DEMO_READ_ONLY_CODE:
+      return "insights.coach.errorDemo";
     default:
       // The operator switched the Coach (or all AI) off on this server.
       if (code.startsWith("assistant.disabled.")) {
@@ -337,11 +341,6 @@ interface ChatBubbleProps {
    * its metadata on `metricSource.activity`; the bubble falls back to that.
    */
   activity?: CoachActivity[];
-  /** v1.41 — the refs of the tables that arrived while the turn ran. */
-  interimRefs?: string[];
-  /** v1.41 — when the live turn started and ended on this device. */
-  startedAt?: number | null;
-  endedAt?: number | null;
   /** v1.41 — the live `memoryNote` frame, with the fact's words. */
   memoryNote?: CoachMemoryNoteFrame | null;
 }
@@ -416,9 +415,6 @@ export function areChatBubblePropsEqual(
     prev.onFollowUp === next.onFollowUp &&
     prev.replies === next.replies &&
     prev.activity === next.activity &&
-    prev.interimRefs === next.interimRefs &&
-    prev.startedAt === next.startedAt &&
-    prev.endedAt === next.endedAt &&
     prev.memoryNote === next.memoryNote &&
     // onRegenerate is a per-render closure — compare only whether it is present.
     (prev.onRegenerate === undefined) === (next.onRegenerate === undefined)
@@ -449,9 +445,6 @@ function ChatBubbleImpl({
   onFollowUp,
   replies,
   activity,
-  interimRefs,
-  startedAt,
-  endedAt,
   memoryNote,
 }: ChatBubbleProps) {
   const { t } = useTranslations();
@@ -645,18 +638,22 @@ function ChatBubbleImpl({
         data-slot="coach-answer-column"
         className="flex w-full max-w-full min-w-0 flex-col items-start gap-2 sm:max-w-[calc(80%-2.625rem)]"
       >
-        {/* v1.41 — what the Coach is doing, one quiet line at the top of the
-            answer: live from the activity frames while the turn runs, one
-            calm summary once it is done. Nothing opens by itself; a tap on
-            the line opens the trail, which also says how the answer was
-            worked out and holds the tables the answer read. A message saved
-            before v1.41 falls back to its steps, or the areas it drew on. */}
+        {/* v1.41 — what the Coach is doing, one quiet row at the top of the
+            answer and the only thing in the column until the answer starts:
+            live from the activity frames while the turn runs, "Thought
+            process · N steps" once it is done, "Answer needed" while a
+            question waits. Nothing opens by itself; a tap on the row opens
+            the steps, which also say how the answer was worked out and hold
+            the tables the answer read. A message saved before v1.41 falls
+            back to its steps, or the areas it drew on. */}
         <CoachTurnActivity
           activity={activity ?? metricSource?.activity ?? []}
           steps={steps ?? metricSource?.steps ?? []}
           active={!!inProgress}
-          startedAt={startedAt}
-          endedAt={endedAt}
+          awaitingAnswer={
+            !inProgress &&
+            !!replies?.replies.some((reply) => reply.kind === "clarification")
+          }
           areas={metricSource?.metrics}
           method={inProgress || errorCode ? null : method}
           conversationId={conversationId}
@@ -673,11 +670,6 @@ function ChatBubbleImpl({
             ) : null
           }
         />
-        {/* v1.41 — the tables read so far, one line each, while the turn
-            still runs. They give way to the answer's own charts. */}
-        {inProgress && results && interimRefs && interimRefs.length > 0 ? (
-          <CoachInterimResults results={results} interimRefs={interimRefs} />
-        ) : null}
         {/* The prose bubble, once there is prose or an error. While the turn
             runs without prose the status line above says what is happening;
             the bubble arrives with the first token. */}

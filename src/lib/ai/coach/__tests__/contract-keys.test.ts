@@ -26,13 +26,12 @@ import {
   activityDigestDoneKey,
   activityDigestKey,
   activityMemoryKey,
-  activitySummaryKey,
+  activityThoughtProcessKey,
 } from "@/lib/ai/coach/activity/contract";
 import {
   COACH_ASSUMPTION_KEYS,
   COACH_CHART_COMPARE_KEYS,
   COACH_SUGGESTED_REPLIES_KEYS,
-  interimLabelKey,
 } from "@/lib/ai/coach/dialog-keys";
 import {
   COACH_MEMORY_KEYS,
@@ -91,8 +90,7 @@ function catalogKeys(): Set<string> {
       keys.add(activityDigestDoneKey(count, locale));
       keys.add(activityAreasKey(count, locale));
       keys.add(activityMemoryKey(count, locale));
-      keys.add(activitySummaryKey(count, locale));
-      keys.add(interimLabelKey(count, locale));
+      keys.add(activityThoughtProcessKey(count, locale));
     }
   }
   return keys;
@@ -104,7 +102,6 @@ const OWNED = [
   "insights.coach.plan",
   "insights.coach.assumption",
   "insights.coach.suggestedReplies",
-  "insights.coach.interim",
   "insights.coach.chart",
   "insights.coach.reasoning",
   "settings.coach.memory",
@@ -122,7 +119,7 @@ describe("v1.41 contract keys", () => {
     // Every key laid down for the release but the `change_assumption` chip
     // label, which the dialog catalog's own test covers, plus the two
     // declined-proposal replies and the admin reasoning description.
-    expect(keys.size).toBe(60);
+    expect(keys.size).toBe(57);
   });
 
   it.each(locales)("every catalog key resolves in %s", (locale) => {

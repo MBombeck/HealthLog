@@ -1,50 +1,63 @@
 "use client";
 
 /**
- * v1.41 — the live trail of a Coach turn, one quiet line at the top of the
- * answer.
+ * v1.41.1 — the thinking row of a Coach turn: one quiet line at the top of
+ * the answer, and the steps behind it.
  *
- * While the turn runs the line says what the Coach is doing right now, from
- * the `activity` frames: "Thinking…", "Fetching blood pressure, last 90
- * days…", "Summarising 214 readings…", "Writing the answer…", with the
- * seconds so far right after the text. A reasoning title replaces the
- * thinking label when one arrives. Once the turn ends the same line settles
- * into one calm summary: "Thought it through, 3 lookups, 12 s".
+ * The row is a brain, the status text and a chevron, in the answer's own
+ * text size and the muted tone. While the turn runs the text says what the
+ * Coach is doing right now ("Fetching blood pressure, last 90 days…", or
+ * "Thinking…" before the first frame), with a shimmer passing through it and
+ * the trailing dots fading in turn; there is no clock. When the answer is
+ * done the row settles into "Thought process · N steps", and a turn that
+ * ends on a question to the person says "Answer needed" instead. The chevron
+ * only shows when there is something to open.
  *
- * Nothing opens by itself. The trail starts closed in every state of a turn
- * (running, asking, stopped, failed, settled, reloaded) and only a tap on the
- * line opens it; it then stays open until the person closes it, and keeps
- * growing while the turn runs. Open, it lists one entry per phase with its
- * status, the reasoning text of a round behind its own disclosure (closed
- * too), the method line and the tables the answer used without pointing at
- * them.
+ * Nothing opens by itself. The row starts closed in every state, only a tap
+ * opens it, and a row opened while the turn ran closes again when it ends:
+ * the answer is what the person came for. Open, it lists the steps one under
+ * the other, each with a small icon on a thin line that runs to the next
+ * one, a reasoning round with its summary underneath; then the method line
+ * and the tables the answer used without pointing at them.
  *
  * Labels are catalog text the server rendered; titles and texts are screened
  * model text the owner alone receives. A persisted message carries only the
  * metadata, so its titles and texts are read from `…/trail` the first time
- * the person opens the trail. A message saved before v1.41 has no activity
- * and falls back to the step list (`metricSource.steps`), and one saved
+ * the person opens the row. A message saved before v1.41 has no activity
+ * and falls back to its step list (`metricSource.steps`), and one saved
  * before steps existed to the areas it drew on.
  *
- * Screen readers hear the line through a polite status region, throttled to
+ * Screen readers hear the status through a polite live region, throttled to
  * one announcement per `ANNOUNCE_THROTTLE_MS` (the latest wins), and the
- * summary once when the turn ends. A reloaded conversation announces nothing.
+ * settled line once when the turn ends. A reloaded conversation announces
+ * nothing.
  */
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Check,
-  ChevronRight,
-  Loader2,
-  Minus,
-  TriangleAlert,
+  BookOpen,
+  Bookmark,
+  Brain,
+  ChartLine,
+  ChartScatter,
+  ChevronDown,
+  CircleStop,
+  Database,
+  FileSearch,
+  Lightbulb,
+  ListTodo,
+  MessageCircleQuestion,
+  PenLine,
+  Sigma,
+  Table2,
+  type LucideIcon,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 import { useTranslations } from "@/lib/i18n/context";
-import type { Locale } from "@/lib/i18n/config";
+import { WaitingText } from "@/components/ui/waiting-text";
 import {
   COACH_STEP_REASON_KEYS,
   COACH_STEP_UI_KEYS,
@@ -55,7 +68,7 @@ import {
 } from "@/lib/ai/coach/dialog-keys";
 import {
   COACH_ACTIVITY_KEYS,
-  activitySummaryKey,
+  activityThoughtProcessKey,
 } from "@/lib/ai/coach/activity/contract";
 import type {
   CoachActivity,
@@ -65,13 +78,14 @@ import type {
   CoachTrail,
 } from "@/lib/ai/coach/types";
 
+import { COACH_FOCUS_RING } from "./focus-ring";
 import { CoachMethodLine } from "./method-line";
 
 /** The shortest gap between two screen-reader announcements. */
 export const ANNOUNCE_THROTTLE_MS = 1500;
 
-/** "12s": the seconds on the line and beside a finished round. */
-const ELAPSED_KEY = "insights.coach.thinkingElapsed";
+/** A trailing "…" or "...", which a finished entry no longer carries. */
+const TRAILING_ELLIPSIS = /(?:…|\.\.\.)\s*$/u;
 
 type Translate = (
   key: string,
@@ -142,15 +156,6 @@ export function describeStep(
 }
 
 /**
- * How many sources the turn looked at: one per domain (a step without one,
- * the snapshot, counts by its tool). A second read of the same domain, for
- * the period before or a retry, is not a new source.
- */
-export function countSources(steps: readonly CoachStep[]): number {
-  return new Set(steps.map((step) => step.domain ?? step.tool)).size;
-}
-
-/**
  * The step a legacy running line names: the latest one still running, else
  * the latest one overall (between two rounds nothing is running).
  */
@@ -197,8 +202,9 @@ export function currentActivity(
 }
 
 /**
- * What an entry is called on the line: a screened reasoning title for a
- * thinking round once one has arrived, else the server's catalog label.
+ * What an entry is called: a screened reasoning title for a thinking round
+ * once one has arrived, else the server's catalog label. A finished entry
+ * no longer trails off: "Writing the answer", not "Writing the answer…".
  */
 export function activityLineLabel(entry: CoachActivity): string {
   if (
@@ -207,89 +213,76 @@ export function activityLineLabel(entry: CoachActivity): string {
   ) {
     return entry.title;
   }
-  // A finished entry no longer trails off: "Writing the answer", not
-  // "Writing the answer…".
   return entry.status === "running"
     ? entry.label
-    : entry.label.replace(/(?:…|\.\.\.)\s*$/u, "");
-}
-
-/** The lookups a turn made: one per fetch. */
-export function countLookups(activity: readonly CoachActivity[]): number {
-  return activity.filter((entry) => entry.phase === "fetch").length;
+    : entry.label.replace(TRAILING_ELLIPSIS, "");
 }
 
 /**
- * The seconds a turn took, from its trail: the phases of a round run one
- * after the other, except its fetches, which run side by side (the longest
- * counts). Null when the trail carries no durations.
+ * Whether the row stays open as the turn moves on: a row opened while the
+ * turn ran closes when it ends. Nothing ever opens it but a tap.
  */
-export function activitySeconds(
-  activity: readonly CoachActivity[],
-): number | null {
-  const fetchByRound = new Map<number, number>();
-  let sequential = 0;
-  let any = false;
-  for (const entry of activity) {
-    if (entry.durationMs === undefined) continue;
-    any = true;
-    if (entry.phase === "fetch") {
-      fetchByRound.set(
-        entry.round,
-        Math.max(fetchByRound.get(entry.round) ?? 0, entry.durationMs),
-      );
-    } else {
-      sequential += entry.durationMs;
-    }
+export function openAfter(args: {
+  open: boolean;
+  wasActive: boolean;
+  active: boolean;
+}): boolean {
+  return args.wasActive && !args.active ? false : args.open;
+}
+
+/** The running row's text: whatever it names, still going ("…"). */
+export function inProgressLabel(label: string): string {
+  return `${label.replace(TRAILING_ELLIPSIS, "")}…`;
+}
+
+/**
+ * The icon of a step: what kind of work it was. Reads of the record are a
+ * database, a table read for the answer a table, connections a scatter, an
+ * earlier chart reopened a chart, the record summary a search.
+ */
+export function stepIcon(
+  phase: CoachActivity["phase"] | null,
+  tool: CoachStep["tool"] | undefined,
+): LucideIcon {
+  switch (phase) {
+    case "thinking":
+    case "checkpoint":
+      return Lightbulb;
+    case "memory":
+      return BookOpen;
+    case "digest":
+      return Sigma;
+    case "remember":
+      return Bookmark;
+    case "plan":
+      return ListTodo;
+    case "asking":
+      return MessageCircleQuestion;
+    case "stop":
+      return CircleStop;
+    case "answer":
+      return PenLine;
+    default:
+      break;
   }
-  if (!any) return null;
-  let total = sequential;
-  for (const ms of fetchByRound.values()) total += ms;
-  return Math.max(1, Math.round(total / 1000));
-}
-
-/** Whole seconds between two instants, at least one. */
-export function elapsedSeconds(from: number, to: number): number {
-  return Math.max(1, Math.round((to - from) / 1000));
-}
-
-/**
- * The settled line: "Thought it through, N lookups, S s". The seconds come
- * from the trail, else from the clock of the turn that just streamed. Null
- * when neither is known (a message saved before v1.41).
- */
-export function activitySummary(args: {
-  activity: readonly CoachActivity[];
-  startedAt?: number | null;
-  endedAt?: number | null;
-  t: Translate;
-  locale: Locale;
-}): string | null {
-  const { activity, startedAt, endedAt, t, locale } = args;
-  if (activity.length === 0) return null;
-  const seconds =
-    activitySeconds(activity) ??
-    (startedAt && endedAt ? elapsedSeconds(startedAt, endedAt) : null);
-  if (seconds === null) return null;
-  const lookups = countLookups(activity);
-  return t(activitySummaryKey(lookups, locale), { lookups, seconds });
-}
-
-/** A tick per second while `running`; the current time otherwise. */
-function useNow(running: boolean): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [running]);
-  return now;
+  switch (tool) {
+    case "snapshot":
+      return FileSearch;
+    case "show_result":
+      return ChartLine;
+    case "get_correlations":
+      return ChartScatter;
+    case "get_metric_table":
+      return Table2;
+    default:
+      return Database;
+  }
 }
 
 /**
  * The status region's text: the running line as it changes, throttled, and
- * the summary once when the turn ends. Nothing is announced for a trail that
- * was already settled when it mounted.
+ * the settled line once when the turn ends. Nothing is announced for a row
+ * that was already settled when it mounted.
  */
 function useLineAnnouncement(text: string, active: boolean): string {
   const [mountedActive] = useState(active);
@@ -299,7 +292,7 @@ function useLineAnnouncement(text: string, active: boolean): string {
   const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
-    // A reloaded, settled trail stays quiet.
+    // A reloaded, settled row stays quiet.
     if (!mountedActive) return;
     if (!text || text === said.current) return;
     said.current = text;
@@ -355,101 +348,115 @@ function useTrailText(args: {
   return query.data ?? null;
 }
 
-// ── Rendering ──────────────────────────────────────────────────────────────
+// ── The open list ──────────────────────────────────────────────────────────
 
-type EntryStatus = CoachActivity["status"];
+/** How a step reads: the one going on now, a finished one, a failed one. */
+type StepTone = "active" | "done" | "failed";
 
-function StatusIcon({
-  status,
-  active,
-}: {
-  status: EntryStatus;
-  active: boolean;
-}) {
-  const className = "mt-0.5 size-3 shrink-0";
-  if (status === "running" && active) {
-    return (
-      <Loader2
-        aria-hidden="true"
-        className={cn(
-          className,
-          "text-muted-foreground animate-spin motion-reduce:animate-none",
-        )}
-      />
-    );
-  }
-  if (status === "done" || status === "running") {
-    return (
-      <Check
-        aria-hidden="true"
-        className={cn(className, "text-muted-foreground")}
-      />
-    );
-  }
-  if (status === "failed") {
-    return (
-      <TriangleAlert
-        aria-hidden="true"
-        className={cn(className, "text-warning")}
-      />
-    );
-  }
-  return (
-    <Minus
-      aria-hidden="true"
-      className={cn(className, "text-muted-foreground")}
-    />
-  );
+interface TrailItem {
+  key: string;
+  icon: LucideIcon;
+  label: string;
+  /** Muted parts under the label, joined by a middle dot. */
+  meta?: string[];
+  /** A reasoning summary under the label. */
+  text?: string;
+  /** What the memory step recalled, one per line. */
+  recalled?: string[];
+  tone: StepTone;
+  phase?: CoachActivity["phase"];
+  status?: CoachActivity["status"];
 }
 
-/** The rows of a legacy step list: one per step, in the order they started. */
-export function CoachTurnStepList({
-  id,
-  steps,
-  active,
-}: {
-  id?: string;
+function toneOf(status: CoachActivity["status"], active: boolean): StepTone {
+  if (status === "failed") return "failed";
+  return status === "running" && active ? "active" : "done";
+}
+
+/** The activity entries of a turn, as the rows of the open list. */
+function activityItems(args: {
+  activity: CoachActivity[];
   steps: CoachStep[];
+  trail: CoachTrail | null;
   active: boolean;
-}) {
-  const { t, tCount } = useTranslations();
-  return (
-    <ol
-      id={id}
-      data-slot="coach-turn-steps-list"
-      aria-label={t(COACH_STEP_UI_KEYS.listLabel)}
-      className="flex flex-col gap-1"
-    >
-      {steps.map((step) => {
-        const { title, meta } = describeStep(step, t, tCount);
-        return (
-          <li
-            key={step.id}
-            data-slot="coach-turn-step"
-            data-status={step.status}
-            className="flex items-start gap-1.5 leading-relaxed"
-          >
-            <StatusIcon status={step.status} active={active} />
-            <span className="text-muted-foreground min-w-0">
-              <span className="text-foreground">{title}</span>
-              <StepMeta parts={meta} />
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+  t: Translate;
+  tCount: TranslateCount;
+}): TrailItem[] {
+  const { activity, steps, trail, active, t, tCount } = args;
+  const stepsById = new Map(steps.map((step) => [step.id, step]));
+  const textById = new Map(
+    (trail?.entries ?? []).map((entry) => [entry.id, entry]),
   );
+  return activity.map((entry) => {
+    const stored = textById.get(entry.id);
+    const merged: CoachActivity = {
+      ...entry,
+      title: entry.title ?? stored?.title,
+      text: entry.text ?? stored?.text,
+    };
+    const step = entry.stepRef ? stepsById.get(entry.stepRef) : undefined;
+    const base = {
+      key: entry.id,
+      icon: stepIcon(entry.phase, step?.tool),
+      tone: toneOf(entry.status, active),
+      phase: entry.phase,
+      status: entry.status,
+    };
+    if (entry.phase === "fetch" && step) {
+      const { title, meta } = describeStep(step, t, tCount);
+      return { ...base, label: title, meta };
+    }
+    return {
+      ...base,
+      label: activityLineLabel(merged),
+      text: merged.text,
+      recalled:
+        entry.phase === "memory" && trail?.recalled?.length
+          ? trail.recalled
+          : undefined,
+    };
+  });
 }
+
+/** A legacy message's steps, as the rows of the open list. */
+function stepItems(
+  steps: CoachStep[],
+  active: boolean,
+  t: Translate,
+  tCount: TranslateCount,
+): TrailItem[] {
+  return steps.map((step) => {
+    const { title, meta } = describeStep(step, t, tCount);
+    return {
+      key: step.id,
+      icon: stepIcon(null, step.tool),
+      label: title,
+      meta,
+      tone: toneOf(step.status, active),
+      status: step.status,
+    };
+  });
+}
+
+const TONE_CLASS: Record<StepTone, string> = {
+  active: "text-foreground",
+  done: "text-muted-foreground",
+  failed: "text-destructive",
+};
 
 function StepMeta({ parts }: { parts: string[] }) {
   return (
     <>
       {parts.map((part, i) => (
         <span key={i}>
-          <span aria-hidden="true"> · </span>
-          {/* The comma is for a screen reader only. `select-none` keeps it
-              out of a copied row. */}
-          <span className="sr-only select-none">, </span>
+          {i > 0 ? (
+            <>
+              <span aria-hidden="true"> · </span>
+              {/* The comma is for a screen reader only. `select-none` keeps
+                  it out of a copied row. */}
+              <span className="sr-only select-none">, </span>
+            </>
+          ) : null}
           {part}
         </span>
       ))}
@@ -458,194 +465,90 @@ function StepMeta({ parts }: { parts: string[] }) {
 }
 
 /**
- * One trail entry. A fetch backed by a step reads like a step row (domain,
- * window, count); everything else shows its label and, once finished, how
- * long it took. A thinking round with reasoning text, and the memory entry
- * with the things it recalled, open their detail on their own tap.
+ * The steps, one under the other: a small icon in the left column on a thin
+ * line that runs down to the next step, the label beside it and anything it
+ * has to say underneath.
  */
-function ActivityEntry({
-  entry,
-  step,
-  active,
-  detail,
+function TrailList({
+  items,
+  slot,
+  itemSlot,
+  label,
 }: {
-  entry: CoachActivity;
-  step: CoachStep | undefined;
-  active: boolean;
-  detail: { text?: string; recalled?: string[] } | null;
+  items: TrailItem[];
+  slot: string;
+  itemSlot: string;
+  label: string;
 }) {
-  const { t, tCount } = useTranslations();
-  const detailId = useId();
-  const [open, setOpen] = useState(false);
-  let title: string;
-  let meta: string[] = [];
-  if (entry.phase === "fetch" && step) {
-    ({ title, meta } = describeStep(step, t, tCount));
-  } else {
-    title = activityLineLabel(entry);
-    if (entry.status !== "running" && entry.durationMs !== undefined) {
-      meta = [
-        t(ELAPSED_KEY, {
-          seconds: Math.max(1, Math.round(entry.durationMs / 1000)),
-        }),
-      ];
-    }
-  }
-  const hasDetail =
-    !!detail?.text ||
-    (detail?.recalled !== undefined && detail.recalled.length > 0);
   return (
-    <li
-      data-slot="coach-turn-step"
-      data-phase={entry.phase}
-      data-status={entry.status}
-      className="relative flex items-start gap-1.5 leading-relaxed"
-    >
-      <StatusIcon status={entry.status} active={active} />
-      <div className="flex min-w-0 flex-col gap-1">
-        {hasDetail ? (
-          <button
-            type="button"
-            data-slot="coach-turn-step-detail-toggle"
-            aria-expanded={open}
-            aria-controls={open ? detailId : undefined}
-            onClick={() => setOpen(!open)}
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-input-focus flex w-fit max-w-full items-start gap-1 rounded text-left outline-none focus-visible:ring-2"
+    <ol data-slot={slot} aria-label={label} className="flex flex-col">
+      {items.map((item, index) => {
+        const last = index === items.length - 1;
+        const Icon = item.icon;
+        return (
+          <li
+            key={item.key}
+            data-slot={itemSlot}
+            data-phase={item.phase}
+            data-status={item.status}
+            className="flex min-w-0 gap-2.5"
           >
-            <span className="min-w-0">
-              <span className="text-foreground">{title}</span>
-              <StepMeta parts={meta} />
-            </span>
-            <ChevronRight
-              aria-hidden="true"
+            <div className="flex shrink-0 flex-col items-center">
+              <span className="flex h-6 items-center">
+                <Icon
+                  aria-hidden="true"
+                  className={cn("size-4", TONE_CLASS[item.tone])}
+                />
+              </span>
+              {!last ? (
+                <span
+                  aria-hidden="true"
+                  data-slot="coach-turn-step-connector"
+                  className="bg-border w-px flex-1"
+                />
+              ) : null}
+            </div>
+            <div
               className={cn(
-                "mt-0.5 size-3 shrink-0 motion-safe:transition-transform",
-                open && "rotate-90",
+                "flex min-w-0 flex-col pt-0.5 leading-5",
+                !last && "pb-3",
               )}
-            />
-          </button>
-        ) : (
-          <span className="text-muted-foreground min-w-0">
-            <span className="text-foreground">{title}</span>
-            <StepMeta parts={meta} />
-          </span>
-        )}
-        {hasDetail && open ? (
-          <div
-            id={detailId}
-            data-slot="coach-turn-step-detail"
-            className="text-foreground flex flex-col gap-1"
-          >
-            {detail?.text ? (
-              <p className="whitespace-pre-wrap">{detail.text}</p>
-            ) : null}
-            {detail?.recalled?.length ? (
-              <ul className="flex flex-col gap-0.5">
-                {detail.recalled.map((fact) => (
-                  <li key={fact}>{fact}</li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-    </li>
+            >
+              <span className={cn("min-w-0", TONE_CLASS[item.tone])}>
+                {item.label}
+              </span>
+              {item.meta?.length ? (
+                <span className="text-muted-foreground min-w-0">
+                  <StepMeta parts={item.meta} />
+                </span>
+              ) : null}
+              {item.text ? (
+                <p
+                  data-slot="coach-turn-step-detail"
+                  className="text-muted-foreground whitespace-pre-wrap"
+                >
+                  {item.text}
+                </p>
+              ) : null}
+              {item.recalled?.length ? (
+                <ul
+                  data-slot="coach-turn-step-detail"
+                  className="text-muted-foreground flex flex-col"
+                >
+                  {item.recalled.map((fact) => (
+                    <li key={fact}>{fact}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
-/**
- * The open trail: the entries (or a legacy message's steps or areas), then
- * the method line, then the tables the answer used. One left rule holds
- * them together.
- */
-function CoachTurnActivityPanel({
-  id,
-  activity,
-  steps,
-  active,
-  areaLabels,
-  trail,
-  method,
-  dataUsed,
-}: {
-  id: string;
-  activity: CoachActivity[];
-  steps: CoachStep[];
-  active: boolean;
-  areaLabels: string[];
-  trail: CoachTrail | null;
-  method?: CoachMethod | null;
-  dataUsed?: ReactNode;
-}) {
-  const { t } = useTranslations();
-  const stepsById = new Map(steps.map((step) => [step.id, step]));
-  const textById = new Map(
-    (trail?.entries ?? []).map((entry) => [entry.id, entry]),
-  );
-  return (
-    <div
-      id={id}
-      data-slot="coach-turn-steps-panel"
-      className="border-border mt-1.5 ml-1.5 flex min-w-0 flex-col gap-2 border-l pl-2.5"
-    >
-      {activity.length > 0 ? (
-        <ol
-          data-slot="coach-turn-activity-list"
-          aria-label={t(COACH_STEP_UI_KEYS.listLabel)}
-          className="flex flex-col gap-1"
-        >
-          {activity.map((entry) => {
-            const stored = textById.get(entry.id);
-            const merged: CoachActivity = {
-              ...entry,
-              title: entry.title ?? stored?.title,
-              text: entry.text ?? stored?.text,
-            };
-            const detail =
-              entry.phase === "memory"
-                ? { recalled: trail?.recalled }
-                : merged.text
-                  ? { text: merged.text }
-                  : null;
-            return (
-              <ActivityEntry
-                key={entry.id}
-                entry={merged}
-                step={entry.stepRef ? stepsById.get(entry.stepRef) : undefined}
-                active={active}
-                detail={detail}
-              />
-            );
-          })}
-        </ol>
-      ) : steps.length > 0 ? (
-        <CoachTurnStepList steps={steps} active={active} />
-      ) : areaLabels.length > 0 ? (
-        <ul
-          data-slot="coach-turn-areas"
-          aria-label={t(COACH_STEP_UI_KEYS.listLabel)}
-          className="flex flex-col gap-1"
-        >
-          {areaLabels.map((label) => (
-            <li
-              key={label}
-              data-slot="coach-turn-area"
-              className="text-foreground flex items-start gap-1.5 leading-relaxed"
-            >
-              <Check
-                aria-hidden="true"
-                className="text-muted-foreground mt-0.5 size-3 shrink-0"
-              />
-              <span className="min-w-0">{label}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {!active && <CoachMethodLine method={method ?? null} />}
-      {!active && dataUsed}
-    </div>
-  );
-}
+// ── The row ────────────────────────────────────────────────────────────────
 
 export interface CoachTurnActivityProps {
   /** The live trail, or `metricSource.activity` of a persisted message. */
@@ -654,19 +557,21 @@ export interface CoachTurnActivityProps {
   steps: CoachStep[];
   /** True while the turn is still running. */
   active: boolean;
-  /** When the live turn started and ended on this device (epoch ms). */
-  startedAt?: number | null;
-  endedAt?: number | null;
+  /**
+   * True when the settled turn asked the person something and waits for
+   * the choice: the row says so instead of summing up.
+   */
+  awaitingAnswer?: boolean;
   /**
    * The provenance metrics, for a message saved before steps existed. Read
    * only when there is neither activity nor steps.
    */
   areas?: readonly CoachProvenanceMetric[];
-  /** How the answer was worked out; shown at the end of the open trail. */
+  /** How the answer was worked out; shown at the end of the open list. */
   method?: CoachMethod | null;
   /**
    * The tables the answer read without pointing at them, shown last in the
-   * open trail. Pass it only when there is something to show.
+   * open list. Pass it only when there is something to show.
    */
   dataUsed?: ReactNode;
   /** The persisted message, for reading its stored titles and texts. */
@@ -678,8 +583,7 @@ export function CoachTurnActivity({
   activity,
   steps,
   active,
-  startedAt,
-  endedAt,
+  awaitingAnswer = false,
   areas,
   method,
   dataUsed,
@@ -688,14 +592,19 @@ export function CoachTurnActivity({
 }: CoachTurnActivityProps) {
   const { t, tCount, locale } = useTranslations();
   const panelId = useId();
-  // Closed in every state; only the person's tap opens it, and it stays as
-  // they left it (also across the swap to the persisted copy, which keeps
-  // this component).
+  // Closed in every state; only the person's tap opens it.
   const [open, setOpen] = useState(false);
-  const now = useNow(active);
+  // A row opened while the turn ran closes when it ends: the answer is
+  // what the person came for. Adjusted while rendering, so the settled
+  // row never paints open for a frame.
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    setOpen(openAfter({ open, wasActive, active }));
+  }
 
   // Only a persisted message whose live entries carry no text asks the
-  // server for it, and only once the trail is open.
+  // server for it, and only once the row is open.
   const needsStoredText =
     !active && activity.length > 0 && !activity.some((a) => a.title || a.text);
   const trail = useTrailText({
@@ -708,130 +617,152 @@ export function CoachTurnActivity({
     activity.length === 0 && steps.length === 0
       ? legacyAreaLabels(areas, t)
       : [];
+  const stepCount = activity.length || steps.length || areaLabels.length;
   const hasMethod = !active && !!method?.text;
   const hasDataUsed = !active && dataUsed != null && dataUsed !== false;
+  const canOpen = stepCount > 0 || hasMethod || hasDataUsed;
 
   let line: string;
   if (active) {
     const entry = currentActivity(activity);
     const step = entry ? null : currentStep(steps);
     line = entry
-      ? activityLineLabel(entry)
+      ? inProgressLabel(activityLineLabel(entry))
       : step
-        ? stepLabel(step, t)
+        ? inProgressLabel(stepLabel(step, t))
         : t(COACH_ACTIVITY_KEYS.thinking);
+  } else if (awaitingAnswer) {
+    line = t(COACH_ACTIVITY_KEYS.awaitingAnswer);
   } else {
-    line =
-      activitySummary({ activity, startedAt, endedAt, t, locale }) ??
-      (steps.length > 0
-        ? tCount("coach.step.headerDone", countSources(steps))
-        : areaLabels.length > 0
-          ? tCount("insights.coach.answer.areasDone", areaLabels.length)
-          : t(COACH_STEP_UI_KEYS.listLabel));
+    line = t(activityThoughtProcessKey(stepCount, locale), {
+      count: stepCount,
+    });
   }
   const announcement = useLineAnnouncement(line, active);
 
-  // A settled message with nothing to show has no line at all.
-  if (
-    !active &&
-    activity.length === 0 &&
-    steps.length === 0 &&
-    areaLabels.length === 0 &&
-    !hasMethod &&
-    !hasDataUsed
-  ) {
-    return null;
-  }
+  // A settled message with nothing to show has no row at all.
+  if (!active && !canOpen) return null;
 
-  const seconds =
-    active && startedAt
-      ? elapsedSeconds(startedAt, Math.max(now, startedAt))
-      : null;
+  const state = active ? "running" : awaitingAnswer ? "awaiting" : "done";
+  const isOpen = open && canOpen;
+
+  const rowContent = (
+    <>
+      <Brain aria-hidden="true" className="size-4 shrink-0" />
+      {active ? (
+        <span
+          aria-hidden="true"
+          data-slot="coach-turn-steps-active"
+          data-text={line}
+          className="min-w-0 truncate"
+        >
+          <WaitingText text={line} textClassName="text-shimmer" />
+        </span>
+      ) : (
+        <span data-slot="coach-turn-steps-done" className="min-w-0 truncate">
+          {line}
+        </span>
+      )}
+      {canOpen ? (
+        <ChevronDown
+          aria-hidden="true"
+          data-slot="coach-turn-steps-chevron"
+          className={cn(
+            "size-4 shrink-0 motion-safe:transition-transform motion-safe:duration-200",
+            isOpen && "rotate-180",
+          )}
+        />
+      ) : null}
+    </>
+  );
+  // The row sits on the answer's left edge: its padding is taken back by
+  // the same negative margin. On phones the 44 px target reaches into the
+  // gap around it, so the row still sits close to the answer.
+  const rowClass =
+    "text-muted-foreground -mx-1.5 -my-1.5 flex min-h-11 w-fit max-w-full min-w-0 items-center gap-1.5 rounded-md px-1.5 text-left leading-relaxed sm:my-0 sm:min-h-8";
 
   return (
     <div
       data-slot="coach-turn-steps"
-      data-state={active ? "running" : "done"}
-      className="flex w-full max-w-full min-w-0 flex-col self-stretch text-xs"
+      data-state={state}
+      className="flex w-full max-w-full min-w-0 flex-col items-start self-stretch text-sm"
     >
-      <button
-        type="button"
-        data-slot="coach-turn-steps-toggle"
-        aria-expanded={open}
-        aria-controls={open ? panelId : undefined}
-        // While the turn runs the visible text changes with every phase; the
-        // status region announces it, so the button keeps a stable name.
-        {...(active
-          ? {
-              "aria-label": t(
-                open
-                  ? COACH_STEP_UI_KEYS.toggleHide
-                  : COACH_STEP_UI_KEYS.toggleShow,
-              ),
-            }
-          : {})}
-        onClick={() => setOpen(!open)}
-        className={cn(
-          // A 44 px target on phones whose extra height reaches into the gap
-          // around it, so the line still sits close to the answer; beside a
-          // pointer the line is as tall as the avatar it sits next to.
-          "text-muted-foreground hover:text-foreground -my-1.5 flex min-h-11 w-full max-w-full min-w-0 items-center gap-1.5 sm:my-0 sm:min-h-8",
-          "focus-visible:ring-input-focus rounded text-left leading-relaxed outline-none focus-visible:ring-2",
-        )}
-      >
-        {active ? (
-          <Loader2
-            aria-hidden="true"
-            data-slot="coach-turn-steps-spinner"
-            className="size-3 shrink-0 animate-spin motion-reduce:animate-none"
-          />
-        ) : (
-          <ChevronRight
-            aria-hidden="true"
-            className={cn(
-              "size-3 shrink-0 motion-safe:transition-transform",
-              open && "rotate-90",
-            )}
-          />
-        )}
-        {active ? (
-          <span
-            aria-hidden="true"
-            data-slot="coach-turn-steps-active"
-            className="min-w-0 truncate"
-          >
-            {line}
-          </span>
-        ) : (
-          <span data-slot="coach-turn-steps-done" className="min-w-0 truncate">
-            {line}
-          </span>
-        )}
-        {/* The seconds follow the text they time, in the same muted tone,
-            so the line reads as one phrase rather than a label and a
-            counter at the far edge of the column. */}
-        {seconds !== null ? (
-          <span
-            aria-hidden="true"
-            data-slot="coach-turn-steps-seconds"
-            className="shrink-0 tabular-nums"
-          >
-            {t(ELAPSED_KEY, { seconds })}
-          </span>
-        ) : null}
-      </button>
-      {open && (
-        <CoachTurnActivityPanel
-          id={panelId}
-          activity={activity}
-          steps={steps}
-          active={active}
-          areaLabels={areaLabels}
-          trail={trail}
-          method={method}
-          dataUsed={hasDataUsed ? dataUsed : null}
-        />
+      {canOpen ? (
+        <button
+          type="button"
+          data-slot="coach-turn-steps-toggle"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? panelId : undefined}
+          // While the turn runs the visible text changes with every step;
+          // the status region announces it, so the button keeps a stable
+          // name.
+          {...(active
+            ? {
+                "aria-label": t(
+                  isOpen
+                    ? COACH_STEP_UI_KEYS.toggleHide
+                    : COACH_STEP_UI_KEYS.toggleShow,
+                ),
+              }
+            : {})}
+          onClick={() => setOpen(!open)}
+          className={cn(
+            rowClass,
+            "hover:text-foreground motion-safe:transition-colors",
+            COACH_FOCUS_RING,
+          )}
+        >
+          {rowContent}
+        </button>
+      ) : (
+        <div data-slot="coach-turn-steps-row" className={rowClass}>
+          {rowContent}
+        </div>
       )}
+      {isOpen ? (
+        <div
+          id={panelId}
+          data-slot="coach-turn-steps-panel"
+          className="motion-safe:animate-in motion-safe:fade-in-0 mt-2 flex w-full min-w-0 flex-col gap-3 motion-safe:duration-200"
+        >
+          {activity.length > 0 ? (
+            <TrailList
+              items={activityItems({
+                activity,
+                steps,
+                trail,
+                active,
+                t,
+                tCount,
+              })}
+              slot="coach-turn-activity-list"
+              itemSlot="coach-turn-step"
+              label={t(COACH_STEP_UI_KEYS.listLabel)}
+            />
+          ) : steps.length > 0 ? (
+            <TrailList
+              items={stepItems(steps, active, t, tCount)}
+              slot="coach-turn-steps-list"
+              itemSlot="coach-turn-step"
+              label={t(COACH_STEP_UI_KEYS.listLabel)}
+            />
+          ) : areaLabels.length > 0 ? (
+            <TrailList
+              items={areaLabels.map((label) => ({
+                key: label,
+                icon: Database,
+                label,
+                tone: "done",
+              }))}
+              slot="coach-turn-areas"
+              itemSlot="coach-turn-area"
+              label={t(COACH_STEP_UI_KEYS.listLabel)}
+            />
+          ) : null}
+          {hasMethod ? <CoachMethodLine method={method ?? null} /> : null}
+          {hasDataUsed ? dataUsed : null}
+        </div>
+      ) : null}
       <span
         role="status"
         aria-live="polite"

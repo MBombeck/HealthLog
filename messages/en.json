@@ -2797,6 +2797,7 @@
       "refusalInjection": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data — please rephrase your question in those terms.",
       "errorBudget": "You've reached today's Coach usage limit. The budget refreshes at midnight UTC.",
       "errorProvider": "The Coach could not reach an Insights provider just now. Please try again in a moment.",
+      "errorDemo": "The Coach doesn't answer in the demo.",
       "errorNoProvider": "The Coach reads your logged health data and answers questions about it (not medical advice). HealthLog needs an AI provider for that — connect your own key or a local model.",
       "errorNoProviderAction": "Connect an AI provider",
       "errorNetwork": "No internet connection — try again once you're back online.",
@@ -3018,7 +3019,6 @@
       "hideConversations": "Hide conversations",
       "heroGreeting": "Ask me anything about your data",
       "heroSubline": "Ask about your trends, medications, or readings.",
-      "thinkingElapsed": "{seconds} s",
       "thinkingDuration": "Thought for {seconds}s",
       "thinkingExpandAria": "Show what the Coach considered",
       "thinkingDetail": "Answered from your health snapshot.",
@@ -3152,9 +3152,6 @@
         "rememberDone": "Remembered",
         "timeYesterday": "yesterday {time}",
         "timeEarlier": "{date}, {time}",
-        "areasDoneOne": "Looked at 1 area",
-        "areasDoneFew": "Looked at {count} areas",
-        "areasDoneOther": "Looked at {count} areas",
         "info": "Answer details",
         "infoModel": "Model: {model}"
       },
@@ -3177,16 +3174,16 @@
         "plan": "Drafting a plan…",
         "asking": "Asking you…",
         "answer": "Writing the answer…",
-        "summaryOne": "Thought it through, {lookups} lookup, {seconds} s",
-        "summaryFew": "Thought it through, {lookups} lookups, {seconds} s",
-        "summaryOther": "Thought it through, {lookups} lookups, {seconds} s",
-        "summaryNoLookups": "Thought it through, {seconds} s",
         "stop": {
           "budget": "Budget reached, answering with what it has",
           "time": "Time limit reached, answering with what it has",
           "cap": "Many steps, wrapping up",
           "noProgress": "No new data, wrapping up"
-        }
+        },
+        "thoughtProcessOne": "Thought process · {count} step",
+        "thoughtProcessFew": "Thought process · {count} steps",
+        "thoughtProcessOther": "Thought process · {count} steps",
+        "awaitingAnswer": "Answer needed"
       },
       "memory": {
         "saved": "Remembered: {fact}",
@@ -3208,11 +3205,6 @@
       },
       "suggestedReplies": {
         "groupLabel": "Suggested replies"
-      },
-      "interim": {
-        "labelOne": "{title}, {window}, {count} reading",
-        "labelFew": "{title}, {window}, {count} readings",
-        "labelOther": "{title}, {window}, {count} readings"
       },
       "chart": {
         "compare": {
@@ -9878,9 +9870,6 @@
       "showResult": "Opening an earlier table",
       "reuse": "Using the table from before",
       "headerActive": "{label}…",
-      "headerDoneOne": "Looked at 1 source",
-      "headerDoneFew": "Looked at {count} sources",
-      "headerDoneOther": "Looked at {count} sources",
       "listLabel": "What the Coach looked at",
       "toggleShow": "Show what the Coach looked at",
       "toggleHide": "Hide what the Coach looked at",

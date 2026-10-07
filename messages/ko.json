@@ -2797,6 +2797,7 @@
       "refusalInjection": "제 지시를 덮어쓰려는 표현이 보였어요. 저는 HealthLog 코치이고 회원님의 건강 데이터만 정리해 드려요 — 그 범위로 질문을 다시 적어 주세요.",
       "errorBudget": "오늘 코치 사용 한도에 도달했어요. 사용량은 UTC 자정에 초기화돼요.",
       "errorProvider": "지금은 코치가 인사이트 제공자에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
+      "errorDemo": "데모에서는 코치가 답하지 않아요.",
       "errorNoProvider": "코치는 기록된 건강 데이터를 읽고 그에 대한 질문에 답해요(의학적 조언은 아니에요). 그러려면 HealthLog에 AI 제공자가 필요해요 — 직접 발급한 키나 로컬 모델을 연결해 주세요.",
       "errorNoProviderAction": "AI 제공자 연결",
       "errorNetwork": "인터넷에 연결되어 있지 않아요 — 다시 연결되면 시도해 주세요.",
@@ -3018,7 +3019,6 @@
       "hideConversations": "대화 숨기기",
       "heroGreeting": "내 데이터에 대해 무엇이든 물어보세요",
       "heroSubline": "추이, 약, 측정값에 대해 물어보세요.",
-      "thinkingElapsed": "{seconds}초",
       "thinkingDuration": "{seconds}초 동안 생각했어요",
       "thinkingExpandAria": "코치가 참고한 내용 보기",
       "thinkingDetail": "건강 스냅샷을 바탕으로 답했어요.",
@@ -3152,9 +3152,6 @@
         "rememberDone": "기억함",
         "timeYesterday": "어제 {time}",
         "timeEarlier": "{date} {time}",
-        "areasDoneOne": "영역 1개 확인",
-        "areasDoneFew": "영역 {count}개 확인",
-        "areasDoneOther": "영역 {count}개 확인",
         "info": "답변 정보",
         "infoModel": "모델: {model}"
       },
@@ -3177,16 +3174,16 @@
         "plan": "계획을 제안하는 중…",
         "asking": "질문하는 중…",
         "answer": "답변을 쓰는 중…",
-        "summaryOne": "생각 완료, 조회 {lookups}회, {seconds}초",
-        "summaryFew": "생각 완료, 조회 {lookups}회, {seconds}초",
-        "summaryOther": "생각 완료, 조회 {lookups}회, {seconds}초",
-        "summaryNoLookups": "생각 완료, {seconds}초",
         "stop": {
           "budget": "예산 도달, 지금까지의 내용으로 답변",
           "time": "시간 제한 도달, 지금까지의 내용으로 답변",
           "cap": "단계가 많아 이제 정리하는 중",
           "noProgress": "새 데이터가 없어 정리하는 중"
-        }
+        },
+        "thoughtProcessOne": "사고 과정 · {count}단계",
+        "thoughtProcessFew": "사고 과정 · {count}단계",
+        "thoughtProcessOther": "사고 과정 · {count}단계",
+        "awaitingAnswer": "답변이 필요해요"
       },
       "memory": {
         "saved": "기억함: {fact}",
@@ -3208,11 +3205,6 @@
       },
       "suggestedReplies": {
         "groupLabel": "추천 답변"
-      },
-      "interim": {
-        "labelOne": "{title}, {window}, 값 {count}개",
-        "labelFew": "{title}, {window}, 값 {count}개",
-        "labelOther": "{title}, {window}, 값 {count}개"
       },
       "chart": {
         "compare": {
@@ -9878,9 +9870,6 @@
       "showResult": "이전 표 여는 중",
       "reuse": "앞서 만든 표 사용 중",
       "headerActive": "{label}…",
-      "headerDoneOne": "출처 1개 확인함",
-      "headerDoneFew": "출처 {count}개 확인함",
-      "headerDoneOther": "출처 {count}개 확인함",
       "listLabel": "코치가 확인한 내용",
       "toggleShow": "코치가 확인한 내용 보기",
       "toggleHide": "코치가 확인한 내용 숨기기",

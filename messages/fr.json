@@ -2797,6 +2797,7 @@
       "refusalInjection": "Ton message contient des instructions qui cherchent à remplacer mes consignes. Je suis le coach HealthLog et je ne résume que tes propres données de santé — reformule ta question dans ce cadre.",
       "errorBudget": "Tu as atteint la limite quotidienne du coach. Le quota se réinitialise à minuit (UTC).",
       "errorProvider": "Le coach n’a pas pu joindre un fournisseur d’analyse maintenant. Réessaie dans un instant.",
+      "errorDemo": "Dans la démo, le Coach ne répond pas.",
       "errorNoProvider": "Le coach lit tes données de santé enregistrées et répond aux questions à leur sujet (pas un avis médical). HealthLog a besoin d'un fournisseur d'IA pour cela : connecte ta propre clé ou un modèle local.",
       "errorNoProviderAction": "Connecter un fournisseur d'IA",
       "errorNetwork": "Pas de connexion Internet — réessaie une fois reconnecté.",
@@ -3018,7 +3019,6 @@
       "hideConversations": "Masquer les conversations",
       "heroGreeting": "Pose-moi une question sur tes données",
       "heroSubline": "Pose une question sur tes tendances, médicaments ou mesures.",
-      "thinkingElapsed": "{seconds} s",
       "thinkingDuration": "A réfléchi pendant {seconds}s",
       "thinkingExpandAria": "Montrer ce que le Coach a pris en compte",
       "thinkingDetail": "Réponse établie à partir de ton aperçu santé.",
@@ -3152,9 +3152,6 @@
         "rememberDone": "Mémorisé",
         "timeYesterday": "hier {time}",
         "timeEarlier": "{date}, {time}",
-        "areasDoneOne": "1 domaine consulté",
-        "areasDoneFew": "{count} domaines consultés",
-        "areasDoneOther": "{count} domaines consultés",
         "info": "Détails de la réponse",
         "infoModel": "Modèle : {model}"
       },
@@ -3177,16 +3174,16 @@
         "plan": "Propose un plan…",
         "asking": "Te pose une question…",
         "answer": "Rédige la réponse…",
-        "summaryOne": "Réflexion faite, {lookups} recherche, {seconds} s",
-        "summaryFew": "Réflexion faite, {lookups} recherches, {seconds} s",
-        "summaryOther": "Réflexion faite, {lookups} recherches, {seconds} s",
-        "summaryNoLookups": "Réflexion faite, {seconds} s",
         "stop": {
           "budget": "Budget atteint, répond avec ce qu'il a",
           "time": "Temps écoulé, répond avec ce qu'il a",
           "cap": "Beaucoup d'étapes, conclut maintenant",
           "noProgress": "Plus de nouvelles données, conclut"
-        }
+        },
+        "thoughtProcessOne": "Raisonnement · {count} étape",
+        "thoughtProcessFew": "Raisonnement · {count} étapes",
+        "thoughtProcessOther": "Raisonnement · {count} étapes",
+        "awaitingAnswer": "Réponse attendue"
       },
       "memory": {
         "saved": "Retenu : {fact}",
@@ -3208,11 +3205,6 @@
       },
       "suggestedReplies": {
         "groupLabel": "Réponses suggérées"
-      },
-      "interim": {
-        "labelOne": "{title}, {window}, {count} mesure",
-        "labelFew": "{title}, {window}, {count} mesures",
-        "labelOther": "{title}, {window}, {count} mesures"
       },
       "chart": {
         "compare": {
@@ -9878,9 +9870,6 @@
       "showResult": "Ouverture d'un tableau précédent",
       "reuse": "Reprise du tableau précédent",
       "headerActive": "{label}…",
-      "headerDoneOne": "1 source consultée",
-      "headerDoneFew": "{count} sources consultées",
-      "headerDoneOther": "{count} sources consultées",
       "listLabel": "Ce que le Coach a consulté",
       "toggleShow": "Afficher ce que le Coach a consulté",
       "toggleHide": "Masquer ce que le Coach a consulté",

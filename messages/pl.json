@@ -2797,6 +2797,7 @@
       "refusalInjection": "Twoja wiadomość zawiera instrukcje, które próbują nadpisać moje wytyczne. Jestem coachem HealthLog i podsumowuję wyłącznie twoje własne dane zdrowotne — przeformułuj pytanie w tych ramach.",
       "errorBudget": "Osiągnięto dzienny limit coacha. Limit resetuje się o północy (UTC).",
       "errorProvider": "Coach nie mógł teraz skontaktować się z dostawcą analizy. Spróbuj za chwilę.",
+      "errorDemo": "W wersji demo Coach nie odpowiada.",
       "errorNoProvider": "Coach czyta Twoje zapisane dane zdrowotne i odpowiada na pytania o nie (to nie porada medyczna). HealthLog potrzebuje do tego dostawcy AI — połącz własny klucz lub model lokalny.",
       "errorNoProviderAction": "Połącz dostawcę AI",
       "errorNetwork": "Brak połączenia z Internetem — spróbuj ponownie, gdy wrócisz online.",
@@ -3018,7 +3019,6 @@
       "hideConversations": "Ukryj rozmowy",
       "heroGreeting": "Zapytaj mnie o cokolwiek na temat twoich danych",
       "heroSubline": "Zapytaj o swoje trendy, leki lub pomiary.",
-      "thinkingElapsed": "{seconds} s",
       "thinkingDuration": "Myślał przez {seconds}s",
       "thinkingExpandAria": "Pokaż, co Coach wziął pod uwagę",
       "thinkingDetail": "Odpowiedź na podstawie Twojego podsumowania zdrowia.",
@@ -3152,9 +3152,6 @@
         "rememberDone": "Zapamiętano",
         "timeYesterday": "wczoraj {time}",
         "timeEarlier": "{date}, {time}",
-        "areasDoneOne": "Sprawdzono 1 obszar",
-        "areasDoneFew": "Sprawdzono {count} obszary",
-        "areasDoneOther": "Sprawdzono {count} obszarów",
         "info": "Szczegóły odpowiedzi",
         "infoModel": "Model: {model}"
       },
@@ -3177,16 +3174,16 @@
         "plan": "Przygotowuje plan…",
         "asking": "Dopytuje…",
         "answer": "Pisze odpowiedź…",
-        "summaryOne": "Przemyślane, {lookups} zapytanie, {seconds} s",
-        "summaryFew": "Przemyślane, {lookups} zapytania, {seconds} s",
-        "summaryOther": "Przemyślane, {lookups} zapytań, {seconds} s",
-        "summaryNoLookups": "Przemyślane, {seconds} s",
         "stop": {
           "budget": "Budżet wyczerpany, odpowiada na podstawie tego, co ma",
           "time": "Limit czasu osiągnięty, odpowiada na podstawie tego, co ma",
           "cap": "Wiele kroków, teraz podsumowuje",
           "noProgress": "Brak nowych danych, podsumowuje"
-        }
+        },
+        "thoughtProcessOne": "Tok myślenia · {count} krok",
+        "thoughtProcessFew": "Tok myślenia · {count} kroki",
+        "thoughtProcessOther": "Tok myślenia · {count} kroków",
+        "awaitingAnswer": "Potrzebna odpowiedź"
       },
       "memory": {
         "saved": "Zapamiętane: {fact}",
@@ -3208,11 +3205,6 @@
       },
       "suggestedReplies": {
         "groupLabel": "Proponowane odpowiedzi"
-      },
-      "interim": {
-        "labelOne": "{title}, {window}, {count} pomiar",
-        "labelFew": "{title}, {window}, {count} pomiary",
-        "labelOther": "{title}, {window}, {count} pomiarów"
       },
       "chart": {
         "compare": {
@@ -9878,9 +9870,6 @@
       "showResult": "Otwieram wcześniejszą tabelę",
       "reuse": "Korzystam z tabeli z poprzedniej odpowiedzi",
       "headerActive": "{label}…",
-      "headerDoneOne": "Sprawdzono 1 źródło",
-      "headerDoneFew": "Sprawdzono {count} źródła",
-      "headerDoneOther": "Sprawdzono {count} źródeł",
       "listLabel": "Co sprawdził Coach",
       "toggleShow": "Pokaż, co sprawdził Coach",
       "toggleHide": "Ukryj, co sprawdził Coach",

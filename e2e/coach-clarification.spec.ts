@@ -104,7 +104,7 @@ async function ask(
       },
     },
   ]);
-  await expect(live).toHaveText("Asking you…");
+  await expect(live).toHaveAttribute("data-text", "Asking you…");
   stub.messages.push(
     { id: "coach-clarify-e2e-u1", role: "user", content: QUESTION },
     {
@@ -167,7 +167,13 @@ test.describe("Coach clarifying question", () => {
     const choices = pills.locator("[data-choice-id]");
     await expect(choices).toHaveCount(2);
     await expect(choices.nth(0)).toHaveAttribute("data-choice-id", "c1");
-    // 4. The trail stays closed.
+    // 4. The row says an answer is needed, and stays closed.
+    const row = asked.locator('[data-slot="coach-turn-steps"]');
+    await expect(row).toHaveAttribute("data-state", "awaiting");
+    await expect(row.locator('[data-slot="coach-turn-steps-done"]')).toHaveText(
+      "Answer needed",
+    );
+    await expect(row.locator(".text-shimmer")).toHaveCount(0);
     await expect(
       asked.locator('[data-slot="coach-turn-steps-toggle"]'),
     ).toHaveAttribute("aria-expanded", "false");

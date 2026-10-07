@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,18 +10,18 @@ import { pluralKey } from "@/lib/i18n/plural";
 import type { Locale } from "@/lib/i18n/config";
 import type { CoachActivity, CoachStep } from "@/lib/ai/coach/types";
 
+import { Brain, ChartScatter, Database, Lightbulb, Table2 } from "lucide-react";
+
 import {
   CoachTurnActivity,
-  CoachTurnStepList,
   activityLineLabel,
-  activitySeconds,
-  activitySummary,
-  countLookups,
-  countSources,
   currentActivity,
   currentStep,
   describeStep,
+  inProgressLabel,
   legacyAreaLabels,
+  openAfter,
+  stepIcon,
   stepLabel,
 } from "../turn-activity";
 
@@ -218,7 +220,133 @@ const SETTLED = [
   ANSWER_DONE,
 ];
 
-describe("the running line", () => {
+/** The row's element (button or plain row) and everything inside it. */
+function rowHtml(html: string): string {
+  const match = html.match(
+    /<(button|div)[^>]*data-slot="coach-turn-steps-(?:toggle|row)"[\s\S]*?<\/\1>/,
+  );
+  return match?.[0] ?? "";
+}
+
+/** The visible text of a fragment, tags removed. */
+function textOf(html: string): string {
+  let text = html.replace(/<span class="sr-only select-none">, <\/span>/g, "");
+  for (let prev = ""; prev !== text;) {
+    prev = text;
+    text = text.replace(/<[^>]*>/g, "");
+  }
+  return text;
+}
+
+describe("one row while the Coach works", () => {
+  it("walks thinking → fetching → summarising on one shimmering row", () => {
+    const frames = [
+      [THINKING_RUNNING],
+      [
+        { ...THINKING_RUNNING, status: "done" as const },
+        { ...FETCH_BP, status: "running" as const },
+      ],
+      [THINKING_DONE, FETCH_BP, DIGEST_RUNNING],
+    ];
+    const htmls = frames.map((activity) =>
+      render(<CoachTurnActivity activity={activity} steps={[]} active />),
+    );
+    expect(htmls[0]).toContain('data-text="Thinking…"');
+    expect(htmls[1]).toContain(
+      'data-text="Fetching blood pressure, last 90 days…"',
+    );
+    expect(htmls[2]).toContain('data-text="Summarising 214 readings…"');
+    for (const html of htmls) {
+      // Exactly one row, and nothing under it while closed.
+      expect(
+        html.match(/data-slot="coach-turn-steps-(toggle|row)"/g),
+      ).toHaveLength(1);
+      expect(html).toContain('data-state="running"');
+      expect(html).not.toContain("coach-interim");
+      expect(html).not.toContain('<svg viewBox="0 0 48 16"');
+      // The words shimmer; the trailing dots fade on their own.
+      expect(html).toMatch(/<span class="text-shimmer">[^<]+<\/span>/);
+      expect(html).toContain('data-slot="waiting-dots"');
+      expect(html.match(/class="waiting-dot /g)).toHaveLength(3);
+      expect(html).toContain("[animation-delay:0.2s]");
+      expect(html).toContain("[animation-delay:0.4s]");
+      // No clock while it runs, in any form.
+      expect(html).not.toMatch(/\d+\s?s</);
+      expect(html).not.toContain("coach-turn-steps-seconds");
+      expect(html).not.toContain("tabular-nums");
+    }
+  });
+
+  it("reads brain, text, chevron, in the answer's text size and the muted tone", () => {
+    const html = render(
+      <CoachTurnActivity
+        activity={[THINKING_DONE, FETCH_BP, DIGEST_RUNNING]}
+        steps={[BP]}
+        active
+      />,
+    );
+    const row = rowHtml(html);
+    expect(row.startsWith("<button")).toBe(true);
+    const order = [
+      row.indexOf("lucide-brain"),
+      row.indexOf('data-slot="coach-turn-steps-active"'),
+      row.indexOf('data-slot="coach-turn-steps-chevron"'),
+    ];
+    expect(order.every((at) => at > -1)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(row).toContain("lucide-chevron-down");
+    expect(row).toMatch(/class="[^"]*\bw-fit\b/);
+    expect(row).toMatch(/class="[^"]*\btext-muted-foreground\b/);
+    expect(row).toMatch(/class="[^"]*\bhover:text-foreground\b/);
+    expect(row).toContain("focus-visible:ring-input-focus");
+    expect(row).not.toMatch(/ring-ring|ring-primary|text-primary/);
+    expect(html).toMatch(
+      /data-slot="coach-turn-steps"[^>]*class="[^"]*\btext-sm\b/,
+    );
+    expect(html).not.toMatch(
+      /data-slot="coach-turn-steps"[^>]*class="[^"]*\btext-xs\b/,
+    );
+    // A stable name while the text keeps changing.
+    expect(row).toContain('aria-label="Show what the Coach looked at"');
+    expect(row).toContain('aria-expanded="false"');
+  });
+
+  it("says Thinking… before the first frame, with no chevron and nothing to open", () => {
+    const html = render(<CoachTurnActivity activity={[]} steps={[]} active />);
+    expect(html).toContain('data-text="Thinking…"');
+    expect(html).toContain("text-shimmer");
+    expect(html).not.toContain("coach-turn-steps-chevron");
+    expect(html).not.toContain("aria-expanded");
+    expect(rowHtml(html).startsWith("<div")).toBe(true);
+  });
+
+  it("names a reasoning title as still going, and a step-only server's step", () => {
+    expect(
+      render(
+        <CoachTurnActivity
+          activity={[{ ...THINKING_RUNNING, title: "Checking the trend" }]}
+          steps={[]}
+          active
+        />,
+      ),
+    ).toContain('data-text="Checking the trend…"');
+    expect(
+      render(
+        <CoachTurnActivity activity={[]} steps={[BP, LABS_RUNNING]} active />,
+      ),
+    ).toContain('data-text="Checking: Lab results, last 12 months…"');
+  });
+
+  it("reads in German", () => {
+    const html = render(
+      <CoachTurnActivity activity={[]} steps={[]} active />,
+      "de",
+    );
+    expect(html).toContain('data-text="Denkt nach…"');
+  });
+});
+
+describe("the labels", () => {
   it("names the latest running entry, else the latest one", () => {
     expect(currentActivity([THINKING_DONE, FETCH_BP, DIGEST_RUNNING])?.id).toBe(
       "a4",
@@ -242,59 +370,134 @@ describe("the running line", () => {
     ).toBe("Fetching blood pressure, last 90 days…");
   });
 
-  it("walks thinking → fetching → summarising, one quiet line", () => {
-    const frames = [
-      [THINKING_RUNNING],
-      [
-        { ...THINKING_RUNNING, status: "done" as const },
-        { ...FETCH_BP, status: "running" as const },
-      ],
-      [THINKING_DONE, FETCH_BP, DIGEST_RUNNING],
-    ];
-    const lines = frames.map((activity) =>
-      render(
-        <CoachTurnActivity
-          activity={activity}
-          steps={[]}
-          active
-          startedAt={Date.now() - 12_000}
-        />,
-      ),
+  it("ends a running line in exactly one ellipsis", () => {
+    expect(inProgressLabel("Writing the answer")).toBe("Writing the answer…");
+    expect(inProgressLabel("Writing the answer…")).toBe("Writing the answer…");
+    expect(inProgressLabel("Writing the answer...")).toBe(
+      "Writing the answer…",
     );
-    expect(lines[0]).toContain(">Thinking…<");
-    expect(lines[1]).toContain(">Fetching blood pressure, last 90 days…<");
-    expect(lines[2]).toContain(">Summarising 214 readings…<");
-    for (const html of lines) {
-      expect(html.match(/data-slot="coach-turn-steps-toggle"/g)).toHaveLength(
-        1,
-      );
-      expect(html).toContain('data-state="running"');
-      expect(html).toContain('aria-label="Show what the Coach looked at"');
-      // The seconds so far follow the text directly, in the line's own
-      // muted tone, with the summary's spacing ("12 s"), never pushed to
-      // the far edge of the column.
-      expect(html).toMatch(
-        /data-slot="coach-turn-steps-active"[^>]*>[^<]*<\/span><span[^>]*data-slot="coach-turn-steps-seconds"[^>]*>1[23]\u00a0s</,
-      );
-      const seconds = html.match(
-        /<span[^>]*data-slot="coach-turn-steps-seconds"[^>]*>/,
-      )?.[0];
-      expect(seconds).toContain("tabular-nums");
-      expect(seconds).not.toMatch(/\bml-auto\b|text-foreground/);
+  });
+
+  it("picks an icon by the kind of work", () => {
+    expect(stepIcon("thinking", undefined)).toBe(Lightbulb);
+    expect(stepIcon("fetch", "get_metric_series")).toBe(Database);
+    expect(stepIcon("fetch", "get_metric_table")).toBe(Table2);
+    expect(stepIcon("fetch", "get_correlations")).toBe(ChartScatter);
+    expect(stepIcon(null, "get_sleep")).toBe(Database);
+    // The brain belongs to the row, never to a step.
+    for (const phase of [
+      "thinking",
+      "memory",
+      "fetch",
+      "digest",
+      "checkpoint",
+      "remember",
+      "plan",
+      "asking",
+      "stop",
+      "answer",
+    ] as const) {
+      expect(stepIcon(phase, undefined)).not.toBe(Brain);
     }
   });
+});
 
-  it("says Thinking… before the first frame arrives", () => {
-    const html = render(<CoachTurnActivity activity={[]} steps={[]} active />);
-    expect(html).toContain(">Thinking…<");
-    expect(html).toContain('aria-expanded="false"');
+describe("after the answer", () => {
+  it("settles into the thought process and its step count, without shimmer", () => {
+    const html = render(
+      <CoachTurnActivity
+        activity={SETTLED}
+        steps={[BP, SLEEP]}
+        active={false}
+      />,
+    );
+    expect(html).toContain('data-state="done"');
+    expect(html).toMatch(
+      /data-slot="coach-turn-steps-done"[^>]*>Thought process · 5 steps</,
+    );
+    expect(html).not.toContain("text-shimmer");
+    expect(html).not.toContain("waiting-dot");
+    expect(html).toContain('data-slot="coach-turn-steps-chevron"');
+    expect(html).not.toMatch(/\d+\s?s</);
+    // The settled row names itself by its text.
+    expect(html).not.toContain('aria-label="Show what the Coach looked at"');
   });
 
-  it("falls back to the step label on a server that sends only steps", () => {
-    const html = render(
-      <CoachTurnActivity activity={[]} steps={[BP, LABS_RUNNING]} active />,
+  it("counts in the reader's language, with proper plurals", () => {
+    const de = render(
+      <CoachTurnActivity activity={[ANSWER_DONE]} steps={[]} active={false} />,
+      "de",
     );
-    expect(html).toContain("Checking: Lab results, last 12 months");
+    expect(de).toContain("Denkprozess · 1 Schritt<");
+    const pl = render(
+      <CoachTurnActivity
+        activity={[THINKING_DONE, FETCH_BP, ANSWER_DONE]}
+        steps={[]}
+        active={false}
+      />,
+      "pl",
+    );
+    expect(pl).toContain("Tok myślenia · 3 kroki<");
+  });
+
+  it("an older message counts its steps, or the areas it drew on", () => {
+    expect(
+      render(
+        <CoachTurnActivity activity={[]} steps={[BP, SLEEP]} active={false} />,
+      ),
+    ).toContain("Thought process · 2 steps<");
+    expect(
+      render(
+        <CoachTurnActivity
+          activity={[]}
+          steps={[]}
+          active={false}
+          areas={["bp"]}
+        />,
+      ),
+    ).toContain("Thought process · 1 step<");
+  });
+
+  it("says an answer is needed while a question waits, without shimmer", () => {
+    const html = render(
+      <CoachTurnActivity
+        activity={[THINKING_DONE, ASKING]}
+        steps={[]}
+        active={false}
+        awaitingAnswer
+      />,
+    );
+    expect(html).toContain('data-state="awaiting"');
+    expect(html).toMatch(
+      /data-slot="coach-turn-steps-done"[^>]*>Answer needed</,
+    );
+    expect(html).not.toContain("text-shimmer");
+    expect(
+      render(
+        <CoachTurnActivity
+          activity={[THINKING_DONE, ASKING]}
+          steps={[]}
+          active={false}
+          awaitingAnswer
+        />,
+        "de",
+      ),
+    ).toContain(">Antwort nötig<");
+  });
+
+  it("renders nothing for a settled message with nothing to show", () => {
+    expect(
+      render(<CoachTurnActivity activity={[]} steps={[]} active={false} />),
+    ).not.toContain("coach-turn-steps");
+  });
+
+  it("carries a polite status region that starts empty", () => {
+    const html = render(
+      <CoachTurnActivity activity={SETTLED} steps={[]} active={false} />,
+    );
+    expect(html).toMatch(
+      /<span role="status" aria-live="polite" aria-atomic="true" class="sr-only"><\/span>/,
+    );
   });
 });
 
@@ -320,6 +523,7 @@ describe("nothing opens by itself", () => {
         activity={[THINKING_DONE, ASKING]}
         steps={[]}
         active={false}
+        awaitingAnswer
       />,
     ],
     [
@@ -370,109 +574,78 @@ describe("nothing opens by itself", () => {
   for (const [name, node] of states) {
     it(`is closed when ${name}`, () => {
       const html = render(node);
-      expect(html).toContain('aria-expanded="false"');
       expect(html).not.toContain('aria-expanded="true"');
+      expect(html).not.toContain('rotate-180"');
       expect(html).not.toContain('data-slot="coach-turn-steps-panel"');
       expect(html).not.toContain('data-slot="coach-turn-step-detail"');
       expect(html).not.toContain("The second half of the month runs higher.");
     });
   }
+
+  it("a row opened while the turn ran closes when it ends, and nothing opens it", () => {
+    // Opened during the run, the turn ends: closed.
+    expect(openAfter({ open: true, wasActive: true, active: false })).toBe(
+      false,
+    );
+    // Closed stays closed through every move.
+    for (const [wasActive, active] of [
+      [true, false],
+      [false, true],
+      [true, true],
+      [false, false],
+    ] as const) {
+      expect(openAfter({ open: false, wasActive, active })).toBe(false);
+    }
+    // A tap on a settled row is the person's, and stays.
+    expect(openAfter({ open: true, wasActive: false, active: false })).toBe(
+      true,
+    );
+  });
 });
 
-describe("after the answer", () => {
-  const { t } = translators("en");
-
-  it("collapses to one calm summary of lookups and seconds", () => {
+describe("tokens and motion", () => {
+  it("uses theme tokens only, and every motion is guarded or turned off by reduced motion", () => {
     const html = render(
       <CoachTurnActivity
-        activity={SETTLED}
-        steps={[BP, SLEEP]}
-        active={false}
+        activity={[THINKING_DONE, FETCH_BP, DIGEST_RUNNING]}
+        steps={[BP]}
+        active
       />,
     );
-    expect(html).toContain('data-state="done"');
-    expect(html).toContain(
-      'data-slot="coach-turn-steps-done" class="min-w-0 truncate">Thought it through, 2 lookups, 12 s<',
+    expect(html).not.toMatch(/#[0-9a-f]{3,8}\b|dracula-|\[#|oklch\(/i);
+    expect(html).not.toMatch(/text-muted-foreground\/\d/);
+    const classes = [...html.matchAll(/class="([^"]*)"/g)].flatMap((m) =>
+      m[1].split(/\s+/),
     );
-    // No spinner, no running seconds, no stable-name override once settled.
-    expect(html).not.toContain("coach-turn-steps-spinner");
-    expect(html).not.toContain("coach-turn-steps-seconds");
-    expect(html).not.toContain('aria-label="Show what the Coach looked at"');
+    for (const cls of classes) {
+      if (cls.startsWith("transition") || cls.startsWith("animate-")) {
+        throw new Error(`unguarded motion: ${cls}`);
+      }
+    }
+    // A 44 px tap target on phones.
+    expect(html).toContain("min-h-11");
   });
 
-  it("counts fetches as lookups and runs a round's fetches side by side", () => {
-    expect(countLookups(SETTLED)).toBe(2);
-    // 4 s thinking + max(0.9, 1.4) s fetching + 0.6 s digest + 6 s answer.
-    expect(activitySeconds(SETTLED)).toBe(12);
-    expect(activitySeconds([THINKING_RUNNING])).toBeNull();
-  });
-
-  it("uses the live turn's clock when the trail has no durations", () => {
-    expect(
-      activitySummary({
-        activity: [{ ...ANSWER_DONE, durationMs: undefined }],
-        startedAt: 1_000,
-        endedAt: 19_000,
-        t,
-        locale: "en",
-      }),
-    ).toBe("Thought it through, 18 s");
-  });
-
-  it("reads in German", () => {
-    const html = render(
-      <CoachTurnActivity activity={SETTLED} steps={[]} active={false} />,
-      "de",
+  it("the shimmer and the dots stop under reduced motion, in the stylesheet", () => {
+    const css = readFileSync(
+      join(__dirname, "../../../../app/globals.css"),
+      "utf8",
     );
-    expect(html).toContain("Nachgedacht, 2 Abfragen, 12 s");
-  });
-
-  it("an older message still folds into its sources", () => {
-    const html = render(
-      <CoachTurnActivity activity={[]} steps={[BP, SLEEP]} active={false} />,
+    const shimmer =
+      css.match(/@utility text-shimmer \{[\s\S]*?\n\}/)?.[0] ?? "";
+    expect(shimmer).toContain("background-clip: text");
+    expect(shimmer).toContain("background-size: 250% 100%");
+    expect(shimmer).toContain("animation: text-shimmer 2s linear infinite");
+    expect(shimmer).toMatch(
+      /@media \(prefers-reduced-motion: reduce\) \{\s*animation: none;\s*background-image: none;\s*color: var\(--muted-foreground\);/,
     );
-    expect(html).toContain("Looked at 2 sources");
-    expect(
-      countSources([BP, { ...BP, id: "s9", period: "previous" }, SLEEP]),
-    ).toBe(2);
-  });
-
-  it("an answer saved before steps folds into its areas", () => {
-    expect(
-      render(
-        <CoachTurnActivity
-          activity={[]}
-          steps={[]}
-          active={false}
-          areas={["bp", "sleep"]}
-        />,
-      ),
-    ).toContain("Looked at 2 areas");
-    expect(
-      render(
-        <CoachTurnActivity
-          activity={[]}
-          steps={[]}
-          active={false}
-          areas={["bp"]}
-        />,
-        "de",
-      ),
-    ).toContain("1 Bereich angesehen");
-  });
-
-  it("renders nothing for a settled message with nothing to show", () => {
-    expect(
-      render(<CoachTurnActivity activity={[]} steps={[]} active={false} />),
-    ).not.toContain("coach-turn-steps");
-  });
-
-  it("carries a polite status region that starts empty", () => {
-    const html = render(
-      <CoachTurnActivity activity={SETTLED} steps={[]} active={false} />,
+    expect(css).toMatch(
+      /@keyframes text-shimmer \{\s*from \{\s*background-position: 100% 0;\s*\}\s*to \{\s*background-position: 0% 0;/,
     );
-    expect(html).toMatch(
-      /<span role="status" aria-live="polite" aria-atomic="true" class="sr-only"><\/span>/,
+    const dot = css.match(/@utility waiting-dot \{[\s\S]*?\n\}/)?.[0] ?? "";
+    expect(dot).toContain("animation: waiting-dot 1.4s ease-in-out infinite");
+    expect(dot).toMatch(
+      /@media \(prefers-reduced-motion: reduce\) \{\s*animation: none;\s*opacity: 1;/,
     );
   });
 });
@@ -482,72 +655,6 @@ describe("currentStep", () => {
     expect(currentStep([BP, LABS_RUNNING, SLEEP])?.id).toBe("s3");
     expect(currentStep([BP, SLEEP])?.id).toBe("s2");
     expect(currentStep([])).toBeNull();
-  });
-});
-
-describe("tokens and motion", () => {
-  it("uses theme tokens only, and every motion stops under reduced motion", () => {
-    const html =
-      render(
-        <CoachTurnActivity
-          activity={[THINKING_DONE, FETCH_BP, DIGEST_RUNNING]}
-          steps={[BP]}
-          active
-        />,
-      ) +
-      render(
-        <CoachTurnStepList
-          steps={[
-            BP,
-            SLEEP,
-            LABS_RUNNING,
-            {
-              ...SLEEP,
-              id: "s4",
-              status: "failed",
-              reason: "retrieval_failed",
-            },
-          ]}
-          active
-        />,
-      );
-    expect(html).not.toMatch(/#[0-9a-f]{3,8}\b|dracula-|\[#|oklch\(/i);
-    expect(html).not.toMatch(/text-muted-foreground\/\d/);
-    const classes = [...html.matchAll(/class="([^"]*)"/g)].flatMap((m) =>
-      m[1].split(/\s+/),
-    );
-    for (const cls of classes) {
-      if (cls.startsWith("transition")) {
-        throw new Error(`unguarded transition: ${cls}`);
-      }
-    }
-    expect(html).toContain("animate-spin motion-reduce:animate-none");
-    // A 44 px tap target on phones.
-    expect(html).toContain("min-h-11");
-  });
-});
-
-describe("<CoachTurnStepList>", () => {
-  it("one row per step: domain · window · count or reason, with its status", () => {
-    const html = render(
-      <CoachTurnStepList steps={[BP, SLEEP, LABS_RUNNING]} active />,
-    );
-    expect(html).toContain('aria-label="What the Coach looked at"');
-    expect(html.match(/data-slot="coach-turn-step"/g)).toHaveLength(3);
-    expect(html).toContain('data-status="done"');
-    expect(html).toContain('data-status="empty"');
-    expect(html).toContain('data-status="running"');
-    let text = html.replace(
-      /<span class="sr-only select-none">, <\/span>/g,
-      "",
-    );
-    for (let prev = ""; prev !== text;) {
-      prev = text;
-      text = text.replace(/<[^>]*>/g, "");
-    }
-    expect(text).toContain("Blood pressure · last 90 days · 142 readings");
-    expect(text).toContain("Sleep · last 30 days · no readings");
-    expect(text).toContain("Lab results · last 12 months");
   });
 });
 
@@ -561,5 +668,24 @@ describe("legacyAreaLabels", () => {
         t,
       ),
     ).toEqual(["Blood pressure", "Sleep"]);
+  });
+});
+
+describe("the visible row text", () => {
+  it("is the status alone", () => {
+    expect(
+      textOf(
+        rowHtml(
+          render(
+            <CoachTurnActivity activity={SETTLED} steps={[]} active={false} />,
+          ),
+        ),
+      ),
+    ).toBe("Thought process · 5 steps");
+    expect(
+      textOf(
+        rowHtml(render(<CoachTurnActivity activity={[]} steps={[]} active />)),
+      ),
+    ).toBe("Thinking...");
   });
 });

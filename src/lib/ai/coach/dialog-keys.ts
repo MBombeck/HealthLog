@@ -46,11 +46,6 @@ export const COACH_STEP_UI_KEYS = {
   announceDone: "coach.step.announceDone",
 } as const;
 
-/** "Looked at N sources", by plural tier. */
-export function stepHeaderDoneKey(count: number, locale: Locale): string {
-  return pluralKey("coach.step.headerDone", count, locale);
-}
-
 /** "N readings" on a step row, by plural tier. */
 export function stepReadingsKey(count: number, locale: Locale): string {
   return pluralKey("coach.step.readings", count, locale);
@@ -256,7 +251,7 @@ export function clarifyWindowLabelKey(window: CoachScopeWindow): string {
   return `coach.clarify.window.${window}`;
 }
 
-// ── Replies, assumptions, interim tables (v1.41) ──────────────────────────
+// ── Replies, assumptions (v1.41) ──────────────────────────────────────
 
 /** The group of reply pills under the latest answer. */
 export const COACH_SUGGESTED_REPLIES_KEYS = {
@@ -268,11 +263,6 @@ export const COACH_ASSUMPTION_KEYS = {
   line: "insights.coach.assumption.line",
   change: "insights.coach.assumption.change",
 } as const;
-
-/** The one-line preview of a table read while the turn still runs. */
-export function interimLabelKey(count: number, locale: Locale): string {
-  return pluralKey("insights.coach.interim.label", count, locale);
-}
 
 /** The legend of a chart comparing two periods ("{a} vs {b}"). */
 export const COACH_CHART_COMPARE_KEYS = {

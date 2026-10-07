@@ -118,6 +118,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     "cycle-prefs": ["cycle-prefs.body.invalid_json", "cycle-prefs.invalid"],
     "disable-coach": ["disable-coach.body.invalid_json"],
+    demo: ["demo.readOnly"],
     documents: [
       "documents.chat.conversationNotFound",
       "documents.chat.invalid",

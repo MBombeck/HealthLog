@@ -159,6 +159,18 @@ describe("proxy.ts DEMO_MODE mutation allowlist", () => {
     expect(res.status).toBe(403);
   });
 
+  it("refuses the Coach chat with a code a client can name", async () => {
+    // The chat POST is not on the allowlist. The refusal carries a stable
+    // code, so the Coach says "not in the demo" instead of reading the 403
+    // as a provider outage.
+    const res = proxy(makeRequest("/api/insights/chat", "POST"));
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as {
+      meta?: { demo?: boolean; errorCode?: string };
+    };
+    expect(body.meta).toEqual({ demo: true, errorCode: "demo.readOnly" });
+  });
+
   it("does not drag in the layout-reset DELETE on the allowlisted widgets path", () => {
     // The allowlist pins method per path; admitting the widgets PUT
     // must not open DELETE (which wipes the user's dashboard layout).

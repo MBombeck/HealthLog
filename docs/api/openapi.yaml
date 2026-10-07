@@ -32867,7 +32867,7 @@ components:
                 cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range, cycle.cycles.invalid,
                 cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled, cycle.period.invalid,
                 cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json,
-                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; documents —
+                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; demo — demo.readOnly; documents —
                 documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
                 documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
                 documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,

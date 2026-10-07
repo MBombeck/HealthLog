@@ -1032,6 +1032,60 @@
   }
 }
 
+/* ── Live status text ────────────────────────────────────────────────
+ * `text-shimmer`: a band of foreground light sweeps through muted text, for a
+ * line that says something is still in progress (the Coach's thinking row).
+ * The gradient is clipped to the glyphs; the band travels left to right once
+ * every two seconds. Under reduced motion the text is plain muted text.
+ *
+ * `waiting-dot`: one of three trailing dots that fade in turn (the caller
+ * staggers them by 0.2 s). Under reduced motion they stand still at full
+ * opacity, which the global backstop below would not give them: it pins the
+ * last frame, and the last frame is dim. */
+@keyframes text-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
+}
+@utility text-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--muted-foreground) 40%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 60%
+  );
+  background-size: 250% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: text-shimmer 2s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    background-image: none;
+    color: var(--muted-foreground);
+  }
+}
+@keyframes waiting-dot {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@utility waiting-dot {
+  animation: waiting-dot 1.4s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* ── Global reduced-motion backstop ──────────────────────────────────
  * Defensive catch-all so any animation/transition we forget to gate
  * per-component still collapses to near-instant when the user has asked
