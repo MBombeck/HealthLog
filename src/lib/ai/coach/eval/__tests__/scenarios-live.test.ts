@@ -5,6 +5,7 @@
  * chat turn's own context, the reply through the turn's parsers) and the
  * grade, so a live run measures the model and nothing else.
  */
+import { TURN_LIMITS } from "@/lib/ai/coach/tools/turn-budget";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CompletionParams, CompletionResult } from "@/lib/ai/types";
@@ -119,23 +120,27 @@ describe("runScenarioLive", () => {
 
   it("forces an answer at the round cap of the person's own plan", async () => {
     const call = toolRound("get_metric_table", { metric: "pulse" });
+    // v1.41.2 — the cap is sixteen (was twelve); read from the limits so
+    // the scenario run and the turn cannot drift apart again.
+    const cap = TURN_LIMITS.user.maxRounds;
+    expect(cap).toBe(16);
     const provider = scripted([
-      ...Array.from({ length: 11 }, () => call),
+      ...Array.from({ length: cap - 1 }, () => call),
       { content: "So far." },
     ]);
     const observation = await runScenarioLive({
       scenario: scenario("forced-final.en"),
       provider,
     });
-    expect(observation.providerCalls).toBe(12);
+    expect(observation.providerCalls).toBe(cap);
     expect(provider.sent.map((p) => p.toolChoice)).toEqual([
-      ...Array.from({ length: 11 }, () => "auto"),
+      ...Array.from({ length: cap - 1 }, () => "auto"),
       "none",
     ]);
     expect(observation.prose).toBe("So far.");
-    expect(observation.toolRounds).toBe(11);
+    expect(observation.toolRounds).toBe(cap - 1);
     // The same call every round: graded as repeats.
-    expect(observation.repeatedCalls).toBe(10);
+    expect(observation.repeatedCalls).toBe(cap - 2);
   });
 
   it("ends the run on a clarifying question asked through the tool", async () => {

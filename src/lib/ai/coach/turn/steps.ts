@@ -40,9 +40,10 @@ import { COMPARE_SERIES_TOOL_NAME } from "@/lib/ai/coach/tools/compare-series";
 
 /**
  * At most this many steps per turn; later calls run but show no step.
- * v1.41 — 48: a budgeted turn runs up to twelve rounds.
+ * v1.41 — four per round of the longest turn: 48 for twelve rounds, 64 since
+ * v1.41.2 raised the cap to sixteen.
  */
-export const MAX_TURN_STEPS = 48;
+export const MAX_TURN_STEPS = 64;
 
 const SCOPE_SOURCES: ReadonlySet<string> = new Set(
   coachScopeSourceSchema.options,

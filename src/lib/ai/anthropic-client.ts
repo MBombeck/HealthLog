@@ -412,6 +412,7 @@ export class AnthropicClient implements AIProvider {
         input_tokens?: number;
         output_tokens?: number;
         cache_read_input_tokens?: number;
+        cache_creation_input_tokens?: number;
         output_tokens_details?: { thinking_tokens?: number };
       };
     };
@@ -487,9 +488,19 @@ export class AnthropicClient implements AIProvider {
     const content =
       wantsJson && rawText ? extractJsonObject(rawText) : (rawText ?? "");
 
+    // v1.41.2 — the gross count includes the cached prefix. Anthropic reports
+    // cache reads and cache writes BESIDE `input_tokens`, which holds only
+    // what came after the last breakpoint; every other client reports a total
+    // that already contains the cached share. The turn budget and the daily
+    // ledger subtract `cachedInputTokens` from `tokensUsed`, so leaving the
+    // reads out of the gross made a mostly cached round look nearly free and
+    // a cache write (billed above the base rate) went uncounted.
     const inputTokens = json.usage?.input_tokens ?? 0;
+    const cacheReadTokens = json.usage?.cache_read_input_tokens ?? 0;
+    const cacheWriteTokens = json.usage?.cache_creation_input_tokens ?? 0;
     const outputTokens = json.usage?.output_tokens ?? 0;
-    const tokensUsed = inputTokens + outputTokens || null;
+    const tokensUsed =
+      inputTokens + cacheReadTokens + cacheWriteTokens + outputTokens || null;
     const cachedInputTokens = json.usage?.cache_read_input_tokens ?? null;
 
     // The presence of tool_use blocks is authoritative for the tool-loop gate:

@@ -25,17 +25,39 @@ function clock(start = 0) {
 }
 
 describe("TURN_LIMITS", () => {
+  // v1.41.2 — raised by about a third from 120k / 150 s / 12 and
+  // 40k / 90 s / 6: a turn on a person's own plan stopped for tokens after
+  // five rounds while it was still reading.
   it("gives the person's own plan more than the operator's", () => {
     expect(TURN_LIMITS.user).toEqual({
-      tokens: 120_000,
-      wallMs: 150_000,
-      maxRounds: 12,
+      tokens: 165_000,
+      wallMs: 200_000,
+      maxRounds: 16,
     });
     expect(TURN_LIMITS.operator).toEqual({
-      tokens: 40_000,
-      wallMs: 90_000,
-      maxRounds: 6,
+      tokens: 55_000,
+      wallMs: 120_000,
+      maxRounds: 8,
     });
+  });
+
+  it("keeps the final answer at the same share of each payer's tokens", () => {
+    expect(FINAL_ANSWER_TOKENS / TURN_LIMITS.user.tokens).toBeCloseTo(0.01);
+    expect(FINAL_ANSWER_TOKENS / TURN_LIMITS.operator.tokens).toBeCloseTo(0.03);
+  });
+
+  it("holds the turn's slot for at least the longest turn", async () => {
+    // The chat route's concurrency slot frees itself after its window; a
+    // window shorter than the wall time would let a third turn start while
+    // a long one is still running.
+    const { readFileSync } = await import("node:fs");
+    const route = readFileSync(
+      `${process.cwd()}/src/app/api/insights/chat/route.ts`,
+      "utf8",
+    );
+    expect(route).toMatch(
+      /COACH_TURN_SLOT_MS = TURN_LIMITS\.user\.wallMs \+ \d/,
+    );
   });
 });
 
@@ -73,9 +95,9 @@ describe("check()", () => {
       effort: "medium",
       initialInputTokens: 10_000,
     });
-    // 34k spent; the next round with medium thinking and the final answer
-    // need about 8k more, past the operator's 40k.
-    budget.endRound({ tokens: 34_000, cachedTokens: 0, durationMs: 1_000 });
+    // 49k spent; the next round with medium thinking and the final answer
+    // need about 8k more, past the operator's 55k.
+    budget.endRound({ tokens: 49_000, cachedTokens: 0, durationMs: 1_000 });
     expect(budget.check()).toBe("budget");
   });
 
@@ -103,9 +125,9 @@ describe("check()", () => {
       initialInputTokens: 1_000,
       now: c.now,
     });
-    c.advance(30_000);
+    c.advance(60_000);
     budget.endRound({ tokens: 1_000, cachedTokens: 0, durationMs: 30_000 });
-    // 30 s elapsed + two typical 30 s rounds = 90 s: not over yet.
+    // 60 s elapsed + two typical 30 s rounds = 120 s: not over yet.
     expect(budget.check()).toBeNull();
     c.advance(1);
     budget.endRound({ tokens: 1_000, cachedTokens: 900, durationMs: 30_000 });

@@ -30,6 +30,7 @@
  * A clarifying question ends the turn without a prose round: the question
  * is the reply.
  */
+import { coachPromptCacheKey } from "@/lib/ai/coach/prompt-cache-key";
 import type { CoachHistoryReach } from "@/lib/ai/coach/history-reach";
 import { annotate } from "@/lib/logging/context";
 import type { Locale } from "@/lib/i18n/config";
@@ -277,6 +278,9 @@ export async function runCoachToolLoop(args: {
       ),
     });
   const progress = createProgressTracker();
+  // v1.41.2 — one key for every round, so round two finds round one's prefix
+  // in the provider's prompt cache.
+  const cacheKey = coachPromptCacheKey(turn?.conversationId);
 
   const messages: AiMessage[] = [...args.messages];
   let system = args.system;
@@ -351,6 +355,7 @@ export async function runCoachToolLoop(args: {
           : {}),
         tools,
         toolChoice: isFinal ? ("none" as const) : ("auto" as const),
+        cacheKey,
       },
     });
     const result = fallback.result;

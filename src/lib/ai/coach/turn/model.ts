@@ -4,6 +4,7 @@
  * completion over the full snapshot. A provider failure is classified into
  * the structured `coach.*` code the stream answers with.
  */
+import { coachPromptCacheKey } from "@/lib/ai/coach/prompt-cache-key";
 import { annotate } from "@/lib/logging/context";
 import type { Locale } from "@/lib/i18n/config";
 import { localeLanguageNames as LANGUAGE_NAMES } from "@/lib/i18n/config";
@@ -652,6 +653,7 @@ export async function runTurnModel(args: {
           // v1.22 (#89) — per-idle-gap timeout for the streaming local call.
           timeoutMs: ctx.aiResponseTimeoutMs,
         }),
+        cacheKey: coachPromptCacheKey(conversationId),
         ...(args.reasoning
           ? {
               reasoning: args.reasoning,

@@ -29,7 +29,7 @@ exports[`coach chat golden transcripts > 01a tool mode, two rounds, present data
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -78,7 +78,7 @@ exports[`coach chat golden transcripts > 01a tool mode, two rounds, present data
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "appendMessage",
@@ -278,7 +278,7 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -327,7 +327,7 @@ exports[`coach chat golden transcripts > 01b tool mode, present data, one figure
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "annotate",
@@ -539,7 +539,7 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
       ],
     },
     {
-      "amount": 12889,
+      "amount": 13339,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -588,7 +588,7 @@ exports[`coach chat golden transcripts > 02 tool mode, every tool missed, fabric
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "annotate",
@@ -1415,7 +1415,7 @@ exports[`coach chat golden transcripts > 07a all providers failed (plain) 1`] = 
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1453,7 +1453,7 @@ exports[`coach chat golden transcripts > 07a all providers failed (plain) 1`] = 
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 12891,
+      "reserved": 13341,
     },
     {
       "call": "annotate",
@@ -1507,7 +1507,7 @@ exports[`coach chat golden transcripts > 07b all providers failed (every hop rat
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1545,7 +1545,7 @@ exports[`coach chat golden transcripts > 07b all providers failed (every hop rat
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 12891,
+      "reserved": 13341,
     },
     {
       "call": "annotate",
@@ -1599,7 +1599,7 @@ exports[`coach chat golden transcripts > 07c all providers failed (primary crede
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1637,7 +1637,7 @@ exports[`coach chat golden transcripts > 07c all providers failed (primary crede
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 12891,
+      "reserved": 13341,
     },
     {
       "call": "annotate",
@@ -1691,7 +1691,7 @@ exports[`coach chat golden transcripts > 08 an unwrapped tagged provider error 1
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1729,7 +1729,7 @@ exports[`coach chat golden transcripts > 08 an unwrapped tagged provider error 1
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 12891,
+      "reserved": 13341,
     },
     {
       "call": "annotate",
@@ -1784,7 +1784,7 @@ exports[`coach chat golden transcripts > 09 an aborted request leaves a cancelle
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1822,7 +1822,7 @@ exports[`coach chat golden transcripts > 09 an aborted request leaves a cancelle
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 12891,
+      "reserved": 13341,
     },
     {
       "call": "appendMessage",
@@ -1883,7 +1883,7 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
       ],
     },
     {
-      "amount": 12892,
+      "amount": 13342,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -1932,7 +1932,7 @@ exports[`coach chat golden transcripts > 10 outbound block replaces the reply an
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "annotate",
@@ -2262,7 +2262,7 @@ exports[`coach chat golden transcripts > 11a KEYVALUES valid 1`] = `
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -2311,7 +2311,7 @@ exports[`coach chat golden transcripts > 11a KEYVALUES valid 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "appendMessage",
@@ -2515,7 +2515,7 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -2564,7 +2564,7 @@ exports[`coach chat golden transcripts > 11b KEYVALUES partial 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "annotate",
@@ -2766,7 +2766,7 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -2815,7 +2815,7 @@ exports[`coach chat golden transcripts > 11c KEYVALUES malformed (no closing mar
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "annotate",
@@ -3001,7 +3001,7 @@ exports[`coach chat golden transcripts > 11d sentinel-only reply is an empty rep
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -3050,7 +3050,7 @@ exports[`coach chat golden transcripts > 11d sentinel-only reply is an empty rep
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "annotate",
@@ -3104,7 +3104,7 @@ exports[`coach chat golden transcripts > 11e empty provider reply 1`] = `
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -3153,7 +3153,7 @@ exports[`coach chat golden transcripts > 11e empty provider reply 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
   ],
   "contentType": "text/event-stream; charset=utf-8",
@@ -3198,7 +3198,7 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
       ],
     },
     {
-      "amount": 12896,
+      "amount": 13346,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -3247,7 +3247,7 @@ exports[`coach chat golden transcripts > 12a SUGGEST-REMINDER surfaced 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1837,
+      "reserved": 2287,
     },
     {
       "call": "prisma.user.update",
@@ -3471,7 +3471,7 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
       ],
     },
     {
-      "amount": 12896,
+      "amount": 13346,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -3520,7 +3520,7 @@ exports[`coach chat golden transcripts > 12b SUGGEST-REMINDER suppressed 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1837,
+      "reserved": 2287,
     },
     {
       "call": "annotate",
@@ -3708,7 +3708,7 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
       ],
     },
     {
-      "amount": 12892,
+      "amount": 13342,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -3757,7 +3757,7 @@ exports[`coach chat golden transcripts > 13 SUGGEST-ACTION 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "annotate",
@@ -3985,7 +3985,7 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
       ],
     },
     {
-      "amount": 12896,
+      "amount": 13346,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -4034,7 +4034,7 @@ exports[`coach chat golden transcripts > 14a REMEMBER valid 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1837,
+      "reserved": 2287,
     },
     {
       "call": "captureReminderFromSentinel",
@@ -4242,7 +4242,7 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
       ],
     },
     {
-      "amount": 12896,
+      "amount": 13346,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -4291,7 +4291,7 @@ exports[`coach chat golden transcripts > 14b REMEMBER malformed 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1837,
+      "reserved": 2287,
     },
     {
       "call": "annotate",
@@ -4494,7 +4494,7 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
       ],
     },
     {
-      "amount": 12895,
+      "amount": 13345,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -4543,7 +4543,7 @@ exports[`coach chat golden transcripts > 15 an unknown learn link is scrubbed, a
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1837,
+      "reserved": 2287,
     },
     {
       "call": "annotate",
@@ -5207,7 +5207,7 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
       ],
     },
     {
-      "amount": 12890,
+      "amount": 13340,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -5256,7 +5256,7 @@ exports[`coach chat golden transcripts > 17a a workout-scoped first turn 1`] = `
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "appendMessage",
@@ -5465,7 +5465,7 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
       ],
     },
     {
-      "amount": 12890,
+      "amount": 13340,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -5514,7 +5514,7 @@ exports[`coach chat golden transcripts > 17b a workout-scoped first turn with th
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "appendMessage",
@@ -5702,7 +5702,7 @@ exports[`coach chat golden transcripts > 18 a persistence throw after the provid
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -5751,7 +5751,7 @@ exports[`coach chat golden transcripts > 18 a persistence throw after the provid
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "event.setError",
@@ -5817,7 +5817,7 @@ exports[`coach chat golden transcripts > 19 an existing conversation with prior 
       ],
     },
     {
-      "amount": 13053,
+      "amount": 13503,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -5866,7 +5866,7 @@ exports[`coach chat golden transcripts > 19 an existing conversation with prior 
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1851,
+      "reserved": 2301,
     },
     {
       "call": "annotate",
@@ -6078,7 +6078,7 @@ exports[`coach chat golden transcripts > 20 a guided-question turn with a scope 
       ],
     },
     {
-      "amount": 12892,
+      "amount": 13342,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -6127,7 +6127,7 @@ exports[`coach chat golden transcripts > 20 a guided-question turn with a scope 
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "appendMessage",
@@ -6295,7 +6295,7 @@ exports[`coach chat golden transcripts > 21 the German locale with a stored self
       ],
     },
     {
-      "amount": 12917,
+      "amount": 13367,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -6344,7 +6344,7 @@ exports[`coach chat golden transcripts > 21 the German locale with a stored self
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1839,
+      "reserved": 2289,
     },
     {
       "call": "appendMessage",
@@ -6548,7 +6548,7 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
       ],
     },
     {
-      "amount": 12891,
+      "amount": 13341,
       "call": "reserveBudget",
       "cap": 2000000,
       "dateKey": "2026-09-26",
@@ -6597,7 +6597,7 @@ exports[`coach chat golden transcripts > 22 tool mode with live steps: found, em
       "cached": 0,
       "call": "reconcileSpend",
       "dateKey": "2026-09-26",
-      "reserved": 1836,
+      "reserved": 2286,
     },
     {
       "call": "appendMessage",

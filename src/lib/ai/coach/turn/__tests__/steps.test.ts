@@ -462,7 +462,7 @@ describe("toStep — mapping", () => {
         parsedArgs: parsed,
         locale: "en",
       })?.id,
-    ).toBe("s48");
+    ).toBe("s64");
     expect(
       toStep({
         call: { id: "u", name: "get_everything", arguments: "{}" },

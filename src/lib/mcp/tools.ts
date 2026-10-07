@@ -537,11 +537,15 @@ function searchAndFetchTools(): McpToolDefinition[] {
           ...MCP_CLINICAL_SIGNALS,
           ...MCP_METRIC_STATUS_DISCOVERY,
         ];
+        // v1.41.2 — live rows only: a deleted reading is not a signal the
+        // record holds, and the filter lets the probe use the live-rows
+        // partial index instead of walking the tombstones.
         const discoverablePresent = await prisma.measurement.groupBy({
           by: ["type"],
           where: {
             userId: ctx.userId,
             type: { in: discoverableSignals.map((s) => s.measurementType) },
+            deletedAt: null,
           },
         });
         const presentTypes = new Set(discoverablePresent.map((r) => r.type));
@@ -815,6 +819,31 @@ const coachReadOutput: z.ZodRawShape = {
   reason: z.string().optional(),
   data: z.unknown().optional(),
   grounding: z.string().optional(),
+  // v1.41.2 — a miss describes its own scope and, when the record holds rows
+  // the window could not reach, what it holds (`CoachToolResult`). The
+  // executor has returned both since v1.37; undeclared, they made a strict
+  // client refuse every out-of-window read (the #1170 class).
+  searchedWindow: z.string().optional(),
+  available: z
+    .object({
+      count: z.number(),
+      firstDate: z.string(),
+      lastDate: z.string(),
+      series: z
+        .array(
+          z.object({
+            series: z.string(),
+            unit: z.string().nullable(),
+            count: z.number(),
+            mean: z.number(),
+            min: z.number(),
+            max: z.number(),
+          }),
+        )
+        .optional(),
+      reachableWithWindow: z.string().nullable(),
+    })
+    .optional(),
 };
 
 /**
@@ -895,6 +924,20 @@ const listMetricsOutput: z.ZodRawShape = {
         present: z.boolean(),
         count: z.number().optional(),
         metric: z.string().optional(),
+        // #1170 — what the record holds for a domain the window found
+        // nothing in (`InventoryEntry.availability`). The handler always
+        // returned it; the advertised schema did not declare it, and the
+        // output schema closes every object, so a strict client refused the
+        // whole result.
+        availability: z
+          .object({
+            state: z.string(),
+            count: z.number().optional(),
+            firstDate: z.string().optional(),
+            lastDate: z.string().optional(),
+            reachableWithWindow: z.string().nullable(),
+          })
+          .optional(),
       }),
     )
     .optional(),
@@ -1211,6 +1254,10 @@ const getIntradayPulseOutput: z.ZodRawShape = {
         startMinute: z.number(),
         mean: z.number(),
         count: z.number(),
+        // v1.41.2 — the bucket's low / high where the source carries a
+        // spread (`IntradayHrBucket`); returned since v1.30.7, never declared.
+        min: z.number().optional(),
+        max: z.number().optional(),
       }),
     )
     .optional(),

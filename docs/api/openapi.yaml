@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.41.1
+  version: 1.41.2
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -52829,7 +52829,7 @@ components:
         id:
           type: string
           pattern: ^s[1-9]\d{0,2}$
-          description: "`s1`..`s48`, unique within a turn."
+          description: "`s1`..`s64`, unique within a turn."
         tool:
           type: string
           enum:

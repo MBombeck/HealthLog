@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { callTimeoutMs } from "./effective-timeout";
 import { safeFetch } from "@/lib/safe-fetch";
 import type {
@@ -431,6 +431,21 @@ export interface CodexAttemptDiagnostics {
   workingSlug: string | null;
 }
 
+/**
+ * A UUID-shaped id derived from a cache key, for the session headers: the
+ * same key gives the same id, and the key itself never rides a header.
+ */
+function uuidFromKey(key: string): string {
+  const hex = createHash("sha256").update(`codex-session:${key}`).digest("hex");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    `4${hex.slice(13, 16)}`,
+    `${((parseInt(hex[16], 16) & 0x3) | 0x8).toString(16)}${hex.slice(17, 20)}`,
+    hex.slice(20, 32),
+  ].join("-");
+}
+
 export class CodexClient implements AIProvider {
   readonly type = "codex" as const;
   /** See `AIProvider.responseTimeoutSeconds`; stamped by the resolver. */
@@ -650,8 +665,15 @@ export class CodexClient implements AIProvider {
     slug: string,
     wire: CodexReasoningWire,
   ): Promise<Response> {
-    const sessionId = randomUUID();
-    const threadId = randomUUID();
+    // v1.41.2 — calls that share a cache key share one session and thread
+    // id and send the key as `prompt_cache_key`, the way the official client
+    // sends its thread id (docs/codex-protocol-spec.md §3b/§3c). Before, every
+    // round of a Coach turn arrived as a new session with no key, so the
+    // backend had no reason to route it to the cache the previous round
+    // filled, and each round was charged its whole prefix again.
+    const cacheKey = params.cacheKey?.trim() || null;
+    const sessionId = cacheKey ? uuidFromKey(cacheKey) : randomUUID();
+    const threadId = cacheKey ? sessionId : randomUUID();
 
     // v1.18.11 — fold vision inputs (Lab-OCR) into the user turn when present.
     // The Codex/ChatGPT-OAuth backend accepts the `input_image` content block
@@ -713,6 +735,7 @@ export class CodexClient implements AIProvider {
             : null,
           store: false,
           stream: true,
+          ...(cacheKey ? { prompt_cache_key: cacheKey } : {}),
           // Required field; empty array when not asking for reasoning. With
           // reasoning on, the encrypted items come back so the next tool
           // round can hand them over statelessly (`store` must stay false).

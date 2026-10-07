@@ -150,7 +150,9 @@ export function parseOpenAIToolCalls(
   }));
 }
 
-export function parseCachedTokens(json: OpenAIResponseJson): number | null {
+export function parseCachedTokens(json: {
+  usage?: { prompt_tokens_details?: { cached_tokens?: number } };
+}): number | null {
   return json.usage?.prompt_tokens_details?.cached_tokens ?? null;
 }
 

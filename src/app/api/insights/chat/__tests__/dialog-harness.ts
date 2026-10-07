@@ -63,6 +63,7 @@ export interface ProviderCall {
   system: string;
   messages: Array<{ role: string; content: string }>;
   toolChoice: string | undefined;
+  cacheKey: string | undefined;
   toolCalls: Array<{ name: string; args: Record<string, unknown> }>;
 }
 export const providerCalls: ProviderCall[] = [];
@@ -278,6 +279,7 @@ async function runRawCompletionWithFallback(args: {
     system: string;
     messages: Array<{ role: string; content: string }>;
     toolChoice?: string;
+    cacheKey?: string;
   };
 }) {
   const round = world.script.shift() ?? { text: "" };
@@ -289,6 +291,7 @@ async function runRawCompletionWithFallback(args: {
       content: msg.content,
     })),
     toolChoice: args.params.toolChoice,
+    cacheKey: args.params.cacheKey,
     toolCalls: calls,
   });
   const offered = args.params.toolChoice !== "none";

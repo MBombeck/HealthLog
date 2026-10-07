@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.41.2] — 2026-10-07
+
+More room for a Coach turn, prompt caching that holds across its rounds, and
+MCP tool results that match their schemas.
+
+### Changed
+
+- **Turn budget.** A turn on the person's own provider gets 165k tokens,
+  200 s and 16 rounds (was 120k, 150 s, 12); a turn on the operator's budget
+  55k tokens, 120 s and 8 rounds (was 40k, 90 s, 6). The final answer's
+  reserve keeps its share of each (1,650 tokens), the concurrent-turn slot
+  follows the longer wall time, and a turn shows up to 64 steps.
+
+### Fixed
+
+- **Cached input in the turn budget.** Codex requests carry a stable
+  `prompt_cache_key` and session id per conversation, as the official client
+  does, so later rounds of a turn read the prefix from the provider's cache
+  instead of paying for it again; `api.openai.com` gets the same key, gateways
+  do not. Anthropic usage now counts cache reads and cache writes in the
+  turn's total (they are reported beside `input_tokens`), so a cached round is
+  weighted at a tenth instead of almost nothing and a cache write in full.
+  Local and OpenAI-compatible servers that report
+  `prompt_tokens_details.cached_tokens` have it counted.
+- **MCP output schemas (#1170).** `list_metrics` declares the `availability`
+  its rows already returned, the Coach-backed reads declare `searchedWindow`
+  and `available`, and `get_intraday_pulse` declares each bucket's `min` and
+  `max`. The advertised
+  schemas close every object, so a strict client refused these results. Every
+  tool's real output is now validated against its advertised schema under a
+  strict 2020-12 validator. Thanks to @RyRyMason for #1170.
+- **Deleted readings in MCP discovery.** The `list_metrics` discovery rows and
+  the `search` clinical-signal probe count live rows only: a measurement type
+  whose readings were all deleted is no longer listed as present, and the
+  probes use the live-rows index instead of walking every deleted row.
+
 ## [1.41.1] — 2026-10-07
 
 A calmer thinking row in the Coach.

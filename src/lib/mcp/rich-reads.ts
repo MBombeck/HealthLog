@@ -481,11 +481,16 @@ export async function metricStatusDiscoveryRows(userId: string): Promise<
     metric: string;
   }>
 > {
+  // v1.41.2 — live rows only. Without `deletedAt: null` a type whose rows
+  // were all deleted still counted as present, and the grouped count could
+  // not use the live-rows partial index (`measurements_live_covering_idx`),
+  // so it walked every tombstone on the way.
   const rows = await prisma.measurement.groupBy({
     by: ["type"],
     where: {
       userId,
       type: { in: MCP_METRIC_STATUS_DISCOVERY.map((s) => s.measurementType) },
+      deletedAt: null,
     },
     _count: { _all: true },
   });

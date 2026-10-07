@@ -375,6 +375,16 @@ export interface CompletionParams {
    */
   reasoning?: { effort: ReasoningLevel; summaries: boolean };
   /**
+   * v1.41.2 — a stable key for calls that resend the same prompt prefix (the
+   * rounds of one Coach turn, the turns of one conversation). Providers that
+   * route a request to a prompt cache by key read it: Codex as
+   * `prompt_cache_key` and its session headers, `api.openai.com` as
+   * `prompt_cache_key`. Without it a Codex call is routed afresh every time
+   * and a later round pays for its whole prefix again. An opaque value: the
+   * caller hashes whatever it derives the key from. Absent → nothing is sent.
+   */
+  cacheKey?: string;
+  /**
    * v1.41 — live reasoning events, called as they arrive on clients that read
    * the provider's stream, or once after the reply on clients that do not.
    * Never called when `reasoning` is absent.
@@ -390,6 +400,12 @@ export interface CompletionResult {
    * from the provider's cache, where the provider reports it (Anthropic
    * `cache_read_input_tokens`, OpenAI/Codex `cached_tokens`). Null / absent
    * when the provider does not report it or the prefix did not hit.
+   *
+   * v1.41.2 — always a share of `tokensUsed`, never beside it: the turn
+   * budget and the daily ledger charge `tokensUsed - cachedInputTokens` at
+   * full weight and the cached share at a tenth. A client whose provider
+   * reports cached input outside its input count (Anthropic) adds it to
+   * `tokensUsed`.
    */
   cachedInputTokens?: number | null;
   model: string;
