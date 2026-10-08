@@ -415,7 +415,13 @@ export function SourcesSection() {
                     </span>
                     {/* Collapsed, the group still says who wins. */}
                     {!open && list[0] ? (
-                      <span className="text-muted-foreground shrink-0 truncate text-xs">
+                      <span
+                        data-slot="sources-metric-winner"
+                        // `truncate` needs room to give up: a shrink-0 span
+                        // never cut, and a long source name squeezed the
+                        // metric label at 390 px instead.
+                        className="text-muted-foreground max-w-[45%] min-w-0 truncate text-xs"
+                      >
                         {t(MEASUREMENT_SOURCE_SETTINGS_LABEL_KEYS[list[0]])}
                       </span>
                     ) : null}
