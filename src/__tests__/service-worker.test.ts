@@ -217,6 +217,10 @@ function bootServiceWorker(): SwHarness {
     URL,
     Promise,
     console,
+    // Read through the context so a test can install fake timers before
+    // dispatching (the slow-navigation fallback arms one per navigation).
+    setTimeout: (...args: Parameters<typeof setTimeout>) => setTimeout(...args),
+    clearTimeout: (id: ReturnType<typeof setTimeout>) => clearTimeout(id),
   };
   vm.createContext(context);
   vm.runInContext(SW_SOURCE, context);
@@ -614,6 +618,23 @@ describe("sw.js — networkFirst offline fallback", () => {
     // The preloaded response was cached under the current page cache.
     const pages = await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
     expect(await pages.match(`${ORIGIN}/`)).toBeDefined();
+  });
+});
+
+describe("sw.js — offline page", () => {
+  it("offers a retry control, reloads by itself when the connection returns, and follows the device scheme", async () => {
+    const harness = bootServiceWorker();
+    const res = await dispatchNavigationFetch(harness, "/");
+    expect(res.status).toBe(503);
+    const html = await res.text();
+    // A real control, not a decorative icon: a link back to the same URL.
+    expect(html).toMatch(/<a href="" aria-label="[^"]+"/);
+    expect(html).toContain('addEventListener("online"');
+    expect(html).toContain("prefers-color-scheme:light");
+    expect(html).toContain("viewport-fit=cover");
+    expect(html).toContain("env(safe-area-inset-bottom)");
+    // Still language-neutral: no sentence in any one locale.
+    expect(html).not.toMatch(/Keine Verbindung|You are offline/);
   });
 });
 

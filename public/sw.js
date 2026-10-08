@@ -341,6 +341,14 @@ async function networkFirstApi(request) {
  *      scores straight into the HTML and emits `no-store`; the explicit
  *      path skip is belt-and-braces so a revoked share can never linger in
  *      CacheStorage and render back offline.
+ *
+ * In practice rule 1 covers every signed-in page: `src/proxy.ts` pins
+ * `private, no-store` on all of them, because several server-prefetch one
+ * account's record into the HTML. Only the public pages (sign-in, legal)
+ * land in this cache, so a navigation to an app page without a connection
+ * gets the offline page below, never somebody's cached record. A page that
+ * is already open keeps working offline from the cached chunks and the
+ * allowlisted data reads.
  */
 function isCacheableNavigation(request, response) {
   const cacheControl = response.headers.get("Cache-Control") || "";
@@ -568,15 +576,27 @@ async function networkFirst(event, cacheName) {
     // "Offline" token + a generic retry hint expressed as an icon
     // (the round-trip arrow), so the page does the right thing in any
     // locale without shipping a translation bundle into the worker.
-    return new Response(
-      '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HealthLog — Offline</title><style>body{font-family:system-ui,sans-serif;background:#282a36;color:#f8f8f2;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}div{text-align:center;padding:2rem}h1{color:#bd93f9;margin:0 0 .5rem;font-size:2rem;letter-spacing:.05em}p{color:#6272a4;margin:.25rem 0;font-size:.9rem}svg{width:48px;height:48px;color:#6272a4;margin-bottom:1rem}</style></head><body><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg><h1>HealthLog</h1><p>Offline</p></div></body></html>',
-      {
-        status: 503,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
-      },
-    );
+    //
+    // v1.42 — the arrow is a real control now (a link to the same URL,
+    // 64 px), the page reloads by itself as soon as the connection is
+    // back, it follows the device's light or dark scheme, and it keeps
+    // clear of the notch and home indicator of an installed app.
+    return new Response(OFFLINE_PAGE, {
+      status: 503,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
   }
 }
+
+const OFFLINE_PAGE =
+  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark light"><title>HealthLog — Offline</title><style>' +
+  ":root{--bg:#282a36;--fg:#f8f8f2;--accent:#bd93f9;--muted:#a4a9c9;color-scheme:dark}" +
+  "@media (prefers-color-scheme:light){:root{--bg:#f3f2f5;--fg:#1f2030;--accent:#6b46c1;--muted:#5b5e78;color-scheme:light}}" +
+  "body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--fg);display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;margin:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);box-sizing:border-box}" +
+  "main{text-align:center;padding:2rem}h1{color:var(--accent);margin:0 0 .5rem;font-size:2rem;letter-spacing:.05em}p{color:var(--muted);margin:.25rem 0 1.5rem;font-size:1rem}" +
+  "a{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:9999px;color:var(--accent);border:2px solid currentColor}a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}svg{width:28px;height:28px}" +
+  '</style></head><body><main><h1>HealthLog</h1><p>Offline</p><a href="" aria-label="Reload" title="Reload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg></a></main>' +
+  '<script>addEventListener("online",function(){location.reload()})</script></body></html>';
 
 /**
  * Cache a successful network response without making CacheStorage

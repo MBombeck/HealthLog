@@ -1,5 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
+
+import { reloadOnceForChunkError } from "@/lib/pwa/chunk-reload";
+
 /**
  * Root-level error boundary. Renders when even the root layout itself fails,
  * so it cannot rely on any providers (i18n, query, auth). Keep it static,
@@ -12,6 +16,12 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // A chunk of the root layout's client tree missing after a deploy lands
+  // here rather than in `app/error.tsx`; it gets the same single reload.
+  useEffect(() => {
+    reloadOnceForChunkError(error);
+  }, [error]);
+
   async function handleCopy() {
     // Strip query string — OAuth callback routes carry sensitive tokens.
     const loc = typeof window !== "undefined" ? window.location : null;
