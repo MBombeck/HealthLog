@@ -8015,7 +8015,9 @@
     "noneUnlockedYet": "Noch keine Erfolge freigeschaltet.",
     "pointsValue": "{points} Punkte",
     "metricCount": "{count}",
-    "metricDays": "{count} Tage",
+    "metricDaysOne": "{count} Tag",
+    "metricDaysFew": "{count} Tage",
+    "metricDaysOther": "{count} Tage",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -9929,7 +9931,7 @@
     "loadError": "Diese Episode konnte nicht geladen werden.",
     "backToList": "Zurück zum Journal",
     "detail": {
-      "note": "Note"
+      "note": "Notiz"
     },
     "edit": {
       "title": "Episode bearbeiten",
@@ -12019,8 +12021,7 @@
     "title": "Praxen und Ärzte",
     "description": "Dein eigenes Adressbuch — einmal tippen, überall auswählen.",
     "linkLabel": "Adressbuch",
-    "add": "Eintrag",
-    "searchPlaceholder": "Name, Praxis oder Fachrichtung suchen",
+    "searchPlaceholder": "Name, Praxis oder Fach suchen",
     "loadError": "Adressbuch konnte nicht geladen werden.",
     "emptyTitle": "Noch kein Eintrag",
     "emptyDescription": "Lege eine Praxis an, damit du sie beim Termin auswählen kannst.",

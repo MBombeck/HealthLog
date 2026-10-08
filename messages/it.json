@@ -8015,7 +8015,9 @@
     "noneUnlockedYet": "Nessun obiettivo ancora sbloccato.",
     "pointsValue": "{points} punti",
     "metricCount": "{count}",
-    "metricDays": "{count} giorni",
+    "metricDaysOne": "{count} giorno",
+    "metricDaysFew": "{count} giorni",
+    "metricDaysOther": "{count} giorni",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -9929,7 +9931,7 @@
     "loadError": "Impossibile caricare questo episodio.",
     "backToList": "Torna al diario",
     "detail": {
-      "note": "Note"
+      "note": "Nota"
     },
     "edit": {
       "title": "Modifica episodio",
@@ -12019,7 +12021,6 @@
     "title": "Studi e medici",
     "description": "La tua rubrica: scrivi uno studio una volta e selezionalo ovunque.",
     "linkLabel": "Rubrica",
-    "add": "Voce",
     "searchPlaceholder": "Cerca nome, studio o specializzazione",
     "loadError": "Impossibile caricare la rubrica.",
     "emptyTitle": "Nessuna voce",

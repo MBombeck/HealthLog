@@ -44,8 +44,7 @@ export default function MentalWellbeingPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6">
-      <MentalWellbeing />
-    </div>
+    // The shell owns the page gutter; a second one here doubled it.
+    <MentalWellbeing />
   );
 }

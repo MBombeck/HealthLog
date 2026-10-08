@@ -8015,7 +8015,9 @@
     "noneUnlockedYet": "No achievements unlocked yet.",
     "pointsValue": "{points} points",
     "metricCount": "{count}",
-    "metricDays": "{count} days",
+    "metricDaysOne": "{count} day",
+    "metricDaysFew": "{count} days",
+    "metricDaysOther": "{count} days",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -12019,7 +12021,6 @@
     "title": "Practices and doctors",
     "description": "Your own address book — type a practice once, pick it everywhere.",
     "linkLabel": "Address book",
-    "add": "Entry",
     "searchPlaceholder": "Search name, practice or specialty",
     "loadError": "The address book could not be loaded.",
     "emptyTitle": "No entry yet",

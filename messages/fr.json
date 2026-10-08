@@ -8015,7 +8015,9 @@
     "noneUnlockedYet": "Aucune réussite débloquée pour l’instant.",
     "pointsValue": "{points} points",
     "metricCount": "{count}",
-    "metricDays": "{count} jours",
+    "metricDaysOne": "{count} jour",
+    "metricDaysFew": "{count} jours",
+    "metricDaysOther": "{count} jours",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -12019,7 +12021,6 @@
     "title": "Cabinets et médecins",
     "description": "Votre carnet d'adresses : saisissez un cabinet une fois, choisissez-le partout.",
     "linkLabel": "Carnet d'adresses",
-    "add": "Entrée",
     "searchPlaceholder": "Rechercher un nom, un cabinet ou une spécialité",
     "loadError": "Impossible de charger le carnet d'adresses.",
     "emptyTitle": "Aucune entrée",

@@ -8015,7 +8015,9 @@
     "noneUnlockedYet": "아직 달성한 업적이 없어요.",
     "pointsValue": "{points}포인트",
     "metricCount": "{count}",
-    "metricDays": "{count}일",
+    "metricDaysOne": "{count}일",
+    "metricDaysFew": "{count}일",
+    "metricDaysOther": "{count}일",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -12019,7 +12021,6 @@
     "title": "병원과 의사",
     "description": "나만의 주소록이에요 — 병원을 한 번만 입력하면 어디서든 골라 쓸 수 있어요.",
     "linkLabel": "주소록",
-    "add": "항목",
     "searchPlaceholder": "이름, 병원, 진료과 검색",
     "loadError": "주소록을 불러오지 못했어요.",
     "emptyTitle": "아직 항목이 없어요",

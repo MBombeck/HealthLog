@@ -8015,7 +8015,9 @@
     "noneUnlockedYet": "Nie odblokowano jeszcze żadnego osiągnięcia.",
     "pointsValue": "{points} punktów",
     "metricCount": "{count}",
-    "metricDays": "{count} dni",
+    "metricDaysOne": "{count} dzień",
+    "metricDaysFew": "{count} dni",
+    "metricDaysOther": "{count} dni",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -9929,7 +9931,7 @@
     "loadError": "Nie udało się wczytać tego epizodu.",
     "backToList": "Powrót do dziennika",
     "detail": {
-      "note": "Note"
+      "note": "Notatka"
     },
     "edit": {
       "title": "Edytuj epizod",
@@ -12019,7 +12021,6 @@
     "title": "Gabinety i lekarze",
     "description": "Twoja własna książka adresowa — wpisz gabinet raz, wybieraj go wszędzie.",
     "linkLabel": "Książka adresowa",
-    "add": "Wpis",
     "searchPlaceholder": "Szukaj nazwiska, gabinetu lub specjalizacji",
     "loadError": "Nie udało się wczytać książki adresowej.",
     "emptyTitle": "Brak wpisów",

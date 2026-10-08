@@ -98,7 +98,7 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
       onClick={() => openSheet("new")}
     >
       <Plus className="size-4" aria-hidden />
-      {t("practitioners.add")}
+      {t("common.add")}
     </Button>
   ) : null;
 

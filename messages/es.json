@@ -8015,7 +8015,9 @@
     "noneUnlockedYet": "Aún no has desbloqueado ningún logro.",
     "pointsValue": "{points} puntos",
     "metricCount": "{count}",
-    "metricDays": "{count} días",
+    "metricDaysOne": "{count} día",
+    "metricDaysFew": "{count} días",
+    "metricDaysOther": "{count} días",
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
@@ -9929,7 +9931,7 @@
     "loadError": "No se pudo cargar este episodio.",
     "backToList": "Volver al diario",
     "detail": {
-      "note": "Note"
+      "note": "Nota"
     },
     "edit": {
       "title": "Editar episodio",
@@ -12019,7 +12021,6 @@
     "title": "Consultas y médicos",
     "description": "Tu propia agenda: escribe una consulta una vez y elígela en todas partes.",
     "linkLabel": "Agenda",
-    "add": "Entrada",
     "searchPlaceholder": "Buscar nombre, consulta o especialidad",
     "loadError": "No se pudo cargar la agenda.",
     "emptyTitle": "Todavía no hay entradas",
