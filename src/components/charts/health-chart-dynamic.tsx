@@ -66,8 +66,15 @@ export function HealthChartDynamic(
       : props.showDataTable
         ? HealthChartLazyTable
         : HealthChartLazy;
+  // A chart that never mounts never reports its window, and a stat strip
+  // holding its cells for that report would stay a skeleton for good. The
+  // failure settles it with "no window", so the strip falls back to the
+  // full-range summary it already has.
+  const { onVisibleStats } = props;
   return (
-    <ChartErrorBoundary>
+    <ChartErrorBoundary
+      onError={onVisibleStats ? () => onVisibleStats(null) : undefined}
+    >
       <Lazy {...props} />
     </ChartErrorBoundary>
   );

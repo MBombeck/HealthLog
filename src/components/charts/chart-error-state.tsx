@@ -95,13 +95,16 @@ export function ChartErrorState({
 interface BoundaryProps {
   fallback: ReactNode;
   children: ReactNode;
+  /** Called once the boundary has caught, after the fallback commits. */
+  onError?: (error: Error) => void;
 }
 
 interface BoundaryState {
   failed: boolean;
 }
 
-class Boundary extends Component<BoundaryProps, BoundaryState> {
+/** Exported for its unit test; mount `<ChartErrorBoundary>` instead. */
+export class ChartBoundary extends Component<BoundaryProps, BoundaryState> {
   state: BoundaryState = { failed: false };
 
   static getDerivedStateFromError(): BoundaryState {
@@ -118,6 +121,7 @@ class Boundary extends Component<BoundaryProps, BoundaryState> {
       };
       g.__healthlog_onError?.(error);
     }
+    this.props.onError?.(error);
   }
 
   render(): ReactNode {
@@ -134,12 +138,20 @@ class Boundary extends Component<BoundaryProps, BoundaryState> {
  */
 export function ChartErrorBoundary({
   children,
+  onError,
 }: {
   children: ReactNode;
+  /**
+   * Lets the page settle anything that waited on the chart: a stat strip
+   * that holds its cells for the chart's window would otherwise wait for a
+   * report the failed chart can never send.
+   */
+  onError?: (error: Error) => void;
 }): ReactElement {
   const { t } = useTranslations();
   return (
-    <Boundary
+    <ChartBoundary
+      onError={onError}
       fallback={
         // Wrapped in the chart-card shell so a chunk failure renders
         // as one solid card among the other cards, not a bare dashed
@@ -159,6 +171,6 @@ export function ChartErrorBoundary({
       }
     >
       {children}
-    </Boundary>
+    </ChartBoundary>
   );
 }
