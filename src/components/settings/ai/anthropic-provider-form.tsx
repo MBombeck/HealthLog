@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -161,7 +162,13 @@ export function AnthropicProviderForm({
         </div>
       )}
 
-      <div>
+      {msg && (
+        <p className={`text-xs ${ok ? "text-success" : "text-destructive"}`}>
+          {msg}
+        </p>
+      )}
+
+      <SettingsCardActions>
         <Button
           type="submit"
           size="sm"
@@ -176,13 +183,7 @@ export function AnthropicProviderForm({
           )}
           {t("settings.ai.saveCta")}
         </Button>
-      </div>
-
-      {msg && (
-        <p className={`text-xs ${ok ? "text-success" : "text-destructive"}`}>
-          {msg}
-        </p>
-      )}
+      </SettingsCardActions>
     </form>
   );
 }

@@ -34,6 +34,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, ShieldCheck, ShieldOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SettingsCard } from "@/components/settings/settings-card";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
@@ -124,24 +127,29 @@ export function AiConsentCard({
   // below it once the receipt arrived.
   if (isLoading) {
     return (
-      <section className="space-y-3" data-slot="ai-consent">
-        <div className="space-y-1">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-4 w-56" />
-        </div>
-        <Skeleton className="h-8 w-32" />
-      </section>
+      <SettingsCard as="section" data-slot="ai-consent">
+        <SettingsCardHeader
+          icon={ShieldCheck}
+          title={t("settings.ai.consent.title")}
+          description={<Skeleton className="h-4 w-56" />}
+        />
+        <Skeleton className="ml-auto h-8 w-32" />
+      </SettingsCard>
     );
   }
 
   if (isError) {
     return (
-      <section className="space-y-3" data-slot="ai-consent">
+      <SettingsCard as="section" data-slot="ai-consent">
+        <SettingsCardHeader
+          icon={ShieldCheck}
+          title={t("settings.ai.consent.title")}
+        />
         <QueryErrorRow
           slot="ai-consent-load-error"
           onRetry={() => void refetch()}
         />
-      </section>
+      </SettingsCard>
     );
   }
 
@@ -150,100 +158,106 @@ export function AiConsentCard({
   const activeReceipt = data && data.revokedAt === null ? data : null;
 
   return (
-    <section className="space-y-3" data-slot="ai-consent">
-      <div className="space-y-1">
-        <p className="flex items-center gap-2 text-sm font-medium">
-          {activeReceipt ? (
-            <ShieldCheck className="size-4" aria-hidden />
-          ) : (
-            <ShieldOff className="text-muted-foreground size-4" aria-hidden />
-          )}
-          {t("settings.ai.consent.title")}
-        </p>
-        <p className="text-muted-foreground text-xs">
-          {activeReceipt
-            ? t("settings.ai.consent.activeSince", {
-                date: formatDateTime(activeReceipt.signedAt),
-              })
-            : t("settings.ai.consent.withdrawn")}
-        </p>
-      </div>
+    <>
+      <SettingsCard as="section" data-slot="ai-consent">
+        <SettingsCardHeader
+          icon={activeReceipt ? ShieldCheck : ShieldOff}
+          title={t("settings.ai.consent.title")}
+          description={
+            activeReceipt
+              ? t("settings.ai.consent.activeSince", {
+                  date: formatDateTime(activeReceipt.signedAt),
+                })
+              : t("settings.ai.consent.withdrawn")
+          }
+        />
 
-      {activeReceipt ? (
-        confirming ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-muted-foreground w-full text-xs">
-              {t("settings.ai.consent.confirmBody")}
-            </p>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              data-slot="ai-consent-withdraw-confirm"
-              onClick={() => revoke.mutate()}
-              disabled={revoke.isPending}
-            >
-              {revoke.isPending ? (
-                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-              ) : null}
-              {t("settings.ai.consent.confirmWithdraw")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setConfirming(false)}
-              disabled={revoke.isPending}
-            >
-              {t("common.cancel")}
-            </Button>
-          </div>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            data-slot="ai-consent-withdraw"
-            onClick={() => setConfirming(true)}
-          >
-            {t("settings.ai.consent.withdraw")}
-          </Button>
-        )
-      ) : (
-        <div className="space-y-2">
+        {activeReceipt && confirming ? (
+          <p className="text-muted-foreground text-xs">
+            {t("settings.ai.consent.confirmBody")}
+          </p>
+        ) : null}
+        {!activeReceipt ? (
           <p className="text-muted-foreground text-xs">
             {t("settings.ai.consent.regrantHint")}
           </p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            data-slot="ai-consent-grant"
-            onClick={() => grant.mutate()}
-            disabled={grant.isPending}
-          >
-            {grant.isPending ? (
-              <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-            ) : null}
-            {t("settings.ai.consent.grant")}
-          </Button>
-        </div>
-      )}
+        ) : null}
 
-      {revoke.isError ? (
-        <p className="text-destructive text-xs" role="alert">
-          {t("settings.ai.consent.error")}
-        </p>
-      ) : null}
+        {revoke.isError ? (
+          <p className="text-destructive text-xs" role="alert">
+            {t("settings.ai.consent.error")}
+          </p>
+        ) : null}
 
-      {grant.isError ? (
-        <p className="text-destructive text-xs" role="alert">
-          {t("settings.ai.consent.grantError")}
-        </p>
-      ) : null}
+        {grant.isError ? (
+          <p className="text-destructive text-xs" role="alert">
+            {t("settings.ai.consent.grantError")}
+          </p>
+        ) : null}
+
+        {/* One action row, last in the card; while confirming, Cancel sits
+            before the destructive confirm (design standards §12). */}
+        <SettingsCardActions>
+          {activeReceipt ? (
+            confirming ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 sm:min-h-9"
+                  onClick={() => setConfirming(false)}
+                  disabled={revoke.isPending}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="min-h-11 sm:min-h-9"
+                  data-slot="ai-consent-withdraw-confirm"
+                  onClick={() => revoke.mutate()}
+                  disabled={revoke.isPending}
+                >
+                  {revoke.isPending ? (
+                    <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+                  ) : null}
+                  {t("settings.ai.consent.confirmWithdraw")}
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-11 sm:min-h-9"
+                data-slot="ai-consent-withdraw"
+                onClick={() => setConfirming(true)}
+              >
+                {t("settings.ai.consent.withdraw")}
+              </Button>
+            )
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              className="min-h-11 sm:min-h-9"
+              data-slot="ai-consent-grant"
+              onClick={() => grant.mutate()}
+              disabled={grant.isPending}
+            >
+              {grant.isPending ? (
+                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+              ) : null}
+              {t("settings.ai.consent.grant")}
+            </Button>
+          )}
+        </SettingsCardActions>
+      </SettingsCard>
 
       <DocumentReadingConsentRow isAuthenticated={isAuthenticated} />
-    </section>
+    </>
   );
 }
 
@@ -298,62 +312,65 @@ function DocumentReadingConsentRow({
   if (!active) return null;
 
   return (
-    <div
-      data-slot="ai-consent-document-reading"
-      className="border-border space-y-2 border-t pt-3"
-    >
-      <p className="text-sm font-medium">
-        {t("settings.ai.consent.documentReading.title")}
-      </p>
-      <p className="text-muted-foreground text-xs">
-        {t("settings.ai.consent.documentReading.activeSince", {
+    <SettingsCard as="section" data-slot="ai-consent-document-reading">
+      <SettingsCardHeader
+        icon={ShieldCheck}
+        title={t("settings.ai.consent.documentReading.title")}
+        description={t("settings.ai.consent.documentReading.activeSince", {
           date: formatDateTime(active.signedAt),
         })}
-      </p>
+      />
       {confirming ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-muted-foreground w-full text-xs">
-            {t("settings.ai.consent.documentReading.confirmBody")}
-          </p>
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            data-slot="ai-consent-document-reading-withdraw-confirm"
-            onClick={() => revoke.mutate()}
-            disabled={revoke.isPending}
-          >
-            {revoke.isPending ? (
-              <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-            ) : null}
-            {t("settings.ai.consent.confirmWithdraw")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setConfirming(false)}
-            disabled={revoke.isPending}
-          >
-            {t("common.cancel")}
-          </Button>
-        </div>
-      ) : (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          data-slot="ai-consent-document-reading-withdraw"
-          onClick={() => setConfirming(true)}
-        >
-          {t("settings.ai.consent.withdraw")}
-        </Button>
-      )}
+        <p className="text-muted-foreground text-xs">
+          {t("settings.ai.consent.documentReading.confirmBody")}
+        </p>
+      ) : null}
       {revoke.isError ? (
         <p className="text-destructive text-xs" role="alert">
           {t("settings.ai.consent.error")}
         </p>
       ) : null}
-    </div>
+      <SettingsCardActions>
+        {confirming ? (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-h-11 sm:min-h-9"
+              onClick={() => setConfirming(false)}
+              disabled={revoke.isPending}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="min-h-11 sm:min-h-9"
+              data-slot="ai-consent-document-reading-withdraw-confirm"
+              onClick={() => revoke.mutate()}
+              disabled={revoke.isPending}
+            >
+              {revoke.isPending ? (
+                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+              ) : null}
+              {t("settings.ai.consent.confirmWithdraw")}
+            </Button>
+          </>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            data-slot="ai-consent-document-reading-withdraw"
+            onClick={() => setConfirming(true)}
+          >
+            {t("settings.ai.consent.withdraw")}
+          </Button>
+        )}
+      </SettingsCardActions>
+    </SettingsCard>
   );
 }

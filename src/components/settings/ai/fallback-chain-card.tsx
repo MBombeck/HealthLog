@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowUp,
+  ListOrdered,
   Loader2,
   PlusCircle,
   RotateCcw,
@@ -29,6 +30,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { SettingsCard } from "@/components/settings/settings-card";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { apiPut } from "@/lib/api/api-fetch";
@@ -148,25 +152,19 @@ export function FallbackChainCard({
   }
 
   return (
-    <div
-      data-testid="ai-fallback-chain"
-      className="bg-muted/50 space-y-3 rounded-lg p-4"
-    >
-      <div>
-        <p className="text-sm font-medium">
-          {t("settings.ai.providerChain.title")}
-        </p>
-        <p className="text-muted-foreground text-xs">
-          {t("settings.ai.providerChain.description")}
-        </p>
-      </div>
+    <SettingsCard data-testid="ai-fallback-chain">
+      <SettingsCardHeader
+        icon={ListOrdered}
+        title={t("settings.ai.providerChain.title")}
+        description={t("settings.ai.providerChain.description")}
+      />
 
       <ul className="space-y-2">
         {entries.map((entry, idx) => (
           <li
             key={entry.providerType}
             data-chain-row={entry.providerType}
-            className={`bg-card border-border flex flex-wrap items-center gap-2 rounded-md border p-2 ${
+            className={`bg-card border-border flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border p-2 ${
               entry.providerType === selected
                 ? "border-primary/40 ring-primary/30 ring-1"
                 : ""
@@ -175,53 +173,58 @@ export function FallbackChainCard({
             <span className="text-muted-foreground w-5 text-center text-xs tabular-nums">
               {idx + 1}.
             </span>
+            {/* The name keeps its own line on a phone and the controls wrap
+                under it, right-aligned; squeezed beside five controls it
+                broke a three-word name over three lines. */}
             <button
               type="button"
               onClick={() => onSelect(entry.providerType)}
-              className="flex-1 text-left text-sm font-medium hover:underline"
+              className="min-w-0 flex-1 basis-[calc(100%-2rem)] text-left text-sm font-medium hover:underline sm:basis-0"
             >
               {t(`settings.ai.providerChain.types.${entry.providerType}`)}
             </button>
-            <Switch
-              checked={entry.enabled}
-              onCheckedChange={() => toggle(idx)}
-              aria-label={t(
-                `settings.ai.providerChain.types.${entry.providerType}`,
-              )}
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              aria-label={t("settings.ai.providerChain.moveUp")}
-              disabled={idx === 0}
-              onClick={() => move(idx, -1)}
-              className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
-            >
-              <ArrowUp className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              aria-label={t("settings.ai.providerChain.moveDown")}
-              disabled={idx === entries.length - 1}
-              onClick={() => move(idx, 1)}
-              className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
-            >
-              <ArrowDown className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              aria-label={t("settings.ai.providerChain.removeFromChain")}
-              className="text-destructive min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
-              onClick={() => remove(idx)}
-              disabled={entries.length <= 1}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <Switch
+                checked={entry.enabled}
+                onCheckedChange={() => toggle(idx)}
+                aria-label={t(
+                  `settings.ai.providerChain.types.${entry.providerType}`,
+                )}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                aria-label={t("settings.ai.providerChain.moveUp")}
+                disabled={idx === 0}
+                onClick={() => move(idx, -1)}
+                className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                aria-label={t("settings.ai.providerChain.moveDown")}
+                disabled={idx === entries.length - 1}
+                onClick={() => move(idx, 1)}
+                className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                aria-label={t("settings.ai.providerChain.removeFromChain")}
+                className="text-destructive min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
+                onClick={() => remove(idx)}
+                disabled={entries.length <= 1}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </li>
         ))}
       </ul>
@@ -234,20 +237,14 @@ export function FallbackChainCard({
             {t("settings.ai.providerChain.addNoneAvailable")}
           </p>
         )}
-        <Button
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          onClick={() => saveMutation.mutate(entries)}
-          disabled={saveMutation.isPending || entries.length === 0}
-          data-testid="ai-fallback-chain-save"
-        >
-          {saveMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          {t("settings.ai.providerChain.saveOrder")}
-        </Button>
+      </div>
+
+      {msg && (
+        <p className={`text-xs ${ok ? "text-success" : "text-destructive"}`}>
+          {msg}
+        </p>
+      )}
+      <SettingsCardActions>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button size="sm" variant="outline" className="min-h-11 sm:min-h-9">
@@ -272,14 +269,22 @@ export function FallbackChainCard({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
-
-      {msg && (
-        <p className={`text-xs ${ok ? "text-success" : "text-destructive"}`}>
-          {msg}
-        </p>
-      )}
-    </div>
+        <Button
+          size="sm"
+          className="min-h-11 sm:min-h-9"
+          onClick={() => saveMutation.mutate(entries)}
+          disabled={saveMutation.isPending || entries.length === 0}
+          data-testid="ai-fallback-chain-save"
+        >
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
+          {t("settings.ai.providerChain.saveOrder")}
+        </Button>
+      </SettingsCardActions>
+    </SettingsCard>
   );
 }
 
