@@ -229,6 +229,26 @@ export const E2E_AI_OPTIONAL = {
   role: "USER",
 } as const;
 
+/**
+ * The timeline journey's own account (`timeline.spec.ts`).
+ *
+ * It switches the opt-in timeline module on and off, which changes the
+ * navigation, the add menus and Settings for the whole account; on the shared
+ * account a parallel spec would see them move underneath it. The module
+ * starts off here, the way every account starts.
+ */
+export const E2E_TIMELINE = {
+  email: "e2e-timeline@healthlog.test",
+  username: "e2e-timeline",
+  password: "Tl6!Wq3zRm8vXn2K",
+  role: "USER",
+} as const;
+
+export const TIMELINE_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateTimeline.json",
+);
+
 export const AI_OPTIONAL_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateAiOptional.json",
@@ -906,6 +926,30 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       ],
     );
 
+    // The timeline journey's account. The module starts off; the journey
+    // switches it through the real Settings switch.
+    await pool.query(
+      `INSERT INTO users
+        (id, username, email, password_hash, role, created_at, updated_at,
+         onboarding_completed_at, onboarding_tour_completed,
+         module_preferences_json)
+       VALUES ($1, $2, $3, $4, 'USER', $5, $5, $5, true, NULL)
+       ON CONFLICT (username) DO UPDATE SET
+         email = EXCLUDED.email,
+         password_hash = EXCLUDED.password_hash,
+         updated_at = EXCLUDED.updated_at,
+         onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+         onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
+         module_preferences_json = NULL`,
+      [
+        cuid(),
+        E2E_TIMELINE.username,
+        E2E_TIMELINE.email,
+        await hashPassword(E2E_TIMELINE.password),
+        now,
+      ],
+    );
+
     // The notification-dispatch journey's account. Seeded like the others;
     // its channels, devices, ledger rows and preferences are reset by
     // `e2e/setup/notification-fixture.ts` before every test, because the
@@ -1508,6 +1552,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
     // The AI-optional journeys' jar — see `E2E_AI_OPTIONAL`.
     await capture(E2E_AI_OPTIONAL, AI_OPTIONAL_STORAGE_STATE_PATH);
+
+    // The timeline journey's jar — see `E2E_TIMELINE`.
+    await capture(E2E_TIMELINE, TIMELINE_STORAGE_STATE_PATH);
 
     await capture(E2E_SCOPE_DELEGATE, SCOPE_DELEGATE_STORAGE_STATE_PATH);
     await capture(E2E_SCOPE_DELEGATE, SCOPE_A11Y_STORAGE_STATE_PATH);

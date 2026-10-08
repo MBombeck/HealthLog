@@ -427,7 +427,9 @@
       "workout": "Entrenamiento",
       "workoutDescription": "Una sesión que tus dispositivos no registraron",
       "symptom": "Síntoma",
-      "symptomDescription": "Uno de tus propios síntomas, con su intensidad"
+      "symptomDescription": "Uno de tus propios síntomas, con su intensidad",
+      "lifeEventDescription": "Una mudanza, un nacimiento, un nuevo trabajo",
+      "lifeEvent": "Acontecimiento vital"
     },
     "cycle": "Ciclo",
     "labs": "Análisis",
@@ -578,6 +580,7 @@
     "quickAddMood": "Registrar estado de ánimo",
     "quickAddMedicationIntake": "Registrar toma",
     "quickAddWorkout": "Registrar entrenamiento",
+    "quickAddLifeEvent": "Registrar acontecimiento vital",
     "customizeDashboard": "Personalizar panel",
     "medicationIntakeQuickAdd": {
       "sheetTitle": "Registrar toma de medicación",
@@ -12214,8 +12217,8 @@
   },
   "timeline": {
     "title": "Cronología",
-    "subtitle": "Años de un vistazo.",
-    "legend": "Mostrado uno junto a otro, no como causa y efecto.",
+    "subtitle": "Qué pasó y cuándo, junto a tus valores.",
+    "legend": "Uno debajo de otro significa al mismo tiempo, no causa y efecto.",
     "standing": "Permanente",
     "startMissing": "Falta la fecha de inicio",
     "openDay": "Abrir {date}",
@@ -12254,16 +12257,151 @@
       "lanes": {
         "values": "Valores",
         "mood": "Estado de ánimo",
-        "environment": "Entorno"
+        "environment": "Entorno",
+        "life": "Acontecimientos vitales"
+      },
+      "meter": "{carrying} de {total} pistas tienen contenido",
+      "carriesDetail": "{carrying} de {total} pistas dan una visión general desde {since}.",
+      "loadFailed": "No se pudo cargar el inventario.",
+      "card": {
+        "title": "Lo que la cronología ya muestra",
+        "summary": "Llega hasta {since}; {carrying} de {total} pistas ya tienen contenido.",
+        "dismiss": "Ocultar"
+      },
+      "detail": {
+        "valuesOne": "{count} medida desde {since}",
+        "valuesFew": "{count} medidas desde {since}",
+        "valuesOther": "{count} medidas desde {since}",
+        "illnessOne": "{count} episodio; crónicos: {chronic}",
+        "illnessFew": "{count} episodios; crónicos: {chronic}",
+        "illnessOther": "{count} episodios; crónicos: {chronic}",
+        "allergiesOne": "{count} alergia",
+        "allergiesFew": "{count} alergias",
+        "allergiesOther": "{count} alergias",
+        "medicationsOne": "{count} medicamento; sin fecha de inicio: {missingStart}",
+        "medicationsFew": "{count} medicamentos; sin fecha de inicio: {missingStart}",
+        "medicationsOther": "{count} medicamentos; sin fecha de inicio: {missingStart}",
+        "medicationsDatedOne": "{count} medicamento con fecha de inicio",
+        "medicationsDatedFew": "{count} medicamentos con fecha de inicio",
+        "medicationsDatedOther": "{count} medicamentos con fecha de inicio",
+        "vaccinationsOne": "{count} vacuna",
+        "vaccinationsFew": "{count} vacunas",
+        "vaccinationsOther": "{count} vacunas",
+        "visitsOne": "{count} visita · con intervención: {procedures}",
+        "visitsFew": "{count} visitas · con intervención: {procedures}",
+        "visitsOther": "{count} visitas · con intervención: {procedures}",
+        "visitsPlannedOne": "{count} visita, solo planificada",
+        "visitsPlannedFew": "{count} visitas, solo planificadas",
+        "visitsPlannedOther": "{count} visitas, solo planificadas",
+        "labsOne": "{count} día con resultados",
+        "labsFew": "{count} días con resultados",
+        "labsOther": "{count} días con resultados",
+        "documentsOne": "{count} documento con fecha",
+        "documentsFew": "{count} documentos con fecha",
+        "documentsOther": "{count} documentos con fecha",
+        "lifeOne": "{count} acontecimiento vital",
+        "lifeFew": "{count} acontecimientos vitales",
+        "lifeOther": "{count} acontecimientos vitales",
+        "cycleOne": "{count} ciclo",
+        "cycleFew": "{count} ciclos",
+        "cycleOther": "{count} ciclos",
+        "moodOne": "{count} entrada desde {since}",
+        "moodFew": "{count} entradas desde {since}",
+        "moodOther": "{count} entradas desde {since}",
+        "environmentOne": "{count} día con datos ambientales",
+        "environmentFew": "{count} días con datos ambientales",
+        "environmentOther": "{count} días con datos ambientales",
+        "empty": "Aún ninguno"
+      },
+      "gap": {
+        "valuesEmpty": "Conectar fuentes",
+        "illnessEmpty": "Añadir episodio",
+        "medicationsWithoutStart": "Completar",
+        "visitsEmpty": "Añadir visita",
+        "documentsUndated": "Revisar",
+        "labsEmpty": "Añadir resultado",
+        "vaccinationsEmpty": "Añadir vacunas",
+        "lifeEventsEmpty": "Añadir"
+      },
+      "gapLine": {
+        "medicationsWithoutStartOne": "{count} medicamento sin fecha de inicio",
+        "medicationsWithoutStartFew": "{count} medicamentos sin fecha de inicio",
+        "medicationsWithoutStartOther": "{count} medicamentos sin fecha de inicio",
+        "documentsUndatedOne": "{count} documento sin fecha",
+        "documentsUndatedFew": "{count} documentos sin fecha",
+        "documentsUndatedOther": "{count} documentos sin fecha",
+        "valuesEmpty": "Aún no hay valores durante un periodo largo",
+        "illnessEmpty": "Aún no hay enfermedades con fecha de inicio",
+        "visitsEmpty": "Aún no hay visitas médicas realizadas",
+        "labsEmpty": "Aún no hay resultados de laboratorio",
+        "vaccinationsEmpty": "Aún no hay vacunas",
+        "lifeEventsEmpty": "Aún no hay acontecimientos vitales"
       }
-    }
+    },
+    "legendSpan": "Periodo",
+    "legendEvent": "Evento",
+    "legendMean": "Media mensual",
+    "today": "Hoy",
+    "noDataYet": "Aún sin datos",
+    "layers": "Capas",
+    "layersLanes": "Pistas",
+    "zoomLabel": "Rango de la vista",
+    "chartLabel": "Cronología de {from} a {to}",
+    "keyboardHint": "Las flechas mueven la selección, Inicio y Fin saltan a los extremos, Intro abre el día.",
+    "loadFailed": "No se pudo cargar la cronología.",
+    "empty": {
+      "title": "Aún no hay nada en la cronología",
+      "description": "Las entradas con fecha aparecerán aquí en cuanto haya alguna."
+    },
+    "values": {
+      "menuLabel": "Hasta tres valores",
+      "none": "Sin valores",
+      "noneInWindow": "Sin valores en este periodo",
+      "series": {
+        "BLOOD_PRESSURE_SYS": "Presión sistólica",
+        "BLOOD_PRESSURE_DIA": "Presión diastólica"
+      }
+    },
+    "table": {
+      "caption": "Entradas de la cronología",
+      "lane": "Pista",
+      "entry": "Entrada",
+      "start": "Inicio",
+      "end": "Fin"
+    },
+    "selection": {
+      "empty": "Sin entradas este mes",
+      "ongoing": "en curso",
+      "range": "{from} a {to}",
+      "mean": "Ø {values}"
+    },
+    "chronicle": {
+      "months": "Meses",
+      "years": "Años",
+      "groupingLabel": "Agrupación",
+      "gap": "{from} a {to} · sin entradas",
+      "gapSingle": "{period} · sin entradas",
+      "ended": "Fin: {label}",
+      "afterDaysOne": "después de 1 día",
+      "afterDaysFew": "después de {count} días",
+      "afterDaysOther": "después de {count} días",
+      "notable": {
+        "extremeHigh": "El valor más alto en mucho tiempo",
+        "extremeLow": "El valor más bajo en mucho tiempo",
+        "firstValue": "Primer valor de una medida",
+        "gap": "Un hueco largo en los valores"
+      },
+      "notableMeta": "Abre el día para ver detalles"
+    },
+    "standingAllergiesOne": "{count} alergia",
+    "standingAllergiesFew": "{count} alergias",
+    "standingAllergiesOther": "{count} alergias"
   },
   "lifeEvents": {
     "title": "Acontecimiento vital",
     "add": "Acontecimiento vital",
     "subtitle": "Un ancla para la cronología, no una medición.",
     "privacy": "El título y la nota se guardan cifrados. No se envían a ninguna IA.",
-    "empty": "Aún no hay acontecimientos vitales",
     "emptyHint": "Una mudanza, un nacimiento o un nuevo trabajo dan un ancla a los años.",
     "save": "Guardar",
     "cancel": "Cancelar",
@@ -12279,7 +12417,8 @@
       "endDate": "Hasta",
       "note": "Nota",
       "optionalTag": "opcional",
-      "notePlaceholder": "Algo que quieras saber más adelante"
+      "notePlaceholder": "Algo que quieras saber más adelante",
+      "removeEnd": "Quitar fecha de fin"
     },
     "category": {
       "FAMILY": "Familia",
@@ -12292,6 +12431,21 @@
       "DAY": "Día",
       "MONTH": "Mes",
       "YEAR": "Año"
+    },
+    "edit": "Editar acontecimiento vital",
+    "errors": {
+      "titleRequired": "Ponle un nombre al acontecimiento.",
+      "titleTooLong": "Máximo 120 caracteres.",
+      "categoryRequired": "Elige un tipo.",
+      "dateRequired": "Introduce una fecha válida.",
+      "endBeforeStart": "El final es anterior al inicio.",
+      "noteTooLong": "Máximo 2000 caracteres."
+    },
+    "saveFailed": "No se pudo guardar.",
+    "deleteFailed": "No se pudo eliminar.",
+    "deleteConfirm": {
+      "title": "¿Eliminar este acontecimiento vital?",
+      "body": "Su título y su nota desaparecerán."
     }
   }
 }

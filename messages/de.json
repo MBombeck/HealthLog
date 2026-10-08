@@ -427,7 +427,9 @@
       "workout": "Workout",
       "workoutDescription": "Eine Einheit, die kein Gerät aufgezeichnet hat",
       "symptom": "Symptom",
-      "symptomDescription": "Eines deiner eigenen Symptome, mit Stärke"
+      "symptomDescription": "Eines deiner eigenen Symptome, mit Stärke",
+      "lifeEventDescription": "Umzug, Geburt, neue Stelle",
+      "lifeEvent": "Lebensereignis"
     },
     "cycle": "Zyklus",
     "labs": "Laborwerte",
@@ -578,6 +580,7 @@
     "quickAddMood": "Stimmung erfassen",
     "quickAddMedicationIntake": "Einnahme erfassen",
     "quickAddWorkout": "Workout erfassen",
+    "quickAddLifeEvent": "Lebensereignis erfassen",
     "customizeDashboard": "Dashboard anpassen",
     "medicationIntakeQuickAdd": {
       "sheetTitle": "Medikamenteneinnahme erfassen",
@@ -12214,8 +12217,8 @@
   },
   "timeline": {
     "title": "Zeitleiste",
-    "subtitle": "Jahre auf einen Blick.",
-    "legend": "Nebeneinander gezeigt, nicht als Ursache und Wirkung.",
+    "subtitle": "Was wann war, neben deinen Werten.",
+    "legend": "Untereinander heißt gleichzeitig, nicht ursächlich.",
     "standing": "Dauerhaft",
     "startMissing": "Startdatum fehlt",
     "openDay": "{date} öffnen",
@@ -12254,16 +12257,151 @@
       "lanes": {
         "values": "Werte",
         "mood": "Stimmung",
-        "environment": "Umwelt"
+        "environment": "Umwelt",
+        "life": "Lebensereignisse"
+      },
+      "meter": "{carrying} von {total} Spuren tragen",
+      "carriesDetail": "{carrying} von {total} Spuren reichen für einen Überblick ab {since}.",
+      "loadFailed": "Die Bestandsaufnahme konnte nicht geladen werden.",
+      "card": {
+        "title": "Was die Zeitleiste schon trägt",
+        "summary": "Sie reicht bis {since} zurück, {carrying} von {total} Spuren tragen schon.",
+        "dismiss": "Ausblenden"
+      },
+      "detail": {
+        "valuesOne": "{count} Messgröße seit {since}",
+        "valuesFew": "{count} Messgrößen seit {since}",
+        "valuesOther": "{count} Messgrößen seit {since}",
+        "illnessOne": "{count} Episode, davon {chronic} chronisch",
+        "illnessFew": "{count} Episoden, davon {chronic} chronisch",
+        "illnessOther": "{count} Episoden, davon {chronic} chronisch",
+        "allergiesOne": "{count} Allergie",
+        "allergiesFew": "{count} Allergien",
+        "allergiesOther": "{count} Allergien",
+        "medicationsOne": "{count} Medikament, {missingStart} ohne Startdatum",
+        "medicationsFew": "{count} Medikamente, {missingStart} ohne Startdatum",
+        "medicationsOther": "{count} Medikamente, {missingStart} ohne Startdatum",
+        "medicationsDatedOne": "{count} Medikament mit Startdatum",
+        "medicationsDatedFew": "{count} Medikamente mit Startdatum",
+        "medicationsDatedOther": "{count} Medikamente mit Startdatum",
+        "vaccinationsOne": "{count} Impfung",
+        "vaccinationsFew": "{count} Impfungen",
+        "vaccinationsOther": "{count} Impfungen",
+        "visitsOne": "{count} Besuch · {procedures} mit Eingriff",
+        "visitsFew": "{count} Besuche · {procedures} mit Eingriff",
+        "visitsOther": "{count} Besuche · {procedures} mit Eingriff",
+        "visitsPlannedOne": "{count} Besuch, nur geplant",
+        "visitsPlannedFew": "{count} Besuche, nur geplant",
+        "visitsPlannedOther": "{count} Besuche, nur geplant",
+        "labsOne": "{count} Befundtag",
+        "labsFew": "{count} Befundtage",
+        "labsOther": "{count} Befundtage",
+        "documentsOne": "{count} Dokument mit Datum",
+        "documentsFew": "{count} Dokumente mit Datum",
+        "documentsOther": "{count} Dokumente mit Datum",
+        "lifeOne": "{count} Lebensereignis",
+        "lifeFew": "{count} Lebensereignisse",
+        "lifeOther": "{count} Lebensereignisse",
+        "cycleOne": "{count} Zyklus",
+        "cycleFew": "{count} Zyklen",
+        "cycleOther": "{count} Zyklen",
+        "moodOne": "{count} Eintrag seit {since}",
+        "moodFew": "{count} Einträge seit {since}",
+        "moodOther": "{count} Einträge seit {since}",
+        "environmentOne": "{count} Tag mit Umweltdaten",
+        "environmentFew": "{count} Tage mit Umweltdaten",
+        "environmentOther": "{count} Tage mit Umweltdaten",
+        "empty": "Noch keine"
+      },
+      "gap": {
+        "valuesEmpty": "Quellen verbinden",
+        "illnessEmpty": "Episode anlegen",
+        "medicationsWithoutStart": "Ergänzen",
+        "visitsEmpty": "Besuch nachtragen",
+        "documentsUndated": "Ansehen",
+        "labsEmpty": "Befund erfassen",
+        "vaccinationsEmpty": "Impfpass erfassen",
+        "lifeEventsEmpty": "Hinzufügen"
+      },
+      "gapLine": {
+        "medicationsWithoutStartOne": "{count} Medikament ohne Startdatum",
+        "medicationsWithoutStartFew": "{count} Medikamente ohne Startdatum",
+        "medicationsWithoutStartOther": "{count} Medikamente ohne Startdatum",
+        "documentsUndatedOne": "{count} Dokument ohne Datum",
+        "documentsUndatedFew": "{count} Dokumente ohne Datum",
+        "documentsUndatedOther": "{count} Dokumente ohne Datum",
+        "valuesEmpty": "Noch keine Werte über längere Zeit",
+        "illnessEmpty": "Noch keine Erkrankungen mit Beginn",
+        "visitsEmpty": "Noch keine erledigten Arztbesuche",
+        "labsEmpty": "Noch keine Laborbefunde",
+        "vaccinationsEmpty": "Noch keine Impfungen",
+        "lifeEventsEmpty": "Noch keine Lebensereignisse"
       }
-    }
+    },
+    "legendSpan": "Zeitraum",
+    "legendEvent": "Ereignis",
+    "legendMean": "Monatsmittel",
+    "today": "Heute",
+    "noDataYet": "Noch keine Daten",
+    "layers": "Ebenen",
+    "layersLanes": "Spuren",
+    "zoomLabel": "Zeitraum der Ansicht",
+    "chartLabel": "Zeitleiste von {from} bis {to}",
+    "keyboardHint": "Pfeiltasten verschieben die Auswahl, Pos1 und Ende springen an die Enden, Eingabe öffnet den Tag.",
+    "loadFailed": "Die Zeitleiste konnte nicht geladen werden.",
+    "empty": {
+      "title": "Noch nichts auf der Zeitleiste",
+      "description": "Sobald es Einträge mit Datum gibt, erscheinen sie hier."
+    },
+    "values": {
+      "menuLabel": "Bis zu drei Werte",
+      "none": "Keine Werte",
+      "noneInWindow": "Keine Werte in diesem Zeitraum",
+      "series": {
+        "BLOOD_PRESSURE_SYS": "Blutdruck sys.",
+        "BLOOD_PRESSURE_DIA": "Blutdruck dia."
+      }
+    },
+    "table": {
+      "caption": "Einträge der Zeitleiste",
+      "lane": "Spur",
+      "entry": "Eintrag",
+      "start": "Beginn",
+      "end": "Ende"
+    },
+    "selection": {
+      "empty": "Keine Einträge in diesem Monat",
+      "ongoing": "laufend",
+      "range": "{from} bis {to}",
+      "mean": "Ø {values}"
+    },
+    "chronicle": {
+      "months": "Monate",
+      "years": "Jahre",
+      "groupingLabel": "Gruppierung",
+      "gap": "{from} bis {to} · keine Einträge",
+      "gapSingle": "{period} · keine Einträge",
+      "ended": "{label} vorbei",
+      "afterDaysOne": "nach einem Tag",
+      "afterDaysFew": "nach {count} Tagen",
+      "afterDaysOther": "nach {count} Tagen",
+      "notable": {
+        "extremeHigh": "Höchster Wert seit Langem",
+        "extremeLow": "Niedrigster Wert seit Langem",
+        "firstValue": "Erster Wert einer Messgröße",
+        "gap": "Längere Lücke in den Werten"
+      },
+      "notableMeta": "Tag öffnen für Einzelheiten"
+    },
+    "standingAllergiesOne": "{count} Allergie",
+    "standingAllergiesFew": "{count} Allergien",
+    "standingAllergiesOther": "{count} Allergien"
   },
   "lifeEvents": {
     "title": "Lebensereignis",
     "add": "Lebensereignis",
     "subtitle": "Ein Anker für die Zeitleiste, kein Messwert.",
     "privacy": "Titel und Notiz liegen verschlüsselt. Sie gehen an keine KI.",
-    "empty": "Noch keine Lebensereignisse",
     "emptyHint": "Umzug, Geburt oder eine neue Stelle geben den Jahren einen Anker.",
     "save": "Speichern",
     "cancel": "Abbrechen",
@@ -12279,7 +12417,8 @@
       "endDate": "Bis",
       "note": "Notiz",
       "optionalTag": "optional",
-      "notePlaceholder": "Etwas, das du später wissen willst"
+      "notePlaceholder": "Etwas, das du später wissen willst",
+      "removeEnd": "Enddatum entfernen"
     },
     "category": {
       "FAMILY": "Familie",
@@ -12292,6 +12431,21 @@
       "DAY": "Tag",
       "MONTH": "Monat",
       "YEAR": "Jahr"
+    },
+    "edit": "Lebensereignis bearbeiten",
+    "errors": {
+      "titleRequired": "Gib dem Ereignis einen Namen.",
+      "titleTooLong": "Höchstens 120 Zeichen.",
+      "categoryRequired": "Wähle eine Art.",
+      "dateRequired": "Gib ein gültiges Datum an.",
+      "endBeforeStart": "Das Ende liegt vor dem Beginn.",
+      "noteTooLong": "Höchstens 2000 Zeichen."
+    },
+    "saveFailed": "Speichern hat nicht geklappt.",
+    "deleteFailed": "Löschen hat nicht geklappt.",
+    "deleteConfirm": {
+      "title": "Lebensereignis löschen?",
+      "body": "Titel und Notiz sind danach nicht mehr da."
     }
   }
 }

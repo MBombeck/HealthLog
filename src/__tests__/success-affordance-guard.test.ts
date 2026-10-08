@@ -82,6 +82,9 @@ const PINNED_AFFORDANCES: Record<
   // the two status grids used to spell the tint at every call site and now
   // name a tone instead, so the marker lives here once.
   "src/components/admin/_shared.tsx": { "text-success": 3, "toast.success": 1 },
+  // v1.42: the readiness inventory's "carries" status icon, one arm of the
+  // carries / thin / empty tone table, beside its spoken status label.
+  "src/components/timeline/readiness-inventory.tsx": { "text-success": 1 },
   "src/components/admin/ai-server-key-section.tsx": { "toast.success": 1 },
   "src/components/admin/api-token-overview-section.tsx": { "text-success": 1 },
   "src/components/admin/app-log-preview-section.tsx": {
