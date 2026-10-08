@@ -78,7 +78,6 @@ const DYNAMIC_ALLOWLIST_PREFIXES = [
  * before the release is tagged. It is NOT a place for keys nobody will wire.
  */
 const RELEASE_PENDING_PREFIXES: Record<string, string> = {
-  "vaccinations.custom": "v1.42 user-defined vaccines (#1005)",
   "labs.convertedFrom": "v1.42 lab unit conversion note (#1095)",
 };
 

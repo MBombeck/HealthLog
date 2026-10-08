@@ -282,7 +282,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(84);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(87);
   });
 });
 
@@ -549,6 +549,12 @@ async function makeVisit(userId: string) {
 async function makeVaccination(userId: string) {
   return getPrismaClient().vaccinationRecord.create({
     data: { userId, occurredAt: new Date(ISO), antigenSlug: "tetanus" },
+  });
+}
+
+async function makeCustomVaccine(userId: string) {
+  return getPrismaClient().customVaccine.create({
+    data: { userId, name: "Travel combo", components: ["typhoid"] },
   });
 }
 
@@ -1794,6 +1800,81 @@ manageContract("POST /api/vaccinations/[id]/restore", {
     )?.deletedAt === null,
 });
 
+writeEffectContract("POST /api/vaccinations/custom", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/vaccinations/custom" && entry.action === "POST",
+  )!,
+  prepare: async (ownerId) => ({ ownerId }),
+  act: async () => {
+    const { POST } = await import("@/app/api/vaccinations/custom/route");
+    return call(POST as Handler, "POST", "/api/vaccinations/custom", {
+      name: "Cholera oral",
+      components: ["cholera"],
+    });
+  },
+  ok: 201,
+  auditAction: "vaccination.custom.create",
+  applied: async ({ ownerId }) =>
+    (await getPrismaClient().customVaccine.count({
+      where: { userId: ownerId },
+    })) === 1,
+});
+
+manageContract("PATCH /api/vaccinations/custom/[id]", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/vaccinations/custom/[id]" &&
+      entry.action === "PATCH",
+  )!,
+  prepare: (ownerId) => makeCustomVaccine(ownerId),
+  act: async (row) => {
+    const { PATCH } = await import("@/app/api/vaccinations/custom/[id]/route");
+    return call(
+      PATCH as Handler,
+      "PATCH",
+      `/api/vaccinations/custom/${row.id}`,
+      { boosterIntervalMonths: 36 },
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "vaccination.custom.update",
+  applied: async (row) =>
+    (
+      await getPrismaClient().customVaccine.findUnique({
+        where: { id: row.id },
+      })
+    )?.boosterIntervalMonths === 36,
+});
+
+manageContract("DELETE /api/vaccinations/custom/[id]", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/vaccinations/custom/[id]" &&
+      entry.action === "DELETE",
+  )!,
+  prepare: (ownerId) => makeCustomVaccine(ownerId),
+  act: async (row) => {
+    const { DELETE } = await import("@/app/api/vaccinations/custom/[id]/route");
+    return call(
+      DELETE as Handler,
+      "DELETE",
+      `/api/vaccinations/custom/${row.id}`,
+      undefined,
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "vaccination.custom.delete",
+  applied: async (row) =>
+    (
+      await getPrismaClient().customVaccine.findUnique({
+        where: { id: row.id },
+      })
+    )?.deletedAt !== null,
+});
+
 proveWriteRoute("POST /api/vaccinations/[id]/booster", {
   route: "/api/vaccinations/[id]/booster",
   // The dose the booster is planned against. `makeVaccination` records a
@@ -2765,13 +2846,13 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(84);
+    expect(STRICT_DRIVER_KEYS.size).toBe(87);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 
   it("executes every registered driver through its owned effect and actor audit", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(REAL_EFFECT_KEYS.size).toBe(84);
+    expect(REAL_EFFECT_KEYS.size).toBe(87);
     expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
   });
 });

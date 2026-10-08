@@ -85,6 +85,8 @@ export interface BackupSummary {
   vaccinations: number;
   /** v1.37.19 (A6-8) — vaccination↔document links. */
   vaccinationLinks: number;
+  /** v1.42 (#1005) — the person's own vaccine definitions. */
+  customVaccines: number;
   /** v1.37.20 (#223 / iOS #68) — Vorsorge reminder cadences. */
   measurementReminders: number;
   /** v1.37.20 (#223 / iOS #68) — completion-ledger rows across every reminder. */
@@ -176,6 +178,7 @@ export function summarizeBackup(payload: BackupPayload): BackupSummary {
       payload.encounterConditionLinks.length,
     vaccinations: payload.vaccinations.length,
     vaccinationLinks: payload.vaccinationDocumentLinks.length,
+    customVaccines: payload.customVaccines.length,
     // v1.37.20 (#223 / iOS #68) — counted from the release that carries them,
     // so the admin's "what did I just restore" answer never under-counts a
     // file with reminders the way it once did for visits.

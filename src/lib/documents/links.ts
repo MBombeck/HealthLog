@@ -16,7 +16,11 @@ import type {
   DocumentLinkedProcedureDto,
   DocumentVaccinationLinkDto,
 } from "@/lib/validations/inbound-documents";
-import { resolveCatalogEntry } from "@/lib/vaccinations/vaccine-catalog";
+import {
+  CUSTOM_VACCINE_RESOLVE_SELECT,
+  customLookupOf,
+  resolveVaccineEntry,
+} from "@/lib/vaccinations/resolve-vaccine-entry";
 
 /**
  * Load the condition links for a page of documents in ONE grouped query.
@@ -237,20 +241,29 @@ export async function loadDocumentVaccinationLinks(
   if (doseIds.length === 0) return map;
   const doses = await prisma.vaccinationRecord.findMany({
     where: { id: { in: doseIds }, userId },
-    select: { id: true, antigenSlug: true, vaccineName: true },
+    select: {
+      id: true,
+      antigenSlug: true,
+      vaccineName: true,
+      customVaccineId: true,
+      customVaccine: { select: CUSTOM_VACCINE_RESOLVE_SELECT },
+    },
   });
   const doseById = new Map(doses.map((dose) => [dose.id, dose]));
+  const customs = customLookupOf(doses.map((dose) => dose.customVaccine));
   for (const [documentId, targets] of byDocument) {
     map.set(
       documentId,
       targets.map((target) => {
         const dose = doseById.get(target.id);
+        const entry = dose ? resolveVaccineEntry(dose, customs) : null;
         return {
           vaccinationId: target.id,
           occurredAt: target.date,
-          catalogSlug:
-            resolveCatalogEntry(dose?.antigenSlug ?? null)?.slug ?? null,
-          vaccineName: dose?.vaccineName ?? null,
+          catalogSlug: entry?.slug ?? null,
+          // A dose logged against the person's own definition and carrying no
+          // wording of its own is named by that definition.
+          vaccineName: dose?.vaccineName ?? entry?.name ?? null,
         };
       }),
     );

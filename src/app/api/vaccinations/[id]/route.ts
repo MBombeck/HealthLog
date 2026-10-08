@@ -34,6 +34,7 @@ import {
   VACCINATION_INCLUDE,
   applyVaccinationLinks,
   loadVaccinationDocuments,
+  resolveOwnedCustomVaccine,
   resolveOwnedEncounter,
   resolveOwnedPractitioner,
   resolveSeriesFor,
@@ -116,9 +117,13 @@ export const PATCH = apiHandler(
       entry.vaccineName !== undefined
         ? entry.vaccineName
         : existing.vaccineName;
-    if (!nextSlug && !nextName) {
+    const nextCustom =
+      entry.customVaccineId !== undefined
+        ? entry.customVaccineId
+        : existing.customVaccineId;
+    if (!nextSlug && !nextName && !nextCustom) {
       return apiError(
-        "A dose keeps a name: pick one from the catalogue or type what the record says",
+        "A dose keeps a name: pick one from the catalogue or your own vaccines, or type what the record says",
         422,
         { errorCode: "vaccination.identity-required" },
       );
@@ -140,6 +145,14 @@ export const PATCH = apiHandler(
           entry.encounterId,
         );
         if (!owned) return "unknown-encounter" as const;
+      }
+      if (entry.customVaccineId) {
+        const owned = await resolveOwnedCustomVaccine(
+          tx,
+          user.id,
+          entry.customVaccineId,
+        );
+        if (!owned) return "unknown-custom-vaccine" as const;
       }
 
       const data: Prisma.VaccinationRecordUpdateInput = {};
@@ -165,6 +178,11 @@ export const PATCH = apiHandler(
           ? { connect: { id: entry.encounterId } }
           : { disconnect: true };
       }
+      if (entry.customVaccineId !== undefined) {
+        data.customVaccine = entry.customVaccineId
+          ? { connect: { id: entry.customVaccineId } }
+          : { disconnect: true };
+      }
 
       const updated = await tx.vaccinationRecord.update({
         where: { id },
@@ -182,6 +200,11 @@ export const PATCH = apiHandler(
     if (outcome === "unknown-encounter") {
       return apiError("Visit not found", 404, {
         errorCode: "vaccination.encounter-not-found",
+      });
+    }
+    if (outcome === "unknown-custom-vaccine") {
+      return apiError("Vaccine not found", 404, {
+        errorCode: "vaccination.custom-vaccine-not-found",
       });
     }
 
@@ -209,6 +232,7 @@ export const PATCH = apiHandler(
             doseNumber: existing.doseNumber,
             practitionerId: existing.practitionerId,
             encounterId: existing.encounterId,
+            customVaccineId: existing.customVaccineId,
           },
           after: {
             occurredAt: outcome.updated.occurredAt,
@@ -216,6 +240,7 @@ export const PATCH = apiHandler(
             doseNumber: outcome.updated.doseNumber,
             practitionerId: outcome.updated.practitionerId,
             encounterId: outcome.updated.encounterId,
+            customVaccineId: outcome.updated.customVaccineId,
           },
         }),
       },
@@ -227,7 +252,10 @@ export const PATCH = apiHandler(
         entity_type: "vaccination",
         entity_id: id,
       },
-      meta: { antigen_slug: row.antigenSlug ?? "free-text" },
+      meta: {
+        antigen_slug:
+          row.antigenSlug ?? (row.customVaccineId ? "custom" : "free-text"),
+      },
     });
 
     return apiSuccess(toVaccinationDTO(row, series.get(id) ?? [], documents));

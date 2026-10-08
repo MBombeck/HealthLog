@@ -62,9 +62,12 @@ function buildPrismaMock(
     );
   const updateMany = vi.fn().mockResolvedValue({ count: 0 });
   const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
+  // The seeded rows are Apple Health's; the Health Connect walk finds none.
   const findManyMeasurement = vi.fn(
-    async (args: { where: { type: string } }) =>
-      rowsByType[args.where.type] ?? [],
+    async (args: { where: { type: string; source: string } }) =>
+      args.where.source === "APPLE_HEALTH"
+        ? (rowsByType[args.where.type] ?? [])
+        : [],
   );
   const tx = {
     measurement: {
@@ -140,20 +143,21 @@ describe("runDenseIntradayRetention — retention bound", () => {
     }
   });
 
-  it("scans exactly the dense-tier types, source-scoped to APPLE_HEALTH", async () => {
+  it("scans exactly the dense-tier types, once per fold source, Apple Health first", async () => {
     const { mock, findManyMeasurement } = buildPrismaMock({});
     await runDenseIntradayRetention(mock, { log: () => {} });
 
-    const scannedTypes = findManyMeasurement.mock.calls.map(
-      (c) => (c[0] as { where: { type: string } }).where.type,
-    );
-    expect(scannedTypes.sort()).toEqual(
-      Array.from(DENSE_INTRADAY_RETENTION_TYPES).sort(),
-    );
-    for (const call of findManyMeasurement.mock.calls) {
-      const where = (call[0] as unknown as { where: { source: string } }).where;
-      expect(where.source).toBe("APPLE_HEALTH");
-    }
+    const scans = findManyMeasurement.mock.calls.map((c) => {
+      const where = (c[0] as { where: { type: string; source: string } }).where;
+      return `${where.source}:${where.type}`;
+    });
+    const types = Array.from(DENSE_INTRADAY_RETENTION_TYPES);
+    // One walk per source, each scoped to its one source: two sources
+    // never share a mean, and manual or Withings rows are never scanned.
+    expect(scans).toEqual([
+      ...types.map((type) => `APPLE_HEALTH:${type}`),
+      ...types.map((type) => `HEALTH_CONNECT:${type}`),
+    ]);
   });
 });
 

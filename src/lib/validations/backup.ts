@@ -1311,6 +1311,24 @@ const vaccinationBackupSchema = z
   })
   .passthrough();
 
+/**
+ * One of the person's own vaccine definitions (v1.42, #1005). `components`
+ * is a list of free strings rather than the antigen enum, for the reason
+ * `antigenSlug` is: a file the app wrote must restore.
+ */
+const customVaccineBackupSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    components: z.array(z.string()).optional(),
+    typicalSeriesDoses: z.number().int().nullable().optional(),
+    boosterIntervalMonths: z.number().int().nullable().optional(),
+    createdAt: isoDateTime,
+    updatedAt: isoDateTime,
+    deletedAt: isoDateTime.nullable().optional(),
+  })
+  .passthrough();
+
 const vaccinationLinkBackupSchema = z
   .object({
     vaccinationId: z.string().min(1),
@@ -2081,6 +2099,9 @@ export const backupPayloadSchema = z
     // for the same reason as the sections above: a file written before the
     // tables existed carries no key, and an account with an empty Impfpass
     // writes [].
+    // v1.42 (#1005) — defaulted: a file written before definitions
+    // travelled carries no key, and its doses name none.
+    customVaccines: z.array(customVaccineBackupSchema).default([]),
     vaccinations: z.array(vaccinationBackupSchema).default([]),
     vaccinationDocumentLinks: z.array(vaccinationLinkBackupSchema).default([]),
     // The Vorsorge reminders and their completion ledger (v1.37.20, #223 /

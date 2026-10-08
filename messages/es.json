@@ -9639,8 +9639,8 @@
     },
     "form": {
       "date": "Fecha",
-      "catalogLabel": "Vacuna (catálogo)",
-      "identityHint": "Elige del catálogo o escríbela abajo: basta con una.",
+      "catalogLabel": "Vacuna",
+      "identityHint": "Elige una vacuna de la lista o escríbela abajo. Basta con una.",
       "catalogNone": "Elegir una vacuna",
       "catalogSearch": "Buscar vacunas",
       "catalogNoMatch": "No se encontró ninguna entrada del catálogo",
@@ -9772,7 +9772,15 @@
       "deleted": "Vacuna eliminada",
       "deleteConfirm": "¿Eliminar esta vacuna? Las dosis ya registradas conservan su nombre.",
       "saveFailed": "No se pudo guardar la vacuna.",
-      "nameTaken": "Ya tienes una vacuna con este nombre."
+      "nameTaken": "Ya tienes una vacuna con este nombre.",
+      "editTitle": "Editar vacuna propia",
+      "description": "Una vacuna que el catálogo no recoge, contada como cualquier entrada del catálogo.",
+      "componentsHint": "Elige todas las enfermedades de las que protege.",
+      "boosterHint": "Déjalo vacío si no hay refuerzo.",
+      "protectsAgainst": "Protege contra {list}.",
+      "deleteTitle": "¿Quitar la vacuna propia?",
+      "sectionDescription": "Vacunas que añadiste tú porque el catálogo no las recoge.",
+      "catalogGroup": "Catálogo"
     }
   },
   "illness": {
@@ -11814,7 +11822,10 @@
       "symptomEventDelete": "{name} eliminó una entrada de síntoma",
       "symptomDefinitionCreate": "{name} añadió un síntoma",
       "symptomDefinitionUpdate": "{name} cambió un síntoma",
-      "symptomDefinitionDelete": "{name} quitó un síntoma"
+      "symptomDefinitionDelete": "{name} quitó un síntoma",
+      "customVaccineCreate": "{name} añadió una vacuna propia",
+      "customVaccineUpdate": "{name} editó una vacuna propia",
+      "customVaccineDelete": "{name} quitó una vacuna propia"
     },
     "section": {
       "measurements": {

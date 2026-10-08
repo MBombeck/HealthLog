@@ -28,8 +28,11 @@
  * A record stores `antigenSlug` verbatim, backups restore it without
  * validation, and a slug this file has stopped listing must still describe
  * what someone was given. {@link resolveCatalogEntry} is the ONLY lookup path
- * and it returns `null` rather than throwing; every consumer answers `null` by
- * falling back to the record's own `vaccineName`. That degrade is a tested
+ * into this file and it returns `null` rather than throwing. Consumers do not
+ * call it directly: since v1.42 (#1005) they ask
+ * `src/lib/vaccinations/resolve-vaccine-entry.ts`, which tries the catalogue
+ * first and the person's own vaccine definitions second, and every consumer
+ * answers `null` by falling back to the record's own `vaccineName`. That degrade is a tested
  * guarantee, not an accident — see
  * `src/lib/vaccinations/__tests__/catalog-integrity.test.ts`.
  *
@@ -545,17 +548,4 @@ export function resolveCatalogEntry(
 ): VaccineSeed | null {
   if (!slug) return null;
   return BY_SLUG.get(slug) ?? null;
-}
-
-/**
- * The antigens a dose with this slug counts into.
- *
- * Empty for an unknown slug and for a free-text-only record: a name string is
- * not evidence about which antigens were given, and guessing from one is how
- * a booster reminder would be cleared by a dose that never contained it.
- */
-export function componentsForSlug(
-  slug: string | null | undefined,
-): readonly AntigenSlug[] {
-  return resolveCatalogEntry(slug)?.components ?? [];
 }

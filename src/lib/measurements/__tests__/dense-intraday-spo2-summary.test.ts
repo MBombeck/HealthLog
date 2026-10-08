@@ -75,8 +75,13 @@ function buildPrismaMock(opts: { spo2Rows: PerSampleRow[] }) {
     },
   };
 
-  const findMany = vi.fn(async (args: { where: { type: string } }) =>
-    args.where.type === "OXYGEN_SATURATION" ? opts.spo2Rows : [],
+  // The seeded rows are Apple Health's; the Health Connect walk finds none.
+  const findMany = vi.fn(
+    async (args: { where: { type: string; source: string } }) =>
+      args.where.type === "OXYGEN_SATURATION" &&
+      args.where.source === "APPLE_HEALTH"
+        ? opts.spo2Rows
+        : [],
   );
   // Native-resting probe + derived-resting upsert: PULSE-only surfaces.
   const topFindFirst = vi.fn().mockResolvedValue(null);

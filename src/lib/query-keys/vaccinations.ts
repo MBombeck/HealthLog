@@ -52,4 +52,13 @@ export const vaccinationKeys = {
   vaccinationRestore: () => ["vaccinations", "restore"] as const,
   vaccinationBooster: () => ["vaccinations", "booster"] as const,
   vaccinationLink: () => ["vaccinations", "link"] as const,
+  /**
+   * v1.42 (#1005) — the record's own vaccine definitions. Under the
+   * `["vaccinations"]` root on purpose: editing or removing a definition
+   * re-reads every dose that names it, and the root eviction repaints both.
+   */
+  customVaccines: () => ["vaccinations", "custom"] as const,
+  customVaccineCreate: () => ["vaccinations", "custom", "create"] as const,
+  customVaccineUpdate: () => ["vaccinations", "custom", "update"] as const,
+  customVaccineDelete: () => ["vaccinations", "custom", "delete"] as const,
 } as const;

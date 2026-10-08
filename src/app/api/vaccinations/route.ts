@@ -43,6 +43,7 @@ import {
 import {
   VACCINATION_INCLUDE,
   applyVaccinationLinks,
+  resolveOwnedCustomVaccine,
   resolveOwnedEncounter,
   resolveOwnedPractitioner,
   resolveOwnerTimezone,
@@ -194,6 +195,14 @@ async function postVaccination(request: NextRequest): Promise<Response> {
       const owned = await resolveOwnedEncounter(tx, user.id, entry.encounterId);
       if (!owned) return "unknown-encounter" as const;
     }
+    if (entry.customVaccineId) {
+      const owned = await resolveOwnedCustomVaccine(
+        tx,
+        user.id,
+        entry.customVaccineId,
+      );
+      if (!owned) return "unknown-custom-vaccine" as const;
+    }
 
     // Field-by-field — never spread the parsed object whole.
     const row = await tx.vaccinationRecord.create({
@@ -208,6 +217,7 @@ async function postVaccination(request: NextRequest): Promise<Response> {
         site: entry.site ?? null,
         practitionerId: entry.practitionerId ?? null,
         encounterId: entry.encounterId ?? null,
+        customVaccineId: entry.customVaccineId ?? null,
         noteEncrypted: entry.note ? encryptToBytes(entry.note) : null,
       },
       select: { id: true },
@@ -223,7 +233,10 @@ async function postVaccination(request: NextRequest): Promise<Response> {
     const boosters = await satisfyBoostersForDose(
       tx,
       user.id,
-      entry.antigenSlug ?? null,
+      {
+        antigenSlug: entry.antigenSlug ?? null,
+        customVaccineId: entry.customVaccineId ?? null,
+      },
       occurredAt,
       timezone,
     );
@@ -251,6 +264,11 @@ async function postVaccination(request: NextRequest): Promise<Response> {
       errorCode: "vaccination.encounter-not-found",
     });
   }
+  if (created === "unknown-custom-vaccine") {
+    return apiError("Vaccine not found", 404, {
+      errorCode: "vaccination.custom-vaccine-not-found",
+    });
+  }
 
   const series = await resolveSeriesFor(prisma, user.id);
 
@@ -261,6 +279,7 @@ async function postVaccination(request: NextRequest): Promise<Response> {
       vaccinationId: created.id,
       occurredAt: created.occurredAt.toISOString(),
       antigenSlug: created.antigenSlug,
+      customVaccineId: created.customVaccineId,
       // The note is deliberately absent: it is encrypted PHI and the audit
       // table is not a second copy of the record.
     },
@@ -273,7 +292,9 @@ async function postVaccination(request: NextRequest): Promise<Response> {
       entity_id: created.id,
     },
     meta: {
-      antigen_slug: created.antigenSlug ?? "free-text",
+      antigen_slug:
+        created.antigenSlug ??
+        (created.customVaccineId ? "custom" : "free-text"),
       linked_documents: entry.documentIds?.length ?? 0,
       satisfied_boosters: satisfiedReminderIds.length,
     },
@@ -285,7 +306,11 @@ async function postVaccination(request: NextRequest): Promise<Response> {
         entity_type: "measurement-reminder",
         entity_id: reminderId,
       },
-      meta: { antigen_slug: created.antigenSlug ?? "free-text" },
+      meta: {
+        antigen_slug:
+          created.antigenSlug ??
+          (created.customVaccineId ? "custom" : "free-text"),
+      },
     });
   }
 

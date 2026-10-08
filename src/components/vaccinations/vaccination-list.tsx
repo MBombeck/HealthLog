@@ -13,6 +13,10 @@
  * duplication: one record, several appearances, and the numbers come straight
  * from the DTO's `series` array, never recomputed here.
  *
+ * A dose logged against the person's own vaccine definition groups exactly
+ * like a catalogue pick, under each antigen the definition lists, with the
+ * definition's name as its marker.
+ *
  * A free-text-only record, and a record whose slug the catalogue no longer
  * resolves, carries an empty `series` and groups under its verbatim
  * `vaccineName` instead — the degrade the DTO's `catalogEntry: null` signals,
@@ -72,7 +76,9 @@ interface AntigenGroup {
 function recordIdentity(t: Translate, record: Vaccination): string | null {
   if (record.catalogEntry)
     return t(`vaccinations.catalog.${record.catalogEntry.slug}`);
-  return record.vaccineName;
+  // The person's own definition names the dose ahead of its free text, the
+  // way a catalogue pick does.
+  return record.customVaccine?.name ?? record.vaccineName;
 }
 
 /** The series sentence for one appearance, composed from resolved numbers. */
@@ -128,7 +134,11 @@ function groupByAntigen(records: readonly Vaccination[]): AntigenGroup[] {
     // No resolvable antigen: a free-text row or a dead slug. Its verbatim name
     // is the heading; the slug is the last-resort key so a nameless dead-slug
     // row still lands somewhere rather than colliding with another.
-    const name = record.vaccineName ?? record.antigenSlug ?? "—";
+    const name =
+      record.vaccineName ??
+      record.customVaccine?.name ??
+      record.antigenSlug ??
+      "—";
     const key = `free:${name}`;
     ensure(key, { key, antigen: null, freeName: name }).rows.push({
       record,

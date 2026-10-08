@@ -6,8 +6,9 @@
  * greps only the restore ROUTE gets a false negative because the route
  * delegates.
  *
- * Two models ride: the dose and the link that keeps the scanned Impfpass page
- * beside it. Both are carried rather than owed. `DocumentConditionLink` on the
+ * Three models ride: the dose, the link that keeps the scanned Impfpass page
+ * beside it, and since v1.42 (#1005) the person's own vaccine definitions a
+ * dose may name. Both are carried rather than owed. `DocumentConditionLink` on the
  * debt register says what the alternative costs — documents and conditions
  * both restore, the filing between them does not — and an immunization history
  * is the record with the least chance of being reconstructed from anywhere
@@ -29,6 +30,9 @@
  *     the same way, and resolves to NULL, with the drop reported, only when
  *     the file genuinely lacks the reminder — a portable export omits
  *     tombstoned ones.
+ *   - `customVaccineId` points at a definition restored by this same section
+ *     first. It drops to NULL, with the drop named, when the file lacks the
+ *     definition; the dose then keeps its own `vaccineName`.
  *   - `antigenSlug` is restored verbatim with no validation against the
  *     current catalogue. A slug this release no longer resolves must still
  *     come back; the renderer degrades to the free-text arm, which is the
@@ -76,10 +80,28 @@ export interface VaccinationBackupEntry {
    * lacks the reminder.
    */
   reminderId: string | null;
+  /** The person's own definition the dose names (v1.42, #1005). */
+  customVaccineId: string | null;
   /** Base64 ciphertext; disaster-recovery payloads only. */
   noteEncrypted?: string | null;
   /** The note readable; portable payloads only. */
   note?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
+/**
+ * One of the person's own vaccine definitions (v1.42, #1005). `components`
+ * travels verbatim, never checked against the antigen list this release
+ * ships, for the same reason a dose's `antigenSlug` does.
+ */
+export interface CustomVaccineBackupEntry {
+  id: string;
+  name: string;
+  components: string[];
+  typicalSeriesDoses: number | null;
+  boosterIntervalMonths: number | null;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -93,11 +115,13 @@ export interface VaccinationDocumentLinkBackupEntry {
 }
 
 export interface VaccinationsBackupSection {
+  customVaccines: CustomVaccineBackupEntry[];
   vaccinations: VaccinationBackupEntry[];
   vaccinationDocumentLinks: VaccinationDocumentLinkBackupEntry[];
 }
 
 export interface VaccinationsBackupCounts {
+  customVaccines: number;
   vaccinations: number;
   vaccinationLinks: number;
 }
@@ -119,7 +143,19 @@ const VACCINATION_BACKUP_SELECT = {
   practitionerId: true,
   encounterId: true,
   reminderId: true,
+  customVaccineId: true,
   noteEncrypted: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
+} as const;
+
+const CUSTOM_VACCINE_BACKUP_SELECT = {
+  id: true,
+  name: true,
+  components: true,
+  typicalSeriesDoses: true,
+  boosterIntervalMonths: true,
   createdAt: true,
   updatedAt: true,
   deletedAt: true,
@@ -140,26 +176,47 @@ const VACCINATION_DOCUMENT_LINK_BACKUP_SELECT = {
  * back as itself.
  */
 export async function buildVaccinationsBackupSection(
-  prisma: Pick<PrismaClient, "vaccinationRecord" | "vaccinationDocumentLink">,
+  prisma: Pick<
+    PrismaClient,
+    "vaccinationRecord" | "vaccinationDocumentLink" | "customVaccine"
+  >,
   userId: string,
   options: VaccinationsBackupOptions = {},
 ): Promise<VaccinationsBackupSection> {
   const disasterRecovery = options.purpose === "disaster-recovery";
 
-  const [vaccinationRows, documentLinkRows] = await Promise.all([
-    prisma.vaccinationRecord.findMany({
-      where: disasterRecovery ? { userId } : { userId, deletedAt: null },
-      orderBy: { occurredAt: "desc" },
-      select: VACCINATION_BACKUP_SELECT,
-    }),
-    prisma.vaccinationDocumentLink.findMany({
-      where: { userId },
-      orderBy: { createdAt: "asc" },
-      select: VACCINATION_DOCUMENT_LINK_BACKUP_SELECT,
-    }),
-  ]);
+  const [customVaccineRows, vaccinationRows, documentLinkRows] =
+    await Promise.all([
+      prisma.customVaccine.findMany({
+        where: disasterRecovery ? { userId } : { userId, deletedAt: null },
+        orderBy: [{ name: "asc" }, { id: "asc" }],
+        select: CUSTOM_VACCINE_BACKUP_SELECT,
+      }),
+      prisma.vaccinationRecord.findMany({
+        where: disasterRecovery ? { userId } : { userId, deletedAt: null },
+        orderBy: { occurredAt: "desc" },
+        select: VACCINATION_BACKUP_SELECT,
+      }),
+      prisma.vaccinationDocumentLink.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+        select: VACCINATION_DOCUMENT_LINK_BACKUP_SELECT,
+      }),
+    ]);
 
   return {
+    customVaccines: customVaccineRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      components: [...row.components],
+      typicalSeriesDoses: row.typicalSeriesDoses,
+      boosterIntervalMonths: row.boosterIntervalMonths,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+      ...(disasterRecovery
+        ? { deletedAt: row.deletedAt?.toISOString() ?? null }
+        : {}),
+    })),
     vaccinations: vaccinationRows.map((row) => ({
       id: row.id,
       occurredAt: row.occurredAt.toISOString(),
@@ -172,6 +229,7 @@ export async function buildVaccinationsBackupSection(
       practitionerId: row.practitionerId,
       encounterId: row.encounterId,
       reminderId: row.reminderId,
+      customVaccineId: row.customVaccineId,
       ...(disasterRecovery
         ? { noteEncrypted: encodeSealedBytes(row.noteEncrypted) }
         : {
@@ -199,6 +257,7 @@ export function countVaccinationsBackupSection(
   section: VaccinationsBackupSection,
 ): VaccinationsBackupCounts {
   return {
+    customVaccines: section.customVaccines.length,
     vaccinations: section.vaccinations.length,
     vaccinationLinks: section.vaccinationDocumentLinks.length,
   };
@@ -206,6 +265,7 @@ export function countVaccinationsBackupSection(
 
 /** Counts the immunization restore wiped, for the audit trail. */
 export interface VaccinationsRestoreCleared {
+  customVaccines: number;
   vaccinations: number;
   vaccinationLinks: number;
 }
@@ -219,9 +279,21 @@ export interface VaccinationsRestoreCleared {
  * times and reports success.
  */
 export interface VaccinationsRestoreInput {
+  customVaccines: RestoredCustomVaccine[];
   vaccinations: RestoredVaccination[];
   vaccinationDocumentLinks: VaccinationDocumentLinkBackupEntry[];
 }
+
+/** A definition as the parsed file presents it. */
+export type RestoredCustomVaccine = Pick<
+  CustomVaccineBackupEntry,
+  "id" | "name" | "createdAt" | "updatedAt"
+> & {
+  components?: string[] | undefined;
+  typicalSeriesDoses?: number | null | undefined;
+  boosterIntervalMonths?: number | null | undefined;
+  deletedAt?: string | null | undefined;
+};
 
 /**
  * What the restore reads, as the parsed file actually presents it — a wider
@@ -246,6 +318,7 @@ export type RestoredVaccination = Pick<
       | "practitionerId"
       | "encounterId"
       | "reminderId"
+      | "customVaccineId"
       | "noteEncrypted"
       | "note"
     >
@@ -276,6 +349,32 @@ export async function restoreVaccinationsData(
   const clearedVaccinations = await tx.vaccinationRecord.deleteMany({
     where: { userId: ownerId },
   });
+  // After the doses that point at them, so neither count reads short.
+  const clearedCustomVaccines = await tx.customVaccine.deleteMany({
+    where: { userId: ownerId },
+  });
+
+  // The definitions first: a dose addresses one by id.
+  if (payload.customVaccines.length > 0) {
+    await tx.customVaccine.createMany({
+      data: payload.customVaccines.map((entry) => ({
+        id: entry.id,
+        userId: ownerId,
+        name: entry.name,
+        // Verbatim, like a dose's slug: an antigen this release does not know
+        // still says what the person meant, and the resolver skips it.
+        components: entry.components ?? [],
+        typicalSeriesDoses: entry.typicalSeriesDoses ?? null,
+        boosterIntervalMonths: entry.boosterIntervalMonths ?? null,
+        createdAt: new Date(entry.createdAt),
+        updatedAt: new Date(entry.updatedAt),
+        deletedAt: entry.deletedAt ? new Date(entry.deletedAt) : null,
+      })),
+    });
+  }
+  const restoredCustomVaccines = new Set(
+    payload.customVaccines.map((entry) => entry.id),
+  );
 
   // All three far sides are restored by other branches of the same
   // transaction, so the check is against the database rather than against the
@@ -308,6 +407,7 @@ export async function restoreVaccinationsData(
   const droppedPractitioners: string[] = [];
   const droppedEncounters: string[] = [];
   const droppedReminders: string[] = [];
+  const droppedCustomVaccines: string[] = [];
   // Sealed notes this host's keys do not open, by file path.
   const unopened: string[] = [];
 
@@ -336,6 +436,14 @@ export async function restoreVaccinationsData(
         if (entry.reminderId && reminderId === null) {
           droppedReminders.push(entry.reminderId);
         }
+        const customVaccineId =
+          entry.customVaccineId &&
+          restoredCustomVaccines.has(entry.customVaccineId)
+            ? entry.customVaccineId
+            : null;
+        if (entry.customVaccineId && customVaccineId === null) {
+          droppedCustomVaccines.push(entry.customVaccineId);
+        }
         return {
           id: entry.id,
           userId: ownerId,
@@ -352,6 +460,7 @@ export async function restoreVaccinationsData(
           practitionerId,
           encounterId,
           reminderId,
+          customVaccineId,
           noteEncrypted: sealBytesForRestore(
             entry.noteEncrypted,
             entry.note,
@@ -383,6 +492,12 @@ export async function restoreVaccinationsData(
     "vaccinationReference",
     [...new Set(droppedReminders)],
     droppedReminders,
+  );
+  recordUnknownKeys(
+    skips,
+    "vaccinationReference",
+    [...new Set(droppedCustomVaccines)],
+    droppedCustomVaccines,
   );
   recordUnknownKeys(skips, "vaccinationCiphertext", unopened, unopened);
 
@@ -433,6 +548,7 @@ export async function restoreVaccinationsData(
   );
 
   return {
+    customVaccines: clearedCustomVaccines.count,
     vaccinations: clearedVaccinations.count,
     vaccinationLinks: clearedLinks.count,
   };

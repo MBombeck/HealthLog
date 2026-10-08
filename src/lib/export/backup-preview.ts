@@ -180,6 +180,7 @@ const SUMMARY_COUNTS = [
   "encounterLinks",
   "vaccinations",
   "vaccinationLinks",
+  "customVaccines",
   "measurementReminders",
   "measurementReminderEvents",
   "coachConversations",

@@ -19,6 +19,7 @@
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { getEvent } from "@/lib/logging/context";
 import type {
+  CustomVaccine,
   Encounter,
   Practitioner,
   VaccinationRecord,
@@ -28,7 +29,10 @@ import {
   toPractitionerDTO,
   type PractitionerDTO,
 } from "@/lib/practitioners/dto";
-import { resolveCatalogEntry } from "@/lib/vaccinations/vaccine-catalog";
+import {
+  knownAntigens,
+  resolveVaccineEntry,
+} from "@/lib/vaccinations/resolve-vaccine-entry";
 import type { SeriesPosition } from "@/lib/vaccinations/series";
 import type { VaccinationRenewalDTO } from "@/lib/vaccinations/renewal";
 
@@ -56,6 +60,43 @@ export interface VaccinationCatalogDTO {
   category: string;
 }
 
+/**
+ * One of the record's own vaccine definitions (v1.42, #1005). `components`
+ * lists only antigens the catalogue knows, so a client can name each one.
+ */
+export interface CustomVaccineDTO {
+  id: string;
+  name: string;
+  components: string[];
+  typicalSeriesDoses: number | null;
+  boosterIntervalMonths: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CustomVaccineRow = Pick<
+  CustomVaccine,
+  | "id"
+  | "name"
+  | "components"
+  | "typicalSeriesDoses"
+  | "boosterIntervalMonths"
+  | "createdAt"
+  | "updatedAt"
+>;
+
+export function toCustomVaccineDTO(row: CustomVaccineRow): CustomVaccineDTO {
+  return {
+    id: row.id,
+    name: row.name,
+    components: knownAntigens(row.components),
+    typicalSeriesDoses: row.typicalSeriesDoses,
+    boosterIntervalMonths: row.boosterIntervalMonths,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
 /** The visit this dose was given at, enough to recognise it by. */
 export interface VaccinationEncounterDTO {
   id: string;
@@ -80,6 +121,13 @@ export interface VaccinationDTO {
    * not know the slug. Null is the signal to render `vaccineName` instead.
    */
   catalogEntry: VaccinationCatalogDTO | null;
+  /** The person's own definition the dose names, verbatim. */
+  customVaccineId: string | null;
+  /**
+   * That definition, resolved, or `null` when the dose names none or it was
+   * removed. When `catalogEntry` is also set, the catalogue is the answer.
+   */
+  customVaccine: CustomVaccineDTO | null;
   /**
    * Where this dose sits in each of its antigen series, resolved server-side.
    *
@@ -123,6 +171,7 @@ function decryptNote(value: Uint8Array | null): string | null {
 export type VaccinationWithRelations = VaccinationRecord & {
   practitioner?: Practitioner | null;
   encounter?: Pick<Encounter, "id" | "occurredAt" | "kind"> | null;
+  customVaccine?: (CustomVaccineRow & Pick<CustomVaccine, "deletedAt">) | null;
 };
 
 export function toVaccinationDTO(
@@ -130,7 +179,11 @@ export function toVaccinationDTO(
   series: SeriesPosition[],
   documents?: VaccinationDocumentDTO[],
 ): VaccinationDTO {
-  const entry = resolveCatalogEntry(row.antigenSlug);
+  const custom =
+    row.customVaccine && row.customVaccine.deletedAt === null
+      ? row.customVaccine
+      : null;
+  const entry = resolveVaccineEntry({ antigenSlug: row.antigenSlug });
   return {
     id: row.id,
     occurredAt: row.occurredAt.toISOString(),
@@ -140,9 +193,12 @@ export function toVaccinationDTO(
     seriesDoses: row.seriesDoses,
     lotNumber: row.lotNumber,
     site: row.site,
-    catalogEntry: entry
-      ? { slug: entry.slug, atc: entry.atc, category: entry.category }
-      : null,
+    catalogEntry:
+      entry?.slug && entry.atc && entry.category
+        ? { slug: entry.slug, atc: entry.atc, category: entry.category }
+        : null,
+    customVaccineId: row.customVaccineId,
+    customVaccine: custom ? toCustomVaccineDTO(custom) : null,
     series,
     practitioner: row.practitioner ? toPractitionerDTO(row.practitioner) : null,
     encounter: row.encounter

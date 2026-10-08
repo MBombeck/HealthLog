@@ -9639,8 +9639,8 @@
     },
     "form": {
       "date": "Datum",
-      "catalogLabel": "Impfstoff (Katalog)",
-      "identityHint": "Katalog wählen oder unten frei eintragen — eins genügt.",
+      "catalogLabel": "Impfstoff",
+      "identityHint": "Aus der Liste wählen oder unten frei eintragen. Eins genügt.",
       "catalogNone": "Impfstoff wählen",
       "catalogSearch": "Impfstoff suchen",
       "catalogNoMatch": "Kein Katalogeintrag gefunden",
@@ -9772,7 +9772,15 @@
       "deleted": "Impfstoff entfernt",
       "deleteConfirm": "Diesen Impfstoff entfernen? Bereits eingetragene Impfungen behalten ihren Namen.",
       "saveFailed": "Der Impfstoff konnte nicht gespeichert werden.",
-      "nameTaken": "Du hast schon einen Impfstoff mit diesem Namen."
+      "nameTaken": "Du hast schon einen Impfstoff mit diesem Namen.",
+      "editTitle": "Eigenen Impfstoff bearbeiten",
+      "description": "Ein Impfstoff, den der Katalog nicht kennt, gezählt wie jeder Katalogeintrag.",
+      "componentsHint": "Alle Krankheiten wählen, vor denen er schützt.",
+      "boosterHint": "Leer lassen, wenn keine Auffrischung nötig ist.",
+      "protectsAgainst": "Schützt vor {list}.",
+      "deleteTitle": "Eigenen Impfstoff entfernen?",
+      "sectionDescription": "Selbst angelegte Impfstoffe, die der Katalog nicht kennt.",
+      "catalogGroup": "Katalog"
     }
   },
   "illness": {
@@ -11814,7 +11822,10 @@
       "symptomEventDelete": "{name} hat einen Symptom-Eintrag gelöscht",
       "symptomDefinitionCreate": "{name} hat ein Symptom angelegt",
       "symptomDefinitionUpdate": "{name} hat ein Symptom geändert",
-      "symptomDefinitionDelete": "{name} hat ein Symptom entfernt"
+      "symptomDefinitionDelete": "{name} hat ein Symptom entfernt",
+      "customVaccineCreate": "{name} hat einen eigenen Impfstoff angelegt",
+      "customVaccineUpdate": "{name} hat einen eigenen Impfstoff bearbeitet",
+      "customVaccineDelete": "{name} hat einen eigenen Impfstoff entfernt"
     },
     "section": {
       "measurements": {

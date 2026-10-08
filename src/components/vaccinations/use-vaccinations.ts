@@ -23,12 +23,14 @@ import {
   vaccinationDependentKeys,
 } from "@/lib/query-keys";
 import type {
+  CustomVaccineDTO,
   VaccinationDTO,
   VaccinationListDTO,
 } from "@/lib/vaccinations/dto";
 import type { VaccinationSuggestionResult } from "@/lib/vaccinations/document-suggestion";
 
 export type Vaccination = VaccinationDTO;
+export type CustomVaccine = CustomVaccineDTO;
 
 /**
  * The write body — every field optional but the identity pair and the date.
@@ -44,6 +46,7 @@ export interface VaccinationWriteBody {
   site?: string | null;
   practitionerId?: string | null;
   encounterId?: string | null;
+  customVaccineId?: string | null;
   note?: string | null;
   documentIds?: string[];
 }
@@ -211,4 +214,60 @@ export function useBoosterMint() {
         invalidateReminderReads(qc),
       ]),
   });
+}
+
+/** What a definition write carries; `userId` is never here. */
+export interface CustomVaccineWriteBody {
+  name?: string;
+  components?: string[];
+  typicalSeriesDoses?: number | null;
+  boosterIntervalMonths?: number | null;
+}
+
+/** v1.42 (#1005) — the record's own vaccine definitions, by name. */
+export function useCustomVaccines(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.customVaccines(),
+    enabled,
+    queryFn: () => apiGet<CustomVaccine[]>(`${BASE}/custom`),
+  });
+}
+
+/**
+ * Add, edit and remove a definition. Every write evicts the whole
+ * vaccinations root: an edit re-reads the series of every dose that names
+ * the definition, and a removal lets those doses go and names them, which
+ * the document sheet's dose chips show too. No reminder moves — a definition
+ * write never runs the satisfy matcher — so the reminder reads and the daily
+ * reads they feed are left alone.
+ */
+export function useCustomVaccineMutations() {
+  const qc = useQueryClient();
+  const invalidate = () =>
+    invalidateKeys(qc, [queryKeys.vaccinations(), queryKeys.documents()]);
+
+  const create = useMutation({
+    mutationKey: queryKeys.customVaccineCreate(),
+    mutationFn: (body: CustomVaccineWriteBody) =>
+      apiPost<CustomVaccine>(`${BASE}/custom`, body),
+    onSuccess: invalidate,
+  });
+
+  const update = useMutation({
+    mutationKey: queryKeys.customVaccineUpdate(),
+    mutationFn: ({ id, body }: { id: string; body: CustomVaccineWriteBody }) =>
+      apiPatch<CustomVaccine>(`${BASE}/custom/${encodeURIComponent(id)}`, body),
+    onSuccess: invalidate,
+  });
+
+  const remove = useMutation({
+    mutationKey: queryKeys.customVaccineDelete(),
+    mutationFn: (id: string) =>
+      apiDelete<{ deleted: boolean }>(
+        `${BASE}/custom/${encodeURIComponent(id)}`,
+      ),
+    onSuccess: invalidate,
+  });
+
+  return { create, update, remove };
 }

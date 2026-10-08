@@ -19,8 +19,9 @@
  *     would count a step the phone and the watch both saw twice.
  *   - Heart rate: per-minute samples of the last 90 days as raw rows, older
  *     ones as hourly means (min and max kept), one app per hour by the vitals
- *     priority. The Apple Health retention fold only folds Apple Health rows,
- *     so this import folds its own history as it writes it.
+ *     priority. The nightly retention fold folds the raw samples into the
+ *     same hourly `stats:` rows once they age past 90 days, and a raw sample
+ *     whose hour is already folded is left out (`folded_window`).
  *   - Sleep: one row per stage (`sleep-stage-map.ts`), a session without
  *     stages as one asleep row; of two overlapping sessions from different
  *     apps the higher-ranked app's is kept.
@@ -58,6 +59,12 @@ import {
   valuesMatch,
 } from "@/lib/measurements/cross-source-merge";
 import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
+import {
+  FOLDED_WINDOW_REASON,
+  findFoldedWindowDuplicates,
+  isFoldedWindowCandidate,
+  loadFoldTimezone,
+} from "@/lib/measurements/folded-window";
 import { canonicalDailyTimestamp } from "@/lib/measurements/consolidation-tz";
 import { validateMeasurementRange } from "@/lib/validations/measurement";
 import { isModuleEnabled } from "@/lib/modules/gate";
@@ -214,6 +221,8 @@ class ImportRun {
   private readonly userId: string;
   private readonly tz: string;
   private readonly now: Date;
+  /** The account zone the fold keys its hours in, read once on first need. */
+  private foldTz: string | undefined;
   private readonly apps = new Map<number, string>();
   private readonly leftOutApps = new Set<number>();
   private readonly devices = new Map<number, string | null>();
@@ -1335,6 +1344,7 @@ class ImportRun {
     });
     if (sameReadingCheck) batch = await this.withoutOtherSourceTwins(batch);
     if (hourlyPulse) batch = await this.withoutRawPulseHours(batch);
+    else batch = await this.withoutFoldedHours(batch);
     if (batch.length === 0) return;
 
     const inserted = await insertNewMeasurementRows(
@@ -1518,6 +1528,38 @@ class ImportRun {
         taken.has(Math.floor((start + HOUR_MS - 1) / HOUR_MS));
       if (clash) this.skip("hour_already_raw", 1, row.type);
       return !clash;
+    });
+  }
+
+  /**
+   * A raw sample of a folded type is left out when the nightly fold has
+   * already turned its hour into a `stats:` mean under this source. The fold
+   * deletes the samples it summarises, so without this a later import of an
+   * export that still holds them would put them back beside their own mean.
+   * Same rule as the Apple Health batch route and ZIP import
+   * (`folded-window.ts`); rows too young to have been folded cost no query.
+   */
+  private async withoutFoldedHours(rows: PendingRow[]): Promise<PendingRow[]> {
+    if (rows.length === 0) return rows;
+    const candidates = rows.map((row) => ({
+      type: row.type,
+      source: SOURCE,
+      externalId: row.externalId,
+      measuredAt: row.measuredAt,
+    }));
+    if (!candidates.some((row) => isFoldedWindowCandidate(row))) return rows;
+    this.foldTz ??= await loadFoldTimezone(this.prisma, this.userId);
+    const folded = await findFoldedWindowDuplicates(
+      this.prisma,
+      this.userId,
+      candidates,
+      { tz: this.foldTz },
+    );
+    if (folded.size === 0) return rows;
+    return rows.filter((row, index) => {
+      if (!folded.has(index)) return true;
+      this.skip(FOLDED_WINDOW_REASON, 1, row.type);
+      return false;
     });
   }
 

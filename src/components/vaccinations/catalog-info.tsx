@@ -14,23 +14,39 @@
  *
  * The per-entry `source` renders verbatim as the footnote — a citation is a
  * proper noun, like a unit, and is not translated.
+ *
+ * The person's own vaccine definitions (v1.42, #1005) render through the same
+ * templates, with the antigens they listed first and no footnote: their
+ * numbers are the person's, not a cited schedule's.
  */
 import { useTranslations } from "@/lib/i18n/context";
-import { resolveCatalogEntry } from "@/lib/vaccinations/vaccine-catalog";
+import {
+  resolveVaccineEntry,
+  type ResolvedVaccineEntry,
+} from "@/lib/vaccinations/resolve-vaccine-entry";
 
 type Translate = ReturnType<typeof useTranslations>["t"];
 type TranslateCount = ReturnType<typeof useTranslations>["tCount"];
 
 /** The impersonal sentences that apply to this entry, in reading order. */
 function infoSentences(
-  slug: string | null,
+  entry: ResolvedVaccineEntry | null,
   t: Translate,
   tCount: TranslateCount,
-): { lines: string[]; source: string } | null {
-  const entry = resolveCatalogEntry(slug);
+): { lines: string[]; source: string | null } | null {
   if (!entry) return null;
 
   const lines: string[] = [];
+
+  if (entry.kind === "custom" && entry.components.length > 0) {
+    lines.push(
+      t("vaccinations.custom.protectsAgainst", {
+        list: entry.components
+          .map((antigen) => t(`vaccinations.catalog.${antigen}`))
+          .join(", "),
+      }),
+    );
+  }
 
   if (entry.typicalSeriesDoses !== null) {
     lines.push(
@@ -70,7 +86,7 @@ function infoSentences(
  * empty popover for an entry the templates say nothing about.
  */
 export function catalogInfoAvailable(slug: string | null): boolean {
-  const entry = resolveCatalogEntry(slug);
+  const entry = resolveVaccineEntry({ antigenSlug: slug });
   if (!entry) return false;
   return (
     entry.typicalSeriesDoses !== null ||
@@ -79,9 +95,20 @@ export function catalogInfoAvailable(slug: string | null): boolean {
   );
 }
 
-export function CatalogInfo({ slug }: { slug: string | null }) {
+export function CatalogInfo({
+  slug = null,
+  entry,
+}: {
+  slug?: string | null;
+  /** An already resolved entry, e.g. one of the person's own definitions. */
+  entry?: ResolvedVaccineEntry | null;
+}) {
   const { t, tCount } = useTranslations();
-  const info = infoSentences(slug, t, tCount);
+  const info = infoSentences(
+    entry ?? resolveVaccineEntry({ antigenSlug: slug }),
+    t,
+    tCount,
+  );
   if (!info) return null;
 
   return (
@@ -91,9 +118,11 @@ export function CatalogInfo({ slug }: { slug: string | null }) {
           <li key={index}>{line}</li>
         ))}
       </ul>
-      <p className="text-muted-foreground text-xs">
-        {t("vaccinations.info.sourceLabel", { source: info.source })}
-      </p>
+      {info.source ? (
+        <p className="text-muted-foreground text-xs">
+          {t("vaccinations.info.sourceLabel", { source: info.source })}
+        </p>
+      ) : null}
     </div>
   );
 }

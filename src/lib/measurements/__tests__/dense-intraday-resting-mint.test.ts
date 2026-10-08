@@ -106,8 +106,13 @@ function buildPrismaMock(existingResting: Array<{ source: string }>) {
           .mockResolvedValue([{ id: "user-1", timezone: "Europe/Berlin" }]),
       },
       measurement: {
-        findMany: vi.fn(async (args: { where: { type: string } }) =>
-          args.where.type === "PULSE" ? pulseRows() : [],
+        // The seeded rows are Apple Health's; the Health Connect walk
+        // finds none.
+        findMany: vi.fn(
+          async (args: { where: { type: string; source: string } }) =>
+            args.where.type === "PULSE" && args.where.source === "APPLE_HEALTH"
+              ? pulseRows()
+              : [],
         ),
         findFirst: probeFindFirst,
         upsert,

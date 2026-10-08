@@ -25,6 +25,7 @@ import {
   runDenseIntradayRetention,
   DENSE_INTRADAY_RETENTION_TYPES,
   DENSE_INTRADAY_RETENTION_DAYS,
+  DENSE_INTRADAY_FOLD_SOURCES,
 } from "@/lib/measurements/dense-intraday-retention";
 
 export const DENSE_INTRADAY_RETENTION_QUEUE = "dense-intraday-retention";
@@ -140,8 +141,8 @@ export async function runDenseIntradayRetentionForUser(
 
 /**
  * Boot-time discovery. Finds every user holding at least one LIVE
- * per-sample dense-tier row (an `APPLE_HEALTH` row of a
- * `DENSE_INTRADAY_RETENTION_TYPES` type whose externalId does NOT start
+ * per-sample dense-tier row (a row of a `DENSE_INTRADAY_FOLD_SOURCES` source
+ * and a `DENSE_INTRADAY_RETENTION_TYPES` type whose externalId does NOT start
  * with the daily-stats prefix, that is not tombstoned, AND whose
  * `measuredAt` is older than the retention window) and enqueues one
  * retention job per account.
@@ -187,7 +188,7 @@ export async function enqueueBootTimeDenseIntradayRetention(): Promise<{
     const users = await prisma.measurement.groupBy({
       by: ["userId"],
       where: {
-        source: "APPLE_HEALTH",
+        source: { in: [...DENSE_INTRADAY_FOLD_SOURCES] },
         type: { in: types },
         deletedAt: null,
         NOT: { externalId: { startsWith: "stats:" } },

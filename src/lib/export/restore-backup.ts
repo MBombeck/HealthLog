@@ -179,6 +179,7 @@ export interface RestoreResponse {
     encounterLinks: number;
     vaccinations: number;
     vaccinationLinks: number;
+    customVaccines: number;
     measurementReminders: number;
     measurementReminderEvents: number;
     coachConversations: number;
@@ -2646,6 +2647,7 @@ export async function restoreBackup(
           encounterLinks: visitsCleared.encounterLinks,
           vaccinations: vaccinationsCleared.vaccinations,
           vaccinationLinks: vaccinationsCleared.vaccinationLinks,
+          customVaccines: vaccinationsCleared.customVaccines,
           measurementReminders: remindersCleared.measurementReminders,
           measurementReminderEvents: remindersCleared.measurementReminderEvents,
           coachConversations: coachCleared.coachConversations,
@@ -2905,6 +2907,7 @@ export async function restoreBackup(
         encounterLinks: summary.encounterLinks,
         vaccinations: summary.vaccinations,
         vaccinationLinks: summary.vaccinationLinks,
+        customVaccines: summary.customVaccines,
         measurementReminders: summary.measurementReminders,
         measurementReminderEvents: summary.measurementReminderEvents,
       },

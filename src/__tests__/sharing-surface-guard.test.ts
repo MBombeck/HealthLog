@@ -971,6 +971,14 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "profile",
     why: "Which of the record's doses a scanned page dated around a given day belongs to. A read over the same rows the immunization list serves, reduced to a verdict — the caller learns nothing it could not learn from the list itself, and the anchor it passes is a date rather than an id, so it cannot address a row.",
   },
+  "app/api/vaccinations/custom/route.ts": {
+    domain: "profile",
+    why: "The record's own vaccine definitions: a name, the antigens from the catalogue's closed list, a series length and a booster interval. Part of the immunization history the dose list already shows a `profile` grant, and it names no credential, no integration and no notification channel. Every row is read and written under the resolved user id. The create arm is a delegable write.",
+  },
+  "app/api/vaccinations/custom/[id]/route.ts": {
+    domain: "profile",
+    why: "One of the record's own vaccine definitions, fetch-then-guard against the resolved user. Reached only through its MANAGE arms; a definition another record holds is a 404 like any foreign id.",
+  },
   "app/api/practitioners/route.ts": {
     domain: "profile",
     why: "The record's own address book of doctors and practices. Record content, not account configuration — it touches no credential, no integration and no notification channel, which is the fence the classification turns on. The create arm is a delegable write.",
@@ -1457,6 +1465,8 @@ const DELEGABLE_WRITE_ROUTES: Record<string, string> = {
     "Logging a dose. Every id the body may carry — the practitioner, the visit, the pages to file it against — is re-narrowed to the resolved record before anything is written, so a delegate cannot attach one record's scan to another's dose. The booster reminders it clears are the RECORD's, which is correct: it is the owner's booster plan, and a helper transcribing an Impfpass is doing exactly the work that should settle it.",
   "app/api/vaccinations/[id]/booster/route.ts":
     "Confirming the booster reminder a dose suggests. The reminder is minted under the RECORD and keyed on the antigen the server reads from the dose's catalogue entry, never from the body, so a delegate cannot point it at an antigen the dose does not contain; a second confirmation re-anchors the one reminder rather than minting another.",
+  "app/api/vaccinations/custom/route.ts":
+    "Adding a vaccine definition to the record. It lands under the RECORD, which is correct: it is the owner's Impfpass a helper is transcribing, and the doses logged against it are the owner's. The rate bucket keys on the ACTOR, and a name the record already holds is the ordinary 409 the owner would hit themselves.",
   "app/api/medications/[id]/side-effects/route.ts":
     "Recording a side effect. Admitted on one condition, met at the call site: the POST rate bucket keys on the ACTOR, so a delegate burns their own allowance rather than the owner's and cannot collect a fresh one by switching records.",
   "app/api/medications/route.ts":
@@ -1602,6 +1612,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     domain: "profile",
     conditions: [],
     why: "Reopening a deleted dose. The document links survived the tombstone, so it comes back with its page still filed against it.",
+  },
+  "app/api/vaccinations/custom/[id]/route.ts": {
+    domain: "profile",
+    conditions: ["C4"],
+    why: "Correcting and removing one vaccine definition. The removal soft-deletes it and lets go of the doses that named it, each keeping a name, so no dose leaves the record; the audit row names the definition and how many doses it let go. C4 on the edit: the antigens, the series length and the booster interval are filed before and after, and a rename is named, never quoted. Neither verb re-runs the booster satisfy matcher, so a delegate cannot move a booster's due date by correcting a definition.",
   },
   "app/api/illness/episodes/[id]/resolve/route.ts": {
     domain: "illness",
@@ -2010,8 +2025,12 @@ const ACTOR_ROUTES: Record<string, string> = {
  * list, the occurrence create on the write literal, and the definition create,
  * the definition edit/delete and the occurrence edit/delete on the manage
  * literal. 232 -> 242 with both.
+ *
+ * v1.42 -- the person's own vaccine definitions (#1005) add four: both
+ * modules on the record list, the create on the write literal and the
+ * edit/delete on the manage literal. 242 -> 246.
  */
-const FROZEN_ENTRY_COUNT = 242;
+const FROZEN_ENTRY_COUNT = 246;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -2772,7 +2791,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(84);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(87);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>
