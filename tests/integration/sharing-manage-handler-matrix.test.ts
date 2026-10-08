@@ -282,7 +282,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(87);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(90);
   });
 });
 
@@ -1875,6 +1875,89 @@ manageContract("DELETE /api/vaccinations/custom/[id]", {
     )?.deletedAt !== null,
 });
 
+/* v1.42 (#613) — life events: MANAGE on all three verbs. */
+
+async function makeLifeEvent(userId: string) {
+  const { encryptToBytes } = await import("@/lib/ai/coach/bytes-codec");
+  return getPrismaClient().lifeEvent.create({
+    data: {
+      userId,
+      category: "HOME",
+      startDate: "2023-09-01",
+      precision: "MONTH",
+      titleEncrypted: encryptToBytes("Moved"),
+    },
+  });
+}
+
+manageContract("POST /api/life-events", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) => entry.route === "/api/life-events" && entry.action === "POST",
+  )!,
+  prepare: async (ownerId) => ({ ownerId }),
+  act: async () => {
+    const { POST } = await import("@/app/api/life-events/route");
+    return call(POST as Handler, "POST", "/api/life-events", {
+      category: "WORK",
+      startDate: "2024-01-01",
+      precision: "YEAR",
+      title: "New job",
+    });
+  },
+  ok: 201,
+  auditAction: "life_event.create",
+  applied: async ({ ownerId }) =>
+    (await getPrismaClient().lifeEvent.count({
+      where: { userId: ownerId, category: "WORK" },
+    })) === 1,
+});
+
+manageContract("PATCH /api/life-events/[id]", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/life-events/[id]" && entry.action === "PATCH",
+  )!,
+  prepare: (ownerId) => makeLifeEvent(ownerId),
+  act: async (row) => {
+    const { PATCH } = await import("@/app/api/life-events/[id]/route");
+    return call(
+      PATCH as Handler,
+      "PATCH",
+      `/api/life-events/${row.id}`,
+      { category: "FAMILY" },
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "life_event.update",
+  applied: async (row) =>
+    (await getPrismaClient().lifeEvent.findUnique({ where: { id: row.id } }))
+      ?.category === "FAMILY",
+});
+
+manageContract("DELETE /api/life-events/[id]", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/life-events/[id]" && entry.action === "DELETE",
+  )!,
+  prepare: (ownerId) => makeLifeEvent(ownerId),
+  act: async (row) => {
+    const { DELETE } = await import("@/app/api/life-events/[id]/route");
+    return call(
+      DELETE as Handler,
+      "DELETE",
+      `/api/life-events/${row.id}`,
+      undefined,
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "life_event.delete",
+  applied: async (row) =>
+    (await getPrismaClient().lifeEvent.findUnique({ where: { id: row.id } }))
+      ?.deletedAt !== null,
+});
+
 proveWriteRoute("POST /api/vaccinations/[id]/booster", {
   route: "/api/vaccinations/[id]/booster",
   // The dose the booster is planned against. `makeVaccination` records a
@@ -2846,13 +2929,13 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(87);
+    expect(STRICT_DRIVER_KEYS.size).toBe(90);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 
   it("executes every registered driver through its owned effect and actor audit", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(REAL_EFFECT_KEYS.size).toBe(87);
+    expect(REAL_EFFECT_KEYS.size).toBe(90);
     expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
   });
 });

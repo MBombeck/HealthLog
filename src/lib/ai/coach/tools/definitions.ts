@@ -26,6 +26,10 @@
  *  11. get_environment           — the weather, air quality, pollen and UV of
  *                                  the stored days, without any location
  *                                  (v1.42, #615)
+ *  12. get_day                   — one local day across the record: what ran
+ *                                  through it, its readings with the usual
+ *                                  range, what happened on it; never the
+ *                                  person's life events or notes (v1.42, #613)
  *
  * Beside the catalogue, `show_result` (v1.39.4) shows a table an earlier reply
  * of the same conversation already read. It reads no health data of its own,
@@ -34,6 +38,8 @@
 import { z } from "zod/v4";
 
 import type { AiToolDef } from "@/lib/ai/types";
+import type { DayToolInput } from "@/lib/day/contract";
+import { isCalendarDateKey } from "@/lib/tz/date-only";
 import {
   coachScopeSourceSchema,
   coachScopeWindowSchema,
@@ -52,6 +58,7 @@ export const COACH_TOOL_NAMES = [
   "get_correlations",
   "get_metric_table",
   "get_environment",
+  "get_day",
 ] as const;
 
 export type CoachToolName = (typeof COACH_TOOL_NAMES)[number];
@@ -139,6 +146,18 @@ export const getEnvironmentArgsSchema = z
   .strict();
 
 /**
+ * v1.42 (#613) — the day read takes one calendar date. The name and the
+ * argument are the contract's (`DAY_TOOL_NAME`, `DayToolInput`).
+ */
+export const getDayArgsSchema = z
+  .object({
+    date: z.string().refine(isCalendarDateKey, {
+      message: "Expected a YYYY-MM-DD calendar date",
+    }),
+  })
+  .strict() satisfies z.ZodType<DayToolInput>;
+
+/**
  * v1.39.4 — `m<k>.r<n>`, a table of an earlier reply as the context names
  * it. The shape only; whether it exists in this conversation is decided by
  * the executor against the conversation's own messages.
@@ -165,6 +184,7 @@ const COACH_TOOL_ARG_SCHEMAS: Record<CoachToolName, z.ZodType> = {
   get_correlations: getCorrelationsArgsSchema,
   get_metric_table: getMetricTableArgsSchema,
   get_environment: getEnvironmentArgsSchema,
+  get_day: getDayArgsSchema,
 };
 
 /**
@@ -412,6 +432,23 @@ export const COACH_TOOL_DEFS: AiToolDef[] = [
           type: "string",
           enum: WINDOW_ENUM,
           description: WINDOW_ARG_DESCRIPTION,
+        },
+      },
+    },
+  },
+  {
+    name: "get_day",
+    description:
+      "Fetch one local calendar day of the user's record: what ran through it (medications and courses with their dose and day n, a pause, an illness with its day n, a cycle phase, an anamnesis fact such as shift work), the readings in the day's own time-zone window with the user's usual range over the 30 days before (median and spread of their own daily values, null with too little history), what happened on it (intakes, dose changes, symptoms, lab results, visits, vaccinations, completed check-ups, documents by kind, mood and screener scores, workouts), and deterministic notable observations (a value highest or lowest for at least three months, the first reading of a kind). Notes and life events are never included. `unavailable` lists the sections the user switched off (module_disabled). Describe what the day held; never claim that one thing on it caused another. Returns { present: false } with no_data (nothing recorded that day), outside_window (a future date) or outside_reach (older than the lookback limit).",
+    parameters: {
+      type: "object",
+      additionalProperties: false,
+      required: ["date"],
+      properties: {
+        date: {
+          type: "string",
+          description:
+            "The local calendar date, YYYY-MM-DD, in the user's own time zone.",
         },
       },
     },

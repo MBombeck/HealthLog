@@ -10066,7 +10066,8 @@
         "cycle": "Ciclo",
         "correlations": "Relaciones entre métricas",
         "snapshot": "Resumen de datos",
-        "environment": "Tiempo y aire"
+        "environment": "Tiempo y aire",
+        "day": "Un día"
       },
       "window": {
         "last7days": "últimos 7 días",
@@ -11830,7 +11831,10 @@
       "symptomDefinitionDelete": "{name} quitó un síntoma",
       "customVaccineCreate": "{name} añadió una vacuna propia",
       "customVaccineUpdate": "{name} editó una vacuna propia",
-      "customVaccineDelete": "{name} quitó una vacuna propia"
+      "customVaccineDelete": "{name} quitó una vacuna propia",
+      "lifeEventCreate": "{name} añadió un acontecimiento vital",
+      "lifeEventUpdate": "{name} cambió un acontecimiento vital",
+      "lifeEventDelete": "{name} eliminó un acontecimiento vital"
     },
     "section": {
       "measurements": {
@@ -12255,6 +12259,26 @@
         "values": "Valores",
         "mood": "Estado de ánimo",
         "environment": "Entorno"
+      },
+      "detail": {
+        "weeks": "Valores en {weeks} de las últimas {of} semanas",
+        "startMissing": "{missing} de {total} sin fecha de inicio",
+        "plannedOnly": "{planned} planificadas, ninguna realizada"
+      },
+      "gap": {
+        "connectSources": "Conectar una fuente",
+        "logMood": "Registrar el estado de ánimo",
+        "logCycle": "Registrar un día del ciclo",
+        "setHome": "Indicar tu domicilio",
+        "addEpisode": "Añadir una enfermedad",
+        "addMedication": "Añadir un medicamento",
+        "medicationStartMissing": "Añadir la fecha de inicio",
+        "addVaccination": "Añadir tus vacunas",
+        "addVisit": "Añadir una visita pasada",
+        "addLabs": "Añadir un informe de laboratorio",
+        "undatedDocuments": "Poner fecha a tus documentos",
+        "addDocument": "Añadir un documento",
+        "addLifeEvent": "Añadir un acontecimiento vital"
       }
     }
   },

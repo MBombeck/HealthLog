@@ -209,6 +209,8 @@ describe("MCP tool registry — surface", () => {
         "get_ecg_recordings",
         // v1.42 — weather, air quality and pollen of the stored days.
         "get_environment",
+        // v1.42 — one day across the record, never life events or notes.
+        "get_day",
         // v1.38 — the bounded visit history.
         "get_visits",
       ].sort(),

@@ -10066,7 +10066,8 @@
         "cycle": "Cycle",
         "correlations": "Connections between metrics",
         "snapshot": "Record summary",
-        "environment": "Weather and air"
+        "environment": "Weather and air",
+        "day": "One day"
       },
       "window": {
         "last7days": "last 7 days",
@@ -11830,7 +11831,10 @@
       "symptomDefinitionDelete": "{name} removed a symptom",
       "customVaccineCreate": "{name} added an own vaccine",
       "customVaccineUpdate": "{name} edited an own vaccine",
-      "customVaccineDelete": "{name} removed an own vaccine"
+      "customVaccineDelete": "{name} removed an own vaccine",
+      "lifeEventCreate": "{name} added a life event",
+      "lifeEventUpdate": "{name} changed a life event",
+      "lifeEventDelete": "{name} removed a life event"
     },
     "section": {
       "measurements": {
@@ -12255,6 +12259,26 @@
         "values": "Values",
         "mood": "Mood",
         "environment": "Environment"
+      },
+      "detail": {
+        "weeks": "Readings in {weeks} of the last {of} weeks",
+        "startMissing": "{missing} of {total} without a start date",
+        "plannedOnly": "{planned} planned, none completed yet"
+      },
+      "gap": {
+        "connectSources": "Connect a source",
+        "logMood": "Log a mood",
+        "logCycle": "Log a cycle day",
+        "setHome": "Set your home location",
+        "addEpisode": "Add an illness",
+        "addMedication": "Add a medication",
+        "medicationStartMissing": "Add the start date",
+        "addVaccination": "Add your vaccinations",
+        "addVisit": "Add a past visit",
+        "addLabs": "Add a lab report",
+        "undatedDocuments": "Date your documents",
+        "addDocument": "Add a document",
+        "addLifeEvent": "Add a life event"
       }
     }
   },

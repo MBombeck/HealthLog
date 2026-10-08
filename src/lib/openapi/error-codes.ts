@@ -118,6 +118,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     "cycle-prefs": ["cycle-prefs.body.invalid_json", "cycle-prefs.invalid"],
     "disable-coach": ["disable-coach.body.invalid_json"],
+    day: ["day.invalid"],
     demo: ["demo.readOnly"],
     documents: [
       "documents.chat.conversationNotFound",
@@ -230,6 +231,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "labs.update.referenceRangeInvalid",
       "labs.update.sourceReferenceRangeInvalid",
     ],
+    life_event: ["life_event.invalid", "life_event.not_found"],
     managed_profile: [
       "managed_profile.guardian.duplicate",
       "managed_profile.guardian.managed_invitee",
@@ -380,6 +382,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "symptoms.event.notFound",
       "symptoms.invalid",
     ],
+    timeline: ["timeline.invalid"],
     tokens: [
       "tokens.documents.ceiling_reached",
       "tokens.measurements.ceiling_reached",
@@ -423,7 +426,6 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "modules_conflict",
       "mood_tag_layout_conflict",
       "not_configured",
-      "not_implemented",
       "notification_prefs_conflict",
       "oidc_only",
       "private_origin_not_approved",

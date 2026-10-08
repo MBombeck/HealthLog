@@ -493,6 +493,7 @@ export type CoachStepDomain =
   | "cycle"
   | "correlations"
   | "environment"
+  | "day"
   | "snapshot";
 
 /** Why a step or a method entry found nothing. */
@@ -521,6 +522,11 @@ export interface CoachStep {
   reason?: CoachStepReason;
   /** `r1` when the step produced a table. */
   resultRef?: string;
+  /**
+   * v1.42 (#613) — the calendar date a `get_day` call read, so the view can
+   * list the days an answer looked at without reading the prose.
+   */
+  day?: string;
 }
 
 // ── Results (v1.39.4) ───────────────────────────────────────────────────

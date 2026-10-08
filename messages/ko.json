@@ -10066,7 +10066,8 @@
         "cycle": "생리 주기",
         "correlations": "지표 간 연관성",
         "snapshot": "기록 요약",
-        "environment": "날씨와 대기"
+        "environment": "날씨와 대기",
+        "day": "하루"
       },
       "window": {
         "last7days": "최근 7일",
@@ -11830,7 +11831,10 @@
       "symptomDefinitionDelete": "{name}님이 증상을 제거했습니다",
       "customVaccineCreate": "{name} 님이 백신을 직접 추가했어요",
       "customVaccineUpdate": "{name} 님이 직접 추가한 백신을 수정했어요",
-      "customVaccineDelete": "{name} 님이 직접 추가한 백신을 삭제했어요"
+      "customVaccineDelete": "{name} 님이 직접 추가한 백신을 삭제했어요",
+      "lifeEventCreate": "{name} 님이 삶의 사건을 추가했어요",
+      "lifeEventUpdate": "{name} 님이 삶의 사건을 수정했어요",
+      "lifeEventDelete": "{name} 님이 삶의 사건을 삭제했어요"
     },
     "section": {
       "measurements": {
@@ -12255,6 +12259,26 @@
         "values": "수치",
         "mood": "기분",
         "environment": "환경"
+      },
+      "detail": {
+        "weeks": "최근 {of}주 중 {weeks}주에 기록이 있어요",
+        "startMissing": "{total}개 중 {missing}개에 시작일이 없어요",
+        "plannedOnly": "{planned}건 예정, 완료된 진료는 아직 없어요"
+      },
+      "gap": {
+        "connectSources": "데이터 소스 연결",
+        "logMood": "기분 기록",
+        "logCycle": "주기 기록",
+        "setHome": "거주지 설정",
+        "addEpisode": "질환 추가",
+        "addMedication": "약 추가",
+        "medicationStartMissing": "시작일 추가",
+        "addVaccination": "예방접종 기록",
+        "addVisit": "지난 진료 추가",
+        "addLabs": "검사 결과 추가",
+        "undatedDocuments": "문서에 날짜 추가",
+        "addDocument": "문서 추가",
+        "addLifeEvent": "삶의 사건 추가"
       }
     }
   },

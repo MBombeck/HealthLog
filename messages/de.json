@@ -10066,7 +10066,8 @@
         "cycle": "Zyklus",
         "correlations": "Zusammenhänge zwischen Messgrößen",
         "snapshot": "Datenübersicht",
-        "environment": "Wetter und Luft"
+        "environment": "Wetter und Luft",
+        "day": "Ein Tag"
       },
       "window": {
         "last7days": "letzte 7 Tage",
@@ -11830,7 +11831,10 @@
       "symptomDefinitionDelete": "{name} hat ein Symptom entfernt",
       "customVaccineCreate": "{name} hat einen eigenen Impfstoff angelegt",
       "customVaccineUpdate": "{name} hat einen eigenen Impfstoff bearbeitet",
-      "customVaccineDelete": "{name} hat einen eigenen Impfstoff entfernt"
+      "customVaccineDelete": "{name} hat einen eigenen Impfstoff entfernt",
+      "lifeEventCreate": "{name} hat ein Lebensereignis hinzugefügt",
+      "lifeEventUpdate": "{name} hat ein Lebensereignis geändert",
+      "lifeEventDelete": "{name} hat ein Lebensereignis entfernt"
     },
     "section": {
       "measurements": {
@@ -12255,6 +12259,26 @@
         "values": "Werte",
         "mood": "Stimmung",
         "environment": "Umwelt"
+      },
+      "detail": {
+        "weeks": "Werte in {weeks} der letzten {of} Wochen",
+        "startMissing": "{missing} von {total} ohne Startdatum",
+        "plannedOnly": "{planned} geplant, noch keiner erledigt"
+      },
+      "gap": {
+        "connectSources": "Quelle verbinden",
+        "logMood": "Stimmung erfassen",
+        "logCycle": "Zyklustag erfassen",
+        "setHome": "Wohnort festlegen",
+        "addEpisode": "Erkrankung anlegen",
+        "addMedication": "Medikament anlegen",
+        "medicationStartMissing": "Startdatum ergänzen",
+        "addVaccination": "Impfungen erfassen",
+        "addVisit": "Besuch nachtragen",
+        "addLabs": "Laborbefund hinzufügen",
+        "undatedDocuments": "Dokumente datieren",
+        "addDocument": "Dokument hinzufügen",
+        "addLifeEvent": "Lebensereignis hinzufügen"
       }
     }
   },
