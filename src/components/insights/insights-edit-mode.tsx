@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -50,6 +50,7 @@ import {
   arrangementSignature,
   reconcileArrangeDraft,
   seedArrangeDraft,
+  sortByOrder,
 } from "@/lib/insights-arrange-draft";
 import { apiDelete, apiPut } from "@/lib/api/api-fetch";
 import {
@@ -222,10 +223,7 @@ export function InsightsEditMode({
     arrangementSignature(draftSections) !==
     arrangementSignature(layout.sections);
 
-  const sections = useMemo(
-    () => [...draftSections].sort((a, b) => a.order - b.order),
-    [draftSections],
-  );
+  const sections = sortByOrder(draftSections);
   const sectionIds = sections.map((s) => s.id);
 
   function toggleSection(id: InsightsSectionId, visible: boolean) {
