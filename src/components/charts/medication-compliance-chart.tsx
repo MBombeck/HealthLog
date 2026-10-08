@@ -63,6 +63,7 @@ import { formatDateShort } from "@/lib/format";
 import { makeFormatters } from "@/lib/format-locale";
 import { cn } from "@/lib/utils";
 import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
+import { ChartDataTable } from "./chart-data-table";
 import { ChartEmptyState } from "./chart-empty-state";
 import { ChartErrorState } from "./chart-error-state";
 import { ChartOverlayControls } from "./chart-overlay-controls";
@@ -743,6 +744,23 @@ export function MedicationComplianceChart({
             insetLeft={8 + 48}
             insetRight={8}
           />
+          {/* The keyboard and screen-reader way to a day: the plot opens
+              days on a click or a tap only. */}
+          {chartDays.active ? (
+            <ChartDataTable
+              points={chartData.map((point) => ({
+                date: point.date,
+                timestamp: point.timestamp,
+                rate: point.rate,
+              }))}
+              columns={[{ key: "rate", label: t("dashboard.compliance7d") }]}
+              formatValue={(value) => `${fmt.integer(value)} %`}
+              formatDate={tzFmt.date}
+              bucket="day"
+              metricLabel={displayTitle}
+              dayLinks
+            />
+          ) : null}
         </>
       )}
     </div>

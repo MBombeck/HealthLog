@@ -32,9 +32,11 @@ import {
   RichChartTooltip,
   type RichTooltipRow,
 } from "@/components/charts/chart-tooltip";
+import { ChartDataTable } from "@/components/charts/chart-data-table";
 import {
   ChartDayFooter,
   OPEN_DAY_LINE,
+  dayAnchor,
   useChartDayLinks,
 } from "@/components/day/chart-day-links";
 import { dateKeyOfInstant } from "@/components/day/day-url";
@@ -406,6 +408,25 @@ export function EfficacyChart({
         insetLeft={40}
         insetRight={8}
       />
+      {/* The keyboard and screen-reader way to a day: the plot opens days on
+          a click or a tap only. Each row stands at its day's anchor, the
+          calendar day the plot's own door opens. */}
+      {chartDays.active ? (
+        <ChartDataTable
+          points={displaySeries.map((point, index) => ({
+            date: seriesDays[index]!,
+            timestamp: dayAnchor(seriesDays[index]!),
+            value: point.value,
+          }))}
+          columns={[{ key: "value", label: target.label }]}
+          unit={unitSuffix ?? undefined}
+          formatValue={(value) => String(value)}
+          formatDate={fmt.date}
+          bucket="day"
+          metricLabel={target.label}
+          dayLinks
+        />
+      ) : null}
     </div>
   );
 }

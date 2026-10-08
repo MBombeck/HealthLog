@@ -21,7 +21,10 @@ import { describe, expect, it } from "vitest";
  *   B. a file that draws its own Recharts chart over a date axis (an
  *      `<XAxis>` keyed on a date-shaped field, or `scale="time"`) calls
  *      `useChartDayLinks` and renders its parts (`ChartDayFooter`,
- *      `OPEN_DAY_LINE`, the tooltip's props and its touch action);
+ *      `OPEN_DAY_LINE`, the tooltip's props and its touch action), and
+ *      offers the keyboard way to the same days: a `<ChartDataTable
+ *      dayLinks>` or a `DayLink` of its own, or an entry on
+ *      `KEYBOARD_ELSEWHERE` naming where that way lives;
  *   C. a calendar heatmap (anything laid out by `heatmapDays`) calls
  *      `useHeatmapDay`.
  *
@@ -82,6 +85,29 @@ const NOT_HERE: Record<string, string> = {
   "src/components/admin/host-metrics-chart.tsx":
     "The server's own resource use, not a health record.",
 };
+
+/**
+ * Day-linked charts whose keyboard and screen-reader way to a day is not in
+ * their own file. Path → the file that carries it, and why there.
+ */
+const KEYBOARD_ELSEWHERE: Record<string, { file: string; why: string }> = {
+  "src/components/labs/lab-biomarker-chart.tsx": {
+    file: "src/components/labs/lab-history-list.tsx",
+    why: "The marker's readings list (its values page) dates every reading with a day link; the chart is the shape, the list the numbers.",
+  },
+  "src/components/mental-health/assessment-history-chart.tsx": {
+    file: "src/components/mental-health/assessment-history.tsx",
+    why: "The questionnaire history renders the chart and, under it, the list of every result with its day link.",
+  },
+};
+
+/** True when the file itself offers a keyboard way to its days. */
+function hasKeyboardDoor(text: string): boolean {
+  return (
+    jsxTags(text, "ChartDataTable").some(mountOpensDays) ||
+    /<DayLink(?:At|Stated)?[\s>]/.test(text)
+  );
+}
 
 function walk(path: string): string[] {
   const abs = join(ROOT, path);
@@ -201,6 +227,12 @@ function findMissingDoors(): {
         if (wired) {
           doors.charts += 1;
           doors.chartFiles.push(file);
+          if (!hasKeyboardDoor(text) && !(file in KEYBOARD_ELSEWHERE)) {
+            missing.push({
+              file,
+              why: "a day-linked chart with no keyboard way to its days (a <ChartDataTable dayLinks> or a DayLink)",
+            });
+          }
         } else if (!listed) {
           missing.push({
             file,
@@ -244,6 +276,19 @@ describe("every chart drawn in days opens its days, or says why not", () => {
     ).toBeGreaterThanOrEqual(12);
     // The mood and the intake calendars.
     expect(doors.heatmaps).toBeGreaterThanOrEqual(2);
+  });
+
+  it("every KEYBOARD_ELSEWHERE entry points at a file with day links", () => {
+    for (const [chart, { file, why }] of Object.entries(KEYBOARD_ELSEWHERE)) {
+      expect(source.get(chart), `${chart} does not exist`).toBeDefined();
+      expect(hasKeyboardDoor(source.get(chart)!), `${chart} has its own`).toBe(
+        false,
+      );
+      const text = source.get(file);
+      expect(text, `${file} does not exist`).toBeDefined();
+      expect(hasKeyboardDoor(text!), `${file} has no day link`).toBe(true);
+      expect(why.length).toBeGreaterThan(30);
+    }
   });
 
   it("every NOT_HERE entry names an existing chart and gives a reason", () => {
