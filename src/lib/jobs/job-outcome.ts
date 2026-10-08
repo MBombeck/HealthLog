@@ -47,6 +47,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "ai_runs_deleted",
   "ai_runs_timed_out",
   "ai_runs_worker_unavailable",
+  // v1.42 — every candidate a fan-out pass attempted failed (`reportJobRun`).
+  "all_failed",
   // An admission delivery that found its import still running from an
   // earlier delivery of the same job and did nothing.
   "already_running",

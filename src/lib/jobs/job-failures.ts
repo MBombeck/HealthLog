@@ -28,21 +28,60 @@ import { prisma } from "@/lib/db";
 import { redactSecrets } from "@/lib/logging/redact";
 
 /**
- * pg-boss 12.34.0 stores terminal rows until
- * `completed_on + deletion_seconds` (`dist/plans.js`). Its queue default is
- * 604800 seconds, while `retention_seconds` defaults to 1209600 seconds; job
- * insertion copies those queue values and maintenance applies the terminal-row
- * deletion clock. The deployed queue-table audit found those same values on
- * every queue, and no job submitter overrides either option.
+ * How long pg-boss keeps a terminal row, and why the readers below can rely
+ * on it.
  *
- * Seven days is therefore the verified availability floor for failed rows.
- * The reader stays at 72 hours, safely inside that floor, and pg-boss remains
- * the single failure ledger.
+ * pg-boss 12.34.0 stores terminal rows until `completed_on +
+ * deletion_seconds` (`dist/plans.js`). The queue default is 604800 seconds
+ * (seven days), `retention_seconds` defaults to 1209600 seconds, and job
+ * insertion copies the queue's values onto each row. A queue created without
+ * a `deleteAfterSeconds` option therefore keeps its failed rows for seven
+ * days.
+ *
+ * That is no longer true for every queue. v1.42 shortens the retention of
+ * the pure-volume queues (a sampler that ticks every five minutes, the rollup
+ * recompute fan-out) so their completed rows stop bloating `job_common`. A
+ * failed row on such a queue lives only as long as that queue's own
+ * retention, and a reader that looks back 72 hours over a queue that forgets
+ * after 48 would report "nothing failed" about failures it can no longer see.
+ *
+ * So the availability is per queue now, and it has a floor: no queue may
+ * keep its terminal rows for less than `FAILED_ROW_AVAILABILITY_FLOOR_HOURS`,
+ * which is the 72-hour reader window plus a day of slack for a run that
+ * fails just before a maintenance pass. Every queue option that shortens
+ * retention goes through `failureReaderRetention`, which refuses a value
+ * under the floor, and `src/__tests__/job-retention-floor-guard.test.ts`
+ * refuses a `deleteAfterSeconds` anywhere that is neither a call to it nor a
+ * literal at or above the floor. pg-boss remains the single failure ledger.
  */
-export const PG_BOSS_FAILED_ROW_AVAILABILITY_HOURS = 7 * 24;
+export const PG_BOSS_DEFAULT_FAILED_ROW_AVAILABILITY_HOURS = 7 * 24;
 
 /** How far back a failure still counts as news. */
 export const JOB_FAILURE_WINDOW_HOURS = 72;
+
+/**
+ * The shortest terminal-row retention any queue may have: the reader window
+ * plus a day. See the block above.
+ */
+export const FAILED_ROW_AVAILABILITY_FLOOR_HOURS =
+  JOB_FAILURE_WINDOW_HOURS + 24;
+
+/**
+ * The `deleteAfterSeconds` queue option for a queue that keeps its terminal
+ * rows for `hours`. Throws below the floor, so a retention change that would
+ * blind the failure readers fails at boot and in the test suite rather than
+ * silently three days later.
+ */
+export function failureReaderRetention(hours: number): {
+  deleteAfterSeconds: number;
+} {
+  if (!Number.isFinite(hours) || hours < FAILED_ROW_AVAILABILITY_FLOOR_HOURS) {
+    throw new RangeError(
+      `queue retention of ${hours} h is below the ${FAILED_ROW_AVAILABILITY_FLOOR_HOURS} h the failure readers need`,
+    );
+  }
+  return { deleteAfterSeconds: Math.round(hours * 3600) };
+}
 
 /** Queues named in one report — enough to see a pattern, bounded for the wire. */
 const MAX_QUEUES = 20;
@@ -371,5 +410,54 @@ export async function readQueueRunningSince(
     return rows[0]?.started_on?.toISOString() ?? null;
   } catch {
     return null;
+  }
+}
+
+/** Newest terminal rows `readConsecutiveRunFailures` looks at. */
+const CONSECUTIVE_LOOKBACK_ROWS = 50;
+
+/**
+ * How many runs of `queue` in a row ended in failure, newest first, counting
+ * the run that is failing right now (so the result is at least 1).
+ *
+ * A run counts as failed when pg-boss failed it (`state = 'failed'`), or when
+ * it completed but said in its own facts that every candidate it attempted
+ * failed (`did.all_failed`, written through `reportJobRun`). A fan-out pass
+ * like the nightly briefing warm completes even when nothing worked, because
+ * failing the queue would retry the whole cohort over one account; its
+ * all-failed nights are still a streak an operator wants to hear about.
+ *
+ * Completed runs that do not report `all_failed` at all (a queue's on-demand
+ * single-account jobs share it with the nightly pass) are not evidence either
+ * way and are skipped. The streak ends at the first completed run that says
+ * it did not all fail.
+ *
+ * Fails soft to 1: when the queue schema cannot be read, this run is still a
+ * failure, and one is the only count that is known.
+ */
+export async function readConsecutiveRunFailures(
+  queue: string,
+): Promise<number> {
+  try {
+    const rows = await prisma.$queryRaw<
+      Array<{ state: string; all_failed: string | null }>
+    >`
+      SELECT state, output->'did'->>'all_failed' AS all_failed
+      FROM pgboss.job
+      WHERE name = ${queue}
+        AND state IN ('completed', 'failed')
+        AND completed_on IS NOT NULL
+        AND (state = 'failed' OR output->'did'->>'all_failed' IS NOT NULL)
+      ORDER BY completed_on DESC
+      LIMIT ${CONSECUTIVE_LOOKBACK_ROWS}
+    `;
+    let streak = 1;
+    for (const row of rows) {
+      if (row.state === "failed" || row.all_failed === "true") streak += 1;
+      else break;
+    }
+    return streak;
+  } catch {
+    return 1;
   }
 }

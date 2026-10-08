@@ -17,6 +17,19 @@ vi.mock("../report-worker-error", () => ({
   reportWorkerError: (...a: unknown[]) => reportWorkerError(...a),
 }));
 
+// v1.42 — the failed run's own line and the streak behind it.
+const emitSignal = vi.fn();
+const readConsecutiveRunFailures = vi.fn(async (_queue: string) => 2);
+vi.mock("@/lib/logging/signal", () => ({
+  emitSignal: (...a: unknown[]) => emitSignal(...a),
+}));
+vi.mock("../job-failures", async () => ({
+  ...(await vi.importActual<typeof import("../job-failures")>(
+    "../job-failures",
+  )),
+  readConsecutiveRunFailures: (q: string) => readConsecutiveRunFailures(q),
+}));
+
 import { jobDone, jobFailed } from "../job-outcome";
 import { JobFailure, runJob } from "../run-job";
 
@@ -169,5 +182,49 @@ describe("runJob observation (#1031)", () => {
       expect.any(Function),
     );
     observe.mockRestore();
+  });
+});
+
+describe("runJob failure signal (v1.42)", () => {
+  it("emits job.run.failed at error with the queue's streak for a failed outcome", async () => {
+    const wrapped = runJob("environment-fetch", async () =>
+      jobFailed("fetch_failed", new Error("open-meteo 503")),
+    );
+    await expect(wrapped(noJobs)).rejects.toBeInstanceOf(JobFailure);
+    expect(readConsecutiveRunFailures).toHaveBeenCalledWith(
+      "environment-fetch",
+    );
+    expect(emitSignal).toHaveBeenCalledTimes(1);
+    expect(emitSignal.mock.calls[0][0]).toMatchObject({
+      action: "job.run.failed",
+      level: "error",
+      meta: {
+        queue: "environment-fetch",
+        reason: "fetch_failed",
+        consecutiveFailures: 2,
+      },
+    });
+  });
+
+  it("emits it for a handler that throws, and still rethrows the original error", async () => {
+    const original = new Error("boom");
+    const wrapped = runJob("data-backup", async () => {
+      throw original;
+    });
+    await expect(wrapped(noJobs)).rejects.toBe(original);
+    expect(emitSignal.mock.calls[0][0]).toMatchObject({
+      action: "job.run.failed",
+      level: "error",
+      meta: { queue: "data-backup", reason: "handler_threw" },
+      error: original,
+    });
+  });
+
+  it("emits nothing for a successful run", async () => {
+    const wrapped = runJob("rate-limit-cleanup", async () =>
+      jobDone({ deleted: 1 }),
+    );
+    await wrapped(noJobs);
+    expect(emitSignal).not.toHaveBeenCalled();
   });
 });
