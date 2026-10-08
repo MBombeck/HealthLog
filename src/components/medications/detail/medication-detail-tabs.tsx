@@ -525,9 +525,9 @@ export function MedicationDetailTabs({
         data-slot="medication-detail-tabs"
       >
         <TabsList
-          // Six tabs do not fit a phone in one row; they wrap into two
-          // there instead of scrolling a label off the edge.
-          className="w-full justify-start max-sm:h-auto! max-sm:flex-wrap"
+          // Six tabs do not fit a phone in one row; they sit in a three-up
+          // grid there instead of scrolling a label off the edge.
+          className="w-full justify-start max-sm:grid! max-sm:h-auto! max-sm:grid-cols-3"
           aria-label={t("medications.detail.shell.tablistLabel")}
         >
           {availableTabs.map((slug) => (
