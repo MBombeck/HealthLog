@@ -21,7 +21,7 @@ export default function InsightsViszeralfettPage() {
       chartKey="visceralFat"
       i18nPrefix="insights.visceralFat"
       explainerMetric="visceralFat"
-      color="var(--warning)"
+      color="var(--chart-5)"
       unit=""
       yAxisUnit=""
       emptyStateIcon={<Droplets className="size-6" />}

@@ -116,7 +116,7 @@ export default function InsightsBmiPage() {
         chartKey="bmi"
         types={["WEIGHT"]}
         title={t("targets.bmi")}
-        colors={["var(--dracula-yellow)"]}
+        colors={["var(--chart-5)"]}
         unit="kg/m²"
         valueMode="bmi"
         valueBands={BMI_BANDS}

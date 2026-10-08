@@ -20,7 +20,7 @@ export default function InsightsStairDescentSpeedPage() {
       chartKey="stairDescentSpeed"
       i18nPrefix="insights.stairDescentSpeed"
       explainerMetric="stairDescentSpeed"
-      color="var(--success)"
+      color="var(--chart-2)"
       unit="m/s"
       yAxisUnit="m/s"
       emptyStateIcon={<Gauge className="size-6" />}

@@ -22,7 +22,7 @@ export default function InsightsGripStrengthPage() {
       insightMetric="GRIP_STRENGTH"
       chartKey="gripStrength"
       i18nPrefix="insights.gripStrength"
-      color="var(--success)"
+      color="var(--chart-2)"
       statIcon={Dumbbell}
       emptyStateIcon={<Dumbbell className="size-6" />}
       emptyStateCtaType="GRIP_STRENGTH"

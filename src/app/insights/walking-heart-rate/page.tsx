@@ -21,7 +21,7 @@ export default function InsightsGehpulsPage() {
       chartKey="walkingHeartRateAverage"
       i18nPrefix="insights.walkingHeartRateAverage"
       explainerMetric="walkingHeartRate"
-      color="var(--destructive)"
+      color="var(--chart-3)"
       unit="bpm"
       yAxisUnit="bpm"
       emptyStateIcon={<HeartPulse className="size-6" />}

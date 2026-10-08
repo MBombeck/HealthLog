@@ -157,8 +157,8 @@ export default function InsightsPulsPage() {
         titleIcon={Heart}
         colors={
           hasRestingHr
-            ? ["var(--success)", "var(--destructive)"]
-            : ["var(--success)"]
+            ? ["var(--chart-2)", "var(--chart-3)"]
+            : ["var(--chart-2)"]
         }
         unit="bpm"
         compareBaseline={compareBaseline}

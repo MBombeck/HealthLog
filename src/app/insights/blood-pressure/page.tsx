@@ -101,10 +101,10 @@ export default function InsightsBlutdruckPage() {
         {
           min: bpTargets.diastolic.min,
           max: bpTargets.diastolic.max,
-          color: "var(--info)",
+          color: "var(--chart-4)",
           opacity: 0.21,
           label: t("charts.diastolic"),
-          textColor: "var(--info)",
+          textColor: "var(--chart-4)",
           lineOpacity: 0.24,
         },
       ]
@@ -172,7 +172,7 @@ export default function InsightsBlutdruckPage() {
         types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
         title={t("charts.bloodPressure")}
         titleIcon={HeartPulse}
-        colors={["var(--chart-3)", "var(--info)"]}
+        colors={["var(--chart-3)", "var(--chart-4)"]}
         unit="mmHg"
         yAxisUnit="mmHg"
         targetZones={bpTargetZones}

@@ -21,7 +21,7 @@ export default function InsightsGehstreckePage() {
       chartKey="walkingRunningDistance"
       i18nPrefix="insights.walkingRunningDistance"
       explainerMetric="walkingDistance"
-      color="var(--success)"
+      color="var(--chart-2)"
       emptyStateIcon={<Footprints className="size-6" />}
       emptyStateCtaType={null}
       coachPrefill="I haven't logged any walking and running distance yet — what does this metric tell me about my health, and how do I improve it?"

@@ -21,7 +21,7 @@ export default function InsightsWaistPage() {
       insightMetric="WAIST_CIRCUMFERENCE"
       chartKey="waistCircumference"
       i18nPrefix="insights.waist"
-      color="var(--info)"
+      color="var(--chart-4)"
       statIcon={Ruler}
       emptyStateIcon={<Ruler className="size-6" />}
       emptyStateCtaType="WAIST_CIRCUMFERENCE"

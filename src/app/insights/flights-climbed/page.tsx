@@ -21,7 +21,7 @@ export default function InsightsStockwerkePage() {
       chartKey="flightsClimbed"
       i18nPrefix="insights.flightsClimbed"
       explainerMetric="flightsClimbed"
-      color="var(--success)"
+      color="var(--chart-2)"
       unitKey="insights.units.flights"
       emptyStateIcon={<TrendingUp className="size-6" />}
       emptyStateCtaType={null}

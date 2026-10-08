@@ -21,7 +21,7 @@ export default function InsightsGangasymmetriePage() {
       chartKey="walkingAsymmetry"
       i18nPrefix="insights.walkingAsymmetry"
       explainerMetric="walkingAsymmetry"
-      color="var(--success)"
+      color="var(--chart-2)"
       unit="%"
       yAxisUnit="%"
       emptyStateIcon={<Footprints className="size-6" />}

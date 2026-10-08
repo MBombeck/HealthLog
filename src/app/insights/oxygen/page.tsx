@@ -23,7 +23,7 @@ export default function InsightsOxygenSaturationPage() {
       chartKey="oxygenSaturation"
       i18nPrefix="insights.oxygenSaturation"
       explainerMetric="oxygenSaturation"
-      color="var(--info)"
+      color="var(--chart-4)"
       unit="%"
       yAxisUnit="%"
       valueBands={[
