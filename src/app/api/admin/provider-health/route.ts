@@ -4,6 +4,14 @@ import { prisma } from "@/lib/db";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { OPERATOR_HELD_PROVIDER_TYPES } from "@/lib/ai/provider-egress";
+import { PROVIDER_PAUSE_THRESHOLD } from "@/lib/ai/provider-health-ledger";
+import {
+  probeModelListing,
+  type ModelListing,
+} from "@/lib/ai/model-availability";
+import { decrypt } from "@/lib/crypto";
+import { isAnthropicBaseUrl } from "@/lib/ai/provider";
+import { isCanonicalOpenAIEndpoint } from "@/lib/ai/openai-capabilities";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +50,20 @@ interface ProviderHealthSummary {
    * success clears the status along with the rest of the failure state.
    */
   lastFailureStatus: number | null;
+  /**
+   * v1.42 — users whose chain has this provider PAUSED right now (a run of
+   * hard failures past the pause threshold, inside its window). The chain
+   * walks a paused provider last and tries it again once the window lifts.
+   */
+  pausedUsers: number;
+  /** When the latest of those pauses lifts. Null when none is paused. */
+  pausedUntil: string | null;
+  /**
+   * v1.42 — for the operator's own key while it is failing: whether its
+   * endpoint still lists the configured model. `not_listed` is the fix the
+   * card names; null when there is nothing to check.
+   */
+  modelListing: { model: string; listing: ModelListing } | null;
 }
 
 /**
@@ -71,6 +93,19 @@ export const GET = apiHandler(async () => {
     },
   });
 
+  // v1.42 — paused providers: a hard-failure run at or past the threshold,
+  // inside its window. Read as rows (one per user and type, two columns) so
+  // the count and the latest lift time are exact, not folded from a group.
+  const now = new Date();
+  const pausedRows = await prisma.providerHealth.findMany({
+    where: {
+      lastResult: "hard_failed",
+      consecutiveFailures: { gte: PROVIDER_PAUSE_THRESHOLD },
+      nextRetryAt: { gt: now },
+    },
+    select: { providerType: true, nextRetryAt: true },
+  });
+
   const byType = new Map<string, ProviderHealthSummary>();
   for (const g of groups) {
     const row = byType.get(g.providerType) ?? {
@@ -81,6 +116,9 @@ export const GET = apiHandler(async () => {
       lastOkAt: null,
       lastFailureAt: null,
       lastFailureStatus: null,
+      pausedUsers: 0,
+      pausedUntil: null,
+      modelListing: null,
     };
     row.tracked += g._count._all;
     if (g.lastResult !== "ok") {
@@ -101,6 +139,21 @@ export const GET = apiHandler(async () => {
       row.lastFailureStatus = g.lastStatus;
     }
     byType.set(g.providerType, row);
+  }
+
+  for (const paused of pausedRows) {
+    const row = byType.get(paused.providerType);
+    if (!row || paused.nextRetryAt === null) continue;
+    row.pausedUsers += 1;
+    const until = paused.nextRetryAt.toISOString();
+    if (!row.pausedUntil || until > row.pausedUntil) row.pausedUntil = until;
+  }
+
+  // The operator's own key, while it is failing: does its endpoint still list
+  // the configured model? A free GET, cached; only on this admin read.
+  const adminRow = byType.get("admin-openai");
+  if (adminRow && adminRow.failing > 0) {
+    adminRow.modelListing = await adminModelListing();
   }
 
   const providers = [...byType.values()].sort((a, b) => {
@@ -136,3 +189,42 @@ export const GET = apiHandler(async () => {
     },
   });
 });
+
+/**
+ * The model check for the operator's key. Never fails the readout: a missing
+ * settings row, a key that does not decrypt, or a probe error is simply no
+ * answer.
+ */
+async function adminModelListing(): Promise<{
+  model: string;
+  listing: ModelListing;
+} | null> {
+  try {
+    const settings = await prisma.appSettings.findUnique({
+      where: { id: "singleton" },
+      select: {
+        adminAiModel: true,
+        adminAiBaseUrl: true,
+        adminAiKeyEncrypted: true,
+      },
+    });
+    if (!settings?.adminAiKeyEncrypted) return null;
+    const baseUrl = settings.adminAiBaseUrl ?? "https://api.openai.com/v1";
+    // The same scope as the client's own check: an OpenAI-compatible
+    // endpoint the operator typed. `api.openai.com` names a missing model in
+    // its own error; Anthropic lists models on a different contract.
+    if (isCanonicalOpenAIEndpoint(baseUrl) || isAnthropicBaseUrl(baseUrl)) {
+      return null;
+    }
+    const model = settings.adminAiModel ?? "gpt-4o";
+    const listing = await probeModelListing({
+      baseUrl,
+      apiKey: decrypt(settings.adminAiKeyEncrypted),
+      model,
+      operatorTrusted: true,
+    });
+    return { model, listing };
+  } catch {
+    return null;
+  }
+}

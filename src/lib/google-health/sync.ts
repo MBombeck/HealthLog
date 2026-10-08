@@ -19,6 +19,7 @@ import { syncUserWorkout } from "./sync-workout";
 import {
   GOOGLE_HEALTH_INTEGRATION_KEY,
   incrementalStart,
+  GOOGLE_HEALTH_INTRADAY_OVERLAP_MS,
   markSynced,
   runWithGoogleHealthSyncCycle,
   type GoogleHealthResourceSyncOptions,
@@ -173,9 +174,14 @@ export async function syncUserGoogleHealth(
   const start = incrementalStart(connection.lastSyncedAt, {
     fullSync: opts.fullSync,
   });
+  const intradayStart = incrementalStart(connection.lastSyncedAt, {
+    fullSync: opts.fullSync,
+    overlapMs: GOOGLE_HEALTH_INTRADAY_OVERLAP_MS,
+  });
   const resourceOpts: GoogleHealthResourceSyncOptions = {
     fullSync: opts.fullSync,
     start,
+    intradayStart,
     deferRollup: opts.fullSync === true,
   };
   const resources = [

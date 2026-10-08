@@ -311,6 +311,16 @@ const BAND_TRUNC_UNIT: Record<
  *
  * `tzKey` (the far-from-UTC day-grain guard) buckets on the user's LOCAL
  * calendar via `AT TIME ZONE`; parameter-bound, never spliced.
+ *
+ * v1.42 — `measured_at` is a `timestamp` without time zone holding UTC wall
+ * time, so the local wall clock is `(measured_at AT TIME ZONE 'UTC') AT TIME
+ * ZONE tz`: the first step says what the value is, the second converts it.
+ * The single `measured_at AT TIME ZONE tz` this used read the UTC value AS IF
+ * it were local time and converted the wrong way, so a far-from-UTC reader's
+ * readings were shifted by twice their offset (sixteen hours in Los Angeles):
+ * an evening reading landed on the next day's bucket. Every other local-day
+ * reader
+ * (`day-aggregates.ts`, `day-mean.ts`) already used the two-step form.
  */
 async function readBandLive(
   userId: string,
@@ -337,7 +347,7 @@ async function readBandLive(
           }>
         >`
           SELECT
-            date_trunc(${unit}, m."measured_at" AT TIME ZONE ${tzKey}) AS bucket_start,
+            date_trunc(${unit}, (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${tzKey}) AS bucket_start,
             COUNT(*)::int                        AS count,
             AVG(m."value")::double precision     AS mean,
             MIN(m."value")::double precision     AS min_value,
@@ -419,7 +429,7 @@ async function readHourlyMeanBandLive(
     }),
   );
   const bucket = tzKey
-    ? Prisma.sql`date_trunc(${unit}, m."measured_at" AT TIME ZONE ${tzKey})`
+    ? Prisma.sql`date_trunc(${unit}, (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${tzKey})`
     : Prisma.sql`date_trunc(${unit}, m."measured_at")`;
   try {
     const rows = await prisma.$queryRaw<

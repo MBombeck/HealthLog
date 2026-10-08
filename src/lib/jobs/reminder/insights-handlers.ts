@@ -381,6 +381,9 @@ export async function handleInsightPregenerateJob(
         failed: summary.failed,
         budget_blocked: summary.budgetBlocked,
         stopped_early: summary.stoppedEarly,
+        // v1.42 — read back by `readConsecutiveRunFailures`, so a night that
+        // completed with nothing generated counts toward the failure streak.
+        all_failed: summary.allFailed,
         assessments_warmed: summary.assessmentsWarmed,
         metric_assessments_warmed: summary.metricAssessmentsWarmed,
       });

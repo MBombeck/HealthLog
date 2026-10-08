@@ -135,6 +135,7 @@ vi.mock("@/lib/insights/comprehensive-generate", () => ({
 vi.mock("../sync-core", () => ({
   GOOGLE_HEALTH_INTEGRATION_KEY: "google-health",
   incrementalStart: vi.fn(() => undefined),
+  GOOGLE_HEALTH_INTRADAY_OVERLAP_MS: 2 * 60 * 60 * 1000,
   markSynced: vi.fn(async () => {}),
   runWithGoogleHealthSyncCycle: runCycle,
 }));

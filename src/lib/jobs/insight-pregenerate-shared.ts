@@ -16,6 +16,7 @@
 import type { SupportedLocale } from "@/lib/insights/status-shared";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
+import { logCaught } from "@/lib/logging/signal";
 
 export const INSIGHT_PREGENERATE_QUEUE = "insight-pregenerate";
 
@@ -111,7 +112,8 @@ export async function enqueueForceWarm(payload: {
       action: { name: "insights.pregenerate.force.enqueued" },
       meta: { locale: payload.locale },
     });
-  } catch {
+  } catch (err) {
+    logCaught("insights.pregenerate.enqueue_failed", err, { kind: "force" });
     // Enqueue is best-effort; a failure here just means the caches stay
     // cold until the next poll / nightly cron warms them.
   }
@@ -169,7 +171,8 @@ export async function enqueueTodayBriefingWarm(payload: {
       action: { name: "insights.pregenerate.today.enqueued" },
       meta: { locale: payload.locale, immediate: payload.immediate },
     });
-  } catch {
+  } catch (err) {
+    logCaught("insights.pregenerate.enqueue_failed", err, { kind: "today" });
     // Best-effort, like every warm enqueue: the next read asks again.
   }
 }
@@ -240,7 +243,8 @@ export async function enqueuePregenerateFailureRetry(payload: {
         delay_seconds: PREGENERATE_RETRY_DELAY_SECONDS,
       },
     });
-  } catch {
+  } catch (err) {
+    logCaught("insights.pregenerate.enqueue_failed", err, { kind: "retry" });
     // Best-effort: a failed enqueue leaves the nightly tick as the
     // catch-net, exactly the pre-retry behaviour.
   }

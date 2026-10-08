@@ -52,13 +52,59 @@ export const HARD_FAILURE_COOLDOWN_MS = 5 * 60 * 1000; // 5min
  *  never productive. */
 export const HARD_FAILURE_SKIP_THRESHOLD = 3;
 
+/**
+ * v1.42 — a provider that keeps failing is PAUSED, with a pause that grows.
+ *
+ * The backoff above lifts five minutes after each failure, and a lifted
+ * provider goes back to the front of the chain. An operator gateway that
+ * answered HTTP 500 to every call (it no longer offered the configured model)
+ * was therefore tried first again every five minutes: 1 766 failures in a row,
+ * and a 500 in front of 61 chains that the next provider then answered.
+ *
+ * From `PROVIDER_PAUSE_THRESHOLD` consecutive hard failures on, each failure
+ * re-arms the skip window at `PROVIDER_PAUSE_BASE_MS` doubled per further
+ * failure, capped at `PROVIDER_PAUSE_MAX_MS`. Paused is the same skip as
+ * backoff (the provider moves to the tail of the chain, behind everything
+ * healthy, and is still walked as a last resort, so a chain never loses its
+ * only provider). When the window lifts, the next call tries it again: one
+ * success clears the count and resumes it in place, one more failure doubles
+ * the pause. Nothing needs to be reset by hand. The admin provider-health card
+ * shows a paused provider and until when.
+ *
+ * Conservative on purpose: five failures in a row is far past a brown-out,
+ * the first pause is half an hour, and the ceiling is a day, so a provider
+ * that recovers is tried again within a day even without a success elsewhere.
+ */
+export const PROVIDER_PAUSE_THRESHOLD = 5;
+export const PROVIDER_PAUSE_BASE_MS = 30 * 60 * 1000;
+export const PROVIDER_PAUSE_MAX_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The skip window a hard failure arms, given the consecutive-failure count
+ * INCLUDING that failure. Below the pause threshold it is the short backoff;
+ * from the threshold on it doubles per failure up to the ceiling.
+ */
+export function hardFailureCooldownMs(consecutiveFailures: number): number {
+  if (consecutiveFailures < PROVIDER_PAUSE_THRESHOLD) {
+    return HARD_FAILURE_COOLDOWN_MS;
+  }
+  const doublings = Math.min(
+    consecutiveFailures - PROVIDER_PAUSE_THRESHOLD,
+    16,
+  );
+  return Math.min(
+    PROVIDER_PAUSE_BASE_MS * 2 ** doublings,
+    PROVIDER_PAUSE_MAX_MS,
+  );
+}
+
 export type ProviderHealthResult = "ok" | "hard_failed" | "auth_failed";
 
 /** A provider the runner should skip (negative cache) on this call,
  *  with the reason so the caller can surface it. */
 export interface ProviderSkipHint {
   providerType: ProviderChainType;
-  reason: "credential_expired" | "backoff";
+  reason: "credential_expired" | "backoff" | "paused";
   /** When the negative cache lifts (ledger `nextRetryAt`). */
   retryAt: Date | null;
 }
@@ -132,7 +178,10 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
         } else if (row.consecutiveFailures >= HARD_FAILURE_SKIP_THRESHOLD) {
           hints.set(provider, {
             providerType: provider,
-            reason: "backoff",
+            reason:
+              row.consecutiveFailures >= PROVIDER_PAUSE_THRESHOLD
+                ? "paused"
+                : "backoff",
             retryAt: row.nextRetryAt,
           });
         }
@@ -172,11 +221,18 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
     const { result, cooldownMs } = classifyFailure(httpStatus);
     const interval = `${cooldownMs} milliseconds`;
     const status = httpStatus ?? null;
+    // v1.42 — the escalating pause for a hard failure, computed in SQL from
+    // the count the same statement writes, so two workers recording at once
+    // still arm the pause the combined count deserves. Mirrors
+    // `hardFailureCooldownMs`; an auth failure keeps its fixed cooldown.
+    const pauseFrom = PROVIDER_PAUSE_THRESHOLD;
+    const pauseBase = `${PROVIDER_PAUSE_BASE_MS} milliseconds`;
+    const pauseMax = `${PROVIDER_PAUSE_MAX_MS} milliseconds`;
     try {
       // Atomic upsert. `consecutive_failures` accumulates across workers;
       // an auth failure forces the cooldown regardless of count, a hard
-      // failure extends it. The fixed cooldown anchors on NOW() so a
-      // fresh failure always re-arms the skip window.
+      // failure extends it. The cooldown anchors on NOW() so a fresh failure
+      // always re-arms the skip window.
       await prisma.$executeRaw`
         INSERT INTO provider_health
           (id, user_id, provider_type, last_result, last_status,
@@ -190,7 +246,18 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
           last_status = ${status},
           consecutive_failures = provider_health.consecutive_failures + 1,
           last_failure_at = NOW(),
-          next_retry_at = NOW() + ${interval}::interval,
+          next_retry_at = NOW() + CASE
+            WHEN ${result} = 'hard_failed'
+              AND provider_health.consecutive_failures + 1 >= ${pauseFrom}::int
+            THEN LEAST(
+              ${pauseMax}::interval,
+              ${pauseBase}::interval * power(
+                2,
+                LEAST(provider_health.consecutive_failures + 1 - ${pauseFrom}::int, 16)
+              )
+            )
+            ELSE ${interval}::interval
+          END,
           updated_at = NOW()
       `;
     } catch {
@@ -265,7 +332,10 @@ export function createInMemoryProviderHealthLedger(): ProviderHealthLedger & {
       ) {
         out.set(provider, {
           providerType: provider,
-          reason: "backoff",
+          reason:
+            row.consecutiveFailures >= PROVIDER_PAUSE_THRESHOLD
+              ? "paused"
+              : "backoff",
           retryAt: new Date(row.nextRetryAt),
         });
       }
@@ -289,11 +359,16 @@ export function createInMemoryProviderHealthLedger(): ProviderHealthLedger & {
       const prev = rowsFor(userId).get(providerType);
       const priorCount =
         prev && prev.result !== "ok" ? prev.consecutiveFailures : 0;
+      const count = priorCount + 1;
       rowsFor(userId).set(providerType, {
         result,
         status: httpStatus,
-        consecutiveFailures: priorCount + 1,
-        nextRetryAt: Date.now() + cooldownMs,
+        consecutiveFailures: count,
+        nextRetryAt:
+          Date.now() +
+          (result === "hard_failed"
+            ? hardFailureCooldownMs(count)
+            : cooldownMs),
       });
     },
     inspect(userId) {

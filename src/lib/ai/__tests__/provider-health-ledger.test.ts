@@ -26,7 +26,11 @@ import {
   AUTH_FAILURE_COOLDOWN_MS,
   HARD_FAILURE_COOLDOWN_MS,
   HARD_FAILURE_SKIP_THRESHOLD,
+  PROVIDER_PAUSE_BASE_MS,
+  PROVIDER_PAUSE_MAX_MS,
+  PROVIDER_PAUSE_THRESHOLD,
   classifyFailure,
+  hardFailureCooldownMs,
   createInMemoryProviderHealthLedger,
   findCredentialExpiredProviders,
   postgresProviderHealthLedger,
@@ -195,5 +199,70 @@ describe("createInMemoryProviderHealthLedger", () => {
 
     vi.advanceTimersByTime(AUTH_FAILURE_COOLDOWN_MS + 1);
     expect((await ledger.getSkipHints("u1")).size).toBe(0);
+  });
+});
+
+// v1.42 — a provider that keeps failing is paused with a pause that grows,
+// and resumes by itself. Before, the five-minute backoff lifted after every
+// failure and put a gateway that answered 500 to everything back at the front
+// of the chain: 1 766 failures in a row.
+describe("provider pause (v1.42)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("keeps the short backoff below the threshold and doubles from it, capped at a day", () => {
+    expect(hardFailureCooldownMs(1)).toBe(HARD_FAILURE_COOLDOWN_MS);
+    expect(hardFailureCooldownMs(PROVIDER_PAUSE_THRESHOLD - 1)).toBe(
+      HARD_FAILURE_COOLDOWN_MS,
+    );
+    expect(hardFailureCooldownMs(PROVIDER_PAUSE_THRESHOLD)).toBe(
+      PROVIDER_PAUSE_BASE_MS,
+    );
+    expect(hardFailureCooldownMs(PROVIDER_PAUSE_THRESHOLD + 1)).toBe(
+      2 * PROVIDER_PAUSE_BASE_MS,
+    );
+    expect(hardFailureCooldownMs(PROVIDER_PAUSE_THRESHOLD + 40)).toBe(
+      PROVIDER_PAUSE_MAX_MS,
+    );
+    // Conservative: the pause never starts before the skip threshold.
+    expect(PROVIDER_PAUSE_THRESHOLD).toBeGreaterThan(
+      HARD_FAILURE_SKIP_THRESHOLD,
+    );
+  });
+
+  it("pauses after N hard failures, keeps it paused past the old five minutes, and resumes after the window", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-08T04:30:00Z"));
+    const ledger = createInMemoryProviderHealthLedger();
+    for (let i = 0; i < PROVIDER_PAUSE_THRESHOLD; i += 1) {
+      await ledger.recordFailure("u1", "admin-openai", 500);
+    }
+    expect(ledger.inspect("u1").get("admin-openai")?.reason).toBe("paused");
+
+    // Past the old five-minute backoff it is still paused.
+    vi.advanceTimersByTime(HARD_FAILURE_COOLDOWN_MS + 1_000);
+    expect(ledger.inspect("u1").get("admin-openai")?.reason).toBe("paused");
+
+    // Past the pause it is tried again.
+    vi.advanceTimersByTime(PROVIDER_PAUSE_BASE_MS);
+    expect(ledger.inspect("u1").has("admin-openai")).toBe(false);
+
+    // One more failure doubles the pause; a success clears it.
+    await ledger.recordFailure("u1", "admin-openai", 500);
+    const retryAt = ledger.inspect("u1").get("admin-openai")?.retryAt;
+    expect(retryAt!.getTime() - Date.now()).toBe(2 * PROVIDER_PAUSE_BASE_MS);
+    await ledger.recordSuccess("u1", "admin-openai");
+    expect(ledger.inspect("u1").has("admin-openai")).toBe(false);
+  });
+
+  it("arms the escalating pause in the Postgres upsert itself", async () => {
+    await postgresProviderHealthLedger.recordFailure("u1", "admin-openai", 500);
+    const sql = (
+      vi.mocked(prisma.$executeRaw).mock.calls[0][0] as unknown as string[]
+    ).join("?");
+    expect(sql).toContain("power(");
+    expect(sql).toContain("LEAST(");
+    expect(sql).toMatch(/consecutive_failures \+ 1 >=/);
   });
 });
