@@ -84,11 +84,19 @@ async function captureDose(
     booster: "confirm" | "decline" | "none";
   },
 ): Promise<void> {
-  // The header Add renders whether or not the list is empty, so clicking it
-  // works in both states. click() auto-waits for the button to be actionable,
-  // which avoids racing an instant visibility read against the client render
-  // (an empty-state-only branch times out once a record already exists).
-  await page.locator('[data-slot="vaccination-add"]').first().click();
+  // While the Impfpass is empty its empty state carries the add action and
+  // the header drops its own, so wait for the list to settle (a record or
+  // the empty state) and click whichever add control is then on screen.
+  await expect(
+    page.locator('[data-vaccination-id], [data-slot="empty-state"]').first(),
+  ).toBeVisible();
+  await page
+    .locator(
+      '[data-slot="vaccination-add"], [data-slot="vaccination-add-empty"]',
+    )
+    .filter({ visible: true })
+    .first()
+    .click();
 
   await expect(page.locator('[data-slot="vaccination-form"]')).toBeVisible();
 
@@ -321,7 +329,12 @@ test.describe("vaccinations", () => {
     ).toBeVisible({ timeout: 15_000 });
     await expectNoSeriousAxe(page);
 
-    await page.locator('[data-slot="vaccination-add"]').first().click();
+    await page
+      .locator(
+        '[data-slot="vaccination-add"], [data-slot="vaccination-add-empty"]',
+      )
+      .last()
+      .click();
     await expect(page.locator('[data-slot="vaccination-form"]')).toBeVisible();
     await expectNoSeriousAxe(page);
   });
