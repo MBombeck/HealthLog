@@ -74,6 +74,9 @@ x-healthlog-env: &healthlog_env
   DATABASE_STATEMENT_TIMEOUT_MS: "${DATABASE_STATEMENT_TIMEOUT_MS:-}"
   # Postgres work_mem for every app session (default 16MB).
   DATABASE_WORK_MEM: "${DATABASE_WORK_MEM:-}"
+  # 1 sends neither of the two settings above (they ride the libpq `options`
+  # startup parameter, which PgBouncer refuses by default).
+  DATABASE_SESSION_OPTIONS_DISABLED: "${DATABASE_SESSION_OPTIONS_DISABLED:-}"
   WITHINGS_WEBHOOK_SECRET: "${WITHINGS_WEBHOOK_SECRET:-}"
   # Overrides the derived `${NEXT_PUBLIC_APP_URL}/api/withings/callback`;
   # set it when the URL registered with Withings differs from the app's own
