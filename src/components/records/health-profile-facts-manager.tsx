@@ -6,6 +6,7 @@ import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Label } from "@/components/ui/label";
@@ -289,7 +290,10 @@ export function HealthProfileFactsManager() {
                 disabled={disabled}
                 onValueChange={(next) => editDraft(kind, next)}
               >
-                <SelectTrigger id={`health-profile-fact-${kind}`}>
+                <SelectTrigger
+                  id={`health-profile-fact-${kind}`}
+                  className="w-full"
+                >
                   <SelectValue
                     placeholder={
                       current?.unreadable
@@ -311,69 +315,51 @@ export function HealthProfileFactsManager() {
                   three fields no longer each stack their own grey Save slab.
                   When a shared Save partially fails, the kind that didn't land
                   says so here rather than behind the toast. */}
-              <div className="flex items-center justify-between gap-2 pt-1">
-                {failed ? (
-                  <span
-                    className="text-destructive text-xs"
-                    data-slot={`health-profile-fact-error-${kind}`}
-                  >
-                    {t("records.profileFacts.saveKindError")}
-                  </span>
-                ) : (
-                  <span aria-hidden />
-                )}
-                {current ? (
-                  <ConfirmButton
-                    // Short label inside the row; the full phrase stays the
-                    // accessible name, because "Remove" on its own is
-                    // ambiguous once three of them are on screen.
-                    label={t("records.profileFacts.removeShort")}
-                    ariaLabel={t("records.profileFacts.remove", {
-                      kind: t(KIND_LABEL[kind]),
-                    })}
-                    title={t("records.profileFacts.removeConfirmTitle", {
-                      kind: t(KIND_LABEL[kind]),
-                    })}
-                    body={t("records.profileFacts.removeConfirmDescription")}
-                    confirmLabel={t("records.profileFacts.remove", {
-                      kind: t(KIND_LABEL[kind]),
-                    })}
-                    onConfirm={() => remove.mutate(current)}
-                    pending={
-                      remove.isPending && remove.variables?.id === current.id
-                    }
-                    disabled={disabled}
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive min-h-11 sm:min-h-9"
-                    icon={<Trash2 className="size-4" aria-hidden />}
-                    slot={`health-profile-fact-remove-${kind}`}
-                  />
-                ) : null}
-              </div>
+              {failed || current ? (
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  {failed ? (
+                    <span
+                      className="text-destructive text-xs"
+                      data-slot={`health-profile-fact-error-${kind}`}
+                    >
+                      {t("records.profileFacts.saveKindError")}
+                    </span>
+                  ) : (
+                    <span aria-hidden />
+                  )}
+                  {current ? (
+                    <ConfirmButton
+                      // Short label inside the row; the full phrase stays the
+                      // accessible name, because "Remove" on its own is
+                      // ambiguous once three of them are on screen.
+                      label={t("records.profileFacts.removeShort")}
+                      ariaLabel={t("records.profileFacts.remove", {
+                        kind: t(KIND_LABEL[kind]),
+                      })}
+                      title={t("records.profileFacts.removeConfirmTitle", {
+                        kind: t(KIND_LABEL[kind]),
+                      })}
+                      body={t("records.profileFacts.removeConfirmDescription")}
+                      confirmLabel={t("records.profileFacts.remove", {
+                        kind: t(KIND_LABEL[kind]),
+                      })}
+                      onConfirm={() => remove.mutate(current)}
+                      pending={
+                        remove.isPending && remove.variables?.id === current.id
+                      }
+                      disabled={disabled}
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive min-h-11 sm:min-h-9"
+                      icon={<Trash2 className="size-4" aria-hidden />}
+                      slot={`health-profile-fact-remove-${kind}`}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           );
         })}
-      </div>
-
-      {/* One Save for the whole tile. It writes only the dirty kinds and stays
-          disabled until at least one field differs from its stored value. */}
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          disabled={disabled || dirtyCount === 0}
-          onClick={() => save.mutate(collectDirtyInputs())}
-        >
-          {save.isPending && (
-            <Loader2
-              className="size-4 animate-spin motion-reduce:animate-none"
-              aria-hidden
-            />
-          )}
-          {t("records.profileFacts.save")}
-        </Button>
       </div>
 
       {closedHistory.length > 0 && (
@@ -412,6 +398,28 @@ export function HealthProfileFactsManager() {
           </ul>
         </div>
       )}
+
+      {/* One Save for the whole tile. It writes only the dirty kinds and stays
+          disabled until at least one field differs from its stored value. It
+          is the last thing in the card, below the history (design standards
+          §12). */}
+      <SettingsCardActions>
+        <Button
+          type="button"
+          size="sm"
+          className="min-h-11 sm:min-h-9"
+          disabled={disabled || dirtyCount === 0}
+          onClick={() => save.mutate(collectDirtyInputs())}
+        >
+          {save.isPending && (
+            <Loader2
+              className="size-4 animate-spin motion-reduce:animate-none"
+              aria-hidden
+            />
+          )}
+          {t("records.profileFacts.save")}
+        </Button>
+      </SettingsCardActions>
     </div>
   );
 }

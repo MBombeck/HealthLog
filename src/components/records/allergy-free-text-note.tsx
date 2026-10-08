@@ -27,6 +27,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Label } from "@/components/ui/label";
 import { useTranslations } from "@/lib/i18n/context";
@@ -125,7 +126,7 @@ export function AllergyFreeTextNote() {
           onRetry={() => query.refetch()}
         />
       ) : (
-        <div className="flex justify-end">
+        <SettingsCardActions>
           <Button
             type="button"
             size="sm"
@@ -142,7 +143,7 @@ export function AllergyFreeTextNote() {
             )}
             {t("settings.ai.aboutMe.save")}
           </Button>
-        </div>
+        </SettingsCardActions>
       )}
     </div>
   );

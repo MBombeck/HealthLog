@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { DeleteButton } from "@/components/data-list";
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -166,16 +167,6 @@ export function BiomarkerManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-muted-foreground text-sm">
-          {t("labs.biomarker.managerDescription")}
-        </p>
-        <Button size="sm" onClick={openNew} className="shrink-0">
-          <Plus className="h-4 w-4" />
-          {t("labs.biomarker.define")}
-        </Button>
-      </div>
-
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 3 }, (_, i) => (
@@ -216,6 +207,18 @@ export function BiomarkerManager() {
           ) : null}
         </div>
       )}
+
+      {/* The add action is the card's one action row, last in the card
+          (design standards §12). An empty catalog leaves it to the empty
+          state's own button, so the card never offers the same action twice. */}
+      {!isLoading && !isError && markers.length > 0 ? (
+        <SettingsCardActions>
+          <Button size="sm" onClick={openNew} className="min-h-11 sm:min-h-9">
+            <Plus className="h-4 w-4" />
+            {t("labs.biomarker.define")}
+          </Button>
+        </SettingsCardActions>
+      ) : null}
 
       <ResponsiveSheet
         open={formOpen}

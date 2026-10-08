@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Switch } from "@/components/ui/switch";
@@ -136,7 +137,7 @@ export function AiProfileInclusionManager() {
           );
         })}
       </div>
-      <div className="flex justify-end">
+      <SettingsCardActions>
         <Button
           type="button"
           size="sm"
@@ -152,7 +153,7 @@ export function AiProfileInclusionManager() {
           )}
           {t("records.aiInclusion.save")}
         </Button>
-      </div>
+      </SettingsCardActions>
     </div>
   );
 }
