@@ -176,6 +176,36 @@ describe("an owner's own vaccine definitions", () => {
     expect(bad.status).toBe(422);
   });
 
+  it("answers 409, not 500, to the loser of two concurrent adds of one name", async () => {
+    const owner = await person("owner");
+    signIn(owner);
+    const prisma = getPrismaClient();
+    // Hold every insert long enough that both requests have passed the name
+    // lookup before either commits, so the loser meets the unique index.
+    await prisma.$executeRawUnsafe(`
+      CREATE OR REPLACE FUNCTION slow_custom_vaccine_insert() RETURNS trigger AS $$
+      BEGIN PERFORM pg_sleep(0.3); RETURN NEW; END; $$ LANGUAGE plpgsql`);
+    await prisma.$executeRawUnsafe(`
+      CREATE TRIGGER slow_custom_vaccine_insert BEFORE INSERT ON "custom_vaccines"
+      FOR EACH ROW EXECUTE FUNCTION slow_custom_vaccine_insert()`);
+    try {
+      const statuses = (
+        await Promise.all([addCustom(TRAVEL), addCustom(TRAVEL)])
+      ).map((r) => r.status);
+      expect(statuses.sort()).toEqual([201, 409]);
+      expect(
+        await prisma.customVaccine.count({ where: { userId: owner.id } }),
+      ).toBe(1);
+    } finally {
+      await prisma.$executeRawUnsafe(
+        'DROP TRIGGER IF EXISTS slow_custom_vaccine_insert ON "custom_vaccines"',
+      );
+      await prisma.$executeRawUnsafe(
+        "DROP FUNCTION IF EXISTS slow_custom_vaccine_insert()",
+      );
+    }
+  });
+
   it("counts a dose into every listed antigen and clears a booster keyed to one", async () => {
     const owner = await person("owner");
     signIn(owner);

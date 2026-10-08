@@ -20,6 +20,7 @@
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
+import { isP2002 } from "@/lib/prisma-errors";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -80,36 +81,45 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
   const entry = parsed.data;
 
-  const outcome = await prisma.$transaction(async (tx) => {
-    if (await findLiveNameClash(tx, user.id, entry.name)) {
-      return "name-taken" as const;
-    }
-    // Names are unique per record, removed definitions included, because the
-    // index is. A name the person removed and now adds again brings that row
-    // back with the new values rather than failing on the index: deleting
-    // unlinked every dose, so nothing re-attaches on the way back.
-    const removed = await tx.customVaccine.findFirst({
-      where: { userId: user.id, name: entry.name, deletedAt: { not: null } },
-      select: { id: true },
-    });
-    const data = {
-      name: entry.name,
-      components: entry.components,
-      typicalSeriesDoses: entry.typicalSeriesDoses ?? null,
-      boosterIntervalMonths: entry.boosterIntervalMonths ?? null,
-    };
-    if (removed) {
-      return tx.customVaccine.update({
-        where: { id: removed.id },
-        data: { ...data, deletedAt: null },
+  // The lookup below and the unique index answer the same question; two
+  // requests racing with the same name both pass the lookup, and the
+  // loser meets the index. That is the same answer, so it gets the same
+  // 409 rather than a 500.
+  const outcome = await prisma
+    .$transaction(async (tx) => {
+      if (await findLiveNameClash(tx, user.id, entry.name)) {
+        return "name-taken" as const;
+      }
+      // Names are unique per record, removed definitions included, because the
+      // index is. A name the person removed and now adds again brings that row
+      // back with the new values rather than failing on the index: deleting
+      // unlinked every dose, so nothing re-attaches on the way back.
+      const removed = await tx.customVaccine.findFirst({
+        where: { userId: user.id, name: entry.name, deletedAt: { not: null } },
+        select: { id: true },
+      });
+      const data = {
+        name: entry.name,
+        components: entry.components,
+        typicalSeriesDoses: entry.typicalSeriesDoses ?? null,
+        boosterIntervalMonths: entry.boosterIntervalMonths ?? null,
+      };
+      if (removed) {
+        return tx.customVaccine.update({
+          where: { id: removed.id },
+          data: { ...data, deletedAt: null },
+          select: CUSTOM_VACCINE_SELECT,
+        });
+      }
+      return tx.customVaccine.create({
+        data: { userId: user.id, ...data },
         select: CUSTOM_VACCINE_SELECT,
       });
-    }
-    return tx.customVaccine.create({
-      data: { userId: user.id, ...data },
-      select: CUSTOM_VACCINE_SELECT,
+    })
+    .catch((err: unknown) => {
+      if (isP2002(err)) return "name-taken" as const;
+      throw err;
     });
-  });
 
   if (outcome === "name-taken") {
     return apiError("A vaccine with this name already exists", 409, {
