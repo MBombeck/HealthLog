@@ -309,16 +309,20 @@ export function ManualWorkoutForm({
           max={wallClockNow(new Date(), timezone)}
           aria-invalid={!!errors.start || undefined}
           aria-describedby={[
-            `${ids.start}-hint`,
+            edit ? undefined : `${ids.start}-hint`,
             describedBy("start", `${ids.start}-error`),
           ]
             .filter(Boolean)
             .join(" ")}
           data-testid="manual-workout-start"
         />
-        <p id={`${ids.start}-hint`} className="text-muted-foreground text-xs">
-          {t("insights.workouts.manual.startHint")}
-        </p>
+        {/* "Leave empty if you just finished" is about logging; an edit
+            opens with the stored start in place. */}
+        {edit ? null : (
+          <p id={`${ids.start}-hint`} className="text-muted-foreground text-xs">
+            {t("insights.workouts.manual.startHint")}
+          </p>
+        )}
         <FieldError id={`${ids.start}-error`} message={fieldError("start")} />
       </div>
 

@@ -129,7 +129,7 @@ export function MetricFreshnessDisclosure<
       </button>
 
       {open && (
-        <ul id={panelId} className="space-y-1">
+        <ul id={panelId} className={detail ? "space-y-2.5" : "space-y-1"}>
           {sorted.map((entry) => {
             const extra = detail?.(entry);
             return (
@@ -151,7 +151,16 @@ export function MetricFreshnessDisclosure<
                         className="size-3 shrink-0"
                       />
                     ) : null}
-                    <span className="truncate">{label(entry.type)}</span>
+                    {/* With a detail line under it, the type name is the
+                        row's content and the line its meta. */}
+                    <span
+                      className={cn(
+                        "truncate",
+                        extra && !entry.stale && "text-foreground",
+                      )}
+                    >
+                      {label(entry.type)}
+                    </span>
                   </span>
                   <time
                     dateTime={entry.lastSeenAt}

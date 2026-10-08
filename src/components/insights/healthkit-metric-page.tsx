@@ -509,7 +509,9 @@ export function HealthKitMetricPage({
           userTimezone={user?.timezone}
           valueScale={resolvedScale}
           valueOffset={resolvedOffset}
-          onVisibleStats={onVisibleStats}
+          // No `onVisibleStats`: the strip describes the primary measure, and
+          // two charts writing the one stats slot would replace each other's
+          // window on every render without end.
           showDataTable
         />
       ) : null}

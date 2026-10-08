@@ -22,11 +22,16 @@ vi.mock("@/hooks/use-ai-capability", () => ({
 }));
 vi.mock("next/dynamic", () => ({
   default: () => {
-    const Stub = (props: { types?: string[]; title?: string }) => (
+    const Stub = (props: {
+      types?: string[];
+      title?: string;
+      onVisibleStats?: unknown;
+    }) => (
       <div
         data-slot="chart-stub"
         data-types={(props.types ?? []).join(",")}
         data-title={props.title ?? ""}
+        data-reports-stats={props.onVisibleStats ? "yes" : "no"}
       />
     );
     Stub.displayName = "HealthChartStub";
@@ -90,6 +95,24 @@ describe("/insights/hrv — SDNN and RMSSD kept apart (#1110)", () => {
     expect(found[0]!.title).toMatch(/SDNN$/);
     expect(found[1]).toMatchObject({ types: "HRV_RMSSD" });
     expect(found[1]!.title).toMatch(/RMSSD$/);
+  });
+
+  it("lets only the primary chart write the stat strip's window", () => {
+    // Two charts writing the one stats slot replaced each other's window on
+    // every render: React's update-depth error, and the chart failed to load.
+    analyticsMock.mockReturnValue({
+      data: {
+        summaries: {
+          HEART_RATE_VARIABILITY: { count: 30 },
+          HRV_RMSSD: { count: 28 },
+        },
+      },
+      isEmpty: false,
+    });
+    const flags = [...render().matchAll(/data-reports-stats="(yes|no)"/g)].map(
+      (m) => m[1],
+    );
+    expect(flags).toEqual(["yes", "no"]);
   });
 
   it("keeps one unlabelled SDNN chart when there is no RMSSD", () => {
