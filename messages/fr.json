@@ -6987,12 +6987,11 @@
       },
       "stored": {
         "title": "Ce qui est stocké",
-        "measurements": "Mesures (poids, tension, pouls, glycémie, sommeil, composition corporelle)",
-        "medications": "Médicaments et historique des prises",
-        "moodLabs": "Entrées d'humeur et résultats de laboratoire",
-        "coach": "Conversations avec le coach",
+        "measurements": "Mesures : poids, tension, pouls et toute autre valeur enregistrée par vous ou un appareil",
         "integrations": "Jetons d'intégration (chiffrés)",
-        "security": "Activité du compte et de sécurité (sessions, journal de connexion)"
+        "security": "Activité du compte et de sécurité (sessions, journal de connexion)",
+        "profile": "Votre profil, vos antécédents médicaux et les informations du dossier de santé",
+        "modules": "Données de chaque module : {list}"
       },
       "retention": {
         "title": "Conservation",

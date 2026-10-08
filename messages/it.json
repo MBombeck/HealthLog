@@ -6987,12 +6987,11 @@
       },
       "stored": {
         "title": "Cosa viene memorizzato",
-        "measurements": "Misurazioni (peso, pressione, polso, glicemia, sonno, composizione corporea)",
-        "medications": "Farmaci e cronologia delle assunzioni",
-        "moodLabs": "Voci dell'umore e referti di laboratorio",
-        "coach": "Conversazioni con il coach",
+        "measurements": "Misurazioni: peso, pressione, battito e ogni altro valore registrato da te o da un dispositivo",
         "integrations": "Token di integrazione (cifrati)",
-        "security": "Attività dell'account e di sicurezza (sessioni, registro degli accessi)"
+        "security": "Attività dell'account e di sicurezza (sessioni, registro degli accessi)",
+        "profile": "Il tuo profilo, l'anamnesi e i dati della cartella sanitaria",
+        "modules": "Dati di ogni modulo: {list}"
       },
       "retention": {
         "title": "Conservazione",

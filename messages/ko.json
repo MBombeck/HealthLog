@@ -6987,12 +6987,11 @@
       },
       "stored": {
         "title": "저장되는 항목",
-        "measurements": "측정값 (체중, 혈압, 맥박, 혈당, 수면, 체성분)",
-        "medications": "약과 복용 기록",
-        "moodLabs": "기분 기록과 검사 결과",
-        "coach": "코치 대화",
+        "measurements": "측정값: 체중, 혈압, 맥박과 직접 또는 기기로 기록한 모든 값",
         "integrations": "연동 토큰 (암호화됨)",
-        "security": "계정·보안 활동 (세션, 로그인 기록)"
+        "security": "계정·보안 활동 (세션, 로그인 기록)",
+        "profile": "프로필, 병력, 건강 기록 정보",
+        "modules": "모듈별 기록: {list}"
       },
       "retention": {
         "title": "보관 기간",

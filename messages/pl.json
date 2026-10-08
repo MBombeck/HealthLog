@@ -6987,12 +6987,11 @@
       },
       "stored": {
         "title": "Co jest przechowywane",
-        "measurements": "Pomiary (waga, ciśnienie, tętno, glukoza, sen, skład ciała)",
-        "medications": "Leki i historia przyjmowania",
-        "moodLabs": "Wpisy nastroju i wyniki badań laboratoryjnych",
-        "coach": "Rozmowy z asystentem",
+        "measurements": "Pomiary: waga, ciśnienie, tętno i każda inna wartość zapisana przez ciebie lub urządzenie",
         "integrations": "Tokeny integracji (szyfrowane)",
-        "security": "Aktywność konta i zabezpieczeń (sesje, dziennik logowań)"
+        "security": "Aktywność konta i zabezpieczeń (sesje, dziennik logowań)",
+        "profile": "Twój profil, wywiad medyczny i dane dokumentacji zdrowotnej",
+        "modules": "Wpisy poszczególnych modułów: {list}"
       },
       "retention": {
         "title": "Retencja",

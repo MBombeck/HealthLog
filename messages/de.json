@@ -6987,12 +6987,11 @@
       },
       "stored": {
         "title": "Was gespeichert wird",
-        "measurements": "Messwerte (Gewicht, Blutdruck, Puls, Glukose, Schlaf, Körperzusammensetzung)",
-        "medications": "Medikamente und Einnahmeverlauf",
-        "moodLabs": "Stimmungseinträge und Laborwerte",
-        "coach": "Coach-Unterhaltungen",
+        "measurements": "Messwerte: Gewicht, Blutdruck, Puls und jeder weitere Wert, den du oder ein Gerät erfasst",
         "integrations": "Integrations-Tokens (verschlüsselt)",
-        "security": "Konto- und Sicherheitsaktivität (Sitzungen, Anmeldeprotokoll)"
+        "security": "Konto- und Sicherheitsaktivität (Sitzungen, Anmeldeprotokoll)",
+        "profile": "Dein Profil, deine Anamnese und die Angaben für die Gesundheitsakte",
+        "modules": "Einträge der Module: {list}"
       },
       "retention": {
         "title": "Aufbewahrung",

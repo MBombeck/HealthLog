@@ -6987,12 +6987,11 @@
       },
       "stored": {
         "title": "Qué se almacena",
-        "measurements": "Mediciones (peso, presión arterial, pulso, glucosa, sueño, composición corporal)",
-        "medications": "Medicamentos e historial de tomas",
-        "moodLabs": "Entradas de estado de ánimo y resultados de laboratorio",
-        "coach": "Conversaciones con el asistente",
+        "measurements": "Mediciones: peso, presión arterial, pulso y cualquier otro valor que registres tú o un dispositivo",
         "integrations": "Tokens de integración (cifrados)",
-        "security": "Actividad de la cuenta y de seguridad (sesiones, registro de inicio de sesión)"
+        "security": "Actividad de la cuenta y de seguridad (sesiones, registro de inicio de sesión)",
+        "profile": "Tu perfil, tus antecedentes médicos y los datos del historial de salud",
+        "modules": "Registros de cada módulo: {list}"
       },
       "retention": {
         "title": "Retención",

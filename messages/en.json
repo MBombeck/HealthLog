@@ -6987,12 +6987,11 @@
       },
       "stored": {
         "title": "What's stored",
-        "measurements": "Measurements (weight, blood pressure, pulse, glucose, sleep, body composition)",
-        "medications": "Medications and intake history",
-        "moodLabs": "Mood entries and lab results",
-        "coach": "Coach conversations",
+        "measurements": "Measurements: weight, blood pressure, pulse and every other value you or a device record",
         "integrations": "Integration tokens (encrypted)",
-        "security": "Account and security activity (sessions, sign-in log)"
+        "security": "Account and security activity (sessions, sign-in log)",
+        "profile": "Your profile, medical history and health-record details",
+        "modules": "Records of each module: {list}"
       },
       "retention": {
         "title": "Retention",
