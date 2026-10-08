@@ -32,7 +32,9 @@ test.describe("mood timestamp capture", () => {
     });
 
     await page.goto("/mood", { waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: "Add", exact: true }).click();
+    // The list is mocked empty, so its empty state carries the add action
+    // (the header drops its own while there is nothing to list).
+    await page.getByRole("button", { name: "Log your first mood" }).click();
     await page.getByRole("radio", { name: "Amazing" }).click();
 
     const details = page.getByRole("button", { name: "Note & details" });

@@ -135,7 +135,13 @@ test.describe("add measurement flow", () => {
     // v1.5 phase-5: the menu items now have distinct labels — the
     // measurement entry says "Measurement" / "Messung" instead of "Add",
     // so we can target it directly.
-    await page.getByRole("menuitem", { name: /measurement|messung/i }).click();
+    // The desktop rail opens a dropdown, the phone shell the capture sheet
+    // the bottom nav's plus opens; the measurement entry is in either.
+    await page
+      .getByRole("menuitem", { name: /measurement|messung/i })
+      .or(page.getByRole("button", { name: /^(measurement|messung)\b/i }))
+      .first()
+      .click();
 
     // Form should be visible inside the dialog. Switch type to WEIGHT
     // (combo-box defaults to BLOOD_PRESSURE).

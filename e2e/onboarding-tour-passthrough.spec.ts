@@ -197,7 +197,14 @@ test.describe("v1.4.33 F2 — onboarding tour passes clicks through to the page"
     await quickAddButton.click();
 
     await expect(quickAddButton).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByRole("menuitem").first()).toBeVisible();
+    // The desktop rail opens a dropdown; the phone shell opens the capture
+    // sheet the bottom nav's plus opens. Either proves the click landed.
+    await expect(
+      page
+        .getByRole("menuitem")
+        .or(page.locator('[role="dialog"][data-state="open"]'))
+        .first(),
+    ).toBeVisible();
 
     // The tour stays mounted — the click went to the underlying button,
     // not anything in the tour layer.

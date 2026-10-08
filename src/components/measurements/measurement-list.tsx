@@ -1087,7 +1087,10 @@ export function MeasurementList({
                     {t("measurements.emptyResetFilter")}
                   </Button>
                 ) : onAddFirst && canAddMeasurement ? (
-                  <Button onClick={onAddFirst}>
+                  <Button
+                    onClick={onAddFirst}
+                    data-slot="measurement-add-first"
+                  >
                     <Plus className="h-4 w-4" />
                     {t("measurements.emptyAddFirst")}
                   </Button>
