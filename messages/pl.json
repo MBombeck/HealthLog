@@ -531,6 +531,7 @@
       "signOut": "Wyloguj i kontynuuj",
       "guardiansTitle": "Kto na razie zachowuje dostęp",
       "guardiansHint": "Zaproponowane przez osoby, które prowadziły Twoją kartę. Zdecydujesz zaraz po zalogowaniu.",
+      "guardianUnnamed": "Opiekun",
       "usernameHint": "Od 3 do 30 liter, cyfr, _ lub -.",
       "usernameReserved": "Nazwy użytkownika zaczynające się od managed- są zarezerwowane.",
       "emailHint": "Wymagany, żebyś mógł wrócić, jeśli zapomnisz hasła.",
@@ -8445,7 +8446,17 @@
       "changedTitle": "{name} zmienia Twój dostęp",
       "changedEnd": "Twój dostęp do karty zdrowia osoby {name} się zakończył.",
       "changedRead": "Możesz teraz oglądać kartę zdrowia osoby {name}, ale nie zmieniać jej.",
-      "changedManage": "Możesz zarządzać kartą zdrowia osoby {name}."
+      "changedManage": "Możesz zarządzać kartą zdrowia osoby {name}.",
+      "unnamed": {
+        "claimedTitle": "Osoba pod Twoją opieką ma teraz własne konto",
+        "claimedEnd": "Osoba pod Twoją opieką przejęła swoją dokumentację zdrowotną. Twój dostęp wygasł.",
+        "claimedRead": "Osoba pod Twoją opieką przejęła swoją dokumentację zdrowotną. Nadal możesz ją przeglądać, ale nie możesz już jej zmieniać.",
+        "claimedManage": "Osoba pod Twoją opieką przejęła swoją dokumentację zdrowotną. Nadal możesz nią zarządzać, dopóki nie zdecyduje inaczej.",
+        "changedTitle": "Twój dostęp do dokumentacji zdrowotnej się zmienił",
+        "changedEnd": "Twój dostęp do dokumentacji zdrowotnej osoby pod Twoją opieką wygasł.",
+        "changedRead": "Możesz teraz przeglądać dokumentację zdrowotną osoby pod Twoją opieką, ale nie możesz jej zmieniać.",
+        "changedManage": "Możesz zarządzać dokumentacją zdrowotną osoby pod Twoją opieką."
+      }
     }
   },
   "i18n": {

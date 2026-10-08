@@ -432,9 +432,13 @@ function isOpen(
 export interface HandoverPreview {
   displayName: string | null;
   expiresAt: Date;
+  /**
+   * Display names only: the holder of the link has proved nothing beyond
+   * holding it, so no grant id and no login name (a Guardian without a
+   * display name is null, and the page says "a guardian").
+   */
   guardians: {
-    grantId: string;
-    displayName: string;
+    displayName: string | null;
     proposal: HandoverAccess;
   }[];
 }
@@ -443,8 +447,8 @@ export interface HandoverPreview {
  * What a link would hand over, or null for every kind of unusable link.
  *
  * Deliberately minimal: the profile's name, the expiry, and who keeps which
- * access. No health data, no date of birth, no usernames — the person holding
- * the link has not proved anything yet beyond holding it.
+ * access. No health data, no date of birth, no usernames and no grant ids —
+ * the person holding the link has not proved anything yet beyond holding it.
  */
 export async function previewHandover(
   rawToken: string,
@@ -468,7 +472,7 @@ export async function previewHandover(
     where: { grantorId: row.profileId, ...activeGuardianWhere(now) },
     select: {
       id: true,
-      grantee: { select: { displayName: true, username: true } },
+      grantee: { select: { displayName: true } },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -476,8 +480,7 @@ export async function previewHandover(
     displayName: profile.displayName,
     expiresAt: row.expiresAt,
     guardians: guardians.map((g) => ({
-      grantId: g.id,
-      displayName: nameOf(g.grantee),
+      displayName: g.grantee.displayName?.trim() || null,
       proposal: proposalFor(state, g.id),
     })),
   };

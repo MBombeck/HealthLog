@@ -18,41 +18,69 @@ import { dispatchLocalisedNotification } from "@/lib/notifications/dispatch-loca
 function accessMessageKey(
   kind: "claimed" | "changed",
   access: HandoverAccess,
+  named: boolean,
 ): string {
   if (kind === "claimed") {
     switch (access) {
       case "end":
-        return "notifications.handover.claimedEnd";
+        return named
+          ? "notifications.handover.claimedEnd"
+          : "notifications.handover.unnamed.claimedEnd";
       case "read":
-        return "notifications.handover.claimedRead";
+        return named
+          ? "notifications.handover.claimedRead"
+          : "notifications.handover.unnamed.claimedRead";
       case "manage":
-        return "notifications.handover.claimedManage";
+        return named
+          ? "notifications.handover.claimedManage"
+          : "notifications.handover.unnamed.claimedManage";
     }
   }
   switch (access) {
     case "end":
-      return "notifications.handover.changedEnd";
+      return named
+        ? "notifications.handover.changedEnd"
+        : "notifications.handover.unnamed.changedEnd";
     case "read":
-      return "notifications.handover.changedRead";
+      return named
+        ? "notifications.handover.changedRead"
+        : "notifications.handover.unnamed.changedRead";
     case "manage":
-      return "notifications.handover.changedManage";
+      return named
+        ? "notifications.handover.changedManage"
+        : "notifications.handover.unnamed.changedManage";
   }
 }
 
+function titleKey(kind: "claimed" | "changed", named: boolean): string {
+  if (kind === "claimed") {
+    return named
+      ? "notifications.handover.claimedTitle"
+      : "notifications.handover.unnamed.claimedTitle";
+  }
+  return named
+    ? "notifications.handover.changedTitle"
+    : "notifications.handover.unnamed.changedTitle";
+}
+
+/**
+ * `recordName` is the display name the Guardians knew the record by, or null.
+ * Never the login name: the new owner chose it to sign in with, and a
+ * notification to somebody else is no place for it. Without a display name
+ * the sentences speak of "the person you looked after".
+ */
 export function notifyGuardiansOfHandover(
   kind: "claimed" | "changed",
-  recordName: string,
+  recordName: string | null,
   guardians: { guardianId: string; access: HandoverAccess }[],
 ): void {
+  const name = recordName?.trim() || null;
   for (const guardian of guardians) {
     void dispatchLocalisedNotification({
       userId: guardian.guardianId,
-      titleKey:
-        kind === "claimed"
-          ? "notifications.handover.claimedTitle"
-          : "notifications.handover.changedTitle",
-      messageKey: accessMessageKey(kind, guardian.access),
-      params: { name: recordName },
+      titleKey: titleKey(kind, name !== null),
+      messageKey: accessMessageKey(kind, guardian.access, name !== null),
+      ...(name ? { params: { name } } : {}),
     }).catch((err: unknown) => {
       getEvent()?.addWarning(
         `handover notification failed: ${err instanceof Error ? err.message : String(err)}`,

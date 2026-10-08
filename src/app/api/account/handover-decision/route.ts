@@ -92,11 +92,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (result.changed.length > 0) {
     const self = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { displayName: true, username: true },
+      select: { displayName: true },
     });
     notifyGuardiansOfHandover(
       "changed",
-      self?.displayName?.trim() || self?.username || user.username,
+      self?.displayName ?? null,
       result.changed,
     );
   }

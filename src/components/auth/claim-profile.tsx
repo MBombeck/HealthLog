@@ -219,15 +219,15 @@ export function ClaimProfile({ token }: { token: string | null }) {
         </h2>
         {data.guardians.length > 0 ? (
           <ul className="divide-y rounded-lg border">
-            {data.guardians.map((guardian) => (
+            {data.guardians.map((guardian, index) => (
               <li
-                key={guardian.grantId}
+                key={index}
                 data-slot="claim-guardian"
                 data-proposal={guardian.proposal}
                 className="flex items-center justify-between gap-3 px-3 py-2"
               >
                 <span className="min-w-0 truncate text-sm">
-                  {guardian.displayName}
+                  {guardian.displayName ?? t("auth.claim.guardianUnnamed")}
                 </span>
                 <span className="text-muted-foreground shrink-0 text-xs">
                   {accessLabel(t, guardian.proposal)}

@@ -41806,14 +41806,15 @@ components:
           items:
             type: object
             properties:
-              grantId:
-                type: string
               displayName:
-                type: string
+                anyOf:
+                  - type: string
+                  - type: "null"
+                description: "The guardian's display name; null when they set none. Never a login name or an id: the holder of the link
+                  has proved nothing yet."
               proposal:
                 $ref: "#/components/schemas/ProfileClaimGuardianAccess"
             required:
-              - grantId
               - displayName
               - proposal
             additionalProperties: false

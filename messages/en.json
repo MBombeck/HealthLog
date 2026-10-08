@@ -531,6 +531,7 @@
       "signOut": "Sign out and continue",
       "guardiansTitle": "Who keeps access for now",
       "guardiansHint": "Proposed by the people who looked after your record. You decide right after signing in.",
+      "guardianUnnamed": "A guardian",
       "usernameHint": "3 to 30 letters, numbers, _ or -.",
       "usernameReserved": "Usernames starting with managed- are reserved.",
       "emailHint": "Required, so you can get back in if you forget your password.",
@@ -8445,7 +8446,17 @@
       "changedTitle": "{name} changed your access",
       "changedEnd": "Your access to the health record of {name} has ended.",
       "changedRead": "You can now view the health record of {name}, but not change it.",
-      "changedManage": "You can manage the health record of {name}."
+      "changedManage": "You can manage the health record of {name}.",
+      "unnamed": {
+        "claimedTitle": "The person you looked after now has their own account",
+        "claimedEnd": "The person you looked after took over their health record. Your access has ended.",
+        "claimedRead": "The person you looked after took over their health record. You can still view it, but no longer change it.",
+        "claimedManage": "The person you looked after took over their health record. You can still manage it until they decide otherwise.",
+        "changedTitle": "Your access to a health record changed",
+        "changedEnd": "Your access to the health record of the person you looked after has ended.",
+        "changedRead": "You can now view the health record of the person you looked after, but not change it.",
+        "changedManage": "You can manage the health record of the person you looked after."
+      }
     }
   },
   "i18n": {

@@ -531,6 +531,7 @@
       "signOut": "로그아웃하고 계속",
       "guardiansTitle": "당분간 접근 권한을 유지하는 사람",
       "guardiansHint": "기록을 관리해 온 사람들이 제안한 내용입니다. 로그인한 직후에 직접 결정합니다.",
+      "guardianUnnamed": "보호자",
       "usernameHint": "영문자, 숫자, _ 또는 - 로 3~30자.",
       "usernameReserved": "managed- 로 시작하는 사용자 이름은 예약되어 있습니다.",
       "emailHint": "비밀번호를 잊었을 때 다시 들어올 수 있도록 필요합니다.",
@@ -8445,7 +8446,17 @@
       "changedTitle": "{name} 님이 내 접근 권한을 바꿨습니다",
       "changedEnd": "{name} 님의 건강 기록에 대한 내 접근 권한이 종료되었습니다.",
       "changedRead": "이제 {name} 님의 건강 기록을 볼 수는 있지만 변경할 수는 없습니다.",
-      "changedManage": "{name} 님의 건강 기록을 관리할 수 있습니다."
+      "changedManage": "{name} 님의 건강 기록을 관리할 수 있습니다.",
+      "unnamed": {
+        "claimedTitle": "돌보던 분이 이제 자신의 계정을 갖게 되었어요",
+        "claimedEnd": "돌보던 분이 자신의 건강 기록을 넘겨받았어요. 내 접근 권한은 종료되었어요.",
+        "claimedRead": "돌보던 분이 자신의 건강 기록을 넘겨받았어요. 계속 볼 수는 있지만 더 이상 변경할 수 없어요.",
+        "claimedManage": "돌보던 분이 자신의 건강 기록을 넘겨받았어요. 그분이 다르게 결정할 때까지 계속 관리할 수 있어요.",
+        "changedTitle": "건강 기록에 대한 접근 권한이 변경되었어요",
+        "changedEnd": "돌보던 분의 건강 기록에 대한 접근 권한이 종료되었어요.",
+        "changedRead": "이제 돌보던 분의 건강 기록을 볼 수 있지만 변경할 수는 없어요.",
+        "changedManage": "돌보던 분의 건강 기록을 관리할 수 있어요."
+      }
     }
   },
   "i18n": {
