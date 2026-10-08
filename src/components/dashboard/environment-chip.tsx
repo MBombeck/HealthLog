@@ -20,6 +20,11 @@ import { useQuery } from "@tanstack/react-query";
 import { CloudSun } from "lucide-react";
 
 import { TagChip } from "@/components/ui/tag-chip";
+import {
+  DAY_LINK_SLOT,
+  DayLink,
+  withDayLinkSlot,
+} from "@/components/day/day-link";
 import { useAuth } from "@/hooks/use-auth";
 import { apiGet } from "@/lib/api/api-fetch";
 import {
@@ -91,7 +96,14 @@ export function EnvironmentChip() {
     >
       <CloudSun className="text-muted-foreground size-4" aria-hidden />
       <span className="text-muted-foreground text-xs">
-        {t("environment.chip.day", { date })}
+        {/* v1.42 — the date opens the day it names, the one thing every
+            date in the app does. */}
+        {withDayLinkSlot(
+          t("environment.chip.day", { date: DAY_LINK_SLOT }),
+          <DayLink date={day.date} size="xs">
+            {date}
+          </DayLink>,
+        )}
       </span>
       {flags.map((flag) => (
         <TagChip key={flag.kind} data-flag={flag.kind}>

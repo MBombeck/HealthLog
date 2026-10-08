@@ -58,7 +58,13 @@ export interface BulkEncounterOption {
 const VERB_CLASS = "min-h-11 min-w-11 sm:min-h-9 sm:min-w-9";
 
 function VerbLabel({ children }: { children: string }) {
-  return <span className="hidden lg:inline">{children}</span>;
+  // Icon-only again while a day is docked: the bar then shares the width
+  // with the day panel and the labelled row would no longer fit one line.
+  return (
+    <span className="hidden lg:inline [body:has([data-slot=day-panel][data-shell=docked])_&]:hidden">
+      {children}
+    </span>
+  );
 }
 
 export function DocumentBulkBar({
@@ -107,6 +113,10 @@ export function DocumentBulkBar({
         aria-label={t("documents.bulk.barLabel")}
         className={cn(
           "bg-card border-border fixed bottom-20 left-1/2 z-40 -translate-x-1/2 md:bottom-6",
+          // v1.42 — while a day is docked on the right, the bar sits against
+          // the page's right edge instead of the window's centre, clear of the
+          // day's footer actions and of an expanded sidebar.
+          "[body:has([data-slot=day-panel][data-shell=docked])_&]:right-[calc(26.25rem+1rem)] [body:has([data-slot=day-panel][data-shell=docked])_&]:left-auto [body:has([data-slot=day-panel][data-shell=docked])_&]:max-w-[calc(100vw-44.25rem)] [body:has([data-slot=day-panel][data-shell=docked])_&]:translate-x-0",
           "flex w-[calc(100%-2rem)] max-w-3xl flex-col gap-2 rounded-xl border p-3 shadow-lg",
         )}
       >

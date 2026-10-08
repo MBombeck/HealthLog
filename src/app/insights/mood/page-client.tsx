@@ -203,6 +203,7 @@ export default function InsightsMoodPageClient() {
             chartKey="mood"
             compareBaseline={compareBaseline}
             onDataReady={markChartSettled}
+            dayLinks
           />
         </div>
       </div>

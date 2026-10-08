@@ -319,7 +319,9 @@ test.describe("mood insights", () => {
       const watch = () => {
         if (
           !w.__seen.heatmap &&
-          document.querySelector('[data-slot="mood-heatmap-day-list"]')
+          document.querySelector(
+            '[data-slot="mood-heatmap-body"] svg[role="img"]',
+          )
         )
           w.__seen.heatmap = performance.now();
         if (
@@ -339,7 +341,7 @@ test.describe("mood insights", () => {
 
     await page.goto("/insights/mood");
     await expect(
-      page.locator('[data-slot="mood-heatmap-day-list"]'),
+      page.locator('[data-slot="mood-heatmap-body"] svg[role="img"]'),
     ).toBeAttached({
       timeout: 15_000,
     });

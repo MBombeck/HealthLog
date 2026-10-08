@@ -7,11 +7,13 @@ import { ComplianceHeatmap } from "../compliance-heatmap";
 /**
  * 2026-07-17 a11y audit (M2) — medication-compliance heatmap day cells are
  * pointer-only SVG `<rect>`s. The keyboard/screen-reader path to the
- * per-day values is a visually-hidden day list beside the grid, not
- * focusable rects (a cell subtree nested under the SVG's `role="img"` is
- * pruned from the a11y tree, and per-cell tab stops would flood the
- * keyboard order). This pins that list plus the aggregate `role="img"`
- * summary, and that the rects stay a pure pointer affordance.
+ * per-day values is the data table under the grid (v1.42: the same
+ * `ChartDataTable` every day-linked chart carries, collapsed until asked
+ * for), not focusable rects (a cell subtree nested under the SVG's
+ * `role="img"` is pruned from the a11y tree, and per-cell tab stops would
+ * flood the keyboard order). This pins that table, each row's date as a link
+ * to its day, the aggregate `role="img"` summary, and that the rects stay a
+ * pure pointer affordance.
  */
 // The grid window is the last `days` days ending today, so seed relative
 // dates (UTC-sliced, matching the component) rather than fixed ones that
@@ -50,18 +52,19 @@ describe("<ComplianceHeatmap> — keyboard-reachable day values", () => {
     }
   });
 
-  it("exposes each active day through a visually-hidden day list", () => {
+  it("exposes each active day, and its day, through the data table", () => {
     const html = render();
-    // The sr-only list carries one entry per day that had a scheduled or
-    // taken dose — here the two seeded days.
-    const listMatch = html.match(
-      /<ul[^>]*data-slot="compliance-heatmap-day-list"[^>]*>([\s\S]*?)<\/ul>/,
+    const table = html.match(
+      /<div[^>]*data-slot="chart-data-table"[^>]*>([\s\S]*?)<\/table>/,
     );
-    expect(listMatch).not.toBeNull();
-    const items = listMatch![1].match(/<li[^>]*>/g) ?? [];
-    expect(items.length).toBe(2);
-    // Each entry pairs the day with its taken/expected + rate string.
-    expect(listMatch![1]).toContain("2/2 (100%)");
-    expect(listMatch![1]).toContain("1/2 (50%)");
+    expect(table).not.toBeNull();
+    // One row per day that had a scheduled or taken dose — the two seeded.
+    const rows = table![1].match(/data-slot="chart-data-table-row"/g) ?? [];
+    expect(rows.length).toBe(2);
+    // Taken, expected and the rate, per day.
+    expect(table![1]).toContain("100 %");
+    expect(table![1]).toContain("50 %");
+    expect(table![1]).toContain(`data-day="${D0}"`);
+    expect(table![1]).toContain(`data-day="${D1}"`);
   });
 });

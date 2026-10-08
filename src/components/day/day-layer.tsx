@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -26,13 +27,15 @@ import { cn } from "@/lib/utils";
 
 import {
   closeDay,
+  peekDayTriggerAt,
   publishOpenDay,
   stepDay,
   takeDayTrigger,
   useDayFocus,
 } from "./day-layer-controller";
-import { parseDayParam, withDayHref } from "./day-url";
+import { parseDayParam, shiftDateKey, withDayHref } from "./day-url";
 import { DayView, useLongDayLabel } from "./day-view";
+import { usePrefetchDay } from "./use-day";
 import { useTodayKey } from "./use-today-key";
 
 /**
@@ -125,6 +128,12 @@ function DayLayer() {
       ? "docked"
       : "sheet";
 
+  // The docked column narrows the page beside it, and the page reflows. Keep
+  // what opened the day where it was on screen, through the open and the
+  // close, so the chart under the pointer does not jump away from it.
+  useKeepAnchorInView(date !== null && shell === "docked");
+
+  const prefetchDay = usePrefetchDay();
   const focus = useDayFocus(date);
   const longLabel = useLongDayLabel();
   const titleId = useId();
@@ -163,6 +172,13 @@ function DayLayer() {
     if (date === null) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
+      // Alt is the first half of the step shortcut: read both neighbours
+      // while the arrow is still on its way, so the step paints a day.
+      if (event.key === "Alt") {
+        prefetchDay(shiftDateKey(date, -1));
+        if (date < today) prefetchDay(shiftDateKey(date, 1));
+        return;
+      }
       const inside =
         panelRef.current?.contains(event.target as Node | null) ?? false;
       if (event.key === "Escape" && shell === "docked") {
@@ -184,7 +200,7 @@ function DayLayer() {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [date, shell, onStep]);
+  }, [date, shell, onStep, prefetchDay, today]);
 
   const live = (
     <p
@@ -227,7 +243,10 @@ function DayLayer() {
             aria-labelledby={titleId}
             data-slot="day-panel"
             data-shell="docked"
-            className="bg-card text-card-foreground border-border flex h-full w-105 shrink-0 flex-col border-l"
+            // A short fade, not a slide: the column takes its width at once
+            // (the page beside it reflows in the same frame either way), so
+            // only its content eases in. None under reduced motion.
+            className="bg-card text-card-foreground border-border motion-safe:animate-in motion-safe:fade-in-0 flex h-full w-105 shrink-0 flex-col border-l motion-safe:duration-150"
           >
             {view(DockedTitle, {
               headerClassName: cn(
@@ -252,6 +271,55 @@ function DayLayer() {
       />
     </>
   );
+}
+
+/**
+ * Keep the element that opened the day at the same place on screen while the
+ * page beside the docked column reflows (the column taking or giving back its
+ * width). Chromium does this itself (CSS scroll anchoring); Safari does not,
+ * and there the chart the person clicked slid away under the pointer by the
+ * height the reflow added above it. Measured after layout, so where the
+ * browser already anchored, the correction is zero and nothing moves twice.
+ */
+function useKeepAnchorInView(active: boolean) {
+  const anchor = useRef<{ el: HTMLElement; top: number } | null>(null);
+  const wasActive = useRef(false);
+
+  // Before paint, so the corrected position is the first one drawn.
+  useLayoutEffect(() => {
+    if (active === wasActive.current) return;
+    wasActive.current = active;
+    const main = document.getElementById("main-content");
+    if (!main) return;
+    if (active) {
+      // Where the opener was when it was clicked, before the column came.
+      const opened = peekDayTriggerAt();
+      anchor.current =
+        opened && main.contains(opened.el)
+          ? { el: opened.el, top: opened.top }
+          : null;
+    }
+    const a = anchor.current;
+    if (a && a.el.isConnected) {
+      const delta = a.el.getBoundingClientRect().top - a.top;
+      if (Math.abs(delta) > 1) main.scrollTop += delta;
+      a.top = a.el.getBoundingClientRect().top;
+    }
+    if (!active) anchor.current = null;
+  }, [active]);
+
+  // While the column is open, the page may scroll; the anchor follows.
+  useEffect(() => {
+    if (!active) return;
+    const main = document.getElementById("main-content");
+    if (!main) return;
+    const record = () => {
+      const a = anchor.current;
+      if (a && a.el.isConnected) a.top = a.el.getBoundingClientRect().top;
+    };
+    main.addEventListener("scroll", record, { passive: true });
+    return () => main.removeEventListener("scroll", record);
+  }, [active]);
 }
 
 function DockedTitle({
@@ -362,7 +430,9 @@ function DaySheet({
           returnFocus();
         }}
         className={cn(
-          "bg-card gap-0 p-0",
+          // Quicker than the primitive's 500 ms, which read as lag on a
+          // layer opened from a tap; no slide at all under reduced motion.
+          "bg-card gap-0 p-0 data-[state=closed]:duration-200 data-[state=open]:duration-300 motion-reduce:animate-none",
           bottom
             ? cn(
                 "rounded-t-2xl transition-[height] duration-200 motion-reduce:transition-none",

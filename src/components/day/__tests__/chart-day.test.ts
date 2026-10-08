@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { chartPointDayKey, rugPosition } from "../chart-day";
+import { chartPointDayKey, rugFraction, rugPosition } from "../chart-day";
 import { daysFromCoachSteps } from "../coach-day-chips";
-import { pickPreparationDays } from "../since-last-visit";
+import { preparationRows } from "../since-last-visit";
 import type { CoachStep } from "@/lib/ai/coach/types";
 
 const noon = (key: string) => Date.parse(`${key}T12:00:00.000Z`);
@@ -74,20 +74,81 @@ describe("Coach day chips", () => {
 });
 
 describe("visit preparation", () => {
-  it("reads notable days first, then context days, newest kept, in date order", () => {
-    const days = pickPreparationDays(
+  const spell = {
+    notableTitle: () => "Blood pressure",
+    notableText: () => "Highest daily value since March",
+    countMeta: (count: number) => (count > 1 ? `${count} entries` : null),
+  };
+
+  it("lists every change the server names, a dose change on a quiet day included", () => {
+    const rows = preparationRows(
       {
-        days: {
-          "2026-08-03": ["medications", "values"],
-          "2026-08-19": ["illness", "values"],
-          "2026-09-14": ["labs"],
-          "2026-09-20": ["values", "mood"],
-        },
-        notable: ["2026-09-02"],
+        changes: [
+          {
+            date: "2026-08-03",
+            kind: "doseChange",
+            section: "medications",
+            id: "d1",
+            title: "Ramipril 5 mg",
+            count: 1,
+            href: null,
+          },
+          {
+            date: "2026-09-14",
+            kind: "labResult",
+            section: "labs",
+            id: "l1",
+            title: "Lab results",
+            count: 4,
+            href: null,
+          },
+        ],
+        observations: [
+          {
+            date: "2026-09-02",
+            kind: "extremeHigh",
+            type: "BLOOD_PRESSURE_SYS",
+            params: { value: 152 },
+          },
+          // A first reading says nothing about the stretch since the visit.
+          {
+            date: "2026-08-20",
+            kind: "firstValue",
+            type: "WEIGHT",
+            params: {},
+          },
+        ],
       },
-      3,
+      spell,
     );
-    // A day with only values and mood is not a context change.
-    expect(days).toEqual(["2026-08-19", "2026-09-02", "2026-09-14"]);
+    expect(rows.map((row) => [row.date, row.title, row.meta])).toEqual([
+      ["2026-08-03", "Ramipril 5 mg", null],
+      ["2026-09-02", "Blood pressure", "Highest daily value since March"],
+      ["2026-09-14", "Lab results", "4 entries"],
+    ]);
+  });
+});
+
+describe("rug placement per axis", () => {
+  const points = [
+    { timestamp: noon("2026-01-01") },
+    { timestamp: noon("2026-01-02") },
+    { timestamp: noon("2026-01-05") },
+  ];
+
+  it("spreads an index axis edge to edge, a band axis at band centres", () => {
+    expect(rugFraction("2026-01-01", points, "index")).toBe(0);
+    expect(rugFraction("2026-01-05", points, "index")).toBe(1);
+    expect(rugFraction("2026-01-01", points, "band")).toBeCloseTo(1 / 6);
+    expect(rugFraction("2026-01-05", points, "band")).toBeCloseTo(5 / 6);
+  });
+
+  it("places a day on a time axis by its date, not by its neighbours", () => {
+    // Day 3 of a 4-day span: three quarters along, although it sits between
+    // the second and third point by index.
+    expect(rugFraction("2026-01-04", points, "time")).toBeCloseTo(0.75);
+    expect(rugFraction("2026-01-04", points, "index")).toBeCloseTo(
+      (1 + 2 / 3) / 2,
+    );
   });
 });

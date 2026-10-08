@@ -108,6 +108,7 @@ let canWrite = true;
 
 vi.mock("../use-day", () => ({
   useDay: () => ({ ...dayQuery, refetch: () => undefined }),
+  usePrefetchDay: () => () => undefined,
 }));
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
 vi.mock("@/hooks/use-auth", () => ({

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // `useUnitDisplay` reads the account through react-query; these static
 // renders have no QueryClient, so the hook is a real display for a fixed
@@ -18,9 +19,13 @@ import { unitDisplayFor } from "@/__tests__/helpers/unit-display-mock";
 import { I18nProvider } from "@/lib/i18n/context";
 import type { CalendarDay } from "../types";
 
+// v1.42 — the chart's row of day dots reads the day index through
+// react-query, so the static render carries a client (it never fetches).
 function render(node: React.ReactNode) {
   return renderToStaticMarkup(
-    <I18nProvider initialLocale="en">{node}</I18nProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <I18nProvider initialLocale="en">{node}</I18nProvider>
+    </QueryClientProvider>,
   );
 }
 

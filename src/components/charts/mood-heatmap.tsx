@@ -1,9 +1,11 @@
 "use client";
 
-import { openDay } from "@/components/day/day-layer-controller";
-import { isOpenableDay } from "@/components/day/day-url";
-import { useTodayKey } from "@/components/day/use-today-key";
+import { ChartDayCaption, useCoarsePointer } from "@/components/day/chart-day";
+import { dayAnchor } from "@/components/day/chart-day-links";
+import { OPEN_DAY_CELL, useHeatmapDay } from "@/components/day/heatmap-day";
 import { useCalendarDate } from "@/hooks/use-calendar-date";
+import { dateOnlyKey } from "@/lib/tz/date-only";
+import { ChartDataTable } from "./chart-data-table";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
 import { heatmapDays } from "@/lib/charts/heatmap-days";
@@ -98,14 +100,15 @@ export function MoodHeatmapBody({
 }
 
 /**
- * The loading shape of the stretched heatmap: the reserved grid box and the
- * legend line, at exactly the height the painted heatmap will take.
- * `days` is the window when it is already known; without it the shape
- * assumes a window short enough to reach the cell ceiling, which every
- * window under a quarter year does on any width.
+ * The loading shape of the stretched heatmap, at exactly the height the
+ * painted heatmap takes: the reserved grid box, the legend line, the day
+ * caption and the data-table toggle. `days` is the window when it is already
+ * known; without it the shape assumes a window short enough to reach the cell
+ * ceiling, which every window under a quarter year does on any width.
  */
 export function MoodHeatmapSkeleton({ days = 84 }: { days?: number }) {
   const timeZone = useDisplayTimezone();
+  const coarse = useCoarsePointer();
   return (
     <div
       data-slot="mood-heatmap-skeleton"
@@ -116,6 +119,10 @@ export function MoodHeatmapSkeleton({ days = 84 }: { days?: number }) {
         <div className="bg-muted/50 h-full w-full animate-pulse rounded-md motion-reduce:animate-none" />
       </MoodHeatmapBody>
       <div className="mt-2 h-4" />
+      <ChartDayCaption coarse={coarse} mark="cell" rug={false} />
+      <div className="border-border mt-3 border-t pt-3">
+        <div className="min-h-11" />
+      </div>
     </div>
   );
 }
@@ -146,47 +153,10 @@ export function MoodHeatmap({
   const formatDay = useCalendarDate();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
-  const [tooltip, setTooltip] = useState<{
-    x: number;
-    y: number;
-    text: string;
-    pinned?: boolean;
-    /** v1.42 — the day a pinned (touch) tooltip offers to open. */
-    day?: string;
-  } | null>(null);
-  // v1.42 — a click opens the day on a fine pointer; a tap pins the tooltip,
-  // which then offers the day. The pointer type of the press decides.
-  const lastPointer = useRef<string>("mouse");
-  const today = useTodayKey();
-
-  useEffect(() => {
-    if (!tooltip?.pinned) return;
-    const handlePointer = (event: PointerEvent) => {
-      const container = containerRef.current;
-      if (!container) return;
-      if (!container.contains(event.target as Node)) {
-        setTooltip(null);
-      }
-    };
-    document.addEventListener("pointerdown", handlePointer, true);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointer, true);
-    };
-  }, [tooltip?.pinned]);
-
-  // 2026-07-17 a11y audit (M2) — Escape dismisses any open tooltip
-  // (pinned touch tooltip or keyboard-focus tooltip), matching 1.4.13's
-  // "dismissible" requirement.
-  useEffect(() => {
-    if (!tooltip) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setTooltip(null);
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [tooltip]);
+  // v1.42 — the cells are doors to their days, the same doors every chart
+  // has: a click (fine pointer), the pinned tooltip's button (touch), a
+  // dashed outline on the open day, and the data table for the keyboard.
+  const heatmapDay = useHeatmapDay(containerRef);
 
   const WEEKDAY_LABELS = [
     t("charts.weekdays.mon"),
@@ -298,9 +268,8 @@ export function MoodHeatmap({
   const svgWidth = labelWidth + weeks * cellSize + Math.max(0, weeks - 1) * GAP;
   const svgHeight = headerHeight + 7 * cellSize + 6 * GAP;
 
-  // Per-day text alternative, shared by the pointer tooltip and the
-  // visually-hidden day list below the grid (M2). One source of truth so
-  // the sr-only list never drifts from what a pointer user reads.
+  // Per-day text for the pointer tooltip; the data table below the grid
+  // prints the same score with the same label (M2).
   const describeCell = (cell: (typeof cells)[number]): string => {
     if (!cell.cell) {
       return `${formatDay(cell.dateKey)}: ${t("insights.mood.heatmapNoEntry")}`;
@@ -309,7 +278,7 @@ export function MoodHeatmap({
     const moodLabel = labelKey ? t(labelKey) : "";
     return `${formatDay(cell.dateKey)}: ${cell.cell.score.toFixed(1)}${moodLabel ? ` · ${moodLabel}` : ""}`;
   };
-  // Only the logged days go into the sr-only list; the empty-tinted cells
+  // Only the logged days go into the data table; the empty-tinted cells
   // are already covered by the aggregate summary on the SVG, so a rotor
   // user hears the days that carry a value rather than a wall of "no entry".
   const loggedCells = cells.filter((cell) => cell.cell !== null);
@@ -333,9 +302,7 @@ export function MoodHeatmap({
             // natural, square, left-aligned grid rather than CSS-stretching a few
             // capped columns into wide rectangles. Mirrors `compliance-heatmap`.
             className={stretch ? "block max-w-full" : "block"}
-            onMouseLeave={() =>
-              setTooltip((prev) => (prev?.pinned ? prev : null))
-            }
+            {...heatmapDay.svgProps}
           >
             {monthMarkers.map((m, i) => (
               <text
@@ -366,114 +333,52 @@ export function MoodHeatmap({
                   ),
               )}
 
-            {cells.map((cell) => {
-              const buildText = (): string => describeCell(cell);
-              return (
+            {cells.map((cell) => (
+              <rect
+                key={cell.dateKey}
+                x={labelWidth + cell.col * step}
+                y={headerHeight + cell.row * step}
+                width={cellSize}
+                height={cellSize}
+                rx={2}
+                fill={cell.color}
+                // v1.19.1 — populated days render at full saturation so the
+                // mood band reads clearly; only the no-entry cells stay the
+                // quiet `--secondary` empty-state tint.
+                fillOpacity={1}
+                // 2026-07-17 a11y audit (M2) — the per-day values reach
+                // assistive tech through the data table below the grid, not
+                // through the rects: a cell subtree nested under the SVG's
+                // `role="img"` is pruned from the a11y tree, and per-cell tab
+                // stops would flood the keyboard order on a year-long grid.
+                // The rects stay a pure pointer affordance.
+                {...heatmapDay.cellProps({
+                  dateKey: cell.dateKey,
+                  hasEntry: cell.cell !== null,
+                  describe: () => describeCell(cell),
+                })}
+              />
+            ))}
+            {cells
+              .filter((cell) => cell.dateKey === heatmapDay.openKey)
+              .map((cell) => (
                 <rect
-                  key={cell.dateKey}
-                  x={labelWidth + cell.col * step}
-                  y={headerHeight + cell.row * step}
-                  width={cellSize}
-                  height={cellSize}
-                  rx={2}
-                  fill={cell.color}
-                  // v1.19.1 — populated days render at full saturation so the
-                  // mood band reads clearly; only the no-entry cells stay the
-                  // quiet `--secondary` empty-state tint.
-                  fillOpacity={1}
-                  className="cursor-pointer"
-                  data-day={cell.dateKey}
-                  // 2026-07-17 a11y audit (M2) — the per-day values reach
-                  // assistive tech through the visually-hidden day list below
-                  // the grid, not through the rects: a cell subtree nested
-                  // under the SVG's `role="img"` is pruned from the a11y tree,
-                  // and per-cell tab stops would flood the keyboard order on a
-                  // year-long grid. The rects stay a pure pointer affordance.
-                  onPointerEnter={(e) => {
-                    if (e.pointerType === "touch") return;
-                    setTooltip({
-                      x: e.clientX,
-                      y: e.clientY,
-                      text: buildText(),
-                    });
-                  }}
-                  onPointerLeave={(e) => {
-                    if (e.pointerType === "touch") return;
-                    setTooltip((prev) => (prev?.pinned ? prev : null));
-                  }}
-                  onPointerDown={(e) => {
-                    lastPointer.current = e.pointerType;
-                    if (e.pointerType !== "touch") return;
-                    setTooltip({
-                      x: e.clientX,
-                      y: e.clientY,
-                      text: buildText(),
-                      pinned: true,
-                      day:
-                        cell.cell !== null && isOpenableDay(cell.dateKey, today)
-                          ? cell.dateKey
-                          : undefined,
-                    });
-                  }}
-                  onClick={() => {
-                    if (lastPointer.current === "touch") return;
-                    if (cell.cell === null) return;
-                    if (!isOpenableDay(cell.dateKey, today)) return;
-                    setTooltip(null);
-                    openDay(cell.dateKey, { trigger: containerRef.current });
-                  }}
+                  key={`open-${cell.dateKey}`}
+                  data-slot="heatmap-open-day"
+                  x={labelWidth + cell.col * step - 1.5}
+                  y={headerHeight + cell.row * step - 1.5}
+                  width={cellSize + 3}
+                  height={cellSize + 3}
+                  rx={3}
+                  pointerEvents="none"
+                  {...OPEN_DAY_CELL}
                 />
-              );
-            })}
+              ))}
           </svg>
         </div>
       </StretchFrame>
 
-      {/* 2026-07-17 a11y audit (M2) — visually-hidden per-day list. The SVG
-          carries an aggregate `role="img"` summary; this list is the
-          keyboard/screen-reader path to the same granular values the pointer
-          tooltip shows, without adding a tab stop per cell. */}
-      {loggedCells.length > 0 && (
-        <ul className="sr-only" data-slot="mood-heatmap-day-list">
-          {loggedCells.map((cell) => (
-            <li key={cell.dateKey}>{describeCell(cell)}</li>
-          ))}
-        </ul>
-      )}
-
-      {tooltip && (
-        <div
-          data-slot="mood-heatmap-tooltip"
-          className={`bg-popover text-popover-foreground border-border fixed z-50 rounded-md border px-2 py-1 text-xs shadow-md ${
-            tooltip.day ? "pointer-events-auto" : "pointer-events-none"
-          }`}
-          // Clamp the left edge so a tap near the right border doesn't push
-          // the pinned label off-screen on a narrow viewport.
-          style={{
-            left:
-              typeof window !== "undefined"
-                ? Math.min(tooltip.x + 10, window.innerWidth - 180 - 8)
-                : tooltip.x + 10,
-            top: tooltip.y - 30,
-          }}
-        >
-          {tooltip.text}
-          {tooltip.day ? (
-            <button
-              type="button"
-              data-slot="heatmap-open-day"
-              onClick={() => {
-                const day = tooltip.day;
-                setTooltip(null);
-                if (day) openDay(day, { trigger: containerRef.current });
-              }}
-              className="bg-muted hover:bg-muted/80 focus-visible:ring-ring/50 mt-1.5 flex min-h-11 w-full items-center justify-center rounded-md px-3 text-sm font-medium focus-visible:ring-[3px] focus-visible:outline-none"
-            >
-              {t("day.openDay")}
-            </button>
-          ) : null}
-        </div>
-      )}
+      {heatmapDay.tooltipNode}
 
       <div
         className="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-xs"
@@ -503,6 +408,31 @@ export function MoodHeatmap({
           </span>
         ))}
       </div>
+      {loggedCells.length > 0 ? (
+        <>
+          <ChartDayCaption coarse={heatmapDay.coarse} mark="cell" rug={false} />
+          {/* The keyboard and screen-reader way to each logged day's value,
+              and to the day itself. */}
+          <ChartDataTable
+            points={loggedCells.map((cell) => ({
+              date: cell.dateKey,
+              timestamp: dayAnchor(cell.dateKey),
+              score: cell.cell?.score,
+            }))}
+            columns={[{ key: "score", label: t("charts.moodScore") }]}
+            formatValue={(value) => {
+              const labelKey = moodLabelKeyForScore(Math.round(value));
+              return labelKey
+                ? `${value.toFixed(1)} · ${t(labelKey)}`
+                : value.toFixed(1);
+            }}
+            formatDate={(date) => formatDay(dateOnlyKey(date))}
+            bucket="day"
+            metricLabel={t("insights.mood.heatmapTitle")}
+            dayLinks
+          />
+        </>
+      ) : null}
     </div>
   );
 }

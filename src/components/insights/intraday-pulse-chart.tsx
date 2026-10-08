@@ -21,6 +21,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { userDayKey, shiftDateKey, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { TileHeader } from "@/components/insights/tile-header";
+import { DayLink } from "@/components/day/day-link";
 import { Button } from "@/components/ui/button";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -219,8 +220,12 @@ export function IntradayPulseChart({
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
             </Button>
-            <span className="text-muted-foreground min-w-14 text-center text-xs tabular-nums">
-              {dayLabel}
+            {/* v1.42 — the date opens the whole day this chart is one part
+                of, the one thing every date in the app does. */}
+            <span className="min-w-14 text-center text-xs">
+              <DayLink date={dateKey} size="xs">
+                {dayLabel}
+              </DayLink>
             </span>
             <Button
               type="button"

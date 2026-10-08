@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { InsightSectionCard } from "./insight-section-card";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { DayLinkAt } from "@/components/day/day-link";
 
 /**
  * v1.10.0 — device-flagged event awareness surface (categorical events,
@@ -174,7 +175,10 @@ export function RhythmEventsCard({
                     </p>
                   )}
                   <p className="text-muted-foreground text-xs">
-                    {fmt.dateTime(new Date(event.occurredAt))}
+                    {/* v1.42 — the date opens the day around the event. */}
+                    <DayLinkAt at={event.occurredAt} size="xs">
+                      {fmt.dateTime(new Date(event.occurredAt))}
+                    </DayLinkAt>
                   </p>
                 </div>
               </li>

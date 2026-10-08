@@ -1,5 +1,6 @@
-import type { Page, Route } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
+import { mockDay } from "./setup/day-mock";
 import { expect, test } from "./setup/test";
 import { MOBILE_ROUTES_STORAGE_STATE_PATH } from "./setup/global-setup";
 import { MOBILE_ROUTES_ANALYTE } from "./setup/mobile-routes-fixture";
@@ -20,96 +21,12 @@ import { MOBILE_ROUTES_ANALYTE } from "./setup/mobile-routes-fixture";
  *   - `?day=` opens the layer on any page, Back and Escape close it, a date in
  *     the future is dropped;
  *   - stepping to the neighbouring days never adds history entries;
- *   - the dashboard's today area offers no door.
+ *   - the dashboard's today area offers no door; its charts below do.
  *
  * Stable data attributes only: `day-panel` (+ `data-shell`), `day-link`,
  * `chart-plot[data-day-links]`, `chart-tooltip-open-day`, `day-prev` /
  * `day-next` / `day-close`.
  */
-
-function dayFixture(date: string) {
-  return {
-    date,
-    tz: "Europe/Berlin",
-    counts: { values: 2, entries: 1 },
-    running: [
-      {
-        kind: "illness",
-        section: "illness",
-        id: "ep1",
-        title: "Common cold",
-        sub: null,
-        since: date,
-        until: null,
-        dayIndex: 1,
-        dayCount: null,
-        href: "/illness",
-      },
-    ],
-    values: [
-      {
-        type: "BLOOD_PRESSURE_SYS",
-        value: 124,
-        unit: "mmHg",
-        at: `${date}T07:00:00.000Z`,
-        source: "MANUAL",
-        band: { lo: 118, hi: 128, n: 20 },
-      },
-      {
-        type: "BLOOD_PRESSURE_DIA",
-        value: 79,
-        unit: "mmHg",
-        at: `${date}T07:00:00.000Z`,
-        source: "MANUAL",
-        band: { lo: 76, hi: 82, n: 20 },
-      },
-    ],
-    events: [
-      {
-        at: `${date}T07:00:00.000Z`,
-        kind: "mood",
-        section: "mood",
-        id: "m1",
-        title: "Mood: good",
-        meta: null,
-        note: null,
-        docs: [],
-        href: "/mood",
-      },
-    ],
-    notable: [],
-    sections: {},
-  };
-}
-
-async function mockDay(page: Page) {
-  await page.route("**/api/day/**", async (route: Route) => {
-    const url = new URL(route.request().url());
-    if (url.pathname === "/api/day/index") {
-      const from = url.searchParams.get("from") ?? "";
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          data: {
-            from,
-            to: url.searchParams.get("to") ?? "",
-            days: {},
-            notable: [],
-          },
-          error: null,
-        }),
-      });
-      return;
-    }
-    const date = url.pathname.split("/").pop() ?? "";
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ data: dayFixture(date), error: null }),
-    });
-  });
-}
 
 const panel = (page: Page) => page.locator('[data-slot="day-panel"]');
 
@@ -252,6 +169,8 @@ test.describe("the day view", () => {
     await open.tap();
     await expect(panel(page)).toBeVisible();
     await expect(panel(page)).toHaveAttribute("data-shell", "bottom");
+    // The tapped value heads the day.
+    await expect(page.locator('[data-slot="day-focus"]')).toBeVisible();
   });
 
   test("the dashboard's today area offers no day door", async ({ page }) => {
@@ -259,8 +178,15 @@ test.describe("the day view", () => {
     await expect(
       page.locator('[data-slot="main-content-wrapper"]'),
     ).toBeVisible();
+    // The hero is today: nothing in it opens another day. (The charts
+    // further down do; `day-doors.spec.ts` walks one.)
     await expect(
-      page.locator('[data-slot="chart-plot"][data-day-links="true"]'),
+      page.locator('[data-slot^="today-hero"]').first(),
+    ).toBeVisible();
+    await expect(
+      page.locator(
+        '[data-slot^="today-hero"] [data-slot="day-link"], [data-slot^="today-hero"] [data-day-links="true"]',
+      ),
     ).toHaveCount(0);
   });
 });

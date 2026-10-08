@@ -7,11 +7,12 @@ import { MoodHeatmap } from "../mood-heatmap";
 /**
  * 2026-07-17 a11y audit (M2) — mood heatmap day cells are pointer-only SVG
  * `<rect>`s. The keyboard/screen-reader path to the per-day values is a
- * visually-hidden day list beside the grid, not focusable rects (a cell
- * subtree nested under the SVG's `role="img"` is pruned from the a11y
- * tree, and per-cell tab stops would flood the keyboard order). This pins
- * that list plus the aggregate `role="img"` summary, and that the rects
- * stay a pure pointer affordance.
+ * the data table under the grid (v1.42: the same `ChartDataTable` every
+ * day-linked chart carries, collapsed until asked for), not focusable rects
+ * (a cell subtree nested under the SVG's `role="img"` is pruned from the
+ * a11y tree, and per-cell tab stops would flood the keyboard order). This
+ * pins that table, each row's date as a link to its day, the aggregate
+ * `role="img"` summary, and that the rects stay a pure pointer affordance.
  */
 // The grid window is the last `days` days ending today, so seed relative
 // dates (UTC-sliced, matching the component) rather than fixed ones that
@@ -50,16 +51,20 @@ describe("<MoodHeatmap> — keyboard-reachable day values", () => {
     }
   });
 
-  it("exposes each logged day through a visually-hidden day list", () => {
+  it("exposes each logged day, and its day, through the data table", () => {
     const html = render();
-    const listMatch = html.match(
-      /<ul[^>]*data-slot="mood-heatmap-day-list"[^>]*>([\s\S]*?)<\/ul>/,
+    const table = html.match(
+      /<div[^>]*data-slot="chart-data-table"[^>]*>([\s\S]*?)<\/table>/,
     );
-    expect(listMatch).not.toBeNull();
-    const items = listMatch![1].match(/<li[^>]*>/g) ?? [];
-    // One entry per logged day — the two seeded days, not every cell.
-    expect(items.length).toBe(2);
-    expect(listMatch![1]).toContain("4.2");
-    expect(listMatch![1]).toContain("2.0");
+    expect(table).not.toBeNull();
+    const rows = table![1].match(/data-slot="chart-data-table-row"/g) ?? [];
+    // One row per logged day — the two seeded days, not every cell.
+    expect(rows.length).toBe(2);
+    expect(table![1]).toContain("4.2");
+    expect(table![1]).toContain("2.0");
+    // Each date opens its day: the keyboard way to the day a click opens.
+    expect(table![1]).toContain(`data-day="${D0}"`);
+    expect(table![1]).toContain(`data-day="${D1}"`);
+    expect(table![1]).toMatch(/data-slot="day-link"/);
   });
 });
