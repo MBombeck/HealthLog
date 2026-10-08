@@ -9796,7 +9796,7 @@
     }
   },
   "illness": {
-    "title": "Illness journal",
+    "title": "Illness",
     "subtitle": "A retrospective log of your illness and condition episodes.",
     "settings": {
       "viewDescription": "Choose whether episodes show as cards or as a compact list.",

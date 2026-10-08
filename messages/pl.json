@@ -9796,7 +9796,7 @@
     }
   },
   "illness": {
-    "title": "Dziennik chorób",
+    "title": "Choroba",
     "subtitle": "Retrospektywny zapis Twoich epizodów chorób i dolegliwości.",
     "settings": {
       "viewDescription": "Wybierz, czy epizody mają być wyświetlane jako karty czy zwarta lista.",

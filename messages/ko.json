@@ -9796,7 +9796,7 @@
     }
   },
   "illness": {
-    "title": "아픈 날 일지",
+    "title": "아픈 날",
     "subtitle": "아픈 날과 컨디션 에피소드를 돌아보는 기록이에요.",
     "settings": {
       "viewDescription": "에피소드를 카드로 볼지 간단한 목록으로 볼지 선택하세요.",

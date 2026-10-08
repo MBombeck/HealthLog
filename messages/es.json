@@ -9796,7 +9796,7 @@
     }
   },
   "illness": {
-    "title": "Diario de enfermedad",
+    "title": "Enfermedad",
     "subtitle": "Un registro retrospectivo de tus episodios de enfermedad y dolencias.",
     "settings": {
       "viewDescription": "Elige si los episodios se muestran como tarjetas o como lista compacta.",

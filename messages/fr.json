@@ -9796,7 +9796,7 @@
     }
   },
   "illness": {
-    "title": "Journal de maladie",
+    "title": "Maladie",
     "subtitle": "Un suivi rétrospectif de vos épisodes de maladie et d'affections.",
     "settings": {
       "viewDescription": "Choisis si les épisodes s'affichent en cartes ou en liste compacte.",

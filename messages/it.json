@@ -9796,7 +9796,7 @@
     }
   },
   "illness": {
-    "title": "Diario delle malattie",
+    "title": "Malattia",
     "subtitle": "Un registro retrospettivo dei tuoi episodi di malattia e disturbi.",
     "settings": {
       "viewDescription": "Scegli se gli episodi appaiono come schede o come elenco compatto.",

@@ -9796,7 +9796,7 @@
     }
   },
   "illness": {
-    "title": "Krankheitstagebuch",
+    "title": "Krankheit",
     "subtitle": "Ein rückblickendes Protokoll deiner Krankheits- und Beschwerde-Episoden.",
     "settings": {
       "viewDescription": "Wähle, ob Episoden als Karten oder als kompakte Liste erscheinen.",
