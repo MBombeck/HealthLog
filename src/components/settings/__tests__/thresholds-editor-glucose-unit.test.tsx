@@ -73,4 +73,13 @@ describe("<ThresholdsEditorSection> glucose unit", () => {
     expect(html).toContain('value="72"');
     expect(html).toContain('min="40"');
   });
+
+  it("prints a whole-number default without a trailing .0", () => {
+    // A bound reads at its own precision: the fixed one decimal printed
+    // "70.0–99.0 mg/dL" and "8,000.0–15,000.0 steps".
+    authUser.current = { glucoseUnit: "mg/dL", unitPreference: "metric" };
+    const html = render();
+    expect(html).toMatch(/70–99 mg\/dL/);
+    expect(html).not.toMatch(/70\.0–99\.0/);
+  });
 });

@@ -96,7 +96,7 @@ export function PasswordCard() {
       <SettingsCard data-slot="settings-password-card">
         <SettingsCardHeader
           icon={Shield}
-          title={t("settings.passwordReset")}
+          title={t("settings.passwordTitle")}
           description={t("settings.changePasswordDescription")}
         />
         <SettingsCardActions>
@@ -122,7 +122,7 @@ export function PasswordCard() {
             setMsgType(null);
           }
         }}
-        title={t("settings.passwordReset")}
+        title={t("settings.passwordTitle")}
         description={t("settings.changePasswordDescription")}
         className="sm:max-w-xl"
       >

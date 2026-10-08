@@ -74,8 +74,11 @@ export function ReportVisitOffer({
       data-slot="report-visit-offer"
       className="border-border flex flex-wrap items-center gap-2 rounded-lg border p-3"
     >
-      {/* Content, not meta: it is the offer, and it names its own source. */}
-      <p className="text-foreground flex min-w-0 flex-1 items-center gap-2 text-sm">
+      {/* Content, not meta: it is the offer, and it names its own source. On
+          a phone the sentence takes the full row and the two buttons wrap
+          below it; with a zero basis it was squeezed into a one-word column
+          beside them. */}
+      <p className="text-foreground flex min-w-0 flex-1 basis-full items-center gap-2 text-sm sm:basis-0">
         <CalendarClock className="size-4 shrink-0" aria-hidden />
         <span>
           {t("settings.healthRecord.visitOffer", {
@@ -88,7 +91,7 @@ export function ReportVisitOffer({
         type="button"
         variant="outline"
         size="sm"
-        className="min-h-11 sm:min-h-9"
+        className="ml-auto min-h-11 sm:ml-0 sm:min-h-9"
         data-slot="report-visit-offer-apply"
         onClick={() => onUseVisitDate(localDay(next.occurredAt))}
       >

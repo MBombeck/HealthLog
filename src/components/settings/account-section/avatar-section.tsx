@@ -114,7 +114,7 @@ export function AvatarSection() {
           Two strings rather than one merged key: the same wording is the
           upload's own constraint copy, and a translator keeps the shorter unit
           either way. */}
-      <p className="text-muted-foreground text-sm">
+      <p className="text-sm">
         {t("settings.avatar.description")} {t("settings.avatar.hint")}
       </p>
       <div className="flex items-center gap-4">
@@ -171,7 +171,7 @@ export function AvatarSection() {
       {msg && (
         <p
           role="alert"
-          className={`mt-3 text-sm ${
+          className={`text-sm ${
             msgType === "success" ? "text-success" : "text-destructive"
           }`}
         >
