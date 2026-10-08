@@ -4340,7 +4340,9 @@
           "method": "Un indice d’effort nocturne de 0 à 100 à partir de votre charge d’activité pondérée par la fréquence cardiaque (un modèle d’impulsion d’entraînement de type TRIMP). Plus élevé signifie une journée plus exigeante.",
           "anchorPersonal": "Calé sur votre propre charge récente des jours d’entraînement — évalué par rapport à votre effort habituel, de sorte qu’une journée vraiment difficile pour vous ressort élevée.",
           "anchorPopulation": "Évalué par rapport à une référence générale pendant que vous constituez votre historique d’entraînement ; dès que vous en avez assez, le calcul passe à votre propre effort habituel.",
-          "description": "Un indice de charge d’activité nocturne à partir de votre effort pondéré par la fréquence cardiaque, relatif à votre effort habituel."
+          "description": "Un indice de charge d’activité nocturne à partir de votre effort pondéré par la fréquence cardiaque, relatif à votre effort habituel.",
+          "deviceCaption": "Effort du jour de votre appareil : {value} sur {max}",
+          "deviceSource": "Tant que HealthLog n’a pas calculé sa propre valeur pendant la nuit, la carte affiche l’effort du jour de votre appareil, ramené sur 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
           "method": "Votre température nocturne typique au poignet est la médiane de vos relevés nocturnes sur la période, ± une dispersion robuste (écart absolu médian, mis à l’échelle). Elle suit VOS relevés — la nuit dernière est affichée comme un écart par rapport à votre propre référence, pas à une norme de population.",

@@ -4340,7 +4340,9 @@
           "method": "Un indicador nocturno de esfuerzo de 0 a 100 a partir de tu carga de actividad ponderada por frecuencia cardíaca (un modelo de impulso de entrenamiento tipo TRIMP). Más alto significa un día más exigente.",
           "anchorPersonal": "Anclado a tu propia carga reciente de días de entrenamiento: se evalúa en relación con tu esfuerzo habitual, de modo que un día realmente duro para ti aparece alto.",
           "anchorPopulation": "Se evalúa frente a una referencia general mientras acumulas historial de entrenamiento; cuando tengas suficiente, pasa a tu propio esfuerzo habitual.",
-          "description": "Un indicador nocturno de carga de actividad a partir de tu esfuerzo ponderado por frecuencia cardíaca, relativo a tu esfuerzo habitual."
+          "description": "Un indicador nocturno de carga de actividad a partir de tu esfuerzo ponderado por frecuencia cardíaca, relativo a tu esfuerzo habitual.",
+          "deviceCaption": "Esfuerzo diario de tu dispositivo: {value} de {max}",
+          "deviceSource": "Hasta que HealthLog calcule su propio valor durante la noche, la tarjeta muestra el esfuerzo diario de tu dispositivo, convertido a 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
           "method": "Tu temperatura típica de muñeca durante la noche es la mediana de tus lecturas nocturnas en el periodo, ± una dispersión robusta (desviación absoluta de la mediana, escalada). Sigue TUS lecturas: la noche pasada se muestra como una desviación respecto a tu propia base, no a una norma poblacional.",

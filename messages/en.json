@@ -4340,7 +4340,9 @@
           "method": "A nightly 0–100 strain proxy from your heart-rate-weighted activity load (a TRIMP-style training-impulse model). Higher means a harder day.",
           "anchorPersonal": "Anchored to your own recent training-day load — scored relative to your typical effort, so a genuinely hard day for you reads high.",
           "anchorPopulation": "Scored against a general reference while you build training history; once you have enough it switches to your own typical effort.",
-          "description": "A nightly activity-load proxy from your heart-rate-weighted effort, relative to your typical effort."
+          "description": "A nightly activity-load proxy from your heart-rate-weighted effort, relative to your typical effort.",
+          "deviceCaption": "Your device's day strain: {value} of {max}",
+          "deviceSource": "Until HealthLog has computed its own value overnight, the card shows your device's day strain, rescaled to 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
           "method": "Your typical overnight wrist temperature is the median of your nightly readings over the window, ± a robust spread (median absolute deviation, scaled). It tracks YOUR readings — last night is shown as a deviation from your own baseline, not a population norm.",

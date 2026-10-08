@@ -68,7 +68,23 @@ export interface WellnessScoreValue {
    * non-breaking).
    */
   components?: ReadinessComponent[] | null;
+  /**
+   * STRAIN only — set when the score is the device's own day strain rather
+   * than the server's computed proxy: no proxy row exists in the window, but
+   * the band delivered `DAY_STRAIN` (WHOOP's 0–21 scale). `value` is the
+   * device's latest reading on its own scale; `score` is that reading as a
+   * share of `scaleMax`, so the ring and the band keep their 0–100 contract.
+   * Absent whenever the computed proxy is the source.
+   */
+  device?: { value: number; scaleMax: number } | null;
 }
+
+/**
+ * The device-native day-strain scale. WHOOP reports cycle strain on 0–21;
+ * the ingest validation (`DAY_STRAIN: { min: 0, max: 21 }`) pins the same
+ * bound, so a stored reading can never exceed it.
+ */
+export const DEVICE_STRAIN_SCALE_MAX = 21;
 
 /** The three persisted score types this engine serves. */
 export const WELLNESS_SCORE_TYPES = {
@@ -176,6 +192,26 @@ export async function computeWellnessScore(
       )
     : rawRows;
 
+  // STRAIN has a second, device-native source: the band's own DAY_STRAIN,
+  // which `/insights/recovery` charts. Without a computed proxy in the window
+  // the strain page reads that same series instead of reporting "not enough
+  // data" for an account the recovery page shows weeks of strain for.
+  if (rows.length === 0 && type === "STRAIN_SCORE") {
+    const deviceRows = await prisma.measurement.findMany({
+      where: {
+        userId,
+        type: "DAY_STRAIN",
+        deletedAt: null,
+        measuredAt: { gte: cutoff, lte: now },
+      },
+      select: { value: true, measuredAt: true, source: true },
+      orderBy: { measuredAt: "desc" },
+    });
+    if (deviceRows.length > 0) {
+      return buildDeviceStrain(deviceRows, windowDays, computedAt);
+    }
+  }
+
   if (rows.length === 0) {
     return buildInsufficient<WellnessScoreValue>({
       coverage: {
@@ -264,6 +300,58 @@ export async function computeWellnessScore(
     confidence: { score: 90, band: "high" },
     provenance: {
       inputs: [type],
+      source: "DAY",
+      windowDays,
+      computedAt,
+    },
+  });
+}
+
+/** A device day-strain reading as a 0–100 share of the device scale. */
+function deviceStrainShare(value: number): number {
+  const clamped = Math.min(Math.max(value, 0), DEVICE_STRAIN_SCALE_MAX);
+  return Math.round((clamped / DEVICE_STRAIN_SCALE_MAX) * 100);
+}
+
+function buildDeviceStrain(
+  rows: { value: number; measuredAt: Date }[],
+  windowDays: number,
+  computedAt: string,
+): Derived<WellnessScoreValue> {
+  const latest = rows[0];
+  const score = deviceStrainShare(latest.value);
+  const prior = rows.slice(1).map((r) => deviceStrainShare(r.value));
+  const trendDelta =
+    prior.length > 0
+      ? Math.round(score - prior.reduce((s, v) => s + v, 0) / prior.length)
+      : null;
+  return buildOk<WellnessScoreValue>({
+    value: {
+      score,
+      band: bandWellnessScore("STRAIN_SCORE", score),
+      trendDelta,
+      daysInWindow: rows.length,
+      asOf: latest.measuredAt.toISOString(),
+      series: rows
+        .slice(0, SPARKLINE_MAX_POINTS)
+        .map((r) => deviceStrainShare(r.value))
+        .reverse(),
+      anchor: null,
+      components: null,
+      device: {
+        value: Math.round(latest.value * 10) / 10,
+        scaleMax: DEVICE_STRAIN_SCALE_MAX,
+      },
+    },
+    coverage: {
+      requiredInputs: 1,
+      presentInputs: 1,
+      historyDays: rows.length,
+      missing: [],
+    },
+    confidence: { score: 90, band: "high" },
+    provenance: {
+      inputs: ["DAY_STRAIN"],
       source: "DAY",
       windowDays,
       computedAt,

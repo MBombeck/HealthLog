@@ -3,6 +3,7 @@
 import { Sparkles } from "lucide-react";
 
 import { useTranslations } from "@/lib/i18n/context";
+import { resolveIntlLocale } from "@/lib/format-locale";
 import { useDerivedMetric } from "./use-derived-metric";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
@@ -109,7 +110,7 @@ export function CompositeScoreAnatomy({
   metric,
   className,
 }: CompositeScoreAnatomyProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
 
   const query = useDerivedMetric<
     SleepScoreValue | ReadinessValue | WellnessScoreValue
@@ -135,7 +136,15 @@ export function CompositeScoreAnatomy({
   // the displayed framing honest per-score. `null` (RECOVERY / STRESS, or no
   // cache row yet) renders nothing.
   let anchorLine: string | null = null;
-  if (metric === "STRAIN_SCORE" && data?.status === "ok" && data.value) {
+  // Strain served from the device's own day strain (no computed proxy in the
+  // window): the card says so, and the course below charts that same series.
+  const deviceStrain =
+    metric === "STRAIN_SCORE" && data?.status === "ok" && data.value
+      ? ((data.value as WellnessScoreValue).device ?? null)
+      : null;
+  if (deviceStrain) {
+    anchorLine = t("insights.derived.composite.STRAIN_SCORE.deviceSource");
+  } else if (metric === "STRAIN_SCORE" && data?.status === "ok" && data.value) {
     const anchor = (data.value as WellnessScoreValue).anchor;
     if (anchor === "personal") {
       anchorLine = t("insights.derived.composite.STRAIN_SCORE.anchorPersonal");
@@ -238,7 +247,15 @@ export function CompositeScoreAnatomy({
       // READINESS component keys verbatim. STRESS / STRAIN stay row-less.
       const v = data.value as WellnessScoreValue;
       score = v.score;
-      caption = t(`insights.derived.scoreRing.band.${v.band}`);
+      caption = v.device
+        ? t("insights.derived.composite.STRAIN_SCORE.deviceCaption", {
+            value: v.device.value.toLocaleString(resolveIntlLocale(locale), {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1,
+            }),
+            max: v.device.scaleMax,
+          })
+        : t(`insights.derived.scoreRing.band.${v.band}`);
       if (metric === "RECOVERY_SCORE" && v.components) {
         contributors = v.components
           .map((c) => ({
@@ -275,7 +292,10 @@ export function CompositeScoreAnatomy({
     data.status !== "ok" ? null : metric === "RECOVERY_SCORE" ||
       metric === "STRESS_SCORE" ||
       metric === "STRAIN_SCORE" ? (
-      <ScoreHistoryChart type={metric} hue={METRIC_HUE[metric]} />
+      <ScoreHistoryChart
+        type={deviceStrain ? "DAY_STRAIN" : metric}
+        hue={METRIC_HUE[metric]}
+      />
     ) : series && series.length >= 2 ? (
       <ScoreHistoryCard
         series={series}

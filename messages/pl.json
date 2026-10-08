@@ -4340,7 +4340,9 @@
           "method": "Nocny wskaźnik obciążenia 0–100 na podstawie Twojego obciążenia aktywnością ważonego tętnem (model impulsu treningowego typu TRIMP). Wyższy oznacza cięższy dzień.",
           "anchorPersonal": "Zakotwiczony w Twoim własnym niedawnym obciążeniu z dni treningowych — oceniany względem Twojego typowego wysiłku, więc naprawdę ciężki dzień dla Ciebie wypada wysoko.",
           "anchorPopulation": "Oceniany względem ogólnego punktu odniesienia, gdy dopiero budujesz historię treningów; gdy zbierzesz jej wystarczająco, przełącza się na Twój własny typowy wysiłek.",
-          "description": "Nocny wskaźnik obciążenia aktywnością z Twojego wysiłku ważonego tętnem, względem Twojego typowego wysiłku."
+          "description": "Nocny wskaźnik obciążenia aktywnością z Twojego wysiłku ważonego tętnem, względem Twojego typowego wysiłku.",
+          "deviceCaption": "Dzienne obciążenie z Twojego urządzenia: {value} z {max}",
+          "deviceSource": "Dopóki HealthLog nie obliczy w nocy własnej wartości, karta pokazuje dzienne obciążenie z Twojego urządzenia, przeliczone na 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
           "method": "Twoja typowa nocna temperatura nadgarstka to mediana Twoich nocnych odczytów w danym okresie, ± solidny rozrzut (przeskalowane medianowe odchylenie bezwzględne). Śledzi TWOJE odczyty — ostatnia noc jest pokazana jako odchylenie od Twojej własnej bazy, a nie od normy populacyjnej.",

@@ -313,3 +313,76 @@ describe("computeWellnessScore", () => {
     expect(where.source).toBe("COMPUTED");
   });
 });
+
+describe("computeWellnessScore — strain reads the device's day strain", () => {
+  // `/insights/recovery` charts the band's own DAY_STRAIN. The strain page
+  // must not call the same account "not enough data": with no computed proxy
+  // in the window it serves the device's day strain, on the device's scale.
+  function byType(rows: Record<string, unknown[]>) {
+    findMany.mockImplementation(
+      async (args: { where: { type: string } }) => rows[args.where.type] ?? [],
+    );
+  }
+
+  it("falls back to DAY_STRAIN when no computed strain score exists", async () => {
+    byType({
+      STRAIN_SCORE: [],
+      DAY_STRAIN: [
+        {
+          value: 10.5,
+          measuredAt: new Date("2026-06-02T04:00:00Z"),
+          source: "WHOOP",
+        },
+        {
+          value: 14.7,
+          measuredAt: new Date("2026-06-01T04:00:00Z"),
+          source: "WHOOP",
+        },
+      ],
+    });
+    const r = await computeWellnessScore("STRAIN_SCORE", "u1", PROFILE, {
+      now: NOW,
+    });
+    expect(r.status).toBe("ok");
+    if (r.status !== "ok") return;
+    const v = r.value as WellnessScoreValue;
+    expect(v.device).toEqual({ value: 10.5, scaleMax: 21 });
+    expect(v.score).toBe(50);
+    expect(v.daysInWindow).toBe(2);
+    expect(r.provenance.inputs).toEqual(["DAY_STRAIN"]);
+  });
+
+  it("keeps the computed proxy when one exists", async () => {
+    byType({
+      STRAIN_SCORE: [
+        {
+          value: 64,
+          measuredAt: new Date("2026-06-01T12:00:00Z"),
+          source: "COMPUTED",
+        },
+      ],
+      DAY_STRAIN: [
+        {
+          value: 10.5,
+          measuredAt: new Date("2026-06-02T04:00:00Z"),
+          source: "WHOOP",
+        },
+      ],
+    });
+    const r = await computeWellnessScore("STRAIN_SCORE", "u1", PROFILE, {
+      now: NOW,
+    });
+    expect(r.status).toBe("ok");
+    if (r.status !== "ok") return;
+    expect(r.value.score).toBe(64);
+    expect(r.value.device ?? null).toBeNull();
+  });
+
+  it("stays insufficient with neither", async () => {
+    byType({});
+    const r = await computeWellnessScore("STRAIN_SCORE", "u1", PROFILE, {
+      now: NOW,
+    });
+    expect(r.status).toBe("insufficient");
+  });
+});

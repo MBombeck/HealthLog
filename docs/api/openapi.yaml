@@ -83586,6 +83586,24 @@ components:
                   - weight
                 additionalProperties: false
             - type: "null"
+        device:
+          description: STRAIN only — present when no computed strain score exists in the window and the score is served from the
+            device's own DAY_STRAIN instead. `score` is then `value` as a 0–100 share of `scaleMax`. Absent when the
+            computed proxy is the source.
+          anyOf:
+            - type: object
+              properties:
+                value:
+                  type: number
+                  description: The device's latest day strain on its own scale.
+                scaleMax:
+                  type: number
+                  description: Top of the device scale (21 for WHOOP day strain).
+              required:
+                - value
+                - scaleMax
+              additionalProperties: false
+            - type: "null"
       required:
         - score
         - band
