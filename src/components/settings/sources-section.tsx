@@ -69,6 +69,38 @@ import { apiGet, apiPut } from "@/lib/api/api-fetch";
 interface ResolvedPriority extends Required<MetricPriority> {
   metricPriority: Required<MetricPriority>;
   deviceTypePriority: DeviceTypePriority;
+  /**
+   * The ranked sources this account has connected or holds data from. The
+   * editor lists only these; the ladders it edits keep every source.
+   */
+  inUse?: string[];
+}
+
+type LadderSource = Required<MetricPriority>[SourcePriorityMetricKey][number];
+
+/**
+ * Move `source` one step past its nearest VISIBLE neighbour in `list`.
+ *
+ * The editor hides sources the account does not use, so an adjacent swap on
+ * the full ladder would trade places with an invisible entry and look like a
+ * button that did nothing. Swapping with the next visible entry keeps the
+ * hidden ones in their slots. Returns `null` when there is no visible
+ * neighbour in that direction.
+ */
+export function moveAmongVisible<T>(
+  list: readonly T[],
+  source: T,
+  delta: -1 | 1,
+  isVisible: (entry: T) => boolean,
+): T[] | null {
+  const from = list.indexOf(source);
+  if (from < 0) return null;
+  let to = from + delta;
+  while (to >= 0 && to < list.length && !isVisible(list[to])) to += delta;
+  if (to < 0 || to >= list.length) return null;
+  const next = [...list];
+  [next[from], next[to]] = [next[to], next[from]];
+  return next;
 }
 
 const METRIC_LABEL_KEYS: Record<SourcePriorityMetricKey, string> = {
@@ -207,13 +239,13 @@ export function SourcesSection() {
 
   function moveSource(
     metric: SourcePriorityMetricKey,
-    index: number,
+    source: LadderSource,
     delta: -1 | 1,
   ) {
     if (!priority) return;
     const current =
       priority.metricPriority[metric] ?? DEFAULT_SOURCE_PRIORITY[metric];
-    const list = reorderLadder(current, index, delta);
+    const list = moveAmongVisible(current, source, delta, isSourceVisible);
     if (!list) return;
     const nextMetric = { ...priority.metricPriority, [metric]: list };
     setDraft({
@@ -262,6 +294,46 @@ export function SourcesSection() {
 
   const dirty = draft !== null && priority !== null;
 
+  // An older server sends no `inUse`; then every source stays listed.
+  const remoteInUse = remote?.inUse;
+  const inUse = useMemo(
+    () => (remoteInUse ? new Set(remoteInUse) : null),
+    [remoteInUse],
+  );
+  function isSourceVisible(source: string): boolean {
+    return inUse === null || inUse.has(source);
+  }
+
+  // The metrics worth showing: those with at least one source in use. A
+  // metric nobody delivers has nothing to rank.
+  const visibleMetrics = useMemo(() => {
+    if (!priority) return [] as SourcePriorityMetricKey[];
+    return SOURCE_PRIORITY_METRIC_KEYS.filter((metric) =>
+      (priority.metricPriority[metric] ?? DEFAULT_SOURCE_PRIORITY[metric]).some(
+        (source) => inUse === null || inUse.has(source),
+      ),
+    );
+  }, [priority, inUse]);
+
+  // Every group starts collapsed except the first, so the page opens on one
+  // worked example instead of twenty open ladders. Toggled groups are
+  // remembered by key; the first group's default is the inverse.
+  const [toggledMetrics, setToggledMetrics] = useState<
+    ReadonlySet<SourcePriorityMetricKey>
+  >(new Set());
+  function isMetricOpen(metric: SourcePriorityMetricKey): boolean {
+    const openByDefault = metric === visibleMetrics[0];
+    return toggledMetrics.has(metric) ? !openByDefault : openByDefault;
+  }
+  function toggleMetric(metric: SourcePriorityMetricKey) {
+    setToggledMetrics((prev) => {
+      const next = new Set(prev);
+      if (next.has(metric)) next.delete(metric);
+      else next.add(metric);
+      return next;
+    });
+  }
+
   // The per-metric expander shows every metric whose ladder has been
   // overridden, plus a hint when none has. Counter lives next to the
   // expander label so the section "asks" for attention proportional
@@ -303,69 +375,100 @@ export function SourcesSection() {
 
         {isLoading || !priority ? (
           <SourcesSkeletonList />
+        ) : visibleMetrics.length === 0 ? (
+          <EmptyState
+            variant="plain"
+            size="compact"
+            data-testid="sources-none-in-use"
+            title={t("settings.sections.sources.noneInUse")}
+          />
         ) : (
           <div className="space-y-3">
-            {SOURCE_PRIORITY_METRIC_KEYS.map((metric) => {
-              const list =
+            {visibleMetrics.map((metric) => {
+              const list = (
                 priority.metricPriority[metric] ??
-                DEFAULT_SOURCE_PRIORITY[metric];
+                DEFAULT_SOURCE_PRIORITY[metric]
+              ).filter(isSourceVisible);
+              const open = isMetricOpen(metric);
+              const panelId = `sources-metric-${metric}`;
               return (
                 <div
                   key={metric}
-                  className="border-border bg-background/30 space-y-2 rounded-md border p-3"
+                  data-testid={`sources-metric-${metric}`}
+                  className="border-border bg-background/30 rounded-md border"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">
+                  <button
+                    type="button"
+                    onClick={() => toggleMetric(metric)}
+                    aria-expanded={open}
+                    aria-controls={panelId}
+                    className="hover:bg-muted/40 flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors"
+                  >
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={`text-muted-foreground size-4 shrink-0 transition-transform ${
+                        open ? "rotate-180" : ""
+                      }`}
+                    />
+                    <span className="min-w-0 flex-1 text-sm font-medium">
                       {t(METRIC_LABEL_KEYS[metric])}
                     </span>
-                  </div>
-                  <ul className="space-y-1">
-                    {list.map((source, index) => (
-                      <li
-                        key={`${metric}-${source}-${index}`}
-                        className="border-border bg-card flex items-center gap-2 rounded-md border px-2 py-1.5"
-                      >
-                        <span className="text-muted-foreground w-5 text-xs font-medium tabular-nums">
-                          {index + 1}.
-                        </span>
-                        <span className="flex-1 text-sm">
-                          {t(MEASUREMENT_SOURCE_SETTINGS_LABEL_KEYS[source])}
-                        </span>
-                        {/* Up/down sit side by side at every width: two
-                            44 px buttons leave a 390 px row ~170 px for the
-                            source name. Stacking them on phones (v1.4.27
-                            MB2) doubled every row and pushed this page past
-                            twelve thousand pixels. */}
-                        <div className="flex shrink-0 gap-1 sm:gap-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-11 w-11"
-                            onClick={() => moveSource(metric, index, -1)}
-                            disabled={index === 0 || saveMutation.isPending}
-                            aria-label={t("settings.sections.sources.moveUp")}
-                          >
-                            <ArrowUp className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-11 w-11"
-                            onClick={() => moveSource(metric, index, 1)}
-                            disabled={
-                              index === list.length - 1 ||
-                              saveMutation.isPending
-                            }
-                            aria-label={t("settings.sections.sources.moveDown")}
-                          >
-                            <ArrowDown className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                    {/* Collapsed, the group still says who wins. */}
+                    {!open && list[0] ? (
+                      <span className="text-muted-foreground shrink-0 truncate text-xs">
+                        {t(MEASUREMENT_SOURCE_SETTINGS_LABEL_KEYS[list[0]])}
+                      </span>
+                    ) : null}
+                  </button>
+                  {open ? (
+                    <ul id={panelId} className="space-y-1 px-3 pb-3">
+                      {list.map((source, index) => (
+                        <li
+                          key={`${metric}-${source}`}
+                          className="border-border bg-card flex items-center gap-2 rounded-md border px-2 py-1.5"
+                        >
+                          <span className="text-muted-foreground w-5 text-xs font-medium tabular-nums">
+                            {index + 1}.
+                          </span>
+                          <span className="flex-1 text-sm">
+                            {t(MEASUREMENT_SOURCE_SETTINGS_LABEL_KEYS[source])}
+                          </span>
+                          {/* Up/down sit side by side at every width: two
+                              44 px buttons leave a 390 px row ~170 px for the
+                              source name. */}
+                          <div className="flex shrink-0 gap-1 sm:gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-11 w-11"
+                              onClick={() => moveSource(metric, source, -1)}
+                              disabled={index === 0 || saveMutation.isPending}
+                              aria-label={t("settings.sections.sources.moveUp")}
+                            >
+                              <ArrowUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-11 w-11"
+                              onClick={() => moveSource(metric, source, 1)}
+                              disabled={
+                                index === list.length - 1 ||
+                                saveMutation.isPending
+                              }
+                              aria-label={t(
+                                "settings.sections.sources.moveDown",
+                              )}
+                            >
+                              <ArrowDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </div>
               );
             })}
@@ -607,9 +710,9 @@ export function SourcesSection() {
 
 /**
  * Skeleton placeholder rendered while `/api/auth/me/source-priority`
- * is in flight. Reserves one row per `SOURCE_PRIORITY_METRIC_KEYS`
- * entry at roughly the loaded height so the page does not jump when
- * the fetched ladder list swaps in. The pulsing animation honours
+ * is in flight. Mirrors the loaded shape: the first group open with a
+ * couple of rows, the rest collapsed to their header line, so the page does
+ * not jump when the ladders swap in. The pulsing animation honours
  * `prefers-reduced-motion` via Tailwind's `motion-reduce:animate-none`.
  */
 function SourcesSkeletonList() {
@@ -619,17 +722,13 @@ function SourcesSkeletonList() {
       data-testid="sources-skeleton"
       aria-hidden="true"
     >
-      {SOURCE_PRIORITY_METRIC_KEYS.map((metric) => (
-        <div
-          key={metric}
-          className="border-border bg-background/30 space-y-2 rounded-md border p-3"
-        >
-          <Skeleton className="h-4 w-40" />
-          <div className="space-y-1">
-            <Skeleton className="h-9 w-full rounded-md" />
-            <Skeleton className="h-9 w-full rounded-md" />
-          </div>
-        </div>
+      <div className="border-border bg-background/30 space-y-2 rounded-md border p-3">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-14 w-full rounded-md" />
+        <Skeleton className="h-14 w-full rounded-md" />
+      </div>
+      {[0, 1, 2, 3].map((i) => (
+        <Skeleton key={i} className="h-11 w-full rounded-md" />
       ))}
     </div>
   );

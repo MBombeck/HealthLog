@@ -5460,7 +5460,8 @@
           "moduleHintLink": "Zarządzaj modułami",
           "detail": "Tylko do odczytu — wartości należą do aplikacji źródłowej."
         },
-        "helpDetail": "Pozostałe pozostają zapisane na potrzeby audytu."
+        "helpDetail": "Pozostałe pozostają zapisane na potrzeby audytu. Widać tylko źródła, które połączono lub z których są dane.",
+        "noneInUse": "Nie ma jeszcze źródeł do uszeregowania. Połącz jedno w Integracjach albo wpisz wartość."
       },
       "ai": {
         "title": "Dostawca AI",

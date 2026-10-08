@@ -5460,7 +5460,8 @@
           "moduleHintLink": "Gérer les modules",
           "detail": "Lecture seule : l'app source reste propriétaire des valeurs."
         },
-        "helpDetail": "Les autres restent enregistrées pour la piste d’audit."
+        "helpDetail": "Les autres restent enregistrées pour la piste d’audit. Seules les sources connectées ou ayant fourni des données sont listées.",
+        "noneInUse": "Aucune source à classer pour l'instant. Connectez-en une dans Intégrations ou saisissez une valeur."
       },
       "ai": {
         "title": "Fournisseur d'IA",

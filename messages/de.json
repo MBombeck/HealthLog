@@ -5460,7 +5460,8 @@
           "moduleHintLink": "Module verwalten",
           "detail": "Nur lesend — die Quell-App besitzt die Werte."
         },
-        "helpDetail": "Die übrigen bleiben für die Audit-Spur gespeichert."
+        "helpDetail": "Die übrigen bleiben für die Audit-Spur gespeichert. Aufgeführt sind nur Quellen, die du verbunden hast oder von denen Daten vorliegen.",
+        "noneInUse": "Noch keine Quelle zum Sortieren. Verbinde eine unter Integrationen oder trage einen Wert ein."
       },
       "ai": {
         "title": "KI-Anbieter",

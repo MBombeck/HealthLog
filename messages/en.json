@@ -5460,7 +5460,8 @@
           "moduleHintLink": "Manage modules",
           "detail": "Read-only — the source app owns the numbers."
         },
-        "helpDetail": "The others stay stored for the audit trail."
+        "helpDetail": "The others stay stored for the audit trail. Only sources you have connected or hold data from are listed.",
+        "noneInUse": "No source to rank yet. Connect one under Integrations or record a value."
       },
       "ai": {
         "title": "AI provider",

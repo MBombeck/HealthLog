@@ -5460,7 +5460,8 @@
           "moduleHintLink": "Gestisci moduli",
           "detail": "Sola lettura: i valori appartengono all'app di origine."
         },
-        "helpDetail": "Le altre restano memorizzate per la traccia di controllo."
+        "helpDetail": "Le altre restano memorizzate per la traccia di controllo. Sono elencate solo le fonti collegate o con dati.",
+        "noneInUse": "Ancora nessuna fonte da ordinare. Collegane una in Integrazioni o registra un valore."
       },
       "ai": {
         "title": "Provider IA",

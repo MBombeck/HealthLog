@@ -5460,7 +5460,8 @@
           "moduleHintLink": "Gestionar módulos",
           "detail": "Solo lectura: la app de origen es la dueña de los valores."
         },
-        "helpDetail": "Las demás se conservan para la traza de auditoría."
+        "helpDetail": "Las demás se conservan para la traza de auditoría. Solo aparecen las fuentes que has conectado o de las que hay datos.",
+        "noneInUse": "Aún no hay fuentes que ordenar. Conecta una en Integraciones o registra un valor."
       },
       "ai": {
         "title": "Proveedor de IA",

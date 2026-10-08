@@ -51244,922 +51244,7 @@ components:
       type: object
       properties:
         data:
-          type: object
-          properties:
-            steps:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            activeEnergy:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            walkingRunningDistance:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            flightsClimbed:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            sleep:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            weight:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            bloodPressure:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            pulse:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            bodyFat:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            bodyTemperature:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            spo2:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            hrv:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            restingHeartRate:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            vo2Max:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            skinTemperature:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            respiratoryRate:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            recovery:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            stress:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            sleepDebt:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            hrvRmssd:
-              maxItems: 16
-              type: array
-              items:
-                type: string
-                enum:
-                  - MANUAL
-                  - WITHINGS
-                  - IMPORT
-                  - APPLE_HEALTH
-                  - COMPUTED
-                  - WHOOP
-                  - FITBIT
-                  - NIGHTSCOUT
-                  - POLAR
-                  - OURA
-                  - TELEGRAM
-                  - MCP
-                  - GOOGLE_HEALTH
-                  - STRAVA
-                  - EXTERNAL
-                  - HEALTH_CONNECT
-            metricPriority:
-              type: object
-              properties:
-                steps:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                activeEnergy:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                walkingRunningDistance:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                flightsClimbed:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                sleep:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                weight:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                bloodPressure:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                pulse:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                bodyFat:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                bodyTemperature:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                spo2:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                hrv:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                restingHeartRate:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                vo2Max:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                skinTemperature:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                respiratoryRate:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                recovery:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                stress:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                sleepDebt:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                hrvRmssd:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-              additionalProperties: false
-            deviceTypePriority:
-              type: object
-              properties:
-                default:
-                  maxItems: 8
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - watch
-                      - band
-                      - ring
-                      - phone
-                      - scale
-                      - other
-                      - unknown
-              additionalProperties:
-                maxItems: 8
-                type: array
-                items:
-                  type: string
-                  enum:
-                    - watch
-                    - band
-                    - ring
-                    - phone
-                    - scale
-                    - other
-                    - unknown
-          additionalProperties: false
+          $ref: "#/components/schemas/ResolvedSourcePriority"
         error:
           type: "null"
         meta:
@@ -52172,10 +51257,450 @@ components:
         - data
         - error
       additionalProperties: false
-    PutSourcePriorityResponse:
+    ResolvedSourcePriority:
       type: object
       properties:
-        data:
+        steps:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        activeEnergy:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        walkingRunningDistance:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        flightsClimbed:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        sleep:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        weight:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        bloodPressure:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        pulse:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        bodyFat:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        bodyTemperature:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        spo2:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        hrv:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        restingHeartRate:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        vo2Max:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        skinTemperature:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        respiratoryRate:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        recovery:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        stress:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        sleepDebt:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        hrvRmssd:
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        metricPriority:
           type: object
           properties:
             steps:
@@ -52618,480 +52143,67 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
-            metricPriority:
-              type: object
-              properties:
-                steps:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                activeEnergy:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                walkingRunningDistance:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                flightsClimbed:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                sleep:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                weight:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                bloodPressure:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                pulse:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                bodyFat:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                bodyTemperature:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                spo2:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                hrv:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                restingHeartRate:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                vo2Max:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                skinTemperature:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                respiratoryRate:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                recovery:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                stress:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                sleepDebt:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-                hrvRmssd:
-                  maxItems: 16
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - MANUAL
-                      - WITHINGS
-                      - IMPORT
-                      - APPLE_HEALTH
-                      - COMPUTED
-                      - WHOOP
-                      - FITBIT
-                      - NIGHTSCOUT
-                      - POLAR
-                      - OURA
-                      - TELEGRAM
-                      - MCP
-                      - GOOGLE_HEALTH
-                      - STRAVA
-                      - EXTERNAL
-                      - HEALTH_CONNECT
-              additionalProperties: false
-            deviceTypePriority:
-              type: object
-              properties:
-                default:
-                  maxItems: 8
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - watch
-                      - band
-                      - ring
-                      - phone
-                      - scale
-                      - other
-                      - unknown
-              additionalProperties:
-                maxItems: 8
-                type: array
-                items:
-                  type: string
-                  enum:
-                    - watch
-                    - band
-                    - ring
-                    - phone
-                    - scale
-                    - other
-                    - unknown
           additionalProperties: false
+        deviceTypePriority:
+          type: object
+          properties:
+            default:
+              maxItems: 8
+              type: array
+              items:
+                type: string
+                enum:
+                  - watch
+                  - band
+                  - ring
+                  - phone
+                  - scale
+                  - other
+                  - unknown
+          additionalProperties:
+            maxItems: 8
+            type: array
+            items:
+              type: string
+              enum:
+                - watch
+                - band
+                - ring
+                - phone
+                - scale
+                - other
+                - unknown
+        inUse:
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+          description: Ranked sources this account has connected or holds at least one measurement from, in ladder-catalogue
+            order. Read-only; an editor may list only these while the ladders keep every source.
+      required:
+        - inUse
+      additionalProperties: false
+    PutSourcePriorityResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ResolvedSourcePriority"
         error:
           type: "null"
         meta:
