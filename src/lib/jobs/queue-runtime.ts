@@ -373,6 +373,14 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "compaction-tombstone-purge": short(
     "At most 40 batches of 5 000 rows per run; the predicate is idempotent, so the next run resumes.",
   ),
+  "measurement-fold-repair": {
+    runtime: "budgeted",
+    budget: {
+      file: "lib/jobs/measurement-fold-repair.ts",
+      fn: "handleMeasurementFoldRepair",
+    },
+    why: "One account's folded means, a day at a time; stops at three quarters of the default expiry and sends a follow-up that resumes at the next day.",
+  },
   "measurement-maintenance": {
     runtime: "long",
     expireInSeconds: MEASUREMENT_MAINTENANCE_SEND_OPTIONS.expireInSeconds,

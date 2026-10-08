@@ -40,6 +40,7 @@ import {
   CONSOLIDATION_GRACE_CUTOFF_HOURS,
   canonicalDailyTimestamp,
   dayKeyForUserTz,
+  foldBoundary,
   type PerSampleRow,
 } from "./consolidation-tz";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -84,15 +85,17 @@ export function resolveUserTimezone(timezone: string | null): string {
 }
 
 /**
- * Compute the cutoff instant for a grace window. Returns `null` when no
- * positive `cutoffHours` is supplied (drain everything the caller points
- * at), matching the one-shot / CLI default the drains carry.
+ * The grace window in milliseconds, or `null` when no positive `cutoffHours`
+ * is supplied (drain everything the caller points at), matching the one-shot
+ * / CLI default the drains carry. The instant a pass stops at is resolved per
+ * account with {@link foldBoundary}: the start of the local day the window
+ * ends in, so only complete local days are folded.
  */
-export function resolveCutoffInstant(
+export function resolveCutoffMs(
   cutoffHours: number | undefined,
-): Date | null {
+): number | null {
   return typeof cutoffHours === "number" && cutoffHours > 0
-    ? new Date(Date.now() - cutoffHours * 60 * 60 * 1000)
+    ? cutoffHours * 60 * 60 * 1000
     : null;
 }
 
@@ -432,7 +435,8 @@ export async function runConsolidation<TType extends MeasurementType>(
 }> {
   const { prismaClient, options } = params;
   const dryRun = options.dryRun ?? false;
-  const cutoffAt = resolveCutoffInstant(options.cutoffHours);
+  const cutoffMs = resolveCutoffMs(options.cutoffHours);
+  const startedAt = new Date();
   const scanSelect = params.scanSelect ?? DEFAULT_SCAN_SELECT;
   const shouldStop = options.shouldStop ?? (() => false);
   let daysFailed = 0;
@@ -444,6 +448,10 @@ export async function runConsolidation<TType extends MeasurementType>(
 
   walk: for (const user of users) {
     const tz = resolveUserTimezone(user.timezone);
+    // Aligned to the account's local day: a day is folded whole or not at
+    // all, never in two runs (see `foldBoundary`).
+    const cutoffAt =
+      cutoffMs === null ? null : foldBoundary(startedAt, cutoffMs, tz);
     params.onUserStart?.({ userId: user.id, tz, dryRun });
 
     for (const type of params.types) {

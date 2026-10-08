@@ -209,6 +209,20 @@ describe("runDenseIntradayRetention (real Postgres)", () => {
       },
     });
 
+    // The sample the prior fold took for that hour, soft-deleted by it.
+    await prisma.measurement.create({
+      data: {
+        userId: TEST_USER_ID,
+        type: "HEART_RATE_VARIABILITY",
+        value: 20,
+        unit: "ms",
+        source: "APPLE_HEALTH",
+        measuredAt: new Date("2026-05-01T06:05:00.000Z"),
+        externalId: "hk-hrv-early",
+        deletedAt: new Date("2026-05-03T00:00:00.000Z"),
+      },
+    });
+
     // Must not throw P2002 — the fold adopts the existing hourly row.
     const summary = await runDenseIntradayRetention(prisma, {
       userId: TEST_USER_ID,
@@ -226,8 +240,9 @@ describe("runDenseIntradayRetention (real Postgres)", () => {
     });
     expect(live).toHaveLength(1);
     expect(live[0].externalId).toBe(`stats:${HRV_HK}:${DAY_KEY}T08`);
-    // Refreshed to the late sample's hourly mean, overwriting the stale 999.
-    expect(live[0].value).toBeCloseTo(40, 6);
+    // Refreshed to the mean over every sample of the hour, the prior fold's
+    // tombstone included, never to the late sample alone.
+    expect(live[0].value).toBeCloseTo(30, 6);
     expect(live[0].measuredAt.toISOString()).toBe("2026-05-01T06:30:00.000Z");
   });
 

@@ -720,6 +720,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "The record of a restore this host ran from one of its own stored copies. It names a backup row that exists only in this database, so carrying it would describe a restore the receiving host never performed.",
   OffhostBackupState:
     "When this host last put this account's copy in this operator's bucket, and how big it was. It describes one deployment's relationship with one bucket, so restoring it elsewhere would assert an off-host copy that host has never written.",
+  MeasurementFoldRepair:
+    "That this host's one-time fold repair has recomputed the account's hourly and daily means, which lets the compaction-tombstone purge delete the tombstones the repair reads. It describes this database, not the file: a restore of a file exported before the repair ran writes back the means and tombstones of that moment, so the restore removes the row and the repair runs again before anything is purged.",
   BackupPassAttempt:
     "When this host's backup passes last started and finished this account, kept so a pass the process died under is taken last next time and named on the backups page. It describes this deployment's own runs, so restoring it elsewhere would report an interrupted run that host never had, or hide one it did.",
   DocumentImportKey:

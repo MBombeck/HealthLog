@@ -22,12 +22,16 @@
  * Per user × type × completed calendar day (anchored to `User.timezone`):
  *   1. SELECT live (`deletedAt IS NULL`) `source = 'APPLE_HEALTH'` rows
  *      for the type whose externalId is NOT the daily-stats shape and
- *      whose `measuredAt` is older than the 36-hour grace cutoff (keeps
- *      today's in-flight watch syncs raw for the live "today" view).
+ *      whose local day ended before the day the 36-hour grace ends in
+ *      (`foldBoundary`; keeps today's in-flight watch syncs raw for the
+ *      live "today" view, and never folds a day in two runs).
  *   2. Group into per-day buckets in the user's timezone.
  *   3. Compute the MEAN of the per-sample values for the day.
  *   4. UPSERT the canonical daily row keyed by
- *      `stats:<HKIdentifier>:<dateKey>` at local-noon, `value = mean`.
+ *      `stats:<HKIdentifier>:<dateKey>` at local-noon, `value = mean`. A day
+ *      that already has a live daily row gets the mean over every sample of
+ *      the day, its fold leftovers included (`fold-constituents.ts`), or
+ *      keeps its stored mean when none are left.
  *      Because mean types are NOT in `CUMULATIVE_HK_TYPES`, the daily
  *      read path averages over the single stats row (count = 1) and
  *      returns it unchanged — no reader change needed.
@@ -65,6 +69,8 @@ import {
 } from "./consolidation-base";
 import { type PerSampleRow } from "./drain-per-sample-cumulative";
 import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
+import { localDayWindow } from "@/lib/tz/local-day";
+import { loadFoldLeftovers, meanOf } from "./fold-constituents";
 
 /**
  * Grace window — rows newer than `now() - cutoffHours` stay raw so
@@ -266,6 +272,8 @@ export async function consolidateDailyMean(
       reducedValue,
       dayRows,
       sourceRowIds,
+      tz,
+      dateKey,
     }): Promise<DayWriteOutcome> => {
       // Carry the canonical unit straight off the in-hand live day rows
       // (units are homogeneous per type). Avoids an extra per-day query
@@ -340,34 +348,77 @@ export async function consolidateDailyMean(
           }
         }
 
+        // A live daily row already holds this day. The pass folds only
+        // complete local days now, so that is a day an earlier run folded
+        // (in part, before the boundary was aligned) and these rows reached
+        // it afterwards. Its stored mean is replaced only by the mean over
+        // EVERY sample of the day: the live rows in hand plus the ones an
+        // earlier fold soft-deleted (`fold-constituents.ts`). When none of
+        // those are left the stored mean is the only account of the earlier
+        // samples, so it stays as it is, and the live rows go the way of
+        // any folded sample.
+        const existing = await tx.measurement.findFirst({
+          where: {
+            userId,
+            type,
+            source: "APPLE_HEALTH",
+            externalId,
+            deletedAt: null,
+          },
+          select: { id: true },
+        });
+        let value = reducedValue;
+        let keepStored = false;
+        if (existing) {
+          const { dayStart, dayEnd } = localDayWindow(dateKey, tz);
+          const leftovers = await loadFoldLeftovers(tx, {
+            userId,
+            type,
+            source: "APPLE_HEALTH",
+            from: dayStart,
+            to: dayEnd,
+            foldedAfterMs: MEAN_CONSOLIDATION_CUTOFF_HOURS * 3_600_000,
+          });
+          if (leftovers.length > 0) {
+            value = meanOf([
+              ...dayRows.map((row) => row.value),
+              ...leftovers.map((row) => row.value),
+            ]);
+          } else {
+            keepStored = true;
+          }
+        }
+
         // Mint / refresh the canonical daily-mean row. The unique
         // index (userId, type, source, externalId) makes the upsert
         // idempotent across re-runs. Built field-by-field (no spread)
         // per the no-mass-assignment convention.
-        await tx.measurement.upsert({
-          where: {
-            userId_type_source_externalId: {
+        if (!keepStored) {
+          await tx.measurement.upsert({
+            where: {
+              userId_type_source_externalId: {
+                userId,
+                type,
+                source: "APPLE_HEALTH",
+                externalId,
+              },
+            },
+            create: {
               userId,
               type,
+              value,
+              unit,
               source: "APPLE_HEALTH",
+              measuredAt: mintAt,
               externalId,
             },
-          },
-          create: {
-            userId,
-            type,
-            value: reducedValue,
-            unit,
-            source: "APPLE_HEALTH",
-            measuredAt: mintAt,
-            externalId,
-          },
-          update: {
-            value: reducedValue,
-            measuredAt: mintAt,
-            deletedAt: null,
-          },
-        });
+            update: {
+              value,
+              measuredAt: mintAt,
+              deletedAt: null,
+            },
+          });
+        }
 
         // Delete the per-sample rows in the same transaction.
         //

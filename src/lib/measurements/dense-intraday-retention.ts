@@ -27,7 +27,9 @@
  *      mean-consolidation drain skeleton (same `runConsolidation` base,
  *      same soft-delete + rollup handling) but with the grace cutoff
  *      widened from 36 hours to the retention window, and the fold grain
- *      set to the LOCAL HOUR: per-sample rows OLDER than the window fold
+ *      set to the LOCAL HOUR: per-sample rows of the local days that ended
+ *      before the window's boundary (`foldBoundary`; a day folds whole, in
+ *      one run) fold
  *      to one `stats:<HK>:<YYYY-MM-DD>T<HH>` hourly-mean row per user ×
  *      type × local hour and the raw rows are deleted (tombstoned before
  *      v1.42); rows INSIDE the
@@ -71,6 +73,12 @@ import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollup
 import { percentile } from "@/lib/insights/strain-score";
 import type { PerSampleRow } from "./drain-per-sample-cumulative";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { localDayWindow } from "@/lib/tz/local-day";
+import {
+  loadFoldLeftovers,
+  meanOf,
+  type FoldConstituent,
+} from "./fold-constituents";
 
 /**
  * iOS#34 / #69 — heart-rate (PULSE) is the densest spot signal after
@@ -629,7 +637,53 @@ export async function runDenseIntradayRetention(
         // live, and the post-fold DAY recompute is skipped entirely. The
         // WEEK/MONTH/YEAR recomputes this call enqueues run post-commit
         // against whatever is live then, as before.
-        await recomputeBucketsForMeasurement(userId, type, canonicalTimestamp);
+        //
+        // A day that already carries hourly rows of this source is one an
+        // earlier run folded in part (before the boundary was aligned to the
+        // local day) or that these rows reached afterwards. Its live rows are
+        // then a mix of hourly means and raw samples, and a DAY recompute
+        // from them would overwrite the figure the first fold took from the
+        // whole raw day, so it is left alone.
+        const hourlyPrefix = `stats:${hkIdentifier}:${dateKey}T`;
+        const dayAlreadyFolded =
+          (await pc.measurement.count({
+            where: {
+              userId,
+              type,
+              source,
+              externalId: { startsWith: hourlyPrefix },
+              deletedAt: null,
+            },
+          })) > 0;
+        // The samples an earlier fold soft-deleted from this day: together
+        // with the live rows in hand they are the whole day again
+        // (`fold-constituents.ts`). Read once; no fold writes tombstones any
+        // more, so nothing adds to them while the day is folded.
+        let leftovers: FoldConstituent[] = [];
+        if (dayAlreadyFolded) {
+          const { dayStart, dayEnd } = localDayWindow(dateKey, tz);
+          leftovers = await loadFoldLeftovers(pc, {
+            userId,
+            type,
+            source,
+            from: dayStart,
+            to: dayEnd,
+            foldedAfterMs: retentionDays * 24 * 3_600_000,
+          });
+        } else {
+          await recomputeBucketsForMeasurement(
+            userId,
+            type,
+            canonicalTimestamp,
+          );
+        }
+        const leftoversByHour = new Map<number, FoldConstituent[]>();
+        for (const row of leftovers) {
+          const hour = hourOfDayForUserTz(row.measuredAt, tz);
+          const slot = leftoversByHour.get(hour) ?? [];
+          slot.push(row);
+          leftoversByHour.set(hour, slot);
+        }
 
         // Fold the day into per-LOCAL-HOUR mean rows, anchored at local
         // HH:30. Sorted for a deterministic write order across runs.
@@ -640,23 +694,63 @@ export async function runDenseIntradayRetention(
         const foldOnce = async (): Promise<{
           removed: number;
           retiredDaily: boolean;
+          slotsWritten: number;
         }> => {
           let removed = 0;
           let retiredDaily = false;
+          let slotsWritten = 0;
           await pc.$transaction(async (tx) => {
             // First, before any reading is touched: see `restore-lock.ts`.
             await holdAccountAgainstRestore(tx, userId);
+            // An hour that already has a live hourly row gets the mean over
+            // every sample of the hour (live + fold leftovers), never the
+            // mean of this batch alone. With no leftovers the stored mean is
+            // the only account of the hour's earlier samples and stays.
+            const hourIds = byHour.map(([hour]) =>
+              hourlyStatsExternalId(hkIdentifier, dateKey, hour),
+            );
+            const liveHourly = dayAlreadyFolded
+              ? new Set(
+                  (
+                    await tx.measurement.findMany({
+                      where: {
+                        userId,
+                        type,
+                        source,
+                        externalId: { in: hourIds },
+                        deletedAt: null,
+                      },
+                      select: { externalId: true },
+                    })
+                  ).map((row) => row.externalId),
+                )
+              : new Set<string | null>();
+            const slots: HourlySlot[] = [];
+            for (const [hour, hourRows] of byHour) {
+              const slotId = hourlyStatsExternalId(hkIdentifier, dateKey, hour);
+              let value = meanBucketValue(hourRows);
+              if (liveHourly.has(slotId)) {
+                const earlier = leftoversByHour.get(hour) ?? [];
+                if (earlier.length === 0) continue;
+                value = meanOf([
+                  ...hourRows.map((row) => row.value),
+                  ...earlier.map((row) => row.value),
+                ]);
+              }
+              slots.push({
+                externalId: slotId,
+                anchor: canonicalHourlyTimestamp(dateKey, hour, tz),
+                value,
+              });
+            }
             const canonicalRowIds = await adoptOrMintHourlyRows(tx, {
               userId,
               type,
               source,
               unit,
-              slots: byHour.map(([hour, hourRows]) => ({
-                externalId: hourlyStatsExternalId(hkIdentifier, dateKey, hour),
-                anchor: canonicalHourlyTimestamp(dateKey, hour, tz),
-                value: meanBucketValue(hourRows),
-              })),
+              slots,
             });
+            slotsWritten = slots.length;
 
             // Retire a live pre-hourly DAILY `stats:` row for this day (the
             // late-sync path: raw samples arriving for a day folded to the
@@ -702,10 +796,14 @@ export async function runDenseIntradayRetention(
             });
             removed = del.count;
           });
-          return { removed, retiredDaily };
+          return { removed, retiredDaily, slotsWritten };
         };
 
-        let foldResult: { removed: number; retiredDaily: boolean };
+        let foldResult: {
+          removed: number;
+          retiredDaily: boolean;
+          slotsWritten: number;
+        };
         try {
           foldResult = await foldOnce();
         } catch (err) {
@@ -717,7 +815,7 @@ export async function runDenseIntradayRetention(
         }
         // Counters mutate OUTSIDE the retryable transaction so a P2002 retry
         // cannot double-count.
-        summary.totals.hourlyRowsUpserted += byHour.length;
+        summary.totals.hourlyRowsUpserted += foldResult.slotsWritten;
         if (foldResult.retiredDaily) summary.totals.dailyRowsRetired += 1;
 
         // iOS#34 — preserve the resting signal for PROXY users. For a user
@@ -731,8 +829,25 @@ export async function runDenseIntradayRetention(
         // the resolver prefers. Skipped for users WITH native resting rows
         // (the resolver ignores the proxy entirely for them, so a derived row
         // would only double-count).
-        if (isPulse) {
-          const restingValue = deriveDailyRestingFromPulse(dayRows);
+        //
+        // On a day an earlier run already folded, the figure comes from the
+        // whole day (live rows + fold leftovers); with no leftovers the rows
+        // in hand are only part of the day and the stored figure stays.
+        if (isPulse && (!dayAlreadyFolded || leftovers.length > 0)) {
+          const restingValue = deriveDailyRestingFromPulse(
+            dayAlreadyFolded
+              ? [
+                  ...dayRows,
+                  ...leftovers.map((row) => ({
+                    id: row.id,
+                    type,
+                    value: row.value,
+                    measuredAt: row.measuredAt,
+                    externalId: null,
+                  })),
+                ]
+              : dayRows,
+          );
           if (restingValue !== null && !(await userHasNativeResting(userId))) {
             const restingExternalId = dailyStatsExternalId(
               RESTING_HK_IDENTIFIER,

@@ -114,7 +114,9 @@ describe("coveringStatsExternalId", () => {
   });
 });
 
-function client(live: Array<{ type: string; externalId: string }>) {
+function client(
+  live: Array<{ type: string; externalId: string; measuredAt: Date }>,
+) {
   const findMany = vi.fn(async () => live);
   return {
     findMany,
@@ -142,11 +144,12 @@ describe("findFoldedWindowDuplicates", () => {
     expect(findMany).not.toHaveBeenCalled();
   });
 
-  it("returns the rows a live `stats:` row covers, in one live-only read", async () => {
+  it("returns the rows a live `stats:` row covers, in live-only reads", async () => {
     const { client: c, findMany } = client([
       {
         type: "PULSE",
         externalId: "stats:HKQuantityTypeIdentifierHeartRate:2026-03-01T10",
+        measuredAt: new Date("2026-03-01T10:30:00.000Z"),
       },
     ]);
     const found = await findFoldedWindowDuplicates(
@@ -161,13 +164,18 @@ describe("findFoldedWindowDuplicates", () => {
       ],
       { now: NOW },
     );
+    // The 11:15 sample is 45 minutes from the 10:30 anchor: outside the
+    // half hour any zone's hour anchor can be from a sample of its hour.
     expect([...found]).toEqual([0]);
-    expect(findMany).toHaveBeenCalledTimes(1);
-    const where = (
-      findMany.mock.calls[0] as unknown as [{ where: Record<string, unknown> }]
-    )[0].where;
-    expect(where.deletedAt).toBeNull();
-    expect(where.source).toBe("APPLE_HEALTH");
+    // One read by externalId, one for the timezone-change reach of the
+    // sample it did not cover; both live rows of the sample's own source.
+    expect(findMany).toHaveBeenCalledTimes(2);
+    for (const call of findMany.mock.calls) {
+      const where = (call as unknown as [{ where: Record<string, unknown> }])[0]
+        .where;
+      expect(where.deletedAt).toBeNull();
+      expect(where.source).toBe("APPLE_HEALTH");
+    }
   });
 });
 
@@ -177,6 +185,7 @@ describe("findCompactionTombstones", () => {
     {
       type: "PULSE",
       externalId: "stats:HKQuantityTypeIdentifierHeartRate:2026-03-01T10",
+      measuredAt: new Date("2026-03-01T10:30:00.000Z"),
     },
   ];
 
@@ -207,6 +216,7 @@ describe("findCompactionTombstones", () => {
       {
         type: "PULSE",
         externalId: "stats:HKQuantityTypeIdentifierHeartRate:2026-03-01",
+        measuredAt: new Date("2026-03-01T12:00:00.000Z"),
       },
     ]);
     const found = await findCompactionTombstones(c, "u1", "UTC", [
@@ -216,6 +226,22 @@ describe("findCompactionTombstones", () => {
       },
     ]);
     expect(found.size).toBe(0);
+  });
+
+  it("leaves a deletion alone whose day the fold had not finished yet", async () => {
+    // Past the 90 days by an hour, but the rest of the local day was still
+    // inside them: an older release folded such a day in two runs, and a
+    // person deleting a sample of it deleted something the fold had not
+    // taken.
+    const { client: c, findMany } = client(covering);
+    const found = await findCompactionTombstones(c, "u1", "UTC", [
+      {
+        ...raw("PULSE", measuredAt),
+        deletedAt: new Date(measuredAt.getTime() + 90 * DAY + 3_600_000),
+      },
+    ]);
+    expect(found.size).toBe(0);
+    expect(findMany).not.toHaveBeenCalled();
   });
 
   it("leaves a live row alone", async () => {
@@ -300,6 +326,9 @@ describe("Health Connect", () => {
       (call) =>
         (call as unknown as [{ where: { source: string } }])[0].where.source,
     );
-    expect(sources.sort()).toEqual(["APPLE_HEALTH", "HEALTH_CONNECT"]);
+    expect([...new Set(sources)].sort()).toEqual([
+      "APPLE_HEALTH",
+      "HEALTH_CONNECT",
+    ]);
   });
 });

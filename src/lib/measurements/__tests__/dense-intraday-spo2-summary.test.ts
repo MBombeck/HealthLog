@@ -93,7 +93,12 @@ function buildPrismaMock(opts: { spo2Rows: PerSampleRow[] }) {
         .fn()
         .mockResolvedValue([{ id: "user-1", timezone: "Europe/Berlin" }]),
     },
-    measurement: { findMany, findFirst: topFindFirst, upsert },
+    measurement: {
+      findMany,
+      findFirst: topFindFirst,
+      upsert,
+      count: vi.fn().mockResolvedValue(0),
+    },
     $transaction: vi.fn(async (cb: (t: unknown) => Promise<unknown>) => cb(tx)),
   } as unknown as PrismaClient;
 
