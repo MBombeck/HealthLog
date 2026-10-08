@@ -107,6 +107,8 @@ const ALLOWED: Record<string, string> = {
     "Cross-source merge probe for one posted sleep segment: SLEEP_DURATION in a ±tolerance window around its end.",
   "lib/targets/build-response.ts::{ in: recentTypes":
     "Thirty days of weight, blood pressure, resting heart rate, body fat and steps (drained to one row per day). PULSE is filtered out of `recentTypes` and folds in SQL.",
+  "lib/import/health-connect/import.ts::{ in: spotTypes":
+    "The Health Connect import's same-reading check: the spot types of one 500-row batch (weight, blood pressure, vitals) in that batch's time window, ±2 s. Heart rate and sleep never take the check.",
   "lib/doctor-report/collect.ts::{ notIn: rawExcluded":
     "The report window's sparse types. Pulse, heart-rate variability and blood oxygen over 10 000 readings or any window over 90 days, and glucose over 90 days, are in `rawExcluded` and read as day buckets; glucose inside 90 days stays raw for the clinical panel (per-reading metrics), below 26 000 rows at a sensor's rate.",
 };

@@ -20,7 +20,6 @@ import {
   dataEnvelope,
   errorEnvelope,
   measurementTypeEnum,
-  notImplementedResponse,
   stdResponses,
 } from "./shared";
 
@@ -196,8 +195,15 @@ const healthConnectImportJob = z
     result: z
       .record(z.string(), z.unknown())
       .nullable()
-      .describe("The worker's outcome summary, null until it finishes."),
-    failureReason: z.string().nullable(),
+      .describe(
+        "The worker's outcome summary, null until it finishes. Counts only: `perType` (read / inserted / updated / unchanged / skipped per measurement type), `perApp` (records per Android package, `leftOut` for an app whose integration the account has connected), `workouts`, `sleep`, `cycle`, `nutrients`, `skipped` (reason → count), `warnings` (codes for tables or columns the importer could not read), `totals`. Never a value, a timestamp or text from the file.",
+      ),
+    failureReason: z
+      .string()
+      .nullable()
+      .describe(
+        "Why the job failed. Starts with a code the client can key on when the file was refused — `unsupported_version` (database older than version 9), `not_health_connect` (no `health_connect_export.db`, or not a Health Connect database), `unsafe_schema` (a record table is a view), `too_large`, `staging_missing` — else free text.",
+      ),
   })
   .meta({ id: "HealthConnectImportJob" });
 
@@ -251,25 +257,25 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "409": {
           description:
-            "An import for this account is already queued or running with different bytes. The upload was discarded.",
+            "An import for this account (Health Connect or Apple Health) is already queued or running. The upload was discarded. `errorCode` is `import.apple_health.busy` for either kind, `jobId` names the running job.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "413": {
-          description: "The declared `Content-Length` exceeds the upload cap.",
+          description:
+            "The declared `Content-Length` exceeds the 1 GiB upload cap.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
         "422": {
           description:
-            "The upload is not a Health Connect export the importer can read: no `file` part, no export database in the ZIP, or a database version older than the importer supports.",
+            "The multipart body could not be read: no `file` part, a malformed body, or more bytes than the cap. Whether the ZIP is a readable Health Connect export is decided by the worker and reported on the job (`status: failed`, `failureReason`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "503": {
           description:
-            "No background worker is bound, so nothing would run the import.",
+            "No background worker is bound, or the queue did not take the job, so nothing would run the import.",
           content: { "application/json": { schema: errorEnvelope } },
         },
-        ...notImplementedResponse,
       },
     },
   },
@@ -292,7 +298,6 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },

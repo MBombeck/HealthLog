@@ -32,6 +32,10 @@
  * Peak memory is bounded by stream buffer sizes and the (small)
  * central directory, independent of archive size.
  *
+ * v1.42 (#972): the same walker pulls `health_connect_export.db` out of an
+ * Android Health Connect export (`extractHealthConnectDb`), under its own,
+ * lower size ceiling.
+ *
  * Locks per `.planning/research/v1434-r-1-xml-import.md` §6.1.
  */
 import {
@@ -312,6 +316,108 @@ export async function extractExportXml(
       xmlBytes,
       otherMembers,
     };
+  } finally {
+    await handle.close();
+  }
+}
+
+/** The one member of a Health Connect export ZIP the importer reads. */
+export const HEALTH_CONNECT_DB_MEMBER = "health_connect_export.db";
+
+/**
+ * Ceiling on the extracted Health Connect database. The export is a byte copy
+ * of the phone's own database; years of minute-by-minute heart rate from a
+ * watch put it in the hundreds of megabytes, and 4 GiB leaves room for that
+ * while keeping a forged archive from filling the temp directory.
+ */
+export const MAX_HEALTH_CONNECT_DB_BYTES = 4 * 1024 * 1024 * 1024;
+
+/** Where the Health Connect database landed. */
+export interface HealthConnectUnzipResult {
+  dbPath: string;
+  dbBytes: number;
+}
+
+/**
+ * Find `health_connect_export.db` among the archive's members. The Health
+ * Connect app writes it as the archive's single entry; any folder in front of
+ * it (an archive repacked on a computer) is tolerated.
+ */
+export function selectHealthConnectDbEntry<T extends { fileName: string }>(
+  entries: readonly T[],
+): T | null {
+  return (
+    entries.find(
+      (e) =>
+        !e.fileName.startsWith("__MACOSX/") &&
+        !e.fileName.endsWith("/") &&
+        baseName(e.fileName).toLowerCase() === HEALTH_CONNECT_DB_MEMBER,
+    ) ?? null
+  );
+}
+
+/**
+ * Write the `health_connect_export.db` member of `archivePath` to a temp file
+ * with an unguessable name. Refuses an archive without the member, an
+ * encrypted or unknown compression method, a declared size above
+ * `maxBytes`, and a declared ratio above the zip-bomb threshold; the streamed
+ * byte cap holds the real output to the same ceiling whatever the header
+ * claims.
+ */
+export async function extractHealthConnectDb(
+  archivePath: string,
+  options: { maxBytes?: number } = {},
+): Promise<HealthConnectUnzipResult> {
+  const maxBytes = options.maxBytes ?? MAX_HEALTH_CONNECT_DB_BYTES;
+  const handle = await open(archivePath, "r");
+  try {
+    const fileSize = Number((await handle.stat()).size);
+    if (!Number.isSafeInteger(fileSize)) {
+      throw new Error("Archive is too large to address safely");
+    }
+    const entries = await readCentralDirectoryFromFile(handle, fileSize);
+    const entry = selectHealthConnectDbEntry(entries);
+    if (!entry) {
+      throw new Error(
+        `not_health_connect: the archive has no ${HEALTH_CONNECT_DB_MEMBER} member — is this a Health Connect export?`,
+      );
+    }
+    if (entry.compressionMethod !== 0 && entry.compressionMethod !== 8) {
+      throw new Error(
+        `Unsupported ZIP compression method ${entry.compressionMethod}` +
+          ` for ${HEALTH_CONNECT_DB_MEMBER} (expected 0=stored or 8=deflate)`,
+      );
+    }
+    if (entry.uncompressedSize > maxBytes) {
+      throw new Error(
+        `too_large: ${HEALTH_CONNECT_DB_MEMBER} declares ${entry.uncompressedSize} bytes` +
+          ` — refusing to extract (cap is ${maxBytes} bytes).`,
+      );
+    }
+    if (
+      entry.compressedSize > 0 &&
+      entry.uncompressedSize / entry.compressedSize > MAX_COMPRESSION_RATIO
+    ) {
+      throw new Error(
+        `${HEALTH_CONNECT_DB_MEMBER} advertises a ${(
+          entry.uncompressedSize / entry.compressedSize
+        ).toFixed(0)}× compression ratio (cap is ${MAX_COMPRESSION_RATIO}×)` +
+          " — refusing as a suspected zip bomb.",
+      );
+    }
+    const dbPath = join(
+      tmpdir(),
+      `healthlog-hc-import-${randomBytes(12).toString("hex")}.db`,
+    );
+    const dbBytes = await streamEntryToFile(
+      handle,
+      archivePath,
+      fileSize,
+      entry,
+      dbPath,
+      maxBytes,
+    );
+    return { dbPath, dbBytes };
   } finally {
     await handle.close();
   }
@@ -651,6 +757,7 @@ async function streamEntryToFile(
   fileSize: number,
   entry: CentralDirectoryEntry,
   destPath: string,
+  maxOutputBytes: number = MAX_DECOMPRESSED_BYTES,
 ): Promise<number> {
   const local = await readExactly(handle, 30, entry.localHeaderOffset);
   if (local.readUInt32LE(0) !== LOCAL_FILE_HEADER) {
@@ -669,7 +776,7 @@ async function streamEntryToFile(
   }
 
   const dest = createWriteStream(destPath);
-  const cap = createByteCap(memberOutputCap(entry));
+  const cap = createByteCap(Math.min(memberOutputCap(entry), maxOutputBytes));
 
   try {
     if (entry.compressedSize === 0) {

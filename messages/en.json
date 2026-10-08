@@ -5653,7 +5653,6 @@
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
             "tooLarge": "The file is larger than this server accepts.",
-            "unsupportedVersion": "This Health Connect export is too old to read.",
             "doneSummary": "{count} values imported.",
             "failed": "The import failed: {reason}",
             "phase": {
@@ -5663,6 +5662,31 @@
               "upserting": "Saving the values",
               "done": "Finished",
               "failed": "Failed"
+            },
+            "steps": {
+              "export": "On your Android phone, open Health Connect, go to Manage data, then Export and import, and start an export.",
+              "cloud": "Health Connect only saves the export to a cloud storage app such as Google Drive, Dropbox or Nextcloud, never to the phone itself. Pick one there.",
+              "upload": "Download the ZIP file from that cloud to this device and upload it here."
+            },
+            "dropLabel": "Drop the Health Connect ZIP here",
+            "dropHint": "or click to choose it. Up to 1 GB.",
+            "fileInputLabel": "Health Connect export ZIP file",
+            "privacyNote": "The file is deleted from the server as soon as the import ends. Records from apps you already connect directly, such as Withings or Fitbit, are left out so nothing arrives twice. Uploading the same file again changes nothing.",
+            "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
+            "busy": "An import is already running for your account. Wait until it has finished.",
+            "rowsSoFar": "{count} values saved so far",
+            "doneNothing": "The import finished, but there was nothing new to add.",
+            "workouts": "Workouts",
+            "leftOutConnected": "{count} records from apps you already connect directly were left out.",
+            "nutrientsModuleOff": "Water and nutrient totals were not imported because the Nutrients module is switched off.",
+            "cycleModuleOff": "Period data was not imported because cycle tracking is switched off.",
+            "failure": {
+              "unsupportedVersion": "This Health Connect export is too old to read. Update Health Connect on the phone and export again.",
+              "notHealthConnect": "This file is not a Health Connect export. Choose the ZIP file Health Connect saved.",
+              "unsafeSchema": "This file does not have the structure of a Health Connect export and was not read.",
+              "tooLarge": "The export is larger than this server accepts.",
+              "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
+              "interrupted": "The import was interrupted by a server restart. Upload the file again."
             }
           }
         },

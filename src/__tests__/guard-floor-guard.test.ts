@@ -83,8 +83,8 @@ const NO_FLOOR_NEEDED: Readonly<Record<string, string>> = {
     "unit test of the ownership helper",
 
   // List a temporary directory the test itself filled.
-  "lib/import/__tests__/apple-health-staging.test.ts":
-    "lists its own temp staging directory",
+  "lib/import/__tests__/unzip-health-connect.test.ts":
+    "lists the temp directory to show a refused extraction left no file behind",
   "lib/multipart/__tests__/stream-to-disk.test.ts":
     "lists its own temp directory",
 };

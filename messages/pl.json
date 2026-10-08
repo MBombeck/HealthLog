@@ -5653,7 +5653,6 @@
             "uploading": "Przesyłanie…",
             "uploadFailed": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
             "tooLarge": "Plik jest większy, niż przyjmuje ten serwer.",
-            "unsupportedVersion": "Ten eksport z Health Connect jest zbyt stary, by go odczytać.",
             "doneSummary": "Zaimportowano wartości: {count}.",
             "failed": "Import nie powiódł się: {reason}",
             "phase": {
@@ -5663,6 +5662,31 @@
               "upserting": "Zapisywanie wartości",
               "done": "Gotowe",
               "failed": "Niepowodzenie"
+            },
+            "steps": {
+              "export": "Na telefonie z Androidem otwórz Health Connect, przejdź do Zarządzaj danymi, potem Eksport i import, i rozpocznij eksport.",
+              "cloud": "Health Connect zapisuje eksport tylko w aplikacji chmurowej, takiej jak Google Drive, Dropbox czy Nextcloud, nigdy w samym telefonie. Wybierz tam jedną z nich.",
+              "upload": "Pobierz plik ZIP z tej chmury na to urządzenie i prześlij go tutaj."
+            },
+            "dropLabel": "Upuść tutaj plik ZIP z Health Connect",
+            "dropHint": "lub kliknij, aby go wybrać. Do 1 GB.",
+            "fileInputLabel": "Plik ZIP eksportu Health Connect",
+            "privacyNote": "Plik jest usuwany z serwera zaraz po zakończeniu importu. Dane z aplikacji, które łączysz już bezpośrednio, np. Withings lub Fitbit, są pomijane, żeby nic nie trafiło podwójnie. Ponowne przesłanie tego samego pliku niczego nie zmienia.",
+            "rateLimited": "Za dużo przesyłań w krótkim czasie. Odczekaj minutę i spróbuj ponownie.",
+            "busy": "Dla Twojego konta trwa już import. Poczekaj, aż się zakończy.",
+            "rowsSoFar": "Zapisane wartości do tej pory: {count}",
+            "doneNothing": "Import się zakończył, ale nie było nic nowego do dodania.",
+            "workouts": "Treningi",
+            "leftOutConnected": "Pominięte wpisy z aplikacji, które łączysz już bezpośrednio: {count}.",
+            "nutrientsModuleOff": "Sumy wody i składników odżywczych nie zostały zaimportowane, bo moduł Składniki odżywcze jest wyłączony.",
+            "cycleModuleOff": "Dane o miesiączce nie zostały zaimportowane, bo śledzenie cyklu jest wyłączone.",
+            "failure": {
+              "unsupportedVersion": "Ten eksport Health Connect jest zbyt stary, aby go odczytać. Zaktualizuj Health Connect na telefonie i wyeksportuj ponownie.",
+              "notHealthConnect": "Ten plik nie jest eksportem Health Connect. Wybierz plik ZIP zapisany przez Health Connect.",
+              "unsafeSchema": "Ten plik nie ma struktury eksportu Health Connect i nie został odczytany.",
+              "tooLarge": "Eksport jest większy, niż ten serwer przyjmuje.",
+              "stagingMissing": "Przesłanego pliku nie było już na serwerze. Prześlij go ponownie.",
+              "interrupted": "Import został przerwany przez ponowne uruchomienie serwera. Prześlij plik ponownie."
             }
           }
         },

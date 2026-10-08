@@ -108,6 +108,15 @@ const PROVIDER_INGESTS: ProviderIngest[] = [
     metadataKey: "activityType",
   },
   {
+    provider: "Health Connect export",
+    mapper: "mapHealthConnectSportType",
+    mapperFile: "lib/import/health-connect/mapper.ts",
+    captureFile: "lib/import/health-connect/import.ts",
+    captureField: "exercise_type",
+    writeFile: "lib/import/health-connect/import.ts",
+    metadataKey: "healthConnectExerciseType",
+  },
+  {
     provider: "Fitbit",
     mapper: "mapFitbitSportType",
     mapperFile: "lib/fitbit/client.ts",

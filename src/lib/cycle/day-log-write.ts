@@ -45,6 +45,16 @@ import type {
   Prisma,
 } from "@/generated/prisma/client";
 
+/**
+ * A day-log as the write helper takes it. The client surfaces parse
+ * `CycleDayLogInput`, whose `source` is the closed client set (manual or
+ * Apple Health); the Health Connect export import is server-side and writes
+ * its own provenance, which no client may claim.
+ */
+export type CycleDayLogWriteEntry = Omit<CycleDayLogInput, "source"> & {
+  source: CycleDayLogInput["source"] | "HEALTH_CONNECT";
+};
+
 export interface DayLogWriteResult {
   id: string;
   existed: boolean;
@@ -210,7 +220,7 @@ const EXISTING_SELECT = {
  */
 export async function upsertCycleDayLog(
   userId: string,
-  entry: CycleDayLogInput,
+  entry: CycleDayLogWriteEntry,
   tz: string | null,
   cycleId: string | null = null,
   encryptSensitiveFlag?: boolean,
@@ -256,10 +266,10 @@ export async function upsertCycleDayLog(
 
 interface WriteArgs {
   userId: string;
-  entry: CycleDayLogInput;
+  entry: CycleDayLogWriteEntry;
   tz: string | null;
   cycleId: string | null;
-  source: CycleDayLogInput["source"];
+  source: CycleDayLogWriteEntry["source"];
   where: Prisma.CycleDayLogWhereUniqueInput;
   existing: ExistingRow | null;
   encryptSensitive: boolean;
