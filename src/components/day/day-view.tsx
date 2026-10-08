@@ -8,8 +8,9 @@ import {
   ChevronRight,
   History,
   MessageCircle,
+  PanelBottomClose,
+  PanelRightClose,
   Plus,
-  X,
 } from "lucide-react";
 
 import {
@@ -38,7 +39,8 @@ import {
   DayValues,
 } from "./day-sections";
 import { curateDayValues, tileKeyOf } from "./day-values-model";
-import { useDay } from "./use-day";
+import { shiftDateKey } from "./day-url";
+import { useDay, usePrefetchDay } from "./use-day";
 import { useDayValueFormat } from "./use-day-value-format";
 
 /**
@@ -91,6 +93,16 @@ export interface DayViewProps {
 const ICON_BUTTON =
   "text-muted-foreground hover:text-foreground size-11 shrink-0 pointer-fine:size-9";
 
+/**
+ * The close control is the Coach panel's own toggle, in the same place: the
+ * panel's top-left corner, the panel icon mirrored so it points the way the
+ * panel goes. Same size and glyph as `PANEL_HEADER_BUTTON` there (kept as a
+ * copy so the day layer does not pull the Coach's panel into the shell).
+ */
+const PANEL_TOGGLE =
+  "text-muted-foreground hover:text-foreground size-11 shrink-0 pointer-fine:size-7";
+const PANEL_TOGGLE_ICON = "size-5 pointer-fine:size-4";
+
 export function DayView({
   date,
   today,
@@ -114,6 +126,15 @@ export function DayView({
   const capabilities = useRecordCapabilities();
   const { user } = useAuth();
   const [captureOpen, setCaptureOpen] = useState(false);
+  // The neighbouring day is read while the pointer rests on its arrow (or
+  // the keyboard reaches it, or a finger lands on it), so the step paints a
+  // day, not a skeleton.
+  const prefetchDay = usePrefetchDay();
+  const warm = (delta: number) => () => {
+    const next = shiftDateKey(date, delta);
+    if (delta > 0 && next > today) return;
+    prefetchDay(next);
+  };
 
   const canCapture =
     visibleCaptureKinds(capabilities, CAPTURE_KIND_ORDER, user?.modules)
@@ -163,28 +184,42 @@ export function DayView({
         data-slot="day-header"
         className={cn(
           "flex shrink-0 items-center gap-1",
-          compact
-            ? "pt-1.5 pr-2 pb-2.5 pl-4"
-            : "border-border border-b pr-3 pl-6",
+          compact ? "pt-0.5 pr-2 pb-2 pl-2" : "border-border border-b px-3",
           headerClassName,
         )}
       >
-        <div className="min-w-0 flex-1">
-          <Title
-            id={titleId}
-            ref={titleRef}
-            tabIndex={-1}
-            className="truncate text-base leading-snug font-semibold focus-visible:outline-none"
-          >
-            {longLabel(date)}
-          </Title>
-          <p
-            className="text-muted-foreground truncate text-xs tabular-nums"
-            data-slot="day-meta"
-          >
-            {meta ?? <span className="invisible">·</span>}
-          </p>
-        </div>
+        {/* Top left, where the Coach panel keeps its toggle: the way out. */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          data-slot="day-close"
+          aria-label={t("day.close")}
+          title={t("day.close")}
+          onClick={onClose}
+          className={PANEL_TOGGLE}
+        >
+          {compact ? (
+            <PanelBottomClose
+              className={PANEL_TOGGLE_ICON}
+              aria-hidden="true"
+            />
+          ) : (
+            <PanelRightClose
+              className={cn(PANEL_TOGGLE_ICON, "-scale-x-100")}
+              aria-hidden="true"
+            />
+          )}
+        </Button>
+        {/* One line, centred in the band: the date and nothing under it. */}
+        <Title
+          id={titleId}
+          ref={titleRef}
+          tabIndex={-1}
+          className="min-w-0 flex-1 truncate px-1 text-base leading-snug font-semibold focus-visible:outline-none"
+        >
+          {longLabel(date)}
+        </Title>
         <Button
           type="button"
           variant={compact ? "ghost" : "outline"}
@@ -192,6 +227,9 @@ export function DayView({
           data-slot="day-prev"
           aria-label={t("day.previousDay")}
           title={t("day.previousDayShortcut")}
+          onPointerEnter={warm(-1)}
+          onPointerDown={warm(-1)}
+          onFocus={warm(-1)}
           onClick={() => onStep(-1)}
           className={ICON_BUTTON}
         >
@@ -208,6 +246,9 @@ export function DayView({
           aria-label={t("day.nextDay")}
           title={t("day.nextDayShortcut")}
           disabled={date >= today}
+          onPointerEnter={warm(1)}
+          onPointerDown={warm(1)}
+          onFocus={warm(1)}
           onClick={() => onStep(1)}
           className={ICON_BUTTON}
         >
@@ -215,18 +256,6 @@ export function DayView({
             className="size-5 pointer-fine:size-4"
             aria-hidden="true"
           />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          data-slot="day-close"
-          aria-label={t("day.close")}
-          title={t("day.close")}
-          onClick={onClose}
-          className={ICON_BUTTON}
-        >
-          <X className="size-5 pointer-fine:size-4" aria-hidden="true" />
         </Button>
       </div>
 
@@ -237,6 +266,14 @@ export function DayView({
           compact ? "gap-6 px-4 pt-0.5 pb-4" : "gap-6 px-6 pt-5 pb-6",
         )}
       >
+        {/* What the day holds, as meta under the header. The line keeps its
+            height while the day loads, so nothing below it moves. */}
+        <p
+          className="text-muted-foreground -mb-3 text-xs tabular-nums"
+          data-slot="day-meta"
+        >
+          {meta ?? <span className="invisible">·</span>}
+        </p>
         {focus ? (
           <div className="space-y-2.5">
             <DayFocusCard

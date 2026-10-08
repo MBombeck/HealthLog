@@ -250,7 +250,12 @@ export function LayoutCoachFab() {
           // The default ring alone is hard to see against the gradient;
           // the offset ring draws a clear halo around the circle.
           "focus-visible:ring-offset-background focus-visible:ring-offset-2",
-          "transition-opacity duration-150 motion-reduce:transition-none",
+          "transition-[opacity,right] duration-150 motion-reduce:transition-none",
+          // v1.42 — while a day is docked on the right (from 1280 px), the
+          // launcher moves left with the page's own edge, so it stays over
+          // the page and never over the day's footer actions. The `:has()`
+          // gate keys off the docked panel's slot, like the yields below.
+          "[body:has([data-slot=day-panel][data-shell=docked])_&]:right-[calc(26.25rem+2rem)]",
           // Yield to the data-list selection bar: its delete action lands
           // in the same lower-right band, and the destructive control
           // wins. The `:has()` gate keys off the bar's `data-slot`.

@@ -155,7 +155,6 @@ export function NutrientDailyBarChart({
                     active
                     label={fmt.dateShortSmartCalendar(point.day)}
                     rows={rows}
-                    action={chartDays.tooltipAction(points.indexOf(point))}
                   />
                 );
               }}

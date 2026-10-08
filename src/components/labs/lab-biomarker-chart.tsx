@@ -406,7 +406,6 @@ export function LabBiomarkerChart({
                         active
                         label={labShortDate(point.timestamp)}
                         rows={rows}
-                        action={chartDays.tooltipAction(points.indexOf(point))}
                       />
                     );
                   }}

@@ -15,6 +15,8 @@ import {
   type EcgClassification,
 } from "@/lib/insights/ecg-classification";
 import { ECG_OVERVIEW_LIMIT } from "@/lib/insights/ecg-overview-limit";
+import { DayLinkAt } from "@/components/day/day-link";
+
 import { InsightSectionCard } from "./insight-section-card";
 
 // Re-exported so the tests (and any teaser call site) can keep importing the
@@ -140,7 +142,11 @@ export function EcgSection({
                       the recording, it is not a second fact about it. */}
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-foreground text-sm font-medium">
-                      {fmt.dateTime(new Date(rec.recordedAt))}
+                      {/* v1.42 — the date opens the day; the rest of the
+                          row opens the recording. Above the row's link. */}
+                      <DayLinkAt at={rec.recordedAt} className="z-10">
+                        {fmt.dateTime(new Date(rec.recordedAt))}
+                      </DayLinkAt>
                     </p>
                     {label && (
                       <span
@@ -166,19 +172,32 @@ export function EcgSection({
                 key={rec.id}
                 data-slot="ecg-row"
                 data-classification={rec.classification ?? "NONE"}
-                className="border-border/60 border-b pb-3 last:border-b-0 last:pb-0"
+                className="border-border/60 relative border-b pb-3 last:border-b-0 last:pb-0"
               >
                 {rec.hasWaveform ? (
-                  <Link
-                    href={`/insights/ecg/${rec.id}`}
-                    className="hover:bg-muted/40 -m-1 flex w-full items-start gap-3 rounded-md p-1 text-left transition-colors"
-                  >
+                  // v1.42 — two targets in one row: the date opens the day,
+                  // the row opens the recording. The row's link is stretched
+                  // under the content (the workout list's pattern), so the
+                  // date can sit above it instead of inside it.
+                  <div className="has-[a[data-slot=ecg-row-link]:hover]:bg-muted/40 has-[a[data-slot=ecg-row-link]:focus-visible]:ring-ring/50 -m-1 flex w-full items-start gap-3 rounded-md p-1 text-left transition-colors has-[a[data-slot=ecg-row-link]:focus-visible]:ring-2">
                     {rowInner}
-                    <ChevronRight
-                      className="text-muted-foreground mt-1.5 size-4 shrink-0"
-                      aria-hidden="true"
-                    />
-                  </Link>
+                    <Link
+                      href={`/insights/ecg/${rec.id}`}
+                      data-slot="ecg-row-link"
+                      aria-label={[
+                        fmt.dateTime(new Date(rec.recordedAt)),
+                        label,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                      className="mt-1.5 shrink-0 after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+                    >
+                      <ChevronRight
+                        className="text-muted-foreground size-4"
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  </div>
                 ) : (
                   <div className="flex items-start gap-3">{rowInner}</div>
                 )}

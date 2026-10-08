@@ -9,17 +9,18 @@ import { describe, expect, it } from "vitest";
  * The day view arrived on six metric pages and nowhere else, and the recovery
  * page beside them offered no day at all: nothing noticed, because every check
  * proved one chart. This guard walks `src/app` and `src/components` and holds
- * three kinds of surface to the same doors (click, the touch tooltip's button,
+ * three kinds of surface to the same doors (a click or a tap opens the day,
  * the dashed line through the open day, the row of day dots, the caption):
  *
  *   A. a mount of a chart whose doors are a prop (`HealthChart`, its dynamic
- *      wrapper, `MoodChart`, the nutrient bar chart) passes `dayLinks`, or is
+ *      wrapper, `MoodChart`, the adherence chart, the nutrient bar chart)
+ *      passes `dayLinks`, or is
  *      a tile's `mini` chart (never a door, by the primitive's contract), or
  *      forwards its props unchanged (a lazy wrapper);
  *   B. a file that draws its own Recharts chart over a date axis (an
  *      `<XAxis>` keyed on a date-shaped field, or `scale="time"`) calls
  *      `useChartDayLinks` and renders its parts (`ChartDayFooter`,
- *      `OPEN_DAY_LINE`, the tooltip's props and action);
+ *      `OPEN_DAY_LINE`, the tooltip's props);
  *   C. a calendar heatmap (anything laid out by `heatmapDays`) calls
  *      `useHeatmapDay`.
  *
@@ -48,6 +49,7 @@ const PROP_GATED = [
   "HealthChart",
   "HealthChartDynamic",
   "MoodChart",
+  "MedicationComplianceChart",
   "NutrientDailyBarChart",
   "NutrientDailyBarChartDynamic",
 ] as const;
@@ -68,10 +70,6 @@ const DATE_AXIS_KEYS = [
  * The integration plan's §1.2 and its table are the source of each reason.
  */
 const NOT_HERE: Record<string, string> = {
-  "src/app/page-client.tsx":
-    "The dashboard is today (decision D12): its charts are a summary of the record, and past days open as a layer over it from a date, never from the dashboard's own charts.",
-  "src/components/charts/medication-compliance-chart.tsx":
-    "Mounted on the dashboard only (see above); the adherence days open from the intake calendar on the medication insights page.",
   "src/components/insights/coach-panel/chat-bubble.tsx":
     "A Coach answer reaches its days through the chips built from the tool calls (`CoachDayChips`), never from what the answer draws or writes.",
   "src/components/insights/coach-panel/result-chart.tsx":
@@ -197,15 +195,14 @@ function findMissingDoors(): {
           /\buseChartDayLinks\(/.test(text) &&
           /\bChartDayFooter\b/.test(text) &&
           /\bOPEN_DAY_LINE\b/.test(text) &&
-          /\.tooltipProps\b/.test(text) &&
-          /\.tooltipAction\(/.test(text);
+          /\.tooltipProps\b/.test(text);
         if (wired) {
           doors.charts += 1;
           doors.chartFiles.push(file);
         } else if (!listed) {
           missing.push({
             file,
-            why: "a date-axis chart without the shared day doors (useChartDayLinks, ChartDayFooter, OPEN_DAY_LINE, tooltip props and action)",
+            why: "a date-axis chart without the shared day doors (useChartDayLinks, ChartDayFooter, OPEN_DAY_LINE, tooltip props)",
           });
         }
       }
@@ -232,15 +229,17 @@ describe("every chart drawn in days opens its days, or says why not", () => {
   it("still finds the doors it is meant to find (an empty match set fails)", () => {
     // HealthChart on the metric pages (two mounts in the HealthKit page),
     // blood pressure, weight, pulse, BMI, recovery, sleep, the mood line,
-    // water and caffeine.
-    expect(doors.mounts).toBeGreaterThanOrEqual(11);
+    // water and caffeine; on the dashboard its seven charts, the mood line
+    // and the adherence chart.
+    expect(doors.mounts).toBeGreaterThanOrEqual(20);
     // HealthChart, the mood line and the nutrient bars themselves, sleep
     // stages, mood dimensions, lab marker, custom metric, questionnaire,
-    // basal temperature, dose strength, efficacy: eleven.
+    // basal temperature, dose strength, efficacy, the adherence chart:
+    // twelve.
     expect(
       doors.chartFiles.length,
       doors.chartFiles.join("\n"),
-    ).toBeGreaterThanOrEqual(11);
+    ).toBeGreaterThanOrEqual(12);
     // The mood and the intake calendars.
     expect(doors.heatmaps).toBeGreaterThanOrEqual(2);
   });

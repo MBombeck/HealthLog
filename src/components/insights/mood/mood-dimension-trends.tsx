@@ -216,7 +216,6 @@ export function MoodDimensionTrends({
                     active
                     label={fmt.dateShortSmartCalendar(String(row.date))}
                     rows={rows}
-                    action={chartDays.tooltipAction(chartData.indexOf(row))}
                   />
                 );
               }}

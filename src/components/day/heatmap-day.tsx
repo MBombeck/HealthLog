@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 
 import type { DateKey } from "@/lib/day/contract";
 
-import { TooltipDayAction, useCoarsePointer } from "./chart-day";
+import { useCoarsePointer } from "./chart-day";
 import { openDay, useOpenDay } from "./day-layer-controller";
 import { isOpenableDay } from "./day-url";
 import { useTodayKey } from "./use-today-key";
@@ -13,10 +13,10 @@ import { useTodayKey } from "./use-today-key";
  * The day view's doors on a calendar heatmap (mood, intake), the cell twin of
  * `useChartDayLinks`:
  *
- *   - fine pointer: hovering a cell shows its tooltip, a click opens its day;
- *   - touch: a tap pins the tooltip, and the tooltip's button ("View the
- *     whole day", the same button every chart's tooltip carries) opens it;
- *     a tap outside or Escape clears it;
+ *   - a click, or a tap, on a cell opens its day; hovering a cell on a fine
+ *     pointer shows its tooltip. A tap on a cell with nothing to open (no
+ *     entry, or a day still ahead) pins its tooltip instead, so the cell
+ *     still says what it is; a tap outside or Escape clears it;
  *   - the open day's cell carries a dashed outline, the heatmap's form of
  *     the dashed line a chart draws through it (`OPEN_DAY_CELL`);
  *   - the keyboard and screen-reader way to a day is the heatmap's data
@@ -39,8 +39,6 @@ interface HeatmapTooltip {
   text: string;
   /** A touch tooltip stays after the finger lifts. */
   pinned?: boolean;
-  /** The day a pinned tooltip offers to open. */
-  day?: DateKey;
 }
 
 export interface HeatmapCellInput {
@@ -53,9 +51,6 @@ export interface HeatmapCellInput {
 
 export function useHeatmapDay(containerRef: RefObject<HTMLElement | null>) {
   const [tooltip, setTooltip] = useState<HeatmapTooltip | null>(null);
-  // The pointer type of the last press decides whether the click that
-  // follows opens the day (mouse, pen) or only pinned the tooltip (touch).
-  const lastPointer = useRef<string>("mouse");
   const today = useTodayKey();
   const openKey = useOpenDay();
   const coarse = useCoarsePointer();
@@ -109,18 +104,17 @@ export function useHeatmapDay(containerRef: RefObject<HTMLElement | null>) {
         setTooltip((prev) => (prev?.pinned ? prev : null));
       },
       onPointerDown: (e: React.PointerEvent) => {
-        lastPointer.current = e.pointerType;
-        if (e.pointerType !== "touch") return;
+        // A touch on a cell with a day to open opens it (the click below);
+        // any other cell pins its tooltip so the tap still answers.
+        if (e.pointerType !== "touch" || openable) return;
         setTooltip({
           x: e.clientX,
           y: e.clientY,
           text: cell.describe(),
           pinned: true,
-          day: openable ? cell.dateKey : undefined,
         });
       },
       onClick: () => {
-        if (lastPointer.current === "touch") return;
         if (!openable) return;
         open(cell.dateKey);
       },
@@ -135,9 +129,7 @@ export function useHeatmapDay(containerRef: RefObject<HTMLElement | null>) {
   const tooltipNode = tooltip ? (
     <div
       data-slot="heatmap-tooltip"
-      className={`bg-popover text-popover-foreground border-border fixed z-50 max-w-[calc(100vw-1rem)] rounded-md border px-2.5 py-1.5 text-xs shadow-md ${
-        tooltip.day ? "pointer-events-auto" : "pointer-events-none"
-      }`}
+      className="bg-popover text-popover-foreground border-border pointer-events-none fixed z-50 max-w-[calc(100vw-1rem)] rounded-md border px-2.5 py-1.5 text-xs shadow-md"
       // Clamp the left edge so a tap near the right border doesn't push
       // the pinned label off-screen on a narrow viewport.
       style={{
@@ -149,9 +141,6 @@ export function useHeatmapDay(containerRef: RefObject<HTMLElement | null>) {
       }}
     >
       {tooltip.text}
-      {tooltip.day ? (
-        <TooltipDayAction onOpen={() => open(tooltip.day as DateKey)} />
-      ) : null}
     </div>
   ) : null;
 

@@ -469,7 +469,6 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
                       const row = payload[0]?.payload as
                         Record<string, number | string> | undefined;
                       const label = row?.label;
-                      const rowIndex = row ? data.indexOf(row) : -1;
                       const napCount =
                         typeof row?.napCount === "number" ? row.napCount : 0;
                       // The footer's first line is the NIGHT. The nap is listed
@@ -549,9 +548,6 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
                                 </div>
                               )}
                             </div>
-                          )}
-                          {chartDays.tooltipAction(
-                            rowIndex === -1 ? undefined : rowIndex,
                           )}
                         </div>
                       );

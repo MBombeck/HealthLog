@@ -1,6 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+
+import { DayLinkAt } from "@/components/day/day-link";
 
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
@@ -111,7 +114,12 @@ export function EcgDetail({ recordingId }: { recordingId: string }) {
       >
         <MetaItem
           label={t("insights.ecg.meta.recorded")}
-          value={fmt.dateTime(new Date(data.recordedAt))}
+          // v1.42 — the date opens the day around the recording.
+          value={
+            <DayLinkAt at={data.recordedAt}>
+              {fmt.dateTime(new Date(data.recordedAt))}
+            </DayLinkAt>
+          }
         />
         <MetaItem
           label={t("insights.ecg.meta.duration")}
@@ -149,7 +157,7 @@ export function EcgDetail({ recordingId }: { recordingId: string }) {
   );
 }
 
-function MetaItem({ label, value }: { label: string; value: string }) {
+function MetaItem({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="space-y-0.5">
       <dt className="text-muted-foreground text-xs">{label}</dt>

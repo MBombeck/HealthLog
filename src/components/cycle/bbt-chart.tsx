@@ -24,7 +24,7 @@
  * it surfaces a "log your morning temperature" hint rather than a flat dot.
  */
 
-import { useMemo, type ReactNode } from "react";
+import { useMemo } from "react";
 import { Thermometer } from "lucide-react";
 import {
   CartesianGrid,
@@ -288,20 +288,7 @@ export function BbtChart({
                       strokeOpacity: 0.3,
                       strokeDasharray: "3 3",
                     }}
-                    content={(props) => {
-                      const payload = props.payload as unknown as
-                        { payload: BbtPoint }[] | undefined;
-                      const point = payload?.[0]?.payload;
-                      return (
-                        <BbtTooltip
-                          active={props.active}
-                          payload={payload}
-                          action={chartDays.tooltipAction(
-                            point ? points.indexOf(point) : undefined,
-                          )}
-                        />
-                      );
-                    }}
+                    content={<BbtTooltip />}
                   />
                   {ovulationMs != null ? (
                     <ReferenceLine
@@ -387,8 +374,6 @@ function PhaseDot(props: { cx?: number; cy?: number; payload?: BbtPoint }) {
 export function BbtTooltip(props: {
   active?: boolean;
   payload?: { payload: BbtPoint }[];
-  /** v1.42 — the tooltip's way to the day on a touch screen. */
-  action?: ReactNode;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -422,7 +407,6 @@ export function BbtTooltip(props: {
           {t(`cycle.ovulationTest.${p.ovulationTest}`)}
         </p>
       ) : null}
-      {props.action ?? null}
     </div>
   );
 }
