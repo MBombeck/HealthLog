@@ -16,6 +16,7 @@
  * whole card is clickable through an invisible overlay button; the checkbox
  * floats above it.
  */
+import { DayLinkStated } from "@/components/day/day-link";
 import { useDocumentDate } from "@/components/documents/use-document-date";
 import { Check, Download, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -184,7 +185,21 @@ export function DocumentCard({
     <div className="flex min-w-0 flex-1 flex-col">
       <p className="truncate text-sm font-medium">{title}</p>
       <p className="text-muted-foreground truncate text-xs">
-        {date} · {size}
+        {/* v1.42 — a dated document's date opens its day, above the
+            whole-card button. It follows the grid's roving tab stop, so the
+            card that holds the keyboard offers its day next. */}
+        {document.documentDate ? (
+          <DayLinkStated
+            at={document.documentDate}
+            tabIndex={tabIndex}
+            className="z-10"
+          >
+            {date}
+          </DayLinkStated>
+        ) : (
+          date
+        )}{" "}
+        · {size}
       </p>
       {showFilename ? (
         // Filename on its OWN muted line so it never clips the date/size

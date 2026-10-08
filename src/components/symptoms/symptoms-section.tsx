@@ -10,6 +10,7 @@
  * intensity as a neutral `TagChip` ("6/10"), and the same kebab + confirm
  * vocabulary as the episode menu.
  */
+import { DayLink } from "@/components/day/day-link";
 import { useState } from "react";
 import {
   Activity,
@@ -478,7 +479,10 @@ export function SymptomsSection() {
               {days.map((group) => (
                 <section key={group.day} className="space-y-0.5">
                   <h3 className="text-sm font-medium">
-                    {fmt.dateWithWeekdaySmart(group.at)}
+                    {/* v1.42 — the day heading opens the whole day. */}
+                    <DayLink date={group.day}>
+                      {fmt.dateWithWeekdaySmart(group.at)}
+                    </DayLink>
                   </h3>
                   <ul className="divide-border divide-y">
                     {group.events.map((event) => {

@@ -109,6 +109,13 @@ export const coachStepSchema = z
     resultRef: resultRefSchema
       .optional()
       .describe("The table this step produced (`r1`..), when it produced one."),
+    day: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional()
+      .describe(
+        "The calendar day a `get_day` step read, `YYYY-MM-DD`. A settled answer lists these days as links to each day; set only on `get_day` steps.",
+      ),
   })
   .meta({
     id: "CoachStep",

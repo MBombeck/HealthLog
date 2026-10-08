@@ -1,5 +1,6 @@
 "use client";
 
+import { localDateTimeValue } from "@/components/day/prefill";
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -102,6 +103,11 @@ interface MoodFormProps {
    * attribute so submit-on-Enter still works.
    */
   footerSlot?: HTMLElement | null;
+  /**
+   * v1.42 — a calendar day (`YYYY-MM-DD`) to start the date on, when the
+   * form is opened from that day. Defaults to now.
+   */
+  defaultDate?: string;
 }
 
 function getDefaultMoodLoggedAtValue() {
@@ -111,7 +117,12 @@ function getDefaultMoodLoggedAtValue() {
   return local.toISOString().slice(0, 16);
 }
 
-export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
+export function MoodForm({
+  onSuccess,
+  onCancel,
+  footerSlot,
+  defaultDate,
+}: MoodFormProps) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
 
@@ -137,7 +148,9 @@ export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
   // accepted `note`; the web form was the only surface that couldn't
   // write it.
   const [note, setNote] = useState("");
-  const [moodLoggedAt, setMoodLoggedAt] = useState(getDefaultMoodLoggedAtValue);
+  const [moodLoggedAt, setMoodLoggedAt] = useState(() =>
+    localDateTimeValue(defaultDate),
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // v1.11.5 — confirm before Reset wipes typed input. Only the content
@@ -193,7 +206,7 @@ export function MoodForm({ onSuccess, onCancel, footerSlot }: MoodFormProps) {
     setTagsInput("");
     setTagKeys([]);
     setNote("");
-    setMoodLoggedAt(getDefaultMoodLoggedAtValue());
+    setMoodLoggedAt(localDateTimeValue(defaultDate));
     setError(null);
   }
 

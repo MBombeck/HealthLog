@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, Moon, Smile } from "lucide-react";
 
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
+import { DayLink } from "@/components/day/day-link";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Card, CardContent } from "@/components/ui/card";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
@@ -90,8 +91,13 @@ export function WorkoutDetailDayContext({
         className="px-4 md:px-6"
         title={t("insights.workouts.detail.thatDayTitle")}
         action={
-          <span className="text-muted-foreground text-xs">
-            {fmt.dateWithWeekdaySmart(new Date(workout.startedAt))}
+          // v1.42 — the date opens the whole day around the session: what
+          // ran through it and everything else that happened.
+          <span className="text-muted-foreground flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs">
+            <span>{fmt.dateWithWeekdaySmart(new Date(workout.startedAt))}</span>
+            <DayLink date={workout.dayKey} size="xs">
+              {t("day.viewWholeDay")}
+            </DayLink>
           </span>
         }
       />
