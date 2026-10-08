@@ -392,8 +392,9 @@ function OfflineMutationToaster() {
  * Below 600 px Sonner lays toasts across the bottom edge, 16 px up, which on
  * a phone is on top of the bottom bar: the "new version" hint sat over the
  * tabs and the add button until it was dismissed. The mobile offset lifts
- * them above the bar and the home indicator. From `md` the bar is gone and
- * the desktop offset applies.
+ * them above the bar and the home indicator. Sonner applies it below 600 px
+ * only, while the bar follows the shell (up to `md`, and a phone held
+ * sideways), so `globals.css` repeats the lift under `shell-mobile`.
  */
 function AppToaster() {
   const { resolvedTheme } = useTheme();

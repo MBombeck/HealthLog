@@ -629,6 +629,21 @@ html[data-keyboard="open"] [data-keyboard-hide] {
 }
 
 /*
+ * Toasts clear the bottom bar wherever the phone shell shows it. The
+ * toaster's `mobileOffset` (providers.tsx) applies below 600 px only, while
+ * the bar follows the shell (up to `md`, and a phone held sideways): between
+ * the two the "new version" toast sat over the tabs. Unlayered and one `html`
+ * deeper than Sonner's injected `[data-sonner-toaster][data-y-position]`
+ * rule, which is unlayered too and lands after this sheet. The Coach panel's
+ * rule further down still outranks it while that panel is open.
+ */
+html [data-sonner-toaster][data-y-position="bottom"] {
+  @variant shell-mobile {
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 0.75rem);
+  }
+}
+
+/*
  * Side and top sheets run the full height of the window. In an installed
  * app on a tablet the status bar sits over their first 24 px, and a phone
  * held sideways has its notch over one side, so the panel keeps its header

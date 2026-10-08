@@ -60,6 +60,15 @@ describe("the shell owns the safe area", () => {
     expect(css).toMatch(/@custom-variant pointer-fine/);
   });
 
+  it("bottom toasts clear the bar under the same query the bar follows", () => {
+    // Sonner's own mobile offset stops at 600 px; the bar shows up to `md`
+    // and on a phone held sideways, so the lift keys on `shell-mobile`.
+    const css = code(read("src/app/globals.css"));
+    expect(css).toMatch(
+      /html \[data-sonner-toaster\]\[data-y-position="bottom"\]\s*\{\s*@variant shell-mobile\s*\{\s*bottom:\s*calc\(4rem \+ env\(safe-area-inset-bottom/,
+    );
+  });
+
   it("the bottom bar and the Coach button step aside for the keyboard", () => {
     expect(read("src/components/layout/bottom-nav.tsx")).toContain(
       'data-keyboard-hide=""',
