@@ -1309,10 +1309,13 @@ export function HealthChart({
   // Report the visible-range stats up to the sub-page so the shared
   // `<MetricStatStrip>` can read them. Effect (not render-time call) so the
   // parent state update never fires during this component's render.
+  // Only once the read has settled: a report during the initial fetch would
+  // tell the strip "no window" and it would paint the full-range summary
+  // first. A failed read settles too, so the strip never waits forever.
   useEffect(() => {
-    if (mini) return;
-    onVisibleStats?.(visibleStatsByType);
-  }, [mini, visibleStatsByType, onVisibleStats]);
+    if (mini || isLoading) return;
+    onVisibleStats?.(isError ? null : visibleStatsByType);
+  }, [mini, isLoading, isError, visibleStatsByType, onVisibleStats]);
 
   // v1.4.16 phase B8 — comparison overlay.
   //

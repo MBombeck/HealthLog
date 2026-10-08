@@ -118,6 +118,13 @@ export interface MetricStatSeries {
    * `h1 → h2` outline under `SubPageShell` stays nested with no skipped level.
    */
   titleAs?: "h2";
+  /**
+   * The chart this strip reads has not reported its window yet. The cells
+   * hold their place instead of painting the full-range summary: the chart
+   * opens on a narrower window, so the all-time numbers would be replaced a
+   * beat later and every value would jump.
+   */
+  windowPending?: boolean;
 }
 
 type MetricStatStripProps = Partial<MetricStatSeries> & {
@@ -165,6 +172,7 @@ function SeriesBlock({
   medianLabel,
   description,
   titleAs,
+  windowPending = false,
 }: MetricStatSeries) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -181,6 +189,7 @@ function SeriesBlock({
   // chart's range tab is the single, visible selector for both.
   const windowed = windowStats != null && windowStats.count > 0;
   const source = windowed ? windowStats : summary;
+  const holding = windowPending && !windowed;
 
   const format = (value: number | null): string =>
     value === null ? "—" : `${fmt.number(value, fractionDigits)} ${unit}`;
@@ -205,6 +214,7 @@ function SeriesBlock({
       data-slot="metric-stat-series"
       data-series={dataKey}
       data-windowed={windowed ? "true" : undefined}
+      data-window-pending={holding ? "true" : undefined}
       className="space-y-1.5"
     >
       {seriesLabel ? (
@@ -228,9 +238,13 @@ function SeriesBlock({
             <p className="text-muted-foreground text-xs tracking-wide uppercase">
               {cell.label}
             </p>
-            <p className="text-base font-semibold tabular-nums">
-              {format(cell.value)}
-            </p>
+            {holding ? (
+              <Skeleton className="h-6 w-16" />
+            ) : (
+              <p className="text-base font-semibold tabular-nums">
+                {format(cell.value)}
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -249,6 +263,7 @@ export function MetricStatStrip({
   medianLabel,
   description,
   titleAs,
+  windowPending,
   series,
   groupLabel,
   pending = false,
@@ -318,6 +333,7 @@ export function MetricStatStrip({
           medianLabel={medianLabel}
           description={description}
           titleAs={titleAs}
+          windowPending={windowPending}
         />
       </CardContent>
     </Card>

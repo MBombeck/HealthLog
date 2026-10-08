@@ -50,6 +50,15 @@ vi.mock("@/hooks/use-insights-layout-prefs", () => ({
 // The coach-read strip paints nothing until it is client-mounted (React
 // #418). Force the mounted branch so the band sentence reaches the markup.
 vi.mock("@/hooks/use-mounted", () => ({ useMounted: () => true }));
+// The chart is stubbed, so it never reports its window; settle the strip so
+// it paints the summary this guard reads.
+vi.mock("@/hooks/use-chart-domain-stats", () => ({
+  useChartDomainStats: () => ({
+    statsByType: null,
+    statsSettled: true,
+    onVisibleStats: () => {},
+  }),
+}));
 
 const analyticsMock = vi.fn();
 vi.mock("@/hooks/use-insights-analytics", () => ({

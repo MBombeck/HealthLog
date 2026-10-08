@@ -60,7 +60,7 @@ export default function InsightsBlutdruckPage() {
   // v1.12.8 — chart-reactive metric statistics. Blood pressure tracks BOTH
   // series at once: the single chart reports per-type visible-range stats and
   // each strip column reads its own half.
-  const { statsByType, onVisibleStats } = useChartDomainStats();
+  const { statsByType, statsSettled, onVisibleStats } = useChartDomainStats();
   const bpTargets = useBpTargetBand();
 
   if (isEmpty) {
@@ -142,6 +142,7 @@ export default function InsightsBlutdruckPage() {
               seriesLabel: t("charts.systolic"),
               icon: ArrowUpRight,
               windowStats: statsByType?.BLOOD_PRESSURE_SYS ?? null,
+              windowPending: !statsSettled,
             },
             {
               dataKey: "dia",
@@ -151,6 +152,7 @@ export default function InsightsBlutdruckPage() {
               seriesLabel: t("charts.diastolic"),
               icon: ArrowDownRight,
               windowStats: statsByType?.BLOOD_PRESSURE_DIA ?? null,
+              windowPending: !statsSettled,
             },
           ]}
         />

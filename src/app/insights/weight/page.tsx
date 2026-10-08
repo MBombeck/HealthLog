@@ -109,7 +109,7 @@ export default function InsightsGewichtPage() {
       : weightSummary;
 
   // v1.12.8 — visible-range stats shared between the chart and the strip.
-  const { statsByType, onVisibleStats } = useChartDomainStats();
+  const { statsByType, statsSettled, onVisibleStats } = useChartDomainStats();
 
   if (isEmpty) {
     return (
@@ -181,6 +181,7 @@ export default function InsightsGewichtPage() {
           seriesLabel={t("insights.weightSectionTitle")}
           icon={Scale}
           windowStats={statsByType?.WEIGHT ?? null}
+          windowPending={!statsSettled}
         />
       }
       coachReadStrip={<CoachReadStrip metricType="WEIGHT" unit={weightUnit} />}
