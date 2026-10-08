@@ -126,7 +126,7 @@ export default function MoodPageClient() {
       <ResponsiveSheet
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title={t("mood.addEntry")}
+        title={t("dashboard.quickAddMood")}
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >
         <MoodForm

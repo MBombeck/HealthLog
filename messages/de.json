@@ -10758,7 +10758,7 @@
     },
     "filter": {
       "searchLabel": "Dokumente durchsuchen",
-      "searchPlaceholder": "Titel oder Dateiname suchen…",
+      "searchPlaceholder": "Titel, Dateiname",
       "typeGroup": "Dokumenttyp",
       "conditionGroup": "Erkrankung",
       "procedureGroup": "Eingriffe und Operationen",
