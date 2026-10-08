@@ -39,13 +39,31 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
-import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import {
+  useDisplayTimezone,
+  useTranslations,
+  useFormatters,
+} from "@/lib/i18n/context";
+import { ChartDataTable } from "@/components/charts/chart-data-table";
+import {
+  RichChartTooltip,
+  type RichTooltipRow,
+} from "@/components/charts/chart-tooltip";
+import {
+  ChartDayFooter,
+  OPEN_DAY_LINE,
+  dayAnchor,
+  useChartDayLinks,
+} from "@/components/day/chart-day-links";
+import { dateKeyOfInstant } from "@/components/day/day-url";
+import { dateOnlyKey, isNoonUtcAnchor } from "@/lib/tz/date-only";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
@@ -175,6 +193,44 @@ export function DoseStrengthCurve({
 
   const unit = latest?.doseUnit ?? "mg";
 
+  // v1.42 — each dose change opens the day it took effect, through the doors
+  // every day-linked chart has. The point carried forward to today is not a
+  // change and opens nothing.
+  const timeZone = useDisplayTimezone();
+  const changeCount = Math.min(
+    doseChanges.filter(
+      (dc) =>
+        Number.isFinite(Date.parse(dc.effectiveFrom)) &&
+        Number.isFinite(dc.doseValue),
+    ).length,
+    chartData.length,
+  );
+  const pointDays = chartData.map((p, index) => {
+    if (index >= changeCount) return null;
+    const instant = new Date(p.t);
+    return isNoonUtcAnchor(instant)
+      ? dateOnlyKey(instant)
+      : dateKeyOfInstant(instant, timeZone);
+  });
+  const chartDays = useChartDayLinks({
+    enabled: hasCurve,
+    days: pointDays,
+    focusFor: (index) => {
+      const point = chartData[index];
+      return point
+        ? {
+            label: t("medications.doseStrength.tooltipLabel"),
+            value: fmt.number(point.dose),
+            unit,
+          }
+        : null;
+    },
+  });
+  const openPoint =
+    chartDays.openIndex !== undefined
+      ? chartData[chartDays.openIndex]
+      : undefined;
+
   const body = isLoading ? (
     <div
       className="flex h-[200px] min-h-[200px] items-center justify-center"
@@ -203,72 +259,123 @@ export function DoseStrengthCurve({
       <p className="text-xs italic">{t("medications.doseStrength.empty")}</p>
     </div>
   ) : (
-    <div
-      className="touch-pan-y"
-      style={{ height: "200px" }}
-      data-slot="dose-strength-curve-area"
-    >
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={chartData}
-          margin={{ top: 10, right: 14, bottom: 16, left: 4 }}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="var(--border)"
-            opacity={0.5}
-          />
-          <XAxis
-            dataKey="t"
-            type="number"
-            scale="time"
-            domain={["dataMin", "dataMax"]}
-            ticks={ticks}
-            tickFormatter={(v) => fmt.dateShortSmart(new Date(v as number))}
-            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis
-            domain={[0, "auto"]}
-            width={34}
-            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v) => fmt.number(v as number)}
-          />
-          <Tooltip
-            cursor={{
-              stroke: "var(--muted-foreground)",
-              strokeOpacity: 0.3,
-              strokeDasharray: "3 3",
-            }}
-            labelFormatter={(v) => fmt.dateShortSmart(new Date(v as number))}
-            formatter={(value) => [
-              `${fmt.number(value as number)} ${unit}`,
-              t("medications.doseStrength.tooltipLabel"),
-            ]}
-            contentStyle={{
-              backgroundColor: "var(--popover)",
-              border: "1px solid var(--border)",
-              borderRadius: "0.375rem",
-              fontSize: "0.75rem",
-            }}
-          />
-          <Line
-            type="stepAfter"
-            dataKey="dose"
-            stroke={CURVE_COLOR}
-            strokeWidth={2}
-            dot={{ r: 3, fill: CURVE_COLOR, strokeWidth: 0 }}
-            activeDot={{ r: 4 }}
-            isAnimationActive={animationsEnabled}
-            animationDuration={animationsEnabled ? 600 : 0}
-            animationEasing="ease-out"
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <>
+      <div
+        className={`touch-pan-y ${chartDays.plotClassName}`}
+        style={{ height: "200px" }}
+        data-slot="dose-strength-curve-area"
+        {...chartDays.plotProps}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={chartData}
+            margin={{ top: 10, right: 14, bottom: 16, left: 4 }}
+            onClick={chartDays.onChartClick}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--border)"
+              opacity={0.5}
+            />
+            <XAxis
+              dataKey="t"
+              type="number"
+              scale="time"
+              domain={["dataMin", "dataMax"]}
+              ticks={ticks}
+              tickFormatter={(v) => fmt.dateShortSmart(new Date(v as number))}
+              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              domain={[0, "auto"]}
+              width={34}
+              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => fmt.number(v as number)}
+            />
+            {openPoint ? (
+              <ReferenceLine x={openPoint.t} {...OPEN_DAY_LINE} />
+            ) : null}
+            <Tooltip
+              {...chartDays.tooltipProps}
+              cursor={{
+                stroke: "var(--muted-foreground)",
+                strokeOpacity: 0.3,
+                strokeDasharray: "3 3",
+              }}
+              content={(props) => {
+                const payload = props.payload as unknown as
+                  | ReadonlyArray<{ payload?: { t: number; dose: number } }>
+                  | undefined;
+                const point = payload?.[0]?.payload;
+                if (!props.active || !point) {
+                  return <RichChartTooltip active={false} rows={[]} />;
+                }
+                const rows: RichTooltipRow[] = [
+                  {
+                    name: t("medications.doseStrength.tooltipLabel"),
+                    value: `${fmt.number(point.dose)} ${unit}`,
+                    color: CURVE_COLOR,
+                  },
+                ];
+                return (
+                  <RichChartTooltip
+                    active
+                    label={fmt.dateShortSmart(new Date(point.t))}
+                    rows={rows}
+                    action={chartDays.tooltipAction(chartData.indexOf(point))}
+                  />
+                );
+              }}
+            />
+            <Line
+              type="stepAfter"
+              dataKey="dose"
+              stroke={CURVE_COLOR}
+              strokeWidth={2}
+              dot={{ r: 3, fill: CURVE_COLOR, strokeWidth: 0 }}
+              activeDot={{ r: 4 }}
+              isAnimationActive={animationsEnabled}
+              animationDuration={animationsEnabled ? 600 : 0}
+              animationEasing="ease-out"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <ChartDayFooter
+        links={chartDays}
+        points={chartData.map((p) => ({ timestamp: p.t }))}
+        axis="time"
+        // The margin (4) + the y axis (34) on the left, the margin (14) on
+        // the right.
+        insetLeft={4 + 34}
+        insetRight={14}
+      />
+      {chartDays.active ? (
+        <ChartDataTable
+          points={chartData.slice(0, changeCount).map((p, index) => ({
+            date: pointDays[index]!,
+            timestamp: dayAnchor(pointDays[index]!),
+            dose: p.dose,
+          }))}
+          columns={[
+            {
+              key: "dose",
+              label: t("medications.doseStrength.tooltipLabel"),
+            },
+          ]}
+          unit={unit}
+          formatValue={(value) => fmt.number(value)}
+          formatDate={(date) => fmt.dateShortSmartCalendar(date)}
+          bucket="day"
+          metricLabel={t("medications.doseStrength.title")}
+          dayLinks
+        />
+      ) : null}
+    </>
   );
 
   return (

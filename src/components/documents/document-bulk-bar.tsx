@@ -90,6 +90,10 @@ export function DocumentBulkBar({
       aria-label={t("documents.bulk.barLabel")}
       className={cn(
         "bg-card border-border fixed bottom-20 left-1/2 z-40 -translate-x-1/2 md:bottom-6",
+        // v1.42 — while a day is docked on the right, the bar sits against
+        // the page's right edge instead of the window's centre, clear of the
+        // day's footer actions and of an expanded sidebar.
+        "[body:has([data-slot=day-panel][data-shell=docked])_&]:right-[calc(26.25rem+1rem)] [body:has([data-slot=day-panel][data-shell=docked])_&]:left-auto [body:has([data-slot=day-panel][data-shell=docked])_&]:max-w-[calc(100vw-44.25rem)] [body:has([data-slot=day-panel][data-shell=docked])_&]:translate-x-0",
         "flex w-[calc(100%-2rem)] max-w-2xl flex-wrap items-center gap-2 rounded-xl border p-3 shadow-lg",
       )}
     >

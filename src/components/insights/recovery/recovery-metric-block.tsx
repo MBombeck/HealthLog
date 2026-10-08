@@ -99,6 +99,9 @@ export function RecoveryMetricBlock({
         compareBaseline={compareBaseline}
         userTimezone={user?.timezone}
         onVisibleStats={onVisibleStats}
+        // v1.42 — the same doors to the day every metric page's chart has.
+        showDataTable
+        dayLinks
       />
 
       <MetricStatusCard

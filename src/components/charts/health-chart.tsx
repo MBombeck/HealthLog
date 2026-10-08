@@ -77,15 +77,12 @@ import {
 } from "@/lib/charts/window-stats";
 import { shouldFireDataReady } from "@/lib/charts/data-ready-latch";
 import { axisUnitSuffix } from "@/lib/charts/axis-unit";
+import { chartPointDayKey } from "@/components/day/chart-day";
 import {
-  ChartDayCaption,
-  DayRug,
-  TooltipDayAction,
-  chartPointDayKey,
-  openChartDay,
-  useCoarsePointer,
-} from "@/components/day/chart-day";
-import { useOpenDay } from "@/components/day/day-layer-controller";
+  ChartDayFooter,
+  OPEN_DAY_LINE,
+  useChartDayLinks,
+} from "@/components/day/chart-day-links";
 import { isWholeNumberType } from "@/components/day/use-day-value-format";
 
 // The range tabs select a CALENDAR-DAY window ending now — `days: 7` is
@@ -1732,19 +1729,10 @@ export function HealthChart({
   // v1.42 — the chart as a door to its days (`dayLinks`). Daily points only:
   // a week or month point averages many days and has no one day to open.
   const dayLinksActive = dayLinks && !mini && activeBucket === "day";
-  const openDayKey = useOpenDay();
-  const coarsePointer = useCoarsePointer();
-  const plotRef = useRef<HTMLDivElement>(null);
-  const openDayIndex =
-    dayLinksActive && openDayKey
-      ? resolveVerticalMarkerPositions([{ date: openDayKey }], chartData)[0]
-          ?.pointIndex
-      : undefined;
-  const openDayPoint =
-    openDayIndex !== undefined ? chartData?.[openDayIndex] : undefined;
   // What the day shows at its top when it is opened from a point: the
   // chart's own name and the point's value as the tooltip reads it.
-  const dayFocusFor = (point: ChartDataPoint) => {
+  const dayFocusFor = (point: ChartDataPoint | undefined) => {
+    if (!point) return null;
     const parts = types
       .map((type) => ({ type, v: point[type] }))
       .filter((p): p is { type: string; v: number } => typeof p.v === "number");
@@ -1764,10 +1752,17 @@ export function HealthChart({
       types: valueMode === "raw" ? types : [],
     };
   };
-  const openPointDay = (point: ChartDataPoint | undefined) => {
-    if (!point) return;
-    openChartDay(point.timestamp, dayFocusFor(point), plotRef.current);
-  };
+  const dayLinkSource = chartDataWithCompare ?? chartData;
+  const chartDays = useChartDayLinks({
+    enabled: dayLinksActive,
+    days: dayLinksActive
+      ? (dayLinkSource ?? []).map((point) => chartPointDayKey(point.timestamp))
+      : [],
+    focusFor: (index) => dayFocusFor(dayLinkSource?.[index]),
+  });
+  const openDayIndex = chartDays.openIndex;
+  const openDayPoint =
+    openDayIndex !== undefined ? chartData?.[openDayIndex] : undefined;
 
   const showContextDetails = showMA || showTrend || showBands;
   const animationsEnabled = !prefersReducedMotion();
@@ -2025,11 +2020,8 @@ export function HealthChart({
               // gate on; this slot is rendered by the data branch only, so it
               // says the same thing without depending on Recharts' markup.
               data-slot="chart-plot"
-              data-day-links={dayLinksActive ? "true" : undefined}
-              ref={plotRef}
-              className={`relative z-10 h-full touch-pan-y ${
-                dayLinksActive && !coarsePointer ? "cursor-pointer" : ""
-              }`}
+              {...chartDays.plotProps}
+              className={`relative z-10 h-full touch-pan-y ${chartDays.plotClassName}`}
               role="img"
               aria-label={chartAriaLabel}
             >
@@ -2038,17 +2030,7 @@ export function HealthChart({
                   data={chartDataWithCompare ?? chartData}
                   margin={{ top: 10, right: 8, bottom: 8, left: 8 }}
                   accessibilityLayer
-                  onClick={
-                    dayLinksActive && !coarsePointer
-                      ? (state) => {
-                          const index = Number(state?.activeTooltipIndex);
-                          if (!Number.isInteger(index)) return;
-                          openPointDay(
-                            (chartDataWithCompare ?? chartData)?.[index],
-                          );
-                        }
-                      : undefined
-                  }
+                  onClick={chartDays.onChartClick}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -2218,10 +2200,7 @@ export function HealthChart({
                     <ReferenceLine
                       key="open-day"
                       x={openDayIndex}
-                      stroke="var(--muted-foreground)"
-                      strokeDasharray="3 3"
-                      strokeOpacity={0.7}
-                      ifOverflow="discard"
+                      {...OPEN_DAY_LINE}
                     />
                   ) : null}
                   {openDayIndex !== undefined && openDayPoint
@@ -2281,14 +2260,7 @@ export function HealthChart({
                     filterNull={false}
                     // v1.42 — on a touch screen the tooltip is the way to the
                     // day: it stays where the tap put it and takes taps.
-                    trigger={
-                      dayLinksActive && coarsePointer ? "click" : "hover"
-                    }
-                    wrapperStyle={
-                      dayLinksActive && coarsePointer
-                        ? { pointerEvents: "auto", zIndex: 20 }
-                        : undefined
-                    }
+                    {...chartDays.tooltipProps}
                     cursor={{
                       stroke: "var(--muted-foreground)",
                       strokeOpacity: 0.3,
@@ -2432,13 +2404,11 @@ export function HealthChart({
                               : dateLabel
                           }
                           rows={rows}
-                          action={
-                            dayLinksActive && coarsePointer && hoverPoint ? (
-                              <TooltipDayAction
-                                onOpen={() => openPointDay(hoverPoint)}
-                              />
-                            ) : undefined
-                          }
+                          action={chartDays.tooltipAction(
+                            hoverPoint
+                              ? dayLinkSource?.indexOf(hoverPoint)
+                              : undefined,
+                          )}
                         />
                       );
                     }}
@@ -2574,17 +2544,15 @@ export function HealthChart({
               </p>
             ) : null}
           </div>
-          {dayLinksActive && chartData && chartData.length > 0 ? (
-            <>
-              <DayRug
-                points={chartData}
-                // The plot's margin (8) + the y axis + the x axis padding
-                // (10) on the left, margin + padding on the right.
-                insetLeft={8 + yAxisWidth + 10}
-                insetRight={8 + 10}
-              />
-              <ChartDayCaption coarse={coarsePointer} />
-            </>
+          {chartData ? (
+            <ChartDayFooter
+              links={chartDays}
+              points={chartData}
+              // The plot's margin (8) + the y axis + the x axis padding
+              // (10) on the left, margin + padding on the right.
+              insetLeft={8 + yAxisWidth + 10}
+              insetRight={8 + 10}
+            />
           ) : null}
           {/* The points the chart just drew, as a table. Reads the SAME
               expression `<ComposedChart data>` is handed above, so the two

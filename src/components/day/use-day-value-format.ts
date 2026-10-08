@@ -27,6 +27,19 @@ const WHOLE_NUMBER_TYPES: ReadonlySet<string> = new Set([
   "RESPIRATORY_RATE",
 ]);
 
+/**
+ * Two spellings of one unit: the day route sends a duration in "min", the
+ * client's unit map knows it as "minutes". Read as the same unit, so a night
+ * reads as "6 h 52 min" and not as a bare 412.
+ */
+const UNIT_ALIASES: Readonly<Record<string, string>> = { min: "minutes" };
+
+/** True when the row carries the type's canonical unit, in either spelling. */
+function isCanonicalUnit(row: Pick<DayValue, "type" | "unit">): boolean {
+  const canonical = getUnitForType(row.type);
+  return row.unit === canonical || UNIT_ALIASES[row.unit] === canonical;
+}
+
 /** True for a type read in whole numbers (counts, pressures, pulses). */
 export function isWholeNumberType(type: string): boolean {
   return WHOLE_NUMBER_TYPES.has(type);
@@ -68,7 +81,7 @@ export function useDayValueFormat() {
 
   const number = useCallback(
     (row: Pick<DayValue, "type" | "unit">, raw: number): string => {
-      const canonical = row.unit === getUnitForType(row.type);
+      const canonical = isCanonicalUnit(row);
       const shown = canonical ? units.toDisplay(row.type, raw) : raw;
       if (row.type === "SLEEP_DURATION" && canonical) {
         return formatDurationMinutes(shown, t);
@@ -89,10 +102,11 @@ export function useDayValueFormat() {
   const unitFor = useCallback(
     (row: Pick<DayValue, "type" | "unit">): string => {
       if (row.type === "SLEEP_DURATION") return "";
-      if (row.unit === getUnitForType(row.type)) return units.unitFor(row.type);
-      return row.unit;
+      const unit = isCanonicalUnit(row) ? units.unitFor(row.type) : row.unit;
+      // A device score reads in points, as on its chart.
+      return unit === "score" ? t("insights.deviceScore.unitScore") : unit;
     },
-    [units],
+    [t, units],
   );
 
   const formatTile = useCallback(

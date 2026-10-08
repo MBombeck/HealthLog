@@ -36,6 +36,8 @@ import { crisisResourcesForLocale } from "@/lib/mental-health/crisis-resources";
 import { Activity, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { DayLinkAt } from "@/components/day/day-link";
+
 import { AssessmentItemBreakdown } from "./assessment-item-breakdown";
 import { CrisisCard } from "./crisis-card";
 import type { AssessmentRow, CrisisSet, InstrumentId } from "./types";
@@ -132,9 +134,11 @@ export function AssessmentHistory({
           return (
             <li key={row.id} className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-muted-foreground">
+                {/* v1.42 — the date opens the day around the result: the
+                    keyboard way to the days the chart above opens. */}
+                <DayLinkAt at={row.takenAt}>
                   {formatDate(row.takenAt)}
-                </span>
+                </DayLinkAt>
                 <div className="flex items-center gap-2">
                   {flagged && (
                     <Button

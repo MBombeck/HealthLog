@@ -33,6 +33,7 @@ import {
 } from "@playwright/test";
 import pg from "pg";
 
+import { seedDayDoorsRecord } from "./day-doors-fixture";
 import { seedMobileRoutesRecord } from "./mobile-routes-fixture";
 
 // Resolve relative to the project root rather than __dirname/import.meta.url —
@@ -247,6 +248,26 @@ export const E2E_TIMELINE = {
 export const TIMELINE_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateTimeline.json",
+);
+
+/**
+ * The day-doors journey's own account (`day-doors.spec.ts`).
+ *
+ * It turns a chart's comparison overlay on, which is a per-account
+ * preference; on a shared account a parallel spec would find its chart
+ * drawing a prior period it never asked for. Its record carries the series
+ * the journey clicks (recovery, sleep, mood, weight, a lab marker).
+ */
+export const E2E_DAY_DOORS = {
+  email: "e2e-day-doors@healthlog.test",
+  username: "e2e-day-doors",
+  password: "Dy4!Rk8wQm2vTz6P",
+  role: "USER",
+} as const;
+
+export const DAY_DOORS_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateDayDoors.json",
 );
 
 export const AI_OPTIONAL_STORAGE_STATE_PATH = resolve(
@@ -950,6 +971,30 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       ],
     );
 
+    // The day-doors journey's account. Every module the journey reaches is
+    // on; its record is written after the login capture.
+    await pool.query(
+      `INSERT INTO users
+        (id, username, email, password_hash, role, created_at, updated_at,
+         onboarding_completed_at, onboarding_tour_completed,
+         module_preferences_json)
+       VALUES ($1, $2, $3, $4, 'USER', $5, $5, $5, true, NULL)
+       ON CONFLICT (username) DO UPDATE SET
+         email = EXCLUDED.email,
+         password_hash = EXCLUDED.password_hash,
+         updated_at = EXCLUDED.updated_at,
+         onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+         onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
+         module_preferences_json = NULL`,
+      [
+        cuid(),
+        E2E_DAY_DOORS.username,
+        E2E_DAY_DOORS.email,
+        await hashPassword(E2E_DAY_DOORS.password),
+        now,
+      ],
+    );
+
     // The notification-dispatch journey's account. Seeded like the others;
     // its channels, devices, ledger rows and preferences are reset by
     // `e2e/setup/notification-fixture.ts` before every test, because the
@@ -1555,6 +1600,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
     // The timeline journey's jar — see `E2E_TIMELINE`.
     await capture(E2E_TIMELINE, TIMELINE_STORAGE_STATE_PATH);
+
+    // The day-doors journey's jar, then its record — see `E2E_DAY_DOORS`.
+    await capture(E2E_DAY_DOORS, DAY_DOORS_STORAGE_STATE_PATH);
+    await seedDayDoorsRecord(baseURL, DAY_DOORS_STORAGE_STATE_PATH);
 
     await capture(E2E_SCOPE_DELEGATE, SCOPE_DELEGATE_STORAGE_STATE_PATH);
     await capture(E2E_SCOPE_DELEGATE, SCOPE_A11Y_STORAGE_STATE_PATH);

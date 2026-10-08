@@ -51,9 +51,16 @@ interface LayerMemory {
   trigger: HTMLElement | null;
   /** The day the layer shows, as the mounted layer resolved it. */
   open: DateKey | null;
+  /** The trigger's top edge on screen when it opened the layer. */
+  triggerTop: number | null;
 }
 
-const memory: LayerMemory = { focus: null, trigger: null, open: null };
+const memory: LayerMemory = {
+  focus: null,
+  trigger: null,
+  open: null,
+  triggerTop: null,
+};
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -95,6 +102,17 @@ export function publishOpenDay(date: DateKey | null): void {
   emit();
 }
 
+/**
+ * The element that opened the layer and where it stood on screen at that
+ * moment, without handing it over: the docked column keeps it there while
+ * the page beside it reflows.
+ */
+export function peekDayTriggerAt(): { el: HTMLElement; top: number } | null {
+  return memory.trigger && memory.triggerTop !== null
+    ? { el: memory.trigger, top: memory.triggerTop }
+    : null;
+}
+
 /** The element focus returns to when the layer closes. */
 export function takeDayTrigger(): HTMLElement | null {
   const trigger = memory.trigger;
@@ -124,6 +142,9 @@ export function openDay(date: DateKey, options: OpenDayOptions = {}): void {
       ? active
       : null;
   memory.trigger = options.trigger ?? focused ?? memory.trigger;
+  memory.triggerTop = memory.trigger
+    ? memory.trigger.getBoundingClientRect().top
+    : null;
   emit();
   const { pathname, search } = currentLocation();
   const href = withDayHref(pathname, search, date);

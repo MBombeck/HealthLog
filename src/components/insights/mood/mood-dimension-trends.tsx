@@ -5,13 +5,25 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { ChartDataTable } from "@/components/charts/chart-data-table";
+import {
+  RichChartTooltip,
+  type RichTooltipRow,
+} from "@/components/charts/chart-tooltip";
+import {
+  ChartDayFooter,
+  OPEN_DAY_LINE,
+  dayAnchor,
+  useChartDayLinks,
+} from "@/components/day/chart-day-links";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   MOOD_DIMENSIONS,
   MOOD_DIMENSION_WINDOWS,
@@ -78,6 +90,7 @@ export function MoodDimensionTrends({
   dimensions: MoodDimensionSummaryData[];
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const [window, setWindow] = useState<MoodDimensionWindow>(30);
 
   const present = dimensions.filter((d) => d.present);
@@ -104,6 +117,14 @@ export function MoodDimensionTrends({
     const dimension = MOOD_DIMENSIONS.find((d) => d.key === key);
     return dimension ? t(dimension.labelKey) : key;
   };
+
+  // v1.42 — each answered day opens its day, through the doors every
+  // day-linked chart has.
+  const rowDays = chartData.map((row) => String(row.date));
+  const chartDays = useChartDayLinks({
+    enabled: present.length > 0 && chartData.length > 0,
+    days: rowDays,
+  });
 
   if (present.length === 0) {
     return (
@@ -134,17 +155,27 @@ export function MoodDimensionTrends({
         ))}
       </div>
 
-      <div className="h-[clamp(160px,34vh,220px)] w-full">
+      <div
+        data-slot="chart-plot"
+        {...chartDays.plotProps}
+        className={cn(
+          "h-[clamp(160px,34vh,220px)] w-full",
+          chartDays.plotClassName,
+        )}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
             margin={{ top: 4, right: 8, bottom: 0, left: -20 }}
+            onClick={chartDays.onChartClick}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-              tickFormatter={(value: string) => value.slice(5)}
+              tickFormatter={(value: string) =>
+                fmt.dateShortSmartCalendar(value)
+              }
               minTickGap={24}
             />
             <YAxis
@@ -152,18 +183,43 @@ export function MoodDimensionTrends({
               ticks={[0, 5, 10]}
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
             />
+            {chartDays.openIndex !== undefined ? (
+              <ReferenceLine
+                x={rowDays[chartDays.openIndex]}
+                {...OPEN_DAY_LINE}
+              />
+            ) : null}
             <Tooltip
-              contentStyle={{
-                background: "var(--popover)",
-                border: "1px solid var(--border)",
-                borderRadius: "0.5rem",
-                fontSize: "0.75rem",
+              {...chartDays.tooltipProps}
+              content={(props) => {
+                const payload = props.payload as unknown as
+                  | ReadonlyArray<{
+                      dataKey?: string | number;
+                      value?: number;
+                      color?: string;
+                      payload?: Record<string, number | string>;
+                    }>
+                  | undefined;
+                const row = payload?.[0]?.payload;
+                if (!props.active || !row) {
+                  return <RichChartTooltip active={false} rows={[]} />;
+                }
+                const rows: RichTooltipRow[] = (payload ?? [])
+                  .filter((item) => typeof item.value === "number")
+                  .map((item) => ({
+                    name: labelFor(String(item.dataKey)),
+                    value: String(item.value),
+                    color: item.color ?? "var(--chart-1)",
+                  }));
+                return (
+                  <RichChartTooltip
+                    active
+                    label={fmt.dateShortSmartCalendar(String(row.date))}
+                    rows={rows}
+                    action={chartDays.tooltipAction(chartData.indexOf(row))}
+                  />
+                );
               }}
-              labelStyle={{ color: "var(--muted-foreground)" }}
-              formatter={(value, name) => [
-                String(value ?? ""),
-                labelFor(String(name)),
-              ]}
             />
             {present.map((summary) => (
               <Line
@@ -183,6 +239,32 @@ export function MoodDimensionTrends({
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <ChartDayFooter
+        links={chartDays}
+        points={rowDays.map((day) => ({ timestamp: dayAnchor(day) }))}
+        // The y axis (60) less the plot's negative left margin (20); the
+        // margin (8) on the right.
+        insetLeft={60 - 20}
+        insetRight={8}
+      />
+      {chartDays.active ? (
+        <ChartDataTable
+          points={chartData.map((row) => ({
+            ...row,
+            date: String(row.date),
+            timestamp: dayAnchor(String(row.date)),
+          }))}
+          columns={present.map((summary) => ({
+            key: summary.key,
+            label: labelFor(summary.key),
+          }))}
+          formatValue={(value) => String(value)}
+          formatDate={(date) => fmt.dateShortSmartCalendar(date)}
+          bucket="day"
+          metricLabel={t("insights.mood.dimensions.title")}
+          dayLinks
+        />
+      ) : null}
 
       <ul className="space-y-1.5">
         {present.map((summary) => {
