@@ -15,9 +15,8 @@ import { MOBILE_ROUTES_ANALYTE } from "./setup/mobile-routes-fixture";
  * day, what the history does, and where no door is.
  *
  *   - a chart point opens the day beside the chart (desktop);
- *   - on a touch screen a tap on a point opens the day at once, as a bottom
- *     sheet with the tapped value on top (the maintainer's call on the beta:
- *     the two-step tooltip broke the flow);
+ *   - on a touch screen the first tap shows the value and the tooltip offers
+ *     the day, the second opens it as a bottom sheet;
  *   - a date in a list opens the day while the row keeps its own target;
  *   - `?day=` opens the layer on any page, Back and Escape close it, a date in
  *     the future is dropped;
@@ -25,7 +24,7 @@ import { MOBILE_ROUTES_ANALYTE } from "./setup/mobile-routes-fixture";
  *   - the dashboard's today area offers no door; its charts below do.
  *
  * Stable data attributes only: `day-panel` (+ `data-shell`), `day-link`,
- * `chart-plot[data-day-links]`, `day-prev` /
+ * `chart-plot[data-day-links]`, `chart-tooltip-open-day`, `day-prev` /
  * `day-next` / `day-close`.
  */
 
@@ -151,7 +150,7 @@ test.describe("the day view", () => {
     await expect(page).toHaveURL(/\/mood$/);
   });
 
-  test("on a phone a tap on a point opens its day at once", async ({
+  test("on a phone the first tap shows the value, the second opens the day", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium-mobile", "touch only");
@@ -162,11 +161,15 @@ test.describe("the day view", () => {
     await plot.scrollIntoViewIfNeeded();
     await expect(plot).toBeVisible();
     const box = (await plot.boundingBox())!;
-    // One tap, the same door as a click on a desktop: the day opens as a
-    // bottom sheet with the tapped value on top.
     await page.touchscreen.tap(box.x + box.width * 0.8, box.y + box.height / 2);
+    const open = page.locator('[data-slot="chart-tooltip-open-day"]');
+    await expect(open).toBeVisible();
+    // A tap alone never opens a sheet.
+    await expect(panel(page)).toHaveCount(0);
+    await open.tap();
     await expect(panel(page)).toBeVisible();
     await expect(panel(page)).toHaveAttribute("data-shell", "bottom");
+    // The tapped value heads the day.
     await expect(page.locator('[data-slot="day-focus"]')).toBeVisible();
   });
 

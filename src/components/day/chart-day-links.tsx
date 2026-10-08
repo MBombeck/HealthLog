@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, type ReactNode } from "react";
 
 import type { DateKey } from "@/lib/day/contract";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
@@ -8,6 +8,7 @@ import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import {
   ChartDayCaption,
   DayRug,
+  TooltipDayAction,
   useCoarsePointer,
   type ChartDayAxis,
   type ChartDayMark,
@@ -25,11 +26,13 @@ import { useTodayKey } from "./use-today-key";
  * button, the dashed line through the open day and the row of dots under the
  * axis behave the same on every page:
  *
- *   - a click, or a tap, on the plot opens the day of the point under it.
- *     On a fine pointer hovering still shows the tooltip; on a touch screen
- *     the tap opens the day at once, and the day puts the tapped value at
- *     its top. A scroll that grazes the chart is a pan, not a tap, and opens
- *     nothing;
+ *   - fine pointer: a click on the plot opens the day of the point under the
+ *     cursor; hovering shows the tooltip as before;
+ *   - touch: a tap shows the value and pins the tooltip, whose button
+ *     ("View the whole day", a calm 44 px row) opens the day. Two steps on
+ *     purpose (the maintainer's call, after trying one on the beta): a
+ *     point is a small target, and one tap that opened a sheet would open
+ *     days by accident;
  *   - the open day is marked with `OPEN_DAY_LINE` (a dashed vertical line)
  *     at `openIndex`;
  *   - `ChartDayFooter` draws the row of day dots and the one-line caption.
@@ -91,12 +94,19 @@ export interface ChartDayLinks {
   onChartClick:
     ((state: ChartClickState | null | undefined) => void) | undefined;
   /**
-   * Spread on `<Tooltip>`. On touch, and under reduced motion, the tooltip
-   * does not glide: Recharts slides it from where it last was for 400 ms,
-   * which on a tap drew a box sweeping across the chart while the day was
-   * already opening.
+   * Spread on `<Tooltip>`: on touch it stays where the tap put it and takes
+   * taps. It does not glide there either: Recharts slides the tooltip from
+   * where it last was for 400 ms, which turned "View the whole day" into a
+   * moving target under the finger. Reduced motion stops the glide on every
+   * pointer.
    */
-  tooltipProps: { isAnimationActive?: boolean };
+  tooltipProps: {
+    trigger: "click" | "hover";
+    wrapperStyle?: React.CSSProperties;
+    isAnimationActive?: boolean;
+  };
+  /** The tooltip's button for point `index`, on a touch screen only. */
+  tooltipAction: (index: number | undefined) => ReactNode | undefined;
 }
 
 export function useChartDayLinks({
@@ -134,16 +144,17 @@ export function useChartDayLinks({
     return at === -1 ? undefined : at;
   }, [enabled, openKey, days]);
 
-  const onChartClick = enabled
-    ? (state: ChartClickState | null | undefined) => {
-        if (!state) return;
-        const index = indexOfClick
-          ? indexOfClick(state)
-          : Number(state.activeTooltipIndex);
-        if (index === null || !Number.isInteger(index)) return;
-        open(index);
-      }
-    : undefined;
+  const onChartClick =
+    enabled && !coarse
+      ? (state: ChartClickState | null | undefined) => {
+          if (!state) return;
+          const index = indexOfClick
+            ? indexOfClick(state)
+            : Number(state.activeTooltipIndex);
+          if (index === null || !Number.isInteger(index)) return;
+          open(index);
+        }
+      : undefined;
 
   return {
     active: enabled,
@@ -159,7 +170,19 @@ export function useChartDayLinks({
     plotClassName: enabled && !coarse ? "cursor-pointer" : "",
     onChartClick,
     tooltipProps:
-      coarse || prefersReducedMotion() ? { isAnimationActive: false } : {},
+      enabled && coarse
+        ? {
+            trigger: "click",
+            wrapperStyle: { pointerEvents: "auto", zIndex: 20 },
+            isAnimationActive: false,
+          }
+        : prefersReducedMotion()
+          ? { trigger: "hover", isAnimationActive: false }
+          : { trigger: "hover" },
+    tooltipAction: (index) =>
+      enabled && coarse && index !== undefined && canOpen(index) ? (
+        <TooltipDayAction onOpen={() => open(index)} />
+      ) : undefined,
   };
 }
 

@@ -378,11 +378,18 @@ export function EfficacyChart({
                       color: item.color ?? "var(--chart-1)",
                     };
                   });
+                const index =
+                  typeof x === "number"
+                    ? displaySeries.findIndex((p) => p.t === x)
+                    : -1;
                 return (
                   <RichChartTooltip
                     active
                     label={typeof x === "number" ? fmt.date(new Date(x)) : ""}
                     rows={rows}
+                    action={chartDays.tooltipAction(
+                      index === -1 ? undefined : index,
+                    )}
                   />
                 );
               }}

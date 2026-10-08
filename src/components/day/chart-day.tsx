@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { ArrowRight } from "lucide-react";
 
 import type { DateKey } from "@/lib/day/contract";
 import { dateOnlyKey } from "@/lib/tz/date-only";
@@ -15,10 +16,12 @@ import { useTodayKey } from "./use-today-key";
 /**
  * The day view's entry points on a value chart.
  *
- *   - A click, or a tap, on the plot opens the day of the point under it,
- *     with that value at the top of the day. Hovering on a fine pointer
- *     keeps showing the tooltip; a scroll that grazes the chart is a pan,
- *     not a tap, and opens nothing.
+ *   - On a fine pointer, a click on the plot opens the day of the point under
+ *     the cursor; hovering keeps showing the tooltip as before.
+ *   - On a touch screen a tap shows the value, as it always did, and the
+ *     tooltip carries "View the whole day". Two steps on purpose: a point is
+ *     a small target, and one tap that opened a sheet would open days by
+ *     accident. A date in a list is a bigger target and opens in one tap.
  *   - Under the axis, a quiet row of dots marks the days that hold anything,
  *     a ring the days with a notable observation. Decoration for the eye; the
  *     keyboard and screen-reader way to a day is the chart's data table.
@@ -55,6 +58,26 @@ export function useCoarsePointer(): boolean {
  */
 export function chartPointDayKey(timestamp: number): DateKey {
   return dateOnlyKey(new Date(timestamp));
+}
+
+/** The tooltip's way to the day on a touch screen. */
+export function TooltipDayAction({ onOpen }: { onOpen: () => void }) {
+  const { t } = useTranslations();
+  return (
+    <button
+      type="button"
+      data-slot="chart-tooltip-open-day"
+      onClick={(event) => {
+        event.stopPropagation();
+        onOpen();
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
+      className="bg-muted hover:bg-muted/80 focus-visible:ring-ring/50 mt-2.5 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+    >
+      {t("day.viewWholeDay")}
+      <ArrowRight className="size-4" aria-hidden="true" />
+    </button>
+  );
 }
 
 interface RugPoint {

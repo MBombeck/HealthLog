@@ -9,8 +9,9 @@ import { describe, expect, it } from "vitest";
  * The day view arrived on six metric pages and nowhere else, and the recovery
  * page beside them offered no day at all: nothing noticed, because every check
  * proved one chart. This guard walks `src/app` and `src/components` and holds
- * three kinds of surface to the same doors (a click or a tap opens the day,
- * the dashed line through the open day, the row of day dots, the caption):
+ * three kinds of surface to the same doors (a click opens the day, on touch
+ * the tooltip's "View the whole day", the dashed line through the open day,
+ * the row of day dots, the caption):
  *
  *   A. a mount of a chart whose doors are a prop (`HealthChart`, its dynamic
  *      wrapper, `MoodChart`, the adherence chart, the nutrient bar chart)
@@ -20,7 +21,7 @@ import { describe, expect, it } from "vitest";
  *   B. a file that draws its own Recharts chart over a date axis (an
  *      `<XAxis>` keyed on a date-shaped field, or `scale="time"`) calls
  *      `useChartDayLinks` and renders its parts (`ChartDayFooter`,
- *      `OPEN_DAY_LINE`, the tooltip's props);
+ *      `OPEN_DAY_LINE`, the tooltip's props and its touch action);
  *   C. a calendar heatmap (anything laid out by `heatmapDays`) calls
  *      `useHeatmapDay`.
  *
@@ -195,14 +196,15 @@ function findMissingDoors(): {
           /\buseChartDayLinks\(/.test(text) &&
           /\bChartDayFooter\b/.test(text) &&
           /\bOPEN_DAY_LINE\b/.test(text) &&
-          /\.tooltipProps\b/.test(text);
+          /\.tooltipProps\b/.test(text) &&
+          /\.tooltipAction\(/.test(text);
         if (wired) {
           doors.charts += 1;
           doors.chartFiles.push(file);
         } else if (!listed) {
           missing.push({
             file,
-            why: "a date-axis chart without the shared day doors (useChartDayLinks, ChartDayFooter, OPEN_DAY_LINE, tooltip props)",
+            why: "a date-axis chart without the shared day doors (useChartDayLinks, ChartDayFooter, OPEN_DAY_LINE, tooltip props and touch action)",
           });
         }
       }

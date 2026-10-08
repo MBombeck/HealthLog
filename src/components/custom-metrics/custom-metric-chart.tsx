@@ -239,6 +239,7 @@ export function CustomMetricChart({
                         active
                         label={fmt.dateShortSmart(new Date(point.timestamp))}
                         rows={rows}
+                        action={chartDays.tooltipAction(points.indexOf(point))}
                       />
                     );
                   }}

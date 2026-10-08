@@ -644,8 +644,18 @@ export function MedicationComplianceChart({
                         delta,
                       },
                     ];
+                    const hoverPoint = payload[0]?.payload;
                     return (
-                      <RichChartTooltip active label={dateLabel} rows={rows} />
+                      <RichChartTooltip
+                        active
+                        label={dateLabel}
+                        rows={rows}
+                        action={chartDays.tooltipAction(
+                          hoverPoint
+                            ? chartData.indexOf(hoverPoint)
+                            : undefined,
+                        )}
+                      />
                     );
                   }}
                 />

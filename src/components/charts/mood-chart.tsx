@@ -1015,7 +1015,16 @@ export function MoodChart({
                 }
               }
               if (rows.length === 0) return null;
-              return <RichChartTooltip active label={dateLabel} rows={rows} />;
+              return (
+                <RichChartTooltip
+                  active
+                  label={dateLabel}
+                  rows={rows}
+                  action={chartDays.tooltipAction(
+                    hoverPoint ? dayLinkSource?.indexOf(hoverPoint) : undefined,
+                  )}
+                />
+              );
             }}
           />
           <Line

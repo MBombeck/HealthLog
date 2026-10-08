@@ -2404,6 +2404,11 @@ export function HealthChart({
                               : dateLabel
                           }
                           rows={rows}
+                          action={chartDays.tooltipAction(
+                            hoverPoint
+                              ? dayLinkSource?.indexOf(hoverPoint)
+                              : undefined,
+                          )}
                         />
                       );
                     }}

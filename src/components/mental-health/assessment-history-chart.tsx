@@ -183,6 +183,7 @@ export function AssessmentHistoryChart({
                     active
                     label={fmt.dateShortSmart(new Date(point.timestamp))}
                     rows={rowsOut}
+                    action={chartDays.tooltipAction(points.indexOf(point))}
                   />
                 );
               }}

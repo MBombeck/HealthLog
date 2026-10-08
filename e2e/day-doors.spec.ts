@@ -13,11 +13,13 @@ import { expect, test } from "./setup/test";
  *
  * The day view first reached six metric pages; the recovery page beside them
  * offered no day at all. These journeys walk the surfaces that came after,
- * each through the same door: a click on a point (or a calendar cell) opens
- * the day beside the page, and on a touch screen a tap does the same as a
- * bottom sheet, the tapped value on top. The dashed line (or outline) marks
- * the open day, the row of dots and the caption sit under every chart, and
- * the data table's dates are the keyboard way to the same days.
+ * each through the same doors: on a fine pointer a click on a point (or a
+ * calendar cell) opens the day beside the page; on a touch screen the first
+ * tap shows the value and the tooltip's "View the whole day" opens it as a
+ * bottom sheet, the tapped value on top. A date in a list opens in one tap.
+ * The dashed line (or outline) marks the open day, the row of dots and the
+ * caption sit under every chart, and the data table's dates are the
+ * keyboard way to the same days.
  *
  *   - recovery (the page the beta reported), sleep, a lab marker, a chart
  *     with its comparison period on and a dashboard chart: line charts;
@@ -41,8 +43,14 @@ async function openFromPlot(page: Page, plot: Locator, testInfo: TestInfo) {
   const x = box.x + box.width * 0.8;
   const y = box.y + box.height / 2;
   if (isPhone(testInfo)) {
-    // One tap, the same door as the click: no tooltip step in between.
     await page.touchscreen.tap(x, y);
+    const open = page.locator('[data-slot="chart-tooltip-open-day"]:visible');
+    await expect(open).toBeVisible();
+    // A tap alone never opens a sheet: a point is a small target.
+    await expect(panel(page)).toHaveCount(0);
+    // The button is a calm, full 44 px row.
+    expect((await open.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await open.tap();
     await expect(panel(page)).toHaveAttribute("data-shell", "bottom");
   } else {
     await page.mouse.move(x, y);
@@ -143,6 +151,12 @@ test.describe("every chart drawn in days opens its days", () => {
     const day = await cell.getAttribute("data-day");
     if (isPhone(testInfo)) {
       await cell.tap();
+      const open = page.locator(
+        '[data-slot="heatmap-tooltip"] [data-slot="chart-tooltip-open-day"]',
+      );
+      await expect(open).toBeVisible();
+      await expect(panel(page)).toHaveCount(0);
+      await open.tap();
       await expect(panel(page)).toHaveAttribute("data-shell", "bottom");
     } else {
       await cell.click();

@@ -326,6 +326,7 @@ export function DoseStrengthCurve({
                     active
                     label={fmt.dateShortSmart(new Date(point.t))}
                     rows={rows}
+                    action={chartDays.tooltipAction(chartData.indexOf(point))}
                   />
                 );
               }}
