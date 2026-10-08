@@ -24,6 +24,7 @@ import { customMetrics } from "./custom-metrics";
 import { cycleKeys } from "./cycle";
 import { dailyKeys } from "./daily";
 import { dashboardKeys } from "./dashboard";
+import { dayKeys } from "./day";
 import { environmentKeys } from "./environment";
 import { documentKeys } from "./documents";
 import { encounterKeys } from "./encounters";
@@ -41,6 +42,7 @@ import { onboardingKeys } from "./onboarding";
 import { recordSettingsKeys } from "./record-settings";
 import { profileKeys } from "./profile";
 import { settingsKeys } from "./settings";
+import { timelineKeys } from "./timeline";
 import { sharingKeys } from "./sharing";
 import { vaccinationKeys } from "./vaccinations";
 import { workoutKeys } from "./workouts";
@@ -76,6 +78,8 @@ export const queryKeys = {
   ...sharingKeys,
   ...vaccinationKeys,
   ...aiRunKeys,
+  ...dayKeys,
+  ...timelineKeys,
 };
 
 export { recordSettingsKeys } from "./record-settings";
@@ -151,6 +155,10 @@ export const measurementDependentKeys = [
   ["sleep-night"] as const,
   // v1.17.0 — refresh the sleep-debt + chronotype read when sleep rows change.
   ["sleep-rhythm"] as const,
+  // v1.42 — an open day and the timeline read every record table, so a
+  // write to this one evicts both roots.
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
 ];
 
 /**
@@ -181,6 +189,10 @@ export const moodDependentKeys = [
   // server-side. Call sites force an inactive refetch too (see
   // `refetchInactiveDailyReads`).
   queryKeys.dailyDigest(),
+  // v1.42 — an open day and the timeline read every record table, so a
+  // write to this one evicts both roots.
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
 ];
 
 /**
@@ -232,6 +244,10 @@ export const medicationDependentKeys = [
   queryKeys.dailyDigest(),
   ["dashboard-medication-compliance"] as const,
   ["compliance-chart-inline"] as const,
+  // v1.42 — an open day and the timeline read every record table, so a
+  // write to this one evicts both roots.
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
 ];
 
 /**
@@ -242,7 +258,14 @@ export const medicationDependentKeys = [
  * log. `insightsRoot()` rides along because phase-correlation cards depend
  * on the same rows.
  */
-export const cycleDependentKeys = [queryKeys.cycle(), queryKeys.insightsRoot()];
+export const cycleDependentKeys = [
+  queryKeys.cycle(),
+  queryKeys.insightsRoot(),
+  // v1.42 — an open day and the timeline read every record table, so a
+  // write to this one evicts both roots.
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
+];
 
 /**
  * Keys invalidated when an illness episode starts, ends, is edited, deleted,
@@ -261,6 +284,10 @@ export const illnessDependentKeys = [
   // v1.39.2 — a condition's body site is half of the body-site view and of
   // the suggestions a body-site field offers.
   queryKeys.bodySitesAll(),
+  // v1.42 — an open day and the timeline read every record table, so a
+  // write to this one evicts both roots.
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
 ];
 
 /**
@@ -290,6 +317,10 @@ export const encounterDependentKeys = [
   // seeds its replace-set visit picker from its own cached links: left
   // stale, the next tap there would delete the link just made.
   queryKeys.documents(),
+  // v1.42 — an open day and the timeline read every record table, so a
+  // write to this one evicts both roots.
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
 ];
 
 /**
@@ -313,6 +344,10 @@ export const vaccinationDependentKeys = [
   // seeds its replace-set dose picker from its own cached links: left stale,
   // the next tap there would delete the link just made.
   queryKeys.documents(),
+  // v1.42 — an open day and the timeline read every record table, so a
+  // write to this one evicts both roots.
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
 ];
 
 /**

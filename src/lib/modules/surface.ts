@@ -48,6 +48,10 @@ import type { ModuleKey } from "@/lib/modules/registry";
  *  - `settings-layout`: a Settings, Layout group, by its id.
  *  - `correlation`: a correlation-discovery channel, by its channel key.
  *  - `score-ring`: a dashboard hero score ring, by its `ScoreRingId`.
+ *  - `day-section`: a section of the day view, by its `DaySectionKey`. The
+ *    day loader blanks a section whose owner is off, and the views drop it.
+ *  - `timeline-lane`: a lane of the timeline, by its `TimelineLaneKey`; the
+ *    readiness inventory leaves it out the same way.
  */
 export const SURFACE_KINDS = [
   "nav",
@@ -62,6 +66,8 @@ export const SURFACE_KINDS = [
   "settings-layout",
   "correlation",
   "score-ring",
+  "day-section",
+  "timeline-lane",
 ] as const;
 
 export type SurfaceKind = (typeof SURFACE_KINDS)[number];
@@ -79,6 +85,7 @@ const STATIC_SURFACE_MODULE = {
   "nav:/documents": "inboundDocuments",
   "nav:/coach": "coach",
   "nav:/achievements": "achievements",
+  "nav:/timeline": "timeline",
 
   // ── Insights sub-pages ──
   "insights-page:mood": "mood",
@@ -205,6 +212,39 @@ const STATIC_SURFACE_MODULE = {
   "correlation:SYMPTOM_SEVERITY": "illness",
   // The labs ↔ outcome pass over lab draws.
   "correlation:LAB_DRAWS": "labs",
+
+  // ── Day view sections (v1.42) ──
+  // The readings carry no owner here: each value follows its own type's
+  // module (`moduleForMeasurementType`), so a section-level owner would hide
+  // the core vitals with it. Allergies, visits, check-ups and the anamnesis
+  // facts are core record surfaces and stay unowned.
+  "day-section:sleep": "sleep",
+  "day-section:mood": "mood",
+  "day-section:assessments": "mentalHealth",
+  "day-section:medications": "medications",
+  "day-section:illness": "illness",
+  // Person-defined symptoms ride the illness module, as everywhere else.
+  "day-section:symptoms": "illness",
+  "day-section:labs": "labs",
+  "day-section:vaccinations": "vaccinations",
+  "day-section:documents": "inboundDocuments",
+  "day-section:workouts": "workouts",
+  "day-section:cycle": "cycle",
+  "day-section:environment": "environment",
+  // Life events are the timeline module's own content: off, they leave the
+  // day as well.
+  "day-section:lifeEvents": "timeline",
+
+  // ── Timeline lanes (v1.42) ──
+  // The `life` lane mixes life events (this module) with travel periods (the
+  // environment module) and is filtered item by item; allergies and visits are
+  // core.
+  "timeline-lane:illness": "illness",
+  "timeline-lane:medications": "medications",
+  "timeline-lane:vaccinations": "vaccinations",
+  "timeline-lane:labs": "labs",
+  "timeline-lane:documents": "inboundDocuments",
+  "timeline-lane:cycle": "cycle",
 } as const satisfies Record<string, ModuleKey>;
 
 /** A surface id the map declares literally. */

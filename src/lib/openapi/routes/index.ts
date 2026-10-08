@@ -48,6 +48,7 @@ import { customMetricPaths } from "./custom-metrics";
 import { dailyPaths } from "./daily";
 import { cyclePaths } from "./cycle";
 import { dashboardWidgetPaths } from "./dashboard";
+import { dayPaths } from "./day";
 import { biomarkerPaths } from "./biomarkers";
 import { inboundDocumentPaths } from "./documents";
 import { documentSourcePaths } from "./document-sources";
@@ -181,6 +182,9 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   // v1.40 — person-defined symptoms and their occurrences, behind the illness
   // module (appended, spread order is load-bearing).
   ...symptomPaths,
+  // v1.42 — the day view, the timeline and life events (appended, spread
+  // order is load-bearing).
+  ...dayPaths,
   // The environmental-context overview. Its own module because nothing else
   // owns the surface (appended, spread order is load-bearing).
   //

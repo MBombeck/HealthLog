@@ -324,6 +324,9 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // v1.40 — the person's own symptom names and the note on one occurrence.
   { model: "SymptomDefinition", field: "labelEncrypted", kind: "bytes" },
   { model: "SymptomEvent", field: "noteEncrypted", kind: "bytes" },
+  // v1.42 — a life event's title and note, in the person's own words.
+  { model: "LifeEvent", field: "titleEncrypted", kind: "bytes" },
+  { model: "LifeEvent", field: "noteEncrypted", kind: "bytes" },
 
   // ───── v1.19.0 ECG waveform (Bytes column) ─────
   { model: "EcgRecording", field: "waveformEncrypted", kind: "bytes" },
@@ -598,6 +601,7 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "InsightStatusCache",
   "IntegrationStatus",
   "LabResult",
+  "LifeEvent",
   "Measurement",
   "MedicationCategoryLabel",
   "MedicationCourse",

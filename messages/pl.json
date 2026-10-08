@@ -436,7 +436,8 @@
     "illness": "Choroba",
     "documents": "Dokumenty",
     "vaccinations": "Szczepienia",
-    "mentalWellbeing": "Dobrostan psychiczny"
+    "mentalWellbeing": "Dobrostan psychiczny",
+    "timeline": "Oś czasu"
   },
   "auth": {
     "login": "Zaloguj się",
@@ -9608,6 +9609,10 @@
     "vaccinations": {
       "label": "Szczepienia",
       "description": "Książeczka szczepień uporządkowana: dawka, seria, następne przypomnienie."
+    },
+    "timeline": {
+      "label": "Oś czasu",
+      "description": "Lata w jednym widoku: choroby, leki i wizyty obok Twoich wartości, a do tego Twoje własne wydarzenia życiowe."
     }
   },
   "moduleOff": {
@@ -11842,7 +11847,7 @@
       },
       "profile": {
         "label": "Historia zdrowia",
-        "detail": "Alergie, wywiad rodzinny, dane z Twojego profilu zdrowotnego, wizyty lekarskie i gabinety oraz Twoja historia szczepień."
+        "detail": "Alergie, wywiad rodzinny, dane z Twojego profilu zdrowotnego, wizyty lekarskie i gabinety, Twoja historia szczepień oraz Twoje wydarzenia życiowe."
       },
       "illness": {
         "label": "Choroby",
@@ -12154,6 +12159,139 @@
     "episode": {
       "title": "Zapisane objawy",
       "filed": "zapisano przy tej chorobie"
+    }
+  },
+  "day": {
+    "title": "Dzień",
+    "previousDay": "Poprzedni dzień",
+    "nextDay": "Następny dzień",
+    "close": "Zamknij dzień",
+    "openDay": "Otwórz dzień",
+    "viewWholeDay": "Zobacz cały dzień",
+    "captureForDay": "Dodaj dla tego dnia",
+    "empty": "Brak wpisów dla tego dnia.",
+    "notShared": "Niektóre obszary nie są Ci udostępnione.",
+    "inTimeline": "Na osi czasu",
+    "askCoach": "Zapytaj Coacha o ten dzień",
+    "chartHint": "Kliknij punkt, aby otworzyć jego dzień.",
+    "daysWithEntries": "Dni z wpisami",
+    "loadFailed": "Nie udało się wczytać tego dnia.",
+    "dayOf": "Dzień {n} z {m}",
+    "dayN": "Dzień {n}",
+    "since": "Od {date}",
+    "usualRange": "Zwykle od {lo} do {hi}",
+    "groups": {
+      "running": "W toku",
+      "values": "Wartości",
+      "happened": "Wydarzyło się"
+    },
+    "sections": {
+      "values": "Wartości",
+      "sleep": "Sen",
+      "mood": "Nastrój",
+      "assessments": "Kwestionariusze",
+      "medications": "Leki",
+      "illness": "Choroba",
+      "symptoms": "Objawy",
+      "allergies": "Alergie",
+      "labs": "Badania",
+      "visits": "Lekarz i zabiegi",
+      "vaccinations": "Szczepienia",
+      "checkups": "Badania profilaktyczne",
+      "documents": "Dokumenty",
+      "workouts": "Treningi",
+      "cycle": "Cykl",
+      "environment": "Otoczenie",
+      "lifestyle": "Styl życia",
+      "lifeEvents": "Wydarzenia życiowe"
+    },
+    "notable": {
+      "extremeHigh": "Najwyższa wartość dzienna od {since}",
+      "extremeLow": "Najniższa wartość dzienna od {since}",
+      "firstValue": "Pierwszy pomiar tego rodzaju",
+      "gap": "{days} dni bez pomiaru"
+    }
+  },
+  "timeline": {
+    "title": "Oś czasu",
+    "subtitle": "Lata w jednym widoku.",
+    "legend": "Pokazane obok siebie, nie jako przyczyna i skutek.",
+    "standing": "Stałe",
+    "startMissing": "Brak daty rozpoczęcia",
+    "openDay": "Otwórz {date}",
+    "zoom": {
+      "all": "Wszystko",
+      "year": "12 miesięcy",
+      "quarter": "3 miesiące"
+    },
+    "lanes": {
+      "life": "Życie",
+      "illness": "Choroby",
+      "allergies": "Alergie",
+      "medications": "Leki",
+      "vaccinations": "Szczepienia",
+      "visits": "Lekarz i zabiegi",
+      "labs": "Badania",
+      "documents": "Dokumenty",
+      "cycle": "Cykl"
+    },
+    "readiness": {
+      "title": "Co już zawiera Twoja oś czasu",
+      "subtitle": "Uczciwy przegląd, zanim ją otworzysz.",
+      "menuEntry": "Stan danych",
+      "hint": "Puste ścieżki pozostają ukryte, dopóki coś się nie pojawi. Wyłączone moduły nigdy się nie pojawiają. Ten przegląd znajdziesz później w sekcji Stan danych na osi czasu.",
+      "later": "Później",
+      "open": "Otwórz oś czasu",
+      "verdict": {
+        "carries": "Już ma treść.",
+        "thin": "Jeszcze skromna. Na razie oś czasu pokazuje głównie Twoje wartości."
+      },
+      "status": {
+        "carries": "wypełniona",
+        "thin": "skromna",
+        "empty": "pusta"
+      },
+      "lanes": {
+        "values": "Wartości",
+        "mood": "Nastrój",
+        "environment": "Otoczenie"
+      }
+    }
+  },
+  "lifeEvents": {
+    "title": "Wydarzenie życiowe",
+    "add": "Wydarzenie życiowe",
+    "subtitle": "Punkt odniesienia na osi czasu, nie pomiar.",
+    "privacy": "Tytuł i notatka są zapisywane w postaci zaszyfrowanej. Nie trafiają do żadnej AI.",
+    "empty": "Brak wydarzeń życiowych",
+    "emptyHint": "Przeprowadzka, narodziny dziecka czy nowa praca dają latom punkt odniesienia.",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "delete": "Usuń wydarzenie życiowe",
+    "saved": "Zapisano wydarzenie życiowe",
+    "deleted": "Usunięto wydarzenie życiowe",
+    "fields": {
+      "title": "Co się wydarzyło?",
+      "category": "Rodzaj",
+      "when": "Kiedy",
+      "precision": "Dokładność",
+      "addEnd": "Data zakończenia, jeśli był to okres",
+      "endDate": "Do",
+      "note": "Notatka",
+      "optionalTag": "opcjonalnie",
+      "notePlaceholder": "Coś, co zechcesz wiedzieć później"
+    },
+    "category": {
+      "FAMILY": "Rodzina",
+      "HOME": "Mieszkanie",
+      "WORK": "Praca",
+      "LOSS": "Strata",
+      "OTHER": "Inne"
+    },
+    "precision": {
+      "DAY": "Dzień",
+      "MONTH": "Miesiąc",
+      "YEAR": "Rok"
     }
   }
 }

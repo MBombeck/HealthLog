@@ -126,6 +126,9 @@
     // a line the moment its first consumer lands; the release integration
     // checklist removes whatever is left before the tag.
     "src/lib/environment/air-quality-contract.ts",
+    // The day view and timeline contract (#613): constants and wire types the
+    // server, the two views and the Coach/MCP tool build against.
+    "src/lib/day/contract.ts",
   ],
   "ignoreDependencies": [
     "@types/node",

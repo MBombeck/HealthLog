@@ -374,7 +374,11 @@ describe("registry — opt-in marker", () => {
   // default-on disabled-allowlist now; their egress channels (the weather
   // fetch, the document AI-read, the AI Coach exposure) are separately gated
   // and stay off until explicitly configured.
-  const OPT_IN_KEYS = new Set(["mcp", "nutrients"]);
+  //
+  // v1.42 — `timeline` joins them for a different reason: it opens no channel,
+  // but it is a new way of reading the whole record, and the readiness
+  // inventory shown when it is switched on is meant to be the first contact.
+  const OPT_IN_KEYS = new Set(["mcp", "nutrients", "timeline"]);
 
   it("marks only the egress-surface modules opt-in (every other is default-on)", () => {
     for (const key of MODULE_KEYS) {

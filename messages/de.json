@@ -436,7 +436,8 @@
     "illness": "Krankheit",
     "documents": "Dokumente",
     "vaccinations": "Impfungen",
-    "mentalWellbeing": "Seelisches Wohlbefinden"
+    "mentalWellbeing": "Seelisches Wohlbefinden",
+    "timeline": "Zeitleiste"
   },
   "auth": {
     "login": "Anmelden",
@@ -9608,6 +9609,10 @@
     "vaccinations": {
       "label": "Impfungen",
       "description": "Der Impfpass in strukturierter Form: Dosis, Serie, nächste Auffrischung."
+    },
+    "timeline": {
+      "label": "Zeitleiste",
+      "description": "Jahre auf einen Blick: Erkrankungen, Medikamente und Arztbesuche neben deinen Werten, dazu deine Lebensereignisse."
     }
   },
   "moduleOff": {
@@ -11842,7 +11847,7 @@
       },
       "profile": {
         "label": "Gesundheitliche Vorgeschichte",
-        "detail": "Allergien, Familienanamnese, die Angaben in deinem Gesundheitsprofil, Arztbesuche und Praxen sowie deine Impfungen."
+        "detail": "Allergien, Familienanamnese, die Angaben in deinem Gesundheitsprofil, Arztbesuche und Praxen, deine Impfungen sowie deine Lebensereignisse."
       },
       "illness": {
         "label": "Krankheiten",
@@ -12154,6 +12159,139 @@
     "episode": {
       "title": "Erfasste Symptome",
       "filed": "zu dieser Erkrankung erfasst"
+    }
+  },
+  "day": {
+    "title": "Tag",
+    "previousDay": "Vortag",
+    "nextDay": "Folgetag",
+    "close": "Tag schließen",
+    "openDay": "Tag öffnen",
+    "viewWholeDay": "Ganzen Tag ansehen",
+    "captureForDay": "Für diesen Tag erfassen",
+    "empty": "Für diesen Tag gibt es keine Einträge.",
+    "notShared": "Einige Bereiche sind für dich nicht freigegeben.",
+    "inTimeline": "In der Zeitleiste",
+    "askCoach": "Im Coach nach diesem Tag fragen",
+    "chartHint": "Klick auf einen Punkt öffnet den Tag.",
+    "daysWithEntries": "Tage mit Einträgen",
+    "loadFailed": "Dieser Tag konnte nicht geladen werden.",
+    "dayOf": "Tag {n} von {m}",
+    "dayN": "Tag {n}",
+    "since": "Seit {date}",
+    "usualRange": "Üblich {lo} bis {hi}",
+    "groups": {
+      "running": "Laufend",
+      "values": "Werte",
+      "happened": "Passiert"
+    },
+    "sections": {
+      "values": "Werte",
+      "sleep": "Schlaf",
+      "mood": "Stimmung",
+      "assessments": "Fragebögen",
+      "medications": "Medikamente",
+      "illness": "Krankheit",
+      "symptoms": "Symptome",
+      "allergies": "Allergien",
+      "labs": "Labor",
+      "visits": "Arzt und Eingriffe",
+      "vaccinations": "Impfungen",
+      "checkups": "Vorsorge",
+      "documents": "Dokumente",
+      "workouts": "Workouts",
+      "cycle": "Zyklus",
+      "environment": "Umwelt",
+      "lifestyle": "Lebensstil",
+      "lifeEvents": "Lebensereignisse"
+    },
+    "notable": {
+      "extremeHigh": "Höchster Tageswert seit {since}",
+      "extremeLow": "Niedrigster Tageswert seit {since}",
+      "firstValue": "Erster Wert dieser Art",
+      "gap": "{days} Tage ohne Wert"
+    }
+  },
+  "timeline": {
+    "title": "Zeitleiste",
+    "subtitle": "Jahre auf einen Blick.",
+    "legend": "Nebeneinander gezeigt, nicht als Ursache und Wirkung.",
+    "standing": "Dauerhaft",
+    "startMissing": "Startdatum fehlt",
+    "openDay": "{date} öffnen",
+    "zoom": {
+      "all": "Alles",
+      "year": "12 Monate",
+      "quarter": "3 Monate"
+    },
+    "lanes": {
+      "life": "Leben",
+      "illness": "Erkrankungen",
+      "allergies": "Allergien",
+      "medications": "Medikamente",
+      "vaccinations": "Impfungen",
+      "visits": "Arzt und Eingriffe",
+      "labs": "Labor",
+      "documents": "Dokumente",
+      "cycle": "Zyklus"
+    },
+    "readiness": {
+      "title": "Was deine Zeitleiste schon trägt",
+      "subtitle": "Eine ehrliche Bestandsaufnahme, bevor du sie öffnest.",
+      "menuEntry": "Datenlage",
+      "hint": "Leere Spuren bleiben ausgeblendet, bis etwas da ist. Abgeschaltete Module erscheinen nie. Du findest diese Übersicht später unter Datenlage in der Zeitleiste.",
+      "later": "Später",
+      "open": "Zeitleiste öffnen",
+      "verdict": {
+        "carries": "Trägt schon.",
+        "thin": "Noch dünn. Die Zeitleiste zeigt vorerst vor allem deine Werte."
+      },
+      "status": {
+        "carries": "trägt",
+        "thin": "dünn",
+        "empty": "leer"
+      },
+      "lanes": {
+        "values": "Werte",
+        "mood": "Stimmung",
+        "environment": "Umwelt"
+      }
+    }
+  },
+  "lifeEvents": {
+    "title": "Lebensereignis",
+    "add": "Lebensereignis",
+    "subtitle": "Ein Anker für die Zeitleiste, kein Messwert.",
+    "privacy": "Titel und Notiz liegen verschlüsselt. Sie gehen an keine KI.",
+    "empty": "Noch keine Lebensereignisse",
+    "emptyHint": "Umzug, Geburt oder eine neue Stelle geben den Jahren einen Anker.",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Lebensereignis löschen",
+    "saved": "Lebensereignis gespeichert",
+    "deleted": "Lebensereignis gelöscht",
+    "fields": {
+      "title": "Was war?",
+      "category": "Art",
+      "when": "Wann",
+      "precision": "Genauigkeit",
+      "addEnd": "Enddatum, wenn es ein Zeitraum war",
+      "endDate": "Bis",
+      "note": "Notiz",
+      "optionalTag": "optional",
+      "notePlaceholder": "Etwas, das du später wissen willst"
+    },
+    "category": {
+      "FAMILY": "Familie",
+      "HOME": "Wohnen",
+      "WORK": "Arbeit",
+      "LOSS": "Verlust",
+      "OTHER": "Sonstiges"
+    },
+    "precision": {
+      "DAY": "Tag",
+      "MONTH": "Monat",
+      "YEAR": "Jahr"
     }
   }
 }

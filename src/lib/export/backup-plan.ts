@@ -111,6 +111,9 @@ export const BACKED_UP_MODELS = [
   // else holds either; a restore without them loses the history outright.
   "SymptomDefinition",
   "SymptomEvent",
+  // v1.42 — the person's life events, the timeline's anchors. Written by the
+  // person and held nowhere else.
+  "LifeEvent",
   "EcgRecording",
   "UserHealthProfile",
   "HealthProfileFactRevision",
@@ -274,6 +277,8 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   // ride inside their definition (`include: { events }` out, `events: {
   // create }` back), the way a medication's side effects do.
   "src/lib/export/symptoms-backup.ts",
+  // The person's life events, both ends beside each other (v1.42).
+  "src/lib/export/life-events-backup.ts",
   "src/lib/cycle/backup.ts",
   // The medication category is read through the one helper that normalises
   // it; the payload writer calls the helper rather than the delegate. The
@@ -297,6 +302,7 @@ export const BACKUP_RESTORE_FILES: readonly string[] = [
   "src/lib/export/onboarding-backup.ts",
   "src/lib/export/ecg-backup.ts",
   "src/lib/export/symptoms-backup.ts",
+  "src/lib/export/life-events-backup.ts",
   "src/lib/cycle/backup.ts",
   // The restore writes the medication category through the same helper.
   "src/lib/medication-category.ts",
@@ -344,6 +350,7 @@ export const TWO_ENDED_MODELS = [
   "IllnessSymptomLink",
   "SymptomDefinition",
   "SymptomEvent",
+  "LifeEvent",
   "UserHealthProfile",
   "HealthProfileFactRevision",
   "CycleProfile",

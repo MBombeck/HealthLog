@@ -64,6 +64,11 @@ export const SHARE_DOMAINS = [
    * toggle, which is a separate question from consent — a module the owner
    * enabled is not a section the owner shared, and a person granting health
    * background is granting the section whether or not the surfaces are on.
+   *
+   * v1.42 adds the person's life events (a move, a birth, a loss) on the same
+   * terms: they are background to the record rather than a reading, the consent
+   * copy names them in every locale, and the timeline module that shows them is
+   * again a separate question from consent.
    */
   "profile",
   /** Illness episodes and the day logs under them. */

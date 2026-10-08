@@ -44,6 +44,7 @@ type DomainDataClient = Pick<
   | "mentalHealthAssessment"
   | "nutrientIntakeDay"
   | "vaccinationRecord"
+  | "lifeEvent"
 >;
 
 type DomainProbe = (
@@ -197,6 +198,15 @@ const MODULE_DOMAIN_PROBES: Record<OwnedModuleKey, DomainProbe> = {
   vaccinations: (client, recordId) =>
     anyRow(
       client.vaccinationRecord.findFirst({
+        where: { userId: recordId, deletedAt: null },
+        select: { id: true },
+      }),
+    ),
+  // The timeline's own content is the life events; everything else on it
+  // belongs to other modules and says nothing about whether this one is used.
+  timeline: (client, recordId) =>
+    anyRow(
+      client.lifeEvent.findFirst({
         where: { userId: recordId, deletedAt: null },
         select: { id: true },
       }),

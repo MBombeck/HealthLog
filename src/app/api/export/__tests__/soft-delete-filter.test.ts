@@ -76,6 +76,7 @@ vi.mock("@/lib/db", () => ({
     extractedFact: { findMany: vi.fn() },
     ecgRecording: { findMany: vi.fn() },
     symptomDefinition: { findMany: vi.fn() },
+    lifeEvent: { findMany: vi.fn() },
     onboardingRecord: { findUnique: vi.fn().mockResolvedValue(null) },
     environmentTravelLocation: { findMany: vi.fn().mockResolvedValue([]) },
     environmentContext: { findMany: vi.fn().mockResolvedValue([]) },
@@ -214,6 +215,7 @@ beforeEach(() => {
   vi.mocked(prisma.extractedFact.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.ecgRecording.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.symptomDefinition.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.lifeEvent.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.userAchievement.findMany).mockResolvedValue([] as never);
 });
 
@@ -272,6 +274,12 @@ describe("v1.4.41 W-DELETED-2 — soft-delete invisibility", () => {
       }),
     );
     expect(prisma.inboundDocument.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1", deletedAt: null },
+      }),
+    );
+    // v1.42 — a deleted life event stays out of a portable file.
+    expect(prisma.lifeEvent.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { userId: "user-1", deletedAt: null },
       }),

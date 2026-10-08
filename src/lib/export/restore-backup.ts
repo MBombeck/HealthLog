@@ -114,6 +114,7 @@ import { restoreAwardsData } from "@/lib/export/awards-backup";
 import { restoreEnvironmentData } from "@/lib/export/environment-backup";
 import { restoreEcgData } from "@/lib/export/ecg-backup";
 import { restoreSymptomsData } from "@/lib/export/symptoms-backup";
+import { restoreLifeEventsData } from "@/lib/export/life-events-backup";
 import { restoredMedicationCreatedAt } from "@/lib/export/medication-created-at";
 import {
   encryptCategoryLabel,
@@ -196,6 +197,7 @@ export interface RestoreResponse {
     environmentTravelLocations: number;
     ecgRecordings: number;
     symptomDefinitions: number;
+    lifeEvents: number;
   };
 }
 
@@ -2277,6 +2279,16 @@ export async function restoreBackup(
           skips,
         );
 
+        // The person's life events (v1.42). They reference nothing but the
+        // account, so they have no ordering constraint and sit beside the
+        // other person-made rows. Both ends live in
+        // `src/lib/export/life-events-backup.ts`.
+        const lifeEventsCleared = await restoreLifeEventsData(
+          tx,
+          ownerId,
+          payload,
+        );
+
         reportSection("allergies");
         for (const allergy of payload.allergies) {
           await tx.allergy.create({
@@ -2665,6 +2677,7 @@ export async function restoreBackup(
             environmentCleared.environmentTravelLocations,
           ecgRecordings: ecgCleared.ecgRecordings,
           symptomDefinitions: symptomsCleared.symptomDefinitions,
+          lifeEvents: lifeEventsCleared.lifeEvents,
         };
         assertNoNewForeignReferences(
           foreignBefore,

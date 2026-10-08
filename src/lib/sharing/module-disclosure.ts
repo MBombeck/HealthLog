@@ -76,6 +76,9 @@ export const MODULE_SHARE_DOMAIN: Readonly<
   // An immunization history is health background, the section `/vaccinations`
   // is presented under.
   vaccinations: "profile",
+  // The timeline lays every section side by side. Its own content, the life
+  // events, sits in `profile`, but the surface reads across the record.
+  timeline: null,
 });
 
 /** Does a grant carrying these sections open this one? `null` is the whole record. */

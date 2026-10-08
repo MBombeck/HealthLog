@@ -46,7 +46,12 @@ export const SHARED_RECORD_DOMAIN_ROUTE_FAMILIES = {
  * Routes whose reads span multiple domains. A selected-domain grant never
  * opens these, even when it happens to name every currently known domain.
  */
-const WHOLE_RECORD_ROUTE_FAMILIES = ["/", "/achievements"] as const;
+const WHOLE_RECORD_ROUTE_FAMILIES = [
+  "/",
+  "/achievements",
+  // v1.42 — the timeline lays every section side by side.
+  "/timeline",
+] as const;
 
 interface RouteFamily {
   href: string;

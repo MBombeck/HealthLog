@@ -436,7 +436,8 @@
     "illness": "Illness",
     "documents": "Documents",
     "vaccinations": "Vaccinations",
-    "mentalWellbeing": "Mental wellbeing"
+    "mentalWellbeing": "Mental wellbeing",
+    "timeline": "Timeline"
   },
   "auth": {
     "login": "Sign in",
@@ -9608,6 +9609,10 @@
     "vaccinations": {
       "label": "Vaccinations",
       "description": "The vaccination record, structured: dose, series, next booster."
+    },
+    "timeline": {
+      "label": "Timeline",
+      "description": "Years at a glance: conditions, medications and visits beside your readings, plus your own life events."
     }
   },
   "moduleOff": {
@@ -11842,7 +11847,7 @@
       },
       "profile": {
         "label": "Health background",
-        "detail": "Allergies, family history, the facts in your health profile, your visits and practices, and your vaccination record."
+        "detail": "Allergies, family history, the facts in your health profile, your visits and practices, your vaccination record and your life events."
       },
       "illness": {
         "label": "Illness",
@@ -12154,6 +12159,139 @@
     "episode": {
       "title": "Symptoms logged",
       "filed": "logged with this illness"
+    }
+  },
+  "day": {
+    "title": "Day",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "close": "Close day",
+    "openDay": "Open day",
+    "viewWholeDay": "View the whole day",
+    "captureForDay": "Add for this day",
+    "empty": "There are no entries for this day.",
+    "notShared": "Some areas are not shared with you.",
+    "inTimeline": "In the timeline",
+    "askCoach": "Ask the Coach about this day",
+    "chartHint": "Click a point to open its day.",
+    "daysWithEntries": "Days with entries",
+    "loadFailed": "This day could not be loaded.",
+    "dayOf": "Day {n} of {m}",
+    "dayN": "Day {n}",
+    "since": "Since {date}",
+    "usualRange": "Usually {lo} to {hi}",
+    "groups": {
+      "running": "Running",
+      "values": "Values",
+      "happened": "Happened"
+    },
+    "sections": {
+      "values": "Values",
+      "sleep": "Sleep",
+      "mood": "Mood",
+      "assessments": "Check-ins",
+      "medications": "Medications",
+      "illness": "Illness",
+      "symptoms": "Symptoms",
+      "allergies": "Allergies",
+      "labs": "Labs",
+      "visits": "Doctor and procedures",
+      "vaccinations": "Vaccinations",
+      "checkups": "Check-ups",
+      "documents": "Documents",
+      "workouts": "Workouts",
+      "cycle": "Cycle",
+      "environment": "Environment",
+      "lifestyle": "Lifestyle",
+      "lifeEvents": "Life events"
+    },
+    "notable": {
+      "extremeHigh": "Highest daily value since {since}",
+      "extremeLow": "Lowest daily value since {since}",
+      "firstValue": "First reading of this kind",
+      "gap": "No reading for {days} days"
+    }
+  },
+  "timeline": {
+    "title": "Timeline",
+    "subtitle": "Years at a glance.",
+    "legend": "Shown side by side, not as cause and effect.",
+    "standing": "Ongoing",
+    "startMissing": "Start date missing",
+    "openDay": "Open {date}",
+    "zoom": {
+      "all": "All",
+      "year": "12 months",
+      "quarter": "3 months"
+    },
+    "lanes": {
+      "life": "Life",
+      "illness": "Conditions",
+      "allergies": "Allergies",
+      "medications": "Medications",
+      "vaccinations": "Vaccinations",
+      "visits": "Doctor and procedures",
+      "labs": "Labs",
+      "documents": "Documents",
+      "cycle": "Cycle"
+    },
+    "readiness": {
+      "title": "What your timeline already carries",
+      "subtitle": "An honest inventory before you open it.",
+      "menuEntry": "Data coverage",
+      "hint": "Empty lanes stay hidden until something is there. Modules you switched off never appear. You find this overview later under Data coverage in the timeline.",
+      "later": "Later",
+      "open": "Open timeline",
+      "verdict": {
+        "carries": "It carries already.",
+        "thin": "Still thin. For now the timeline shows mostly your values."
+      },
+      "status": {
+        "carries": "carries",
+        "thin": "thin",
+        "empty": "empty"
+      },
+      "lanes": {
+        "values": "Values",
+        "mood": "Mood",
+        "environment": "Environment"
+      }
+    }
+  },
+  "lifeEvents": {
+    "title": "Life event",
+    "add": "Life event",
+    "subtitle": "An anchor for the timeline, not a reading.",
+    "privacy": "Title and note are stored encrypted. They go to no AI.",
+    "empty": "No life events yet",
+    "emptyHint": "A move, a birth or a new job gives the years an anchor.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete life event",
+    "saved": "Life event saved",
+    "deleted": "Life event deleted",
+    "fields": {
+      "title": "What happened?",
+      "category": "Kind",
+      "when": "When",
+      "precision": "Precision",
+      "addEnd": "End date, if it was a period",
+      "endDate": "Until",
+      "note": "Note",
+      "optionalTag": "optional",
+      "notePlaceholder": "Something you want to know later"
+    },
+    "category": {
+      "FAMILY": "Family",
+      "HOME": "Home",
+      "WORK": "Work",
+      "LOSS": "Loss",
+      "OTHER": "Other"
+    },
+    "precision": {
+      "DAY": "Day",
+      "MONTH": "Month",
+      "YEAR": "Year"
     }
   }
 }

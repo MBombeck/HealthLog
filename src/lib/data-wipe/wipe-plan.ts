@@ -133,6 +133,8 @@ export const WIPE_MODELS = [
   "IllnessDayLog",
   // Before its definition and before the episode it may point at (SetNull).
   "SymptomEvent",
+  // v1.42 — the person's life events. Nothing points at them.
+  "LifeEvent",
   "EcgRecording",
   "NutrientIntakeDay",
 
