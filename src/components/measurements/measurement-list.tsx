@@ -66,6 +66,7 @@ import { useUrlFilterSync } from "@/hooks/use-url-filter-sync";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { formatDateOrRelative, formatDateTime } from "@/lib/format";
+import { DayLink, DayLinkAt } from "@/components/day/day-link";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { MEASUREMENT_SOURCE_LIST_LABEL_KEYS } from "@/lib/i18n/source-labels";
 import { CUMULATIVE_DAY_SUM_TYPES } from "@/lib/measurements/cumulative-day-sum";
@@ -1283,7 +1284,17 @@ export function MeasurementList({
                             phrase "when".
                           */}
                             <TableCell className="text-muted-foreground text-sm">
-                              {formatDateOrRelative(m.measuredAt, t)}
+                              {/* v1.42 — the date opens its day; the row
+                                keeps opening the reading. */}
+                              {m.dayKey !== undefined ? (
+                                <DayLink date={m.dayKey}>
+                                  {formatDateOrRelative(m.measuredAt, t)}
+                                </DayLink>
+                              ) : (
+                                <DayLinkAt at={m.measuredAt}>
+                                  {formatDateOrRelative(m.measuredAt, t)}
+                                </DayLinkAt>
+                              )}
                             </TableCell>
                             <TableCell className="text-sm">
                               {m.notes ? (
@@ -1497,9 +1508,15 @@ export function MeasurementList({
                               site. Relative under 24 h, absolute
                               older.
                             */}
-                              <span>
-                                {formatDateOrRelative(m.measuredAt, t)}
-                              </span>
+                              {m.dayKey !== undefined ? (
+                                <DayLink date={m.dayKey}>
+                                  {formatDateOrRelative(m.measuredAt, t)}
+                                </DayLink>
+                              ) : (
+                                <DayLinkAt at={m.measuredAt}>
+                                  {formatDateOrRelative(m.measuredAt, t)}
+                                </DayLinkAt>
+                              )}
                               {m.source !== "MANUAL" && (
                                 <Badge
                                   variant="outline"

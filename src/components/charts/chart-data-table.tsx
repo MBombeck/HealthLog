@@ -15,6 +15,8 @@ import {
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import type { ChartBucketType } from "@/lib/charts/bucket-time-series";
+import { chartPointDayKey } from "@/components/day/chart-day";
+import { DayLink } from "@/components/day/day-link";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 
 /**
@@ -77,6 +79,12 @@ export interface ChartDataTableProps {
   bucket: ChartBucketType;
   /** Metric name for the table caption. */
   metricLabel: string;
+  /**
+   * v1.42 — each date cell opens its day: the keyboard and screen-reader
+   * way to a day from a chart, which has no keyboard of its own. Daily rows
+   * only; a week or month row has no single day.
+   */
+  dayLinks?: boolean;
 }
 
 const BUCKET_CAPTION_KEY: Record<ChartBucketType, string> = {
@@ -93,12 +101,28 @@ export function ChartDataTable({
   formatDate,
   bucket,
   metricLabel,
+  dayLinks = false,
 }: ChartDataTableProps) {
   const { t } = useTranslations();
   const [open, setOpen] = useState(false);
   const regionId = useId();
 
   if (points.length === 0 || columns.length === 0) return null;
+
+  // The row's values, carried to the top of the day it opens.
+  const dayFocusOf = (point: ChartTablePoint) => {
+    const values = columns
+      .map((column) => point[column.key])
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+    return values.length > 0
+      ? {
+          label: metricLabel,
+          value: values.map(formatValue).join("/"),
+          unit,
+          types: columns.map((column) => column.key),
+        }
+      : undefined;
+  };
 
   // Newest first, matching the measurement list — the two places the app
   // prints the same readings must not disagree on reading order.
@@ -170,7 +194,16 @@ export function ChartDataTable({
                   scope="row"
                   className="text-foreground h-auto p-2 font-normal"
                 >
-                  {formatDate(new Date(point.timestamp))}
+                  {dayLinks && bucket === "day" ? (
+                    <DayLink
+                      date={chartPointDayKey(point.timestamp)}
+                      focus={dayFocusOf(point)}
+                    >
+                      {formatDate(new Date(point.timestamp))}
+                    </DayLink>
+                  ) : (
+                    formatDate(new Date(point.timestamp))
+                  )}
                 </TableHead>
                 {columns.map((column) => {
                   const value = point[column.key];

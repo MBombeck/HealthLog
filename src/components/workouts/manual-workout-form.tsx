@@ -1,5 +1,6 @@
 "use client";
 
+import { localDateTimeValue } from "@/components/day/prefill";
 import { useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
@@ -67,6 +68,19 @@ interface ManualWorkoutFormProps {
   edit?: ManualWorkoutEdit;
   /** Whether the fields differ from what the form opened with. */
   onDirtyChange?: (dirty: boolean) => void;
+  /**
+   * v1.42 — a past calendar day (`YYYY-MM-DD`) the form was opened from. The
+   * start is set on that day, because a blank start means "it just ended".
+   * Today leaves the start blank.
+   */
+  defaultDate?: string;
+}
+
+/** A past day's start for the draft: that day at the current clock time. */
+function pastDayStart(defaultDate: string | undefined): string {
+  if (!defaultDate) return "";
+  const value = localDateTimeValue(defaultDate);
+  return value.slice(0, 10) === localDateTimeValue().slice(0, 10) ? "" : value;
 }
 
 interface BatchResult {
@@ -120,6 +134,7 @@ export function ManualWorkoutForm({
   footerSlot,
   edit,
   onDirtyChange,
+  defaultDate,
 }: ManualWorkoutFormProps) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -135,7 +150,11 @@ export function ManualWorkoutForm({
     () => edit?.externalId ?? newManualWorkoutExternalId(),
   );
   const [initialDraft] = useState<ManualWorkoutDraft>(
-    () => edit?.original.draft ?? emptyManualWorkoutDraft(),
+    () =>
+      edit?.original.draft ?? {
+        ...emptyManualWorkoutDraft(),
+        start: pastDayStart(defaultDate),
+      },
   );
   const [draft, setDraft] = useState<ManualWorkoutDraft>(initialDraft);
   const dirty = (

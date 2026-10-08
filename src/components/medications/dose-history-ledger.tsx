@@ -39,6 +39,7 @@
  * the ledger uses the semantic feedback vocabulary on the row, not the card.
  */
 
+import { DayLink } from "@/components/day/day-link";
 import {
   useActiveRecordName,
   useRecordCapabilities,
@@ -481,7 +482,16 @@ export function DoseHistoryLedger({
                   the DEVICE zone and could shift the heading a day when
                   browser ≠ profile zone; the day-key label renders
                   UTC-pinned instead (zone-independent, weekday included). */}
-              {formatDateWithWeekdaySmart(group.dayKey, dateFormatPref, locale)}
+              {/* v1.42 — the day heading opens the whole day: did I take
+                  it, and how was that day otherwise. Rows keep their own
+                  actions. A planned future slot gets no link. */}
+              <DayLink date={group.dayKey}>
+                {formatDateWithWeekdaySmart(
+                  group.dayKey,
+                  dateFormatPref,
+                  locale,
+                )}
+              </DayLink>
             </h3>
             <ul className="border-border/60 divide-border/60 divide-y rounded-md border">
               {group.rows.map((row, i) => (

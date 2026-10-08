@@ -491,6 +491,7 @@ export function HealthKitMetricPage({
         valueOffset={resolvedOffset}
         onVisibleStats={onVisibleStats}
         showDataTable
+        dayLinks
       />
       {bothMeasures ? (
         <HealthChartDynamic
@@ -513,6 +514,7 @@ export function HealthKitMetricPage({
           // two charts writing the one stats slot would replace each other's
           // window on every render without end.
           showDataTable
+          dayLinks
         />
       ) : null}
       {targetSummarySlug ? (

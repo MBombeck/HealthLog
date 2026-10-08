@@ -1,5 +1,6 @@
 "use client";
 
+import { DayLinkAt } from "@/components/day/day-link";
 import Link from "next/link";
 import { HeartPulse, Loader2, Map as MapIcon } from "lucide-react";
 
@@ -98,13 +99,15 @@ export function WorkoutList({
           sportLabel === sportLabelKey ? workout.sportType : sportLabel;
 
         return (
-          <li key={workout.id}>
-            <Link
-              href={`/insights/workouts/${encodeURIComponent(workout.id)}`}
+          // v1.42 — the row opens the workout and its date opens the day:
+          // two targets, so the row is a stretched link (the sport name's
+          // link covers the row) and the date sits above it.
+          <li key={workout.id} className="relative">
+            <div
               data-slot="workout-list-row"
               className={cn(
                 "flex items-center gap-3 px-3 py-3 text-sm transition-colors",
-                "hover:bg-accent focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
+                "hover:bg-accent has-[a[data-slot=workout-list-link]:focus-visible]:ring-ring/50 has-[a[data-slot=workout-list-link]:focus-visible]:ring-2",
               )}
             >
               <span
@@ -115,7 +118,13 @@ export function WorkoutList({
               </span>
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="flex items-center gap-1.5 truncate font-medium">
-                  {sportName}
+                  <Link
+                    href={`/insights/workouts/${encodeURIComponent(workout.id)}`}
+                    data-slot="workout-list-link"
+                    className="truncate after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+                  >
+                    {sportName}
+                  </Link>
                   {/* #67 — discreet glyphs flag which sessions open rich
                       (map / HR curve). Muted so they never compete with
                       the sport name. */}
@@ -135,7 +144,9 @@ export function WorkoutList({
                   ) : null}
                 </span>
                 <span className="text-muted-foreground truncate text-xs">
-                  {formatDate(workout.startedAt, locale, timeFormat)}
+                  <DayLinkAt at={workout.startedAt} className="z-10">
+                    {formatDate(workout.startedAt, locale, timeFormat)}
+                  </DayLinkAt>
                 </span>
               </div>
               <div className="flex flex-col items-end gap-0.5 text-xs">
@@ -160,7 +171,7 @@ export function WorkoutList({
                   ) : null}
                 </span>
               </div>
-            </Link>
+            </div>
           </li>
         );
       })}

@@ -523,8 +523,9 @@ export interface CoachStep {
   /** `r1` when the step produced a table. */
   resultRef?: string;
   /**
-   * v1.42 (#613) — the calendar date a `get_day` call read, so the view can
-   * list the days an answer looked at without reading the prose.
+   * v1.42 — the calendar day (`YYYY-MM-DD`) a `get_day` step read. A settled
+   * answer lists the days its tools read as chips that open each day; the
+   * prose is never parsed for dates. Set only on `get_day` steps.
    */
   day?: string;
 }

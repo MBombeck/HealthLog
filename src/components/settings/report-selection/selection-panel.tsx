@@ -26,6 +26,7 @@
  * `undefined` and stick — and the per-user gate means a late re-resolve never
  * clobbers edits the user is in the middle of.
  */
+import { isCalendarDateKey } from "@/lib/tz/date-only";
 import Link from "next/link";
 import { useId, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -79,6 +80,21 @@ type ExportFormat = "pdf" | "fhir" | "package";
 const EXPORT_FORMATS: readonly ExportFormat[] = ["pdf", "fhir", "package"];
 const PRESET_RANGES = [30, 90, 180, 365] as const;
 
+/**
+ * The custom window a link into the panel asks for, when both ends are
+ * calendar dates in order. Anything else opens the panel as usual.
+ */
+export function readLinkedReportRange(): { from: string; to: string } | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  const from = params.get("reportFrom");
+  const to = params.get("reportTo");
+  if (!from || !to || !isCalendarDateKey(from) || !isCalendarDateKey(to)) {
+    return null;
+  }
+  return from <= to ? { from, to } : null;
+}
+
 /** A refusal already worded for the panel; shown as it is. */
 class ReportRequestError extends Error {}
 
@@ -97,9 +113,13 @@ export function HealthRecordExportPanel() {
     SAVED_PROFILE_FALLBACK.format,
   );
   const [days, setDays] = useState<number>(SAVED_PROFILE_FALLBACK.rangeDays);
-  const [customRange, setCustomRange] = useState(false);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  // v1.42 — `?reportFrom=&reportTo=` (the visit preparation's "Doctor
+  // report for this period") opens the panel on that custom window. Read
+  // once, on the first client render; the person can change it from there.
+  const [linkedRange] = useState(readLinkedReportRange);
+  const [customRange, setCustomRange] = useState(linkedRange !== null);
+  const [startDate, setStartDate] = useState(linkedRange?.from ?? "");
+  const [endDate, setEndDate] = useState(linkedRange?.to ?? "");
   const [practiceName, setPracticeName] = useState("");
   const [includeCharts, setIncludeCharts] = useState<boolean>(
     SAVED_PROFILE_FALLBACK.includeCharts,

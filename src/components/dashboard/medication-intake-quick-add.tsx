@@ -1,5 +1,6 @@
 "use client";
 
+import { localDateTimeValue } from "@/components/day/prefill";
 import { useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -102,19 +103,18 @@ interface MedicationIntakeQuickAddProps {
    * attribute on the portalled Save button.
    */
   footerSlot?: HTMLElement | null;
-}
-
-function getDefaultIntakeAtValue(): string {
-  const now = new Date();
-  const offset = now.getTimezoneOffset();
-  const local = new Date(now.getTime() - offset * 60 * 1000);
-  return local.toISOString().slice(0, 16);
+  /**
+   * v1.42 — a calendar day (`YYYY-MM-DD`) to start the date on, when the
+   * form is opened from that day. Defaults to now.
+   */
+  defaultDate?: string;
 }
 
 export function MedicationIntakeQuickAdd({
   onSuccess,
   onCancel,
   footerSlot,
+  defaultDate,
 }: MedicationIntakeQuickAddProps) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -178,7 +178,9 @@ export function MedicationIntakeQuickAdd({
   // and nothing extra is sent; an edit that differs from the configured
   // dose is persisted as the per-intake override.
   const [doseOverride, setDoseOverride] = useState<string | null>(null);
-  const [takenAt, setTakenAt] = useState<string>(getDefaultIntakeAtValue);
+  const [takenAt, setTakenAt] = useState<string>(() =>
+    localDateTimeValue(defaultDate),
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectionNow] = useState(() => new Date());

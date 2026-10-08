@@ -1,5 +1,6 @@
 "use client";
 
+import { CoachDayChips } from "@/components/day/coach-day-chips";
 import { memo } from "react";
 import Link from "next/link";
 import { Bot, Info, RotateCcw, Sparkles, User } from "lucide-react";
@@ -751,6 +752,11 @@ function ChatBubbleImpl({
             section="displayed"
           />
         )}
+        {/* v1.42 — the days the turn's tools read, each opening its day.
+            From the tool calls, never from the prose. */}
+        {!inProgress && !errorCode ? (
+          <CoachDayChips steps={steps ?? metricSource?.steps ?? []} />
+        ) : null}
         {/* v1.41 — what the answer assumed instead of asking, and what the
             Coach kept from this turn: one quiet line each. */}
         {settled && (metricSource?.assumptions?.length ?? 0) > 0 ? (
