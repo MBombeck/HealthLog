@@ -5,6 +5,7 @@ import {
   MEASUREMENT_TYPE_ICONS,
   MEASUREMENT_TYPE_COLORS,
   measurementUnitLabel,
+  measurementUnitMetaLead,
 } from "../measurement-list-meta";
 import enMessages from "../../../../messages/en.json";
 import deMessages from "../../../../messages/de.json";
@@ -59,5 +60,16 @@ describe("measurementUnitLabel", () => {
   it("drops the score and rating tokens", () => {
     expect(measurementUnitLabel("RECOVERY_SCORE", "score", t)).toBe("");
     expect(measurementUnitLabel("VISCERAL_FAT", "rating", t)).toBe("");
+  });
+});
+
+describe("measurementUnitMetaLead", () => {
+  const t = (key: string) => `t:${key}`;
+  it("leads the meta line with the unit and its separator", () => {
+    expect(measurementUnitMetaLead("WEIGHT", "kg", t)).toBe("kg · ");
+  });
+  it("leaves no bare separator for a score or a rating", () => {
+    expect(measurementUnitMetaLead("PHQ9_SCORE", "score", t)).toBeNull();
+    expect(measurementUnitMetaLead("VISCERAL_FAT", "rating", t)).toBeNull();
   });
 });

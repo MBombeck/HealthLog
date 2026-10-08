@@ -105,6 +105,7 @@ import {
   MEASUREMENT_TYPE_ICONS as TYPE_ICONS,
   MEASUREMENT_TYPE_COLORS as TYPE_COLORS,
   measurementUnitLabel,
+  measurementUnitMetaLead,
 } from "./measurement-list-meta";
 import {
   measurementListFiltersToSearch,
@@ -1537,19 +1538,22 @@ export function MeasurementList({
                                 one ("Atemzüge/min") beside the value pushed
                                 the row's controls; it leads the meta line
                                 instead. Sleep reads as a duration. */}
-                              {isSleep ? null : (
-                                <span
-                                  data-slot="measurement-row-unit"
-                                  className="whitespace-nowrap"
-                                >
-                                  {measurementUnitLabel(
-                                    m.type,
-                                    isGrouped ? m.unit : rowDisplay(m).unit,
-                                    t,
-                                  )}
-                                  {" · "}
-                                </span>
-                              )}
+                              {(() => {
+                                if (isSleep) return null;
+                                const lead = measurementUnitMetaLead(
+                                  m.type,
+                                  isGrouped ? m.unit : rowDisplay(m).unit,
+                                  t,
+                                );
+                                return lead ? (
+                                  <span
+                                    data-slot="measurement-row-unit"
+                                    className="whitespace-nowrap"
+                                  >
+                                    {lead}
+                                  </span>
+                                ) : null;
+                              })()}
                               {m.dayKey !== undefined ? (
                                 <DayLink
                                   date={m.dayKey}
