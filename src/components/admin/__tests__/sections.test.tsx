@@ -102,7 +102,7 @@ describe("admin sections — SSR smoke", () => {
 
   it("<UserManagementSection> renders with filter pills", () => {
     const html = render(<UserManagementSection />);
-    expect(html).toContain("User Management");
+    expect(html).toContain("Accounts");
     // Filter pills painted from i18n
     expect(html).toContain("All");
     expect(html).toContain("Admins");
@@ -110,7 +110,7 @@ describe("admin sections — SSR smoke", () => {
 
   it("<ApiTokenOverviewSection> renders", () => {
     const html = render(<ApiTokenOverviewSection />);
-    expect(html).toContain("API Tokens");
+    expect(html).toContain("API tokens");
   });
 
   it("<LoginOverviewSection> renders", () => {

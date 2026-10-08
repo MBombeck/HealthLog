@@ -5310,12 +5310,10 @@
     "sections": {
       "account": {
         "title": "계정",
-        "description": "프로필, 비밀번호, 패스키, 시작 설정 둘러보기.",
         "subtitle": "프로필과 신원, 로그인 정보예요."
       },
       "integrations": {
         "title": "연동",
-        "description": "연결된 서비스, 전송 채널, 소스 우선순위를 한곳에서.",
         "subtitle": "데이터 소스와 기기를 연결하고 관리해요.",
         "connectionsHeading": "연결",
         "channelsHeading": "전송 채널",
@@ -5324,7 +5322,6 @@
       },
       "notifications": {
         "title": "알림",
-        "description": "모든 알림을 한곳에서 — 무엇을 언제 알릴지, 어디로 보낼지.",
         "subtitle": "받을 알림과 전달될 곳을 골라요.",
         "remindersHeading": "알림",
         "matrixLink": "채널별 알림",
@@ -5332,7 +5329,6 @@
       },
       "layout": {
         "title": "화면 구성",
-        "description": "대시보드, 인사이트, 기록 모듈의 모습과 배치를 정해요.",
         "backToHub": "화면 구성으로 돌아가기",
         "dashboard": {
           "title": "대시보드",
@@ -5342,7 +5338,7 @@
           "title": "인사이트",
           "description": "개요 섹션과 내비게이션 칩 순서."
         },
-        "subtitle": "대시보드, 인사이트, 기록 모듈의 모습을 원하는 대로 바꿔요.",
+        "subtitle": "대시보드, 인사이트, 기록 모듈에 무엇을 어떤 순서로 보여줄지 정해요.",
         "medications": {
           "title": "복약",
           "description": "목록 보기와 수동 순서."
@@ -5373,12 +5369,10 @@
       },
       "thresholds": {
         "title": "목표",
-        "description": "지표별로 건강한 값의 목표 범위를 정해요.",
         "subtitle": "지표별 목표 범위를 직접 정해요."
       },
       "sources": {
         "title": "소스 우선순위",
-        "description": "같은 날 같은 지표를 여러 소스가 기록했을 때 어느 소스를 쓸지 골라요.",
         "integrationsHint": "데이터 소스 연결과 해제는 연동 페이지에서 해요.",
         "integrationsHintLink": "연동 열기",
         "cardTitle": "지표별 순위",
@@ -5460,26 +5454,23 @@
           "moduleHintLink": "모듈 관리",
           "detail": "읽기 전용 — 숫자는 원본 앱이 관리해요."
         },
-        "helpDetail": "나머지는 감사 기록용으로 그대로 보관해요."
+        "helpDetail": "나머지는 감사 기록용으로 그대로 보관해요. 연결했거나 데이터가 있는 소스만 보여요.",
+        "noneInUse": "아직 순위를 정할 소스가 없어요. 연동에서 연결하거나 값을 기록해 보세요."
       },
       "ai": {
         "title": "AI 제공자",
-        "description": "인사이트에 쓸 제공자, 모델, API 키 — 그리고 '나에 대해' 컨텍스트.",
         "subtitle": "AI 제공자를 고르고 직접 키를 등록해요."
       },
       "api": {
         "title": "API와 토큰",
-        "description": "내 스크립트와 앱에서 쓸 베어러 토큰 — 어디서든 측정값이나 약 복용을 기록해요.",
         "subtitle": "API 엔드포인트와 액세스 토큰을 관리해요."
       },
       "advanced": {
         "title": "고급",
-        "description": "마지막 출구: 모든 건강 기록을 영구히 지우거나 계정을 완전히 닫아요.",
         "subtitle": "데이터 초기화와 계정 삭제."
       },
       "export": {
         "title": "내보내기와 불러오기",
-        "description": "데이터를 CSV나 전체 JSON 백업으로 내려받고, Apple Health·JSON·CSV에서 불러와요. 진료용 리포트는 이제 건강 기록에 있어요.",
         "otherOptionsHeading": "다른 내보내기 옵션",
         "downloadFailed": "내보내기 파일을 내려받지 못했어요. 다시 시도해 주세요.",
         "actions": {
@@ -5724,12 +5715,10 @@
       },
       "about": {
         "title": "앱 정보",
-        "description": "버전, 라이선스, 링크.",
         "subtitle": "버전, 라이선스, 프로젝트 링크."
       },
       "sharing": {
         "title": "공유",
-        "description": "임상의와 건강 기록을 나눌 읽기 전용 링크를 만들어요.",
         "subtitle": "데이터를 읽기 전용으로 공유해요."
       },
       "insights": {
@@ -5764,12 +5753,10 @@
       },
       "gesundheitsakte": {
         "title": "건강 기록",
-        "description": "전체 건강 기록을 PDF, FHIR R4, 또는 하나로 묶은 ZIP으로 내보내요.",
         "subtitle": "임상의에게 바로 건넬 수 있는 완전한 건강 기록을 내보내요."
       },
       "coach": {
         "title": "코치",
-        "description": "코치 켜기, 말투와 범위, 저장된 기억.",
         "subtitle": "코치의 말투, 먼저 건네는 알림, 기억을 조정해요."
       },
       "security": {
@@ -5778,8 +5765,7 @@
       },
       "privacy": {
         "title": "데이터와 개인정보",
-        "subtitle": "데이터, 보관 기간, 암호화, 계정 보안을 한곳에서.",
-        "description": "내보내기, 삭제, 보관 기간, 암호화 상태, 세션, 보안 활동."
+        "subtitle": "데이터, 보관 기간, 암호화, 계정 보안을 한곳에서."
       },
       "mcp": {
         "title": "MCP 커넥터",
@@ -5787,8 +5773,7 @@
       },
       "anamnesis": {
         "title": "병력",
-        "subtitle": "병력, 생활 습관, 응급 정보와 AI가 읽을 수 있는 범위를 관리해요.",
-        "description": "구조화된 알레르기·가족력 기록."
+        "subtitle": "병력, 생활 습관, 응급 정보와 AI가 읽을 수 있는 범위를 관리해요."
       },
       "environment": {
         "title": "위치 및 날씨",
@@ -6542,30 +6527,32 @@
     "fitbitViewData": "수면 보기",
     "googleHealthViewData": "걸음 수 보기",
     "apiTokens": "API 토큰",
-    "apiTokensDescription": "외부에서 복용을 기록할 때 쓰는 API 토큰을 확인하고 폐기해요.",
+    "apiTokensDescription": "측정값, 운동, 문서, 복용 기록용 토큰을 확인하고 폐기해요.",
     "measurementsToken": {
       "title": "측정 토큰",
       "description": "체중계나 시계, 홈 오토메이션이 측정값을 기록할 수 있도록 토큰을 만들어요.",
       "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 기록에 새 측정값을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값은 외부 기기에서 온 것으로 표시되니 나중에 구분할 수 있고, 언제든 고칠 수 있어요.",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요."
+      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
+      "namePlaceholder": "이름 (예: Home Assistant)"
     },
     "workoutsToken": {
       "title": "운동 토큰",
       "description": "시계 연동 브리지나 동기화 스크립트가 운동 기록을 추가할 수 있도록 토큰을 만들어요.",
       "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 기록에 새 운동을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 이 토큰으로 추가된 운동은 외부 기기에서 온 것으로 표시되고, 휴대폰이 같은 운동을 기록했다면 휴대폰의 기록이 보여요.",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요."
+      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
+      "namePlaceholder": "이름 (예: Garmin)"
     },
     "documentsToken": {
       "title": "문서 토큰",
       "description": "Paperless-ngx, Papra 또는 가져오기 스크립트가 문서함에 문서를 추가할 수 있도록 토큰을 만들어요.",
       "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 문서함에 새 문서를 추가하는 것만 할 수 있어요. 목록을 보거나, 열거나, 내려받거나, 고치거나 지울 수 없고, 다른 토큰을 만들 수도 없어요. 파일이 저장됐는지만 알 수 있고, 어떻게 정리했는지는 알 수 없어요.",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요."
+      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
+      "namePlaceholder": "이름 (예: Paperless-ngx)"
     },
-    "tokenMintMovedDescription": "토큰은 쓰이는 곳에서 발급돼요. 측정값과 문서는 위에서, 특정 약은 그 약의 API 엔드포인트에서 만들 수 있어요.",
-    "tokenNamePlaceholder": "토큰 이름 (예: iPhone 단축어)",
+    "tokenMintMovedDescription": "토큰은 쓰이는 곳에서 발급돼요. 측정값, 운동, 문서는 위에서, 특정 약은 그 약의 API 엔드포인트에서 만들 수 있어요.",
     "tokenCreated": "토큰을 만들었어요 — 지금 복사하세요! 다시 보여주지 않아요.",
     "tokenCopy": "토큰 복사",
     "tokenCopied": "토큰을 클립보드에 복사했어요",
@@ -6757,7 +6744,8 @@
       "statusNeedsReselect": "내용 다시 선택",
       "reselectReason": "이 링크는 선택한 적 없는 범위를 제공하고 있어서 닫았어요. 새로 만들고 담을 내용을 골라 주세요.",
       "reselectAction": "새 링크 만들기",
-      "createDetail": "토큰은 만들 때 한 번만 보여줘요 — 그때 저장해 두세요. 복구할 수 없어요."
+      "createDetail": "토큰은 만들 때 한 번만 보여줘요 — 그때 저장해 두세요. 복구할 수 없어요.",
+      "activeDescription": "공유한 링크와 만료 시점, 열람 횟수를 보여줘요."
     },
     "genderOther": "기타",
     "nightscout": "Nightscout",
@@ -6983,12 +6971,11 @@
       },
       "stored": {
         "title": "저장되는 항목",
-        "measurements": "측정값 (체중, 혈압, 맥박, 혈당, 수면, 체성분)",
-        "medications": "약과 복용 기록",
-        "moodLabs": "기분 기록과 검사 결과",
-        "coach": "코치 대화",
+        "measurements": "측정값: 체중, 혈압, 맥박과 직접 또는 기기로 기록한 모든 값",
         "integrations": "연동 토큰 (암호화됨)",
-        "security": "계정·보안 활동 (세션, 로그인 기록)"
+        "security": "계정·보안 활동 (세션, 로그인 기록)",
+        "profile": "프로필, 병력, 건강 기록 정보",
+        "modules": "모듈별 기록: {list}"
       },
       "retention": {
         "title": "보관 기간",
@@ -7019,8 +7006,6 @@
     "mcp": {
       "enableTitle": "원격 MCP 엔드포인트",
       "enableDescription": "MCP를 지원하는 어시스턴트(Claude.ai, ChatGPT)가 범위가 제한된 토큰으로 건강 데이터를 읽게 해요.",
-      "enabled": "켜짐",
-      "disabled": "꺼짐",
       "enableToggleLabel": "MCP 엔드포인트 켜기",
       "endpointLabel": "커넥터 URL",
       "connectDescription": "어시스턴트의 커스텀 커넥터 설정에 이 URL을 붙여 넣고, 아래 토큰으로 인증하거나 안내가 나오면 로그인하세요.",
@@ -7039,7 +7024,8 @@
       "connectionRevokeDescription": "어시스턴트의 접근을 즉시 끊고 갱신도 막아요. 다시 연결하려면 승인을 새로 받아야 해요.",
       "connectionRevokeFailed": "어시스턴트 연결을 해제하지 못했어요.",
       "connectionsDetail": "연결을 해지하면 갱신 권한까지 포함해 접근이 즉시 끊겨요.",
-      "tokensDetail": "토큰은 한 번만 보여줘요."
+      "tokensDetail": "토큰은 한 번만 보여줘요.",
+      "tokenNamePlaceholder": "이름 (예: Claude Desktop)"
     },
     "strava": "Strava",
     "stravaDescription": "Strava 계정을 연결해 활동을 운동 기록으로 동기화해요.",
@@ -7169,7 +7155,12 @@
       "signInAgain": "다시 로그인한 후 한 번 더 시도하세요. 이 계정에는 여기서 확인할 비밀번호나 패스키가 없습니다.",
       "failed": "확인하지 못했습니다. 입력한 내용을 확인하고 다시 시도하세요."
     },
-    "passwordTitle": "비밀번호"
+    "passwordTitle": "비밀번호",
+    "tokenNameLabel": "토큰 이름",
+    "displayCard": {
+      "title": "표시",
+      "description": "언어, 단위, 형식은 바꾸는 즉시 저장돼요."
+    }
   },
   "admin": {
     "title": "관리자",
@@ -7353,8 +7344,8 @@
       "coachFollowsSwitch": "코치 섹션의 코치 스위치를 따라요."
     },
     "invites": {
-      "title": "초대",
-      "description": "가입 초대 링크 — 회원가입이 닫혀 있어도 동작해요.",
+      "title": "초대 링크",
+      "description": "링크마다 회원가입이 닫혀 있어도 가입할 수 있어요.",
       "create": "초대 만들기",
       "createTitle": "초대 만들기",
       "createDescription": "회원가입이 닫혀 있어도 이 링크로는 가입할 수 있어요.",
@@ -7400,8 +7391,8 @@
       "revokedToast": "초대를 취소했어요.",
       "revokeError": "초대를 취소하지 못했어요."
     },
-    "userManagement": "사용자 관리",
-    "userManagementDescription": "계정 관리: 역할, 비밀번호 재설정, 강제 로그아웃.",
+    "userManagement": "계정",
+    "userManagementDescription": "계정마다 역할, 비밀번호 재설정, 강제 로그아웃을 관리해요.",
     "userName": "이름",
     "userEmail": "이메일",
     "userRole": "역할",
@@ -7857,7 +7848,12 @@
         "backupsNone": "아직 필요한 키를 기록한 백업이 없습니다.",
         "backupsStillNeed": "모든 행이 회전되었지만 백업에 아직 {keys}가 필요합니다",
         "backupsUnrecordedBadge": "모든 행이 회전되었지만 이전 백업에는 아직 폐기한 키가 필요할 수 있습니다",
-        "backupsDetail": "회전은 모든 행을 다시 암호화하지만, 백업은 내용이 기록된 키를 그대로 유지하며 복원에는 그 키가 필요합니다. 아래에 더 이상 표시되지 않을 때까지 폐기한 키를 ENCRYPTION_KEYS에 유지하세요."
+        "backupsDetail": "회전은 모든 행을 다시 암호화하지만, 백업은 내용이 기록된 키를 그대로 유지하며 복원에는 그 키가 필요합니다. 아래에 더 이상 표시되지 않을 때까지 폐기한 키를 ENCRYPTION_KEYS에 유지하세요.",
+        "columnsShow": "표 보기 (행 있음 {count}개)",
+        "columnsHide": "표 숨기기",
+        "columnsShowAll": "열 {count}개 모두 보기",
+        "columnsShowWithRows": "행이 있는 열만",
+        "columnsNoneWithRows": "아직 행이 있는 암호화 열이 없어요."
       },
       "maintenance": {
         "title": "측정값 테이블 유지 관리",

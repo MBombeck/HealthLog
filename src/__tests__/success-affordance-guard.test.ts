@@ -379,7 +379,7 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 2,
   },
   "src/components/settings/mcp-section.tsx": {
-    "text-success": 5,
+    "text-success": 4,
     "toast.success": 2,
   },
   "src/components/settings/modules-section.tsx": { "toast.success": 1 },

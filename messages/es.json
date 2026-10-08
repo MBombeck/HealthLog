@@ -5310,12 +5310,10 @@
     "sections": {
       "account": {
         "title": "Cuenta",
-        "description": "Perfil, contraseña, claves de acceso y tu recorrido de incorporación.",
         "subtitle": "Tu perfil, identidad y datos de acceso."
       },
       "integrations": {
         "title": "Integraciones",
-        "description": "Servicios conectados, canales de entrega y prioridad de fuentes en un solo lugar.",
         "subtitle": "Conecta y gestiona tus fuentes de datos y dispositivos.",
         "connectionsHeading": "Conexiones",
         "channelsHeading": "Canales de entrega",
@@ -5324,16 +5322,14 @@
       },
       "notifications": {
         "title": "Notificaciones",
-        "description": "Todos los recordatorios en un solo lugar: qué se recuerda y cuándo, y dónde se entrega.",
         "subtitle": "Elige qué recordatorios recibes y dónde se entregan.",
         "remindersHeading": "Recordatorios",
         "matrixLink": "Notificaciones por canal",
         "channelsLink": "Canales de entrega"
       },
       "layout": {
-        "title": "Apariencia",
-        "description": "Elige cómo se ven y se organizan el panel, los análisis y tus módulos de seguimiento.",
-        "backToHub": "Volver a Apariencia",
+        "title": "Diseño",
+        "backToHub": "Volver a Diseño",
         "dashboard": {
           "title": "Panel",
           "description": "Diseño y orden de los mosaicos."
@@ -5342,7 +5338,7 @@
           "title": "Análisis",
           "description": "Orden de la vista general y de las pestañas de navegación."
         },
-        "subtitle": "Personaliza cómo se ven tu panel, los análisis y los módulos de seguimiento.",
+        "subtitle": "Elige qué muestran tu panel, los análisis y los módulos de seguimiento, y en qué orden.",
         "medications": {
           "title": "Medicamentos",
           "description": "Vista de lista y orden manual."
@@ -5373,12 +5369,10 @@
       },
       "thresholds": {
         "title": "Objetivos",
-        "description": "Por métrica: tu propio rango objetivo de valores saludables.",
         "subtitle": "Define tus rangos objetivo personales por métrica."
       },
       "sources": {
         "title": "Prioridad de fuentes",
-        "description": "Elige qué fuente prevalece cuando varias registran la misma métrica el mismo día.",
         "integrationsHint": "Conecta o desconecta fuentes de datos en la página de integraciones.",
         "integrationsHintLink": "Abrir integraciones",
         "cardTitle": "Orden por métrica",
@@ -5460,26 +5454,23 @@
           "moduleHintLink": "Gestionar módulos",
           "detail": "Solo lectura: la app de origen es la dueña de los valores."
         },
-        "helpDetail": "Las demás se conservan para la traza de auditoría."
+        "helpDetail": "Las demás se conservan para la traza de auditoría. Solo aparecen las fuentes que has conectado o de las que hay datos.",
+        "noneInUse": "Aún no hay fuentes que ordenar. Conecta una en Integraciones o registra un valor."
       },
       "ai": {
         "title": "Proveedor de IA",
-        "description": "Proveedor, modelo y clave API para los análisis, además de tu contexto «sobre mí».",
         "subtitle": "Elige tu proveedor de IA y usa tu propia clave."
       },
       "api": {
-        "title": "API & Tokens",
-        "description": "Tokens Bearer para tus propios scripts y apps — registra mediciones o tomas de medicación desde cualquier lugar.",
+        "title": "API y tokens",
         "subtitle": "Gestiona los endpoints de la API y los tokens de acceso."
       },
       "advanced": {
         "title": "Avanzado",
-        "description": "La salida: borra todos los registros de salud para siempre o cierra la cuenta.",
         "subtitle": "Restablecer datos y eliminar cuenta."
       },
       "export": {
         "title": "Exportar e importar",
-        "description": "Descarga tus datos como CSV o una copia de seguridad JSON completa, o importa desde Apple Health, JSON o CSV. El informe médico ahora está en Historia de salud.",
         "otherOptionsHeading": "Otras opciones de exportación",
         "downloadFailed": "No se pudo descargar la exportación. Inténtalo de nuevo.",
         "actions": {
@@ -5724,12 +5715,10 @@
       },
       "about": {
         "title": "Acerca de esta app",
-        "description": "Versión, licencia, enlaces.",
         "subtitle": "Versión, licencia y enlaces del proyecto."
       },
       "sharing": {
         "title": "Compartir",
-        "description": "Crea un enlace de solo lectura para compartir tu historial de salud con un profesional médico.",
         "subtitle": "Comparte acceso de solo lectura a tus datos."
       },
       "insights": {
@@ -5764,12 +5753,10 @@
       },
       "gesundheitsakte": {
         "title": "Historial médico",
-        "description": "Exporta tu historial médico completo como PDF, FHIR R4 o un paquete ZIP combinado.",
         "subtitle": "Exporta un historial de salud completo, listo para el médico."
       },
       "coach": {
         "title": "Coach",
-        "description": "Activa el Coach, tono y alcance, recuerdos guardados.",
         "subtitle": "Ajusta el Coach, sus avisos proactivos y su memoria."
       },
       "security": {
@@ -5778,8 +5765,7 @@
       },
       "privacy": {
         "title": "Datos y privacidad",
-        "subtitle": "Tus datos, su retención, el cifrado y la seguridad de la cuenta en un solo lugar.",
-        "description": "Exportación, eliminación, retención, estado de cifrado, sesiones y actividad de seguridad."
+        "subtitle": "Tus datos, su retención, el cifrado y la seguridad de la cuenta en un solo lugar."
       },
       "mcp": {
         "title": "Conector MCP",
@@ -5787,8 +5773,7 @@
       },
       "anamnesis": {
         "title": "Antecedentes médicos",
-        "subtitle": "Tus antecedentes, tu estilo de vida, tus datos de emergencia y lo que la IA puede leer.",
-        "description": "Registros estructurados de alergias y antecedentes familiares."
+        "subtitle": "Tus antecedentes, tu estilo de vida, tus datos de emergencia y lo que la IA puede leer."
       },
       "environment": {
         "title": "Ubicación y clima",
@@ -6542,30 +6527,32 @@
     "fitbitViewData": "Ver tu sueño",
     "googleHealthViewData": "Ver tus pasos",
     "apiTokens": "Tokens de API",
-    "apiTokensDescription": "Revisa y revoca tokens de API para el registro externo de tomas de medicación.",
+    "apiTokensDescription": "Revisa y revoca los tokens de mediciones, entrenamientos, documentos y tomas de medicación.",
     "measurementsToken": {
       "title": "Tokens de mediciones",
       "description": "Crea un token para que una báscula, un reloj o tu domótica añadan mediciones.",
       "detail": "El token se muestra una sola vez.",
       "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial: no puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Las mediciones se marcan como procedentes de un dispositivo externo, así las distingues más tarde, y puedes corregirlas igualmente.",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
+      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
+      "namePlaceholder": "Nombre, p. ej. Home Assistant"
     },
     "workoutsToken": {
       "title": "Tokens de entrenamientos",
       "description": "Crea un token para que un puente de tu reloj o un script de sincronización añadan tus entrenamientos.",
       "detail": "El token se muestra una sola vez.",
       "scopeNote": "Solo puede añadir entrenamientos nuevos a tu propio historial. No puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Los entrenamientos que añade se marcan como procedentes de un dispositivo externo, y si tu teléfono registró la misma sesión, ves la copia del teléfono.",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
+      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
+      "namePlaceholder": "Nombre, p. ej. Garmin"
     },
     "documentsToken": {
       "title": "Tokens de documentos",
       "description": "Crea un token para que Paperless-ngx, Papra o el script de importación añadan documentos a tu archivo.",
       "detail": "El token se muestra una sola vez.",
       "scopeNote": "Solo puede añadir documentos nuevos a tu propio archivo. No puede listar, abrir, descargar, modificar ni borrar nada, ni crear otro token. Lo único que recibe es si un archivo se guardó, no cómo lo archivaste.",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo."
+      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
+      "namePlaceholder": "Nombre, p. ej. Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Los tokens se emiten donde se aplican: arriba para las mediciones y los documentos, o en el endpoint de API de un medicamento para ese medicamento concreto.",
-    "tokenNamePlaceholder": "Nombre del token (p. ej., Atajo de iPhone)",
+    "tokenMintMovedDescription": "Los tokens se emiten donde se aplican: arriba para las mediciones, los entrenamientos y los documentos, o en el endpoint de API de un medicamento para ese medicamento concreto.",
     "tokenCreated": "Token creado — ¡cópialo ahora! No se mostrará de nuevo.",
     "tokenCopy": "Copiar token",
     "tokenCopied": "Token copiado al portapapeles",
@@ -6757,7 +6744,8 @@
       "statusNeedsReselect": "Elegir contenido de nuevo",
       "reselectReason": "Este enlace mostraba un alcance que nadie eligió, por eso se cerró. Crea uno nuevo y elige su contenido.",
       "reselectAction": "Crear un reemplazo",
-      "createDetail": "El token se muestra una sola vez al crearlo — guárdalo entonces; no se puede recuperar."
+      "createDetail": "El token se muestra una sola vez al crearlo — guárdalo entonces; no se puede recuperar.",
+      "activeDescription": "Los enlaces que has compartido, cuándo caducan y cuántas veces se abrieron."
     },
     "genderOther": "Otro",
     "nightscout": "Nightscout",
@@ -6983,12 +6971,11 @@
       },
       "stored": {
         "title": "Qué se almacena",
-        "measurements": "Mediciones (peso, presión arterial, pulso, glucosa, sueño, composición corporal)",
-        "medications": "Medicamentos e historial de tomas",
-        "moodLabs": "Entradas de estado de ánimo y resultados de laboratorio",
-        "coach": "Conversaciones con el asistente",
+        "measurements": "Mediciones: peso, presión arterial, pulso y cualquier otro valor que registres tú o un dispositivo",
         "integrations": "Tokens de integración (cifrados)",
-        "security": "Actividad de la cuenta y de seguridad (sesiones, registro de inicio de sesión)"
+        "security": "Actividad de la cuenta y de seguridad (sesiones, registro de inicio de sesión)",
+        "profile": "Tu perfil, tus antecedentes médicos y los datos del historial de salud",
+        "modules": "Registros de cada módulo: {list}"
       },
       "retention": {
         "title": "Retención",
@@ -7019,8 +7006,6 @@
     "mcp": {
       "enableTitle": "Endpoint MCP remoto",
       "enableDescription": "Permite que un asistente compatible con MCP (Claude.ai, ChatGPT) lea tus datos de salud mediante un token limitado.",
-      "enabled": "Activado",
-      "disabled": "Desactivado",
       "enableToggleLabel": "Activar el endpoint MCP",
       "endpointLabel": "URL del conector",
       "connectDescription": "Pega esta URL en la configuración del conector personalizado de tu asistente y autoriza con el token de abajo o inicia sesión cuando se te solicite.",
@@ -7039,7 +7024,8 @@
       "connectionRevokeDescription": "Esto finaliza el acceso del asistente de inmediato e impide su renovación. Será necesario autorizarlo de nuevo para volver a conectarlo.",
       "connectionRevokeFailed": "No se pudo desconectar el asistente.",
       "tokensDetail": "El token se muestra una sola vez.",
-      "connectionsDetail": "Revocar una conexión finaliza su acceso de inmediato, incluida su capacidad de renovación."
+      "connectionsDetail": "Revocar una conexión finaliza su acceso de inmediato, incluida su capacidad de renovación.",
+      "tokenNamePlaceholder": "Nombre, p. ej. Claude Desktop"
     },
     "strava": "Strava",
     "stravaDescription": "Conecta tu cuenta de Strava para sincronizar tus actividades con tu historial de entrenamientos.",
@@ -7169,7 +7155,12 @@
       "signInAgain": "Vuelve a iniciar sesión y inténtalo de nuevo. Tu cuenta no tiene contraseña ni llave de acceso que confirmar aquí.",
       "failed": "No ha funcionado. Revisa lo que has introducido e inténtalo de nuevo."
     },
-    "passwordTitle": "Contraseña"
+    "passwordTitle": "Contraseña",
+    "tokenNameLabel": "Nombre del token",
+    "displayCard": {
+      "title": "Visualización",
+      "description": "Idioma, unidades y formatos; se guardan en cuanto los cambias."
+    }
   },
   "admin": {
     "title": "Administration",
@@ -7377,8 +7368,8 @@
       "coachFollowsSwitch": "Sigue el interruptor del Coach en la sección Coach."
     },
     "invites": {
-      "title": "Invitaciones",
-      "description": "Enlaces de invitación para el registro: funcionan incluso con el registro cerrado.",
+      "title": "Enlaces de invitación",
+      "description": "Cada enlace permite un registro aunque el registro esté cerrado.",
       "create": "Crear invitación",
       "createTitle": "Crear invitación",
       "createDescription": "El enlace permite registrarse incluso con el registro cerrado.",
@@ -7424,8 +7415,8 @@
       "revokedToast": "Invitación revocada.",
       "revokeError": "No se pudo revocar la invitación."
     },
-    "userManagement": "Gestión de usuarios",
-    "userManagementDescription": "Gestiona las cuentas: roles, restablecimientos de contraseña y cierres de sesión forzados.",
+    "userManagement": "Cuentas",
+    "userManagementDescription": "Roles, restablecimientos de contraseña y cierres de sesión forzados de cada cuenta.",
     "userName": "Nombre",
     "userEmail": "Correo electrónico",
     "userRole": "Rol",
@@ -7881,7 +7872,12 @@
         "backupsNone": "Ninguna copia ha registrado todavía las claves que necesita.",
         "backupsStillNeed": "Todas las filas están rotadas, pero las copias aún necesitan {keys}",
         "backupsUnrecordedBadge": "Todas las filas están rotadas, pero copias antiguas pueden necesitar aún una clave retirada",
-        "backupsDetail": "La rotación vuelve a cifrar cada fila, pero una copia conserva la clave con la que se escribió su contenido, y restaurarla necesita esa clave. Mantén una clave retirada en ENCRYPTION_KEYS hasta que no aparezca abajo."
+        "backupsDetail": "La rotación vuelve a cifrar cada fila, pero una copia conserva la clave con la que se escribió su contenido, y restaurarla necesita esa clave. Mantén una clave retirada en ENCRYPTION_KEYS hasta que no aparezca abajo.",
+        "columnsShow": "Mostrar la tabla ({count} con filas)",
+        "columnsHide": "Ocultar la tabla",
+        "columnsShowAll": "Mostrar las {count} columnas",
+        "columnsShowWithRows": "Solo columnas con filas",
+        "columnsNoneWithRows": "Ninguna columna cifrada contiene filas todavía."
       },
       "maintenance": {
         "title": "Mantenimiento de la tabla de mediciones",

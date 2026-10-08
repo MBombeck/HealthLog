@@ -149,38 +149,42 @@ test.describe("Settings mobile consistency (Pixel 5)", () => {
     }
   });
 
-  test("/settings/account: Sprache select shares one grid row with date-of-birth", async ({
+  test("/settings/account: the language select sits in the display card, outside the profile form", async ({
     page,
   }) => {
     await page.goto("/settings/account", { waitUntil: "networkidle" });
-    // Gate on the two elements this test is about, not on the network. An idle
-    // network says nothing about whether React has rendered the profile form,
-    // and the single `evaluate` below does not retry — so without this the
-    // test reads an empty document and reports "language + dob fields must
-    // exist", which sounds like a missing feature and is really a race.
+    // Gate on the elements this test is about, not on the network: the
+    // single `evaluate` below does not retry.
     await expect(page.locator("#language-select")).toBeAttached();
     await expect(page.locator("#dob")).toBeAttached();
 
-    // The v1.4.27 R1 settings audit pairs date-of-birth with language
-    // in a single `grid sm:grid-cols-2` row so the profile form keeps
-    // a uniform two-column rhythm and the language field no longer
-    // sits alone at the bottom with a `sm:max-w-xs` clamp.
-    const sharedGrid = await page.evaluate(() => {
+    // The language, unit and format selects save the moment they change, so
+    // they live in their own card with no save button. Inside the profile
+    // form they read as covered by its Save. Each card keeps a two-column
+    // grid: the language shares one with the units, the date of birth one
+    // with the timezone.
+    const layout = await page.evaluate(() => {
       const lang = document.getElementById("language-select");
       const dob = document.getElementById("dob");
-      if (!lang || !dob) return { found: false, sharedGrid: false };
-      const langGrid = lang.closest('[class*="grid"]');
-      const dobGrid = dob.closest('[class*="grid"]');
+      if (!lang || !dob) return null;
+      const displayCard = document.querySelector(
+        '[data-testid="settings-display-card"]',
+      );
       return {
-        found: true,
-        sharedGrid: langGrid !== null && langGrid === dobGrid,
+        langInDisplayCard: !!displayCard && displayCard.contains(lang),
+        langInForm: lang.closest("form") !== null,
+        dobInForm: dob.closest("form") !== null,
+        langHasGrid: lang.closest('[class*="grid"]') !== null,
+        dobHasGrid: dob.closest('[class*="grid"]') !== null,
       };
     });
 
-    expect(sharedGrid.found, "language + dob fields must exist").toBe(true);
-    expect(sharedGrid.sharedGrid, "language + dob must share a grid").toBe(
-      true,
-    );
+    expect(layout, "language + dob fields must exist").not.toBeNull();
+    expect(layout!.langInDisplayCard).toBe(true);
+    expect(layout!.langInForm).toBe(false);
+    expect(layout!.dobInForm).toBe(true);
+    expect(layout!.langHasGrid).toBe(true);
+    expect(layout!.dobHasGrid).toBe(true);
   });
 
   test("/: Compare-to trigger renders at 44 px", async ({ page }) => {

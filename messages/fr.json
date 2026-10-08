@@ -5310,12 +5310,10 @@
     "sections": {
       "account": {
         "title": "Compte",
-        "description": "Profil, mot de passe, clés d’accès et votre visite guidée.",
         "subtitle": "Votre profil, votre identité et vos identifiants."
       },
       "integrations": {
         "title": "Intégrations",
-        "description": "Services connectés, canaux de diffusion et priorité des sources au même endroit.",
         "subtitle": "Connectez et gérez vos sources de données et appareils.",
         "connectionsHeading": "Connexions",
         "channelsHeading": "Canaux de diffusion",
@@ -5324,16 +5322,14 @@
       },
       "notifications": {
         "title": "Notifications",
-        "description": "Tous les rappels au même endroit — quoi et quand, et où c'est envoyé.",
         "subtitle": "Choisissez les rappels que vous recevez et où ils sont envoyés.",
         "remindersHeading": "Rappels",
         "matrixLink": "Notifications par canal",
         "channelsLink": "Canaux de diffusion"
       },
       "layout": {
-        "title": "Apparence",
-        "description": "Choisissez l'apparence et l'agencement du tableau de bord, des analyses et de vos modules de suivi.",
-        "backToHub": "Retour à Apparence",
+        "title": "Disposition",
+        "backToHub": "Retour à Disposition",
         "dashboard": {
           "title": "Tableau de bord",
           "description": "Disposition et ordre des tuiles."
@@ -5342,7 +5338,7 @@
           "title": "Analyses",
           "description": "Ordre de la vue d'ensemble et des onglets de navigation."
         },
-        "subtitle": "Personnalisez l'apparence du tableau de bord, des analyses et des modules de suivi.",
+        "subtitle": "Choisissez ce qu'affichent le tableau de bord, les analyses et les modules de suivi, et dans quel ordre.",
         "medications": {
           "title": "Médicaments",
           "description": "Vue en liste et ordre manuel."
@@ -5373,12 +5369,10 @@
       },
       "thresholds": {
         "title": "Objectifs",
-        "description": "Par métrique : votre propre plage cible pour des valeurs saines.",
         "subtitle": "Définissez vos plages cibles personnelles par mesure."
       },
       "sources": {
         "title": "Priorité des sources",
-        "description": "Choisissez quelle source prévaut quand plusieurs enregistrent la même métrique le même jour.",
         "integrationsHint": "Connectez ou déconnectez des sources de données sur la page Intégrations.",
         "integrationsHintLink": "Ouvrir les intégrations",
         "cardTitle": "Classement par métrique",
@@ -5460,26 +5454,23 @@
           "moduleHintLink": "Gérer les modules",
           "detail": "Lecture seule : l'app source reste propriétaire des valeurs."
         },
-        "helpDetail": "Les autres restent enregistrées pour la piste d’audit."
+        "helpDetail": "Les autres restent enregistrées pour la piste d’audit. Seules les sources connectées ou ayant fourni des données sont listées.",
+        "noneInUse": "Aucune source à classer pour l'instant. Connectez-en une dans Intégrations ou saisissez une valeur."
       },
       "ai": {
         "title": "Fournisseur d'IA",
-        "description": "Fournisseur, modèle et clé API pour les analyses, ainsi que votre contexte « à propos de moi ».",
         "subtitle": "Choisissez votre fournisseur d'IA et utilisez votre propre clé."
       },
       "api": {
-        "title": "API & Tokens",
-        "description": "Jetons Bearer pour vos propres scripts et applis — enregistrez des mesures ou des prises de médicaments depuis n’importe où.",
+        "title": "API et jetons",
         "subtitle": "Gérez les points d'accès API et les jetons d'accès."
       },
       "advanced": {
         "title": "Avancé",
-        "description": "La sortie : effacer définitivement toutes les données de santé ou fermer le compte.",
         "subtitle": "Réinitialisation des données et suppression du compte."
       },
       "export": {
         "title": "Export et import",
-        "description": "Téléchargez vos données en CSV ou en sauvegarde JSON complète, ou importez depuis Apple Santé, JSON ou CSV. Le compte rendu médical se trouve désormais dans Dossier de santé.",
         "otherOptionsHeading": "Autres options d'export",
         "downloadFailed": "Échec du téléchargement de l'export. Veuillez réessayer.",
         "actions": {
@@ -5724,12 +5715,10 @@
       },
       "about": {
         "title": "À propos de cette app",
-        "description": "Version, licence, liens.",
         "subtitle": "Version, licence et liens du projet."
       },
       "sharing": {
         "title": "Partage",
-        "description": "Créez un lien en lecture seule pour partager votre dossier de santé avec un professionnel de santé.",
         "subtitle": "Partagez un accès en lecture seule à vos données."
       },
       "insights": {
@@ -5764,12 +5753,10 @@
       },
       "gesundheitsakte": {
         "title": "Dossier médical",
-        "description": "Exportez votre dossier médical complet au format PDF, FHIR R4 ou en paquet ZIP combiné.",
         "subtitle": "Exportez un dossier de santé complet, prêt pour le médecin."
       },
       "coach": {
         "title": "Coach",
-        "description": "Activez le Coach, le ton et la portée, les souvenirs enregistrés.",
         "subtitle": "Réglez le Coach, ses suggestions proactives et sa mémoire."
       },
       "security": {
@@ -5778,8 +5765,7 @@
       },
       "privacy": {
         "title": "Données et confidentialité",
-        "subtitle": "Vos données, leur conservation, le chiffrement et la sécurité du compte au même endroit.",
-        "description": "Export, suppression, conservation, état du chiffrement, sessions et activité de sécurité."
+        "subtitle": "Vos données, leur conservation, le chiffrement et la sécurité du compte au même endroit."
       },
       "mcp": {
         "title": "Connecteur MCP",
@@ -5787,8 +5773,7 @@
       },
       "anamnesis": {
         "title": "Antécédents médicaux",
-        "subtitle": "Vos antécédents, votre mode de vie, vos informations d’urgence et ce que l’IA peut lire.",
-        "description": "Dossiers structurés des allergies et des antécédents familiaux."
+        "subtitle": "Vos antécédents, votre mode de vie, vos informations d’urgence et ce que l’IA peut lire."
       },
       "environment": {
         "title": "Localisation et météo",
@@ -6542,30 +6527,32 @@
     "fitbitViewData": "Voir votre sommeil",
     "googleHealthViewData": "Voir vos pas",
     "apiTokens": "Jetons API",
-    "apiTokensDescription": "Consultez et révoquez les jetons API pour l’enregistrement externe des prises de médicaments.",
+    "apiTokensDescription": "Consultez et révoquez les jetons des mesures, entraînements, documents et prises de médicaments.",
     "measurementsToken": {
       "title": "Jetons de mesures",
       "description": "Créez un jeton pour qu'une balance, une montre ou votre domotique ajoutent des mesures.",
       "detail": "Le jeton n'est affiché qu'une fois.",
       "scopeNote": "Il peut uniquement ajouter de nouvelles mesures à votre propre dossier : il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les mesures sont signalées comme provenant d'un appareil externe, ce qui vous permet de les reconnaître plus tard, et vous pouvez toujours les corriger.",
-      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer."
+      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
+      "namePlaceholder": "Nom, p. ex. Home Assistant"
     },
     "workoutsToken": {
       "title": "Jetons d'entraînements",
       "description": "Créez un jeton pour qu'une passerelle de montre ou un script de synchronisation ajoutent vos entraînements.",
       "detail": "Le jeton n'est affiché qu'une fois.",
       "scopeNote": "Il peut uniquement ajouter de nouveaux entraînements à votre propre dossier. Il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les entraînements qu'il ajoute sont signalés comme provenant d'un appareil externe, et si votre téléphone a enregistré la même séance, c'est la copie du téléphone que vous voyez.",
-      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer."
+      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
+      "namePlaceholder": "Nom, p. ex. Garmin"
     },
     "documentsToken": {
       "title": "Jetons de documents",
       "description": "Créez un jeton pour que Paperless-ngx, Papra ou le script d'import ajoutent des documents à votre coffre.",
       "detail": "Le jeton n'est affiché qu'une fois.",
       "scopeNote": "Il peut uniquement ajouter de nouveaux documents à votre propre coffre. Il ne peut rien lister, ouvrir, télécharger, modifier ou supprimer, ni créer un autre jeton. Il apprend seulement si un fichier a été enregistré, pas comment vous l'avez classé.",
-      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer."
+      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
+      "namePlaceholder": "Nom, p. ex. Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Les jetons sont émis là où ils s'appliquent : ci-dessus pour les mesures et les documents, ou dans le point de terminaison API d'un médicament pour ce seul médicament.",
-    "tokenNamePlaceholder": "Nom du jeton (par exemple Raccourci iPhone)",
+    "tokenMintMovedDescription": "Les jetons sont émis là où ils s'appliquent : ci-dessus pour les mesures, les entraînements et les documents, ou dans le point de terminaison API d'un médicament pour ce seul médicament.",
     "tokenCreated": "Jeton créé — copiez-le maintenant ! Il ne sera plus affiché.",
     "tokenCopy": "Copier le jeton",
     "tokenCopied": "Jeton copié dans le presse-papiers",
@@ -6757,7 +6744,8 @@
       "statusNeedsReselect": "Choisir à nouveau le contenu",
       "reselectReason": "Ce lien diffusait un périmètre que personne n'avait choisi ; il a donc été fermé. Créez-en un nouveau et choisissez son contenu.",
       "reselectAction": "Créer un remplacement",
-      "createDetail": "Le jeton n'est affiché qu'une fois à la création — conservez-le alors ; il ne peut pas être récupéré."
+      "createDetail": "Le jeton n'est affiché qu'une fois à la création — conservez-le alors ; il ne peut pas être récupéré.",
+      "activeDescription": "Les liens que vous avez partagés, leur expiration et le nombre d'ouvertures."
     },
     "genderOther": "Autre",
     "nightscout": "Nightscout",
@@ -6983,12 +6971,11 @@
       },
       "stored": {
         "title": "Ce qui est stocké",
-        "measurements": "Mesures (poids, tension, pouls, glycémie, sommeil, composition corporelle)",
-        "medications": "Médicaments et historique des prises",
-        "moodLabs": "Entrées d'humeur et résultats de laboratoire",
-        "coach": "Conversations avec le coach",
+        "measurements": "Mesures : poids, tension, pouls et toute autre valeur enregistrée par vous ou un appareil",
         "integrations": "Jetons d'intégration (chiffrés)",
-        "security": "Activité du compte et de sécurité (sessions, journal de connexion)"
+        "security": "Activité du compte et de sécurité (sessions, journal de connexion)",
+        "profile": "Votre profil, vos antécédents médicaux et les informations du dossier de santé",
+        "modules": "Données de chaque module : {list}"
       },
       "retention": {
         "title": "Conservation",
@@ -7019,8 +7006,6 @@
     "mcp": {
       "enableTitle": "Point de terminaison MCP distant",
       "enableDescription": "Autorisez un assistant compatible MCP (Claude.ai, ChatGPT) à lire vos données de santé via un jeton restreint.",
-      "enabled": "Activé",
-      "disabled": "Désactivé",
       "enableToggleLabel": "Activer le point de terminaison MCP",
       "endpointLabel": "URL du connecteur",
       "connectDescription": "Collez cette URL dans la configuration du connecteur personnalisé de votre assistant, puis autorisez avec le jeton ci-dessous ou connectez-vous lorsque vous y êtes invité.",
@@ -7039,7 +7024,8 @@
       "connectionRevokeDescription": "Cela met fin immédiatement à l'accès de l'assistant et l'empêche de se renouveler. Une nouvelle autorisation sera nécessaire pour le reconnecter.",
       "connectionRevokeFailed": "Impossible de déconnecter l'assistant.",
       "tokensDetail": "Le jeton n'est affiché qu'une seule fois.",
-      "connectionsDetail": "Révoquer une connexion met fin à son accès immédiatement, y compris sa capacité à se renouveler."
+      "connectionsDetail": "Révoquer une connexion met fin à son accès immédiatement, y compris sa capacité à se renouveler.",
+      "tokenNamePlaceholder": "Nom, p. ex. Claude Desktop"
     },
     "strava": "Strava",
     "stravaDescription": "Connecte ton compte Strava pour synchroniser tes activités avec ton historique d'entraînement.",
@@ -7169,7 +7155,12 @@
       "signInAgain": "Reconnectez-vous, puis réessayez. Votre compte n'a ni mot de passe ni clé d'accès à confirmer ici.",
       "failed": "Cela n'a pas fonctionné. Vérifiez votre saisie et réessayez."
     },
-    "passwordTitle": "Mot de passe"
+    "passwordTitle": "Mot de passe",
+    "tokenNameLabel": "Nom du jeton",
+    "displayCard": {
+      "title": "Affichage",
+      "description": "Langue, unités et formats, enregistrés dès que vous les modifiez."
+    }
   },
   "admin": {
     "title": "Administration",
@@ -7377,8 +7368,8 @@
       "coachFollowsSwitch": "Suit l'interrupteur Coach de la section Coach."
     },
     "invites": {
-      "title": "Invitations",
-      "description": "Liens d'invitation pour l'inscription — ils fonctionnent même lorsque les inscriptions sont fermées.",
+      "title": "Liens d'invitation",
+      "description": "Chaque lien permet une inscription même lorsque les inscriptions sont fermées.",
       "create": "Créer une invitation",
       "createTitle": "Créer une invitation",
       "createDescription": "Le lien permet une inscription même lorsque les inscriptions sont fermées.",
@@ -7424,8 +7415,8 @@
       "revokedToast": "Invitation révoquée.",
       "revokeError": "Impossible de révoquer l'invitation."
     },
-    "userManagement": "Gestion des utilisateurs",
-    "userManagementDescription": "Gérez les comptes : rôles, réinitialisations de mot de passe et déconnexions forcées.",
+    "userManagement": "Comptes",
+    "userManagementDescription": "Rôles, réinitialisations de mot de passe et déconnexions forcées pour chaque compte.",
     "userName": "Nom",
     "userEmail": "E-mail",
     "userRole": "Rôle",
@@ -7881,7 +7872,12 @@
         "backupsNone": "Aucune sauvegarde n'a encore enregistré les clés dont elle a besoin.",
         "backupsStillNeed": "Toutes les lignes sont renouvelées, mais des sauvegardes ont encore besoin de {keys}",
         "backupsUnrecordedBadge": "Toutes les lignes sont renouvelées, mais d'anciennes sauvegardes peuvent encore avoir besoin d'une clé retirée",
-        "backupsDetail": "La rotation rechiffre chaque ligne, mais une sauvegarde garde la clé sous laquelle son contenu a été écrit, et sa restauration en a besoin. Gardez une clé retirée dans ENCRYPTION_KEYS tant qu'elle figure ci-dessous."
+        "backupsDetail": "La rotation rechiffre chaque ligne, mais une sauvegarde garde la clé sous laquelle son contenu a été écrit, et sa restauration en a besoin. Gardez une clé retirée dans ENCRYPTION_KEYS tant qu'elle figure ci-dessous.",
+        "columnsShow": "Afficher le tableau ({count} avec des lignes)",
+        "columnsHide": "Masquer le tableau",
+        "columnsShowAll": "Afficher les {count} colonnes",
+        "columnsShowWithRows": "Seulement les colonnes avec des lignes",
+        "columnsNoneWithRows": "Aucune colonne chiffrée ne contient encore de lignes."
       },
       "maintenance": {
         "title": "Maintenance de la table des mesures",

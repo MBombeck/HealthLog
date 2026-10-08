@@ -5310,12 +5310,10 @@
     "sections": {
       "account": {
         "title": "Konto",
-        "description": "Profil, hasło, klucze dostępu i przewodnik wprowadzający.",
         "subtitle": "Twój profil, tożsamość i dane logowania."
       },
       "integrations": {
         "title": "Integracje",
-        "description": "Połączone usługi, kanały dostarczania i priorytet źródeł w jednym miejscu.",
         "subtitle": "Połącz i zarządzaj źródłami danych oraz urządzeniami.",
         "connectionsHeading": "Połączenia",
         "channelsHeading": "Kanały dostarczania",
@@ -5324,16 +5322,14 @@
       },
       "notifications": {
         "title": "Powiadomienia",
-        "description": "Wszystkie przypomnienia w jednym miejscu — co i kiedy oraz gdzie są dostarczane.",
         "subtitle": "Wybierz, które przypomnienia otrzymujesz i gdzie są dostarczane.",
         "remindersHeading": "Przypomnienia",
         "matrixLink": "Powiadomienia wg kanału",
         "channelsLink": "Kanały dostarczania"
       },
       "layout": {
-        "title": "Wygląd",
-        "description": "Ustal, jak wyglądają i są rozłożone pulpit, analizy i Twoje moduły śledzenia.",
-        "backToHub": "Powrót do Wygląd",
+        "title": "Układ",
+        "backToHub": "Powrót do układu",
         "dashboard": {
           "title": "Pulpit",
           "description": "Układ i kolejność kafelków."
@@ -5342,7 +5338,7 @@
           "title": "Analizy",
           "description": "Kolejność przeglądu i pigułek nawigacyjnych."
         },
-        "subtitle": "Dostosuj wygląd pulpitu, analiz i modułów śledzenia.",
+        "subtitle": "Wybierz, co pokazują pulpit, analizy i moduły śledzenia oraz w jakiej kolejności.",
         "medications": {
           "title": "Leki",
           "description": "Widok listy i ręczna kolejność."
@@ -5373,12 +5369,10 @@
       },
       "thresholds": {
         "title": "Cele",
-        "description": "Dla każdej metryki: własny zakres docelowy zdrowych wartości.",
         "subtitle": "Ustaw osobiste zakresy docelowe dla każdej metryki."
       },
       "sources": {
         "title": "Priorytet źródeł",
-        "description": "Wybierz, które źródło wygrywa, gdy kilka rejestruje tę samą metrykę tego samego dnia.",
         "integrationsHint": "Źródła danych podłączysz lub odłączysz na stronie integracji.",
         "integrationsHintLink": "Otwórz integracje",
         "cardTitle": "Kolejność według metryki",
@@ -5460,26 +5454,23 @@
           "moduleHintLink": "Zarządzaj modułami",
           "detail": "Tylko do odczytu — wartości należą do aplikacji źródłowej."
         },
-        "helpDetail": "Pozostałe pozostają zapisane na potrzeby audytu."
+        "helpDetail": "Pozostałe pozostają zapisane na potrzeby audytu. Widać tylko źródła, które połączono lub z których są dane.",
+        "noneInUse": "Nie ma jeszcze źródeł do uszeregowania. Połącz jedno w Integracjach albo wpisz wartość."
       },
       "ai": {
         "title": "Dostawca AI",
-        "description": "Dostawca, model i klucz API do analiz, a także Twój kontekst „o mnie”.",
         "subtitle": "Wybierz dostawcę AI i użyj własnego klucza."
       },
       "api": {
-        "title": "API & Tokens",
-        "description": "Tokeny Bearer dla własnych skryptów i aplikacji — zapisuj pomiary lub przyjęcia leków z dowolnego miejsca.",
+        "title": "API i tokeny",
         "subtitle": "Zarządzaj punktami końcowymi API i tokenami dostępu."
       },
       "advanced": {
         "title": "Zaawansowane",
-        "description": "Wyjście awaryjne: trwale usuń wszystkie dane zdrowotne albo zamknij konto.",
         "subtitle": "Reset danych i usunięcie konta."
       },
       "export": {
         "title": "Eksport i import",
-        "description": "Pobierz swoje dane jako CSV lub pełną kopię zapasową JSON albo zaimportuj z Apple Health, JSON lub CSV. Raport dla lekarza znajdziesz teraz w Dokumentacji zdrowotnej.",
         "otherOptionsHeading": "Inne opcje eksportu",
         "downloadFailed": "Nie udało się pobrać eksportu. Spróbuj ponownie.",
         "actions": {
@@ -5724,12 +5715,10 @@
       },
       "about": {
         "title": "O tej aplikacji",
-        "description": "Wersja, licencja, linki.",
         "subtitle": "Wersja, licencja i linki do projektu."
       },
       "sharing": {
         "title": "Udostępnianie",
-        "description": "Utwórz link tylko do odczytu, aby udostępnić swoją dokumentację zdrowotną lekarzowi.",
         "subtitle": "Udostępnij dostęp tylko do odczytu do swoich danych."
       },
       "insights": {
@@ -5764,12 +5753,10 @@
       },
       "gesundheitsakte": {
         "title": "Dokumentacja zdrowotna",
-        "description": "Wyeksportuj pełną dokumentację zdrowotną jako PDF, FHIR R4 lub łączony pakiet ZIP.",
         "subtitle": "Eksportuj kompletną dokumentację zdrowotną gotową dla lekarza."
       },
       "coach": {
         "title": "Coach",
-        "description": "Włącz Coacha, ton i zakres, zapisane wspomnienia.",
         "subtitle": "Dostosuj Coacha, jego proaktywne podpowiedzi i pamięć."
       },
       "security": {
@@ -5778,8 +5765,7 @@
       },
       "privacy": {
         "title": "Dane i prywatność",
-        "subtitle": "Twoje dane, retencja, szyfrowanie i bezpieczeństwo konta w jednym miejscu.",
-        "description": "Eksport, usuwanie, retencja, stan szyfrowania, sesje i aktywność zabezpieczeń."
+        "subtitle": "Twoje dane, retencja, szyfrowanie i bezpieczeństwo konta w jednym miejscu."
       },
       "mcp": {
         "title": "Łącznik MCP",
@@ -5787,8 +5773,7 @@
       },
       "anamnesis": {
         "title": "Wywiad medyczny",
-        "subtitle": "Twoja historia zdrowia, styl życia, dane alarmowe i to, co może czytać AI.",
-        "description": "Ustrukturyzowane rekordy alergii i wywiadu rodzinnego."
+        "subtitle": "Twoja historia zdrowia, styl życia, dane alarmowe i to, co może czytać AI."
       },
       "environment": {
         "title": "Lokalizacja i pogoda",
@@ -6542,30 +6527,32 @@
     "fitbitViewData": "Zobacz swój sen",
     "googleHealthViewData": "Zobacz swoje kroki",
     "apiTokens": "Tokeny API",
-    "apiTokensDescription": "Przeglądaj i unieważniaj tokeny API do zewnętrznego rejestrowania przyjęć leków.",
+    "apiTokensDescription": "Przeglądaj i unieważniaj tokeny do pomiarów, treningów, dokumentów i przyjęć leków.",
     "measurementsToken": {
       "title": "Tokeny pomiarów",
       "description": "Utwórz token, aby waga, zegarek lub automatyka domowa mogły dodawać pomiary.",
       "detail": "Token pokazujemy tylko raz.",
       "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji — nie odczyta danych, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz, i nadal możesz je poprawić.",
-      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie."
+      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
+      "namePlaceholder": "Nazwa, np. Home Assistant"
     },
     "workoutsToken": {
       "title": "Tokeny treningów",
       "description": "Utwórz token, aby mostek zegarka lub skrypt synchronizacji mogły dodawać Twoje treningi.",
       "detail": "Token pokazujemy tylko raz.",
       "scopeNote": "Może wyłącznie dodawać nowe treningi do Twojej dokumentacji. Nie odczyta danych, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Dodane przez niego treningi są oznaczane jako pochodzące z urządzenia zewnętrznego, a jeśli telefon zapisał tę samą sesję, widzisz zapis z telefonu.",
-      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie."
+      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
+      "namePlaceholder": "Nazwa, np. Garmin"
     },
     "documentsToken": {
       "title": "Tokeny dokumentów",
       "description": "Utwórz token, aby Paperless-ngx, Papra lub skrypt importu mogły dodawać dokumenty do Twojego archiwum.",
       "detail": "Token pokazujemy tylko raz.",
       "scopeNote": "Może wyłącznie dodawać nowe dokumenty do Twojego archiwum. Niczego nie wyświetli, nie otworzy, nie pobierze, nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Dowiaduje się tylko, czy plik został zapisany, a nie to, jak został opisany.",
-      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie."
+      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
+      "namePlaceholder": "Nazwa, np. Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Tokeny wydajemy tam, gdzie działają: powyżej dla pomiarów i dokumentów albo w punkcie końcowym API danego leku dla tego jednego leku.",
-    "tokenNamePlaceholder": "Nazwa tokena (np. Skrót iPhone)",
+    "tokenMintMovedDescription": "Tokeny wydajemy tam, gdzie działają: powyżej dla pomiarów, treningów i dokumentów albo w punkcie końcowym API danego leku dla tego jednego leku.",
     "tokenCreated": "Token utworzony — skopiuj go teraz! Nie zostanie pokazany ponownie.",
     "tokenCopy": "Kopiuj token",
     "tokenCopied": "Token skopiowany do schowka",
@@ -6757,7 +6744,8 @@
       "statusNeedsReselect": "Wybierz zawartość ponownie",
       "reselectReason": "Ten link udostępniał zakres, którego nikt nie wybrał, więc został zamknięty. Utwórz nowy i wybierz jego zawartość.",
       "reselectAction": "Utwórz zamiennik",
-      "createDetail": "Token jest pokazywany tylko raz przy tworzeniu — zapisz go wtedy; nie można go odzyskać."
+      "createDetail": "Token jest pokazywany tylko raz przy tworzeniu — zapisz go wtedy; nie można go odzyskać.",
+      "activeDescription": "Udostępnione linki, termin ich wygaśnięcia i liczba otwarć."
     },
     "genderOther": "Inna",
     "nightscout": "Nightscout",
@@ -6983,12 +6971,11 @@
       },
       "stored": {
         "title": "Co jest przechowywane",
-        "measurements": "Pomiary (waga, ciśnienie, tętno, glukoza, sen, skład ciała)",
-        "medications": "Leki i historia przyjmowania",
-        "moodLabs": "Wpisy nastroju i wyniki badań laboratoryjnych",
-        "coach": "Rozmowy z asystentem",
+        "measurements": "Pomiary: waga, ciśnienie, tętno i każda inna wartość zapisana przez ciebie lub urządzenie",
         "integrations": "Tokeny integracji (szyfrowane)",
-        "security": "Aktywność konta i zabezpieczeń (sesje, dziennik logowań)"
+        "security": "Aktywność konta i zabezpieczeń (sesje, dziennik logowań)",
+        "profile": "Twój profil, wywiad medyczny i dane dokumentacji zdrowotnej",
+        "modules": "Wpisy poszczególnych modułów: {list}"
       },
       "retention": {
         "title": "Retencja",
@@ -7019,8 +7006,6 @@
     "mcp": {
       "enableTitle": "Zdalny punkt końcowy MCP",
       "enableDescription": "Zezwól asystentowi obsługującemu MCP (Claude.ai, ChatGPT) na odczyt danych zdrowotnych za pomocą ograniczonego tokenu.",
-      "enabled": "Włączony",
-      "disabled": "Wyłączony",
       "enableToggleLabel": "Włącz punkt końcowy MCP",
       "endpointLabel": "Adres URL łącznika",
       "connectDescription": "Wklej ten adres URL w konfiguracji własnego łącznika asystenta, a następnie autoryzuj za pomocą poniższego tokenu lub zaloguj się po wyświetleniu monitu.",
@@ -7039,7 +7024,8 @@
       "connectionRevokeDescription": "To natychmiast kończy dostęp asystenta i uniemożliwia odnawianie. Ponowne połączenie będzie wymagać nowej autoryzacji.",
       "connectionRevokeFailed": "Nie udało się rozłączyć asystenta.",
       "tokensDetail": "Token jest wyświetlany tylko raz.",
-      "connectionsDetail": "Cofnięcie połączenia natychmiast kończy dostęp, w tym możliwość odnawiania."
+      "connectionsDetail": "Cofnięcie połączenia natychmiast kończy dostęp, w tym możliwość odnawiania.",
+      "tokenNamePlaceholder": "Nazwa, np. Claude Desktop"
     },
     "strava": "Strava",
     "stravaDescription": "Połącz konto Strava, aby synchronizować aktywności z historią treningów.",
@@ -7169,7 +7155,12 @@
       "signInAgain": "Zaloguj się ponownie, a potem spróbuj jeszcze raz. Twoje konto nie ma hasła ani klucza dostępu do potwierdzenia tutaj.",
       "failed": "To się nie udało. Sprawdź wprowadzone dane i spróbuj ponownie."
     },
-    "passwordTitle": "Hasło"
+    "passwordTitle": "Hasło",
+    "tokenNameLabel": "Nazwa tokena",
+    "displayCard": {
+      "title": "Wyświetlanie",
+      "description": "Język, jednostki i formaty zapisywane od razu po zmianie."
+    }
   },
   "admin": {
     "title": "Administracja",
@@ -7377,8 +7368,8 @@
       "coachFollowsSwitch": "Podlega przełącznikowi Coach w sekcji Coach."
     },
     "invites": {
-      "title": "Zaproszenia",
-      "description": "Linki z zaproszeniem do rejestracji — działają nawet przy zamkniętej rejestracji.",
+      "title": "Linki z zaproszeniem",
+      "description": "Każdy link pozwala na rejestrację nawet przy zamkniętej rejestracji.",
       "create": "Utwórz zaproszenie",
       "createTitle": "Utwórz zaproszenie",
       "createDescription": "Link umożliwia rejestrację nawet przy zamkniętej rejestracji.",
@@ -7424,8 +7415,8 @@
       "revokedToast": "Zaproszenie unieważnione.",
       "revokeError": "Nie udało się unieważnić zaproszenia."
     },
-    "userManagement": "Zarządzanie użytkownikami",
-    "userManagementDescription": "Zarządzaj kontami: role, resety haseł i wymuszone wylogowania.",
+    "userManagement": "Konta",
+    "userManagementDescription": "Role, resety haseł i wymuszone wylogowania dla każdego konta.",
     "userName": "Nazwa",
     "userEmail": "E-mail",
     "userRole": "Rola",
@@ -7881,7 +7872,12 @@
         "backupsNone": "Żadna kopia nie zapisała jeszcze kluczy, których potrzebuje.",
         "backupsStillNeed": "Wszystkie wiersze są zrotowane, ale kopie nadal potrzebują {keys}",
         "backupsUnrecordedBadge": "Wszystkie wiersze są zrotowane, ale starsze kopie mogą nadal potrzebować wycofanego klucza",
-        "backupsDetail": "Rotacja ponownie szyfruje każdy wiersz, ale kopia zachowuje klucz, którym zapisano jej zawartość, a jej przywrócenie wymaga tego klucza. Trzymaj wycofany klucz w ENCRYPTION_KEYS, dopóki widnieje poniżej."
+        "backupsDetail": "Rotacja ponownie szyfruje każdy wiersz, ale kopia zachowuje klucz, którym zapisano jej zawartość, a jej przywrócenie wymaga tego klucza. Trzymaj wycofany klucz w ENCRYPTION_KEYS, dopóki widnieje poniżej.",
+        "columnsShow": "Pokaż tabelę (z wierszami: {count})",
+        "columnsHide": "Ukryj tabelę",
+        "columnsShowAll": "Pokaż wszystkie kolumny ({count})",
+        "columnsShowWithRows": "Tylko kolumny z wierszami",
+        "columnsNoneWithRows": "Żadna zaszyfrowana kolumna nie zawiera jeszcze wierszy."
       },
       "maintenance": {
         "title": "Konserwacja tabeli pomiarów",

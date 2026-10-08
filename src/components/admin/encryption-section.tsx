@@ -12,9 +12,11 @@
  * which case the documented CLI is the path).
  */
 
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Archive,
+  ChevronDown,
   KeyRound,
   Loader2,
   RotateCw,
@@ -360,59 +362,135 @@ export function EncryptionSection() {
           title={t("admin.section.encryption.columnsTitle")}
           description={t("admin.section.encryption.columnsDescription")}
         />
-        {/* Focusable, named scroll region: on a phone the table scrolls
-            sideways, and a keyboard user has to be able to reach it
-            (axe scrollable-region-focusable). */}
-        <div
-          className="overflow-x-auto"
-          tabIndex={0}
-          role="region"
-          aria-label={t("admin.section.encryption.columnsTitle")}
-        >
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-muted-foreground border-b text-left">
-                <th className="py-2 pr-3 font-medium">
-                  {t("admin.section.encryption.colColumn")}
-                </th>
-                <th className="py-2 pr-3 font-medium">
-                  {t("admin.section.encryption.colTotal")}
-                </th>
-                <th className="py-2 pr-3 font-medium">
-                  {t("admin.section.encryption.colActive")}
-                </th>
-                <th className="py-2 font-medium">
-                  {t("admin.section.encryption.colStale")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {columns.map((c) => {
-                const active = c.byKeyId[s.activeKeyId] ?? 0;
-                const stale = c.total - active;
-                return (
-                  <tr key={`${c.model}.${c.field}`} className="border-b">
-                    <td className="py-2 pr-3 font-mono text-xs">
-                      {c.model}.{c.field}
-                    </td>
-                    <td className="py-2 pr-3">{c.total.toLocaleString()}</td>
-                    <td className="py-2 pr-3">{active.toLocaleString()}</td>
-                    <td className="py-2">
-                      {stale > 0 ? (
-                        <Badge variant="secondary">
-                          {stale.toLocaleString()}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">0</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ColumnCoverage columns={columns} activeKeyId={s.activeKeyId} />
       </SettingsCard>
+    </div>
+  );
+}
+
+/**
+ * The per-column table, collapsed by default. A fresh install lists well over
+ * a hundred encrypted columns, nearly all of them empty, and the table pushed
+ * every other card off the page. Opened, it shows the columns that hold rows
+ * (the ones a rotation has to touch), with a toggle for the full list.
+ */
+export function ColumnCoverage({
+  columns,
+  activeKeyId,
+  initiallyOpen = false,
+}: {
+  columns: ColumnScan[];
+  activeKeyId: string;
+  /** Start expanded; the page always starts collapsed. */
+  initiallyOpen?: boolean;
+}) {
+  const { t } = useTranslations();
+  const [open, setOpen] = useState(initiallyOpen);
+  const [showAll, setShowAll] = useState(false);
+  const withRows = columns.filter((c) => c.total > 0);
+  const shown = showAll ? columns : withRows;
+
+  return (
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-controls="encryption-columns-panel"
+        data-testid="encryption-columns-toggle"
+        className="text-foreground hover:text-primary flex min-h-11 items-center gap-2 text-sm font-medium transition-colors sm:min-h-9"
+      >
+        <ChevronDown
+          aria-hidden="true"
+          className={`size-4 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+        {open
+          ? t("admin.section.encryption.columnsHide")
+          : t("admin.section.encryption.columnsShow", {
+              count: withRows.length,
+            })}
+      </button>
+      {open ? (
+        <div id="encryption-columns-panel" className="space-y-3">
+          {shown.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              {t("admin.section.encryption.columnsNoneWithRows")}
+            </p>
+          ) : (
+            /* Focusable, named scroll region: on a phone the table scrolls
+               sideways, and a keyboard user has to be able to reach it
+               (axe scrollable-region-focusable). */
+            <div
+              className="overflow-x-auto"
+              tabIndex={0}
+              role="region"
+              aria-label={t("admin.section.encryption.columnsTitle")}
+            >
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-muted-foreground border-b text-left">
+                    <th className="py-2 pr-3 font-medium">
+                      {t("admin.section.encryption.colColumn")}
+                    </th>
+                    <th className="py-2 pr-3 font-medium">
+                      {t("admin.section.encryption.colTotal")}
+                    </th>
+                    <th className="py-2 pr-3 font-medium">
+                      {t("admin.section.encryption.colActive")}
+                    </th>
+                    <th className="py-2 font-medium">
+                      {t("admin.section.encryption.colStale")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody data-slot="encryption-column-rows">
+                  {shown.map((c) => {
+                    const active = c.byKeyId[activeKeyId] ?? 0;
+                    const stale = c.total - active;
+                    return (
+                      <tr key={`${c.model}.${c.field}`} className="border-b">
+                        <td className="py-2 pr-3 font-mono text-xs">
+                          {c.model}.{c.field}
+                        </td>
+                        <td className="py-2 pr-3">
+                          {c.total.toLocaleString()}
+                        </td>
+                        <td className="py-2 pr-3">{active.toLocaleString()}</td>
+                        <td className="py-2">
+                          {stale > 0 ? (
+                            <Badge variant="secondary">
+                              {stale.toLocaleString()}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">0</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {withRows.length < columns.length ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-h-11 sm:min-h-9"
+              onClick={() => setShowAll((prev) => !prev)}
+              aria-pressed={showAll}
+              data-testid="encryption-columns-show-all"
+            >
+              {showAll
+                ? t("admin.section.encryption.columnsShowWithRows")
+                : t("admin.section.encryption.columnsShowAll", {
+                    count: columns.length,
+                  })}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -392,7 +392,7 @@
     "insights": "Insights",
     "achievements": "Achievements",
     "settings": "Settings",
-    "admin": "Admin Console",
+    "admin": "Admin console",
     "logout": "Sign out",
     "login": "Sign in",
     "notifications": "Notifications",
@@ -3279,7 +3279,7 @@
     "relativeDaysAgoFew": "{count} days ago",
     "navOverview": "Overview",
     "navCatalog": "All metrics",
-    "navBloodPressure": "Blood Pressure",
+    "navBloodPressure": "Blood pressure",
     "navWeight": "Weight",
     "navPulse": "Pulse",
     "navMood": "Mood",
@@ -3814,7 +3814,7 @@
         "description": "Body-water readings appear here once a connected body-composition scale syncs."
       }
     },
-    "navTotalBodyWater": "Body Water",
+    "navTotalBodyWater": "Body water",
     "boneMass": {
       "title": "Bone Mass",
       "description": "Your bone mass over time, in kilograms.",
@@ -3824,7 +3824,7 @@
         "description": "Bone-mass readings appear here once a connected body-composition scale syncs."
       }
     },
-    "navBoneMass": "Bone Mass",
+    "navBoneMass": "Bone mass",
     "flightsClimbed": {
       "title": "Flights Climbed",
       "description": "Flights of stairs you climbed each day.",
@@ -3854,7 +3854,7 @@
         "description": "Fat-free-mass readings appear here once a connected body-composition scale syncs."
       }
     },
-    "navFatFreeMass": "Fat-Free Mass",
+    "navFatFreeMass": "Fat-free mass",
     "fatMass": {
       "title": "Fat Mass",
       "description": "Your fat mass over time, in kilograms.",
@@ -3874,8 +3874,8 @@
         "cta": "Log body fat"
       }
     },
-    "navFatMass": "Fat Mass",
-    "navBodyFat": "Body Fat",
+    "navFatMass": "Fat mass",
+    "navBodyFat": "Body fat",
     "muscleMass": {
       "title": "Muscle Mass",
       "description": "Your muscle mass over time, in kilograms.",
@@ -3885,7 +3885,7 @@
         "description": "Muscle-mass readings appear here once a connected body-composition scale syncs."
       }
     },
-    "navMuscleMass": "Muscle Mass",
+    "navMuscleMass": "Muscle mass",
     "skinTemperature": {
       "title": "Skin Temperature",
       "description": "Your wrist skin temperature over time, in degrees Celsius.",
@@ -3895,7 +3895,7 @@
         "description": "Skin-temperature readings appear here once a wearable syncs overnight wrist temperature."
       }
     },
-    "navSkinTemperature": "Skin Temp",
+    "navSkinTemperature": "Skin temp",
     "pulseWaveVelocity": {
       "title": "Pulse Wave Velocity",
       "description": "Your arterial pulse-wave velocity over time, in m/s — higher values suggest stiffer arteries.",
@@ -3905,7 +3905,7 @@
         "description": "Pulse-wave-velocity readings appear here once a compatible Withings device syncs."
       }
     },
-    "navPulseWaveVelocity": "Pulse Wave Velocity",
+    "navPulseWaveVelocity": "Pulse wave velocity",
     "vascularAge": {
       "title": "Vascular Age",
       "description": "Your estimated vascular age over time, in years.",
@@ -3915,7 +3915,7 @@
         "description": "Vascular-age estimates appear here once a compatible Withings device syncs."
       }
     },
-    "navVascularAge": "Vascular Age",
+    "navVascularAge": "Vascular age",
     "visceralFat": {
       "title": "Visceral Fat",
       "description": "Your visceral-fat rating over time.",
@@ -3925,7 +3925,7 @@
         "description": "Visceral-fat ratings appear here once a compatible body-composition scale syncs."
       }
     },
-    "navVisceralFat": "Visceral Fat",
+    "navVisceralFat": "Visceral fat",
     "audioExposureEnv": {
       "title": "Environmental Audio",
       "description": "Your daily average environmental sound exposure, in dBA.",
@@ -3935,7 +3935,7 @@
         "description": "Environmental sound-level readings appear here once Apple Health syncs."
       }
     },
-    "navAudioExposureEnv": "Environmental Audio",
+    "navAudioExposureEnv": "Environmental audio",
     "audioExposureHeadphone": {
       "title": "Headphone Audio",
       "description": "Your daily average headphone audio exposure, in dBA.",
@@ -3945,7 +3945,7 @@
         "description": "Headphone audio-level readings appear here once Apple Health syncs."
       }
     },
-    "navAudioExposureHeadphone": "Headphone Audio",
+    "navAudioExposureHeadphone": "Headphone audio",
     "timeInDaylight": {
       "title": "Time in Daylight",
       "description": "Minutes spent in daylight each day.",
@@ -3965,7 +3965,7 @@
         "description": "Walking-steadiness readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingSteadiness": "Walking Steadiness",
+    "navWalkingSteadiness": "Walking steadiness",
     "audioExposureEvent": {
       "title": "Loud Audio Events",
       "description": "Days with a loud-environment exposure event.",
@@ -3975,7 +3975,7 @@
         "description": "Loud-environment events appear here once Apple Health syncs."
       }
     },
-    "navAudioExposureEvent": "Loud Events",
+    "navAudioExposureEvent": "Loud events",
     "respiratoryRate": {
       "title": "Respiratory Rate",
       "description": "Your respiratory rate over time, in breaths per minute.",
@@ -3985,7 +3985,7 @@
         "description": "Respiratory-rate readings appear here once Apple Health syncs sleep or workout breathing."
       }
     },
-    "navRespiratoryRate": "Respiratory Rate",
+    "navRespiratoryRate": "Respiratory rate",
     "leanBodyMass": {
       "title": "Lean Body Mass",
       "description": "Your lean body mass over time, in kilograms.",
@@ -3995,7 +3995,7 @@
         "description": "Lean-body-mass readings appear here once a connected body-composition scale syncs."
       }
     },
-    "navLeanBodyMass": "Lean Body Mass",
+    "navLeanBodyMass": "Lean body mass",
     "walkingHeartRateAverage": {
       "title": "Walking Heart Rate",
       "description": "Your average heart rate while walking, in bpm.",
@@ -4005,7 +4005,7 @@
         "description": "Walking-heart-rate readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingHeartRateAverage": "Walking Heart Rate",
+    "navWalkingHeartRateAverage": "Walking heart rate",
     "walkingAsymmetry": {
       "title": "Walking Asymmetry",
       "description": "Your walking asymmetry over time, as a percentage.",
@@ -4015,7 +4015,7 @@
         "description": "Walking-asymmetry readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingAsymmetry": "Walking Asymmetry",
+    "navWalkingAsymmetry": "Walking asymmetry",
     "walkingDoubleSupport": {
       "title": "Double Support Time",
       "description": "The percentage of each stride spent with both feet on the ground.",
@@ -4025,7 +4025,7 @@
         "description": "Double-support readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingDoubleSupport": "Double Support",
+    "navWalkingDoubleSupport": "Double support",
     "walkingStepLength": {
       "title": "Walking Step Length",
       "description": "Your average walking step length over time, in metres.",
@@ -4035,7 +4035,7 @@
         "description": "Step-length readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingStepLength": "Step Length",
+    "navWalkingStepLength": "Step length",
     "walkingSpeed": {
       "title": "Walking Speed",
       "description": "Your average walking speed over time, in km/h.",
@@ -4045,7 +4045,7 @@
         "description": "Walking-speed readings appear here once Apple Health syncs."
       }
     },
-    "navWalkingSpeed": "Walking Speed",
+    "navWalkingSpeed": "Walking speed",
     "mood": {
       "logLink": "Log a mood entry",
       "heatmapTitle": "Mood calendar",
@@ -4426,7 +4426,7 @@
         "description": "VO₂ max readings appear here once Apple Health syncs from your workouts."
       }
     },
-    "navCardioFitness": "Cardio Fitness",
+    "navCardioFitness": "Cardio fitness",
     "cardioRecovery": {
       "title": "Cardio Recovery",
       "description": "How far your heart rate drops one minute after peak exercise.",
@@ -4436,7 +4436,7 @@
         "description": "Cardio-recovery readings appear here once Apple Health syncs from a workout."
       }
     },
-    "navCardioRecovery": "Cardio Recovery",
+    "navCardioRecovery": "Cardio recovery",
     "wristTemperature": {
       "title": "Wrist Temperature",
       "description": "Your overnight wrist temperature, tracked against your own baseline.",
@@ -4446,7 +4446,7 @@
         "description": "Wrist-temperature readings appear here once Apple Health syncs overnight wear."
       }
     },
-    "navWristTemperature": "Wrist Temp",
+    "navWristTemperature": "Wrist temp",
     "falls": {
       "title": "Falls",
       "description": "Hard falls your Apple Watch detected, counted per day.",
@@ -4466,7 +4466,7 @@
         "description": "Six-minute-walk estimates appear here once Apple Health syncs."
       }
     },
-    "navSixMinuteWalk": "6-Min Walk",
+    "navSixMinuteWalk": "6-min walk",
     "stairAscentSpeed": {
       "title": "Stair Ascent Speed",
       "description": "How fast you climb stairs, measured by your iPhone or Watch.",
@@ -4476,7 +4476,7 @@
         "description": "Stair-ascent-speed readings appear here once Apple Health syncs."
       }
     },
-    "navStairAscentSpeed": "Stair Ascent",
+    "navStairAscentSpeed": "Stair ascent",
     "stairDescentSpeed": {
       "title": "Stair Descent Speed",
       "description": "How fast you go down stairs, measured by your iPhone or Watch.",
@@ -4486,7 +4486,7 @@
         "description": "Stair-descent-speed readings appear here once Apple Health syncs."
       }
     },
-    "navStairDescentSpeed": "Stair Descent",
+    "navStairDescentSpeed": "Stair descent",
     "breathingDisturbances": {
       "title": "Breathing Disturbances",
       "description": "How often your breathing was disturbed during sleep.",
@@ -5310,12 +5310,10 @@
     "sections": {
       "account": {
         "title": "Account",
-        "description": "Profile, password, passkeys, and your onboarding tour.",
         "subtitle": "Your profile, identity, and sign-in details."
       },
       "integrations": {
         "title": "Integrations",
-        "description": "Connected services, delivery channels, and source priority in one place.",
         "subtitle": "Connect and manage your data sources and devices.",
         "connectionsHeading": "Connections",
         "channelsHeading": "Delivery channels",
@@ -5324,16 +5322,14 @@
       },
       "notifications": {
         "title": "Notifications",
-        "description": "Every reminder in one place — what gets reminded and when, and where it's delivered.",
         "subtitle": "Choose which reminders you receive and where they're delivered.",
         "remindersHeading": "Reminders",
         "matrixLink": "Per-channel notifications",
         "channelsLink": "Delivery channels"
       },
       "layout": {
-        "title": "Appearance",
-        "description": "Choose how the dashboard, insights, and your tracking modules look and are arranged.",
-        "backToHub": "Back to Appearance",
+        "title": "Layout",
+        "backToHub": "Back to Layout",
         "dashboard": {
           "title": "Dashboard",
           "description": "Tile layout and order."
@@ -5342,7 +5338,7 @@
           "title": "Insights",
           "description": "Overview sections and navigation-pill order."
         },
-        "subtitle": "Personalize how your dashboard, insights, and tracking modules look.",
+        "subtitle": "Choose what your dashboard, insights and tracking modules show, and in which order.",
         "medications": {
           "title": "Medications",
           "description": "List view and manual order."
@@ -5373,12 +5369,10 @@
       },
       "thresholds": {
         "title": "Targets",
-        "description": "Per metric: your own target range for healthy values.",
         "subtitle": "Set your personal target ranges per metric."
       },
       "sources": {
         "title": "Source priority",
-        "description": "Pick which ingest source wins when more than one records the same metric for the same day.",
         "integrationsHint": "Connect or disconnect data sources on the Integrations page.",
         "integrationsHintLink": "Open integrations",
         "cardTitle": "Ranking per metric",
@@ -5460,26 +5454,23 @@
           "moduleHintLink": "Manage modules",
           "detail": "Read-only — the source app owns the numbers."
         },
-        "helpDetail": "The others stay stored for the audit trail."
+        "helpDetail": "The others stay stored for the audit trail. Only sources you have connected or hold data from are listed.",
+        "noneInUse": "No source to rank yet. Connect one under Integrations or record a value."
       },
       "ai": {
         "title": "AI provider",
-        "description": "Provider, model, and API key for the insights — plus your “about me” context.",
         "subtitle": "Choose your AI provider and bring your own key."
       },
       "api": {
-        "title": "API & Tokens",
-        "description": "Bearer tokens for your own scripts and apps — log measurements or medication intake from anywhere.",
+        "title": "API & tokens",
         "subtitle": "Manage API endpoints and access tokens."
       },
       "advanced": {
         "title": "Advanced",
-        "description": "The way out: erase every health record for good, or close the account entirely.",
         "subtitle": "Data reset and account deletion."
       },
       "export": {
-        "title": "Export & Import",
-        "description": "Download your data as CSV or a full JSON backup — or import from Apple Health, JSON, or CSV. The doctor report now lives under Health Record.",
+        "title": "Export & import",
         "otherOptionsHeading": "Other export options",
         "downloadFailed": "Couldn't download the export. Please try again.",
         "actions": {
@@ -5724,12 +5715,10 @@
       },
       "about": {
         "title": "About this app",
-        "description": "Version, license, links.",
         "subtitle": "Version, license, and project links."
       },
       "sharing": {
         "title": "Sharing",
-        "description": "Create a read-only link to share your health record with a clinician.",
         "subtitle": "Share read-only access to your data."
       },
       "insights": {
@@ -5764,12 +5753,10 @@
       },
       "gesundheitsakte": {
         "title": "Health record",
-        "description": "Export your full health record as PDF, FHIR R4, or a combined ZIP package.",
         "subtitle": "Export a complete, clinician-ready health record."
       },
       "coach": {
         "title": "Coach",
-        "description": "Enable the Coach, tone and scope, stored memories.",
         "subtitle": "Tune the Coach, its proactive nudges, and its memory."
       },
       "security": {
@@ -5777,18 +5764,16 @@
         "subtitle": "Two-factor authentication, recovery codes, and passkeys."
       },
       "privacy": {
-        "title": "Data & Privacy",
-        "subtitle": "Your data, retention, encryption, and account security in one place.",
-        "description": "Export, deletion, retention, encryption status, sessions, and security activity."
+        "title": "Data & privacy",
+        "subtitle": "Your data, retention, encryption, and account security in one place."
       },
       "mcp": {
-        "title": "MCP Connector",
+        "title": "MCP connector",
         "subtitle": "Connect an external assistant to your own health data."
       },
       "anamnesis": {
         "title": "Medical history",
-        "subtitle": "Your medical background, lifestyle, emergency details and what the AI may read.",
-        "description": "Structured allergies and family history records."
+        "subtitle": "Your medical background, lifestyle, emergency details and what the AI may read."
       },
       "environment": {
         "title": "Location & weather",
@@ -5847,7 +5832,7 @@
         }
       },
       "score": {
-        "title": "Health Score",
+        "title": "Health score",
         "subtitle": "Choose which pillars count toward your score.",
         "card": {
           "title": "What counts toward your score",
@@ -6541,31 +6526,33 @@
     "whoopViewData": "View your recovery",
     "fitbitViewData": "View your sleep",
     "googleHealthViewData": "View your steps",
-    "apiTokens": "API Tokens",
-    "apiTokensDescription": "Review and revoke API tokens for external medication intake.",
+    "apiTokens": "API tokens",
+    "apiTokensDescription": "Review and revoke tokens for measurements, workouts, documents and medication intake.",
     "measurementsToken": {
       "title": "Measurement tokens",
       "description": "Mint a token so a scale, a watch bridge or your home automation can add readings.",
       "detail": "The token is shown once.",
       "scopeNote": "It can only add new readings to your own record — it cannot read your data, change or delete anything, or create another token. Readings are marked as coming from an external device, so you can tell them apart later, and you can still correct them yourself.",
-      "createFailed": "The token could not be created. Please try again."
+      "createFailed": "The token could not be created. Please try again.",
+      "namePlaceholder": "Name, e.g. Home Assistant"
     },
     "workoutsToken": {
       "title": "Workout tokens",
       "description": "Mint a token so a watch bridge or a sync script can add your workouts.",
       "detail": "The token is shown once.",
       "scopeNote": "It can only add new workouts to your own record. It cannot read your data, change or delete anything, or create another token. Workouts it adds are marked as coming from an external device, and when your phone recorded the same session, you see the phone's copy.",
-      "createFailed": "The token could not be created. Please try again."
+      "createFailed": "The token could not be created. Please try again.",
+      "namePlaceholder": "Name, e.g. Garmin"
     },
     "documentsToken": {
       "title": "Document tokens",
       "description": "Mint a token so Paperless-ngx, Papra or the import script can add documents to your vault.",
       "detail": "The token is shown once.",
       "scopeNote": "It can only add new documents to your own vault. It cannot list, open, download, change or delete anything, and it cannot create another token. What it gets back is whether a file was stored, not how you filed it.",
-      "createFailed": "The token could not be created. Please try again."
+      "createFailed": "The token could not be created. Please try again.",
+      "namePlaceholder": "Name, e.g. Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Tokens are issued where they apply: above for measurements and documents, or in a medication's own API endpoint for that one medication.",
-    "tokenNamePlaceholder": "Token name (e.g., iPhone Shortcut)",
+    "tokenMintMovedDescription": "Tokens are issued where they apply: above for measurements, workouts and documents, or in a medication's own API endpoint for that one medication.",
     "tokenCreated": "Token created — copy it now! It won't be shown again.",
     "tokenCopy": "Copy token",
     "tokenCopied": "Token copied to clipboard",
@@ -6757,7 +6744,8 @@
       "statusNeedsReselect": "Pick contents again",
       "reselectReason": "This link served a scope that was never chosen, so it was closed. Create a new one and pick what it should contain.",
       "reselectAction": "Create a replacement",
-      "createDetail": "The token is shown once on creation — store it then; it cannot be recovered."
+      "createDetail": "The token is shown once on creation — store it then; it cannot be recovered.",
+      "activeDescription": "Links you have shared, when they expire and how often they were opened."
     },
     "genderOther": "Other",
     "nightscout": "Nightscout",
@@ -6983,12 +6971,11 @@
       },
       "stored": {
         "title": "What's stored",
-        "measurements": "Measurements (weight, blood pressure, pulse, glucose, sleep, body composition)",
-        "medications": "Medications and intake history",
-        "moodLabs": "Mood entries and lab results",
-        "coach": "Coach conversations",
+        "measurements": "Measurements: weight, blood pressure, pulse and every other value you or a device record",
         "integrations": "Integration tokens (encrypted)",
-        "security": "Account and security activity (sessions, sign-in log)"
+        "security": "Account and security activity (sessions, sign-in log)",
+        "profile": "Your profile, medical history and health-record details",
+        "modules": "Records of each module: {list}"
       },
       "retention": {
         "title": "Retention",
@@ -7019,8 +7006,6 @@
     "mcp": {
       "enableTitle": "Remote MCP endpoint",
       "enableDescription": "Let an MCP-capable assistant (Claude.ai, ChatGPT) read your health data over a scoped token.",
-      "enabled": "Enabled",
-      "disabled": "Disabled",
       "enableToggleLabel": "Enable the MCP endpoint",
       "endpointLabel": "Connector URL",
       "connectDescription": "Paste this URL into your assistant's custom-connector setup, then authorize with the token below or sign in when prompted.",
@@ -7039,7 +7024,8 @@
       "connectionRevokeDescription": "This ends the assistant's access immediately and stops it from renewing. It will need to be re-authorized to reconnect.",
       "connectionRevokeFailed": "Could not disconnect the assistant.",
       "connectionsDetail": "Revoking a connection ends its access immediately, including its ability to refresh.",
-      "tokensDetail": "The token is shown once."
+      "tokensDetail": "The token is shown once.",
+      "tokenNamePlaceholder": "Name, e.g. Claude Desktop"
     },
     "strava": "Strava",
     "stravaDescription": "Connect your Strava account to sync your activities into your workout history.",
@@ -7169,7 +7155,12 @@
       "signInAgain": "Sign in again, then try once more. Your account has no password or passkey to confirm here.",
       "failed": "That did not work. Check what you entered and try again."
     },
-    "passwordTitle": "Password"
+    "passwordTitle": "Password",
+    "tokenNameLabel": "Token name",
+    "displayCard": {
+      "title": "Display",
+      "description": "Language, units and formats, saved as soon as you change them."
+    }
   },
   "admin": {
     "title": "Administration",
@@ -7377,8 +7368,8 @@
       "coachFollowsSwitch": "Follows the Coach switch in the Coach section."
     },
     "invites": {
-      "title": "Invites",
-      "description": "Registration invite links — they work even while registration is closed.",
+      "title": "Invite links",
+      "description": "Each link admits a signup even while registration is closed.",
       "create": "Create invite",
       "createTitle": "Create invite",
       "createDescription": "The link admits a signup even while registration is closed.",
@@ -7424,8 +7415,8 @@
       "revokedToast": "Invite revoked.",
       "revokeError": "Could not revoke the invite."
     },
-    "userManagement": "User Management",
-    "userManagementDescription": "Manage accounts: roles, password resets, and forced logouts.",
+    "userManagement": "Accounts",
+    "userManagementDescription": "Roles, password resets and forced logouts for every account.",
     "userName": "Name",
     "userEmail": "Email",
     "userRole": "Role",
@@ -7446,7 +7437,7 @@
     "passwordReset": "Password has been reset",
     "reset": "Reset",
     "loadingUsers": "Loading users…",
-    "apiTokens": "API Tokens",
+    "apiTokens": "API tokens",
     "apiTokensDescription": "All active and revoked API tokens across all accounts.",
     "tokenUser": "User",
     "tokenName": "Name",
@@ -7557,7 +7548,7 @@
     },
     "section": {
       "system-status": {
-        "title": "System Status",
+        "title": "System status",
         "subtitle": "Worker, database, and integration health at a glance."
       },
       "general": {
@@ -7603,7 +7594,7 @@
         "subtitle": "Mint, track, and revoke registration invite links."
       },
       "api-tokens": {
-        "title": "API Tokens",
+        "title": "API tokens",
         "subtitle": "Active bearer tokens issued to native clients and integrations."
       },
       "login-overview": {
@@ -7823,7 +7814,7 @@
         "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)"
       },
       "danger-zone": {
-        "title": "Danger Zone",
+        "title": "Danger zone",
         "subtitle": "Destructive system-wide operations."
       },
       "about": {
@@ -7881,7 +7872,12 @@
         "backupsNone": "No backup has recorded the keys it needs yet.",
         "backupsStillNeed": "Every row is rotated, but backups still need {keys}",
         "backupsUnrecordedBadge": "Every row is rotated, but older backups may still need a retired key",
-        "backupsDetail": "Rotation re-encrypts every row, but a backup keeps the key its content was written under, and restoring it needs that key. Keep a retired key in ENCRYPTION_KEYS until nothing below lists it."
+        "backupsDetail": "Rotation re-encrypts every row, but a backup keeps the key its content was written under, and restoring it needs that key. Keep a retired key in ENCRYPTION_KEYS until nothing below lists it.",
+        "columnsShow": "Show the table ({count} with rows)",
+        "columnsHide": "Hide the table",
+        "columnsShowAll": "Show all {count} columns",
+        "columnsShowWithRows": "Only columns with rows",
+        "columnsNoneWithRows": "No encrypted column holds rows yet."
       },
       "maintenance": {
         "title": "Measurement table maintenance",

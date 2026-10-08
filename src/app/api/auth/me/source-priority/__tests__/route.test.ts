@@ -11,6 +11,10 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 
+vi.mock("@/lib/integrations/sources-in-use", () => ({
+  getSourcesInUse: vi.fn().mockResolvedValue(["WITHINGS", "MANUAL"]),
+}));
+
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
@@ -72,6 +76,17 @@ describe("GET /api/auth/me/source-priority", () => {
     expect(env.data).toHaveProperty("weight");
     expect(env.data).toHaveProperty("metricPriority");
     expect(env.data).toHaveProperty("deviceTypePriority");
+  });
+
+  it("carries the account's sources in use beside the ladders", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      sourcePriorityJson: null,
+    } as never);
+
+    const res = await (GET as () => Promise<Response>)();
+    const env = (await res.json()) as { data: { inUse: string[] } };
+    expect(env.data.inUse).toEqual(["WITHINGS", "MANUAL"]);
   });
 });
 

@@ -9,6 +9,7 @@ import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { notificationPrefsSchema } from "@/lib/validations/notification-prefs";
 import { sourcePrioritySchema } from "@/lib/validations/source-priority";
+import { measurementSourceEnum } from "@/lib/validations/measurement";
 import { modulePrefsPatchSchema } from "@/lib/validations/modules";
 import { MODULE_KEYS } from "@/lib/modules/registry";
 import {
@@ -203,6 +204,21 @@ export const aiAccountBlock = z
     description:
       "Which AI capabilities the record this session is inside has, and why not when it has none. Resolved on the server for the ACTIVE RECORD and masked to the sections the active grant opens, exactly like `modules` and `moduleAccess`; with no switch (every native request) it describes the caller's own record.",
   });
+
+/**
+ * The source-priority read and save both echo the resolved ladders plus
+ * `inUse`: the ranked sources the account has connected or holds data from.
+ * Context for an editor, never part of the stored shape (the PUT body stays
+ * `SourcePriority`).
+ */
+const sourcePriorityResolved = sourcePrioritySchema
+  .extend({
+    inUse: z.array(measurementSourceEnum).meta({
+      description:
+        "Ranked sources this account has connected or holds at least one measurement from, in ladder-catalogue order. Read-only; an editor may list only these while the ladders keep every source.",
+    }),
+  })
+  .meta({ id: "ResolvedSourcePriority" });
 
 const moduleMapEnvelopeInner = z
   .object({ modules: moduleMapResolved, updatedAt: updatedAtTokenField })
@@ -1425,7 +1441,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                sourcePrioritySchema,
+                sourcePriorityResolved,
                 "GetSourcePriorityResponse",
               ),
             },
@@ -1449,7 +1465,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                sourcePrioritySchema,
+                sourcePriorityResolved,
                 "PutSourcePriorityResponse",
               ),
             },

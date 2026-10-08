@@ -55,6 +55,13 @@ import { apiGet } from "@/lib/api/api-fetch";
 
 type RangePreset = "15m" | "1h" | "6h" | "all";
 
+/**
+ * Rows per page. The buffer answers with up to ~500 events at once; fifty a
+ * page matches the login overview's default and keeps the table one screen
+ * of scrolling instead of ten.
+ */
+export const APP_LOG_PAGE_SIZE = 50;
+
 interface AppLogsResponse {
   events: WideEvent[];
   meta: {
@@ -92,6 +99,7 @@ export function AppLogPreviewSection() {
   const [level, setLevel] = useState<LogLevel | "__all__">("__all__");
   const [range, setRange] = useState<RangePreset>("1h");
   const [selected, setSelected] = useState<WideEvent | null>(null);
+  const [page, setPage] = useState(1);
 
   const params = useMemo(() => {
     const p = new URLSearchParams();
@@ -114,6 +122,14 @@ export function AppLogPreviewSection() {
   });
 
   const events = data?.events ?? [];
+  // The buffer refetches every 30 s and can shrink under a narrower filter,
+  // so the page is clamped on read rather than trusted.
+  const lastPage = Math.max(1, Math.ceil(events.length / APP_LOG_PAGE_SIZE));
+  const currentPage = Math.min(page, lastPage);
+  const pageEvents = events.slice(
+    (currentPage - 1) * APP_LOG_PAGE_SIZE,
+    currentPage * APP_LOG_PAGE_SIZE,
+  );
 
   return (
     <SettingsCard>
@@ -133,19 +149,28 @@ export function AppLogPreviewSection() {
           type="search"
           placeholder={t("admin.section.app-logs.filterTraceId")}
           value={traceId}
-          onChange={(e) => setTraceId(e.target.value)}
+          onChange={(e) => {
+            setTraceId(e.target.value);
+            setPage(1);
+          }}
           aria-label={t("admin.section.app-logs.filterTraceId")}
         />
         <Input
           type="search"
           placeholder={t("admin.section.app-logs.filterAction")}
           value={actionFilter}
-          onChange={(e) => setActionFilter(e.target.value)}
+          onChange={(e) => {
+            setActionFilter(e.target.value);
+            setPage(1);
+          }}
           aria-label={t("admin.section.app-logs.filterAction")}
         />
         <Select
           value={level}
-          onValueChange={(v) => setLevel(v as LogLevel | "__all__")}
+          onValueChange={(v) => {
+            setLevel(v as LogLevel | "__all__");
+            setPage(1);
+          }}
         >
           <SelectTrigger
             className="w-full"
@@ -165,7 +190,13 @@ export function AppLogPreviewSection() {
             <SelectItem value="error">error</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={range} onValueChange={(v) => setRange(v as RangePreset)}>
+        <Select
+          value={range}
+          onValueChange={(v) => {
+            setRange(v as RangePreset);
+            setPage(1);
+          }}
+        >
           <SelectTrigger
             className="w-full"
             aria-label={t("admin.section.app-logs.filterRange")}
@@ -246,7 +277,7 @@ export function AppLogPreviewSection() {
                 data-slot="app-log-rows"
                 className="divide-border divide-y"
               >
-                {events.map((event, i) => {
+                {pageEvents.map((event, i) => {
                   const actionLabel =
                     event.action?.name ??
                     (`${event.http?.method ?? ""} ${event.http?.path ?? ""}`.trim() ||
@@ -290,7 +321,7 @@ export function AppLogPreviewSection() {
             </table>
           </div>
           <div
-            className="text-muted-foreground flex items-center justify-between text-xs"
+            className="text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-xs"
             data-testid="app-log-preview-summary"
           >
             <span>
@@ -299,6 +330,38 @@ export function AppLogPreviewSection() {
                 bufferMax: data?.meta.bufferMax ?? 500,
               })}
             </span>
+            {/* Same pager as the login overview. */}
+            {lastPage > 1 ? (
+              <div
+                className="flex items-center gap-2"
+                data-testid="app-log-pagination"
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 sm:min-h-9"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage(Math.max(1, currentPage - 1))}
+                >
+                  {t("admin.section.auditLog.prev")}
+                </Button>
+                <span>
+                  {t("admin.section.auditLog.pageOf", {
+                    page: currentPage,
+                    total: lastPage,
+                  })}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 sm:min-h-9"
+                  disabled={currentPage >= lastPage}
+                  onClick={() => setPage(Math.min(lastPage, currentPage + 1))}
+                >
+                  {t("admin.section.auditLog.next")}
+                </Button>
+              </div>
+            ) : null}
           </div>
         </>
       )}
