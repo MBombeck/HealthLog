@@ -5310,12 +5310,10 @@
     "sections": {
       "account": {
         "title": "Account",
-        "description": "Profilo, password, passkey e il tour di benvenuto.",
         "subtitle": "Il tuo profilo, la tua identità e i dati di accesso."
       },
       "integrations": {
         "title": "Integrazioni",
-        "description": "Servizi collegati, canali di consegna e priorità delle fonti in un unico posto.",
         "subtitle": "Collega e gestisci le tue fonti di dati e i dispositivi.",
         "connectionsHeading": "Connessioni",
         "channelsHeading": "Canali di recapito",
@@ -5324,7 +5322,6 @@
       },
       "notifications": {
         "title": "Notifiche",
-        "description": "Tutti i promemoria in un unico posto — cosa e quando, e dove vengono recapitati.",
         "subtitle": "Scegli quali promemoria ricevere e dove vengono recapitati.",
         "remindersHeading": "Promemoria",
         "matrixLink": "Notifiche per canale",
@@ -5332,7 +5329,6 @@
       },
       "layout": {
         "title": "Layout",
-        "description": "Scegli cosa mostrano dashboard, approfondimenti e i tuoi moduli di monitoraggio, e come sono disposti.",
         "backToHub": "Torna a Layout",
         "dashboard": {
           "title": "Cruscotto",
@@ -5373,12 +5369,10 @@
       },
       "thresholds": {
         "title": "Obiettivi",
-        "description": "Per metrica: il tuo intervallo target per valori sani.",
         "subtitle": "Imposta i tuoi intervalli target personali per metrica."
       },
       "sources": {
         "title": "Priorità delle fonti",
-        "description": "Scegli quale fonte prevale quando più di una registra la stessa metrica lo stesso giorno.",
         "integrationsHint": "Collega o scollega le fonti dati nella pagina Integrazioni.",
         "integrationsHintLink": "Apri le integrazioni",
         "cardTitle": "Ordine per metrica",
@@ -5465,22 +5459,18 @@
       },
       "ai": {
         "title": "Provider IA",
-        "description": "Provider, modello e chiave API per gli approfondimenti, oltre al tuo contesto «su di me».",
         "subtitle": "Scegli il tuo provider IA e usa la tua chiave."
       },
       "api": {
         "title": "API e token",
-        "description": "Token Bearer per i tuoi script e le tue app — registra misurazioni o assunzioni di farmaci da ovunque.",
         "subtitle": "Gestisci gli endpoint API e i token di accesso."
       },
       "advanced": {
         "title": "Avanzate",
-        "description": "La via d'uscita: cancella per sempre tutti i dati di salute o chiudi l'account.",
         "subtitle": "Ripristino dati ed eliminazione account."
       },
       "export": {
         "title": "Esporta e importa",
-        "description": "Scarica i tuoi dati come CSV o backup JSON completo, oppure importa da Apple Salute, JSON o CSV. Il referto medico ora si trova in Cartella sanitaria.",
         "otherOptionsHeading": "Altre opzioni di esportazione",
         "downloadFailed": "Impossibile scaricare l'esportazione. Riprova.",
         "actions": {
@@ -5725,12 +5715,10 @@
       },
       "about": {
         "title": "Informazioni su questa app",
-        "description": "Versione, licenza, link.",
         "subtitle": "Versione, licenza e link al progetto."
       },
       "sharing": {
         "title": "Condivisione",
-        "description": "Crea un link di sola lettura per condividere la tua cartella clinica con un medico.",
         "subtitle": "Condividi l'accesso in sola lettura ai tuoi dati."
       },
       "insights": {
@@ -5765,12 +5753,10 @@
       },
       "gesundheitsakte": {
         "title": "Cartella clinica",
-        "description": "Esporta la tua cartella clinica completa in PDF, FHIR R4 o in un pacchetto ZIP combinato.",
         "subtitle": "Esporta una cartella clinica completa, pronta per il medico."
       },
       "coach": {
         "title": "Coach",
-        "description": "Attiva il Coach, tono e ambito, ricordi salvati.",
         "subtitle": "Regola il Coach, i suoi suggerimenti proattivi e la sua memoria."
       },
       "security": {
@@ -5779,8 +5765,7 @@
       },
       "privacy": {
         "title": "Dati e privacy",
-        "subtitle": "I tuoi dati, la conservazione, la cifratura e la sicurezza dell'account in un unico posto.",
-        "description": "Esportazione, eliminazione, conservazione, stato della cifratura, sessioni e attività di sicurezza."
+        "subtitle": "I tuoi dati, la conservazione, la cifratura e la sicurezza dell'account in un unico posto."
       },
       "mcp": {
         "title": "Connettore MCP",
@@ -5788,8 +5773,7 @@
       },
       "anamnesis": {
         "title": "Anamnesi",
-        "subtitle": "La tua anamnesi, lo stile di vita, i dati di emergenza e ciò che l’IA può leggere.",
-        "description": "Record strutturati di allergie e anamnesi familiare."
+        "subtitle": "La tua anamnesi, lo stile di vita, i dati di emergenza e ciò che l’IA può leggere."
       },
       "environment": {
         "title": "Posizione e meteo",

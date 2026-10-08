@@ -5310,12 +5310,10 @@
     "sections": {
       "account": {
         "title": "Konto",
-        "description": "Profil, Passwort, Passkeys und deine Onboarding-Tour.",
         "subtitle": "Dein Profil, deine Identität und deine Anmeldedaten."
       },
       "integrations": {
         "title": "Integrationen",
-        "description": "Verbundene Dienste, Zustellkanäle und die Quellen-Priorität an einem Ort.",
         "subtitle": "Datenquellen und Geräte verbinden und verwalten.",
         "connectionsHeading": "Verbindungen",
         "channelsHeading": "Zustellkanäle",
@@ -5324,7 +5322,6 @@
       },
       "notifications": {
         "title": "Benachrichtigungen",
-        "description": "Alle Erinnerungen an einem Ort — was wann erinnert wird und wohin es zugestellt wird.",
         "subtitle": "Wähle, welche Erinnerungen du erhältst und wohin sie zugestellt werden.",
         "remindersHeading": "Erinnerungen",
         "matrixLink": "Benachrichtigungen je Kanal",
@@ -5332,7 +5329,6 @@
       },
       "layout": {
         "title": "Layout",
-        "description": "Lege fest, was Dashboard, Auswertungen und deine Tracking-Module zeigen und wie sie angeordnet sind.",
         "backToHub": "Zurück zu Layout",
         "dashboard": {
           "title": "Dashboard",
@@ -5373,12 +5369,10 @@
       },
       "thresholds": {
         "title": "Zielwerte",
-        "description": "Pro Metrik dein eigener Zielbereich für gesunde Werte.",
         "subtitle": "Lege deine persönlichen Zielbereiche je Messgröße fest."
       },
       "sources": {
         "title": "Quellen-Priorität",
-        "description": "Lege fest, welche Quelle führt, wenn mehrere am selben Tag dieselbe Metrik liefern.",
         "integrationsHint": "Neue Datenquellen verbindest oder trennst du auf der Integrationen-Seite.",
         "integrationsHintLink": "Integrationen öffnen",
         "cardTitle": "Rangfolge je Messgröße",
@@ -5465,22 +5459,18 @@
       },
       "ai": {
         "title": "KI-Anbieter",
-        "description": "Provider, Modell und API-Key für die Auswertungen — dazu dein „Über mich“-Kontext.",
         "subtitle": "Wähle deinen KI-Anbieter und hinterlege deinen eigenen Schlüssel."
       },
       "api": {
         "title": "API & Tokens",
-        "description": "Bearer-Tokens für eigene Skripte und Apps — erfasse Messwerte oder Einnahmen von überall.",
         "subtitle": "API-Endpunkte und Zugriffstoken verwalten."
       },
       "advanced": {
         "title": "Erweitert",
-        "description": "Der Notausgang: alle Gesundheitsdaten unwiderruflich löschen oder das Konto auflösen.",
         "subtitle": "Daten zurücksetzen und Konto löschen."
       },
       "export": {
         "title": "Export & Import",
-        "description": "Lade deine Daten als CSV oder vollständiges JSON-Backup herunter — oder importiere aus Apple Health, JSON oder CSV. Den Arztbericht findest du jetzt unter Gesundheitsakte.",
         "otherOptionsHeading": "Weitere Export-Optionen",
         "downloadFailed": "Der Export konnte nicht heruntergeladen werden. Bitte versuche es erneut.",
         "actions": {
@@ -5725,12 +5715,10 @@
       },
       "about": {
         "title": "Über diese App",
-        "description": "Version, Lizenz, Links.",
         "subtitle": "Version, Lizenz und Projektlinks."
       },
       "sharing": {
         "title": "Freigabe",
-        "description": "Erstelle einen schreibgeschützten Link, um deine Gesundheitsakte mit einer Ärztin oder einem Arzt zu teilen.",
         "subtitle": "Teile schreibgeschützten Zugriff auf deine Daten."
       },
       "insights": {
@@ -5765,12 +5753,10 @@
       },
       "gesundheitsakte": {
         "title": "Gesundheitsakte",
-        "description": "Vollständige Gesundheitsakte als PDF, FHIR R4 oder kombiniertes ZIP-Paket exportieren.",
         "subtitle": "Exportiere eine vollständige, arzttaugliche Gesundheitsakte."
       },
       "coach": {
         "title": "Coach",
-        "description": "Coach aktivieren, Ton und Umfang, gespeicherte Erinnerungen.",
         "subtitle": "Stelle den Coach, seine proaktiven Hinweise und sein Gedächtnis ein."
       },
       "security": {
@@ -5779,8 +5765,7 @@
       },
       "privacy": {
         "title": "Daten & Datenschutz",
-        "subtitle": "Deine Daten, Aufbewahrung, Verschlüsselung und Kontosicherheit an einem Ort.",
-        "description": "Export, Löschung, Aufbewahrung, Verschlüsselungsstatus, Sitzungen und Sicherheitsaktivität."
+        "subtitle": "Deine Daten, Aufbewahrung, Verschlüsselung und Kontosicherheit an einem Ort."
       },
       "mcp": {
         "title": "MCP-Connector",
@@ -5788,8 +5773,7 @@
       },
       "anamnesis": {
         "title": "Anamnese",
-        "subtitle": "Deine Vorgeschichte, Lebensumstände, Notfalldaten und was die KI lesen darf.",
-        "description": "Strukturierte Datensätze zu Allergien und Familienanamnese."
+        "subtitle": "Deine Vorgeschichte, Lebensumstände, Notfalldaten und was die KI lesen darf."
       },
       "environment": {
         "title": "Standort & Wetter",

@@ -5310,12 +5310,10 @@
     "sections": {
       "account": {
         "title": "Account",
-        "description": "Profile, password, passkeys, and your onboarding tour.",
         "subtitle": "Your profile, identity, and sign-in details."
       },
       "integrations": {
         "title": "Integrations",
-        "description": "Connected services, delivery channels, and source priority in one place.",
         "subtitle": "Connect and manage your data sources and devices.",
         "connectionsHeading": "Connections",
         "channelsHeading": "Delivery channels",
@@ -5324,7 +5322,6 @@
       },
       "notifications": {
         "title": "Notifications",
-        "description": "Every reminder in one place — what gets reminded and when, and where it's delivered.",
         "subtitle": "Choose which reminders you receive and where they're delivered.",
         "remindersHeading": "Reminders",
         "matrixLink": "Per-channel notifications",
@@ -5332,7 +5329,6 @@
       },
       "layout": {
         "title": "Layout",
-        "description": "Choose what the dashboard, insights and your tracking modules show, and how they are arranged.",
         "backToHub": "Back to Layout",
         "dashboard": {
           "title": "Dashboard",
@@ -5373,12 +5369,10 @@
       },
       "thresholds": {
         "title": "Targets",
-        "description": "Per metric: your own target range for healthy values.",
         "subtitle": "Set your personal target ranges per metric."
       },
       "sources": {
         "title": "Source priority",
-        "description": "Pick which ingest source wins when more than one records the same metric for the same day.",
         "integrationsHint": "Connect or disconnect data sources on the Integrations page.",
         "integrationsHintLink": "Open integrations",
         "cardTitle": "Ranking per metric",
@@ -5465,22 +5459,18 @@
       },
       "ai": {
         "title": "AI provider",
-        "description": "Provider, model, and API key for the insights — plus your “about me” context.",
         "subtitle": "Choose your AI provider and bring your own key."
       },
       "api": {
         "title": "API & tokens",
-        "description": "Bearer tokens for your own scripts and apps — log measurements or medication intake from anywhere.",
         "subtitle": "Manage API endpoints and access tokens."
       },
       "advanced": {
         "title": "Advanced",
-        "description": "The way out: erase every health record for good, or close the account entirely.",
         "subtitle": "Data reset and account deletion."
       },
       "export": {
         "title": "Export & import",
-        "description": "Download your data as CSV or a full JSON backup — or import from Apple Health, JSON, or CSV. The doctor report now lives under Health Record.",
         "otherOptionsHeading": "Other export options",
         "downloadFailed": "Couldn't download the export. Please try again.",
         "actions": {
@@ -5725,12 +5715,10 @@
       },
       "about": {
         "title": "About this app",
-        "description": "Version, license, links.",
         "subtitle": "Version, license, and project links."
       },
       "sharing": {
         "title": "Sharing",
-        "description": "Create a read-only link to share your health record with a clinician.",
         "subtitle": "Share read-only access to your data."
       },
       "insights": {
@@ -5765,12 +5753,10 @@
       },
       "gesundheitsakte": {
         "title": "Health record",
-        "description": "Export your full health record as PDF, FHIR R4, or a combined ZIP package.",
         "subtitle": "Export a complete, clinician-ready health record."
       },
       "coach": {
         "title": "Coach",
-        "description": "Enable the Coach, tone and scope, stored memories.",
         "subtitle": "Tune the Coach, its proactive nudges, and its memory."
       },
       "security": {
@@ -5779,8 +5765,7 @@
       },
       "privacy": {
         "title": "Data & privacy",
-        "subtitle": "Your data, retention, encryption, and account security in one place.",
-        "description": "Export, deletion, retention, encryption status, sessions, and security activity."
+        "subtitle": "Your data, retention, encryption, and account security in one place."
       },
       "mcp": {
         "title": "MCP connector",
@@ -5788,8 +5773,7 @@
       },
       "anamnesis": {
         "title": "Medical history",
-        "subtitle": "Your medical background, lifestyle, emergency details and what the AI may read.",
-        "description": "Structured allergies and family history records."
+        "subtitle": "Your medical background, lifestyle, emergency details and what the AI may read."
       },
       "environment": {
         "title": "Location & weather",
