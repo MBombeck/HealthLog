@@ -146,6 +146,17 @@ describe("buildSessionOptions", () => {
     );
   });
 
+  it("sends no startup options at all when a connection pooler needs that", () => {
+    process.env.DATABASE_SESSION_OPTIONS_DISABLED = "true";
+    try {
+      expect(buildSessionOptions()).toBeUndefined();
+      process.env.DATABASE_SESSION_OPTIONS_DISABLED = "0";
+      expect(buildSessionOptions()).toContain("-c work_mem=");
+    } finally {
+      delete process.env.DATABASE_SESSION_OPTIONS_DISABLED;
+    }
+  });
+
   it("takes DATABASE_WORK_MEM and refuses a value that would inject a flag", () => {
     process.env.DATABASE_WORK_MEM = "64MB";
     expect(buildSessionOptions()).toContain("-c work_mem=64MB");

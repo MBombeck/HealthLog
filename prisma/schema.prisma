@@ -3927,8 +3927,11 @@ model ManagedProfileHandover {
   id            String    @id @default(cuid())
   /// The managed profile (`User` row with `managedProfileAt` set).
   profileId     String    @map("profile_id")
-  /// The guardian who minted the link.
-  createdById   String    @map("created_by_id")
+  /// The guardian who minted the link. Cleared when that account is deleted
+  /// (0390): a claimed handover keeps the new owner's pending decision, and
+  /// an unclaimed link without a creator is refused like any link whose
+  /// creator lost access.
+  createdById   String?   @map("created_by_id")
   /// HMAC-SHA256 of the token, unique; the claim and its preview look the
   /// link up by it (`src/lib/managed-profiles/handover.ts`).
   tokenHash     String    @unique @map("token_hash")
@@ -3947,8 +3950,8 @@ model ManagedProfileHandover {
   /// creator lost access.
   revokedAt     DateTime? @map("revoked_at")
 
-  profile   User @relation("HandoverProfile", fields: [profileId], references: [id], onDelete: Cascade)
-  createdBy User @relation("HandoverCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  profile   User  @relation("HandoverProfile", fields: [profileId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("HandoverCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([profileId])
   // `managed_profile_handovers_open_idx` UNIQUE (profile_id) WHERE used_at IS

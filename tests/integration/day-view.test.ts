@@ -520,6 +520,170 @@ describe("life events", () => {
   });
 });
 
+describe("life events are the owner's only", () => {
+  async function seedOwnerWithEvent() {
+    const db = getPrismaClient();
+    const owner = await makeUser("le-owner", { timeline: true });
+    await db.measurement.create({
+      data: {
+        userId: owner.id,
+        type: "WEIGHT",
+        value: 80,
+        unit: "kg",
+        measuredAt: new Date("2026-03-10T06:00:00.000Z"),
+      },
+    });
+    const { encryptToBytes } = await import("@/lib/ai/coach/bytes-codec");
+    const event = await db.lifeEvent.create({
+      data: {
+        userId: owner.id,
+        category: "LOSS",
+        startDate: "2026-03-10",
+        precision: "DAY",
+        titleEncrypted: encryptToBytes("Zqx private"),
+      },
+    });
+    return { owner, event };
+  }
+
+  async function manageWith(ownerId: string, delegateId: string) {
+    const { inviteGrant, acceptGrant } = await import("@/lib/sharing/grants");
+    const invited = await inviteGrant({
+      grantorId: ownerId,
+      granteeId: delegateId,
+      access: "MANAGE",
+      scope: null,
+    });
+    await acceptGrant({ grantId: invited.id, granteeId: delegateId });
+    const session = await signIn(delegateId);
+    await switchSessionTo(session.id, ownerId);
+  }
+
+  const grants: Array<
+    [string, (ownerId: string, delegateId: string) => Promise<void>]
+  > = [
+    ["a profile share", (o, d) => shareWith(o, d, ["profile", "measurements"])],
+    ["a whole-record share", (o, d) => shareWith(o, d, null)],
+    ["a MANAGE share", manageWith],
+  ];
+
+  for (const [label, grant] of grants) {
+    it(`shows none to ${label}`, async () => {
+      const { owner, event } = await seedOwnerWithEvent();
+      const delegate = await makeUser("le-delegate");
+      await grant(owner.id, delegate.id);
+
+      const routes = await import("@/app/api/life-events/route");
+      const byId = await import("@/app/api/life-events/[id]/route");
+      expect(
+        (await call(routes.GET as Handler, "GET", "/api/life-events")).status,
+      ).toBe(403);
+      expect(
+        (
+          await call(routes.POST as Handler, "POST", "/api/life-events", {
+            category: "WORK",
+            startDate: "2024-01-01",
+            precision: "YEAR",
+            title: "New job",
+          })
+        ).status,
+      ).toBe(403);
+      expect(
+        (
+          await call(
+            byId.PATCH as Handler,
+            "PATCH",
+            `/api/life-events/${event.id}`,
+            { category: "FAMILY" },
+            { id: event.id },
+          )
+        ).status,
+      ).toBe(403);
+      expect(
+        (
+          await call(
+            byId.DELETE as Handler,
+            "DELETE",
+            `/api/life-events/${event.id}`,
+            undefined,
+            { id: event.id },
+          )
+        ).status,
+      ).toBe(403);
+
+      const day = await json<Day>(await getDay("2026-03-10"));
+      expect(day.values.map((v) => v.value)).toEqual([80]);
+      expect(JSON.stringify(day)).not.toMatch(/Zqx|"lifeEvent"/);
+      expect(day.sections.lifeEvents).toEqual({
+        available: false,
+        reason: "not_shared",
+      });
+
+      const { GET: index } = await import("@/app/api/day/index/route");
+      const days = await json<{ days: Record<string, string[]> }>(
+        await call(
+          index as Handler,
+          "GET",
+          "/api/day/index?from=2026-03-01&to=2026-03-31",
+        ),
+      );
+      expect(days.days["2026-03-10"]).not.toContain("lifeEvents");
+
+      const { GET: timeline } = await import("@/app/api/timeline/route");
+      const lanes = await call(
+        timeline as Handler,
+        "GET",
+        "/api/timeline?zoom=year&to=2026-03-31",
+      );
+      if (lanes.status === 200) {
+        const body =
+          await json<import("@/lib/day/contract").TimelineResponse>(lanes);
+        expect(body.lanes.map((l) => l.key)).not.toContain("life");
+        expect(JSON.stringify(body)).not.toContain("Zqx");
+      } else {
+        expect(lanes.status).toBe(403);
+      }
+
+      const { GET: readiness } =
+        await import("@/app/api/timeline/readiness/route");
+      const ready = await call(
+        readiness as Handler,
+        "GET",
+        "/api/timeline/readiness",
+      );
+      if (ready.status === 200) {
+        const body =
+          await json<import("@/lib/day/contract").TimelineReadinessResponse>(
+            ready,
+          );
+        expect(body.lanes.map((l) => l.key)).not.toContain("life");
+      } else {
+        expect(ready.status).toBe(403);
+      }
+
+      // The event is untouched.
+      const row = await getPrismaClient().lifeEvent.findUniqueOrThrow({
+        where: { id: event.id },
+      });
+      expect([row.category, row.deletedAt]).toEqual(["LOSS", null]);
+    });
+  }
+
+  it("shows the owner their own events in the timeline", async () => {
+    const { owner } = await seedOwnerWithEvent();
+    await signIn(owner.id);
+    const { GET: timeline } = await import("@/app/api/timeline/route");
+    const body = await json<import("@/lib/day/contract").TimelineResponse>(
+      await call(
+        timeline as Handler,
+        "GET",
+        "/api/timeline?zoom=year&to=2026-03-31",
+      ),
+    );
+    expect(body.lanes.map((l) => l.key)).toContain("life");
+  });
+});
+
 describe("notable days", () => {
   it("marks a three-month high in the day, the index and the visit window", async () => {
     const db = getPrismaClient();

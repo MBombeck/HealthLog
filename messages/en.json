@@ -531,6 +531,7 @@
       "signOut": "Sign out and continue",
       "guardiansTitle": "Who keeps access for now",
       "guardiansHint": "Proposed by the people who looked after your record. You decide right after signing in.",
+      "guardianUnnamed": "A guardian",
       "usernameHint": "3 to 30 letters, numbers, _ or -.",
       "usernameReserved": "Usernames starting with managed- are reserved.",
       "emailHint": "Required, so you can get back in if you forget your password.",
@@ -7811,7 +7812,8 @@
         "restoreSkippedCycleCiphertext": "Cycle note or label sealed with a key this server does not hold (day or symptom kept without it)",
         "restoreSkippedMoodLabelCiphertext": "Mood tag or group name sealed with a key this server does not hold (kept without its name)",
         "restoreSkippedVisitCiphertext": "Visit or practitioner text sealed with a key this server does not hold (kept without it)",
-        "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)"
+        "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Location of an environment period or day sealed with a key this server does not hold (kept sealed, those days are not refreshed)"
       },
       "danger-zone": {
         "title": "Danger zone",
@@ -8444,7 +8446,17 @@
       "changedTitle": "{name} changed your access",
       "changedEnd": "Your access to the health record of {name} has ended.",
       "changedRead": "You can now view the health record of {name}, but not change it.",
-      "changedManage": "You can manage the health record of {name}."
+      "changedManage": "You can manage the health record of {name}.",
+      "unnamed": {
+        "claimedTitle": "The person you looked after now has their own account",
+        "claimedEnd": "The person you looked after took over their health record. Your access has ended.",
+        "claimedRead": "The person you looked after took over their health record. You can still view it, but no longer change it.",
+        "claimedManage": "The person you looked after took over their health record. You can still manage it until they decide otherwise.",
+        "changedTitle": "Your access to a health record changed",
+        "changedEnd": "Your access to the health record of the person you looked after has ended.",
+        "changedRead": "You can now view the health record of the person you looked after, but not change it.",
+        "changedManage": "You can manage the health record of the person you looked after."
+      }
     }
   },
   "i18n": {
@@ -9544,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Report range {range}",
       "catalogDiffers": "your range {range}"
-    },
-    "convertedFrom": "Converted from {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {
@@ -11880,7 +11891,7 @@
       },
       "profile": {
         "label": "Health background",
-        "detail": "Allergies, family history, the facts in your health profile, your visits and practices, your vaccination record and your life events."
+        "detail": "Allergies, family history, the facts in your health profile, your visits and practices, and your vaccination record."
       },
       "illness": {
         "label": "Illness",

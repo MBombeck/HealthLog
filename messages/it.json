@@ -531,6 +531,7 @@
       "signOut": "Esci e continua",
       "guardiansTitle": "Chi mantiene l'accesso per ora",
       "guardiansHint": "Proposto dalle persone che hanno tenuto la tua cartella. Decidi subito dopo l'accesso.",
+      "guardianUnnamed": "Un tutore",
       "usernameHint": "Da 3 a 30 lettere, numeri, _ o -.",
       "usernameReserved": "I nomi utente che iniziano con managed- sono riservati.",
       "emailHint": "Obbligatorio, così puoi rientrare se dimentichi la password.",
@@ -7811,7 +7812,8 @@
         "restoreSkippedCycleCiphertext": "Nota o etichetta del ciclo cifrata con una chiave che questo server non possiede (giorno o sintomo mantenuto senza)",
         "restoreSkippedMoodLabelCiphertext": "Nome di tag o gruppo dell’umore cifrato con una chiave che questo server non possiede (mantenuto senza nome)",
         "restoreSkippedVisitCiphertext": "Testo di visita o professionista cifrato con una chiave che questo server non possiede (mantenuto senza)",
-        "restoreSkippedVaccinationCiphertext": "Nota di vaccinazione cifrata con una chiave che questo server non possiede (dose mantenuta senza)"
+        "restoreSkippedVaccinationCiphertext": "Nota di vaccinazione cifrata con una chiave che questo server non possiede (dose mantenuta senza)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Luogo di un periodo o giorno ambientale cifrato con una chiave che questo server non possiede (mantenuto cifrato, quei giorni non vengono aggiornati)"
       },
       "danger-zone": {
         "title": "Zona pericolosa",
@@ -8444,7 +8446,17 @@
       "changedTitle": "{name} ha cambiato il tuo accesso",
       "changedEnd": "Il tuo accesso alla cartella sanitaria di {name} è terminato.",
       "changedRead": "Ora puoi vedere la cartella sanitaria di {name}, ma non modificarla.",
-      "changedManage": "Puoi gestire la cartella sanitaria di {name}."
+      "changedManage": "Puoi gestire la cartella sanitaria di {name}.",
+      "unnamed": {
+        "claimedTitle": "La persona di cui ti occupavi ora ha un proprio account",
+        "claimedEnd": "La persona di cui ti occupavi ha preso in carico la propria cartella sanitaria. Il tuo accesso è terminato.",
+        "claimedRead": "La persona di cui ti occupavi ha preso in carico la propria cartella sanitaria. Puoi ancora consultarla, ma non più modificarla.",
+        "claimedManage": "La persona di cui ti occupavi ha preso in carico la propria cartella sanitaria. Puoi ancora gestirla finché non deciderà diversamente.",
+        "changedTitle": "Il tuo accesso a una cartella sanitaria è cambiato",
+        "changedEnd": "Il tuo accesso alla cartella sanitaria della persona di cui ti occupavi è terminato.",
+        "changedRead": "Ora puoi consultare la cartella sanitaria della persona di cui ti occupavi, ma non modificarla.",
+        "changedManage": "Puoi gestire la cartella sanitaria della persona di cui ti occupavi."
+      }
     }
   },
   "i18n": {
@@ -9544,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Intervallo del referto {range}",
       "catalogDiffers": "il tuo intervallo {range}"
-    },
-    "convertedFrom": "Convertito da {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {
@@ -11880,7 +11891,7 @@
       },
       "profile": {
         "label": "Anamnesi",
-        "detail": "Allergie, anamnesi familiare, i dati del tuo profilo sanitario, le tue visite mediche e studi, il tuo libretto vaccinale e i tuoi eventi di vita."
+        "detail": "Allergie, anamnesi familiare, i dati del tuo profilo sanitario, le tue visite mediche e studi e il tuo libretto vaccinale."
       },
       "illness": {
         "label": "Malattie",

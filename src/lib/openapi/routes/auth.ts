@@ -718,8 +718,12 @@ const claimPreview = z
     guardians: z
       .array(
         z.object({
-          grantId: z.string(),
-          displayName: z.string(),
+          displayName: z
+            .string()
+            .nullable()
+            .describe(
+              "The guardian's display name; null when they set none. Never a login name or an id: the holder of the link has proved nothing yet.",
+            ),
           proposal: claimAccess,
         }),
       )

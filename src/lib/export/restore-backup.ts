@@ -2048,6 +2048,7 @@ export async function restoreBackup(
                 biomarker.context == null
                   ? null
                   : encryptContextToBytes(biomarker.context),
+              analyteKey: biomarker.analyteKey ?? null,
               ...(biomarker.createdAt
                 ? { createdAt: new Date(biomarker.createdAt) }
                 : {}),
@@ -2154,6 +2155,8 @@ export async function restoreBackup(
               sourceReferenceLow: lab.sourceReferenceLow ?? null,
               sourceReferenceHigh: lab.sourceReferenceHigh ?? null,
               sourceReferenceText: lab.sourceReferenceText ?? null,
+              sourceValue: lab.sourceValue ?? null,
+              sourceUnit: lab.sourceUnit ?? null,
               takenAt: new Date(lab.takenAt),
               source: lab.source,
               noteEncrypted:
@@ -2660,6 +2663,7 @@ export async function restoreBackup(
           tx,
           ownerId,
           payload,
+          skips,
         );
 
         const cleared = {

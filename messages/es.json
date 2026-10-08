@@ -531,6 +531,7 @@
       "signOut": "Cerrar sesión y continuar",
       "guardiansTitle": "Quién conserva el acceso por ahora",
       "guardiansHint": "Lo proponen las personas que llevaron tu historial. Tú decides justo después de iniciar sesión.",
+      "guardianUnnamed": "Una persona tutora",
       "usernameHint": "De 3 a 30 letras, números, _ o -.",
       "usernameReserved": "Los nombres de usuario que empiezan por managed- están reservados.",
       "emailHint": "Obligatorio, para que puedas volver a entrar si olvidas tu contraseña.",
@@ -7811,7 +7812,8 @@
         "restoreSkippedCycleCiphertext": "Nota o etiqueta del ciclo cifrada con una clave que este servidor no tiene (el día o el síntoma se conserva sin ella)",
         "restoreSkippedMoodLabelCiphertext": "Nombre de etiqueta o grupo de ánimo cifrado con una clave que este servidor no tiene (se conserva sin el nombre)",
         "restoreSkippedVisitCiphertext": "Texto de visita o profesional cifrado con una clave que este servidor no tiene (se conserva sin él)",
-        "restoreSkippedVaccinationCiphertext": "Nota de vacunación cifrada con una clave que este servidor no tiene (la dosis se conserva sin ella)"
+        "restoreSkippedVaccinationCiphertext": "Nota de vacunación cifrada con una clave que este servidor no tiene (la dosis se conserva sin ella)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Ubicación de un periodo o día ambiental cifrada con una clave que este servidor no tiene (se conserva cifrada, esos días no se actualizan)"
       },
       "danger-zone": {
         "title": "Zona de peligro",
@@ -8444,7 +8446,17 @@
       "changedTitle": "{name} ha cambiado tu acceso",
       "changedEnd": "Tu acceso al historial de salud de {name} ha terminado.",
       "changedRead": "Ahora puedes ver el historial de salud de {name}, pero no cambiarlo.",
-      "changedManage": "Puedes gestionar el historial de salud de {name}."
+      "changedManage": "Puedes gestionar el historial de salud de {name}.",
+      "unnamed": {
+        "claimedTitle": "La persona a la que cuidabas ya tiene su propia cuenta",
+        "claimedEnd": "La persona a la que cuidabas ha asumido su historial de salud. Tu acceso ha terminado.",
+        "claimedRead": "La persona a la que cuidabas ha asumido su historial de salud. Puedes seguir viéndolo, pero ya no modificarlo.",
+        "claimedManage": "La persona a la que cuidabas ha asumido su historial de salud. Puedes seguir gestionándolo hasta que decida otra cosa.",
+        "changedTitle": "Tu acceso a un historial de salud ha cambiado",
+        "changedEnd": "Tu acceso al historial de salud de la persona a la que cuidabas ha terminado.",
+        "changedRead": "Ahora puedes ver el historial de salud de la persona a la que cuidabas, pero no modificarlo.",
+        "changedManage": "Puedes gestionar el historial de salud de la persona a la que cuidabas."
+      }
     }
   },
   "i18n": {
@@ -9544,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Rango del informe {range}",
       "catalogDiffers": "tu rango {range}"
-    },
-    "convertedFrom": "Convertido de {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {
@@ -11880,7 +11891,7 @@
       },
       "profile": {
         "label": "Antecedentes de salud",
-        "detail": "Alergias, antecedentes familiares, los datos de tu perfil de salud, tus visitas médicas y consultas, tu cartilla de vacunación y tus acontecimientos vitales."
+        "detail": "Alergias, antecedentes familiares, los datos de tu perfil de salud, tus visitas médicas y consultas, y tu cartilla de vacunación."
       },
       "illness": {
         "label": "Enfermedades",

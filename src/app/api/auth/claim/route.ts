@@ -138,11 +138,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     details: { method: "password" },
   });
 
-  notifyGuardiansOfHandover(
-    "claimed",
-    claimed.displayName ?? claimed.username,
-    claimed.guardians,
-  );
+  notifyGuardiansOfHandover("claimed", claimed.displayName, claimed.guardians);
 
   annotate({
     action: { name: "profile_claim.complete" },

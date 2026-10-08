@@ -14,8 +14,8 @@
  * Every section maps to the sharing domain the routes that own its rows
  * already declare (the sharing guard freezes those), so the day can never show
  * a delegate more of a section than its own list would. The environment rows
- * have no delegable route at all, so they map to no domain and are read for
- * the owner only.
+ * and the life events have no delegable route at all, so they map to no
+ * domain and are read for the owner only.
  */
 import type { MeasurementType } from "@/generated/prisma/enums";
 
@@ -32,8 +32,11 @@ import type { ShareDomain } from "@/lib/sharing/scope";
  *
  * Mirrors the declarations of the routes that serve the same rows: readings,
  * sleep, workouts and check-up reminders are `measurements`; mood and the
- * screeners are `mind`; allergies, visits, vaccinations, the anamnesis facts
- * and life events are `profile`; symptoms ride `illness`.
+ * screeners are `mind`; allergies, visits, vaccinations and the anamnesis
+ * facts are `profile`; symptoms ride `illness`. Life events, like the
+ * environment rows, are owner-only in v1.42: their routes take no delegate
+ * at any level, so no share (a `profile` one, a legacy whole-record one, or
+ * MANAGE) shows them here either.
  */
 export const DAY_SECTION_SHARE_DOMAIN: Readonly<
   Record<DaySectionKey, ShareDomain | null>
@@ -55,7 +58,7 @@ export const DAY_SECTION_SHARE_DOMAIN: Readonly<
   cycle: "cycle",
   environment: null,
   lifestyle: "profile",
-  lifeEvents: "profile",
+  lifeEvents: null,
 });
 
 /** The module that owns a section, from the one surface map. */

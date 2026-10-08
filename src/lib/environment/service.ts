@@ -42,6 +42,7 @@ import {
   type DailyAirQualityObservation,
 } from "@/lib/environment/open-meteo-air-quality";
 import { readLocation, sealLocation } from "@/lib/environment/location-cipher";
+import { emitSignal } from "@/lib/logging/signal";
 
 export { isAirQualityActive };
 import { OpenMeteoBudgetExhaustedError } from "@/lib/environment/request-budget";
@@ -148,7 +149,10 @@ function groupKey(loc: ResolvedLocation): string {
 export interface FetchAndStoreResult {
   /** Days that resolved to a location and were upserted. */
   stored: number;
-  /** Days skipped because no location resolved (no home, no override). */
+  /**
+   * Days skipped because no location resolved (no home, no override), or
+   * because they fall in a period whose sealed location does not open.
+   */
   skipped: number;
   /** Distinct upstream fetches made. */
   fetches: number;
@@ -203,8 +207,23 @@ export function resolveHome(user: {
   };
 }
 
-/** Every dated location period of an account, opened. */
-async function readTravelOverrides(userId: string): Promise<TravelOverride[]> {
+/** A location period whose sealed location this host cannot open. */
+interface UnreadablePeriod {
+  startDate: string;
+  endDate: string;
+}
+
+/**
+ * Every dated location period of an account, opened, plus the periods whose
+ * sealed location did not open (a key missing from `ENCRYPTION_KEYS`, a
+ * damaged value). The second list exists so the caller can fail closed: a
+ * period it cannot read still says "this account was not at home on these
+ * days", so those days must not fall through to the home location.
+ */
+async function readTravelOverrides(userId: string): Promise<{
+  overrides: TravelOverride[];
+  unreadable: UnreadablePeriod[];
+}> {
   const records = await prisma.environmentTravelLocation.findMany({
     where: { userId },
     select: {
@@ -216,17 +235,33 @@ async function readTravelOverrides(userId: string): Promise<TravelOverride[]> {
       locationEncrypted: true,
     },
   });
-  return records.flatMap((row) => {
+  const overrides: TravelOverride[] = [];
+  const unreadable: UnreadablePeriod[] = [];
+  for (const row of records) {
     const location = readLocation({
       sealed: row.locationEncrypted,
       lat: row.lat,
       lon: row.lon,
       label: row.label,
     });
-    return location
-      ? [{ startDate: row.startDate, endDate: row.endDate, ...location }]
-      : [];
-  });
+    if (location) {
+      overrides.push({
+        startDate: row.startDate,
+        endDate: row.endDate,
+        ...location,
+      });
+    } else if (row.locationEncrypted && row.locationEncrypted.byteLength > 0) {
+      // `readLocation` returns null for a present sealed value only when it
+      // does not open.
+      unreadable.push({ startDate: row.startDate, endDate: row.endDate });
+    }
+  }
+  return { overrides, unreadable };
+}
+
+/** True when `day` falls inside one of `periods`. */
+function inAnyPeriod(day: string, periods: readonly UnreadablePeriod[]) {
+  return periods.some((p) => day >= p.startDate && day <= p.endDate);
 }
 
 /**
@@ -251,7 +286,17 @@ export async function fetchAndStoreEnvironment(args: {
   }
 
   const home = resolveHome(user);
-  const travelRows = await readTravelOverrides(userId);
+  const travel = await readTravelOverrides(userId);
+  if (travel.unreadable.length > 0) {
+    // Fail closed: the days of a period this host cannot open are skipped,
+    // never resolved to the home location, so a stored travel day is not
+    // overwritten with the weather at home.
+    emitSignal({
+      action: "environment.travel_location.undecryptable",
+      level: "error",
+      meta: { periods: travel.unreadable.length },
+    });
+  }
   const airQuality = isAirQualityActive(user.environmentAirQualityEnabled);
 
   // The timezone used to enumerate AND fetch days — one tz keeps the stored
@@ -262,7 +307,11 @@ export async function fetchAndStoreEnvironment(args: {
   const groups = new Map<string, { loc: ResolvedLocation; days: string[] }>();
   let skipped = 0;
   for (const day of days) {
-    const loc = resolveLocationForDay(day, home, travelRows);
+    if (inAnyPeriod(day, travel.unreadable)) {
+      skipped += 1;
+      continue;
+    }
+    const loc = resolveLocationForDay(day, home, travel.overrides);
     if (!loc) {
       skipped += 1;
       continue;
@@ -281,13 +330,16 @@ export async function fetchAndStoreEnvironment(args: {
     const max = groupDays[groupDays.length - 1];
     let observations: DailyEnvironmentObservation[];
     try {
-      observations = await fetchDailyEnvironment({
-        lat: loc.lat,
-        lon: loc.lon,
-        timezone,
-        startDate: min,
-        endDate: max,
-      });
+      observations = await fetchDailyEnvironment(
+        {
+          lat: loc.lat,
+          lon: loc.lon,
+          timezone,
+          startDate: min,
+          endDate: max,
+        },
+        { accountId: userId },
+      );
     } catch (err) {
       if (err instanceof OpenMeteoBudgetExhaustedError) {
         // Nothing was sent. The remaining groups wait for the next run.
@@ -305,13 +357,16 @@ export async function fetchAndStoreEnvironment(args: {
     // air quality; the weather is stored regardless.
     let airByDay: Map<string, DailyAirQualityObservation> | null = null;
     if (airQuality) {
-      const result = await fetchDailyAirQuality({
-        lat: loc.lat,
-        lon: loc.lon,
-        timezone,
-        startDate: min,
-        endDate: max,
-      });
+      const result = await fetchDailyAirQuality(
+        {
+          lat: loc.lat,
+          lon: loc.lon,
+          timezone,
+          startDate: min,
+          endDate: max,
+        },
+        { accountId: userId },
+      );
       if (result.stopped === "budget") budgetBlocked = true;
       airByDay = new Map(result.days.map((d) => [d.date, d]));
       fetches += result.days.length > 0 ? 1 : 0;
@@ -525,13 +580,16 @@ export async function fillAirQualityGaps(
   let filled = 0;
   for (const group of byLocation.values()) {
     for (const range of nearbyRanges(group.days)) {
-      const result = await fetchDailyAirQuality({
-        lat: group.lat,
-        lon: group.lon,
-        timezone,
-        startDate: range[0],
-        endDate: range[range.length - 1],
-      });
+      const result = await fetchDailyAirQuality(
+        {
+          lat: group.lat,
+          lon: group.lon,
+          timezone,
+          startDate: range[0],
+          endDate: range[range.length - 1],
+        },
+        { accountId: userId },
+      );
       const wanted = new Set(range);
       const now = new Date();
       const ops = result.days

@@ -350,13 +350,16 @@ export interface AirQualityFetchResult {
  * problem: the caller gets what was fetched and why it stopped, and the days
  * not returned stay unfetched for the next run.
  */
-export async function fetchDailyAirQuality(args: {
-  lat: number;
-  lon: number;
-  timezone: string;
-  startDate: string;
-  endDate: string;
-}): Promise<AirQualityFetchResult> {
+export async function fetchDailyAirQuality(
+  args: {
+    lat: number;
+    lon: number;
+    timezone: string;
+    startDate: string;
+    endDate: string;
+  },
+  budget: { accountId?: string } = {},
+): Promise<AirQualityFetchResult> {
   const days: DailyAirQualityObservation[] = [];
   // Days before the feed's first day are answered here, without a request.
   for (
@@ -379,7 +382,7 @@ export async function fetchDailyAirQuality(args: {
       variables.length,
       enumerateDayCount(chunk.startDate, chunk.endDate),
     );
-    if (!(await reserveOpenMeteoCalls(weight))) {
+    if (!(await reserveOpenMeteoCalls(weight, budget.accountId))) {
       return { days, stopped: "budget" };
     }
     try {

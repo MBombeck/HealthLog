@@ -6,6 +6,11 @@
  * The span is capped (the worker re-checks the cap too). Requires a home
  * location (otherwise there is nothing to resolve). Module-gated + rate-limited;
  * `userId` is narrowed from auth.
+ *
+ * Every backfill draws on the instance-wide Open-Meteo budget, so one account
+ * is held to three a rolling hour (429), one queued per twenty minutes (409
+ * `environment.backfill_pending`), and its own share of the daily budget in
+ * the worker (`OPEN_METEO_ACCOUNT_DAY_SHARE`).
  */
 import { NextRequest } from "next/server";
 
@@ -18,7 +23,10 @@ import {
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
-import { checkAnalyticsReadRateLimit } from "@/lib/rate-limit";
+import {
+  checkAnalyticsReadRateLimit,
+  checkEnvironmentBackfillRateLimit,
+} from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { environmentBackfillSchema } from "@/lib/validations/environment";
 import {
@@ -26,7 +34,7 @@ import {
   defaultBackfillRange,
   utcDayKey,
 } from "@/lib/environment/service";
-import { enqueueEnvironmentFetch } from "@/lib/jobs/environment-fetch";
+import { enqueueEnvironmentBackfill } from "@/lib/jobs/environment-fetch";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -96,11 +104,24 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  const enqueued = await enqueueEnvironmentFetch({
+  const backfillLimit = await checkEnvironmentBackfillRateLimit(user.id);
+  if (!backfillLimit.allowed) {
+    return apiError("Too many backfills. Please retry later.", 429, {
+      errorCode: "environment.backfill_rate_limited",
+    });
+  }
+
+  const outcome = await enqueueEnvironmentBackfill({
     userId: user.id,
     startDate,
     endDate,
   });
+  if (outcome === "already_queued") {
+    return apiError("A backfill for this account is already queued.", 409, {
+      errorCode: "environment.backfill_pending",
+    });
+  }
+  const enqueued = outcome === "enqueued";
 
   annotate({
     action: { name: "environment.backfill.enqueue" },

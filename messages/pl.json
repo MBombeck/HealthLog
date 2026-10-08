@@ -531,6 +531,7 @@
       "signOut": "Wyloguj i kontynuuj",
       "guardiansTitle": "Kto na razie zachowuje dostęp",
       "guardiansHint": "Zaproponowane przez osoby, które prowadziły Twoją kartę. Zdecydujesz zaraz po zalogowaniu.",
+      "guardianUnnamed": "Opiekun",
       "usernameHint": "Od 3 do 30 liter, cyfr, _ lub -.",
       "usernameReserved": "Nazwy użytkownika zaczynające się od managed- są zarezerwowane.",
       "emailHint": "Wymagany, żebyś mógł wrócić, jeśli zapomnisz hasła.",
@@ -7811,7 +7812,8 @@
         "restoreSkippedCycleCiphertext": "Notatka lub etykieta cyklu zaszyfrowana kluczem, którego ten serwer nie ma (dzień lub objaw zachowany bez niej)",
         "restoreSkippedMoodLabelCiphertext": "Nazwa tagu lub grupy nastroju zaszyfrowana kluczem, którego ten serwer nie ma (zachowana bez nazwy)",
         "restoreSkippedVisitCiphertext": "Tekst wizyty lub lekarza zaszyfrowany kluczem, którego ten serwer nie ma (zachowany bez niego)",
-        "restoreSkippedVaccinationCiphertext": "Notatka szczepienia zaszyfrowana kluczem, którego ten serwer nie ma (dawka zachowana bez niej)"
+        "restoreSkippedVaccinationCiphertext": "Notatka szczepienia zaszyfrowana kluczem, którego ten serwer nie ma (dawka zachowana bez niej)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Lokalizacja okresu lub dnia środowiskowego zaszyfrowana kluczem, którego ten serwer nie ma (zachowana w postaci zaszyfrowanej, te dni nie są odświeżane)"
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",
@@ -8444,7 +8446,17 @@
       "changedTitle": "{name} zmienia Twój dostęp",
       "changedEnd": "Twój dostęp do karty zdrowia osoby {name} się zakończył.",
       "changedRead": "Możesz teraz oglądać kartę zdrowia osoby {name}, ale nie zmieniać jej.",
-      "changedManage": "Możesz zarządzać kartą zdrowia osoby {name}."
+      "changedManage": "Możesz zarządzać kartą zdrowia osoby {name}.",
+      "unnamed": {
+        "claimedTitle": "Osoba pod Twoją opieką ma teraz własne konto",
+        "claimedEnd": "Osoba pod Twoją opieką przejęła swoją dokumentację zdrowotną. Twój dostęp wygasł.",
+        "claimedRead": "Osoba pod Twoją opieką przejęła swoją dokumentację zdrowotną. Nadal możesz ją przeglądać, ale nie możesz już jej zmieniać.",
+        "claimedManage": "Osoba pod Twoją opieką przejęła swoją dokumentację zdrowotną. Nadal możesz nią zarządzać, dopóki nie zdecyduje inaczej.",
+        "changedTitle": "Twój dostęp do dokumentacji zdrowotnej się zmienił",
+        "changedEnd": "Twój dostęp do dokumentacji zdrowotnej osoby pod Twoją opieką wygasł.",
+        "changedRead": "Możesz teraz przeglądać dokumentację zdrowotną osoby pod Twoją opieką, ale nie możesz jej zmieniać.",
+        "changedManage": "Możesz zarządzać dokumentacją zdrowotną osoby pod Twoją opieką."
+      }
     }
   },
   "i18n": {
@@ -9544,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Zakres z wyniku {range}",
       "catalogDiffers": "twój zakres {range}"
-    },
-    "convertedFrom": "Przeliczono z {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {
@@ -11880,7 +11891,7 @@
       },
       "profile": {
         "label": "Historia zdrowia",
-        "detail": "Alergie, wywiad rodzinny, dane z Twojego profilu zdrowotnego, wizyty lekarskie i gabinety, Twoja historia szczepień oraz Twoje wydarzenia życiowe."
+        "detail": "Alergie, wywiad rodzinny, dane z Twojego profilu zdrowotnego, wizyty lekarskie i gabinety oraz Twoja historia szczepień."
       },
       "illness": {
         "label": "Choroby",

@@ -109,6 +109,22 @@ export function getWorkMem(): string {
 }
 
 /**
+ * Whether the app may send the libpq `options` startup parameter at all.
+ *
+ * PgBouncer refuses a connection that carries a startup parameter it does not
+ * know (`unsupported startup parameter: options`) unless the operator lists
+ * it in `ignore_startup_parameters`. Up to v1.41 such a host could set the
+ * statement timeout to 0, which dropped the whole string; v1.42 always sends
+ * `work_mem`, so that no longer worked. `DATABASE_SESSION_OPTIONS_DISABLED`
+ * (1, true or yes) sends none of the session settings; the pooler or the
+ * database's own defaults then apply.
+ */
+export function sessionOptionsDisabled(): boolean {
+  const raw = process.env.DATABASE_SESSION_OPTIONS_DISABLED?.trim();
+  return raw !== undefined && /^(1|true|yes)$/i.test(raw);
+}
+
+/**
  * Build the libpq `options` startup string applying the session settings.
  * Passed straight through `PrismaPg` to the underlying `pg.Pool`, which
  * forwards it as the connection's `options` startup parameter so every
@@ -116,9 +132,12 @@ export function getWorkMem(): string {
  *
  * The timeouts are left out when disabled (timeout 0); `work_mem` is always
  * set. Up to v1.41 the whole string was `undefined` at timeout 0, which would
- * have taken `work_mem` with it.
+ * have taken `work_mem` with it. `undefined` now means exactly one thing:
+ * the operator turned the startup options off for a connection pooler
+ * ({@link sessionOptionsDisabled}).
  */
-export function buildSessionOptions(): string {
+export function buildSessionOptions(): string | undefined {
+  if (sessionOptionsDisabled()) return undefined;
   const timeoutMs = getStatementTimeoutMs();
   const timeouts =
     timeoutMs > 0

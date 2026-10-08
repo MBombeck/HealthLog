@@ -88,14 +88,25 @@ vi.mock("@/lib/password-breach-check", () => ({
 
 // The outbox. Guardians are told on their own channels; what is sent, to
 // whom, is read back from here instead of from a mail server.
-const sent: { userId: string; titleKey: string; messageKey: string }[] = [];
+const sent: {
+  userId: string;
+  titleKey: string;
+  messageKey: string;
+  params?: Record<string, unknown>;
+}[] = [];
 vi.mock("@/lib/notifications/dispatch-localised", () => ({
   dispatchLocalisedNotification: vi.fn(
-    async (opts: { userId: string; titleKey: string; messageKey: string }) => {
+    async (opts: {
+      userId: string;
+      titleKey: string;
+      messageKey: string;
+      params?: Record<string, unknown>;
+    }) => {
       sent.push({
         userId: opts.userId,
         titleKey: opts.titleKey,
         messageKey: opts.messageKey,
+        ...(opts.params ? { params: opts.params } : {}),
       });
     },
   ),
@@ -410,6 +421,58 @@ describe("the handover link", () => {
   });
 });
 
+describe("what the link shows before anyone signs in", () => {
+  it("names each guardian by display name only, never a login name or a grant id", async () => {
+    const { creator, second, profile, creatorGrant, secondGrant } =
+      await household();
+    await getPrismaClient().user.update({
+      where: { id: creator.id },
+      data: { displayName: "Alex Example" },
+    });
+    signIn(creator);
+    const token = await mintToken(profile.id, [
+      { grantId: creatorGrant.id, proposal: "manage" },
+      { grantId: secondGrant.id, proposal: "read" },
+    ]);
+    signOut();
+
+    const response = await preview(token);
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    const text = JSON.stringify(body);
+    expect(text).not.toContain(creatorGrant.id);
+    expect(text).not.toContain(secondGrant.id);
+    expect(text).not.toContain(creator.username);
+    expect(text).not.toContain(second.username);
+    expect(body.data.guardians).toEqual([
+      { displayName: "Alex Example", proposal: "manage" },
+      { displayName: null, proposal: "read" },
+    ]);
+  });
+
+  it("tells the guardians without the new login name when the profile has no display name", async () => {
+    const { creator, profile, creatorGrant } = await household();
+    signIn(creator);
+    const token = await mintToken(profile.id, [
+      { grantId: creatorGrant.id, proposal: "end" },
+    ]);
+    signOut();
+    await getPrismaClient().user.update({
+      where: { id: profile.id },
+      data: { displayName: null },
+    });
+    const response = await claim(token, { username: "robinlogin" });
+    expect(response.status).toBe(201);
+    await vi.waitFor(() => expect(sent.length).toBeGreaterThan(0));
+    for (const message of sent) {
+      expect(message.titleKey).toBe(
+        "notifications.handover.unnamed.claimedTitle",
+      );
+      expect(message.params).toBeUndefined();
+    }
+  });
+});
+
 describe("minting the link", () => {
   it("needs a fresh second factor", async () => {
     const creator = await person("stale", false);
@@ -618,11 +681,14 @@ describe("claiming the profile", () => {
           userId: creator.id,
           titleKey: "notifications.handover.claimedTitle",
           messageKey: "notifications.handover.claimedManage",
+          // The name the Guardians gave the profile, never the new login.
+          params: { name: "Robin" },
         },
         {
           userId: second.id,
           titleKey: "notifications.handover.claimedTitle",
           messageKey: "notifications.handover.claimedEnd",
+          params: { name: "Robin" },
         },
       ]),
     );
@@ -988,6 +1054,48 @@ describe("the new owner's decision", () => {
     await claimedHousehold(() => []);
     const response = await decide([{ grantId: "stranger", access: "manage" }]);
     expect(response.status).toBe(422);
+  });
+
+  it("keeps the decision waiting when the issuing Guardian deletes their account", async () => {
+    const h = await claimedHousehold((x) => [
+      { grantId: x.creatorGrant.id, proposal: "end" },
+      { grantId: x.secondGrant.id, proposal: "manage" },
+    ]);
+    const prisma = getPrismaClient();
+    await prisma.user.delete({ where: { id: h.creator.id } });
+
+    const handover = await prisma.managedProfileHandover.findFirstOrThrow({
+      where: { profileId: h.profile.id },
+    });
+    expect(handover.createdById).toBeNull();
+
+    const pending = (await (await readDecision()).json()).data.pending;
+    expect(pending).not.toBeNull();
+    expect(pending.guardians).toEqual([
+      expect.objectContaining({
+        grantId: h.secondGrant.id,
+        proposal: "manage",
+        current: "manage",
+        decidable: true,
+      }),
+    ]);
+    expect(
+      (await decide([{ grantId: h.secondGrant.id, access: "read" }])).status,
+    ).toBe(200);
+  });
+
+  it("refuses a decision about a Guardian whose account is gone", async () => {
+    const h = await claimedHousehold((x) => [
+      { grantId: x.secondGrant.id, proposal: "end" },
+    ]);
+    await getPrismaClient().user.delete({ where: { id: h.second.id } });
+    const response = await decide([
+      { grantId: h.secondGrant.id, access: "manage" },
+    ]);
+    expect(response.status).toBe(422);
+    expect((await response.json()).meta.errorCode).toBe(
+      "managed_profile.handover.unknown_guardian",
+    );
   });
 
   it("answers no pending decision to an account that never was a profile", async () => {

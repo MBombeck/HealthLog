@@ -8,6 +8,7 @@ import {
 } from "@/lib/rollups/measurement-rollups";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
   runWithGoogleHealthClientOutcome,
   type GoogleHealthClientOutcome,
@@ -19,7 +20,7 @@ import { syncUserWorkout } from "./sync-workout";
 import {
   GOOGLE_HEALTH_INTEGRATION_KEY,
   incrementalStart,
-  GOOGLE_HEALTH_INTRADAY_OVERLAP_MS,
+  intradayOverlapMs,
   markSynced,
   runWithGoogleHealthSyncCycle,
   type GoogleHealthResourceSyncOptions,
@@ -176,7 +177,10 @@ export async function syncUserGoogleHealth(
   });
   const intradayStart = incrementalStart(connection.lastSyncedAt, {
     fullSync: opts.fullSync,
-    overlapMs: GOOGLE_HEALTH_INTRADAY_OVERLAP_MS,
+    overlapMs: intradayOverlapMs(
+      connection.lastSyncedAt,
+      await resolveUserTimezone(userId),
+    ),
   });
   const resourceOpts: GoogleHealthResourceSyncOptions = {
     fullSync: opts.fullSync,

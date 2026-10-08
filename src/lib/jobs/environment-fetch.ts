@@ -103,6 +103,32 @@ export async function enqueueEnvironmentFetch(
   return true;
 }
 
+/** One account's backfill slot: at most one backfill job per slot. */
+export const ENVIRONMENT_BACKFILL_SINGLETON_SECONDS = 20 * 60;
+
+/**
+ * Enqueue the on-demand backfill a person asked for from the settings
+ * surface. Unlike the travel-period refresh, it carries a per-account
+ * `singletonKey` with a time slot, so one account has at most one backfill
+ * per twenty minutes no matter how often the button is pressed; pg-boss
+ * enforces the slot (`singleton_on`) under every queue policy. A send the
+ * slot refuses comes back as `already_queued`, and the route says so instead
+ * of reporting a job that will not run.
+ */
+export async function enqueueEnvironmentBackfill(payload: {
+  userId: string;
+  startDate: string;
+  endDate: string;
+}): Promise<"enqueued" | "no_worker" | "already_queued"> {
+  const boss = getGlobalBoss();
+  if (!boss) return "no_worker";
+  const id = await boss.send(ENVIRONMENT_FETCH_QUEUE, payload, {
+    singletonKey: `environment-backfill:${payload.userId}`,
+    singletonSeconds: ENVIRONMENT_BACKFILL_SINGLETON_SECONDS,
+  });
+  return id ? "enqueued" : "already_queued";
+}
+
 /**
  * Discovery fan-out: enqueue one per-user fetch job for every account with the
  * module on and a home location set. Idempotent (singletonKey-coalesced per

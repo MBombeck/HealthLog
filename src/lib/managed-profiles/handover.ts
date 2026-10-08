@@ -199,9 +199,12 @@ function proposalFor(state: HandoverState, grantId: string): HandoverAccess {
 async function isActiveGuardian(
   db: Pick<Transaction, "accountGrant">,
   profileId: string,
-  guardianId: string,
+  guardianId: string | null,
   now: Date,
 ): Promise<boolean> {
+  // A link whose creator's account is gone (`created_by_id` cleared) has no
+  // Guardian behind it.
+  if (guardianId === null) return false;
   const grant = await db.accountGrant.findFirst({
     where: {
       grantorId: profileId,
@@ -429,9 +432,13 @@ function isOpen(
 export interface HandoverPreview {
   displayName: string | null;
   expiresAt: Date;
+  /**
+   * Display names only: the holder of the link has proved nothing beyond
+   * holding it, so no grant id and no login name (a Guardian without a
+   * display name is null, and the page says "a guardian").
+   */
   guardians: {
-    grantId: string;
-    displayName: string;
+    displayName: string | null;
     proposal: HandoverAccess;
   }[];
 }
@@ -440,8 +447,8 @@ export interface HandoverPreview {
  * What a link would hand over, or null for every kind of unusable link.
  *
  * Deliberately minimal: the profile's name, the expiry, and who keeps which
- * access. No health data, no date of birth, no usernames — the person holding
- * the link has not proved anything yet beyond holding it.
+ * access. No health data, no date of birth, no usernames and no grant ids —
+ * the person holding the link has not proved anything yet beyond holding it.
  */
 export async function previewHandover(
   rawToken: string,
@@ -465,7 +472,7 @@ export async function previewHandover(
     where: { grantorId: row.profileId, ...activeGuardianWhere(now) },
     select: {
       id: true,
-      grantee: { select: { displayName: true, username: true } },
+      grantee: { select: { displayName: true } },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -473,8 +480,7 @@ export async function previewHandover(
     displayName: profile.displayName,
     expiresAt: row.expiresAt,
     guardians: guardians.map((g) => ({
-      grantId: g.id,
-      displayName: nameOf(g.grantee),
+      displayName: g.grantee.displayName?.trim() || null,
       proposal: proposalFor(state, g.id),
     })),
   };
@@ -793,7 +799,23 @@ export async function decideHandover(input: {
         throw new HandoverError("no_pending");
       }
       const claim = state.claim;
-      const known = new Set(claim.guardians.map((e) => e.grantId));
+      // A former Guardian whose account is gone has nothing left to decide:
+      // the pending read leaves them out, and a decision that names them
+      // anyway is refused like one about a stranger, rather than failing on
+      // a grant written for an account that no longer exists.
+      const present = new Set(
+        (
+          await tx.user.findMany({
+            where: { id: { in: claim.guardians.map((e) => e.guardianId) } },
+            select: { id: true },
+          })
+        ).map((u) => u.id),
+      );
+      const known = new Set(
+        claim.guardians
+          .filter((e) => present.has(e.guardianId))
+          .map((e) => e.grantId),
+      );
       if (input.decisions.some((d) => !known.has(d.grantId))) {
         throw new HandoverError("unknown_guardian");
       }
@@ -807,6 +829,16 @@ export async function decideHandover(input: {
       }[] = [];
       const guardians: StoredClaimEntry[] = [];
       for (const entry of claim.guardians) {
+        if (!present.has(entry.guardianId)) {
+          guardians.push(entry);
+          outcome.push({
+            grantId: entry.grantId,
+            access: entry.applied,
+            changed: false,
+            skipped: true,
+          });
+          continue;
+        }
         const target =
           input.decisions.find((d) => d.grantId === entry.grantId)?.access ??
           entry.applied;

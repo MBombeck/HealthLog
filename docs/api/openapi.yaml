@@ -22222,6 +22222,12 @@ paths:
 
         The span is capped at 730 days, and the worker re-checks the cap independently. Body cap 4 KiB. Module-gated,
         and it draws on the shared analytics-read rate bucket.
+
+
+        Every backfill draws on the instance-wide Open-Meteo budget, so one account is held to three a rolling hour (429
+        `environment.backfill_rate_limited`), at most one queued backfill per twenty-minute slot (409
+        `environment.backfill_pending`), and, inside the worker, its own share of the daily request budget; days the
+        share does not reach are filled by the nightly run.
       requestBody:
         required: true
         content:
@@ -22239,8 +22245,9 @@ paths:
         "401": *a1
         "403": *a19
         "409":
-          description: No home location is set, so there is nothing to resolve the days against. `meta.errorCode` =
-            `environment.no_home`.
+          description: No home location is set, so there is nothing to resolve the days against (`meta.errorCode` =
+            `environment.no_home`), or a backfill for this account is already queued in the current twenty-minute slot
+            (`environment.backfill_pending`).
           content:
             application/json:
               schema:
@@ -23406,8 +23413,9 @@ paths:
       description: "Everything on one local calendar day: what ran through it (medications, an illness, a cycle phase, a
         trip), the readings in its window with the person's usual range, what happened on it, and deterministic notable
         observations as keys with parameters. Sections of a switched-off module are left out; sections the caller's
-        grant does not cover are named in `sections`. Read live from the record, never from the UTC rollups. A date that
-        is not a real calendar date answers 422."
+        grant does not cover are named in `sections`. Life events and the environment are the owner's only: for a
+        delegate at any level they are named `not_shared`. Read live from the record, never from the UTC rollups. A date
+        that is not a real calendar date answers 422."
       parameters:
         - in: path
           name: date
@@ -23434,7 +23442,8 @@ paths:
       summary: The record over the years
       description: Lanes of conditions, allergies, medications, vaccinations, visits, lab days, documents and life events, the
         standing items without a start, and monthly (or finer, by zoom) value series. Empty lanes are not sent; lanes of
-        a switched-off module never are. Requires the opt-in `timeline` module.
+        a switched-off module never are. The `life` lane (life events and travel periods) is the owner's only and is
+        never sent to a delegate. Requires the opt-in `timeline` module.
       parameters:
         - in: query
           name: zoom
@@ -23496,8 +23505,8 @@ paths:
         - Records
       summary: What the timeline can show
       description: "One row per lane: carries, thin or empty, a count, a detail as a message key with parameters, and the gaps
-        with one in-app link each. The verdict is one of two words, never a score. Requires the opt-in `timeline`
-        module."
+        with one in-app link each. The verdict is one of two words, never a score. The `life` lane is reported to the
+        owner only. Requires the opt-in `timeline` module."
       responses:
         "200":
           description: The readiness inventory.
@@ -23514,8 +23523,8 @@ paths:
       tags:
         - Records
       summary: List life events
-      description: The record's life events, oldest first; soft-deleted ones are excluded. Title and note are decrypted for
-        the caller. Part of the `profile` sharing domain. Life events are never sent to a model.
+      description: "The account's own life events, oldest first; soft-deleted ones are excluded. Title and note are decrypted
+        for the caller. Owner-only: no delegate reads them at any share level. Life events are never sent to a model."
       responses:
         "200":
           description: The life events.
@@ -23524,7 +23533,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/LifeEventListEnvelope"
         "401": *a1
-        "403": *a11
+        "403": &a68
+          description: >-
+            Owner-only in v1.42: no share reaches life events, not a `profile` share, a whole-record share or MANAGE,
+            and not a guardian acting for a managed profile.
+
+
+            Refused: the request was made while the session is acting on another account (`meta.errorCode` =
+            `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it
+            refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any
+            level opens it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
     post:
@@ -23533,7 +23555,8 @@ paths:
       summary: Add a life event
       description: "A dated anchor in the person's life. `precision` says how much of the date is known and applies to both
         ends: at MONTH a date is the first of its month, at YEAR the first of its year. `endDate`, when given, is not
-        before `startDate`. Title (1-120 characters) and note (up to 2000) are encrypted at rest."
+        before `startDate`. Title (1-120 characters) and note (up to 2000) are encrypted at rest. Owner-only, like every
+        life-event route."
       parameters:
         - *a6
       requestBody:
@@ -23550,7 +23573,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateLifeEventEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a68
         "409": *a7
         "422": *a4
         "429": *a12
@@ -23581,9 +23604,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateLifeEventEnvelope"
         "401": *a1
-        "403": *a11
-        "404": &a68
-          description: No such life event on this record.
+        "403": *a68
+        "404": &a69
+          description: No such life event on this account.
           content:
             application/json:
               schema:
@@ -23609,8 +23632,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteLifeEventEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a68
+        "403": *a68
+        "404": *a69
         "422": *a4
         "429": *a5
   /api/bugreport:
@@ -34255,19 +34278,20 @@ components:
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
                 encounter.practitioner-not-found, encounter.reminder-conflict, encounter.reminder-not-found; encryption
-                — encryption.keyBackup.stale, encryption.key_mismatch; environment — environment.invalid,
-                environment.no_home, environment.range_too_large, environment.travel.not_found; export —
-                export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid; feedback —
-                feedback.body.invalid; health_score_config — health_score_config.invalid,
-                health_score_config.too_narrow; illness — illness.day-log.invalid, illness.disabled,
-                illness.episode.chronic-no-resolve, illness.episode.invalid, illness.episode.invalid-window,
-                illness.episode.parent-not-found, illness.insights.invalid; import — import.apple_health.busy,
-                import.write_failed; ingest — ingest.rate_limited; insights — insights.generate.budgetExceeded,
-                insights.generate.outboundScreened, insights.generate.profileScopeChanged,
-                insights.generate.scopeChanged; labs — labs.biomarker.create.invalid, labs.biomarker.duplicate,
-                labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
-                labs.create.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge,
-                labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
+                — encryption.keyBackup.stale, encryption.key_mismatch; environment — environment.backfill_pending,
+                environment.backfill_rate_limited, environment.invalid, environment.no_home,
+                environment.range_too_large, environment.travel.not_found; export — export.selection.empty,
+                export.selection.unknown_leaf; familyHistory — familyHistory.invalid; feedback — feedback.body.invalid;
+                health_score_config — health_score_config.invalid, health_score_config.too_narrow; illness —
+                illness.day-log.invalid, illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
+                illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
+                import.apple_health.busy, import.write_failed; ingest — ingest.rate_limited; insights —
+                insights.generate.budgetExceeded, insights.generate.outboundScreened,
+                insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
+                labs.biomarker.create.invalid, labs.biomarker.duplicate, labs.biomarker.notFound,
+                labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
+                labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType,
+                labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
                 labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
                 labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
                 labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
@@ -41782,14 +41806,15 @@ components:
           items:
             type: object
             properties:
-              grantId:
-                type: string
               displayName:
-                type: string
+                anyOf:
+                  - type: string
+                  - type: "null"
+                description: "The guardian's display name; null when they set none. Never a login name or an id: the holder of the link
+                  has proved nothing yet."
               proposal:
                 $ref: "#/components/schemas/ProfileClaimGuardianAccess"
             required:
-              - grantId
               - displayName
               - proposal
             additionalProperties: false

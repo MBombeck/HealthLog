@@ -531,6 +531,7 @@
       "signOut": "Abmelden und weiter",
       "guardiansTitle": "Wer vorerst Zugriff behält",
       "guardiansHint": "Vorgeschlagen von den Personen, die deine Akte geführt haben. Du entscheidest direkt nach der Anmeldung.",
+      "guardianUnnamed": "Eine betreuende Person",
       "usernameHint": "3 bis 30 Buchstaben, Ziffern, _ oder -.",
       "usernameReserved": "Benutzernamen, die mit managed- beginnen, sind reserviert.",
       "emailHint": "Pflicht, damit du wieder hineinkommst, wenn du dein Passwort vergisst.",
@@ -7811,7 +7812,8 @@
         "restoreSkippedCycleCiphertext": "Zyklus-Notiz oder -Bezeichnung mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Tag oder Symptom ohne sie behalten)",
         "restoreSkippedMoodLabelCiphertext": "Name eines Stimmungs-Tags oder einer Gruppe mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne Namen behalten)",
         "restoreSkippedVisitCiphertext": "Text zu Arztbesuch oder Praxis mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne ihn behalten)",
-        "restoreSkippedVaccinationCiphertext": "Impf-Notiz mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Impfung ohne sie behalten)"
+        "restoreSkippedVaccinationCiphertext": "Impf-Notiz mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Impfung ohne sie behalten)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Ort eines Umweltzeitraums oder -tags mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (verschlüsselt behalten, diese Tage werden nicht neu abgerufen)"
       },
       "danger-zone": {
         "title": "Gefahrenzone",
@@ -8444,7 +8446,17 @@
       "changedTitle": "{name} hat deinen Zugriff geändert",
       "changedEnd": "Dein Zugriff auf die Gesundheitsakte von {name} ist beendet.",
       "changedRead": "Du kannst die Gesundheitsakte von {name} jetzt ansehen, aber nicht ändern.",
-      "changedManage": "Du kannst die Gesundheitsakte von {name} verwalten."
+      "changedManage": "Du kannst die Gesundheitsakte von {name} verwalten.",
+      "unnamed": {
+        "claimedTitle": "Die Person, die du betreut hast, hat jetzt ein eigenes Konto",
+        "claimedEnd": "Die Person, die du betreut hast, hat die eigene Gesundheitsakte übernommen. Dein Zugriff ist beendet.",
+        "claimedRead": "Die Person, die du betreut hast, hat die eigene Gesundheitsakte übernommen. Du kannst sie weiter ansehen, aber nicht mehr ändern.",
+        "claimedManage": "Die Person, die du betreut hast, hat die eigene Gesundheitsakte übernommen. Du kannst sie weiter verwalten, bis sie anders entscheidet.",
+        "changedTitle": "Dein Zugriff auf eine Gesundheitsakte hat sich geändert",
+        "changedEnd": "Dein Zugriff auf die Gesundheitsakte der Person, die du betreut hast, ist beendet.",
+        "changedRead": "Du kannst die Gesundheitsakte der Person, die du betreut hast, jetzt ansehen, aber nicht ändern.",
+        "changedManage": "Du kannst die Gesundheitsakte der Person, die du betreut hast, verwalten."
+      }
     }
   },
   "i18n": {
@@ -9544,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Befundbereich {range}",
       "catalogDiffers": "dein Bereich {range}"
-    },
-    "convertedFrom": "Umgerechnet aus {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {
@@ -11880,7 +11891,7 @@
       },
       "profile": {
         "label": "Gesundheitliche Vorgeschichte",
-        "detail": "Allergien, Familienanamnese, die Angaben in deinem Gesundheitsprofil, Arztbesuche und Praxen, deine Impfungen sowie deine Lebensereignisse."
+        "detail": "Allergien, Familienanamnese, die Angaben in deinem Gesundheitsprofil, Arztbesuche und Praxen sowie deine Impfungen."
       },
       "illness": {
         "label": "Krankheiten",

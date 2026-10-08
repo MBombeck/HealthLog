@@ -1,8 +1,8 @@
 /**
  * `PATCH /api/life-events/{id}` edits one life event; `DELETE` soft-deletes
- * it (v1.42, #613). Record-scoped like the list beside it, and MANAGE like
- * the create: correcting or removing somebody's life event is a guardian's
- * act. A foreign, unknown or already deleted id is the same 404.
+ * it (v1.42, #613). Owner-only like the list beside it (see there): no
+ * delegate at any level, and no guardian acting for a managed profile. A
+ * foreign, unknown or already deleted id is the same 404.
  *
  * The edit files the replaced dates, category and precision (C4) and names a
  * changed title or note without quoting either. The delete tombstones the
@@ -10,7 +10,7 @@
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
@@ -42,7 +42,7 @@ function notFound() {
 
 export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireRecordAuth("manage", "profile");
+    const { user } = await requireAuth();
     const path = lifeEventIdPathSchema.safeParse(await params);
     if (!path.success) return notFound();
     const existing = await findOwnLifeEvent(user.id, path.data.id);
@@ -109,7 +109,7 @@ export const PATCH = apiHandler(
 
 export const DELETE = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireRecordAuth("manage", "profile");
+    const { user } = await requireAuth();
     const path = lifeEventIdPathSchema.safeParse(await params);
     if (!path.success) return notFound();
     const existing = await findOwnLifeEvent(user.id, path.data.id);

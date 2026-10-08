@@ -67,14 +67,24 @@ describe("day access", () => {
     );
   });
 
-  it("keeps the environment rows for the owner even under a full grant", () => {
+  it("keeps the environment rows and the life events for the owner even under a full grant", () => {
     const access = resolveDayAccessFrom({
       modules: ALL_ON,
       domainVisible: () => true,
       owner: false,
     });
     expect(access.readable.has("environment")).toBe(false);
-    expect(access.notShared).toEqual(["environment"]);
+    expect(access.readable.has("lifeEvents")).toBe(false);
+    expect(access.notShared).toEqual(["environment", "lifeEvents"]);
+  });
+
+  it("opens the life events to the owner", () => {
+    const access = resolveDayAccessFrom({
+      modules: ALL_ON,
+      domainVisible: () => true,
+      owner: true,
+    });
+    expect(access.readable.has("lifeEvents")).toBe(true);
   });
 
   it("maps every section to a real sharing domain or to the owner", () => {
@@ -82,7 +92,8 @@ describe("day access", () => {
       const domain = DAY_SECTION_SHARE_DOMAIN[section];
       if (domain !== null) expect(SHARE_DOMAINS).toContain(domain);
     }
-    expect(DAY_SECTION_SHARE_DOMAIN.lifeEvents).toBe("profile");
+    // Owner-only in v1.42: no share level reaches them.
+    expect(DAY_SECTION_SHARE_DOMAIN.lifeEvents).toBeNull();
   });
 
   it("narrows readings type by type through their own module", () => {

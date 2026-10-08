@@ -217,6 +217,10 @@
         {
           "name": "DATABASE_WORK_MEM",
           "purpose": "Postgres work_mem for every app session, as a Postgres size string. Default 16MB. Raise it when large sorts and aggregates spill to disk; each sort step of each connection may use this much."
+        },
+        {
+          "name": "DATABASE_SESSION_OPTIONS_DISABLED",
+          "purpose": "Set to 1, true or yes to send no session settings (statement timeout, work_mem) as the libpq options startup parameter. Needed behind PgBouncer, which refuses that parameter unless it is in ignore_startup_parameters."
         }
       ]
     },

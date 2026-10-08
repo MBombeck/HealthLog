@@ -531,6 +531,7 @@
       "signOut": "Se déconnecter et continuer",
       "guardiansTitle": "Qui garde l'accès pour l'instant",
       "guardiansHint": "Proposé par les personnes qui ont tenu votre dossier. Vous décidez juste après la connexion.",
+      "guardianUnnamed": "Un tuteur",
       "usernameHint": "3 à 30 lettres, chiffres, _ ou -.",
       "usernameReserved": "Les noms d'utilisateur commençant par managed- sont réservés.",
       "emailHint": "Obligatoire, pour pouvoir revenir si vous oubliez votre mot de passe.",
@@ -7811,7 +7812,8 @@
         "restoreSkippedCycleCiphertext": "Note ou libellé du cycle chiffré avec une clé que ce serveur ne possède pas (jour ou symptôme conservé sans)",
         "restoreSkippedMoodLabelCiphertext": "Nom d’étiquette ou de groupe d’humeur chiffré avec une clé que ce serveur ne possède pas (conservé sans son nom)",
         "restoreSkippedVisitCiphertext": "Texte de consultation ou de praticien chiffré avec une clé que ce serveur ne possède pas (conservé sans)",
-        "restoreSkippedVaccinationCiphertext": "Note de vaccination chiffrée avec une clé que ce serveur ne possède pas (dose conservée sans)"
+        "restoreSkippedVaccinationCiphertext": "Note de vaccination chiffrée avec une clé que ce serveur ne possède pas (dose conservée sans)",
+        "restoreSkippedEnvironmentLocationCiphertext": "Lieu d'une période ou d'un jour environnemental chiffré avec une clé que ce serveur ne possède pas (conservé chiffré, ces jours ne sont pas actualisés)"
       },
       "danger-zone": {
         "title": "Zone de danger",
@@ -8444,7 +8446,17 @@
       "changedTitle": "{name} a modifié votre accès",
       "changedEnd": "Votre accès au dossier de santé de {name} a pris fin.",
       "changedRead": "Vous pouvez désormais consulter le dossier de santé de {name}, sans le modifier.",
-      "changedManage": "Vous pouvez gérer le dossier de santé de {name}."
+      "changedManage": "Vous pouvez gérer le dossier de santé de {name}.",
+      "unnamed": {
+        "claimedTitle": "La personne dont vous vous occupiez a maintenant son propre compte",
+        "claimedEnd": "La personne dont vous vous occupiez a repris son dossier de santé. Votre accès a pris fin.",
+        "claimedRead": "La personne dont vous vous occupiez a repris son dossier de santé. Vous pouvez toujours le consulter, mais plus le modifier.",
+        "claimedManage": "La personne dont vous vous occupiez a repris son dossier de santé. Vous pouvez toujours le gérer jusqu'à ce qu'elle en décide autrement.",
+        "changedTitle": "Votre accès à un dossier de santé a changé",
+        "changedEnd": "Votre accès au dossier de santé de la personne dont vous vous occupiez a pris fin.",
+        "changedRead": "Vous pouvez désormais consulter le dossier de santé de la personne dont vous vous occupiez, mais pas le modifier.",
+        "changedManage": "Vous pouvez gérer le dossier de santé de la personne dont vous vous occupiez."
+      }
     }
   },
   "i18n": {
@@ -9544,8 +9556,7 @@
     "sourceRange": {
       "fromReport": "Plage du compte rendu {range}",
       "catalogDiffers": "votre plage {range}"
-    },
-    "convertedFrom": "Converti depuis {value} {unit}"
+    }
   },
   "modules": {
     "cycle": {
@@ -11880,7 +11891,7 @@
       },
       "profile": {
         "label": "Antécédents de santé",
-        "detail": "Allergies, antécédents familiaux, les informations de votre profil de santé, vos consultations et cabinets, votre carnet de vaccination ainsi que vos événements de vie."
+        "detail": "Allergies, antécédents familiaux, les informations de votre profil de santé, vos consultations et cabinets ainsi que votre carnet de vaccination."
       },
       "illness": {
         "label": "Maladies",

@@ -12,9 +12,11 @@
  *
  * Each lane belongs to one sharing domain and, where a module owns it, to
  * that module; a lane the caller may not see is not read. The `life` lane
- * mixes life events (the timeline module's own content, `profile`) with
- * travel periods (the environment module, owner only) and is filtered item
- * by item. A travel item never carries a place: the label is sealed.
+ * holds life events (the timeline module's own content) and travel periods
+ * (the environment module); both are owner-only in v1.42, so the lane maps
+ * to no domain and no delegate sees it at any level. Travel periods are
+ * filtered item by item on the environment module. A travel item never
+ * carries a place: the label is sealed.
  */
 import type { TimelineItem, TimelineLaneKey } from "@/lib/day/contract";
 import { openText } from "@/lib/day/records";
@@ -26,11 +28,14 @@ import type { ShareDomain } from "@/lib/sharing/scope";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/format";
 
-/** The sharing domain each lane reads. */
+/**
+ * The sharing domain each lane reads, or `null` for a lane only the record's
+ * owner sees.
+ */
 export const TIMELINE_LANE_SHARE_DOMAIN: Readonly<
-  Record<TimelineLaneKey, ShareDomain>
+  Record<TimelineLaneKey, ShareDomain | null>
 > = Object.freeze({
-  life: "profile",
+  life: null,
   illness: "illness",
   allergies: "profile",
   medications: "medications",
@@ -54,7 +59,8 @@ export function laneVisible(
 ): boolean {
   const owner = surfaceModule(`timeline-lane:${lane}`);
   if (owner !== undefined && access.modules[owner] === false) return false;
-  return access.domainVisible(TIMELINE_LANE_SHARE_DOMAIN[lane]);
+  const domain = TIMELINE_LANE_SHARE_DOMAIN[lane];
+  return domain === null ? access.owner : access.domainVisible(domain);
 }
 
 export interface StandingItem {
@@ -90,10 +96,12 @@ function item(
 }
 
 async function lifeLane(frame: LaneFrame): Promise<LaneRead> {
+  // `laneVisible` already keeps this lane from every delegate; the owner
+  // test is repeated here so a caller that skips it cannot read either half.
   const travelVisible =
     frame.access.owner && frame.access.modules.environment !== false;
   const [events, trips] = await Promise.all([
-    frame.access.modules.timeline === false
+    !frame.access.owner || frame.access.modules.timeline === false
       ? Promise.resolve([])
       : prisma.lifeEvent.findMany({
           where: { userId: frame.userId, deletedAt: null },

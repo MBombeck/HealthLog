@@ -177,6 +177,8 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     encryption: ["encryption.keyBackup.stale", "encryption.key_mismatch"],
     environment: [
+      "environment.backfill_pending",
+      "environment.backfill_rate_limited",
       "environment.invalid",
       "environment.no_home",
       "environment.range_too_large",

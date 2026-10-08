@@ -18,8 +18,7 @@ export interface ProfileClaimPreview {
   displayName: string | null;
   expiresAt: string;
   guardians: {
-    grantId: string;
-    displayName: string;
+    displayName: string | null;
     proposal: HandoverAccess;
   }[];
 }

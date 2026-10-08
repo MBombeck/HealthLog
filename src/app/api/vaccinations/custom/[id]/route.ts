@@ -18,6 +18,7 @@
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
+import { isP2002 } from "@/lib/prisma-errors";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -69,42 +70,51 @@ export const PATCH = apiHandler(
     }
     const entry = parsed.data;
 
-    const outcome = await prisma.$transaction(async (tx) => {
-      if (
-        entry.name !== undefined &&
-        entry.name !== existing.name &&
-        (await findLiveNameClash(tx, user.id, entry.name, id))
-      ) {
-        return "name-taken" as const;
-      }
-      // A removed definition may still hold the new name on the unique
-      // index. It is gone from the person's view, so it gives the name up
-      // rather than blocking the rename.
-      if (entry.name !== undefined && entry.name !== existing.name) {
-        await tx.customVaccine.deleteMany({
-          where: {
-            userId: user.id,
-            name: entry.name,
-            deletedAt: { not: null },
-          },
+    // The lookup below and the unique index answer the same question; two
+    // requests racing with the same name both pass the lookup, and the
+    // loser meets the index. That is the same answer, so it gets the same
+    // 409 rather than a 500.
+    const outcome = await prisma
+      .$transaction(async (tx) => {
+        if (
+          entry.name !== undefined &&
+          entry.name !== existing.name &&
+          (await findLiveNameClash(tx, user.id, entry.name, id))
+        ) {
+          return "name-taken" as const;
+        }
+        // A removed definition may still hold the new name on the unique
+        // index. It is gone from the person's view, so it gives the name up
+        // rather than blocking the rename.
+        if (entry.name !== undefined && entry.name !== existing.name) {
+          await tx.customVaccine.deleteMany({
+            where: {
+              userId: user.id,
+              name: entry.name,
+              deletedAt: { not: null },
+            },
+          });
+        }
+        // Field-by-field — never spread the parsed object whole.
+        const data: Prisma.CustomVaccineUpdateInput = {};
+        if (entry.name !== undefined) data.name = entry.name;
+        if (entry.components !== undefined) data.components = entry.components;
+        if (entry.typicalSeriesDoses !== undefined) {
+          data.typicalSeriesDoses = entry.typicalSeriesDoses;
+        }
+        if (entry.boosterIntervalMonths !== undefined) {
+          data.boosterIntervalMonths = entry.boosterIntervalMonths;
+        }
+        return tx.customVaccine.update({
+          where: { id },
+          data,
+          select: CUSTOM_VACCINE_SELECT,
         });
-      }
-      // Field-by-field — never spread the parsed object whole.
-      const data: Prisma.CustomVaccineUpdateInput = {};
-      if (entry.name !== undefined) data.name = entry.name;
-      if (entry.components !== undefined) data.components = entry.components;
-      if (entry.typicalSeriesDoses !== undefined) {
-        data.typicalSeriesDoses = entry.typicalSeriesDoses;
-      }
-      if (entry.boosterIntervalMonths !== undefined) {
-        data.boosterIntervalMonths = entry.boosterIntervalMonths;
-      }
-      return tx.customVaccine.update({
-        where: { id },
-        data,
-        select: CUSTOM_VACCINE_SELECT,
+      })
+      .catch((err: unknown) => {
+        if (isP2002(err)) return "name-taken" as const;
+        throw err;
       });
-    });
 
     if (outcome === "name-taken") {
       return apiError("A vaccine with this name already exists", 409, {

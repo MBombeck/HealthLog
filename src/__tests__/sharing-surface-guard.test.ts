@@ -1045,14 +1045,6 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "record",
     why: "Counts per timeline lane with an in-app link per gap. Counts only, no record content; scoped to the resolved user and module-gated like the timeline.",
   },
-  "app/api/life-events/route.ts": {
-    domain: "profile",
-    why: "The record's life events, a section of health background beside allergies and visits; the consent copy for `profile` names them. The GET reads rows scoped `userId: user.id` and decrypts title and note for the resolved session; the create is a MANAGE verb (see the manage literal).",
-  },
-  "app/api/life-events/[id]/route.ts": {
-    domain: "profile",
-    why: "One life event of the record, fetch-then-guard against the resolved user. Reached only through its MANAGE arms; an event another record holds is a 404 like any foreign id.",
-  },
   "app/api/workouts/route.ts": {
     domain: "measurements",
     why: "The record's workout list. Verified to carry no AI-written paragraph: the single-workout route beside it does, and stays refused for exactly that reason.",
@@ -1660,16 +1652,6 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: ["C4"],
     why: "Correcting and removing one vaccine definition. The removal soft-deletes it and lets go of the doses that named it, each keeping a name, so no dose leaves the record; the audit row names the definition and how many doses it let go. C4 on the edit: the antigens, the series length and the booster interval are filed before and after, and a rename is named, never quoted. Neither verb re-runs the booster satisfy matcher, so a delegate cannot move a booster's due date by correcting a definition.",
   },
-  "app/api/life-events/route.ts": {
-    domain: "profile",
-    conditions: [],
-    why: "Recording a life event. The person's own anchor, so a guardian's act on a managed profile rather than a helper's; additive, rate-limited on the actor, audited with the category and precision and never the title.",
-  },
-  "app/api/life-events/[id]/route.ts": {
-    domain: "profile",
-    conditions: ["C4"],
-    why: "Correcting and removing a life event. The removal soft-deletes and the audit row names the event's category and date; C4 on the edit: the dates, category and precision are filed before and after, and a changed title or note is named, never quoted.",
-  },
   "app/api/illness/episodes/[id]/resolve/route.ts": {
     domain: "illness",
     conditions: [],
@@ -2093,8 +2075,13 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * v1.42 -- the document vault's presentation read joins the record list
  * beside the rest of the vault; its PUT stays bare. 255 -> 256.
+ *
+ * v1.42 -- life events leave every list: they are owner-only in this
+ * release (no share level was worded for them), so both modules take a bare
+ * `requireAuth()` and drop off the record list and the manage literal.
+ * 256 -> 252.
  */
-const FROZEN_ENTRY_COUNT = 256;
+const FROZEN_ENTRY_COUNT = 252;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -2855,7 +2842,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(90);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(87);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

@@ -116,6 +116,72 @@ describe("model projection", () => {
   it("wraps the person's own words when asked to", () => {
     const fenced = projectDayForModel(day, [], (v) => `[${v}]`);
     expect(fenced.running[0].title).toBe("[Ramipril]");
-    expect(fenced.events[0].title).toBe("[Check-up]");
+    expect(fenced.events[1].title).toBe("[GUT]");
+  });
+});
+
+describe("free text that never reaches a model", () => {
+  const withDocument: DayResponse = {
+    ...day,
+    events: [
+      ...day.events,
+      {
+        at: null,
+        kind: "document",
+        section: "documents",
+        id: "doc1",
+        title: "Befund Dr. Example Mustermann 2026.pdf",
+        meta: "LAB_REPORT",
+        note: null,
+        docs: [],
+        href: "/documents?doc=doc1",
+      },
+      {
+        at: "2026-03-29T11:00:00.000Z",
+        kind: "procedure",
+        section: "visits",
+        id: "v2",
+        title: "Dr. Example Mustermann",
+        meta: "PROCEDURE",
+        note: null,
+        docs: [],
+        href: "/checkups?visit=v2",
+      },
+    ],
+  };
+  const projected = projectDayForModel(withDocument, [], (v) => `[${v}]`);
+  const text = JSON.stringify(projected);
+
+  it("sends a document's kind instead of its name", () => {
+    expect(text).not.toContain("Befund");
+    expect(projected.events.find((e) => e.kind === "document")?.title).toBe(
+      "LAB_REPORT",
+    );
+  });
+
+  it("sends a visit's kind instead of its reason or practitioner", () => {
+    expect(text).not.toContain("Check-up");
+    expect(text).not.toContain("Mustermann");
+    expect(
+      projected.events
+        .filter((e) => e.section === "visits")
+        .map((e) => e.title),
+    ).toEqual(["visit", "procedure"]);
+  });
+});
+
+describe("caller exclusions", () => {
+  const projected = projectDayForModel(day, [], undefined, {
+    sections: new Set(["mood", "medications"]),
+    types: new Set(["WEIGHT"]),
+  });
+
+  it("leaves out excluded sections and types without naming them", () => {
+    const text = JSON.stringify(projected);
+    expect(text).not.toContain("Ramipril");
+    expect(text).not.toContain("GUT");
+    expect(text).not.toContain("WEIGHT");
+    expect(projected.counts).toEqual({ values: 0, entries: 1 });
+    expect(projected.unavailable.map((u) => u.section)).not.toContain("mood");
   });
 });

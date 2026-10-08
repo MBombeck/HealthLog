@@ -441,6 +441,7 @@ async function documentsLane(frame: Frame) {
 }
 
 async function lifeLane(frame: Frame) {
+  // Owner-only: `laneVisible` leaves this lane out for every delegate.
   const where = { userId: frame.userId, deletedAt: null };
   const [count, first] = await Promise.all([
     prisma.lifeEvent.count({ where }),

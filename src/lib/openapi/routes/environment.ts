@@ -361,7 +361,7 @@ export const environmentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     post: {
       tags: ["Environment"],
       summary: "Enqueue a historical environment fetch",
-      description: `Asks the worker to fetch and store past days rather than waiting for the rolling nightly lookback. Returns 202 — the work has been QUEUED, not done; poll \`GET /api/environment\` and watch \`context.days\`.\n\nAn omitted bound defaults to the conservative \`[homeSince .. today]\` range. An explicit start earlier than \`homeSince\` is accepted and then resolves to a skip inside the worker: the span cannot fabricate weather for the pre-home past, so a wide range can legitimately return \`enqueued: true\` and add no days at all.\n\nThe span is capped at ${ENVIRONMENT_MAX_BACKFILL_DAYS} days, and the worker re-checks the cap independently. Body cap 4 KiB. Module-gated, and it draws on the shared analytics-read rate bucket.`,
+      description: `Asks the worker to fetch and store past days rather than waiting for the rolling nightly lookback. Returns 202 — the work has been QUEUED, not done; poll \`GET /api/environment\` and watch \`context.days\`.\n\nAn omitted bound defaults to the conservative \`[homeSince .. today]\` range. An explicit start earlier than \`homeSince\` is accepted and then resolves to a skip inside the worker: the span cannot fabricate weather for the pre-home past, so a wide range can legitimately return \`enqueued: true\` and add no days at all.\n\nThe span is capped at ${ENVIRONMENT_MAX_BACKFILL_DAYS} days, and the worker re-checks the cap independently. Body cap 4 KiB. Module-gated, and it draws on the shared analytics-read rate bucket.\n\nEvery backfill draws on the instance-wide Open-Meteo budget, so one account is held to three a rolling hour (429 \`environment.backfill_rate_limited\`), at most one queued backfill per twenty-minute slot (409 \`environment.backfill_pending\`), and, inside the worker, its own share of the daily request budget; days the share does not reach are filled by the nightly run.`,
       requestBody: {
         required: true,
         content: { "application/json": { schema: backfillRequest } },
@@ -391,7 +391,7 @@ export const environmentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...moduleDisabledResponse,
         "409": {
           description:
-            "No home location is set, so there is nothing to resolve the days against. `meta.errorCode` = `environment.no_home`.",
+            "No home location is set, so there is nothing to resolve the days against (`meta.errorCode` = `environment.no_home`), or a backfill for this account is already queued in the current twenty-minute slot (`environment.backfill_pending`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "413": {
