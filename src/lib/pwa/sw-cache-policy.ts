@@ -15,6 +15,15 @@
  */
 
 /**
+ * The worker's own cache names: `healthlog-{static,pages,data}-<version>`.
+ * Everything the app deletes from CacheStorage (session end, the "new
+ * version" reload) matches against this and nothing else, so another app's
+ * caches on the same origin are left alone. Keep in lockstep with
+ * `HEALTHLOG_CACHE_NAME_RE` in `public/sw.js`.
+ */
+export const HEALTHLOG_CACHE_NAME_RE = /^healthlog-(?:static|pages|data)-/;
+
+/**
  * Path prefixes whose safe GET reads are eligible for the offline data cache.
  *
  * v1.18.6 — AI/clinical narrative surfaces (`/api/insights`, `/api/analytics`)

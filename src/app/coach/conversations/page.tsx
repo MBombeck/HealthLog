@@ -328,8 +328,10 @@ export default function CoachConversationsPage() {
       // mobile-only BottomNav band). L4 fix
       // (`.planning/audits/2026-07-18-qa-ui.md`) — this had dropped the
       // `safe-area-inset-top` term `/coach` subtracts, overshooting by
-      // ~50px on notched devices; restored to match exactly.
-      className="bg-background -mx-4 -mt-6 -mb-20 flex h-[calc(100dvh-8rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] min-h-[32rem] flex-col overflow-hidden md:-mx-6 md:h-[calc(100dvh-4rem)]"
+      // ~50px on notched devices; restored to match exactly. v1.42 — the
+      // shell now takes that inset above the top bar at every width, so
+      // the desktop height subtracts it too, and `/coach/plans` matches.
+      className="bg-background -mx-4 -mt-6 -mb-20 flex h-[calc(100dvh-8rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] min-h-[32rem] flex-col overflow-hidden md:-mx-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))]"
     >
       <CoachConversationsBody readOnly={!coach.available} />
     </div>

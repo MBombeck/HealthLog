@@ -278,13 +278,18 @@ export function AuthShell({
     if (isStandalonePublicPage) {
       return <>{children}</>;
     }
+    // `min-h-dvh`, not `h-dvh`: a phone held sideways is ~390 px tall, and
+    // a sign-in form that is taller than a fixed-height box centres out of
+    // it at the top, where nothing can scroll back to it. A minimum lets the
+    // box grow and the document scroll. The safe-area padding keeps the form
+    // off the status bar and the home indicator in an installed app.
     return (
-      <div className="flex h-dvh flex-col">
+      <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top,0px)] pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)] pl-[env(safe-area-inset-left,0px)]">
         {demoMode ? <DemoBanner /> : null}
         <MaintainershipBanner />
         <main
           id="main-content"
-          className="flex flex-1 items-center justify-center px-4"
+          className="flex flex-1 items-center justify-center px-4 py-6"
         >
           {children}
         </main>
@@ -352,7 +357,7 @@ export function AuthShell({
         {showUnlockNotifier && user?.id ? (
           <AchievementUnlockNotifier userId={user.id} />
         ) : null}
-        <div className="flex min-h-dvh flex-col">
+        <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top,0px)] pr-[env(safe-area-inset-right,0px)] pl-[env(safe-area-inset-left,0px)]">
           <MaintainershipBanner />
           <div className="flex flex-1 items-center justify-center px-4 py-8">
             {children}
@@ -418,7 +423,21 @@ export function AuthShell({
         vertical scroller. Measured in `e2e/chrome-header-seam-banners.spec.ts`
         at both breakpoints.
       */}
-      <div className="flex h-dvh flex-col">
+      {/*
+        The installed app draws under the status bar and beside the notch
+        (`viewport-fit=cover` + `black-translucent`), so the shell takes the
+        insets once, here, for everything inside it: the banner stack, the
+        top bar, the sidebar's logo band and any docked side panel all start
+        below the status bar together, and the seam between the top bar and
+        the logo band cannot come apart over an inset only one of them
+        reserved. The bands used to pad themselves inside their 4rem
+        (border-box), which on a phone with a 59 px inset left the top bar
+        five pixels of content box and pushed the logo and the account menu
+        across its bottom border. `shell-safe-area` paints the strip behind
+        the status bar in the chrome colour (globals.css). The bottom inset
+        stays with the bottom nav and `<main>`, which own that edge.
+      */}
+      <div className="shell-safe-area flex h-dvh flex-col">
         {/*
           v1.4.43 QoL (M5) — `<OfflineBanner>` paints only when
           `navigator.onLine === false`. Sits above the maintainership

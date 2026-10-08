@@ -1,5 +1,6 @@
 /**
- * Unit tests for the chunk-error auto-reload guard in `src/app/error.tsx`.
+ * Unit tests for the chunk-error auto-reload guard in
+ * `src/lib/pwa/chunk-reload.ts` (both error boundaries call it).
  *
  * The guard is keyed on the running shell's build version: one reload
  * attempt per BROKEN SHELL, not one per session. After a successful
@@ -10,7 +11,11 @@
 
 import { describe, expect, it } from "vitest";
 
-import { chunkReloadGuardValue, shouldAttemptChunkReload } from "../error";
+import {
+  chunkReloadGuardValue,
+  isChunkLoadError,
+  shouldAttemptChunkReload,
+} from "@/lib/pwa/chunk-reload";
 
 describe("shouldAttemptChunkReload", () => {
   it("reloads when no attempt is recorded", () => {
@@ -37,5 +42,41 @@ describe("shouldAttemptChunkReload", () => {
     expect(chunkReloadGuardValue("")).toBe("unversioned");
     expect(shouldAttemptChunkReload(null, "")).toBe(true);
     expect(shouldAttemptChunkReload("unversioned", "")).toBe(false);
+  });
+});
+
+describe("isChunkLoadError", () => {
+  it.each([
+    [{ name: "ChunkLoadError", message: "x" }],
+    [{ name: "Error", message: "Loading chunk 123 failed." }],
+    [{ name: "Error", message: "Loading CSS chunk 7 failed." }],
+    [
+      {
+        name: "Error",
+        message: "Failed to load chunk /_next/static/chunks/a.js",
+      },
+    ],
+    [
+      {
+        name: "TypeError",
+        message: "Failed to fetch dynamically imported module: /x.js",
+      },
+    ],
+    // WebKit and Firefox word a failed dynamic import differently.
+    [{ name: "TypeError", message: "Importing a module script failed." }],
+    [
+      {
+        name: "TypeError",
+        message: "error loading dynamically imported module: /x.js",
+      },
+    ],
+  ])("recognises %j", (err) => {
+    expect(isChunkLoadError(err)).toBe(true);
+  });
+
+  it("leaves other errors to the error page", () => {
+    expect(
+      isChunkLoadError({ name: "TypeError", message: "x is undefined" }),
+    ).toBe(false);
   });
 });

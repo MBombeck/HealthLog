@@ -110,7 +110,10 @@ export default defineConfig({
       name: "chromium-desktop",
       // The disk-layer spec needs a live service worker, which the shared
       // `use` block blocks for every other spec. It runs in its own project.
-      testIgnore: ["v137-record-session-fence-offline.spec.ts"],
+      testIgnore: [
+        "v137-record-session-fence-offline.spec.ts",
+        "pwa-offline.spec.ts",
+      ],
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1280, height: 720 },
@@ -130,10 +133,14 @@ export default defineConfig({
       // cannot pass is worse than no check, so the spec gets a project rather
       // than a caveat.
       //
-      // It uses no route mocks for exactly this reason, and it is the only
-      // spec in this project.
+      // It uses no route mocks for exactly this reason. v1.42 — the offline
+      // page journey (`pwa-offline.spec.ts`) joined it on the same terms:
+      // what the worker itself serves without a connection, no mocks.
       name: "chromium-service-worker",
-      testMatch: ["v137-record-session-fence-offline.spec.ts"],
+      testMatch: [
+        "v137-record-session-fence-offline.spec.ts",
+        "pwa-offline.spec.ts",
+      ],
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1280, height: 720 },
@@ -220,6 +227,7 @@ export default defineConfig({
         "doctor-report-delegate.spec.ts",
         // Runs only in the service-worker project.
         "v137-record-session-fence-offline.spec.ts",
+        "pwa-offline.spec.ts",
         // The Apple Health import journey uploads an archive into the one
         // shared account and its refusal control asserts that the account's
         // Apple-Health row count did not move. A second project running the

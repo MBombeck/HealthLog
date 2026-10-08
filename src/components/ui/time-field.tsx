@@ -45,10 +45,10 @@ const FIELD_HEIGHT_CLASSES = "min-h-11 h-11 sm:min-h-10 sm:h-10";
 // Focus vocabulary and font-size parity with `<Input>` / `<DateField>`: the
 // border turns the neutral `input-focus` tone with no ring (not the old hard
 // `ring-2 ring-offset-2`, which painted 4 px outside the div and jumped on
-// focus) and `text-base md:text-sm`
+// focus) and `text-base md:pointer-fine:text-sm`
 // to keep iOS Safari from auto-zooming a sub-16 px input.
 const FIELD_BASE_CLASSES =
-  "border-input bg-background text-foreground placeholder:text-muted-foreground relative flex w-full min-w-0 items-center rounded-md border ps-3 pe-2 text-base md:text-sm shadow-xs transition-[color,box-shadow] focus-within:border-input-focus focus-within:outline-none";
+  "border-input bg-background text-foreground placeholder:text-muted-foreground relative flex w-full min-w-0 items-center rounded-md border ps-3 pe-2 text-base md:pointer-fine:text-sm shadow-xs transition-[color,box-shadow] focus-within:border-input-focus focus-within:outline-none";
 
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 

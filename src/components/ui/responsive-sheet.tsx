@@ -250,8 +250,14 @@ export function ResponsiveSheet({
             className={cn(
               // Vertical-only scroll port — see the note on the Dialog
               // branch's body below for why `overflow-y-auto` alone does not
-              // say that.
-              "flex min-h-0 flex-1 flex-col gap-4 overflow-x-clip overflow-y-auto p-4",
+              // say that. `overscroll-contain`: a flick that reaches the end
+              // of the form stops there instead of chaining into the page
+              // (or the browser's pull-to-refresh) behind the sheet.
+              "flex min-h-0 flex-1 flex-col gap-4 overflow-x-clip overflow-y-auto overscroll-contain p-4",
+              // Without a footer the body is the sheet's bottom edge, so it
+              // keeps its last row above the home indicator of an
+              // installed app; the footer does that when there is one.
+              !footer && "pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]",
               bodyClassName,
             )}
           >
