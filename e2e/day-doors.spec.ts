@@ -1,5 +1,6 @@
 import type { Locator, Page, TestInfo } from "@playwright/test";
 
+import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
 import { DAY_DOORS_ANALYTE } from "./setup/day-doors-fixture";
 import { mockDay } from "./setup/day-mock";
 import {
@@ -203,6 +204,11 @@ test.describe("every chart drawn in days opens its days", () => {
       .locator('[data-slot="chart-overlay-comparison-lastMonth"]')
       .click();
     await page.keyboard.press("Escape");
+    // The overlay menu is closed before the chart is touched, so the tap
+    // lands on the chart and not on the menu's outside-dismiss.
+    await expect(
+      page.locator('[data-slot="chart-overlay-controls-content"]'),
+    ).toHaveCount(0);
     await expect(
       page.locator('[data-slot="chart-compare-caption"]').first(),
     ).toBeAttached();
@@ -265,9 +271,13 @@ test.describe("the dashboard and the list of all values", () => {
   }, testInfo) => {
     test.skip(isPhone(testInfo), "docked from 1280 px");
     await page.setViewportSize({ width: 1440, height: 900 });
+    // The launcher follows the `coach` capability, which needs a provider
+    // the suite cannot reach, so the capability reads available here; this
+    // journey is about where the button sits, not what it opens.
+    await serveAiBlock(page, aiBlockAvailable());
     await page.goto("/insights/weight");
     const fab = page.locator('[data-slot="coach-fab"]');
-    test.skip((await fab.count()) === 0, "no Coach on this account");
+    await expect(fab).toBeVisible();
     const plot = page
       .locator('[data-slot="chart-plot"][data-day-links="true"]')
       .first();

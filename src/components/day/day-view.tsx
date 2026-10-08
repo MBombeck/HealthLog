@@ -54,14 +54,16 @@ import { useDayValueFormat } from "./use-day-value-format";
  */
 
 /** "Saturday, 3 January 2026", for the header and the spoken name. */
-export function useLongDayLabel(): (date: DateKey) => string {
+export function useLongDayLabel(
+  length: "long" | "short" = "long",
+): (date: DateKey) => string {
   const { locale } = useTranslations();
   const intl = resolveIntlLocale(locale);
   return (date: DateKey) =>
     new Intl.DateTimeFormat(intl, {
-      weekday: "long",
+      weekday: length,
       day: "numeric",
-      month: "long",
+      month: length,
       year: "numeric",
       timeZone: "UTC",
     }).format(new Date(`${date}T12:00:00.000Z`));
@@ -118,6 +120,10 @@ export function DayView({
 }: DayViewProps) {
   const { t, tCount } = useTranslations();
   const longLabel = useLongDayLabel();
+  // "Mo., 5. Okt. 2026" in the phone sheet's header: a September Thursday
+  // spelled out in full does not fit beside the arrows at 360 px, and a
+  // date cut off before its year reads as the wrong day.
+  const shortLabel = useLongDayLabel("short");
   const pathname = usePathname();
   const day = useDay(date);
   const { labelFor, formatTile } = useDayValueFormat();
@@ -218,7 +224,14 @@ export function DayView({
           tabIndex={-1}
           className="min-w-0 flex-1 truncate px-1 text-base leading-snug font-semibold focus-visible:outline-none"
         >
-          {longLabel(date)}
+          {compact ? (
+            <>
+              <span aria-hidden="true">{shortLabel(date)}</span>
+              <span className="sr-only">{longLabel(date)}</span>
+            </>
+          ) : (
+            longLabel(date)
+          )}
         </Title>
         <Button
           type="button"
