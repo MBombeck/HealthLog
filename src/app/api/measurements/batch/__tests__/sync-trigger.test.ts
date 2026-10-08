@@ -25,7 +25,11 @@ const mocks = vi.hoisted(() => ({ annotate: vi.fn() }));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    user: { update: vi.fn() },
+    user: {
+      update: vi.fn(),
+      // The `folded_window` guard reads the account's zone for old samples.
+      findUnique: vi.fn().mockResolvedValue({ timezone: null }),
+    },
     measurement: {
       findMany: vi.fn(),
       createManyAndReturn: vi.fn(),

@@ -39,7 +39,7 @@ beforeEach(async () => {
 });
 
 describe("runDenseIntradayRetention (real Postgres)", () => {
-  it("folds out-of-window HRV per-sample rows into hourly MEANs and soft-deletes them", async () => {
+  it("folds out-of-window HRV per-sample rows into hourly MEANs and deletes them", async () => {
     const prisma = getPrismaClient();
     await prisma.measurement.createMany({
       data: [
@@ -103,6 +103,12 @@ describe("runDenseIntradayRetention (real Postgres)", () => {
     expect(live[1].externalId).toBe(`stats:${HRV_HK}:${DAY_KEY}T11`);
     expect(live[1].value).toBeCloseTo(70, 6);
     expect(live[1].measuredAt.toISOString()).toBe("2026-05-01T09:30:00.000Z");
+    // v1.42 — the raw rows are gone, not tombstoned.
+    expect(
+      await prisma.measurement.count({
+        where: { userId: TEST_USER_ID, type: "HEART_RATE_VARIABILITY" },
+      }),
+    ).toBe(2);
   });
 
   it("retires a pre-hourly DAILY stats row in the same pass (late-sync path, no P2002, no double count)", async () => {

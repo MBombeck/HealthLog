@@ -1,5 +1,5 @@
 /**
- * Per-minute host-load sampler that backs the admin /admin/system-status
+ * Host-load sampler (every five minutes since v1.42) that backs the admin /admin/system-status
  * "last 2 hours" chart (v1.4.16 phase B3).
  *
  * The maintainer asked for a small at-a-glance graph above the system-status facts
@@ -8,7 +8,7 @@
  * Sentinel collector, but the Coolify HTTP API does not expose a clean
  * read endpoint for per-server metrics — every approach ended up either
  * scraping the Coolify dashboard HTML or hitting a private RPC. An
- * in-process sampler costs us a single 7-column row per minute, never
+ * in-process sampler costs us a single 7-column row per tick, never
  * leaves the app's own DB, and works identically on dev (macOS) and
  * production (Linux).
  *
@@ -19,8 +19,8 @@
  * of failing the whole chart.
  *
  * Retention: rows older than 7 days are deleted at the end of every
- * tick. With one insert per minute that's 10,080 rows steady-state,
- * indexed by `captured_at` so the 2h query stays under 200 rows.
+ * tick. With one insert every five minutes that's 2,016 rows steady-state,
+ * indexed by `captured_at` so the 2h query stays under 30 rows.
  */
 import { loadavg, totalmem, freemem } from "node:os";
 import { readFile } from "node:fs/promises";

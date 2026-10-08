@@ -51,6 +51,11 @@ import type { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
+import {
+  findCompactionTombstones,
+  isFoldedWindowCandidate,
+  loadFoldTimezone,
+} from "@/lib/measurements/folded-window";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
@@ -416,7 +421,37 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const mPage = mHasMore ? measurementRows.slice(0, limit) : measurementRows;
   const measurementUpserts: MeasurementUpsert[] = [];
   const measurementTombstones: MeasurementTombstone[] = [];
+  // v1.42 — compaction tombstones are not deletions anyone made. The folds
+  // used to soft-delete the raw Apple Health samples they folded into an
+  // hourly or daily `stats:` row, and those rows rode this feed as
+  // tombstones for 75 days. They are left out now, by the same classifier the
+  // backlog purge uses (`folded-window.ts`); the cursor still advances past
+  // them, so the keyset walk is unchanged. A person's own deletions are
+  // reported exactly as before.
+  const compaction = new Set<string>();
+  const tombstonesOnPage = mPage.filter((row) => row.deletedAt !== null);
+  if (tombstonesOnPage.length > 0) {
+    const candidates = tombstonesOnPage.map((row) => ({
+      type: row.type,
+      source: row.source,
+      externalId: row.externalId,
+      measuredAt: row.measuredAt,
+      deletedAt: row.deletedAt,
+    }));
+    if (
+      candidates.some((row) => isFoldedWindowCandidate(row, row.deletedAt!))
+    ) {
+      const classA = await findCompactionTombstones(
+        prisma,
+        user.id,
+        await loadFoldTimezone(prisma, user.id),
+        candidates,
+      );
+      for (const index of classA) compaction.add(tombstonesOnPage[index].id);
+    }
+  }
   for (const row of mPage) {
+    if (compaction.has(row.id)) continue;
     if (row.deletedAt) {
       measurementTombstones.push({
         id: row.id,

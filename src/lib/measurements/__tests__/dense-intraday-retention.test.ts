@@ -6,7 +6,7 @@
  * OLDER than the retention window (`measuredAt < now - retentionDays`), so
  * the recent intra-day shape the Stress engine reads is never collapsed.
  * Also pins the dense-tier scope (HRV + PULSE + SpO2), the APPLE_HEALTH
- * source scope, the per-local-hour MEAN reduction + soft-delete, the
+ * source scope, the per-local-hour MEAN reduction + delete, the
  * hourly `stats:` externalId shape, and the pre-fold rollup recompute.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -61,6 +61,7 @@ function buildPrismaMock(
       existingCanonicalId ? { id: existingCanonicalId } : null,
     );
   const updateMany = vi.fn().mockResolvedValue({ count: 0 });
+  const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
   const findManyMeasurement = vi.fn(
     async (args: { where: { type: string } }) =>
       rowsByType[args.where.type] ?? [],
@@ -71,6 +72,7 @@ function buildPrismaMock(
       update,
       findFirst,
       updateMany,
+      deleteMany,
       findMany: candidateLookup(existingCanonicalId),
       createManyAndReturn: createManyVia(create),
     },
@@ -91,6 +93,7 @@ function buildPrismaMock(
     update,
     findFirst,
     updateMany,
+    deleteMany,
     findManyMeasurement,
   };
 }
@@ -155,14 +158,14 @@ describe("runDenseIntradayRetention — retention bound", () => {
 });
 
 describe("runDenseIntradayRetention — hourly fold flow", () => {
-  it("creates one MEAN row per LOCAL hour and soft-deletes the out-of-window rows", async () => {
+  it("creates one MEAN row per LOCAL hour and deletes the out-of-window rows", async () => {
     // Two HRV samples in DIFFERENT local hours (Berlin is UTC+2 on this
     // date: 08:00Z → 10:xx local, 09:00Z → 11:xx local).
     const hrvRows = [
       row("a", 40, "2026-05-01T08:00:00.000Z", "HEART_RATE_VARIABILITY"),
       row("b", 60, "2026-05-01T09:00:00.000Z", "HEART_RATE_VARIABILITY"),
     ];
-    const { mock, create, update, updateMany } = buildPrismaMock({
+    const { mock, create, update, updateMany, deleteMany } = buildPrismaMock({
       HEART_RATE_VARIABILITY: hrvRows,
     });
 
@@ -205,11 +208,12 @@ describe("runDenseIntradayRetention — hourly fold flow", () => {
       expect(d.type).toBe("HEART_RATE_VARIABILITY");
     }
 
-    // soft-delete, never hard delete.
-    const updArg = updateMany.mock.calls[0]?.[0] as {
-      data: { deletedAt: Date };
+    // v1.42 — the raw rows are deleted outright, no longer tombstoned.
+    const delArg = deleteMany.mock.calls[0]?.[0] as {
+      where: { id: { in: string[] } };
     };
-    expect(updArg.data.deletedAt).toBeInstanceOf(Date);
+    expect(delArg.where.id.in).toEqual(["a", "b"]);
+    expect(updateMany).not.toHaveBeenCalled();
     expect(summary.totals.daysConsolidated).toBe(1);
     expect(summary.totals.hourlyRowsUpserted).toBe(2);
   });
@@ -242,7 +246,7 @@ describe("runDenseIntradayRetention — hourly fold flow", () => {
       row("a", 40, "2026-05-01T08:00:00.000Z", "HEART_RATE_VARIABILITY"),
     ];
     // A row already sits on the hourly slot (externalId or anchor).
-    const { mock, create, update, updateMany } = buildPrismaMock(
+    const { mock, create, update, deleteMany } = buildPrismaMock(
       { HEART_RATE_VARIABILITY: hrvRows },
       "existing-canonical-row",
     );
@@ -264,11 +268,11 @@ describe("runDenseIntradayRetention — hourly fold flow", () => {
     );
     expect(updateArg.data.deletedAt).toBeNull();
 
-    // The soft-delete excludes the adopted canonical row ids.
-    const updManyArg = updateMany.mock.calls[0]?.[0] as {
+    // The delete excludes the adopted canonical row ids.
+    const delArg = deleteMany.mock.calls[0]?.[0] as {
       where: { id: { notIn: string[] } };
     };
-    expect(updManyArg.where.id.notIn).toContain("existing-canonical-row");
+    expect(delArg.where.id.notIn).toContain("existing-canonical-row");
   });
 
   it("retires a live pre-hourly DAILY stats row in the same fold transaction", async () => {

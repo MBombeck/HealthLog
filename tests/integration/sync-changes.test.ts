@@ -399,7 +399,12 @@ describe("GET /api/sync/changes (real Postgres)", () => {
     // pruned; the recent reachable tombstone survives. `drained` says the
     // batched walk reached the end of the backlog rather than stopping at
     // its per-run cap.
-    expect(pruned).toEqual({ deleted: 1, drained: true, deferredAccounts: 0 });
+    expect(pruned).toEqual({
+      deleted: 1,
+      drained: true,
+      deferredAccounts: 0,
+      deferredUserIds: [],
+    });
     const survivors = await prisma.measurement.findMany({
       where: { userId: TEST_USER_ID },
       select: { externalId: true },

@@ -20,7 +20,18 @@ const aiCapabilityForRecord = vi.fn();
 const enqueueStatusGeneration = vi.fn();
 const userFindUnique = vi.fn();
 const measurementFindMany = vi.fn();
-const measurementGroupBy = vi.fn();
+// v1.42 — type discovery goes through the loose-index-scan helper; the
+// rows it answers with are the types themselves.
+const listLiveTypes = vi.fn();
+const measurementGroupBy = {
+  mockResolvedValue: (rows: Array<{ type: string }>) =>
+    listLiveTypes.mockResolvedValue(rows.map((row) => row.type)),
+  mockRejectedValue: (err: Error) => listLiveTypes.mockRejectedValue(err),
+};
+
+vi.mock("@/lib/measurements/live-types", () => ({
+  listLiveMeasurementTypes: (...a: unknown[]) => listLiveTypes(...a),
+}));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -31,9 +42,6 @@ vi.mock("@/lib/db", () => ({
     user: { findUnique: (...a: unknown[]) => userFindUnique(...a) },
     measurement: {
       findMany: (...a: unknown[]) => measurementFindMany(...a),
-      // v1.28.25 — type discovery runs as a server-side GROUP BY, not a
-      // client-deduped `distinct` findMany.
-      groupBy: (...a: unknown[]) => measurementGroupBy(...a),
     },
   },
 }));
@@ -361,7 +369,7 @@ describe("enqueueStatusRefillForUser", () => {
     const count = await enqueueStatusRefillForUser("u1", "de");
     expect(count).toBe(0);
     expect(enqueueStatusGeneration).not.toHaveBeenCalled();
-    expect(measurementGroupBy).not.toHaveBeenCalled();
+    expect(listLiveTypes).not.toHaveBeenCalled();
   });
 
   it("still refills the specialised scopes when the generic-scope discovery read fails", async () => {

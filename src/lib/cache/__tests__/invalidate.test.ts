@@ -197,6 +197,24 @@ describe("invalidateUserMeasurements", () => {
     expect(caches.achievements.get(USER_A)).toBeNull();
     expect(caches.workouts.get(`${USER_A}|3|0||`)).toBeNull();
   });
+
+  // v1.42 — the targets bucket follows the same split. Its route reads
+  // through `cachedSwr`, so a background sync marks it stale instead of
+  // throwing it away on every batch.
+  it("marks the targets bucket stale by default and evicts it with { evict: true }", async () => {
+    await cached(caches.insightsTargets, USER_A, async () => ({ t: 1 }));
+    await cached(caches.insightsTargets, USER_B, async () => ({ t: 2 }));
+    invalidateUserMeasurements(USER_A);
+    expect(caches.insightsTargets.getAllowStale(USER_A)).toEqual({
+      value: { t: 1 },
+      stale: true,
+    });
+    expect(caches.insightsTargets.get(USER_B)).not.toBeNull();
+
+    invalidateUserMeasurements(USER_A, { evict: true });
+    expect(caches.insightsTargets.getAllowStale(USER_A)).toBeNull();
+    expect(caches.insightsTargets.get(USER_B)).not.toBeNull();
+  });
 });
 
 describe("invalidateUserMood", () => {

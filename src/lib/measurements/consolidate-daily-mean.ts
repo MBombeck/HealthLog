@@ -31,13 +31,13 @@
  *      Because mean types are NOT in `CUMULATIVE_HK_TYPES`, the daily
  *      read path averages over the single stats row (count = 1) and
  *      returns it unchanged — no reader change needed.
- *   5. SOFT-DELETE (set `deletedAt`) the per-sample rows — they stay in
- *      the table as an audit/backup trail. Sub-day detail loss is
- *      accepted, matching the legacy-step consolidation choice.
+ *   5. DELETE the per-sample rows (since v1.42; they used to be
+ *      soft-deleted and kept for the tombstone retention). Sub-day detail
+ *      loss is accepted, matching the legacy-step consolidation choice.
  *
  * Idempotent: the discovery query matches only users still holding live
  * per-sample mean-type rows, so a second run converges to zero work.
- * Within a run, soft-deleted rows are excluded from the scan, and the
+ * Within a run, already-removed rows are excluded from the scan, and the
  * single minted stats row is excluded by the `NOT externalId LIKE
  * 'stats:%'` predicate so it is never re-folded.
  *
@@ -369,12 +369,14 @@ export async function consolidateDailyMean(
           },
         });
 
-        // Soft-delete the per-sample rows in the same transaction —
-        // tombstone, never hard-delete; they remain as an audit trail and
-        // drop off the live read + this pass's re-run discovery.
-        const del = await tx.measurement.updateMany({
+        // Delete the per-sample rows in the same transaction.
+        //
+        // v1.42 — deleted outright, where they used to be tombstoned for the
+        // 75-day retention. No client ever pulled them; the tombstone only
+        // held a re-upload of a folded sample off, which the `folded_window`
+        // ingest guard (`folded-window.ts`) now does from the live daily row.
+        const del = await tx.measurement.deleteMany({
           where: { id: { in: sourceRowIds }, deletedAt: null },
-          data: { deletedAt: new Date() },
         });
         removed = del.count;
       });

@@ -47,6 +47,11 @@ import {
 } from "@/lib/measurements/cross-source-merge";
 import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
 import {
+  FOLDED_WINDOW_REASON,
+  findFoldedWindowDuplicates,
+  isFoldedWindowCandidate,
+} from "@/lib/measurements/folded-window";
+import {
   insertNewMeasurementRows,
   type InsertedMeasurementRow,
   type NewMeasurementRow,
@@ -704,11 +709,46 @@ export async function streamParseExportXml(
     });
   };
 
+  // v1.42 — the `folded_window` guard, the same rule the batch route applies
+  // (`folded-window.ts`). A raw sample of a dense or mean type whose hour or
+  // day the consolidation has already folded into a live `stats:` row is left
+  // out: the fold deletes its raw rows outright since v1.42, so re-importing
+  // the export would otherwise put them back beside the mean that already
+  // accounts for them. One read per flush, none when nothing is old enough.
+  const withoutFoldedWindows = async (
+    rows: PreparedMeasurement[],
+  ): Promise<PreparedMeasurement[]> => {
+    if (rows.length === 0) return rows;
+    const now = new Date();
+    const candidates = rows.map((row) => ({
+      type: row.type,
+      source: "APPLE_HEALTH" as const,
+      externalId: row.externalId,
+      measuredAt: row.measuredAt,
+    }));
+    if (!candidates.some((row) => isFoldedWindowCandidate(row, now))) {
+      return rows;
+    }
+    const folded = await findFoldedWindowDuplicates(
+      prisma,
+      userId,
+      candidates,
+      { now, tz: userTimezone },
+    );
+    if (folded.size === 0) return rows;
+    return rows.filter((row, index) => {
+      if (!folded.has(index)) return true;
+      unknown[`${row.type}::${FOLDED_WINDOW_REASON}`] =
+        (unknown[`${row.type}::${FOLDED_WINDOW_REASON}`] ?? 0) + 1;
+      return false;
+    });
+  };
+
   const flushSpotBatch = async (): Promise<void> => {
     if (spotBatch.length === 0) return;
     const incoming = spotBatch.splice(0, spotBatch.length);
-    const chunk = await withoutManualMirrors(
-      await withoutHealthLogIds(incoming),
+    const chunk = await withoutFoldedWindows(
+      await withoutManualMirrors(await withoutHealthLogIds(incoming)),
     );
     for (const row of incoming) {
       healthLogIdOf.delete(row);

@@ -108,12 +108,18 @@ describe("getStatementTimeoutMs", () => {
 
 describe("buildSessionOptions", () => {
   const originalEnv = process.env.DATABASE_STATEMENT_TIMEOUT_MS;
+  const originalWorkMem = process.env.DATABASE_WORK_MEM;
 
   afterEach(() => {
     if (originalEnv === undefined) {
       delete process.env.DATABASE_STATEMENT_TIMEOUT_MS;
     } else {
       process.env.DATABASE_STATEMENT_TIMEOUT_MS = originalEnv;
+    }
+    if (originalWorkMem === undefined) {
+      delete process.env.DATABASE_WORK_MEM;
+    } else {
+      process.env.DATABASE_WORK_MEM = originalWorkMem;
     }
   });
 
@@ -124,9 +130,28 @@ describe("buildSessionOptions", () => {
     expect(opts).toContain("-c idle_in_transaction_session_timeout=60000");
   });
 
-  it("returns undefined (no options) when the timeout is disabled", () => {
+  // v1.42 — work_mem rides the same startup options, and must survive a
+  // disabled timeout: up to v1.41 the whole string was undefined at 0.
+  it("keeps work_mem when the timeout is disabled", () => {
     process.env.DATABASE_STATEMENT_TIMEOUT_MS = "0";
-    expect(buildSessionOptions()).toBeUndefined();
+    delete process.env.DATABASE_WORK_MEM;
+    expect(buildSessionOptions()).toBe("-c work_mem=16MB");
+  });
+
+  it("sets the default work_mem beside the timeouts", () => {
+    delete process.env.DATABASE_STATEMENT_TIMEOUT_MS;
+    delete process.env.DATABASE_WORK_MEM;
+    expect(buildSessionOptions()).toBe(
+      "-c statement_timeout=60000 -c idle_in_transaction_session_timeout=60000 -c work_mem=16MB",
+    );
+  });
+
+  it("takes DATABASE_WORK_MEM and refuses a value that would inject a flag", () => {
+    process.env.DATABASE_WORK_MEM = "64MB";
+    expect(buildSessionOptions()).toContain("-c work_mem=64MB");
+    process.env.DATABASE_WORK_MEM = "8MB -c statement_timeout=0";
+    expect(buildSessionOptions()).toContain("-c work_mem=16MB");
+    expect(buildSessionOptions()).toContain("statement_timeout=60000");
   });
 });
 

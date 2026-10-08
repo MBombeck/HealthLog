@@ -83,25 +83,56 @@ export function getStatementTimeoutMs(): number {
   return 60_000;
 }
 
+/** `work_mem` when `DATABASE_WORK_MEM` is unset. */
+export const DEFAULT_WORK_MEM = "16MB";
+
 /**
- * Build the libpq `options` startup string applying the session timeouts, or
- * `undefined` when disabled (timeout 0). Passed straight through `PrismaPg` to
- * the underlying `pg.Pool`, which forwards it as the connection's `options`
- * startup parameter so every session is timeout-bounded from the first query.
+ * A Postgres memory size: digits and an optional unit. The value is spliced
+ * into the libpq `options` string, where a space would start another `-c`
+ * flag, so anything else is refused and the default used.
  */
-export function buildSessionOptions(): string | undefined {
+const WORK_MEM_SHAPE = /^[1-9][0-9]{0,6}(kB|MB|GB)?$/;
+
+/**
+ * Per-session `work_mem` (v1.42), from `DATABASE_WORK_MEM`.
+ *
+ * The server default of 4 MB made the larger sorts and hash aggregates of the
+ * analytics reads spill to disk. `work_mem` is a USERSET setting, so it rides
+ * the same startup `options` as the timeouts and applies to this app's
+ * connections only, without a database restart. Each sort or hash step of
+ * each connection may use this much, so raise it with the pool size in mind.
+ * An unparsable value falls back to the default rather than reaching libpq.
+ */
+export function getWorkMem(): string {
+  const raw = process.env.DATABASE_WORK_MEM?.trim();
+  return raw && WORK_MEM_SHAPE.test(raw) ? raw : DEFAULT_WORK_MEM;
+}
+
+/**
+ * Build the libpq `options` startup string applying the session settings.
+ * Passed straight through `PrismaPg` to the underlying `pg.Pool`, which
+ * forwards it as the connection's `options` startup parameter so every
+ * session carries them from the first query.
+ *
+ * The timeouts are left out when disabled (timeout 0); `work_mem` is always
+ * set. Up to v1.41 the whole string was `undefined` at timeout 0, which would
+ * have taken `work_mem` with it.
+ */
+export function buildSessionOptions(): string {
   const timeoutMs = getStatementTimeoutMs();
-  if (timeoutMs <= 0) return undefined;
-  return `-c statement_timeout=${timeoutMs} -c idle_in_transaction_session_timeout=${timeoutMs}`;
+  const timeouts =
+    timeoutMs > 0
+      ? `-c statement_timeout=${timeoutMs} -c idle_in_transaction_session_timeout=${timeoutMs} `
+      : "";
+  return `${timeouts}-c work_mem=${getWorkMem()}`;
 }
 
 function createPrismaClient() {
-  const sessionOptions = buildSessionOptions();
   const adapter = new PrismaPg({
     connectionString: process.env.DATABASE_URL!,
     max: getPrismaPoolMax(),
     connectionTimeoutMillis: getPoolConnectionTimeoutMs(),
-    ...(sessionOptions ? { options: sessionOptions } : {}),
+    options: buildSessionOptions(),
   });
   return new PrismaClient({ adapter });
 }

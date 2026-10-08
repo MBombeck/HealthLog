@@ -1,5 +1,5 @@
 /**
- * The `folded_window` ingest guard (v1.42).
+ * The `folded_window` ingest guard and the compaction-tombstone class (v1.42).
  *
  * The dense-intraday consolidation folds the raw Apple Health samples of a
  * DENSE type into one `stats:` row per local hour once they are older than
@@ -12,27 +12,51 @@
  * live `stats:` row covers its hour or day. The batch route and the ZIP import
  * apply the same rule.
  *
+ * The same question, asked of a tombstone, names the compaction tombstones
+ * ("class A"): a soft-deleted raw sample that was already old enough to fold
+ * when it was deleted, and whose hour or day a live `stats:` row covers. The
+ * backlog purge, the sync feed and the restore all classify through
+ * {@link findCompactionTombstones}, so the three can never disagree about
+ * which rows are compaction leftovers and which are a person's deletions.
+ *
+ * Which `stats:` row covers a sample is decided by its externalId, built from
+ * the account's current timezone exactly as the fold builds it
+ * (`stats:<HK>:<YYYY-MM-DD>T<HH>` for a dense hour, `stats:<HK>:<YYYY-MM-DD>`
+ * for a mean day). A dense day still folded at the pre-v1.28.31 daily grain is
+ * deliberately NOT covered: the one-shot hourly rebuild reads those days'
+ * tombstones, so they are neither refused at ingest by this rule nor purged.
+ * An account whose timezone changed after a fold may see an old day keyed in
+ * the other zone; such a row is then simply not recognised, which is the
+ * pre-v1.42 behaviour, never a wrong refusal.
+ *
  * Health Connect does not use this: its importer writes the folded shape
  * itself.
- *
- * Contract stub: the rules and the pure candidate check are final; the lookup
- * that finds the covering `stats:` rows returns nothing until it is built, so
- * nothing is refused yet.
  */
 import type {
   MeasurementSource,
   MeasurementType,
   Prisma,
 } from "@/generated/prisma/client";
-import { HIGH_FREQUENCY_MEAN_TYPES } from "@/lib/measurements/apple-health-mapping";
-import { CONSOLIDATION_GRACE_CUTOFF_HOURS } from "@/lib/measurements/consolidation-tz";
+import {
+  HIGH_FREQUENCY_MEAN_TYPES,
+  dailyStatsExternalId,
+  hkIdentifierForType,
+} from "@/lib/measurements/apple-health-mapping";
+import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
+import {
+  CONSOLIDATION_GRACE_CUTOFF_HOURS,
+  dayKeyForUserTz,
+  hourOfDayForUserTz,
+} from "@/lib/measurements/consolidation-tz";
 import {
   DENSE_INTRADAY_RETENTION_DAYS,
   DENSE_INTRADAY_RETENTION_TYPES,
+  hourlyStatsExternalId,
 } from "@/lib/measurements/dense-intraday-retention";
 
 /** The per-entry status reason the batch result carries for such a row. */
 export type FoldedWindowReason = "folded_window";
+export const FOLDED_WINDOW_REASON: FoldedWindowReason = "folded_window";
 
 const HOUR_MS = 3_600_000;
 
@@ -50,6 +74,12 @@ export const FOLDED_WINDOW_RULES = [
   },
 ] as const;
 
+/** Every type either rule folds. */
+export const FOLDED_TYPES: readonly MeasurementType[] = [
+  ...DENSE_INTRADAY_RETENTION_TYPES,
+  ...HIGH_FREQUENCY_MEAN_TYPES,
+];
+
 /** The fields of an incoming row the guard reads. */
 export interface FoldedWindowCandidateRow {
   type: MeasurementType;
@@ -61,14 +91,19 @@ export interface FoldedWindowCandidateRow {
 /**
  * Whether a row is old enough, and of the right kind, for its hour or day to
  * have been folded already. Pure: whether a live `stats:` row actually covers
- * it is the lookup's question.
+ * it is the lookup's question. `now` is the instant the age is measured at:
+ * the request time for an upload, the deletion time for a tombstone.
  */
 export function isFoldedWindowCandidate(
   row: FoldedWindowCandidateRow,
   now: Date = new Date(),
 ): boolean {
   if (row.source !== "APPLE_HEALTH") return false;
-  if (row.externalId?.startsWith("stats:")) return false;
+  if (row.externalId === null) return false;
+  if (row.externalId.startsWith("stats:")) return false;
+  // A collision retirement (`reconcile-external-measurement.ts`) parks the
+  // losing row at the epoch under a `retired:` id. It is not a folded sample.
+  if (row.externalId.startsWith("retired:")) return false;
   const age = now.getTime() - row.measuredAt.getTime();
   return FOLDED_WINDOW_RULES.some(
     (rule) => rule.types.has(row.type) && age > rule.foldedAfterMs,
@@ -76,16 +111,140 @@ export function isFoldedWindowCandidate(
 }
 
 /**
- * Indexes (into `rows`) of the candidates whose hour or day a live `stats:`
- * row already covers. Stub: returns none.
+ * The externalId of the `stats:` row the fold writes for a sample's hour
+ * (dense types) or day (mean types), in `tz`. Null for a type outside both
+ * rules or without an HK identifier. Pure.
+ */
+export function coveringStatsExternalId(
+  row: Pick<FoldedWindowCandidateRow, "type" | "measuredAt">,
+  tz: string,
+): string | null {
+  const hk = hkIdentifierForType(row.type);
+  if (!hk) return null;
+  const dateKey = dayKeyForUserTz(row.measuredAt, tz);
+  if (DENSE_INTRADAY_RETENTION_TYPES.has(row.type)) {
+    return hourlyStatsExternalId(
+      hk,
+      dateKey,
+      hourOfDayForUserTz(row.measuredAt, tz),
+    );
+  }
+  if (HIGH_FREQUENCY_MEAN_TYPES.has(row.type)) {
+    return dailyStatsExternalId(hk, dateKey);
+  }
+  return null;
+}
+
+type LookupClient = {
+  measurement: Pick<Prisma.TransactionClient["measurement"], "findMany">;
+  user: Pick<Prisma.TransactionClient["user"], "findUnique">;
+};
+
+/** The account's timezone, resolved the way the fold resolves it. */
+export async function loadFoldTimezone(
+  client: Pick<LookupClient, "user">,
+  userId: string,
+): Promise<string> {
+  const user = await client.user.findUnique({
+    where: { id: userId },
+    select: { timezone: true },
+  });
+  return resolveUserTimezone(user?.timezone ?? null);
+}
+
+/**
+ * Indexes (into `rows`) whose covering `stats:` row is live. One query over
+ * the unique `(user_id, type, source, external_id)` index for the whole set.
+ */
+async function coveredIndexes(
+  client: Pick<LookupClient, "measurement">,
+  userId: string,
+  tz: string,
+  rows: ReadonlyArray<{
+    index: number;
+    type: MeasurementType;
+    measuredAt: Date;
+  }>,
+): Promise<Set<number>> {
+  const covered = new Set<number>();
+  if (rows.length === 0) return covered;
+  const keyOf = new Map<number, string>();
+  const ids = new Set<string>();
+  const types = new Set<MeasurementType>();
+  for (const row of rows) {
+    const id = coveringStatsExternalId(row, tz);
+    if (!id) continue;
+    keyOf.set(row.index, `${row.type}|${id}`);
+    ids.add(id);
+    types.add(row.type);
+  }
+  if (ids.size === 0) return covered;
+  const live = await client.measurement.findMany({
+    where: {
+      userId,
+      type: { in: [...types] },
+      source: "APPLE_HEALTH",
+      externalId: { in: [...ids] },
+      deletedAt: null,
+    },
+    select: { type: true, externalId: true },
+  });
+  const liveKeys = new Set(live.map((row) => `${row.type}|${row.externalId}`));
+  for (const [index, key] of keyOf) {
+    if (liveKeys.has(key)) covered.add(index);
+  }
+  return covered;
+}
+
+/**
+ * Indexes (into `rows`) of the incoming rows whose hour or day a live `stats:`
+ * row already covers. Rows too young to have been folded are never looked up,
+ * so a batch of current samples costs no query at all.
  */
 export async function findFoldedWindowDuplicates(
-  tx: Prisma.TransactionClient,
+  client: Pick<LookupClient, "measurement"> &
+    Partial<Pick<LookupClient, "user">>,
   userId: string,
   rows: readonly FoldedWindowCandidateRow[],
+  options: { now?: Date; tz?: string } = {},
 ): Promise<Set<number>> {
-  void tx;
-  void userId;
-  void rows;
-  return new Set();
+  const now = options.now ?? new Date();
+  const candidates = rows.flatMap((row, index) =>
+    isFoldedWindowCandidate(row, now)
+      ? [{ index, type: row.type, measuredAt: row.measuredAt }]
+      : [],
+  );
+  if (candidates.length === 0) return new Set();
+  let tz = options.tz;
+  if (tz === undefined) {
+    if (!client.user) throw new Error("folded_window lookup needs a timezone");
+    tz = await loadFoldTimezone({ user: client.user }, userId);
+  }
+  return coveredIndexes(client, userId, tz, candidates);
+}
+
+/** A tombstone as the classifier reads it. */
+export interface TombstoneCandidateRow extends FoldedWindowCandidateRow {
+  deletedAt: Date | null;
+}
+
+/**
+ * Indexes (into `rows`) of the compaction tombstones ("class A"): soft-deleted
+ * raw Apple Health samples of a folded type that were already past the fold
+ * threshold when they were deleted, and whose hour or day a live `stats:` row
+ * covers. Everything else, in particular a person's own deletions of recent
+ * samples, is class B and keeps the 75-day tombstone retention.
+ */
+export async function findCompactionTombstones(
+  client: Pick<LookupClient, "measurement">,
+  userId: string,
+  tz: string,
+  rows: readonly TombstoneCandidateRow[],
+): Promise<Set<number>> {
+  const candidates = rows.flatMap((row, index) =>
+    row.deletedAt !== null && isFoldedWindowCandidate(row, row.deletedAt)
+      ? [{ index, type: row.type, measuredAt: row.measuredAt }]
+      : [],
+  );
+  return coveredIndexes(client, userId, tz, candidates);
 }

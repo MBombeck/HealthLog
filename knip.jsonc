@@ -126,9 +126,6 @@
     // a line the moment its first consumer lands; the release integration
     // checklist removes whatever is left before the tag.
     "src/lib/environment/air-quality-contract.ts",
-    "src/lib/integrations/healthkit-type-sync.ts",
-    "src/lib/measurements/folded-window.ts",
-    "src/lib/measurements/live-types.ts",
   ],
   "ignoreDependencies": [
     "@types/node",

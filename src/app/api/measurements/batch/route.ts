@@ -65,6 +65,15 @@ import {
   type MergeCandidate,
 } from "@/lib/measurements/cross-source-merge";
 import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
+import { classifyRangeRejection } from "@/lib/measurements/plausibility-gate";
+import {
+  FOLDED_WINDOW_REASON,
+  findFoldedWindowDuplicates,
+} from "@/lib/measurements/folded-window";
+import {
+  recordHealthKitTypeArrivals,
+  type HealthKitTypeArrival,
+} from "@/lib/integrations/healthkit-type-sync";
 import { isPlausibleEntryInstant } from "@/lib/validations/entry-instant";
 import {
   classifyExternalId,
@@ -86,7 +95,11 @@ import { emitDataArrival } from "@/lib/arrivals/emit-shared";
 import { groupRowsByArrivalKind } from "@/lib/arrivals/measurement-kind";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
-import { Prisma, type MeasurementType } from "@/generated/prisma/client";
+import {
+  Prisma,
+  type MeasurementSource,
+  type MeasurementType,
+} from "@/generated/prisma/client";
 
 // v1.4.25 W16c — historical-backfill threshold for PR push
 // suppression. A batch larger than this fires the detection job with
@@ -530,6 +543,8 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // composite-key duplicate). Surfaced as a dedicated wide-event count so
   // an operator can see how often the standalone-pair mirror collapses.
   let crossSourceMergedCount = 0;
+  // v1.42 — subset of `duplicateCount` refused by the `folded_window` guard.
+  let foldedWindowCount = 0;
   // Only rows the reconciler actually inserted drive arrival side effects.
   const insertedPrepared: Prepared[] = [];
   const writtenIdentities: Array<{
@@ -621,6 +636,128 @@ async function postBatch(request: NextRequest): Promise<Response> {
       );
     }
 
+    // v1.42 — exact-duplicate prefilter. A re-sent sample used to cost one
+    // interactive transaction of about ten round-trips (savepoint, three
+    // advisory locks, two candidate reads, a row lock) only for the
+    // reconciler to answer `duplicate` without writing. A backfill after an
+    // anchor reset re-sends whole 500-entry batches of exactly that.
+    //
+    // The reconciler answers `duplicate` for a non-`stats:` row exactly when
+    // an existing row, live OR tombstoned, has the same
+    // `(type, source, externalId)` AND the same `measuredAt` and
+    // `sleepStage`: the natural-identity index is unique NULLS NOT DISTINCT,
+    // so that row is both its external and its natural match, and with no
+    // aggregation provenance on a sample nothing else can win. One read over
+    // the batch's sample ids, without a `deletedAt` filter, answers that for
+    // every row at once.
+    //
+    // The verdict is taken at the very point the reconciler would have been
+    // called, after `superseded_in_batch` and the cross-source merge, so
+    // statuses, reasons, counters and the in-batch merge candidates are the
+    // same as before. A row is only prefiltered when neither its external
+    // key nor its natural identity occurs a second time in the batch: an
+    // earlier entry sharing either could move or retire the matched row
+    // before this one is reached, and then the reconciler has to decide.
+    // `stats:` rows are never prefiltered (overwrite semantics), and neither
+    // is a value the reconciler's own plausibility gate would refuse.
+    const externalKeyCounts = new Map<string, number>();
+    const naturalKeyCounts = new Map<string, number>();
+    const naturalKeyOf = (
+      type: unknown,
+      source: unknown,
+      measuredAt: Date,
+      sleepStage: unknown,
+    ) => `${type}::${source}::${measuredAt.getTime()}::${sleepStage ?? "null"}`;
+    for (const p of prepared) {
+      const externalKey = `${p.row.type}::${p.row.source}::${p.row.externalId}`;
+      externalKeyCounts.set(
+        externalKey,
+        (externalKeyCounts.get(externalKey) ?? 0) + 1,
+      );
+      const naturalKey = naturalKeyOf(
+        p.row.type,
+        p.row.source,
+        p.row.measuredAt as Date,
+        p.row.sleepStage,
+      );
+      naturalKeyCounts.set(
+        naturalKey,
+        (naturalKeyCounts.get(naturalKey) ?? 0) + 1,
+      );
+    }
+    const sampleExternalIds = [
+      ...new Set(
+        prepared
+          .map((p) => p.row.externalId as string)
+          .filter((externalId) => !isStatsExternalId(externalId)),
+      ),
+    ];
+    const existingByExternalKey = new Map<
+      string,
+      { measuredAt: Date; sleepStage: unknown }
+    >();
+    if (sampleExternalIds.length > 0) {
+      const existing = await prisma.measurement.findMany({
+        where: { userId: user.id, externalId: { in: sampleExternalIds } },
+        select: {
+          type: true,
+          source: true,
+          externalId: true,
+          measuredAt: true,
+          sleepStage: true,
+        },
+      });
+      for (const row of existing) {
+        existingByExternalKey.set(
+          `${row.type}::${row.source}::${row.externalId}`,
+          { measuredAt: row.measuredAt, sleepStage: row.sleepStage },
+        );
+      }
+    }
+    function isExactStoredDuplicate(p: Prepared): boolean {
+      const externalKey = `${p.row.type}::${p.row.source}::${p.row.externalId}`;
+      const stored = existingByExternalKey.get(externalKey);
+      if (!stored) return false;
+      const measuredAt = p.row.measuredAt as Date;
+      const naturalKey = naturalKeyOf(
+        p.row.type,
+        p.row.source,
+        measuredAt,
+        p.row.sleepStage,
+      );
+      return (
+        stored.measuredAt.getTime() === measuredAt.getTime() &&
+        (stored.sleepStage ?? null) === (p.row.sleepStage ?? null) &&
+        externalKeyCounts.get(externalKey) === 1 &&
+        naturalKeyCounts.get(naturalKey) === 1 &&
+        classifyRangeRejection(
+          p.row.type as MeasurementType,
+          p.row.value as number,
+        ) === null
+      );
+    }
+
+    // v1.42 — the `folded_window` guard (`folded-window.ts`). A raw Apple
+    // Health sample of a dense or mean type, old enough to have been folded,
+    // whose hour or day a live `stats:` row already covers, is a duplicate:
+    // the fold no longer leaves the raw rows behind as tombstones, so this is
+    // what keeps a re-upload after an anchor reset from standing beside the
+    // mean that already accounts for it. One read for the batch, and none at
+    // all when no row is old enough.
+    const foldedIndexes = await findFoldedWindowDuplicates(
+      prisma,
+      user.id,
+      prepared.map((p) => ({
+        type: p.row.type as MeasurementType,
+        source: p.row.source as MeasurementSource,
+        externalId: p.row.externalId as string,
+        measuredAt: p.row.measuredAt as Date,
+      })),
+    );
+    const foldedPrepared = new Set(
+      [...foldedIndexes].map((index) => prepared[index]),
+    );
+
     for (const p of prepared) {
       const externalId = p.row.externalId as string;
       const statsRow = isStatsExternalId(externalId);
@@ -643,6 +780,32 @@ async function postBatch(request: NextRequest): Promise<Response> {
         };
         duplicateCount++;
         crossSourceMergedCount++;
+        continue;
+      }
+
+      // Both verdicts below are the reconciler's `duplicate`, reached without
+      // its transaction; like every duplicate they fall through to the
+      // in-batch merge candidates.
+      const prefiltered = !statsRow && isExactStoredDuplicate(p);
+      const folded = !prefiltered && !statsRow && foldedPrepared.has(p);
+      if (prefiltered || folded) {
+        results[p.index] = folded
+          ? {
+              index: p.index,
+              status: "duplicate",
+              reason: FOLDED_WINDOW_REASON,
+            }
+          : { index: p.index, status: "duplicate" };
+        duplicateCount++;
+        if (folded) foldedWindowCount++;
+        if (isMergeableSource(p.row.source as string)) {
+          inBatchCandidates.push({
+            type: p.row.type as MeasurementType,
+            source: p.row.source as string,
+            value: p.row.value as number,
+            measuredAt: p.row.measuredAt as Date,
+          });
+        }
         continue;
       }
 
@@ -776,6 +939,34 @@ async function postBatch(request: NextRequest): Promise<Response> {
     const syncedAt = new Date();
     const deliveredWithoutTheApp =
       syncTrigger === "background" || syncTrigger === "push";
+    // v1.42 (#1173) — what this sync brought per type, for the per-type
+    // freshness list on the Apple Health card. Apple Health rows only, and
+    // under the same conditions as the checkpoint beside it.
+    const arrivals = new Map<MeasurementType, HealthKitTypeArrival>();
+    for (const p of prepared) {
+      if (p.row.source !== "APPLE_HEALTH") continue;
+      const status = results[p.index]?.status;
+      if (
+        status !== "inserted" &&
+        status !== "updated" &&
+        status !== "duplicate"
+      ) {
+        continue;
+      }
+      const type = p.row.type as MeasurementType;
+      const entry = arrivals.get(type) ?? { accepted: 0, newSamples: 0 };
+      entry.accepted += 1;
+      if (status !== "duplicate") entry.newSamples += 1;
+      arrivals.set(type, entry);
+    }
+    if (arrivals.size > 0) {
+      await recordHealthKitTypeArrivals(prisma, {
+        userId: user.id,
+        counts: arrivals,
+        trigger: syncTrigger ?? null,
+        at: syncedAt,
+      });
+    }
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -920,15 +1111,18 @@ async function postBatch(request: NextRequest): Promise<Response> {
     });
   }
 
-  // v1.4.25 W16c — kick off PR detection for this user. We always
-  // enqueue when at least one row was written (or the batch had any
-  // measurements to consider) so a single off-day reading still gets
-  // evaluated; the warm-up gate inside the detector decides whether
-  // it's a record. Suppress push notifications for historical
-  // backfills above the silent threshold. Updated `stats:*` rows also
-  // count — a per-day-total overwrite can flip the day's value past a
-  // personal record.
-  if (insertedCount > 0 || updatedCount > 0 || duplicateCount > 0) {
+  // v1.4.25 W16c — kick off PR detection for this user when at least one
+  // row was written, so a single off-day reading still gets evaluated; the
+  // warm-up gate inside the detector decides whether it's a record. Suppress
+  // push notifications for historical backfills above the silent threshold.
+  // Updated `stats:*` rows also count — a per-day-total overwrite can flip
+  // the day's value past a personal record.
+  //
+  // v1.42 — a batch of duplicates only no longer enqueues. It changed
+  // nothing a record or a reminder could read, and an anchor-reset backfill
+  // sends hundreds of them, each of which used to queue a detection pass, a
+  // reminder sweep and an audit row for no new reading.
+  if (insertedCount > 0 || updatedCount > 0) {
     const silent = entries.length > PR_DETECTION_SILENT_THRESHOLD;
     // v1.18.1 — eventful Vorsorge satisfaction. A matching reading just
     // landed; resolve the user's reminders now rather than waiting on the
@@ -970,9 +1164,13 @@ async function postBatch(request: NextRequest): Promise<Response> {
       skipped_by_reason: skippedByReason,
       failed: failedCount,
       // v1.32.8 (iOS #66) — diagnostic sync-trigger tag (foreground /
-      // background / push), or null when the client did not send one.
-      // Observability only; it never influenced any count above.
+      // background / push / manual), or null when the client did not send
+      // one. It never influenced any count above; since v1.42 it decides
+      // how hard the caches below are invalidated.
       syncTrigger: syncTrigger ?? null,
+      // v1.42 — duplicates refused because a live `stats:` row already
+      // covers the sample's hour or day (`folded-window.ts`).
+      folded_window: foldedWindowCount,
     },
   });
 
@@ -984,12 +1182,26 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // and must invalidate every consumer that reads through this user's
   // measurements.
   if (insertedCount > 0 || updatedCount > 0) {
-    // v1.18.9 (#38) — hard-evict so a focus-refetch after a background
-    // iOS / Apple-Health batch sync returns post-sync data. A mark-stale
-    // would let the `cachedSwr` snapshot serve the pre-batch body on the
-    // very next read, leaving the dashboard up to ~180 s stale; the manual
-    // measurement routes already pass `{ evict: true }` for the same reason.
-    invalidateUserMeasurements(user.id, { evict: true });
+    // v1.42 — evict only when someone is looking. v1.18.9 (#38) evicted on
+    // every batch so a focus-refetch after a sync showed post-sync data, but
+    // a phone syncing in the background posts a batch every few minutes all
+    // day, and each eviction sent the next dashboard read into a cold
+    // rebuild. Every other background sync marks stale, which `cachedSwr`
+    // serves once while one rebuild runs; this route now does the same
+    // unless the app is open (`foreground`), the person pressed sync
+    // (`manual`), or the batch wrote one of their own hand-entered readings
+    // (`MANUAL`), whose entry has to show on the very next read.
+    const wroteManualRow = prepared.some(
+      (p) =>
+        p.row.source === "MANUAL" &&
+        (results[p.index]?.status === "inserted" ||
+          results[p.index]?.status === "updated"),
+    );
+    const evict =
+      syncTrigger === "foreground" ||
+      syncTrigger === "manual" ||
+      wroteManualRow;
+    invalidateUserMeasurements(user.id, evict ? { evict: true } : undefined);
 
     // v1.37.19 (C2-F1) — shared post-mutation tail for every distinct
     // (type, day) the batch touched. Updates participate as well as

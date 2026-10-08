@@ -6,8 +6,8 @@
  * Modelled on `step-consolidation.ts`: a discovery query enqueues one
  * job per user still holding live per-sample mean-type rows, the
  * per-user handler runs `consolidateDailyMean`, and the pass is
- * idempotent across reboots (consolidated rows are soft-deleted so they
- * drop off the discovery list).
+ * idempotent across reboots (consolidated rows are deleted, before v1.42
+ * soft-deleted, so they drop off the discovery list).
  *
  * The queue name MUST be registered in `allQueues` in
  * `src/lib/jobs/reminder-worker.ts` so pg-boss provisions it at boot;
@@ -84,8 +84,8 @@ export async function runMeanConsolidationForUser(
  * enqueues one consolidation job per account.
  *
  * Idempotent across reboots: once a user's per-sample rows are
- * soft-deleted, the `deleted_at IS NULL` predicate drops them from the
- * discovery set. pg-boss `singletonKey` coalesces duplicate sends.
+ * consolidated (deleted since v1.42), the `deleted_at IS NULL` predicate
+ * drops them from the discovery set. pg-boss `singletonKey` coalesces duplicate sends.
  *
  * Best-effort: errors are returned through the result value so the
  * worker boot never fails because of a consolidation miss.

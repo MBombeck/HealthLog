@@ -57,7 +57,12 @@ describe("cleanupExpiredMeasurementTombstones", () => {
     const { prisma } = mockClient({ findMany, deleteMany });
 
     const outcome = await cleanupExpiredMeasurementTombstones(prisma, now);
-    expect(outcome).toEqual({ deleted: 3, drained: true, deferredAccounts: 0 });
+    expect(outcome).toEqual({
+      deleted: 3,
+      drained: true,
+      deferredAccounts: 0,
+      deferredUserIds: [],
+    });
 
     expect(findMany).toHaveBeenCalledTimes(1);
     const where = findMany.mock.calls[0][0].where as {
@@ -118,7 +123,12 @@ describe("cleanupExpiredMeasurementTombstones — accounts under restore", () =>
 
     const outcome = await cleanupExpiredMeasurementTombstones(prisma);
 
-    expect(outcome).toEqual({ deleted: 3, drained: true, deferredAccounts: 0 });
+    expect(outcome).toEqual({
+      deleted: 3,
+      drained: true,
+      deferredAccounts: 0,
+      deferredUserIds: [],
+    });
     expect(lockCalls).toEqual(["a", "b"]);
     expect(deleteMany.mock.calls.map((call) => call[0].where)).toEqual([
       { id: { in: ["a1", "a2"] } },
@@ -146,7 +156,12 @@ describe("cleanupExpiredMeasurementTombstones — accounts under restore", () =>
 
     const outcome = await cleanupExpiredMeasurementTombstones(prisma);
 
-    expect(outcome).toEqual({ deleted: 1, drained: true, deferredAccounts: 1 });
+    expect(outcome).toEqual({
+      deleted: 1,
+      drained: true,
+      deferredAccounts: 1,
+      deferredUserIds: ["restoring"],
+    });
     expect(findMany.mock.calls[0][0].where).not.toHaveProperty("userId");
     expect(findMany.mock.calls[1][0].where.userId).toEqual({
       notIn: ["restoring"],
