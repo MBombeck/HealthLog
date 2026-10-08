@@ -5331,9 +5331,9 @@
         "channelsLink": "Delivery channels"
       },
       "layout": {
-        "title": "Appearance",
-        "description": "Choose how the dashboard, insights, and your tracking modules look and are arranged.",
-        "backToHub": "Back to Appearance",
+        "title": "Layout",
+        "description": "Choose what the dashboard, insights and your tracking modules show, and how they are arranged.",
+        "backToHub": "Back to Layout",
         "dashboard": {
           "title": "Dashboard",
           "description": "Tile layout and order."
@@ -5342,7 +5342,7 @@
           "title": "Insights",
           "description": "Overview sections and navigation-pill order."
         },
-        "subtitle": "Personalize how your dashboard, insights, and tracking modules look.",
+        "subtitle": "Choose what your dashboard, insights and tracking modules show, and in which order.",
         "medications": {
           "title": "Medications",
           "description": "List view and manual order."

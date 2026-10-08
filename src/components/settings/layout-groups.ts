@@ -12,7 +12,7 @@ import { DocumentsSection } from "./documents-section";
 import { VorsorgeSection } from "./vorsorge-section";
 
 /**
- * v1.25.11 (#148) — single source of truth for the "Appearance" (slug
+ * v1.25.11 (#148) — single source of truth for the "Layout" (slug
  * `layout`) hub + its per-module subpages.
  *
  * "How my app looks and is arranged" was scattered across several unrelated
@@ -21,7 +21,7 @@ import { VorsorgeSection } from "./vorsorge-section";
  * back into a HUB → SUBPAGE model: `/settings/layout` lists the modules as
  * clickable rows, and each row opens `/settings/layout/<id>`, which renders
  * ONLY that module's section (the same existing section component, verbatim)
- * with a "← Appearance" back-link.
+ * with a "← Layout" back-link.
  *
  * This module is intentionally NOT `"use client"`: the client hub
  * (`layout-section.tsx`) AND the server subpage route

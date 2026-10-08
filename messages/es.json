@@ -5331,9 +5331,9 @@
         "channelsLink": "Canales de entrega"
       },
       "layout": {
-        "title": "Apariencia",
-        "description": "Elige cómo se ven y se organizan el panel, los análisis y tus módulos de seguimiento.",
-        "backToHub": "Volver a Apariencia",
+        "title": "Diseño",
+        "description": "Elige qué muestran el panel, los análisis y tus módulos de seguimiento, y cómo se organizan.",
+        "backToHub": "Volver a Diseño",
         "dashboard": {
           "title": "Panel",
           "description": "Diseño y orden de los mosaicos."
@@ -5342,7 +5342,7 @@
           "title": "Análisis",
           "description": "Orden de la vista general y de las pestañas de navegación."
         },
-        "subtitle": "Personaliza cómo se ven tu panel, los análisis y los módulos de seguimiento.",
+        "subtitle": "Elige qué muestran tu panel, los análisis y los módulos de seguimiento, y en qué orden.",
         "medications": {
           "title": "Medicamentos",
           "description": "Vista de lista y orden manual."

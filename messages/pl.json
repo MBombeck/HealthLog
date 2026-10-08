@@ -5331,9 +5331,9 @@
         "channelsLink": "Kanały dostarczania"
       },
       "layout": {
-        "title": "Wygląd",
-        "description": "Ustal, jak wyglądają i są rozłożone pulpit, analizy i Twoje moduły śledzenia.",
-        "backToHub": "Powrót do Wygląd",
+        "title": "Układ",
+        "description": "Ustal, co pokazują pulpit, analizy i Twoje moduły śledzenia oraz jak są rozłożone.",
+        "backToHub": "Powrót do układu",
         "dashboard": {
           "title": "Pulpit",
           "description": "Układ i kolejność kafelków."
@@ -5342,7 +5342,7 @@
           "title": "Analizy",
           "description": "Kolejność przeglądu i pigułek nawigacyjnych."
         },
-        "subtitle": "Dostosuj wygląd pulpitu, analiz i modułów śledzenia.",
+        "subtitle": "Wybierz, co pokazują pulpit, analizy i moduły śledzenia oraz w jakiej kolejności.",
         "medications": {
           "title": "Leki",
           "description": "Widok listy i ręczna kolejność."

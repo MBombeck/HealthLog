@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Settings → Appearance → Documents.
+ * Settings → Layout → Documents.
  *
  * Reached from the wrench beside the vault's Upload button, the way the
  * illness journal's wrench reaches its own page. Two choices, each in its own

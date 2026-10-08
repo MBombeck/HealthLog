@@ -5331,9 +5331,9 @@
         "channelsLink": "Canaux de diffusion"
       },
       "layout": {
-        "title": "Apparence",
-        "description": "Choisissez l'apparence et l'agencement du tableau de bord, des analyses et de vos modules de suivi.",
-        "backToHub": "Retour à Apparence",
+        "title": "Disposition",
+        "description": "Choisissez ce qu'affichent le tableau de bord, les analyses et vos modules de suivi, et leur agencement.",
+        "backToHub": "Retour à Disposition",
         "dashboard": {
           "title": "Tableau de bord",
           "description": "Disposition et ordre des tuiles."
@@ -5342,7 +5342,7 @@
           "title": "Analyses",
           "description": "Ordre de la vue d'ensemble et des onglets de navigation."
         },
-        "subtitle": "Personnalisez l'apparence du tableau de bord, des analyses et des modules de suivi.",
+        "subtitle": "Choisissez ce qu'affichent le tableau de bord, les analyses et les modules de suivi, et dans quel ordre.",
         "medications": {
           "title": "Médicaments",
           "description": "Vue en liste et ordre manuel."

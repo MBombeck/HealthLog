@@ -433,11 +433,11 @@ describe("<SettingsShell>", () => {
     // `/notifications` inbox now shares the "Notifications" label.
     expect(html).toContain("Notifications");
     // v1.17.1 (F-2) — the view/arrangement editors are reached through one hub
-    // entry (route stays `/settings/layout`). v1.25.3 — the hub is renamed
-    // "Appearance" (DE "Darstellung") and indexes every module's view surface;
-    // the route is unchanged.
+    // entry (route stays `/settings/layout`). v1.42 — the hub is named
+    // "Layout": it arranges and picks what each module shows and holds no
+    // theme, so "Appearance" promised a control it does not have.
     expect(html).toContain('href="/settings/layout"');
-    expect(html).toContain(">Appearance</a>");
+    expect(html).toContain(">Layout</a>");
     // v1.25.3 — Channels folded into Notifications, so it is no longer a
     // left-side entry; Sources keeps its own.
     expect(html).not.toContain('href="/settings/channels"');
@@ -478,10 +478,10 @@ describe("<SettingsShell>", () => {
     // inbox now shares the "Benachrichtigungen" label.
     expect(html).toContain("Benachrichtigungen");
     // v1.17.1 (F-2) — the view editors are reached through one hub entry
-    // (route stays `/settings/layout`). v1.25.3 — the German nav label reads
-    // "Darstellung" (Appearance) to match the renamed hub.
+    // (route stays `/settings/layout`). v1.42 — "Layout" in German too;
+    // "Darstellung" now names the account page's language-and-units card.
     expect(html).toContain('href="/settings/layout"');
-    expect(html).toContain(">Darstellung</a>");
+    expect(html).toContain(">Layout</a>");
     // v1.25.3 — Channels ("Kanäle") folded into Notifications; Sources keeps
     // its own left-side entry.
     expect(html).not.toContain('href="/settings/channels"');

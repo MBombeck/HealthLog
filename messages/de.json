@@ -5331,9 +5331,9 @@
         "channelsLink": "Zustellkanäle"
       },
       "layout": {
-        "title": "Darstellung",
-        "description": "Lege fest, wie Dashboard, Auswertungen und deine Tracking-Module dargestellt und angeordnet sind.",
-        "backToHub": "Zurück zu Darstellung",
+        "title": "Layout",
+        "description": "Lege fest, was Dashboard, Auswertungen und deine Tracking-Module zeigen und wie sie angeordnet sind.",
+        "backToHub": "Zurück zu Layout",
         "dashboard": {
           "title": "Dashboard",
           "description": "Kachel-Layout und Reihenfolge."
@@ -5342,7 +5342,7 @@
           "title": "Insights",
           "description": "Reihenfolge der Übersicht und der Navigations-Pills."
         },
-        "subtitle": "Lege fest, wie Dashboard, Auswertungen und Tracking-Module dargestellt werden.",
+        "subtitle": "Lege fest, was Dashboard, Auswertungen und Tracking-Module zeigen und in welcher Reihenfolge.",
         "medications": {
           "title": "Medikamente",
           "description": "Listenansicht und manuelle Reihenfolge."

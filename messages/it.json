@@ -5331,9 +5331,9 @@
         "channelsLink": "Canali di recapito"
       },
       "layout": {
-        "title": "Aspetto",
-        "description": "Scegli l'aspetto e la disposizione di dashboard, approfondimenti e dei tuoi moduli di monitoraggio.",
-        "backToHub": "Torna ad Aspetto",
+        "title": "Layout",
+        "description": "Scegli cosa mostrano dashboard, approfondimenti e i tuoi moduli di monitoraggio, e come sono disposti.",
+        "backToHub": "Torna a Layout",
         "dashboard": {
           "title": "Cruscotto",
           "description": "Layout e ordine dei riquadri."
@@ -5342,7 +5342,7 @@
           "title": "Approfondimenti",
           "description": "Ordine della panoramica e delle schede di navigazione."
         },
-        "subtitle": "Personalizza l'aspetto di dashboard, approfondimenti e moduli di monitoraggio.",
+        "subtitle": "Scegli cosa mostrano dashboard, approfondimenti e moduli di monitoraggio, e in quale ordine.",
         "medications": {
           "title": "Farmaci",
           "description": "Vista elenco e ordine manuale."

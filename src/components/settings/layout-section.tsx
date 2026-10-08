@@ -11,14 +11,14 @@ import { isSurfaceVisible } from "@/lib/modules/surface";
 import { LAYOUT_GROUPS } from "./layout-groups";
 
 /**
- * v1.25.11 (#148) — the "Appearance" hub (slug stays `layout`).
+ * v1.25.11 (#148) — the "Layout" hub (slug stays `layout`).
  *
  * The hub is a navigable index, NOT a stacked composition: it lists each
  * module as a clickable row (title + description + chevron) that opens the
  * module's own subpage at `/settings/layout/<id>`. Nothing is stacked inline;
  * the per-module view/sort surfaces live on their subpages so the hub reads as
  * a short, scannable directory. The visible page heading + subtitle
- * ("Appearance" / "Personalize how …") are painted by `SettingsShell` from the
+ * ("Layout" / "Choose what …") are painted by `SettingsShell` from the
  * `layout` slug; this body renders only the row list.
  *
  * Per-module gating fails OPEN (`!== false`): a missing key reads as enabled so
