@@ -618,3 +618,23 @@ describe("<InsightsTabStrip> — pill row clip box (v1.16.8)", () => {
     expect(scroller).toContain("-mx-1");
   });
 });
+
+describe("<InsightsTabStrip> — scroll arrows hold their slot", () => {
+  it("renders both arrows before the row is measured, hidden but in place", () => {
+    // Mounting the arrows only once the row measured as overflowing shifted
+    // every pill sideways right after first paint (a layout shift on every
+    // insights page). They render from the start and only hide.
+    const html = render(<InsightsTabStrip />);
+    for (const slot of [
+      "insights-tab-strip-scroll-left",
+      "insights-tab-strip-scroll-right",
+    ]) {
+      const tag = html.match(
+        new RegExp(`<button[^>]*data-slot="${slot}"[^>]*>`),
+      );
+      expect(tag?.[0]).toBeDefined();
+      expect(tag?.[0]).toContain("invisible");
+      expect(tag?.[0]).toContain('tabindex="-1"');
+    }
+  });
+});

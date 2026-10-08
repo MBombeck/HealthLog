@@ -5,6 +5,7 @@ import { Sigma } from "lucide-react";
 
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TileHeader } from "@/components/insights/tile-header";
 import type { DataSummary } from "@/lib/analytics/trends";
 import type { MetricWindowStats } from "@/lib/charts/window-stats";
@@ -139,6 +140,13 @@ type MetricStatStripProps = Partial<MetricStatSeries> & {
    * Single-series mode derives the label from `seriesLabel` instead.
    */
   groupLabel?: string;
+  /**
+   * The read behind the summary is still in flight. The strip then holds its
+   * place with a card of the same anatomy instead of painting nothing: it
+   * sits at the top of the sub-page, so arriving later pushed the read strip,
+   * the chart and everything below it down the page.
+   */
+  pending?: boolean;
 };
 
 /**
@@ -243,8 +251,13 @@ export function MetricStatStrip({
   titleAs,
   series,
   groupLabel,
+  pending = false,
 }: MetricStatStripProps) {
   const { t } = useTranslations();
+
+  if (pending) {
+    return <MetricStatStripSkeleton seriesCount={series?.length ?? 1} />;
+  }
 
   // v1.12.7 — multi-series mode: ONE Card, columns side by side. The card
   // self-gates to nothing only when EVERY series is empty so a one-sided
@@ -306,6 +319,52 @@ export function MetricStatStrip({
           description={description}
           titleAs={titleAs}
         />
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Layout-stable loading shell for the stat strip: the loaded card's chrome
+ * (compact rhythm, a header row, a four-up grid per series, two series side
+ * by side from `md`) so the page does not jump when the read lands.
+ * Decorative — hidden from assistive tech; the chart skeleton below carries
+ * the busy announcement.
+ */
+export function MetricStatStripSkeleton({
+  seriesCount = 1,
+}: {
+  seriesCount?: number;
+}) {
+  return (
+    <Card
+      data-slot="metric-stat-strip-skeleton"
+      aria-hidden="true"
+      className="gap-2 py-3 md:py-4"
+    >
+      <CardContent>
+        <div
+          className={
+            seriesCount > 1
+              ? "grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2"
+              : undefined
+          }
+        >
+          {Array.from({ length: Math.max(1, seriesCount) }).map((_, s) => (
+            <div key={s} className="space-y-1.5">
+              {/* h-6: the TileHeader row is one 24 px line. */}
+              <Skeleton className="h-6 w-32" />
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
+                {Array.from({ length: 4 }).map((__, i) => (
+                  <div key={i} className="min-h-[44px] space-y-1">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

@@ -63,7 +63,11 @@ export default function InsightsPulsPage() {
   const { t } = useTranslations();
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
 
-  const { data: analytics, isEmpty } = useInsightsAnalytics("PULSE");
+  const {
+    data: analytics,
+    isEmpty,
+    isLoading: analyticsLoading,
+  } = useInsightsAnalytics("PULSE");
   // VO₂ max rides on the same `/api/analytics` bundle; we only need the
   // sample count to decide whether to surface the cross-link to the
   // dedicated cardio-fitness page.
@@ -123,6 +127,7 @@ export default function InsightsPulsPage() {
       explainerMetric="pulse"
       statStrip={
         <MetricStatStrip
+          pending={analyticsLoading}
           summary={pulseSummary}
           unit="bpm"
           seriesLabel={t("insights.pulseSectionTitle")}

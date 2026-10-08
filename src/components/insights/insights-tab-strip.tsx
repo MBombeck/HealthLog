@@ -822,23 +822,27 @@ function InsightsTabStripImpl({
       )}
     >
       <div className="flex items-center gap-2">
-        {pillsOverflow && (
-          <button
-            type="button"
-            onClick={() => scrollPills(-1)}
-            disabled={!canScrollLeft}
-            aria-label={t("insights.pillScrollLeft")}
-            data-slot="insights-tab-strip-scroll-left"
-            className={cn(
-              "hidden h-11 w-9 shrink-0 items-center justify-center rounded-full sm:inline-flex",
-              "text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
-              "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-              "disabled:cursor-not-allowed disabled:opacity-30",
-            )}
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-          </button>
-        )}
+        {/* Both arrows always hold their slot (sm+) and only hide while the
+            row fits: mounting them once the row measured as overflowing
+            shifted every pill sideways a moment after first paint. */}
+        <button
+          type="button"
+          onClick={() => scrollPills(-1)}
+          disabled={!canScrollLeft}
+          aria-hidden={pillsOverflow ? undefined : true}
+          tabIndex={pillsOverflow ? undefined : -1}
+          aria-label={t("insights.pillScrollLeft")}
+          data-slot="insights-tab-strip-scroll-left"
+          className={cn(
+            "hidden h-11 w-9 shrink-0 items-center justify-center rounded-full sm:inline-flex",
+            !pillsOverflow && "invisible",
+            "text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
+            "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+            "disabled:cursor-not-allowed disabled:opacity-30",
+          )}
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+        </button>
         <div
           ref={scrollerRef}
           onScroll={updateScrollAffordance}
@@ -971,23 +975,24 @@ function InsightsTabStripImpl({
             );
           })}
         </div>
-        {pillsOverflow && (
-          <button
-            type="button"
-            onClick={() => scrollPills(1)}
-            disabled={!canScrollRight}
-            aria-label={t("insights.pillScrollRight")}
-            data-slot="insights-tab-strip-scroll-right"
-            className={cn(
-              "hidden h-11 w-9 shrink-0 items-center justify-center rounded-full sm:inline-flex",
-              "text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
-              "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-              "disabled:cursor-not-allowed disabled:opacity-30",
-            )}
-          >
-            <ChevronRight className="h-4 w-4" aria-hidden="true" />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => scrollPills(1)}
+          disabled={!canScrollRight}
+          aria-hidden={pillsOverflow ? undefined : true}
+          tabIndex={pillsOverflow ? undefined : -1}
+          aria-label={t("insights.pillScrollRight")}
+          data-slot="insights-tab-strip-scroll-right"
+          className={cn(
+            "hidden h-11 w-9 shrink-0 items-center justify-center rounded-full sm:inline-flex",
+            !pillsOverflow && "invisible",
+            "text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
+            "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+            "disabled:cursor-not-allowed disabled:opacity-30",
+          )}
+        >
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+        </button>
         {/* v1.4.27 MB7 / CF-72 — right-edge fade. The gradient
             absolute-positions over the rightmost ~24 px of the strip
             so the last visible pill softly fades into the background
