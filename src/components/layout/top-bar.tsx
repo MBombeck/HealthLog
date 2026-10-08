@@ -97,7 +97,7 @@ export function TopBar() {
       // inside its own 4rem, a 59 px inset left the bar a 5 px content box.
     >
       {/* Mobile logo */}
-      <Link href="/" className="flex items-center gap-2 md:hidden">
+      <Link href="/" className="flex min-h-11 items-center gap-2 md:hidden">
         <Logo className="text-primary" size={20} />
         <span className="font-bold tracking-tight">HealthLog</span>
       </Link>
