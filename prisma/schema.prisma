@@ -3947,12 +3947,12 @@ model ManagedProfileHandover {
 model HealthKitTypeSync {
   userId          String          @map("user_id")
   type            MeasurementType
-  /// @pending-consumer(#1173) Last batch that carried this type.
+  /// Last batch that carried this type.
   lastReceivedAt  DateTime        @map("last_received_at")
-  /// @pending-consumer(#1173) `syncTrigger` of that batch
+  /// `syncTrigger` of that batch
   /// (`foreground` / `background` / `push` / `manual`), NULL when absent.
   lastTrigger     String?         @map("last_trigger")
-  /// @pending-consumer(#1173) Last batch that inserted or updated a sample of
+  /// Last batch that inserted or updated a sample of
   /// this type (as opposed to sending only duplicates).
   lastNewSampleAt DateTime?       @map("last_new_sample_at")
 

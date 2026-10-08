@@ -130,7 +130,7 @@ const batchPayloadSchema = z
       .enum(["foreground", "background", "push", "manual"])
       .optional()
       .describe(
-        'Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, a push wake, or a user-initiated `manual` "Sync all" run, since v1.42). Recorded on the ingest wide event and kept on the account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from `GET /api/integrations/healthkit`. It does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66 clients omit it.',
+        'Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, a push wake, or a user-initiated `manual` "Sync all" run, since v1.42). Recorded on the ingest wide event and kept on the account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the batch carried (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on each `metricFreshness` entry of that read. It does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66 clients omit it.',
       ),
   })
   .meta({

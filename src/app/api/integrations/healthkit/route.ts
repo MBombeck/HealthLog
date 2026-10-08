@@ -21,6 +21,10 @@ import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { getAppleHealthSyncProgress } from "@/lib/integrations/apple-health-progress";
+import {
+  getHealthKitTypeArrivals,
+  withHealthKitArrivals,
+} from "@/lib/integrations/healthkit-type-sync";
 import { getSourceFreshness } from "@/lib/integrations/metric-freshness";
 import {
   classifyMetricFreshness,
@@ -166,9 +170,13 @@ export const GET = apiHandler(async () => {
     legacyLastSyncedAt: lastSyncedAt,
     cadence: PUSH_CADENCE,
   });
-  const samples = await getSourceFreshness(user.id, "APPLE_HEALTH").catch(
-    () => [],
-  );
+  // #1173 — when each type last ARRIVED and under which trigger, beside when
+  // its newest sample was taken. Fail-soft to null, which leaves the entries
+  // without arrival fields rather than reporting every type as never received.
+  const [samples, arrivals] = await Promise.all([
+    getSourceFreshness(user.id, "APPLE_HEALTH").catch(() => []),
+    getHealthKitTypeArrivals(user.id).catch(() => null),
+  ]);
   // Issue #778 — a first-run backfill used to be invisible from the web: the
   // card said "last sync 2 minutes ago" while giving no sense of how much had
   // arrived or how far back it reached. These two figures (row count + oldest
@@ -186,7 +194,10 @@ export const GET = apiHandler(async () => {
     lastSyncTrigger,
     lastBackgroundSyncAt,
     syncHealth,
-    metricFreshness: classifyMetricFreshness(samples, syncHealth.verdict),
+    metricFreshness: withHealthKitArrivals(
+      classifyMetricFreshness(samples, syncHealth.verdict),
+      arrivals,
+    ),
     syncProgress,
   });
 });

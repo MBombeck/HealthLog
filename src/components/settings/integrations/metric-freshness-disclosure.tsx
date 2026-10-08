@@ -20,7 +20,7 @@
  * "expected but missing" row is invented.
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { AlertTriangle, ChevronDown } from "lucide-react";
 
 import { formatRelative } from "@/components/settings/integration-status-pill";
@@ -42,16 +42,27 @@ function humanise(type: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-export function MetricFreshnessDisclosure({
+export function MetricFreshnessDisclosure<
+  Entry extends MetricFreshnessEntry = MetricFreshnessEntry,
+>({
   entries,
   idPrefix,
   now,
+  title,
+  detail,
 }: {
-  entries: MetricFreshnessEntry[] | undefined;
+  entries: Entry[] | undefined;
   /** Namespaces the disclosure's ids so several cards can coexist. */
   idPrefix: string;
   /** Override "now" for deterministic testing. */
   now?: Date;
+  /** Replaces the shared "received data" heading. */
+  title?: string;
+  /**
+   * A second line under a row, for a card that knows more per type than the
+   * newest sample (the Apple Health card's arrival facts, #1173).
+   */
+  detail?: (entry: Entry) => ReactNode;
 }) {
   const { t } = useTranslations();
   const [open, setOpen] = useState(false);
@@ -101,7 +112,7 @@ export function MetricFreshnessDisclosure({
           )}
         />
         <span className="text-sm font-medium">
-          {t("settings.integrationFreshness.title")}
+          {title ?? t("settings.integrationFreshness.title")}
         </span>
         <span className="text-muted-foreground min-w-0 truncate text-xs">
           {t("settings.integrationFreshness.summary", {
@@ -119,34 +130,44 @@ export function MetricFreshnessDisclosure({
 
       {open && (
         <ul id={panelId} className="space-y-1">
-          {sorted.map((entry) => (
-            <li
-              key={entry.type}
-              data-slot="metric-freshness-row"
-              data-metric={entry.type}
-              data-state={entry.stale ? "stale" : "fresh"}
-              className={cn(
-                "flex items-center justify-between gap-3 text-xs",
-                entry.stale ? "text-warning" : "text-muted-foreground",
-              )}
-            >
-              <span className="flex min-w-0 items-center gap-1.5">
-                {entry.stale ? (
-                  <AlertTriangle
-                    aria-hidden="true"
-                    className="size-3 shrink-0"
-                  />
-                ) : null}
-                <span className="truncate">{label(entry.type)}</span>
-              </span>
-              <time
-                dateTime={entry.lastSeenAt}
-                className="shrink-0 tabular-nums"
+          {sorted.map((entry) => {
+            const extra = detail?.(entry);
+            return (
+              <li
+                key={entry.type}
+                data-slot="metric-freshness-row"
+                data-metric={entry.type}
+                data-state={entry.stale ? "stale" : "fresh"}
+                className={cn(
+                  "text-xs",
+                  entry.stale ? "text-warning" : "text-muted-foreground",
+                )}
               >
-                {relative(entry.lastSeenAt)}
-              </time>
-            </li>
-          ))}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    {entry.stale ? (
+                      <AlertTriangle
+                        aria-hidden="true"
+                        className="size-3 shrink-0"
+                      />
+                    ) : null}
+                    <span className="truncate">{label(entry.type)}</span>
+                  </span>
+                  <time
+                    dateTime={entry.lastSeenAt}
+                    className="shrink-0 tabular-nums"
+                  >
+                    {relative(entry.lastSeenAt)}
+                  </time>
+                </div>
+                {extra ? (
+                  <div data-slot="metric-freshness-detail" className="mt-0.5">
+                    {extra}
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

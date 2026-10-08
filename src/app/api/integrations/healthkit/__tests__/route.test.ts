@@ -8,10 +8,18 @@ vi.mock("@/lib/db", () => ({
     auditLog: { create: vi.fn() },
     // Per-metric freshness + first-run sync progress for the APPLE_HEALTH
     // source (#778).
-    measurement: { groupBy: vi.fn(), aggregate: vi.fn() },
+    measurement: { aggregate: vi.fn() },
     workout: { groupBy: vi.fn(), aggregate: vi.fn() },
+    // v1.42 — the newest sample per live type is one raw probe per type, and
+    // the per-type arrival ledger (#1173) is read beside it.
+    $queryRaw: vi.fn(),
+    healthKitTypeSync: { findMany: vi.fn() },
   },
   toJson: <T>(v: T) => v,
+}));
+
+vi.mock("@/lib/measurements/live-types", () => ({
+  listLiveMeasurementTypes: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
@@ -38,6 +46,7 @@ vi.mock("next/headers", () => ({
 import { GET, PATCH } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import { APPLE_HEALTH_DATA_STALE_AFTER_MS } from "@/lib/integrations/sync-verdict";
 
 const SESSION_OK = {
@@ -53,7 +62,9 @@ beforeEach(() => {
   } as never);
   vi.mocked(prisma.user.update).mockResolvedValue({} as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
-  vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
+  vi.mocked(listLiveMeasurementTypes).mockResolvedValue([]);
+  vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
+  vi.mocked(prisma.healthKitTypeSync.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.workout.groupBy).mockResolvedValue([] as never);
   vi.mocked(prisma.measurement.aggregate).mockResolvedValue({
     _count: { _all: 0 },
@@ -281,26 +292,20 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       healthKitConfigJson: null,
       healthKitLastSyncedAt: ago(60 * 60 * 1000),
     } as never);
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
-      {
-        source: "APPLE_HEALTH",
-        type: "RESPIRATORY_RATE",
-        _max: { measuredAt: ago(30 * DAY) },
-      },
-      {
-        source: "APPLE_HEALTH",
-        type: "PULSE",
-        _max: { measuredAt: ago(60 * 60 * 1000) },
-      },
+    vi.mocked(listLiveMeasurementTypes).mockResolvedValue([
+      "RESPIRATORY_RATE",
+      "PULSE",
+    ]);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      { type: "RESPIRATORY_RATE", last_seen: ago(30 * DAY) },
+      { type: "PULSE", last_seen: ago(60 * 60 * 1000) },
     ] as never);
 
     const body = await read();
     // Only the Apple Health source is read.
-    const groupByArgs = vi.mocked(prisma.measurement.groupBy).mock
-      .calls[0]?.[0] as unknown as {
-      where: { source: { in: string[] } };
-    };
-    expect(groupByArgs.where.source.in).toEqual(["APPLE_HEALTH"]);
+    expect(vi.mocked(listLiveMeasurementTypes).mock.calls[0]?.[1]).toEqual({
+      source: "APPLE_HEALTH",
+    });
     const byType = Object.fromEntries(
       body.metricFreshness.map((entry) => [entry.type, entry.stale]),
     );
@@ -382,11 +387,75 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       healthKitConfigJson: null,
       healthKitLastSyncedAt: ago(DAY),
     } as never);
-    vi.mocked(prisma.measurement.groupBy).mockRejectedValue(
-      new Error("groupBy hiccup"),
+    vi.mocked(listLiveMeasurementTypes).mockRejectedValue(
+      new Error("live-type hiccup"),
     );
     const body = await read();
     expect(body.metricFreshness).toEqual([]);
     expect(body.syncHealth.verdict).toBe("fresh");
+  });
+
+  // #1173 — when a type last ARRIVED and under which trigger, beside when its
+  // newest sample was taken. A type that only ever comes with "Sync all" is
+  // visible as `manual`; a type no live sync carried yet reads null.
+  it("lays the per-type arrival facts over the freshness entries", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      healthKitConfigJson: null,
+      healthKitLastSyncedAt: ago(60 * 60 * 1000),
+    } as never);
+    vi.mocked(listLiveMeasurementTypes).mockResolvedValue([
+      "RESPIRATORY_RATE",
+      "PULSE",
+    ]);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      { type: "RESPIRATORY_RATE", last_seen: ago(2 * DAY) },
+      { type: "PULSE", last_seen: ago(60 * 60 * 1000) },
+    ] as never);
+    vi.mocked(prisma.workout.groupBy).mockResolvedValue([
+      { source: "APPLE_HEALTH", _max: { startedAt: ago(DAY) } },
+    ] as never);
+    const receivedAt = ago(3 * 60 * 60 * 1000);
+    vi.mocked(prisma.healthKitTypeSync.findMany).mockResolvedValue([
+      {
+        type: "RESPIRATORY_RATE",
+        lastReceivedAt: receivedAt,
+        lastTrigger: "manual",
+        lastNewSampleAt: null,
+      },
+    ] as never);
+
+    const body = await read();
+    const byType = Object.fromEntries(
+      body.metricFreshness.map((entry) => [entry.type, entry]),
+    );
+    expect(byType.RESPIRATORY_RATE).toMatchObject({
+      lastReceivedAt: receivedAt.toISOString(),
+      lastTrigger: "manual",
+      lastNewSampleAt: null,
+    });
+    expect(byType.PULSE).toMatchObject({
+      lastReceivedAt: null,
+      lastTrigger: null,
+      lastNewSampleAt: null,
+    });
+    // Workouts ride their own batch route, which the ledger does not cover.
+    expect(byType.WORKOUTS).not.toHaveProperty("lastReceivedAt");
+  });
+
+  it("leaves the arrival facts off when the ledger read fails", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      healthKitConfigJson: null,
+      healthKitLastSyncedAt: ago(DAY),
+    } as never);
+    vi.mocked(listLiveMeasurementTypes).mockResolvedValue(["PULSE"]);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      { type: "PULSE", last_seen: ago(DAY) },
+    ] as never);
+    vi.mocked(prisma.healthKitTypeSync.findMany).mockRejectedValue(
+      new Error("ledger hiccup"),
+    );
+    const body = await read();
+    expect(body.metricFreshness).toHaveLength(1);
+    expect(body.metricFreshness[0]).not.toHaveProperty("lastReceivedAt");
   });
 });

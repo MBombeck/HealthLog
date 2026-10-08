@@ -117,6 +117,38 @@ const metricFreshnessEntry = z
       "Per-metric-type last-seen timestamp with the server-computed staleness flag. Only types that have actually delivered appear — absence is absence, never an invented row.",
   });
 
+// #1173 — the Apple Health read adds when each type last ARRIVED, under which
+// trigger, and when a sync last brought something new for it. Mirrors
+// `HealthKitFreshnessEntry` in `src/lib/integrations/healthkit-type-sync.ts`.
+const appleHealthMetricFreshnessEntry = metricFreshnessEntry
+  .extend({
+    lastReceivedAt: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .optional()
+      .describe(
+        "When a live sync batch last carried this type (inserted, updated or duplicate entries all count). Null when no live sync has carried it yet: a type that so far came only from the export import, or from before v1.42. `lastSeenAt` is when the newest sample was TAKEN; this is when the server last RECEIVED the type. Omitted on the `WORKOUTS` entry, which the ledger does not cover, and on every entry when the ledger read failed.",
+      ),
+    lastTrigger: healthKitSyncTriggerEnum
+      .nullable()
+      .optional()
+      .describe(
+        "The `syncTrigger` of that batch. Null when the client reported none. A type whose trigger is only ever `manual` reaches the server only through a user-started full sync. Same omission rules as `lastReceivedAt`.",
+      ),
+    lastNewSampleAt: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .optional()
+      .describe(
+        "When a live sync batch last brought a new or updated sample of this type, as opposed to duplicates only. Null when none has. Same omission rules as `lastReceivedAt`.",
+      ),
+  })
+  .meta({
+    id: "AppleHealthMetricFreshnessEntry",
+    description:
+      "Per-type Apple Health freshness: the newest sample's timestamp and staleness flag, plus the per-type arrival facts recorded by `POST /api/measurements/batch` (v1.42).",
+  });
+
 // Issue #778 — the two backfill-progress figures the server genuinely holds.
 // The iOS app drives the backfill; its queue, throttle state, and any ETA
 // live on the device and are deliberately absent here.
@@ -167,10 +199,10 @@ const healthKitConfigResponse = z
       .optional()
       .describe("Present on the GET read; omitted from the PATCH echo."),
     metricFreshness: z
-      .array(metricFreshnessEntry)
+      .array(appleHealthMetricFreshnessEntry)
       .optional()
       .describe(
-        "Per-metric-type freshness for the `APPLE_HEALTH` source. Present on the GET read; omitted from the PATCH echo.",
+        "Per-metric-type freshness for the `APPLE_HEALTH` source, with the per-type arrival facts. Present on the GET read; omitted from the PATCH echo.",
       ),
     syncProgress: appleHealthSyncProgress
       .nullable()
