@@ -8047,14 +8047,6 @@
         "title": "Intake legend",
         "description": "Record 300 taken medication events."
       },
-      "overIntake1": {
-        "title": "Double take",
-        "description": "Take medication at least once more than planned."
-      },
-      "skippedIntake1": {
-        "title": "Stepped back",
-        "description": "Skip at least one planned intake."
-      },
       "passkeyCreated1": {
         "title": "Passkey set up",
         "description": "Create your first passkey."

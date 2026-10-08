@@ -8047,14 +8047,6 @@
         "title": "Legenda przyjęć",
         "description": "Zarejestruj 300 przyjęć leków."
       },
-      "overIntake1": {
-        "title": "Podwójna dawka",
-        "description": "Przyjmij lek co najmniej raz więcej niż zaplanowano."
-      },
-      "skippedIntake1": {
-        "title": "Krok wstecz",
-        "description": "Pomiń co najmniej jedno zaplanowane przyjęcie."
-      },
       "passkeyCreated1": {
         "title": "Klucz dostępu ustawiony",
         "description": "Utwórz swój pierwszy klucz dostępu."

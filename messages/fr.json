@@ -8047,14 +8047,6 @@
         "title": "Légende des prises",
         "description": "Enregistrez 300 prises de médicaments."
       },
-      "overIntake1": {
-        "title": "Double dose",
-        "description": "Prenez votre médicament au moins une fois de plus que prévu."
-      },
-      "skippedIntake1": {
-        "title": "Pause prise",
-        "description": "Sautez au moins une prise prévue."
-      },
       "passkeyCreated1": {
         "title": "Clé d’accès configurée",
         "description": "Créez votre première clé d’accès."

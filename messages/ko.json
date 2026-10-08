@@ -8047,14 +8047,6 @@
         "title": "복용 전설",
         "description": "복용 기록 300회를 남겨요."
       },
-      "overIntake1": {
-        "title": "한 번 더",
-        "description": "계획보다 한 번 이상 더 복용해요."
-      },
-      "skippedIntake1": {
-        "title": "한 걸음 물러서기",
-        "description": "계획된 복용을 한 번 이상 건너뛰어요."
-      },
       "passkeyCreated1": {
         "title": "패스키 등록",
         "description": "첫 패스키를 만들어요."

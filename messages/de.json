@@ -8047,14 +8047,6 @@
         "title": "Einnahme-Legende",
         "description": "Dokumentiere 300 eingenommene Medikamente."
       },
-      "overIntake1": {
-        "title": "Doppelt genommen",
-        "description": "Nimm mindestens einmal mehr ein als vorgesehen."
-      },
-      "skippedIntake1": {
-        "title": "Pause eingelegt",
-        "description": "Überspringe mindestens eine geplante Einnahme."
-      },
       "passkeyCreated1": {
         "title": "Passkey gesetzt",
         "description": "Erstelle deinen ersten Passkey."

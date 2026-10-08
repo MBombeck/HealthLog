@@ -8047,14 +8047,6 @@
         "title": "Leyenda de las tomas",
         "description": "Registra 300 tomas de medicación."
       },
-      "overIntake1": {
-        "title": "Dosis doble",
-        "description": "Toma la medicación al menos una vez más de lo previsto."
-      },
-      "skippedIntake1": {
-        "title": "Un paso atrás",
-        "description": "Omite al menos una toma planificada."
-      },
       "passkeyCreated1": {
         "title": "Clave de acceso creada",
         "description": "Crea tu primera clave de acceso."

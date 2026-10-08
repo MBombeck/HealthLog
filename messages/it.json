@@ -8047,14 +8047,6 @@
         "title": "Leggenda delle assunzioni",
         "description": "Registra 300 assunzioni di farmaci."
       },
-      "overIntake1": {
-        "title": "Doppia dose",
-        "description": "Assumi il farmaco almeno una volta in più del previsto."
-      },
-      "skippedIntake1": {
-        "title": "Pausa presa",
-        "description": "Salta almeno un’assunzione pianificata."
-      },
       "passkeyCreated1": {
         "title": "Passkey configurata",
         "description": "Crea la tua prima passkey."
