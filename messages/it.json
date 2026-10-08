@@ -513,6 +513,19 @@
       "fixLan": "Server in una rete domestica senza TLS: imposta SESSION_COOKIE_SECURE=false nelle sue impostazioni e riavvialo.",
       "fixHttps": "Server dietro un proxy HTTPS: apri invece l'indirizzo https:// e assicurati che il proxy inoltri X-Forwarded-Proto: https.",
       "localhostNote": "Questa pagina è su http://localhost mentre il server imposta il cookie di accesso solo per https://. La maggior parte dei browser lo accetta su localhost; se dopo l'accesso torni qui, imposta SESSION_COOKIE_SECURE=false."
+    },
+    "claim": {
+      "title": "Prendi in mano il tuo profilo",
+      "description": "{guardian} ha tenuto un registro sanitario per te. Scegli il tuo accesso per renderlo il tuo account.",
+      "invalid": "Questo link non è valido, è scaduto o è già stato usato.",
+      "signOutFirst": "Esci prima per prendere in mano questo profilo.",
+      "emailRequired": "È necessario un indirizzo email.",
+      "guardiansTitle": "Chi mantiene l’accesso",
+      "guardianProposal": "{name} propone: {proposal}",
+      "consentNote": "Dopo la presa in carico confermerai tu l’avvertenza e l’eventuale consenso all’IA.",
+      "submit": "Prendi il profilo",
+      "submitting": "Presa in carico…",
+      "success": "Il profilo ora è il tuo account."
     }
   },
   "dashboard": {
@@ -834,7 +847,8 @@
     "durationHoursOnly": "{hours} h",
     "durationMinutesOnly": "{minutes} min",
     "durationInvalid": "Inserisci una durata come 7,5, 7:30 o 7h 30m.",
-    "durationTooLong": "Una voce non può superare le 24 ore."
+    "durationTooLong": "Una voce non può superare le 24 ore.",
+    "sourceHealthConnect": "Health Connect"
   },
   "metricCatalog": {
     "title": "Cosa può monitorare HealthLog",
@@ -2550,7 +2564,10 @@
         "ENV_DAYLIGHT": "la luce del giorno",
         "ENV_PRECIP": "le precipitazioni",
         "ENV_PRESSURE_MEAN": "la pressione atmosferica",
-        "ENV_PRESSURE_DELTA": "l'oscillazione di pressione nella giornata"
+        "ENV_PRESSURE_DELTA": "l'oscillazione di pressione nella giornata",
+        "ENV_PM25": "il particolato fine (PM2,5)",
+        "ENV_OZONE_8H": "l’ozono",
+        "ENV_POLLEN_MAX": "i pollini"
       },
       "daily": {
         "high": "Quando {behaviour} sale, {outcome} del giorno dopo tende a {direction} nei tuoi dati — un andamento da osservare, non una causa.",
@@ -2573,6 +2590,11 @@
           "none": "L'umore e il polso a riposo non si muovono insieme in modo marcato in questo periodo."
         },
         "weightWeekday": "Il peso del {weekday} è {delta} kg {direction} la tua media degli altri giorni — un andamento da osservare."
+      },
+      "dailySameDay": {
+        "high": "Più {behaviour} nello stesso giorno e in quello prima tende ad accompagnarsi a {direction} {outcome} nei tuoi dati: uno schema da osservare, non una causa.",
+        "moderate": "Più {behaviour} nello stesso giorno e in quello prima sembra accompagnarsi a {direction} {outcome} nei tuoi dati, per quanto visto finora: uno schema da osservare, non una causa.",
+        "faint": "Più {behaviour} nello stesso giorno e in quello prima mostra al massimo un debole indizio di {direction} {outcome} nei tuoi dati: troppo poco per contarci, mai una causa."
       }
     },
     "noAnalysisYet": "Ancora nessuna valutazione.",
@@ -3678,7 +3700,10 @@
           "endInFuture": "Finirebbe nel futuro. Imposta come inizio l’ora in cui è cominciato l’allenamento.",
           "distanceInvalid": "Inserisci la distanza come numero in un intervallo realistico.",
           "energyInvalid": "Inserisci l’energia attiva come numero fino a 20.000 kcal."
-        }
+        },
+        "editTitle": "Modifica allenamento",
+        "editAction": "Modifica",
+        "updated": "Allenamento aggiornato"
       }
     },
     "bloodGlucose": {
@@ -5364,7 +5389,8 @@
           "respiratoryRate": "Frequenza respiratoria",
           "recovery": "Recupero",
           "stress": "Stress",
-          "sleepDebt": "Debito di sonno"
+          "sleepDebt": "Debito di sonno",
+          "hrvRmssd": "HRV (RMSSD)"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -5381,7 +5407,8 @@
           "MCP": "MCP",
           "GOOGLE_HEALTH": "Google Health",
           "STRAVA": "Strava",
-          "EXTERNAL": "Dispositivo esterno"
+          "EXTERNAL": "Dispositivo esterno",
+          "HEALTH_CONNECT": "Health Connect"
         },
         "deviceLabels": {
           "watch": "Orologio",
@@ -5618,6 +5645,25 @@
               "tooManyRows": "Quel file contiene più righe di quante un'importazione possa accoglierne. Dividilo e importa le parti."
             },
             "detail": "Un file copre tutti i farmaci che contiene."
+          },
+          "healthConnect": {
+            "title": "Esportazione di Health Connect",
+            "description": "Importa il file ZIP che l’app Health Connect su Android crea quando esporti i tuoi dati.",
+            "choose": "Scegli file ZIP",
+            "uploading": "Caricamento…",
+            "uploadFailed": "Il caricamento non è riuscito. Riprova.",
+            "tooLarge": "Il file supera la dimensione accettata da questo server.",
+            "unsupportedVersion": "Questa esportazione di Health Connect è troppo vecchia per essere letta.",
+            "doneSummary": "{count} valori importati.",
+            "failed": "L’importazione non è riuscita: {reason}",
+            "phase": {
+              "queued": "In attesa di avvio",
+              "unpacking": "Estrazione del file",
+              "parsing": "Lettura dei record",
+              "upserting": "Salvataggio dei valori",
+              "done": "Completato",
+              "failed": "Non riuscito"
+            }
           }
         },
         "subtitle": "Esporta i tuoi dati o importa da un backup."
@@ -5732,7 +5778,17 @@
         "noResults": "Nessun luogo corrispondente trovato.",
         "fetchFailedOne": "L’ultimo aggiornamento meteo in background non è riuscito ({when}).",
         "fetchFailedFew": "Gli ultimi {count} aggiornamenti meteo in background non sono riusciti, il più recente {when}.",
-        "fetchFailedOther": "Gli ultimi {count} aggiornamenti meteo in background non sono riusciti, il più recente {when}."
+        "fetchFailedOther": "Gli ultimi {count} aggiornamenti meteo in background non sono riusciti, il più recente {when}.",
+        "airQuality": {
+          "title": "Qualità dell’aria e pollini",
+          "description": "Qualità dell’aria, pollini e UV giornalieri per la tua località, dal modello CAMS tramite Open-Meteo.",
+          "toggle": "Includi qualità dell’aria e pollini",
+          "operatorDisabled": "La qualità dell’aria è disattivata su questo server.",
+          "coverage": "{count} giorni con dati sulla qualità dell’aria",
+          "pollenEuropeOnly": "I dati sui pollini coprono solo l’Europa.",
+          "attribution": "Qualità dell’aria: servizio di monitoraggio atmosferico di Copernicus (CAMS), tramite Open-Meteo.",
+          "saveError": "Impossibile salvare l’impostazione."
+        }
       },
       "score": {
         "title": "Punteggio di salute",
@@ -6990,8 +7046,15 @@
           "foreground": "con l'app aperta",
           "background": "in background",
           "push": "da una sveglia push",
-          "unknown": "trigger non segnalato dall'app"
+          "unknown": "trigger non segnalato dall'app",
+          "manual": "da «Sincronizza tutto»"
         }
+      },
+      "freshness": {
+        "title": "Per tipo di dato",
+        "lastReceived": "Ultima ricezione {relative}",
+        "lastNewValue": "Ultimo nuovo valore {relative}",
+        "never": "Non ancora ricevuto"
       }
     },
     "garminInfo": {
@@ -9386,7 +9449,8 @@
     "sourceRange": {
       "fromReport": "Intervallo del referto {range}",
       "catalogDiffers": "il tuo intervallo {range}"
-    }
+    },
+    "convertedFrom": "Convertito da {value} {unit}"
   },
   "modules": {
     "cycle": {
@@ -9616,6 +9680,19 @@
       "overdue": "Richiamo scaduto dal {date}",
       "dueSoon": "Richiamo previsto il {date}",
       "current": "Prossimo richiamo il {date}"
+    },
+    "custom": {
+      "title": "Vaccini personali",
+      "add": "Aggiungi vaccino personale",
+      "name": "Nome",
+      "components": "Protegge da",
+      "seriesDoses": "Dosi del ciclo primario",
+      "boosterMonths": "Richiamo ogni (mesi)",
+      "saved": "Vaccino salvato",
+      "deleted": "Vaccino rimosso",
+      "deleteConfirm": "Rimuovere questo vaccino? Le dosi già registrate mantengono il loro nome.",
+      "saveFailed": "Impossibile salvare il vaccino.",
+      "nameTaken": "Hai già un vaccino con questo nome."
     }
   },
   "illness": {
@@ -10528,7 +10605,16 @@
       "daylight": "Ore di luce",
       "precip": "Precipitazioni",
       "pressureMean": "Pressione atmosferica",
-      "pressureDelta": "Variazione di pressione"
+      "pressureDelta": "Variazione di pressione",
+      "apparentMax": "Massima percepita",
+      "pm25": "Particolato fine (PM2,5)",
+      "pm10": "Particolato (PM10)",
+      "no2": "Biossido di azoto",
+      "ozone8h": "Ozono (massimo su 8 ore)",
+      "europeanAqi": "Indice europeo di qualità dell’aria",
+      "uvIndexMax": "Indice UV (massimo)",
+      "dustMax": "Polvere del Sahara",
+      "pollenMax": "Pollini (valore più alto)"
     }
   },
   "documents": {
@@ -11475,7 +11561,32 @@
       "guardianErrorFailed": "Non è stato possibile inviare l'invito.",
       "errorMfaRequired": "Serve un secondo fattore e il tuo account non ne ha ancora uno. Impostane uno in Impostazioni → Sicurezza e riprova.",
       "rosterLoadError": "Non è stato possibile caricare chi si occupa di questa cartella.",
-      "errorRateLimit": "Troppi profili creati nell'ultima ora. Aspetta un po' e riprova."
+      "errorRateLimit": "Troppi profili creati nell'ultima ora. Aspetta un po' e riprova.",
+      "handover": {
+        "title": "Consegna questo profilo",
+        "description": "Dai a {name} un accesso tutto suo. I dati restano dove sono; tu proponi quale accesso mantiene ogni persona che se ne occupa e {name} decide.",
+        "create": "Crea link di consegna",
+        "expiryLabel": "Link valido per",
+        "expiry1": "1 giorno",
+        "expiry7": "7 giorni",
+        "expiry14": "14 giorni",
+        "proposalLabel": "Accesso proposto dopo",
+        "proposal": {
+          "end": "Termina l’accesso",
+          "read": "Solo visualizzazione",
+          "manage": "Continua a gestire"
+        },
+        "linkTitle": "Link di consegna",
+        "linkOnce": "Questo link viene mostrato una sola volta. Consegnalo direttamente a {name} o fagli scansionare il codice.",
+        "copy": "Copia link",
+        "copied": "Link copiato",
+        "pending": "Link di consegna aperto fino al {date}",
+        "revoke": "Ritira link",
+        "revoked": "Link ritirato",
+        "errorFailed": "Impossibile creare il link di consegna.",
+        "oidcOnly": "La consegna del profilo non è disponibile finché questo server consente solo l’accesso unico.",
+        "minorHint": "{name} ha meno di 16 anni. Vale la pena considerare di mantenere l’accesso in lettura."
+      }
     },
     "toast": {
       "savedTo": "Salvato nella cartella di {name}"

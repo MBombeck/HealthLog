@@ -127,10 +127,10 @@ const batchPayloadSchema = z
     // used in attribution — sending it or omitting it produces byte-identical
     // row outcomes. Omit on any client that does not track its wake reason.
     syncTrigger: z
-      .enum(["foreground", "background", "push"])
+      .enum(["foreground", "background", "push", "manual"])
       .optional()
       .describe(
-        "Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, or a push wake). Recorded on the ingest wide event and kept on the account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from `GET /api/integrations/healthkit`. It does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66 clients omit it.",
+        'Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, a push wake, or a user-initiated `manual` "Sync all" run, since v1.42). Recorded on the ingest wide event and kept on the account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from `GET /api/integrations/healthkit`. It does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66 clients omit it.',
       ),
   })
   .meta({

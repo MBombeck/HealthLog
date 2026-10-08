@@ -171,6 +171,10 @@ export const BACKED_UP_MODELS = [
   // re-syncs it from a provider.
   "VaccinationRecord",
   "VaccinationDocumentLink",
+  // v1.42 (#1005) — the person's own vaccine definitions. A dose logged
+  // against one resolves its antigens and booster rule through it, so a
+  // restore without them leaves those doses as bare names.
+  "CustomVaccine",
 
   // ── Coach ─────────────────────────────────────────────────────────────────
   // The transcript — conversation, message, attachment — travels; see
@@ -585,6 +589,8 @@ export const STRUCTURALLY_UNATTRIBUTABLE: Readonly<Record<string, string>> = {
  * rather than by what is cheapest to write.
  */
 export const COVERAGE_PENDING: Readonly<Record<string, string>> = {
+  CustomVaccine:
+    "The person's own vaccine definitions (v1.42, #1005). Until both ends land, a restored dose that pointed at one comes back as its bare `vaccineName`: no antigens, no series position, no booster rule.",
   WorkoutRoute:
     "GPS traces. Deliberately absent from the payload today and DISCLOSED as absent in the file's own manifest, which is why this is a documented exclusion rather than a silent one — but it is still a loss for a self-hoster with no other copy.",
   WorkoutSamples:
@@ -718,6 +724,10 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Further import source keys that were answered with an already stored document because the bytes matched. The next import run writes the same alias again the moment it meets the same bytes, so a restore loses nothing a re-run does not rebuild; and for a deleted document it restores no less than the tombstones and ledger beside it do, which do not travel either.",
   ImportJob:
     "A job record pointing at an uploaded file that the backup does not carry, so restoring it would resurrect a task with nothing to work on.",
+  HealthKitTypeSync:
+    "When each HealthKit type last arrived on this host and how. Diagnostic state the next sync rebuilds; restored elsewhere it would claim deliveries that host never received.",
+  ManagedProfileHandover:
+    "A one-time handover link: a credential, minted by a guardian and shown once. Restoring it would bring back a link that was used, withdrawn or expired, and only its hash exists to carry anyway. Same reasoning as `InviteToken`.",
   InviteToken:
     "The instance's registration ledger, minted by the operator rather than by the person, and already declared instance-scoped by the wipe plan. Restoring one account's backup must not re-open a registration code the operator retired, and the creator relation is the only thing that makes this look account-scoped at all. It surfaced here when the classification check learned to read a relation by type instead of by field name.",
   MedicationIntakeImportJob:
@@ -914,6 +924,10 @@ export const USER_COLUMN_BACKUP_CLASS = {
   homeLabel: "SETTING",
   homeTimezone: "SETTING",
   homeSince: "SETTING",
+  // v1.42 (#615) — the sealed copy of the same home location, and the
+  // account's switch for the air-quality part of the module.
+  homeLocationEncrypted: "SETTING",
+  environmentAirQualityEnabled: "SETTING",
   // How the interface reads.
   timezone: "SETTING",
   locale: "SETTING",

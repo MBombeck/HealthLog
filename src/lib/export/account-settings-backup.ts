@@ -381,6 +381,37 @@ const insuranceNumber: SettingCodec = {
   },
 };
 
+/**
+ * v1.42 (#615) — the sealed home location. A disaster-recovery file carries
+ * the ciphertext verbatim, like the insurance number, because it is restored
+ * onto a host holding the same keys. A portable file leaves it out: the
+ * readable home rides `homeLat` / `homeLon` / `homeLabel` until those columns
+ * drop, and the receiving host's encryption backfill seals it again.
+ */
+const homeLocationSealed: SettingCodec = {
+  write: (row, disasterRecovery) => {
+    if (!disasterRecovery) return {};
+    const sealed = row.homeLocationEncrypted;
+    return {
+      homeLocationEncrypted:
+        sealed instanceof Uint8Array
+          ? Buffer.from(sealed).toString("base64")
+          : null,
+    };
+  },
+  read: (entry) => {
+    if (!has(entry, "homeLocationEncrypted")) return undefined;
+    const value = entry.homeLocationEncrypted;
+    if (value === null) return null;
+    if (typeof value !== "string") return new Refused("homeLocationEncrypted");
+    const buffer = Buffer.from(value, "base64");
+    if (buffer.byteLength === 0) return new Refused("homeLocationEncrypted");
+    const bytes = new Uint8Array(new ArrayBuffer(buffer.byteLength));
+    bytes.set(buffer);
+    return bytes;
+  },
+};
+
 const ACCOUNT_SETTING_CODECS: Readonly<
   Record<AccountSettingColumn, SettingCodec>
 > = {
@@ -402,6 +433,8 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   homeLabel: plain("homeLabel"),
   homeTimezone: timeZone("homeTimezone", true),
   homeSince: instant("homeSince"),
+  homeLocationEncrypted: homeLocationSealed,
+  environmentAirQualityEnabled: plain("environmentAirQualityEnabled"),
   timezone: timeZone("timezone", false),
   locale: oneOf("locale", locales, true),
   // The vocabularies the two preference routes accept, read from their own

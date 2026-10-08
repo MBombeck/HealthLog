@@ -66,9 +66,13 @@ import { roundCoarse } from "@/lib/environment/open-meteo";
 export interface EnvironmentContextBackupEntry {
   /** `YYYY-MM-DD`, anchored to the resolved location's timezone. */
   date: string;
-  lat: number;
-  lon: number;
-  locationLabel: string;
+  /**
+   * Plaintext coarse location. Nullable since v1.42 (migration 0382): the
+   * sealed copy replaces it once the encryption backfill has run.
+   */
+  lat: number | null;
+  lon: number | null;
+  locationLabel: string | null;
   /**
    * Which precedence rule chose the location. Carried because it is the only
    * record that this day was NOT the home city, and because a re-resolve
@@ -98,9 +102,10 @@ export interface EnvironmentTravelLocationBackupEntry {
   /** Inclusive `YYYY-MM-DD` bounds. Strings end to end; see the file header. */
   startDate: string;
   endDate: string;
-  lat: number;
-  lon: number;
-  label: string;
+  /** Plaintext coarse location; nullable since v1.42 (migration 0382). */
+  lat: number | null;
+  lon: number | null;
+  label: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -315,8 +320,8 @@ export async function restoreEnvironmentData(
         endDate: entry.endDate,
         // A file written before v1.39.4 carries 2-decimal coordinates; they
         // come back at today's privacy floor.
-        lat: roundCoarse(entry.lat),
-        lon: roundCoarse(entry.lon),
+        lat: entry.lat == null ? null : roundCoarse(entry.lat),
+        lon: entry.lon == null ? null : roundCoarse(entry.lon),
         label: entry.label,
         ...(entry.createdAt ? { createdAt: new Date(entry.createdAt) } : {}),
         ...(entry.updatedAt ? { updatedAt: new Date(entry.updatedAt) } : {}),
@@ -329,8 +334,8 @@ export async function restoreEnvironmentData(
       data: payload.environmentContexts.map((entry) => ({
         userId: ownerId,
         date: entry.date,
-        lat: roundCoarse(entry.lat),
-        lon: roundCoarse(entry.lon),
+        lat: entry.lat == null ? null : roundCoarse(entry.lat),
+        lon: entry.lon == null ? null : roundCoarse(entry.lon),
         locationLabel: entry.locationLabel,
         source: entry.source,
         tempMin: entry.tempMin ?? null,

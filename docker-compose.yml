@@ -72,6 +72,8 @@ x-healthlog-env: &healthlog_env
   # (default 60000; 0 disables it and restores the unbounded behaviour).
   # Raise it if a very large account's analytics fallback is being cut off.
   DATABASE_STATEMENT_TIMEOUT_MS: "${DATABASE_STATEMENT_TIMEOUT_MS:-}"
+  # Postgres work_mem for every app session (default 16MB).
+  DATABASE_WORK_MEM: "${DATABASE_WORK_MEM:-}"
   WITHINGS_WEBHOOK_SECRET: "${WITHINGS_WEBHOOK_SECRET:-}"
   # Overrides the derived `${NEXT_PUBLIC_APP_URL}/api/withings/callback`;
   # set it when the URL registered with Withings differs from the app's own
@@ -244,6 +246,11 @@ x-healthlog-env: &healthlog_env
   # the coordinate lookups off a third party.
   OPENMETEO_BASE_URL: "${OPENMETEO_BASE_URL:-}"
   OPENMETEO_GEOCODING_URL: "${OPENMETEO_GEOCODING_URL:-}"
+  # Air quality, pollen and UV (CAMS via Open-Meteo). Same hosted default and
+  # self-host option as above; ENVIRONMENT_AIR_QUALITY_DISABLED=1 stops the
+  # air-quality requests for the whole instance.
+  OPENMETEO_AIR_QUALITY_URL: "${OPENMETEO_AIR_QUALITY_URL:-}"
+  ENVIRONMENT_AIR_QUALITY_DISABLED: "${ENVIRONMENT_AIR_QUALITY_DISABLED:-}"
   # OIDC SSO login (self-hosted IdP: Authentik/Keycloak/Authelia/etc).
   # All three of ISSUER_URL/CLIENT_ID/CLIENT_SECRET together enable the
   # "Sign in with SSO" button; set none to leave it disabled. OIDC_ONLY

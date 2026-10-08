@@ -104,6 +104,8 @@ describe("DELETE /api/admin/data leaves nothing it promised to delete", () => {
         dateOfBirth: new Date("1990-01-01T00:00:00Z"),
         telegramBotToken: "secret-token",
         telegramEnabled: true,
+        // Off, so the reset back to the default (on) is visible below.
+        environmentAirQualityEnabled: false,
         locale: "en",
         unitPreference: "metric",
       },
@@ -269,7 +271,12 @@ describe("DELETE /api/admin/data leaves nothing it promised to delete", () => {
           value === 0 ||
           (Array.isArray(value) && value.length === 0) ||
           value === "aggregated" ||
-          value === "disconnected";
+          value === "disconnected" ||
+          // A column whose reset is a non-empty default (v1.42: the
+          // air-quality switch resets to on) is cleared when it holds
+          // exactly that default.
+          (typeof value === "boolean" &&
+            (USER_RESET as Record<string, unknown>)[column] === value);
         if (!cleared) stillSet.push(`${column} = ${JSON.stringify(value)}`);
       }
       expect(

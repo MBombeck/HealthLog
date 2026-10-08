@@ -38,7 +38,12 @@ import {
 } from "@/lib/validations/managed-profiles";
 import { onboardingStateResource } from "./onboarding";
 import { aiAccountBlock, moduleAccessMap } from "./profile";
-import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import {
+  dataEnvelope,
+  errorEnvelope,
+  notImplementedResponse,
+  stdResponses,
+} from "./shared";
 
 /**
  * The four request bodies this table publishes, and the one thing to know about
@@ -545,7 +550,113 @@ const managedProfileEnvelope = dataEnvelope(
   "ManagedProfileEnvelope",
 );
 
+// v1.42 (#959) — handing a managed profile over to the person it describes.
+const handoverProposal = z
+  .enum(["end", "read", "manage"])
+  .describe(
+    "What a guardian's access becomes after the handover: ended, view only, or still managing. The new owner confirms or changes it when claiming.",
+  )
+  .meta({ id: "ManagedProfileHandoverProposal" });
+
+const createHandoverRequest = z
+  .object({
+    expiresInDays: z
+      .union([z.literal(1), z.literal(7), z.literal(14)])
+      .default(7)
+      .describe("How long the link stays valid."),
+    proposals: z
+      .array(
+        z.object({
+          grantId: z.string().describe("The guardian's MANAGE grant."),
+          proposal: handoverProposal,
+        }),
+      )
+      .describe(
+        "One proposal per active guardian. A guardian left out is proposed `read`.",
+      ),
+  })
+  .strict()
+  .meta({ id: "CreateManagedProfileHandoverRequest" });
+
+const managedProfileHandover = z
+  .object({
+    id: z.string(),
+    token: z
+      .string()
+      .describe(
+        "The one-time `hlp_` token. Returned only in this response and never again; only its hash is stored.",
+      ),
+    url: z.string().describe("The link to hand over: `<app>/claim/<token>`."),
+    expiresAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({ id: "ManagedProfileHandover" });
+
 export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/managed-profiles/{id}/handover": {
+    post: {
+      tags: ["Account sharing"],
+      summary: "Create a handover link for a managed profile",
+      description:
+        "Mints the one-time link that lets the person a managed profile describes take it over as their own account. No data moves: claiming sets credentials on the profile's own record. Each guardian's access afterwards follows the proposal recorded here unless the new owner changes it. Creating a new link withdraws an open one. Pending MANAGE invitations on the profile are withdrawn when it is claimed. Cookie-only and step-up gated, like every act on a managed profile. Refused on an instance that allows single sign-on only.",
+      requestParams: { path: z.object({ id: z.string() }) },
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: createHandoverRequest } },
+      },
+      responses: {
+        ...stdResponses,
+        "201": {
+          description: "The link, shown once.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                managedProfileHandover,
+                "ManagedProfileHandoverEnvelope",
+              ),
+            },
+          },
+        },
+        "403": {
+          description:
+            "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "404": {
+          description:
+            "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode: managed_profile.not_found`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...notImplementedResponse,
+      },
+    },
+    delete: {
+      tags: ["Account sharing"],
+      summary: "Withdraw the open handover link",
+      description:
+        "Withdraws the profile's open handover link, if there is one; the link then answers like any unknown one. Cookie-only; no step-up, because withdrawing only takes something away.",
+      requestParams: { path: z.object({ id: z.string() }) },
+      responses: {
+        ...stdResponses,
+        "200": {
+          description: "Withdrawn, or there was no open link.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ revoked: z.boolean() }),
+                "RevokeManagedProfileHandoverEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode: managed_profile.not_found`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...notImplementedResponse,
+      },
+    },
+  },
   "/api/auth/me": {
     get: {
       tags: ["Auth"],

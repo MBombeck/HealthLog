@@ -46,6 +46,7 @@ import {
   stdResponses,
   errorEnvelope,
   loginPasswordSchema,
+  notImplementedResponse,
 } from "./shared";
 import { passkeyLoginOptionsSchema } from "@/lib/validations/auth";
 
@@ -697,7 +698,137 @@ const codexDevicePollResponse = z
   })
   .meta({ id: "CodexDevicePollResponse" });
 
+// v1.42 (#959) — claiming a managed profile through its handover link.
+const claimTokenField = z
+  .string()
+  .describe(
+    "The `hlp_` token from the handover link. Sent in the body, never in a URL.",
+  );
+
+const claimPreviewRequest = z
+  .object({ token: claimTokenField })
+  .strict()
+  .meta({ id: "ProfileClaimPreviewRequest" });
+
+const claimPreview = z
+  .object({
+    displayName: z.string(),
+    expiresAt: z.iso.datetime({ offset: true }),
+    guardians: z.array(
+      z.object({
+        grantId: z.string(),
+        displayName: z.string(),
+        proposal: z.enum(["end", "read", "manage"]),
+      }),
+    ),
+  })
+  .meta({ id: "ProfileClaimPreview" });
+
+const claimRequest = z
+  .object({
+    token: claimTokenField,
+    username: z.string(),
+    email: z.string().describe("Required: the account needs a way back in."),
+    password: z.string(),
+    guardians: z
+      .array(
+        z.object({
+          grantId: z.string(),
+          decision: z.enum(["end", "read", "manage"]),
+        }),
+      )
+      .describe("The new owner's decision per guardian."),
+  })
+  .strict()
+  .meta({ id: "ProfileClaimRequest" });
+
 export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/auth/claim/preview": {
+    post: {
+      // No credential: the person claiming the profile has none yet. The
+      // one-time token in the body is the credential.
+      security: [],
+      tags: ["Auth"],
+      summary: "Preview a managed-profile handover link",
+      description:
+        "What a handover link would hand over: the profile's display name, the link's expiry, and each guardian's proposal. Anonymous; the token travels in the body. An unknown, expired, used or withdrawn token, and a link whose creator lost access, all answer the same 404. Rate-limited per source address.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: claimPreviewRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The preview.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(claimPreview, "ProfileClaimPreviewEnvelope"),
+            },
+          },
+        },
+        "403": {
+          description:
+            "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "404": {
+          description:
+            "No usable link behind this token (`meta.errorCode: profile_claim.invalid`). Every failure class answers identically.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "The request carries a signed-in session (`meta.errorCode: auth.already_authenticated`); sign out first.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+  },
+  "/api/auth/claim": {
+    post: {
+      // No credential: see the preview above.
+      security: [],
+      tags: ["Auth"],
+      summary: "Claim a managed profile",
+      description:
+        "Turns the managed profile behind a handover link into the claimant's own account: sets the username, email and password on the profile's record, clears the managed marker, settles each guardian's access by the claimant's decision, withdraws pending MANAGE invitations, and resets the disclaimer, onboarding and AI consent so the new owner gives them personally. No data moves. Signs the new owner in. Anonymous; the token travels in the body, and every token failure answers the same 404.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: claimRequest } },
+      },
+      responses: {
+        "201": {
+          description: "Claimed; the response sets the session cookie.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ userId: z.string(), username: z.string() }),
+                "ProfileClaimEnvelope",
+              ),
+            },
+          },
+        },
+        "403": {
+          description:
+            "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "404": {
+          description:
+            "No usable link behind this token (`meta.errorCode: profile_claim.invalid`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "The request carries a signed-in session (`meta.errorCode: auth.already_authenticated`), or the username or email is taken.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+  },
   "/api/auth/login": {
     post: {
       // No credential: this operation is reachable before one exists.

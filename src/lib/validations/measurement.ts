@@ -234,6 +234,12 @@ export const measurementSourceEnum = z.enum([
   // above these rows stay value-editable; see
   // `USER_CORRECTABLE_MEASUREMENT_SOURCES`.
   "EXTERNAL",
+  // v1.42 — rows imported from an Android Health Connect export (#972).
+  // Server-owned: only the Health Connect import worker writes them, so the
+  // value is deliberately absent from `WRITABLE_MEASUREMENT_SOURCES` and the
+  // batch allowlist, like IMPORT. Part of this enum so the read/response
+  // shapes (and the iOS decoder) can decode the rows it surfaces.
+  "HEALTH_CONNECT",
 ]);
 
 /**
@@ -602,10 +608,10 @@ export const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   STRESS_SCORE: { min: 0, max: 100 },
   STRAIN_SCORE: { min: 0, max: 100 },
   // ── v1.11.0 — WHOOP-native score classes ──
-  // RMSSD HRV (ms). Same plausibility band as the SDNN variant: lows reach
-  // single digits in stressed samples, 200 ms is a generous upper bound for
-  // relaxed athletic windows.
-  HRV_RMSSD: { min: 1, max: 200 },
+  // RMSSD HRV (ms). Lows reach single digits in stressed samples. RMSSD runs
+  // higher than SDNN in relaxed, well-trained sleepers, and nightly readings
+  // above 200 ms are real (#1110), so the ceiling sits at 300 ms.
+  HRV_RMSSD: { min: 1, max: 300 },
   // Day / workout strain on WHOOP's bounded 0–21 scale.
   DAY_STRAIN: { min: 0, max: 21 },
   WORKOUT_STRAIN: { min: 0, max: 21 },

@@ -85,6 +85,7 @@ const METRIC_LABEL_KEYS: Record<SourcePriorityMetricKey, string> = {
   bodyTemperature: "settings.sections.sources.metrics.bodyTemperature",
   spo2: "settings.sections.sources.metrics.spo2",
   hrv: "settings.sections.sources.metrics.hrv",
+  hrvRmssd: "settings.sections.sources.metrics.hrvRmssd",
   restingHeartRate: "settings.sections.sources.metrics.restingHeartRate",
   vo2Max: "settings.sections.sources.metrics.vo2Max",
   // v1.11.0 — WHOOP-overlapping metric classes + native-vs-derived recovery.

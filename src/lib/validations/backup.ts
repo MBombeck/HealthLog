@@ -1091,6 +1091,10 @@ const labResultBackupSchema = z
     sourceReferenceLow: z.number().nullable().optional(),
     sourceReferenceHigh: z.number().nullable().optional(),
     sourceReferenceText: z.string().nullable().optional(),
+    // v1.42 (#1095) — the value and unit as printed, kept beside a converted
+    // reading. Optional: absent on every file written before the columns.
+    sourceValue: z.number().nullable().optional(),
+    sourceUnit: z.string().nullable().optional(),
     takenAt: isoDateTime,
     source: z.string().min(1),
     biomarkerName: z.string().nullable().optional(),
@@ -1112,6 +1116,8 @@ const biomarkerBackupSchema = z
     upperBound: z.number().nullable().optional(),
     panel: z.string().nullable().optional(),
     hidden: z.boolean().optional(),
+    // v1.42 (#1095) — the catalogue analyte the marker resolves to.
+    analyteKey: z.string().nullable().optional(),
     context: z.string().nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
@@ -1293,6 +1299,9 @@ const vaccinationBackupSchema = z
     // Remapped against the restored reminders (they travel since v1.37.20);
     // dropped to NULL, with the drop named, only when the file lacks the row.
     reminderId: z.string().nullable().optional(),
+    // v1.42 (#1005) — the person's own vaccine definition the dose names;
+    // remapped against the restored definitions like `reminderId`.
+    customVaccineId: z.string().nullable().optional(),
     // Ciphertext on a disaster-recovery file, readable on a portable one.
     noteEncrypted: base64BytesSchema.nullable().optional(),
     note: z.string().nullable().optional(),
@@ -1421,9 +1430,12 @@ const environmentDayKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
 const environmentContextBackupSchema = z
   .object({
     date: environmentDayKey,
-    lat: z.number(),
-    lon: z.number(),
-    locationLabel: z.string(),
+    // Nullable since v1.42 (migration 0382): once the encryption backfill has
+    // run, the location travels sealed in `locationEncrypted` instead.
+    lat: z.number().nullable(),
+    lon: z.number().nullable(),
+    locationLabel: z.string().nullable(),
+    locationEncrypted: base64BytesSchema.nullable().optional(),
     source: z.enum(EnvironmentLocationSource),
     tempMin: z.number().nullable().optional(),
     tempMax: z.number().nullable().optional(),
@@ -1437,6 +1449,29 @@ const environmentContextBackupSchema = z
     humidityMean: z.number().nullable().optional(),
     cloudMean: z.number().nullable().optional(),
     weatherCode: z.number().int().nullable().optional(),
+    // v1.42 (#615) — air quality, pollen and UV. Optional throughout.
+    apparentMax: z.number().nullable().optional(),
+    pm25Mean: z.number().nullable().optional(),
+    pm25Max: z.number().nullable().optional(),
+    pm10Mean: z.number().nullable().optional(),
+    no2Mean: z.number().nullable().optional(),
+    so2Mean: z.number().nullable().optional(),
+    coMean: z.number().nullable().optional(),
+    o3Max8h: z.number().nullable().optional(),
+    eaqiMax: z.number().nullable().optional(),
+    usaqiMax: z.number().nullable().optional(),
+    uvIndexMax: z.number().nullable().optional(),
+    dustMax: z.number().nullable().optional(),
+    aodMax: z.number().nullable().optional(),
+    pollenAlderMax: z.number().nullable().optional(),
+    pollenBirchMax: z.number().nullable().optional(),
+    pollenGrassMax: z.number().nullable().optional(),
+    pollenMugwortMax: z.number().nullable().optional(),
+    pollenOliveMax: z.number().nullable().optional(),
+    pollenRagweedMax: z.number().nullable().optional(),
+    aqDomain: z.string().nullable().optional(),
+    aqHours: z.number().int().nullable().optional(),
+    aqFetchedAt: isoDateTime.nullable().optional(),
     fetchedAt: isoDateTime.optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
@@ -1452,9 +1487,11 @@ const environmentTravelLocationBackupSchema = z
   .object({
     startDate: environmentDayKey,
     endDate: environmentDayKey,
-    lat: z.number(),
-    lon: z.number(),
-    label: z.string(),
+    // Nullable since v1.42 (migration 0382), as above.
+    lat: z.number().nullable(),
+    lon: z.number().nullable(),
+    label: z.string().nullable(),
+    locationEncrypted: base64BytesSchema.nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
   })
@@ -1903,6 +1940,10 @@ const accountSettingsBackupSchema = z
     homeLabel: z.string().nullable().optional(),
     homeTimezone: z.string().nullable().optional(),
     homeSince: isoDateTime.nullable().optional(),
+    // v1.42 (#615) — the sealed home location rides a disaster-recovery file
+    // as ciphertext; a portable file carries the readable home above.
+    homeLocationEncrypted: base64BytesSchema.nullable().optional(),
+    environmentAirQualityEnabled: z.boolean().optional(),
     timezone: z.string().optional(),
     locale: z.string().nullable().optional(),
     unitPreference: z.string().nullable().optional(),

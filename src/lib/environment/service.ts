@@ -174,7 +174,7 @@ export async function fetchAndStoreEnvironment(args: {
         }
       : null;
 
-  const travelRows = await prisma.environmentTravelLocation.findMany({
+  const travelRecords = await prisma.environmentTravelLocation.findMany({
     where: { userId },
     select: {
       startDate: true,
@@ -184,6 +184,15 @@ export async function fetchAndStoreEnvironment(args: {
       label: true,
     },
   });
+
+  // Since v1.42 the plaintext location is nullable (migration 0382): a period
+  // whose plaintext the encryption backfill has already cleared resolves only
+  // through its sealed copy, which this reader does not open yet.
+  const travelRows: TravelOverride[] = travelRecords.flatMap((row) =>
+    row.lat != null && row.lon != null && row.label != null
+      ? [{ ...row, lat: row.lat, lon: row.lon, label: row.label }]
+      : [],
+  );
 
   // The timezone used to enumerate AND fetch days — one tz keeps the stored
   // `date` consistent with the user's day-keys elsewhere.

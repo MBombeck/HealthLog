@@ -65,6 +65,10 @@ const PUBLIC_PATHS = [
   // so without the entry the shell classifies the route as protected and
   // `router.replace("/auth/login")` wins the race against the redirect.
   "/invite/",
+  // v1.42 (#959) — the managed-profile handover link is an edge redirect onto
+  // `/auth/claim?token=…`, public in `proxy.ts` for the same reason as
+  // `/invite/`.
+  "/claim/",
 ];
 
 export function AuthShell({

@@ -11,6 +11,7 @@ import {
   parseSourcePriority,
   sourcePrioritySchema,
 } from "../source-priority";
+import { measurementSourceEnum } from "../measurement";
 
 /**
  * v1.4.25 W5e — per-user, per-metric-class source-priority foundation.
@@ -116,21 +117,17 @@ describe("sourcePrioritySchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects more than 8 sources in a single metric class", () => {
-    const result = sourcePrioritySchema.safeParse({
-      weight: [
-        "WITHINGS",
-        "APPLE_HEALTH",
-        "MANUAL",
-        "IMPORT",
-        "WITHINGS",
-        "APPLE_HEALTH",
-        "MANUAL",
-        "IMPORT",
-        "WITHINGS",
-      ],
-    });
-    expect(result.success).toBe(false);
+  // The cap is the number of sources: every source may be ranked once (a
+  // ladder that ranks all sixteen is valid), and one entry more is refused.
+  it("accepts a ladder that ranks every source, and rejects one entry more", () => {
+    const every = [...measurementSourceEnum.options];
+    expect(every.length).toBeGreaterThan(8);
+    expect(sourcePrioritySchema.safeParse({ weight: every }).success).toBe(
+      true,
+    );
+    expect(
+      sourcePrioritySchema.safeParse({ weight: [...every, "MANUAL"] }).success,
+    ).toBe(false);
   });
 
   it("rejects a non-array value for a metric class", () => {

@@ -60,6 +60,14 @@ export const WORKOUT_ROUTE_GEOMETRY_AAD = "healthlog/workout-route-geometry/v1";
 export const DOCUMENT_AI_RUN_INPUT_AAD = "healthlog/document-ai-run-input/v1";
 export const DOCUMENT_AI_RUN_RESULT_AAD = "healthlog/document-ai-run-result/v1";
 
+/**
+ * The associated-data label the environment module's coarse locations are
+ * sealed with (v1.42, #615): the home, each dated location period, and each
+ * day's resolved location. One label for all three, because they hold the
+ * same kind of value; it keeps a location from opening as anything else.
+ */
+export const ENVIRONMENT_LOCATION_AAD = "healthlog/environment-location/v1";
+
 export interface EncryptedColumn {
   /** Prisma model name (PascalCase, as declared in schema.prisma). */
   readonly model: string;
@@ -395,6 +403,32 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
     aad: WORKOUT_ROUTE_GEOMETRY_AAD,
   },
 
+  // ───── v1.42 environment locations (Bytes, binary2) ─────
+  // The coarse home, each dated location period, and each day's resolved
+  // location, sealed as (lat, lon, label) under one label. The plaintext
+  // columns beside them empty as the encryption backfill runs.
+  {
+    model: "User",
+    field: "homeLocationEncrypted",
+    kind: "bytes",
+    codec: "binary2",
+    aad: ENVIRONMENT_LOCATION_AAD,
+  },
+  {
+    model: "EnvironmentTravelLocation",
+    field: "locationEncrypted",
+    kind: "bytes",
+    codec: "binary2",
+    aad: ENVIRONMENT_LOCATION_AAD,
+  },
+  {
+    model: "EnvironmentContext",
+    field: "locationEncrypted",
+    kind: "bytes",
+    codec: "binary2",
+    aad: ENVIRONMENT_LOCATION_AAD,
+  },
+
   // ───── v1.38.0 dose free text (Bytes column) ─────
   // What the person wrote about the dose — a reaction, a sore arm, why the
   // schedule went the way it did. The Pass's own structured fields stay
@@ -551,6 +585,8 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "DocumentThumbnail",
   "EcgRecording",
   "Encounter",
+  "EnvironmentContext",
+  "EnvironmentTravelLocation",
   "ExtractedFact",
   "FamilyHistoryEntry",
   "FitbitConnection",

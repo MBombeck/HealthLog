@@ -513,6 +513,19 @@
       "fixLan": "TLS 없이 홈 네트워크에서 쓰는 서버: 설정에서 SESSION_COOKIE_SECURE=false로 지정하고 다시 시작하세요.",
       "fixHttps": "HTTPS 프록시 뒤의 서버: 대신 https:// 주소를 열고, 프록시가 X-Forwarded-Proto: https를 전달하는지 확인하세요.",
       "localhostNote": "이 페이지는 http://localhost에 있지만 서버는 로그인 쿠키를 https://에만 설정합니다. 대부분의 브라우저는 localhost에서 이를 허용합니다. 로그인 후 계속 여기로 돌아온다면 SESSION_COOKIE_SECURE=false로 지정하세요."
+    },
+    "claim": {
+      "title": "내 프로필 넘겨받기",
+      "description": "{guardian}님이 당신의 건강 기록을 관리해 왔습니다. 로그인 방법을 정해 내 계정으로 만드세요.",
+      "invalid": "이 링크는 유효하지 않거나 만료되었거나 이미 사용되었습니다.",
+      "signOutFirst": "이 프로필을 넘겨받으려면 먼저 로그아웃하세요.",
+      "emailRequired": "이메일 주소가 필요합니다.",
+      "guardiansTitle": "접근 권한을 유지할 사람",
+      "guardianProposal": "{name}님의 제안: {proposal}",
+      "consentNote": "넘겨받은 뒤에는 고지 사항과 AI 동의를 직접 다시 확인하게 됩니다.",
+      "submit": "프로필 넘겨받기",
+      "submitting": "넘겨받는 중…",
+      "success": "이제 이 프로필이 내 계정입니다."
     }
   },
   "dashboard": {
@@ -834,7 +847,8 @@
     "durationHoursOnly": "{hours}시간",
     "durationMinutesOnly": "{minutes}분",
     "durationInvalid": "7.5, 7:30, 7h 30m처럼 시간을 입력해 주세요.",
-    "durationTooLong": "한 번에 24시간보다 길게 입력할 수 없어요."
+    "durationTooLong": "한 번에 24시간보다 길게 입력할 수 없어요.",
+    "sourceHealthConnect": "Health Connect"
   },
   "metricCatalog": {
     "title": "HealthLog가 기록할 수 있는 것",
@@ -2550,7 +2564,10 @@
         "ENV_DAYLIGHT": "낮 길이",
         "ENV_PRECIP": "강수량",
         "ENV_PRESSURE_MEAN": "기압",
-        "ENV_PRESSURE_DELTA": "하루 중 기압 변화"
+        "ENV_PRESSURE_DELTA": "하루 중 기압 변화",
+        "ENV_PM25": "초미세먼지(PM2.5)",
+        "ENV_OZONE_8H": "오존",
+        "ENV_POLLEN_MAX": "꽃가루"
       },
       "daily": {
         "high": "{behaviour} 수치가 높은 날에는 다음 날 {outcome} 수치가 {direction} 경향이 있어요 — 원인이 아니라 지켜볼 만한 패턴이에요.",
@@ -2573,6 +2590,11 @@
           "none": "이 기간에는 기분과 안정 시 맥박이 뚜렷하게 함께 움직이지 않아요."
         },
         "weightWeekday": "{weekday} 체중이 다른 요일 평균보다 {delta}kg {direction} 편이에요 — 지켜볼 만한 패턴이에요."
+      },
+      "dailySameDay": {
+        "high": "당일과 전날의 {behaviour}이(가) 높을수록 내 데이터에서는 {outcome}이(가) {direction} 경향이 있습니다. 지켜볼 만한 패턴이지 원인은 아닙니다.",
+        "moderate": "지금까지의 데이터로 보면 당일과 전날의 {behaviour}이(가) 높을수록 {outcome}이(가) {direction} 것으로 보입니다. 지켜볼 만한 패턴이지 원인은 아닙니다.",
+        "faint": "당일과 전날의 {behaviour}이(가) 높을 때 내 데이터에서 {outcome}이(가) {direction} 기미가 아주 약하게 보일 뿐입니다. 의지하기엔 너무 작고, 원인은 아닙니다."
       }
     },
     "noAnalysisYet": "아직 평가가 없어요.",
@@ -3678,7 +3700,10 @@
           "endInFuture": "종료 시간이 미래가 됩니다. 시작 시간을 운동을 시작한 시각으로 설정하세요.",
           "distanceInvalid": "거리를 현실적인 범위의 숫자로 입력하세요.",
           "energyInvalid": "활동 에너지는 20,000kcal 이하의 숫자로 입력하세요."
-        }
+        },
+        "editTitle": "운동 편집",
+        "editAction": "편집",
+        "updated": "운동을 업데이트했습니다"
       }
     },
     "bloodGlucose": {
@@ -5364,7 +5389,8 @@
           "respiratoryRate": "호흡수",
           "recovery": "회복",
           "stress": "스트레스",
-          "sleepDebt": "수면 부채"
+          "sleepDebt": "수면 부채",
+          "hrvRmssd": "심박변이도 (RMSSD)"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -5381,7 +5407,8 @@
           "MCP": "MCP",
           "GOOGLE_HEALTH": "Google Health",
           "STRAVA": "Strava",
-          "EXTERNAL": "외부 기기"
+          "EXTERNAL": "외부 기기",
+          "HEALTH_CONNECT": "Health Connect"
         },
         "deviceLabels": {
           "watch": "워치",
@@ -5618,6 +5645,25 @@
               "tooManyRows": "한 번에 불러올 수 있는 행 수를 넘었어요. 파일을 나눠서 불러와 주세요."
             },
             "detail": "파일 하나에 담긴 모든 약을 함께 처리해요."
+          },
+          "healthConnect": {
+            "title": "Health Connect 내보내기",
+            "description": "Android의 Health Connect 앱에서 데이터를 내보낼 때 만들어지는 ZIP 파일을 가져옵니다.",
+            "choose": "ZIP 파일 선택",
+            "uploading": "업로드 중…",
+            "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
+            "tooLarge": "파일이 이 서버에서 허용하는 크기보다 큽니다.",
+            "unsupportedVersion": "이 Health Connect 내보내기는 너무 오래되어 읽을 수 없습니다.",
+            "doneSummary": "값 {count}개를 가져왔습니다.",
+            "failed": "가져오기에 실패했습니다: {reason}",
+            "phase": {
+              "queued": "시작 대기 중",
+              "unpacking": "파일 압축 해제 중",
+              "parsing": "기록 읽는 중",
+              "upserting": "값 저장 중",
+              "done": "완료",
+              "failed": "실패"
+            }
           }
         },
         "subtitle": "데이터를 내보내거나 백업에서 불러와요."
@@ -5732,7 +5778,17 @@
         "noResults": "일치하는 장소가 없어요.",
         "fetchFailedOne": "마지막 백그라운드 날씨 업데이트가 실패했어요 ({when}).",
         "fetchFailedFew": "최근 백그라운드 날씨 업데이트 {count}번이 실패했어요 — 마지막은 {when}.",
-        "fetchFailedOther": "최근 백그라운드 날씨 업데이트 {count}번이 실패했어요 — 마지막은 {when}."
+        "fetchFailedOther": "최근 백그라운드 날씨 업데이트 {count}번이 실패했어요 — 마지막은 {when}.",
+        "airQuality": {
+          "title": "대기질과 꽃가루",
+          "description": "Open-Meteo를 통해 CAMS 모델에서 가져온 내 위치의 일별 대기질, 꽃가루, 자외선 정보입니다.",
+          "toggle": "대기질과 꽃가루 포함",
+          "operatorDisabled": "이 서버에서는 대기질 기능이 꺼져 있습니다.",
+          "coverage": "대기질 데이터가 있는 날 {count}일",
+          "pollenEuropeOnly": "꽃가루 데이터는 유럽만 제공됩니다.",
+          "attribution": "대기질: 코페르니쿠스 대기 모니터링 서비스(CAMS), Open-Meteo 경유.",
+          "saveError": "설정을 저장하지 못했습니다."
+        }
       },
       "score": {
         "title": "건강 점수",
@@ -6990,8 +7046,15 @@
           "foreground": "앱이 열린 상태에서",
           "background": "백그라운드에서",
           "push": "푸시 깨우기로",
-          "unknown": "앱이 트리거를 알려주지 않았어요"
+          "unknown": "앱이 트리거를 알려주지 않았어요",
+          "manual": "'모두 동기화'로"
         }
+      },
+      "freshness": {
+        "title": "데이터 유형별",
+        "lastReceived": "마지막 수신 {relative}",
+        "lastNewValue": "마지막 새 값 {relative}",
+        "never": "아직 수신되지 않음"
       }
     },
     "garminInfo": {
@@ -9386,7 +9449,8 @@
     "sourceRange": {
       "fromReport": "결과지 범위 {range}",
       "catalogDiffers": "내 범위 {range}"
-    }
+    },
+    "convertedFrom": "{value} {unit}에서 변환됨"
   },
   "modules": {
     "cycle": {
@@ -9616,6 +9680,19 @@
       "overdue": "{date}부터 추가접종 기한 지남",
       "dueSoon": "{date} 추가접종 예정",
       "current": "다음 추가접종 {date}"
+    },
+    "custom": {
+      "title": "직접 추가한 백신",
+      "add": "백신 직접 추가",
+      "name": "이름",
+      "components": "예방 대상",
+      "seriesDoses": "기초 접종 횟수",
+      "boosterMonths": "추가 접종 주기(개월)",
+      "saved": "백신을 저장했습니다",
+      "deleted": "백신을 삭제했습니다",
+      "deleteConfirm": "이 백신을 삭제할까요? 이미 기록된 접종은 이름이 그대로 남습니다.",
+      "saveFailed": "백신을 저장하지 못했습니다.",
+      "nameTaken": "같은 이름의 백신이 이미 있습니다."
     }
   },
   "illness": {
@@ -10528,7 +10605,16 @@
       "daylight": "낮 길이",
       "precip": "강수량",
       "pressureMean": "기압",
-      "pressureDelta": "기압 변화"
+      "pressureDelta": "기압 변화",
+      "apparentMax": "체감 최고 기온",
+      "pm25": "초미세먼지 (PM2.5)",
+      "pm10": "미세먼지 (PM10)",
+      "no2": "이산화질소",
+      "ozone8h": "오존 (8시간 최고)",
+      "europeanAqi": "유럽 대기질 지수",
+      "uvIndexMax": "자외선 지수 (최고)",
+      "dustMax": "사하라 먼지",
+      "pollenMax": "꽃가루 (최고)"
     }
   },
   "documents": {
@@ -11475,7 +11561,32 @@
       "guardianErrorFailed": "초대를 보내지 못했어요.",
       "errorMfaRequired": "여기에는 2단계 인증이 필요한데 계정에 아직 없어요. 설정 → 보안에서 등록한 뒤 다시 시도해 주세요.",
       "rosterLoadError": "이 기록을 돌보는 사람을 불러오지 못했어요.",
-      "errorRateLimit": "최근 한 시간 동안 만든 프로필이 너무 많아요. 잠시 기다렸다 다시 시도해 주세요."
+      "errorRateLimit": "최근 한 시간 동안 만든 프로필이 너무 많아요. 잠시 기다렸다 다시 시도해 주세요.",
+      "handover": {
+        "title": "이 프로필 넘겨주기",
+        "description": "{name}에게 자신의 로그인을 만들어 주세요. 데이터는 그대로 있고, 각 보호자가 유지할 접근 권한은 당신이 제안하며 {name}이(가) 결정합니다.",
+        "create": "넘겨주기 링크 만들기",
+        "expiryLabel": "링크 유효 기간",
+        "expiry1": "1일",
+        "expiry7": "7일",
+        "expiry14": "14일",
+        "proposalLabel": "이후 제안하는 접근 권한",
+        "proposal": {
+          "end": "접근 종료",
+          "read": "보기만",
+          "manage": "계속 관리"
+        },
+        "linkTitle": "넘겨주기 링크",
+        "linkOnce": "이 링크는 한 번만 표시됩니다. {name}에게 직접 전달하거나 코드를 스캔하게 하세요.",
+        "copy": "링크 복사",
+        "copied": "링크를 복사했습니다",
+        "pending": "넘겨주기 링크 유효: {date}까지",
+        "revoke": "링크 철회",
+        "revoked": "링크를 철회했습니다",
+        "errorFailed": "넘겨주기 링크를 만들지 못했습니다.",
+        "oidcOnly": "이 서버가 통합 로그인만 허용하는 동안에는 프로필을 넘겨줄 수 없습니다.",
+        "minorHint": "{name}은(는) 16세 미만입니다. 보기 권한을 유지하는 것을 고려해 보세요."
+      }
     },
     "toast": {
       "savedTo": "{name} 님의 기록에 저장했어요"

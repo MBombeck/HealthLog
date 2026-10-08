@@ -49,7 +49,7 @@ const healthKitDirectionEnum = z
 
 // Mirror the batch route's `syncTriggerEnum` — what woke the client for a sync.
 const healthKitSyncTriggerEnum = z
-  .enum(["foreground", "background", "push"])
+  .enum(["foreground", "background", "push", "manual"])
   .describe("What triggered a HealthKit batch.");
 
 // Resolved entry (defaults merged): `kind` + `enabled` are always present.

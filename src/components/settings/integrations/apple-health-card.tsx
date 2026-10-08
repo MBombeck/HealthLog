@@ -34,7 +34,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { MetricFreshnessDisclosure } from "./metric-freshness-disclosure";
 import { IntegrationErrorMessage, pillStateForVerdict } from "./shared";
 
-type SyncTrigger = "foreground" | "background" | "push";
+type SyncTrigger = "foreground" | "background" | "push" | "manual";
 
 interface HealthKitStatus {
   lastSyncedAt: string | null;
@@ -65,6 +65,7 @@ const TRIGGER_KEYS: Record<SyncTrigger, string> = {
   foreground: "settings.appleHealth.delivery.trigger.foreground",
   background: "settings.appleHealth.delivery.trigger.background",
   push: "settings.appleHealth.delivery.trigger.push",
+  manual: "settings.appleHealth.delivery.trigger.manual",
 };
 
 /**

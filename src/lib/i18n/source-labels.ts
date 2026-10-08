@@ -45,6 +45,7 @@ export const MEASUREMENT_SOURCE_SETTINGS_LABEL_KEYS: Record<
   // Never offered in the ladder (it is on no default priority list), but
   // the map is keyed by the enum, so the entry is not optional.
   EXTERNAL: "settings.sections.sources.sourceLabels.EXTERNAL",
+  HEALTH_CONNECT: "settings.sections.sources.sourceLabels.HEALTH_CONNECT",
 };
 
 /**
@@ -71,6 +72,7 @@ export const MEASUREMENT_SOURCE_LIST_LABEL_KEYS: Record<
   GOOGLE_HEALTH: "measurements.sourceGoogleHealth",
   STRAVA: "measurements.sourceStrava",
   EXTERNAL: "measurements.sourceExternal",
+  HEALTH_CONNECT: "measurements.sourceHealthConnect",
 };
 
 /**

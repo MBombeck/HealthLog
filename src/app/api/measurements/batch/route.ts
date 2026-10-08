@@ -181,7 +181,9 @@ const batchEntrySchema = z.object({
 // client knows its own wake reason, so it is client-asserted by necessity;
 // being diagnostic-only, that carries no trust surface. Optional so every
 // pre-#66 caller stays byte-for-byte unchanged.
-const syncTriggerEnum = z.enum(["foreground", "background", "push"]);
+// v1.42 (#1173) — `manual` names a user-initiated "Sync all" run, as opposed to
+// the app simply being open (`foreground`).
+const syncTriggerEnum = z.enum(["foreground", "background", "push", "manual"]);
 
 const batchPayloadSchema = z.object({
   entries: z.array(batchEntrySchema).min(1),

@@ -62,6 +62,23 @@ import {
   type AppleHealthImportPayload,
 } from "@/lib/jobs/apple-health-import-worker";
 import {
+  COMPACTION_TOMBSTONE_PURGE_QUEUE,
+  enqueueBootTimeCompactionTombstonePurge,
+  handleCompactionTombstonePurge,
+  type CompactionTombstonePurgePayload,
+} from "@/lib/jobs/compaction-tombstone-purge";
+import {
+  MEASUREMENT_MAINTENANCE_QUEUE,
+  handleMeasurementMaintenance,
+  type MeasurementMaintenancePayload,
+} from "@/lib/jobs/measurement-maintenance";
+import {
+  HEALTH_CONNECT_IMPORT_QUEUE,
+  HEALTH_CONNECT_IMPORT_CONCURRENCY,
+  handleHealthConnectImport,
+  type HealthConnectImportPayload,
+} from "@/lib/jobs/health-connect-import-worker";
+import {
   MEDICATION_INTAKE_IMPORT_QUEUE,
   MEDICATION_INTAKE_IMPORT_CONCURRENCY,
   handleMedicationIntakeImport,
@@ -303,9 +320,11 @@ const INTAKE_SLOT_DEDUP_CRON = "28 3 * * *";
 const OFFHOST_BACKUP_CRON = "30 2 * * *";
 
 const HOST_METRIC_QUEUE = "host-metric-sample";
-// Per-minute cadence — matches the chart's 60s polling refetchInterval.
+// v1.42 — every five minutes. A per-minute sample filled pg-boss's job
+// table with one row a minute for a chart nobody reads at that resolution.
+// The admin chart's polling interval (`host-metrics-chart.tsx`) has to match.
 
-const HOST_METRIC_CRON = "* * * * *";
+const HOST_METRIC_CRON = "*/5 * * * *";
 // v1.4.16 phase B5e — daily rec-feedback aggregator. 04:00 Europe/Berlin
 // runs the slot AFTER all the cleanup jobs (rate-limit, idempotency,
 // audit-log) so the previous-day's noise is gone before we aggregate.
@@ -436,6 +455,17 @@ const allQueues = [
   // that survives past the next worker boot is never revisited.
   IMPORT_JOB_RECONCILE_QUEUE,
   MEDICATION_INTAKE_IMPORT_QUEUE,
+  // v1.42 (#972) — Android Health Connect export import, the Apple Health
+  // import's sibling. Without this entry every upload would queue a job
+  // nobody works.
+  HEALTH_CONNECT_IMPORT_QUEUE,
+  // v1.42 — backlog purge of compaction tombstones, queued once at boot.
+  // Without this entry the boot enqueue silently no-ops.
+  COMPACTION_TOMBSTONE_PURGE_QUEUE,
+  // v1.42 — operator-triggered VACUUM / REINDEX of `measurements`. No
+  // cron: the admin route enqueues it. Without this entry the trigger
+  // silently no-ops.
+  MEASUREMENT_MAINTENANCE_QUEUE,
   // v1.8.2 — one-time duplicate dose-slot cleanup. Boot discovery enqueues
   // one job per user holding two live intake rows that snap to the same
   // canonical slot (the pre-fix REMINDER-pending + API-taken pair). Also
@@ -1083,6 +1113,30 @@ export async function registerMaintenanceQueues(
       }
       return jobDone({ jobs: jobs.length });
     },
+  );
+  // v1.42 (#972) — Health Connect import. One at a time per worker, like the
+  // Apple Health import: each run reads a whole export and consumes its
+  // staged upload.
+  await createAndWork<HealthConnectImportPayload>(
+    boss,
+    HEALTH_CONNECT_IMPORT_QUEUE,
+    { localConcurrency: HEALTH_CONNECT_IMPORT_CONCURRENCY },
+    handleHealthConnectImport,
+  );
+  // v1.42 — compaction-tombstone backlog purge. Serial: each batch holds
+  // an account against a concurrent restore.
+  await createAndWork<CompactionTombstonePurgePayload>(
+    boss,
+    COMPACTION_TOMBSTONE_PURGE_QUEUE,
+    { localConcurrency: 1 },
+    handleCompactionTombstonePurge,
+  );
+  // v1.42 — measurement table maintenance, operator-triggered only.
+  await createAndWork<MeasurementMaintenancePayload>(
+    boss,
+    MEASUREMENT_MAINTENANCE_QUEUE,
+    { localConcurrency: 1 },
+    handleMeasurementMaintenance,
   );
   // v1.32.1 (issue #588) — periodic orphan-ImportJob sweep. Single-flight:
   // the underlying `updateMany` is idempotent and two ticks racing the same
@@ -1821,6 +1875,22 @@ export async function enqueueMaintenanceBootDiscovery(): Promise<void> {
     workerLog(
       "error",
       "[document-thumbnail-backfill] boot discovery threw an unexpected error",
+      err,
+    );
+  }
+
+  // v1.42 — one compaction-tombstone purge run per boot. The run is
+  // self-limiting and idempotent, so a boot with no backlog costs one query.
+  try {
+    const { enqueued } = await enqueueBootTimeCompactionTombstonePurge();
+    workerLog(
+      "info",
+      `[compaction-tombstone-purge] boot discovery: enqueued=${enqueued}`,
+    );
+  } catch (err) {
+    workerLog(
+      "error",
+      "[compaction-tombstone-purge] boot discovery threw an unexpected error",
       err,
     );
   }

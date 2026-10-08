@@ -311,6 +311,28 @@ const SOURCE_CASES = {
       expect(verdict.status).toBe("inserted");
     },
   },
+  // v1.42 — Health Connect rows enter through the import worker, which writes
+  // each sample through the shared external-measurement reconciliation
+  // service. Until the worker lands, the case drives that service directly,
+  // the same narrowest production path the STRAVA case uses.
+  HEALTH_CONNECT: {
+    expectedType: "PULSE",
+    expectedExternalId: "hc:source-smoke-health-connect",
+    write: async () => {
+      const verdict = await getPrismaClient().$transaction((tx) =>
+        reconcileExternalMeasurement(tx, {
+          userId: USER_ID,
+          type: "PULSE",
+          source: "HEALTH_CONNECT",
+          value: 64,
+          unit: "bpm",
+          measuredAt: new Date("2026-07-20T08:13:00.000Z"),
+          externalId: "hc:source-smoke-health-connect",
+        }),
+      );
+      expect(verdict.status).toBe("inserted");
+    },
+  },
   // v1.38.x — the third-party ingest token. Written through the ordinary
   // single-entry POST, because that IS the production path: the route reads
   // the credential and resolves the source itself. The body names none — one
@@ -405,9 +427,9 @@ describe("MeasurementSource write paths against real Postgres", () => {
       });
     }
 
-    expect(sourceCases).toHaveLength(15);
+    expect(sourceCases).toHaveLength(16);
     expect(await prisma.measurement.count({ where: { userId: USER_ID } })).toBe(
-      15,
+      16,
     );
   });
 });

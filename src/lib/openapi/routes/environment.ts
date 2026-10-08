@@ -30,6 +30,7 @@ import {
   dataEnvelope,
   errorEnvelope,
   moduleDisabledResponse,
+  notImplementedResponse,
   stdResponses,
 } from "./shared";
 
@@ -159,7 +160,58 @@ const geocodeResult = z
   })
   .meta({ id: "EnvironmentGeocodeResult" });
 
+// v1.42 (#615) — the per-user environment switches.
+const environmentPreferencesRequest = z
+  .object({
+    airQualityEnabled: z
+      .boolean()
+      .describe("Fetch and show air quality, pollen and UV for this account."),
+  })
+  .strict()
+  .meta({ id: "EnvironmentPreferencesRequest" });
+
+const environmentPreferences = z
+  .object({
+    airQualityEnabled: z.boolean(),
+    operatorDisabled: z
+      .boolean()
+      .describe(
+        "True when the operator turned air quality off for the whole instance; the account switch then has no effect.",
+      ),
+  })
+  .meta({ id: "EnvironmentPreferences" });
+
 export const environmentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/environment/preferences": {
+    patch: {
+      tags: ["Environment"],
+      summary: "Change the environment switches",
+      description:
+        "Turns the air-quality part of the module on or off for this account (on by default). Off means the nightly fetch skips the air-quality feed and the overview leaves the fields out; days already stored are kept. Module-gated. Strict body.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: environmentPreferencesRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The stored switches.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                environmentPreferences,
+                "EnvironmentPreferencesEnvelope",
+              ),
+            },
+          },
+        },
+        ...moduleDisabledResponse,
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+  },
   "/api/environment": {
     get: {
       tags: ["Environment"],

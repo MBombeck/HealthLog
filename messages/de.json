@@ -513,6 +513,19 @@
       "fixLan": "Server im Heimnetz ohne TLS: Setze SESSION_COOKIE_SECURE=false in seinen Einstellungen und starte ihn neu.",
       "fixHttps": "Server hinter einem HTTPS-Proxy: Öffne stattdessen die https://-Adresse und sorge dafür, dass der Proxy X-Forwarded-Proto: https weitergibt.",
       "localhostNote": "Diese Seite läuft auf http://localhost, der Server setzt sein Anmelde-Cookie aber nur für https://. Die meisten Browser akzeptieren das auf localhost; wenn du nach der Anmeldung wieder hier landest, setze SESSION_COOKIE_SECURE=false."
+    },
+    "claim": {
+      "title": "Dein Profil übernehmen",
+      "description": "{guardian} hat ein Gesundheitsprofil für dich geführt. Wähle deine Anmeldung, um es zu deinem eigenen Konto zu machen.",
+      "invalid": "Dieser Link ist ungültig, abgelaufen oder schon benutzt.",
+      "signOutFirst": "Melde dich zuerst ab, um dieses Profil zu übernehmen.",
+      "emailRequired": "Eine E-Mail-Adresse ist erforderlich.",
+      "guardiansTitle": "Wer Zugang behält",
+      "guardianProposal": "{name} schlägt vor: {proposal}",
+      "consentNote": "Den Hinweis und eine etwaige KI-Einwilligung bestätigst du nach der Übernahme selbst.",
+      "submit": "Profil übernehmen",
+      "submitting": "Wird übernommen …",
+      "success": "Das Profil ist jetzt dein Konto."
     }
   },
   "dashboard": {
@@ -834,7 +847,8 @@
     "durationHoursOnly": "{hours} Std.",
     "durationMinutesOnly": "{minutes} Min.",
     "durationInvalid": "Gib eine Dauer ein, zum Beispiel 7,5, 7:30 oder 7h 30m.",
-    "durationTooLong": "Ein Eintrag kann nicht länger als 24 Stunden sein."
+    "durationTooLong": "Ein Eintrag kann nicht länger als 24 Stunden sein.",
+    "sourceHealthConnect": "Health Connect"
   },
   "metricCatalog": {
     "title": "Was HealthLog erfassen kann",
@@ -2550,7 +2564,10 @@
         "ENV_DAYLIGHT": "das Tageslicht",
         "ENV_PRECIP": "der Niederschlag",
         "ENV_PRESSURE_MEAN": "der Luftdruck",
-        "ENV_PRESSURE_DELTA": "die Luftdruckschwankung am Tag"
+        "ENV_PRESSURE_DELTA": "die Luftdruckschwankung am Tag",
+        "ENV_PM25": "der Feinstaub (PM2,5)",
+        "ENV_OZONE_8H": "das Ozon",
+        "ENV_POLLEN_MAX": "der Pollenflug"
       },
       "daily": {
         "high": "Wenn {behaviour} höher liegt, fällt {outcome} am Folgetag in deinen Daten tendenziell {direction} aus — ein Muster, das Beachtung verdient, keine Ursache.",
@@ -2573,6 +2590,11 @@
           "none": "Stimmung und Ruhepuls bewegen sich in diesem Zeitraum nicht deutlich gemeinsam."
         },
         "weightWeekday": "Das Gewicht am {weekday} liegt {delta} kg {direction} deinem Durchschnitt der übrigen Tage — ein Muster, das Beachtung verdient."
+      },
+      "dailySameDay": {
+        "high": "Mehr {behaviour} am selben Tag und am Vortag geht in deinen Daten tendenziell mit {direction} {outcome} einher — ein Muster, das sich zu beobachten lohnt, keine Ursache.",
+        "moderate": "Mehr {behaviour} am selben Tag und am Vortag scheint in deinen Daten nach bisheriger Lage mit {direction} {outcome} einherzugehen — ein Muster, das sich zu beobachten lohnt, keine Ursache.",
+        "faint": "Mehr {behaviour} am selben Tag und am Vortag zeigt in deinen Daten allenfalls einen schwachen Hinweis auf {direction} {outcome} — zu klein, um sich darauf zu stützen, nie eine Ursache."
       }
     },
     "emptyTitle": "Noch nicht genug Daten",
@@ -3678,7 +3700,10 @@
           "endInFuture": "Das Workout würde in der Zukunft enden. Stell den Beginn auf die Uhrzeit, zu der es angefangen hat.",
           "distanceInvalid": "Gib die Distanz als Zahl in einem realistischen Bereich ein.",
           "energyInvalid": "Gib die aktive Energie als Zahl bis 20.000 kcal ein."
-        }
+        },
+        "editTitle": "Training bearbeiten",
+        "editAction": "Bearbeiten",
+        "updated": "Training aktualisiert"
       }
     },
     "bloodGlucose": {
@@ -5364,7 +5389,8 @@
           "respiratoryRate": "Atemfrequenz",
           "recovery": "Erholung",
           "stress": "Stress",
-          "sleepDebt": "Schlafdefizit"
+          "sleepDebt": "Schlafdefizit",
+          "hrvRmssd": "HRV (RMSSD)"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -5381,7 +5407,8 @@
           "MCP": "MCP",
           "GOOGLE_HEALTH": "Google Health",
           "STRAVA": "Strava",
-          "EXTERNAL": "Externes Gerät"
+          "EXTERNAL": "Externes Gerät",
+          "HEALTH_CONNECT": "Health Connect"
         },
         "deviceLabels": {
           "watch": "Uhr",
@@ -5618,6 +5645,25 @@
               "tooManyRows": "Diese Datei enthält mehr Zeilen, als ein Import aufnehmen kann. Teilen und in Teilen importieren."
             },
             "detail": "Eine Datei deckt alle Medikamente darin ab."
+          },
+          "healthConnect": {
+            "title": "Health-Connect-Export",
+            "description": "Importiere die ZIP-Datei, die die Health-Connect-App auf Android beim Export deiner Daten schreibt.",
+            "choose": "ZIP-Datei wählen",
+            "uploading": "Wird hochgeladen …",
+            "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuch es noch einmal.",
+            "tooLarge": "Die Datei ist größer, als dieser Server annimmt.",
+            "unsupportedVersion": "Dieser Health-Connect-Export ist zu alt, um ihn zu lesen.",
+            "doneSummary": "{count} Werte importiert.",
+            "failed": "Der Import ist fehlgeschlagen: {reason}",
+            "phase": {
+              "queued": "Wartet auf den Start",
+              "unpacking": "Datei wird entpackt",
+              "parsing": "Einträge werden gelesen",
+              "upserting": "Werte werden gespeichert",
+              "done": "Fertig",
+              "failed": "Fehlgeschlagen"
+            }
           }
         },
         "subtitle": "Exportiere deine Daten oder importiere aus einer Sicherung."
@@ -5732,7 +5778,17 @@
         "noResults": "Keine passenden Orte gefunden.",
         "fetchFailedOne": "Die letzte Wetteraktualisierung im Hintergrund ist fehlgeschlagen ({when}).",
         "fetchFailedFew": "Die letzten {count} Wetteraktualisierungen im Hintergrund sind fehlgeschlagen, zuletzt {when}.",
-        "fetchFailedOther": "Die letzten {count} Wetteraktualisierungen im Hintergrund sind fehlgeschlagen, zuletzt {when}."
+        "fetchFailedOther": "Die letzten {count} Wetteraktualisierungen im Hintergrund sind fehlgeschlagen, zuletzt {when}.",
+        "airQuality": {
+          "title": "Luftqualität und Pollen",
+          "description": "Tägliche Luftqualität, Pollen und UV für deinen Ort, aus dem CAMS-Modell über Open-Meteo.",
+          "toggle": "Luftqualität und Pollen einbeziehen",
+          "operatorDisabled": "Luftqualität ist auf diesem Server abgeschaltet.",
+          "coverage": "{count} Tage mit Luftqualitätsdaten",
+          "pollenEuropeOnly": "Pollendaten gibt es nur für Europa.",
+          "attribution": "Luftqualität: Copernicus-Atmosphärenüberwachungsdienst (CAMS), über Open-Meteo.",
+          "saveError": "Die Einstellung konnte nicht gespeichert werden."
+        }
       },
       "score": {
         "title": "Gesundheitsscore",
@@ -6990,8 +7046,15 @@
           "foreground": "bei geöffneter App",
           "background": "im Hintergrund",
           "push": "durch einen Push-Weckruf",
-          "unknown": "Auslöser von der App nicht gemeldet"
+          "unknown": "Auslöser von der App nicht gemeldet",
+          "manual": "über „Alles synchronisieren“"
         }
+      },
+      "freshness": {
+        "title": "Nach Datentyp",
+        "lastReceived": "Zuletzt empfangen {relative}",
+        "lastNewValue": "Letzter neuer Wert {relative}",
+        "never": "Noch nicht empfangen"
       }
     },
     "garminInfo": {
@@ -9386,7 +9449,8 @@
     "sourceRange": {
       "fromReport": "Befundbereich {range}",
       "catalogDiffers": "dein Bereich {range}"
-    }
+    },
+    "convertedFrom": "Umgerechnet aus {value} {unit}"
   },
   "modules": {
     "cycle": {
@@ -9616,6 +9680,19 @@
       "overdue": "Auffrischung fällig seit {date}",
       "dueSoon": "Auffrischung fällig am {date}",
       "current": "Nächste Auffrischung {date}"
+    },
+    "custom": {
+      "title": "Eigene Impfstoffe",
+      "add": "Eigenen Impfstoff anlegen",
+      "name": "Name",
+      "components": "Schützt vor",
+      "seriesDoses": "Dosen der Grundimmunisierung",
+      "boosterMonths": "Auffrischung alle (Monate)",
+      "saved": "Impfstoff gespeichert",
+      "deleted": "Impfstoff entfernt",
+      "deleteConfirm": "Diesen Impfstoff entfernen? Bereits eingetragene Impfungen behalten ihren Namen.",
+      "saveFailed": "Der Impfstoff konnte nicht gespeichert werden.",
+      "nameTaken": "Du hast schon einen Impfstoff mit diesem Namen."
     }
   },
   "illness": {
@@ -10528,7 +10605,16 @@
       "daylight": "Tageslicht",
       "precip": "Niederschlag",
       "pressureMean": "Luftdruck",
-      "pressureDelta": "Druckschwankung"
+      "pressureDelta": "Druckschwankung",
+      "apparentMax": "Gefühlte Höchsttemperatur",
+      "pm25": "Feinstaub (PM2,5)",
+      "pm10": "Feinstaub (PM10)",
+      "no2": "Stickstoffdioxid",
+      "ozone8h": "Ozon (höchster 8-Stunden-Wert)",
+      "europeanAqi": "Europäischer Luftqualitätsindex",
+      "uvIndexMax": "UV-Index (Höchstwert)",
+      "dustMax": "Saharastaub",
+      "pollenMax": "Pollen (höchster Wert)"
     }
   },
   "documents": {
@@ -11475,7 +11561,32 @@
       "guardianErrorFailed": "Die Einladung konnte nicht gesendet werden.",
       "errorMfaRequired": "Dafür ist ein zweiter Faktor nötig, und dein Konto hat noch keinen. Richte unter Einstellungen → Sicherheit einen ein und versuche es dann erneut.",
       "rosterLoadError": "Es ließ sich nicht laden, wer sich um diese Akte kümmert.",
-      "errorRateLimit": "Zu viele Profile in der letzten Stunde angelegt. Warte etwas und versuche es erneut."
+      "errorRateLimit": "Zu viele Profile in der letzten Stunde angelegt. Warte etwas und versuche es erneut.",
+      "handover": {
+        "title": "Profil übergeben",
+        "description": "Gib {name} eine eigene Anmeldung. Die Daten bleiben, wo sie sind; du schlägst vor, welchen Zugang jede betreuende Person behält, und {name} entscheidet.",
+        "create": "Übergabelink erstellen",
+        "expiryLabel": "Link gültig für",
+        "expiry1": "1 Tag",
+        "expiry7": "7 Tage",
+        "expiry14": "14 Tage",
+        "proposalLabel": "Vorgeschlagener Zugang danach",
+        "proposal": {
+          "end": "Zugang beenden",
+          "read": "Nur ansehen",
+          "manage": "Weiter verwalten"
+        },
+        "linkTitle": "Übergabelink",
+        "linkOnce": "Dieser Link wird nur einmal angezeigt. Gib ihn {name} direkt oder lass den Code scannen.",
+        "copy": "Link kopieren",
+        "copied": "Link kopiert",
+        "pending": "Übergabelink offen bis {date}",
+        "revoke": "Link zurückziehen",
+        "revoked": "Link zurückgezogen",
+        "errorFailed": "Der Übergabelink konnte nicht erstellt werden.",
+        "oidcOnly": "Die Profilübergabe ist nicht verfügbar, solange dieser Server nur Single Sign-on erlaubt.",
+        "minorHint": "{name} ist jünger als 16. Den Lesezugang zu behalten, ist eine Überlegung wert."
+      }
     },
     "toast": {
       "savedTo": "In der Akte von {name} gespeichert"

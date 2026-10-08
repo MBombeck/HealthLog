@@ -37,6 +37,7 @@ import {
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
+  notImplementedResponse,
   recordRefusal,
   recordWriteRateLimitResponse,
   stdResponses,
@@ -243,7 +244,150 @@ const vaccinationNotFound = {
 
 const idPath = { path: z.object({ id: z.string() }) };
 
+// v1.42 (#1005) — the record's own vaccine definitions.
+const customVaccine = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    components: z
+      .array(z.string())
+      .describe("Catalogue antigen slugs the product covers."),
+    typicalSeriesDoses: z.number().int().nullable(),
+    boosterIntervalMonths: z.number().int().nullable(),
+    createdAt: z.iso.datetime({ offset: true }),
+    updatedAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({ id: "CustomVaccine" });
+
+const customVaccineCreateRequest = z
+  .object({
+    name: z.string(),
+    components: z.array(z.string()),
+    typicalSeriesDoses: z.number().int().nullable().optional(),
+    boosterIntervalMonths: z.number().int().nullable().optional(),
+  })
+  .strict()
+  .meta({ id: "CreateCustomVaccineRequest" });
+
+const customVaccineUpdateRequest = customVaccineCreateRequest
+  .partial()
+  .meta({ id: "UpdateCustomVaccineRequest" });
+
 export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/vaccinations/custom": {
+    get: {
+      tags: ["Records"],
+      summary: "List the record's own vaccines",
+      description:
+        "Vaccine definitions the record's owner added for products the shipped catalogue does not list. Soft-deleted definitions are excluded.",
+      responses: {
+        "200": {
+          description: "The definitions, by name.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.array(customVaccine),
+                "ListCustomVaccinesEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+    post: {
+      tags: ["Records"],
+      summary: "Add an own vaccine",
+      description:
+        "Defines a vaccine in the same shape a catalogue entry resolves to, so series and booster logic treat both alike. Names are unique per record.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: customVaccineCreateRequest } },
+      },
+      responses: {
+        "201": {
+          description: "Created.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                customVaccine,
+                "CreateCustomVaccineEnvelope",
+              ),
+            },
+          },
+        },
+        "409": {
+          description: "A live definition with this name already exists.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        ...recordWriteRateLimitResponse,
+        ...notImplementedResponse,
+      },
+    },
+  },
+  "/api/vaccinations/custom/{id}": {
+    patch: {
+      tags: ["Records"],
+      summary: "Edit an own vaccine",
+      description: "Changes one definition. Owner-scoped; an unknown id 404s.",
+      requestParams: idPath,
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: customVaccineUpdateRequest } },
+      },
+      responses: {
+        "200": {
+          description: "Updated.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                customVaccine,
+                "UpdateCustomVaccineEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "No such definition on this record.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description: "A live definition with this name already exists.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+    delete: {
+      tags: ["Records"],
+      summary: "Remove an own vaccine",
+      description:
+        "Soft-deletes one definition. Doses logged against it stay, on their `vaccineName`.",
+      requestParams: idPath,
+      responses: {
+        "200": {
+          description: "Removed.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ deleted: z.boolean() }),
+                "DeleteCustomVaccineEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "No such definition on this record.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+  },
   "/api/vaccinations": {
     get: {
       tags: ["Records"],

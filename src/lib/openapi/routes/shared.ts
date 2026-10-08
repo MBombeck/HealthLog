@@ -269,6 +269,21 @@ export const malformedJsonResponse = {
   },
 };
 
+/**
+ * The 501 a route answers while its contract is published ahead of its
+ * implementation on a release branch. Every stub carries it; the owner of the
+ * route drops it with the stub. No tagged release answers it: the error-code
+ * catalogue check fails once `not_implemented` is listed and nothing emits
+ * it, and fails while something still does and it is not listed.
+ */
+export const notImplementedResponse = {
+  "501": {
+    description:
+      "Not implemented yet: the contract is published ahead of the implementation on a release branch. `meta.errorCode: not_implemented`.",
+    content: { "application/json": { schema: errorEnvelope } },
+  },
+} as const;
+
 // ── Standard 401 / 422 / 429 responses ───────────────────────────────
 
 export const stdResponses = {

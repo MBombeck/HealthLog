@@ -114,6 +114,9 @@ export const WIPE_MODELS = [
   // ahead of both.
   "VaccinationDocumentLink",
   "VaccinationRecord",
+  // v1.42 (#1005) — the person's own vaccine definitions. After the doses,
+  // which point at them with SetNull, so neither count reads short.
+  "CustomVaccine",
 
   // ── Clinical record ─────────────────────────────────────────────────────
   "MentalHealthAssessment",
@@ -173,6 +176,14 @@ export const WIPE_MODELS = [
   // was read off it; a child of the document, so it goes before it.
   "DocumentAiRun",
   "ImportJob",
+  // v1.42 (#1173) — when each HealthKit type last arrived. Diagnostic, but a
+  // record of what the account's phone sent and when.
+  "HealthKitTypeSync",
+  // v1.42 (#959) — handover links, on both sides: the ones minted for this
+  // profile, and the ones this account minted for a profile it looks after.
+  // The second is the AccountGrant argument: an account that asked for
+  // everything of its own to be deleted must not leave a live link behind.
+  "ManagedProfileHandover",
 
   // ── AI ──────────────────────────────────────────────────────────────────
   "CoachConversation",
@@ -360,6 +371,8 @@ export const USER_RESET = {
   homeLabel: null,
   homeTimezone: null,
   homeSince: null,
+  homeLocationEncrypted: null,
+  environmentAirQualityEnabled: true,
 
   // Derived AI output cached on the row
   insightsPrivacyMode: "aggregated",
@@ -512,6 +525,7 @@ export const WIPE_OWNER_FIELDS: Readonly<Record<string, readonly string[]>> = {
   MedicationIntakeImportJob: ["recordUserId"],
   NotificationEvent: ["recordUserId"],
   NotificationEgressAuthorization: ["recordUserId", "recipientUserId"],
+  ManagedProfileHandover: ["profileId", "createdById"],
   // Both sides. Wiping only the grantor side would leave the account still
   // holding read access to other people's records after it asked for
   // everything of its own to be deleted.

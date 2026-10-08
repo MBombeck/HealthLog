@@ -3503,6 +3503,48 @@ const COLUMN_EXCLUSIONS: Readonly<Record<string, string>> = {
 };
 
 /**
+ * Columns a release adds ahead of the backup ends that carry them, so the
+ * packages built in parallel on its branch each own their own section of the
+ * export and the restore. NOT an exclusion: each entry names the package that
+ * carries it, and the companion assertion fails as soon as an entry's column
+ * starts coming back, so the entry has to go in the change that carries it.
+ * The list is empty again before the release is tagged.
+ */
+const ENVIRONMENT_V142 =
+  "v1.42 (#615): the environment section carries the air-quality columns and the sealed location";
+const LABS_V142 =
+  "v1.42 (#1095): the lab section carries the conversion provenance";
+const RELEASE_PENDING_COLUMNS: Readonly<Record<string, string>> = {
+  "EnvironmentContext.aodMax": ENVIRONMENT_V142,
+  "EnvironmentContext.apparentMax": ENVIRONMENT_V142,
+  "EnvironmentContext.aqDomain": ENVIRONMENT_V142,
+  "EnvironmentContext.aqFetchedAt": ENVIRONMENT_V142,
+  "EnvironmentContext.aqHours": ENVIRONMENT_V142,
+  "EnvironmentContext.coMean": ENVIRONMENT_V142,
+  "EnvironmentContext.dustMax": ENVIRONMENT_V142,
+  "EnvironmentContext.eaqiMax": ENVIRONMENT_V142,
+  "EnvironmentContext.no2Mean": ENVIRONMENT_V142,
+  "EnvironmentContext.o3Max8h": ENVIRONMENT_V142,
+  "EnvironmentContext.pm10Mean": ENVIRONMENT_V142,
+  "EnvironmentContext.pm25Max": ENVIRONMENT_V142,
+  "EnvironmentContext.pm25Mean": ENVIRONMENT_V142,
+  "EnvironmentContext.pollenAlderMax": ENVIRONMENT_V142,
+  "EnvironmentContext.pollenBirchMax": ENVIRONMENT_V142,
+  "EnvironmentContext.pollenGrassMax": ENVIRONMENT_V142,
+  "EnvironmentContext.pollenMugwortMax": ENVIRONMENT_V142,
+  "EnvironmentContext.pollenOliveMax": ENVIRONMENT_V142,
+  "EnvironmentContext.pollenRagweedMax": ENVIRONMENT_V142,
+  "EnvironmentContext.so2Mean": ENVIRONMENT_V142,
+  "EnvironmentContext.usaqiMax": ENVIRONMENT_V142,
+  "EnvironmentContext.uvIndexMax": ENVIRONMENT_V142,
+  "EnvironmentContext.locationEncrypted": ENVIRONMENT_V142,
+  "EnvironmentTravelLocation.locationEncrypted": ENVIRONMENT_V142,
+  "Biomarker.analyteKey": LABS_V142,
+  "LabResult.sourceValue": LABS_V142,
+  "LabResult.sourceUnit": LABS_V142,
+};
+
+/**
  * Columns every reader parses through one function before using, compared
  * through that same function: the restore writes the parsed form.
  */
@@ -3915,10 +3957,14 @@ describe("every column of every two-ended model survives a real restore", () => 
     // data model that stopped being read.
     expect(compared).toBeGreaterThanOrEqual(620);
     expect(
-      lost,
+      lost.filter((key) => !(key in RELEASE_PENDING_COLUMNS)),
       "these columns left with a value and came back without it. Carry each " +
         "through the export and the restore, or name it in COLUMN_EXCLUSIONS " +
         "with the reason the restore is right to drop it",
+    ).toEqual([]);
+    expect(
+      Object.keys(RELEASE_PENDING_COLUMNS).filter((key) => !lost.includes(key)),
+      "these RELEASE_PENDING_COLUMNS entries come back now — drop them",
     ).toEqual([]);
   });
 
@@ -3958,6 +4004,7 @@ describe("every column of every two-ended model survives a real restore", () => 
     );
     const stale = [
       ...Object.keys(COLUMN_EXCLUSIONS),
+      ...Object.keys(RELEASE_PENDING_COLUMNS),
       ...Object.keys(READ_THROUGH),
       ...Object.keys(FILL_OVERRIDES),
     ].filter((key) => !known.has(key));

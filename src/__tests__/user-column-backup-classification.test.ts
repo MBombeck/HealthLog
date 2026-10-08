@@ -51,18 +51,21 @@ describe("User column backup classification", () => {
     );
   });
 
+  // The person's own data, sealed at rest for privacy rather than a secret
+  // that grants anything: the insurance number, and since v1.42 the home
+  // location the environment module resolves weather against.
+  const SEALED_SETTINGS = ["insuranceNumberEncrypted", "homeLocationEncrypted"];
+
   it("carries no credential-shaped column as a setting", () => {
-    // The insurance number is the one sealed setting: it is the person's own
-    // data, sealed at rest for privacy, not a secret that grants anything.
     const sealedSettings = ACCOUNT_SETTING_COLUMNS.filter((column) =>
       /Encrypted$|Token|Secret|password|totp|oidc/i.test(column),
     );
-    expect(sealedSettings).toEqual(["insuranceNumberEncrypted"]);
+    expect(sealedSettings.sort()).toEqual([...SEALED_SETTINGS].sort());
   });
 
-  it("never classifies a sealed column other than the insurance number as anything but a credential", () => {
+  it("never classifies a sealed column other than the sealed settings as anything but a credential", () => {
     const sealed = columns.filter(
-      (c) => /Encrypted$/.test(c) && c !== "insuranceNumberEncrypted",
+      (c) => /Encrypted$/.test(c) && !SEALED_SETTINGS.includes(c),
     );
     expect(sealed.length).toBeGreaterThan(20);
     expect(sealed.filter((c) => classified[c] !== "CREDENTIAL")).toEqual([]);

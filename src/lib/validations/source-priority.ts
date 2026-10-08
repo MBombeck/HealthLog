@@ -94,10 +94,14 @@ export type DeviceType = z.infer<typeof deviceTypeEnum>;
  * keys; lifted into a nested object so the schema has room for the new
  * `deviceTypePriority` sibling without clobbering the metric keys.
  *
- * The 8-entry cap is a sanity bound (we have 4 sources today, the cap
- * leaves headroom without inviting a megabyte-blob payload).
+ * The cap is the number of `MeasurementSource` values: a ladder may rank
+ * every source once, and no more. A fixed 8 stopped fitting once the
+ * longest default ladders reached eight entries and a ninth source
+ * (Health Connect, v1.42) had to be sortable into them.
  */
-const metricSourceLadder = z.array(measurementSourceEnum).max(8);
+const metricSourceLadder = z
+  .array(measurementSourceEnum)
+  .max(measurementSourceEnum.options.length);
 
 /**
  * Metric-class keys carried by `SourcePriority`. Listed once here so
@@ -144,6 +148,10 @@ export const SOURCE_PRIORITY_METRIC_KEYS = [
   // Laddering it now keeps the picker deterministic — and the choice user-
   // configurable, not WHOOP-hardcoded — the instant a native producer lands.
   "sleepDebt",
+  // v1.42 (#1110) — RMSSD HRV as its own class. WHOOP, Oura and Polar report
+  // RMSSD natively, Apple Health relays it from third-party apps; SDNN keeps
+  // the `hrv` ladder, since the two measures are not interchangeable.
+  "hrvRmssd",
 ] as const;
 
 export type SourcePriorityMetricKey =
@@ -395,6 +403,9 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
   // rolling-balance debt; the COMPUTED engine is the fallback every user lands
   // on now. Mirrors the recovery ladder's native-above-computed ordering.
   sleepDebt: ["WHOOP", "OURA", "POLAR", "COMPUTED"],
+  // v1.42 (#1110) — the straps and rings that measure RMSSD overnight lead;
+  // the HealthKit relay of a third-party reading is the fallback.
+  hrvRmssd: ["WHOOP", "OURA", "POLAR", "APPLE_HEALTH"],
 };
 
 /**

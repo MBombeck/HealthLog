@@ -403,6 +403,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "modules_conflict",
       "mood_tag_layout_conflict",
       "not_configured",
+      "not_implemented",
       "notification_prefs_conflict",
       "oidc_only",
       "private_origin_not_approved",

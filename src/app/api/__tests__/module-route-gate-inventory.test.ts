@@ -402,6 +402,11 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/vaccinations/[id]/route.ts",
   "src/app/api/vaccinations/[id]/restore/route.ts",
   "src/app/api/vaccinations/[id]/links/route.ts",
+  // v1.42 (#1005) — the record's own vaccine definitions. Same posture: a
+  // restore must bring back the definitions its doses point at with the
+  // surface hidden.
+  "src/app/api/vaccinations/custom/route.ts",
+  "src/app/api/vaccinations/custom/[id]/route.ts",
   // The booster mint and the upload suggestion are the same posture: a restore
   // or an import that arms a booster, or a document review that files a scan,
   // must keep working with the surface hidden, so the data routes stay exempt

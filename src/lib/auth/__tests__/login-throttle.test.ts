@@ -161,9 +161,13 @@ describe("somebody guessing from two addresses", () => {
   it("the owner's remembered browser still gets through", async () => {
     await tenGuesses();
     deviceCookie = "device-token";
+    // The device's expiry is compared against the wall clock, not the mocked
+    // rate-limit clock `now`, so it is anchored to the wall clock too: an
+    // expiry fixed relative to `now` expired for real once the calendar
+    // passed it.
     vi.mocked(prisma.trustedDevice.findUnique).mockResolvedValue({
       userId: "owner-1",
-      expiresAt: new Date(now + 1e9),
+      expiresAt: new Date(Date.now() + 30 * 86_400_000),
     } as never);
     expect(await guess("203.0.113.51", { right: true })).toBe("checked");
   });

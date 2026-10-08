@@ -513,6 +513,19 @@
       "fixLan": "Server on a home network without TLS: set SESSION_COOKIE_SECURE=false in its settings and restart it.",
       "fixHttps": "Server behind an HTTPS proxy: open the https:// address instead, and make sure the proxy forwards X-Forwarded-Proto: https.",
       "localhostNote": "This page is on http://localhost while the server sets its sign-in cookie for https:// only. Most browsers accept that on localhost; if signing in keeps returning here, set SESSION_COOKIE_SECURE=false."
+    },
+    "claim": {
+      "title": "Take over your profile",
+      "description": "{guardian} has kept a health record for you. Choose your sign-in to make it your own account.",
+      "invalid": "This link is invalid, expired or already used.",
+      "signOutFirst": "Sign out first to take over this profile.",
+      "emailRequired": "An email address is required.",
+      "guardiansTitle": "Who keeps access",
+      "guardianProposal": "{name} proposes: {proposal}",
+      "consentNote": "You will confirm the disclaimer and any AI consent yourself after taking over.",
+      "submit": "Take over profile",
+      "submitting": "Taking over…",
+      "success": "The profile is now your account."
     }
   },
   "dashboard": {
@@ -834,7 +847,8 @@
     "durationHoursOnly": "{hours} h",
     "durationMinutesOnly": "{minutes} min",
     "durationInvalid": "Enter a duration like 7.5, 7:30 or 7h 30m.",
-    "durationTooLong": "One entry can't be longer than 24 hours."
+    "durationTooLong": "One entry can't be longer than 24 hours.",
+    "sourceHealthConnect": "Health Connect"
   },
   "metricCatalog": {
     "title": "What HealthLog can track",
@@ -2550,7 +2564,10 @@
         "ENV_DAYLIGHT": "daylight",
         "ENV_PRECIP": "precipitation",
         "ENV_PRESSURE_MEAN": "barometric pressure",
-        "ENV_PRESSURE_DELTA": "intraday pressure swing"
+        "ENV_PRESSURE_DELTA": "intraday pressure swing",
+        "ENV_PM25": "fine particles (PM2.5)",
+        "ENV_OZONE_8H": "ozone",
+        "ENV_POLLEN_MAX": "pollen"
       },
       "daily": {
         "high": "Higher {behaviour} tends to go with {direction} next-day {outcome} in your data — a pattern worth watching, not a cause.",
@@ -2573,6 +2590,11 @@
           "none": "Mood and resting pulse do not move together strongly in this window."
         },
         "weightWeekday": "{weekday} weights run {delta} kg {direction} your other-day average — a pattern worth watching."
+      },
+      "dailySameDay": {
+        "high": "Higher {behaviour} on the day and the day before tends to go with {direction} {outcome} in your data — a pattern worth watching, not a cause.",
+        "moderate": "Higher {behaviour} on the day and the day before looks like it goes with {direction} {outcome} in your data, on the evidence so far — a pattern worth watching, not a cause.",
+        "faint": "Higher {behaviour} on the day and the day before shows a faint hint, if anything, of {direction} {outcome} in your data — too small to lean on, never a cause."
       }
     },
     "noAnalysisYet": "No assessment yet.",
@@ -3678,7 +3700,10 @@
           "endInFuture": "It would end in the future. Set the start to when the workout began.",
           "distanceInvalid": "Enter the distance as a number within a realistic range.",
           "energyInvalid": "Enter active energy as a number up to 20,000 kcal."
-        }
+        },
+        "editTitle": "Edit workout",
+        "editAction": "Edit",
+        "updated": "Workout updated"
       }
     },
     "bloodGlucose": {
@@ -5364,7 +5389,8 @@
           "respiratoryRate": "Respiratory rate",
           "recovery": "Recovery",
           "stress": "Stress",
-          "sleepDebt": "Sleep debt"
+          "sleepDebt": "Sleep debt",
+          "hrvRmssd": "HRV (RMSSD)"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -5381,7 +5407,8 @@
           "MCP": "MCP",
           "GOOGLE_HEALTH": "Google Health",
           "STRAVA": "Strava",
-          "EXTERNAL": "External device"
+          "EXTERNAL": "External device",
+          "HEALTH_CONNECT": "Health Connect"
         },
         "deviceLabels": {
           "watch": "Watch",
@@ -5618,6 +5645,25 @@
               "tooManyRows": "That file holds more rows than one import can take. Split it and import the parts."
             },
             "detail": "One file covers every medication in it."
+          },
+          "healthConnect": {
+            "title": "Health Connect export",
+            "description": "Import the ZIP file the Health Connect app on Android writes when you export your data.",
+            "choose": "Choose ZIP file",
+            "uploading": "Uploading…",
+            "uploadFailed": "The upload failed. Please try again.",
+            "tooLarge": "The file is larger than this server accepts.",
+            "unsupportedVersion": "This Health Connect export is too old to read.",
+            "doneSummary": "{count} values imported.",
+            "failed": "The import failed: {reason}",
+            "phase": {
+              "queued": "Waiting to start",
+              "unpacking": "Unpacking the file",
+              "parsing": "Reading the records",
+              "upserting": "Saving the values",
+              "done": "Finished",
+              "failed": "Failed"
+            }
           }
         },
         "subtitle": "Export your data or import from a backup."
@@ -5732,7 +5778,17 @@
         "noResults": "No matching places found.",
         "fetchFailedOne": "The last background weather update failed ({when}).",
         "fetchFailedFew": "The last {count} background weather updates failed, most recently {when}.",
-        "fetchFailedOther": "The last {count} background weather updates failed, most recently {when}."
+        "fetchFailedOther": "The last {count} background weather updates failed, most recently {when}.",
+        "airQuality": {
+          "title": "Air quality and pollen",
+          "description": "Daily air quality, pollen and UV for your location, from the CAMS model via Open-Meteo.",
+          "toggle": "Include air quality and pollen",
+          "operatorDisabled": "Air quality is turned off on this server.",
+          "coverage": "{count} days with air-quality data",
+          "pollenEuropeOnly": "Pollen data covers Europe only.",
+          "attribution": "Air quality: Copernicus Atmosphere Monitoring Service (CAMS), via Open-Meteo.",
+          "saveError": "The setting could not be saved."
+        }
       },
       "score": {
         "title": "Health Score",
@@ -6990,8 +7046,15 @@
           "foreground": "with the app open",
           "background": "in the background",
           "push": "from a push wake",
-          "unknown": "trigger not reported by the app"
+          "unknown": "trigger not reported by the app",
+          "manual": "from Sync all"
         }
+      },
+      "freshness": {
+        "title": "By data type",
+        "lastReceived": "Last received {relative}",
+        "lastNewValue": "Last new value {relative}",
+        "never": "Not received yet"
       }
     },
     "garminInfo": {
@@ -9386,7 +9449,8 @@
     "sourceRange": {
       "fromReport": "Report range {range}",
       "catalogDiffers": "your range {range}"
-    }
+    },
+    "convertedFrom": "Converted from {value} {unit}"
   },
   "modules": {
     "cycle": {
@@ -9616,6 +9680,19 @@
       "overdue": "Booster overdue since {date}",
       "dueSoon": "Booster due {date}",
       "current": "Next booster {date}"
+    },
+    "custom": {
+      "title": "Own vaccines",
+      "add": "Add own vaccine",
+      "name": "Name",
+      "components": "Protects against",
+      "seriesDoses": "Doses in the primary series",
+      "boosterMonths": "Booster every (months)",
+      "saved": "Vaccine saved",
+      "deleted": "Vaccine removed",
+      "deleteConfirm": "Remove this vaccine? Doses already logged keep their name.",
+      "saveFailed": "The vaccine could not be saved.",
+      "nameTaken": "You already have a vaccine with this name."
     }
   },
   "illness": {
@@ -10528,7 +10605,16 @@
       "daylight": "Daylight",
       "precip": "Precipitation",
       "pressureMean": "Barometric pressure",
-      "pressureDelta": "Pressure swing"
+      "pressureDelta": "Pressure swing",
+      "apparentMax": "Feels-like high",
+      "pm25": "Fine particles (PM2.5)",
+      "pm10": "Particles (PM10)",
+      "no2": "Nitrogen dioxide",
+      "ozone8h": "Ozone (8-hour high)",
+      "europeanAqi": "European air quality index",
+      "uvIndexMax": "UV index (high)",
+      "dustMax": "Saharan dust",
+      "pollenMax": "Pollen (highest)"
     }
   },
   "documents": {
@@ -11475,7 +11561,32 @@
       "guardianErrorFailed": "The invitation could not be sent.",
       "errorMfaRequired": "This needs a second factor, and your account does not have one yet. Set one up under Settings → Security, then try again.",
       "rosterLoadError": "Could not load who looks after this record.",
-      "errorRateLimit": "Too many profiles created in the last hour. Wait a while and try again."
+      "errorRateLimit": "Too many profiles created in the last hour. Wait a while and try again.",
+      "handover": {
+        "title": "Hand over this profile",
+        "description": "Give {name} a sign-in of their own. The data stays where it is; you propose what access each guardian keeps, and {name} decides.",
+        "create": "Create handover link",
+        "expiryLabel": "Link valid for",
+        "expiry1": "1 day",
+        "expiry7": "7 days",
+        "expiry14": "14 days",
+        "proposalLabel": "Proposed access afterwards",
+        "proposal": {
+          "end": "End access",
+          "read": "View only",
+          "manage": "Keep managing"
+        },
+        "linkTitle": "Handover link",
+        "linkOnce": "This link is shown only once. Hand it to {name} directly or let them scan the code.",
+        "copy": "Copy link",
+        "copied": "Link copied",
+        "pending": "Handover link open until {date}",
+        "revoke": "Withdraw link",
+        "revoked": "Link withdrawn",
+        "errorFailed": "The handover link could not be created.",
+        "oidcOnly": "Handing over a profile is not available while this server allows single sign-on only.",
+        "minorHint": "{name} is under 16. Keeping view access is worth considering."
+      }
     },
     "toast": {
       "savedTo": "Saved to {name}'s record"

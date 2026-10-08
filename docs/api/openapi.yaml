@@ -393,7 +393,7 @@ paths:
         "403": *a2
         "409": *a7
         "422": *a4
-        "429": &a12
+        "429": &a13
           description: "Rate limit exceeded. This route shares one per-account bucket with the other single-record writes —
             `record-write:<accountId>`, 300 requests per 60 seconds — keyed on the ACTING account, so a delegate burns
             their own allowance rather than the record owner's. Nothing was written. `meta.errorCode` is
@@ -703,7 +703,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CyclePrefsPatchEnvelope"
-        "400": &a14
+        "400": &a15
           description: The request body is not parseable JSON. Nothing was read and nothing was written. `meta.errorCode` names
             the surface that refused it (`<surface>.body.invalid_json`). This is a client-side serialisation fault, not
             a validation failure — a body that parses but fails the schema is the 422 beside this.
@@ -895,7 +895,7 @@ paths:
                 type: string
                 format: binary
         "401": *a1
-        "403": &a11
+        "403": &a12
           description: "Refused: this request named a record the caller may not act on (`meta.errorCode` =
             `sharing.access.denied`). Byte-identical for an account that does not exist, an account that granted
             nothing, a grant whose sections do not reach this surface, and a read grant on a request that writes — the
@@ -1852,6 +1852,104 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/auth/claim/preview:
+    post:
+      security: []
+      tags:
+        - Auth
+      summary: Preview a managed-profile handover link
+      description: "What a handover link would hand over: the profile's display name, the link's expiry, and each guardian's
+        proposal. Anonymous; the token travels in the body. An unknown, expired, used or withdrawn token, and a link
+        whose creator lost access, all answer the same 404. Rate-limited per source address."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileClaimPreviewRequest"
+      responses:
+        "200":
+          description: The preview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileClaimPreviewEnvelope"
+        "401": *a1
+        "403":
+          description: "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: "No usable link behind this token (`meta.errorCode: profile_claim.invalid`). Every failure class answers
+            identically."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: "The request carries a signed-in session (`meta.errorCode: auth.already_authenticated`); sign out first."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": &a9
+          description: "Not implemented yet: the contract is published ahead of the implementation on a release branch.
+            `meta.errorCode: not_implemented`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/auth/claim:
+    post:
+      security: []
+      tags:
+        - Auth
+      summary: Claim a managed profile
+      description: "Turns the managed profile behind a handover link into the claimant's own account: sets the username, email
+        and password on the profile's record, clears the managed marker, settles each guardian's access by the
+        claimant's decision, withdraws pending MANAGE invitations, and resets the disclaimer, onboarding and AI consent
+        so the new owner gives them personally. No data moves. Signs the new owner in. Anonymous; the token travels in
+        the body, and every token failure answers the same 404."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileClaimRequest"
+      responses:
+        "201":
+          description: Claimed; the response sets the session cookie.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileClaimEnvelope"
+        "401": *a1
+        "403":
+          description: "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: "No usable link behind this token (`meta.errorCode: profile_claim.invalid`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: "The request carries a signed-in session (`meta.errorCode: auth.already_authenticated`), or the username or
+            email is taken."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a9
   /api/auth/login:
     post:
       security: []
@@ -1902,7 +2000,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "409": &a9
+        "409": &a10
           description: 'Refused before anything was checked or spent: the request stated `clientTransport.protocol: "http"` on a
             non-loopback host while this server issues `Secure` session cookies, so the browser would drop the session.
             `meta.errorCode` = `auth.session.insecure_transport`, `meta.sessionCookieSecure` = `true`. No password was
@@ -1937,7 +2035,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MfaVerifyResponse"
         "401": *a1
-        "409": *a9
+        "409": *a10
         "422": *a4
         "429": *a5
   /api/auth/oidc/native/token:
@@ -2234,7 +2332,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TotpSetupEnvelope"
-        "401": &a10
+        "401": &a11
           description: No session or elevation; or, on the cookie path, `auth.reproof.required` (no recent sign-in and no proof in
             the body) or `auth.reproof.failed` (the proof did not verify).
           content:
@@ -2382,7 +2480,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MfaWebauthnRegisterOptionsEnvelope"
-        "401": *a10
+        "401": *a11
         "422": *a4
         "429": *a5
   /api/auth/me/mfa/webauthn/register/verify:
@@ -2530,7 +2628,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MfaWebauthnVerifyResponse"
         "401": *a1
-        "409": *a9
+        "409": *a10
         "422": *a4
         "429": *a5
   /api/auth/passkey/login-verify:
@@ -2871,7 +2969,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "409": *a9
+        "409": *a10
         "429": *a5
   /api/auth/passkeys/{id}:
     patch:
@@ -3482,7 +3580,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": &a16
+        "429": &a17
           description: "Too many email-address changes, and the request asked for nothing else. The address change shares one
             per-account bucket across both profile routes — `profile-email:<accountId>`, 10 requests per 3600 seconds —
             keyed on the ACTING account, so an account cannot collect a fresh allowance by probing a different address.
@@ -3918,7 +4016,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetMeasurementsSeriesBatchResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/measurements/series:
@@ -3973,7 +4071,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetMeasurementsSeriesResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/measurements:
@@ -4144,6 +4242,7 @@ paths:
               - GOOGLE_HEALTH
               - STRAVA
               - EXTERNAL
+              - HEALTH_CONNECT
         - in: query
           name: valueMin
           schema:
@@ -4171,7 +4270,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListMeasurementsResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -4227,7 +4326,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateMeasurementResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409":
           description: A measurement with this data already exists — the `(userId, type, source, externalId)` dedup index rejected
             the write. Never for a named sleep-stage body, which answers a re-post with 200 instead.
@@ -4243,7 +4342,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": *a12
+        "429": *a13
   /api/measurements/{id}:
     get:
       tags:
@@ -4264,7 +4363,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetMeasurementResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Measurement not found (or owned by another user).
           content:
@@ -4312,7 +4411,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateMeasurementResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Measurement not found (or owned by another user).
           content:
@@ -4348,7 +4447,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteMeasurementResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Measurement not found (or owned by another user).
           content:
@@ -4454,7 +4553,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementsBulkDeleteResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -4483,7 +4582,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementsRestoreResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -4514,7 +4613,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SleepNightResponse"
         "401": *a1
-        "403": &a13
+        "403": &a14
           description: >-
             Module disabled for this account: the user (or operator) has the module turned off. `meta.errorCode` =
             `module.disabled` and `meta.module` carries the disabled module key (e.g. "sleep"). Returned even for a
@@ -4555,7 +4654,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SleepRhythmResponse"
         "401": *a1
-        "403": *a13
+        "403": *a14
         "422": *a4
         "429": *a5
   /api/personal-records:
@@ -4602,7 +4701,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListPersonalRecordsEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422":
           description: "`metricType` or `limit` carried an unacceptable value. `meta.errorCode` =
             `personal_records.invalid_query`, with the offending path under `details.issues`."
@@ -4657,7 +4756,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListWorkoutsResponse"
         "401": *a1
-        "403": *a13
+        "403": *a14
         "422": *a4
         "429": *a5
   /api/workouts/{id}:
@@ -4693,7 +4792,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetWorkoutResponse"
         "401": *a1
-        "403": &a19
+        "403": &a20
           description: 'Module disabled for this account: the user (or operator) has the module turned off. `meta.errorCode` =
             `module.disabled` and `meta.module` carries the disabled module key (e.g. "sleep"). Returned even for a
             valid Bearer token. Clients hide the whole module surface end-to-end rather than retry.'
@@ -4916,7 +5015,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MedicationIntakeAggregateEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422":
           description: The query failed validation — a missing or unknown `scope`, or a `days` outside 1..365. Multi-issue
             envelope; an audit breadcrumb is filed under the RECORD as `medications.intake.list.validation-failed` with
@@ -5041,7 +5140,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": *a12
+        "429": *a13
   /api/medications/{id}/glp1:
     get:
       tags:
@@ -5066,7 +5165,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Glp1DetailResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another account).
           content:
@@ -5150,7 +5249,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Glp1PostResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another account).
           content:
@@ -5285,7 +5384,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ReminderPhaseConfigEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another account).
           content:
@@ -5401,7 +5500,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListMedicationSideEffectsEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another account).
           content:
@@ -5440,7 +5539,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateMedicationSideEffectEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another account).
           content:
@@ -5485,7 +5584,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteMedicationSideEffectEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: No such entry for this medication and this record. An unknown id, another medication's entry and another
             record's entry are indistinguishable.
@@ -5533,7 +5632,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateMedicationIntakeEventEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: No live event with that id under this medication and record. An unknown id and an already-tombstoned one
             are indistinguishable.
@@ -5581,7 +5680,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteMedicationIntakeEventEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: No event with that id under this medication and record.
           content:
@@ -5624,7 +5723,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/BulkDeleteMedicationIntakeEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another account).
           content:
@@ -5666,7 +5765,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/PurgeMedicationIntakeEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another account).
           content:
@@ -5711,7 +5810,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MedicationIntakeImportAcceptedEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another account).
           content:
@@ -5791,7 +5890,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListMedicationsResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -5823,7 +5922,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateMedicationResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -5843,7 +5942,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListMedicationCategoriesResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -5870,7 +5969,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateMedicationCategoryResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -6097,7 +6196,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MedicationListLayoutResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     put:
@@ -6131,7 +6230,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": &a15
+        "422": &a16
           description: Request validation failed. When the body carried a `baseUpdatedAt` that could not be parsed as an ISO-8601
             timestamp — including an explicit `null` — `meta.errorCode` = `invalid_base_updated_at` and nothing was
             written. Omit the key entirely for the unconditional write; do not send `null` for it.
@@ -6176,7 +6275,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetMedicationResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -6217,7 +6316,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateMedicationResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -6290,7 +6389,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateMedicationIntakeResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -6299,7 +6398,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "409": *a7
         "422": *a4
-        "429": *a12
+        "429": *a13
     get:
       tags:
         - Medications
@@ -6364,7 +6463,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListMedicationIntakeEventsResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -6397,7 +6496,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListMedicationInventoryResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -6433,7 +6532,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateMedicationInventoryItemResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -6477,7 +6576,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateMedicationInventoryItemResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Inventory item not found (or owned by another user / medication).
           content:
@@ -6512,7 +6611,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteMedicationInventoryItemResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Inventory item not found (or owned by another user / medication).
           content:
@@ -6608,7 +6707,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetMedicationCadenceResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -6634,7 +6733,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListMedicationComplianceResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/medications/{id}/compliance:
@@ -6815,7 +6914,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListScheduleRevisionsResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -6853,7 +6952,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateScheduleRevisionResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -6897,7 +6996,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateScheduleRevisionResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication or revision not found (or owned by another user).
           content:
@@ -6938,7 +7037,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteScheduleRevisionResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Medication or revision not found (or owned by another user).
           content:
@@ -7001,7 +7100,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MedicationDoseHistoryImportQueuedEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409":
           description: A dose-history import is already in progress.
           content:
@@ -7063,7 +7162,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MedicationIntakeImportJobStatusEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: No such job for this medication (or owned by another user).
           content:
@@ -7097,7 +7196,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MedicationIntakeImportJobStatusEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: No such job for this account (or owned by another user).
           content:
@@ -7127,7 +7226,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProfileSummaryEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/ai/test:
@@ -7332,7 +7431,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutCoachPrefsResponse"
-        "400": *a14
+        "400": *a15
         "401": *a1
         "409":
           description: Coach preferences changed since it was loaded (optimistic-concurrency conflict). No write happened. Re-read
@@ -7342,7 +7441,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a15
+        "422": *a16
         "429": *a5
   /api/auth/me/disable-coach:
     get:
@@ -7380,7 +7479,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PatchDisableCoachResponse"
-        "400": *a14
+        "400": *a15
         "401": *a1
         "422": *a4
         "429": *a5
@@ -7535,7 +7634,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PatchModulesResponse"
-        "400": *a14
+        "400": *a15
         "401": *a1
         "409":
           description: Module preferences changed since it was loaded (optimistic-concurrency conflict). No write happened.
@@ -7545,7 +7644,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a15
+        "422": *a16
         "429": *a5
   /api/auth/me/source-priority:
     get:
@@ -7578,7 +7677,7 @@ paths:
               type: object
               properties:
                 steps:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7598,8 +7697,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 activeEnergy:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7619,8 +7719,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 walkingRunningDistance:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7640,8 +7741,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 flightsClimbed:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7661,8 +7763,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 sleep:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7682,8 +7785,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 weight:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7703,8 +7807,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 bloodPressure:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7724,8 +7829,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 pulse:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7745,8 +7851,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 bodyFat:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7766,8 +7873,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 bodyTemperature:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7787,8 +7895,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 spo2:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7808,8 +7917,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 hrv:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7829,8 +7939,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 restingHeartRate:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7850,8 +7961,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 vo2Max:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7871,8 +7983,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 skinTemperature:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7892,8 +8005,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 respiratoryRate:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7913,8 +8027,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 recovery:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7934,8 +8049,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 stress:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7955,8 +8071,9 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 sleepDebt:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -7976,11 +8093,34 @@ paths:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
+                hrvRmssd:
+                  maxItems: 16
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
                 metricPriority:
                   type: object
                   properties:
                     steps:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8000,8 +8140,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     activeEnergy:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8021,8 +8162,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     walkingRunningDistance:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8042,8 +8184,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     flightsClimbed:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8063,8 +8206,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     sleep:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8084,8 +8228,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     weight:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8105,8 +8250,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     bloodPressure:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8126,8 +8272,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     pulse:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8147,8 +8294,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     bodyFat:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8168,8 +8316,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     bodyTemperature:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8189,8 +8338,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     spo2:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8210,8 +8360,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     hrv:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8231,8 +8382,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     restingHeartRate:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8252,8 +8404,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     vo2Max:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8273,8 +8426,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     skinTemperature:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8294,8 +8448,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     respiratoryRate:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8315,8 +8470,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     recovery:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8336,8 +8492,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     stress:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8357,8 +8514,9 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
                     sleepDebt:
-                      maxItems: 8
+                      maxItems: 16
                       type: array
                       items:
                         type: string
@@ -8378,6 +8536,29 @@ paths:
                           - GOOGLE_HEALTH
                           - STRAVA
                           - EXTERNAL
+                          - HEALTH_CONNECT
+                    hrvRmssd:
+                      maxItems: 16
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                          - COMPUTED
+                          - WHOOP
+                          - FITBIT
+                          - NIGHTSCOUT
+                          - POLAR
+                          - OURA
+                          - TELEGRAM
+                          - MCP
+                          - GOOGLE_HEALTH
+                          - STRAVA
+                          - EXTERNAL
+                          - HEALTH_CONNECT
                 deviceTypePriority:
                   type: object
                   properties:
@@ -8414,7 +8595,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutSourcePriorityResponse"
-        "400": *a14
+        "400": *a15
         "401": *a1
         "422": *a4
         "429": *a5
@@ -8567,7 +8748,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
-        "429": *a16
+        "429": *a17
   /api/auth/me/notification-prefs:
     get:
       tags:
@@ -8608,7 +8789,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PatchNotificationPrefsResponse"
-        "400": *a14
+        "400": *a15
         "401": *a1
         "409":
           description: Notification preferences changed since it was loaded (optimistic-concurrency conflict). No write happened.
@@ -8618,7 +8799,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a15
+        "422": *a16
         "429": *a5
   /api/auth/me/report-selection:
     get:
@@ -8660,7 +8841,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutReportSelectionResponseEnvelope"
-        "400": *a14
+        "400": *a15
         "401": *a1
         "422": *a4
         "429": *a5
@@ -9381,7 +9562,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "503": &a18
+        "503": &a19
           description: "The AI capability could not be resolved (its inputs could not be read) and the answer failed closed:
             `meta.errorCode` = `ai.unavailable`, `meta.reason` = `check_failed`. Retry later; no data depends on it."
           content:
@@ -9789,7 +9970,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a15
+        "422": *a16
         "429": *a5
     delete:
       tags:
@@ -9964,7 +10145,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CoachNudgeStatus"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/coach/seen:
@@ -10082,7 +10263,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a15
+        "422": *a16
         "429": *a5
   /api/anamnesis/facts:
     get:
@@ -10100,7 +10281,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetAnamnesisFactsResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -10210,7 +10391,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CorrectAnamnesisFactResponse"
         "401": *a1
-        "404": &a17
+        "404": &a18
           description: No current revision with this id exists for the authenticated account.
           content:
             application/json:
@@ -10246,7 +10427,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RemoveAnamnesisFactResponse"
         "401": *a1
-        "404": *a17
+        "404": *a18
         "409":
           description: Anamnesis fact changed since it was loaded (optimistic-concurrency conflict). No write happened. Re-read
             the resource, re-apply the user's change against the fresh state, and resend with the new token.
@@ -10606,7 +10787,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CoachRemindersList"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -10867,6 +11048,44 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/admin/maintenance/measurements:
+    post:
+      tags:
+        - Admin
+      summary: Queue measurement table maintenance
+      description: "Queues one `VACUUM (ANALYZE)` and `REINDEX INDEX CONCURRENTLY` pass over the `measurements` table, for
+        after a large purge. Runs in the background worker, one statement at a time; pick a quiet window, because a
+        rebuild needs free disk the size of the index it rebuilds. At most one run at a time. Cookie auth only:
+        `requireAdmin()` refuses every Bearer caller. Runbook: `docs/ops/measurement-maintenance.md`."
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminMeasurementMaintenanceRequest"
+      responses:
+        "202":
+          description: Queued, or already queued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMeasurementMaintenanceResponse"
+        "401": *a1
+        "403":
+          description: Caller is not an admin.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a9
+        "503":
+          description: No background worker is bound, so nothing would run it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/admin/notifications/reminder-check:
     post:
       tags:
@@ -10955,7 +11174,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DashboardSnapshotResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/comprehensive:
@@ -10977,7 +11196,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InsightsComprehensiveResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/cards:
@@ -10998,7 +11217,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InsightsCardsEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/pregenerate:
@@ -11133,7 +11352,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "503": *a18
+        "503": *a19
     post:
       tags:
         - Insights
@@ -11335,7 +11554,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CoachReadStripEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/coach/seeded-question:
@@ -11408,7 +11627,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NarrativeEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/glp1-timeline:
@@ -11445,7 +11664,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Glp1TimelineEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/pulse/intraday:
@@ -11481,7 +11700,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/IntradayPulseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/settings:
@@ -11555,7 +11774,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TargetsEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/analytics/range:
@@ -11628,7 +11847,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/BloodPressureStatusResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/pulse-status:
@@ -11660,7 +11879,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/PulseStatusResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/weight-status:
@@ -11692,7 +11911,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/WeightStatusResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/bmi-status:
@@ -11724,7 +11943,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/BmiStatusResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/mood-status:
@@ -11756,7 +11975,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodStatusResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/medication-compliance-status:
@@ -11789,7 +12008,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MedicationComplianceStatusResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/metric-status:
@@ -11884,7 +12103,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MetricStatusResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/biomarker-assessment:
@@ -11929,7 +12148,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/BiomarkerAssessmentResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/derived:
@@ -12041,7 +12260,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DerivedMetricResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/derived/batch:
@@ -12081,7 +12300,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DerivedBatchResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/glp1-plateau:
@@ -12101,7 +12320,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InsightsGlp1PlateauResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/ecg:
@@ -12123,7 +12342,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EcgListResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -12200,7 +12419,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EcgDetailResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: No ECG recording with that id for the authenticated user (existence sealed — a foreign id is
             indistinguishable from a missing one).
@@ -12232,7 +12451,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RhythmEventsResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/correlations:
@@ -12254,7 +12473,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CorrelationDiscoveryResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/patterns:
@@ -12272,7 +12491,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CorrelationPatternListResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/patterns/{id}:
@@ -12302,7 +12521,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateCorrelationPatternResponseEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: No current pattern with that id for this account.
           content:
@@ -12327,7 +12546,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InsightsHealthStatusEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/breathing-screening:
@@ -12346,7 +12565,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InsightsBreathingScreeningEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/insights/labs-changes:
@@ -12365,7 +12584,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InsightsLabsChangesEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/mood/analytics:
@@ -12388,7 +12607,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodDailySeriesEnvelope"
         "401": *a1
-        "403": *a19
+        "403": *a20
         "422": *a4
         "429": *a5
   /api/mood/insights:
@@ -12410,7 +12629,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodAggregatesEnvelope"
         "401": *a1
-        "403": *a19
+        "403": *a20
         "422": *a4
         "429": *a5
   /api/mood/prognosis:
@@ -12433,7 +12652,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodPrognosisEnvelope"
         "401": *a1
-        "403": *a13
+        "403": *a14
         "422": *a4
         "429": *a5
   /api/mood-entries/bulk:
@@ -12543,7 +12762,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodCustomTagPatchEnvelope"
         "401": *a1
-        "404": &a20
+        "404": &a21
           description: Not found / not owned by the caller.
           content:
             application/json:
@@ -12578,7 +12797,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodCustomTagDeleteEnvelope"
         "401": *a1
-        "404": *a20
+        "404": *a21
         "422": *a4
         "429": *a5
   /api/mood/tags/{key}/hidden:
@@ -12614,7 +12833,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "404": *a20
+        "404": *a21
         "422": *a4
         "429": *a5
   /api/mood/tags/groups:
@@ -12667,7 +12886,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodTagGroupPatchEnvelope"
         "401": *a1
-        "404": *a20
+        "404": *a21
         "422": *a4
         "429": *a5
     delete:
@@ -12698,7 +12917,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodTagGroupDeleteEnvelope"
         "401": *a1
-        "404": *a20
+        "404": *a21
         "422": *a4
         "429": *a5
   /api/mood/tags/layout:
@@ -12746,7 +12965,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a15
+        "422": *a16
         "429": *a5
   /api/mood-entries:
     get:
@@ -12829,7 +13048,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodEntryListEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -12862,8 +13081,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodEntryEnvelope"
         "401": *a1
-        "403": *a11
-        "409": &a21
+        "403": *a12
+        "409": &a22
           description: A mood entry with the same `(date, moodLoggedAt)` instant already exists. `meta.errorCode` =
             `mood.duplicate_timestamp`. Only a request without `externalId` can answer this — with one, the write
             upserts in place.
@@ -12872,7 +13091,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
-        "429": *a12
+        "429": *a13
   /api/mood-entries/{id}:
     get:
       tags:
@@ -12894,8 +13113,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodEntryEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a20
+        "403": *a12
+        "404": *a21
         "422": *a4
         "429": *a5
     put:
@@ -12929,9 +13148,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodEntryEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a20
-        "409": *a21
+        "403": *a12
+        "404": *a21
+        "409": *a22
         "422": *a4
         "429": *a5
     delete:
@@ -12956,8 +13175,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodEntryDeleteEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a20
+        "403": *a12
+        "404": *a21
         "422": *a4
         "429": *a5
   /api/mood-entries/restore:
@@ -12986,7 +13205,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodEntriesRestoreEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -13015,7 +13234,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodEntriesBulkDeleteEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -13059,7 +13278,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MoodLinkedContextEnvelope"
         "401": *a1
-        "403": *a13
+        "403": *a14
         "422": *a4
         "429": *a5
   /api/settings/ntfy:
@@ -13107,7 +13326,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutNtfySettingsResponse"
-        "400": &a22
+        "400": &a23
           description: Body is not parseable JSON.
           content:
             application/json:
@@ -13120,13 +13339,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "413": &a23
+        "413": &a24
           description: Body exceeds 64 KiB.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "415": &a24
+        "415": &a25
           description: Content-Type is not `application/json`.
           content:
             application/json:
@@ -13186,7 +13405,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutTelegramSettingsResponse"
-        "400": *a22
+        "400": *a23
         "401": *a1
         "403":
           description: The operator switched Telegram off for this instance and the body asked to enable it. No webhook was
@@ -13201,8 +13420,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "413": *a23
-        "415": *a24
+        "413": *a24
+        "415": *a25
         "422":
           description: Body matched neither accepted shape; or `enabled` is true without both a bot token and a chat id; or the
             deployment's `APP_URL` is not a public HTTPS host on port 80/88/443/8443; or Telegram refused the webhook
@@ -13256,10 +13475,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PutWebhookSettingsResponse"
-        "400": *a22
+        "400": *a23
         "401": *a1
-        "413": *a23
-        "415": *a24
+        "413": *a24
+        "415": *a25
         "422":
           description: Body matched neither accepted shape, or `enabled` is true while no webhook URL is stored; or the URL is on
             a private network the operator has not listed in `NOTIFICATION_PRIVATE_ORIGINS` (`meta.errorCode` =
@@ -13286,7 +13505,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetReminderThresholdsResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/settings/global-services:
@@ -13816,7 +14035,7 @@ paths:
                 anyOf:
                   - $ref: "#/components/schemas/ConsentLatestForKindEnvelope"
                   - $ref: "#/components/schemas/ConsentLatestByKindEnvelope"
-        "400": &a25
+        "400": &a26
           description: "`kind` was present but is not one of `ai_full`, `ai_insights_only`, `ai_coach`, `ai_extraction`.
             Multi-issue envelope; nothing was read or revoked. The consent family answers 400 here where the rest of the
             API answers 422."
@@ -13876,10 +14095,90 @@ paths:
                 anyOf:
                   - $ref: "#/components/schemas/ConsentRevokeForKindEnvelope"
                   - $ref: "#/components/schemas/ConsentRevokeAllEnvelope"
-        "400": *a25
+        "400": *a26
         "401": *a1
         "422": *a4
         "429": *a5
+  /api/import/health-connect-export:
+    post:
+      tags:
+        - Import
+      summary: Upload a Health Connect export for background import
+      description: "Takes the ZIP the Android Health Connect app writes (it holds `health_connect_export.db`) and hands it to
+        a background worker. The response is **202 with a `jobId`**; poll `GET
+        /api/import/health-connect-export/status`. Body is `multipart/form-data` with the file under `file`, streamed to
+        disk after authentication like the Apple Health upload. Re-uploading the same bytes resolves to the still-viable
+        job and returns `idempotent: true`. Imported rows carry `source = HEALTH_CONNECT`. Cookie or wildcard Bearer."
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  description: The Health Connect export ZIP, under the field name `file`.
+              required:
+                - file
+      responses:
+        "202":
+          description: Accepted and queued, or matched to a job already carrying these bytes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthConnectImportKickoffEnvelope"
+        "400":
+          description: The request carried no body at all.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401": *a1
+        "409":
+          description: An import for this account is already queued or running with different bytes. The upload was discarded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: The declared `Content-Length` exceeds the upload cap.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "The upload is not a Health Connect export the importer can read: no `file` part, no export database in the
+            ZIP, or a database version older than the importer supports."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
+        "501": *a9
+        "503":
+          description: No background worker is bound, so nothing would run the import.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/import/health-connect-export/status:
+    get:
+      tags:
+        - Import
+      summary: The caller's latest Health Connect import
+      description: The most recent Health Connect import job of the caller, or `null` when there has never been one.
+      responses:
+        "200":
+          description: The latest job, or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthConnectImportStatusEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a5
+        "501": *a9
   /api/import/csv:
     post:
       tags:
@@ -14128,7 +14427,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementReminderListEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -14153,7 +14452,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementReminderCreatedEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -14177,8 +14476,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementReminderEnvelope"
         "401": *a1
-        "403": *a11
-        "404": &a26
+        "403": *a12
+        "404": &a27
           description: Measurement reminder not found / not owned.
           content:
             application/json:
@@ -14215,8 +14514,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementReminderPatchEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a26
+        "403": *a12
+        "404": *a27
         "422": *a4
         "429": *a5
     delete:
@@ -14238,8 +14537,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementReminderDeleteEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a26
+        "403": *a12
+        "404": *a27
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/satisfy:
@@ -14263,8 +14562,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementReminderSatisfyEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a26
+        "403": *a12
+        "404": *a27
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/complete:
@@ -14291,8 +14590,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementReminderCompleteEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a26
+        "403": *a12
+        "404": *a27
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/skip:
@@ -14321,8 +14620,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementReminderSkipEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a26
+        "403": *a12
+        "404": *a27
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/snooze:
@@ -14355,8 +14654,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementReminderSnoozeEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a26
+        "403": *a12
+        "404": *a27
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/history:
@@ -14396,8 +14695,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/MeasurementReminderHistoryEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a26
+        "403": *a12
+        "404": *a27
         "422": *a4
         "429": *a5
   /api/labs:
@@ -14469,7 +14768,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListLabResultsEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -14496,7 +14795,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateLabResultResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422":
           description: Nothing was written. `meta.errorCode` = `labs.create.invalid` when the body failed validation (every issue
@@ -14508,7 +14807,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": *a12
+        "429": *a13
   /api/labs/{id}:
     get:
       tags:
@@ -14529,8 +14828,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetLabResultResponse"
         "401": *a1
-        "403": *a11
-        "404": &a27
+        "403": *a12
+        "404": &a28
           description: Lab result not found (or owned by another user).
           content:
             application/json:
@@ -14564,8 +14863,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateLabResultResponse"
         "401": *a1
-        "403": *a11
-        "404": *a27
+        "403": *a12
+        "404": *a28
         "422": *a4
         "429": *a5
     delete:
@@ -14587,8 +14886,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteLabResultResponse"
         "401": *a1
-        "403": *a11
-        "404": *a27
+        "403": *a12
+        "404": *a28
         "422": *a4
         "429": *a5
   /api/labs/restore:
@@ -14614,7 +14913,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RestoreLabResultsResponse"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -14675,7 +14974,7 @@ paths:
             schema:
               $ref: "#/components/schemas/OcrTextExtractRequest"
       responses:
-        "202": &a36
+        "202": &a37
           description: Queued for the background worker. Every refusal the route can answer quickly (capability, provider, rate
             limit, budget, validation) has already been answered; anything that goes wrong from here is reported on the
             run.
@@ -14796,7 +15095,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListBiomarkersEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -14821,15 +15120,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateBiomarkerResponse"
         "401": *a1
-        "403": *a11
-        "409": &a29
+        "403": *a12
+        "409": &a30
           description: A biomarker with this name already exists for the caller.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
-        "429": *a12
+        "429": *a13
   /api/biomarkers/{id}:
     get:
       tags:
@@ -14850,8 +15149,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetBiomarkerResponse"
         "401": *a1
-        "403": *a11
-        "404": &a28
+        "403": *a12
+        "404": &a29
           description: Biomarker not found (or owned by another user).
           content:
             application/json:
@@ -14888,9 +15187,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateBiomarkerResponse"
         "401": *a1
-        "403": *a11
-        "404": *a28
-        "409": *a29
+        "403": *a12
+        "404": *a29
+        "409": *a30
         "422": *a4
         "429": *a5
     delete:
@@ -14913,7 +15212,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteBiomarkerResponse"
         "401": *a1
-        "404": *a28
+        "404": *a29
         "422": *a4
         "429": *a5
   /api/encounters:
@@ -14971,7 +15270,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListEncountersEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -14997,10 +15296,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateEncounterEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
-        "429": *a12
+        "429": *a13
   /api/encounters/procedures:
     get:
       tags:
@@ -15031,7 +15330,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListProceduresEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/body-sites:
@@ -15068,7 +15367,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListBodySitesEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/encounters/suggest:
@@ -15098,7 +15397,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuggestEncounterEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/encounters/{id}:
@@ -15121,8 +15420,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetEncounterEnvelope"
         "401": *a1
-        "403": *a11
-        "404": &a30
+        "403": *a12
+        "404": &a31
           description: Visit not found (or owned by another user).
           content:
             application/json:
@@ -15155,8 +15454,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateEncounterEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a30
+        "403": *a12
+        "404": *a31
         "422": *a4
         "429": *a5
     delete:
@@ -15180,8 +15479,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteEncounterEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a30
+        "403": *a12
+        "404": *a31
         "422": *a4
         "429": *a5
   /api/encounters/{id}/restore:
@@ -15206,8 +15505,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/RestoreEncounterEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a30
+        "403": *a12
+        "404": *a31
         "422": *a4
         "429": *a5
   /api/encounters/{id}/links:
@@ -15237,7 +15536,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LinkEncounterEnvelope"
         "401": *a1
-        "404": *a30
+        "404": *a31
         "422": *a4
         "429": *a5
     delete:
@@ -15266,7 +15565,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnlinkEncounterEnvelope"
         "401": *a1
-        "404": *a30
+        "404": *a31
         "422": *a4
         "429": *a5
   /api/practitioners:
@@ -15296,7 +15595,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListPractitionersEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -15320,7 +15619,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreatePractitionerEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -15344,8 +15643,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetPractitionerEnvelope"
         "401": *a1
-        "403": *a11
-        "404": &a31
+        "403": *a12
+        "404": &a32
           description: Practitioner not found (or owned by another user).
           content:
             application/json:
@@ -15378,8 +15677,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdatePractitionerEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a31
+        "403": *a12
+        "404": *a32
         "422": *a4
         "429": *a5
     delete:
@@ -15402,8 +15701,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeletePractitionerEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a31
+        "403": *a12
+        "404": *a32
         "422": *a4
         "429": *a5
   /api/practitioners/{id}/restore:
@@ -15428,10 +15727,126 @@ paths:
               schema:
                 $ref: "#/components/schemas/RestorePractitionerEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a31
+        "403": *a12
+        "404": *a32
         "422": *a4
         "429": *a5
+  /api/vaccinations/custom:
+    get:
+      tags:
+        - Records
+      summary: List the record's own vaccines
+      description: Vaccine definitions the record's owner added for products the shipped catalogue does not list. Soft-deleted
+        definitions are excluded.
+      responses:
+        "200":
+          description: The definitions, by name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListCustomVaccinesEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a5
+        "501": *a9
+    post:
+      tags:
+        - Records
+      summary: Add an own vaccine
+      description: Defines a vaccine in the same shape a catalogue entry resolves to, so series and booster logic treat both
+        alike. Names are unique per record.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCustomVaccineRequest"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateCustomVaccineEnvelope"
+        "401": *a1
+        "409":
+          description: A live definition with this name already exists.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a13
+        "501": *a9
+  /api/vaccinations/custom/{id}:
+    patch:
+      tags:
+        - Records
+      summary: Edit an own vaccine
+      description: Changes one definition. Owner-scoped; an unknown id 404s.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCustomVaccineRequest"
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateCustomVaccineEnvelope"
+        "401": *a1
+        "404":
+          description: No such definition on this record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: A live definition with this name already exists.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a9
+    delete:
+      tags:
+        - Records
+      summary: Remove an own vaccine
+      description: Soft-deletes one definition. Doses logged against it stay, on their `vaccineName`.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Removed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteCustomVaccineEnvelope"
+        "401": *a1
+        "404":
+          description: No such definition on this record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a9
   /api/vaccinations:
     get:
       tags:
@@ -15472,7 +15887,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListVaccinationsEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -15499,10 +15914,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateVaccinationEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
-        "429": *a12
+        "429": *a13
   /api/vaccinations/{id}:
     get:
       tags:
@@ -15523,8 +15938,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetVaccinationEnvelope"
         "401": *a1
-        "403": *a11
-        "404": &a32
+        "403": *a12
+        "404": &a33
           description: Vaccination not found (or owned by another user).
           content:
             application/json:
@@ -15558,8 +15973,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateVaccinationEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a32
+        "403": *a12
+        "404": *a33
         "422": *a4
         "429": *a5
     delete:
@@ -15583,8 +15998,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteVaccinationEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a32
+        "403": *a12
+        "404": *a33
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/restore:
@@ -15608,8 +16023,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/RestoreVaccinationEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a32
+        "403": *a12
+        "404": *a33
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/booster:
@@ -15675,7 +16090,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": *a32
+        "404": *a33
         "422": *a4
         "429": *a5
   /api/vaccinations/suggest:
@@ -15703,7 +16118,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/VaccinationSuggestEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/links:
@@ -15733,7 +16148,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LinkVaccinationEnvelope"
         "401": *a1
-        "404": *a32
+        "404": *a33
         "422": *a4
         "429": *a5
     delete:
@@ -15762,7 +16177,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnlinkVaccinationEnvelope"
         "401": *a1
-        "404": *a32
+        "404": *a33
         "422": *a4
         "429": *a5
   /api/illness/episodes:
@@ -15795,7 +16210,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListIllnessEpisodesEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -15821,7 +16236,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateIllnessEpisodeEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -15845,8 +16260,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetIllnessEpisodeEnvelope"
         "401": *a1
-        "403": *a11
-        "404": &a33
+        "403": *a12
+        "404": &a34
           description: Illness episode not found (or owned by another user).
           content:
             application/json:
@@ -15880,8 +16295,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateIllnessEpisodeEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a33
+        "403": *a12
+        "404": *a34
         "422": *a4
         "429": *a5
     delete:
@@ -15904,8 +16319,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteIllnessEpisodeEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a33
+        "403": *a12
+        "404": *a34
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/restore:
@@ -15932,8 +16347,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/RestoreIllnessEpisodeEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a33
+        "403": *a12
+        "404": *a34
         "409": *a7
         "422": *a4
         "429": *a5
@@ -15965,8 +16380,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ResolveIllnessEpisodeEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a33
+        "403": *a12
+        "404": *a34
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/day-logs:
@@ -16016,8 +16431,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetIllnessDayLogEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a33
+        "403": *a12
+        "404": *a34
         "422": *a4
         "429": *a5
     post:
@@ -16053,8 +16468,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpsertIllnessDayLogCreatedEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a33
+        "403": *a12
+        "404": *a34
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/correlation:
@@ -16081,7 +16496,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/IllnessCorrelationEnvelope"
         "401": *a1
-        "404": *a33
+        "404": *a34
         "422": *a4
         "429": *a5
   /api/illness/insights:
@@ -16154,7 +16569,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListMentalHealthAssessmentsEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -16187,7 +16602,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateMentalHealthAssessmentEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -16214,7 +16629,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetMentalHealthAssessmentEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/allergies:
@@ -16247,7 +16662,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListAllergiesEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -16272,10 +16687,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateAllergyEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
-        "429": *a12
+        "429": *a13
   /api/allergies/{id}:
     get:
       tags:
@@ -16296,8 +16711,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetAllergyEnvelope"
         "401": *a1
-        "403": *a11
-        "404": &a34
+        "403": *a12
+        "404": &a35
           description: Allergy not found (or owned by another user).
           content:
             application/json:
@@ -16330,8 +16745,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateAllergyEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a34
+        "403": *a12
+        "404": *a35
         "422": *a4
         "429": *a5
     delete:
@@ -16354,8 +16769,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteAllergyEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a34
+        "403": *a12
+        "404": *a35
         "422": *a4
         "429": *a5
   /api/family-history:
@@ -16379,7 +16794,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListFamilyHistoryEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -16404,7 +16819,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateFamilyHistoryEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "409": *a7
         "422": *a4
         "429": *a5
@@ -16428,8 +16843,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetFamilyHistoryEnvelope"
         "401": *a1
-        "403": *a11
-        "404": &a35
+        "403": *a12
+        "404": &a36
           description: Family history entry not found (or owned by another user).
           content:
             application/json:
@@ -16462,8 +16877,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateFamilyHistoryEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a35
+        "403": *a12
+        "404": *a36
         "422": *a4
         "429": *a5
     delete:
@@ -16486,8 +16901,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteFamilyHistoryEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a35
+        "403": *a12
+        "404": *a36
         "422": *a4
         "429": *a5
   /api/documents/inbound:
@@ -16602,7 +17017,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InboundDocumentListEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -16885,7 +17300,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentUsageEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/documents/inbound/bulk:
@@ -16932,7 +17347,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InboundDocumentDetailEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     patch:
@@ -17051,7 +17466,7 @@ paths:
                 type: string
                 format: binary
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/documents/inbound/{id}/thumbnail:
@@ -17080,7 +17495,7 @@ paths:
                 type: string
                 format: binary
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/documents/inbound/{id}/extract:
@@ -17112,7 +17527,7 @@ paths:
           required: true
           schema:
             type: string
-        - &a37
+        - &a38
           name: Prefer
           in: header
           required: false
@@ -17137,9 +17552,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InboundExtractEnvelope"
-        "202": *a36
+        "202": *a37
         "401": *a1
-        "403": &a38
+        "403": &a39
           description: "AI refusal: the `documentAi` capability is unavailable for this record. The envelope carries
             `meta.errorCode`, `meta.capability` and `meta.reason` (one of `AiUnavailableReason`).
             `assistant.disabled.documentAi` — the operator turned off reading documents, or every AI feature (the master
@@ -17163,7 +17578,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "503": &a39
+        "503": &a40
           description: "`ai.unavailable` — the inputs behind the AI capability could not be read, and the answer failed closed.
             Nothing was sent. Retry later."
           content:
@@ -17193,7 +17608,7 @@ paths:
           required: true
           schema:
             type: string
-        - *a37
+        - *a38
       requestBody:
         required: false
         content:
@@ -17229,12 +17644,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentSuggestEnvelope"
-        "202": *a36
+        "202": *a37
         "401": *a1
-        "403": *a38
+        "403": *a39
         "422": *a4
         "429": *a5
-        "503": *a39
+        "503": *a40
   /api/documents/inbound/{id}/summary:
     post:
       tags:
@@ -17284,7 +17699,7 @@ paths:
             type: boolean
             default: false
           description: With `persist=true`, explicitly replace an existing stored summary.
-        - *a37
+        - *a38
       requestBody:
         required: false
         content:
@@ -17320,12 +17735,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentSummaryEnvelope"
-        "202": *a36
+        "202": *a37
         "401": *a1
-        "403": *a38
+        "403": *a39
         "422": *a4
         "429": *a5
-        "503": *a39
+        "503": *a40
   /api/documents/inbound/{id}/index:
     post:
       tags:
@@ -17351,7 +17766,7 @@ paths:
           required: true
           schema:
             type: string
-        - *a37
+        - *a38
       requestBody:
         required: false
         content:
@@ -17387,12 +17802,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentIndexEnvelope"
-        "202": *a36
+        "202": *a37
         "401": *a1
-        "403": *a38
+        "403": *a39
         "422": *a4
         "429": *a5
-        "503": *a39
+        "503": *a40
   /api/documents/inbound/{id}/chat:
     post:
       tags:
@@ -17432,10 +17847,10 @@ paths:
                 type: string
                 description: "SSE frames: `data: <json>\\n\\n`. See the operation description for the per-`type` frame shapes."
         "401": *a1
-        "403": *a38
+        "403": *a39
         "422": *a4
         "429": *a5
-        "503": *a39
+        "503": *a40
     get:
       tags:
         - Documents
@@ -17498,10 +17913,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentReindexEnvelope"
         "401": *a1
-        "403": *a38
+        "403": *a39
         "422": *a4
         "429": *a5
-        "503": *a39
+        "503": *a40
   /api/documents/inbound/{id}/facts/{factId}:
     patch:
       tags:
@@ -17583,7 +17998,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListCustomMetricsEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     post:
@@ -17608,7 +18023,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateCustomMetricResponse"
         "401": *a1
-        "409": &a41
+        "409": &a42
           description: A custom metric with this name already exists for the caller.
           content:
             application/json:
@@ -17636,8 +18051,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetCustomMetricResponse"
         "401": *a1
-        "403": *a11
-        "404": &a40
+        "403": *a12
+        "404": &a41
           description: Custom metric not found (or owned by another user).
           content:
             application/json:
@@ -17671,8 +18086,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateCustomMetricResponse"
         "401": *a1
-        "404": *a40
-        "409": *a41
+        "404": *a41
+        "409": *a42
         "422": *a4
         "429": *a5
     delete:
@@ -17695,7 +18110,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteCustomMetricResponse"
         "401": *a1
-        "404": *a40
+        "404": *a41
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries:
@@ -17738,8 +18153,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListCustomMetricEntriesEnvelope"
         "401": *a1
-        "403": *a11
-        "404": *a40
+        "403": *a12
+        "404": *a41
         "422": *a4
         "429": *a5
     post:
@@ -17768,10 +18183,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateCustomMetricEntryResponse"
         "401": *a1
-        "404": *a40
+        "404": *a41
         "409": *a7
         "422": *a4
-        "429": *a12
+        "429": *a13
   /api/custom-metrics/{id}/entries/{entryId}:
     patch:
       tags:
@@ -17804,7 +18219,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateCustomMetricEntryResponse"
         "401": *a1
-        "404": &a42
+        "404": &a43
           description: Custom metric entry not found (or owned by another user).
           content:
             application/json:
@@ -17837,7 +18252,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteCustomMetricEntryResponse"
         "401": *a1
-        "404": *a42
+        "404": *a43
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries/restore:
@@ -18249,7 +18664,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientOverviewEnvelope"
         "401": *a1
-        "403": &a43
+        "403": &a44
           description: >-
             The opt-in `nutrients` module is off for this account (errorCode `module.disabled`). Stop syncing and do not
             retry; offer the enable-in-settings hint. Only run the HealthKit read-authorization flow while the module is
@@ -18304,7 +18719,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientDailySeriesEnvelope"
         "401": *a1
-        "403": *a43
+        "403": *a44
         "422": *a4
         "429": *a5
   /api/nutrients/water:
@@ -18333,7 +18748,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientWaterWriteEnvelope"
         "401": *a1
-        "403": *a43
+        "403": *a44
         "409": *a7
         "422": *a4
         "429": *a5
@@ -18835,26 +19250,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WithingsCredentialsUpdateEnvelope"
-        "400": &a44
+        "400": &a45
           description: Body is not parseable JSON.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "413": &a45
+        "413": &a46
           description: Body exceeds 64 KiB.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "415": &a46
+        "415": &a47
           description: Content-Type is not `application/json`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": &a47
+        "422": &a48
           description: "`clientId` and `clientSecret` are both required and each must be 1–200 characters. The envelope carries a
             single fixed message, not per-field issues."
           content:
@@ -19040,11 +19455,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FitbitCredentialsUpdateEnvelope"
-        "400": *a44
+        "400": *a45
         "401": *a1
-        "413": *a45
-        "415": *a46
-        "422": *a47
+        "413": *a46
+        "415": *a47
+        "422": *a48
         "429": *a5
     delete:
       tags:
@@ -19187,11 +19602,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GoogleHealthCredentialsUpdateEnvelope"
-        "400": *a44
+        "400": *a45
         "401": *a1
-        "413": *a45
-        "415": *a46
-        "422": *a47
+        "413": *a46
+        "415": *a47
+        "422": *a48
         "429": *a5
     delete:
       tags:
@@ -19344,11 +19759,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OuraCredentialsUpdateEnvelope"
-        "400": *a44
+        "400": *a45
         "401": *a1
-        "413": *a45
-        "415": *a46
-        "422": *a47
+        "413": *a46
+        "415": *a47
+        "422": *a48
         "429": *a5
     delete:
       tags:
@@ -19424,21 +19839,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/OuraTestEnvelope"
         "401": *a1
-        "422": &a48
+        "422": &a49
           description: No usable connection for this provider — nothing stored, or the stored grant could no longer be resolved
             into an access token. `meta.errorCode` = `not_configured`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": &a49
+        "429": &a50
           description: More than 5 requests in 60 s from this user. `meta.errorCode` = `rate_limited_self` — this is the local
             limiter, distinct from a `rate_limited` 502 which is the provider's.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "502": &a50
+        "502": &a51
           description: "The probe did not complete. `meta.errorCode` names the class: `credentials_rejected` (the provider
             answered 401/403 — the stored grant is gone), `rate_limited` (the PROVIDER answered 429, which is not this
             endpoint's own limiter), `upstream_error` (5xx), `timeout` (no answer within 5 s), `connection_failed`
@@ -19483,11 +19898,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PolarCredentialsUpdateEnvelope"
-        "400": *a44
+        "400": *a45
         "401": *a1
-        "413": *a45
-        "415": *a46
-        "422": *a47
+        "413": *a46
+        "415": *a47
+        "422": *a48
         "429": *a5
     delete:
       tags:
@@ -19563,9 +19978,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/PolarTestEnvelope"
         "401": *a1
-        "422": *a48
-        "429": *a49
-        "502": *a50
+        "422": *a49
+        "429": *a50
+        "502": *a51
   /api/strava/credentials:
     get:
       tags:
@@ -19601,11 +20016,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StravaCredentialsUpdateEnvelope"
-        "400": *a44
+        "400": *a45
         "401": *a1
-        "413": *a45
-        "415": *a46
-        "422": *a47
+        "413": *a46
+        "415": *a47
+        "422": *a48
         "429": *a5
     delete:
       tags:
@@ -19683,9 +20098,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/StravaTestEnvelope"
         "401": *a1
-        "422": *a48
-        "429": *a49
-        "502": *a50
+        "422": *a49
+        "429": *a50
+        "502": *a51
   /api/integrations/status:
     get:
       tags:
@@ -19721,7 +20136,7 @@ paths:
                 $ref: "#/components/schemas/FitbitResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a49
+        "429": *a50
   /api/integrations/fitbit/test:
     post:
       tags:
@@ -19739,9 +20154,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/FitbitIntegrationTestEnvelope"
         "401": *a1
-        "422": *a48
-        "429": *a49
-        "502": *a50
+        "422": *a49
+        "429": *a50
+        "502": *a51
   /api/integrations/google-health/resume:
     post:
       tags:
@@ -19758,7 +20173,7 @@ paths:
                 $ref: "#/components/schemas/GoogleHealthResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a49
+        "429": *a50
   /api/integrations/google-health/test:
     post:
       tags:
@@ -19791,9 +20206,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a48
-        "429": *a49
-        "502": *a50
+        "422": *a49
+        "429": *a50
+        "502": *a51
   /api/integrations/whoop/resume:
     post:
       tags:
@@ -19810,7 +20225,7 @@ paths:
                 $ref: "#/components/schemas/WhoopResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a49
+        "429": *a50
   /api/integrations/whoop/test:
     post:
       tags:
@@ -19827,9 +20242,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/WhoopIntegrationTestEnvelope"
         "401": *a1
-        "422": *a48
-        "429": *a49
-        "502": *a50
+        "422": *a49
+        "429": *a50
+        "502": *a51
   /api/integrations/withings/resume:
     post:
       tags:
@@ -19847,7 +20262,7 @@ paths:
                 $ref: "#/components/schemas/WithingsResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a49
+        "429": *a50
   /api/integrations/withings/test:
     post:
       tags:
@@ -19865,8 +20280,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/WithingsIntegrationTestEnvelope"
         "401": *a1
-        "422": *a48
-        "429": *a49
+        "422": *a49
+        "429": *a50
         "502":
           description: "The probe did not complete. The shared codes apply (`credentials_rejected`, `rate_limited`,
             `upstream_error`, `timeout`, `connection_failed`) and this path adds one of its own:
@@ -19899,7 +20314,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DailyDigestEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/daily/digest/dismiss:
@@ -19990,7 +20405,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DashboardSummaryEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/dashboard/widgets:
@@ -20009,7 +20424,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DashboardLayout"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
     put:
@@ -20043,7 +20458,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a15
+        "422": *a16
         "429": *a5
     delete:
       tags:
@@ -20061,6 +20476,82 @@ paths:
         "401": *a1
         "422": *a4
         "429": *a5
+  /api/managed-profiles/{id}/handover:
+    post:
+      tags:
+        - Account sharing
+      summary: Create a handover link for a managed profile
+      description: "Mints the one-time link that lets the person a managed profile describes take it over as their own
+        account. No data moves: claiming sets credentials on the profile's own record. Each guardian's access afterwards
+        follows the proposal recorded here unless the new owner changes it. Creating a new link withdraws an open one.
+        Pending MANAGE invitations on the profile are withdrawn when it is claimed. Cookie-only and step-up gated, like
+        every act on a managed profile. Refused on an instance that allows single sign-on only."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateManagedProfileHandoverRequest"
+      responses:
+        "201":
+          description: The link, shown once.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedProfileHandoverEnvelope"
+        "401": *a1
+        "403":
+          description: "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode:
+            managed_profile.not_found`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a9
+    delete:
+      tags:
+        - Account sharing
+      summary: Withdraw the open handover link
+      description: Withdraws the profile's open handover link, if there is one; the link then answers like any unknown one.
+        Cookie-only; no step-up, because withdrawing only takes something away.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Withdrawn, or there was no open link.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevokeManagedProfileHandoverEnvelope"
+        "401": *a1
+        "404":
+          description: "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode:
+            managed_profile.not_found`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a9
   /api/auth/me:
     get:
       tags:
@@ -20106,7 +20597,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecordActivityEnvelope"
         "401": *a1
-        "403": &a51
+        "403": &a52
           description: Refused. `meta.errorCode` is `sharing.not_permitted` when the request was made while acting on another
             account (grant management is never delegable), or `sharing.access.denied` when the caller may not act as the
             account they named. The latter is byte-identical for an account that does not exist and one that granted
@@ -20131,7 +20622,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AccountGrantListEnvelope"
         "401": *a1
-        "403": *a51
+        "403": *a52
         "422": *a4
         "429": *a5
     post:
@@ -20233,7 +20724,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AcceptedAccountGrantEnvelope"
         "401": *a1
-        "403": *a51
+        "403": *a52
         "404":
           description: No such invitation for this account.
           content:
@@ -20277,7 +20768,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RevokedAccountGrantEnvelope"
         "401": *a1
-        "403": *a51
+        "403": *a52
         "404":
           description: No such grant on this account's record.
           content:
@@ -20318,7 +20809,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RenouncedAccountGrantEnvelope"
         "401": *a1
-        "403": *a51
+        "403": *a52
         "404":
           description: No such grant held by this account.
           content:
@@ -20700,7 +21191,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a51
+        "403": *a52
         "409":
           description: "The record this browser session is on is not the record the request asserted. `meta.errorCode` is
             `sharing.session.changed`. It is not a refusal of access — the caller may well be entitled to both records —
@@ -21030,7 +21521,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionListEnvelope"
         "401": *a1
-        "403": &a52
+        "403": &a53
           description: The operator has disabled the API instance-wide. Every route in this module refuses while that setting is
             off, for a cookie session as well as for a Bearer token; it is not a per-user permission and retrying will
             not help.
@@ -21063,7 +21554,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionRevokeEnvelope"
         "401": *a1
-        "403": *a52
+        "403": *a53
         "404":
           description: No live connection with this id for this caller — also the answer for an already-revoked one, so a repeat
             revoke is 404 rather than an idempotent 200.
@@ -21090,7 +21581,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenListEnvelope"
         "401": *a1
-        "403": *a52
+        "403": *a53
         "422": *a4
         "429": *a5
     post:
@@ -21123,7 +21614,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a52
+        "403": *a53
         "413":
           description: Body exceeds 16 KiB.
           content:
@@ -21166,7 +21657,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenRevokeEnvelope"
         "401": *a1
-        "403": *a52
+        "403": *a53
         "404":
           description: No `health:read` token with this id for this caller. An already-revoked token is still found, so a repeat
             revoke answers 200.
@@ -21193,7 +21684,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecordSettingsEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/record-settings/integrations:
@@ -21213,7 +21704,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecordSettingsIntegrationsEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "422": *a4
         "429": *a5
   /api/record-settings/{family}:
@@ -21224,7 +21715,7 @@ paths:
       description: Returns the named family's resolved settings for the record the session is acting on. Cookie session or
         Bearer, while acting on a managed record the caller guards.
       parameters:
-        - &a53
+        - &a54
           name: family
           in: path
           required: true
@@ -21248,7 +21739,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetRecordSettingsFamilyEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: Either the path named a family outside the closed set, or the record row itself is gone. The two are not
             distinguished, and the first is answered before the caller is authenticated at all.
@@ -21268,7 +21759,7 @@ paths:
         ride the audit row. Body capped at 64 KiB. Cookie session or Bearer, while acting on a managed record the caller
         guards.
       parameters:
-        - *a53
+        - *a54
       requestBody:
         required: true
         content:
@@ -21289,7 +21780,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a11
+        "403": *a12
         "404":
           description: The path named a family outside the closed set. Answered before authentication.
           content:
@@ -21402,9 +21893,35 @@ paths:
               schema:
                 $ref: "#/components/schemas/AchievementsEnvelope"
         "401": *a1
-        "403": *a13
+        "403": *a14
         "422": *a4
         "429": *a5
+  /api/environment/preferences:
+    patch:
+      tags:
+        - Environment
+      summary: Change the environment switches
+      description: Turns the air-quality part of the module on or off for this account (on by default). Off means the nightly
+        fetch skips the air-quality feed and the overview leaves the fields out; days already stored are kept.
+        Module-gated. Strict body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnvironmentPreferencesRequest"
+      responses:
+        "200":
+          description: The stored switches.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvironmentPreferencesEnvelope"
+        "401": *a1
+        "403": *a20
+        "422": *a4
+        "429": *a5
+        "501": *a9
   /api/environment:
     get:
       tags:
@@ -21420,7 +21937,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EnvironmentOverviewEnvelope"
         "401": *a1
-        "403": *a19
+        "403": *a20
         "422": *a4
         "429": *a5
   /api/environment/home:
@@ -21457,7 +21974,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EnvironmentHomeEnvelope"
         "401": *a1
-        "403": *a19
+        "403": *a20
         "413":
           description: Body exceeds 4 KiB.
           content:
@@ -21511,7 +22028,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EnvironmentBackfillEnvelope"
         "401": *a1
-        "403": *a19
+        "403": *a20
         "409":
           description: No home location is set, so there is nothing to resolve the days against. `meta.errorCode` =
             `environment.no_home`.
@@ -21570,7 +22087,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EnvironmentGeocodeEnvelope"
         "401": *a1
-        "403": *a19
+        "403": *a20
         "422":
           description: "`q` was missing, empty after trimming, or longer than 120 characters. `meta.errorCode` =
             `environment.invalid`."
@@ -21609,7 +22126,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateEnvironmentTravelEnvelope"
         "401": *a1
-        "403": *a19
+        "403": *a20
         "413":
           description: Body exceeds 4 KiB.
           content:
@@ -21662,7 +22179,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteEnvironmentTravelEnvelope"
         "401": *a1
-        "403": *a19
+        "403": *a20
         "404":
           description: No such override for this account. `meta.errorCode` = `environment.travel.not_found`. Also the answer for
             an id owned by somebody else — existence is not leaked.
@@ -21805,13 +22322,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupDocument"
-        "403": &a54
+        "403": &a55
           description: Caller is not an admin. `requireAdmin()` is cookie-only, so a Bearer token lands here whatever its scope.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": &a55
+        "404": &a56
           description: No stored copy with this id.
           content:
             application/json:
@@ -21885,8 +22402,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "403": *a54
-        "404": *a55
+        "403": *a55
+        "404": *a56
         "409":
           description: A restore of the same account is already queued or running (`meta.errorCode` = `backup.restore.active`,
             `meta.jobId` names it), the stored copy was replaced by a newer one while it was being checked
@@ -21930,7 +22447,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupRestoreJobListResponse"
-        "403": *a54
+        "403": *a55
   /api/admin/backups/restores/{jobId}:
     get:
       tags:
@@ -21953,7 +22470,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupRestoreJobResponse"
-        "403": *a54
+        "403": *a55
         "404":
           description: No restore job with this id.
           content:
@@ -21972,7 +22489,7 @@ paths:
         request leaves the server. Needs neither the Documents module nor the list: with the list unset, `available` is
         false and any connection still stored is listed (with `originAllowed: false`) so it can be removed. Cookie
         session only; not delegable."
-      security: &a56
+      security: &a57
         - cookieAuth: []
       responses:
         "200":
@@ -21982,7 +22499,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourcesStatusEnvelope"
         "401": *a1
-        "403": &a57
+        "403": &a58
           description: "Refused before any request to the source: `documents.sources.browserOnly` for a Bearer caller,
             `sharing.not_permitted` while acting on another person's record (a delegate or guardian never uses the
             owner's archive), or `module.disabled` when the Documents module is off."
@@ -22005,9 +22522,9 @@ paths:
         `documents.sources.tokenRequired`), so a stored token is never sent to an address it was not saved for. A Papra
         organization id is letters, digits, `_` and `-`. The token is stored encrypted (AES-256-GCM) and never returned.
         Ten saves and tests a minute per person. Cookie session only; not delegable."
-      security: *a56
+      security: *a57
       parameters:
-        - &a58
+        - &a59
           name: system
           in: path
           required: true
@@ -22046,8 +22563,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceConnectionEnvelope"
         "401": *a1
-        "403": *a57
-        "404": &a59
+        "403": *a58
+        "404": &a60
           description: "`documents.sources.unavailable`: the operator has not listed any origin in `DOCUMENT_SOURCE_ORIGINS`, so
             the picker is off. `documents.sources.notConnected`: no connection is saved for this system.
             `documents.sources.notFound`: the source has no such document, or (Papra) no such organization, including
@@ -22066,7 +22583,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "502": &a60
+        "502": &a61
           description: "The source could not answer usefully, with the reason in `meta.errorCode` and, when the source answered at
             all, its HTTP status in `meta.upstreamStatus` (its body is never passed on): `documents.sources.unreachable`
             (no connection, timeout, or a destination refused at dial time), `documents.sources.redirected` (the source
@@ -22085,9 +22602,9 @@ paths:
       description: Deletes the caller's connection for this system, and its token with it. Works even after the operator
         removed the origin from the list, and with the Documents module switched off. `disconnected` is false when there
         was nothing to delete. Cookie session only; not delegable.
-      security: *a56
+      security: *a57
       parameters:
-        - *a58
+        - *a59
       responses:
         "200":
           description: Removed, or there was nothing to remove.
@@ -22096,7 +22613,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceDisconnectEnvelope"
         "401": *a1
-        "403": *a57
+        "403": *a58
         "422": *a4
         "429": *a5
   /api/documents/sources/{system}/test:
@@ -22107,9 +22624,9 @@ paths:
       description: One request to the source with the stored token. Answers `ok` with the round-trip time and stamps
         `lastVerifiedAt`, or the reason in `meta.errorCode`. Shares the save's allowance of ten a minute. Cookie session
         only; not delegable.
-      security: *a56
+      security: *a57
       parameters:
-        - *a58
+        - *a59
       responses:
         "200":
           description: The source answered.
@@ -22118,9 +22635,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceTestEnvelope"
         "401": *a1
-        "403": *a57
-        "404": *a59
-        "422": &a61
+        "403": *a58
+        "404": *a60
+        "422": &a62
           description: "`documents.sources.originNotAllowed`: the base address's origin is not on the operator's list (checked on
             every request, so a connection saved earlier is cut off once its origin is removed), or another validation
             failure."
@@ -22129,7 +22646,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "502": *a60
+        "502": *a61
   /api/documents/sources/{system}/tags:
     get:
       tags:
@@ -22137,9 +22654,9 @@ paths:
       summary: Tags of a connected archive
       description: The source's tags for the picker's filter, the first 250 by name, in the source's own ids. Shares the
         search allowance of sixty a minute. Cookie session only; not delegable.
-      security: *a56
+      security: *a57
       parameters:
-        - *a58
+        - *a59
       responses:
         "200":
           description: The tags.
@@ -22148,11 +22665,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceTagsEnvelope"
         "401": *a1
-        "403": *a57
-        "404": *a59
-        "422": *a61
+        "403": *a58
+        "404": *a60
+        "422": *a62
         "429": *a5
-        "502": *a60
+        "502": *a61
   /api/documents/sources/{system}/search:
     get:
       tags:
@@ -22166,9 +22683,9 @@ paths:
         under that source key: `new`, `imported` with the vault document's `documentId`, or `deleted` (deleted in
         HealthLog; importing it again stores nothing). Nothing is stored. Sixty searches a minute, shared with the tag
         read. Cookie session only; not delegable."
-      security: *a56
+      security: *a57
       parameters:
-        - *a58
+        - *a59
         - name: q
           in: query
           required: false
@@ -22209,11 +22726,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceSearchEnvelope"
         "401": *a1
-        "403": *a57
-        "404": *a59
-        "422": *a61
+        "403": *a58
+        "404": *a60
+        "422": *a62
         "429": *a5
-        "502": *a60
+        "502": *a61
   /api/documents/sources/{system}/import:
     post:
       tags:
@@ -22232,9 +22749,9 @@ paths:
         fetched), including a duplicate. `kind` sets the document type (default OTHER). Automatic AI reading follows the
         person's own setting. Counts against the person's upload allowance (60 an hour) and storage quota. 201 for a new
         document, 200 otherwise. Cookie session only; not delegable."
-      security: *a56
+      security: *a57
       parameters:
-        - *a58
+        - *a59
       requestBody:
         required: true
         content:
@@ -22292,7 +22809,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceImportEnvelope"
         "401": *a1
-        "403": *a57
+        "403": *a58
         "404":
           description: "`documents.sources.unavailable`: the operator has not listed any origin in `DOCUMENT_SOURCE_ORIGINS`, so
             the picker is off. `documents.sources.notConnected`: no connection is saved for this system.
@@ -22323,7 +22840,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a61
+        "422": *a62
         "429":
           description: "`documents.inbound.rateLimited` (the person's hourly upload allowance, with the rate-limit headers) or
             `documents.inbound.uploadBusy` (too many uploads in progress; `Retry-After: 1`)."
@@ -22331,7 +22848,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "502": *a60
+        "502": *a61
   /api/symptoms/definitions:
     get:
       tags:
@@ -22355,7 +22872,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSymptomDefinitionsEnvelope"
         "401": *a1
-        "403": &a62
+        "403": &a63
           description: >-
             `illness.disabled`: the record has the illness module switched off (or the operator turned it off
             server-wide); symptoms ride that module.
@@ -22398,7 +22915,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a62
+        "403": *a63
         "409": *a7
         "422": *a4
         "429": *a5
@@ -22428,8 +22945,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a62
-        "404": &a63
+        "403": *a63
+        "404": &a64
           description: "`symptoms.definition.notFound`: no definition with this id on the record."
           content:
             application/json:
@@ -22463,8 +22980,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a62
-        "404": *a63
+        "403": *a63
+        "404": *a64
         "422": *a4
         "429": *a5
   /api/symptoms/events:
@@ -22513,7 +23030,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSymptomEventsEnvelope"
         "401": *a1
-        "403": *a62
+        "403": *a63
         "422": *a4
         "429": *a5
     post:
@@ -22539,8 +23056,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSymptomEventEnvelope"
         "401": *a1
-        "403": *a62
-        "404": *a63
+        "403": *a63
+        "404": *a64
         "409": *a7
         "422": *a4
         "429": *a5
@@ -22570,8 +23087,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSymptomEventEnvelope"
         "401": *a1
-        "403": *a62
-        "404": &a64
+        "403": *a63
+        "404": &a65
           description: "`symptoms.event.notFound`: no occurrence with this id on the record."
           content:
             application/json:
@@ -22598,8 +23115,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSymptomEventEnvelope"
         "401": *a1
-        "403": *a62
-        "404": *a64
+        "403": *a63
+        "404": *a65
         "422": *a4
         "429": *a5
   /api/bugreport:
@@ -23478,6 +23995,52 @@ components:
             server-side recovery.
       required:
         - passphrase
+    ProfileClaimPreviewRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          description: The `hlp_` token from the handover link. Sent in the body, never in a URL.
+      required:
+        - token
+      additionalProperties: false
+    ProfileClaimRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          description: The `hlp_` token from the handover link. Sent in the body, never in a URL.
+        username:
+          type: string
+        email:
+          type: string
+          description: "Required: the account needs a way back in."
+        password:
+          type: string
+        guardians:
+          type: array
+          items:
+            type: object
+            properties:
+              grantId:
+                type: string
+              decision:
+                type: string
+                enum:
+                  - end
+                  - read
+                  - manage
+            required:
+              - grantId
+              - decision
+          description: The new owner's decision per guardian.
+      required:
+        - token
+        - username
+        - email
+        - password
+        - guardians
+      additionalProperties: false
     LoginPasswordRequest:
       type: object
       properties:
@@ -24307,16 +24870,17 @@ components:
           items:
             $ref: "#/components/schemas/AppleHealthBatchEntry"
         syncTrigger:
-          description: "Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, or a push wake).
-            Recorded on the ingest wide event and kept on the account as `lastSyncTrigger` — plus `lastBackgroundSyncAt`
-            for a `background` or `push` trigger — both readable from `GET /api/integrations/healthkit`. It does not
-            affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66 clients
-            omit it."
+          description: 'Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, a push wake, or
+            a user-initiated `manual` "Sync all" run, since v1.42). Recorded on the ingest wide event and kept on the
+            account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both
+            readable from `GET /api/integrations/healthkit`. It does not affect dedup, attribution, or how any sample is
+            stored. Optional and backward-compatible: pre-#66 clients omit it.'
           type: string
           enum:
             - foreground
             - background
             - push
+            - manual
       required:
         - entries
       description: Apple Health batch ingest. ≤500 entries per call; idempotent via `Idempotency-Key`.
@@ -27278,6 +27842,18 @@ components:
       required:
         - rating
       description: Per-message helpful/unhelpful feedback (v1.4.23 H7). Optional `reason` is free-form prose, capped at 200 chars.
+    AdminMeasurementMaintenanceRequest:
+      type: object
+      properties:
+        vacuum:
+          default: true
+          description: Run `VACUUM (ANALYZE)` on `measurements`.
+          type: boolean
+        reindex:
+          default: true
+          description: Rebuild every index of `measurements` with `REINDEX INDEX CONCURRENTLY`, largest first, one at a time.
+          type: boolean
+      additionalProperties: false
     InsightsPregenerateRequest:
       type: object
       properties: {}
@@ -29482,6 +30058,53 @@ components:
       additionalProperties: false
       description: Partial edit; an omitted key leaves the column untouched, an explicit null clears it, and a body naming
         nothing is a 422.
+    CreateCustomVaccineRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        components:
+          type: array
+          items:
+            type: string
+        typicalSeriesDoses:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        boosterIntervalMonths:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+      required:
+        - name
+        - components
+      additionalProperties: false
+    UpdateCustomVaccineRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        components:
+          type: array
+          items:
+            type: string
+        typicalSeriesDoses:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        boosterIntervalMonths:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+      additionalProperties: false
     CreateVaccinationRequest:
       type: object
       properties:
@@ -31549,6 +32172,44 @@ components:
         - version
       description: PUT body for the dashboard layout — the layout fields plus the optional optimistic-concurrency base token
         (`baseUpdatedAt`). Omit the token for the legacy unconditional write.
+    CreateManagedProfileHandoverRequest:
+      type: object
+      properties:
+        expiresInDays:
+          default: 7
+          description: How long the link stays valid.
+          anyOf:
+            - type: number
+              const: 1
+            - type: number
+              const: 7
+            - type: number
+              const: 14
+        proposals:
+          type: array
+          items:
+            type: object
+            properties:
+              grantId:
+                type: string
+                description: The guardian's MANAGE grant.
+              proposal:
+                $ref: "#/components/schemas/ManagedProfileHandoverProposal"
+            required:
+              - grantId
+              - proposal
+          description: One proposal per active guardian. A guardian left out is proposed `read`.
+      required:
+        - proposals
+      additionalProperties: false
+    ManagedProfileHandoverProposal:
+      type: string
+      enum:
+        - end
+        - read
+        - manage
+      description: "What a guardian's access becomes after the handover: ended, view only, or still managing. The new owner
+        confirms or changes it when claiming."
     AccountGrantInvite:
       type: object
       properties:
@@ -32438,6 +33099,15 @@ components:
         - layout
       additionalProperties: false
       description: The full insights layout. Unlike the other five families this one is a replacement rather than a merge.
+    EnvironmentPreferencesRequest:
+      type: object
+      properties:
+        airQualityEnabled:
+          type: boolean
+          description: Fetch and show air quality, pollen and UV for this account.
+      required:
+        - airQualityEnabled
+      additionalProperties: false
     EnvironmentHomeRequest:
       type: object
       properties:
@@ -32951,9 +33621,9 @@ components:
                 — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
-                modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
-                private_origin_not_approved, private_origin_not_grantable, rate_limited_self, too_many_rows,
-                unreadable_json, upstream_invalid_json, vapid_not_configured"
+                modules_conflict, mood_tag_layout_conflict, not_configured, not_implemented,
+                notification_prefs_conflict, oidc_only, private_origin_not_approved, private_origin_not_grantable,
+                rate_limited_self, too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
               type: string
             capability:
               description: "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`,
@@ -35310,6 +35980,13 @@ components:
                     - type: string
                       minLength: 1
                     - type: "null"
+                homeLocationEncrypted:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                    - type: "null"
+                environmentAirQualityEnabled:
+                  type: boolean
                 timezone:
                   type: string
                 locale:
@@ -35531,6 +36208,7 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
               notes:
                 anyOf:
                   - type: string
@@ -36925,6 +37603,7 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
               externalId:
                 anyOf:
                   - type: string
@@ -37186,6 +37865,14 @@ components:
                 anyOf:
                   - type: string
                   - type: "null"
+              sourceValue:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              sourceUnit:
+                anyOf:
+                  - type: string
+                  - type: "null"
               takenAt:
                 type: string
                 minLength: 1
@@ -37255,6 +37942,10 @@ components:
                   - type: "null"
               hidden:
                 type: boolean
+              analyteKey:
+                anyOf:
+                  - type: string
+                  - type: "null"
               context:
                 anyOf:
                   - type: string
@@ -37720,6 +38411,7 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
               externalId:
                 anyOf:
                   - type: string
@@ -38936,6 +39628,10 @@ components:
                 anyOf:
                   - type: string
                   - type: "null"
+              customVaccineId:
+                anyOf:
+                  - type: string
+                  - type: "null"
               noteEncrypted:
                 anyOf:
                   - type: string
@@ -39755,6 +40451,7 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
               externalId:
                 anyOf:
                   - type: string
@@ -39798,11 +40495,22 @@ components:
                 type: string
                 pattern: ^\d{4}-\d{2}-\d{2}$
               lat:
-                type: number
+                anyOf:
+                  - type: number
+                  - type: "null"
               lon:
-                type: number
+                anyOf:
+                  - type: number
+                  - type: "null"
               locationLabel:
-                type: string
+                anyOf:
+                  - type: string
+                  - type: "null"
+              locationEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
               source:
                 type: string
                 enum:
@@ -39863,6 +40571,97 @@ components:
                     minimum: -9007199254740991
                     maximum: 9007199254740991
                   - type: "null"
+              apparentMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              pm25Mean:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              pm25Max:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              pm10Mean:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              no2Mean:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              so2Mean:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              coMean:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              o3Max8h:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              eaqiMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              usaqiMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              uvIndexMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              dustMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              aodMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              pollenAlderMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              pollenBirchMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              pollenGrassMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              pollenMugwortMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              pollenOliveMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              pollenRagweedMax:
+                anyOf:
+                  - type: number
+                  - type: "null"
+              aqDomain:
+                anyOf:
+                  - type: string
+                  - type: "null"
+              aqHours:
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
+              aqFetchedAt:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
               fetchedAt:
                 type: string
                 minLength: 1
@@ -39892,11 +40691,22 @@ components:
                 type: string
                 pattern: ^\d{4}-\d{2}-\d{2}$
               lat:
-                type: number
+                anyOf:
+                  - type: number
+                  - type: "null"
               lon:
-                type: number
+                anyOf:
+                  - type: number
+                  - type: "null"
               label:
-                type: string
+                anyOf:
+                  - type: string
+                  - type: "null"
+              locationEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
               createdAt:
                 type: string
                 minLength: 1
@@ -39937,6 +40747,7 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
               externalRecordingId:
                 type: string
                 minLength: 1
@@ -40117,6 +40928,83 @@ components:
         omissions there is a real, undeclared gap: roughly thirty of the models the backup plan marks as backed up have
         neither a reader here nor a restore branch yet, and `src/lib/export/backup-plan.ts` is the enumeration of which.
         `schemaVersion` is `2` on everything written today; the parser still accepts `1`."
+    ProfileClaimPreviewEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ProfileClaimPreview"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ProfileClaimPreview:
+      type: object
+      properties:
+        displayName:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        guardians:
+          type: array
+          items:
+            type: object
+            properties:
+              grantId:
+                type: string
+              displayName:
+                type: string
+              proposal:
+                type: string
+                enum:
+                  - end
+                  - read
+                  - manage
+            required:
+              - grantId
+              - displayName
+              - proposal
+            additionalProperties: false
+      required:
+        - displayName
+        - expiresAt
+        - guardians
+      additionalProperties: false
+    ProfileClaimEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            userId:
+              type: string
+            username:
+              type: string
+          required:
+            - userId
+            - username
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     LoginResponse:
       type: object
       properties:
@@ -42239,6 +43127,7 @@ components:
         - GOOGLE_HEALTH
         - STRAVA
         - EXTERNAL
+        - HEALTH_CONNECT
       description: Origin of the measurement. v1.4.23 added APPLE_HEALTH for the iOS HealthKit batch ingest path. v1.38.x
         added EXTERNAL for rows pushed in under a narrow `measurements:write` Bearer — a scale, a watch bridge, a
         home-automation rule — and workouts pushed in under a narrow `workouts:write` Bearer carry it too. No client may
@@ -49446,7 +50335,7 @@ components:
           type: object
           properties:
             steps:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49466,8 +50355,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             activeEnergy:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49487,8 +50377,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             walkingRunningDistance:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49508,8 +50399,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             flightsClimbed:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49529,8 +50421,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             sleep:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49550,8 +50443,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             weight:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49571,8 +50465,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             bloodPressure:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49592,8 +50487,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             pulse:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49613,8 +50509,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             bodyFat:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49634,8 +50531,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             bodyTemperature:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49655,8 +50553,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             spo2:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49676,8 +50575,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             hrv:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49697,8 +50597,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             restingHeartRate:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49718,8 +50619,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             vo2Max:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49739,8 +50641,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             skinTemperature:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49760,8 +50663,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             respiratoryRate:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49781,8 +50685,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             recovery:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49802,8 +50707,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             stress:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49823,8 +50729,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             sleepDebt:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -49844,11 +50751,34 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
+            hrvRmssd:
+              maxItems: 16
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
             metricPriority:
               type: object
               properties:
                 steps:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -49868,8 +50798,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 activeEnergy:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -49889,8 +50820,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 walkingRunningDistance:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -49910,8 +50842,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 flightsClimbed:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -49931,8 +50864,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 sleep:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -49952,8 +50886,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 weight:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -49973,8 +50908,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 bloodPressure:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -49994,8 +50930,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 pulse:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50015,8 +50952,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 bodyFat:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50036,8 +50974,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 bodyTemperature:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50057,8 +50996,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 spo2:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50078,8 +51018,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 hrv:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50099,8 +51040,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 restingHeartRate:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50120,8 +51062,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 vo2Max:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50141,8 +51084,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 skinTemperature:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50162,8 +51106,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 respiratoryRate:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50183,8 +51128,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 recovery:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50204,8 +51150,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 stress:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50225,8 +51172,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 sleepDebt:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50246,6 +51194,29 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
+                hrvRmssd:
+                  maxItems: 16
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
               additionalProperties: false
             deviceTypePriority:
               type: object
@@ -50296,7 +51267,7 @@ components:
           type: object
           properties:
             steps:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50316,8 +51287,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             activeEnergy:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50337,8 +51309,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             walkingRunningDistance:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50358,8 +51331,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             flightsClimbed:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50379,8 +51353,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             sleep:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50400,8 +51375,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             weight:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50421,8 +51397,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             bloodPressure:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50442,8 +51419,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             pulse:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50463,8 +51441,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             bodyFat:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50484,8 +51463,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             bodyTemperature:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50505,8 +51485,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             spo2:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50526,8 +51507,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             hrv:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50547,8 +51529,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             restingHeartRate:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50568,8 +51551,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             vo2Max:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50589,8 +51573,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             skinTemperature:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50610,8 +51595,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             respiratoryRate:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50631,8 +51617,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             recovery:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50652,8 +51639,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             stress:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50673,8 +51661,9 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
             sleepDebt:
-              maxItems: 8
+              maxItems: 16
               type: array
               items:
                 type: string
@@ -50694,11 +51683,34 @@ components:
                   - GOOGLE_HEALTH
                   - STRAVA
                   - EXTERNAL
+                  - HEALTH_CONNECT
+            hrvRmssd:
+              maxItems: 16
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
             metricPriority:
               type: object
               properties:
                 steps:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50718,8 +51730,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 activeEnergy:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50739,8 +51752,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 walkingRunningDistance:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50760,8 +51774,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 flightsClimbed:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50781,8 +51796,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 sleep:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50802,8 +51818,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 weight:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50823,8 +51840,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 bloodPressure:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50844,8 +51862,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 pulse:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50865,8 +51884,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 bodyFat:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50886,8 +51906,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 bodyTemperature:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50907,8 +51928,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 spo2:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50928,8 +51950,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 hrv:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50949,8 +51972,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 restingHeartRate:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50970,8 +51994,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 vo2Max:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -50991,8 +52016,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 skinTemperature:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -51012,8 +52038,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 respiratoryRate:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -51033,8 +52060,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 recovery:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -51054,8 +52082,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 stress:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -51075,8 +52104,9 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
                 sleepDebt:
-                  maxItems: 8
+                  maxItems: 16
                   type: array
                   items:
                     type: string
@@ -51096,6 +52126,29 @@ components:
                       - GOOGLE_HEALTH
                       - STRAVA
                       - EXTERNAL
+                      - HEALTH_CONNECT
+                hrvRmssd:
+                  maxItems: 16
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
               additionalProperties: false
             deviceTypePriority:
               type: object
@@ -56495,6 +57548,32 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    AdminMeasurementMaintenanceResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminMeasurementMaintenanceResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminMeasurementMaintenanceResult:
+      type: object
+      properties:
+        enqueued:
+          type: boolean
+          description: False when a maintenance run is already queued or running; nothing new was queued.
+      required:
+        - enqueued
       additionalProperties: false
     AdminReminderCheckResponse:
       type: object
@@ -64998,6 +66077,116 @@ components:
       required:
         - revoked
       additionalProperties: false
+    HealthConnectImportKickoffEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            jobId:
+              type: string
+            status:
+              type: string
+              enum:
+                - queued
+                - unpacking
+                - parsing
+                - upserting
+                - done
+            idempotent:
+              type: boolean
+          required:
+            - jobId
+            - status
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    HealthConnectImportStatusEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            job:
+              anyOf:
+                - $ref: "#/components/schemas/HealthConnectImportJob"
+                - type: "null"
+          required:
+            - job
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    HealthConnectImportJob:
+      type: object
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+          description: "`queued`, `unpacking`, `parsing`, `upserting`, `done` or `failed`. A plain string, like the Apple Health
+            status."
+        startedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        completedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        uploadBytes:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        progress:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+          description: Free-form phase progress. Shape is not part of the contract.
+        result:
+          anyOf:
+            - type: object
+              propertyNames:
+                type: string
+              additionalProperties: {}
+            - type: "null"
+          description: The worker's outcome summary, null until it finishes.
+        failureReason:
+          anyOf:
+            - type: string
+            - type: "null"
+      required:
+        - jobId
+        - status
+        - startedAt
+        - completedAt
+        - uploadBytes
+        - progress
+        - result
+        - failureReason
+      additionalProperties: false
     CsvImportResponseEnvelope:
       type: object
       properties:
@@ -67573,6 +68762,123 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/Practitioner"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ListCustomVaccinesEnvelope:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomVaccine"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CustomVaccine:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        components:
+          type: array
+          items:
+            type: string
+          description: Catalogue antigen slugs the product covers.
+        typicalSeriesDoses:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        boosterIntervalMonths:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - name
+        - components
+        - typicalSeriesDoses
+        - boosterIntervalMonths
+        - createdAt
+        - updatedAt
+      additionalProperties: false
+    CreateCustomVaccineEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomVaccine"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    UpdateCustomVaccineEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomVaccine"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DeleteCustomVaccineEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            deleted:
+              type: boolean
+          required:
+            - deleted
+          additionalProperties: false
         error:
           type: "null"
         meta:
@@ -71470,6 +72776,7 @@ components:
                 - foreground
                 - background
                 - push
+                - manual
               description: What triggered a HealthKit batch.
             - type: "null"
         lastBackgroundSyncAt:
@@ -74844,6 +76151,67 @@ components:
         - data
         - error
       additionalProperties: false
+    ManagedProfileHandoverEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ManagedProfileHandover"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ManagedProfileHandover:
+      type: object
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+          description: The one-time `hlp_` token. Returned only in this response and never again; only its hash is stored.
+        url:
+          type: string
+          description: "The link to hand over: `<app>/claim/<token>`."
+        expiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - token
+        - url
+        - expiresAt
+      additionalProperties: false
+    RevokeManagedProfileHandoverEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            revoked:
+              type: boolean
+          required:
+            - revoked
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     AccountPayloadEnvelope:
       type: object
       properties:
@@ -77608,6 +78976,35 @@ components:
       description: "The flattened, pre-translated badge the native client renders. Note the differences from the web shape:
         translated strings instead of keys, `iconName` instead of `icon`, `unlockedAt` instead of `completedAt`, and
         `progress` as a 0–1 fraction."
+    EnvironmentPreferencesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/EnvironmentPreferences"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    EnvironmentPreferences:
+      type: object
+      properties:
+        airQualityEnabled:
+          type: boolean
+        operatorDisabled:
+          type: boolean
+          description: True when the operator turned air quality off for the whole instance; the account switch then has no effect.
+      required:
+        - airQualityEnabled
+        - operatorDisabled
+      additionalProperties: false
     EnvironmentOverviewEnvelope:
       type: object
       properties:
