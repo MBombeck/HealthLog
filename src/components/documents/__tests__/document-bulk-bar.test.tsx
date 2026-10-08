@@ -110,4 +110,15 @@ describe("<DocumentBulkBar>", () => {
     // assertion above is about the visit menu and not about an empty render.
     expect(html).toContain("Link condition");
   });
+
+  it("drops to the page edge only when the bottom bar is gone", () => {
+    // The bar follows the shell, not `md`: a phone held sideways is wider
+    // than `md` and still shows the bottom bar over a `md:` drop.
+    const html = render([]);
+    const cls =
+      html.match(/data-slot="document-bulk-bar"[^>]*class="([^"]*)"/)?.[1] ??
+      "";
+    expect(cls).toContain("shell-desktop:bottom-6");
+    expect(cls).not.toMatch(/(?<![\w-])md:bottom-/);
+  });
 });
