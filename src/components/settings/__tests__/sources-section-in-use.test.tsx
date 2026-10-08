@@ -45,6 +45,15 @@ describe("Settings → Source priority, sources in use", () => {
     expect(html).toContain('aria-expanded="false"');
   });
 
+  it("names an element with every toggle's aria-controls, open or not", () => {
+    const html = render(["WITHINGS", "MANUAL"]);
+    const controls = [...html.matchAll(/aria-controls="([^"]+)"/g)].map(
+      (m) => m[1]!,
+    );
+    expect(controls.length).toBeGreaterThan(1);
+    for (const id of controls) expect(html).toContain(`id="${id}"`);
+  });
+
   it("says so when no source is in use at all", () => {
     expect(render([])).toContain('data-testid="sources-none-in-use"');
   });

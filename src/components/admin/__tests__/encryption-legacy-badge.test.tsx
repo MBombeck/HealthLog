@@ -131,6 +131,12 @@ describe("encryption coverage — the per-column table", () => {
     expect(html).not.toContain('data-slot="encryption-column-rows"');
   });
 
+  it("keeps the toggle's aria-controls target in the tree while collapsed", () => {
+    const html = renderCoverage(false);
+    expect(html).toContain('aria-controls="encryption-columns-panel"');
+    expect(html).toMatch(/<div id="encryption-columns-panel" hidden=""/);
+  });
+
   it("lists only columns with rows when opened, with a toggle for all", () => {
     const html = renderCoverage(true);
     expect(html).toContain("User.withRows");
