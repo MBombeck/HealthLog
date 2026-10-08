@@ -7377,8 +7377,8 @@
       "coachFollowsSwitch": "Follows the Coach switch in the Coach section."
     },
     "invites": {
-      "title": "Invites",
-      "description": "Registration invite links — they work even while registration is closed.",
+      "title": "Invite links",
+      "description": "Each link admits a signup even while registration is closed.",
       "create": "Create invite",
       "createTitle": "Create invite",
       "createDescription": "The link admits a signup even while registration is closed.",
@@ -7424,8 +7424,8 @@
       "revokedToast": "Invite revoked.",
       "revokeError": "Could not revoke the invite."
     },
-    "userManagement": "User Management",
-    "userManagementDescription": "Manage accounts: roles, password resets, and forced logouts.",
+    "userManagement": "Accounts",
+    "userManagementDescription": "Roles, password resets and forced logouts for every account.",
     "userName": "Name",
     "userEmail": "Email",
     "userRole": "Role",
@@ -7446,7 +7446,7 @@
     "passwordReset": "Password has been reset",
     "reset": "Reset",
     "loadingUsers": "Loading users…",
-    "apiTokens": "API Tokens",
+    "apiTokens": "API tokens",
     "apiTokensDescription": "All active and revoked API tokens across all accounts.",
     "tokenUser": "User",
     "tokenName": "Name",

@@ -7377,8 +7377,8 @@
       "coachFollowsSwitch": "Segue l'interruttore Coach nella sezione Coach."
     },
     "invites": {
-      "title": "Inviti",
-      "description": "Link di invito per la registrazione: funzionano anche quando la registrazione è chiusa.",
+      "title": "Link di invito",
+      "description": "Ogni link consente una registrazione anche quando la registrazione è chiusa.",
       "create": "Crea invito",
       "createTitle": "Crea invito",
       "createDescription": "Il link consente una registrazione anche quando la registrazione è chiusa.",
@@ -7424,8 +7424,8 @@
       "revokedToast": "Invito revocato.",
       "revokeError": "Impossibile revocare l'invito."
     },
-    "userManagement": "Gestione utenti",
-    "userManagementDescription": "Gestisci gli account: ruoli, reset delle password e disconnessioni forzate.",
+    "userManagement": "Account",
+    "userManagementDescription": "Ruoli, reset delle password e disconnessioni forzate per ogni account.",
     "userName": "Nome",
     "userEmail": "E-mail",
     "userRole": "Ruolo",

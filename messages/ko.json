@@ -7353,8 +7353,8 @@
       "coachFollowsSwitch": "코치 섹션의 코치 스위치를 따라요."
     },
     "invites": {
-      "title": "초대",
-      "description": "가입 초대 링크 — 회원가입이 닫혀 있어도 동작해요.",
+      "title": "초대 링크",
+      "description": "링크마다 회원가입이 닫혀 있어도 가입할 수 있어요.",
       "create": "초대 만들기",
       "createTitle": "초대 만들기",
       "createDescription": "회원가입이 닫혀 있어도 이 링크로는 가입할 수 있어요.",
@@ -7400,8 +7400,8 @@
       "revokedToast": "초대를 취소했어요.",
       "revokeError": "초대를 취소하지 못했어요."
     },
-    "userManagement": "사용자 관리",
-    "userManagementDescription": "계정 관리: 역할, 비밀번호 재설정, 강제 로그아웃.",
+    "userManagement": "계정",
+    "userManagementDescription": "계정마다 역할, 비밀번호 재설정, 강제 로그아웃을 관리해요.",
     "userName": "이름",
     "userEmail": "이메일",
     "userRole": "역할",

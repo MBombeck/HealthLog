@@ -7377,8 +7377,8 @@
       "coachFollowsSwitch": "Folgt dem Coach-Schalter im Bereich Coach."
     },
     "invites": {
-      "title": "Einladungen",
-      "description": "Einladungslinks für die Registrierung — funktionieren auch bei geschlossener Registrierung.",
+      "title": "Einladungslinks",
+      "description": "Jeder Link lässt eine Registrierung zu, auch wenn sie geschlossen ist.",
       "create": "Einladung erstellen",
       "createTitle": "Einladung erstellen",
       "createDescription": "Der Link erlaubt eine Registrierung auch bei geschlossener Registrierung.",
@@ -7424,8 +7424,8 @@
       "revokedToast": "Einladung widerrufen.",
       "revokeError": "Einladung konnte nicht widerrufen werden."
     },
-    "userManagement": "Nutzerverwaltung",
-    "userManagementDescription": "Konten verwalten: Rollen, Passwort-Resets und erzwungene Abmeldungen.",
+    "userManagement": "Konten",
+    "userManagementDescription": "Rollen, Passwort-Resets und erzwungene Abmeldungen für jedes Konto.",
     "userName": "Name",
     "userEmail": "E-Mail",
     "userRole": "Rolle",

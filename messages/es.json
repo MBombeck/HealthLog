@@ -7377,8 +7377,8 @@
       "coachFollowsSwitch": "Sigue el interruptor del Coach en la sección Coach."
     },
     "invites": {
-      "title": "Invitaciones",
-      "description": "Enlaces de invitación para el registro: funcionan incluso con el registro cerrado.",
+      "title": "Enlaces de invitación",
+      "description": "Cada enlace permite un registro aunque el registro esté cerrado.",
       "create": "Crear invitación",
       "createTitle": "Crear invitación",
       "createDescription": "El enlace permite registrarse incluso con el registro cerrado.",
@@ -7424,8 +7424,8 @@
       "revokedToast": "Invitación revocada.",
       "revokeError": "No se pudo revocar la invitación."
     },
-    "userManagement": "Gestión de usuarios",
-    "userManagementDescription": "Gestiona las cuentas: roles, restablecimientos de contraseña y cierres de sesión forzados.",
+    "userManagement": "Cuentas",
+    "userManagementDescription": "Roles, restablecimientos de contraseña y cierres de sesión forzados de cada cuenta.",
     "userName": "Nombre",
     "userEmail": "Correo electrónico",
     "userRole": "Rol",

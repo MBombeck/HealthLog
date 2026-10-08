@@ -7377,8 +7377,8 @@
       "coachFollowsSwitch": "Suit l'interrupteur Coach de la section Coach."
     },
     "invites": {
-      "title": "Invitations",
-      "description": "Liens d'invitation pour l'inscription — ils fonctionnent même lorsque les inscriptions sont fermées.",
+      "title": "Liens d'invitation",
+      "description": "Chaque lien permet une inscription même lorsque les inscriptions sont fermées.",
       "create": "Créer une invitation",
       "createTitle": "Créer une invitation",
       "createDescription": "Le lien permet une inscription même lorsque les inscriptions sont fermées.",
@@ -7424,8 +7424,8 @@
       "revokedToast": "Invitation révoquée.",
       "revokeError": "Impossible de révoquer l'invitation."
     },
-    "userManagement": "Gestion des utilisateurs",
-    "userManagementDescription": "Gérez les comptes : rôles, réinitialisations de mot de passe et déconnexions forcées.",
+    "userManagement": "Comptes",
+    "userManagementDescription": "Rôles, réinitialisations de mot de passe et déconnexions forcées pour chaque compte.",
     "userName": "Nom",
     "userEmail": "E-mail",
     "userRole": "Rôle",

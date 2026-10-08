@@ -7377,8 +7377,8 @@
       "coachFollowsSwitch": "Podlega przełącznikowi Coach w sekcji Coach."
     },
     "invites": {
-      "title": "Zaproszenia",
-      "description": "Linki z zaproszeniem do rejestracji — działają nawet przy zamkniętej rejestracji.",
+      "title": "Linki z zaproszeniem",
+      "description": "Każdy link pozwala na rejestrację nawet przy zamkniętej rejestracji.",
       "create": "Utwórz zaproszenie",
       "createTitle": "Utwórz zaproszenie",
       "createDescription": "Link umożliwia rejestrację nawet przy zamkniętej rejestracji.",
@@ -7424,8 +7424,8 @@
       "revokedToast": "Zaproszenie unieważnione.",
       "revokeError": "Nie udało się unieważnić zaproszenia."
     },
-    "userManagement": "Zarządzanie użytkownikami",
-    "userManagementDescription": "Zarządzaj kontami: role, resety haseł i wymuszone wylogowania.",
+    "userManagement": "Konta",
+    "userManagementDescription": "Role, resety haseł i wymuszone wylogowania dla każdego konta.",
     "userName": "Nazwa",
     "userEmail": "E-mail",
     "userRole": "Rola",
