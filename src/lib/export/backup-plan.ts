@@ -950,6 +950,7 @@ export const USER_COLUMN_BACKUP_CLASS = {
   insightsLayoutJson: "SETTING",
   medicationListLayoutJson: "SETTING",
   moodTagLayoutJson: "SETTING",
+  documentsLayoutJson: "SETTING",
   reportSelectionJson: "SETTING",
   globalExcludedInjectionSites: "SETTING",
   healthKitConfigJson: "SETTING",

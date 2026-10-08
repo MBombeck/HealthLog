@@ -5352,6 +5352,10 @@
         "mood": {
           "title": "Étiquettes d’humeur",
           "description": "Groupes, étiquettes et étiquettes archivées du sélecteur d’humeur."
+        },
+        "documents": {
+          "title": "Documents",
+          "description": "Affichage et disposition des mois."
         }
       },
       "dashboard": {
@@ -11061,6 +11065,21 @@
       "finishedHint": "Cherchez à nouveau ou changez un filtre pour choisir d'autres documents.",
       "maxReached": "Vous pouvez importer au plus {max} documents à la fois.",
       "noMatchHint": "Essayez une partie du nom, ou effacez l'étiquette et les dates."
+    },
+    "customize": "Personnaliser l'affichage",
+    "layout": {
+      "viewDescription": "Des cartes avec aperçu ou une liste compacte.",
+      "arrangementHeading": "Disposition",
+      "arrangementDescription": "Chaque mois dans son propre bloc, ou tout à la suite sur toute la largeur.",
+      "stacked": "Mois empilés",
+      "flow": "En continu",
+      "saveFailed": "Impossible d'enregistrer l'affichage."
+    },
+    "deleteConfirm": {
+      "titleOne": "Supprimer ce document ?",
+      "titleMany": "Supprimer {count} documents ?",
+      "body": "Vous pouvez annuler juste après. Au bout de 30 jours, la suppression est définitive.",
+      "action": "Supprimer"
     }
   },
   "selfDescription": {

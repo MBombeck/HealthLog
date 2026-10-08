@@ -5352,6 +5352,10 @@
         "mood": {
           "title": "Etiquetas de ánimo",
           "description": "Grupos, etiquetas y etiquetas archivadas del selector de ánimo."
+        },
+        "documents": {
+          "title": "Documentos",
+          "description": "Vista y disposición de los meses."
         }
       },
       "dashboard": {
@@ -11061,6 +11065,21 @@
       "finishedHint": "Busca de nuevo o cambia un filtro para elegir más documentos.",
       "maxReached": "Puedes importar como máximo {max} documentos a la vez.",
       "noMatchHint": "Prueba con parte del nombre o quita la etiqueta y las fechas."
+    },
+    "customize": "Personalizar vista",
+    "layout": {
+      "viewDescription": "Tarjetas con miniatura o una lista compacta.",
+      "arrangementHeading": "Disposición",
+      "arrangementDescription": "Cada mes en su propio bloque o todo seguido a lo ancho.",
+      "stacked": "Meses apilados",
+      "flow": "Continuo",
+      "saveFailed": "No se pudo guardar la vista."
+    },
+    "deleteConfirm": {
+      "titleOne": "¿Eliminar este documento?",
+      "titleMany": "¿Eliminar {count} documentos?",
+      "body": "Puedes deshacerlo justo después. A los 30 días se elimina definitivamente.",
+      "action": "Eliminar"
     }
   },
   "selfDescription": {

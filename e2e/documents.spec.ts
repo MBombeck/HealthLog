@@ -464,6 +464,8 @@ test.describe("document vault", () => {
     const sheet = page.getByRole("dialog", { name: `${title}.pdf` });
     await expect(sheet).toBeVisible();
     await sheet.getByRole("button", { name: "Delete" }).click();
+    // v1.42 — the sheet's Delete asks first, like every vault delete.
+    await page.locator('[data-slot="document-detail-delete-confirm"]').click();
 
     // Undo toast → restore → the card returns.
     //

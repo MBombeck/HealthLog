@@ -5352,6 +5352,10 @@
         "mood": {
           "title": "기분 태그",
           "description": "기분 선택기의 그룹, 태그, 보관된 태그."
+        },
+        "documents": {
+          "title": "문서",
+          "description": "보기 방식과 월 배치."
         }
       },
       "dashboard": {
@@ -11061,6 +11065,21 @@
       "finishedHint": "다시 검색하거나 필터를 바꿔 문서를 더 고르세요.",
       "maxReached": "한 번에 최대 {max}개 문서를 가져올 수 있습니다.",
       "noMatchHint": "이름의 일부로 검색하거나 태그와 날짜를 지워 보세요."
+    },
+    "customize": "보기 사용자 지정",
+    "layout": {
+      "viewDescription": "미리보기가 있는 카드 또는 간단한 목록.",
+      "arrangementHeading": "배치",
+      "arrangementDescription": "월별로 따로 묶거나 전체 너비에 이어서 표시합니다.",
+      "stacked": "월별로 나누기",
+      "flow": "이어서 보기",
+      "saveFailed": "보기 설정을 저장하지 못했습니다."
+    },
+    "deleteConfirm": {
+      "titleOne": "이 문서를 삭제할까요?",
+      "titleMany": "문서 {count}개를 삭제할까요?",
+      "body": "삭제 직후에는 되돌릴 수 있습니다. 30일이 지나면 완전히 삭제됩니다.",
+      "action": "삭제"
     }
   },
   "selfDescription": {

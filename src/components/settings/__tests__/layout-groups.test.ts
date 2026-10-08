@@ -29,7 +29,7 @@ import {
 } from "../layout-groups";
 
 describe("layout-groups registry", () => {
-  it("exposes the seven Appearance modules as statically-generated subpage params", () => {
+  it("exposes the eight Appearance modules as statically-generated subpage params", () => {
     expect(LAYOUT_GROUP_IDS).toEqual([
       "dashboard",
       "insights",
@@ -37,6 +37,7 @@ describe("layout-groups registry", () => {
       "mood",
       "labs",
       "illness",
+      "documents",
       "vorsorge",
     ]);
     // generateStaticParams() shape.
@@ -47,6 +48,7 @@ describe("layout-groups registry", () => {
       { module: "mood" },
       { module: "labs" },
       { module: "illness" },
+      { module: "documents" },
       { module: "vorsorge" },
     ]);
   });

@@ -5352,6 +5352,10 @@
         "mood": {
           "title": "Tag dell’umore",
           "description": "Gruppi, tag e tag archiviati del selettore dell’umore."
+        },
+        "documents": {
+          "title": "Documenti",
+          "description": "Visualizzazione e disposizione dei mesi."
         }
       },
       "dashboard": {
@@ -11061,6 +11065,21 @@
       "finishedHint": "Cerca di nuovo o cambia un filtro per scegliere altri documenti.",
       "maxReached": "Puoi importare al massimo {max} documenti alla volta.",
       "noMatchHint": "Prova con parte del nome, oppure azzera etichetta e date."
+    },
+    "customize": "Personalizza visualizzazione",
+    "layout": {
+      "viewDescription": "Schede con anteprima oppure un elenco compatto.",
+      "arrangementHeading": "Disposizione",
+      "arrangementDescription": "Ogni mese in un blocco a sé oppure tutto di seguito su tutta la larghezza.",
+      "stacked": "Mesi impilati",
+      "flow": "Continuo",
+      "saveFailed": "Impossibile salvare la visualizzazione."
+    },
+    "deleteConfirm": {
+      "titleOne": "Eliminare questo documento?",
+      "titleMany": "Eliminare {count} documenti?",
+      "body": "Puoi annullare subito dopo. Dopo 30 giorni viene rimosso definitivamente.",
+      "action": "Elimina"
     }
   },
   "selfDescription": {

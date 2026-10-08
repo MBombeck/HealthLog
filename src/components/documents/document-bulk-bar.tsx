@@ -3,20 +3,24 @@
 /**
  * Floating bulk-action bar for the vault's multi-select mode. Appears once
  * at least one document is selected, pinned above the bottom nav on phones
- * and near the bottom edge on desktop. Carries the selected count and the
- * bulk verbs — set type, link condition, file against a visit, share (one
- * link for the whole selection), delete (undo-able), clear — all driving the
- * page's handlers.
+ * and near the bottom edge on desktop.
+ *
+ * Two tight lines. The first carries the selected count and, at its right
+ * edge, the X that clears the selection. The second is the one action row:
+ * set type, link condition, file against a visit and share lead from the
+ * left, and Delete sits alone at the right edge in the destructive style.
+ * Delete never deletes from here — it asks the page, which confirms first
+ * (`onRequestDelete`), the same path the card's Delete key takes.
  *
  * The two link verbs are the same shape and stay that way: each renders only
  * when the account HAS something to link to, so an empty menu is never
  * offered.
  *
- * A `role="toolbar"` with proper labels; the destructive verb sits last
- * before Clear so a stray tap sequence never ends on Delete. Share sits just
- * before Delete (the safe actions lead). The bar is a deliberate hand-rolled
- * shell (a floating toolbar is not a Card surface): dense-tile padding `p-3`
- * per the standards.
+ * Below `lg` every verb is icon-only with its name in `aria-label` and
+ * `title`, at the 44 px tap floor, so the row stays one line at 360 px; the
+ * labels return where the bar is wide enough to hold them on one line. A
+ * `role="toolbar"`; the bar is a deliberate hand-rolled shell (a floating
+ * toolbar is not a Card surface): dense-tile padding `p-3` per the standards.
  */
 import {
   CalendarClock,
@@ -50,6 +54,13 @@ export interface BulkEncounterOption {
   label: string;
 }
 
+/** Shared shape of the leading verbs: icon-only below `lg`, labelled from it. */
+const VERB_CLASS = "min-h-11 min-w-11 sm:min-h-9 sm:min-w-9";
+
+function VerbLabel({ children }: { children: string }) {
+  return <span className="hidden lg:inline">{children}</span>;
+}
+
 export function DocumentBulkBar({
   selectedCount,
   episodes,
@@ -59,7 +70,7 @@ export function DocumentBulkBar({
   onLinkEpisode,
   onLinkEncounter,
   onShare,
-  onDelete,
+  onRequestDelete,
   onClear,
 }: {
   selectedCount: number;
@@ -78,153 +89,170 @@ export function DocumentBulkBar({
    * this handler just opens the share sheet seeded with the selection.
    */
   onShare: () => void;
-  onDelete: () => void;
+  /** Ask to delete the selection. The page confirms before anything goes. */
+  onRequestDelete: () => void;
   onClear: () => void;
 }) {
   const { t } = useTranslations();
 
   return (
-    <div
-      data-slot="document-bulk-bar"
-      role="toolbar"
-      aria-label={t("documents.bulk.barLabel")}
-      className={cn(
-        "bg-card border-border fixed bottom-20 left-1/2 z-40 -translate-x-1/2 md:bottom-6",
-        "flex w-[calc(100%-2rem)] max-w-2xl flex-wrap items-center gap-2 rounded-xl border p-3 shadow-lg",
-      )}
-    >
-      <p className="px-1 text-sm font-medium whitespace-nowrap" role="status">
-        {t("documents.selection.count", { count: selectedCount })}
-      </p>
+    // The outer slot is the data-list selection bar's: the Coach launcher
+    // watches for it and steps aside while a selection is open, so it never
+    // sits over Delete at the bar's right edge. `contents` keeps the wrapper
+    // out of the layout.
+    <div data-slot="selection-action-bar" className="contents">
+      <div
+        data-slot="document-bulk-bar"
+        role="toolbar"
+        aria-label={t("documents.bulk.barLabel")}
+        className={cn(
+          "bg-card border-border fixed bottom-20 left-1/2 z-40 -translate-x-1/2 md:bottom-6",
+          "flex w-[calc(100%-2rem)] max-w-3xl flex-col gap-2 rounded-xl border p-3 shadow-lg",
+        )}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <p
+            className="px-1 text-sm font-medium whitespace-nowrap"
+            role="status"
+            data-slot="document-bulk-count"
+          >
+            {t("documents.selection.count", { count: selectedCount })}
+          </p>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground size-11 sm:size-9"
+            onClick={onClear}
+            data-slot="document-bulk-clear"
+            aria-label={t("documents.selection.clear")}
+            title={t("documents.selection.clear")}
+          >
+            <X className="size-4" aria-hidden />
+          </Button>
+        </div>
 
-      <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
-        {/* v1.30 mobile audit (DO-1) — five labelled buttons wrapped into a
-            2–3-row floating slab at ~360 px. Below `sm` every verb collapses
-            to icon-only (`aria-label` carries the accessible name; the
-            visible label returns at `sm+`) — the `document-detail-sheet`
-            footer's established icon-collapse pattern. */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={busy}
-              aria-label={t("documents.bulk.setKind")}
-            >
-              <Tag className="size-4" aria-hidden />
-              <span className="hidden sm:inline">
-                {t("documents.bulk.setKind")}
-              </span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {DOCUMENT_KIND_ORDER.map((kind) => {
-              const Icon = DOCUMENT_KIND_ICONS[kind];
-              return (
-                <DropdownMenuItem key={kind} onSelect={() => onSetKind(kind)}>
-                  <Icon className="size-4" aria-hidden />
-                  {t(`documents.kind.${kind}`)}
-                </DropdownMenuItem>
-              );
-            })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {episodes.length > 0 ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={busy}
-                aria-label={t("documents.bulk.linkCondition")}
-              >
-                <FolderPlus className="size-4" aria-hidden />
-                <span className="hidden sm:inline">
-                  {t("documents.bulk.linkCondition")}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {episodes.map((episode) => (
-                <DropdownMenuItem
-                  key={episode.id}
-                  onSelect={() => onLinkEpisode(episode.id)}
-                >
-                  <span className="max-w-56 truncate">{episode.label}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
-
-        {encounters.length > 0 ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={busy}
-                data-slot="document-bulk-link-visit"
-                aria-label={t("documents.bulk.linkVisit")}
-              >
-                <CalendarClock className="size-4" aria-hidden />
-                <span className="hidden sm:inline">
-                  {t("documents.bulk.linkVisit")}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {encounters.map((encounter) => (
-                <DropdownMenuItem
-                  key={encounter.id}
-                  onSelect={() => onLinkEncounter(encounter.id)}
-                >
-                  <span className="max-w-56 truncate">{encounter.label}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
-
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={onShare}
-          data-slot="document-bulk-share"
-          aria-label={t("documents.bulk.share")}
+        <div
+          data-slot="document-bulk-actions"
+          className="flex items-center gap-1.5"
         >
-          <Share2 className="size-4" aria-hidden />
-          <span className="hidden sm:inline">{t("documents.bulk.share")}</span>
-        </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                className={VERB_CLASS}
+                data-slot="document-bulk-set-kind"
+                aria-label={t("documents.bulk.setKind")}
+                title={t("documents.bulk.setKind")}
+              >
+                <Tag className="size-4" aria-hidden />
+                <VerbLabel>{t("documents.bulk.setKind")}</VerbLabel>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {DOCUMENT_KIND_ORDER.map((kind) => {
+                const Icon = DOCUMENT_KIND_ICONS[kind];
+                return (
+                  <DropdownMenuItem key={kind} onSelect={() => onSetKind(kind)}>
+                    <Icon className="size-4" aria-hidden />
+                    {t(`documents.kind.${kind}`)}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        {/* Solid destructive (matching the detail sheet's Delete) — the
+          {episodes.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  className={VERB_CLASS}
+                  data-slot="document-bulk-link-condition"
+                  aria-label={t("documents.bulk.linkCondition")}
+                  title={t("documents.bulk.linkCondition")}
+                >
+                  <FolderPlus className="size-4" aria-hidden />
+                  <VerbLabel>{t("documents.bulk.linkCondition")}</VerbLabel>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {episodes.map((episode) => (
+                  <DropdownMenuItem
+                    key={episode.id}
+                    onSelect={() => onLinkEpisode(episode.id)}
+                  >
+                    <span className="max-w-56 truncate">{episode.label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+
+          {encounters.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  className={VERB_CLASS}
+                  data-slot="document-bulk-link-visit"
+                  aria-label={t("documents.bulk.linkVisit")}
+                  title={t("documents.bulk.linkVisit")}
+                >
+                  <CalendarClock className="size-4" aria-hidden />
+                  <VerbLabel>{t("documents.bulk.linkVisit")}</VerbLabel>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {encounters.map((encounter) => (
+                  <DropdownMenuItem
+                    key={encounter.id}
+                    onSelect={() => onLinkEncounter(encounter.id)}
+                  >
+                    <span className="max-w-56 truncate">{encounter.label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={onShare}
+            className={VERB_CLASS}
+            data-slot="document-bulk-share"
+            aria-label={t("documents.bulk.share")}
+            title={t("documents.bulk.share")}
+          >
+            <Share2 className="size-4" aria-hidden />
+            <VerbLabel>{t("documents.bulk.share")}</VerbLabel>
+          </Button>
+
+          {/* Solid destructive (matching the detail sheet's Delete) — the
             outline variant's destructive text on the card surface fails the
-            WCAG contrast gate. */}
-        <Button
-          variant="destructive"
-          size="sm"
-          disabled={busy}
-          onClick={onDelete}
-          aria-label={t("documents.bulk.delete")}
-        >
-          <Trash2 className="size-4" aria-hidden />
-          <span className="hidden sm:inline">{t("documents.bulk.delete")}</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-          onClick={onClear}
-          aria-label={t("documents.selection.clear")}
-        >
-          <X className="size-3.5" aria-hidden />
-          <span className="hidden sm:inline">
-            {t("documents.selection.clear")}
-          </span>
-        </Button>
+            WCAG contrast gate. Alone at the right edge, away from the safe
+            verbs. */}
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={busy}
+            onClick={onRequestDelete}
+            className={cn("ml-auto", VERB_CLASS)}
+            data-slot="document-bulk-delete"
+            aria-label={t("documents.bulk.delete")}
+            title={t("documents.bulk.delete")}
+          >
+            <Trash2 className="size-4" aria-hidden />
+            <VerbLabel>{t("documents.bulk.delete")}</VerbLabel>
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -5352,6 +5352,10 @@
         "mood": {
           "title": "Mood tags",
           "description": "Groups, tags, and archived tags for the mood picker."
+        },
+        "documents": {
+          "title": "Documents",
+          "description": "View and how the months are arranged."
         }
       },
       "dashboard": {
@@ -11061,6 +11065,21 @@
       "finishedHint": "Search again or change a filter to pick more documents.",
       "maxReached": "You can import up to {max} documents at a time.",
       "noMatchHint": "Try part of the name, or clear the tag and dates."
+    },
+    "customize": "Customize view",
+    "layout": {
+      "viewDescription": "Preview cards with thumbnails, or a compact list.",
+      "arrangementHeading": "Arrangement",
+      "arrangementDescription": "Each month as its own block, or everything flowing across the full width.",
+      "stacked": "Months stacked",
+      "flow": "Continuous",
+      "saveFailed": "Couldn't save the view."
+    },
+    "deleteConfirm": {
+      "titleOne": "Delete this document?",
+      "titleMany": "Delete {count} documents?",
+      "body": "You can undo this right afterwards. After 30 days it is removed for good.",
+      "action": "Delete"
     }
   },
   "selfDescription": {

@@ -5352,6 +5352,10 @@
         "mood": {
           "title": "Tagi nastroju",
           "description": "Grupy, tagi i zarchiwizowane tagi w wyborze nastroju."
+        },
+        "documents": {
+          "title": "Dokumenty",
+          "description": "Widok i układ miesięcy."
         }
       },
       "dashboard": {
@@ -11061,6 +11065,21 @@
       "finishedHint": "Wyszukaj ponownie lub zmień filtr, aby wybrać więcej dokumentów.",
       "maxReached": "Możesz zaimportować naraz najwyżej {max} dokumentów.",
       "noMatchHint": "Spróbuj części nazwy albo wyczyść tag i daty."
+    },
+    "customize": "Dostosuj widok",
+    "layout": {
+      "viewDescription": "Karty z miniaturą albo zwarta lista.",
+      "arrangementHeading": "Układ",
+      "arrangementDescription": "Każdy miesiąc osobno albo wszystko po kolei na całą szerokość.",
+      "stacked": "Miesiące jeden pod drugim",
+      "flow": "Ciągły",
+      "saveFailed": "Nie udało się zapisać widoku."
+    },
+    "deleteConfirm": {
+      "titleOne": "Usunąć ten dokument?",
+      "titleMany": "Usunąć dokumenty ({count})?",
+      "body": "Zaraz potem możesz to cofnąć. Po 30 dniach zostanie usunięte na stałe.",
+      "action": "Usuń"
     }
   },
   "selfDescription": {

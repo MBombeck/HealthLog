@@ -5352,6 +5352,10 @@
         "mood": {
           "title": "Stimmungs-Tags",
           "description": "Gruppen, Tags und archivierte Tags der Stimmungs-Auswahl."
+        },
+        "documents": {
+          "title": "Dokumente",
+          "description": "Ansicht und Anordnung der Monate."
         }
       },
       "dashboard": {
@@ -11061,6 +11065,21 @@
       "finishedHint": "Suche erneut oder ändere einen Filter, um weitere Dokumente auszuwählen.",
       "maxReached": "Du kannst höchstens {max} Dokumente auf einmal importieren.",
       "noMatchHint": "Versuche einen Teil des Namens oder setze Tag und Datum zurück."
+    },
+    "customize": "Darstellung anpassen",
+    "layout": {
+      "viewDescription": "Vorschaukarten mit Miniaturansicht oder eine kompakte Liste.",
+      "arrangementHeading": "Anordnung",
+      "arrangementDescription": "Jeder Monat als eigener Block oder alles fortlaufend über die ganze Breite.",
+      "stacked": "Monate untereinander",
+      "flow": "Fortlaufend",
+      "saveFailed": "Die Darstellung konnte nicht gespeichert werden."
+    },
+    "deleteConfirm": {
+      "titleOne": "Dieses Dokument löschen?",
+      "titleMany": "{count} Dokumente löschen?",
+      "body": "Direkt danach lässt sich das noch rückgängig machen. Nach 30 Tagen wird es endgültig entfernt.",
+      "action": "Löschen"
     }
   },
   "selfDescription": {
