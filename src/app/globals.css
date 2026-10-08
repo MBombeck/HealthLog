@@ -32,6 +32,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * `pointer-fine:` — a mouse or trackpad is the primary pointer. Form fields
+ * take the compact 14 px type only under it: iOS and iPadOS Safari zoom the
+ * page into any focused field whose text is smaller than 16 px, and a width
+ * breakpoint alone (`md:text-sm`) handed 14 px to a phone held sideways
+ * (844 px) and to every iPad. Touch-first screens keep the 16 px base at
+ * every width.
+ */
+@custom-variant pointer-fine {
+  @media (hover: hover) and (pointer: fine) {
+    @slot;
+  }
+}
+
 @theme inline {
   /* Extra-small breakpoint (30rem / 480px) for the narrowest phones — the
      default scale starts at sm (640px), which leaves a gap between an iPhone SE

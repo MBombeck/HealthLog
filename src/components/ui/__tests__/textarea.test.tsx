@@ -4,10 +4,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { Textarea } from "../textarea";
 
 describe("<Textarea>", () => {
-  it("pins text-base on mobile and shrinks to text-sm on sm+ (iOS zoom defence)", () => {
+  it("pins text-base on touch screens and shrinks to text-sm only under a fine pointer (iOS zoom defence)", () => {
     const html = renderToStaticMarkup(<Textarea id="note" />);
     expect(html).toContain("text-base");
-    expect(html).toContain("sm:text-sm");
+    expect(html).toContain("sm:pointer-fine:text-sm");
+    // A width breakpoint alone handed 14 px to a phone held sideways.
+    expect(html).not.toMatch(/(^|\s)sm:text-sm(\s|")/);
   });
 
   it("floors at min-h-11 on mobile and min-h-9 on sm+ (WCAG 2.5.5 tap target)", () => {
@@ -62,7 +64,7 @@ describe("<Textarea>", () => {
     expect(html).toContain("font-mono");
     // iOS zoom defence still present after merge
     expect(html).toContain("text-base");
-    expect(html).toContain("sm:text-sm");
+    expect(html).toContain("sm:pointer-fine:text-sm");
   });
 
   it("forwards rows / placeholder / maxLength to the underlying element", () => {
